@@ -1,0 +1,74 @@
+<div 
+  class="desktop-icon"
+  [class.selected]="isSelected"
+  [class.dragging]="isDragging()"
+  [ngStyle]="iconPosition()"
+  (click)="onIconClick()"
+  (dblclick)="onIconDoubleClick()"
+  (mousedown)="onIconMouseDown($event)"
+  (contextmenu)="onIconRightClick($event)">
+  
+  <!-- Icon Image -->
+  <div class="icon-image">
+    <!-- Local icon image -->
+    <img [src]="iconData.icon" *ngIf="iconData.icon && !iconData.icon.startsWith('pi ')" [alt]="iconData.name">
+    <!-- Font icon -->
+    <i [class]="iconData.icon" *ngIf="iconData.icon && iconData.icon.startsWith('pi ')"></i>
+  </div>
+  
+  <!-- Icon Name -->
+  <div class="icon-name" *ngIf="!isRenaming()">
+    {{ iconData.name }}
+  </div>
+  
+  <!-- Rename Input -->
+  <input 
+    *ngIf="isRenaming()"
+    class="rename-input"
+    type="text"
+    [value]="newName()"
+    (input)="onRenameInput($event)"
+    (keydown)="onRenameKeyDown($event)"
+    (blur)="finishRename()"
+    #renameInput>
+</div>
+
+<!-- Context Menu -->
+<div 
+  *ngIf="showContextMenu()"
+  class="context-menu"
+  [ngStyle]="{
+    left: contextMenuPosition().x + 'px',
+    top: contextMenuPosition().y + 'px'
+  }"
+  (click)="hideContextMenu()">
+  
+  <div class="context-menu-item" (click)="onContextMenuAction('open')">
+    <i class="pi pi-external-link"></i>
+    <span>Open</span>
+  </div>
+  
+  <div class="context-menu-separator"></div>
+  
+  <div class="context-menu-item" (click)="onContextMenuAction('rename')" *ngIf="!isInTrash">
+    <i class="pi pi-pencil"></i>
+    <span>Rename</span>
+  </div>
+  
+  <div class="context-menu-item" (click)="onContextMenuAction('restore')" *ngIf="isInTrash">
+    <i class="pi pi-undo"></i>
+    <span>Restore</span>
+  </div>
+  
+  <div class="context-menu-item danger" (click)="onContextMenuAction('delete')" *ngIf="!isInTrash">
+    <i class="pi pi-trash"></i>
+    <span>Delete</span>
+  </div>
+</div>
+
+<!-- Context Menu Backdrop -->
+<div 
+  *ngIf="showContextMenu()"
+  class="context-menu-backdrop"
+  (click)="hideContextMenu()">
+</div>

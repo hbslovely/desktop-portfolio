@@ -1,0 +1,188 @@
+.desktop-icon {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 80px;
+  padding: 8px;
+  cursor: pointer;
+  user-select: none;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+
+  &.selected {
+    background-color: rgba(0, 120, 212, 0.3);
+    border: 1px solid rgba(0, 120, 212, 0.6);
+  }
+
+  &.dragging {
+    opacity: 0.8;
+    transform: scale(1.05);
+    z-index: 1000;
+    pointer-events: none; // Prevent interference during drag
+    transition: none; // Disable transitions during drag for better performance
+  }
+}
+
+.icon-image {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+  
+  i {
+    font-size: 32px;
+    color: #ffffff;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  }
+  
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: 4px;
+  }
+}
+
+.icon-name {
+  color: #ffffff;
+  font-size: 11px;
+  text-align: center;
+  line-height: 1.2;
+  max-width: 100%;
+  word-wrap: break-word;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.rename-input {
+  background: #ffffff;
+  border: 1px solid #0078d4;
+  border-radius: 2px;
+  padding: 2px 4px;
+  font-size: 11px;
+  text-align: center;
+  width: 100%;
+  outline: none;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+// Context Menu
+.context-menu-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 9998;
+}
+
+.context-menu {
+  position: fixed;
+  background: #ffffff;
+  border: 1px solid #cccccc;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 9999;
+  min-width: 150px;
+  padding: 4px 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.context-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  font-size: 13px;
+  color: #333333;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+
+  &:hover {
+    background-color: #f0f0f0;
+  }
+
+  &.danger {
+    color: #d13438;
+    
+    &:hover {
+      background-color: #fdf2f2;
+    }
+  }
+
+  i {
+    font-size: 12px;
+    width: 16px;
+    text-align: center;
+  }
+
+  span {
+    flex: 1;
+  }
+}
+
+.context-menu-separator {
+  height: 1px;
+  background-color: #e0e0e0;
+  margin: 4px 0;
+}
+
+// Icon types specific styling
+.desktop-icon {
+  // Application icons
+  &[data-type="application"] {
+    .icon-image i {
+      color: #0078d4;
+    }
+  }
+  
+  // Folder icons
+  &[data-type="folder"] {
+    .icon-image i {
+      color: #ffc107;
+    }
+  }
+  
+  // File icons
+  &[data-type="file"] {
+    .icon-image i {
+      color: #6c757d;
+    }
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .desktop-icon {
+    width: 70px;
+    
+    .icon-image {
+      width: 40px;
+      height: 40px;
+      
+      i {
+        font-size: 28px;
+      }
+    }
+    
+    .icon-name {
+      font-size: 10px;
+    }
+  }
+  
+  .context-menu {
+    min-width: 120px;
+  }
+  
+  .context-menu-item {
+    padding: 12px 16px;
+    font-size: 14px;
+  }
+}

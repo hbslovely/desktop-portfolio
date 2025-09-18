@@ -1,0 +1,33 @@
+<div class="iframe-container">
+  <!-- Loading indicator -->
+  <div class="loading-overlay" *ngIf="isLoading()">
+    <div class="loading-spinner">
+      <i class="pi pi-spin pi-spinner"></i>
+    </div>
+    <p>Loading {{ title }}...</p>
+  </div>
+  
+  <!-- Error state -->
+  <div class="error-overlay" *ngIf="hasError()">
+    <div class="error-content">
+      <i class="pi pi-exclamation-triangle"></i>
+      <h3>Unable to load content</h3>
+      <p>The website may not allow embedding or there might be a connection issue.</p>
+      <button class="retry-button" (click)="reloadIframe()">
+        <i class="pi pi-refresh"></i>
+        Try Again
+      </button>
+    </div>
+  </div>
+  
+  <!-- Iframe -->
+  <iframe 
+    [src]="safeUrl()"
+    [title]="title"
+    (load)="onIframeLoad()"
+    (error)="onIframeError()"
+    frameborder="0"
+    allowfullscreen
+    *ngIf="safeUrl()">
+  </iframe>
+</div>

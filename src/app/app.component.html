@@ -1,0 +1,325 @@
+<!-- Desktop Environment -->
+<div class="desktop">
+  <!-- Desktop Wallpaper -->
+  <div class="wallpaper"></div>
+  
+  <!-- Calculator Window -->
+  <app-window
+    *ngIf="showTestWindow()"
+    title="Calculator"
+    icon="calculator"
+    statusText="Ready"
+    [initialWidth]="320"
+    [initialHeight]="480"
+    [initialX]="100"
+    [initialY]="100"
+    [maximizable]="false"
+    [zIndex]="getWindowZIndex('calculator')"
+    [isFocused]="isWindowFocused('calculator')"
+    (onClose)="onCloseTestWindow()"
+    (onMinimize)="onMinimizeTestWindow()"
+    (onMaximize)="onMaximizeTestWindow()"
+    (onRestore)="onRestoreTestWindow()"
+    (onFocus)="onFocusTestWindow()">
+    
+    <app-calculator></app-calculator>
+  </app-window>
+
+  <!-- My Information Window -->
+  <app-window
+    *ngIf="showMyInfoWindow()"
+    title="My Information"
+    icon="user-profile"
+    statusText="Loading profile information..."
+    [initialWidth]="900"
+    [initialHeight]="700"
+    [initialX]="200"
+    [initialY]="50"
+    [maximizable]="true"
+    [zIndex]="getWindowZIndex('my-info')"
+    [isFocused]="isWindowFocused('my-info')"
+    (onClose)="onCloseMyInfoWindow()"
+    (onMinimize)="onMinimizeMyInfoWindow()"
+    (onMaximize)="onMaximizeMyInfoWindow()"
+    (onRestore)="onRestoreMyInfoWindow()"
+    (onFocus)="onFocusMyInfoWindow()">
+    
+    <div class="profile-content">
+      <div class="profile-header">
+        <img src="assets/images/icons/profile.png" alt="Profile" class="profile-avatar">
+        <h2>Welcome to My Desktop Portfolio</h2>
+      </div>
+      <div class="profile-body">
+        <h3>About Me</h3>
+        <p>This is a Windows-style desktop environment built with Angular. You can:</p>
+        <ul>
+          <li>Double-click desktop icons to open applications</li>
+          <li>Drag windows around the desktop</li>
+          <li>Resize windows by dragging the edges and corners</li>
+          <li>Click taskbar buttons to switch between windows</li>
+          <li>Use the start menu to launch applications</li>
+        </ul>
+        <h3>Features</h3>
+        <ul>
+          <li>✅ Desktop icons with drag & drop</li>
+          <li>✅ Resizable and moveable windows</li>
+          <li>✅ Taskbar with window management</li>
+          <li>✅ Start menu</li>
+          <li>✅ Calculator application</li>
+          <li>✅ Window focus management</li>
+        </ul>
+      </div>
+    </div>
+  </app-window>
+
+  <!-- My Page Window -->
+  <app-window
+    *ngIf="showMyPageWindow()"
+    title="My Page"
+    icon="info"
+    statusText="Loading web page..."
+    [initialWidth]="1000"
+    [initialHeight]="700"
+    [initialX]="150"
+    [initialY]="100"
+    [maximizable]="true"
+    [zIndex]="getWindowZIndex('my-page')"
+    [isFocused]="isWindowFocused('my-page')"
+    (onClose)="onCloseMyPageWindow()"
+    (onMinimize)="onMinimizeMyPageWindow()"
+    (onMaximize)="onMaximizeMyPageWindow()"
+    (onRestore)="onRestoreMyPageWindow()"
+    (onFocus)="onFocusMyPageWindow()">
+    
+    <div class="browser-container">
+      <!-- Browser Tab Bar -->
+      <div class="tab-bar">
+        <div class="tab active">
+          <i class="pi pi-globe tab-icon"></i>
+          <span class="tab-title">Google</span>
+          <button class="tab-close" title="Close tab">
+            <i class="pi pi-times"></i>
+          </button>
+        </div>
+        <button class="new-tab-btn" title="New tab">
+          <i class="pi pi-plus"></i>
+        </button>
+      </div>
+
+      <!-- Browser Navigation Bar -->
+      <div class="nav-bar">
+        <div class="nav-controls">
+          <button class="nav-btn" [disabled]="!canGoBack" (click)="goBack()" title="Back">
+            <i class="pi pi-arrow-left"></i>
+          </button>
+          <button class="nav-btn" [disabled]="!canGoForward" (click)="goForward()" title="Forward">
+            <i class="pi pi-arrow-right"></i>
+          </button>
+          <button class="nav-btn" (click)="refreshPage()" title="Reload">
+            <i class="pi pi-refresh" [class.spinning]="isLoading"></i>
+          </button>
+          <button class="nav-btn" (click)="goHome()" title="Home">
+            <i class="pi pi-home"></i>
+          </button>
+        </div>
+
+        <div class="address-bar-container">
+          <div class="address-bar">
+            <i class="pi pi-lock security-icon" title="Secure"></i>
+            <input 
+              type="text" 
+              class="url-input" 
+              [value]="currentUrl" 
+              (keydown.enter)="navigateToUrl($event)"
+              (focus)="selectUrl($event)"
+              placeholder="Search Google or type a URL">
+            <button class="bookmark-btn" [class.bookmarked]="isBookmarked" (click)="toggleBookmark()" title="Bookmark">
+              <i class="pi pi-star" [class.pi-star-fill]="isBookmarked"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="browser-actions">
+          <button class="action-btn" (click)="toggleBookmarks()" title="Bookmarks">
+            <i class="pi pi-bookmark"></i>
+          </button>
+          <button class="action-btn" (click)="openHistory()" title="History">
+            <i class="pi pi-history"></i>
+          </button>
+          <button class="action-btn" (click)="openDownloads()" title="Downloads">
+            <i class="pi pi-download"></i>
+          </button>
+          <button class="action-btn menu-btn" (click)="toggleBrowserMenu()" title="Menu">
+            <i class="pi pi-ellipsis-v"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Bookmarks Bar -->
+      <div class="bookmarks-bar" *ngIf="showBookmarksBar">
+        <div class="bookmark-item" *ngFor="let bookmark of bookmarks" (click)="navigateToBookmark(bookmark)">
+          <i class="pi pi-globe"></i>
+          <span>{{ bookmark.name }}</span>
+        </div>
+        <button class="bookmark-item add-bookmark" (click)="addBookmark()">
+          <i class="pi pi-plus"></i>
+          <span>Add bookmark</span>
+        </button>
+      </div>
+
+      <!-- Browser Menu -->
+      <div class="browser-menu" *ngIf="showBrowserMenu">
+        <div class="menu-item" (click)="newTab()">
+          <i class="pi pi-plus"></i>
+          <span>New tab</span>
+        </div>
+        <div class="menu-item" (click)="newWindow()">
+          <i class="pi pi-window-maximize"></i>
+          <span>New window</span>
+        </div>
+        <div class="menu-separator"></div>
+        <div class="menu-item" (click)="openHistory()">
+          <i class="pi pi-history"></i>
+          <span>History</span>
+        </div>
+        <div class="menu-item" (click)="openDownloads()">
+          <i class="pi pi-download"></i>
+          <span>Downloads</span>
+        </div>
+        <div class="menu-item" (click)="openBookmarks()">
+          <i class="pi pi-bookmark"></i>
+          <span>Bookmarks</span>
+        </div>
+        <div class="menu-separator"></div>
+        <div class="menu-item" (click)="openSettings()">
+          <i class="pi pi-cog"></i>
+          <span>Settings</span>
+        </div>
+        <div class="menu-item" (click)="openDevTools()">
+          <i class="pi pi-code"></i>
+          <span>Developer tools</span>
+        </div>
+      </div>
+
+      <!-- Browser Content -->
+      <div class="browser-content">
+        <div class="loading-bar" *ngIf="isLoading"></div>
+        <iframe 
+          [src]="getIframeSrc()"
+          class="content-iframe"
+          frameborder="0"
+          allowfullscreen
+          (load)="onPageLoad()">
+        </iframe>
+      </div>
+    </div>
+  </app-window>
+
+  <!-- Floating Clock Widget -->
+  <div *ngIf="showClockWindow()" class="floating-clock-widget">
+    <div class="clock-widget-header">
+      <span class="clock-title">Clock</span>
+      <button class="close-btn" (click)="onCloseClockWindow()" title="Close">
+        <i class="pi pi-times"></i>
+      </button>
+    </div>
+    <div class="clock-app">
+      <div class="digital-clock">
+        <div class="time-display">{{ currentTime }}</div>
+        <div class="date-display">{{ currentDate }}</div>
+      </div>
+      <div class="analog-clock">
+        <div class="clock-face">
+          <div class="clock-numbers">
+            <div class="number" *ngFor="let num of clockNumbers" [style.transform]="'rotate(' + (num * 30 - 90) + 'deg) translateY(-60px) rotate(' + (90 - num * 30) + 'deg)'">{{ num }}</div>
+          </div>
+          <div class="clock-hands">
+            <div class="hour-hand" [style.transform]="'rotate(' + hourAngle + 'deg)'"></div>
+            <div class="minute-hand" [style.transform]="'rotate(' + minuteAngle + 'deg)'"></div>
+            <div class="second-hand" [style.transform]="'rotate(' + secondAngle + 'deg)'"></div>
+            <div class="center-dot"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Test Icons -->
+  <app-desktop-icon
+    *ngFor="let icon of testIcons"
+    [iconData]="icon"
+    (onDoubleClick)="openTestApp($event)">
+  </app-desktop-icon>
+
+  <!-- Taskbar -->
+  <div class="taskbar">
+    <!-- Start Button -->
+    <button class="start-button" (click)="toggleStartMenu()" title="Start">
+      <i class="pi pi-microsoft"></i>
+    </button>
+    
+    <!-- Taskbar Apps -->
+    <div class="taskbar-apps">
+      <button 
+        *ngIf="showTestWindow()"
+        class="taskbar-app"
+        [class.active]="isWindowFocused('calculator')"
+        (click)="focusWindow('calculator')"
+        title="Calculator">
+        <i class="pi pi-calculator"></i>
+        <span>Calculator</span>
+      </button>
+      
+      <button 
+        *ngIf="showMyInfoWindow()"
+        class="taskbar-app"
+        [class.active]="isWindowFocused('my-info')"
+        (click)="focusWindow('my-info')"
+        title="My Information">
+        <i class="pi pi-user"></i>
+        <span>My Information</span>
+      </button>
+      
+      <button 
+        *ngIf="showMyPageWindow()"
+        class="taskbar-app"
+        [class.active]="isWindowFocused('my-page')"
+        (click)="focusWindow('my-page')"
+        title="My Page">
+        <i class="pi pi-globe"></i>
+        <span>My Page</span>
+      </button>
+      
+    </div>
+    
+    <!-- System Tray -->
+    <div class="system-tray">
+      <div class="clock" (click)="openClockWindow()" title="Click to open Clock">
+        {{ currentTime }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Start Menu -->
+  <div *ngIf="showStartMenu()" class="start-menu" (click)="closeStartMenu()">
+    <div class="start-menu-content" (click)="$event.stopPropagation()">
+      <h3>Applications</h3>
+      <div class="start-menu-apps">
+        <div class="start-menu-item" (click)="openApp('calculator')">
+          <i class="pi pi-calculator"></i>
+          <span>Calculator</span>
+        </div>
+        <div class="start-menu-item" (click)="openApp('my-info')">
+          <i class="pi pi-user"></i>
+          <span>My Information</span>
+        </div>
+        <div class="start-menu-item" (click)="openApp('my-page')">
+          <i class="pi pi-globe"></i>
+          <span>My Page</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<router-outlet />

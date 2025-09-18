@@ -1,0 +1,48 @@
+/* You can add global styles to this file, and also import other style files */
+
+// PrimeNG Theme - will be configured later
+// @import '../node_modules/primeng/resources/themes/saga-blue/theme.css';
+// @import '../node_modules/primeng/resources/primeng.css';
+// @import '../node_modules/primeicons/primeicons.css';
+
+// Basic PrimeIcons for now
+@import url('https://cdn.jsdelivr.net/npm/primeicons@6.0.1/primeicons.css');
+
+// Global Styles
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: #000000;
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+}
+
+html, body {
+  height: 100%;
+  width: 100%;
+}
+
+// Disable text selection globally except for specific elements
+body {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+// Allow text selection in content areas
+.selectable,
+input,
+textarea,
+.window-content {
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+}

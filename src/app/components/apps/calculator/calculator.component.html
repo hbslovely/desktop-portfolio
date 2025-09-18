@@ -1,0 +1,20 @@
+<div class="calculator">
+  <!-- Display -->
+  <div class="display">
+    {{ displayValue() }}
+  </div>
+  
+  <!-- Buttons -->
+  <div class="buttons">
+    <div class="button-row" *ngFor="let row of buttons">
+      <button 
+        *ngFor="let button of row"
+        class="calc-button"
+        [class]="getButtonClass(button)"
+        [class.zero]="button === '0'"
+        (click)="onButtonClick(button)">
+        {{ button }}
+      </button>
+    </div>
+  </div>
+</div>

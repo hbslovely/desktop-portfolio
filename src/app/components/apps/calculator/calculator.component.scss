@@ -1,0 +1,113 @@
+.calculator {
+  background: #000000;
+  padding: 20px;
+  border-radius: 8px;
+  width: 100%;
+  max-width: 300px;
+  margin: 0 auto;
+  box-sizing: border-box;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.display {
+  background: #000000;
+  color: #ffffff;
+  font-size: 36px;
+  font-weight: 300;
+  text-align: right;
+  padding: 20px;
+  margin-bottom: 10px;
+  border-radius: 4px;
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  overflow: hidden;
+}
+
+.buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.button-row {
+  display: flex;
+  gap: 1px;
+}
+
+.calc-button {
+  flex: 1;
+  height: 60px;
+  border: none;
+  font-size: 24px;
+  font-weight: 400;
+  cursor: pointer;
+  transition: all 0.1s ease;
+  border-radius: 0;
+  
+  &:hover {
+    opacity: 0.8;
+  }
+  
+  &:active {
+    opacity: 0.6;
+  }
+  
+  // Number buttons (gray)
+  &.number {
+    background: #333333;
+    color: #ffffff;
+    
+    &:hover {
+      background: #404040;
+    }
+  }
+  
+  // Function buttons (light gray)
+  &.function {
+    background: #a6a6a6;
+    color: #000000;
+    
+    &:hover {
+      background: #b8b8b8;
+    }
+  }
+  
+  // Operator buttons (orange)
+  &.operator {
+    background: #ff9500;
+    color: #ffffff;
+    
+    &:hover {
+      background: #ffad33;
+    }
+  }
+  
+  // Zero button spans two columns
+  &.zero {
+    flex: 2;
+  }
+}
+
+// First row buttons are slightly rounded at the top
+.button-row:first-child .calc-button {
+  &:first-child {
+    border-top-left-radius: 4px;
+  }
+  
+  &:last-child {
+    border-top-right-radius: 4px;
+  }
+}
+
+// Last row buttons are slightly rounded at the bottom
+.button-row:last-child .calc-button {
+  &:first-child {
+    border-bottom-left-radius: 4px;
+  }
+  
+  &:last-child {
+    border-bottom-right-radius: 4px;
+  }
+}
