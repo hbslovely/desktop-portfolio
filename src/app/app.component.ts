@@ -50,7 +50,8 @@ export class AppComponent {
     { name: 'Google', url: 'https://www.google.com' },
     { name: 'GitHub', url: 'https://github.com' },
     { name: 'Stack Overflow', url: 'https://stackoverflow.com' },
-    { name: 'MDN', url: 'https://developer.mozilla.org' }
+    { name: 'Wikipedia', url: 'https://en.wikipedia.org' },
+    { name: 'YouTube', url: 'https://www.youtube.com' }
   ];
   
   constructor() {
@@ -234,29 +235,6 @@ export class AppComponent {
     this.secondAngle = seconds * 6; // 6 degrees per second
   }
 
-  // My Page web browser methods
-  refreshPage() {
-    console.log('Refreshing page...');
-    // In a real implementation, this would reload the content
-  }
-
-  performSearch(query: string) {
-    if (query.trim()) {
-      console.log('Searching for:', query);
-      // In a real implementation, this would perform a search
-      alert(`Searching for: "${query}"\n\nThis is a demo interface. In a real implementation, this would connect to Google's Custom Search API.`);
-    }
-  }
-
-  feelingLucky() {
-    console.log('I\'m Feeling Lucky clicked');
-    alert('I\'m Feeling Lucky!\n\nThis would take you to the first search result in a real implementation.');
-  }
-
-  openLink(linkName: string) {
-    console.log('Opening link:', linkName);
-    alert(`Opening ${linkName}\n\nThis is a demo interface. In a real implementation, this would navigate to ${linkName}.`);
-  }
 
   openClockWindow() {
     this.showClockWindow.set(true);
@@ -264,11 +242,25 @@ export class AppComponent {
 
   // Browser methods
   getIframeSrc() {
-    // Use a search engine that allows embedding
-    if (this.currentUrl.includes('google.com')) {
+    // Handle different URLs and provide embeddable alternatives
+    const url = this.currentUrl.toLowerCase();
+    
+    if (url.includes('google.com')) {
+      return 'https://www.startpage.com';
+    } else if (url.includes('github.com')) {
+      return 'https://github.com';
+    } else if (url.includes('stackoverflow.com')) {
+      return 'https://stackoverflow.com';
+    } else if (url.includes('wikipedia.org')) {
+      return 'https://en.wikipedia.org';
+    } else if (url.includes('youtube.com')) {
+      return 'https://www.youtube.com';
+    } else if (url.startsWith('http://') || url.startsWith('https://')) {
+      return this.currentUrl;
+    } else {
+      // Default to search if not a valid URL
       return 'https://www.startpage.com';
     }
-    return this.currentUrl;
   }
 
   navigateToUrl(event: any) {
@@ -282,6 +274,19 @@ export class AppComponent {
         this.currentUrl = url;
       }
       this.canGoBack = true;
+      
+      // Check if current URL is bookmarked
+      this.isBookmarked = this.bookmarks.some(b => b.url === this.currentUrl);
+      
+      // Force iframe reload with new URL
+      setTimeout(() => {
+        this.reloadIframe();
+      }, 100);
+      
+      // Simulate loading time
+      setTimeout(() => {
+        this.isLoading = false;
+      }, 1000);
     }
   }
 
@@ -317,9 +322,16 @@ export class AppComponent {
   goHome() {
     this.currentUrl = 'https://www.google.com';
     this.isLoading = true;
+    this.isBookmarked = this.bookmarks.some(b => b.url === this.currentUrl);
+    
+    // Force iframe reload with home URL
+    setTimeout(() => {
+      this.reloadIframe();
+    }, 100);
+    
     setTimeout(() => {
       this.isLoading = false;
-    }, 500);
+    }, 1000);
   }
 
   toggleBookmark() {
@@ -340,11 +352,23 @@ export class AppComponent {
   }
 
   navigateToBookmark(bookmark: any) {
+    console.log('Navigating to bookmark:', bookmark.name, bookmark.url);
     this.currentUrl = bookmark.url;
     this.isLoading = true;
+    this.canGoBack = true;
+    
+    // Check if this bookmark is already bookmarked
+    this.isBookmarked = this.bookmarks.some(b => b.url === bookmark.url);
+    
+    // Force iframe reload with new URL
+    setTimeout(() => {
+      this.reloadIframe();
+    }, 100);
+    
+    // Simulate loading time
     setTimeout(() => {
       this.isLoading = false;
-    }, 500);
+    }, 1000);
   }
 
   addBookmark() {
@@ -391,5 +415,22 @@ export class AppComponent {
 
   onPageLoad() {
     this.isLoading = false;
+    console.log('Page loaded:', this.currentUrl);
+  }
+
+  onPageError() {
+    this.isLoading = false;
+    console.log('Page failed to load:', this.currentUrl);
+  }
+
+  // Force iframe to reload when URL changes
+  reloadIframe() {
+    const iframe = document.querySelector('.content-iframe') as HTMLIFrameElement;
+    if (iframe) {
+      const newSrc = this.getIframeSrc();
+      if (iframe.src !== newSrc) {
+        iframe.src = newSrc;
+      }
+    }
   }
 }

@@ -209,7 +209,9 @@
           class="content-iframe"
           frameborder="0"
           allowfullscreen
-          (load)="onPageLoad()">
+          sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
+          (load)="onPageLoad()"
+          (error)="onPageError()">
         </iframe>
       </div>
     </div>
