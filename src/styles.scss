@@ -45,4 +45,10 @@ textarea,
   -moz-user-select: text;
   -ms-user-select: text;
   user-select: text;
+
+
+  & > * {
+    height: 100%;
+    display: block;
+  }
 }

@@ -2,7 +2,7 @@
 <div class="desktop">
   <!-- Desktop Wallpaper -->
   <div class="wallpaper"></div>
-  
+
   <!-- Calculator Window -->
   <app-window
     *ngIf="showTestWindow()"
@@ -21,7 +21,7 @@
     (onMaximize)="onMaximizeTestWindow()"
     (onRestore)="onRestoreTestWindow()"
     (onFocus)="onFocusTestWindow()">
-    
+
     <app-calculator></app-calculator>
   </app-window>
 
@@ -30,7 +30,7 @@
     *ngIf="showMyInfoWindow()"
     title="My Information"
     icon="user-profile"
-    statusText="Loading profile information..."
+    [showStatusBar]="false"
     [initialWidth]="900"
     [initialHeight]="700"
     [initialX]="200"
@@ -43,33 +43,11 @@
     (onMaximize)="onMaximizeMyInfoWindow()"
     (onRestore)="onRestoreMyInfoWindow()"
     (onFocus)="onFocusMyInfoWindow()">
-    
-    <div class="profile-content">
-      <div class="profile-header">
-        <img src="assets/images/icons/profile.png" alt="Profile" class="profile-avatar">
-        <h2>Welcome to My Desktop Portfolio</h2>
-      </div>
-      <div class="profile-body">
-        <h3>About Me</h3>
-        <p>This is a Windows-style desktop environment built with Angular. You can:</p>
-        <ul>
-          <li>Double-click desktop icons to open applications</li>
-          <li>Drag windows around the desktop</li>
-          <li>Resize windows by dragging the edges and corners</li>
-          <li>Click taskbar buttons to switch between windows</li>
-          <li>Use the start menu to launch applications</li>
-        </ul>
-        <h3>Features</h3>
-        <ul>
-          <li>✅ Desktop icons with drag & drop</li>
-          <li>✅ Resizable and moveable windows</li>
-          <li>✅ Taskbar with window management</li>
-          <li>✅ Start menu</li>
-          <li>✅ Calculator application</li>
-          <li>✅ Window focus management</li>
-        </ul>
-      </div>
-    </div>
+
+    <app-iframe-app
+      url="https://hpphat1992.vercel.app"
+      title="My Information">
+    </app-iframe-app>
   </app-window>
 
   <!-- My Page Window -->
@@ -90,7 +68,7 @@
     (onMaximize)="onMaximizeMyPageWindow()"
     (onRestore)="onRestoreMyPageWindow()"
     (onFocus)="onFocusMyPageWindow()">
-    
+
     <div class="browser-container">
       <!-- Browser Tab Bar -->
       <div class="tab-bar">
@@ -126,10 +104,10 @@
         <div class="address-bar-container">
           <div class="address-bar">
             <i class="pi pi-lock security-icon" title="Secure"></i>
-            <input 
-              type="text" 
-              class="url-input" 
-              [value]="currentUrl" 
+            <input
+              type="text"
+              class="url-input"
+              [value]="currentUrl"
               (keydown.enter)="navigateToUrl($event)"
               (focus)="selectUrl($event)"
               placeholder="Search Google or type a URL">
@@ -204,36 +182,72 @@
       <!-- Browser Content -->
       <div class="browser-content">
         <div class="loading-bar" *ngIf="isLoading"></div>
-        <iframe 
-          [src]="getIframeSrc()"
-          class="content-iframe"
-          frameborder="0"
-          allowfullscreen
-          sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
-          (load)="onPageLoad()"
-          (error)="onPageError()">
-        </iframe>
+        @if (iframeSrc()) {
+          <iframe
+            [src]="iframeSrc()"
+            class="content-iframe"
+            frameborder="0"
+            allowfullscreen
+            sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
+            target="_parent"
+            (load)="onPageLoad()"
+            (error)="onPageError()">
+          </iframe>
+        }
       </div>
     </div>
+  </app-window>
+
+  <!-- Love Window -->
+  <app-window
+    *ngIf="showLoveWindow()"
+    title="Love"
+    icon="heart"
+    statusText="Loading love website..."
+    [initialWidth]="1000"
+    [initialHeight]="700"
+    [initialX]="200"
+    [initialY]="150"
+    [maximizable]="true"
+    [zIndex]="getWindowZIndex('love')"
+    [isFocused]="isWindowFocused('love')"
+    (onClose)="onCloseLoveWindow()"
+    (onMinimize)="onMinimizeLoveWindow()"
+    (onMaximize)="onMaximizeLoveWindow()"
+    (onRestore)="onRestoreLoveWindow()"
+    (onFocus)="onFocusLoveWindow()">
+
+    <app-love-app
+      url="https://hbslovely.vercel.app/"
+      title="Love Application">
+    </app-love-app>
   </app-window>
 
   <!-- Floating Clock Widget -->
   <div *ngIf="showClockWindow()" class="floating-clock-widget">
     <div class="clock-widget-header">
       <span class="clock-title">Clock</span>
-      <button class="close-btn" (click)="onCloseClockWindow()" title="Close">
-        <i class="pi pi-times"></i>
-      </button>
+      <div class="clock-controls">
+        <button class="mode-toggle-btn" (click)="toggleClockMode()" [title]="clockMode === 'digital' ? 'Switch to Analog' : 'Switch to Digital'">
+          <i [class]="clockMode === 'digital' ? 'pi pi-clock' : 'pi pi-calendar-times'"></i>
+        </button>
+        <button class="close-btn" (click)="onCloseClockWindow()" title="Close">
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
     </div>
     <div class="clock-app">
-      <div class="digital-clock">
+      <!-- Digital Clock Mode -->
+      <div *ngIf="clockMode === 'digital'" class="digital-clock">
         <div class="time-display">{{ currentTime }}</div>
         <div class="date-display">{{ currentDate }}</div>
       </div>
-      <div class="analog-clock">
+      
+      <!-- Analog Clock Mode -->
+      <div *ngIf="clockMode === 'analog'" class="analog-clock">
         <div class="clock-face">
           <div class="clock-numbers">
-            <div class="number" *ngFor="let num of clockNumbers" [style.transform]="'rotate(' + (num * 30 - 90) + 'deg) translateY(-60px) rotate(' + (90 - num * 30) + 'deg)'">{{ num }}</div>
+            <div class="number" *ngFor="let num of clockNumbers" [style.transform]="'rotate(' + (num * 30) + 'deg) translateY(-60px) rotate(' + (-num * 30) + 'deg)'">{{ num }}</div>
           </div>
           <div class="clock-hands">
             <div class="hour-hand" [style.transform]="'rotate(' + hourAngle + 'deg)'"></div>
@@ -245,7 +259,7 @@
       </div>
     </div>
   </div>
-  
+
   <!-- Test Icons -->
   <app-desktop-icon
     *ngFor="let icon of testIcons"
@@ -259,10 +273,10 @@
     <button class="start-button" (click)="toggleStartMenu()" title="Start">
       <i class="pi pi-microsoft"></i>
     </button>
-    
+
     <!-- Taskbar Apps -->
     <div class="taskbar-apps">
-      <button 
+      <button
         *ngIf="showTestWindow()"
         class="taskbar-app"
         [class.active]="isWindowFocused('calculator')"
@@ -271,8 +285,8 @@
         <i class="pi pi-calculator"></i>
         <span>Calculator</span>
       </button>
-      
-      <button 
+
+      <button
         *ngIf="showMyInfoWindow()"
         class="taskbar-app"
         [class.active]="isWindowFocused('my-info')"
@@ -281,8 +295,8 @@
         <i class="pi pi-user"></i>
         <span>My Information</span>
       </button>
-      
-      <button 
+
+      <button
         *ngIf="showMyPageWindow()"
         class="taskbar-app"
         [class.active]="isWindowFocused('my-page')"
@@ -291,9 +305,19 @@
         <i class="pi pi-globe"></i>
         <span>My Page</span>
       </button>
-      
+
+      <button
+        *ngIf="showLoveWindow()"
+        class="taskbar-app"
+        [class.active]="isWindowFocused('love')"
+        (click)="focusWindow('love')"
+        title="Love">
+        <i class="pi pi-heart"></i>
+        <span>Love</span>
+      </button>
+
     </div>
-    
+
     <!-- System Tray -->
     <div class="system-tray">
       <div class="clock" (click)="openClockWindow()" title="Click to open Clock">
@@ -319,9 +343,11 @@
           <i class="pi pi-globe"></i>
           <span>My Page</span>
         </div>
+        <div class="start-menu-item" (click)="openApp('love')">
+          <i class="pi pi-heart"></i>
+          <span>Love</span>
+        </div>
       </div>
     </div>
   </div>
 </div>
-
-<router-outlet />

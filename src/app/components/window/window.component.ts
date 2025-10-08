@@ -19,6 +19,7 @@ export class WindowComponent implements OnInit {
   @Input() title = 'Window';
   @Input() icon = '';
   @Input() statusText = 'Ready';
+  @Input() showStatusBar = true; // New property to control status bar visibility
   @Input() initialWidth = 800;
   @Input() initialHeight = 600;
   @Input() initialX = 100;

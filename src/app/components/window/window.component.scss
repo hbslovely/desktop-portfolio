@@ -27,12 +27,12 @@
 
   &.focused {
     box-shadow: 0 6px 30px rgba(0, 120, 212, 0.3);
-    
+
     .title-bar {
       background: linear-gradient(180deg, #0078d4 0%, #106ebe 100%);
       color: #ffffff;
       border-bottom: 1px solid #005a9e;
-      
+
       &:hover {
         background: linear-gradient(180deg, #1084d8 0%, #0f6bb8 100%);
       }
@@ -41,18 +41,18 @@
         background: linear-gradient(180deg, #005a9e 0%, #004578 100%);
       }
     }
-    
+
     .title-text {
       color: #ffffff;
     }
-    
+
     .control-btn {
       color: #ffffff;
-      
+
       &:hover {
         background: rgba(255, 255, 255, 0.1);
       }
-      
+
       &.close-btn:hover {
         background: #e81123;
         color: #ffffff;
@@ -75,7 +75,7 @@
 .resize-handle {
   position: absolute;
   pointer-events: all;
-  
+
   // Corner handles
   &.nw {
     top: -3px;
@@ -84,7 +84,7 @@
     height: 10px;
     cursor: nw-resize;
   }
-  
+
   &.ne {
     top: -3px;
     right: -3px;
@@ -92,7 +92,7 @@
     height: 10px;
     cursor: ne-resize;
   }
-  
+
   &.sw {
     bottom: -3px;
     left: -3px;
@@ -100,7 +100,7 @@
     height: 10px;
     cursor: sw-resize;
   }
-  
+
   &.se {
     bottom: -3px;
     right: -3px;
@@ -108,7 +108,7 @@
     height: 10px;
     cursor: se-resize;
   }
-  
+
   // Edge handles
   &.n {
     top: -3px;
@@ -117,7 +117,7 @@
     height: 6px;
     cursor: n-resize;
   }
-  
+
   &.s {
     bottom: -3px;
     left: 10px;
@@ -125,7 +125,7 @@
     height: 6px;
     cursor: s-resize;
   }
-  
+
   &.e {
     top: 10px;
     right: -3px;
@@ -133,7 +133,7 @@
     width: 6px;
     cursor: e-resize;
   }
-  
+
   &.w {
     top: 10px;
     left: -3px;
@@ -141,7 +141,7 @@
     width: 6px;
     cursor: w-resize;
   }
-  
+
   // Visual feedback on hover
   &:hover {
     background: rgba(0, 120, 212, 0.3);
@@ -151,7 +151,7 @@
 .resize-handle-corner {
   cursor: se-resize;
   color: #666666;
-  
+
   &:hover {
     color: #0078d4;
   }
@@ -243,7 +243,7 @@
     color: #333333;
     font-size: 12px;
     line-height: 1;
-    
+
     &.restore {
       font-size: 10px;
     }
@@ -251,7 +251,7 @@
 
   &:hover {
     background: rgba(0, 0, 0, 0.1);
-    
+
     .minimize-icon,
     .maximize-icon {
       color: #000000;
@@ -265,7 +265,7 @@
   &.close-btn {
     &:hover {
       background: #e81123;
-      
+
       i {
         color: white;
       }
@@ -286,10 +286,11 @@
   display: flex;
   flex-direction: column;
 
+
   // Custom scrollbar for when overflow is needed
   &.scrollable {
     overflow: auto;
-    
+
     &::-webkit-scrollbar {
       width: 12px;
     }
@@ -345,7 +346,7 @@
 .resize-handle {
   cursor: nw-resize;
   padding: 2px;
-  
+
   i {
     font-size: 8px;
     color: #999999;
@@ -378,14 +379,14 @@
 // Focus state
 .window.focused {
   z-index: 1001;
-  
+
   .title-bar {
     background: linear-gradient(180deg, #0078d4 0%, #106ebe 100%);
-    
+
     .title-text {
       color: white;
     }
-    
+
     .window-icon-fallback {
       color: rgba(255, 255, 255, 0.9);
     }
@@ -396,7 +397,7 @@
 @media (max-width: 768px) {
   .window {
     border-radius: 0;
-    
+
     &:not(.maximized) {
       left: 0 !important;
       top: 0 !important;
@@ -404,12 +405,12 @@
       height: calc(100vh - 48px) !important;
     }
   }
-  
+
   .control-btn {
     width: 40px;
     height: 28px;
   }
-  
+
   .title-text {
     font-size: 12px;
   }

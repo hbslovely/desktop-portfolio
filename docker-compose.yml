@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  desktop-portfolio:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      platforms:
+        - linux/amd64
+        - linux/arm64
+    ports:
+      - "3000:80"
+    container_name: desktop-portfolio-app
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+    volumes:
+      # Optional: Mount nginx logs
+      - ./logs:/var/log/nginx
+    networks:
+      - portfolio-network
+
+  # Optional: Add a development service
+  desktop-portfolio-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+      platforms:
+        - linux/amd64
+        - linux/arm64
+    ports:
+      - "4200:4200"
+    container_name: desktop-portfolio-dev
+    restart: unless-stopped
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+    command: npm start
+    networks:
+      - portfolio-network
+    profiles:
+      - dev
+
+networks:
+  portfolio-network:
+    driver: bridge
+
+volumes:
+  node_modules:

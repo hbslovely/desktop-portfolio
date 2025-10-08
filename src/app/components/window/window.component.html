@@ -62,7 +62,7 @@
   </div>
   
   <!-- Status Bar -->
-  <div class="status-bar">
+  <div *ngIf="showStatusBar" class="status-bar">
     <div class="status-section">
       <i class="pi pi-circle-fill status-indicator"></i>
       <span class="status-text">{{ statusText }}</span>
