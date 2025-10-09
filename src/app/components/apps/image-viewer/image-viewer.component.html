@@ -7,7 +7,7 @@
       <span class="file-type" *ngIf="getFileExtension()">{{ getFileExtension() }}</span>
       <span class="scale-info">{{ (scale() * 100).toFixed(0) }}%</span>
     </div>
-    
+
     <div class="toolbar-actions">
       <!-- Zoom Controls -->
       <div class="action-group">
@@ -24,7 +24,7 @@
           <i class="pi pi-window-maximize"></i>
         </button>
       </div>
-      
+
       <!-- Rotation Controls -->
       <div class="action-group">
         <button class="action-btn" (click)="rotateLeft()" title="Rotate Left">
@@ -34,14 +34,14 @@
           <i class="pi pi-redo"></i>
         </button>
       </div>
-      
+
       <!-- Reset -->
       <button class="action-btn" (click)="resetView()" title="Reset All">
         <i class="pi pi-refresh"></i>
       </button>
     </div>
   </div>
-  
+
   <!-- Image Display Area -->
   <div class="image-area">
     <!-- Loading State -->
@@ -49,17 +49,17 @@
       <i class="pi pi-spin pi-spinner"></i>
       <p>Loading {{ imageName }}...</p>
     </div>
-    
+
     <!-- Error State -->
     <div *ngIf="hasError()" class="error-state">
       <i class="pi pi-exclamation-triangle"></i>
       <h3>Failed to load image</h3>
       <p>{{ errorMessage() }}</p>
     </div>
-    
+
     <!-- Image Display -->
-    <div *ngIf="!isLoading() && !hasError()" class="image-container">
-      <img 
+    <div [class.hidden]="!isLoading() && !hasError()" class="image-container">
+      <img
         [src]="imagePath"
         [alt]="imageName"
         [style.transform]="imageTransform()"
@@ -71,7 +71,7 @@
         draggable="false">
     </div>
   </div>
-  
+
   <!-- Status Bar -->
   <div class="status-bar">
     <div class="status-left">
