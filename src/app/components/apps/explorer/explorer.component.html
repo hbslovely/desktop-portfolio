@@ -1,0 +1,99 @@
+<div class="explorer-container">
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div class="navigation-controls">
+      <button class="nav-btn" [disabled]="!canGoBack()" (click)="goBack()" title="Back">
+        <i class="pi pi-arrow-left"></i>
+      </button>
+      <button class="nav-btn" [disabled]="!canGoForward()" (click)="goForward()" title="Forward">
+        <i class="pi pi-arrow-right"></i>
+      </button>
+      <button class="nav-btn" (click)="goUp()" [disabled]="currentPath() === '/'" title="Up">
+        <i class="pi pi-arrow-up"></i>
+      </button>
+    </div>
+    
+    <div class="address-bar">
+      <div class="breadcrumbs">
+        <span *ngFor="let crumb of breadcrumbs(); let last = last" class="breadcrumb">
+          <button *ngIf="!last" class="breadcrumb-btn" (click)="navigateToPath(crumb.path)">
+            {{ crumb.name }}
+          </button>
+          <span *ngIf="last" class="current-crumb">{{ crumb.name }}</span>
+          <i *ngIf="!last" class="pi pi-angle-right separator"></i>
+        </span>
+      </div>
+    </div>
+    
+    <div class="view-controls">
+      <button class="nav-btn" (click)="refresh()" title="Refresh">
+        <i class="pi pi-refresh"></i>
+      </button>
+      <button class="nav-btn" (click)="toggleViewMode()" [title]="viewMode() === 'list' ? 'Icon view' : 'List view'">
+        <i [class]="viewMode() === 'list' ? 'pi pi-th-large' : 'pi pi-list'"></i>
+      </button>
+    </div>
+  </div>
+  
+  <!-- File List -->
+  <div class="file-area" [class.icons-view]="viewMode() === 'icons'">
+    <div *ngIf="currentItems().length === 0" class="empty-folder">
+      <i class="pi pi-folder-open"></i>
+      <p>This folder is empty</p>
+    </div>
+    
+    <!-- List View -->
+    <div *ngIf="viewMode() === 'list'" class="list-view">
+      <div class="list-header">
+        <div class="column name-column">Name</div>
+        <div class="column size-column">Size</div>
+        <div class="column date-column">Date Modified</div>
+      </div>
+      
+      <div 
+        *ngFor="let item of currentItems()" 
+        class="list-item"
+        [class.selected]="selectedItem() === item"
+        (click)="onItemClick(item)"
+        (dblclick)="onItemDoubleClick(item)">
+        
+        <div class="item-info">
+          <i [class]="item.icon" class="item-icon"></i>
+          <span class="item-name">{{ item.name }}</span>
+        </div>
+        
+        <div class="item-size">
+          {{ item.type === 'folder' ? '' : formatFileSize(item.size) }}
+        </div>
+        
+        <div class="item-date">
+          {{ formatDate(item.modified) }}
+        </div>
+      </div>
+    </div>
+    
+    <!-- Icons View -->
+    <div *ngIf="viewMode() === 'icons'" class="icons-view">
+      <div 
+        *ngFor="let item of currentItems()" 
+        class="icon-item"
+        [class.selected]="selectedItem() === item"
+        (click)="onItemClick(item)"
+        (dblclick)="onItemDoubleClick(item)">
+        
+        <i [class]="item.icon" class="item-icon"></i>
+        <span class="item-name">{{ item.name }}</span>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Status Bar -->
+  <div class="status-bar">
+    <div class="status-info">
+      <span>{{ currentItems().length }} items</span>
+    </div>
+    <div class="selected-info" *ngIf="selectedItem()">
+      <span>{{ selectedItem()?.name }} - {{ selectedItem()?.type === 'file' ? formatFileSize(selectedItem()?.size) : 'Folder' }}</span>
+    </div>
+  </div>
+</div>

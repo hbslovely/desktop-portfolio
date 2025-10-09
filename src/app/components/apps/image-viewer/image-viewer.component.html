@@ -1,0 +1,86 @@
+<div class="image-viewer-container">
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div class="file-info">
+      <i class="pi pi-image"></i>
+      <span class="file-name">{{ imageName }}</span>
+      <span class="file-type" *ngIf="getFileExtension()">{{ getFileExtension() }}</span>
+      <span class="scale-info">{{ (scale() * 100).toFixed(0) }}%</span>
+    </div>
+    
+    <div class="toolbar-actions">
+      <!-- Zoom Controls -->
+      <div class="action-group">
+        <button class="action-btn" [disabled]="!canZoomOut()" (click)="zoomOut()" title="Zoom Out">
+          <i class="pi pi-minus"></i>
+        </button>
+        <button class="action-btn" (click)="resetZoom()" title="Reset Zoom (1:1)">
+          <i class="pi pi-search"></i>
+        </button>
+        <button class="action-btn" [disabled]="!canZoomIn()" (click)="zoomIn()" title="Zoom In">
+          <i class="pi pi-plus"></i>
+        </button>
+        <button class="action-btn" (click)="fitToWindow()" title="Fit to Window">
+          <i class="pi pi-window-maximize"></i>
+        </button>
+      </div>
+      
+      <!-- Rotation Controls -->
+      <div class="action-group">
+        <button class="action-btn" (click)="rotateLeft()" title="Rotate Left">
+          <i class="pi pi-undo"></i>
+        </button>
+        <button class="action-btn" (click)="rotateRight()" title="Rotate Right">
+          <i class="pi pi-redo"></i>
+        </button>
+      </div>
+      
+      <!-- Reset -->
+      <button class="action-btn" (click)="resetView()" title="Reset All">
+        <i class="pi pi-refresh"></i>
+      </button>
+    </div>
+  </div>
+  
+  <!-- Image Display Area -->
+  <div class="image-area">
+    <!-- Loading State -->
+    <div *ngIf="isLoading()" class="loading-state">
+      <i class="pi pi-spin pi-spinner"></i>
+      <p>Loading {{ imageName }}...</p>
+    </div>
+    
+    <!-- Error State -->
+    <div *ngIf="hasError()" class="error-state">
+      <i class="pi pi-exclamation-triangle"></i>
+      <h3>Failed to load image</h3>
+      <p>{{ errorMessage() }}</p>
+    </div>
+    
+    <!-- Image Display -->
+    <div *ngIf="!isLoading() && !hasError()" class="image-container">
+      <img 
+        [src]="imagePath"
+        [alt]="imageName"
+        [style.transform]="imageTransform()"
+        [class.dragging]="isDragging()"
+        (load)="onImageLoad()"
+        (error)="onImageError()"
+        (mousedown)="onMouseDown($event)"
+        (dblclick)="onDoubleClick()"
+        draggable="false">
+    </div>
+  </div>
+  
+  <!-- Status Bar -->
+  <div class="status-bar">
+    <div class="status-left">
+      <span>{{ imageName }}</span>
+    </div>
+    <div class="status-right">
+      <span>Scale: {{ (scale() * 100).toFixed(0) }}%</span>
+      <span *ngIf="rotation() !== 0">Rotation: {{ rotation() }}°</span>
+      <span class="help-text">Scroll to zoom • Drag to pan • Double-click to reset</span>
+    </div>
+  </div>
+</div>

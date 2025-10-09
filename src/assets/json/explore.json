@@ -1,0 +1,78 @@
+{
+  "fileSystem": {
+    "type": "folder",
+    "name": "explorer",
+    "path": "/",
+    "children": [
+      {
+        "type": "folder",
+        "name": "Documents",
+        "path": "/Documents",
+        "icon": "pi pi-folder",
+        "children": [
+          {
+            "type": "file",
+            "name": "readme.txt",
+            "path": "/Documents/readme.txt",
+            "icon": "pi pi-file",
+            "size": "512 bytes",
+            "modified": "2024-01-15T10:30:00Z",
+            "content": "assets/explorer/Documents/readme.txt"
+          },
+          {
+            "type": "file",
+            "name": "projects.md",
+            "path": "/Documents/projects.md",
+            "icon": "pi pi-file-edit",
+            "size": "1.2 KB",
+            "modified": "2024-01-15T11:45:00Z",
+            "content": "assets/explorer/Documents/projects.md"
+          }
+        ]
+      },
+      {
+        "type": "folder",
+        "name": "Pictures",
+        "path": "/Pictures",
+        "icon": "pi pi-folder",
+        "children": [
+          {
+            "type": "file",
+            "name": "info.txt",
+            "path": "/Pictures/info.txt",
+            "icon": "pi pi-file",
+            "size": "64 bytes",
+            "modified": "2024-01-15T09:15:00Z",
+            "content": "assets/explorer/Pictures/info.txt"
+          },
+          {
+            "type": "file",
+            "name": "wallpaper.jpg",
+            "path": "/Pictures/wallpaper.jpg",
+            "icon": "pi pi-image",
+            "size": "2.1 MB",
+            "modified": "2024-01-10T14:20:00Z",
+            "content": "assets/images/wallpaper.jpg"
+          }
+        ]
+      },
+      {
+        "type": "folder",
+        "name": "Downloads",
+        "path": "/Downloads",
+        "icon": "pi pi-folder",
+        "children": [
+          {
+            "type": "file",
+            "name": "info.txt",
+            "path": "/Downloads/info.txt",
+            "icon": "pi pi-file",
+            "size": "128 bytes",
+            "modified": "2024-01-12T16:30:00Z",
+            "content": "assets/explorer/Downloads/info.txt"
+          }
+        ]
+      }
+    ]
+  }
+}
