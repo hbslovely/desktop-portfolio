@@ -393,6 +393,7 @@
   <app-desktop-icon
     *ngFor="let icon of testIcons"
     [iconData]="icon"
+    (onClick)="onDesktopIconClick($event)"
     (onDoubleClick)="openTestApp($event)"
     (onContextMenu)="onDesktopIconContextMenu($event)">
   </app-desktop-icon>

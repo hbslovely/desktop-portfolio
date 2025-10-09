@@ -47,12 +47,30 @@
           },
           {
             "type": "file",
-            "name": "wallpaper.jpg",
-            "path": "/Pictures/wallpaper.jpg",
+            "name": "image_1.png",
+            "path": "/Pictures/image_1.png",
             "icon": "pi pi-image",
             "size": "2.1 MB",
             "modified": "2024-01-10T14:20:00Z",
-            "content": "assets/images/wallpaper.jpg"
+            "content": "assets/images/image_1.png"
+          },
+          {
+            "type": "file",
+            "name": "war.png",
+            "path": "/Pictures/man.png",
+            "icon": "pi pi-image",
+            "size": "2.1 MB",
+            "modified": "2024-01-10T14:20:00Z",
+            "content": "assets/images/man.png"
+          },
+          {
+            "type": "file",
+            "name": "war.png",
+            "path": "/Pictures/war.png",
+            "icon": "pi pi-image",
+            "size": "2.1 MB",
+            "modified": "2024-01-10T14:20:00Z",
+            "content": "assets/images/war.png"
           }
         ]
       },
@@ -76,3 +94,4 @@
     ]
   }
 }
+

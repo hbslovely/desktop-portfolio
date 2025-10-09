@@ -28,6 +28,7 @@ export class DesktopIconComponent implements OnDestroy {
   @Input() isInTrash = false;
   
   @Output() onDoubleClick = new EventEmitter<DesktopIconData>();
+  @Output() onClick = new EventEmitter<DesktopIconData>();
   @Output() onContextMenu = new EventEmitter<IconContextMenuEvent>();
   @Output() onDragEnd = new EventEmitter<{ icon: DesktopIconData; position: { x: number; y: number } }>();
   @Output() onSelect = new EventEmitter<DesktopIconData>();
@@ -67,6 +68,7 @@ export class DesktopIconComponent implements OnDestroy {
 
   onIconClick() {
     this.onSelect.emit(this.iconData);
+    this.onClick.emit(this.iconData);
   }
 
   onIconDoubleClick() {

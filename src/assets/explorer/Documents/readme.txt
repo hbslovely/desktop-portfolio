@@ -7,3 +7,4 @@ Features:
 - Browse folders and files
 - View file details
 - Navigate through the directory structure
+

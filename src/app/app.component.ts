@@ -363,6 +363,31 @@ export class AppComponent {
     }
   }
 
+  onDesktopIconClick(icon: DesktopIconData) {
+    console.log('Desktop icon clicked:', icon.name);
+    
+    // Check if the application is already open
+    if (icon.id === 'calculator' && this.showTestWindow()) {
+      // App is already open, restore/focus it
+      this.focusWindow('calculator');
+    } else if (icon.id === 'my-info' && this.showMyInfoWindow()) {
+      // App is already open, restore/focus it
+      this.focusWindow('my-info');
+    } else if (icon.id === 'my-page' && this.showMyPageWindow()) {
+      // App is already open, restore/focus it
+      this.focusWindow('my-page');
+    } else if (icon.id === 'love' && this.showLoveWindow()) {
+      // App is already open, restore/focus it
+      this.focusWindow('love');
+    } else if (icon.id === 'explorer' && this.showExplorerWindow()) {
+      // App is already open, restore/focus it
+      this.focusWindow('explorer');
+    } else {
+      // App is not open, open it
+      this.openTestApp(icon);
+    }
+  }
+
   openTestApp(icon: DesktopIconData) {
     console.log('Opening app:', icon.name);
     if (icon.id === 'calculator') {

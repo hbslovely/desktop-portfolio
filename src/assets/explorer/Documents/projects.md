@@ -16,3 +16,4 @@ This is a Windows-style desktop environment built with Angular.
 - TypeScript
 - SCSS
 - PrimeIcons
+
