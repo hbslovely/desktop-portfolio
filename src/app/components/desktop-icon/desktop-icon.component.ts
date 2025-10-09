@@ -181,6 +181,15 @@ export class DesktopIconComponent implements OnDestroy {
   startRename() {
     this.isRenaming.set(true);
     this.newName.set(this.iconData.name);
+    
+    // Use setTimeout to ensure the input is rendered before focusing
+    setTimeout(() => {
+      const input = document.querySelector('.rename-input') as HTMLInputElement;
+      if (input) {
+        input.focus();
+        input.select(); // Select all text
+      }
+    }, 0);
   }
 
   finishRename() {

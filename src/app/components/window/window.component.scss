@@ -8,8 +8,8 @@
   flex-direction: column;
   z-index: 1000;
   overflow: hidden;
-  transition: all 0.2s ease;
   user-select: none;
+  will-change: transform, left, top, width, height; // Optimize for smooth animations
 
   &:hover {
     box-shadow: 0 6px 25px rgba(0, 0, 0, 0.2);
@@ -19,6 +19,7 @@
     border-radius: 0;
     border: none;
     box-shadow: none;
+    will-change: auto; // No need to optimize when maximized
   }
 
   &.minimized {
@@ -75,6 +76,7 @@
 .resize-handle {
   position: absolute;
   pointer-events: all;
+  transition: background-color 0.1s ease;
 
   // Corner handles
   &.nw {
@@ -145,6 +147,11 @@
   // Visual feedback on hover
   &:hover {
     background: rgba(0, 120, 212, 0.3);
+  }
+
+  // Active state for better feedback
+  &:active {
+    background: rgba(0, 120, 212, 0.5);
   }
 }
 

@@ -1,5 +1,5 @@
 <!-- Desktop Environment -->
-<div class="desktop">
+<div class="desktop" (contextmenu)="onDesktopRightClick($event)" (click)="hideDesktopContextMenu()">
   <!-- Desktop Wallpaper -->
   <div class="wallpaper"></div>
 
@@ -223,6 +223,79 @@
     </app-love-app>
   </app-window>
 
+  <!-- Explorer Window -->
+  <app-window
+    *ngIf="showExplorerWindow()"
+    title="Explorer"
+    icon="pi pi-folder"
+    statusText="Ready"
+    [initialWidth]="800"
+    [initialHeight]="600"
+    [initialX]="300"
+    [initialY]="100"
+    [maximizable]="true"
+    [zIndex]="getWindowZIndex('explorer')"
+    [isFocused]="isWindowFocused('explorer')"
+    (onClose)="onCloseExplorerWindow()"
+    (onMinimize)="onMinimizeExplorerWindow()"
+    (onMaximize)="onMaximizeExplorerWindow()"
+    (onRestore)="onRestoreExplorerWindow()"
+    (onFocus)="onFocusExplorerWindow()">
+
+    <app-explorer (onFileOpen)="onExplorerFileOpen($event)"></app-explorer>
+  </app-window>
+
+  <!-- Text Viewer Window -->
+  <app-window
+    *ngIf="showTextViewerWindow() && currentTextFile()"
+    [title]="'Text Viewer - ' + currentTextFile()!.name"
+    icon="pi pi-file"
+    statusText="Ready"
+    [initialWidth]="800"
+    [initialHeight]="600"
+    [initialX]="350"
+    [initialY]="120"
+    [maximizable]="true"
+    [zIndex]="getWindowZIndex('text-viewer')"
+    [isFocused]="isWindowFocused('text-viewer')"
+    (onClose)="onCloseTextViewerWindow()"
+    (onMinimize)="onMinimizeTextViewerWindow()"
+    (onMaximize)="onMaximizeTextViewerWindow()"
+    (onRestore)="onRestoreTextViewerWindow()"
+    (onFocus)="onFocusTextViewerWindow()">
+
+    <app-text-viewer
+      [filePath]="currentTextFile()!.path"
+      [fileName]="currentTextFile()!.name"
+      [fileType]="currentTextFile()!.type">
+    </app-text-viewer>
+  </app-window>
+
+  <!-- Image Viewer Window -->
+  <app-window
+    *ngIf="showImageViewerWindow() && currentImageFile()"
+    [title]="'Image Viewer - ' + currentImageFile()!.name"
+    icon="pi pi-image"
+    statusText="Ready"
+    [initialWidth]="900"
+    [initialHeight]="700"
+    [initialX]="400"
+    [initialY]="80"
+    [maximizable]="true"
+    [zIndex]="getWindowZIndex('image-viewer')"
+    [isFocused]="isWindowFocused('image-viewer')"
+    (onClose)="onCloseImageViewerWindow()"
+    (onMinimize)="onMinimizeImageViewerWindow()"
+    (onMaximize)="onMaximizeImageViewerWindow()"
+    (onRestore)="onRestoreImageViewerWindow()"
+    (onFocus)="onFocusImageViewerWindow()">
+
+    <app-image-viewer
+      [imagePath]="currentImageFile()!.path"
+      [imageName]="currentImageFile()!.name">
+    </app-image-viewer>
+  </app-window>
+ 
   <!-- Floating Clock Widget -->
   <div *ngIf="showClockWindow()" class="floating-clock-widget">
     <div class="clock-widget-header">
@@ -246,9 +319,15 @@
       <!-- Analog Clock Mode -->
       <div *ngIf="clockMode === 'analog'" class="analog-clock">
         <div class="clock-face">
-          <div class="clock-numbers">
-            <div class="number" *ngFor="let num of clockNumbers" [style.transform]="'rotate(' + (num * 30) + 'deg) translateY(-60px) rotate(' + (-num * 30) + 'deg)'">{{ num }}</div>
+          <!-- Hour tick marks -->
+          <div class="tick-marks">
+            <div class="tick" *ngFor="let tick of [1,2,3,4,5,6,7,8,9,10,11,12]" [style.transform]="'rotate(' + (tick * 30) + 'deg)'"></div>
           </div>
+          <!-- Clock numbers -->
+          <div class="clock-numbers">
+            <div class="number" *ngFor="let num of clockNumbers" [style.transform]="'rotate(' + (num * 30) + 'deg) translateY(-75px) rotate(' + (-num * 30) + 'deg)'">{{ num }}</div>
+          </div>
+          <!-- Clock hands -->
           <div class="clock-hands">
             <div class="hour-hand" [style.transform]="'rotate(' + hourAngle + 'deg)'"></div>
             <div class="minute-hand" [style.transform]="'rotate(' + minuteAngle + 'deg)'"></div>
@@ -260,11 +339,62 @@
     </div>
   </div>
 
+  <!-- Search Window -->
+  <div *ngIf="showSearchWindow()" class="search-window" (click)="closeSearchWindow()">
+    <div class="search-content" (click)="$event.stopPropagation()">
+      <div class="search-header">
+        <div class="search-input-container">
+          <i class="pi pi-search search-icon"></i>
+          <input 
+            type="text" 
+            class="search-input" 
+            placeholder="Search applications, files, and web..."
+            [(ngModel)]="searchQuery"
+            (input)="onSearchInput($event)"
+            (keydown.enter)="selectSearchResult(searchResults[0])"
+            autofocus>
+        </div>
+        <button class="search-close-btn" (click)="closeSearchWindow()" title="Close">
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+      
+      <div class="search-results" *ngIf="showSearchSuggestions">
+        <div class="search-section" *ngIf="appSearchResults.length > 0">
+          <div class="section-title">Applications</div>
+          <div class="result-item" 
+               *ngFor="let result of appSearchResults" 
+               (click)="selectSearchResult(result)">
+            <i [class]="'pi ' + result.icon"></i>
+            <span>{{ result.name }}</span>
+          </div>
+        </div>
+        
+        <div class="search-section" *ngIf="webSearchResults.length > 0">
+          <div class="section-title">Web Search</div>
+          <div class="result-item" 
+               *ngFor="let result of webSearchResults" 
+               (click)="selectSearchResult(result)">
+            <i [class]="'pi ' + result.icon"></i>
+            <span>{{ result.name }}</span>
+            <span class="result-subtitle">{{ searchQuery }}</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="search-empty" *ngIf="!showSearchSuggestions && searchQuery.length >= 2">
+        <i class="pi pi-search"></i>
+        <p>No results found for "{{ searchQuery }}"</p>
+      </div>
+    </div>
+  </div>
+
   <!-- Test Icons -->
   <app-desktop-icon
     *ngFor="let icon of testIcons"
     [iconData]="icon"
-    (onDoubleClick)="openTestApp($event)">
+    (onDoubleClick)="openTestApp($event)"
+    (onContextMenu)="onDesktopIconContextMenu($event)">
   </app-desktop-icon>
 
   <!-- Taskbar -->
@@ -272,6 +402,11 @@
     <!-- Start Button -->
     <button class="start-button" (click)="toggleStartMenu()" title="Start">
       <i class="pi pi-microsoft"></i>
+    </button>
+
+    <!-- Search Button -->
+    <button class="search-button" (click)="openSearchWindow()" title="Search">
+      <i class="pi pi-search"></i>
     </button>
 
     <!-- Taskbar Apps -->
@@ -316,6 +451,36 @@
         <span>Love</span>
       </button>
 
+      <button
+        *ngIf="showExplorerWindow()"
+        class="taskbar-app"
+        [class.active]="isWindowFocused('explorer')"
+        (click)="focusWindow('explorer')"
+        title="Explorer">
+        <i class="pi pi-folder"></i>
+        <span>Explorer</span>
+      </button>
+
+      <button
+        *ngIf="showTextViewerWindow()"
+        class="taskbar-app"
+        [class.active]="isWindowFocused('text-viewer')"
+        (click)="focusWindow('text-viewer')"
+        title="Text Viewer">
+        <i class="pi pi-file"></i>
+        <span>{{ currentTextFile()?.name || 'Text Viewer' }}</span>
+      </button>
+
+      <button
+        *ngIf="showImageViewerWindow()"
+        class="taskbar-app"
+        [class.active]="isWindowFocused('image-viewer')"
+        (click)="focusWindow('image-viewer')"
+        title="Image Viewer">
+        <i class="pi pi-image"></i>
+        <span>{{ currentImageFile()?.name || 'Image Viewer' }}</span>
+      </button>
+
     </div>
 
     <!-- System Tray -->
@@ -347,7 +512,37 @@
           <i class="pi pi-heart"></i>
           <span>Love</span>
         </div>
+        <div class="start-menu-item" (click)="openApp('explorer')">
+          <i class="pi pi-folder"></i>
+          <span>Explorer</span>
+        </div>
       </div>
     </div>
+  </div>
+
+  <!-- Desktop Context Menu -->
+  <div *ngIf="showDesktopContextMenu()" class="desktop-context-menu" 
+       [ngStyle]="{
+         left: desktopContextMenuPosition().x + 'px',
+         top: desktopContextMenuPosition().y + 'px'
+       }"
+       (click)="$event.stopPropagation()">
+    
+    <div class="context-menu-item" (click)="refreshDesktop()">
+      <i class="pi pi-refresh"></i>
+      <span>Refresh</span>
+    </div>
+    
+    <div class="context-menu-separator"></div>
+    
+    <div class="context-menu-item" (click)="openSettings()">
+      <i class="pi pi-cog"></i>
+      <span>Settings</span>
+    </div>
+  </div>
+
+  <!-- Desktop Context Menu Backdrop -->
+  <div *ngIf="showDesktopContextMenu()" class="context-menu-backdrop" 
+       (click)="hideDesktopContextMenu()">
   </div>
 </div>

@@ -5,9 +5,7 @@
   [class.focused]="isFocused"
   [ngStyle]="windowStyles()"
   (click)="onWindowClick()"
-  (mousemove)="onMouseMove($event)"
-  (mouseup)="onMouseUp()"
-  (mouseleave)="onMouseUp()">
+  (mousedown)="onWindowClick()">
   
   <!-- Title Bar -->
   <div 
@@ -57,7 +55,7 @@
   </div>
   
   <!-- Window Content -->
-  <div class="window-content" (click)="onWindowClick()">
+  <div class="window-content" (click)="onWindowClick()" (mousedown)="onWindowClick()">
     <ng-content></ng-content>
   </div>
   

@@ -4,13 +4,17 @@ import { DesktopIconComponent, DesktopIconData } from './components/desktop-icon
 import { CalculatorComponent } from './components/apps/calculator/calculator.component';
 import { IframeAppComponent } from './components/apps/iframe-app/iframe-app.component';
 import { LoveAppComponent } from './components/apps/love-app/love-app.component';
+import { ExplorerComponent, FileOpenEvent } from './components/apps/explorer/explorer.component';
+import { TextViewerComponent } from './components/apps/text-viewer/text-viewer.component';
+import { ImageViewerComponent } from './components/apps/image-viewer/image-viewer.component';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { DomSanitizer } from "@angular/platform-browser";
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [ WindowComponent, DesktopIconComponent, CalculatorComponent, IframeAppComponent, LoveAppComponent, CommonModule ],
+  imports: [ WindowComponent, DesktopIconComponent, CalculatorComponent, IframeAppComponent, LoveAppComponent, ExplorerComponent, TextViewerComponent, ImageViewerComponent, CommonModule, FormsModule ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
 })
@@ -22,14 +26,24 @@ export class AppComponent {
   showMyInfoWindow = signal(false);
   showMyPageWindow = signal(false);
   showLoveWindow = signal(false);
+  showExplorerWindow = signal(false);
+  showTextViewerWindow = signal(false);
+  showImageViewerWindow = signal(false);
   showClockWindow = signal(false);
+  
+  // File viewer data
+  currentTextFile = signal<{ path: string; name: string; type: 'txt' | 'md' } | null>(null);
+  currentImageFile = signal<{ path: string; name: string } | null>(null);
+  showSearchWindow = signal(false);
 
   // Window management
   focusedWindow = signal<string | null>(null);
-  windowZIndex = signal(1000);
+  maxZIndex = signal(1000); // Track the maximum z-index used
 
   // Taskbar state
   showStartMenu = signal(false);
+  showDesktopContextMenu = signal(false);
+  desktopContextMenuPosition = signal({ x: 0, y: 0 });
   currentTime = '';
   currentDate = '';
 
@@ -39,6 +53,20 @@ export class AppComponent {
   minuteAngle = 0;
   secondAngle = 0;
   clockMode: 'analog' | 'digital' = 'digital'; // Default to digital mode
+
+  // Search properties
+  searchQuery = '';
+  searchResults: any[] = [];
+  showSearchSuggestions = false;
+
+  // Computed search results
+  get appSearchResults() {
+    return this.searchResults.filter(r => r.type === 'app');
+  }
+
+  get webSearchResults() {
+    return this.searchResults.filter(r => r.type === 'web');
+  }
 
   // Browser properties
   private _currentUrl = signal('https://www.google.com');
@@ -111,11 +139,22 @@ export class AppComponent {
       icon: 'assets/images/icons/love.png',
       type: 'application',
       position: { x: 50, y: 350 }
+    },
+    {
+      id: 'explorer',
+      name: 'Explorer',
+      icon: 'assets/images/icons/explorer.png',
+      type: 'application',
+      position: { x: 150, y: 50 }
     }
   ];
 
   onCloseTestWindow() {
     this.showTestWindow.set(false);
+    // Clear focus if this was the focused window
+    if (this.focusedWindow() === 'calculator') {
+      this.focusedWindow.set(null);
+    }
   }
 
   onMinimizeTestWindow() {
@@ -137,6 +176,10 @@ export class AppComponent {
 
   onCloseMyInfoWindow() {
     this.showMyInfoWindow.set(false);
+    // Clear focus if this was the focused window
+    if (this.focusedWindow() === 'my-info') {
+      this.focusedWindow.set(null);
+    }
   }
 
   onMinimizeMyInfoWindow() {
@@ -158,6 +201,10 @@ export class AppComponent {
 
   onCloseMyPageWindow() {
     this.showMyPageWindow.set(false);
+    // Clear focus if this was the focused window
+    if (this.focusedWindow() === 'my-page') {
+      this.focusedWindow.set(null);
+    }
   }
 
   onMinimizeMyPageWindow() {
@@ -179,6 +226,10 @@ export class AppComponent {
 
   onCloseLoveWindow() {
     this.showLoveWindow.set(false);
+    // Clear focus if this was the focused window
+    if (this.focusedWindow() === 'love') {
+      this.focusedWindow.set(null);
+    }
   }
 
   onMinimizeLoveWindow() {
@@ -198,8 +249,118 @@ export class AppComponent {
     this.focusWindow('love');
   }
 
+  onCloseExplorerWindow() {
+    this.showExplorerWindow.set(false);
+    // Clear focus if this was the focused window
+    if (this.focusedWindow() === 'explorer') {
+      this.focusedWindow.set(null);
+    }
+  }
+
+  onMinimizeExplorerWindow() {
+    console.log('Explorer window minimized');
+  }
+
+  onMaximizeExplorerWindow() {
+    console.log('Explorer window maximized');
+  }
+
+  onRestoreExplorerWindow() {
+    console.log('Explorer window restored');
+  }
+
+  onFocusExplorerWindow() {
+    console.log('Explorer window focused');
+    this.focusWindow('explorer');
+  }
+
+  // Text Viewer Window Methods
+  onCloseTextViewerWindow() {
+    this.showTextViewerWindow.set(false);
+    this.currentTextFile.set(null);
+    if (this.focusedWindow() === 'text-viewer') {
+      this.focusedWindow.set(null);
+    }
+  }
+
+  onMinimizeTextViewerWindow() {
+    console.log('Text viewer window minimized');
+  }
+
+  onMaximizeTextViewerWindow() {
+    console.log('Text viewer window maximized');
+  }
+
+  onRestoreTextViewerWindow() {
+    console.log('Text viewer window restored');
+  }
+
+  onFocusTextViewerWindow() {
+    console.log('Text viewer window focused');
+    this.focusWindow('text-viewer');
+  }
+
+  // Image Viewer Window Methods
+  onCloseImageViewerWindow() {
+    this.showImageViewerWindow.set(false);
+    this.currentImageFile.set(null);
+    if (this.focusedWindow() === 'image-viewer') {
+      this.focusedWindow.set(null);
+    }
+  }
+
+  onMinimizeImageViewerWindow() {
+    console.log('Image viewer window minimized');
+  }
+
+  onMaximizeImageViewerWindow() {
+    console.log('Image viewer window maximized');
+  }
+
+  onRestoreImageViewerWindow() {
+    console.log('Image viewer window restored');
+  }
+
+  onFocusImageViewerWindow() {
+    console.log('Image viewer window focused');
+    this.focusWindow('image-viewer');
+  }
+
+  // File Open Handler
+  onExplorerFileOpen(event: FileOpenEvent) {
+    const { item, fileType, extension } = event;
+    console.log('Opening file from Explorer:', item.name, 'Type:', fileType);
+    
+    if (fileType === 'text') {
+      // Open text file
+      this.currentTextFile.set({
+        path: item.content || `assets/explorer${item.path}`,
+        name: item.name,
+        type: extension === 'md' || extension === 'markdown' ? 'md' : 'txt'
+      });
+      this.showTextViewerWindow.set(true);
+      this.focusWindow('text-viewer');
+    } else if (fileType === 'image') {
+      // Open image file
+      this.currentImageFile.set({
+        path: item.content || `assets/explorer${item.path}`,
+        name: item.name
+      });
+      this.showImageViewerWindow.set(true);
+      this.focusWindow('image-viewer');
+    } else {
+      // Unknown file type
+      console.log('Unknown file type:', extension);
+      alert(`Cannot open ${item.name}. File type .${extension} is not supported.`);
+    }
+  }
+
   onCloseClockWindow() {
     this.showClockWindow.set(false);
+    // Clear focus if this was the focused window
+    if (this.focusedWindow() === 'clock') {
+      this.focusedWindow.set(null);
+    }
   }
 
   openTestApp(icon: DesktopIconData) {
@@ -216,6 +377,53 @@ export class AppComponent {
     } else if (icon.id === 'love') {
       this.showLoveWindow.set(true);
       this.focusWindow('love');
+    } else if (icon.id === 'explorer') {
+      this.showExplorerWindow.set(true);
+      this.focusWindow('explorer');
+    }
+  }
+
+  onDesktopIconContextMenu(event: any) {
+    const { action, icon } = event;
+    console.log('Desktop icon context menu action:', action, icon.name);
+    
+    switch (action) {
+      case 'open':
+        this.openTestApp(icon);
+        break;
+      case 'delete':
+        this.deleteDesktopIcon(icon);
+        break;
+      case 'rename':
+        // Rename is handled by the icon component itself
+        console.log('Icon renamed to:', icon.name);
+        break;
+      case 'restore':
+        // Handle restore if needed
+        console.log('Restore icon:', icon.name);
+        break;
+    }
+  }
+
+  deleteDesktopIcon(icon: DesktopIconData) {
+    // Remove the icon from the testIcons array
+    const index = this.testIcons.findIndex(i => i.id === icon.id);
+    if (index > -1) {
+      this.testIcons.splice(index, 1);
+      console.log('Deleted icon:', icon.name);
+      
+      // Close the associated window if it's open
+      if (icon.id === 'calculator' && this.showTestWindow()) {
+        this.onCloseTestWindow();
+      } else if (icon.id === 'my-info' && this.showMyInfoWindow()) {
+        this.onCloseMyInfoWindow();
+      } else if (icon.id === 'my-page' && this.showMyPageWindow()) {
+        this.onCloseMyPageWindow();
+      } else if (icon.id === 'love' && this.showLoveWindow()) {
+        this.onCloseLoveWindow();
+      } else if (icon.id === 'explorer' && this.showExplorerWindow()) {
+        this.onCloseExplorerWindow();
+      }
     }
   }
 
@@ -242,13 +450,20 @@ export class AppComponent {
     } else if (appId === 'love') {
       this.showLoveWindow.set(true);
       this.focusWindow('love');
+    } else if (appId === 'explorer') {
+      this.showExplorerWindow.set(true);
+      this.focusWindow('explorer');
     }
   }
 
   focusWindow(windowId: string) {
     console.log('Focusing window:', windowId);
+    
+    // Set the focused window
     this.focusedWindow.set(windowId);
-    this.windowZIndex.update(z => z + 1);
+    
+    // Increment the max z-index for the focused window
+    this.maxZIndex.update(max => max + 1);
 
     // If window is minimized, restore it
     if (windowId === 'calculator' && this.showTestWindow()) {
@@ -259,11 +474,23 @@ export class AppComponent {
       // My Page window focus logic can be added here if needed
     } else if (windowId === 'love' && this.showLoveWindow()) {
       // Love window focus logic can be added here if needed
+    } else if (windowId === 'explorer' && this.showExplorerWindow()) {
+      // Explorer window focus logic can be added here if needed
+    } else if (windowId === 'text-viewer' && this.showTextViewerWindow()) {
+      // Text viewer window focus logic can be added here if needed
+    } else if (windowId === 'image-viewer' && this.showImageViewerWindow()) {
+      // Image viewer window focus logic can be added here if needed
     }
   }
 
   getWindowZIndex(windowId: string): number {
-    return this.focusedWindow() === windowId ? this.windowZIndex() : 1000;
+    // If this is the focused window, return the max z-index
+    if (this.focusedWindow() === windowId) {
+      return this.maxZIndex();
+    }
+    
+    // For non-focused windows, return a base z-index
+    return 1000;
   }
 
   isWindowFocused(windowId: string): boolean {
@@ -301,6 +528,82 @@ export class AppComponent {
 
   toggleClockMode() {
     this.clockMode = this.clockMode === 'analog' ? 'digital' : 'analog';
+  }
+
+  // Desktop context menu methods
+  onDesktopRightClick(event: MouseEvent) {
+    event.preventDefault();
+    this.showDesktopContextMenu.set(true);
+    this.desktopContextMenuPosition.set({
+      x: event.clientX,
+      y: event.clientY
+    });
+    // Close start menu if open
+    this.showStartMenu.set(false);
+  }
+
+  hideDesktopContextMenu() {
+    this.showDesktopContextMenu.set(false);
+  }
+
+  openSettings() {
+    this.hideDesktopContextMenu();
+    console.log('Opening Settings...');
+    // TODO: Implement settings dialog
+  }
+
+  refreshDesktop() {
+    this.hideDesktopContextMenu();
+    console.log('Refreshing desktop...');
+  }
+
+  // Search methods
+  openSearchWindow() {
+    this.showSearchWindow.set(true);
+  }
+
+  closeSearchWindow() {
+    this.showSearchWindow.set(false);
+    this.searchQuery = '';
+    this.searchResults = [];
+    this.showSearchSuggestions = false;
+  }
+
+  onSearchInput(event: any) {
+    this.searchQuery = event.target.value;
+    this.performSearch();
+  }
+
+  performSearch() {
+    if (this.searchQuery.trim().length < 2) {
+      this.searchResults = [];
+      this.showSearchSuggestions = false;
+      return;
+    }
+
+    // Mock search results - in a real app, this would be API calls
+    this.searchResults = [
+      { type: 'app', name: 'Calculator', icon: 'pi-calculator', action: 'calculator' },
+      { type: 'app', name: 'My Information', icon: 'pi-user', action: 'my-info' },
+      { type: 'app', name: 'My Page', icon: 'pi-globe', action: 'my-page' },
+      { type: 'app', name: 'Love', icon: 'pi-heart', action: 'love' },
+      { type: 'app', name: 'Explorer', icon: 'pi-folder', action: 'explorer' },
+      { type: 'web', name: 'Google Search', icon: 'pi-search', url: `https://www.google.com/search?q=${encodeURIComponent(this.searchQuery)}` },
+      { type: 'web', name: 'Wikipedia', icon: 'pi-book', url: `https://en.wikipedia.org/wiki/${encodeURIComponent(this.searchQuery)}` }
+    ].filter(item => 
+      item.name.toLowerCase().includes(this.searchQuery.toLowerCase())
+    );
+
+    this.showSearchSuggestions = this.searchResults.length > 0;
+  }
+
+  selectSearchResult(result: any) {
+    if (result.type === 'app') {
+      this.openApp(result.action);
+    } else if (result.type === 'web') {
+      window.open(result.url, '_blank');
+    }
+    this.closeSearchWindow();
   }
 
   // Browser methods
@@ -444,7 +747,7 @@ export class AppComponent {
     alert('Bookmarks manager - this is a demo browser');
   }
 
-  openSettings() {
+  openBrowserSettings() {
     this.showBrowserMenu = false;
     alert('Settings - this is a demo browser');
   }

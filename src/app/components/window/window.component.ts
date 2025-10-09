@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, signal, computed, OnInit } from '@angular/core';
+import { Component, Input, Output, EventEmitter, signal, computed, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 export interface WindowState {
@@ -15,7 +15,7 @@ export interface WindowState {
   templateUrl: './window.component.html',
   styleUrl: './window.component.scss'
 })
-export class WindowComponent implements OnInit {
+export class WindowComponent implements OnInit, OnDestroy {
   @Input() title = 'Window';
   @Input() icon = '';
   @Input() statusText = 'Ready';
@@ -79,6 +79,8 @@ export class WindowComponent implements OnInit {
   private resizeStartPos = { x: 0, y: 0 };
   private resizeStartSize = { width: 0, height: 0 };
   private resizeStartWindowPos = { x: 0, y: 0 };
+  private animationFrameId: number | null = null;
+  private pendingUpdate = false;
 
   ngOnInit() {
     // Initialize position and size
@@ -89,41 +91,87 @@ export class WindowComponent implements OnInit {
     }));
   }
 
+  ngOnDestroy() {
+    this.cleanup();
+  }
+
+  private cleanup() {
+    if (this.animationFrameId) {
+      cancelAnimationFrame(this.animationFrameId);
+    }
+    document.removeEventListener('mousemove', this.onDocumentMouseMove);
+    document.removeEventListener('mouseup', this.onDocumentMouseUp);
+    document.removeEventListener('mouseleave', this.onDocumentMouseUp);
+  }
+
   onWindowClick() {
     this.onFocus.emit();
   }
 
   onTitleBarMouseDown(event: MouseEvent) {
+    // Focus the window first
+    this.onFocus.emit();
+    
     if (this.windowState().isMaximized) return;
     
     this.isDragging = true;
-    const rect = (event.target as HTMLElement).getBoundingClientRect();
     this.dragOffset = {
       x: event.clientX - this.windowState().position.x,
       y: event.clientY - this.windowState().position.y
     };
     
+    // Add global event listeners for smooth dragging
+    document.addEventListener('mousemove', this.onDocumentMouseMove);
+    document.addEventListener('mouseup', this.onDocumentMouseUp);
+    document.addEventListener('mouseleave', this.onDocumentMouseUp);
+    
     event.preventDefault();
   }
 
-  onMouseMove(event: MouseEvent) {
+  private onDocumentMouseMove = (event: MouseEvent) => {
     if (this.isDragging && !this.windowState().isMaximized) {
-      this.windowState.update(state => ({
-        ...state,
-        position: {
-          x: event.clientX - this.dragOffset.x,
-          y: event.clientY - this.dragOffset.y
-        }
-      }));
+      // Use requestAnimationFrame for smooth updates
+      if (!this.pendingUpdate) {
+        this.pendingUpdate = true;
+        this.animationFrameId = requestAnimationFrame(() => {
+          this.updateWindowPosition(event.clientX - this.dragOffset.x, event.clientY - this.dragOffset.y);
+          this.pendingUpdate = false;
+        });
+      }
     } else if (this.isResizing) {
       this.handleResize(event);
     }
-  }
+  };
 
-  onMouseUp() {
+  private onDocumentMouseUp = () => {
     this.isDragging = false;
     this.isResizing = false;
     this.resizeDirection = '';
+    this.pendingUpdate = false;
+    
+    if (this.animationFrameId) {
+      cancelAnimationFrame(this.animationFrameId);
+      this.animationFrameId = null;
+    }
+    
+    // Remove global event listeners
+    document.removeEventListener('mousemove', this.onDocumentMouseMove);
+    document.removeEventListener('mouseup', this.onDocumentMouseUp);
+    document.removeEventListener('mouseleave', this.onDocumentMouseUp);
+  };
+
+  private updateWindowPosition(x: number, y: number) {
+    // Constrain to viewport bounds
+    const maxX = window.innerWidth - this.windowState().size.width;
+    const maxY = window.innerHeight - 48 - this.windowState().size.height; // Account for taskbar
+    
+    const constrainedX = Math.max(0, Math.min(x, maxX));
+    const constrainedY = Math.max(0, Math.min(y, maxY));
+    
+    this.windowState.update(state => ({
+      ...state,
+      position: { x: constrainedX, y: constrainedY }
+    }));
   }
 
   minimize() {
@@ -175,29 +223,14 @@ export class WindowComponent implements OnInit {
       y: this.windowState().position.y 
     };
     
-    event.preventDefault();
-    event.stopPropagation();
-    
-    // Add global event listeners
+    // Add global event listeners for resize
     document.addEventListener('mousemove', this.onDocumentMouseMove);
     document.addEventListener('mouseup', this.onDocumentMouseUp);
-  }
-
-  private onDocumentMouseMove = (event: MouseEvent) => {
-    if (this.isResizing) {
-      this.handleResize(event);
-    }
-  };
-
-  private onDocumentMouseUp = (event: MouseEvent) => {
-    this.isResizing = false;
-    this.isDragging = false;
-    this.resizeDirection = '';
+    document.addEventListener('mouseleave', this.onDocumentMouseUp);
     
-    // Remove global event listeners
-    document.removeEventListener('mousemove', this.onDocumentMouseMove);
-    document.removeEventListener('mouseup', this.onDocumentMouseUp);
-  };
+    event.preventDefault();
+    event.stopPropagation();
+  }
 
   private handleResize(event: MouseEvent) {
     if (!this.isResizing) return;
@@ -210,21 +243,34 @@ export class WindowComponent implements OnInit {
     let newX = this.resizeStartWindowPos.x;
     let newY = this.resizeStartWindowPos.y;
 
+    // Minimum window size
+    const minWidth = 200;
+    const minHeight = 150;
+
     // Handle different resize directions
     if (this.resizeDirection.includes('e')) {
-      newWidth = Math.max(200, this.resizeStartSize.width + deltaX);
+      newWidth = Math.max(minWidth, this.resizeStartSize.width + deltaX);
     }
     if (this.resizeDirection.includes('w')) {
-      newWidth = Math.max(200, this.resizeStartSize.width - deltaX);
+      const oldWidth = newWidth;
+      newWidth = Math.max(minWidth, this.resizeStartSize.width - deltaX);
       newX = this.resizeStartWindowPos.x + (this.resizeStartSize.width - newWidth);
     }
     if (this.resizeDirection.includes('s')) {
-      newHeight = Math.max(150, this.resizeStartSize.height + deltaY);
+      newHeight = Math.max(minHeight, this.resizeStartSize.height + deltaY);
     }
     if (this.resizeDirection.includes('n')) {
-      newHeight = Math.max(150, this.resizeStartSize.height - deltaY);
+      const oldHeight = newHeight;
+      newHeight = Math.max(minHeight, this.resizeStartSize.height - deltaY);
       newY = this.resizeStartWindowPos.y + (this.resizeStartSize.height - newHeight);
     }
+
+    // Constrain to viewport
+    const maxWidth = window.innerWidth - newX;
+    const maxHeight = window.innerHeight - 48 - newY; // Account for taskbar
+    
+    newWidth = Math.min(newWidth, maxWidth);
+    newHeight = Math.min(newHeight, maxHeight);
 
     this.windowState.update(state => ({
       ...state,
