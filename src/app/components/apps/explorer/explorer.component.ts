@@ -19,6 +19,12 @@ export interface FileOpenEvent {
   extension: string;
 }
 
+export interface ContextMenuEvent {
+  action: 'rename' | 'delete' | 'copy' | 'cut' | 'paste' | 'set-wallpaper';
+  item: FileSystemItem;
+  newName?: string;
+}
+
 @Component({
   selector: 'app-explorer',
   standalone: true,
@@ -28,6 +34,7 @@ export interface FileOpenEvent {
 })
 export class ExplorerComponent implements OnInit {
   @Output() onFileOpen = new EventEmitter<FileOpenEvent>();
+  @Output() onContextMenuAction = new EventEmitter<ContextMenuEvent>();
   
   fileSystem = signal<FileSystemItem | null>(null);
   currentPath = signal<string>('/');
@@ -38,6 +45,28 @@ export class ExplorerComponent implements OnInit {
   navigationHistory = signal<string[]>(['/']);
   historyIndex = signal<number>(0);
   
+  // Context menu state
+  showContextMenu = signal(false);
+  contextMenuPosition = signal({ x: 0, y: 0 });
+  contextMenuItem = signal<FileSystemItem | null>(null);
+  
+  // Clipboard state
+  clipboardItem = signal<FileSystemItem | null>(null);
+  clipboardAction = signal<'copy' | 'cut' | null>(null);
+  
+  // Rename state
+  renamingItem = signal<FileSystemItem | null>(null);
+  newItemName = signal('');
+  
+  // Search state
+  searchQuery = signal('');
+  isSearching = signal(false);
+  searchResults = signal<FileSystemItem[]>([]);
+  
+  // Click tracking for double-click detection
+  private lastClickTime = 0;
+  private lastClickItem: FileSystemItem | null = null;
+  
   constructor(private http: HttpClient) {}
   
   ngOnInit() {
@@ -46,6 +75,11 @@ export class ExplorerComponent implements OnInit {
   
   // Computed current folder items
   currentItems = computed(() => {
+    // If searching, return search results
+    if (this.isSearching() && this.searchQuery().trim()) {
+      return this.searchResults();
+    }
+    
     const fs = this.fileSystem();
     if (!fs) return [];
     
@@ -120,10 +154,26 @@ export class ExplorerComponent implements OnInit {
   }
   
   onItemClick(item: FileSystemItem) {
+    const currentTime = Date.now();
+    const timeSinceLastClick = currentTime - this.lastClickTime;
+    
+    // If this is a double-click (same item, within 300ms), don't show preview
+    if (this.lastClickItem === item && timeSinceLastClick < 300) {
+      return;
+    }
+    
+    // Update click tracking
+    this.lastClickTime = currentTime;
+    this.lastClickItem = item;
+    
+    // Show preview panel for single click
     this.selectedItem.set(item);
   }
   
   onItemDoubleClick(item: FileSystemItem) {
+    // Clear the selected item to hide preview panel
+    this.selectedItem.set(null);
+    
     if (item.type === 'folder') {
       this.navigateToPath(item.path);
     } else {
@@ -202,5 +252,283 @@ export class ExplorerComponent implements OnInit {
   formatDate(dateStr: string | undefined): string {
     if (!dateStr) return '';
     return new Date(dateStr).toLocaleDateString();
+  }
+
+  // Context menu methods
+  onItemRightClick(event: MouseEvent, item: FileSystemItem) {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    this.contextMenuItem.set(item);
+    this.contextMenuPosition.set({ x: event.clientX, y: event.clientY });
+    this.showContextMenu.set(true);
+  }
+
+  hideContextMenu() {
+    this.showContextMenu.set(false);
+    this.contextMenuItem.set(null);
+  }
+
+  handleContextMenuAction(action: string) {
+    const item = this.contextMenuItem();
+    if (!item) return;
+
+    this.hideContextMenu();
+
+    switch (action) {
+      case 'rename':
+        this.startRename(item);
+        break;
+      case 'delete':
+        this.deleteItem(item);
+        break;
+      case 'copy':
+        this.copyItem(item);
+        break;
+      case 'cut':
+        this.cutItem(item);
+        break;
+      case 'paste':
+        this.pasteItem();
+        break;
+      case 'set-wallpaper':
+        this.setAsWallpaper(item);
+        break;
+    }
+  }
+
+  startRename(item: FileSystemItem) {
+    this.renamingItem.set(item);
+    this.newItemName.set(item.name);
+    
+    // Focus the input after a short delay
+    setTimeout(() => {
+      const input = document.querySelector('.rename-input') as HTMLInputElement;
+      if (input) {
+        input.focus();
+        input.select();
+      }
+    }, 0);
+  }
+
+  finishRename() {
+    const item = this.renamingItem();
+    const newName = this.newItemName().trim();
+    
+    if (item && newName && newName !== item.name) {
+      // Emit rename event to parent
+      this.onContextMenuAction.emit({
+        action: 'rename',
+        item,
+        newName
+      });
+      
+      // Update the item name locally
+      item.name = newName;
+    }
+    
+    this.cancelRename();
+  }
+
+  cancelRename() {
+    this.renamingItem.set(null);
+    this.newItemName.set('');
+  }
+
+  onRenameInput(event: Event) {
+    const target = event.target as HTMLInputElement;
+    this.newItemName.set(target.value || '');
+  }
+
+  onRenameKeyDown(event: KeyboardEvent) {
+    if (event.key === 'Enter') {
+      this.finishRename();
+    } else if (event.key === 'Escape') {
+      this.cancelRename();
+    }
+  }
+
+  deleteItem(item: FileSystemItem) {
+    if (confirm(`Are you sure you want to delete "${item.name}"?`)) {
+      this.onContextMenuAction.emit({
+        action: 'delete',
+        item
+      });
+    }
+  }
+
+  copyItem(item: FileSystemItem) {
+    this.clipboardItem.set(item);
+    this.clipboardAction.set('copy');
+    this.onContextMenuAction.emit({
+      action: 'copy',
+      item
+    });
+  }
+
+  cutItem(item: FileSystemItem) {
+    this.clipboardItem.set(item);
+    this.clipboardAction.set('cut');
+    this.onContextMenuAction.emit({
+      action: 'cut',
+      item
+    });
+  }
+
+  pasteItem() {
+    const clipboardItem = this.clipboardItem();
+    const action = this.clipboardAction();
+    
+    if (clipboardItem && action) {
+      this.onContextMenuAction.emit({
+        action: 'paste',
+        item: clipboardItem
+      });
+    }
+  }
+
+  setAsWallpaper(item: FileSystemItem) {
+    if (this.getFileType(item.name.split('.').pop() || '') === 'image') {
+      this.onContextMenuAction.emit({
+        action: 'set-wallpaper',
+        item
+      });
+    }
+  }
+
+  // Computed properties for context menu
+  get canPaste(): boolean {
+    return this.clipboardItem() !== null && this.clipboardAction() !== null;
+  }
+
+  isImageFile(item: any): boolean {
+    if (!item) return false;
+    return this.getFileType(item.name.split('.').pop() || '') === 'image';
+  }
+
+  get contextMenuItems() {
+    const item = this.contextMenuItem();
+    if (!item) return [];
+
+    const items = [];
+
+    // Always available
+    items.push({ action: 'rename', label: 'Rename', icon: 'pi pi-pencil' });
+    items.push({ action: 'copy', label: 'Copy', icon: 'pi pi-copy' });
+    items.push({ action: 'cut', label: 'Cut', icon: 'pi pi-scissors' });
+
+    // Paste if clipboard has item
+    if (this.canPaste) {
+      items.push({ action: 'paste', label: 'Paste', icon: 'pi pi-clone' });
+    }
+
+    // Set as wallpaper for images
+    if (this.isImageFile(item)) {
+      items.push({ action: 'set-wallpaper', label: 'Set as Wallpaper', icon: 'pi pi-image' });
+    }
+
+    // Delete
+    items.push({ action: 'delete', label: 'Delete', icon: 'pi pi-trash' });
+
+    return items;
+  }
+
+  // Search functionality
+  onSearchInput(event: Event) {
+    const target = event.target as HTMLInputElement;
+    const query = target.value.trim();
+    this.searchQuery.set(query);
+    
+    if (query.length > 0) {
+      this.performSearch(query);
+    } else {
+      this.clearSearch();
+    }
+  }
+
+  performSearch(query: string) {
+    this.isSearching.set(true);
+    const results: FileSystemItem[] = [];
+    
+    if (this.fileSystem()) {
+      this.searchInDirectory(this.fileSystem()!, query.toLowerCase(), results);
+    }
+    
+    this.searchResults.set(results);
+  }
+
+  private searchInDirectory(directory: FileSystemItem, query: string, results: FileSystemItem[]) {
+    if (directory.children) {
+      for (const item of directory.children) {
+        // Check if item name matches search query
+        if (item.name.toLowerCase().includes(query)) {
+          results.push(item);
+        }
+        
+        // Recursively search in subdirectories
+        if (item.type === 'folder' && item.children) {
+          this.searchInDirectory(item, query, results);
+        }
+      }
+    }
+  }
+
+  clearSearch() {
+    this.isSearching.set(false);
+    this.searchQuery.set('');
+    this.searchResults.set([]);
+  }
+
+  onSearchKeyDown(event: KeyboardEvent) {
+    if (event.key === 'Escape') {
+      this.clearSearch();
+      // Clear the search input
+      const searchInput = document.querySelector('.search-input') as HTMLInputElement;
+      if (searchInput) {
+        searchInput.value = '';
+      }
+    }
+  }
+
+  // Computed search status
+  get searchStatus() {
+    if (this.isSearching() && this.searchQuery().trim()) {
+      const resultCount = this.searchResults().length;
+      return `Found ${resultCount} item${resultCount !== 1 ? 's' : ''} for "${this.searchQuery()}"`;
+    }
+    return '';
+  }
+
+  // Preview functionality
+  getFileTypeDisplay(filename: string): string {
+    const extension = filename.split('.').pop()?.toLowerCase();
+    switch (extension) {
+      case 'txt': return 'Text File';
+      case 'md': return 'Markdown File';
+      case 'png':
+      case 'jpg':
+      case 'jpeg':
+      case 'gif':
+      case 'svg': return 'Image File';
+      case 'pdf': return 'PDF Document';
+      case 'doc':
+      case 'docx': return 'Word Document';
+      case 'xls':
+      case 'xlsx': return 'Excel Spreadsheet';
+      default: return 'File';
+    }
+  }
+
+  getImagePath(item: any): string {
+    if (item.content) {
+      return item.content;
+    }
+    return `assets/explorer${item.path}`;
+  }
+
+  isTextFile(item: any): boolean {
+    if (!item) return false;
+    const extension = item.name.split('.').pop()?.toLowerCase();
+    return ['txt', 'md'].includes(extension);
   }
 }

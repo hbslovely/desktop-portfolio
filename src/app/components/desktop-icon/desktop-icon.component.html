@@ -55,6 +55,25 @@
     <span>Rename</span>
   </div>
   
+  <div class="context-menu-separator" *ngIf="!isInTrash"></div>
+  
+  <div class="context-menu-item" (click)="onContextMenuAction('copy')" *ngIf="!isInTrash">
+    <i class="pi pi-copy"></i>
+    <span>Copy</span>
+  </div>
+  
+  <div class="context-menu-item" (click)="onContextMenuAction('cut')" *ngIf="!isInTrash">
+    <i class="pi pi-scissors"></i>
+    <span>Cut</span>
+  </div>
+  
+  <div class="context-menu-item" (click)="onContextMenuAction('paste')" *ngIf="canPaste">
+    <i class="pi pi-clone"></i>
+    <span>Paste</span>
+  </div>
+  
+  <div class="context-menu-separator"></div>
+  
   <div class="context-menu-item" (click)="onContextMenuAction('restore')" *ngIf="isInTrash">
     <i class="pi pi-undo"></i>
     <span>Restore</span>

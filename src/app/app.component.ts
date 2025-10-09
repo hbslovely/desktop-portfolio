@@ -1,12 +1,14 @@
-import { Component, signal, computed } from '@angular/core';
+import { Component, signal, computed, ViewChild } from '@angular/core';
 import { WindowComponent } from './components/window/window.component';
 import { DesktopIconComponent, DesktopIconData } from './components/desktop-icon/desktop-icon.component';
 import { CalculatorComponent } from './components/apps/calculator/calculator.component';
 import { IframeAppComponent } from './components/apps/iframe-app/iframe-app.component';
 import { LoveAppComponent } from './components/apps/love-app/love-app.component';
-import { ExplorerComponent, FileOpenEvent } from './components/apps/explorer/explorer.component';
+import { ExplorerComponent, FileOpenEvent, ContextMenuEvent } from './components/apps/explorer/explorer.component';
 import { TextViewerComponent } from './components/apps/text-viewer/text-viewer.component';
 import { ImageViewerComponent } from './components/apps/image-viewer/image-viewer.component';
+import { MachineInfoComponent } from './components/apps/machine-info/machine-info.component';
+import { WelcomeScreenComponent } from './components/welcome-screen/welcome-screen.component';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DomSanitizer } from "@angular/platform-browser";
@@ -14,11 +16,13 @@ import { DomSanitizer } from "@angular/platform-browser";
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [ WindowComponent, DesktopIconComponent, CalculatorComponent, IframeAppComponent, LoveAppComponent, ExplorerComponent, TextViewerComponent, ImageViewerComponent, CommonModule, FormsModule ],
+  imports: [ WelcomeScreenComponent, WindowComponent, DesktopIconComponent, CalculatorComponent, IframeAppComponent, LoveAppComponent, ExplorerComponent, TextViewerComponent, ImageViewerComponent, MachineInfoComponent, CommonModule, FormsModule ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
 })
 export class AppComponent {
+  @ViewChild(WelcomeScreenComponent) welcomeScreen!: WelcomeScreenComponent;
+  
   title = 'Desktop Portfolio';
 
   // Test windows
@@ -29,6 +33,7 @@ export class AppComponent {
   showExplorerWindow = signal(false);
   showTextViewerWindow = signal(false);
   showImageViewerWindow = signal(false);
+  showMachineInfoWindow = signal(false);
   showClockWindow = signal(false);
   
   // File viewer data
@@ -39,6 +44,13 @@ export class AppComponent {
   // Window management
   focusedWindow = signal<string | null>(null);
   maxZIndex = signal(1000); // Track the maximum z-index used
+  
+  // Track minimized state for each window
+  minimizedWindows = signal<Set<string>>(new Set());
+  
+  // Clipboard for copy/cut/paste operations
+  clipboardItem = signal<any>(null);
+  clipboardAction = signal<'copy' | 'cut' | null>(null);
 
   // Taskbar state
   showStartMenu = signal(false);
@@ -146,6 +158,13 @@ export class AppComponent {
       icon: 'assets/images/icons/explorer.png',
       type: 'application',
       position: { x: 150, y: 50 }
+    },
+    {
+      id: 'machine-info',
+      name: 'System Info',
+      icon: 'assets/images/icons/info.png',
+      type: 'application',
+      position: { x: 150, y: 150 }
     }
   ];
 
@@ -158,7 +177,8 @@ export class AppComponent {
   }
 
   onMinimizeTestWindow() {
-    console.log('Window minimized');
+    console.log('Calculator window minimized');
+    this.minimizedWindows.update(set => new Set(set).add('calculator'));
   }
 
   onMaximizeTestWindow() {
@@ -166,7 +186,12 @@ export class AppComponent {
   }
 
   onRestoreTestWindow() {
-    console.log('Window restored');
+    console.log('Calculator window restored');
+    this.minimizedWindows.update(set => {
+      const newSet = new Set(set);
+      newSet.delete('calculator');
+      return newSet;
+    });
   }
 
   onFocusTestWindow() {
@@ -184,6 +209,7 @@ export class AppComponent {
 
   onMinimizeMyInfoWindow() {
     console.log('My Info window minimized');
+    this.minimizedWindows.update(set => new Set(set).add('my-info'));
   }
 
   onMaximizeMyInfoWindow() {
@@ -192,6 +218,11 @@ export class AppComponent {
 
   onRestoreMyInfoWindow() {
     console.log('My Info window restored');
+    this.minimizedWindows.update(set => {
+      const newSet = new Set(set);
+      newSet.delete('my-info');
+      return newSet;
+    });
   }
 
   onFocusMyInfoWindow() {
@@ -209,6 +240,7 @@ export class AppComponent {
 
   onMinimizeMyPageWindow() {
     console.log('My Page window minimized');
+    this.minimizedWindows.update(set => new Set(set).add('my-page'));
   }
 
   onMaximizeMyPageWindow() {
@@ -217,6 +249,11 @@ export class AppComponent {
 
   onRestoreMyPageWindow() {
     console.log('My Page window restored');
+    this.minimizedWindows.update(set => {
+      const newSet = new Set(set);
+      newSet.delete('my-page');
+      return newSet;
+    });
   }
 
   onFocusMyPageWindow() {
@@ -234,6 +271,7 @@ export class AppComponent {
 
   onMinimizeLoveWindow() {
     console.log('Love window minimized');
+    this.minimizedWindows.update(set => new Set(set).add('love'));
   }
 
   onMaximizeLoveWindow() {
@@ -242,6 +280,11 @@ export class AppComponent {
 
   onRestoreLoveWindow() {
     console.log('Love window restored');
+    this.minimizedWindows.update(set => {
+      const newSet = new Set(set);
+      newSet.delete('love');
+      return newSet;
+    });
   }
 
   onFocusLoveWindow() {
@@ -259,6 +302,7 @@ export class AppComponent {
 
   onMinimizeExplorerWindow() {
     console.log('Explorer window minimized');
+    this.minimizedWindows.update(set => new Set(set).add('explorer'));
   }
 
   onMaximizeExplorerWindow() {
@@ -267,6 +311,11 @@ export class AppComponent {
 
   onRestoreExplorerWindow() {
     console.log('Explorer window restored');
+    this.minimizedWindows.update(set => {
+      const newSet = new Set(set);
+      newSet.delete('explorer');
+      return newSet;
+    });
   }
 
   onFocusExplorerWindow() {
@@ -285,6 +334,7 @@ export class AppComponent {
 
   onMinimizeTextViewerWindow() {
     console.log('Text viewer window minimized');
+    this.minimizedWindows.update(set => new Set(set).add('text-viewer'));
   }
 
   onMaximizeTextViewerWindow() {
@@ -293,6 +343,11 @@ export class AppComponent {
 
   onRestoreTextViewerWindow() {
     console.log('Text viewer window restored');
+    this.minimizedWindows.update(set => {
+      const newSet = new Set(set);
+      newSet.delete('text-viewer');
+      return newSet;
+    });
   }
 
   onFocusTextViewerWindow() {
@@ -311,6 +366,7 @@ export class AppComponent {
 
   onMinimizeImageViewerWindow() {
     console.log('Image viewer window minimized');
+    this.minimizedWindows.update(set => new Set(set).add('image-viewer'));
   }
 
   onMaximizeImageViewerWindow() {
@@ -319,11 +375,47 @@ export class AppComponent {
 
   onRestoreImageViewerWindow() {
     console.log('Image viewer window restored');
+    this.minimizedWindows.update(set => {
+      const newSet = new Set(set);
+      newSet.delete('image-viewer');
+      return newSet;
+    });
   }
 
   onFocusImageViewerWindow() {
     console.log('Image viewer window focused');
     this.focusWindow('image-viewer');
+  }
+
+  // Machine Info Window Methods
+  onCloseMachineInfoWindow() {
+    this.showMachineInfoWindow.set(false);
+    if (this.focusedWindow() === 'machine-info') {
+      this.focusedWindow.set(null);
+    }
+  }
+
+  onMinimizeMachineInfoWindow() {
+    console.log('Machine info window minimized');
+    this.minimizedWindows.update(set => new Set(set).add('machine-info'));
+  }
+
+  onMaximizeMachineInfoWindow() {
+    console.log('Machine info window maximized');
+  }
+
+  onRestoreMachineInfoWindow() {
+    console.log('Machine info window restored');
+    this.minimizedWindows.update(set => {
+      const newSet = new Set(set);
+      newSet.delete('machine-info');
+      return newSet;
+    });
+  }
+
+  onFocusMachineInfoWindow() {
+    console.log('Machine info window focused');
+    this.focusWindow('machine-info');
   }
 
   // File Open Handler
@@ -355,6 +447,96 @@ export class AppComponent {
     }
   }
 
+  // Context Menu Handler
+  onExplorerContextMenu(event: ContextMenuEvent) {
+    const { action, item, newName } = event;
+    console.log('Explorer context menu action:', action, item.name);
+    
+    switch (action) {
+      case 'rename':
+        if (newName) {
+          console.log(`Renamed "${item.name}" to "${newName}"`);
+          // Update the item name in the file system
+          item.name = newName;
+        }
+        break;
+        
+      case 'delete':
+        if (confirm(`Are you sure you want to delete "${item.name}"?`)) {
+          console.log(`Deleted "${item.name}"`);
+          // Remove the item from its parent's children array
+          this.deleteFileSystemItem(item);
+        }
+        break;
+        
+      case 'copy':
+        console.log(`Copied "${item.name}"`);
+        this.clipboardItem.set(item);
+        this.clipboardAction.set('copy');
+        break;
+        
+      case 'cut':
+        console.log(`Cut "${item.name}"`);
+        this.clipboardItem.set(item);
+        this.clipboardAction.set('cut');
+        break;
+        
+      case 'paste':
+        const clipboardItem = this.clipboardItem();
+        const clipboardAction = this.clipboardAction();
+        if (clipboardItem && clipboardAction) {
+          console.log(`Pasted "${clipboardItem.name}"`);
+          this.pasteFileSystemItem(clipboardItem, clipboardAction);
+        }
+        break;
+        
+      case 'set-wallpaper':
+        this.setImageAsWallpaper(item);
+        break;
+    }
+  }
+
+  // File system operations
+  deleteFileSystemItem(item: any) {
+    // Find and remove the item from its parent's children array
+    // This is a simplified implementation - in a real app, you'd need to traverse the file system
+    console.log('Deleting file system item:', item.name);
+    // For now, we'll just log the action since we don't have a direct reference to the parent
+  }
+
+  pasteFileSystemItem(item: any, action: 'copy' | 'cut') {
+    console.log(`Pasting ${action} item:`, item.name);
+    
+    if (action === 'cut') {
+      // Remove the original item after pasting
+      this.deleteFileSystemItem(item);
+    }
+    
+    // Clear clipboard after paste
+    this.clipboardItem.set(null);
+    this.clipboardAction.set(null);
+  }
+
+  // Set image as wallpaper
+  setImageAsWallpaper(item: any) {
+    const imagePath = item.content || `assets/explorer${item.path}`;
+    console.log('Setting wallpaper to:', imagePath);
+    
+    // Apply the wallpaper immediately
+    const wallpaperElement = document.querySelector('.wallpaper') as HTMLElement;
+    if (wallpaperElement) {
+      wallpaperElement.style.backgroundImage = `url('${imagePath}')`;
+      wallpaperElement.style.background = 'none';
+    }
+    
+    // Save to settings
+    const currentSettings = JSON.parse(localStorage.getItem('desktop-portfolio-settings') || '{}');
+    currentSettings.wallpaper = imagePath;
+    localStorage.setItem('desktop-portfolio-settings', JSON.stringify(currentSettings));
+    
+    alert(`"${item.name}" has been set as your wallpaper!`);
+  }
+
   onCloseClockWindow() {
     this.showClockWindow.set(false);
     // Clear focus if this was the focused window
@@ -363,29 +545,16 @@ export class AppComponent {
     }
   }
 
-  onDesktopIconClick(icon: DesktopIconData) {
-    console.log('Desktop icon clicked:', icon.name);
-    
-    // Check if the application is already open
-    if (icon.id === 'calculator' && this.showTestWindow()) {
-      // App is already open, restore/focus it
-      this.focusWindow('calculator');
-    } else if (icon.id === 'my-info' && this.showMyInfoWindow()) {
-      // App is already open, restore/focus it
-      this.focusWindow('my-info');
-    } else if (icon.id === 'my-page' && this.showMyPageWindow()) {
-      // App is already open, restore/focus it
-      this.focusWindow('my-page');
-    } else if (icon.id === 'love' && this.showLoveWindow()) {
-      // App is already open, restore/focus it
-      this.focusWindow('love');
-    } else if (icon.id === 'explorer' && this.showExplorerWindow()) {
-      // App is already open, restore/focus it
-      this.focusWindow('explorer');
-    } else {
-      // App is not open, open it
-      this.openTestApp(icon);
-    }
+  onDesktopIconSelect(icon: DesktopIconData) {
+    console.log('Desktop icon selected:', icon.name);
+    // Single click only selects the icon, doesn't open the app
+    // This is handled by the desktop-icon component itself
+  }
+
+  onDesktopIconDoubleClick(icon: DesktopIconData) {
+    console.log('Desktop icon double-clicked:', icon.name);
+    // Double-click opens the app
+    this.openTestApp(icon);
   }
 
   openTestApp(icon: DesktopIconData) {
@@ -405,6 +574,9 @@ export class AppComponent {
     } else if (icon.id === 'explorer') {
       this.showExplorerWindow.set(true);
       this.focusWindow('explorer');
+    } else if (icon.id === 'machine-info') {
+      this.showMachineInfoWindow.set(true);
+      this.focusWindow('machine-info');
     }
   }
 
@@ -427,7 +599,36 @@ export class AppComponent {
         // Handle restore if needed
         console.log('Restore icon:', icon.name);
         break;
+      case 'copy':
+        console.log('Copied desktop icon:', icon.name);
+        // Copy is handled by the icon component itself
+        break;
+      case 'cut':
+        console.log('Cut desktop icon:', icon.name);
+        // Cut is handled by the icon component itself
+        break;
+      case 'paste':
+        console.log('Pasting desktop icon:', icon.name);
+        this.pasteDesktopIcon(icon);
+        break;
     }
+  }
+
+  pasteDesktopIcon(icon: DesktopIconData) {
+    // Create a new icon with a unique ID and slightly offset position
+    const newIcon: DesktopIconData = {
+      ...icon,
+      id: `${icon.id}_copy_${Date.now()}`,
+      name: `${icon.name} (Copy)`,
+      position: {
+        x: icon.position.x + 20,
+        y: icon.position.y + 20
+      }
+    };
+    
+    // Add the new icon to the desktop
+    this.testIcons = [...this.testIcons, newIcon];
+    console.log('Pasted desktop icon:', newIcon.name);
   }
 
   deleteDesktopIcon(icon: DesktopIconData) {
@@ -481,30 +682,156 @@ export class AppComponent {
     }
   }
 
+  // Restore a minimized window
+  restoreWindow(windowId: string) {
+    this.minimizedWindows.update(set => {
+      const newSet = new Set(set);
+      newSet.delete(windowId);
+      return newSet;
+    });
+  }
+
+  // Minimize a window
+  minimizeWindow(windowId: string) {
+    console.log('Minimizing window:', windowId);
+    this.minimizedWindows.update(set => new Set(set).add(windowId));
+    
+    // Clear focus if this was the focused window
+    if (this.focusedWindow() === windowId) {
+      this.focusedWindow.set(null);
+    }
+  }
+
   focusWindow(windowId: string) {
     console.log('Focusing window:', windowId);
+    
+    // If window is minimized, restore it first
+    if (this.minimizedWindows().has(windowId)) {
+      this.restoreWindow(windowId);
+    }
     
     // Set the focused window
     this.focusedWindow.set(windowId);
     
-    // Increment the max z-index for the focused window
+    // Increment the max z-index for the focused window to bring it to front
     this.maxZIndex.update(max => max + 1);
+    
+    console.log('New max z-index:', this.maxZIndex());
+  }
 
-    // If window is minimized, restore it
-    if (windowId === 'calculator' && this.showTestWindow()) {
-      // Calculator window focus logic can be added here if needed
-    } else if (windowId === 'my-info' && this.showMyInfoWindow()) {
-      // My Info window focus logic can be added here if needed
-    } else if (windowId === 'my-page' && this.showMyPageWindow()) {
-      // My Page window focus logic can be added here if needed
-    } else if (windowId === 'love' && this.showLoveWindow()) {
-      // Love window focus logic can be added here if needed
-    } else if (windowId === 'explorer' && this.showExplorerWindow()) {
-      // Explorer window focus logic can be added here if needed
-    } else if (windowId === 'text-viewer' && this.showTextViewerWindow()) {
-      // Text viewer window focus logic can be added here if needed
-    } else if (windowId === 'image-viewer' && this.showImageViewerWindow()) {
-      // Image viewer window focus logic can be added here if needed
+  // Toggle window: minimize if focused, restore/focus if not focused, open if closed
+  toggleTaskbarApp(windowId: string) {
+    console.log('Toggling taskbar app:', windowId);
+    console.log('Current focused window:', this.focusedWindow());
+    console.log('Minimized windows:', Array.from(this.minimizedWindows()));
+    
+    switch (windowId) {
+      case 'calculator':
+        if (this.showTestWindow()) {
+          if (this.focusedWindow() === 'calculator') {
+            // Window is focused, minimize it
+            this.minimizeWindow('calculator');
+          } else {
+            // Window is open but not focused, focus it
+            this.focusWindow('calculator');
+          }
+        } else {
+          // Window is closed, open it
+          this.showTestWindow.set(true);
+          this.focusWindow('calculator');
+        }
+        break;
+        
+      case 'my-info':
+        if (this.showMyInfoWindow()) {
+          if (this.focusedWindow() === 'my-info') {
+            this.minimizeWindow('my-info');
+          } else {
+            this.focusWindow('my-info');
+          }
+        } else {
+          this.showMyInfoWindow.set(true);
+          this.focusWindow('my-info');
+        }
+        break;
+        
+      case 'my-page':
+        if (this.showMyPageWindow()) {
+          if (this.focusedWindow() === 'my-page') {
+            this.minimizeWindow('my-page');
+          } else {
+            this.focusWindow('my-page');
+          }
+        } else {
+          this.showMyPageWindow.set(true);
+          this.focusWindow('my-page');
+        }
+        break;
+        
+      case 'love':
+        if (this.showLoveWindow()) {
+          if (this.focusedWindow() === 'love') {
+            this.minimizeWindow('love');
+          } else {
+            this.focusWindow('love');
+          }
+        } else {
+          this.showLoveWindow.set(true);
+          this.focusWindow('love');
+        }
+        break;
+        
+      case 'explorer':
+        if (this.showExplorerWindow()) {
+          if (this.focusedWindow() === 'explorer') {
+            this.minimizeWindow('explorer');
+          } else {
+            this.focusWindow('explorer');
+          }
+        } else {
+          this.showExplorerWindow.set(true);
+          this.focusWindow('explorer');
+        }
+        break;
+        
+      case 'text-viewer':
+        if (this.showTextViewerWindow()) {
+          if (this.focusedWindow() === 'text-viewer') {
+            this.minimizeWindow('text-viewer');
+          } else {
+            this.focusWindow('text-viewer');
+          }
+        } else {
+          this.showTextViewerWindow.set(true);
+          this.focusWindow('text-viewer');
+        }
+        break;
+        
+      case 'image-viewer':
+        if (this.showImageViewerWindow()) {
+          if (this.focusedWindow() === 'image-viewer') {
+            this.minimizeWindow('image-viewer');
+          } else {
+            this.focusWindow('image-viewer');
+          }
+        } else {
+          this.showImageViewerWindow.set(true);
+          this.focusWindow('image-viewer');
+        }
+        break;
+        
+      case 'machine-info':
+        if (this.showMachineInfoWindow()) {
+          if (this.focusedWindow() === 'machine-info') {
+            this.minimizeWindow('machine-info');
+          } else {
+            this.focusWindow('machine-info');
+          }
+        } else {
+          this.showMachineInfoWindow.set(true);
+          this.focusWindow('machine-info');
+        }
+        break;
     }
   }
 
@@ -516,6 +843,11 @@ export class AppComponent {
     
     // For non-focused windows, return a base z-index
     return 1000;
+  }
+
+  // Check if a window is minimized
+  isWindowMinimized(windowId: string): boolean {
+    return this.minimizedWindows().has(windowId);
   }
 
   isWindowFocused(windowId: string): boolean {
@@ -802,6 +1134,13 @@ export class AppComponent {
       if (iframe.src !== rawUrl) {
         iframe.src = rawUrl;
       }
+    }
+  }
+
+  // Lock screen functionality
+  lockScreen() {
+    if (this.welcomeScreen) {
+      this.welcomeScreen.lockScreenFromParent();
     }
   }
 }

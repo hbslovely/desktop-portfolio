@@ -30,6 +30,7 @@ export class WindowComponent implements OnInit, OnDestroy {
   @Input() closable = true;
   @Input() zIndex = 1000;
   @Input() isFocused = false;
+  @Input() isMinimizedExternal = false;
 
   @Output() onClose = new EventEmitter<void>();
   @Output() onMinimize = new EventEmitter<void>();
@@ -48,9 +49,17 @@ export class WindowComponent implements OnInit, OnDestroy {
   // Computed styles
   windowStyles = computed(() => {
     const state = this.windowState();
+    const isMinimized = state.isMinimized || this.isMinimizedExternal;
     const baseStyles = {
       zIndex: this.zIndex.toString()
     };
+    
+    if (isMinimized) {
+      return {
+        ...baseStyles,
+        display: 'none'
+      };
+    }
     
     if (state.isMaximized) {
       return {

@@ -11,7 +11,7 @@ export interface DesktopIconData {
 }
 
 export interface IconContextMenuEvent {
-  action: 'rename' | 'delete' | 'open' | 'restore';
+  action: 'rename' | 'delete' | 'open' | 'restore' | 'copy' | 'cut' | 'paste';
   icon: DesktopIconData;
 }
 
@@ -47,6 +47,10 @@ export class DesktopIconComponent implements OnDestroy {
   // Rename state
   isRenaming = signal(false);
   newName = signal('');
+  
+  // Clipboard state (shared across all desktop icons)
+  static clipboardIcon: DesktopIconData | null = null;
+  static clipboardAction: 'copy' | 'cut' | null = null;
 
   // Computed position - use drag position during dragging for smooth performance
   iconPosition = computed(() => {
@@ -170,14 +174,52 @@ export class DesktopIconComponent implements OnDestroy {
     });
   }
 
-  onContextMenuAction(action: 'rename' | 'delete' | 'open' | 'restore') {
+  onContextMenuAction(action: 'rename' | 'delete' | 'open' | 'restore' | 'copy' | 'cut' | 'paste') {
     this.showContextMenu.set(false);
     
-    if (action === 'rename') {
-      this.startRename();
-    } else {
-      this.onContextMenu.emit({ action, icon: this.iconData });
+    switch (action) {
+      case 'rename':
+        this.startRename();
+        break;
+      case 'copy':
+        DesktopIconComponent.clipboardIcon = { ...this.iconData };
+        DesktopIconComponent.clipboardAction = 'copy';
+        this.onContextMenu.emit({ action, icon: this.iconData });
+        break;
+      case 'cut':
+        DesktopIconComponent.clipboardIcon = { ...this.iconData };
+        DesktopIconComponent.clipboardAction = 'cut';
+        this.onContextMenu.emit({ action, icon: this.iconData });
+        break;
+      case 'paste':
+        if (DesktopIconComponent.clipboardIcon && DesktopIconComponent.clipboardAction) {
+          // Emit paste event to parent
+          this.onContextMenu.emit({ 
+            action: 'paste', 
+            icon: DesktopIconComponent.clipboardIcon 
+          });
+          
+          // If it was a cut operation, remove the original
+          if (DesktopIconComponent.clipboardAction === 'cut') {
+            this.onContextMenu.emit({ 
+              action: 'delete', 
+              icon: DesktopIconComponent.clipboardIcon 
+            });
+          }
+          
+          // Clear clipboard
+          DesktopIconComponent.clipboardIcon = null;
+          DesktopIconComponent.clipboardAction = null;
+        }
+        break;
+      default:
+        this.onContextMenu.emit({ action, icon: this.iconData });
     }
+  }
+  
+  // Check if paste is available
+  get canPaste(): boolean {
+    return DesktopIconComponent.clipboardIcon !== null && DesktopIconComponent.clipboardAction !== null;
   }
 
   startRename() {

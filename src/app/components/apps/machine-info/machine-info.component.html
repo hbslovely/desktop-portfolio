@@ -1,0 +1,120 @@
+<div class="machine-info-container">
+  <div class="info-header">
+    <h2><i class="pi pi-desktop"></i> System Information</h2>
+    <button class="refresh-btn" (click)="refreshInfo()" title="Refresh Information">
+      <i class="pi pi-refresh"></i>
+    </button>
+  </div>
+
+  <div class="info-sections">
+    <!-- System Information -->
+    <div class="info-section">
+      <h3><i class="pi pi-cog"></i> System Details</h3>
+      <div class="info-grid">
+        <div class="info-item">
+          <span class="label">Operating System:</span>
+          <span class="value">{{ systemInfo().os }}</span>
+        </div>
+        <div class="info-item">
+          <span class="label">Browser:</span>
+          <span class="value">{{ systemInfo().browser }}</span>
+        </div>
+        <div class="info-item">
+          <span class="label">Language:</span>
+          <span class="value">{{ systemInfo().language }}</span>
+        </div>
+        <div class="info-item">
+          <span class="label">Platform:</span>
+          <span class="value">{{ systemInfo().platform }}</span>
+        </div>
+        <div class="info-item">
+          <span class="label">Screen Resolution:</span>
+          <span class="value">{{ systemInfo().screenResolution }}</span>
+        </div>
+        <div class="info-item">
+          <span class="label">Color Depth:</span>
+          <span class="value">{{ systemInfo().colorDepth }} bits</span>
+        </div>
+        <div class="info-item">
+          <span class="label">Timezone:</span>
+          <span class="value">{{ systemInfo().timezone }}</span>
+        </div>
+        <div class="info-item">
+          <span class="label">Cookies Enabled:</span>
+          <span class="value" [class.status-true]="systemInfo().cookieEnabled" [class.status-false]="!systemInfo().cookieEnabled">
+            {{ systemInfo().cookieEnabled ? 'Yes' : 'No' }}
+          </span>
+        </div>
+        <div class="info-item">
+          <span class="label">Online Status:</span>
+          <span class="value" [class.status-true]="systemInfo().onlineStatus" [class.status-false]="!systemInfo().onlineStatus">
+            {{ systemInfo().onlineStatus ? 'Online' : 'Offline' }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Performance Information -->
+    <div class="info-section">
+      <h3><i class="pi pi-chart-line"></i> Performance</h3>
+      <div class="info-grid">
+        <div class="info-item">
+          <span class="label">Memory Usage:</span>
+          <span class="value">{{ performanceInfo().memoryUsage }}</span>
+        </div>
+        <div class="info-item">
+          <span class="label">Connection Type:</span>
+          <span class="value">{{ performanceInfo().connectionType }}</span>
+        </div>
+        <div class="info-item">
+          <span class="label">CPU Cores:</span>
+          <span class="value">{{ performanceInfo().hardwareConcurrency }}</span>
+        </div>
+        <div class="info-item">
+          <span class="label">Pixel Ratio:</span>
+          <span class="value">{{ performanceInfo().devicePixelRatio }}</span>
+        </div>
+        <div class="info-item">
+          <span class="label">Last Updated:</span>
+          <span class="value">{{ performanceInfo().timestamp }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Network Information -->
+    <div class="info-section">
+      <h3><i class="pi pi-wifi"></i> Network</h3>
+      <div class="info-grid">
+        <div class="info-item">
+          <span class="label">Connection Speed:</span>
+          <span class="value">{{ networkInfo().connectionSpeed }}</span>
+        </div>
+        <div class="info-item">
+          <span class="label">Effective Type:</span>
+          <span class="value">{{ networkInfo().effectiveType }}</span>
+        </div>
+        <div class="info-item">
+          <span class="label">Downlink:</span>
+          <span class="value">{{ networkInfo().downlink }} Mbps</span>
+        </div>
+        <div class="info-item">
+          <span class="label">Round Trip Time:</span>
+          <span class="value">{{ networkInfo().rtt }} ms</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- User Agent -->
+    <div class="info-section">
+      <h3><i class="pi pi-code"></i> User Agent</h3>
+      <div class="user-agent-container">
+        <div class="user-agent-text" (click)="copyToClipboard(systemInfo().userAgent)">
+          {{ systemInfo().userAgent }}
+        </div>
+        <button class="copy-btn" (click)="copyToClipboard(systemInfo().userAgent)" title="Copy to Clipboard">
+          <i class="pi pi-copy"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

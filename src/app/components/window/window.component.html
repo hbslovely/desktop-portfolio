@@ -1,7 +1,7 @@
 <div 
   class="window" 
   [class.maximized]="windowState().isMaximized"
-  [class.minimized]="windowState().isMinimized"
+  [class.minimized]="windowState().isMinimized || isMinimizedExternal"
   [class.focused]="isFocused"
   [ngStyle]="windowStyles()"
   (click)="onWindowClick()"

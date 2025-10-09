@@ -1,5 +1,7 @@
-<!-- Desktop Environment -->
-<div class="desktop" (contextmenu)="onDesktopRightClick($event)" (click)="hideDesktopContextMenu()">
+<!-- Welcome Screen with Desktop Environment -->
+<app-welcome-screen>
+  <!-- Desktop Environment -->
+  <div class="desktop" (contextmenu)="onDesktopRightClick($event)" (click)="hideDesktopContextMenu()">
   <!-- Desktop Wallpaper -->
   <div class="wallpaper"></div>
 
@@ -16,6 +18,7 @@
     [maximizable]="false"
     [zIndex]="getWindowZIndex('calculator')"
     [isFocused]="isWindowFocused('calculator')"
+    [isMinimizedExternal]="isWindowMinimized('calculator')"
     (onClose)="onCloseTestWindow()"
     (onMinimize)="onMinimizeTestWindow()"
     (onMaximize)="onMaximizeTestWindow()"
@@ -38,6 +41,7 @@
     [maximizable]="true"
     [zIndex]="getWindowZIndex('my-info')"
     [isFocused]="isWindowFocused('my-info')"
+    [isMinimizedExternal]="isWindowMinimized('my-info')"
     (onClose)="onCloseMyInfoWindow()"
     (onMinimize)="onMinimizeMyInfoWindow()"
     (onMaximize)="onMaximizeMyInfoWindow()"
@@ -63,6 +67,7 @@
     [maximizable]="true"
     [zIndex]="getWindowZIndex('my-page')"
     [isFocused]="isWindowFocused('my-page')"
+    [isMinimizedExternal]="isWindowMinimized('my-page')"
     (onClose)="onCloseMyPageWindow()"
     (onMinimize)="onMinimizeMyPageWindow()"
     (onMaximize)="onMaximizeMyPageWindow()"
@@ -211,6 +216,7 @@
     [maximizable]="true"
     [zIndex]="getWindowZIndex('love')"
     [isFocused]="isWindowFocused('love')"
+    [isMinimizedExternal]="isWindowMinimized('love')"
     (onClose)="onCloseLoveWindow()"
     (onMinimize)="onMinimizeLoveWindow()"
     (onMaximize)="onMaximizeLoveWindow()"
@@ -236,13 +242,17 @@
     [maximizable]="true"
     [zIndex]="getWindowZIndex('explorer')"
     [isFocused]="isWindowFocused('explorer')"
+    [isMinimizedExternal]="isWindowMinimized('explorer')"
     (onClose)="onCloseExplorerWindow()"
     (onMinimize)="onMinimizeExplorerWindow()"
     (onMaximize)="onMaximizeExplorerWindow()"
     (onRestore)="onRestoreExplorerWindow()"
     (onFocus)="onFocusExplorerWindow()">
 
-    <app-explorer (onFileOpen)="onExplorerFileOpen($event)"></app-explorer>
+    <app-explorer 
+      (onFileOpen)="onExplorerFileOpen($event)"
+      (onContextMenuAction)="onExplorerContextMenu($event)">
+    </app-explorer>
   </app-window>
 
   <!-- Text Viewer Window -->
@@ -258,6 +268,7 @@
     [maximizable]="true"
     [zIndex]="getWindowZIndex('text-viewer')"
     [isFocused]="isWindowFocused('text-viewer')"
+    [isMinimizedExternal]="isWindowMinimized('text-viewer')"
     (onClose)="onCloseTextViewerWindow()"
     (onMinimize)="onMinimizeTextViewerWindow()"
     (onMaximize)="onMaximizeTextViewerWindow()"
@@ -284,6 +295,7 @@
     [maximizable]="true"
     [zIndex]="getWindowZIndex('image-viewer')"
     [isFocused]="isWindowFocused('image-viewer')"
+    [isMinimizedExternal]="isWindowMinimized('image-viewer')"
     (onClose)="onCloseImageViewerWindow()"
     (onMinimize)="onMinimizeImageViewerWindow()"
     (onMaximize)="onMaximizeImageViewerWindow()"
@@ -294,6 +306,29 @@
       [imagePath]="currentImageFile()!.path"
       [imageName]="currentImageFile()!.name">
     </app-image-viewer>
+  </app-window>
+
+  <!-- Machine Info Window -->
+  <app-window
+    *ngIf="showMachineInfoWindow()"
+    title="System Information"
+    icon="pi pi-desktop"
+    statusText="Ready"
+    [initialWidth]="1000"
+    [initialHeight]="700"
+    [initialX]="200"
+    [initialY]="100"
+    [maximizable]="true"
+    [zIndex]="getWindowZIndex('machine-info')"
+    [isFocused]="isWindowFocused('machine-info')"
+    [isMinimizedExternal]="isWindowMinimized('machine-info')"
+    (onClose)="onCloseMachineInfoWindow()"
+    (onMinimize)="onMinimizeMachineInfoWindow()"
+    (onMaximize)="onMaximizeMachineInfoWindow()"
+    (onRestore)="onRestoreMachineInfoWindow()"
+    (onFocus)="onFocusMachineInfoWindow()">
+
+    <app-machine-info></app-machine-info>
   </app-window>
  
   <!-- Floating Clock Widget -->
@@ -393,8 +428,8 @@
   <app-desktop-icon
     *ngFor="let icon of testIcons"
     [iconData]="icon"
-    (onClick)="onDesktopIconClick($event)"
-    (onDoubleClick)="openTestApp($event)"
+    (onClick)="onDesktopIconSelect($event)"
+    (onDoubleClick)="onDesktopIconDoubleClick($event)"
     (onContextMenu)="onDesktopIconContextMenu($event)">
   </app-desktop-icon>
 
@@ -416,7 +451,7 @@
         *ngIf="showTestWindow()"
         class="taskbar-app"
         [class.active]="isWindowFocused('calculator')"
-        (click)="focusWindow('calculator')"
+        (click)="toggleTaskbarApp('calculator')"
         title="Calculator">
         <i class="pi pi-calculator"></i>
         <span>Calculator</span>
@@ -426,7 +461,7 @@
         *ngIf="showMyInfoWindow()"
         class="taskbar-app"
         [class.active]="isWindowFocused('my-info')"
-        (click)="focusWindow('my-info')"
+        (click)="toggleTaskbarApp('my-info')"
         title="My Information">
         <i class="pi pi-user"></i>
         <span>My Information</span>
@@ -436,7 +471,7 @@
         *ngIf="showMyPageWindow()"
         class="taskbar-app"
         [class.active]="isWindowFocused('my-page')"
-        (click)="focusWindow('my-page')"
+        (click)="toggleTaskbarApp('my-page')"
         title="My Page">
         <i class="pi pi-globe"></i>
         <span>My Page</span>
@@ -446,7 +481,7 @@
         *ngIf="showLoveWindow()"
         class="taskbar-app"
         [class.active]="isWindowFocused('love')"
-        (click)="focusWindow('love')"
+        (click)="toggleTaskbarApp('love')"
         title="Love">
         <i class="pi pi-heart"></i>
         <span>Love</span>
@@ -456,7 +491,7 @@
         *ngIf="showExplorerWindow()"
         class="taskbar-app"
         [class.active]="isWindowFocused('explorer')"
-        (click)="focusWindow('explorer')"
+        (click)="toggleTaskbarApp('explorer')"
         title="Explorer">
         <i class="pi pi-folder"></i>
         <span>Explorer</span>
@@ -466,7 +501,7 @@
         *ngIf="showTextViewerWindow()"
         class="taskbar-app"
         [class.active]="isWindowFocused('text-viewer')"
-        (click)="focusWindow('text-viewer')"
+        (click)="toggleTaskbarApp('text-viewer')"
         title="Text Viewer">
         <i class="pi pi-file"></i>
         <span>{{ currentTextFile()?.name || 'Text Viewer' }}</span>
@@ -476,16 +511,29 @@
         *ngIf="showImageViewerWindow()"
         class="taskbar-app"
         [class.active]="isWindowFocused('image-viewer')"
-        (click)="focusWindow('image-viewer')"
+        (click)="toggleTaskbarApp('image-viewer')"
         title="Image Viewer">
         <i class="pi pi-image"></i>
         <span>{{ currentImageFile()?.name || 'Image Viewer' }}</span>
+      </button>
+
+      <button
+        *ngIf="showMachineInfoWindow()"
+        class="taskbar-app"
+        [class.active]="isWindowFocused('machine-info')"
+        (click)="toggleTaskbarApp('machine-info')"
+        title="System Information">
+        <i class="pi pi-desktop"></i>
+        <span>System Info</span>
       </button>
 
     </div>
 
     <!-- System Tray -->
     <div class="system-tray">
+      <button class="lock-button" (click)="lockScreen()" title="Lock Screen">
+        <i class="pi pi-lock"></i>
+      </button>
       <div class="clock" (click)="openClockWindow()" title="Click to open Clock">
         {{ currentTime }}
       </div>
@@ -518,6 +566,13 @@
           <span>Explorer</span>
         </div>
       </div>
+      
+      <div class="start-menu-separator"></div>
+      
+      <div class="start-menu-item lock-menu-item" (click)="lockScreen()">
+        <i class="pi pi-lock"></i>
+        <span>Lock Screen</span>
+      </div>
     </div>
   </div>
 
@@ -546,4 +601,5 @@
   <div *ngIf="showDesktopContextMenu()" class="context-menu-backdrop" 
        (click)="hideDesktopContextMenu()">
   </div>
-</div>
+  </div>
+</app-welcome-screen>
