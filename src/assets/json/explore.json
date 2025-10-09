@@ -59,7 +59,7 @@
             "name": "war.png",
             "path": "/Pictures/man.png",
             "icon": "pi pi-image",
-            "size": "2.1 MB",
+            "size": "1.1 MB",
             "modified": "2024-01-10T14:20:00Z",
             "content": "assets/images/man.png"
           },
@@ -68,7 +68,7 @@
             "name": "war.png",
             "path": "/Pictures/war.png",
             "icon": "pi pi-image",
-            "size": "2.1 MB",
+            "size": "120 kB",
             "modified": "2024-01-10T14:20:00Z",
             "content": "assets/images/war.png"
           }
