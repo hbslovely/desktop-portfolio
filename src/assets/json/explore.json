@@ -52,7 +52,7 @@
             "icon": "pi pi-image",
             "size": "2.1 MB",
             "modified": "2024-01-10T14:20:00Z",
-            "content": "assets/images/image_1.png"
+            "content": "assets/explorer/Pictures/image_1.png"
           },
           {
             "type": "file",
@@ -61,7 +61,7 @@
             "icon": "pi pi-image",
             "size": "1.1 MB",
             "modified": "2024-01-10T14:20:00Z",
-            "content": "assets/images/man.png"
+            "content": "assets/explorer/Pictures/man.png"
           },
           {
             "type": "file",
@@ -70,7 +70,7 @@
             "icon": "pi pi-image",
             "size": "120 kB",
             "modified": "2024-01-10T14:20:00Z",
-            "content": "assets/images/war.png"
+            "content": "assets/explorer/Pictures/war.png"
           }
         ]
       },
