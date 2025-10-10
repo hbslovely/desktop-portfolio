@@ -19,6 +19,7 @@
     [zIndex]="getWindowZIndex('calculator')"
     [isFocused]="isWindowFocused('calculator')"
     [isMinimizedExternal]="isWindowMinimized('calculator')"
+    data-window-id="calculator"
     (onClose)="onCloseTestWindow()"
     (onMinimize)="onMinimizeTestWindow()"
     (onMaximize)="onMaximizeTestWindow()"
@@ -42,6 +43,7 @@
     [zIndex]="getWindowZIndex('my-info')"
     [isFocused]="isWindowFocused('my-info')"
     [isMinimizedExternal]="isWindowMinimized('my-info')"
+    data-window-id="my-info"
     (onClose)="onCloseMyInfoWindow()"
     (onMinimize)="onMinimizeMyInfoWindow()"
     (onMaximize)="onMaximizeMyInfoWindow()"
@@ -54,154 +56,6 @@
     </app-iframe-app>
   </app-window>
 
-  <!-- My Page Window -->
-  <app-window
-    *ngIf="showMyPageWindow()"
-    title="My Page"
-    icon="info"
-    statusText="Loading web page..."
-    [initialWidth]="1000"
-    [initialHeight]="700"
-    [initialX]="150"
-    [initialY]="100"
-    [maximizable]="true"
-    [zIndex]="getWindowZIndex('my-page')"
-    [isFocused]="isWindowFocused('my-page')"
-    [isMinimizedExternal]="isWindowMinimized('my-page')"
-    (onClose)="onCloseMyPageWindow()"
-    (onMinimize)="onMinimizeMyPageWindow()"
-    (onMaximize)="onMaximizeMyPageWindow()"
-    (onRestore)="onRestoreMyPageWindow()"
-    (onFocus)="onFocusMyPageWindow()">
-
-    <div class="browser-container">
-      <!-- Browser Tab Bar -->
-      <div class="tab-bar">
-        <div class="tab active">
-          <i class="pi pi-globe tab-icon"></i>
-          <span class="tab-title">Google</span>
-          <button class="tab-close" title="Close tab">
-            <i class="pi pi-times"></i>
-          </button>
-        </div>
-        <button class="new-tab-btn" title="New tab">
-          <i class="pi pi-plus"></i>
-        </button>
-      </div>
-
-      <!-- Browser Navigation Bar -->
-      <div class="nav-bar">
-        <div class="nav-controls">
-          <button class="nav-btn" [disabled]="!canGoBack" (click)="goBack()" title="Back">
-            <i class="pi pi-arrow-left"></i>
-          </button>
-          <button class="nav-btn" [disabled]="!canGoForward" (click)="goForward()" title="Forward">
-            <i class="pi pi-arrow-right"></i>
-          </button>
-          <button class="nav-btn" (click)="refreshPage()" title="Reload">
-            <i class="pi pi-refresh" [class.spinning]="isLoading"></i>
-          </button>
-          <button class="nav-btn" (click)="goHome()" title="Home">
-            <i class="pi pi-home"></i>
-          </button>
-        </div>
-
-        <div class="address-bar-container">
-          <div class="address-bar">
-            <i class="pi pi-lock security-icon" title="Secure"></i>
-            <input
-              type="text"
-              class="url-input"
-              [value]="currentUrl"
-              (keydown.enter)="navigateToUrl($event)"
-              (focus)="selectUrl($event)"
-              placeholder="Search Google or type a URL">
-            <button class="bookmark-btn" [class.bookmarked]="isBookmarked" (click)="toggleBookmark()" title="Bookmark">
-              <i class="pi pi-star" [class.pi-star-fill]="isBookmarked"></i>
-            </button>
-          </div>
-        </div>
-
-        <div class="browser-actions">
-          <button class="action-btn" (click)="toggleBookmarks()" title="Bookmarks">
-            <i class="pi pi-bookmark"></i>
-          </button>
-          <button class="action-btn" (click)="openHistory()" title="History">
-            <i class="pi pi-history"></i>
-          </button>
-          <button class="action-btn" (click)="openDownloads()" title="Downloads">
-            <i class="pi pi-download"></i>
-          </button>
-          <button class="action-btn menu-btn" (click)="toggleBrowserMenu()" title="Menu">
-            <i class="pi pi-ellipsis-v"></i>
-          </button>
-        </div>
-      </div>
-
-      <!-- Bookmarks Bar -->
-      <div class="bookmarks-bar" *ngIf="showBookmarksBar">
-        <div class="bookmark-item" *ngFor="let bookmark of bookmarks" (click)="navigateToBookmark(bookmark)">
-          <i class="pi pi-globe"></i>
-          <span>{{ bookmark.name }}</span>
-        </div>
-        <button class="bookmark-item add-bookmark" (click)="addBookmark()">
-          <i class="pi pi-plus"></i>
-          <span>Add bookmark</span>
-        </button>
-      </div>
-
-      <!-- Browser Menu -->
-      <div class="browser-menu" *ngIf="showBrowserMenu">
-        <div class="menu-item" (click)="newTab()">
-          <i class="pi pi-plus"></i>
-          <span>New tab</span>
-        </div>
-        <div class="menu-item" (click)="newWindow()">
-          <i class="pi pi-window-maximize"></i>
-          <span>New window</span>
-        </div>
-        <div class="menu-separator"></div>
-        <div class="menu-item" (click)="openHistory()">
-          <i class="pi pi-history"></i>
-          <span>History</span>
-        </div>
-        <div class="menu-item" (click)="openDownloads()">
-          <i class="pi pi-download"></i>
-          <span>Downloads</span>
-        </div>
-        <div class="menu-item" (click)="openBookmarks()">
-          <i class="pi pi-bookmark"></i>
-          <span>Bookmarks</span>
-        </div>
-        <div class="menu-separator"></div>
-        <div class="menu-item" (click)="openSettings()">
-          <i class="pi pi-cog"></i>
-          <span>Settings</span>
-        </div>
-        <div class="menu-item" (click)="openDevTools()">
-          <i class="pi pi-code"></i>
-          <span>Developer tools</span>
-        </div>
-      </div>
-
-      <!-- Browser Content -->
-      <div class="browser-content">
-        <div class="loading-bar" *ngIf="isLoading"></div>
-        @if (iframeSrc()) {
-          <iframe
-            [src]="iframeSrc()"
-            class="content-iframe"
-            frameborder="0"
-            allowfullscreen
-            sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
-            target="_parent"
-            (load)="onPageLoad()"
-            (error)="onPageError()">
-          </iframe>
-        }
-      </div>
-    </div>
-  </app-window>
 
   <!-- Love Window -->
   <app-window
@@ -253,6 +107,98 @@
       (onFileOpen)="onExplorerFileOpen($event)"
       (onContextMenuAction)="onExplorerContextMenu($event)">
     </app-explorer>
+  </app-window>
+
+  <!-- Credit Tracker Window -->
+  <app-window
+    *ngIf="showCreditWindow()"
+    title="Credit Tracker"
+    icon="pi pi-dollar"
+    statusText="Ready"
+    [initialWidth]="900"
+    [initialHeight]="700"
+    [initialX]="200"
+    [initialY]="100"
+    [maximizable]="true"
+    [zIndex]="getWindowZIndex('credit')"
+    [isFocused]="isWindowFocused('credit')"
+    [isMinimizedExternal]="isWindowMinimized('credit')"
+    (onClose)="onCloseCreditWindow()"
+    (onMinimize)="onMinimizeCreditWindow()"
+    (onMaximize)="onMaximizeCreditWindow()"
+    (onRestore)="onRestoreCreditWindow()"
+    (onFocus)="onFocusCreditWindow()">
+
+    <app-credit-app></app-credit-app>
+  </app-window>
+
+  <!-- Paint Window -->
+  <app-window
+    *ngIf="showPaintWindow()"
+    title="Paint"
+    icon="pi pi-palette"
+    statusText="Ready"
+    [initialWidth]="1000"
+    [initialHeight]="800"
+    [initialX]="150"
+    [initialY]="50"
+    [maximizable]="true"
+    [zIndex]="getWindowZIndex('paint')"
+    [isFocused]="isWindowFocused('paint')"
+    [isMinimizedExternal]="isWindowMinimized('paint')"
+    (onClose)="onClosePaintWindow()"
+    (onMinimize)="onMinimizePaintWindow()"
+    (onMaximize)="onMaximizePaintWindow()"
+    (onRestore)="onRestorePaintWindow()"
+    (onFocus)="onFocusPaintWindow()">
+
+    <app-paint-app></app-paint-app>
+  </app-window>
+
+  <!-- Credits Window -->
+  <app-window
+    *ngIf="showCreditsWindow()"
+    title="Credits"
+    icon="pi pi-star"
+    statusText="Rolling..."
+    [initialWidth]="1000"
+    [initialHeight]="700"
+    [initialX]="100"
+    [initialY]="50"
+    [maximizable]="true"
+    [zIndex]="getWindowZIndex('credits')"
+    [isFocused]="isWindowFocused('credits')"
+    [isMinimizedExternal]="isWindowMinimized('credits')"
+    (onClose)="onCloseCreditsWindow()"
+    (onMinimize)="onMinimizeCreditsWindow()"
+    (onMaximize)="onMaximizeCreditsWindow()"
+    (onRestore)="onRestoreCreditsWindow()"
+    (onFocus)="onFocusCreditsWindow()">
+
+    <app-credits-app></app-credits-app>
+  </app-window>
+
+  <!-- Ho Chi Minh City Window -->
+  <app-window
+    *ngIf="showHcmcWindow()"
+    title="Ho Chi Minh City"
+    icon="pi pi-globe"
+    statusText="Welcome to Saigon"
+    [initialWidth]="1000"
+    [initialHeight]="700"
+    [initialX]="100"
+    [initialY]="50"
+    [maximizable]="true"
+    [zIndex]="getWindowZIndex('hcmc')"
+    [isFocused]="isWindowFocused('hcmc')"
+    [isMinimizedExternal]="isWindowMinimized('hcmc')"
+    (onClose)="onCloseHcmcWindow()"
+    (onMinimize)="onMinimizeHcmcWindow()"
+    (onMaximize)="onMaximizeHcmcWindow()"
+    (onRestore)="onRestoreHcmcWindow()"
+    (onFocus)="onFocusHcmcWindow()">
+
+    <app-hcmc-app></app-hcmc-app>
   </app-window>
 
   <!-- Text Viewer Window -->
@@ -377,49 +323,147 @@
   <!-- Search Window -->
   <div *ngIf="showSearchWindow()" class="search-window" (click)="closeSearchWindow()">
     <div class="search-content" (click)="$event.stopPropagation()">
+      <!-- Search Header -->
       <div class="search-header">
-        <div class="search-input-container">
-          <i class="pi pi-search search-icon"></i>
-          <input 
-            type="text" 
-            class="search-input" 
-            placeholder="Search applications, files, and web..."
-            [(ngModel)]="searchQuery"
-            (input)="onSearchInput($event)"
-            (keydown.enter)="selectSearchResult(searchResults[0])"
-            autofocus>
+        <div class="search-title">
+          <i class="pi pi-search"></i>
+          <span>Search</span>
         </div>
         <button class="search-close-btn" (click)="closeSearchWindow()" title="Close">
           <i class="pi pi-times"></i>
         </button>
       </div>
-      
-      <div class="search-results" *ngIf="showSearchSuggestions">
-        <div class="search-section" *ngIf="appSearchResults.length > 0">
-          <div class="section-title">Applications</div>
-          <div class="result-item" 
-               *ngFor="let result of appSearchResults" 
-               (click)="selectSearchResult(result)">
-            <i [class]="'pi ' + result.icon"></i>
-            <span>{{ result.name }}</span>
-          </div>
-        </div>
-        
-        <div class="search-section" *ngIf="webSearchResults.length > 0">
-          <div class="section-title">Web Search</div>
-          <div class="result-item" 
-               *ngFor="let result of webSearchResults" 
-               (click)="selectSearchResult(result)">
-            <i [class]="'pi ' + result.icon"></i>
-            <span>{{ result.name }}</span>
-            <span class="result-subtitle">{{ searchQuery }}</span>
+
+      <!-- Search Input -->
+      <div class="search-input-section">
+        <div class="search-input-container">
+          <i class="pi pi-search search-icon"></i>
+          <input 
+            #searchInput
+            type="text" 
+            class="search-input" 
+            placeholder="Type to search applications, files, and web..."
+            [(ngModel)]="searchQuery"
+            (input)="onSearchInput($event)"
+            (keydown.enter)="selectSearchResult(searchResults[selectedSearchIndex])"
+            (keydown.arrowdown)="navigateSearchResults(1, $event)"
+            (keydown.arrowup)="navigateSearchResults(-1, $event)"
+            (keydown.escape)="closeSearchWindow()">
+          <div class="search-shortcuts">
+            <span class="shortcut-hint">↑↓ Navigate • Enter Open • Esc Close</span>
           </div>
         </div>
       </div>
       
+      <!-- Search Results -->
+      <div class="search-results-container" *ngIf="showSearchSuggestions">
+        <div class="search-results">
+          <div class="search-section" *ngIf="appSearchResults.length > 0">
+            <div class="section-title">
+              <i class="pi pi-apps"></i>
+              <span>Applications</span>
+              <span class="result-count">{{ appSearchResults.length }}</span>
+            </div>
+            <div class="result-item" 
+                 *ngFor="let result of appSearchResults; let i = index" 
+                 [class.selected]="getResultIndex('app', i) === selectedSearchIndex"
+                 (click)="selectSearchResult(result)">
+              <div class="result-icon">
+                <i [class]="'pi ' + result.icon"></i>
+              </div>
+              <div class="result-content">
+                <span class="result-name">{{ result.name }}</span>
+                <span class="result-description">{{ result.description }}</span>
+              </div>
+              <div class="result-action">
+                <i class="pi pi-arrow-right"></i>
+              </div>
+            </div>
+          </div>
+          
+          <div class="search-section" *ngIf="fileSearchResults.length > 0">
+            <div class="section-title">
+              <i class="pi pi-folder"></i>
+              <span>Files</span>
+              <span class="result-count">{{ fileSearchResults.length }}</span>
+            </div>
+            <div class="result-item" 
+                 *ngFor="let result of fileSearchResults; let i = index" 
+                 [class.selected]="getResultIndex('file', i) === selectedSearchIndex"
+                 (click)="selectSearchResult(result)">
+              <div class="result-icon">
+                <i [class]="'pi ' + result.icon"></i>
+              </div>
+              <div class="result-content">
+                <span class="result-name">{{ result.name }}</span>
+                <span class="result-description">{{ result.description }}</span>
+                <span class="result-path">{{ result.path }}</span>
+              </div>
+              <div class="result-action">
+                <i class="pi pi-arrow-right"></i>
+              </div>
+            </div>
+          </div>
+          
+          <div class="search-section" *ngIf="webSearchResults.length > 0">
+            <div class="section-title">
+              <i class="pi pi-globe"></i>
+              <span>Web Search</span>
+              <span class="result-count">{{ webSearchResults.length }}</span>
+            </div>
+            <div class="result-item" 
+                 *ngFor="let result of webSearchResults; let i = index" 
+                 [class.selected]="getResultIndex('web', i) === selectedSearchIndex"
+                 (click)="selectSearchResult(result)">
+              <div class="result-icon">
+                <i [class]="'pi ' + result.icon"></i>
+              </div>
+              <div class="result-content">
+                <span class="result-name">{{ result.name }}</span>
+                <span class="result-description">{{ result.description }}</span>
+              </div>
+              <div class="result-action">
+                <i class="pi pi-external-link"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Empty State -->
       <div class="search-empty" *ngIf="!showSearchSuggestions && searchQuery.length >= 2">
-        <i class="pi pi-search"></i>
-        <p>No results found for "{{ searchQuery }}"</p>
+        <div class="empty-icon">
+          <i class="pi pi-search"></i>
+        </div>
+        <div class="empty-content">
+          <h3>No results found</h3>
+          <p>Try searching for "{{ searchQuery }}" with different keywords</p>
+        </div>
+      </div>
+
+      <!-- Welcome State -->
+      <div class="search-welcome" *ngIf="searchQuery.length < 2">
+        <div class="welcome-content">
+          <div class="welcome-icon">
+            <i class="pi pi-search"></i>
+          </div>
+          <h3>Search Everything</h3>
+          <p>Find applications, files, and search the web</p>
+          <div class="search-examples">
+            <div class="example-item">
+              <i class="pi pi-calculator"></i>
+              <span>Calculator</span>
+            </div>
+            <div class="example-item">
+              <i class="pi pi-file"></i>
+              <span>README.md</span>
+            </div>
+            <div class="example-item">
+              <i class="pi pi-globe"></i>
+              <span>Angular</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -447,10 +491,11 @@
 
     <!-- Taskbar Apps -->
     <div class="taskbar-apps">
-      <button
-        *ngIf="showTestWindow()"
+      <button 
+        *ngIf="showTestWindow() || isWindowMinimized('calculator')"
         class="taskbar-app"
         [class.active]="isWindowFocused('calculator')"
+        [class.minimized]="isWindowMinimized('calculator')"
         (click)="toggleTaskbarApp('calculator')"
         title="Calculator">
         <i class="pi pi-calculator"></i>
@@ -458,29 +503,22 @@
       </button>
 
       <button
-        *ngIf="showMyInfoWindow()"
+        *ngIf="showMyInfoWindow() || isWindowMinimized('my-info')"
         class="taskbar-app"
         [class.active]="isWindowFocused('my-info')"
+        [class.minimized]="isWindowMinimized('my-info')"
         (click)="toggleTaskbarApp('my-info')"
         title="My Information">
         <i class="pi pi-user"></i>
         <span>My Information</span>
       </button>
 
-      <button
-        *ngIf="showMyPageWindow()"
-        class="taskbar-app"
-        [class.active]="isWindowFocused('my-page')"
-        (click)="toggleTaskbarApp('my-page')"
-        title="My Page">
-        <i class="pi pi-globe"></i>
-        <span>My Page</span>
-      </button>
 
       <button
-        *ngIf="showLoveWindow()"
+        *ngIf="showLoveWindow() || isWindowMinimized('love')"
         class="taskbar-app"
         [class.active]="isWindowFocused('love')"
+        [class.minimized]="isWindowMinimized('love')"
         (click)="toggleTaskbarApp('love')"
         title="Love">
         <i class="pi pi-heart"></i>
@@ -488,9 +526,10 @@
       </button>
 
       <button
-        *ngIf="showExplorerWindow()"
+        *ngIf="showExplorerWindow() || isWindowMinimized('explorer')"
         class="taskbar-app"
         [class.active]="isWindowFocused('explorer')"
+        [class.minimized]="isWindowMinimized('explorer')"
         (click)="toggleTaskbarApp('explorer')"
         title="Explorer">
         <i class="pi pi-folder"></i>
@@ -498,9 +537,10 @@
       </button>
 
       <button
-        *ngIf="showTextViewerWindow()"
+        *ngIf="showTextViewerWindow() || isWindowMinimized('text-viewer')"
         class="taskbar-app"
         [class.active]="isWindowFocused('text-viewer')"
+        [class.minimized]="isWindowMinimized('text-viewer')"
         (click)="toggleTaskbarApp('text-viewer')"
         title="Text Viewer">
         <i class="pi pi-file"></i>
@@ -508,9 +548,10 @@
       </button>
 
       <button
-        *ngIf="showImageViewerWindow()"
+        *ngIf="showImageViewerWindow() || isWindowMinimized('image-viewer')"
         class="taskbar-app"
         [class.active]="isWindowFocused('image-viewer')"
+        [class.minimized]="isWindowMinimized('image-viewer')"
         (click)="toggleTaskbarApp('image-viewer')"
         title="Image Viewer">
         <i class="pi pi-image"></i>
@@ -518,13 +559,58 @@
       </button>
 
       <button
-        *ngIf="showMachineInfoWindow()"
+        *ngIf="showMachineInfoWindow() || isWindowMinimized('machine-info')"
         class="taskbar-app"
         [class.active]="isWindowFocused('machine-info')"
+        [class.minimized]="isWindowMinimized('machine-info')"
         (click)="toggleTaskbarApp('machine-info')"
         title="System Information">
         <i class="pi pi-desktop"></i>
         <span>System Info</span>
+      </button>
+
+      <button
+        *ngIf="showCreditWindow() || isWindowMinimized('credit')"
+        class="taskbar-app"
+        [class.active]="isWindowFocused('credit')"
+        [class.minimized]="isWindowMinimized('credit')"
+        (click)="toggleTaskbarApp('credit')"
+        title="Credit Tracker">
+        <i class="pi pi-dollar"></i>
+        <span>Credit Tracker</span>
+      </button>
+
+      <button
+        *ngIf="showPaintWindow() || isWindowMinimized('paint')"
+        class="taskbar-app"
+        [class.active]="isWindowFocused('paint')"
+        [class.minimized]="isWindowMinimized('paint')"
+        (click)="toggleTaskbarApp('paint')"
+        title="Paint">
+        <i class="pi pi-palette"></i>
+        <span>Paint</span>
+      </button>
+
+      <button
+        *ngIf="showCreditsWindow() || isWindowMinimized('credits')"
+        class="taskbar-app"
+        [class.active]="isWindowFocused('credits')"
+        [class.minimized]="isWindowMinimized('credits')"
+        (click)="toggleTaskbarApp('credits')"
+        title="Credits">
+        <i class="pi pi-star"></i>
+        <span>Credits</span>
+      </button>
+
+      <button
+        *ngIf="showHcmcWindow() || isWindowMinimized('hcmc')"
+        class="taskbar-app"
+        [class.active]="isWindowFocused('hcmc')"
+        [class.minimized]="isWindowMinimized('hcmc')"
+        (click)="toggleTaskbarApp('hcmc')"
+        title="Ho Chi Minh City">
+        <i class="pi pi-globe"></i>
+        <span>HCMC</span>
       </button>
 
     </div>
@@ -543,37 +629,99 @@
   <!-- Start Menu -->
   <div *ngIf="showStartMenu()" class="start-menu" (click)="closeStartMenu()">
     <div class="start-menu-content" (click)="$event.stopPropagation()">
-      <h3>Applications</h3>
-      <div class="start-menu-apps">
-        <div class="start-menu-item" (click)="openApp('calculator')">
-          <i class="pi pi-calculator"></i>
-          <span>Calculator</span>
+      <!-- Start Menu Header -->
+      <div class="start-menu-header">
+        <div class="user-info">
+          <div class="user-avatar">
+            <i class="pi pi-user"></i>
+          </div>
+          <div class="user-details">
+            <div class="user-name">Portfolio User</div>
+            <div class="user-status">Online</div>
+          </div>
         </div>
-        <div class="start-menu-item" (click)="openApp('my-info')">
-          <i class="pi pi-user"></i>
-          <span>My Information</span>
+        <button class="settings-btn" (click)="openSettings()" title="Settings">
+          <i class="pi pi-cog"></i>
+        </button>
+      </div>
+
+      <!-- Start Menu Body -->
+      <div class="start-menu-body">
+        <!-- Pinned Apps -->
+        <div class="menu-section">
+          <div class="section-title">Pinned</div>
+          <div class="pinned-apps">
+            <div class="pinned-app" (click)="openApp('calculator')" title="Calculator">
+              <i class="pi pi-calculator"></i>
+            </div>
+            <div class="pinned-app" (click)="openApp('explorer')" title="File Explorer">
+              <i class="pi pi-folder"></i>
+            </div>
+            <div class="pinned-app" (click)="openApp('paint')" title="Paint">
+              <i class="pi pi-palette"></i>
+            </div>
+            <div class="pinned-app" (click)="openApp('my-info')" title="My Information">
+              <i class="pi pi-user"></i>
+            </div>
+          </div>
         </div>
-        <div class="start-menu-item" (click)="openApp('my-page')">
-          <i class="pi pi-globe"></i>
-          <span>My Page</span>
-        </div>
-        <div class="start-menu-item" (click)="openApp('love')">
-          <i class="pi pi-heart"></i>
-          <span>Love</span>
-        </div>
-        <div class="start-menu-item" (click)="openApp('explorer')">
-          <i class="pi pi-folder"></i>
-          <span>Explorer</span>
+
+        <!-- App Groups -->
+        <div class="menu-section">
+          <div class="section-title">All Applications</div>
+          <div class="app-groups">
+            <div 
+              *ngFor="let group of startMenuGroups"
+              class="app-group"
+              (mouseenter)="openStartSubmenu(group.id)"
+              (mouseleave)="onGroupMouseLeave()">
+              <div class="group-header">
+                <i [class]="group.icon"></i>
+                <span>{{ group.name }}</span>
+                <i class="pi pi-chevron-right group-arrow"></i>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-      
-      <div class="start-menu-separator"></div>
-      
-      <div class="start-menu-item lock-menu-item" (click)="lockScreen()">
-        <i class="pi pi-lock"></i>
-        <span>Lock Screen</span>
+
+      <!-- Start Menu Footer -->
+      <div class="start-menu-footer">
+        <div class="power-options">
+          <button class="power-btn" (click)="lockScreen()" title="Lock Screen">
+            <i class="pi pi-lock"></i>
+            <span>Lock</span>
+          </button>
+          <button class="power-btn" (click)="closeStartMenu()" title="Shut Down">
+            <i class="pi pi-power-off"></i>
+            <span>Shut Down</span>
+          </button>
+        </div>
       </div>
     </div>
+
+    <!-- Submenus -->
+    <ng-container *ngFor="let group of startMenuGroups">
+      <div 
+        *ngIf="showStartSubmenu() === group.id"
+        class="start-submenu"
+        (mouseenter)="openStartSubmenu(group.id)"
+        (mouseleave)="onSubmenuMouseLeave()">
+        <div class="submenu-header">
+          <i [class]="group.icon"></i>
+          <span>{{ group.name }}</span>
+        </div>
+        <div class="submenu-apps">
+          <div 
+            *ngFor="let app of group.apps"
+            class="submenu-app"
+            (click)="openApp(app.id)">
+            <i [class]="app.icon"></i>
+            <span>{{ app.name }}</span>
+          </div>
+        </div>
+      </div>
+    </ng-container>
   </div>
 
   <!-- Desktop Context Menu -->
@@ -603,3 +751,10 @@
   </div>
   </div>
 </app-welcome-screen>
+
+<!-- Settings Dialog -->
+<app-settings-dialog
+  [isVisible]="showSettingsDialog()"
+  (onClose)="closeSettingsDialog()"
+  (onSettingsChange)="onSettingsChange($event)">
+</app-settings-dialog>

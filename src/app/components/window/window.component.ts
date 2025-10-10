@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, signal, computed, OnInit, OnDestroy } from '@angular/core';
+import { Component, Input, Output, EventEmitter, signal, computed, OnInit, OnDestroy, OnChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 export interface WindowState {
@@ -15,7 +15,7 @@ export interface WindowState {
   templateUrl: './window.component.html',
   styleUrl: './window.component.scss'
 })
-export class WindowComponent implements OnInit, OnDestroy {
+export class WindowComponent implements OnInit, OnDestroy, OnChanges {
   @Input() title = 'Window';
   @Input() icon = '';
   @Input() statusText = 'Ready';
@@ -28,9 +28,23 @@ export class WindowComponent implements OnInit, OnDestroy {
   @Input() minimizable = true;
   @Input() maximizable = true;
   @Input() closable = true;
-  @Input() zIndex = 1000;
   @Input() isFocused = false;
   @Input() isMinimizedExternal = false;
+
+  // Track previous external minimize state to detect changes
+  private previousIsMinimizedExternal = false;
+
+  // Make z-index reactive
+  private _zIndex = signal(1000);
+  
+  @Input() 
+  set zIndex(value: number) {
+    this._zIndex.set(value);
+  }
+  
+  get zIndex(): number {
+    return this._zIndex();
+  }
 
   @Output() onClose = new EventEmitter<void>();
   @Output() onMinimize = new EventEmitter<void>();
@@ -51,7 +65,7 @@ export class WindowComponent implements OnInit, OnDestroy {
     const state = this.windowState();
     const isMinimized = state.isMinimized || this.isMinimizedExternal;
     const baseStyles = {
-      zIndex: this.zIndex.toString()
+      zIndex: this._zIndex().toString()
     };
     
     if (isMinimized) {
@@ -98,6 +112,22 @@ export class WindowComponent implements OnInit, OnDestroy {
       position: { x: this.initialX, y: this.initialY },
       size: { width: this.initialWidth, height: this.initialHeight }
     }));
+    
+    // Initialize previous external minimize state
+    this.previousIsMinimizedExternal = this.isMinimizedExternal;
+  }
+
+  ngOnChanges() {
+    console.log('Window component ngOnChanges - isMinimizedExternal:', this.isMinimizedExternal, 'previous:', this.previousIsMinimizedExternal);
+    
+    // Check if external minimize state changed from true to false
+    if (this.previousIsMinimizedExternal && !this.isMinimizedExternal) {
+      console.log('External minimize state changed from true to false, resetting internal state');
+      this.resetMinimizeState();
+    }
+    
+    // Update previous state
+    this.previousIsMinimizedExternal = this.isMinimizedExternal;
   }
 
   ngOnDestroy() {
@@ -202,6 +232,16 @@ export class WindowComponent implements OnInit, OnDestroy {
       isMinimized: false 
     }));
     this.onRestore.emit();
+  }
+
+  // Reset minimize state (called externally)
+  resetMinimizeState() {
+    console.log('Resetting window minimize state - before:', this.windowState().isMinimized);
+    this.windowState.update(state => ({ 
+      ...state, 
+      isMinimized: false 
+    }));
+    console.log('Resetting window minimize state - after:', this.windowState().isMinimized);
   }
 
   close() {

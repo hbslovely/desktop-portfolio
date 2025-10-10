@@ -1,0 +1,119 @@
+<div class="credit-app">
+  <div class="header">
+    <h2>Credit Tracker</h2>
+    <div class="total-display">
+      <span class="total-label">Total Credits:</span>
+      <span class="total-amount">{{ formatCurrency(totalCredits()) }}</span>
+    </div>
+  </div>
+
+  <div class="main-content">
+    <!-- Add New Entry Form -->
+    <div class="form-section">
+      <h3>Add New Credit Entry</h3>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="description">Description:</label>
+          <input 
+            type="text" 
+            id="description"
+            [(ngModel)]="newEntry().description"
+            placeholder="Enter description"
+            class="form-input">
+        </div>
+        <div class="form-group">
+          <label for="amount">Amount:</label>
+          <input 
+            type="number" 
+            id="amount"
+            [(ngModel)]="newEntry().amount"
+            placeholder="0.00"
+            min="0"
+            step="0.01"
+            class="form-input">
+        </div>
+        <div class="form-group">
+          <label for="category">Category:</label>
+          <select 
+            id="category"
+            [(ngModel)]="newEntry().category"
+            class="form-select">
+            <option *ngFor="let category of categories" [value]="category">
+              {{ category }}
+            </option>
+          </select>
+        </div>
+        <button 
+          type="button" 
+          (click)="addEntry()"
+          class="add-button"
+          [disabled]="!newEntry().description.trim() || newEntry().amount <= 0">
+          Add Entry
+        </button>
+      </div>
+    </div>
+
+    <!-- Category Filter -->
+    <div class="filter-section">
+      <h3>Filter by Category</h3>
+      <div class="category-filters">
+        <button 
+          *ngFor="let category of getAllCategories()"
+          (click)="setCategory(category)"
+          [class.active]="selectedCategory() === category"
+          class="category-filter">
+          {{ category }}
+          <span *ngIf="category !== 'All'" class="category-count">
+            ({{ categoryTotals()[category] || 0 | currency:'USD':'symbol':'1.0-0' }})
+          </span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Credit Entries List -->
+    <div class="entries-section">
+      <h3>Credit Entries</h3>
+      <div class="entries-list">
+        <div 
+          *ngFor="let entry of filteredEntries(); trackBy: trackByEntryId"
+          class="entry-item">
+          <div class="entry-info">
+            <div class="entry-description">{{ entry.description }}</div>
+            <div class="entry-details">
+              <span class="entry-category">{{ entry.category }}</span>
+              <span class="entry-date">{{ formatDate(entry.date) }}</span>
+            </div>
+          </div>
+          <div class="entry-amount">
+            {{ formatCurrency(entry.amount) }}
+          </div>
+          <button 
+            (click)="deleteEntry(entry.id)"
+            class="delete-button"
+            title="Delete entry">
+            <i class="pi pi-trash"></i>
+          </button>
+        </div>
+        
+        <div *ngIf="filteredEntries().length === 0" class="no-entries">
+          <i class="pi pi-info-circle"></i>
+          <p>No credit entries found for the selected category.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Category Summary -->
+    <div class="summary-section">
+      <h3>Category Summary</h3>
+      <div class="category-summary">
+        <div 
+          *ngFor="let category of categories"
+          class="summary-item"
+          [style.display]="categoryTotals()[category] ? 'flex' : 'none'">
+          <span class="summary-category">{{ category }}</span>
+          <span class="summary-amount">{{ formatCurrency(categoryTotals()[category] || 0) }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

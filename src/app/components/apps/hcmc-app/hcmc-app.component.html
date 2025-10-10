@@ -1,0 +1,217 @@
+<div class="hcmc-app">
+  <!-- Header -->
+  <div class="app-header">
+    <div class="header-content">
+      <h1>{{ cityInfo.name }}</h1>
+      <p class="vietnamese-name">{{ cityInfo.vietnameseName }}</p>
+      <p class="nickname">"{{ cityInfo.nickname }}"</p>
+    </div>
+    <div class="header-stats">
+      <div class="stat-item">
+        <i class="pi pi-users"></i>
+        <span>{{ cityInfo.population }}</span>
+        <small>Population</small>
+      </div>
+      <div class="stat-item">
+        <i class="pi pi-map"></i>
+        <span>{{ cityInfo.area }}</span>
+        <small>Area</small>
+      </div>
+      <div class="stat-item">
+        <i class="pi pi-calendar"></i>
+        <span>{{ cityInfo.established }}</span>
+        <small>Established</small>
+      </div>
+    </div>
+  </div>
+
+  <!-- Navigation Tabs -->
+  <div class="nav-tabs">
+    <button 
+      *ngFor="let tab of ['overview', 'attractions', 'food', 'culture']"
+      (click)="setActiveTab(tab)"
+      [class.active]="activeTab() === tab"
+      class="nav-tab">
+      <i [class]="getTabIcon(tab)"></i>
+      <span>{{ getTabLabel(tab) }}</span>
+    </button>
+    <button 
+      (click)="openIframe()"
+      class="nav-tab iframe-tab">
+      <i class="pi pi-external-link"></i>
+      <span>Interactive Map</span>
+    </button>
+  </div>
+
+  <!-- Content Area -->
+  <div class="content-area">
+    
+    <!-- Overview Tab -->
+    <div *ngIf="activeTab() === 'overview'" class="tab-content overview-tab">
+      <div class="overview-grid">
+        <div class="overview-card">
+          <h3><i class="pi pi-info-circle"></i> About Ho Chi Minh City</h3>
+          <p>Ho Chi Minh City, formerly known as Saigon, is the largest city in Vietnam and serves as the country's economic hub. Located in the southern part of Vietnam, it's a vibrant metropolis that blends traditional Vietnamese culture with modern urban development.</p>
+        </div>
+        
+        <div class="overview-card">
+          <h3><i class="pi pi-globe"></i> Location & Climate</h3>
+          <p>The city is situated in the Mekong Delta region, about 1,760 km south of Hanoi. It experiences a tropical monsoon climate with two distinct seasons: the rainy season (May to November) and the dry season (December to April).</p>
+        </div>
+        
+        <div class="overview-card">
+          <h3><i class="pi pi-building"></i> Economy</h3>
+          <p>Ho Chi Minh City is Vietnam's economic powerhouse, contributing about 20% of the country's GDP. It's home to the Ho Chi Minh City Stock Exchange and numerous multinational corporations.</p>
+        </div>
+        
+        <div class="overview-card">
+          <h3><i class="pi pi-heart"></i> Culture</h3>
+          <p>The city is known for its dynamic street life, delicious street food, and rich history. It's a melting pot of Vietnamese, Chinese, and French influences, creating a unique cultural identity.</p>
+        </div>
+      </div>
+      
+      <div class="quick-facts">
+        <h3>Quick Facts</h3>
+        <div class="facts-grid">
+          <div class="fact-item">
+            <strong>Time Zone:</strong> {{ cityInfo.timeZone }}
+          </div>
+          <div class="fact-item">
+            <strong>Currency:</strong> {{ cityInfo.currency }}
+          </div>
+          <div class="fact-item">
+            <strong>Language:</strong> {{ cityInfo.language }}
+          </div>
+          <div class="fact-item">
+            <strong>Climate:</strong> {{ cityInfo.climate }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Attractions Tab -->
+    <div *ngIf="activeTab() === 'attractions'" class="tab-content attractions-tab">
+      <div class="attractions-header">
+        <h3>Top Attractions</h3>
+        <div class="category-filters">
+          <button 
+            *ngFor="let category of ['all', 'landmark', 'culture', 'entertainment', 'shopping']"
+            (click)="setCategory(category)"
+            [class.active]="selectedCategory() === category"
+            class="category-filter"
+            [style.border-color]="getCategoryColor(category)">
+            <i [class]="getCategoryIcon(category)"></i>
+            <span>{{ getCategoryLabel(category) }}</span>
+          </button>
+        </div>
+      </div>
+      
+      <div class="attractions-grid">
+        <div 
+          *ngFor="let attraction of filteredAttractions()"
+          class="attraction-card">
+          <div class="attraction-image">
+            <img [src]="attraction.image" [alt]="attraction.name" (error)="onImageError($event)">
+            <div class="attraction-category" [style.background-color]="getCategoryColor(attraction.category)">
+              {{ getCategoryLabel(attraction.category) }}
+            </div>
+          </div>
+          <div class="attraction-content">
+            <h4>{{ attraction.name }}</h4>
+            <p class="attraction-location">
+              <i class="pi pi-map-marker"></i>
+              {{ attraction.location }}
+            </p>
+            <p class="attraction-description">{{ attraction.description }}</p>
+            <div class="attraction-rating">
+              <div class="stars">
+                <i 
+                  *ngFor="let star of getStarRating(attraction.rating)"
+                  [class]="star ? 'pi pi-star-fill' : 'pi pi-star'"
+                  class="star">
+                </i>
+              </div>
+              <span class="rating-value">{{ attraction.rating }}/5</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Food Tab -->
+    <div *ngIf="activeTab() === 'food'" class="tab-content food-tab">
+      <div class="food-header">
+        <h3>Must-Try Vietnamese Food</h3>
+        <p>Ho Chi Minh City is a food lover's paradise, offering an incredible variety of Vietnamese cuisine from street food to fine dining.</p>
+      </div>
+      
+      <div class="food-grid">
+        <div 
+          *ngFor="let food of foods()"
+          class="food-card">
+          <div class="food-image">
+            <img [src]="food.image" [alt]="food.name" (error)="onImageError($event)">
+            <div class="food-category">
+              <i [class]="getFoodCategoryIcon(food.category)"></i>
+              {{ getFoodCategoryLabel(food.category) }}
+            </div>
+          </div>
+          <div class="food-content">
+            <h4>{{ food.name }}</h4>
+            <p class="food-description">{{ food.description }}</p>
+            <div class="food-price">
+              <i class="pi pi-money-bill"></i>
+              {{ formatPrice(food.price) }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Culture Tab -->
+    <div *ngIf="activeTab() === 'culture'" class="tab-content culture-tab">
+      <div class="culture-content">
+        <div class="culture-section">
+          <h3><i class="pi pi-book"></i> History</h3>
+          <p>Ho Chi Minh City has a rich and complex history. Originally a small fishing village, it was transformed by French colonization in the 19th century. The city played a crucial role during the Vietnam War and was the capital of South Vietnam until 1975.</p>
+        </div>
+        
+        <div class="culture-section">
+          <h3><i class="pi pi-users"></i> People & Language</h3>
+          <p>The city is home to a diverse population of over 9 million people. While Vietnamese is the official language, English is widely spoken in tourist areas and business districts. The local dialect has its own unique characteristics.</p>
+        </div>
+        
+        <div class="culture-section">
+          <h3><i class="pi pi-calendar"></i> Festivals & Events</h3>
+          <p>Ho Chi Minh City celebrates numerous festivals throughout the year, including Tet (Lunar New Year), Mid-Autumn Festival, and various local cultural events. The city comes alive during these celebrations with colorful decorations and traditional performances.</p>
+        </div>
+        
+        <div class="culture-section">
+          <h3><i class="pi pi-heart"></i> Lifestyle</h3>
+          <p>Life in Ho Chi Minh City is fast-paced and dynamic. The city never sleeps, with bustling markets, vibrant nightlife, and a strong coffee culture. Motorbikes dominate the streets, and street food is an integral part of daily life.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Interactive Map Iframe Overlay -->
+  <div *ngIf="showIframe()" class="iframe-overlay" (click)="closeIframe()">
+    <div class="iframe-container" (click)="$event.stopPropagation()">
+      <div class="iframe-header">
+        <h3>Interactive Ho Chi Minh City Map</h3>
+        <button (click)="closeIframe()" class="close-btn">
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+      <div class="iframe-content">
+        <iframe 
+          src="https://hello-hcmc.vercel.app/"
+          frameborder="0"
+          allowfullscreen
+          sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
+          title="Ho Chi Minh City Interactive Map">
+        </iframe>
+      </div>
+    </div>
+  </div>
+</div>

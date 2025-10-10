@@ -1,4 +1,4 @@
-import { Component, signal, computed, OnInit } from '@angular/core';
+import { Component, Input, Output, EventEmitter, signal, computed, OnChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
@@ -6,16 +6,14 @@ export interface WallpaperOption {
   id: string;
   name: string;
   path: string;
-  thumbnail?: string;
+  preview: string;
 }
 
 export interface SettingsData {
   wallpaper: string;
   theme: 'light' | 'dark' | 'auto';
-  animations: boolean;
-  soundEffects: boolean;
-  autoLock: boolean;
-  lockTimeout: number; // in minutes
+  themeColor: string;
+  backdropEnabled: boolean;
 }
 
 @Component({
@@ -25,156 +23,235 @@ export interface SettingsData {
   templateUrl: './settings-dialog.component.html',
   styleUrl: './settings-dialog.component.scss'
 })
-export class SettingsDialogComponent implements OnInit {
-  // Settings state
-  settings = signal<SettingsData>({
-    wallpaper: 'assets/images/wallpaper.jpg',
-    theme: 'dark',
-    animations: true,
-    soundEffects: true,
-    autoLock: false,
-    lockTimeout: 15
-  });
+export class SettingsDialogComponent implements OnChanges {
+  @Input() isVisible = false;
+  @Output() onClose = new EventEmitter<void>();
+  @Output() onSettingsChange = new EventEmitter<SettingsData>();
 
-  // Dialog state
-  isVisible = signal(false);
-  activeTab = signal<'appearance' | 'security' | 'system'>('appearance');
+  ngOnChanges() {
+    console.log('Settings dialog visibility changed:', this.isVisible);
+    
+    // Reload settings when dialog becomes visible
+    if (this.isVisible) {
+      this.loadSettings();
+    }
+  }
 
-  // Wallpaper options
-  wallpaperOptions: WallpaperOption[] = [
+  // Settings state - these are the temporary/preview values
+  selectedWallpaper = signal<string>('1');
+  selectedTheme = signal<'light' | 'dark' | 'auto'>('auto');
+  selectedThemeColor = signal<string>('#007bff');
+  backdropEnabled = signal<boolean>(false);
+
+  // Original settings - used to restore on cancel
+  originalSettings = signal<SettingsData | null>(null);
+
+  // Available wallpapers
+  wallpapers: WallpaperOption[] = [
     {
-      id: 'default',
-      name: 'Default Wallpaper',
-      path: 'assets/images/wallpaper.jpg',
-      thumbnail: 'assets/images/wallpaper.jpg'
+      id: '1',
+      name: 'Wallpaper 1',
+      path: 'assets/images/lib/wallpaper/1.png',
+      preview: 'assets/images/lib/wallpaper/1.png'
     },
     {
-      id: 'gradient1',
-      name: 'Blue Gradient',
-      path: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      thumbnail: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiM2NjdlZWEiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiM3NjRiYTIiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0idXJsKCNnKSIvPjwvc3ZnPg=='
+      id: '2',
+      name: 'Wallpaper 2',
+      path: 'assets/images/lib/wallpaper/2.png',
+      preview: 'assets/images/lib/wallpaper/2.png'
     },
     {
-      id: 'gradient2',
-      name: 'Sunset Gradient',
-      path: 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 50%, #fecfef 100%)',
-      thumbnail: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNmZjlhOWUiLz48c3RvcCBvZmZzZXQ9IjUwJSIgc3RvcC1jb2xvcj0iI2ZlY2ZlZiIvPjxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iI2ZlY2ZlZiIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiBmaWxsPSJ1cmwoI2cpIi8+PC9zdmc+'
-    },
-    {
-      id: 'gradient3',
-      name: 'Ocean Gradient',
-      path: 'linear-gradient(135deg, #74b9ff 0%, #0984e3 100%)',
-      thumbnail: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiM3NGI5ZmYiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMwOTg0ZTMiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0idXJsKCNnKSIvPjwvc3ZnPg=='
-    },
-    {
-      id: 'gradient4',
-      name: 'Forest Gradient',
-      path: 'linear-gradient(135deg, #00b894 0%, #00a085 100%)',
-      thumbnail: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiMwMGI4OTQiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMwMGEwODUiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0idXJsKCNnKSIvPjwvc3ZnPg=='
-    },
-    {
-      id: 'gradient5',
-      name: 'Purple Gradient',
-      path: 'linear-gradient(135deg, #a29bfe 0%, #6c5ce7 100%)',
-      thumbnail: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNhMjliZmUiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiM2YzVjZTciLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0idXJsKCNnKSIvPjwvc3ZnPg=='
+      id: '3',
+      name: 'Wallpaper 3',
+      path: 'assets/images/lib/wallpaper/3.png',
+      preview: 'assets/images/lib/wallpaper/3.png'
     }
   ];
 
-  constructor() {}
+  // Theme options
+  themes = [
+    { value: 'light', label: 'Light', icon: 'pi pi-sun' },
+    { value: 'dark', label: 'Dark', icon: 'pi pi-moon' },
+    { value: 'auto', label: 'Auto', icon: 'pi pi-circle' }
+  ];
+
+  // Theme color options
+  themeColors = [
+    { value: '#007bff', label: 'Blue', color: '#007bff' },
+    { value: '#28a745', label: 'Green', color: '#28a745' },
+    { value: '#dc3545', label: 'Red', color: '#dc3545' },
+    { value: '#ffc107', label: 'Yellow', color: '#ffc107' },
+    { value: '#6f42c1', label: 'Purple', color: '#6f42c1' },
+    { value: '#fd7e14', label: 'Orange', color: '#fd7e14' },
+    { value: '#20c997', label: 'Teal', color: '#20c997' },
+    { value: '#e83e8c', label: 'Pink', color: '#e83e8c' }
+  ];
+
+  // Computed settings data
+  settingsData = computed(() => ({
+    wallpaper: this.selectedWallpaper(),
+    theme: this.selectedTheme(),
+    themeColor: this.selectedThemeColor(),
+    backdropEnabled: this.backdropEnabled()
+  }));
+
+  // Check if there are unsaved changes
+  hasUnsavedChanges = computed(() => {
+    const current = this.settingsData();
+    const original = this.originalSettings();
+    
+    if (!original) return true; // If no original settings, consider as changed
+    
+    return (
+      current.wallpaper !== original.wallpaper ||
+      current.theme !== original.theme ||
+      current.themeColor !== original.themeColor ||
+      current.backdropEnabled !== original.backdropEnabled
+    );
+  });
 
   ngOnInit() {
+    // Load saved settings from localStorage
     this.loadSettings();
+    console.log('Settings dialog component initialized');
   }
 
   loadSettings() {
     const savedSettings = localStorage.getItem('desktop-portfolio-settings');
     if (savedSettings) {
       try {
-        const parsed = JSON.parse(savedSettings);
-        this.settings.set({ ...this.settings(), ...parsed });
-      } catch (e) {
-        console.error('Failed to parse saved settings:', e);
+        const settings = JSON.parse(savedSettings);
+        console.log('Loading settings from localStorage:', settings);
+        
+        // Store original settings for cancel functionality
+        this.originalSettings.set(settings);
+        
+        // Set current values (these can be changed temporarily)
+        this.selectedWallpaper.set(settings.wallpaper || '1');
+        this.selectedTheme.set(settings.theme || 'auto');
+        this.selectedThemeColor.set(settings.themeColor || '#007bff');
+        this.backdropEnabled.set(settings.backdropEnabled || false);
+        
+        // Emit the loaded settings to parent component
+        this.onSettingsChange.emit(settings);
+      } catch (error) {
+        console.error('Error loading settings:', error);
+        // Use default settings if there's an error
+        this.setDefaultSettings();
       }
+    } else {
+      // No saved settings, use defaults
+      this.setDefaultSettings();
     }
+  }
+
+  setDefaultSettings() {
+    const defaultSettings = {
+      wallpaper: '1',
+      theme: 'auto' as 'light' | 'dark' | 'auto',
+      themeColor: '#007bff',
+      backdropEnabled: false
+    };
+    
+    // Store original settings
+    this.originalSettings.set(defaultSettings);
+    
+    this.selectedWallpaper.set(defaultSettings.wallpaper);
+    this.selectedTheme.set(defaultSettings.theme);
+    this.selectedThemeColor.set(defaultSettings.themeColor);
+    this.backdropEnabled.set(defaultSettings.backdropEnabled);
+    
+    // Save default settings
+    this.saveSettingsToStorage(defaultSettings);
   }
 
   saveSettings() {
-    localStorage.setItem('desktop-portfolio-settings', JSON.stringify(this.settings()));
-    this.applySettings();
+    const settings = this.settingsData();
+    console.log('Saving settings to localStorage:', settings);
+    this.saveSettingsToStorage(settings);
+    this.onSettingsChange.emit(settings);
   }
 
-  applySettings() {
-    // Apply wallpaper
-    this.applyWallpaper();
-    
-    // Apply theme
-    this.applyTheme();
-    
-    // Emit settings change event
-    this.onSettingsChange.emit(this.settings());
+  private saveSettingsToStorage(settings: any) {
+    localStorage.setItem('desktop-portfolio-settings', JSON.stringify(settings));
   }
 
-  private applyWallpaper() {
-    const wallpaper = this.settings().wallpaper;
-    const wallpaperElement = document.querySelector('.wallpaper') as HTMLElement;
-    if (wallpaperElement) {
-      if (wallpaper.startsWith('linear-gradient')) {
-        wallpaperElement.style.background = wallpaper;
-        wallpaperElement.style.backgroundImage = 'none';
-      } else {
-        wallpaperElement.style.backgroundImage = `url('${wallpaper}')`;
-        wallpaperElement.style.background = 'none';
-      }
+  onWallpaperChange(wallpaperId: string) {
+    this.selectedWallpaper.set(wallpaperId);
+    // Apply changes immediately for preview but don't save
+    this.applySettingsPreview();
+  }
+
+  onThemeChange(theme: string) {
+    this.selectedTheme.set(theme as 'light' | 'dark' | 'auto');
+    // Apply changes immediately for preview but don't save
+    this.applySettingsPreview();
+  }
+
+  onThemeColorChange(color: string) {
+    this.selectedThemeColor.set(color);
+    // Apply changes immediately for preview but don't save
+    this.applySettingsPreview();
+  }
+
+  onBackdropToggle() {
+    this.backdropEnabled.update(enabled => !enabled);
+    // Apply changes immediately for preview but don't save
+    this.applySettingsPreview();
+  }
+
+  // Apply settings preview (temporary changes)
+  applySettingsPreview() {
+    const settings = this.settingsData();
+    this.onSettingsChange.emit(settings);
+  }
+
+  // Cancel button - restore original settings
+  onCancel() {
+    const original = this.originalSettings();
+    if (original) {
+      // Restore original settings
+      this.selectedWallpaper.set(original.wallpaper);
+      this.selectedTheme.set(original.theme);
+      this.selectedThemeColor.set(original.themeColor);
+      this.backdropEnabled.set(original.backdropEnabled);
+      
+      // Apply the restored settings
+      this.onSettingsChange.emit(original);
     }
+    
+    // Close dialog
+    this.onClose.emit();
   }
 
-  private applyTheme() {
-    const theme = this.settings().theme;
-    document.body.setAttribute('data-theme', theme);
+  // Apply button - save settings but keep dialog open
+  onApply() {
+    const settings = this.settingsData();
+    console.log('Applying settings:', settings);
+    this.saveSettingsToStorage(settings);
+    
+    // Update original settings to current values
+    this.originalSettings.set(settings);
+    
+    // Emit the applied settings
+    this.onSettingsChange.emit(settings);
   }
 
-  show() {
-    this.isVisible.set(true);
+  // Save button - save settings and close dialog
+  onSave() {
+    this.onApply();
+    this.onClose.emit();
   }
 
-  hide() {
-    this.isVisible.set(false);
+  onCloseDialog() {
+    this.onClose.emit();
   }
 
-  setActiveTab(tab: 'appearance' | 'security' | 'system') {
-    this.activeTab.set(tab);
+  onBackdropClick() {
+    this.onCloseDialog();
   }
 
-  selectWallpaper(wallpaper: WallpaperOption) {
-    this.settings.update(s => ({ ...s, wallpaper: wallpaper.path }));
-    this.applyWallpaper();
-  }
-
-  updateSetting<K extends keyof SettingsData>(key: K, value: SettingsData[K]) {
-    this.settings.update(s => ({ ...s, [key]: value }));
-  }
-
-  resetToDefaults() {
-    this.settings.set({
-      wallpaper: 'assets/images/wallpaper.jpg',
-      theme: 'dark',
-      animations: true,
-      soundEffects: true,
-      autoLock: false,
-      lockTimeout: 15
-    });
-    this.applySettings();
-  }
-
-  // Event emitter for parent component
-  onSettingsChange = new EventEmitter<SettingsData>();
-
-  // Computed properties
-  get currentWallpaper() {
-    return this.wallpaperOptions.find(w => w.path === this.settings().wallpaper) || this.wallpaperOptions[0];
-  }
-
-  get isCurrentWallpaper() {
-    return (wallpaper: WallpaperOption) => wallpaper.path === this.settings().wallpaper;
+  onDialogClick(event: Event) {
+    event.stopPropagation();
   }
 }

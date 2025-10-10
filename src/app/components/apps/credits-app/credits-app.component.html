@@ -1,0 +1,87 @@
+<div class="credits-app">
+  <!-- Controls -->
+  <div class="credits-controls">
+    <div class="control-group">
+      <button 
+        (click)="isPlaying() ? pauseCredits() : resumeCredits()"
+        class="control-btn play-pause"
+        [class.playing]="isPlaying()">
+        <i [class]="isPlaying() ? 'pi pi-pause' : 'pi pi-play'"></i>
+        <span>{{ isPlaying() ? 'Pause' : 'Play' }}</span>
+      </button>
+      
+      <button 
+        (click)="restartCredits()"
+        class="control-btn restart">
+        <i class="pi pi-refresh"></i>
+        <span>Restart</span>
+      </button>
+    </div>
+    
+    <div class="control-group">
+      <label>Speed:</label>
+      <input 
+        type="range" 
+        min="20" 
+        max="100" 
+        [value]="scrollSpeed()"
+        (input)="onSpeedChange($event)"
+        class="speed-slider">
+      <span class="speed-value">{{ scrollSpeed() }}px/s</span>
+    </div>
+  </div>
+  
+  <!-- Credits Container -->
+  <div class="credits-container">
+    <div 
+      class="credits-content"
+      [style.transform]="getTransform()">
+      
+      <!-- Spacer for smooth start -->
+      <div class="credits-spacer"></div>
+      
+      <!-- Credits List -->
+      <div 
+        *ngFor="let credit of credits(); trackBy: trackByIndex"
+        [class]="getCreditClass(credit)"
+        class="credit-item">
+        
+        <!-- Title Credits -->
+        <div *ngIf="credit.type === 'title'" class="credit-title">
+          {{ credit.text }}
+        </div>
+        
+        <!-- Section Headers -->
+        <div *ngIf="credit.type === 'section'" class="credit-section">
+          {{ credit.text }}
+        </div>
+        
+        <!-- Person Credits -->
+        <div *ngIf="credit.type === 'person'" class="credit-person">
+          <div class="person-name">{{ credit.text }}</div>
+          <div class="person-role" *ngIf="credit.subtitle">{{ credit.subtitle }}</div>
+        </div>
+        
+        <!-- Library Credits -->
+        <div *ngIf="credit.type === 'library'" class="credit-library">
+          <div class="library-name">{{ credit.text }}</div>
+          <div class="library-description" *ngIf="credit.subtitle">{{ credit.subtitle }}</div>
+        </div>
+      </div>
+      
+      <!-- Spacer for smooth end -->
+      <div class="credits-spacer"></div>
+    </div>
+  </div>
+  
+  <!-- Status Bar -->
+  <div class="credits-status">
+    <div class="status-info">
+      <span>Status: {{ isPlaying() ? 'Playing' : 'Paused' }}</span>
+      <span>Speed: {{ scrollSpeed() }}px/s</span>
+    </div>
+    <div class="status-progress">
+      <span>Credits</span>
+    </div>
+  </div>
+</div>

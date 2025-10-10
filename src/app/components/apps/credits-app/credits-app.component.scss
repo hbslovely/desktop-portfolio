@@ -1,0 +1,278 @@
+.credits-app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: linear-gradient(180deg, #000000 0%, #1a1a1a 50%, #000000 100%);
+  color: #ffffff;
+  font-family: 'Courier New', monospace;
+  overflow: hidden;
+}
+
+.credits-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  background: rgba(0, 0, 0, 0.8);
+  border-bottom: 1px solid #333;
+  backdrop-filter: blur(10px);
+}
+
+.control-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.control-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  color: #ffffff;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 14px;
+  font-weight: 500;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.4);
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  &.playing {
+    background: rgba(0, 255, 0, 0.2);
+    border-color: rgba(0, 255, 0, 0.4);
+  }
+
+  i {
+    font-size: 16px;
+  }
+}
+
+.restart {
+  &:hover {
+    background: rgba(255, 165, 0, 0.2);
+    border-color: rgba(255, 165, 0, 0.4);
+  }
+}
+
+.control-group label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #cccccc;
+}
+
+.speed-slider {
+  width: 120px;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.2);
+  outline: none;
+  cursor: pointer;
+
+  &::-webkit-slider-thumb {
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #ffffff;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  }
+
+  &::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #ffffff;
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  }
+}
+
+.speed-value {
+  font-size: 12px;
+  color: #cccccc;
+  min-width: 60px;
+  text-align: right;
+}
+
+.credits-container {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.05) 0%, transparent 70%);
+}
+
+.credits-content {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  transition: transform 0.1s linear;
+}
+
+.credits-spacer {
+  height: 200px;
+}
+
+.credit-item {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  margin: 0 auto;
+  max-width: 800px;
+  text-align: center;
+}
+
+// Credit Type Styles
+.credit-title {
+  font-size: 48px;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+  letter-spacing: 4px;
+  margin: 40px 0;
+  animation: titleGlow 3s ease-in-out infinite alternate;
+}
+
+.credit-section {
+  font-size: 24px;
+  font-weight: 700;
+  color: #ffd700;
+  text-shadow: 0 0 15px rgba(255, 215, 0, 0.6);
+  letter-spacing: 2px;
+  margin: 30px 0 20px 0;
+  border-bottom: 2px solid rgba(255, 215, 0, 0.3);
+  padding-bottom: 10px;
+}
+
+.credit-person {
+  margin: 15px 0;
+  
+  .person-name {
+    font-size: 20px;
+    font-weight: 600;
+    color: #ffffff;
+    margin-bottom: 5px;
+  }
+  
+  .person-role {
+    font-size: 16px;
+    color: #cccccc;
+    font-style: italic;
+  }
+}
+
+.credit-library {
+  margin: 15px 0;
+  
+  .library-name {
+    font-size: 18px;
+    font-weight: 600;
+    color: #00ff88;
+    text-shadow: 0 0 10px rgba(0, 255, 136, 0.4);
+    margin-bottom: 5px;
+  }
+  
+  .library-description {
+    font-size: 14px;
+    color: #aaaaaa;
+    font-style: italic;
+  }
+}
+
+.credits-status {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 24px;
+  background: rgba(0, 0, 0, 0.9);
+  border-top: 1px solid #333;
+  font-size: 12px;
+  color: #cccccc;
+}
+
+.status-info {
+  display: flex;
+  gap: 20px;
+}
+
+.status-progress {
+  font-weight: 600;
+  color: #ffd700;
+}
+
+// Animations
+@keyframes titleGlow {
+  0% {
+    text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+  }
+  100% {
+    text-shadow: 0 0 30px rgba(255, 255, 255, 0.8), 0 0 40px rgba(255, 255, 255, 0.3);
+  }
+}
+
+// Responsive Design
+@media (max-width: 768px) {
+  .credits-controls {
+    flex-direction: column;
+    gap: 16px;
+    padding: 12px 16px;
+  }
+
+  .control-group {
+    justify-content: center;
+  }
+
+  .credit-title {
+    font-size: 32px;
+    letter-spacing: 2px;
+  }
+
+  .credit-section {
+    font-size: 20px;
+  }
+
+  .credit-person .person-name,
+  .credit-library .library-name {
+    font-size: 16px;
+  }
+
+  .credits-status {
+    flex-direction: column;
+    gap: 8px;
+    text-align: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .credit-title {
+    font-size: 24px;
+    letter-spacing: 1px;
+  }
+
+  .credit-section {
+    font-size: 18px;
+  }
+
+  .control-btn {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+
+  .speed-slider {
+    width: 100px;
+  }
+}

@@ -1,4 +1,4 @@
-import { Component, signal, computed, ViewChild } from '@angular/core';
+import { Component, signal, computed, ViewChild, AfterViewInit, ChangeDetectorRef, ElementRef } from '@angular/core';
 import { WindowComponent } from './components/window/window.component';
 import { DesktopIconComponent, DesktopIconData } from './components/desktop-icon/desktop-icon.component';
 import { CalculatorComponent } from './components/apps/calculator/calculator.component';
@@ -8,34 +8,54 @@ import { ExplorerComponent, FileOpenEvent, ContextMenuEvent } from './components
 import { TextViewerComponent } from './components/apps/text-viewer/text-viewer.component';
 import { ImageViewerComponent } from './components/apps/image-viewer/image-viewer.component';
 import { MachineInfoComponent } from './components/apps/machine-info/machine-info.component';
+import { CreditAppComponent } from './components/apps/credit-app/credit-app.component';
+import { PaintAppComponent } from './components/apps/paint-app/paint-app.component';
+import { CreditsAppComponent } from './components/apps/credits-app/credits-app.component';
+import { HcmcAppComponent } from './components/apps/hcmc-app/hcmc-app.component';
 import { WelcomeScreenComponent } from './components/welcome-screen/welcome-screen.component';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DomSanitizer } from "@angular/platform-browser";
+import { SettingsDialogComponent } from "./components/settings-dialog/settings-dialog.component";
+import { APP_ICONS, APP_SEARCH_CONFIG } from './config/app-icons.config';
+import { SearchService, SearchResult } from './services/search.service';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [ WelcomeScreenComponent, WindowComponent, DesktopIconComponent, CalculatorComponent, IframeAppComponent, LoveAppComponent, ExplorerComponent, TextViewerComponent, ImageViewerComponent, MachineInfoComponent, CommonModule, FormsModule ],
+  imports: [ WelcomeScreenComponent, WindowComponent, DesktopIconComponent, CalculatorComponent, IframeAppComponent, LoveAppComponent, ExplorerComponent, TextViewerComponent, ImageViewerComponent, MachineInfoComponent, CreditAppComponent, PaintAppComponent, CreditsAppComponent, HcmcAppComponent, CommonModule, FormsModule, SettingsDialogComponent ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
 })
-export class AppComponent {
+export class AppComponent implements AfterViewInit {
   @ViewChild(WelcomeScreenComponent) welcomeScreen!: WelcomeScreenComponent;
-  
+  @ViewChild('searchInput', { static: false }) searchInput!: ElementRef<HTMLInputElement>;
+
+  constructor(
+    private sanitizer: DomSanitizer,
+    private cdr: ChangeDetectorRef,
+    private searchService: SearchService
+  ) {
+    this.updateTime();
+    setInterval(() => this.updateTime(), 1000);
+  }
+
   title = 'Desktop Portfolio';
 
   // Test windows
   showTestWindow = signal(false); // Start with calculator closed so users can test double-click
   showMyInfoWindow = signal(false);
-  showMyPageWindow = signal(false);
   showLoveWindow = signal(false);
   showExplorerWindow = signal(false);
   showTextViewerWindow = signal(false);
   showImageViewerWindow = signal(false);
   showMachineInfoWindow = signal(false);
+  showCreditWindow = signal(false);
+  showPaintWindow = signal(false);
+  showCreditsWindow = signal(false);
+  showHcmcWindow = signal(false);
   showClockWindow = signal(false);
-  
+
   // File viewer data
   currentTextFile = signal<{ path: string; name: string; type: 'txt' | 'md' } | null>(null);
   currentImageFile = signal<{ path: string; name: string } | null>(null);
@@ -44,10 +64,10 @@ export class AppComponent {
   // Window management
   focusedWindow = signal<string | null>(null);
   maxZIndex = signal(1000); // Track the maximum z-index used
-  
+
   // Track minimized state for each window
   minimizedWindows = signal<Set<string>>(new Set());
-  
+
   // Clipboard for copy/cut/paste operations
   clipboardItem = signal<any>(null);
   clipboardAction = signal<'copy' | 'cut' | null>(null);
@@ -56,6 +76,10 @@ export class AppComponent {
   showStartMenu = signal(false);
   showDesktopContextMenu = signal(false);
   desktopContextMenuPosition = signal({ x: 0, y: 0 });
+  showStartSubmenu = signal<string | null>(null);
+
+  // Settings dialog state
+  showSettingsDialog = signal(false);
   currentTime = '';
   currentDate = '';
 
@@ -68,103 +92,76 @@ export class AppComponent {
 
   // Search properties
   searchQuery = '';
-  searchResults: any[] = [];
+  searchResults: SearchResult[] = [];
   showSearchSuggestions = false;
+  selectedSearchIndex = 0;
 
   // Computed search results
   get appSearchResults() {
     return this.searchResults.filter(r => r.type === 'app');
   }
 
+  get fileSearchResults() {
+    return this.searchResults.filter(r => r.type === 'file');
+  }
+
   get webSearchResults() {
     return this.searchResults.filter(r => r.type === 'web');
   }
 
-  // Browser properties
-  private _currentUrl = signal('https://www.google.com');
-  canGoBack = false;
-  canGoForward = false;
-  isLoading = false;
-  isBookmarked = false;
-  showBookmarksBar = true;
-  showBrowserMenu = false;
-  hasIframeError = false;
 
-  // Computed properties
-  get currentUrl() {
-    return this._currentUrl();
+
+
+
+  ngAfterViewInit() {
+    // Load settings after view is initialized to ensure DOM elements exist
+    // Use a small delay to ensure all DOM elements are fully rendered
+    setTimeout(() => {
+      this.loadSettingsOnInit();
+    }, 50);
   }
 
-  set currentUrl(value: string) {
-    this._currentUrl.set(value);
-  }
+  // Desktop icons from configuration
+  testIcons: DesktopIconData[] = APP_ICONS;
 
-  // Computed iframe src to prevent infinite recomputation
-  iframeSrc = computed(() => {
-    const url = this._currentUrl();
-    if (!url) return null;
-    
-    // Don't use toLowerCase() as it might interfere with URL structure
-    return this.sanitizer.bypassSecurityTrustResourceUrl(url);
-  });
-
-  bookmarks = [
-    { name: 'Google', url: 'https://www.google.com' },
-    { name: 'Wikipedia', url: 'https://en.wikipedia.org' },
-    { name: 'GitHub', url: 'https://github.com' },
-    { name: 'Stack Overflow', url: 'https://stackoverflow.com' },
-    { name: 'Example.com', url: 'https://example.com' },
-    { name: 'HTTPBin', url: 'https://httpbin.org' }
-  ];
-
-  constructor(private sanitizer: DomSanitizer) {
-    this.updateTime();
-    setInterval(() => this.updateTime(), 1000);
-  }
-
-  // Test icons
-  testIcons: DesktopIconData[] = [
+  // Start menu configuration
+  startMenuGroups = [
     {
-      id: 'calculator',
-      name: 'Calculator',
-      icon: 'assets/images/icons/calculator.png',
-      type: 'application',
-      position: { x: 50, y: 50 }
+      id: 'productivity',
+      name: 'Productivity',
+      icon: 'pi pi-briefcase',
+      apps: [
+        { id: 'calculator', name: 'Calculator', icon: 'pi pi-calculator' },
+        { id: 'credit', name: 'Credit Tracker', icon: 'pi pi-dollar' },
+        { id: 'explorer', name: 'File Explorer', icon: 'pi pi-folder' }
+      ]
     },
     {
-      id: 'my-info',
-      name: 'My Information',
-      icon: 'assets/images/icons/profile.png',
-      type: 'application',
-      position: { x: 50, y: 150 }
+      id: 'creative',
+      name: 'Creative',
+      icon: 'pi pi-palette',
+      apps: [
+        { id: 'paint', name: 'Paint', icon: 'pi pi-palette' },
+        { id: 'love', name: 'Love', icon: 'pi pi-heart' }
+      ]
     },
     {
-      id: 'my-page',
-      name: 'My Page',
-      icon: 'assets/images/icons/info.png',
-      type: 'application',
-      position: { x: 50, y: 250 }
+      id: 'information',
+      name: 'Information',
+      icon: 'pi pi-info-circle',
+      apps: [
+        { id: 'my-info', name: 'My Information', icon: 'pi pi-user' },
+        { id: 'machine-info', name: 'System Info', icon: 'pi pi-desktop' },
+        { id: 'hcmc', name: 'Ho Chi Minh City', icon: 'pi pi-globe' }
+      ]
     },
     {
-      id: 'love',
-      name: 'Love',
-      icon: 'assets/images/icons/love.png',
-      type: 'application',
-      position: { x: 50, y: 350 }
-    },
-    {
-      id: 'explorer',
-      name: 'Explorer',
-      icon: 'assets/images/icons/explorer.png',
-      type: 'application',
-      position: { x: 150, y: 50 }
-    },
-    {
-      id: 'machine-info',
-      name: 'System Info',
-      icon: 'assets/images/icons/info.png',
-      type: 'application',
-      position: { x: 150, y: 150 }
+      id: 'system',
+      name: 'System',
+      icon: 'pi pi-cog',
+      apps: [
+        { id: 'credits', name: 'Credits', icon: 'pi pi-star' }
+      ]
     }
   ];
 
@@ -230,36 +227,6 @@ export class AppComponent {
     this.focusWindow('my-info');
   }
 
-  onCloseMyPageWindow() {
-    this.showMyPageWindow.set(false);
-    // Clear focus if this was the focused window
-    if (this.focusedWindow() === 'my-page') {
-      this.focusedWindow.set(null);
-    }
-  }
-
-  onMinimizeMyPageWindow() {
-    console.log('My Page window minimized');
-    this.minimizedWindows.update(set => new Set(set).add('my-page'));
-  }
-
-  onMaximizeMyPageWindow() {
-    console.log('My Page window maximized');
-  }
-
-  onRestoreMyPageWindow() {
-    console.log('My Page window restored');
-    this.minimizedWindows.update(set => {
-      const newSet = new Set(set);
-      newSet.delete('my-page');
-      return newSet;
-    });
-  }
-
-  onFocusMyPageWindow() {
-    console.log('My Page window focused');
-    this.focusWindow('my-page');
-  }
 
   onCloseLoveWindow() {
     this.showLoveWindow.set(false);
@@ -321,6 +288,130 @@ export class AppComponent {
   onFocusExplorerWindow() {
     console.log('Explorer window focused');
     this.focusWindow('explorer');
+  }
+
+  onCloseCreditWindow() {
+    this.showCreditWindow.set(false);
+    // Clear focus if this was the focused window
+    if (this.focusedWindow() === 'credit') {
+      this.focusedWindow.set(null);
+    }
+  }
+
+  onMinimizeCreditWindow() {
+    console.log('Credit window minimized');
+    this.minimizedWindows.update(set => new Set(set).add('credit'));
+  }
+
+  onMaximizeCreditWindow() {
+    console.log('Credit window maximized');
+  }
+
+  onRestoreCreditWindow() {
+    console.log('Credit window restored');
+    this.minimizedWindows.update(set => {
+      const newSet = new Set(set);
+      newSet.delete('credit');
+      return newSet;
+    });
+  }
+
+  onFocusCreditWindow() {
+    console.log('Credit window focused');
+    this.focusWindow('credit');
+  }
+
+  onClosePaintWindow() {
+    this.showPaintWindow.set(false);
+    // Clear focus if this was the focused window
+    if (this.focusedWindow() === 'paint') {
+      this.focusedWindow.set(null);
+    }
+  }
+
+  onMinimizePaintWindow() {
+    console.log('Paint window minimized');
+    this.minimizedWindows.update(set => new Set(set).add('paint'));
+  }
+
+  onMaximizePaintWindow() {
+    console.log('Paint window maximized');
+  }
+
+  onRestorePaintWindow() {
+    console.log('Paint window restored');
+    this.minimizedWindows.update(set => {
+      const newSet = new Set(set);
+      newSet.delete('paint');
+      return newSet;
+    });
+  }
+
+  onFocusPaintWindow() {
+    console.log('Paint window focused');
+    this.focusWindow('paint');
+  }
+
+  onCloseCreditsWindow() {
+    this.showCreditsWindow.set(false);
+    // Clear focus if this was the focused window
+    if (this.focusedWindow() === 'credits') {
+      this.focusedWindow.set(null);
+    }
+  }
+
+  onMinimizeCreditsWindow() {
+    console.log('Credits window minimized');
+    this.minimizedWindows.update(set => new Set(set).add('credits'));
+  }
+
+  onMaximizeCreditsWindow() {
+    console.log('Credits window maximized');
+  }
+
+  onRestoreCreditsWindow() {
+    console.log('Credits window restored');
+    this.minimizedWindows.update(set => {
+      const newSet = new Set(set);
+      newSet.delete('credits');
+      return newSet;
+    });
+  }
+
+  onFocusCreditsWindow() {
+    console.log('Credits window focused');
+    this.focusWindow('credits');
+  }
+
+  onCloseHcmcWindow() {
+    this.showHcmcWindow.set(false);
+    // Clear focus if this was the focused window
+    if (this.focusedWindow() === 'hcmc') {
+      this.focusedWindow.set(null);
+    }
+  }
+
+  onMinimizeHcmcWindow() {
+    console.log('HCMC window minimized');
+    this.minimizedWindows.update(set => new Set(set).add('hcmc'));
+  }
+
+  onMaximizeHcmcWindow() {
+    console.log('HCMC window maximized');
+  }
+
+  onRestoreHcmcWindow() {
+    console.log('HCMC window restored');
+    this.minimizedWindows.update(set => {
+      const newSet = new Set(set);
+      newSet.delete('hcmc');
+      return newSet;
+    });
+  }
+
+  onFocusHcmcWindow() {
+    console.log('HCMC window focused');
+    this.focusWindow('hcmc');
   }
 
   // Text Viewer Window Methods
@@ -422,7 +513,7 @@ export class AppComponent {
   onExplorerFileOpen(event: FileOpenEvent) {
     const { item, fileType, extension } = event;
     console.log('Opening file from Explorer:', item.name, 'Type:', fileType);
-    
+
     if (fileType === 'text') {
       // Open text file
       this.currentTextFile.set({
@@ -451,7 +542,7 @@ export class AppComponent {
   onExplorerContextMenu(event: ContextMenuEvent) {
     const { action, item, newName } = event;
     console.log('Explorer context menu action:', action, item.name);
-    
+
     switch (action) {
       case 'rename':
         if (newName) {
@@ -460,7 +551,7 @@ export class AppComponent {
           item.name = newName;
         }
         break;
-        
+
       case 'delete':
         if (confirm(`Are you sure you want to delete "${item.name}"?`)) {
           console.log(`Deleted "${item.name}"`);
@@ -468,19 +559,19 @@ export class AppComponent {
           this.deleteFileSystemItem(item);
         }
         break;
-        
+
       case 'copy':
         console.log(`Copied "${item.name}"`);
         this.clipboardItem.set(item);
         this.clipboardAction.set('copy');
         break;
-        
+
       case 'cut':
         console.log(`Cut "${item.name}"`);
         this.clipboardItem.set(item);
         this.clipboardAction.set('cut');
         break;
-        
+
       case 'paste':
         const clipboardItem = this.clipboardItem();
         const clipboardAction = this.clipboardAction();
@@ -489,7 +580,7 @@ export class AppComponent {
           this.pasteFileSystemItem(clipboardItem, clipboardAction);
         }
         break;
-        
+
       case 'set-wallpaper':
         this.setImageAsWallpaper(item);
         break;
@@ -506,12 +597,12 @@ export class AppComponent {
 
   pasteFileSystemItem(item: any, action: 'copy' | 'cut') {
     console.log(`Pasting ${action} item:`, item.name);
-    
+
     if (action === 'cut') {
       // Remove the original item after pasting
       this.deleteFileSystemItem(item);
     }
-    
+
     // Clear clipboard after paste
     this.clipboardItem.set(null);
     this.clipboardAction.set(null);
@@ -521,19 +612,19 @@ export class AppComponent {
   setImageAsWallpaper(item: any) {
     const imagePath = item.content || `assets/explorer${item.path}`;
     console.log('Setting wallpaper to:', imagePath);
-    
+
     // Apply the wallpaper immediately
     const wallpaperElement = document.querySelector('.wallpaper') as HTMLElement;
     if (wallpaperElement) {
       wallpaperElement.style.backgroundImage = `url('${imagePath}')`;
       wallpaperElement.style.background = 'none';
     }
-    
+
     // Save to settings
     const currentSettings = JSON.parse(localStorage.getItem('desktop-portfolio-settings') || '{}');
     currentSettings.wallpaper = imagePath;
     localStorage.setItem('desktop-portfolio-settings', JSON.stringify(currentSettings));
-    
+
     alert(`"${item.name}" has been set as your wallpaper!`);
   }
 
@@ -565,9 +656,6 @@ export class AppComponent {
     } else if (icon.id === 'my-info') {
       this.showMyInfoWindow.set(true);
       this.focusWindow('my-info');
-    } else if (icon.id === 'my-page') {
-      this.showMyPageWindow.set(true);
-      this.focusWindow('my-page');
     } else if (icon.id === 'love') {
       this.showLoveWindow.set(true);
       this.focusWindow('love');
@@ -577,13 +665,25 @@ export class AppComponent {
     } else if (icon.id === 'machine-info') {
       this.showMachineInfoWindow.set(true);
       this.focusWindow('machine-info');
+    } else if (icon.id === 'credit') {
+      this.showCreditWindow.set(true);
+      this.focusWindow('credit');
+    } else if (icon.id === 'paint') {
+      this.showPaintWindow.set(true);
+      this.focusWindow('paint');
+    } else if (icon.id === 'credits') {
+      this.showCreditsWindow.set(true);
+      this.focusWindow('credits');
+    } else if (icon.id === 'hcmc') {
+      this.showHcmcWindow.set(true);
+      this.focusWindow('hcmc');
     }
   }
 
   onDesktopIconContextMenu(event: any) {
     const { action, icon } = event;
     console.log('Desktop icon context menu action:', action, icon.name);
-    
+
     switch (action) {
       case 'open':
         this.openTestApp(icon);
@@ -625,7 +725,7 @@ export class AppComponent {
         y: icon.position.y + 20
       }
     };
-    
+
     // Add the new icon to the desktop
     this.testIcons = [...this.testIcons, newIcon];
     console.log('Pasted desktop icon:', newIcon.name);
@@ -637,18 +737,24 @@ export class AppComponent {
     if (index > -1) {
       this.testIcons.splice(index, 1);
       console.log('Deleted icon:', icon.name);
-      
+
       // Close the associated window if it's open
       if (icon.id === 'calculator' && this.showTestWindow()) {
         this.onCloseTestWindow();
       } else if (icon.id === 'my-info' && this.showMyInfoWindow()) {
         this.onCloseMyInfoWindow();
-      } else if (icon.id === 'my-page' && this.showMyPageWindow()) {
-        this.onCloseMyPageWindow();
       } else if (icon.id === 'love' && this.showLoveWindow()) {
         this.onCloseLoveWindow();
       } else if (icon.id === 'explorer' && this.showExplorerWindow()) {
         this.onCloseExplorerWindow();
+      } else if (icon.id === 'credit' && this.showCreditWindow()) {
+        this.onCloseCreditWindow();
+      } else if (icon.id === 'paint' && this.showPaintWindow()) {
+        this.onClosePaintWindow();
+      } else if (icon.id === 'credits' && this.showCreditsWindow()) {
+        this.onCloseCreditsWindow();
+      } else if (icon.id === 'hcmc' && this.showHcmcWindow()) {
+        this.onCloseHcmcWindow();
       }
     }
   }
@@ -660,6 +766,41 @@ export class AppComponent {
 
   closeStartMenu() {
     this.showStartMenu.set(false);
+    this.showStartSubmenu.set(null);
+  }
+
+  openStartSubmenu(groupId: string) {
+    this.showStartSubmenu.set(groupId);
+  }
+
+  closeStartSubmenu() {
+    this.showStartSubmenu.set(null);
+  }
+
+  onGroupMouseLeave() {
+    // Add a small delay to allow moving to submenu
+    setTimeout(() => {
+      if (this.showStartSubmenu()) {
+        // Check if mouse is still over the submenu area
+        const submenu = document.querySelector('.start-submenu');
+        if (!submenu || !submenu.matches(':hover')) {
+          this.closeStartSubmenu();
+        }
+      }
+    }, 100);
+  }
+
+  onSubmenuMouseLeave() {
+    // Add a small delay to allow moving back to group
+    setTimeout(() => {
+      if (this.showStartSubmenu()) {
+        // Check if mouse is still over the group area
+        const group = document.querySelector('.app-group:hover');
+        if (!group) {
+          this.closeStartSubmenu();
+        }
+      }
+    }, 100);
   }
 
   openApp(appId: string) {
@@ -670,20 +811,30 @@ export class AppComponent {
     } else if (appId === 'my-info') {
       this.showMyInfoWindow.set(true);
       this.focusWindow('my-info');
-    } else if (appId === 'my-page') {
-      this.showMyPageWindow.set(true);
-      this.focusWindow('my-page');
     } else if (appId === 'love') {
       this.showLoveWindow.set(true);
       this.focusWindow('love');
     } else if (appId === 'explorer') {
       this.showExplorerWindow.set(true);
       this.focusWindow('explorer');
+    } else if (appId === 'credit') {
+      this.showCreditWindow.set(true);
+      this.focusWindow('credit');
+    } else if (appId === 'paint') {
+      this.showPaintWindow.set(true);
+      this.focusWindow('paint');
+    } else if (appId === 'credits') {
+      this.showCreditsWindow.set(true);
+      this.focusWindow('credits');
+    } else if (appId === 'hcmc') {
+      this.showHcmcWindow.set(true);
+      this.focusWindow('hcmc');
     }
   }
 
   // Restore a minimized window
   restoreWindow(windowId: string) {
+    console.log('Restoring window:', windowId);
     this.minimizedWindows.update(set => {
       const newSet = new Set(set);
       newSet.delete(windowId);
@@ -695,7 +846,7 @@ export class AppComponent {
   minimizeWindow(windowId: string) {
     console.log('Minimizing window:', windowId);
     this.minimizedWindows.update(set => new Set(set).add(windowId));
-    
+
     // Clear focus if this was the focused window
     if (this.focusedWindow() === windowId) {
       this.focusedWindow.set(null);
@@ -704,47 +855,85 @@ export class AppComponent {
 
   focusWindow(windowId: string) {
     console.log('Focusing window:', windowId);
-    
+    console.log('Previous focused window:', this.focusedWindow());
+    console.log('Previous max z-index:', this.maxZIndex());
+
     // If window is minimized, restore it first
     if (this.minimizedWindows().has(windowId)) {
       this.restoreWindow(windowId);
     }
-    
+
     // Set the focused window
     this.focusedWindow.set(windowId);
-    
+
     // Increment the max z-index for the focused window to bring it to front
     this.maxZIndex.update(max => max + 1);
-    
+
+    console.log('New focused window:', this.focusedWindow());
     console.log('New max z-index:', this.maxZIndex());
+    console.log('Window z-index for', windowId, ':', this.getWindowZIndex(windowId));
+
+    // Force change detection to ensure z-index updates are reflected
+    this.cdr.detectChanges();
+
+    // Also directly update DOM z-index as a fallback
+    setTimeout(() => {
+      this.updateWindowZIndex(windowId);
+    }, 0);
+  }
+
+  // Directly update window z-index in DOM as fallback
+  private updateWindowZIndex(windowId: string) {
+    const windowElement = document.querySelector(`[data-window-id="${windowId}"]`) as HTMLElement;
+    if (windowElement) {
+      const zIndex = this.getWindowZIndex(windowId);
+      windowElement.style.zIndex = zIndex.toString();
+      console.log('Directly updated DOM z-index for', windowId, 'to', zIndex);
+    }
   }
 
   // Toggle window: minimize if focused, restore/focus if not focused, open if closed
   toggleTaskbarApp(windowId: string) {
+    console.log('=== Toggle Taskbar App ===');
     console.log('Toggling taskbar app:', windowId);
     console.log('Current focused window:', this.focusedWindow());
     console.log('Minimized windows:', Array.from(this.minimizedWindows()));
-    
+    console.log('Current max z-index:', this.maxZIndex());
+
     switch (windowId) {
       case 'calculator':
+        console.log('Calculator case - showTestWindow:', this.showTestWindow());
+        console.log('Calculator is minimized:', this.isWindowMinimized('calculator'));
+        console.log('Calculator is focused:', this.isWindowFocused('calculator'));
+
         if (this.showTestWindow()) {
-          if (this.focusedWindow() === 'calculator') {
+          if (this.isWindowMinimized('calculator')) {
+            console.log('Calculator is minimized, restoring and focusing...');
+            // Window is minimized, restore and focus it
+            this.focusWindow('calculator');
+          } else if (this.focusedWindow() === 'calculator') {
+            console.log('Calculator is focused, minimizing...');
             // Window is focused, minimize it
             this.minimizeWindow('calculator');
           } else {
+            console.log('Calculator is open but not focused, focusing...');
             // Window is open but not focused, focus it
             this.focusWindow('calculator');
           }
         } else {
+          console.log('Calculator is closed, opening...');
           // Window is closed, open it
           this.showTestWindow.set(true);
           this.focusWindow('calculator');
         }
         break;
-        
+
       case 'my-info':
         if (this.showMyInfoWindow()) {
-          if (this.focusedWindow() === 'my-info') {
+          if (this.isWindowMinimized('my-info')) {
+            // Window is minimized, restore and focus it
+            this.focusWindow('my-info');
+          } else if (this.focusedWindow() === 'my-info') {
             this.minimizeWindow('my-info');
           } else {
             this.focusWindow('my-info');
@@ -754,23 +943,13 @@ export class AppComponent {
           this.focusWindow('my-info');
         }
         break;
-        
-      case 'my-page':
-        if (this.showMyPageWindow()) {
-          if (this.focusedWindow() === 'my-page') {
-            this.minimizeWindow('my-page');
-          } else {
-            this.focusWindow('my-page');
-          }
-        } else {
-          this.showMyPageWindow.set(true);
-          this.focusWindow('my-page');
-        }
-        break;
-        
+
+
       case 'love':
         if (this.showLoveWindow()) {
-          if (this.focusedWindow() === 'love') {
+          if (this.isWindowMinimized('love')) {
+            this.focusWindow('love');
+          } else if (this.focusedWindow() === 'love') {
             this.minimizeWindow('love');
           } else {
             this.focusWindow('love');
@@ -780,10 +959,12 @@ export class AppComponent {
           this.focusWindow('love');
         }
         break;
-        
+
       case 'explorer':
         if (this.showExplorerWindow()) {
-          if (this.focusedWindow() === 'explorer') {
+          if (this.isWindowMinimized('explorer')) {
+            this.focusWindow('explorer');
+          } else if (this.focusedWindow() === 'explorer') {
             this.minimizeWindow('explorer');
           } else {
             this.focusWindow('explorer');
@@ -793,10 +974,12 @@ export class AppComponent {
           this.focusWindow('explorer');
         }
         break;
-        
+
       case 'text-viewer':
         if (this.showTextViewerWindow()) {
-          if (this.focusedWindow() === 'text-viewer') {
+          if (this.isWindowMinimized('text-viewer')) {
+            this.focusWindow('text-viewer');
+          } else if (this.focusedWindow() === 'text-viewer') {
             this.minimizeWindow('text-viewer');
           } else {
             this.focusWindow('text-viewer');
@@ -806,10 +989,12 @@ export class AppComponent {
           this.focusWindow('text-viewer');
         }
         break;
-        
+
       case 'image-viewer':
         if (this.showImageViewerWindow()) {
-          if (this.focusedWindow() === 'image-viewer') {
+          if (this.isWindowMinimized('image-viewer')) {
+            this.focusWindow('image-viewer');
+          } else if (this.focusedWindow() === 'image-viewer') {
             this.minimizeWindow('image-viewer');
           } else {
             this.focusWindow('image-viewer');
@@ -819,10 +1004,12 @@ export class AppComponent {
           this.focusWindow('image-viewer');
         }
         break;
-        
+
       case 'machine-info':
         if (this.showMachineInfoWindow()) {
-          if (this.focusedWindow() === 'machine-info') {
+          if (this.isWindowMinimized('machine-info')) {
+            this.focusWindow('machine-info');
+          } else if (this.focusedWindow() === 'machine-info') {
             this.minimizeWindow('machine-info');
           } else {
             this.focusWindow('machine-info');
@@ -830,6 +1017,66 @@ export class AppComponent {
         } else {
           this.showMachineInfoWindow.set(true);
           this.focusWindow('machine-info');
+        }
+        break;
+
+      case 'credit':
+        if (this.showCreditWindow()) {
+          if (this.isWindowMinimized('credit')) {
+            this.focusWindow('credit');
+          } else if (this.focusedWindow() === 'credit') {
+            this.minimizeWindow('credit');
+          } else {
+            this.focusWindow('credit');
+          }
+        } else {
+          this.showCreditWindow.set(true);
+          this.focusWindow('credit');
+        }
+        break;
+
+      case 'paint':
+        if (this.showPaintWindow()) {
+          if (this.isWindowMinimized('paint')) {
+            this.focusWindow('paint');
+          } else if (this.focusedWindow() === 'paint') {
+            this.minimizeWindow('paint');
+          } else {
+            this.focusWindow('paint');
+          }
+        } else {
+          this.showPaintWindow.set(true);
+          this.focusWindow('paint');
+        }
+        break;
+
+      case 'credits':
+        if (this.showCreditsWindow()) {
+          if (this.isWindowMinimized('credits')) {
+            this.focusWindow('credits');
+          } else if (this.focusedWindow() === 'credits') {
+            this.minimizeWindow('credits');
+          } else {
+            this.focusWindow('credits');
+          }
+        } else {
+          this.showCreditsWindow.set(true);
+          this.focusWindow('credits');
+        }
+        break;
+
+      case 'hcmc':
+        if (this.showHcmcWindow()) {
+          if (this.isWindowMinimized('hcmc')) {
+            this.focusWindow('hcmc');
+          } else if (this.focusedWindow() === 'hcmc') {
+            this.minimizeWindow('hcmc');
+          } else {
+            this.focusWindow('hcmc');
+          }
+        } else {
+          this.showHcmcWindow.set(true);
+          this.focusWindow('hcmc');
         }
         break;
     }
@@ -840,8 +1087,9 @@ export class AppComponent {
     if (this.focusedWindow() === windowId) {
       return this.maxZIndex();
     }
-    
+
     // For non-focused windows, return a base z-index
+    // But ensure it's lower than the focused window
     return 1000;
   }
 
@@ -905,8 +1153,207 @@ export class AppComponent {
 
   openSettings() {
     this.hideDesktopContextMenu();
-    console.log('Opening Settings...');
-    // TODO: Implement settings dialog
+    console.log('Opening settings dialog...');
+    this.showSettingsDialog.set(true);
+    console.log('Settings dialog state:', this.showSettingsDialog());
+  }
+
+  closeSettingsDialog() {
+    this.showSettingsDialog.set(false);
+  }
+
+  onSettingsChange(settings: any) {
+    console.log('Settings changed:', settings);
+
+    // Apply wallpaper change
+    if (settings.wallpaper) {
+      this.applyWallpaper(settings.wallpaper);
+    }
+
+    // Apply theme change
+    if (settings.theme) {
+      this.applyTheme(settings.theme);
+    }
+
+    // Apply theme color change
+    if (settings.themeColor) {
+      this.applyThemeColor(settings.themeColor);
+    }
+
+    // Apply backdrop change
+    if (settings.backdropEnabled !== undefined) {
+      this.applyBackdrop(settings.backdropEnabled);
+    }
+  }
+
+  applyWallpaper(wallpaperId: string) {
+    let wallpaperElement = document.querySelector('.wallpaper') as HTMLElement;
+
+    // If element not found, try again after a short delay
+    if (!wallpaperElement) {
+      setTimeout(() => {
+        wallpaperElement = document.querySelector('.wallpaper') as HTMLElement;
+        if (wallpaperElement) {
+          this.setWallpaperStyles(wallpaperElement, wallpaperId);
+        }
+      }, 100);
+      return;
+    }
+
+    this.setWallpaperStyles(wallpaperElement, wallpaperId);
+  }
+
+  private setWallpaperStyles(element: HTMLElement, wallpaperId: string) {
+    let wallpaperPath = 'assets/images/lib/wallpaper/1.png'; // Default to first wallpaper
+
+    // Map wallpaper IDs to actual paths
+    switch (wallpaperId) {
+      case '1':
+        wallpaperPath = 'assets/images/lib/wallpaper/1.png';
+        break;
+      case '2':
+        wallpaperPath = 'assets/images/lib/wallpaper/2.png';
+        break;
+      case '3':
+        wallpaperPath = 'assets/images/lib/wallpaper/3.png';
+        break;
+      default:
+        wallpaperPath = 'assets/images/lib/wallpaper/1.png';
+    }
+
+    console.log('Setting wallpaper styles:', wallpaperId, wallpaperPath);
+    console.log('Wallpaper element found:', !!element);
+
+    element.style.backgroundImage = `url('${wallpaperPath}')`;
+    element.style.backgroundSize = 'cover';
+    element.style.backgroundPosition = 'center';
+    element.style.backgroundRepeat = 'no-repeat';
+
+    console.log('Wallpaper applied successfully:', wallpaperId, wallpaperPath);
+  }
+
+  applyTheme(theme: string) {
+    // Apply theme to the document
+    document.documentElement.setAttribute('data-theme', theme);
+
+    // Apply dark theme styles
+    if (theme === 'dark') {
+      document.documentElement.style.setProperty('--bg-color', '#1a1a1a');
+      document.documentElement.style.setProperty('--text-color', '#ffffff');
+      document.documentElement.style.setProperty('--window-bg', '#2d2d2d');
+      document.documentElement.style.setProperty('--border-color', '#404040');
+    } else if (theme === 'light') {
+      document.documentElement.style.setProperty('--bg-color', '#ffffff');
+      document.documentElement.style.setProperty('--text-color', '#000000');
+      document.documentElement.style.setProperty('--window-bg', '#f8f9fa');
+      document.documentElement.style.setProperty('--border-color', '#dee2e6');
+    } else {
+      // Auto theme - use system preference
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (prefersDark) {
+        document.documentElement.style.setProperty('--bg-color', '#1a1a1a');
+        document.documentElement.style.setProperty('--text-color', '#ffffff');
+        document.documentElement.style.setProperty('--window-bg', '#2d2d2d');
+        document.documentElement.style.setProperty('--border-color', '#404040');
+      } else {
+        document.documentElement.style.setProperty('--bg-color', '#ffffff');
+        document.documentElement.style.setProperty('--text-color', '#000000');
+        document.documentElement.style.setProperty('--window-bg', '#f8f9fa');
+        document.documentElement.style.setProperty('--border-color', '#dee2e6');
+      }
+    }
+
+    console.log('Theme applied:', theme);
+  }
+
+  applyThemeColor(color: string) {
+    // Apply theme color to CSS custom properties
+    document.documentElement.style.setProperty('--primary-color', color);
+    document.documentElement.style.setProperty('--accent-color', color);
+
+    // Update window title bar colors
+    const windowElements = document.querySelectorAll('.window-header');
+    windowElements.forEach((element: any) => {
+      element.style.backgroundColor = color;
+    });
+
+    console.log('Theme color applied:', color);
+  }
+
+  applyBackdrop(enabled: boolean) {
+    let backdropElement = document.querySelector('.wallpaper-backdrop') as HTMLElement;
+
+    if (enabled) {
+      if (!backdropElement) {
+        // Create backdrop element if it doesn't exist
+        backdropElement = document.createElement('div');
+        backdropElement.className = 'wallpaper-backdrop';
+        const wallpaperElement = document.querySelector('.wallpaper');
+        if (wallpaperElement) {
+          wallpaperElement.appendChild(backdropElement);
+        }
+      }
+      backdropElement.style.display = 'block';
+    } else {
+      if (backdropElement) {
+        backdropElement.style.display = 'none';
+      }
+    }
+
+    console.log('Backdrop applied:', enabled);
+  }
+
+  loadSettingsOnInit() {
+    const savedSettings = localStorage.getItem('desktop-portfolio-settings');
+    if (savedSettings) {
+      try {
+        const settings = JSON.parse(savedSettings);
+        console.log('Loading settings on app init:', settings);
+
+        // Apply wallpaper
+        if (settings.wallpaper) {
+          this.applyWallpaper(settings.wallpaper);
+        } else {
+          // Apply default wallpaper if none is set
+          this.applyWallpaper('1');
+        }
+
+        // Apply theme
+        if (settings.theme) {
+          this.applyTheme(settings.theme);
+        }
+
+        // Apply theme color
+        if (settings.themeColor) {
+          this.applyThemeColor(settings.themeColor);
+        }
+
+        // Apply backdrop
+        if (settings.backdropEnabled !== undefined) {
+          this.applyBackdrop(settings.backdropEnabled);
+        }
+
+        // Apply other settings as needed
+        console.log('Settings loaded and applied on app initialization');
+      } catch (error) {
+        console.error('Error loading settings on init:', error);
+        // Apply default wallpaper on error
+        this.applyWallpaper('1');
+      }
+    } else {
+      console.log('No saved settings found, using defaults');
+      // Create and save default settings
+      const defaultSettings = {
+        wallpaper: '1',
+        theme: 'auto',
+        themeColor: '#007bff',
+        backdropEnabled: false
+      };
+      localStorage.setItem('desktop-portfolio-settings', JSON.stringify(defaultSettings));
+
+      // Apply default wallpaper when no settings exist
+      this.applyWallpaper('1');
+    }
   }
 
   refreshDesktop() {
@@ -917,6 +1364,12 @@ export class AppComponent {
   // Search methods
   openSearchWindow() {
     this.showSearchWindow.set(true);
+    // Focus the search input after the view updates
+    setTimeout(() => {
+      if (this.searchInput) {
+        this.searchInput.nativeElement.focus();
+      }
+    }, 100);
   }
 
   closeSearchWindow() {
@@ -924,6 +1377,7 @@ export class AppComponent {
     this.searchQuery = '';
     this.searchResults = [];
     this.showSearchSuggestions = false;
+    this.selectedSearchIndex = 0;
   }
 
   onSearchInput(event: any) {
@@ -932,210 +1386,88 @@ export class AppComponent {
   }
 
   performSearch() {
-    if (this.searchQuery.trim().length < 2) {
+    if (this.searchQuery.trim().length < 1) {
       this.searchResults = [];
       this.showSearchSuggestions = false;
+      this.selectedSearchIndex = 0;
       return;
     }
 
-    // Mock search results - in a real app, this would be API calls
-    this.searchResults = [
-      { type: 'app', name: 'Calculator', icon: 'pi-calculator', action: 'calculator' },
-      { type: 'app', name: 'My Information', icon: 'pi-user', action: 'my-info' },
-      { type: 'app', name: 'My Page', icon: 'pi-globe', action: 'my-page' },
-      { type: 'app', name: 'Love', icon: 'pi-heart', action: 'love' },
-      { type: 'app', name: 'Explorer', icon: 'pi-folder', action: 'explorer' },
-      { type: 'web', name: 'Google Search', icon: 'pi-search', url: `https://www.google.com/search?q=${encodeURIComponent(this.searchQuery)}` },
-      { type: 'web', name: 'Wikipedia', icon: 'pi-book', url: `https://en.wikipedia.org/wiki/${encodeURIComponent(this.searchQuery)}` }
-    ].filter(item => 
-      item.name.toLowerCase().includes(this.searchQuery.toLowerCase())
-    );
-
+    // Use the search service to get comprehensive results
+    this.searchResults = this.searchService.search(this.searchQuery);
     this.showSearchSuggestions = this.searchResults.length > 0;
+    this.selectedSearchIndex = 0; // Reset selection to first result
   }
 
-  selectSearchResult(result: any) {
+  selectSearchResult(result: SearchResult) {
     if (result.type === 'app') {
-      this.openApp(result.action);
+      this.openApp(result.action!);
+    } else if (result.type === 'file') {
+      this.openFile(result.path!);
     } else if (result.type === 'web') {
       window.open(result.url, '_blank');
     }
     this.closeSearchWindow();
   }
 
-  // Browser methods
-  navigateToUrl(event: any) {
-    const url = event.target.value.trim();
-    if (url) {
-      this.isLoading = true;
-      if (!url.startsWith('http://') && !url.startsWith('https://')) {
-        // If it's not a URL, treat as search
-        this.currentUrl = `https://www.google.com/search?q=${ encodeURIComponent(url) }`;
-      } else {
-        this.currentUrl = url;
-      }
-      this.canGoBack = true;
+  openFile(filePath: string) {
+    // Extract file extension to determine how to open it
+    const extension = filePath.split('.').pop()?.toLowerCase();
 
-      // Check if current URL is bookmarked
-      this.isBookmarked = this.bookmarks.some(b => b.url === this.currentUrl);
-
-      // Force iframe reload with new URL
-      setTimeout(() => {
-        this.reloadIframe();
-      }, 100);
-
-      // Simulate loading time
-      setTimeout(() => {
-        this.isLoading = false;
-      }, 1000);
-    }
-  }
-
-  selectUrl(event: any) {
-    event.target.select();
-  }
-
-  goBack() {
-    if (this.canGoBack) {
-      console.log('Going back');
-      this.canGoForward = true;
-      // In a real browser, this would navigate to previous page
-      alert('Going back - this is a demo browser');
-    }
-  }
-
-  goForward() {
-    if (this.canGoForward) {
-      console.log('Going forward');
-      // In a real browser, this would navigate to next page
-      alert('Going forward - this is a demo browser');
-    }
-  }
-
-  refreshPage() {
-    console.log('Refreshing page...');
-    this.isLoading = true;
-    setTimeout(() => {
-      this.isLoading = false;
-    }, 1000);
-  }
-
-  goHome() {
-    this.currentUrl = 'https://www.google.com';
-    this.isLoading = true;
-    this.isBookmarked = this.bookmarks.some(b => b.url === this.currentUrl);
-
-    // Force iframe reload with home URL
-    setTimeout(() => {
-      this.reloadIframe();
-    }, 100);
-
-    setTimeout(() => {
-      this.isLoading = false;
-    }, 1000);
-  }
-
-  toggleBookmark() {
-    this.isBookmarked = !this.isBookmarked;
-    if (this.isBookmarked) {
-      console.log('Bookmarked:', this.currentUrl);
+    if (extension === 'md' || extension === 'txt') {
+      // Open text files in text viewer
+      this.currentTextFile.set({
+        path: filePath,
+        name: filePath.split('/').pop() || 'Unknown File',
+        type: extension === 'md' ? 'md' : 'txt'
+      });
+      this.showTextViewerWindow.set(true);
+      this.focusWindow('text-viewer');
+    } else if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension || '')) {
+      // Open image files in image viewer
+      this.currentImageFile.set({
+        path: filePath,
+        name: filePath.split('/').pop() || 'Unknown Image'
+      });
+      this.showImageViewerWindow.set(true);
+      this.focusWindow('image-viewer');
     } else {
-      console.log('Removed bookmark:', this.currentUrl);
+      // For other files, try to open in explorer
+      this.showExplorerWindow.set(true);
+      this.focusWindow('explorer');
+      // You could add logic here to navigate to the specific file in explorer
     }
   }
 
-  toggleBookmarks() {
-    this.showBookmarksBar = !this.showBookmarksBar;
-  }
+  navigateSearchResults(direction: number, event: Event) {
+    const keyboardEvent = event as KeyboardEvent;
+    keyboardEvent.preventDefault();
 
-  toggleBrowserMenu() {
-    this.showBrowserMenu = !this.showBrowserMenu;
-  }
+    if (this.searchResults.length === 0) return;
 
-  navigateToBookmark(bookmark: any) {
-    console.log('Navigating to bookmark:', bookmark.name, bookmark.url);
-    this.currentUrl = bookmark.url;
-    this.isLoading = true;
-    this.canGoBack = true;
+    this.selectedSearchIndex += direction;
 
-    // Check if this bookmark is already bookmarked
-    this.isBookmarked = this.bookmarks.some(b => b.url === bookmark.url);
-
-    // Force iframe reload with new URL
-    setTimeout(() => {
-      this.reloadIframe();
-    }, 100);
-
-    // Simulate loading time
-    setTimeout(() => {
-      this.isLoading = false;
-    }, 1000);
-  }
-
-  addBookmark() {
-    const name = prompt('Bookmark name:', 'New Bookmark');
-    if (name) {
-      this.bookmarks.push({ name, url: this.currentUrl });
+    // Wrap around
+    if (this.selectedSearchIndex < 0) {
+      this.selectedSearchIndex = this.searchResults.length - 1;
+    } else if (this.selectedSearchIndex >= this.searchResults.length) {
+      this.selectedSearchIndex = 0;
     }
   }
 
-  newTab() {
-    this.showBrowserMenu = false;
-    alert('New tab - this is a demo browser');
-  }
+  getResultIndex(type: string, localIndex: number): number {
+    let globalIndex = 0;
 
-  newWindow() {
-    this.showBrowserMenu = false;
-    alert('New window - this is a demo browser');
-  }
-
-  openHistory() {
-    this.showBrowserMenu = false;
-    alert('History - this is a demo browser');
-  }
-
-  openDownloads() {
-    this.showBrowserMenu = false;
-    alert('Downloads - this is a demo browser');
-  }
-
-  openBookmarks() {
-    this.showBrowserMenu = false;
-    alert('Bookmarks manager - this is a demo browser');
-  }
-
-  openBrowserSettings() {
-    this.showBrowserMenu = false;
-    alert('Settings - this is a demo browser');
-  }
-
-  openDevTools() {
-    this.showBrowserMenu = false;
-    alert('Developer tools - this is a demo browser');
-  }
-
-  onPageLoad() {
-    this.isLoading = false;
-    console.log('Page loaded:', this.currentUrl);
-  }
-
-  onPageError() {
-    this.isLoading = false;
-    console.log('Page failed to load:', this.currentUrl);
-    // Could show an error message or fallback content here
-  }
-
-  // Force iframe to reload when URL changes
-  reloadIframe() {
-    const iframe = document.querySelector('.content-iframe') as HTMLIFrameElement;
-    if (iframe && this._currentUrl()) {
-      // Use the raw URL string instead of the SafeResourceUrl to avoid routing conflicts
-      const rawUrl = this._currentUrl();
-      if (iframe.src !== rawUrl) {
-        iframe.src = rawUrl;
-      }
+    // Count results before this type
+    if (type === 'file') {
+      globalIndex += this.appSearchResults.length;
+    } else if (type === 'web') {
+      globalIndex += this.appSearchResults.length + this.fileSearchResults.length;
     }
+
+    return globalIndex + localIndex;
   }
+
 
   // Lock screen functionality
   lockScreen() {
