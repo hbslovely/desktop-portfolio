@@ -1,4 +1,4 @@
-import { Component, signal, computed, ViewChild, AfterViewInit, ChangeDetectorRef, ElementRef, inject, HostListener } from '@angular/core';
+import { Component, signal, computed, ViewChild, AfterViewInit, ChangeDetectorRef, ElementRef } from '@angular/core';
 import { WindowComponent } from './components/window/window.component';
 import { DesktopIconComponent, DesktopIconData } from './components/desktop-icon/desktop-icon.component';
 import { CalculatorComponent } from './components/apps/calculator/calculator.component';
@@ -14,30 +14,24 @@ import { PaintAppComponent } from './components/apps/paint-app/paint-app.compone
 import { CreditsAppComponent } from './components/apps/credits-app/credits-app.component';
 import { HcmcAppComponent } from './components/apps/hcmc-app/hcmc-app.component';
 import { NewsAppComponent } from './components/apps/news-app/news-app.component';
-import { SettingsAppComponent } from './components/apps/settings-app/settings-app.component';
 import { WelcomeScreenComponent } from './components/welcome-screen/welcome-screen.component';
-import { WindowOverviewComponent } from './components/window-overview/window-overview.component';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DomSanitizer } from "@angular/platform-browser";
 import { SettingsDialogComponent } from "./components/settings-dialog/settings-dialog.component";
 import { APP_ICONS, APP_SEARCH_CONFIG } from './config/app-icons.config';
 import { SearchService, SearchResult } from './services/search.service';
-import { WindowManagerService } from './services/window-manager.service';
-import { getWindowDefinition } from './config/window-registry';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [ WelcomeScreenComponent, WindowComponent, DesktopIconComponent, CalculatorComponent, IframeAppComponent, LoveAppComponent, ExplorerComponent, TextViewerComponent, ImageViewerComponent, PdfViewerComponent, MachineInfoComponent, CreditAppComponent, PaintAppComponent, CreditsAppComponent, HcmcAppComponent, NewsAppComponent, SettingsAppComponent, WindowOverviewComponent, CommonModule, FormsModule, SettingsDialogComponent ],
+  imports: [ WelcomeScreenComponent, WindowComponent, DesktopIconComponent, CalculatorComponent, IframeAppComponent, LoveAppComponent, ExplorerComponent, TextViewerComponent, ImageViewerComponent, PdfViewerComponent, MachineInfoComponent, CreditAppComponent, PaintAppComponent, CreditsAppComponent, HcmcAppComponent, NewsAppComponent, CommonModule, FormsModule, SettingsDialogComponent ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
 })
 export class AppComponent implements AfterViewInit {
   @ViewChild(WelcomeScreenComponent) welcomeScreen!: WelcomeScreenComponent;
   @ViewChild('searchInput', { static: false }) searchInput!: ElementRef<HTMLInputElement>;
-
-  windowManager = inject(WindowManagerService);
 
   constructor(
     private sanitizer: DomSanitizer,
@@ -91,7 +85,6 @@ export class AppComponent implements AfterViewInit {
 
   // Settings dialog state
   showSettingsDialog = signal(false);
-  showWindowOverview = signal(false);
   currentTime = '';
   currentDate = '';
 
@@ -905,29 +898,8 @@ export class AppComponent implements AfterViewInit {
     }, 100);
   }
 
-  openApp(appId: string, data?: any) {
+  openApp(appId: string) {
     this.closeStartMenu();
-    
-    // Use WindowManager for new system
-    const definition = getWindowDefinition(appId);
-    if (definition) {
-      this.windowManager.openWindow({
-        id: appId,
-        title: definition.title,
-        icon: definition.icon,
-        component: definition.component,
-        initialWidth: definition.defaultWidth,
-        initialHeight: definition.defaultHeight,
-        initialX: definition.defaultX,
-        initialY: definition.defaultY,
-        maximizable: definition.maximizable,
-        statusText: definition.statusText,
-        data
-      });
-      return;
-    }
-    
-    // Fallback to old system for compatibility
     if (appId === 'calculator') {
       this.showTestWindow.set(true);
       this.focusWindow('calculator');
@@ -1301,23 +1273,6 @@ export class AppComponent implements AfterViewInit {
 
   closeSettingsDialog() {
     this.showSettingsDialog.set(false);
-  }
-
-  toggleWindowOverview() {
-    this.showWindowOverview.update(v => !v);
-  }
-
-  @HostListener('window:keydown', ['$event'])
-  handleGlobalKeyboard(event: KeyboardEvent) {
-    // F3 for window overview
-    if (event.key === 'F3' && !event.ctrlKey && !event.altKey && !event.metaKey) {
-      event.preventDefault();
-      this.toggleWindowOverview();
-    }
-    // Escape to close window overview
-    if (event.key === 'Escape' && this.showWindowOverview()) {
-      this.showWindowOverview.set(false);
-    }
   }
 
   onSettingsChange(settings: any) {

@@ -1,0 +1,72 @@
+<div class="window-overview-backdrop" (click)="close()"></div>
+
+<div class="window-overview">
+  <div class="overview-header">
+    <div class="header-left">
+      <i class="pi pi-th"></i>
+      <h2>Open Windows</h2>
+      <span class="window-count">{{ windowManager.windowList().length }} windows</span>
+    </div>
+    <div class="header-actions">
+      <button class="action-btn" (click)="minimizeAllWindows()" title="Minimize All">
+        <i class="pi pi-window-minimize"></i>
+      </button>
+      <button class="action-btn" (click)="closeAllWindows()" title="Close All">
+        <i class="pi pi-times-circle"></i>
+      </button>
+      <button class="close-btn" (click)="close()" title="Close Overview">
+        <i class="pi pi-times"></i>
+      </button>
+    </div>
+  </div>
+
+  <div class="overview-content">
+    <div *ngIf="windowManager.windowList().length === 0" class="empty-state">
+      <i class="pi pi-inbox"></i>
+      <h3>No Open Windows</h3>
+      <p>Open some apps to see them here</p>
+    </div>
+
+    <div *ngIf="windowManager.windowList().length > 0" class="windows-grid">
+      <div 
+        *ngFor="let window of windowManager.windowList()"
+        class="window-card"
+        [class.minimized]="window.isMinimized"
+        [class.focused]="window.isFocused"
+        (click)="selectWindow(window)">
+        
+        <div class="window-preview">
+          <div class="preview-placeholder">
+            <i [class]="window.icon"></i>
+            <span class="window-title">{{ window.title }}</span>
+          </div>
+          <button class="close-window-btn" (click)="closeWindow($event, window.id)" title="Close">
+            <i class="pi pi-times"></i>
+          </button>
+        </div>
+
+        <div class="window-info">
+          <div class="window-icon">
+            <i [class]="window.icon"></i>
+          </div>
+          <div class="window-details">
+            <h4>{{ window.title }}</h4>
+            <p *ngIf="window.statusText">{{ window.statusText }}</p>
+          </div>
+          <div class="window-status">
+            <span *ngIf="window.isFocused" class="status-badge focused">Active</span>
+            <span *ngIf="window.isMinimized" class="status-badge minimized">Minimized</span>
+            <span *ngIf="window.isMaximized && !window.isMinimized" class="status-badge maximized">Maximized</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="overview-footer">
+    <div class="footer-info">
+      <span>Press <kbd>Esc</kbd> to close • Click on a window to focus</span>
+    </div>
+  </div>
+</div>
+

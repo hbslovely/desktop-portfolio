@@ -1,0 +1,392 @@
+<div class="settings-app">
+  <!-- Sidebar Navigation -->
+  <div class="settings-sidebar">
+    <div class="sidebar-header">
+      <i class="pi pi-cog"></i>
+      <h3>Settings</h3>
+    </div>
+    <nav class="sidebar-nav">
+      <button 
+        *ngFor="let tab of tabs"
+        class="nav-item"
+        [class.active]="activeTab() === tab.id"
+        (click)="selectTab(tab.id)">
+        <i [class]="tab.icon"></i>
+        <span>{{ tab.name }}</span>
+      </button>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="action-btn" (click)="saveSettings()" [disabled]="!hasUnsavedChanges()">
+        <i class="pi pi-save"></i>
+        <span>Save Changes</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="settings-content">
+    
+    <!-- Appearance Tab -->
+    <div *ngIf="activeTab() === 'appearance'" class="settings-panel">
+      <div class="panel-header">
+        <h2>Appearance</h2>
+        <p>Customize the look and feel of your desktop</p>
+      </div>
+
+      <!-- Wallpaper Section -->
+      <div class="settings-group">
+        <div class="group-header">
+          <i class="pi pi-image"></i>
+          <div class="group-title">
+            <h4>Wallpaper</h4>
+            <p>Choose your desktop background</p>
+          </div>
+        </div>
+        <div class="wallpaper-grid">
+          <div 
+            *ngFor="let wallpaper of wallpapers"
+            class="wallpaper-card"
+            [class.selected]="selectedWallpaper() === wallpaper.id"
+            (click)="onWallpaperChange(wallpaper.id)">
+            <div class="wallpaper-preview">
+              <img [src]="wallpaper.preview" [alt]="wallpaper.name">
+              <div class="wallpaper-overlay">
+                <i class="pi pi-check"></i>
+              </div>
+            </div>
+            <span class="wallpaper-name">{{ wallpaper.name }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Theme Section -->
+      <div class="settings-group">
+        <div class="group-header">
+          <i class="pi pi-palette"></i>
+          <div class="group-title">
+            <h4>Theme Mode</h4>
+            <p>Select your preferred color scheme</p>
+          </div>
+        </div>
+        <div class="theme-grid">
+          <div 
+            *ngFor="let theme of themes"
+            class="theme-card"
+            [class.selected]="selectedTheme() === theme.value"
+            (click)="onThemeChange(theme.value)">
+            <i [class]="theme.icon"></i>
+            <span>{{ theme.label }}</span>
+            <div class="check-icon">
+              <i class="pi pi-check"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Accent Color Section -->
+      <div class="settings-group">
+        <div class="group-header">
+          <i class="pi pi-palette"></i>
+          <div class="group-title">
+            <h4>Accent Color</h4>
+            <p>Choose the accent color for UI elements</p>
+          </div>
+        </div>
+        <div class="color-palette">
+          <div 
+            *ngFor="let color of themeColors"
+            class="color-option"
+            [class.selected]="selectedThemeColor() === color.value"
+            [style.background-color]="color.color"
+            (click)="onThemeColorChange(color.value)"
+            [title]="color.label">
+            <i class="pi pi-check"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Transparency Section -->
+      <div class="settings-group">
+        <div class="group-header">
+          <i class="pi pi-eye"></i>
+          <div class="group-title">
+            <h4>Window Transparency</h4>
+            <p>Adjust window transparency level: {{ transparency() }}%</p>
+          </div>
+        </div>
+        <div class="slider-container">
+          <input 
+            type="range" 
+            min="50" 
+            max="100" 
+            [value]="transparency()"
+            (input)="onTransparencyChange($event)"
+            class="transparency-slider">
+          <div class="slider-labels">
+            <span>50%</span>
+            <span>100%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Backdrop Toggle -->
+      <div class="settings-group">
+        <div class="toggle-item">
+          <div class="toggle-info">
+            <i class="pi pi-eye"></i>
+            <div class="toggle-text">
+              <h4>Backdrop Overlay</h4>
+              <p>Add a subtle overlay above the wallpaper</p>
+            </div>
+          </div>
+          <div class="toggle-switch" [class.active]="backdropEnabled()" (click)="toggleSetting('backdropEnabled')">
+            <div class="toggle-slider"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Personalization Tab -->
+    <div *ngIf="activeTab() === 'personalization'" class="settings-panel">
+      <div class="panel-header">
+        <h2>Personalization</h2>
+        <p>Personalize your desktop experience</p>
+      </div>
+
+      <!-- Language Section -->
+      <div class="settings-group">
+        <div class="group-header">
+          <i class="pi pi-globe"></i>
+          <div class="group-title">
+            <h4>Language</h4>
+            <p>Select your preferred language</p>
+          </div>
+        </div>
+        <select class="select-input" [value]="language()" (change)="onLanguageChange($any($event.target).value)">
+          <option *ngFor="let lang of languages" [value]="lang.value">{{ lang.label }}</option>
+        </select>
+      </div>
+
+      <!-- Font Size Section -->
+      <div class="settings-group">
+        <div class="group-header">
+          <i class="pi pi-align-left"></i>
+          <div class="group-title">
+            <h4>Font Size</h4>
+            <p>Adjust text size across the desktop</p>
+          </div>
+        </div>
+        <div class="font-size-grid">
+          <div 
+            *ngFor="let size of fontSizes"
+            class="font-size-option"
+            [class.selected]="fontSize() === size.value"
+            (click)="onFontSizeChange($any(size.value))">
+            <span>{{ size.label }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Animations Toggle -->
+      <div class="settings-group">
+        <div class="toggle-item">
+          <div class="toggle-info">
+            <i class="pi pi-play-circle"></i>
+            <div class="toggle-text">
+              <h4>Animations</h4>
+              <p>Enable smooth transitions and animations</p>
+            </div>
+          </div>
+          <div class="toggle-switch" [class.active]="animations()" (click)="toggleSetting('animations')">
+            <div class="toggle-slider"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sound Effects Toggle -->
+      <div class="settings-group">
+        <div class="toggle-item">
+          <div class="toggle-info">
+            <i class="pi pi-volume-up"></i>
+            <div class="toggle-text">
+              <h4>Sound Effects</h4>
+              <p>Play sounds for system events</p>
+            </div>
+          </div>
+          <div class="toggle-switch" [class.active]="soundEffects()" (click)="toggleSetting('soundEffects')">
+            <div class="toggle-slider"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- System Tab -->
+    <div *ngIf="activeTab() === 'system'" class="settings-panel">
+      <div class="panel-header">
+        <h2>System</h2>
+        <p>System preferences and behaviors</p>
+      </div>
+
+      <!-- Notifications Toggle -->
+      <div class="settings-group">
+        <div class="toggle-item">
+          <div class="toggle-info">
+            <i class="pi pi-bell"></i>
+            <div class="toggle-text">
+              <h4>Notifications</h4>
+              <p>Show desktop notifications</p>
+            </div>
+          </div>
+          <div class="toggle-switch" [class.active]="notifications()" (click)="toggleSetting('notifications')">
+            <div class="toggle-slider"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Auto Save Toggle -->
+      <div class="settings-group">
+        <div class="toggle-item">
+          <div class="toggle-info">
+            <i class="pi pi-save"></i>
+            <div class="toggle-text">
+              <h4>Auto-Save</h4>
+              <p>Automatically save your work</p>
+            </div>
+          </div>
+          <div class="toggle-switch" [class.active]="autoSave()" (click)="toggleSetting('autoSave')">
+            <div class="toggle-slider"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Import/Export Section -->
+      <div class="settings-group">
+        <div class="group-header">
+          <i class="pi pi-download"></i>
+          <div class="group-title">
+            <h4>Backup & Restore</h4>
+            <p>Export or import your settings</p>
+          </div>
+        </div>
+        <div class="action-buttons">
+          <button class="action-button" (click)="exportSettings()">
+            <i class="pi pi-upload"></i>
+            <span>Export Settings</span>
+          </button>
+          <label class="action-button">
+            <i class="pi pi-download"></i>
+            <span>Import Settings</span>
+            <input type="file" accept=".json" (change)="importSettings($event)" style="display: none;">
+          </label>
+        </div>
+      </div>
+
+      <!-- Reset Section -->
+      <div class="settings-group">
+        <div class="group-header">
+          <i class="pi pi-refresh"></i>
+          <div class="group-title">
+            <h4>Reset Settings</h4>
+            <p>Restore default settings</p>
+          </div>
+        </div>
+        <button class="reset-button" (click)="resetSettings()">
+          <i class="pi pi-replay"></i>
+          <span>Reset to Defaults</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Accessibility Tab -->
+    <div *ngIf="activeTab() === 'accessibility'" class="settings-panel">
+      <div class="panel-header">
+        <h2>Accessibility</h2>
+        <p>Make your desktop more accessible</p>
+      </div>
+
+      <div class="settings-group">
+        <div class="group-header">
+          <i class="pi pi-eye"></i>
+          <div class="group-title">
+            <h4>Visual Accessibility</h4>
+            <p>Enhance visibility and readability</p>
+          </div>
+        </div>
+        <div class="info-box">
+          <i class="pi pi-info-circle"></i>
+          <p>Font size and transparency settings can be adjusted in the Appearance and Personalization tabs.</p>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <div class="group-header">
+          <i class="pi pi-keyboard"></i>
+          <div class="group-title">
+            <h4>Keyboard Shortcuts</h4>
+            <p>Learn keyboard shortcuts for faster navigation</p>
+          </div>
+        </div>
+        <div class="shortcuts-list">
+          <div class="shortcut-item">
+            <span class="shortcut-key"><kbd>Ctrl</kbd> + <kbd>Space</kbd></span>
+            <span class="shortcut-desc">Open Global Search</span>
+          </div>
+          <div class="shortcut-item">
+            <span class="shortcut-key"><kbd>Win</kbd> / <kbd>⌘</kbd></span>
+            <span class="shortcut-desc">Open Start Menu</span>
+          </div>
+          <div class="shortcut-item">
+            <span class="shortcut-key"><kbd>Esc</kbd></span>
+            <span class="shortcut-desc">Close Active Window</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- About Tab -->
+    <div *ngIf="activeTab() === 'about'" class="settings-panel">
+      <div class="panel-header">
+        <h2>About</h2>
+        <p>Information about this desktop environment</p>
+      </div>
+
+      <div class="about-section">
+        <div class="about-logo">
+          <i class="pi pi-desktop"></i>
+          <h3>Desktop Portfolio</h3>
+          <p class="version">Version 2.0.0</p>
+        </div>
+
+        <div class="about-info">
+          <div class="info-item">
+            <i class="pi pi-code"></i>
+            <div>
+              <h4>Built with</h4>
+              <p>Angular 19+ & TypeScript</p>
+            </div>
+          </div>
+          <div class="info-item">
+            <i class="pi pi-github"></i>
+            <div>
+              <h4>Source Code</h4>
+              <p>Available on GitHub</p>
+            </div>
+          </div>
+          <div class="info-item">
+            <i class="pi pi-user"></i>
+            <div>
+              <h4>Developer</h4>
+              <p>Hong Phung Phat</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="about-footer">
+          <p>&copy; 2025 Desktop Portfolio. All rights reserved.</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+

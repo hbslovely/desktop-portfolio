@@ -747,6 +747,9 @@
 
     <!-- System Tray -->
     <div class="system-tray">
+      <button class="widgets-button" (click)="toggleWindowOverview()" title="Window Overview (F3)">
+        <i class="pi pi-objects-column"></i>
+      </button>
       <button class="widgets-button" (click)="toggleWidgets()" title="Toggle Desktop Widgets">
         <i class="pi pi-th"></i>
       </button>
@@ -924,3 +927,76 @@
   (onClose)="closeSettingsDialog()"
   (onSettingsChange)="onSettingsChange($event)">
 </app-settings-dialog>
+
+<!-- Window Overview -->
+<app-window-overview
+  *ngIf="showWindowOverview()"
+  (onClose)="showWindowOverview.set(false)">
+</app-window-overview>
+
+<!-- Dynamic Windows from WindowManager -->
+<ng-container *ngFor="let window of windowManager.windowList()">
+  <app-window
+    *ngIf="!window.isMinimized || windowManager.isWindowOpen(window.id)"
+    [title]="window.title"
+    [icon]="window.icon"
+    [initialWidth]="window.initialWidth"
+    [initialHeight]="window.initialHeight"
+    [initialX]="window.initialX"
+    [initialY]="window.initialY"
+    [maximizable]="window.maximizable"
+    [zIndex]="window.zIndex"
+    [isFocused]="window.isFocused"
+    [isMinimizedExternal]="window.isMinimized"
+    (onClose)="windowManager.closeWindow(window.id)"
+    (onMinimize)="windowManager.minimizeWindow(window.id)"
+    (onMaximize)="windowManager.maximizeWindow(window.id)"
+    (onRestore)="windowManager.restoreWindow(window.id)"
+    (onFocus)="windowManager.focusWindow(window.id)">
+    
+    <!-- Dynamic Component Rendering -->
+    <ng-container [ngSwitch]="window.component">
+      <app-calculator *ngSwitchCase="'calculator'"></app-calculator>
+      
+      <app-iframe-app *ngSwitchCase="'my-info'"></app-iframe-app>
+      
+      <app-love-app *ngSwitchCase="'love'"></app-love-app>
+      
+      <app-explorer *ngSwitchCase="'explorer'"
+        (onFileOpen)="onExplorerFileOpen($event)"
+        (onContextMenuAction)="onExplorerContextMenu($event)">
+      </app-explorer>
+      
+      <app-text-viewer *ngSwitchCase="'text-viewer'"
+        [filePath]="window.data?.path"
+        [fileName]="window.data?.name"
+        [fileType]="window.data?.type">
+      </app-text-viewer>
+      
+      <app-image-viewer *ngSwitchCase="'image-viewer'"
+        [imagePath]="window.data?.path"
+        [imageName]="window.data?.name">
+      </app-image-viewer>
+      
+      <app-pdf-viewer *ngSwitchCase="'pdf-viewer'"
+        [pdfPath]="window.data?.path">
+      </app-pdf-viewer>
+      
+      <app-machine-info *ngSwitchCase="'machine-info'"></app-machine-info>
+      
+      <app-credit-app *ngSwitchCase="'credit'"></app-credit-app>
+      
+      <app-paint-app *ngSwitchCase="'paint'"></app-paint-app>
+      
+      <app-credits-app *ngSwitchCase="'credits'"></app-credits-app>
+      
+      <app-hcmc-app *ngSwitchCase="'hcmc'"></app-hcmc-app>
+      
+      <app-news-app *ngSwitchCase="'news'"></app-news-app>
+      
+      <app-settings-app *ngSwitchCase="'settings'"
+        (onSettingsChange)="onSettingsChange($event)">
+      </app-settings-app>
+    </ng-container>
+  </app-window>
+</ng-container>
