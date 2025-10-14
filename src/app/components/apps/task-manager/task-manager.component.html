@@ -1,0 +1,508 @@
+<div class="task-manager">
+  <!-- Header with Tabs -->
+  <div class="header">
+    <div class="tabs">
+      <button 
+        class="tab" 
+        [class.active]="activeTab() === 'processes'"
+        (click)="setActiveTab('processes')">
+        <i class="pi pi-list"></i>
+        <span>Processes</span>
+      </button>
+      <button 
+        class="tab" 
+        [class.active]="activeTab() === 'performance'"
+        (click)="setActiveTab('performance')">
+        <i class="pi pi-chart-line"></i>
+        <span>Performance</span>
+      </button>
+      <button 
+        class="tab" 
+        [class.active]="activeTab() === 'details'"
+        (click)="setActiveTab('details')">
+        <i class="pi pi-info-circle"></i>
+        <span>Details</span>
+      </button>
+      <button 
+        class="tab" 
+        [class.active]="activeTab() === 'startup'"
+        (click)="setActiveTab('startup')">
+        <i class="pi pi-power-off"></i>
+        <span>Startup</span>
+      </button>
+    </div>
+    <div class="header-actions">
+      <div class="auto-refresh-toggle">
+        <label class="toggle-label">
+          <input type="checkbox" [checked]="autoRefresh()" (change)="toggleAutoRefresh()">
+          <span class="toggle-slider"></span>
+          <span class="toggle-text">Auto-refresh</span>
+        </label>
+      </div>
+      <button class="icon-btn" (click)="refreshData()" title="Refresh" [class.spinning]="autoRefresh()">
+        <i class="pi pi-refresh"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Content Area -->
+  <div class="content">
+    <!-- Processes Tab -->
+    <div *ngIf="activeTab() === 'processes'" class="processes-view">
+      <div class="toolbar">
+        <div class="search-bar">
+          <i class="pi pi-search"></i>
+          <input 
+            type="text" 
+            placeholder="Search processes..." 
+            [value]="searchQuery()"
+            (input)="searchQuery.set($any($event.target).value)">
+          <button *ngIf="searchQuery()" class="clear-btn" (click)="clearSearch()">
+            <i class="pi pi-times"></i>
+          </button>
+        </div>
+        <div class="toolbar-controls">
+          <div class="view-mode-toggle">
+            <button 
+              class="view-btn" 
+              [class.active]="viewMode() === 'detailed'"
+              (click)="setViewMode('detailed')"
+              title="Detailed View">
+              <i class="pi pi-th-large"></i>
+            </button>
+            <button 
+              class="view-btn" 
+              [class.active]="viewMode() === 'simple'"
+              (click)="setViewMode('simple')"
+              title="Simple View">
+              <i class="pi pi-list"></i>
+            </button>
+          </div>
+          <div class="actions">
+            <button class="btn btn-secondary" (click)="exportProcessList()">
+              <i class="pi pi-download"></i>
+              Export
+            </button>
+            <button class="btn btn-secondary" (click)="minimizeAllWindows()">
+              <i class="pi pi-window-minimize"></i>
+              Minimize All
+            </button>
+            <button class="btn btn-danger" (click)="closeAllWindows()">
+              <i class="pi pi-times"></i>
+              Close All
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="processes-info">
+        <span class="info-badge">
+          <i class="pi pi-check-circle"></i>
+          {{ sortedProcesses().length }} processes
+        </span>
+        <span class="info-badge">
+          <i class="pi pi-microchip"></i>
+          CPU: {{ getTotalCpu().toFixed(1) }}%
+        </span>
+        <span class="info-badge">
+          <i class="pi pi-database"></i>
+          Memory: {{ getTotalMemory().toFixed(1) }} MB
+        </span>
+      </div>
+
+      <div class="table-container">
+        <!-- Detailed View -->
+        <table *ngIf="viewMode() === 'detailed'" class="process-table">
+          <thead>
+            <tr>
+              <th (click)="setSortBy('name')" class="sortable">
+                <span>Name</span>
+                <i class="pi" [class.pi-sort-up]="sortBy() === 'name' && sortDirection() === 'asc'"
+                   [class.pi-sort-down]="sortBy() === 'name' && sortDirection() === 'desc'"
+                   [class.pi-sort]="sortBy() !== 'name'"></i>
+              </th>
+              <th (click)="setSortBy('status')" class="sortable">
+                <span>Status</span>
+                <i class="pi" [class.pi-sort-up]="sortBy() === 'status' && sortDirection() === 'asc'"
+                   [class.pi-sort-down]="sortBy() === 'status' && sortDirection() === 'desc'"
+                   [class.pi-sort]="sortBy() !== 'status'"></i>
+              </th>
+              <th (click)="setSortBy('cpu')" class="sortable">
+                <span>CPU</span>
+                <i class="pi" [class.pi-sort-up]="sortBy() === 'cpu' && sortDirection() === 'asc'"
+                   [class.pi-sort-down]="sortBy() === 'cpu' && sortDirection() === 'desc'"
+                   [class.pi-sort]="sortBy() !== 'cpu'"></i>
+              </th>
+              <th (click)="setSortBy('memory')" class="sortable">
+                <span>Memory</span>
+                <i class="pi" [class.pi-sort-up]="sortBy() === 'memory' && sortDirection() === 'asc'"
+                   [class.pi-sort-down]="sortBy() === 'memory' && sortDirection() === 'desc'"
+                   [class.pi-sort]="sortBy() !== 'memory'"></i>
+              </th>
+              <th>Uptime</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let process of sortedProcesses()" 
+                [class.selected]="selectedProcess() === process.windowId"
+                [class.focused]="process.isFocused"
+                (click)="selectProcess(process.windowId)">
+              <td class="name-cell">
+                <i [class]="process.icon" class="process-icon"></i>
+                <span class="process-name">{{ process.title }}</span>
+              </td>
+              <td class="status-cell">
+                <span class="status-badge" [style.background-color]="getStatusColor(process.status)">
+                  <i [class]="getStatusIcon(process.status)"></i>
+                  {{ process.status }}
+                </span>
+              </td>
+              <td class="cpu-cell">
+                <div class="usage-bar">
+                  <div class="usage-fill cpu" [style.width.%]="process.cpu"></div>
+                  <span class="usage-text">{{ process.cpu }}%</span>
+                </div>
+              </td>
+              <td class="memory-cell">
+                <div class="usage-bar">
+                  <div class="usage-fill memory" [style.width.%]="Math.min(+process.memory / 5, 100)"></div>
+                  <span class="usage-text">{{ process.memory }} MB</span>
+                </div>
+              </td>
+              <td class="uptime-cell">{{ getProcessUptime(process.startTime) }}</td>
+              <td class="actions-cell">
+                <button class="action-btn" (click)="focusWindow(process.windowId); $event.stopPropagation()" title="Focus">
+                  <i class="pi pi-eye"></i>
+                </button>
+                <button class="action-btn" (click)="minimizeWindow(process.windowId); $event.stopPropagation()" title="Minimize">
+                  <i class="pi pi-window-minimize"></i>
+                </button>
+                <button class="action-btn" (click)="maximizeWindow(process.windowId); $event.stopPropagation()" title="Maximize">
+                  <i class="pi pi-window-maximize"></i>
+                </button>
+                <button class="action-btn danger" (click)="endTask(process.windowId); $event.stopPropagation()" title="End Task">
+                  <i class="pi pi-times-circle"></i>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Simple View -->
+        <div *ngIf="viewMode() === 'simple'" class="simple-view">
+          <div *ngFor="let process of sortedProcesses()" 
+               class="process-card"
+               [class.selected]="selectedProcess() === process.windowId"
+               [class.focused]="process.isFocused"
+               (click)="selectProcess(process.windowId)">
+            <div class="card-header">
+              <i [class]="process.icon" class="process-icon-large"></i>
+              <div class="card-info">
+                <h4>{{ process.title }}</h4>
+                <span class="process-id">{{ process.windowId }}</span>
+              </div>
+              <span class="status-badge-small" [style.background-color]="getStatusColor(process.status)">
+                {{ process.status }}
+              </span>
+            </div>
+            <div class="card-stats">
+              <div class="stat">
+                <span class="stat-label">CPU</span>
+                <span class="stat-value">{{ process.cpu }}%</span>
+              </div>
+              <div class="stat">
+                <span class="stat-label">Memory</span>
+                <span class="stat-value">{{ process.memory }} MB</span>
+              </div>
+              <div class="stat">
+                <span class="stat-label">Uptime</span>
+                <span class="stat-value">{{ getProcessUptime(process.startTime) }}</span>
+              </div>
+            </div>
+            <div class="card-actions">
+              <button class="card-action-btn" (click)="focusWindow(process.windowId); $event.stopPropagation()">
+                <i class="pi pi-eye"></i>
+                Focus
+              </button>
+              <button class="card-action-btn" (click)="endTask(process.windowId); $event.stopPropagation()">
+                <i class="pi pi-times-circle"></i>
+                End
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="sortedProcesses().length === 0" class="empty-state">
+          <i class="pi pi-inbox"></i>
+          <p>No processes found</p>
+          <span *ngIf="searchQuery()">Try adjusting your search query</span>
+          <span *ngIf="!searchQuery()">Open an app to see it here</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Performance Tab -->
+    <div *ngIf="activeTab() === 'performance'" class="performance-view">
+      <div class="performance-header">
+        <h3>System Performance</h3>
+        <div class="refresh-interval">
+          <label>Refresh Interval:</label>
+          <select [value]="refreshInterval()" (change)="setRefreshInterval(+$any($event.target).value)">
+            <option [value]="500">0.5s</option>
+            <option [value]="1000">1s</option>
+            <option [value]="2000">2s</option>
+            <option [value]="5000">5s</option>
+            <option [value]="10000">10s</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="performance-graphs">
+        <div class="graph-card">
+          <div class="graph-header">
+            <h4><i class="pi pi-microchip"></i> CPU Usage</h4>
+            <span class="graph-value">{{ getTotalCpu().toFixed(1) }}%</span>
+          </div>
+          <svg class="performance-graph" viewBox="0 0 300 60" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="cpuGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:0.8" />
+                <stop offset="100%" style="stop-color:#3b82f6;stop-opacity:0.1" />
+              </linearGradient>
+            </defs>
+            <path [attr.d]="getCpuGraphPath()" fill="url(#cpuGradient)" stroke="#3b82f6" stroke-width="2"/>
+          </svg>
+          <div class="graph-labels">
+            <span>0%</span>
+            <span>100%</span>
+          </div>
+        </div>
+
+        <div class="graph-card">
+          <div class="graph-header">
+            <h4><i class="pi pi-database"></i> Memory Usage</h4>
+            <span class="graph-value">{{ getTotalMemory().toFixed(1) }} MB</span>
+          </div>
+          <svg class="performance-graph" viewBox="0 0 300 60" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="memoryGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" style="stop-color:#10b981;stop-opacity:0.8" />
+                <stop offset="100%" style="stop-color:#10b981;stop-opacity:0.1" />
+              </linearGradient>
+            </defs>
+            <path [attr.d]="getMemoryGraphPath()" fill="url(#memoryGradient)" stroke="#10b981" stroke-width="2"/>
+          </svg>
+          <div class="graph-labels">
+            <span>0 MB</span>
+            <span>Auto</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon">
+            <i class="pi pi-window-maximize"></i>
+          </div>
+          <div class="stat-info">
+            <span class="stat-label">Total Windows</span>
+            <span class="stat-value">{{ performanceStats().totalWindows }}</span>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon active">
+            <i class="pi pi-play-circle"></i>
+          </div>
+          <div class="stat-info">
+            <span class="stat-label">Active Windows</span>
+            <span class="stat-value">{{ performanceStats().activeWindows }}</span>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon minimized">
+            <i class="pi pi-minus-circle"></i>
+          </div>
+          <div class="stat-info">
+            <span class="stat-label">Minimized</span>
+            <span class="stat-value">{{ performanceStats().minimizedWindows }}</span>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon maximized">
+            <i class="pi pi-window-maximize"></i>
+          </div>
+          <div class="stat-info">
+            <span class="stat-label">Maximized</span>
+            <span class="stat-value">{{ performanceStats().maximizedWindows }}</span>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon">
+            <i class="pi pi-clock"></i>
+          </div>
+          <div class="stat-info">
+            <span class="stat-label">System Uptime</span>
+            <span class="stat-value">{{ performanceStats().uptime }}</span>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon">
+            <i class="pi pi-bolt"></i>
+          </div>
+          <div class="stat-info">
+            <span class="stat-label">Performance</span>
+            <span class="stat-value">{{ getTotalCpu() < 50 ? 'Good' : getTotalCpu() < 80 ? 'Fair' : 'High' }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Details Tab -->
+    <div *ngIf="activeTab() === 'details'" class="details-view">
+      <div class="details-header">
+        <h3>Process Details</h3>
+        <p>Select a process from the Processes tab to view detailed information</p>
+      </div>
+
+      <div *ngIf="selectedProcess()" class="details-content">
+        <ng-container *ngFor="let process of processes()">
+          <div *ngIf="process.windowId === selectedProcess()" class="detail-card">
+            <div class="detail-header">
+              <i [class]="process.icon" class="detail-icon"></i>
+              <div>
+                <h4>{{ process.title }}</h4>
+                <span class="detail-subtitle">Window Process</span>
+              </div>
+              <span class="status-badge-large" [style.background-color]="getStatusColor(process.status)">
+                <i [class]="getStatusIcon(process.status)"></i>
+                {{ process.status }}
+              </span>
+            </div>
+            
+            <div class="detail-sections">
+              <div class="detail-section">
+                <h5><i class="pi pi-info-circle"></i> General Information</h5>
+                <div class="detail-grid">
+                  <div class="detail-item">
+                    <span class="detail-label">Process ID:</span>
+                    <span class="detail-value">{{ process.windowId }}</span>
+                  </div>
+                  <div class="detail-item">
+                    <span class="detail-label">Status:</span>
+                    <span class="detail-value">{{ process.status | titlecase }}</span>
+                  </div>
+                  <div class="detail-item">
+                    <span class="detail-label">Z-Index:</span>
+                    <span class="detail-value">{{ process.zIndex }}</span>
+                  </div>
+                  <div class="detail-item">
+                    <span class="detail-label">Is Focused:</span>
+                    <span class="detail-value">{{ process.isFocused ? 'Yes' : 'No' }}</span>
+                  </div>
+                  <div class="detail-item">
+                    <span class="detail-label">Start Time:</span>
+                    <span class="detail-value">{{ process.startTime.toLocaleString() }}</span>
+                  </div>
+                  <div class="detail-item">
+                    <span class="detail-label">Uptime:</span>
+                    <span class="detail-value">{{ getProcessUptime(process.startTime) }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="detail-section">
+                <h5><i class="pi pi-chart-bar"></i> Resource Usage</h5>
+                <div class="resource-details">
+                  <div class="resource-item">
+                    <div class="resource-header">
+                      <span class="resource-label">CPU Usage</span>
+                      <span class="resource-value">{{ process.cpu }}%</span>
+                    </div>
+                    <div class="resource-bar">
+                      <div class="resource-fill cpu" [style.width.%]="process.cpu"></div>
+                    </div>
+                  </div>
+                  <div class="resource-item">
+                    <div class="resource-header">
+                      <span class="resource-label">Memory Usage</span>
+                      <span class="resource-value">{{ process.memory }} MB</span>
+                    </div>
+                    <div class="resource-bar">
+                      <div class="resource-fill memory" [style.width.%]="Math.min(+process.memory / 5, 100)"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="detail-actions">
+              <button class="btn btn-primary" (click)="focusWindow(process.windowId)">
+                <i class="pi pi-eye"></i>
+                Focus Window
+              </button>
+              <button class="btn btn-secondary" (click)="minimizeWindow(process.windowId)">
+                <i class="pi pi-window-minimize"></i>
+                Minimize
+              </button>
+              <button class="btn btn-secondary" (click)="maximizeWindow(process.windowId)">
+                <i class="pi pi-window-maximize"></i>
+                Maximize
+              </button>
+              <button class="btn btn-danger" (click)="endTask(process.windowId)">
+                <i class="pi pi-times-circle"></i>
+                End Task
+              </button>
+            </div>
+          </div>
+        </ng-container>
+      </div>
+
+      <div *ngIf="!selectedProcess()" class="empty-state">
+        <i class="pi pi-info-circle"></i>
+        <p>No process selected</p>
+        <span>Select a process from the Processes tab to view its details</span>
+      </div>
+    </div>
+
+    <!-- Startup Tab -->
+    <div *ngIf="activeTab() === 'startup'" class="startup-view">
+      <div class="startup-header">
+        <h3>Startup Applications</h3>
+        <p>Manage which applications start automatically</p>
+      </div>
+
+      <div class="startup-list">
+        <div class="startup-item" *ngFor="let process of processes().slice(0, 5)">
+          <div class="startup-info">
+            <i [class]="process.icon" class="startup-icon"></i>
+            <div class="startup-details">
+              <h4>{{ process.title }}</h4>
+              <span class="startup-path">{{ process.windowId }}</span>
+            </div>
+          </div>
+          <div class="startup-controls">
+            <span class="startup-impact" [class.high]="+process.cpu > 10">
+              Impact: {{ +process.cpu > 10 ? 'High' : +process.cpu > 5 ? 'Medium' : 'Low' }}
+            </span>
+            <label class="toggle-switch">
+              <input type="checkbox" checked>
+              <span class="toggle-slider-small"></span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="processes().length === 0" class="empty-state">
+        <i class="pi pi-power-off"></i>
+        <p>No startup applications</p>
+        <span>Applications added to startup will appear here</span>
+      </div>
+    </div>
+  </div>
+</div>

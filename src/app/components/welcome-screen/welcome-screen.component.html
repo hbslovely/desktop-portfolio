@@ -8,85 +8,105 @@
 
   <!-- Main content -->
   <div class="welcome-content">
-    <!-- Time and Date Display -->
-    <div class="time-display">
-      <div class="current-time">{{ currentTime() }}</div>
-      <div class="current-date">{{ currentDate() }}</div>
-    </div>
-
-    <!-- User Profile Section -->
-    <div class="user-section">
-      <div class="user-avatar">
-        <img src="assets/images/icons/profile.png" alt="User Avatar" class="avatar-image">
+    <div class="lock-screen-container">
+      <!-- Top Section: Time & Greeting -->
+      <div class="top-section">
+        <div class="time-display">
+          <div class="current-time">{{ currentTime() }}</div>
+          <div class="current-date">{{ currentDate() }}</div>
+        </div>
+        <div class="greeting-text">{{ greeting() }}</div>
       </div>
-      <div class="user-name">Welcome</div>
-      <div class="user-subtitle">Enter password to continue</div>
-    </div>
 
-    <!-- Password Input Section -->
-    <div class="password-section">
-      <div class="password-container">
-        <div class="password-input-wrapper">
-          <input
-            [type]="showPassword() ? 'text' : 'password'"
-            class="password-input"
-            [class.error]="errorMessage()"
-            [value]="password()"
-            (input)="onPasswordInput($event)"
-            (keypress)="onKeyPress($event)"
-            placeholder="Enter password"
-            autofocus>
-          <button 
-            type="button" 
-            class="password-toggle"
-            (click)="togglePasswordVisibility()"
-            [title]="showPassword() ? 'Hide password' : 'Show password'">
-            <i [class]="showPassword() ? 'pi pi-eye-slash' : 'pi pi-eye'"></i>
+      <!-- Middle Section: Login -->
+      <div class="middle-section">
+        <div class="user-avatar">
+          <img src="assets/images/icons/profile.png" alt="User Avatar" class="avatar-image">
+          <div class="avatar-ring"></div>
+        </div>
+
+        <!-- Password Input Section -->
+        <div class="login-section">
+          <div class="password-input-wrapper">
+            <input
+              [type]="showPassword() ? 'text' : 'password'"
+              class="password-input"
+              [class.error]="errorMessage()"
+              [value]="password()"
+              (input)="onPasswordInput($event)"
+              (keypress)="onKeyPress($event)"
+              placeholder="Enter password to unlock"
+              autofocus>
+            <button 
+              type="button" 
+              class="password-toggle"
+              (click)="togglePasswordVisibility()"
+              [title]="showPassword() ? 'Hide password' : 'Show password'">
+              <i [class]="showPassword() ? 'pi pi-eye-slash' : 'pi pi-eye'"></i>
+            </button>
+            <button 
+              type="button" 
+              class="unlock-button"
+              [class.loading]="isLoading()"
+              [disabled]="!password() || isLoading()"
+              (click)="onSubmit()">
+              <i class="pi pi-lock-open" *ngIf="!isLoading()"></i>
+              <div *ngIf="isLoading()" class="loading-spinner"></div>
+            </button>
+          </div>
+
+          <!-- Error Message -->
+          <div class="error-message" *ngIf="errorMessage()">
+            <i class="pi pi-exclamation-triangle"></i>
+            <span>{{ errorMessage() }}</span>
+          </div>
+
+          <!-- Password Hint -->
+          <div class="hint-section">
+            <button class="hint-btn" (click)="toggleHint()">
+              <i [class]="showHint() ? 'pi pi-eye-slash' : 'pi pi-info-circle'"></i>
+              {{ showHint() ? 'Hide Hint' : 'Show Hint' }}
+            </button>
+            <div class="password-hint" *ngIf="showHint()">
+              <i class="pi pi-lightbulb"></i>
+              {{ getPasswordHint() }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Section: Fun Features -->
+      <div class="bottom-section">
+        <!-- Daily Quote -->
+        <div class="info-card quote-card">
+          <div class="card-icon">💭</div>
+          <p class="card-text">{{ currentQuote() }}</p>
+          <button (click)="refreshFunContent()" class="refresh-card-btn" title="New Quote">
+            <i class="pi pi-refresh"></i>
           </button>
         </div>
-        
-        <button 
-          type="button" 
-          class="login-button"
-          [class.loading]="isLoading()"
-          [disabled]="!password() || isLoading()"
-          (click)="onSubmit()">
-          <span *ngIf="!isLoading()">Sign In</span>
-          <div *ngIf="isLoading()" class="loading-spinner"></div>
-        </button>
-      </div>
 
-      <!-- Error Message -->
-      <div class="error-message" *ngIf="errorMessage()">
-        <i class="pi pi-exclamation-triangle"></i>
-        <span>{{ errorMessage() }}</span>
-      </div>
+        <!-- Fun Fact -->
+        <div class="info-card fact-card">
+          <div class="card-header">
+            <div class="card-icon">🎯</div>
+            <span class="card-title">Did You Know?</span>
+          </div>
+          <p class="card-text">{{ quickFact() }}</p>
+        </div>
 
-      <!-- Password Hint -->
-      <div class="password-hint-container">
-        <button class="hint-toggle-btn" (click)="toggleHint()" [title]="showHint() ? 'Hide hint' : 'Show hint'">
-          <i [class]="showHint() ? 'pi pi-eye-slash' : 'pi pi-info-circle'"></i>
-          <span>{{ showHint() ? 'Hide Hint' : 'Show Hint' }}</span>
-        </button>
-        
-        <div class="password-hint" *ngIf="showHint()">
-          <i class="pi pi-lightbulb"></i>
-          <span>{{ getPasswordHint() }}</span>
+        <!-- Daily Advice -->
+        <div class="info-card advice-card" *ngIf="!adviceLoading()">
+          <div class="card-header">
+            <div class="card-icon">💡</div>
+            <span class="card-title">Daily Wisdom</span>
+          </div>
+          <p class="card-text">{{ adviceText() }}</p>
+          <button (click)="refreshAdvice()" class="refresh-card-btn" title="New Advice">
+            <i class="pi pi-refresh"></i>
+          </button>
         </div>
       </div>
-    </div>
-
-    <!-- Additional Options -->
-    <div class="welcome-options">
-      <button class="option-button" title="Accessibility">
-        <i class="pi pi-universal-access"></i>
-      </button>
-      <button class="option-button" title="Network">
-        <i class="pi pi-wifi"></i>
-      </button>
-      <button class="option-button" title="Power">
-        <i class="pi pi-power-off"></i>
-      </button>
     </div>
   </div>
 
@@ -95,6 +115,9 @@
     <div class="loading-content">
       <div class="loading-avatar">
         <img src="assets/images/icons/profile.png" alt="User Avatar" class="avatar-image">
+        <div class="success-checkmark">
+          <i class="pi pi-check"></i>
+        </div>
       </div>
       <div class="loading-text">Welcome back!</div>
       <div class="loading-progress">

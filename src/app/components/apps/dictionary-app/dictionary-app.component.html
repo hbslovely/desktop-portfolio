@@ -1,0 +1,193 @@
+<div class="dictionary-app">
+  <!-- Search Header -->
+  <div class="search-header">
+    <div class="search-container">
+      <i class="pi pi-search search-icon"></i>
+      <input 
+        #searchInput
+        type="text" 
+        class="search-input"
+        placeholder="Search for a word..."
+        [value]="searchTerm()"
+        (input)="onSearchInput($event)"
+        (keypress)="onKeyPress($event)"
+        [disabled]="loading()">
+      <button 
+        *ngIf="searchTerm()" 
+        (click)="clearSearch()" 
+        class="clear-btn"
+        title="Clear">
+        <i class="pi pi-times"></i>
+      </button>
+      <button 
+        (click)="searchWord()" 
+        class="search-btn"
+        [disabled]="!searchTerm() || loading()"
+        title="Search">
+        <i class="pi pi-arrow-right"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Content Area -->
+  <div class="content-area">
+    <!-- Loading State -->
+    <div *ngIf="loading()" class="loading-state">
+      <div class="spinner"></div>
+      <p>Looking up word...</p>
+    </div>
+
+    <!-- Error State -->
+    <div *ngIf="error() && !loading()" class="error-state">
+      <i class="pi pi-exclamation-circle"></i>
+      <h3>Word Not Found</h3>
+      <p>{{ error() }}</p>
+      <button (click)="clearSearch()" class="try-again-btn">
+        <i class="pi pi-search"></i>
+        Try Another Word
+      </button>
+    </div>
+
+    <!-- Welcome State -->
+    <div *ngIf="!wordData() && !loading() && !error()" class="welcome-state">
+      <div class="welcome-icon">
+        <i class="pi pi-book"></i>
+      </div>
+      <h2>Dictionary</h2>
+      <p class="welcome-subtitle">Search for word definitions, pronunciations, and more</p>
+
+      <!-- Search History -->
+      <div *ngIf="searchHistory().length > 0" class="history-section">
+        <div class="section-header">
+          <h3>Recent Searches</h3>
+          <button (click)="clearHistory()" class="clear-history-btn">
+            <i class="pi pi-trash"></i>
+            Clear
+          </button>
+        </div>
+        <div class="history-chips">
+          <button 
+            *ngFor="let word of searchHistory()" 
+            (click)="searchFromHistory(word)"
+            class="history-chip">
+            <i class="pi pi-clock"></i>
+            {{ word }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Popular Words -->
+      <div class="suggestions-section">
+        <h3>Try These Words</h3>
+        <div class="suggestion-chips">
+          <button 
+            *ngFor="let word of popularWords" 
+            (click)="searchSuggestion(word)"
+            class="suggestion-chip">
+            {{ word }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Word Definition Content -->
+    <div *ngIf="wordData() && !loading()" class="definition-content">
+      <!-- Word Header -->
+      <div class="word-header">
+        <div class="word-title-section">
+          <h1 class="word-title">{{ wordData()?.word }}</h1>
+          <div class="phonetic-section" *ngIf="wordData()?.phonetic || getPhoneticWithAudio()">
+            <span class="phonetic-text">{{ wordData()?.phonetic || getPhoneticWithAudio()?.text }}</span>
+            <button 
+              *ngIf="getPhoneticWithAudio()"
+              (click)="playAudio(getPhoneticWithAudio()!.audio!)"
+              class="audio-btn"
+              title="Play pronunciation">
+              <i class="pi pi-volume-up"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Origin -->
+      <div *ngIf="wordData()?.origin" class="origin-section">
+        <h3 class="section-title">
+          <i class="pi pi-info-circle"></i>
+          Origin:
+        </h3>
+        <span class="origin-text">{{ wordData()?.origin }}</span>
+      </div>
+
+      <!-- Meanings -->
+      <div class="meanings-section">
+        <div *ngFor="let meaning of wordData()?.meanings; let i = index" class="meaning-block">
+          <div class="part-of-speech">
+            <span class="pos-badge">{{ meaning.partOfSpeech }}</span>
+          </div>
+
+          <div class="definitions-list">
+            <div *ngFor="let definition of meaning.definitions; let j = index" class="definition-item">
+              <div class="definition-number">{{ j + 1 }}</div>
+              <div class="definition-content">
+                <p class="definition-text">{{ definition.definition }}</p>
+                <p *ngIf="definition.example" class="example-text">
+                  <i class="pi pi-quote-right"></i>
+                  "{{ definition.example }}"
+                </p>
+
+                <!-- Definition-level Synonyms/Antonyms -->
+                <div *ngIf="definition.synonyms.length > 0" class="word-relations">
+                  <span class="relation-label">Synonyms:</span>
+                  <span *ngFor="let syn of definition.synonyms.slice(0, 5); let last = last" class="relation-word">
+                    {{ syn }}<span *ngIf="!last">, </span>
+                  </span>
+                </div>
+
+                <div *ngIf="definition.antonyms.length > 0" class="word-relations">
+                  <span class="relation-label">Antonyms:</span>
+                  <span *ngFor="let ant of definition.antonyms.slice(0, 5); let last = last" class="relation-word">
+                    {{ ant }}<span *ngIf="!last">, </span>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- All Synonyms & Antonyms -->
+      <div class="relations-section" *ngIf="getAllSynonyms().length > 0 || getAllAntonyms().length > 0">
+        <div *ngIf="getAllSynonyms().length > 0" class="relation-group">
+          <h3 class="section-title">
+            <i class="pi pi-link"></i>
+            Synonyms
+          </h3>
+          <div class="relation-tags">
+            <button 
+              *ngFor="let syn of getAllSynonyms()" 
+              (click)="searchSuggestion(syn)"
+              class="relation-tag synonym-tag">
+              {{ syn }}
+            </button>
+          </div>
+        </div>
+
+        <div *ngIf="getAllAntonyms().length > 0" class="relation-group">
+          <h3 class="section-title">
+            <i class="pi pi-ban"></i>
+            Antonyms
+          </h3>
+          <div class="relation-tags">
+            <button 
+              *ngFor="let ant of getAllAntonyms()" 
+              (click)="searchSuggestion(ant)"
+              class="relation-tag antonym-tag">
+              {{ ant }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+

@@ -15,8 +15,12 @@ import { CreditsAppComponent } from './components/apps/credits-app/credits-app.c
 import { HcmcAppComponent } from './components/apps/hcmc-app/hcmc-app.component';
 import { NewsAppComponent } from './components/apps/news-app/news-app.component';
 import { SettingsAppComponent } from './components/apps/settings-app/settings-app.component';
+import { TaskManagerComponent } from './components/apps/task-manager/task-manager.component';
+import { WeatherAppComponent } from './components/apps/weather-app/weather-app.component';
+import { DictionaryAppComponent } from './components/apps/dictionary-app/dictionary-app.component';
+import { LinkShortenerComponent } from './components/apps/link-shortener/link-shortener.component';
+import { CountriesAppComponent } from './components/apps/countries-app/countries-app.component';
 import { WelcomeScreenComponent } from './components/welcome-screen/welcome-screen.component';
-import { WindowOverviewComponent } from './components/window-overview/window-overview.component';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DomSanitizer } from "@angular/platform-browser";
@@ -24,12 +28,16 @@ import { SettingsDialogComponent } from "./components/settings-dialog/settings-d
 import { APP_ICONS, APP_SEARCH_CONFIG } from './config/app-icons.config';
 import { SearchService, SearchResult } from './services/search.service';
 import { WindowManagerService } from './services/window-manager.service';
+import { WeatherService, WeatherData } from './services/weather.service';
+import { CatFactsService, CatFact } from './services/cat-facts.service';
+import { RandomFoxService, RandomFox } from './services/random-fox.service';
+import { AdviceSlipService } from './services/advice-slip.service';
 import { getWindowDefinition } from './config/window-registry';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [ WelcomeScreenComponent, WindowComponent, DesktopIconComponent, CalculatorComponent, IframeAppComponent, LoveAppComponent, ExplorerComponent, TextViewerComponent, ImageViewerComponent, PdfViewerComponent, MachineInfoComponent, CreditAppComponent, PaintAppComponent, CreditsAppComponent, HcmcAppComponent, NewsAppComponent, SettingsAppComponent, WindowOverviewComponent, CommonModule, FormsModule, SettingsDialogComponent ],
+  imports: [ WelcomeScreenComponent, WindowComponent, DesktopIconComponent, CalculatorComponent, IframeAppComponent, LoveAppComponent, ExplorerComponent, TextViewerComponent, ImageViewerComponent, PdfViewerComponent, MachineInfoComponent, CreditAppComponent, PaintAppComponent, CreditsAppComponent, HcmcAppComponent, NewsAppComponent, SettingsAppComponent, TaskManagerComponent, WeatherAppComponent, DictionaryAppComponent, LinkShortenerComponent, CountriesAppComponent, CommonModule, FormsModule, SettingsDialogComponent ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
 })
@@ -42,10 +50,18 @@ export class AppComponent implements AfterViewInit {
   constructor(
     private sanitizer: DomSanitizer,
     private cdr: ChangeDetectorRef,
-    private searchService: SearchService
+    private searchService: SearchService,
+    private weatherService: WeatherService,
+    private catFactsService: CatFactsService,
+    private randomFoxService: RandomFoxService,
+    private adviceSlipService: AdviceSlipService
   ) {
     this.updateTime();
     setInterval(() => this.updateTime(), 1000);
+    this.loadWeatherWidget();
+    this.loadCatFact();
+    this.loadRandomFox();
+    this.loadDailyAdvice();
   }
 
   title = 'Desktop Portfolio';
@@ -87,11 +103,10 @@ export class AppComponent implements AfterViewInit {
   showStartMenu = signal(false);
   showDesktopContextMenu = signal(false);
   desktopContextMenuPosition = signal({ x: 0, y: 0 });
-  showStartSubmenu = signal<string | null>(null);
+  startMenuSearch = signal('');
 
   // Settings dialog state
   showSettingsDialog = signal(false);
-  showWindowOverview = signal(false);
   currentTime = '';
   currentDate = '';
 
@@ -133,12 +148,40 @@ export class AppComponent implements AfterViewInit {
     }, 50);
   }
 
+  @HostListener('window:keydown', ['$event'])
+  handleGlobalKeyboard(event: KeyboardEvent) {
+    // Ctrl+Shift+Esc opens Task Manager (like Windows)
+    if (event.ctrlKey && event.shiftKey && event.key === 'Escape') {
+      event.preventDefault();
+      this.openApp('task-manager');
+    }
+  }
+
   // Desktop icons from configuration
   testIcons: DesktopIconData[] = APP_ICONS;
 
   // Desktop widgets
   showDesktopWidgets = signal(true);
-  currentWeather = signal({ temp: 25, condition: 'Sunny', icon: 'pi pi-sun' });
+  currentWeather = signal({ 
+    temp: 25, 
+    condition: 'Loading...', 
+    icon: 'pi pi-sun',
+    location: 'Current Location',
+    humidity: 0,
+    wind: 0,
+    feelsLike: 25,
+    iconUrl: ''
+  });
+  weekForecast = signal<any[]>([]);
+  catFact = signal<string>('Loading cat fact...');
+  catFactLoading = signal<boolean>(false);
+  randomFox = signal<{ image: string; link: string }>({ 
+    image: 'https://randomfox.ca/images/1.jpg', 
+    link: 'https://randomfox.ca/?i=1' 
+  });
+  foxLoading = signal<boolean>(false);
+  dailyAdvice = signal<string>('Loading advice...');
+  adviceLoading = signal<boolean>(false);
   quickNotes = signal<string[]>(['Welcome to Desktop Portfolio!', 'Click to add notes']);
   showNotificationsPanel = signal(false);
   notifications = signal([
@@ -155,7 +198,9 @@ export class AppComponent implements AfterViewInit {
       apps: [
         { id: 'calculator', name: 'Calculator', icon: 'pi pi-calculator' },
         { id: 'credit', name: 'Credit Tracker', icon: 'pi pi-dollar' },
-        { id: 'explorer', name: 'File Explorer', icon: 'pi pi-folder' }
+        { id: 'explorer', name: 'File Explorer', icon: 'pi pi-folder' },
+        { id: 'dictionary', name: 'Dictionary', icon: 'pi pi-book' },
+        { id: 'link-shortener', name: 'Link Shortener', icon: 'pi pi-link' }
       ]
     },
     {
@@ -175,7 +220,8 @@ export class AppComponent implements AfterViewInit {
         { id: 'my-info', name: 'My Information', icon: 'pi pi-user' },
         { id: 'machine-info', name: 'System Info', icon: 'pi pi-desktop' },
         { id: 'hcmc', name: 'Ho Chi Minh City', icon: 'pi pi-globe' },
-        { id: 'news', name: 'News Headlines', icon: 'pi pi-globe' }
+        { id: 'news', name: 'News Headlines', icon: 'pi pi-globe' },
+        { id: 'weather', name: 'Weather Forecast', icon: 'pi pi-cloud' }
       ]
     },
     {
@@ -183,10 +229,29 @@ export class AppComponent implements AfterViewInit {
       name: 'System',
       icon: 'pi pi-cog',
       apps: [
+        { id: 'settings', name: 'Settings', icon: 'pi pi-cog' },
+        { id: 'task-manager', name: 'Task Manager', icon: 'pi pi-th-large' },
         { id: 'credits', name: 'Credits', icon: 'pi pi-star' }
       ]
     }
   ];
+
+  // Filtered groups based on search
+  filteredStartMenuGroups = computed(() => {
+    const search = this.startMenuSearch().toLowerCase().trim();
+    
+    if (!search) {
+      return this.startMenuGroups;
+    }
+
+    return this.startMenuGroups.map(group => ({
+      ...group,
+      apps: group.apps.filter(app => 
+        app.name.toLowerCase().includes(search) ||
+        app.id.toLowerCase().includes(search)
+      )
+    })).filter(group => group.apps.length > 0);
+  });
 
   onCloseTestWindow() {
     this.showTestWindow.set(false);
@@ -747,6 +812,26 @@ export class AppComponent implements AfterViewInit {
 
   openTestApp(icon: DesktopIconData) {
     console.log('Opening app:', icon.name);
+    
+    // Try to use the new WindowManager system first
+    const definition = getWindowDefinition(icon.id);
+    if (definition) {
+      this.windowManager.openWindow({
+        id: icon.id,
+        title: definition.title,
+        icon: definition.icon,
+        component: definition.component,
+        initialWidth: definition.defaultWidth,
+        initialHeight: definition.defaultHeight,
+        initialX: definition.defaultX,
+        initialY: definition.defaultY,
+        maximizable: definition.maximizable,
+        statusText: definition.statusText
+      });
+      return;
+    }
+    
+    // Fallback to old system for apps not yet in window registry
     if (icon.id === 'calculator') {
       this.showTestWindow.set(true);
       this.focusWindow('calculator');
@@ -868,42 +953,8 @@ export class AppComponent implements AfterViewInit {
 
   closeStartMenu() {
     this.showStartMenu.set(false);
-    this.showStartSubmenu.set(null);
   }
 
-  openStartSubmenu(groupId: string) {
-    this.showStartSubmenu.set(groupId);
-  }
-
-  closeStartSubmenu() {
-    this.showStartSubmenu.set(null);
-  }
-
-  onGroupMouseLeave() {
-    // Add a small delay to allow moving to submenu
-    setTimeout(() => {
-      if (this.showStartSubmenu()) {
-        // Check if mouse is still over the submenu area
-        const submenu = document.querySelector('.start-submenu');
-        if (!submenu || !submenu.matches(':hover')) {
-          this.closeStartSubmenu();
-        }
-      }
-    }, 100);
-  }
-
-  onSubmenuMouseLeave() {
-    // Add a small delay to allow moving back to group
-    setTimeout(() => {
-      if (this.showStartSubmenu()) {
-        // Check if mouse is still over the group area
-        const group = document.querySelector('.app-group:hover');
-        if (!group) {
-          this.closeStartSubmenu();
-        }
-      }
-    }, 100);
-  }
 
   openApp(appId: string, data?: any) {
     this.closeStartMenu();
@@ -1267,6 +1318,147 @@ export class AppComponent implements AfterViewInit {
     this.secondAngle = seconds * 6; // 6 degrees per second
   }
 
+  openWeatherApp() {
+    this.windowManager.openWindow({
+      id: 'weather',
+      title: 'Weather Forecast',
+      icon: 'pi pi-cloud',
+      component: 'weather',
+      initialWidth: 900,
+      initialHeight: 700,
+      initialX: 250,
+      initialY: 80
+    });
+  }
+
+  async loadWeatherWidget() {
+    try {
+      const weatherObservable = await this.weatherService.getWeatherForCurrentLocation(
+        ['current', 'daily'],
+        'metric'
+      );
+
+      weatherObservable.subscribe({
+        next: async (data: WeatherData) => {
+          // Update current weather
+          this.currentWeather.set({
+            temp: Math.round(data.current.temperature),
+            condition: data.current.summary,
+            icon: this.weatherService.getWeatherIconClass(data.current.icon_num),
+            location: await this.getLocationName(data.lat, data.lon),
+            humidity: data.current.humidity,
+            wind: Math.round(data.current.wind.speed),
+            feelsLike: Math.round(data.current.feels_like),
+            iconUrl: this.weatherService.getWeatherIcon(data.current.icon_num)
+          });
+
+          // Update week forecast (next 7 days)
+          if (data.daily?.data) {
+            const forecast = data.daily.data.slice(0, 7).map(day => ({
+              day: this.formatDayShort(day.day),
+              icon: this.weatherService.getWeatherIcon(day.icon),
+              tempMax: Math.round(day.all_day.temperature_max),
+              tempMin: Math.round(day.all_day.temperature_min)
+            }));
+            this.weekForecast.set(forecast);
+          }
+        },
+        error: (err) => {
+          console.error('Widget weather error:', err);
+        }
+      });
+    } catch (err) {
+      console.error('Widget location error:', err);
+    }
+  }
+
+  async getLocationName(lat: number, lon: number): Promise<string> {
+    try {
+      // Ensure lat and lon are proper numbers without any suffixes
+      const cleanLat = parseFloat(String(lat).replace(/[NSEW]/gi, ''));
+      const cleanLon = parseFloat(String(lon).replace(/[NSEW]/gi, ''));
+      
+      const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${cleanLat}&lon=${cleanLon}&zoom=10`, {
+        headers: {
+          'User-Agent': 'DesktopPortfolioApp/1.0'
+        }
+      });
+      const data = await response.json();
+      
+      if (data.error) {
+        console.error('Geocoding API error:', data.error);
+        return 'Current Location';
+      }
+      
+      if (data.address) {
+        const city = data.address.city || data.address.town || data.address.village;
+        return city || data.address.state || 'Current Location';
+      }
+      return 'Current Location';
+    } catch (error) {
+      console.error('Reverse geocoding error:', error);
+      return 'Current Location';
+    }
+  }
+
+  formatDayShort(dateString: string): string {
+    const date = new Date(dateString);
+    const today = new Date();
+    
+    if (date.toDateString() === today.toDateString()) {
+      return 'Today';
+    }
+    return date.toLocaleDateString('en-US', { weekday: 'short' });
+  }
+
+  loadCatFact() {
+    this.catFactLoading.set(true);
+    this.catFactsService.getSingleRandomFact().subscribe({
+      next: (fact: CatFact) => {
+        this.catFact.set(fact.text);
+        this.catFactLoading.set(false);
+      },
+      error: (err) => {
+        console.error('Cat fact error:', err);
+        this.catFact.set('Unable to load cat fact. Click refresh to try again.');
+        this.catFactLoading.set(false);
+      }
+    });
+  }
+
+  loadRandomFox() {
+    this.foxLoading.set(true);
+    this.randomFoxService.getRandomFox().subscribe({
+      next: (fox) => {
+        this.randomFox.set(fox);
+        this.foxLoading.set(false);
+      },
+      error: (err) => {
+        console.error('Random fox error:', err);
+        this.foxLoading.set(false);
+      }
+    });
+  }
+
+  openFoxLink() {
+    window.open(this.randomFox().link, '_blank');
+  }
+
+  loadDailyAdvice() {
+    this.adviceLoading.set(true);
+    this.adviceSlipService.getRandomAdvice().subscribe({
+      next: (advice) => {
+        this.dailyAdvice.set(advice.advice);
+        this.adviceLoading.set(false);
+      },
+      error: (err) => {
+        console.error('Daily advice error:', err);
+        this.dailyAdvice.set('Believe in yourself and all that you are.');
+        this.adviceLoading.set(false);
+      }
+    });
+  }
+
 
   openClockWindow() {
     this.showClockWindow.set(true);
@@ -1303,22 +1495,6 @@ export class AppComponent implements AfterViewInit {
     this.showSettingsDialog.set(false);
   }
 
-  toggleWindowOverview() {
-    this.showWindowOverview.update(v => !v);
-  }
-
-  @HostListener('window:keydown', ['$event'])
-  handleGlobalKeyboard(event: KeyboardEvent) {
-    // F3 for window overview
-    if (event.key === 'F3' && !event.ctrlKey && !event.altKey && !event.metaKey) {
-      event.preventDefault();
-      this.toggleWindowOverview();
-    }
-    // Escape to close window overview
-    if (event.key === 'Escape' && this.showWindowOverview()) {
-      this.showWindowOverview.set(false);
-    }
-  }
 
   onSettingsChange(settings: any) {
     console.log('Settings changed:', settings);

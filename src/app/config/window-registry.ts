@@ -179,6 +179,66 @@ export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
     defaultY: 80,
     maximizable: true,
     statusText: 'Configure your desktop'
+  },
+  'task-manager': {
+    id: 'task-manager',
+    title: 'Task Manager',
+    icon: 'pi pi-th-large',
+    component: 'task-manager',
+    defaultWidth: 1100,
+    defaultHeight: 750,
+    defaultX: 200,
+    defaultY: 60,
+    maximizable: true,
+    statusText: 'Managing processes'
+  },
+  'weather': {
+    id: 'weather',
+    title: 'Weather Forecast',
+    icon: 'pi pi-cloud',
+    component: 'weather',
+    defaultWidth: 900,
+    defaultHeight: 700,
+    defaultX: 250,
+    defaultY: 80,
+    maximizable: true,
+    statusText: 'Current weather and forecast'
+  },
+  'dictionary': {
+    id: 'dictionary',
+    title: 'Dictionary',
+    icon: 'pi pi-book',
+    component: 'dictionary',
+    defaultWidth: 900,
+    defaultHeight: 750,
+    defaultX: 250,
+    defaultY: 60,
+    maximizable: true,
+    statusText: 'Look up word definitions'
+  },
+  'link-shortener': {
+    id: 'link-shortener',
+    title: 'Link Shortener',
+    icon: 'pi pi-link',
+    component: 'link-shortener',
+    defaultWidth: 950,
+    defaultHeight: 800,
+    defaultX: 200,
+    defaultY: 50,
+    maximizable: true,
+    statusText: 'Shorten long URLs quickly'
+  },
+  'countries': {
+    id: 'countries',
+    title: 'Countries Explorer',
+    icon: 'pi pi-globe',
+    component: 'countries',
+    defaultWidth: 1100,
+    defaultHeight: 800,
+    defaultX: 150,
+    defaultY: 60,
+    maximizable: true,
+    statusText: 'Explore countries around the world'
   }
 };
 

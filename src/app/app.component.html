@@ -531,35 +531,62 @@
       <div class="widget-header">
         <i class="pi pi-cloud"></i>
         <span>Weather</span>
-      </div>
-      <div class="widget-body">
-        <div class="weather-main">
-          <i [class]="'weather-icon ' + currentWeather().icon"></i>
-          <div class="weather-temp">{{ currentWeather().temp }}°C</div>
-        </div>
-        <div class="weather-condition">{{ currentWeather().condition }}</div>
-      </div>
-    </div>
-
-    <!-- Quick Notes Widget -->
-    <div class="widget notes-widget">
-      <div class="widget-header">
-        <i class="pi pi-file-edit"></i>
-        <span>Quick Notes</span>
-        <button (click)="addQuickNote()" class="add-note-btn">
-          <i class="pi pi-plus"></i>
+        <button (click)="loadWeatherWidget()" class="refresh-widget-btn" title="Refresh Weather">
+          <i class="pi pi-refresh"></i>
         </button>
       </div>
       <div class="widget-body">
-        <div *ngIf="quickNotes().length === 0" class="empty-notes">
-          <i class="pi pi-inbox"></i>
-          <p>No notes yet</p>
-        </div>
-        <div *ngFor="let note of quickNotes(); let i = index" class="note-item">
-          <span>{{ note }}</span>
-          <button (click)="removeQuickNote(i)" class="remove-note-btn">
-            <i class="pi pi-times"></i>
+        <div class="weather-compact">
+          <div class="weather-main-compact">
+            <img *ngIf="currentWeather().iconUrl" [src]="currentWeather().iconUrl" class="weather-icon-compact" [alt]="currentWeather().condition">
+            <div class="weather-info-compact">
+              <div class="weather-temp-compact">{{ currentWeather().temp }}°C</div>
+              <div class="weather-location-compact">{{ currentWeather().location }}</div>
+            </div>
+          </div>
+          <div class="weather-condition-text">{{ currentWeather().condition }}</div>
+          <div class="weather-details-compact">
+            <span><i class="pi pi-percentage"></i> {{ currentWeather().humidity }}%</span>
+            <span><i class="pi pi-compass"></i> {{ currentWeather().wind }} m/s</span>
+          </div>
+          <button (click)="openWeatherApp()" class="open-weather-app-btn">
+            <i class="pi pi-external-link"></i>
+            Open Weather App
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cat Facts Widget -->
+    <div class="widget cat-facts-widget">
+      <div class="widget-header">
+        <i class="pi pi-info-circle"></i>
+        <span>Cat Fact</span>
+        <button (click)="loadCatFact()" class="refresh-widget-btn" [disabled]="catFactLoading()" title="New Cat Fact">
+          <i class="pi pi-refresh" [class.pi-spin]="catFactLoading()"></i>
+        </button>
+      </div>
+      <div class="widget-body">
+        <div class="cat-fact-content">
+          <div class="cat-icon">🐱</div>
+          <p class="fact-text">{{ catFact() }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Daily Advice Widget -->
+    <div class="widget advice-widget">
+      <div class="widget-header">
+        <i class="pi pi-lightbulb"></i>
+        <span>Daily Advice</span>
+        <button (click)="loadDailyAdvice()" class="refresh-widget-btn" [disabled]="adviceLoading()" title="New Advice">
+          <i class="pi pi-refresh" [class.pi-spin]="adviceLoading()"></i>
+        </button>
+      </div>
+      <div class="widget-body">
+        <div class="advice-content">
+          <div class="advice-icon">💡</div>
+          <p class="advice-text">{{ dailyAdvice() }}</p>
         </div>
       </div>
     </div>
@@ -591,6 +618,26 @@
             <div class="stat-fill" style="width: 38%"></div>
           </div>
           <span class="stat-value">38%</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Random Fox Widget -->
+    <div class="widget fox-widget">
+      <div class="widget-header">
+        <i class="pi pi-image"></i>
+        <span>Random Fox</span>
+        <button (click)="loadRandomFox()" class="refresh-widget-btn" [disabled]="foxLoading()" title="New Fox">
+          <i class="pi pi-refresh" [class.pi-spin]="foxLoading()"></i>
+        </button>
+      </div>
+      <div class="widget-body fox-body">
+        <div class="fox-image-container" (click)="openFoxLink()">
+          <img [src]="randomFox().image" alt="Random Fox" class="fox-image" />
+          <div class="fox-overlay">
+            <i class="pi pi-external-link"></i>
+            <span>View Full Size</span>
+          </div>
         </div>
       </div>
     </div>
@@ -747,9 +794,6 @@
 
     <!-- System Tray -->
     <div class="system-tray">
-      <button class="widgets-button" (click)="toggleWindowOverview()" title="Window Overview (F3)">
-        <i class="pi pi-objects-column"></i>
-      </button>
       <button class="widgets-button" (click)="toggleWidgets()" title="Toggle Desktop Widgets">
         <i class="pi pi-th"></i>
       </button>
@@ -796,101 +840,114 @@
   </div>
 
   <!-- Start Menu -->
-  <div *ngIf="showStartMenu()" class="start-menu" (click)="closeStartMenu()">
-    <div class="start-menu-content" (click)="$event.stopPropagation()">
-      <!-- Start Menu Header -->
-      <div class="start-menu-header">
-        <div class="user-info">
+  <div *ngIf="showStartMenu()" class="start-menu-backdrop" (click)="closeStartMenu()">
+    <div class="start-menu" (click)="$event.stopPropagation()">
+      <!-- Search Bar -->
+      <div class="start-menu-search">
+        <i class="pi pi-search"></i>
+        <input type="text" placeholder="Type to search apps..." [(ngModel)]="startMenuSearch">
+      </div>
+
+      <!-- Scrollable Content -->
+      <div class="start-menu-content">
+        <!-- Pinned Apps Section -->
+        <div class="start-section pinned-section">
+          <div class="section-header">
+            <h3>Pinned</h3>
+          </div>
+          <div class="app-grid">
+            <div class="app-tile" (click)="openApp('calculator')" title="Calculator">
+              <div class="app-tile-icon">
+                <i class="pi pi-calculator"></i>
+              </div>
+              <span class="app-tile-name">Calculator</span>
+            </div>
+            <div class="app-tile" (click)="openApp('explorer')" title="File Explorer">
+              <div class="app-tile-icon">
+                <i class="pi pi-folder"></i>
+              </div>
+              <span class="app-tile-name">Explorer</span>
+            </div>
+            <div class="app-tile" (click)="openApp('paint')" title="Paint">
+              <div class="app-tile-icon">
+                <i class="pi pi-palette"></i>
+              </div>
+              <span class="app-tile-name">Paint</span>
+            </div>
+            <div class="app-tile" (click)="openApp('my-info')" title="About Me">
+              <div class="app-tile-icon">
+                <i class="pi pi-user"></i>
+              </div>
+              <span class="app-tile-name">About Me</span>
+            </div>
+            <div class="app-tile" (click)="openApp('news')" title="News">
+              <div class="app-tile-icon">
+                <i class="pi pi-globe"></i>
+              </div>
+              <span class="app-tile-name">News</span>
+            </div>
+            <div class="app-tile" (click)="openApp('hcmc')" title="HCMC">
+              <div class="app-tile-icon">
+                <i class="pi pi-map-marker"></i>
+              </div>
+              <span class="app-tile-name">HCMC</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- All Apps Section -->
+        <div class="start-section all-apps-section">
+          <div class="section-header">
+            <h3>All Apps</h3>
+          </div>
+          <div class="app-list">
+            <ng-container *ngIf="filteredStartMenuGroups().length > 0; else noResults">
+              <ng-container *ngFor="let group of filteredStartMenuGroups()">
+                <!-- Group Label -->
+                <div class="app-list-group-label">{{ group.name }}</div>
+                <!-- Apps in Group -->
+                <div class="app-list-item" 
+                     *ngFor="let app of group.apps"
+                     (click)="openApp(app.id)"
+                     [title]="app.name">
+                  <div class="app-list-icon">
+                    <i [class]="app.icon"></i>
+                  </div>
+                  <span class="app-list-name">{{ app.name }}</span>
+                </div>
+              </ng-container>
+            </ng-container>
+            <ng-template #noResults>
+              <div class="no-results">
+                <i class="pi pi-search"></i>
+                <p>No apps found for "{{ startMenuSearch() }}"</p>
+              </div>
+            </ng-template>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="start-menu-footer">
+        <div class="user-profile" (click)="openApp('my-info')">
           <div class="user-avatar">
             <i class="pi pi-user"></i>
           </div>
-          <div class="user-details">
-            <div class="user-name">Portfolio User</div>
-            <div class="user-status">Online</div>
-          </div>
+          <span class="user-name">Portfolio User</span>
         </div>
-        <button class="settings-btn" (click)="openSettings()" title="Settings">
-          <i class="pi pi-cog"></i>
-        </button>
-      </div>
-
-      <!-- Start Menu Body -->
-      <div class="start-menu-body">
-        <!-- Pinned Apps -->
-        <div class="menu-section">
-          <div class="section-title">Pinned</div>
-          <div class="pinned-apps">
-            <div class="pinned-app" (click)="openApp('calculator')" title="Calculator">
-              <i class="pi pi-calculator"></i>
-            </div>
-            <div class="pinned-app" (click)="openApp('explorer')" title="File Explorer">
-              <i class="pi pi-folder"></i>
-            </div>
-            <div class="pinned-app" (click)="openApp('paint')" title="Paint">
-              <i class="pi pi-palette"></i>
-            </div>
-            <div class="pinned-app" (click)="openApp('my-info')" title="My Information">
-              <i class="pi pi-user"></i>
-            </div>
-          </div>
-        </div>
-
-        <!-- App Groups -->
-        <div class="menu-section">
-          <div class="section-title">All Applications</div>
-          <div class="app-groups">
-            <div 
-              *ngFor="let group of startMenuGroups"
-              class="app-group"
-              (mouseenter)="openStartSubmenu(group.id)"
-              (mouseleave)="onGroupMouseLeave()">
-              <div class="group-header">
-                <i [class]="group.icon"></i>
-                <span>{{ group.name }}</span>
-                <i class="pi pi-chevron-right group-arrow"></i>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Start Menu Footer -->
-      <div class="start-menu-footer">
-        <div class="power-options">
-          <button class="power-btn" (click)="lockScreen()" title="Lock Screen">
-            <i class="pi pi-lock"></i>
-            <span>Lock</span>
+        <div class="footer-actions">
+          <button class="footer-btn" (click)="openApp('settings')" title="Settings">
+            <i class="pi pi-cog"></i>
           </button>
-          <button class="power-btn" (click)="closeStartMenu()" title="Shut Down">
+          <button class="footer-btn" (click)="lockScreen()" title="Lock">
+            <i class="pi pi-lock"></i>
+          </button>
+          <button class="footer-btn" (click)="closeStartMenu()" title="Power">
             <i class="pi pi-power-off"></i>
-            <span>Shut Down</span>
           </button>
         </div>
       </div>
     </div>
-
-    <!-- Submenus -->
-    <ng-container *ngFor="let group of startMenuGroups">
-      <div 
-        *ngIf="showStartSubmenu() === group.id"
-        class="start-submenu"
-        (mouseenter)="openStartSubmenu(group.id)"
-        (mouseleave)="onSubmenuMouseLeave()">
-        <div class="submenu-header">
-          <i [class]="group.icon"></i>
-          <span>{{ group.name }}</span>
-        </div>
-        <div class="submenu-apps">
-          <div 
-            *ngFor="let app of group.apps"
-            class="submenu-app"
-            (click)="openApp(app.id)">
-            <i [class]="app.icon"></i>
-            <span>{{ app.name }}</span>
-          </div>
-        </div>
-      </div>
-    </ng-container>
   </div>
 
   <!-- Desktop Context Menu -->
@@ -927,12 +984,6 @@
   (onClose)="closeSettingsDialog()"
   (onSettingsChange)="onSettingsChange($event)">
 </app-settings-dialog>
-
-<!-- Window Overview -->
-<app-window-overview
-  *ngIf="showWindowOverview()"
-  (onClose)="showWindowOverview.set(false)">
-</app-window-overview>
 
 <!-- Dynamic Windows from WindowManager -->
 <ng-container *ngFor="let window of windowManager.windowList()">
@@ -997,6 +1048,11 @@
       <app-settings-app *ngSwitchCase="'settings'"
         (onSettingsChange)="onSettingsChange($event)">
       </app-settings-app>
+      <app-task-manager *ngSwitchCase="'task-manager'"></app-task-manager>
+      <app-weather-app *ngSwitchCase="'weather'"></app-weather-app>
+      <app-dictionary-app *ngSwitchCase="'dictionary'"></app-dictionary-app>
+      <app-link-shortener *ngSwitchCase="'link-shortener'"></app-link-shortener>
+      <app-countries-app *ngSwitchCase="'countries'"></app-countries-app>
     </ng-container>
   </app-window>
 </ng-container>

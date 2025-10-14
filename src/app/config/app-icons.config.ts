@@ -1,75 +1,113 @@
 import { DesktopIconData } from '../components/desktop-icon/desktop-icon.component';
 
 export const APP_ICONS: DesktopIconData[] = [
+  // Column 1 (x: 20)
   {
     id: 'calculator',
     name: 'Calculator',
     icon: 'assets/images/icons/calculator.png',
     type: 'application',
-    position: { x: 50, y: 50 }
+    position: { x: 20, y: 20 }
   },
   {
     id: 'my-info',
     name: 'My Information',
     icon: 'assets/images/icons/profile.png',
     type: 'application',
-    position: { x: 50, y: 150 }
+    position: { x: 20, y: 120 }
   },
   {
     id: 'love',
     name: 'Love',
     icon: 'assets/images/icons/love.png',
     type: 'application',
-    position: { x: 50, y: 350 }
+    position: { x: 20, y: 220 }
   },
   {
     id: 'explorer',
     name: 'Explorer',
     icon: 'assets/images/icons/explorer.png',
     type: 'application',
-    position: { x: 150, y: 50 }
+    position: { x: 20, y: 320 }
   },
   {
     id: 'machine-info',
     name: 'System Info',
     icon: 'assets/images/icons/info.png',
     type: 'application',
-    position: { x: 150, y: 150 }
+    position: { x: 20, y: 420 }
   },
+  // Column 2 (x: 120)
   {
     id: 'credit',
     name: 'Credit Tracker',
     icon: 'assets/images/icons/calculator.png',
     type: 'application',
-    position: { x: 150, y: 250 }
+    position: { x: 120, y: 20 }
   },
   {
     id: 'paint',
     name: 'Paint',
     icon: 'assets/images/icons/paint.png',
     type: 'application',
-    position: { x: 150, y: 350 }
+    position: { x: 120, y: 120 }
   },
   {
     id: 'credits',
     name: 'Credits',
     icon: 'assets/images/icons/star.png',
     type: 'application',
-    position: { x: 250, y: 50 }
+    position: { x: 120, y: 220 }
   },
   {
     id: 'hcmc',
     name: 'Ho Chi Minh City',
     icon: 'assets/images/icons/globe.png',
     type: 'application',
-    position: { x: 250, y: 150 }
+    position: { x: 120, y: 320 }
   },
   {
     id: 'news',
     name: 'News',
     icon: 'assets/images/icons/news.png',
     type: 'application',
-    position: { x: 250, y: 250 }
+    position: { x: 120, y: 420 }
+  },
+  // Column 3 (x: 220)
+  {
+    id: 'task-manager',
+    name: 'Task Manager',
+    icon: 'assets/images/icons/system.png',
+    type: 'application',
+    position: { x: 220, y: 20 }
+  },
+  {
+    id: 'weather',
+    name: 'Weather',
+    icon: 'assets/images/icons/weather.png',
+    type: 'application',
+    position: { x: 220, y: 120 }
+  },
+  {
+    id: 'dictionary',
+    name: 'Dictionary',
+    icon: 'assets/images/icons/book.png',
+    type: 'application',
+    position: { x: 220, y: 220 }
+  },
+  {
+    id: 'link-shortener',
+    name: 'Link Shortener',
+    icon: 'assets/images/icons/link.png',
+    type: 'application',
+    position: { x: 220, y: 320 }
+  },
+  {
+    id: 'countries',
+    name: 'Countries',
+    icon: 'assets/images/icons/world.png',
+    type: 'application',
+    position: { x: 220, y: 420 }
   }
 ];
 
@@ -96,7 +134,12 @@ function getAppDescription(appId: string): string {
     'paint': 'Create drawings and artwork with various tools',
     'credits': 'View project credits and acknowledgments',
     'hcmc': 'Explore Ho Chi Minh City attractions and culture',
-    'news': 'Read latest news headlines from around the world'
+    'news': 'Read latest news headlines from around the world',
+    'task-manager': 'View and manage all open windows and processes',
+    'weather': 'View current weather and forecast for your location',
+    'dictionary': 'Look up word definitions, pronunciations, and synonyms',
+    'link-shortener': 'Shorten long URLs quickly and easily with GoTiny',
+    'countries': 'Explore detailed information about countries around the world'
   };
   return descriptions[appId] || 'Application';
 }
@@ -112,7 +155,12 @@ function getAppKeywords(appId: string): string[] {
     'paint': ['draw', 'art', 'design', 'canvas', 'creative'],
     'credits': ['acknowledgments', 'thanks', 'contributors', 'team'],
     'hcmc': ['vietnam', 'saigon', 'city', 'travel', 'culture', 'attractions'],
-    'news': ['headlines', 'articles', 'media', 'journalism', 'current', 'events']
+    'news': ['headlines', 'articles', 'media', 'journalism', 'current', 'events'],
+    'task-manager': ['processes', 'windows', 'performance', 'monitor', 'manager', 'tasks'],
+    'weather': ['forecast', 'temperature', 'rain', 'cloud', 'wind', 'climate', 'meteorology'],
+    'dictionary': ['words', 'definitions', 'meaning', 'vocabulary', 'thesaurus', 'synonyms', 'antonyms', 'pronunciation'],
+    'link-shortener': ['url', 'shorten', 'tiny', 'link', 'gotiny', 'redirect', 'short', 'share'],
+    'countries': ['world', 'nations', 'flags', 'capitals', 'geography', 'borders', 'population', 'currencies', 'languages', 'maps', 'continents', 'regions']
   };
   return keywords[appId] || [];
 }

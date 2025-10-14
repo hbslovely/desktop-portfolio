@@ -1,0 +1,462 @@
+<div class="countries-app">
+  <!-- Loading State -->
+  <div *ngIf="loading()" class="loading-state">
+    <div class="loading-spinner">
+      <i class="pi pi-spin pi-spinner"></i>
+    </div>
+    <p>Loading countries data...</p>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="error() && !loading()" class="error-state">
+    <i class="pi pi-exclamation-triangle"></i>
+    <p>{{ error() }}</p>
+    <button class="btn btn-primary" (click)="refresh()">
+      <i class="pi pi-refresh"></i>
+      Try Again
+    </button>
+  </div>
+
+  <!-- Main Content -->
+  <div *ngIf="!loading() && !error()" class="countries-content">
+    
+    <!-- List View -->
+    <div *ngIf="viewMode() === 'list'" class="list-view">
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <div class="search-box">
+          <i class="pi pi-search"></i>
+          <input 
+            type="text" 
+            placeholder="Search countries, capitals, languages..." 
+            [value]="searchQuery()"
+            (input)="onSearchChange($any($event.target).value)"
+            class="search-input"
+          />
+          <button 
+            *ngIf="searchQuery()" 
+            class="clear-btn"
+            (click)="onSearchChange('')"
+          >
+            <i class="pi pi-times"></i>
+          </button>
+        </div>
+
+        <div class="filters">
+          <div class="filter-group">
+            <label>Region:</label>
+            <select 
+              class="region-select" 
+              [(ngModel)]="selectedRegion"
+              (ngModelChange)="filterByRegion($event)"
+            >
+              <option *ngFor="let region of regions" [value]="region">
+                {{ region === 'all' ? 'All Regions' : region }}
+              </option>
+            </select>
+          </div>
+
+          <div class="filter-group">
+            <label>Sort:</label>
+            <select 
+              class="sort-select" 
+              [(ngModel)]="sortType"
+              (ngModelChange)="setSortType($event)"
+            >
+              <option value="name">Name</option>
+              <option value="population">Population</option>
+              <option value="area">Area</option>
+              <option value="region">Region</option>
+            </select>
+            <button 
+              class="icon-btn-sm" 
+              (click)="setSortType(sortType())"
+              [title]="sortOrder() === 'asc' ? 'Sort Ascending' : 'Sort Descending'"
+            >
+              <i [class]="sortOrder() === 'asc' ? 'pi pi-sort-amount-up' : 'pi pi-sort-amount-down'"></i>
+            </button>
+          </div>
+
+          <div class="filter-group">
+            <label>Group:</label>
+            <select 
+              class="group-select" 
+              [(ngModel)]="groupType"
+              (ngModelChange)="setGroupType($event)"
+            >
+              <option value="none">None</option>
+              <option value="region">By Region</option>
+              <option value="population">By Population</option>
+              <option value="size">By Size (Area)</option>
+            </select>
+          </div>
+
+          <div class="display-toggle">
+            <button 
+              class="icon-btn-sm" 
+              [class.active]="displayType() === 'grid'"
+              (click)="setDisplayType('grid')"
+              title="Grid View"
+            >
+              <i class="pi pi-th-large"></i>
+            </button>
+            <button 
+              class="icon-btn-sm" 
+              [class.active]="displayType() === 'list'"
+              (click)="setDisplayType('list')"
+              title="List View"
+            >
+              <i class="pi pi-list"></i>
+            </button>
+          </div>
+
+          <button class="icon-btn" (click)="refresh()" title="Refresh">
+            <i class="pi pi-refresh"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Results Info -->
+      <div class="results-info">
+        <span class="count">{{ displayedCountries().length }} countries found</span>
+      </div>
+
+      <!-- Countries Display -->
+      <div class="countries-container">
+        <ng-container *ngFor="let groupKey of getGroupKeys()">
+          <!-- Group Header -->
+          <div class="group-header" *ngIf="groupType() !== 'none'">
+            <h3>{{ groupKey }}</h3>
+            <span class="group-count">({{ groupedCountries()[groupKey].length }})</span>
+          </div>
+
+          <!-- Countries Grid/List -->
+          <div [class]="displayType() === 'grid' ? 'countries-grid' : 'countries-list'">
+            <div 
+              *ngFor="let country of groupedCountries()[groupKey]" 
+              [class]="displayType() === 'grid' ? 'country-card' : 'country-row'"
+              (click)="selectCountry(country)"
+            >
+              <div class="card-flag">
+                <img [src]="country.flags.png" [alt]="country.flags.alt || country.name.common + ' flag'" />
+              </div>
+              <div class="card-content">
+                <h3 class="card-title" [title]="country.name.official || country.name.common">
+                  {{ country.name.common || country.name.official || country.cca3 || 'Unknown Country' }}
+                </h3>
+                <div class="card-details">
+                  <div class="detail-row">
+                    <i class="pi pi-map-marker"></i>
+                    <span>{{ country.region || 'Unknown' }}</span>
+                  </div>
+                  <div class="detail-row" *ngIf="country.capital && country.capital.length > 0">
+                    <i class="pi pi-building"></i>
+                    <span>{{ getCapital(country) }}</span>
+                  </div>
+                  <div class="detail-row">
+                    <i class="pi pi-users"></i>
+                    <span>{{ formatPopulation(country.population) }}</span>
+                  </div>
+                  <div class="detail-row" *ngIf="displayType() === 'list'">
+                    <i class="pi pi-globe"></i>
+                    <span>{{ country.area.toLocaleString() }} km²</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </ng-container>
+      </div>
+
+      <!-- Empty State -->
+      <div *ngIf="displayedCountries().length === 0" class="empty-state">
+        <i class="pi pi-search"></i>
+        <p>No countries found</p>
+        <p class="empty-hint">Try adjusting your search or filters</p>
+      </div>
+    </div>
+
+    <!-- Detail View -->
+    <div *ngIf="viewMode() === 'detail' && selectedCountry()" class="detail-view">
+      <!-- Detail Header -->
+      <div class="detail-header">
+        <button class="back-btn" (click)="backToList()">
+          <i class="pi pi-arrow-left"></i>
+          <span>Back to List</span>
+        </button>
+        <div class="header-actions">
+          <span *ngIf="loadingDetail()" class="loading-indicator">
+            <i class="pi pi-spin pi-spinner"></i>
+            Loading details...
+          </span>
+          <button class="icon-btn" (click)="openMap(selectedCountry()!)" title="View on Map">
+            <i class="pi pi-map"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Detail Content -->
+      <div class="detail-content">
+        <!-- Flag & Basic Info -->
+        <div class="detail-hero">
+          <div class="hero-flag">
+            <img [src]="selectedCountry()!.flags.svg" [alt]="selectedCountry()!.name.common + ' flag'" />
+          </div>
+          <div class="hero-info">
+            <h1 class="country-name">{{ selectedCountry()!.name.common }}</h1>
+            <h2 class="country-official">{{ selectedCountry()!.name.official }}</h2>
+            <div class="country-meta">
+              <span class="meta-tag">{{ selectedCountry()!.region }}</span>
+              <span class="meta-tag" *ngIf="selectedCountry()!.subregion">{{ selectedCountry()!.subregion }}</span>
+              <span class="meta-tag" *ngIf="selectedCountry()!.independent">Independent</span>
+              <span class="meta-tag" *ngIf="selectedCountry()!.unMember">UN Member</span>
+            </div>
+          </div>
+          <div class="hero-coat" *ngIf="selectedCountry()!.coatOfArms?.svg">
+            <img [src]="selectedCountry()!.coatOfArms!.svg" [alt]="selectedCountry()!.name.common + ' coat of arms'" />
+          </div>
+        </div>
+
+        <!-- Detail Sections -->
+        <div class="detail-sections">
+          <!-- General Information -->
+          <div class="detail-section">
+            <h3 class="section-title">
+              <i class="pi pi-info-circle"></i>
+              General Information
+            </h3>
+            <div class="info-grid">
+              <div class="info-item">
+                <span class="info-label">Native Name</span>
+                <span class="info-value">{{ getNativeName(selectedCountry()!) }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Capital</span>
+                <span class="info-value">{{ getCapital(selectedCountry()!) }}</span>
+              </div>
+              <div class="info-item" *ngIf="selectedCountry()!.capitalInfo?.latlng">
+                <span class="info-label">Capital Coordinates</span>
+                <span class="info-value">{{ getCapitalCoordinates(selectedCountry()!) }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Population</span>
+                <span class="info-value">{{ selectedCountry()!.population.toLocaleString() }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Area</span>
+                <span class="info-value">{{ formatArea(selectedCountry()!.area) }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Population Density</span>
+                <span class="info-value">{{ getPopulationDensity(selectedCountry()!) }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Demonym</span>
+                <span class="info-value">{{ getDemonym(selectedCountry()!) }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Gini Index</span>
+                <span class="info-value">{{ getGini(selectedCountry()!) }}</span>
+              </div>
+              <div class="info-item" *ngIf="selectedCountry()!.status">
+                <span class="info-label">Status</span>
+                <span class="info-value">{{ getStatus(selectedCountry()!) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Location & Geography -->
+          <div class="detail-section">
+            <h3 class="section-title">
+              <i class="pi pi-map-marker"></i>
+              Location & Geography
+            </h3>
+            <div class="info-grid">
+              <div class="info-item">
+                <span class="info-label">Coordinates</span>
+                <span class="info-value">{{ selectedCountry()!.latlng[0] }}°, {{ selectedCountry()!.latlng[1] }}°</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Continents</span>
+                <span class="info-value">{{ selectedCountry()!.continents.join(', ') }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Region</span>
+                <span class="info-value">{{ selectedCountry()!.region }}</span>
+              </div>
+              <div class="info-item" *ngIf="selectedCountry()!.subregion">
+                <span class="info-label">Subregion</span>
+                <span class="info-value">{{ selectedCountry()!.subregion }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Landlocked</span>
+                <span class="info-value">{{ isLandlocked(selectedCountry()!) ? 'Yes' : 'No' }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Languages -->
+          <div class="detail-section" *ngIf="getLanguageList(selectedCountry()!).length > 0">
+            <h3 class="section-title">
+              <i class="pi pi-comments"></i>
+              Languages
+            </h3>
+            <div class="tag-list">
+              <span class="tag" *ngFor="let lang of getLanguageList(selectedCountry()!)">
+                {{ lang.name }} ({{ lang.code }})
+              </span>
+            </div>
+          </div>
+
+          <!-- Currencies -->
+          <div class="detail-section" *ngIf="getCurrencyList(selectedCountry()!).length > 0">
+            <h3 class="section-title">
+              <i class="pi pi-dollar"></i>
+              Currencies
+            </h3>
+            <div class="tag-list">
+              <span class="tag" *ngFor="let curr of getCurrencyList(selectedCountry()!)">
+                {{ curr.name }} ({{ curr.symbol }}) - {{ curr.code }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Codes & Identifiers -->
+          <div class="detail-section">
+            <h3 class="section-title">
+              <i class="pi pi-id-card"></i>
+              Codes & Identifiers
+            </h3>
+            <div class="info-grid">
+              <div class="info-item">
+                <span class="info-label">ISO Alpha-2</span>
+                <span class="info-value">{{ selectedCountry()!.cca2 }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">ISO Alpha-3</span>
+                <span class="info-value">{{ selectedCountry()!.cca3 }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">ISO Numeric</span>
+                <span class="info-value">{{ getCCN3(selectedCountry()!) }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">CIOC Code</span>
+                <span class="info-value">{{ getCIOC(selectedCountry()!) }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Top-Level Domain</span>
+                <span class="info-value">{{ getTLD(selectedCountry()!) }}</span>
+              </div>
+              <div class="info-item" *ngIf="selectedCountry()!.fifa">
+                <span class="info-label">FIFA Code</span>
+                <span class="info-value">{{ selectedCountry()!.fifa }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Communication -->
+          <div class="detail-section">
+            <h3 class="section-title">
+              <i class="pi pi-phone"></i>
+              Communication
+            </h3>
+            <div class="info-grid">
+              <div class="info-item">
+                <span class="info-label">Calling Code</span>
+                <span class="info-value">{{ getCallingCode(selectedCountry()!) }}</span>
+              </div>
+              <div class="info-item" *ngIf="selectedCountry()!.postalCode">
+                <span class="info-label">Postal Code Format</span>
+                <span class="info-value">{{ selectedCountry()!.postalCode!.format }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Timezones -->
+          <div class="detail-section" *ngIf="getTimezones(selectedCountry()!).length > 0">
+            <h3 class="section-title">
+              <i class="pi pi-clock"></i>
+              Timezones
+            </h3>
+            <div class="tag-list">
+              <span class="tag" *ngFor="let tz of getTimezones(selectedCountry()!)">{{ tz }}</span>
+            </div>
+          </div>
+
+          <!-- Transportation -->
+          <div class="detail-section">
+            <h3 class="section-title">
+              <i class="pi pi-car"></i>
+              Transportation
+            </h3>
+            <div class="info-grid">
+              <div class="info-item">
+                <span class="info-label">Car Signs & Driving</span>
+                <span class="info-value">{{ getCarInfo(selectedCountry()!) }}</span>
+              </div>
+              <div class="info-item" *ngIf="selectedCountry()!.startOfWeek">
+                <span class="info-label">Start of Week</span>
+                <span class="info-value">{{ selectedCountry()!.startOfWeek }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Alternative Names -->
+          <div class="detail-section" *ngIf="getAltSpellings(selectedCountry()!).length > 0">
+            <h3 class="section-title">
+              <i class="pi pi-align-justify"></i>
+              Alternative Spellings
+            </h3>
+            <div class="tag-list">
+              <span class="tag" *ngFor="let spelling of getAltSpellings(selectedCountry()!)">
+                {{ spelling }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Translations -->
+          <div class="detail-section" *ngIf="getTranslations(selectedCountry()!).length > 0">
+            <h3 class="section-title">
+              <i class="pi pi-globe"></i>
+              Name Translations
+            </h3>
+            <div class="translations-grid">
+              <div class="translation-item" *ngFor="let trans of getTranslations(selectedCountry()!)">
+                <span class="trans-lang">{{ trans.lang }}</span>
+                <span class="trans-name">{{ trans.name }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bordering Countries -->
+          <div class="detail-section" *ngIf="borderCountries().length > 0">
+            <h3 class="section-title">
+              <i class="pi pi-share-alt"></i>
+              Bordering Countries ({{ borderCountries().length }})
+            </h3>
+            <div class="border-countries">
+              <div 
+                class="border-country" 
+                *ngFor="let border of borderCountries()"
+                (click)="selectCountry(border)"
+              >
+                <img [src]="border.flags.png" [alt]="border.name.common" />
+                <span>{{ border.name.common }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="countries-footer" *ngIf="!loading() && !error()">
+    <span class="api-credit">
+      <i class="pi pi-info-circle"></i>
+      Data provided by <a href="https://restcountries.com" target="_blank">REST Countries API</a>
+    </span>
+  </div>
+</div>
+
