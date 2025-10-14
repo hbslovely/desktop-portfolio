@@ -1,0 +1,14 @@
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist/desktop-portfolio/browser",
+  "framework": "angular",
+  "env": {
+    "NEWS_API_TOKEN": "@news-api-token"
+  },
+  "build": {
+    "env": {
+      "NEWS_API_TOKEN": "@news-api-token"
+    }
+  }
+}
+

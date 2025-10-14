@@ -1,0 +1,81 @@
+<div class="news-app">
+  <!-- Header -->
+  <div class="news-header">
+    <div class="header-content">
+      <i class="pi pi-globe"></i>
+      <h2>Latest Headlines</h2>
+    </div>
+    <button (click)="refreshNews()" class="refresh-btn" title="Refresh News">
+      <i class="pi pi-refresh" [class.spinning]="loading()"></i>
+    </button>
+  </div>
+
+  <!-- Categories -->
+  <div class="categories-bar">
+    <button
+      *ngFor="let category of categories"
+      (click)="selectCategory(category.id)"
+      [class.active]="selectedCategory() === category.id"
+      class="category-btn">
+      <i [class]="category.icon"></i>
+      <span>{{ category.name }}</span>
+    </button>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading()" class="loading-container">
+    <div class="loader"></div>
+    <p>Loading latest news...</p>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="error()" class="error-container">
+    <i class="pi pi-exclamation-triangle"></i>
+    <h3>Oops!</h3>
+    <p>{{ error() }}</p>
+    <button (click)="refreshNews()" class="retry-btn">
+      <i class="pi pi-refresh"></i>
+      Try Again
+    </button>
+  </div>
+
+  <!-- News Grid -->
+  <div *ngIf="!loading() && !error()" class="news-grid">
+    <div *ngFor="let article of articles()" class="news-card" (click)="openArticle(article.url)">
+      <div class="card-image">
+        <img 
+          [src]="article.image_url" 
+          [alt]="article.title"
+          (error)="onImageError($event)"
+          loading="lazy">
+        <div class="source-badge">{{ article.source }}</div>
+      </div>
+      <div class="card-content">
+        <div class="card-categories">
+          <span *ngFor="let cat of article.categories.slice(0, 2)" class="category-tag">
+            {{ cat }}
+          </span>
+        </div>
+        <h3 class="card-title">{{ article.title }}</h3>
+        <p class="card-description">{{ article.description || article.snippet }}</p>
+        <div class="card-footer">
+          <span class="time-ago">
+            <i class="pi pi-clock"></i>
+            {{ getTimeAgo(article.published_at) }}
+          </span>
+          <span class="read-more">
+            Read more
+            <i class="pi pi-arrow-right"></i>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Empty State -->
+    <div *ngIf="articles().length === 0" class="empty-state">
+      <i class="pi pi-inbox"></i>
+      <h3>No Articles Found</h3>
+      <p>Try selecting a different category</p>
+    </div>
+  </div>
+</div>

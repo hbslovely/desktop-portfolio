@@ -10,7 +10,8 @@ export interface SearchResult {
   icon: string;
   description?: string;
   action?: string; // For apps
-  path?: string;   // For files
+  path?: string;   // For files (virtual path)
+  content?: string; // For files (actual content path)
   url?: string;    // For web
   score: number;
 }
@@ -107,6 +108,7 @@ export class SearchService {
             icon: file.icon,
             description: this.getFileDescription(file),
             path: file.path,
+            content: file.content,
             score: score
           });
         }

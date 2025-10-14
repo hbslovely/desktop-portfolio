@@ -27,6 +27,23 @@
             "size": "1.2 KB",
             "modified": "2024-01-15T11:45:00Z",
             "content": "assets/explorer/Documents/projects.md"
+          },
+          {
+            "type": "folder",
+            "name": "CV",
+            "path": "/Documents/CV",
+            "icon": "pi pi-folder",
+            "children": [
+              {
+                "type": "file",
+                "name": "CV_Hong_Phung_Phat.pdf",
+                "path": "/Documents/CV/CV_Hong_Phung_Phat.pdf",
+                "icon": "pi pi-file-pdf",
+                "size": "350 kB",
+                "modified": "2024-01-20T09:00:00Z",
+                "content": "assets/explorer/Documents/CV/CV_Hong_Phung_Phat.pdf"
+              }
+            ]
           }
         ]
       },

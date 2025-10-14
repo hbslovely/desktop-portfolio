@@ -23,18 +23,24 @@ interface DrawingPath {
 })
 export class PaintAppComponent implements AfterViewInit {
   @ViewChild('canvas', { static: false }) canvasRef!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('fileInput', { static: false }) fileInput!: ElementRef<HTMLInputElement>;
   
   private canvas!: HTMLCanvasElement;
   private ctx!: CanvasRenderingContext2D;
   private isDrawing = false;
   private currentPath: Point[] = [];
-  private paths: DrawingPath[] = [];
+  paths: DrawingPath[] = [];
+  redoPaths: DrawingPath[] = [];
   private previewPoint: Point | null = null;
   
   // Tool settings
   selectedTool = signal<string>('brush');
   selectedColor = signal<string>('#000000');
   lineWidth = signal<number>(5);
+  opacity = signal<number>(1);
+  fillShape = signal<boolean>(false);
+  showGrid = signal<boolean>(false);
+  zoom = signal<number>(1);
   
   // Available tools
   tools = [
@@ -253,7 +259,8 @@ export class PaintAppComponent implements AfterViewInit {
 
   undo() {
     if (this.paths.length > 0) {
-      this.paths.pop();
+      const path = this.paths.pop()!;
+      this.redoPaths.push(path);
       this.redrawCanvas();
     }
   }
@@ -353,5 +360,72 @@ export class PaintAppComponent implements AfterViewInit {
 
   setFontFamily(font: string) {
     this.fontFamily.set(font);
+  }
+
+  // New enhanced features
+  redo() {
+    if (this.redoPaths.length > 0) {
+      const path = this.redoPaths.pop()!;
+      this.paths.push(path);
+      this.redrawCanvas();
+    }
+  }
+
+  toggleGrid() {
+    this.showGrid.set(!this.showGrid());
+  }
+
+  toggleFullscreen() {
+    const elem = document.documentElement;
+    if (!document.fullscreenElement) {
+      elem.requestFullscreen();
+    } else {
+      document.exitFullscreen();
+    }
+  }
+
+  zoomIn() {
+    const newZoom = Math.min(this.zoom() + 0.1, 3);
+    this.zoom.set(newZoom);
+    this.applyZoom();
+  }
+
+  zoomOut() {
+    const newZoom = Math.max(this.zoom() - 0.1, 0.5);
+    this.zoom.set(newZoom);
+    this.applyZoom();
+  }
+
+  resetZoom() {
+    this.zoom.set(1);
+    this.applyZoom();
+  }
+
+  applyZoom() {
+    const wrapper = this.canvas.parentElement;
+    if (wrapper) {
+      this.canvas.style.transform = `scale(${this.zoom()})`;
+    }
+  }
+
+  openImageDialog() {
+    if (this.fileInput) {
+      this.fileInput.nativeElement.click();
+    }
+  }
+
+  onImageUpload(event: any) {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e: any) => {
+        const img = new Image();
+        img.onload = () => {
+          this.ctx.drawImage(img, 0, 0, this.canvas.width, this.canvas.height);
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
   }
 }

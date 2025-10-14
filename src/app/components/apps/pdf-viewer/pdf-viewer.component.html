@@ -1,0 +1,50 @@
+<div class="pdf-viewer-container">
+  <!-- Toolbar -->
+  <div class="pdf-toolbar">
+    <div class="toolbar-left">
+      <i class="pi pi-file-pdf"></i>
+      <span class="pdf-title">PDF Viewer</span>
+    </div>
+    <div class="toolbar-right">
+      <button class="toolbar-btn" (click)="downloadPdf()" title="Download PDF">
+        <i class="pi pi-download"></i>
+        <span>Download</span>
+      </button>
+      <button class="toolbar-btn" (click)="openInNewTab()" title="Open in New Tab">
+        <i class="pi pi-external-link"></i>
+        <span>Open in Tab</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- PDF Content -->
+  <div class="pdf-content">
+    <!-- Loading State -->
+    <div *ngIf="loading()" class="pdf-loading">
+      <div class="loading-spinner"></div>
+      <p>Loading PDF...</p>
+    </div>
+
+    <!-- Error State -->
+    <div *ngIf="error()" class="pdf-error">
+      <i class="pi pi-exclamation-triangle"></i>
+      <h3>Failed to Load PDF</h3>
+      <p>The PDF file could not be loaded. Please try again.</p>
+      <button class="retry-btn" (click)="downloadPdf()">
+        <i class="pi pi-download"></i>
+        Download Instead
+      </button>
+    </div>
+
+    <!-- PDF Embed -->
+    <iframe
+      *ngIf="safePdfUrl && !error()"
+      [src]="safePdfUrl"
+      class="pdf-frame"
+      (load)="onLoadSuccess()"
+      (error)="onLoadError()"
+      frameborder="0">
+    </iframe>
+  </div>
+</div>
+

@@ -201,6 +201,28 @@
     <app-hcmc-app></app-hcmc-app>
   </app-window>
 
+  <!-- News Window -->
+  <app-window
+    *ngIf="showNewsWindow() || isWindowMinimized('news')"
+    title="News Headlines"
+    icon="pi pi-globe"
+    statusText="Latest News"
+    [initialWidth]="1000"
+    [initialHeight]="700"
+    [initialX]="250"
+    [initialY]="100"
+    [maximizable]="true"
+    [zIndex]="getWindowZIndex('news')"
+    [isFocused]="isWindowFocused('news')"
+    (onClose)="onCloseNewsWindow()"
+    (onMinimize)="onMinimizeNewsWindow()"
+    (onMaximize)="onMaximizeNewsWindow()"
+    (onRestore)="onRestoreNewsWindow()"
+    (onFocus)="onFocusNewsWindow()">
+
+    <app-news-app></app-news-app>
+  </app-window>
+
   <!-- Text Viewer Window -->
   <app-window
     *ngIf="showTextViewerWindow() && currentTextFile()"
@@ -252,6 +274,31 @@
       [imagePath]="currentImageFile()!.path"
       [imageName]="currentImageFile()!.name">
     </app-image-viewer>
+  </app-window>
+
+  <!-- PDF Viewer Window -->
+  <app-window
+    *ngIf="showPdfViewerWindow() && currentPdfFile()"
+    [title]="'PDF Viewer - ' + currentPdfFile()!.name"
+    icon="pi pi-file-pdf"
+    statusText="Ready"
+    [initialWidth]="1000"
+    [initialHeight]="800"
+    [initialX]="350"
+    [initialY]="60"
+    [maximizable]="true"
+    [zIndex]="getWindowZIndex('pdf-viewer')"
+    [isFocused]="isWindowFocused('pdf-viewer')"
+    [isMinimizedExternal]="isWindowMinimized('pdf-viewer')"
+    (onClose)="onClosePdfViewerWindow()"
+    (onMinimize)="onMinimizePdfViewerWindow()"
+    (onMaximize)="onMaximizePdfViewerWindow()"
+    (onRestore)="onRestorePdfViewerWindow()"
+    (onFocus)="onFocusPdfViewerWindow()">
+
+    <app-pdf-viewer
+      [pdfPath]="currentPdfFile()!.path">
+    </app-pdf-viewer>
   </app-window>
 
   <!-- Machine Info Window -->
@@ -477,6 +524,78 @@
     (onContextMenu)="onDesktopIconContextMenu($event)">
   </app-desktop-icon>
 
+  <!-- Desktop Widgets -->
+  <div *ngIf="showDesktopWidgets()" class="desktop-widgets">
+    <!-- Weather Widget -->
+    <div class="widget weather-widget">
+      <div class="widget-header">
+        <i class="pi pi-cloud"></i>
+        <span>Weather</span>
+      </div>
+      <div class="widget-body">
+        <div class="weather-main">
+          <i [class]="'weather-icon ' + currentWeather().icon"></i>
+          <div class="weather-temp">{{ currentWeather().temp }}°C</div>
+        </div>
+        <div class="weather-condition">{{ currentWeather().condition }}</div>
+      </div>
+    </div>
+
+    <!-- Quick Notes Widget -->
+    <div class="widget notes-widget">
+      <div class="widget-header">
+        <i class="pi pi-file-edit"></i>
+        <span>Quick Notes</span>
+        <button (click)="addQuickNote()" class="add-note-btn">
+          <i class="pi pi-plus"></i>
+        </button>
+      </div>
+      <div class="widget-body">
+        <div *ngIf="quickNotes().length === 0" class="empty-notes">
+          <i class="pi pi-inbox"></i>
+          <p>No notes yet</p>
+        </div>
+        <div *ngFor="let note of quickNotes(); let i = index" class="note-item">
+          <span>{{ note }}</span>
+          <button (click)="removeQuickNote(i)" class="remove-note-btn">
+            <i class="pi pi-times"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- System Stats Widget -->
+    <div class="widget stats-widget">
+      <div class="widget-header">
+        <i class="pi pi-chart-bar"></i>
+        <span>System</span>
+      </div>
+      <div class="widget-body">
+        <div class="stat-item">
+          <span class="stat-label">CPU Usage</span>
+          <div class="stat-bar">
+            <div class="stat-fill" style="width: 45%"></div>
+          </div>
+          <span class="stat-value">45%</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Memory</span>
+          <div class="stat-bar">
+            <div class="stat-fill" style="width: 62%"></div>
+          </div>
+          <span class="stat-value">62%</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Storage</span>
+          <div class="stat-bar">
+            <div class="stat-fill" style="width: 38%"></div>
+          </div>
+          <span class="stat-value">38%</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Taskbar -->
   <div class="taskbar">
     <!-- Start Button -->
@@ -613,15 +732,62 @@
         <span>HCMC</span>
       </button>
 
+      <button
+        *ngIf="showNewsWindow() || isWindowMinimized('news')"
+        class="taskbar-app"
+        [class.active]="isWindowFocused('news')"
+        [class.minimized]="isWindowMinimized('news')"
+        (click)="toggleTaskbarApp('news')"
+        title="News Headlines">
+        <i class="pi pi-globe"></i>
+        <span>News</span>
+      </button>
+
     </div>
 
     <!-- System Tray -->
     <div class="system-tray">
+      <button class="widgets-button" (click)="toggleWidgets()" title="Toggle Desktop Widgets">
+        <i class="pi pi-th"></i>
+      </button>
+      <button class="notifications-button" (click)="toggleNotificationsPanel()" title="Notifications">
+        <i class="pi pi-bell"></i>
+        <span *ngIf="notifications().length > 0" class="notification-badge">{{ notifications().length }}</span>
+      </button>
       <button class="lock-button" (click)="lockScreen()" title="Lock Screen">
         <i class="pi pi-lock"></i>
       </button>
       <div class="clock" (click)="openClockWindow()" title="Click to open Clock">
         {{ currentTime }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Notifications Panel -->
+  <div *ngIf="showNotificationsPanel()" class="notifications-panel">
+    <div class="notifications-header">
+      <h3>Notifications</h3>
+      <button (click)="clearAllNotifications()" class="clear-all-btn" *ngIf="notifications().length > 0">
+        Clear All
+      </button>
+    </div>
+    <div class="notifications-body">
+      <div *ngIf="notifications().length === 0" class="no-notifications">
+        <i class="pi pi-check-circle"></i>
+        <p>No notifications</p>
+      </div>
+      <div *ngFor="let notification of notifications()" class="notification-item">
+        <div class="notification-icon">
+          <i [class]="notification.icon"></i>
+        </div>
+        <div class="notification-content">
+          <h4>{{ notification.title }}</h4>
+          <p>{{ notification.message }}</p>
+          <span class="notification-time">{{ notification.time }}</span>
+        </div>
+        <button (click)="clearNotification(notification.id)" class="notification-close">
+          <i class="pi pi-times"></i>
+        </button>
       </div>
     </div>
   </div>

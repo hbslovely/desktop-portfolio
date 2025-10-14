@@ -1,126 +1,171 @@
 <div class="paint-app">
-  <div class="toolbar">
-    <div class="tool-section">
-      <h3>Tools</h3>
-      <div class="tools">
-        <button 
-          *ngFor="let tool of tools"
-          (click)="selectTool(tool.id)"
-          [class.active]="selectedTool() === tool.id"
-          class="tool-button"
-          [title]="tool.name">
-          <i [class]="tool.icon"></i>
-          <span>{{ tool.name }}</span>
-        </button>
-      </div>
+  <div class="top-toolbar">
+    <div class="toolbar-group">
+      <button (click)="undo()" class="icon-button" title="Undo (Ctrl+Z)" [disabled]="paths.length === 0">
+        <i class="pi pi-undo"></i>
+      </button>
+      <button (click)="redo()" class="icon-button" title="Redo (Ctrl+Y)" [disabled]="redoPaths.length === 0">
+        <i class="pi pi-refresh"></i>
+      </button>
     </div>
-
-    <div class="color-section">
-      <h3>Colors</h3>
-      <div class="color-palette">
-        <button 
-          *ngFor="let color of colors"
-          (click)="selectColor(color)"
-          [class.active]="selectedColor() === color"
-          class="color-button"
-          [style.background-color]="color"
-          [title]="color">
-        </button>
-      </div>
-      <div class="current-color">
-        <span>Current:</span>
-        <div 
-          class="color-preview"
-          [style.background-color]="selectedColor()">
-        </div>
-      </div>
+    <div class="toolbar-separator"></div>
+    <div class="toolbar-group">
+      <button (click)="clearCanvas()" class="icon-button" title="Clear All">
+        <i class="pi pi-trash"></i>
+      </button>
+      <button (click)="downloadCanvas()" class="icon-button" title="Save Image">
+        <i class="pi pi-download"></i>
+      </button>
+      <button (click)="openImageDialog()" class="icon-button" title="Import Image">
+        <i class="pi pi-upload"></i>
+      </button>
     </div>
-
-    <div class="size-section">
-      <h3>Brush Size</h3>
-      <div class="size-controls">
-        <input 
-          type="range" 
-          min="1" 
-          max="50" 
-          [(ngModel)]="lineWidth"
-          class="size-slider">
-        <span class="size-value">{{ lineWidth() }}px</span>
-      </div>
-      <div class="size-preview">
-        <div 
-          class="size-circle"
-          [style.width.px]="lineWidth()"
-          [style.height.px]="lineWidth()"
-          [style.background-color]="selectedColor()">
-        </div>
-      </div>
-    </div>
-
-    <div class="text-section" *ngIf="selectedTool() === 'text'">
-      <h3>Text Settings</h3>
-      <div class="text-controls">
-        <div class="font-size-control">
-          <label>Font Size:</label>
-          <input 
-            type="range" 
-            min="8" 
-            max="72" 
-            [(ngModel)]="fontSize"
-            class="font-size-slider">
-          <span class="font-size-value">{{ fontSize() }}px</span>
-        </div>
-        <div class="font-family-control">
-          <label>Font:</label>
-          <select [(ngModel)]="fontFamily" class="font-select">
-            <option value="Arial">Arial</option>
-            <option value="Times New Roman">Times New Roman</option>
-            <option value="Courier New">Courier New</option>
-            <option value="Georgia">Georgia</option>
-            <option value="Verdana">Verdana</option>
-            <option value="Comic Sans MS">Comic Sans MS</option>
-          </select>
-        </div>
-      </div>
-    </div>
-
-    <div class="actions-section">
-      <h3>Actions</h3>
-      <div class="action-buttons">
-        <button 
-          (click)="undo()"
-          class="action-button"
-          title="Undo">
-          <i class="pi pi-undo"></i>
-          <span>Undo</span>
-        </button>
-        <button 
-          (click)="clearCanvas()"
-          class="action-button clear"
-          title="Clear Canvas">
-          <i class="pi pi-trash"></i>
-          <span>Clear</span>
-        </button>
-        <button 
-          (click)="downloadCanvas()"
-          class="action-button download"
-          title="Download">
-          <i class="pi pi-download"></i>
-          <span>Save</span>
-        </button>
-      </div>
+    <div class="toolbar-separator"></div>
+    <div class="toolbar-group">
+      <button (click)="toggleGrid()" class="icon-button" [class.active]="showGrid()" title="Toggle Grid">
+        <i class="pi pi-th-large"></i>
+      </button>
+      <button (click)="toggleFullscreen()" class="icon-button" title="Fullscreen">
+        <i class="pi pi-window-maximize"></i>
+      </button>
     </div>
   </div>
 
-  <div class="canvas-container">
-    <canvas 
-      #canvas
-      class="drawing-canvas"
-      (mousedown)="startDrawing($event)"
-      (mousemove)="draw($event)"
-      (mouseup)="stopDrawing($event)"
-      (mouseleave)="stopDrawing($event)">
-    </canvas>
+  <div class="main-content">
+    <div class="left-toolbar">
+      <div class="tool-section">
+        <div class="section-title">Tools</div>
+        <div class="tool-grid">
+          <button 
+            *ngFor="let tool of tools"
+            (click)="selectTool(tool.id)"
+            [class.active]="selectedTool() === tool.id"
+            class="tool-btn"
+            [title]="tool.name">
+            <i [class]="tool.icon"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="color-section">
+        <div class="section-title">Colors</div>
+        <div class="color-picker-container">
+          <input 
+            type="color" 
+            [(ngModel)]="selectedColor"
+            class="color-picker"
+            title="Pick Color">
+          <div class="current-color-display" [style.background-color]="selectedColor()">
+            <span>{{ selectedColor() }}</span>
+          </div>
+        </div>
+        <div class="color-grid">
+          <button 
+            *ngFor="let color of colors"
+            (click)="selectColor(color)"
+            [class.active]="selectedColor() === color"
+            class="color-swatch"
+            [style.background-color]="color"
+            [title]="color">
+          </button>
+        </div>
+      </div>
+
+      <div class="stroke-section">
+        <div class="section-title">Stroke</div>
+        <div class="stroke-controls">
+          <div class="slider-group">
+            <label>Width</label>
+            <input 
+              type="range" 
+              min="1" 
+              max="50" 
+              [(ngModel)]="lineWidth"
+              class="slider">
+            <span class="value">{{ lineWidth() }}px</span>
+          </div>
+          <div class="slider-group">
+            <label>Opacity</label>
+            <input 
+              type="range" 
+              min="0" 
+              max="1" 
+              step="0.1"
+              [(ngModel)]="opacity"
+              class="slider">
+            <span class="value">{{ (opacity() * 100).toFixed(0) }}%</span>
+          </div>
+        </div>
+        <div class="stroke-preview">
+          <div 
+            class="preview-circle"
+            [style.width.px]="lineWidth()"
+            [style.height.px]="lineWidth()"
+            [style.background-color]="selectedColor()"
+            [style.opacity]="opacity()">
+          </div>
+        </div>
+      </div>
+
+      <div class="fill-section" *ngIf="selectedTool() === 'rectangle' || selectedTool() === 'circle'">
+        <div class="section-title">Fill</div>
+        <div class="fill-toggle">
+          <label class="toggle-switch">
+            <input type="checkbox" [(ngModel)]="fillShape">
+            <span class="toggle-slider"></span>
+          </label>
+          <span>Fill Shape</span>
+        </div>
+      </div>
+
+      <div class="text-settings" *ngIf="selectedTool() === 'text'">
+        <div class="section-title">Text</div>
+        <div class="text-controls">
+          <select [(ngModel)]="fontFamily" class="select-input">
+            <option value="Arial">Arial</option>
+            <option value="Times New Roman">Times</option>
+            <option value="Courier New">Courier</option>
+            <option value="Georgia">Georgia</option>
+            <option value="Verdana">Verdana</option>
+          </select>
+          <div class="slider-group">
+            <label>Size</label>
+            <input 
+              type="range" 
+              min="8" 
+              max="72" 
+              [(ngModel)]="fontSize"
+              class="slider">
+            <span class="value">{{ fontSize() }}px</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="canvas-area">
+      <div class="canvas-wrapper" [class.show-grid]="showGrid()">
+        <canvas 
+          #canvas
+          class="drawing-canvas"
+          (mousedown)="startDrawing($event)"
+          (mousemove)="draw($event)"
+          (mouseup)="stopDrawing($event)"
+          (mouseleave)="stopDrawing($event)">
+        </canvas>
+      </div>
+      <div class="zoom-controls">
+        <button (click)="zoomOut()" class="zoom-btn" title="Zoom Out">
+          <i class="pi pi-minus"></i>
+        </button>
+        <span class="zoom-level">{{ (zoom() * 100).toFixed(0) }}%</span>
+        <button (click)="zoomIn()" class="zoom-btn" title="Zoom In">
+          <i class="pi pi-plus"></i>
+        </button>
+        <button (click)="resetZoom()" class="zoom-btn" title="Reset Zoom">
+          <i class="pi pi-replay"></i>
+        </button>
+      </div>
+    </div>
   </div>
 
   <!-- Text Input Dialog -->
@@ -145,13 +190,24 @@
   </div>
 
   <div class="status-bar">
-    <div class="status-info">
-      <span>Tool: {{ getSelectedToolName() }}</span>
-      <span>Color: {{ selectedColor() }}</span>
-      <span>Size: {{ lineWidth() }}px</span>
+    <div class="status-left">
+      <span><i class="pi pi-pencil"></i> {{ getSelectedToolName() }}</span>
+      <span><i class="pi pi-palette"></i> {{ selectedColor() }}</span>
+      <span><i class="pi pi-circle"></i> {{ lineWidth() }}px</span>
     </div>
-    <div class="canvas-info">
-      <span>{{ canvasWidth }} × {{ canvasHeight }}</span>
+    <div class="status-center">
+      <span>{{ paths.length }} paths</span>
+    </div>
+    <div class="status-right">
+      <span>{{ canvasWidth }} × {{ canvasHeight }}px</span>
     </div>
   </div>
+
+  <!-- Hidden file input for image upload -->
+  <input 
+    type="file" 
+    #fileInput 
+    accept="image/*" 
+    style="display: none" 
+    (change)="onImageUpload($event)">
 </div>

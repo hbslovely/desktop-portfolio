@@ -63,6 +63,13 @@ export const APP_ICONS: DesktopIconData[] = [
     icon: 'assets/images/icons/globe.png',
     type: 'application',
     position: { x: 250, y: 150 }
+  },
+  {
+    id: 'news',
+    name: 'News',
+    icon: 'assets/images/icons/news.png',
+    type: 'application',
+    position: { x: 250, y: 250 }
   }
 ];
 
@@ -88,7 +95,8 @@ function getAppDescription(appId: string): string {
     'credit': 'Track and manage financial credits and expenses',
     'paint': 'Create drawings and artwork with various tools',
     'credits': 'View project credits and acknowledgments',
-    'hcmc': 'Explore Ho Chi Minh City attractions and culture'
+    'hcmc': 'Explore Ho Chi Minh City attractions and culture',
+    'news': 'Read latest news headlines from around the world'
   };
   return descriptions[appId] || 'Application';
 }
@@ -103,7 +111,8 @@ function getAppKeywords(appId: string): string[] {
     'credit': ['finance', 'money', 'expenses', 'budget', 'tracking'],
     'paint': ['draw', 'art', 'design', 'canvas', 'creative'],
     'credits': ['acknowledgments', 'thanks', 'contributors', 'team'],
-    'hcmc': ['vietnam', 'saigon', 'city', 'travel', 'culture', 'attractions']
+    'hcmc': ['vietnam', 'saigon', 'city', 'travel', 'culture', 'attractions'],
+    'news': ['headlines', 'articles', 'media', 'journalism', 'current', 'events']
   };
   return keywords[appId] || [];
 }

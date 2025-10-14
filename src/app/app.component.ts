@@ -7,11 +7,13 @@ import { LoveAppComponent } from './components/apps/love-app/love-app.component'
 import { ExplorerComponent, FileOpenEvent, ContextMenuEvent } from './components/apps/explorer/explorer.component';
 import { TextViewerComponent } from './components/apps/text-viewer/text-viewer.component';
 import { ImageViewerComponent } from './components/apps/image-viewer/image-viewer.component';
+import { PdfViewerComponent } from './components/apps/pdf-viewer/pdf-viewer.component';
 import { MachineInfoComponent } from './components/apps/machine-info/machine-info.component';
 import { CreditAppComponent } from './components/apps/credit-app/credit-app.component';
 import { PaintAppComponent } from './components/apps/paint-app/paint-app.component';
 import { CreditsAppComponent } from './components/apps/credits-app/credits-app.component';
 import { HcmcAppComponent } from './components/apps/hcmc-app/hcmc-app.component';
+import { NewsAppComponent } from './components/apps/news-app/news-app.component';
 import { WelcomeScreenComponent } from './components/welcome-screen/welcome-screen.component';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -23,7 +25,7 @@ import { SearchService, SearchResult } from './services/search.service';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [ WelcomeScreenComponent, WindowComponent, DesktopIconComponent, CalculatorComponent, IframeAppComponent, LoveAppComponent, ExplorerComponent, TextViewerComponent, ImageViewerComponent, MachineInfoComponent, CreditAppComponent, PaintAppComponent, CreditsAppComponent, HcmcAppComponent, CommonModule, FormsModule, SettingsDialogComponent ],
+  imports: [ WelcomeScreenComponent, WindowComponent, DesktopIconComponent, CalculatorComponent, IframeAppComponent, LoveAppComponent, ExplorerComponent, TextViewerComponent, ImageViewerComponent, PdfViewerComponent, MachineInfoComponent, CreditAppComponent, PaintAppComponent, CreditsAppComponent, HcmcAppComponent, NewsAppComponent, CommonModule, FormsModule, SettingsDialogComponent ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
 })
@@ -54,11 +56,14 @@ export class AppComponent implements AfterViewInit {
   showPaintWindow = signal(false);
   showCreditsWindow = signal(false);
   showHcmcWindow = signal(false);
+  showNewsWindow = signal(false);
   showClockWindow = signal(false);
 
   // File viewer data
   currentTextFile = signal<{ path: string; name: string; type: 'txt' | 'md' } | null>(null);
   currentImageFile = signal<{ path: string; name: string } | null>(null);
+  currentPdfFile = signal<{ path: string; name: string } | null>(null);
+  showPdfViewerWindow = signal(false);
   showSearchWindow = signal(false);
 
   // Window management
@@ -124,6 +129,16 @@ export class AppComponent implements AfterViewInit {
   // Desktop icons from configuration
   testIcons: DesktopIconData[] = APP_ICONS;
 
+  // Desktop widgets
+  showDesktopWidgets = signal(true);
+  currentWeather = signal({ temp: 25, condition: 'Sunny', icon: 'pi pi-sun' });
+  quickNotes = signal<string[]>(['Welcome to Desktop Portfolio!', 'Click to add notes']);
+  showNotificationsPanel = signal(false);
+  notifications = signal([
+    { id: 1, title: 'System Update', message: 'New features available', time: '5m ago', icon: 'pi pi-info-circle' },
+    { id: 2, title: 'Welcome', message: 'Thanks for using Desktop Portfolio', time: '1h ago', icon: 'pi pi-heart' }
+  ]);
+
   // Start menu configuration
   startMenuGroups = [
     {
@@ -152,7 +167,8 @@ export class AppComponent implements AfterViewInit {
       apps: [
         { id: 'my-info', name: 'My Information', icon: 'pi pi-user' },
         { id: 'machine-info', name: 'System Info', icon: 'pi pi-desktop' },
-        { id: 'hcmc', name: 'Ho Chi Minh City', icon: 'pi pi-globe' }
+        { id: 'hcmc', name: 'Ho Chi Minh City', icon: 'pi pi-globe' },
+        { id: 'news', name: 'News Headlines', icon: 'pi pi-globe' }
       ]
     },
     {
@@ -414,6 +430,37 @@ export class AppComponent implements AfterViewInit {
     this.focusWindow('hcmc');
   }
 
+  // News Window Methods
+  onCloseNewsWindow() {
+    this.showNewsWindow.set(false);
+    if (this.focusedWindow() === 'news') {
+      this.focusedWindow.set(null);
+    }
+  }
+
+  onMinimizeNewsWindow() {
+    console.log('News window minimized');
+    this.minimizedWindows.update(set => new Set(set).add('news'));
+  }
+
+  onMaximizeNewsWindow() {
+    console.log('News window maximized');
+  }
+
+  onRestoreNewsWindow() {
+    console.log('News window restored');
+    this.minimizedWindows.update(set => {
+      const newSet = new Set(set);
+      newSet.delete('news');
+      return newSet;
+    });
+  }
+
+  onFocusNewsWindow() {
+    console.log('News window focused');
+    this.focusWindow('news');
+  }
+
   // Text Viewer Window Methods
   onCloseTextViewerWindow() {
     this.showTextViewerWindow.set(false);
@@ -478,6 +525,41 @@ export class AppComponent implements AfterViewInit {
     this.focusWindow('image-viewer');
   }
 
+  // PDF Viewer Window Methods
+  onClosePdfViewerWindow() {
+    this.showPdfViewerWindow.set(false);
+    this.currentPdfFile.set(null);
+    if (this.focusedWindow() === 'pdf-viewer') {
+      this.focusedWindow.set(null);
+    }
+  }
+
+  onMinimizePdfViewerWindow() {
+    console.log('Minimizing PDF viewer window');
+    this.minimizedWindows.update(set => new Set(set).add('pdf-viewer'));
+    if (this.focusedWindow() === 'pdf-viewer') {
+      this.focusedWindow.set(null);
+    }
+  }
+
+  onRestorePdfViewerWindow() {
+    console.log('Restoring PDF viewer window');
+    this.minimizedWindows.update(set => {
+      const newSet = new Set(set);
+      newSet.delete('pdf-viewer');
+      return newSet;
+    });
+  }
+
+  onMaximizePdfViewerWindow() {
+    console.log('PDF viewer window maximized');
+  }
+
+  onFocusPdfViewerWindow() {
+    console.log('PDF viewer window focused');
+    this.focusWindow('pdf-viewer');
+  }
+
   // Machine Info Window Methods
   onCloseMachineInfoWindow() {
     this.showMachineInfoWindow.set(false);
@@ -531,6 +613,14 @@ export class AppComponent implements AfterViewInit {
       });
       this.showImageViewerWindow.set(true);
       this.focusWindow('image-viewer');
+    } else if (fileType === 'pdf') {
+      // Open PDF file
+      this.currentPdfFile.set({
+        path: item.content || `assets/explorer${item.path}`,
+        name: item.name
+      });
+      this.showPdfViewerWindow.set(true);
+      this.focusWindow('pdf-viewer');
     } else {
       // Unknown file type
       console.log('Unknown file type:', extension);
@@ -677,6 +767,9 @@ export class AppComponent implements AfterViewInit {
     } else if (icon.id === 'hcmc') {
       this.showHcmcWindow.set(true);
       this.focusWindow('hcmc');
+    } else if (icon.id === 'news') {
+      this.showNewsWindow.set(true);
+      this.focusWindow('news');
     }
   }
 
@@ -755,6 +848,8 @@ export class AppComponent implements AfterViewInit {
         this.onCloseCreditsWindow();
       } else if (icon.id === 'hcmc' && this.showHcmcWindow()) {
         this.onCloseHcmcWindow();
+      } else if (icon.id === 'news' && this.showNewsWindow()) {
+        this.onCloseNewsWindow();
       }
     }
   }
@@ -829,6 +924,9 @@ export class AppComponent implements AfterViewInit {
     } else if (appId === 'hcmc') {
       this.showHcmcWindow.set(true);
       this.focusWindow('hcmc');
+    } else if (appId === 'news') {
+      this.showNewsWindow.set(true);
+      this.focusWindow('news');
     }
   }
 
@@ -1077,6 +1175,21 @@ export class AppComponent implements AfterViewInit {
         } else {
           this.showHcmcWindow.set(true);
           this.focusWindow('hcmc');
+        }
+        break;
+
+      case 'news':
+        if (this.showNewsWindow()) {
+          if (this.isWindowMinimized('news')) {
+            this.focusWindow('news');
+          } else if (this.focusedWindow() === 'news') {
+            this.minimizeWindow('news');
+          } else {
+            this.focusWindow('news');
+          }
+        } else {
+          this.showNewsWindow.set(true);
+          this.focusWindow('news');
         }
         break;
     }
@@ -1403,22 +1516,22 @@ export class AppComponent implements AfterViewInit {
     if (result.type === 'app') {
       this.openApp(result.action!);
     } else if (result.type === 'file') {
-      this.openFile(result.path!);
+      this.openFile(result.content || result.path!, result.path!);
     } else if (result.type === 'web') {
       window.open(result.url, '_blank');
     }
     this.closeSearchWindow();
   }
 
-  openFile(filePath: string) {
+  openFile(contentPath: string, displayPath: string) {
     // Extract file extension to determine how to open it
-    const extension = filePath.split('.').pop()?.toLowerCase();
+    const extension = contentPath.split('.').pop()?.toLowerCase();
 
     if (extension === 'md' || extension === 'txt') {
       // Open text files in text viewer
       this.currentTextFile.set({
-        path: filePath,
-        name: filePath.split('/').pop() || 'Unknown File',
+        path: contentPath,
+        name: displayPath.split('/').pop() || 'Unknown File',
         type: extension === 'md' ? 'md' : 'txt'
       });
       this.showTextViewerWindow.set(true);
@@ -1426,11 +1539,19 @@ export class AppComponent implements AfterViewInit {
     } else if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension || '')) {
       // Open image files in image viewer
       this.currentImageFile.set({
-        path: filePath,
-        name: filePath.split('/').pop() || 'Unknown Image'
+        path: contentPath,
+        name: displayPath.split('/').pop() || 'Unknown Image'
       });
       this.showImageViewerWindow.set(true);
       this.focusWindow('image-viewer');
+    } else if (extension === 'pdf') {
+      // Open PDF files in PDF viewer
+      this.currentPdfFile.set({
+        path: contentPath,
+        name: displayPath.split('/').pop() || 'Unknown PDF'
+      });
+      this.showPdfViewerWindow.set(true);
+      this.focusWindow('pdf-viewer');
     } else {
       // For other files, try to open in explorer
       this.showExplorerWindow.set(true);
@@ -1453,6 +1574,36 @@ export class AppComponent implements AfterViewInit {
     } else if (this.selectedSearchIndex >= this.searchResults.length) {
       this.selectedSearchIndex = 0;
     }
+  }
+
+  toggleNotificationsPanel() {
+    this.showNotificationsPanel.set(!this.showNotificationsPanel());
+  }
+
+  clearNotification(id: number) {
+    const currentNotifications = this.notifications();
+    this.notifications.set(currentNotifications.filter(n => n.id !== id));
+  }
+
+  clearAllNotifications() {
+    this.notifications.set([]);
+  }
+
+  toggleWidgets() {
+    this.showDesktopWidgets.set(!this.showDesktopWidgets());
+  }
+
+  addQuickNote() {
+    const note = prompt('Enter a quick note:');
+    if (note) {
+      const currentNotes = this.quickNotes();
+      this.quickNotes.set([...currentNotes, note]);
+    }
+  }
+
+  removeQuickNote(index: number) {
+    const currentNotes = this.quickNotes();
+    this.quickNotes.set(currentNotes.filter((_, i) => i !== index));
   }
 
   getResultIndex(type: string, localIndex: number): number {

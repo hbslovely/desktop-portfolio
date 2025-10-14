@@ -15,7 +15,7 @@ export interface FileSystemItem {
 
 export interface FileOpenEvent {
   item: FileSystemItem;
-  fileType: 'text' | 'image' | 'unknown';
+  fileType: 'text' | 'image' | 'pdf' | 'unknown';
   extension: string;
 }
 
@@ -196,14 +196,17 @@ export class ExplorerComponent implements OnInit {
     });
   }
   
-  private getFileType(extension: string): 'text' | 'image' | 'unknown' {
+  private getFileType(extension: string): 'text' | 'image' | 'pdf' | 'unknown' {
     const textExtensions = ['txt', 'md', 'markdown', 'json', 'csv', 'log', 'xml', 'html', 'css', 'js', 'ts', 'py', 'java', 'cpp', 'c', 'h'];
     const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp', 'ico'];
+    const pdfExtensions = ['pdf'];
     
     if (textExtensions.includes(extension)) {
       return 'text';
     } else if (imageExtensions.includes(extension)) {
       return 'image';
+    } else if (pdfExtensions.includes(extension)) {
+      return 'pdf';
     }
     
     return 'unknown';
