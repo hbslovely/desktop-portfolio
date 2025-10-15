@@ -246,8 +246,10 @@ export class VnstockAppComponent implements OnInit, OnDestroy {
   }
 
   async selectIndustry(industry: Industry) {
-    console.log('Selecting industry:', industry.icbCode, industry.icbName);
-    console.log('Previous selected:', this.selectedIndustry?.icbCode);
+    console.log('🔍 Selecting industry CODE:', industry.icbCode);
+    console.log('🔍 Selecting industry NAME:', industry.icbName);
+    console.log('🔍 Previous selected CODE:', this.selectedIndustry?.icbCode);
+    console.log('🔍 Full industry object:', industry);
     
     this.selectedIndustry = industry;
     this.loading = true;
@@ -273,7 +275,23 @@ export class VnstockAppComponent implements OnInit, OnDestroy {
     if (!this.selectedIndustry) {
       return false;
     }
+    
+    // Ensure both have valid icbCode
+    if (!this.selectedIndustry.icbCode || !industry.icbCode) {
+      console.warn('⚠️ Missing icbCode in comparison:', {
+        selected: this.selectedIndustry,
+        current: industry
+      });
+      return false;
+    }
+    
     const isSelected = this.selectedIndustry.icbCode === industry.icbCode;
+    
+    // Debug log for each comparison
+    if (isSelected) {
+      console.log('✅ Match found:', industry.icbCode, industry.icbName);
+    }
+    
     return isSelected;
   }
 
@@ -525,6 +543,41 @@ export class VnstockAppComponent implements OnInit, OnDestroy {
 
   trackByStockSymbol(index: number, stock: StockData): string {
     return stock.symbol;
+  }
+
+  // Format post date
+  formatPostDate(dateStr: string): string {
+    if (!dateStr) return '';
+    
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    
+    if (diffMins < 1) return 'Vừa xong';
+    if (diffMins < 60) return `${diffMins} phút trước`;
+    if (diffHours < 24) return `${diffHours} giờ trước`;
+    if (diffDays < 7) return `${diffDays} ngày trước`;
+    
+    return date.toLocaleDateString('vi-VN');
+  }
+
+  // Get change class for tagged symbols
+  getChangeClass(change: number | undefined): string {
+    if (!change && change !== 0) return 'change-neutral';
+    if (change > 0) return 'change-up';
+    if (change < 0) return 'change-down';
+    return 'change-neutral';
+  }
+
+  // Format change value
+  formatChange(change: number | undefined): string {
+    if (change === undefined || change === null) return '';
+    if (!change && change !== 0) return '';
+    const sign = change > 0 ? '+' : '';
+    return `${sign}${change.toFixed(2)}`;
   }
 }
 

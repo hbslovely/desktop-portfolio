@@ -60,11 +60,40 @@ export interface SymbolPost {
   id?: string;
   title?: string;
   content?: string;
+  originalContent?: string;
   summary?: string;
   publishDate?: string;
+  date?: string;
   source?: string;
   url?: string;
   imageUrl?: string;
+  user?: {
+    id?: string;
+    name?: string;
+    bio?: string;
+    isAuthentic?: boolean;
+    followed?: boolean;
+  };
+  link?: string;
+  linkImage?: string;
+  linkTitle?: string;
+  linkDescription?: string;
+  images?: Array<{
+    imageID?: number;
+    base64Image?: string;
+    imageUrl?: string;
+  }>;
+  totalLikes?: number;
+  totalReplies?: number;
+  totalShares?: number;
+  taggedSymbols?: Array<{
+    symbol?: string;
+    price?: number;
+    change?: number;
+    percentChange?: number;
+    changeSince?: number;
+    percentChangeSince?: number;
+  }>;
   [key: string]: any;
 }
 
@@ -86,16 +115,35 @@ export interface HistoricalQuote {
 }
 
 export interface InstitutionProfile {
+  institutionID?: number;
   symbol?: string;
+  icbCode?: string;
   companyName?: string;
-  address?: string;
+  shortName?: string;
+  internationalName?: string;
+  headQuarters?: string;
   phone?: string;
   fax?: string;
   email?: string;
-  website?: string;
+  webAddress?: string;
+  overview?: string;
+  history?: string;
   businessAreas?: string;
   employees?: number;
-  establishedDate?: string;
+  branches?: number;
+  establishmentDate?: string;
+  businessLicenseNumber?: string;
+  dateOfIssue?: string;
+  taxIDNumber?: string;
+  charterCapital?: number;
+  dateOfListing?: string;
+  exchange?: string;
+  initialListingPrice?: number;
+  listingVolume?: number;
+  stateOwnership?: number;
+  foreignOwnership?: number;
+  otherOwnership?: number;
+  isListed?: boolean;
   [key: string]: any;
 }
 
@@ -424,13 +472,27 @@ export class FireantService {
         }
 
         console.log(`✅ Received ${dataArray.length} industries`);
+        
+        // Log first industry for debugging
+        if (dataArray.length > 0) {
+          console.log('📋 Sample industry:', JSON.stringify(dataArray[0], null, 2));
+        }
 
-        return dataArray.map((item: any) => ({
-          icbCode: item.icbCode || item.code || '',
-          icbName: item.icbName || item.name || '',
-          orderNo: item.orderNo || 0,
-          level: item.level || 0
-        }));
+        return dataArray.map((item: any) => {
+          const industry = {
+            icbCode: item.industryCode || item.icbCode || item.code || '',
+            icbName: item.name || item.icbName || item.industryName || '',
+            orderNo: item.orderNo || 0,
+            level: item.level || 0
+          };
+          
+          // Log if icbCode is missing
+          if (!industry.icbCode) {
+            console.warn('⚠️ Industry missing icbCode:', item);
+          }
+          
+          return industry;
+        });
       }),
       catchError(error => {
         console.error('❌ Error fetching industries:', error);
@@ -503,7 +565,7 @@ export class FireantService {
       'Content-Type': 'application/json'
     });
 
-    const url = `${this.apiUrl}/symbols?icbCode=${icbCode}`;
+    const url = `${this.apiUrl}/icb/${icbCode}/symbols`;
     console.log(`📊 Fetching symbols by industry ${icbCode}: ${url}`);
 
     return this.http.get<any>(url, { headers }).pipe(
@@ -732,22 +794,41 @@ export class FireantService {
 
     console.log(`🏢 Fetching institution profile for ${symbol}...`);
 
-    return this.http.get<any>(`${this.apiUrl}/symbols/${symbol}/institution-profile`, { headers }).pipe(
+    return this.http.get<any>(`${this.apiUrl}/symbols/${symbol}/profile`, { headers }).pipe(
       map(response => {
         console.log('✅ Institution Profile Response:', response);
         const data = response.data || response;
 
         return {
+          institutionID: data.institutionID || 0,
           symbol: data.symbol || symbol,
-          companyName: data.companyName || data.organName || '',
-          address: data.address || '',
-          phone: data.phone || data.phoneNumber || '',
+          icbCode: data.icbCode || '',
+          companyName: data.companyName || '',
+          shortName: data.shortName || '',
+          internationalName: data.internationalName || '',
+          headQuarters: data.headQuarters || '',
+          phone: data.phone || '',
           fax: data.fax || '',
           email: data.email || '',
-          website: data.website || '',
-          businessAreas: data.businessAreas || data.business || '',
-          employees: data.employees || data.totalEmployees || 0,
-          establishedDate: data.establishedDate || data.foundedDate || '',
+          webAddress: data.webAddress || '',
+          overview: data.overview || '',
+          history: data.history || '',
+          businessAreas: data.businessAreas || '',
+          employees: data.employees || 0,
+          branches: data.branches || 0,
+          establishmentDate: data.establishmentDate || data.establishmentDate || '',
+          businessLicenseNumber: data.businessLicenseNumber || '',
+          dateOfIssue: data.dateOfIssue || '',
+          taxIDNumber: data.taxIDNumber || '',
+          charterCapital: data.charterCapital || 0,
+          dateOfListing: data.dateOfListing || '',
+          exchange: data.exchange || '',
+          initialListingPrice: data.initialListingPrice || 0,
+          listingVolume: data.listingVolume || 0,
+          stateOwnership: data.stateOwnership || 0,
+          foreignOwnership: data.foreignOwnership || 0,
+          otherOwnership: data.otherOwnership || 0,
+          isListed: data.isListed || false,
           ...data
         };
       }),
