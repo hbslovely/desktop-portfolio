@@ -359,38 +359,109 @@
       </div>
 
       <!-- Institution Profile -->
-      <div class="data-section" *ngIf="institutionProfile">
+      <div class="data-section profile-section" *ngIf="institutionProfile">
         <div class="section-header">
-          <h4>🏢 Thông Tin Doanh Nghiệp</h4>
+          <h4>🏢 Hồ Sơ Doanh Nghiệp</h4>
+          <span class="badge" *ngIf="institutionProfile.isListed">Đã niêm yết</span>
         </div>
-        <div class="institution-details">
-          <div class="detail-row" *ngIf="institutionProfile.companyName">
-            <span class="detail-label">Tên công ty:</span>
-            <span class="detail-value">{{institutionProfile.companyName}}</span>
+        
+        <!-- Company Overview -->
+        <div class="profile-overview" *ngIf="institutionProfile.overview">
+          <h5>Tổng Quan</h5>
+          <p class="overview-text">{{institutionProfile.overview}}</p>
+        </div>
+
+        <!-- Company History -->
+        <div class="profile-overview" *ngIf="institutionProfile.history">
+          <h5>Lịch Sử Hình Thành</h5>
+          <p class="overview-text">{{institutionProfile.history}}</p>
+        </div>
+
+        <!-- Basic Info Grid -->
+        <div class="profile-grid">
+          <div class="profile-card" *ngIf="institutionProfile.companyName">
+            <div class="card-label">Tên công ty</div>
+            <div class="card-value">{{institutionProfile.companyName}}</div>
           </div>
-          <div class="detail-row" *ngIf="institutionProfile.address">
-            <span class="detail-label">Địa chỉ:</span>
-            <span class="detail-value">{{institutionProfile.address}}</span>
+          
+          <div class="profile-card" *ngIf="institutionProfile.shortName">
+            <div class="card-label">Tên viết tắt</div>
+            <div class="card-value">{{institutionProfile.shortName}}</div>
           </div>
-          <div class="detail-row" *ngIf="institutionProfile.phone">
-            <span class="detail-label">Điện thoại:</span>
-            <span class="detail-value">{{institutionProfile.phone}}</span>
+          
+          <div class="profile-card" *ngIf="institutionProfile.exchange">
+            <div class="card-label">Sàn giao dịch</div>
+            <div class="card-value">{{institutionProfile.exchange}}</div>
           </div>
-          <div class="detail-row" *ngIf="institutionProfile.website">
-            <span class="detail-label">Website:</span>
-            <span class="detail-value"><a [href]="institutionProfile.website" target="_blank">{{institutionProfile.website}}</a></span>
+          
+          <div class="profile-card" *ngIf="institutionProfile.employees">
+            <div class="card-label">Số nhân viên</div>
+            <div class="card-value">{{formatNumber(institutionProfile.employees)}}</div>
           </div>
-          <div class="detail-row" *ngIf="institutionProfile.email">
-            <span class="detail-label">Email:</span>
-            <span class="detail-value">{{institutionProfile.email}}</span>
+          
+          <div class="profile-card" *ngIf="institutionProfile.branches">
+            <div class="card-label">Chi nhánh</div>
+            <div class="card-value">{{institutionProfile.branches}}</div>
           </div>
-          <div class="detail-row" *ngIf="institutionProfile.businessAreas">
-            <span class="detail-label">Lĩnh vực KD:</span>
-            <span class="detail-value">{{institutionProfile.businessAreas}}</span>
+          
+          <div class="profile-card" *ngIf="institutionProfile.charterCapital">
+            <div class="card-label">Vốn điều lệ</div>
+            <div class="card-value">{{formatMarketCap(institutionProfile.charterCapital)}}</div>
           </div>
-          <div class="detail-row" *ngIf="institutionProfile.employees">
-            <span class="detail-label">Số nhân viên:</span>
-            <span class="detail-value">{{formatNumber(institutionProfile.employees)}}</span>
+        </div>
+
+        <!-- Contact Info -->
+        <div class="contact-section">
+          <h5>Thông Tin Liên Hệ</h5>
+          <div class="institution-details">
+            <div class="detail-row" *ngIf="institutionProfile.headQuarters">
+              <span class="detail-label">Trụ sở chính:</span>
+              <span class="detail-value">{{institutionProfile.headQuarters}}</span>
+            </div>
+            <div class="detail-row" *ngIf="institutionProfile.phone">
+              <span class="detail-label">Điện thoại:</span>
+              <span class="detail-value">{{institutionProfile.phone}}</span>
+            </div>
+            <div class="detail-row" *ngIf="institutionProfile.fax">
+              <span class="detail-label">Fax:</span>
+              <span class="detail-value">{{institutionProfile.fax}}</span>
+            </div>
+            <div class="detail-row" *ngIf="institutionProfile.email">
+              <span class="detail-label">Email:</span>
+              <span class="detail-value">{{institutionProfile.email}}</span>
+            </div>
+            <div class="detail-row" *ngIf="institutionProfile.webAddress">
+              <span class="detail-label">Website:</span>
+              <span class="detail-value"><a [href]="institutionProfile.webAddress" target="_blank">{{institutionProfile.webAddress}}</a></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Ownership -->
+        <div class="ownership-section" *ngIf="institutionProfile.stateOwnership || institutionProfile.foreignOwnership">
+          <h5>Cơ Cấu Sở Hữu</h5>
+          <div class="ownership-bars">
+            <div class="ownership-bar" *ngIf="institutionProfile.stateOwnership">
+              <div class="bar-label">Sở hữu Nhà nước</div>
+              <div class="bar-container">
+                <div class="bar-fill state" [style.width.%]="institutionProfile.stateOwnership"></div>
+                <span class="bar-value">{{institutionProfile.stateOwnership}}%</span>
+              </div>
+            </div>
+            <div class="ownership-bar" *ngIf="institutionProfile.foreignOwnership">
+              <div class="bar-label">Sở hữu nước ngoài</div>
+              <div class="bar-container">
+                <div class="bar-fill foreign" [style.width.%]="institutionProfile.foreignOwnership"></div>
+                <span class="bar-value">{{institutionProfile.foreignOwnership}}%</span>
+              </div>
+            </div>
+            <div class="ownership-bar" *ngIf="institutionProfile.otherOwnership">
+              <div class="bar-label">Sở hữu khác</div>
+              <div class="bar-container">
+                <div class="bar-fill other" [style.width.%]="institutionProfile.otherOwnership"></div>
+                <span class="bar-value">{{institutionProfile.otherOwnership}}%</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -427,19 +498,74 @@
       </div>
 
       <!-- News/Posts -->
-      <div class="data-section" *ngIf="symbolPosts.length > 0">
+      <div class="data-section posts-section" *ngIf="symbolPosts.length > 0">
         <div class="section-header">
-          <h4>📰 Tin Tức & Bài Viết</h4>
+          <h4>📰 Tin Tức & Thảo Luận</h4>
+          <span class="post-count">{{symbolPosts.length}} bài viết</span>
         </div>
         <div class="posts-list">
-          <div class="post-item" *ngFor="let post of symbolPosts">
-            <div class="post-content">
-              <h5 class="post-title">{{post.title}}</h5>
-              <p class="post-summary" *ngIf="post.summary">{{post.summary}}</p>
-              <div class="post-meta">
-                <span *ngIf="post.source">📌 {{post.source}}</span>
-                <span *ngIf="post.publishDate">📅 {{post.publishDate}}</span>
-                <a *ngIf="post.url" [href]="post.url" target="_blank" class="post-link">Xem chi tiết →</a>
+          <div class="post-card" *ngFor="let post of symbolPosts">
+            <!-- User Info -->
+            <div class="post-header" *ngIf="post.user">
+              <div class="user-avatar">
+                {{post.user.name?.charAt(0) || '?'}}
+              </div>
+              <div class="user-info">
+                <div class="user-name">
+                  {{post.user.name}}
+                  <span class="verified-badge" *ngIf="post.user.isAuthentic">✓</span>
+                </div>
+                <div class="post-date">{{formatPostDate(post.publishDate || post.date)}}</div>
+              </div>
+            </div>
+
+            <!-- Post Content -->
+            <div class="post-body">
+              <h5 class="post-title" *ngIf="post.title">{{post.title}}</h5>
+              <p class="post-content-text">{{post.content || post.originalContent}}</p>
+              
+              <!-- Link Preview -->
+              <div class="link-preview" *ngIf="post.link">
+                <img *ngIf="post.linkImage" [src]="post.linkImage" [alt]="post.linkTitle" class="link-image">
+                <div class="link-info">
+                  <div class="link-title" *ngIf="post.linkTitle">{{post.linkTitle}}</div>
+                  <div class="link-desc" *ngIf="post.linkDescription">{{post.linkDescription}}</div>
+                  <a [href]="post.link" target="_blank" class="link-url">{{post.link}}</a>
+                </div>
+              </div>
+
+              <!-- Images -->
+              <div class="post-images" *ngIf="post.images && post.images.length > 0">
+                <img *ngFor="let img of post.images" [src]="img.imageUrl" alt="Post image" class="post-image">
+              </div>
+            </div>
+
+            <!-- Post Footer -->
+            <div class="post-footer">
+              <div class="post-stats">
+                <span class="stat-item" *ngIf="post.totalLikes">
+                  <span class="stat-icon">👍</span>
+                  <span class="stat-value">{{post.totalLikes}}</span>
+                </span>
+                <span class="stat-item" *ngIf="post.totalReplies">
+                  <span class="stat-icon">💬</span>
+                  <span class="stat-value">{{post.totalReplies}}</span>
+                </span>
+                <span class="stat-item" *ngIf="post.totalShares">
+                  <span class="stat-icon">🔄</span>
+                  <span class="stat-value">{{post.totalShares}}</span>
+                </span>
+              </div>
+              
+              <!-- Tagged Symbols -->
+              <div class="tagged-symbols" *ngIf="post.taggedSymbols && post.taggedSymbols.length > 0">
+                <span class="tag-label">Cổ phiếu:</span>
+                <span class="symbol-tag" *ngFor="let tagged of post.taggedSymbols">
+                  {{tagged.symbol}}
+                  <span [class]="getChangeClass(tagged.change)">
+                    {{formatChange(tagged.change)}}
+                  </span>
+                </span>
               </div>
             </div>
           </div>
