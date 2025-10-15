@@ -368,13 +368,13 @@
         <!-- Company Overview -->
         <div class="profile-overview" *ngIf="institutionProfile.overview">
           <h5>Tổng Quan</h5>
-          <p class="overview-text">{{institutionProfile.overview}}</p>
+          <div class="overview-text" [innerHTML]="textToHtml(institutionProfile.overview)"></div>
         </div>
 
         <!-- Company History -->
         <div class="profile-overview" *ngIf="institutionProfile.history">
           <h5>Lịch Sử Hình Thành</h5>
-          <p class="overview-text">{{institutionProfile.history}}</p>
+          <div class="overview-text" [innerHTML]="textToHtml(institutionProfile.history)"></div>
         </div>
 
         <!-- Basic Info Grid -->
@@ -445,21 +445,21 @@
               <div class="bar-label">Sở hữu Nhà nước</div>
               <div class="bar-container">
                 <div class="bar-fill state" [style.width.%]="institutionProfile.stateOwnership"></div>
-                <span class="bar-value">{{institutionProfile.stateOwnership}}%</span>
+                <span class="bar-value">{{formatOwnership(institutionProfile.stateOwnership)}}%</span>
               </div>
             </div>
             <div class="ownership-bar" *ngIf="institutionProfile.foreignOwnership">
               <div class="bar-label">Sở hữu nước ngoài</div>
               <div class="bar-container">
                 <div class="bar-fill foreign" [style.width.%]="institutionProfile.foreignOwnership"></div>
-                <span class="bar-value">{{institutionProfile.foreignOwnership}}%</span>
+                <span class="bar-value">{{formatOwnership(institutionProfile.foreignOwnership)}}%</span>
               </div>
             </div>
             <div class="ownership-bar" *ngIf="institutionProfile.otherOwnership">
               <div class="bar-label">Sở hữu khác</div>
               <div class="bar-container">
                 <div class="bar-fill other" [style.width.%]="institutionProfile.otherOwnership"></div>
-                <span class="bar-value">{{institutionProfile.otherOwnership}}%</span>
+                <span class="bar-value">{{formatOwnership(institutionProfile.otherOwnership)}}%</span>
               </div>
             </div>
           </div>
@@ -485,7 +485,7 @@
             </thead>
             <tbody>
               <tr *ngFor="let quote of historicalQuotes.slice(0, 10)">
-                <td>{{quote.date}}</td>
+                <td>{{formatHistoricalDate(quote.date || '')}}</td>
                 <td class="text-right">{{formatPrice(quote.open || 0)}}</td>
                 <td class="text-right">{{formatPrice(quote.high || 0)}}</td>
                 <td class="text-right">{{formatPrice(quote.low || 0)}}</td>
@@ -521,8 +521,8 @@
 
             <!-- Post Content -->
             <div class="post-body">
-              <h5 class="post-title" *ngIf="post.title">{{post.title}}</h5>
-              <p class="post-content-text">{{post.content || post.originalContent}}</p>
+              <h5 class="post-title" *ngIf="post.title">{{decodeHtml(post.title)}}</h5>
+              <div class="post-content-text" [innerHTML]="decodeHtml(post.content || post.originalContent || '')"></div>
               
               <!-- Link Preview -->
               <div class="link-preview" *ngIf="post.link">

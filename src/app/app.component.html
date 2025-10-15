@@ -1081,6 +1081,12 @@
 
       <app-yugioh-app *ngSwitchCase="'yugioh'"></app-yugioh-app>
 
+      <app-yugioh-card-detail 
+        *ngSwitchCase="'yugioh-card-detail'"
+        [cardId]="window.data?.cardId"
+        [cardName]="window.data?.cardName">
+      </app-yugioh-card-detail>
+
       <app-vnstock-app *ngSwitchCase="'vnstock'"></app-vnstock-app>
     </ng-container>
   </app-window>

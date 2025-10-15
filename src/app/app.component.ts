@@ -23,6 +23,7 @@ import { LinkShortenerComponent } from './components/apps/link-shortener/link-sh
 import { CountriesAppComponent } from './components/apps/countries-app/countries-app.component';
 import { TextEditorComponent } from './components/apps/text-editor/text-editor.component';
 import { YugiohAppComponent } from './components/apps/yugioh-app/yugioh-app.component';
+import { YugiohCardDetailComponent } from './components/apps/yugioh-card-detail/yugioh-card-detail.component';
 import { AboutMeComponent } from './components/apps/about-me/about-me.component';
 import { VnstockAppComponent } from './components/apps/vnstock-app/vnstock-app.component';
 import { WelcomeScreenComponent } from './components/welcome-screen/welcome-screen.component';
@@ -44,7 +45,7 @@ import { FileSystemService } from './services/file-system.service';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [ WelcomeScreenComponent, WindowComponent, DesktopIconComponent, CalculatorComponent, IframeAppComponent, LoveAppComponent, ExplorerComponent, TextViewerComponent, ImageViewerComponent, PdfViewerComponent, MachineInfoComponent, CreditAppComponent, PaintAppComponent, CreditsAppComponent, HcmcAppComponent, NewsAppComponent, SettingsAppComponent, TaskManagerComponent, WeatherAppComponent, DictionaryAppComponent, LinkShortenerComponent, CountriesAppComponent, TextEditorComponent, YugiohAppComponent, AboutMeComponent, VnstockAppComponent, CommonModule, FormsModule, SettingsDialogComponent ],
+  imports: [ WelcomeScreenComponent, WindowComponent, DesktopIconComponent, CalculatorComponent, IframeAppComponent, LoveAppComponent, ExplorerComponent, TextViewerComponent, ImageViewerComponent, PdfViewerComponent, MachineInfoComponent, CreditAppComponent, PaintAppComponent, CreditsAppComponent, HcmcAppComponent, NewsAppComponent, SettingsAppComponent, TaskManagerComponent, WeatherAppComponent, DictionaryAppComponent, LinkShortenerComponent, CountriesAppComponent, TextEditorComponent, YugiohAppComponent, YugiohCardDetailComponent, AboutMeComponent, VnstockAppComponent, CommonModule, FormsModule, SettingsDialogComponent ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
 })
