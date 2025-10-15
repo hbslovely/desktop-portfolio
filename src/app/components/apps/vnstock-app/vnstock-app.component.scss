@@ -112,6 +112,47 @@
   }
 }
 
+// Market Sub-Navigation
+.market-sub-nav {
+  display: flex;
+  gap: 8px;
+  padding: 16px 20px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e0e6ed;
+  overflow-x: auto;
+
+  .market-sub-btn {
+    padding: 10px 20px;
+    background: #fff;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    color: #475569;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+
+    .sub-icon {
+      font-size: 16px;
+    }
+
+    &:hover {
+      background: #f1f5f9;
+      border-color: #94a3b8;
+    }
+
+    &.active {
+      background: #1e40af;
+      border-color: #1e40af;
+      color: #fff;
+    }
+  }
+}
+
 // Sub Header (Exchange/Index selectors)
 .sub-header {
   padding: 16px 20px;
@@ -124,14 +165,20 @@
   border-bottom: 1px solid #e0e6ed;
 
   .exchange-selector,
-  .index-selector {
+  .contributor-type-selector,
+  .mover-top-type-selector,
+  .mover-exchange-selector,
+  .mover-security-type-selector {
     display: flex;
     gap: 8px;
     flex-wrap: wrap;
   }
 
   .exchange-btn,
-  .index-btn {
+  .contributor-type-btn,
+  .mover-top-type-btn,
+  .mover-exchange-btn,
+  .mover-security-type-btn {
     padding: 8px 16px;
     background: #fff;
     border: 1px solid #cbd5e1;
@@ -141,6 +188,15 @@
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    .type-icon,
+    .exchange-icon,
+    .security-icon {
+      font-size: 14px;
+    }
 
     &:hover {
       background: #f1f5f9;
@@ -343,6 +399,17 @@
         &.symbol {
           font-weight: 700;
           color: #1e40af;
+
+          &.clickable {
+            cursor: pointer;
+            text-decoration: underline;
+            transition: all 0.2s ease;
+
+            &:hover {
+              color: #1e3a8a;
+              background: #f1f5f9;
+            }
+          }
         }
 
         &.name {
@@ -1325,6 +1392,102 @@
           z-index: 1;
         }
       }
+    }
+  }
+}
+
+// Macro Indicators Grid
+.macro-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 20px;
+  padding: 20px;
+
+  .macro-card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 20px;
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+
+    &:hover {
+      box-shadow: 0 4px 16px rgba(30, 64, 175, 0.1);
+      border-color: #cbd5e1;
+      transform: translateY(-2px);
+    }
+
+    .macro-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+
+      .macro-name {
+        font-size: 13px;
+        font-weight: 600;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        flex: 1;
+      }
+
+      .macro-period {
+        font-size: 11px;
+        color: #94a3b8;
+        background: #f1f5f9;
+        padding: 2px 8px;
+        border-radius: 4px;
+        white-space: nowrap;
+      }
+    }
+
+    .macro-value {
+      font-size: 28px;
+      font-weight: 700;
+      color: #1e293b;
+      line-height: 1.2;
+
+      .macro-unit {
+        font-size: 16px;
+        font-weight: 500;
+        color: #64748b;
+        margin-left: 4px;
+      }
+    }
+
+    .macro-change {
+      font-size: 14px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+
+      &.positive {
+        color: #10b981;
+      }
+
+      &.negative {
+        color: #ef4444;
+      }
+
+      &.neutral {
+        color: #f59e0b;
+      }
+    }
+  }
+
+  .no-results-content {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 60px 20px;
+    color: #94a3b8;
+
+    p {
+      font-size: 16px;
+      margin: 0;
     }
   }
 }

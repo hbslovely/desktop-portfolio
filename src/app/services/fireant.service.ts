@@ -397,10 +397,12 @@ export class FireantService {
   }
 
   /**
-   * Get top contributors to index
-   * @param index - Index code (VNINDEX, HNX-INDEX, UPCOM-INDEX, VN30)
+   * Get top contributors to index (contribute-to-index endpoint)
+   * @param exchange - Exchange code (HSX, HNX, UPCOM)
+   * @param type - Type (1: Đóng góp tăng index, 2: Đóng góp giảm index)
+   * @param count - Number of records (default 20)
    */
-  getTopContributors(index: string = 'VNINDEX'): Observable<StockData[]> {
+  getTopContributors(exchange: string = 'HSX', type: number = 1, count: number = 20): Observable<StockData[]> {
     const token = this.tokenSubject.value;
     
     if (!token) {
@@ -413,8 +415,8 @@ export class FireantService {
       'Content-Type': 'application/json'
     });
 
-    const url = `${this.apiUrl}/symbols/top-contributors-to-index?index=${index}`;
-    console.log(`📊 Fetching top contributors to ${index}: ${url}`);
+    const url = `${this.apiUrl}/symbols/contribute-to-index?exchange=${exchange}&type=${type}&count=${count}`;
+    console.log(`📊 Fetching top contributors for ${exchange} (type: ${type}): ${url}`);
 
     return this.http.get<any>(url, { headers }).pipe(
       map(response => {
@@ -452,12 +454,12 @@ export class FireantService {
             high: priceData.highest || item.highest || item.high || 0,
             low: priceData.lowest || item.lowest || item.low || 0,
             open: priceData.open || item.open || 0,
-            contributionToIndex: item.contributionToIndex || item.indexContribution || item.indexImpact || 0
+            contributionToIndex: item.contributionToIndex || item.indexContribution || item.indexImpact || item.contribution || 0
           };
         });
       }),
       catchError(error => {
-        console.error(`❌ Error fetching top contributors for ${index}:`, error);
+        console.error(`❌ Error fetching top contributors for ${exchange}:`, error);
         throw error;
       })
     );
@@ -855,10 +857,12 @@ export class FireantService {
 
   /**
    * Get top movers (gainers, losers, most active)
-   * @param type - Type of movers: 'gainer', 'loser', 'active', 'breakout', 'foreign'
-   * @param exchange - Exchange filter (optional)
+   * @param exchange - Exchange (HSX, HNX, UPCOM or empty for all)
+   * @param type - Security type (stock, warrant, crypto...)
+   * @param topType - Top type (Actives, Gainers, Losers)
+   * @param count - Number of records (default 20)
    */
-  getTopMovers(type: string = 'gainer', exchange?: string): Observable<TopMover[]> {
+  getTopMovers(exchange: string = '', type: string = 'stock', topType: string = 'Gainers', count: number = 20): Observable<TopMover[]> {
     const token = this.tokenSubject.value;
     
     if (!token) {
@@ -871,9 +875,16 @@ export class FireantService {
       'Content-Type': 'application/json'
     });
 
-    const params = exchange ? `?type=${type}&exchange=${exchange}` : `?type=${type}`;
-    const url = `${this.apiUrl}/symbols/top-movers${params}`;
-    console.log(`📊 Fetching top movers (${type}): ${url}`);
+    // Build query params
+    const params: string[] = [];
+    if (exchange) params.push(`exchange=${exchange}`);
+    if (type) params.push(`type=${type}`);
+    if (topType) params.push(`topType=${topType}`);
+    if (count) params.push(`count=${count}`);
+    
+    const queryString = params.length > 0 ? `?${params.join('&')}` : '';
+    const url = `${this.apiUrl}/symbols/movers${queryString}`;
+    console.log(`📊 Fetching top movers (${topType}): ${url}`);
 
     return this.http.get<any>(url, { headers }).pipe(
       map(response => {
@@ -905,13 +916,13 @@ export class FireantService {
             high: priceData.highest || item.highest || item.high || 0,
             low: priceData.lowest || item.lowest || item.low || 0,
             open: priceData.open || item.open || 0,
-            type: type,
+            type: topType,
             ...item
           };
         });
       }),
       catchError(error => {
-        console.error(`❌ Error fetching top movers (${type}):`, error);
+        console.error(`❌ Error fetching top movers (${topType}):`, error);
         throw error;
       })
     );
