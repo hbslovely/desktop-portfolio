@@ -546,7 +546,7 @@ export class VnstockAppComponent implements OnInit, OnDestroy {
   }
 
   // Format post date
-  formatPostDate(dateStr: string): string {
+  formatPostDate(dateStr: string | undefined): string {
     if (!dateStr) return '';
     
     const date = new Date(dateStr);
@@ -562,6 +562,36 @@ export class VnstockAppComponent implements OnInit, OnDestroy {
     if (diffDays < 7) return `${diffDays} ngày trước`;
     
     return date.toLocaleDateString('vi-VN');
+  }
+
+  // Format date for historical data (DD/MM/YYYY)
+  formatHistoricalDate(dateStr: string): string {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  }
+
+  // Format ownership percentage (2 decimal places)
+  formatOwnership(value: number | undefined): string {
+    if (value === undefined || value === null) return '0.00';
+    return value.toFixed(2);
+  }
+
+  // Decode HTML entities
+  decodeHtml(html: string): string {
+    const txt = document.createElement('textarea');
+    txt.innerHTML = html;
+    return txt.value;
+  }
+
+  // Convert text to HTML paragraphs
+  textToHtml(text: string | undefined): string {
+    if (!text) return '';
+    const decoded = this.decodeHtml(text);
+    return decoded.split('\n').filter(p => p.trim()).map(p => `<p>${p.trim()}</p>`).join('');
   }
 
   // Get change class for tagged symbols

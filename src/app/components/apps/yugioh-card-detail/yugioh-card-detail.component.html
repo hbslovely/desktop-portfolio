@@ -1,0 +1,190 @@
+<div class="card-detail-container">
+  <!-- Loading State -->
+  <div *ngIf="isLoading()" class="loading-state">
+    <div class="spinner"></div>
+    <p>Loading card details...</p>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="error() && !isLoading()" class="error-state">
+    <i class="pi pi-exclamation-circle"></i>
+    <h2>Error</h2>
+    <p>{{ error() }}</p>
+    <button class="btn-retry" (click)="loadCardDetail()">
+      <i class="pi pi-refresh"></i> Retry
+    </button>
+  </div>
+
+  <!-- Card Content -->
+  <div *ngIf="card() && !isLoading() && !error()" class="card-content">
+    <!-- Left Column - Card Image -->
+    <div class="card-image-section">
+      <div class="image-wrapper" [class]="getFrameTypeClass(card()!.frameType)">
+        <img 
+          [src]="getCardImageUrl(selectedImageSize())" 
+          [alt]="card()!.name"
+          class="main-card-image">
+        
+        <!-- Image Navigation -->
+        <div *ngIf="hasMultipleImages()" class="image-nav">
+          <button 
+            class="nav-btn"
+            [disabled]="currentImageIndex() === 0"
+            (click)="prevImage()">
+            <i class="pi pi-chevron-left"></i>
+          </button>
+          <span class="image-counter">
+            {{ currentImageIndex() + 1 }} / {{ card()!.card_images.length }}
+          </span>
+          <button 
+            class="nav-btn"
+            [disabled]="currentImageIndex() === card()!.card_images.length - 1"
+            (click)="nextImage()">
+            <i class="pi pi-chevron-right"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Image Size Selector -->
+      <div class="image-size-selector">
+        <button 
+          [class.active]="selectedImageSize() === 'normal'"
+          (click)="setImageSize('normal')">
+          Normal
+        </button>
+        <button 
+          [class.active]="selectedImageSize() === 'small'"
+          (click)="setImageSize('small')">
+          Small
+        </button>
+        <button 
+          [class.active]="selectedImageSize() === 'cropped'"
+          (click)="setImageSize('cropped')">
+          Artwork
+        </button>
+      </div>
+
+      <!-- External Link -->
+      <button 
+        class="btn-external"
+        *ngIf="card()!.ygoprodeck_url"
+        (click)="openYgoprodeckPage()">
+        <i class="pi pi-external-link"></i>
+        View on YGOPRODeck
+      </button>
+    </div>
+
+    <!-- Right Column - Card Info -->
+    <div class="card-info-section">
+      <!-- Card Header -->
+      <div class="card-header">
+        <div class="header-top">
+          <h1 class="card-name">{{ card()!.name }}</h1>
+          <div class="card-id">ID: {{ card()!.id }}</div>
+        </div>
+        <div class="card-type-line">
+          <span class="card-icon" [class]="getFrameTypeClass(card()!.frameType)">
+            {{ card()!.frameType }}
+          </span>
+          <span class="card-race">{{ card()!.race }}</span>
+          <span *ngIf="card()!.attribute" class="card-attribute">
+            {{ getAttributeIcon(card()!.attribute) }} {{ card()!.attribute }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Monster Stats -->
+      <div *ngIf="card()!.type.includes('Monster')" class="monster-stats">
+        <div class="stat-group">
+          <div class="stat" *ngIf="card()!.level !== undefined">
+            <span class="stat-label">Level/Rank:</span>
+            <span class="stat-value">⭐ {{ card()!.level }}</span>
+          </div>
+          <div class="stat" *ngIf="card()!.atk !== undefined">
+            <span class="stat-label">ATK:</span>
+            <span class="stat-value">{{ card()!.atk === -1 ? '?' : card()!.atk }}</span>
+          </div>
+          <div class="stat" *ngIf="card()!.def !== undefined">
+            <span class="stat-label">DEF:</span>
+            <span class="stat-value">{{ card()!.def === -1 ? '?' : card()!.def }}</span>
+          </div>
+          <div class="stat" *ngIf="card()!.scale !== undefined">
+            <span class="stat-label">Pendulum Scale:</span>
+            <span class="stat-value">{{ card()!.scale }}</span>
+          </div>
+          <div class="stat" *ngIf="card()!.linkval !== undefined">
+            <span class="stat-label">Link Value:</span>
+            <span class="stat-value">{{ card()!.linkval }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card Description -->
+      <div class="card-description">
+        <h3>Card Text</h3>
+        <p class="desc-text">{{ card()!.desc }}</p>
+      </div>
+
+      <!-- Archetype -->
+      <div *ngIf="card()!.archetype" class="card-archetype">
+        <span class="archetype-label">Archetype:</span>
+        <span class="archetype-value">{{ card()!.archetype }}</span>
+      </div>
+
+      <!-- Card Sets -->
+      <div *ngIf="card()!.card_sets && card()!.card_sets!.length > 0" class="card-sets">
+        <h3>Card Sets ({{ card()!.card_sets!.length }})</h3>
+        <div class="sets-list">
+          <div 
+            *ngFor="let set of card()!.card_sets!.slice(0, 5)" 
+            class="set-item">
+            <div class="set-name">{{ set.set_name }}</div>
+            <div class="set-details">
+              <span class="set-code">{{ set.set_code }}</span>
+              <span class="set-rarity">{{ set.set_rarity }}</span>
+            </div>
+          </div>
+          <div *ngIf="card()!.card_sets!.length > 5" class="more-sets">
+            + {{ card()!.card_sets!.length - 5 }} more sets
+          </div>
+        </div>
+      </div>
+
+      <!-- Card Prices -->
+      <div *ngIf="card()!.card_prices && card()!.card_prices!.length > 0" class="card-prices">
+        <h3>Market Prices</h3>
+        <div class="prices-grid">
+          <div class="price-item">
+            <span class="price-label">TCGPlayer:</span>
+            <span class="price-value">{{ formatPrice(card()!.card_prices?.[0]?.tcgplayer_price) }}</span>
+          </div>
+          <div class="price-item">
+            <span class="price-label">Cardmarket:</span>
+            <span class="price-value">{{ formatPrice(card()!.card_prices?.[0]?.cardmarket_price) }}</span>
+          </div>
+          <div class="price-item">
+            <span class="price-label">eBay:</span>
+            <span class="price-value">{{ formatPrice(card()!.card_prices?.[0]?.ebay_price) }}</span>
+          </div>
+          <div class="price-item">
+            <span class="price-label">Amazon:</span>
+            <span class="price-value">{{ formatPrice(card()!.card_prices?.[0]?.amazon_price) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Link Markers (for Link Monsters) -->
+      <div *ngIf="card()!.linkmarkers && card()!.linkmarkers!.length > 0" class="link-markers">
+        <h3>Link Markers</h3>
+        <div class="markers-list">
+          <span 
+            *ngFor="let marker of card()!.linkmarkers" 
+            class="marker-badge">
+            {{ marker }}
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+

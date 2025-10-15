@@ -2,6 +2,7 @@ import { Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { YugiohService, YugiohCard, FilterOptions } from '../../../services/yugioh.service';
+import { WindowManagerService } from '../../../services/window-manager.service';
 
 @Component({
   selector: 'app-yugioh-app',
@@ -13,10 +14,10 @@ import { YugiohService, YugiohCard, FilterOptions } from '../../../services/yugi
 export class YugiohAppComponent implements OnInit {
   // State signals
   allCards = signal<YugiohCard[]>([]);
+  displayedCards = signal<YugiohCard[]>([]); // Cards currently displayed (lazy loaded)
   filteredCards = signal<YugiohCard[]>([]);
-  isLoading = signal(true);
-  selectedCard = signal<YugiohCard | null>(null);
-  showCardDetail = signal(false);
+  isLoading = signal(false);
+  isLoadingMore = signal(false);
   
   // Filter state
   searchQuery = signal('');
@@ -29,9 +30,12 @@ export class YugiohAppComponent implements OnInit {
   // View mode
   viewMode = signal<'grid' | 'list'>('grid');
   
-  // Pagination
-  currentPage = signal(1);
-  itemsPerPage = 50;
+  // Lazy Loading
+  batchSize = 100; // Load 100 cards at a time
+  currentBatchIndex = signal(0);
+  hasMoreCards = computed(() => {
+    return this.displayedCards().length < this.filteredCards().length;
+  });
   
   // Computed values
   availableTypes = computed(() => {
@@ -50,31 +54,25 @@ export class YugiohAppComponent implements OnInit {
     return this.yugiohService.getUniqueAttributes(this.allCards());
   });
   
-  paginatedCards = computed(() => {
-    const cards = this.filteredCards();
-    const start = (this.currentPage() - 1) * this.itemsPerPage;
-    const end = start + this.itemsPerPage;
-    return cards.slice(start, end);
-  });
-  
-  totalPages = computed(() => {
-    return Math.ceil(this.filteredCards().length / this.itemsPerPage);
-  });
-  
-  // Statistics
+  // Statistics (based on filtered, not displayed)
   totalCards = computed(() => this.filteredCards().length);
+  displayedCount = computed(() => this.displayedCards().length);
   monsterCards = computed(() => this.filteredCards().filter(c => c.frameType !== 'spell' && c.frameType !== 'trap').length);
   spellCards = computed(() => this.filteredCards().filter(c => c.frameType === 'spell').length);
   trapCards = computed(() => this.filteredCards().filter(c => c.frameType === 'trap').length);
 
-  constructor(private yugiohService: YugiohService) {}
+  constructor(
+    private yugiohService: YugiohService,
+    private windowManager: WindowManagerService
+  ) {}
 
   ngOnInit() {
-    this.loadAllCards();
+    this.loadInitialBatch();
   }
 
-  loadAllCards() {
+  loadInitialBatch() {
     this.isLoading.set(true);
+    // Load all cards for filtering purposes, but only display first batch
     this.yugiohService.getAllCards().subscribe({
       next: (cards) => {
         this.allCards.set(cards);
@@ -86,6 +84,21 @@ export class YugiohAppComponent implements OnInit {
         this.isLoading.set(false);
       }
     });
+  }
+
+  loadMoreCards() {
+    if (!this.hasMoreCards() || this.isLoadingMore()) return;
+    
+    this.isLoadingMore.set(true);
+    const currentLength = this.displayedCards().length;
+    const nextBatch = this.filteredCards().slice(currentLength, currentLength + this.batchSize);
+    
+    // Simulate async loading for smooth UX
+    setTimeout(() => {
+      this.displayedCards.update(cards => [...cards, ...nextBatch]);
+      this.currentBatchIndex.update(i => i + 1);
+      this.isLoadingMore.set(false);
+    }, 100);
   }
 
   applyFilters() {
@@ -102,8 +115,15 @@ export class YugiohAppComponent implements OnInit {
       const sort = this.selectedSort();
       cards = this.sortCards(cards, sort);
       this.filteredCards.set(cards);
-      this.currentPage.set(1);
+      this.loadFirstBatch();
     }
+  }
+
+  loadFirstBatch() {
+    // Reset and load first batch of filtered cards
+    this.currentBatchIndex.set(0);
+    const firstBatch = this.filteredCards().slice(0, this.batchSize);
+    this.displayedCards.set(firstBatch);
   }
 
   searchWithAPI() {
@@ -136,7 +156,7 @@ export class YugiohAppComponent implements OnInit {
         }
         
         this.filteredCards.set(filteredCards);
-        this.currentPage.set(1);
+        this.loadFirstBatch();
         this.isLoading.set(false);
       },
       error: (error) => {
@@ -188,13 +208,16 @@ export class YugiohAppComponent implements OnInit {
   }
 
   openCardDetail(card: YugiohCard) {
-    this.selectedCard.set(card);
-    this.showCardDetail.set(true);
-  }
-
-  closeCardDetail() {
-    this.showCardDetail.set(false);
-    this.selectedCard.set(null);
+    // Open card detail in a new window
+    this.windowManager.openWindow({
+      id: `yugioh-card-detail-${card.id}`,
+      component: 'yugioh-card-detail',
+      title: card.name,
+      data: {
+        cardId: card.id,
+        cardName: card.name
+      }
+    });
   }
 
   getRandomCard() {

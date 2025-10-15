@@ -21,6 +21,7 @@ export interface YugiohCard {
   card_sets?: CardSet[];
   card_images: CardImage[];
   card_prices?: CardPrice[];
+  ygoprodeck_url?: string;
 }
 
 export interface CardImage {

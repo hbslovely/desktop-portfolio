@@ -264,6 +264,18 @@ export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
     maximizable: true,
     statusText: 'Browse Yu-Gi-Oh! card database'
   },
+  'yugioh-card-detail': {
+    id: 'yugioh-card-detail',
+    title: 'Card Details',
+    icon: 'pi pi-id-card',
+    component: 'yugioh-card-detail',
+    defaultWidth: 1000,
+    defaultHeight: 700,
+    defaultX: 150,
+    defaultY: 100,
+    maximizable: true,
+    statusText: 'View detailed card information'
+  },
   'vnstock': {
     id: 'vnstock',
     title: 'VNStock - Vietnam Stock Market',
