@@ -147,6 +147,31 @@ export interface InstitutionProfile {
   [key: string]: any;
 }
 
+export interface MacroIndicator {
+  indicatorID?: string;
+  name?: string;
+  value?: number;
+  unit?: string;
+  period?: string;
+  lastUpdate?: string;
+  changePercent?: number;
+  [key: string]: any;
+}
+
+export interface TopMover {
+  symbol: string;
+  name: string;
+  price: number;
+  change: number;
+  changePercent: number;
+  volume: number;
+  high: number;
+  low: number;
+  open: number;
+  type?: string; // 'gainer', 'loser', 'active'
+  [key: string]: any;
+}
+
 export interface FireAntAuthResponse {
   accessToken: string;
   tokenType?: string;
@@ -770,6 +795,123 @@ export class FireantService {
       }),
       catchError(error => {
         console.error(`❌ Error fetching historical quotes for ${symbol}:`, error);
+        throw error;
+      })
+    );
+  }
+
+  /**
+   * Get macro indicators
+   */
+  getMacroIndicators(): Observable<MacroIndicator[]> {
+    const token = this.tokenSubject.value;
+    
+    if (!token) {
+      console.error('❌ No authentication token available');
+      return throwError(() => new Error('No authentication token'));
+    }
+
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    });
+
+    console.log('📊 Fetching macro indicators...');
+
+    return this.http.get<any>(`${this.apiUrl}/macro/indicators`, { headers }).pipe(
+      map(response => {
+        console.log('✅ Macro Indicators Response:', response);
+        let dataArray = response;
+        
+        if (response && response.data) {
+          dataArray = Array.isArray(response.data) ? response.data : [response.data];
+        } else if (response && Array.isArray(response)) {
+          dataArray = response;
+        }
+
+        if (!Array.isArray(dataArray)) {
+          dataArray = [];
+        }
+
+        console.log(`✅ Received ${dataArray.length} macro indicators`);
+
+        return dataArray.map((item: any) => ({
+          indicatorID: item.indicatorID || item.id || '',
+          name: item.name || item.indicatorName || '',
+          value: item.value || item.latestValue || 0,
+          unit: item.unit || '',
+          period: item.period || item.periodName || '',
+          lastUpdate: item.lastUpdate || item.updateDate || '',
+          changePercent: item.changePercent || item.percentChange || 0,
+          ...item
+        }));
+      }),
+      catchError(error => {
+        console.error('❌ Error fetching macro indicators:', error);
+        throw error;
+      })
+    );
+  }
+
+  /**
+   * Get top movers (gainers, losers, most active)
+   * @param type - Type of movers: 'gainer', 'loser', 'active', 'breakout', 'foreign'
+   * @param exchange - Exchange filter (optional)
+   */
+  getTopMovers(type: string = 'gainer', exchange?: string): Observable<TopMover[]> {
+    const token = this.tokenSubject.value;
+    
+    if (!token) {
+      console.error('❌ No authentication token available');
+      return throwError(() => new Error('No authentication token'));
+    }
+
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    });
+
+    const params = exchange ? `?type=${type}&exchange=${exchange}` : `?type=${type}`;
+    const url = `${this.apiUrl}/symbols/top-movers${params}`;
+    console.log(`📊 Fetching top movers (${type}): ${url}`);
+
+    return this.http.get<any>(url, { headers }).pipe(
+      map(response => {
+        console.log('✅ Top Movers Response:', response);
+        let dataArray = response;
+        
+        if (response && response.data) {
+          dataArray = Array.isArray(response.data) ? response.data : [response.data];
+        } else if (response && Array.isArray(response)) {
+          dataArray = response;
+        }
+
+        if (!Array.isArray(dataArray)) {
+          dataArray = [];
+        }
+
+        console.log(`✅ Received ${dataArray.length} top movers`);
+
+        return dataArray.map((item: any) => {
+          const priceData = item.priceBasic || item;
+          
+          return {
+            symbol: item.symbol || item.ticker || item.code || '',
+            name: item.organName || item.name || item.companyName || item.organShortName || '',
+            price: priceData.matchPrice || item.lastPrice || item.price || priceData.lastPrice || 0,
+            change: priceData.change || item.change || item.priceChange || 0,
+            changePercent: priceData.changePc || item.changePc || item.changePercent || item.perPriceChange || 0,
+            volume: item.totalMatchVol || priceData.totalMatchVol || item.volume || item.totalVolume || 0,
+            high: priceData.highest || item.highest || item.high || 0,
+            low: priceData.lowest || item.lowest || item.low || 0,
+            open: priceData.open || item.open || 0,
+            type: type,
+            ...item
+          };
+        });
+      }),
+      catchError(error => {
+        console.error(`❌ Error fetching top movers (${type}):`, error);
         throw error;
       })
     );

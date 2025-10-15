@@ -6,6 +6,13 @@
   overflow: hidden;
 }
 
+.list-view-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
 // Header
 .app-header {
   display: flex;
@@ -537,6 +544,87 @@
 }
 
 .cards-content::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+  
+  &:hover {
+    background: #a8a8a8;
+  }
+}
+
+// Detail View Styles
+.detail-view-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.detail-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 24px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  flex-shrink: 0;
+  
+  .btn-back {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s;
+    
+    &:hover {
+      background: rgba(255, 255, 255, 0.3);
+      transform: translateX(-2px);
+    }
+    
+    i {
+      font-size: 16px;
+    }
+  }
+  
+  .detail-title {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+.detail-content {
+  flex: 1;
+  overflow-y: auto;
+  background: #f5f5f5;
+  
+  // Remove the default padding from the card detail component
+  app-yugioh-card-detail {
+    display: block;
+    height: 100%;
+  }
+}
+
+.detail-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.detail-content::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.detail-content::-webkit-scrollbar-thumb {
   background: #c1c1c1;
   border-radius: 4px;
   

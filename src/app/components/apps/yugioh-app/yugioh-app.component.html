@@ -1,19 +1,21 @@
 <div class="yugioh-app-container">
-  <!-- Header -->
-  <div class="app-header">
-    <div class="header-title">
-      <h1>Yu-Gi-Oh! Card Database</h1>
-      <p class="subtitle">Powered by YGOPRODeck API</p>
+  <!-- List View -->
+  <div *ngIf="currentView() === 'list'" class="list-view-container">
+    <!-- Header -->
+    <div class="app-header">
+      <div class="header-title">
+        <h1>Yu-Gi-Oh! Card Database</h1>
+        <p class="subtitle">Powered by YGOPRODeck API</p>
+      </div>
+      <div class="header-actions">
+        <button class="btn-icon" (click)="getRandomCard()" title="Random Card">
+          <i class="pi pi-refresh"></i>
+        </button>
+        <button class="btn-icon" (click)="toggleViewMode()" title="Toggle View">
+          <i [class]="viewMode() === 'grid' ? 'pi pi-list' : 'pi pi-th-large'"></i>
+        </button>
+      </div>
     </div>
-    <div class="header-actions">
-      <button class="btn-icon" (click)="getRandomCard()" title="Random Card">
-        <i class="pi pi-refresh"></i>
-      </button>
-      <button class="btn-icon" (click)="toggleViewMode()" title="Toggle View">
-        <i [class]="viewMode() === 'grid' ? 'pi pi-list' : 'pi pi-th-large'"></i>
-      </button>
-    </div>
-  </div>
 
   <!-- Statistics Bar -->
   <div class="stats-bar">
@@ -188,6 +190,27 @@
     <h3>No cards found</h3>
     <p>Try adjusting your search or filters</p>
     <button class="btn-primary" (click)="clearFilters()">Clear Filters</button>
+  </div>
+  </div>
+
+  <!-- Detail View -->
+  <div *ngIf="currentView() === 'detail' && selectedCard()" class="detail-view-container">
+    <!-- Back Button Header -->
+    <div class="detail-header">
+      <button class="btn-back" (click)="backToList()">
+        <i class="pi pi-arrow-left"></i>
+        Back to List
+      </button>
+      <h2 class="detail-title">{{ selectedCard()?.name }}</h2>
+    </div>
+
+    <!-- Card Detail Component -->
+    <div class="detail-content">
+      <app-yugioh-card-detail 
+        [cardId]="selectedCard()!.id"
+        [cardName]="selectedCard()!.name">
+      </app-yugioh-card-detail>
+    </div>
   </div>
 </div>
 

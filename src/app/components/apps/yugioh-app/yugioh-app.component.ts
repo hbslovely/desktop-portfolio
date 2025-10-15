@@ -2,12 +2,12 @@ import { Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { YugiohService, YugiohCard, FilterOptions } from '../../../services/yugioh.service';
-import { WindowManagerService } from '../../../services/window-manager.service';
+import { YugiohCardDetailComponent } from '../yugioh-card-detail/yugioh-card-detail.component';
 
 @Component({
   selector: 'app-yugioh-app',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, YugiohCardDetailComponent],
   templateUrl: './yugioh-app.component.html',
   styleUrl: './yugioh-app.component.scss'
 })
@@ -29,6 +29,10 @@ export class YugiohAppComponent implements OnInit {
   
   // View mode
   viewMode = signal<'grid' | 'list'>('grid');
+  
+  // Navigation state
+  currentView = signal<'list' | 'detail'>('list');
+  selectedCard = signal<YugiohCard | null>(null);
   
   // Lazy Loading
   batchSize = 100; // Load 100 cards at a time
@@ -62,8 +66,7 @@ export class YugiohAppComponent implements OnInit {
   trapCards = computed(() => this.filteredCards().filter(c => c.frameType === 'trap').length);
 
   constructor(
-    private yugiohService: YugiohService,
-    private windowManager: WindowManagerService
+    private yugiohService: YugiohService
   ) {}
 
   ngOnInit() {
@@ -218,16 +221,14 @@ export class YugiohAppComponent implements OnInit {
   }
 
   openCardDetail(card: YugiohCard) {
-    // Open card detail in a new window
-    this.windowManager.openWindow({
-      id: `yugioh-card-detail-${card.id}`,
-      component: 'yugioh-card-detail',
-      title: card.name,
-      data: {
-        cardId: card.id,
-        cardName: card.name
-      }
-    });
+    // Show card detail within the same component
+    this.selectedCard.set(card);
+    this.currentView.set('detail');
+  }
+  
+  backToList() {
+    this.currentView.set('list');
+    this.selectedCard.set(null);
   }
 
   getRandomCard() {
