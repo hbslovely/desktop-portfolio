@@ -1,0 +1,286 @@
+.about-me-container {
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  background: #f5f5f5;
+  padding: 32px;
+  box-sizing: border-box;
+}
+
+// Profile Section
+.profile-section {
+  background: white;
+  border-radius: 8px;
+  padding: 32px;
+  margin-bottom: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.profile-header {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 24px;
+  align-items: center;
+}
+
+.avatar {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  
+  i {
+    font-size: 48px;
+    color: white;
+  }
+}
+
+.profile-info {
+  flex: 1;
+  
+  h1 {
+    margin: 0 0 8px;
+    font-size: 28px;
+    font-weight: 600;
+    color: #212529;
+  }
+  
+  h2 {
+    margin: 0 0 16px;
+    font-size: 16px;
+    font-weight: 400;
+    color: #6c757d;
+  }
+}
+
+.contact-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.info-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #495057;
+  
+  i {
+    color: #6c757d;
+    font-size: 14px;
+  }
+}
+
+.bio {
+  padding-top: 16px;
+  border-top: 1px solid #e9ecef;
+  
+  p {
+    margin: 0;
+    line-height: 1.6;
+    color: #495057;
+    font-size: 15px;
+  }
+}
+
+// Section Styles
+.section {
+  background: white;
+  border-radius: 8px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.section-title {
+  margin: 0 0 20px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #212529;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  
+  i {
+    color: #667eea;
+    font-size: 20px;
+  }
+}
+
+// Skills Grid
+.skills-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.skill-tag {
+  padding: 8px 16px;
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #495057;
+  transition: all 0.2s;
+  
+  &:hover {
+    background: #e9ecef;
+    border-color: #adb5bd;
+  }
+}
+
+// Apps Grid
+.apps-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.app-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: white;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+  position: relative;
+  overflow: hidden;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: var(--app-color, #667eea);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.2s;
+  }
+  
+  &:hover {
+    border-color: #dee2e6;
+    background: #f8f9fa;
+    transform: translateX(4px);
+    
+    &::before {
+      transform: scaleX(1);
+    }
+    
+    .app-arrow {
+      transform: translateX(4px);
+      opacity: 1;
+    }
+  }
+  
+  &:active {
+    transform: translateX(2px);
+    background: #e9ecef;
+  }
+}
+
+.app-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  background: var(--app-color, #667eea);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  
+  i {
+    font-size: 24px;
+    color: white;
+  }
+}
+
+.app-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.app-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #212529;
+  margin-bottom: 4px;
+}
+
+.app-description {
+  font-size: 12px;
+  color: #6c757d;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.app-arrow {
+  color: #adb5bd;
+  font-size: 14px;
+  opacity: 0;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+// Footer
+.footer {
+  text-align: center;
+  padding: 24px;
+  color: #6c757d;
+  font-size: 13px;
+  
+  p {
+    margin: 0;
+  }
+}
+
+// Responsive Design
+@media (max-width: 768px) {
+  .about-me-container {
+    padding: 16px;
+  }
+  
+  .profile-header {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .contact-info {
+    align-items: center;
+  }
+  
+  .apps-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+// Scrollbar Styling
+.about-me-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.about-me-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.about-me-container::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+  
+  &:hover {
+    background: #a8a8a8;
+  }
+}
+

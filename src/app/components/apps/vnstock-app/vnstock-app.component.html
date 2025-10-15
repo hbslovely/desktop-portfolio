@@ -1,0 +1,472 @@
+<div class="vnstock-container">
+  <!-- Header with Title and Controls -->
+  <div class="header">
+    <div class="header-content">
+      <h2>🇻🇳 VNStock - Thị Trường Chứng Khoán Việt Nam</h2>
+      <div class="header-controls">
+        <button class="btn-refresh" (click)="loadTabData()" [disabled]="loading">
+          {{ loading ? '⏳' : '🔄' }}
+        </button>
+        <button 
+          class="btn-auto-refresh" 
+          [class.active]="autoRefresh"
+          (click)="toggleAutoRefresh()"
+        >
+          {{ autoRefresh ? '⏸️' : '▶️' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Tab Navigation -->
+  <div class="tab-navigation">
+    <button 
+      *ngFor="let tab of tabs"
+      class="tab-btn"
+      [class.active]="activeTab === tab.id"
+      (click)="switchTab(tab.id)"
+    >
+      <span class="tab-icon">{{tab.icon}}</span>
+      <span class="tab-name">{{tab.name}}</span>
+    </button>
+  </div>
+
+  <!-- Error Message -->
+  <div class="error-message" *ngIf="error">
+    ⚠️ {{ error }}
+  </div>
+
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" *ngIf="loading">
+    <div class="spinner"></div>
+    <p>Đang tải dữ liệu...</p>
+  </div>
+
+  <!-- TAB 1: Top Contributors -->
+  <div class="tab-content" *ngIf="activeTab === 'contributors' && !loading">
+    <div class="sub-header">
+      <div class="index-selector">
+        <button 
+          *ngFor="let index of indices"
+          class="index-btn"
+          [class.active]="selectedIndex === index.code"
+          (click)="changeIndex(index.code)"
+        >
+          {{index.name}}
+        </button>
+      </div>
+      <div class="search-box">
+        <input
+          type="text"
+          [(ngModel)]="searchTerm"
+          (input)="filterStocks()"
+          placeholder="Tìm kiếm mã CP..."
+          class="search-input"
+        />
+      </div>
+    </div>
+
+    <div class="info-bar" *ngIf="lastUpdate">
+      <span class="info-item">📊 Chỉ số: <strong>{{getSelectedIndexName()}}</strong></span>
+      <span class="info-item">⏰ {{lastUpdate | date:'HH:mm:ss dd/MM/yyyy'}}</span>
+      <span class="info-item">📈 {{filteredStocks.length}} / {{stocks.length}} cổ phiếu</span>
+    </div>
+
+    <div class="table-container">
+      <table class="stock-table">
+        <thead>
+          <tr>
+            <th (click)="sortBy('symbol')" class="sortable">Mã CP {{getSortIcon('symbol')}}</th>
+            <th (click)="sortBy('name')" class="sortable">Tên công ty {{getSortIcon('name')}}</th>
+            <th (click)="sortBy('price')" class="sortable text-right">Giá {{getSortIcon('price')}}</th>
+            <th (click)="sortBy('change')" class="sortable text-right">+/- {{getSortIcon('change')}}</th>
+            <th (click)="sortBy('changePercent')" class="sortable text-right">% {{getSortIcon('changePercent')}}</th>
+            <th (click)="sortBy('volume')" class="sortable text-right">KL {{getSortIcon('volume')}}</th>
+            <th (click)="sortBy('contributionToIndex')" class="sortable text-right">Đóng góp {{getSortIcon('contributionToIndex')}}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let stock of filteredStocks" class="stock-row">
+            <td class="symbol">{{stock.symbol}}</td>
+            <td class="name">{{stock.name}}</td>
+            <td class="price text-right" [class]="getPriceChangeClass(stock.change)">
+              {{formatPrice(stock.price)}}
+            </td>
+            <td class="change text-right" [class]="getPriceChangeClass(stock.change)">
+              {{stock.change > 0 ? '+' : ''}}{{formatPrice(stock.change)}}
+            </td>
+            <td class="change-percent text-right" [class]="getPriceChangeClass(stock.change)">
+              {{formatPercent(stock.changePercent)}}
+            </td>
+            <td class="volume text-right">{{formatNumber(stock.volume)}}</td>
+            <td class="contribution text-right">{{stock.contributionToIndex || 0}}</td>
+          </tr>
+          <tr *ngIf="filteredStocks.length === 0" class="no-results">
+            <td colspan="7">
+              <div class="no-results-content">
+                <p>📊 Không tìm thấy cổ phiếu nào</p>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TAB 2: All Instruments (Danh sách mã chứng khoán) -->
+  <div class="tab-content" *ngIf="activeTab === 'movers' && !loading">
+    <div class="sub-header">
+      <div class="exchange-selector">
+        <button 
+          *ngFor="let exchange of exchanges"
+          class="exchange-btn"
+          [class.active]="selectedExchange === exchange.code"
+          (click)="changeExchange(exchange.code)"
+        >
+          {{exchange.name}}
+        </button>
+      </div>
+      <div class="search-box">
+        <input
+          type="text"
+          [(ngModel)]="searchTerm"
+          (input)="filterStocks()"
+          placeholder="Tìm kiếm mã CP..."
+          class="search-input"
+        />
+      </div>
+    </div>
+
+    <div class="info-bar" *ngIf="lastUpdate">
+      <span class="info-item">📊 Sàn: <strong>{{getSelectedExchangeName()}}</strong></span>
+      <span class="info-item">⏰ {{lastUpdate | date:'HH:mm:ss dd/MM/yyyy'}}</span>
+      <span class="info-item">📈 {{filteredStocks.length}} / {{stocks.length}} cổ phiếu</span>
+    </div>
+
+    <div class="table-container">
+      <table class="stock-table">
+        <thead>
+          <tr>
+            <th (click)="sortBy('symbol')" class="sortable">Mã CP {{getSortIcon('symbol')}}</th>
+            <th (click)="sortBy('name')" class="sortable">Tên công ty {{getSortIcon('name')}}</th>
+            <th (click)="sortBy('price')" class="sortable text-right">Giá {{getSortIcon('price')}}</th>
+            <th (click)="sortBy('change')" class="sortable text-right">+/- {{getSortIcon('change')}}</th>
+            <th (click)="sortBy('changePercent')" class="sortable text-right">% {{getSortIcon('changePercent')}}</th>
+            <th (click)="sortBy('volume')" class="sortable text-right">KL {{getSortIcon('volume')}}</th>
+            <th (click)="sortBy('high')" class="sortable text-right">Cao {{getSortIcon('high')}}</th>
+            <th (click)="sortBy('low')" class="sortable text-right">Thấp {{getSortIcon('low')}}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let stock of filteredStocks" class="stock-row">
+            <td class="symbol">{{stock.symbol}}</td>
+            <td class="name">{{stock.name}}</td>
+            <td class="price text-right" [class]="getPriceChangeClass(stock.change)">
+              {{formatPrice(stock.price)}}
+            </td>
+            <td class="change text-right" [class]="getPriceChangeClass(stock.change)">
+              {{stock.change > 0 ? '+' : ''}}{{formatPrice(stock.change)}}
+            </td>
+            <td class="change-percent text-right" [class]="getPriceChangeClass(stock.change)">
+              {{formatPercent(stock.changePercent)}}
+            </td>
+            <td class="volume text-right">{{formatNumber(stock.volume)}}</td>
+            <td class="high text-right">{{formatPrice(stock.high)}}</td>
+            <td class="low text-right">{{formatPrice(stock.low)}}</td>
+          </tr>
+          <tr *ngIf="filteredStocks.length === 0" class="no-results">
+            <td colspan="8">
+              <div class="no-results-content">
+                <p>📊 Không tìm thấy cổ phiếu nào</p>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TAB 3: Industries -->
+  <div class="tab-content industries-tab" *ngIf="activeTab === 'industries' && !loading">
+    <div class="industries-layout">
+      <!-- Industry List -->
+      <div class="industry-list">
+        <div class="search-box">
+          <input
+            type="text"
+            [(ngModel)]="industrySearchTerm"
+            (input)="filterIndustries()"
+            placeholder="Tìm kiếm ngành..."
+            class="search-input"
+          />
+        </div>
+        <div class="industry-items">
+          <button 
+            *ngFor="let industry of filteredIndustries; trackBy: trackByIndustryCode"
+            class="industry-item"
+            [ngClass]="{'active': isIndustrySelected(industry)}"
+            (click)="selectIndustry(industry)"
+            type="button"
+          >
+            <span class="industry-code">{{industry.icbCode}}</span>
+            <span class="industry-name">{{industry.icbName}}</span>
+          </button>
+          <div *ngIf="filteredIndustries.length === 0" class="no-results-content">
+            <p>🏢 Không tìm thấy ngành nào</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stocks in Industry -->
+      <div class="industry-stocks">
+        <div *ngIf="!selectedIndustry" class="placeholder">
+          <p>👈 Chọn một ngành để xem danh sách cổ phiếu</p>
+        </div>
+        <div *ngIf="selectedIndustry">
+          <h3>{{selectedIndustry.icbName}} ({{filteredStocks.length}} cổ phiếu)</h3>
+          <div class="table-container">
+            <table class="stock-table compact">
+              <thead>
+                <tr>
+                  <th>Mã CP</th>
+                  <th>Tên</th>
+                  <th class="text-right">Giá</th>
+                  <th class="text-right">%</th>
+                  <th class="text-right">KL</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let stock of filteredStocks; trackBy: trackByStockSymbol" class="stock-row">
+                  <td class="symbol">{{stock.symbol}}</td>
+                  <td class="name">{{stock.name}}</td>
+                  <td class="price text-right" [class]="getPriceChangeClass(stock.change)">
+                    {{formatPrice(stock.price)}}
+                  </td>
+                  <td class="change-percent text-right" [class]="getPriceChangeClass(stock.change)">
+                    {{formatPercent(stock.changePercent)}}
+                  </td>
+                  <td class="volume text-right">{{formatNumber(stock.volume)}}</td>
+                </tr>
+                <tr *ngIf="filteredStocks.length === 0" class="no-results">
+                  <td colspan="5">
+                    <div class="no-results-content">
+                      <p>Không có cổ phiếu trong ngành này</p>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 4: Fundamentals - Enhanced -->
+  <div class="tab-content fundamentals-tab" *ngIf="activeTab === 'fundamentals' && !loading">
+    <div class="fundamental-search">
+      <div class="search-box-large">
+        <input
+          type="text"
+          [(ngModel)]="fundamentalSymbol"
+          (keyup.enter)="searchFundamental()"
+          placeholder="Nhập mã cổ phiếu (VD: VNM, FPT, HPG...)"
+          class="search-input-large"
+        />
+        <button class="btn-search" (click)="searchFundamental()" [disabled]="fundamentalLoading">
+          🔍 Tra Cứu Đầy Đủ
+        </button>
+      </div>
+    </div>
+
+    <div *ngIf="fundamentalLoading" class="loading-small">
+      <div class="spinner-small"></div>
+      <p>Đang tải thông tin toàn diện...</p>
+    </div>
+
+    <!-- Comprehensive Data Display -->
+    <div *ngIf="(symbolInfo || fundamentalData) && !fundamentalLoading" class="comprehensive-data">
+      
+      <!-- Symbol Overview -->
+      <div class="data-section overview-section" *ngIf="symbolInfo">
+        <div class="section-header">
+          <h3>📊 {{symbolInfo.symbol}} - {{symbolInfo.organName || symbolInfo.organShortName}}</h3>
+          <span class="badge">{{symbolInfo.exchange}}</span>
+        </div>
+        
+        <div class="overview-cards">
+          <div class="overview-card price-card">
+            <div class="card-label">Giá hiện tại</div>
+            <div class="card-value large" [class]="getPriceChangeClass(symbolInfo.priceChange || 0)">
+              {{formatPrice(symbolInfo.lastPrice || 0)}}
+            </div>
+            <div class="card-change" [class]="getPriceChangeClass(symbolInfo.priceChange || 0)">
+              {{formatPrice(symbolInfo.priceChange || 0)}} ({{formatPercent(symbolInfo.perPriceChange || 0)}})
+            </div>
+          </div>
+          
+          <div class="overview-card">
+            <div class="card-label">Khối lượng</div>
+            <div class="card-value">{{formatNumber(symbolInfo.totalVolume || 0)}}</div>
+          </div>
+          
+          <div class="overview-card">
+            <div class="card-label">Ngành</div>
+            <div class="card-value small">{{symbolInfo.icbName || 'N/A'}}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Fundamentals -->
+      <div class="data-section" *ngIf="fundamentalData">
+        <div class="section-header">
+          <h4>💰 Chỉ Số Tài Chính</h4>
+        </div>
+        <div class="fundamental-grid">
+          <div class="fundamental-card">
+            <div class="card-label">Vốn hóa TT</div>
+            <div class="card-value">{{formatMarketCap(fundamentalData.marketCap || 0)}}</div>
+          </div>
+          <div class="fundamental-card">
+            <div class="card-label">CP lưu hành</div>
+            <div class="card-value">{{formatNumber(fundamentalData.sharesOutstanding || 0)}}</div>
+          </div>
+          <div class="fundamental-card">
+            <div class="card-label">EPS</div>
+            <div class="card-value">{{formatRatio(fundamentalData.eps || 0)}}</div>
+          </div>
+          <div class="fundamental-card">
+            <div class="card-label">P/E</div>
+            <div class="card-value">{{formatRatio(fundamentalData.pe || 0)}}</div>
+          </div>
+          <div class="fundamental-card">
+            <div class="card-label">P/B</div>
+            <div class="card-value">{{formatRatio(fundamentalData.pb || 0)}}</div>
+          </div>
+          <div class="fundamental-card">
+            <div class="card-label">ROE (%)</div>
+            <div class="card-value">{{formatRatio(fundamentalData.roe || 0)}}</div>
+          </div>
+          <div class="fundamental-card">
+            <div class="card-label">ROA (%)</div>
+            <div class="card-value">{{formatRatio(fundamentalData.roa || 0)}}</div>
+          </div>
+          <div class="fundamental-card">
+            <div class="card-label">Sàn GD</div>
+            <div class="card-value">{{fundamentalData.exchange || 'N/A'}}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Institution Profile -->
+      <div class="data-section" *ngIf="institutionProfile">
+        <div class="section-header">
+          <h4>🏢 Thông Tin Doanh Nghiệp</h4>
+        </div>
+        <div class="institution-details">
+          <div class="detail-row" *ngIf="institutionProfile.companyName">
+            <span class="detail-label">Tên công ty:</span>
+            <span class="detail-value">{{institutionProfile.companyName}}</span>
+          </div>
+          <div class="detail-row" *ngIf="institutionProfile.address">
+            <span class="detail-label">Địa chỉ:</span>
+            <span class="detail-value">{{institutionProfile.address}}</span>
+          </div>
+          <div class="detail-row" *ngIf="institutionProfile.phone">
+            <span class="detail-label">Điện thoại:</span>
+            <span class="detail-value">{{institutionProfile.phone}}</span>
+          </div>
+          <div class="detail-row" *ngIf="institutionProfile.website">
+            <span class="detail-label">Website:</span>
+            <span class="detail-value"><a [href]="institutionProfile.website" target="_blank">{{institutionProfile.website}}</a></span>
+          </div>
+          <div class="detail-row" *ngIf="institutionProfile.email">
+            <span class="detail-label">Email:</span>
+            <span class="detail-value">{{institutionProfile.email}}</span>
+          </div>
+          <div class="detail-row" *ngIf="institutionProfile.businessAreas">
+            <span class="detail-label">Lĩnh vực KD:</span>
+            <span class="detail-value">{{institutionProfile.businessAreas}}</span>
+          </div>
+          <div class="detail-row" *ngIf="institutionProfile.employees">
+            <span class="detail-label">Số nhân viên:</span>
+            <span class="detail-value">{{formatNumber(institutionProfile.employees)}}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Historical Quotes -->
+      <div class="data-section" *ngIf="historicalQuotes.length > 0">
+        <div class="section-header">
+          <h4>📈 Lịch Sử Giá ({{historicalDays}} ngày gần nhất)</h4>
+        </div>
+        <div class="historical-table-container">
+          <table class="historical-table">
+            <thead>
+              <tr>
+                <th>Ngày</th>
+                <th class="text-right">Mở cửa</th>
+                <th class="text-right">Cao nhất</th>
+                <th class="text-right">Thấp nhất</th>
+                <th class="text-right">Đóng cửa</th>
+                <th class="text-right">KL</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let quote of historicalQuotes.slice(0, 10)">
+                <td>{{quote.date}}</td>
+                <td class="text-right">{{formatPrice(quote.open || 0)}}</td>
+                <td class="text-right">{{formatPrice(quote.high || 0)}}</td>
+                <td class="text-right">{{formatPrice(quote.low || 0)}}</td>
+                <td class="text-right">{{formatPrice(quote.close || 0)}}</td>
+                <td class="text-right">{{formatNumber(quote.volume || 0)}}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- News/Posts -->
+      <div class="data-section" *ngIf="symbolPosts.length > 0">
+        <div class="section-header">
+          <h4>📰 Tin Tức & Bài Viết</h4>
+        </div>
+        <div class="posts-list">
+          <div class="post-item" *ngFor="let post of symbolPosts">
+            <div class="post-content">
+              <h5 class="post-title">{{post.title}}</h5>
+              <p class="post-summary" *ngIf="post.summary">{{post.summary}}</p>
+              <div class="post-meta">
+                <span *ngIf="post.source">📌 {{post.source}}</span>
+                <span *ngIf="post.publishDate">📅 {{post.publishDate}}</span>
+                <a *ngIf="post.url" [href]="post.url" target="_blank" class="post-link">Xem chi tiết →</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- No Data Placeholder -->
+    <div *ngIf="!symbolInfo && !fundamentalData && !fundamentalLoading" class="placeholder-large">
+      <div class="placeholder-icon">🔍</div>
+      <p class="placeholder-text">
+        Nhập mã cổ phiếu để xem:<br>
+        • Thông tin giá & giao dịch<br>
+        • Chỉ số tài chính<br>
+        • Lịch sử giá<br>
+        • Tin tức & bài viết<br>
+        • Hồ sơ doanh nghiệp
+      </p>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <p class="disclaimer">
+      ⚠️ Dữ liệu chỉ mang tính chất tham khảo. 
+      Nguồn: <a href="https://fireant.vn" target="_blank">FireAnt.vn</a>
+    </p>
+  </div>
+</div>
