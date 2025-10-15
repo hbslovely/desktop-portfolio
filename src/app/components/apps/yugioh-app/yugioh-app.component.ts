@@ -203,6 +203,16 @@ export class YugiohAppComponent implements OnInit {
     this.applyFilters();
   }
 
+  onScroll(event: Event) {
+    const element = event.target as HTMLElement;
+    const threshold = 200; // Load more when 200px from bottom
+    const atBottom = element.scrollHeight - element.scrollTop - element.clientHeight < threshold;
+    
+    if (atBottom && this.hasMoreCards() && !this.isLoadingMore()) {
+      this.loadMoreCards();
+    }
+  }
+
   toggleViewMode() {
     this.viewMode.set(this.viewMode() === 'grid' ? 'list' : 'grid');
   }
@@ -230,23 +240,6 @@ export class YugiohAppComponent implements OnInit {
     });
   }
 
-  nextPage() {
-    if (this.currentPage() < this.totalPages()) {
-      this.currentPage.update(p => p + 1);
-    }
-  }
-
-  prevPage() {
-    if (this.currentPage() > 1) {
-      this.currentPage.update(p => p - 1);
-    }
-  }
-
-  goToPage(page: number) {
-    if (page >= 1 && page <= this.totalPages()) {
-      this.currentPage.set(page);
-    }
-  }
 
   getCardImageUrl(card: YugiohCard, size: 'normal' | 'small' | 'cropped' = 'small'): string {
     // Use local images - use the first image ID from card_images array

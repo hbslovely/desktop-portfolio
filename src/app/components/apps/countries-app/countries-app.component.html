@@ -166,7 +166,7 @@
                   </div>
                   <div class="detail-row" *ngIf="displayType() === 'list' && country.area != null">
                     <i class="pi pi-globe"></i>
-                    <span>{{ country.area?.toLocaleString() }} km²</span>
+                    <span>{{ country.area.toLocaleString() }} km²</span>
                   </div>
                 </div>
               </div>
@@ -219,26 +219,34 @@
       <div class="detail-content">
         <!-- Flag & Basic Info -->
         <div class="detail-hero">
-          <div class="hero-flag" *ngIf="selectedCountry()!.flags?.svg || selectedCountry()!.flags?.png">
-            <img [src]="selectedCountry()!.flags?.svg || selectedCountry()!.flags?.png || ''" [alt]="selectedCountry()!.name.common + ' flag'" />
+          <div class="hero-flag" *ngIf="selectedCountry()?.flags?.svg || selectedCountry()?.flags?.png">
+            <img 
+              [src]="selectedCountry()?.flags?.svg || selectedCountry()?.flags?.png || ''" 
+              [alt]="(selectedCountry()?.flags?.alt || selectedCountry()?.name?.common + ' flag' || 'Country flag')"
+              loading="lazy"
+            />
           </div>
           <div class="hero-info">
             <div class="country-name-group">
-              <span class="flag-emoji" *ngIf="selectedCountry()!.flag">{{ selectedCountry()!.flag }}</span>
-              <h1 class="country-name">{{ selectedCountry()!.name.common || 'Unknown' }}</h1>
+              <span class="flag-emoji" *ngIf="selectedCountry()?.flag">{{ selectedCountry()!.flag }}</span>
+              <h1 class="country-name">{{ selectedCountry()?.name?.common || 'Unknown' }}</h1>
             </div>
-            <h2 class="country-official">{{ selectedCountry()!.name.official || selectedCountry()!.name.common || 'Unknown' }}</h2>
+            <h2 class="country-official">{{ selectedCountry()?.name?.official || selectedCountry()?.name?.common || 'Unknown' }}</h2>
             <div class="country-meta">
-              <span class="meta-tag region-tag" *ngIf="selectedCountry()!.region">{{ selectedCountry()!.region }}</span>
-              <span class="meta-tag" *ngIf="selectedCountry()!.subregion">{{ selectedCountry()!.subregion }}</span>
-              <span class="meta-tag success-tag" *ngIf="selectedCountry()!.independent">Independent</span>
-              <span class="meta-tag success-tag" *ngIf="selectedCountry()!.independent === false">Not Independent</span>
-              <span class="meta-tag info-tag" *ngIf="selectedCountry()!.unMember">UN Member</span>
-              <span class="meta-tag warning-tag" *ngIf="selectedCountry()!.unMember === false">Not UN Member</span>
+              <span class="meta-tag region-tag" *ngIf="selectedCountry()?.region">{{ selectedCountry()!.region }}</span>
+              <span class="meta-tag" *ngIf="selectedCountry()?.subregion">{{ selectedCountry()!.subregion }}</span>
+              <span class="meta-tag success-tag" *ngIf="selectedCountry()?.independent">Independent</span>
+              <span class="meta-tag success-tag" *ngIf="selectedCountry()?.independent === false">Not Independent</span>
+              <span class="meta-tag info-tag" *ngIf="selectedCountry()?.unMember">UN Member</span>
+              <span class="meta-tag warning-tag" *ngIf="selectedCountry()?.unMember === false">Not UN Member</span>
             </div>
           </div>
-          <div class="hero-coat" *ngIf="selectedCountry()!.coatOfArms?.svg">
-            <img [src]="selectedCountry()!.coatOfArms!.svg" [alt]="selectedCountry()!.name.common + ' coat of arms'" />
+          <div class="hero-coat" *ngIf="selectedCountry()?.coatOfArms?.svg || selectedCountry()?.coatOfArms?.png">
+            <img 
+              [src]="selectedCountry()?.coatOfArms?.svg || selectedCountry()?.coatOfArms?.png || ''" 
+              [alt]="(selectedCountry()?.name?.common || 'Country') + ' coat of arms'"
+              loading="lazy"
+            />
           </div>
         </div>
 

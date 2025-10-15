@@ -439,6 +439,94 @@
 }
 
 
+// Lazy Loading UI
+.loading-more {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  
+  .loading-spinner {
+    margin-bottom: 12px;
+    
+    i {
+      font-size: 32px;
+      color: #667eea;
+    }
+  }
+  
+  p {
+    color: #666;
+    font-size: 14px;
+    margin: 0;
+  }
+}
+
+.load-more-section {
+  display: flex;
+  justify-content: center;
+  padding: 40px 20px;
+  
+  .btn-load-more {
+    padding: 16px 32px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: all 0.3s;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    }
+    
+    &:active {
+      transform: translateY(0);
+    }
+    
+    i {
+      font-size: 18px;
+    }
+    
+    .badge {
+      background: rgba(255, 255, 255, 0.2);
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+  }
+}
+
+.all-loaded {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  
+  i {
+    font-size: 48px;
+    color: #10b981;
+    margin-bottom: 12px;
+  }
+  
+  p {
+    color: #666;
+    font-size: 14px;
+    margin: 0;
+    font-weight: 500;
+  }
+}
+
 // Scrollbar
 .cards-content::-webkit-scrollbar {
   width: 8px;

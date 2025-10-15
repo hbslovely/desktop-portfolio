@@ -18,8 +18,8 @@
   <!-- Statistics Bar -->
   <div class="stats-bar">
     <div class="stat-item">
-      <span class="stat-label">Total:</span>
-      <span class="stat-value">{{ totalCards() }}</span>
+      <span class="stat-label">Showing:</span>
+      <span class="stat-value">{{ displayedCount() }} / {{ totalCards() }}</span>
     </div>
     <div class="stat-item">
       <span class="stat-label">Monsters:</span>
@@ -106,11 +106,11 @@
   </div>
 
   <!-- Cards Content -->
-  <div class="cards-content" *ngIf="!isLoading()">
+  <div class="cards-content" *ngIf="!isLoading()" (scroll)="onScroll($event)">
     <!-- Grid View -->
     <div class="cards-grid" *ngIf="viewMode() === 'grid'">
       <div 
-        *ngFor="let card of paginatedCards()" 
+        *ngFor="let card of displayedCards()" 
         class="card-item"
         [class]="getFrameTypeClass(card.frameType)"
         (click)="openCardDetail(card)">
@@ -136,7 +136,7 @@
     <!-- List View -->
     <div class="cards-list" *ngIf="viewMode() === 'list'">
       <div 
-        *ngFor="let card of paginatedCards()" 
+        *ngFor="let card of displayedCards()" 
         class="list-item"
         [class]="getFrameTypeClass(card.frameType)"
         (click)="openCardDetail(card)">
@@ -158,25 +158,27 @@
       </div>
     </div>
 
-    <!-- Pagination -->
-    <div class="pagination" *ngIf="totalPages() > 1">
-      <button 
-        class="page-btn"
-        [disabled]="currentPage() === 1"
-        (click)="prevPage()">
-        <i class="pi pi-chevron-left"></i>
+    <!-- Loading More Indicator -->
+    <div class="loading-more" *ngIf="isLoadingMore()">
+      <div class="loading-spinner">
+        <i class="pi pi-spin pi-spinner"></i>
+      </div>
+      <p>Loading more cards...</p>
+    </div>
+
+    <!-- Load More Button -->
+    <div class="load-more-section" *ngIf="hasMoreCards() && !isLoadingMore()">
+      <button class="btn-load-more" (click)="loadMoreCards()">
+        <i class="pi pi-angle-down"></i>
+        Load More Cards
+        <span class="badge">{{ totalCards() - displayedCount() }} remaining</span>
       </button>
-      
-      <span class="page-info">
-        Page {{ currentPage() }} of {{ totalPages() }}
-      </span>
-      
-      <button 
-        class="page-btn"
-        [disabled]="currentPage() === totalPages()"
-        (click)="nextPage()">
-        <i class="pi pi-chevron-right"></i>
-      </button>
+    </div>
+
+    <!-- All Loaded Message -->
+    <div class="all-loaded" *ngIf="!hasMoreCards() && displayedCount() > 0">
+      <i class="pi pi-check-circle"></i>
+      <p>All {{ totalCards() }} cards loaded</p>
     </div>
   </div>
 
