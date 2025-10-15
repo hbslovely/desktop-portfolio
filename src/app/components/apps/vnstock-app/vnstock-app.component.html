@@ -420,16 +420,36 @@
   <div class="tab-content fundamentals-tab" *ngIf="activeTab === 'fundamentals' && !loading">
     <div class="fundamental-search">
       <div class="search-box-large">
-        <input
-          type="text"
-          [(ngModel)]="fundamentalSymbol"
-          (keyup.enter)="searchFundamental()"
-          placeholder="Nhập mã cổ phiếu (VD: VNM, FPT, HPG...)"
-          class="search-input-large"
-        />
-        <button class="btn-search" (click)="searchFundamental()" [disabled]="fundamentalLoading">
-          🔍 Tra Cứu Đầy Đủ
-        </button>
+        <div class="search-wrapper">
+          <input
+            type="text"
+            [(ngModel)]="fundamentalSymbol"
+            (input)="onSearchInput(fundamentalSymbol)"
+            (keyup.enter)="searchFundamental()"
+            (blur)="hideSearchResults()"
+            placeholder="Nhập mã cổ phiếu (VD: VNM, FPT, HPG...)"
+            class="search-input-large"
+            autocomplete="off"
+          />
+          <button class="btn-search" (click)="searchFundamental()" [disabled]="fundamentalLoading">
+            🔍 Tra Cứu
+          </button>
+          
+          <!-- Autocomplete dropdown -->
+          <div class="search-results-dropdown" *ngIf="showSearchResults && searchResults.length > 0">
+            <div 
+              class="search-result-item" 
+              *ngFor="let result of searchResults"
+              (mousedown)="selectSearchResult(result)"
+            >
+              <div class="result-symbol">{{result.key}}</div>
+              <div class="result-info">
+                <div class="result-name">{{result.name}}</div>
+                <div class="result-description" *ngIf="result.description">{{result.description}}</div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -440,6 +460,11 @@
 
     <!-- Comprehensive Data Display -->
     <div *ngIf="(symbolInfo || fundamentalData) && !fundamentalLoading" class="comprehensive-data">
+      
+      <!-- Two Column Layout -->
+      <div class="two-column-layout">
+        <!-- Left Column: Main Info -->
+        <div class="left-column">
       
       <!-- Symbol Overview -->
       <div class="data-section overview-section" *ngIf="symbolInfo">
@@ -621,8 +646,81 @@
         </div>
       </div>
 
-      <!-- Historical Quotes -->
-      <div class="data-section" *ngIf="historicalQuotes.length > 0">
+        </div>
+        <!-- End Left Column -->
+
+        <!-- Right Column: News/Posts -->
+        <div class="right-column">
+          <!-- News/Posts -->
+          <div class="data-section posts-section" *ngIf="symbolPosts.length > 0">
+            <div class="section-header">
+              <h4>📰 Tin Tức</h4>
+              <span class="post-count">{{symbolPosts.length}}</span>
+            </div>
+            <div class="posts-list">
+              <div class="post-card" *ngFor="let post of symbolPosts">
+                <!-- User Info -->
+                <div class="post-header" *ngIf="post.user">
+                  <div class="user-avatar">
+                    {{post.user.name?.charAt(0) || '?'}}
+                  </div>
+                  <div class="user-info">
+                    <div class="user-name">
+                      {{post.user.name}}
+                      <span class="verified-badge" *ngIf="post.user.isAuthentic">✓</span>
+                    </div>
+                    <div class="post-date">{{formatPostDate(post.publishDate || post.date)}}</div>
+                  </div>
+                </div>
+
+                <!-- Post Content -->
+                <div class="post-body">
+                  <h5 class="post-title" *ngIf="post.title">{{decodeHtml(post.title)}}</h5>
+                  <div class="post-content-text" [innerHTML]="decodeHtml(post.content || post.originalContent || '')"></div>
+                  
+                  <!-- Link Preview -->
+                  <div class="link-preview" *ngIf="post.link">
+                    <img *ngIf="post.linkImage" [src]="post.linkImage" [alt]="post.linkTitle" class="link-image">
+                    <div class="link-info">
+                      <div class="link-title" *ngIf="post.linkTitle">{{post.linkTitle}}</div>
+                      <div class="link-desc" *ngIf="post.linkDescription">{{post.linkDescription}}</div>
+                      <a [href]="post.link" target="_blank" class="link-url">{{post.link}}</a>
+                    </div>
+                  </div>
+
+                  <!-- Images -->
+                  <div class="post-images" *ngIf="post.images && post.images.length > 0">
+                    <img *ngFor="let img of post.images" [src]="img.imageUrl" alt="Post image" class="post-image">
+                  </div>
+                </div>
+
+                <!-- Post Footer -->
+                <div class="post-footer">
+                  <div class="post-stats">
+                    <span class="stat-item" *ngIf="post.totalLikes">
+                      <span class="stat-icon">👍</span>
+                      <span class="stat-value">{{post.totalLikes}}</span>
+                    </span>
+                    <span class="stat-item" *ngIf="post.totalReplies">
+                      <span class="stat-icon">💬</span>
+                      <span class="stat-value">{{post.totalReplies}}</span>
+                    </span>
+                    <span class="stat-item" *ngIf="post.totalShares">
+                      <span class="stat-icon">🔄</span>
+                      <span class="stat-value">{{post.totalShares}}</span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- End Right Column -->
+      </div>
+      <!-- End Two Column Layout -->
+
+      <!-- Historical Quotes - Full Width Below -->
+      <div class="data-section full-width" *ngIf="historicalQuotes.length > 0">
         <div class="section-header">
           <h4>📈 Lịch Sử Giá ({{historicalDays}} ngày gần nhất)</h4>
         </div>
@@ -649,81 +747,6 @@
               </tr>
             </tbody>
           </table>
-        </div>
-      </div>
-
-      <!-- News/Posts -->
-      <div class="data-section posts-section" *ngIf="symbolPosts.length > 0">
-        <div class="section-header">
-          <h4>📰 Tin Tức & Thảo Luận</h4>
-          <span class="post-count">{{symbolPosts.length}} bài viết</span>
-        </div>
-        <div class="posts-list">
-          <div class="post-card" *ngFor="let post of symbolPosts">
-            <!-- User Info -->
-            <div class="post-header" *ngIf="post.user">
-              <div class="user-avatar">
-                {{post.user.name?.charAt(0) || '?'}}
-              </div>
-              <div class="user-info">
-                <div class="user-name">
-                  {{post.user.name}}
-                  <span class="verified-badge" *ngIf="post.user.isAuthentic">✓</span>
-                </div>
-                <div class="post-date">{{formatPostDate(post.publishDate || post.date)}}</div>
-              </div>
-            </div>
-
-            <!-- Post Content -->
-            <div class="post-body">
-              <h5 class="post-title" *ngIf="post.title">{{decodeHtml(post.title)}}</h5>
-              <div class="post-content-text" [innerHTML]="decodeHtml(post.content || post.originalContent || '')"></div>
-              
-              <!-- Link Preview -->
-              <div class="link-preview" *ngIf="post.link">
-                <img *ngIf="post.linkImage" [src]="post.linkImage" [alt]="post.linkTitle" class="link-image">
-                <div class="link-info">
-                  <div class="link-title" *ngIf="post.linkTitle">{{post.linkTitle}}</div>
-                  <div class="link-desc" *ngIf="post.linkDescription">{{post.linkDescription}}</div>
-                  <a [href]="post.link" target="_blank" class="link-url">{{post.link}}</a>
-                </div>
-              </div>
-
-              <!-- Images -->
-              <div class="post-images" *ngIf="post.images && post.images.length > 0">
-                <img *ngFor="let img of post.images" [src]="img.imageUrl" alt="Post image" class="post-image">
-              </div>
-            </div>
-
-            <!-- Post Footer -->
-            <div class="post-footer">
-              <div class="post-stats">
-                <span class="stat-item" *ngIf="post.totalLikes">
-                  <span class="stat-icon">👍</span>
-                  <span class="stat-value">{{post.totalLikes}}</span>
-                </span>
-                <span class="stat-item" *ngIf="post.totalReplies">
-                  <span class="stat-icon">💬</span>
-                  <span class="stat-value">{{post.totalReplies}}</span>
-                </span>
-                <span class="stat-item" *ngIf="post.totalShares">
-                  <span class="stat-icon">🔄</span>
-                  <span class="stat-value">{{post.totalShares}}</span>
-                </span>
-              </div>
-              
-              <!-- Tagged Symbols -->
-              <div class="tagged-symbols" *ngIf="post.taggedSymbols && post.taggedSymbols.length > 0">
-                <span class="tag-label">Cổ phiếu:</span>
-                <span class="symbol-tag" *ngFor="let tagged of post.taggedSymbols">
-                  {{tagged.symbol}}
-                  <span [class]="getChangeClass(tagged.change)">
-                    {{formatChange(tagged.change)}}
-                  </span>
-                </span>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
 

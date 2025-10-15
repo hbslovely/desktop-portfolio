@@ -172,6 +172,21 @@ export interface TopMover {
   [key: string]: any;
 }
 
+export interface SearchResult {
+  id?: string | null;
+  type?: string;
+  key?: string;          // Symbol code
+  name?: string;         // Company name
+  description?: string;  // Exchange (HSX, HNX, WORLD...)
+  symbol?: string;       // Fallback for symbol
+  organCode?: string;
+  organName?: string;
+  organShortName?: string;
+  comGroupCode?: string;
+  icbCode?: string;
+  [key: string]: any;
+}
+
 export interface FireAntAuthResponse {
   accessToken: string;
   tokenType?: string;
@@ -924,6 +939,77 @@ export class FireantService {
       catchError(error => {
         console.error(`❌ Error fetching top movers (${topType}):`, error);
         throw error;
+      })
+    );
+  }
+
+  /**
+   * Search for symbols (autocomplete)
+   * @param keywords - Search keywords (required)
+   * @param type - Result type (symbol, individual, hashtag, user, room, post) - default "symbol"
+   * @param offset - Pagination offset (default 0)
+   * @param limit - Max results (default 20)
+   */
+  searchSymbols(keywords: string, type: string = 'symbol', offset: number = 0, limit: number = 20): Observable<SearchResult[]> {
+    const token = this.tokenSubject.value;
+    
+    if (!token) {
+      console.error('❌ No authentication token available');
+      return throwError(() => new Error('No authentication token'));
+    }
+
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    });
+
+    // Build query params
+    const params: string[] = [];
+    params.push(`keywords=${encodeURIComponent(keywords)}`);
+    if (type) params.push(`type=${type}`);
+    if (offset) params.push(`offset=${offset}`);
+    if (limit) params.push(`limit=${limit}`);
+    
+    const queryString = params.join('&');
+    const url = `${this.apiUrl}/search?${queryString}`;
+    
+    console.log(`🔍 Searching for: ${keywords} (type: ${type})`);
+
+    return this.http.get<any>(url, { headers }).pipe(
+      map(response => {
+        console.log('✅ Search Response:', response);
+        let dataArray = response;
+        
+        if (response && response.data) {
+          dataArray = Array.isArray(response.data) ? response.data : [response.data];
+        } else if (response && Array.isArray(response)) {
+          dataArray = response;
+        }
+
+        if (!Array.isArray(dataArray)) {
+          dataArray = [];
+        }
+
+        console.log(`✅ Found ${dataArray.length} results`);
+
+        return dataArray.map((item: any) => ({
+          id: item.id || null,
+          type: item.type || 'symbol',
+          key: item.key || item.symbol || item.ticker || '',
+          name: item.name || item.organName || item.companyName || '',
+          description: item.description || item.exchange || '',
+          symbol: item.key || item.symbol || item.ticker || '',
+          organCode: item.organCode || '',
+          organName: item.name || item.organName || item.companyName || '',
+          organShortName: item.organShortName || item.shortName || '',
+          comGroupCode: item.comGroupCode || '',
+          icbCode: item.icbCode || '',
+          ...item
+        }));
+      }),
+      catchError(error => {
+        console.error(`❌ Error searching for ${keywords}:`, error);
+        return throwError(() => error);
       })
     );
   }
