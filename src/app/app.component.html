@@ -1,3 +1,16 @@
+<!-- System Restart Screen -->
+<div *ngIf="showRestartScreen()" class="restart-screen">
+  <div class="terminal-body" #terminalBody>
+    <div *ngFor="let message of restartMessages; let i = index" class="terminal-line" [class]="'terminal-' + message.type">
+      <span class="terminal-timestamp" *ngIf="message.timestamp">[{{ message.timestamp }}]</span>
+      <span class="terminal-text" [class.typing]="currentTypingIndex() === i">{{ message.text }}</span>
+    </div>
+    <div class="terminal-cursor-line" *ngIf="showCursor()">
+      <span class="terminal-cursor"></span>
+    </div>
+  </div>
+</div>
+
 <!-- Welcome Screen with Desktop Environment -->
 <app-welcome-screen>
   <!-- Desktop Environment -->
@@ -32,7 +45,7 @@
   <!-- My Information Window -->
   <app-window
     *ngIf="showMyInfoWindow()"
-    title="My Information"
+    title="About Me"
     icon="user-profile"
     [showStatusBar]="false"
     [initialWidth]="900"
@@ -50,10 +63,9 @@
     (onRestore)="onRestoreMyInfoWindow()"
     (onFocus)="onFocusMyInfoWindow()">
 
-    <app-iframe-app
-      url="https://hpphat1992.vercel.app"
-      title="My Information">
-    </app-iframe-app>
+    <app-about-me
+      (onOpenApp)="openApp($event)">
+    </app-about-me>
   </app-window>
 
 
@@ -103,17 +115,17 @@
     (onRestore)="onRestoreExplorerWindow()"
     (onFocus)="onFocusExplorerWindow()">
 
-    <app-explorer 
+    <app-explorer
       (onFileOpen)="onExplorerFileOpen($event)"
       (onContextMenuAction)="onExplorerContextMenu($event)">
     </app-explorer>
   </app-window>
 
-  <!-- Credit Tracker Window -->
+  <!-- Family Finance Tracker Window -->
   <app-window
     *ngIf="showCreditWindow()"
-    title="Credit Tracker"
-    icon="pi pi-dollar"
+    title="Family Finance Tracker"
+    icon="pi pi-wallet"
     statusText="Ready"
     [initialWidth]="900"
     [initialHeight]="700"
@@ -129,7 +141,7 @@
     (onRestore)="onRestoreCreditWindow()"
     (onFocus)="onFocusCreditWindow()">
 
-    <app-credit-app></app-credit-app>
+    <app-credit-app (onOpenMyInfo)="openApp('my-info')"></app-credit-app>
   </app-window>
 
   <!-- Paint Window -->
@@ -323,7 +335,7 @@
 
     <app-machine-info></app-machine-info>
   </app-window>
- 
+
   <!-- Floating Clock Widget -->
   <div *ngIf="showClockWindow()" class="floating-clock-widget">
     <div class="clock-widget-header">
@@ -343,7 +355,7 @@
         <div class="time-display">{{ currentTime }}</div>
         <div class="date-display">{{ currentDate }}</div>
       </div>
-      
+
       <!-- Analog Clock Mode -->
       <div *ngIf="clockMode === 'analog'" class="analog-clock">
         <div class="clock-face">
@@ -385,10 +397,10 @@
       <div class="search-input-section">
         <div class="search-input-container">
           <i class="pi pi-search search-icon"></i>
-          <input 
+          <input
             #searchInput
-            type="text" 
-            class="search-input" 
+            type="text"
+            class="search-input"
             placeholder="Type to search applications, files, and web..."
             [(ngModel)]="searchQuery"
             (input)="onSearchInput($event)"
@@ -401,7 +413,7 @@
           </div>
         </div>
       </div>
-      
+
       <!-- Search Results -->
       <div class="search-results-container" *ngIf="showSearchSuggestions">
         <div class="search-results">
@@ -411,8 +423,8 @@
               <span>Applications</span>
               <span class="result-count">{{ appSearchResults.length }}</span>
             </div>
-            <div class="result-item" 
-                 *ngFor="let result of appSearchResults; let i = index" 
+            <div class="result-item"
+                 *ngFor="let result of appSearchResults; let i = index"
                  [class.selected]="getResultIndex('app', i) === selectedSearchIndex"
                  (click)="selectSearchResult(result)">
               <div class="result-icon">
@@ -427,15 +439,15 @@
               </div>
             </div>
           </div>
-          
+
           <div class="search-section" *ngIf="fileSearchResults.length > 0">
             <div class="section-title">
               <i class="pi pi-folder"></i>
               <span>Files</span>
               <span class="result-count">{{ fileSearchResults.length }}</span>
             </div>
-            <div class="result-item" 
-                 *ngFor="let result of fileSearchResults; let i = index" 
+            <div class="result-item"
+                 *ngFor="let result of fileSearchResults; let i = index"
                  [class.selected]="getResultIndex('file', i) === selectedSearchIndex"
                  (click)="selectSearchResult(result)">
               <div class="result-icon">
@@ -451,15 +463,15 @@
               </div>
             </div>
           </div>
-          
+
           <div class="search-section" *ngIf="webSearchResults.length > 0">
             <div class="section-title">
               <i class="pi pi-globe"></i>
               <span>Web Search</span>
               <span class="result-count">{{ webSearchResults.length }}</span>
             </div>
-            <div class="result-item" 
-                 *ngFor="let result of webSearchResults; let i = index" 
+            <div class="result-item"
+                 *ngFor="let result of webSearchResults; let i = index"
                  [class.selected]="getResultIndex('web', i) === selectedSearchIndex"
                  (click)="selectSearchResult(result)">
               <div class="result-icon">
@@ -476,7 +488,7 @@
           </div>
         </div>
       </div>
-      
+
       <!-- Empty State -->
       <div class="search-empty" *ngIf="!showSearchSuggestions && searchQuery.length >= 2">
         <div class="empty-icon">
@@ -657,7 +669,7 @@
 
     <!-- Taskbar Apps -->
     <div class="taskbar-apps">
-      <button 
+      <button
         *ngIf="showTestWindow() || isWindowMinimized('calculator')"
         class="taskbar-app"
         [class.active]="isWindowFocused('calculator')"
@@ -741,9 +753,9 @@
         [class.active]="isWindowFocused('credit')"
         [class.minimized]="isWindowMinimized('credit')"
         (click)="toggleTaskbarApp('credit')"
-        title="Credit Tracker">
-        <i class="pi pi-dollar"></i>
-        <span>Credit Tracker</span>
+        title="Finance Tracker">
+        <i class="pi pi-wallet"></i>
+        <span>Finance Tracker</span>
       </button>
 
       <button
@@ -804,8 +816,9 @@
       <button class="lock-button" (click)="lockScreen()" title="Lock Screen">
         <i class="pi pi-lock"></i>
       </button>
-      <div class="clock" (click)="openClockWindow()" title="Click to open Clock">
-        {{ currentTime }}
+      <div class="clock-widget" (click)="openClockWindow()" title="Click to open Clock">
+        <div class="clock-time">{{ currentTime }}</div>
+        <div class="clock-date">{{ currentShortDate }}</div>
       </div>
     </div>
   </div>
@@ -874,11 +887,11 @@
               </div>
               <span class="app-tile-name">Paint</span>
             </div>
-            <div class="app-tile" (click)="openApp('my-info')" title="About Me">
+            <div class="app-tile" (click)="openApp('my-info')" title="My Information">
               <div class="app-tile-icon">
                 <i class="pi pi-user"></i>
               </div>
-              <span class="app-tile-name">About Me</span>
+              <span class="app-tile-name">My Information</span>
             </div>
             <div class="app-tile" (click)="openApp('news')" title="News">
               <div class="app-tile-icon">
@@ -906,7 +919,7 @@
                 <!-- Group Label -->
                 <div class="app-list-group-label">{{ group.name }}</div>
                 <!-- Apps in Group -->
-                <div class="app-list-item" 
+                <div class="app-list-item"
                      *ngFor="let app of group.apps"
                      (click)="openApp(app.id)"
                      [title]="app.name">
@@ -933,17 +946,20 @@
           <div class="user-avatar">
             <i class="pi pi-user"></i>
           </div>
-          <span class="user-name">Portfolio User</span>
+          <span class="user-name">hpphat1992</span>
         </div>
         <div class="footer-actions">
-          <button class="footer-btn" (click)="openApp('settings')" title="Settings">
+          <button class="footer-btn settings-btn" (click)="openApp('settings')" title="Open Settings">
             <i class="pi pi-cog"></i>
+            <span class="btn-label">Settings</span>
           </button>
-          <button class="footer-btn" (click)="lockScreen()" title="Lock">
+          <button class="footer-btn lock-btn" (click)="lockScreen()" title="Lock Screen">
             <i class="pi pi-lock"></i>
+            <span class="btn-label">Lock</span>
           </button>
-          <button class="footer-btn" (click)="closeStartMenu()" title="Power">
-            <i class="pi pi-power-off"></i>
+          <button class="footer-btn restart-btn" (click)="restartSystem()" title="Restart System">
+            <i class="pi pi-refresh"></i>
+            <span class="btn-label">Restart</span>
           </button>
         </div>
       </div>
@@ -951,20 +967,20 @@
   </div>
 
   <!-- Desktop Context Menu -->
-  <div *ngIf="showDesktopContextMenu()" class="desktop-context-menu" 
+  <div *ngIf="showDesktopContextMenu()" class="desktop-context-menu"
        [ngStyle]="{
          left: desktopContextMenuPosition().x + 'px',
          top: desktopContextMenuPosition().y + 'px'
        }"
        (click)="$event.stopPropagation()">
-    
+
     <div class="context-menu-item" (click)="refreshDesktop()">
       <i class="pi pi-refresh"></i>
       <span>Refresh</span>
     </div>
-    
+
     <div class="context-menu-separator"></div>
-    
+
     <div class="context-menu-item" (click)="openSettings()">
       <i class="pi pi-cog"></i>
       <span>Settings</span>
@@ -972,7 +988,7 @@
   </div>
 
   <!-- Desktop Context Menu Backdrop -->
-  <div *ngIf="showDesktopContextMenu()" class="context-menu-backdrop" 
+  <div *ngIf="showDesktopContextMenu()" class="context-menu-backdrop"
        (click)="hideDesktopContextMenu()">
   </div>
   </div>
@@ -1004,47 +1020,49 @@
     (onMaximize)="windowManager.maximizeWindow(window.id)"
     (onRestore)="windowManager.restoreWindow(window.id)"
     (onFocus)="windowManager.focusWindow(window.id)">
-    
+
     <!-- Dynamic Component Rendering -->
     <ng-container [ngSwitch]="window.component">
       <app-calculator *ngSwitchCase="'calculator'"></app-calculator>
-      
-      <app-iframe-app *ngSwitchCase="'my-info'"></app-iframe-app>
-      
+
+      <app-iframe-app
+        url="https://hpphat1992.vercel.app"
+        *ngSwitchCase="'my-info'"></app-iframe-app>
+
       <app-love-app *ngSwitchCase="'love'"></app-love-app>
-      
+
       <app-explorer *ngSwitchCase="'explorer'"
         (onFileOpen)="onExplorerFileOpen($event)"
         (onContextMenuAction)="onExplorerContextMenu($event)">
       </app-explorer>
-      
+
       <app-text-viewer *ngSwitchCase="'text-viewer'"
         [filePath]="window.data?.path"
         [fileName]="window.data?.name"
         [fileType]="window.data?.type">
       </app-text-viewer>
-      
+
       <app-image-viewer *ngSwitchCase="'image-viewer'"
         [imagePath]="window.data?.path"
         [imageName]="window.data?.name">
       </app-image-viewer>
-      
+
       <app-pdf-viewer *ngSwitchCase="'pdf-viewer'"
         [pdfPath]="window.data?.path">
       </app-pdf-viewer>
-      
+
       <app-machine-info *ngSwitchCase="'machine-info'"></app-machine-info>
-      
-      <app-credit-app *ngSwitchCase="'credit'"></app-credit-app>
-      
+
+      <app-credit-app *ngSwitchCase="'credit'" (onOpenMyInfo)="openApp('my-info')"></app-credit-app>
+
       <app-paint-app *ngSwitchCase="'paint'"></app-paint-app>
-      
+
       <app-credits-app *ngSwitchCase="'credits'"></app-credits-app>
-      
+
       <app-hcmc-app *ngSwitchCase="'hcmc'"></app-hcmc-app>
-      
+
       <app-news-app *ngSwitchCase="'news'"></app-news-app>
-      
+
       <app-settings-app *ngSwitchCase="'settings'"
         (onSettingsChange)="onSettingsChange($event)">
       </app-settings-app>
@@ -1053,6 +1071,17 @@
       <app-dictionary-app *ngSwitchCase="'dictionary'"></app-dictionary-app>
       <app-link-shortener *ngSwitchCase="'link-shortener'"></app-link-shortener>
       <app-countries-app *ngSwitchCase="'countries'"></app-countries-app>
+
+      <app-text-editor *ngSwitchCase="'text-editor'"
+        [filePath]="window.data?.path"
+        [fileName]="window.data?.name"
+        [mode]="window.data?.mode || 'new'"
+        (onFileSave)="onTextEditorFileSave($event)">
+      </app-text-editor>
+
+      <app-yugioh-app *ngSwitchCase="'yugioh'"></app-yugioh-app>
+
+      <app-vnstock-app *ngSwitchCase="'vnstock'"></app-vnstock-app>
     </ng-container>
   </app-window>
 </ng-container>

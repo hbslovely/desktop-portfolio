@@ -6,7 +6,9 @@
     "start": "ng serve --port 3006",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "download-yugioh-images": "node scripts/download-yugioh-images.js",
+    "check-yugioh-progress": "./scripts/check-download-progress.sh"
   },
   "private": true,
   "dependencies": {
@@ -18,8 +20,9 @@
     "@angular/platform-browser": "^17.3.0",
     "@angular/platform-browser-dynamic": "^17.3.0",
     "@angular/router": "^17.3.0",
+    "chart.js": "^4.5.1",
     "primeicons": "^7.0.0",
-    "primeng": "^20.1.1",
+    "primeng": "^17.18.11",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
     "zone.js": "~0.14.3"

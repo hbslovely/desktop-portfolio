@@ -1,7 +1,6 @@
-import { Component, signal, computed, OnInit } from '@angular/core';
+import { Component, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { AdviceSlipService } from '../../services/advice-slip.service';
 
 @Component({
   selector: 'app-welcome-screen',
@@ -24,50 +23,18 @@ export class WelcomeScreenComponent implements OnInit {
   currentTime = signal('');
   currentDate = signal('');
 
-  // Advice of the day
-  adviceText = signal<string>('');
-  adviceLoading = signal<boolean>(true);
-
-  // Fun features
+  // Greeting
   greeting = signal<string>('');
-  quickFact = signal<string>('');
-  currentQuote = signal<string>('');
 
   private greetings = [
     'Welcome Back!', 'Hello There!', 'Good to See You!', 
     'Ready to Create?', 'Let\'s Get Started!', 'Nice to See You Again!'
   ];
 
-  private quotes = [
-    'The best time to start was yesterday. The next best time is now.',
-    'Small steps every day lead to big changes.',
-    'Your potential is endless.',
-    'Believe you can and you\'re halfway there.',
-    'Success is the sum of small efforts repeated daily.',
-    'Dream big, start small, act now.'
-  ];
-
-  private funFacts = [
-    'The average person spends 6 months of their life waiting for red lights to turn green.',
-    'Honey never spoils. Archaeologists have found 3000-year-old honey in Egyptian tombs that\'s still edible!',
-    'Octopuses have three hearts and blue blood.',
-    'A group of flamingos is called a "flamboyance".',
-    'Bananas are berries, but strawberries aren\'t!',
-    'The Eiffel Tower can be 15 cm taller during summer due to thermal expansion.',
-    'Your brain uses 20% of your body\'s energy while being only 2% of your body weight.',
-    'A day on Venus is longer than a year on Venus!'
-  ];
-
-  // Computed properties
-  get maskedPassword() {
-    return '*'.repeat(this.password().length);
-  }
-
-  constructor(private adviceService: AdviceSlipService) {
+  constructor() {
     this.updateTime();
     setInterval(() => this.updateTime(), 1000);
-    this.loadAdvice();
-    this.setRandomContent();
+    this.greeting.set(this.greetings[Math.floor(Math.random() * this.greetings.length)]);
   }
 
   ngOnInit() {
@@ -187,36 +154,9 @@ export class WelcomeScreenComponent implements OnInit {
     this.lockScreen();
   }
 
-  // Load advice from API
-  private loadAdvice() {
-    this.adviceLoading.set(true);
-    this.adviceService.getRandomAdvice().subscribe({
-      next: (advice) => {
-        this.adviceText.set(advice.advice);
-        this.adviceLoading.set(false);
-      },
-      error: (err) => {
-        console.error('Error loading advice:', err);
-        this.adviceText.set('Believe in yourself and all that you are.');
-        this.adviceLoading.set(false);
-      }
-    });
-  }
-
-  // Refresh advice
-  public refreshAdvice() {
-    this.loadAdvice();
-  }
-
-  // Set random content for fun features
-  private setRandomContent() {
-    this.greeting.set(this.greetings[Math.floor(Math.random() * this.greetings.length)]);
-    this.currentQuote.set(this.quotes[Math.floor(Math.random() * this.quotes.length)]);
-    this.quickFact.set(this.funFacts[Math.floor(Math.random() * this.funFacts.length)]);
-  }
-
-  // Refresh fun content
-  public refreshFunContent() {
-    this.setRandomContent();
+  // Method to emit restart request to parent
+  onRestartRequest() {
+    // Emit custom event that parent can listen to
+    window.dispatchEvent(new CustomEvent('system-restart-requested'));
   }
 }

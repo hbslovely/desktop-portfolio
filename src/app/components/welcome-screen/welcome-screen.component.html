@@ -75,35 +75,13 @@
         </div>
       </div>
 
-      <!-- Bottom Section: Fun Features -->
+      <!-- Bottom Section: Simple Info -->
       <div class="bottom-section">
-        <!-- Daily Quote -->
-        <div class="info-card quote-card">
-          <div class="card-icon">💭</div>
-          <p class="card-text">{{ currentQuote() }}</p>
-          <button (click)="refreshFunContent()" class="refresh-card-btn" title="New Quote">
+        <div class="simple-info">
+          <p class="info-text">Enter today's date to unlock</p>
+          <button class="restart-btn" (click)="onRestartRequest()" title="Restart System">
             <i class="pi pi-refresh"></i>
-          </button>
-        </div>
-
-        <!-- Fun Fact -->
-        <div class="info-card fact-card">
-          <div class="card-header">
-            <div class="card-icon">🎯</div>
-            <span class="card-title">Did You Know?</span>
-          </div>
-          <p class="card-text">{{ quickFact() }}</p>
-        </div>
-
-        <!-- Daily Advice -->
-        <div class="info-card advice-card" *ngIf="!adviceLoading()">
-          <div class="card-header">
-            <div class="card-icon">💡</div>
-            <span class="card-title">Daily Wisdom</span>
-          </div>
-          <p class="card-text">{{ adviceText() }}</p>
-          <button (click)="refreshAdvice()" class="refresh-card-btn" title="New Advice">
-            <i class="pi pi-refresh"></i>
+            Restart System
           </button>
         </div>
       </div>

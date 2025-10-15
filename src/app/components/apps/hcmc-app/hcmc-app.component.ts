@@ -30,7 +30,6 @@ interface FoodItem {
 export class HcmcAppComponent {
   // Navigation
   activeTab = signal<string>('overview');
-  showIframe = signal<boolean>(false);
   
   // City data
   cityInfo = {
@@ -221,10 +220,10 @@ export class HcmcAppComponent {
 
   getTabIcon(tab: string): string {
     const icons: { [key: string]: string } = {
-      'overview': 'pi pi-info-circle',
+      'overview': 'pi pi-home',
       'attractions': 'pi pi-map-marker',
       'food': 'pi pi-apple',
-      'culture': 'pi pi-book'
+      'explore': 'pi pi-compass'
     };
     return icons[tab] || 'pi pi-circle';
   }
@@ -234,7 +233,7 @@ export class HcmcAppComponent {
       'overview': 'Overview',
       'attractions': 'Attractions',
       'food': 'Food',
-      'culture': 'Culture'
+      'explore': 'Explore'
     };
     return labels[tab] || tab;
   }
@@ -264,13 +263,5 @@ export class HcmcAppComponent {
   onImageError(event: Event) {
     const target = event.target as HTMLImageElement;
     target.src = 'assets/images/placeholder.jpg';
-  }
-
-  openIframe() {
-    this.showIframe.set(true);
-  }
-
-  closeIframe() {
-    this.showIframe.set(false);
   }
 }

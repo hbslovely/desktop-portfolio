@@ -110,15 +110,15 @@ export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
   },
   credit: {
     id: 'credit',
-    title: 'Credit Tracker',
-    icon: 'pi pi-chart-line',
+    title: 'About',
+    icon: 'pi pi-info-circle',
     component: 'credit',
-    defaultWidth: 900,
-    defaultHeight: 700,
-    defaultX: 200,
-    defaultY: 80,
+    defaultWidth: 1100,
+    defaultHeight: 750,
+    defaultX: 150,
+    defaultY: 60,
     maximizable: true,
-    statusText: 'Ready'
+    statusText: 'About this project'
   },
   paint: {
     id: 'paint',
@@ -239,6 +239,42 @@ export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
     defaultY: 60,
     maximizable: true,
     statusText: 'Explore countries around the world'
+  },
+  'text-editor': {
+    id: 'text-editor',
+    title: 'Text Editor',
+    icon: 'pi pi-file-edit',
+    component: 'text-editor',
+    defaultWidth: 1000,
+    defaultHeight: 700,
+    defaultX: 200,
+    defaultY: 80,
+    maximizable: true,
+    statusText: 'Rich text editor with formatting'
+  },
+  'yugioh': {
+    id: 'yugioh',
+    title: 'Yu-Gi-Oh! Cards',
+    icon: 'pi pi-images',
+    component: 'yugioh',
+    defaultWidth: 1200,
+    defaultHeight: 800,
+    defaultX: 100,
+    defaultY: 50,
+    maximizable: true,
+    statusText: 'Browse Yu-Gi-Oh! card database'
+  },
+  'vnstock': {
+    id: 'vnstock',
+    title: 'VNStock - Vietnam Stock Market',
+    icon: 'pi pi-chart-line',
+    component: 'vnstock',
+    defaultWidth: 1200,
+    defaultHeight: 800,
+    defaultX: 100,
+    defaultY: 50,
+    maximizable: true,
+    statusText: 'Vietnam stock prices from FireAnt'
   }
 };
 
