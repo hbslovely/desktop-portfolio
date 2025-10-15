@@ -7,7 +7,7 @@ type ViewMode = 'list' | 'detail';
 type FilterType = 'all' | 'name' | 'region' | 'capital' | 'language';
 type DisplayType = 'grid' | 'list';
 type SortType = 'name' | 'population' | 'area' | 'region';
-type GroupType = 'none' | 'region' | 'population' | 'size';
+type GroupType = 'none' | 'region' | 'population' | 'size' | 'name';
 
 @Component({
   selector: 'app-countries-app',
@@ -36,8 +36,13 @@ export class CountriesAppComponent implements OnInit {
   sortType = signal<SortType>('name');
   sortOrder = signal<'asc' | 'desc'>('asc');
   groupType = signal<GroupType>('none');
+  collapsedGroups = signal<Set<string>>(new Set());
+  showAllTranslations = signal<boolean>(false);
   
   regions = ['all', 'Africa', 'Americas', 'Asia', 'Europe', 'Oceania', 'Antarctic'];
+  
+  // Common languages for translations
+  private readonly COMMON_LANGUAGES = ['ENG', 'ZHO', 'SPA', 'FRA', 'DEU', 'JPN', 'POR', 'RUS', 'ARA', 'KOR', 'ITA', 'NLD'];
   
   // Computed values
   displayedCountries = computed(() => {
@@ -85,6 +90,9 @@ export class CountriesAppComponent implements OnInit {
         case 'size':
           key = this.getSizeCategory(country.area);
           break;
+        case 'name':
+          key = this.getNameCategory(country.name.common);
+          break;
       }
       
       if (!grouped[key]) {
@@ -109,7 +117,8 @@ export class CountriesAppComponent implements OnInit {
     return Object.keys(this.groupedCountries());
   }
 
-  getPopulationCategory(population: number): string {
+  getPopulationCategory(population?: number): string {
+    if (!population && population !== 0) return '❓ Unknown';
     if (population >= 100000000) return '🌟 Very Large (100M+)';
     if (population >= 50000000) return '🔷 Large (50M - 100M)';
     if (population >= 10000000) return '🔹 Medium-Large (10M - 50M)';
@@ -118,13 +127,24 @@ export class CountriesAppComponent implements OnInit {
     return '⚫ Very Small (< 100K)';
   }
 
-  getSizeCategory(area: number): string {
+  getSizeCategory(area?: number): string {
+    if (!area && area !== 0) return '❓ Unknown';
     if (area >= 5000000) return '🌍 Massive (5M+ km²)';
     if (area >= 1000000) return '🗺️ Very Large (1M - 5M km²)';
     if (area >= 500000) return '📍 Large (500K - 1M km²)';
     if (area >= 100000) return '📌 Medium (100K - 500K km²)';
     if (area >= 10000) return '📎 Small (10K - 100K km²)';
     return '🔹 Very Small (< 10K km²)';
+  }
+
+  getNameCategory(name: string): string {
+    if (!name) return '#';
+    const firstChar = name.charAt(0).toUpperCase();
+    // Check if it's a letter
+    if (firstChar >= 'A' && firstChar <= 'Z') {
+      return firstChar;
+    }
+    return '#'; // For names starting with numbers or special characters
   }
 
   getGroupSortOrder(groupType: GroupType): string[] {
@@ -146,6 +166,12 @@ export class CountriesAppComponent implements OnInit {
           '📌 Medium (100K - 500K km²)',
           '📎 Small (10K - 100K km²)',
           '🔹 Very Small (< 10K km²)'
+        ];
+      case 'name':
+        // A-Z alphabetical order, with # at the end
+        return [
+          'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
+          'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '#'
         ];
       default:
         return [];
@@ -202,10 +228,10 @@ export class CountriesAppComponent implements OnInit {
           comparison = a.name.common.localeCompare(b.name.common);
           break;
         case 'population':
-          comparison = a.population - b.population;
+          comparison = (a.population || 0) - (b.population || 0);
           break;
         case 'area':
-          comparison = a.area - b.area;
+          comparison = (a.area || 0) - (b.area || 0);
           break;
         case 'region':
           comparison = a.region.localeCompare(b.region);
@@ -234,6 +260,22 @@ export class CountriesAppComponent implements OnInit {
 
   setGroupType(type: GroupType) {
     this.groupType.set(type);
+    // Clear collapsed groups when changing group type
+    this.collapsedGroups.set(new Set());
+  }
+
+  toggleGroupCollapse(groupKey: string) {
+    const collapsed = new Set(this.collapsedGroups());
+    if (collapsed.has(groupKey)) {
+      collapsed.delete(groupKey);
+    } else {
+      collapsed.add(groupKey);
+    }
+    this.collapsedGroups.set(collapsed);
+  }
+
+  isGroupCollapsed(groupKey: string): boolean {
+    return this.collapsedGroups().has(groupKey);
   }
 
   selectCountry(country: Country) {
@@ -287,16 +329,34 @@ export class CountriesAppComponent implements OnInit {
     this.borderCountries.set([]);
   }
 
-  openMap(country: Country) {
-    window.open(country.maps.googleMaps, '_blank');
+  openMap(country: Country, type: 'google' | 'osm' = 'google') {
+    if (!country.maps) return;
+    const url = type === 'google' ? country.maps.googleMaps : country.maps.openStreetMaps;
+    if (url) {
+      window.open(url, '_blank');
+    }
+  }
+
+  openCapitalOnMap(country: Country) {
+    if (country.capitalInfo?.latlng && country.capitalInfo.latlng.length >= 2) {
+      const lat = country.capitalInfo.latlng[0];
+      const lng = country.capitalInfo.latlng[1];
+      const capitalName = this.getCapital(country);
+      const url = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}&query_place_id=${encodeURIComponent(capitalName)}`;
+      window.open(url, '_blank');
+    }
+  }
+
+  toggleAllTranslations() {
+    this.showAllTranslations.set(!this.showAllTranslations());
   }
 
   // Helper methods
-  formatPopulation(population: number): string {
+  formatPopulation(population?: number): string {
     return this.countriesService.formatPopulation(population);
   }
 
-  formatArea(area: number): string {
+  formatArea(area?: number): string {
     return this.countriesService.formatArea(area);
   }
 
@@ -313,9 +373,18 @@ export class CountriesAppComponent implements OnInit {
   }
 
   getNativeName(country: Country): string {
-    if (!country.name.nativeName) return country.name.common;
+    if (!country.name?.nativeName) return country.name?.common || 'N/A';
     const firstNative = Object.values(country.name.nativeName)[0];
-    return firstNative ? firstNative.common : country.name.common;
+    return firstNative ? firstNative.common : country.name?.common || 'N/A';
+  }
+
+  getNativeNames(country: Country): { lang: string; official: string; common: string }[] {
+    if (!country.name?.nativeName) return [];
+    return Object.entries(country.name.nativeName).map(([code, names]) => ({
+      lang: code.toUpperCase(),
+      official: names.official,
+      common: names.common
+    }));
   }
 
   getCurrencyList(country: Country): { name: string; symbol: string; code: string }[] {
@@ -341,7 +410,20 @@ export class CountriesAppComponent implements OnInit {
 
   getDemonym(country: Country): string {
     if (country.demonyms?.eng) {
-      return country.demonyms.eng.m || country.demonyms.eng.f || 'N/A';
+      const m = country.demonyms.eng.m;
+      const f = country.demonyms.eng.f;
+      if (m && f && m !== f) {
+        return `${m} (m) / ${f} (f)`;
+      }
+      return m || f || 'N/A';
+    }
+    if (country.demonyms?.fra) {
+      const m = country.demonyms.fra.m;
+      const f = country.demonyms.fra.f;
+      if (m && f && m !== f) {
+        return `${m} (m) / ${f} (f)`;
+      }
+      return m || f || 'N/A';
     }
     return 'N/A';
   }
@@ -356,11 +438,15 @@ export class CountriesAppComponent implements OnInit {
     return country.tld?.join(', ') || 'N/A';
   }
 
+  getTLDList(country: Country): string[] {
+    return country.tld || [];
+  }
+
   getCarInfo(country: Country): string {
     if (!country.car) return 'N/A';
-    const signs = country.car.signs?.join(', ') || 'N/A';
-    const side = country.car.side === 'right' ? 'Right' : 'Left';
-    return `${signs} - Drives on ${side}`;
+    const signs = country.car.signs?.filter(s => s).join(', ') || 'No international signs';
+    const side = country.car.side === 'right' ? 'right side' : 'left side';
+    return `Signs: ${signs} • Drives on the ${side}`;
   }
 
   getCallingCode(country: Country): string {
@@ -373,7 +459,10 @@ export class CountriesAppComponent implements OnInit {
   }
 
   getAltSpellings(country: Country): string[] {
-    return country.altSpellings?.slice(0, 10) || [];
+    // Remove duplicates and limit to reasonable number
+    const spellings = country.altSpellings || [];
+    const unique = [...new Set(spellings)];
+    return unique.filter(s => s !== country.name.common && s !== country.cca2 && s !== country.cca3);
   }
 
   getTranslations(country: Country): { lang: string; name: string }[] {
@@ -386,8 +475,34 @@ export class CountriesAppComponent implements OnInit {
       }));
   }
 
+  getAllTranslations(country: Country): { lang: string; common: string; official: string }[] {
+    if (!country.translations) return [];
+    return Object.entries(country.translations).map(([code, trans]) => ({
+      lang: code.toUpperCase(),
+      common: trans.common,
+      official: trans.official
+    }));
+  }
+
+  getCommonTranslations(country: Country): { lang: string; common: string; official: string }[] {
+    const all = this.getAllTranslations(country);
+    return all.filter(trans => this.COMMON_LANGUAGES.includes(trans.lang));
+  }
+
+  getOtherTranslations(country: Country): { lang: string; common: string; official: string }[] {
+    const all = this.getAllTranslations(country);
+    return all.filter(trans => !this.COMMON_LANGUAGES.includes(trans.lang));
+  }
+
+  isPopularLanguage(lang: string): boolean {
+    return ['ENG', 'ZHO', 'SPA', 'FRA', 'DEU', 'JPN'].includes(lang);
+  }
+
   getStatus(country: Country): string {
-    return country.status || 'N/A';
+    const status = country.status || 'unknown';
+    return status.split('-').map(word => 
+      word.charAt(0).toUpperCase() + word.slice(1)
+    ).join(' ');
   }
 
   isLandlocked(country: Country): boolean {
@@ -403,7 +518,7 @@ export class CountriesAppComponent implements OnInit {
   }
 
   getPopulationDensity(country: Country): string {
-    if (!country.area || country.area === 0) return 'N/A';
+    if (!country.area || country.area === 0 || !country.population) return 'N/A';
     const density = country.population / country.area;
     return density.toFixed(2) + ' per km²';
   }

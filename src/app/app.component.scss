@@ -8,6 +8,125 @@
   --border-color: #dee2e6;
 }
 
+// Restart Screen Styles - Full Screen Terminal
+.restart-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #000000;
+  z-index: 10001;
+  animation: fadeIn 0.3s ease;
+
+  .terminal-body {
+    width: 100%;
+    height: 100%;
+    padding: 24px;
+    overflow-y: auto;
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Courier New', 'Consolas', monospace;
+    font-size: 14px;
+    line-height: 1.5;
+    color: #ffffff;
+    background: #000000;
+
+    .terminal-line {
+      margin-bottom: 2px;
+      display: flex;
+      gap: 8px;
+      white-space: pre-wrap;
+      word-break: break-word;
+
+      &.terminal-info {
+        color: #ffffff;
+      }
+
+      &.terminal-success {
+        color: #ffffff;
+        font-weight: bold;
+      }
+
+      &.terminal-warning {
+        color: #ffaa00;
+      }
+
+      &.terminal-error {
+        color: #ff4444;
+      }
+
+      .terminal-timestamp {
+        color: #ffffff;
+        font-size: 11px;
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
+
+      .terminal-text {
+        flex: 1;
+        position: relative;
+        display: inline-block;
+        
+        &.typing::after {
+          content: '█';
+          display: inline-block;
+          margin-left: 2px;
+          animation: cursorBlink 0.7s step-end infinite;
+        }
+      }
+    }
+
+    .terminal-cursor-line {
+      display: flex;
+      align-items: center;
+      margin-top: 2px;
+      height: 21px;
+
+      .terminal-cursor {
+        display: inline-block;
+        width: 10px;
+        height: 18px;
+        background: #ffffff;
+        animation: cursorBlink 1s step-end infinite;
+      }
+    }
+
+    &::-webkit-scrollbar {
+      width: 12px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: #000000;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: #1a1a1a;
+      border-radius: 0;
+
+      &:hover {
+        background: #2a2a2a;
+      }
+    }
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes cursorBlink {
+  0%, 50% {
+    opacity: 1;
+  }
+  51%, 100% {
+    opacity: 0;
+  }
+}
+
 .desktop {
   position: relative;
   width: 100vw;
@@ -211,17 +330,31 @@
   }
 }
 
-.clock {
+.clock-widget {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
   color: #ffffff;
-  font-size: 13px;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 4px;
+  padding: 4px 12px;
+  border-radius: 6px;
   transition: background-color 0.2s ease;
+  line-height: 1.3;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.15);
+  }
+
+  .clock-time {
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .clock-date {
+    font-size: 11px;
+    opacity: 0.85;
+    font-weight: 400;
   }
 }
 
@@ -443,10 +576,13 @@
 
 // Start Menu Footer
 .start-menu-footer {
-  padding: 12px 24px;
+  padding: 16px 20px;
   border-top: 1px solid rgba(0, 0, 0, 0.08);
-  background: rgba(0, 0, 0, 0.02);
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.02) 0%, rgba(0, 0, 0, 0.04) 100%);
   flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .power-options {
@@ -2662,30 +2798,102 @@
 
 .footer-actions {
   display: flex;
-  gap: 6px;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .footer-btn {
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  background: rgba(0, 0, 0, 0.05);
-  border: none;
-  color: #666;
+  flex: 1;
+  min-width: 90px;
+  height: 48px;
+  border-radius: 12px;
+  border: 2px solid transparent;
   cursor: pointer;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
+  gap: 4px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  font-weight: 600;
 
-  &:hover {
-    background: rgba(102, 126, 234, 0.1);
-    color: #667eea;
-    transform: scale(1.05);
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, transparent 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
   }
 
   i {
-    font-size: 16px;
+    font-size: 18px;
+    transition: all 0.3s ease;
+    position: relative;
+    z-index: 1;
+  }
+
+  .btn-label {
+    font-size: 11px;
+    font-weight: 600;
+    position: relative;
+    z-index: 1;
+    transition: all 0.3s ease;
+  }
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+
+    &::before {
+      opacity: 1;
+    }
+
+    i {
+      transform: scale(1.1);
+    }
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  // Settings button - blue
+  &.settings-btn {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    color: white;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+
+    &:hover {
+      box-shadow: 0 4px 16px rgba(59, 130, 246, 0.4);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+  }
+
+  // Lock button - amber
+  &.lock-btn {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: white;
+    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+
+    &:hover {
+      box-shadow: 0 4px 16px rgba(245, 158, 11, 0.4);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+  }
+
+  // Restart button - purple
+  &.restart-btn {
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    color: white;
+    box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
+
+    &:hover {
+      box-shadow: 0 4px 16px rgba(139, 92, 246, 0.4);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
   }
 }
 

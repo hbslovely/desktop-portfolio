@@ -1,4 +1,4 @@
-import { Component, Input, signal, computed } from '@angular/core';
+import { Component, Input, OnInit, OnDestroy, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 
@@ -9,9 +9,15 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
   templateUrl: './iframe-app.component.html',
   styleUrl: './iframe-app.component.scss'
 })
-export class IframeAppComponent {
+export class IframeAppComponent implements OnInit, OnDestroy {
   @Input() set url(value: string) {
     this._url.set(value);
+    // Reset loading state when URL changes
+    if (value) {
+      this.isLoading.set(true);
+      this.hasError.set(false);
+      this.startLoadingTimeout();
+    }
   }
   get url() {
     return this._url();
@@ -22,8 +28,21 @@ export class IframeAppComponent {
   private _url = signal('');
   isLoading = signal(true);
   hasError = signal(false);
+  private loadingTimeout: any;
   
   constructor(private sanitizer: DomSanitizer) {}
+  
+  ngOnInit() {
+    if (this._url()) {
+      this.startLoadingTimeout();
+    }
+  }
+  
+  ngOnDestroy() {
+    if (this.loadingTimeout) {
+      clearTimeout(this.loadingTimeout);
+    }
+  }
   
   // Convert to computed signal to prevent infinite loading
   safeUrl = computed(() => {
@@ -31,12 +50,36 @@ export class IframeAppComponent {
     return url ? this.sanitizer.bypassSecurityTrustResourceUrl(url) : null;
   });
   
+  private startLoadingTimeout() {
+    // Clear any existing timeout
+    if (this.loadingTimeout) {
+      clearTimeout(this.loadingTimeout);
+    }
+    
+    // Set timeout to detect if iframe fails to load after 10 seconds
+    this.loadingTimeout = setTimeout(() => {
+      if (this.isLoading()) {
+        console.warn('Iframe loading timeout - treating as error');
+        this.isLoading.set(false);
+        this.hasError.set(true);
+      }
+    }, 10000);
+  }
+  
   onIframeLoad() {
+    console.log('Iframe loaded successfully');
+    if (this.loadingTimeout) {
+      clearTimeout(this.loadingTimeout);
+    }
     this.isLoading.set(false);
     this.hasError.set(false);
   }
   
   onIframeError() {
+    console.error('Iframe error occurred');
+    if (this.loadingTimeout) {
+      clearTimeout(this.loadingTimeout);
+    }
     this.isLoading.set(false);
     this.hasError.set(true);
   }
@@ -44,10 +87,23 @@ export class IframeAppComponent {
   reloadIframe() {
     this.isLoading.set(true);
     this.hasError.set(false);
+    this.startLoadingTimeout();
+    
     // Force reload by changing src
     const iframe = document.querySelector('iframe') as HTMLIFrameElement;
     if (iframe) {
-      iframe.src = iframe.src;
+      const currentSrc = iframe.src;
+      iframe.src = 'about:blank';
+      setTimeout(() => {
+        iframe.src = currentSrc;
+      }, 100);
+    }
+  }
+  
+  openInNewTab() {
+    const url = this._url();
+    if (url) {
+      window.open(url, '_blank');
     }
   }
 }

@@ -37,11 +37,18 @@ export const APP_ICONS: DesktopIconData[] = [
     type: 'application',
     position: { x: 20, y: 420 }
   },
+  {
+    id: 'vnstock',
+    name: 'VNStock',
+    icon: 'assets/images/icons/stock.png',
+    type: 'application',
+    position: { x: 20, y: 520 }
+  },
   // Column 2 (x: 120)
   {
     id: 'credit',
-    name: 'Credit Tracker',
-    icon: 'assets/images/icons/calculator.png',
+    name: 'About',
+    icon: 'assets/images/icons/info.png',
     type: 'application',
     position: { x: 120, y: 20 }
   },
@@ -108,6 +115,21 @@ export const APP_ICONS: DesktopIconData[] = [
     icon: 'assets/images/icons/world.png',
     type: 'application',
     position: { x: 220, y: 420 }
+  },
+  // Column 4 (x: 320)
+  {
+    id: 'text-editor',
+    name: 'Text Editor',
+    icon: 'assets/images/icons/book.png',
+    type: 'application',
+    position: { x: 320, y: 20 }
+  },
+  {
+    id: 'yugioh',
+    name: 'Yu-Gi-Oh! Cards',
+    icon: 'assets/images/icons/yugi.png',
+    type: 'application',
+    position: { x: 320, y: 120 }
   }
 ];
 
@@ -130,7 +152,7 @@ function getAppDescription(appId: string): string {
     'love': 'Explore love and relationship content',
     'explorer': 'Browse and manage files and folders',
     'machine-info': 'View system information and device details',
-    'credit': 'Track and manage financial credits and expenses',
+    'credit': 'View project information, statistics, dependencies, and technical details',
     'paint': 'Create drawings and artwork with various tools',
     'credits': 'View project credits and acknowledgments',
     'hcmc': 'Explore Ho Chi Minh City attractions and culture',
@@ -139,7 +161,10 @@ function getAppDescription(appId: string): string {
     'weather': 'View current weather and forecast for your location',
     'dictionary': 'Look up word definitions, pronunciations, and synonyms',
     'link-shortener': 'Shorten long URLs quickly and easily with GoTiny',
-    'countries': 'Explore detailed information about countries around the world'
+    'countries': 'Explore detailed information about countries around the world',
+    'text-editor': 'Create and edit rich text documents with formatting',
+    'yugioh': 'Browse and search the complete Yu-Gi-Oh! card database with filters',
+    'vnstock': 'View real-time Vietnam stock market prices and data from FireAnt'
   };
   return descriptions[appId] || 'Application';
 }
@@ -151,7 +176,7 @@ function getAppKeywords(appId: string): string[] {
     'love': ['relationship', 'romance', 'heart', 'dating'],
     'explorer': ['files', 'folders', 'browse', 'manage', 'directory'],
     'machine-info': ['system', 'device', 'hardware', 'specs', 'info'],
-    'credit': ['finance', 'money', 'expenses', 'budget', 'tracking'],
+    'credit': ['about', 'project', 'info', 'statistics', 'dependencies', 'files', 'code', 'technical', 'details', 'angular', 'primeng', 'typescript'],
     'paint': ['draw', 'art', 'design', 'canvas', 'creative'],
     'credits': ['acknowledgments', 'thanks', 'contributors', 'team'],
     'hcmc': ['vietnam', 'saigon', 'city', 'travel', 'culture', 'attractions'],
@@ -160,7 +185,10 @@ function getAppKeywords(appId: string): string[] {
     'weather': ['forecast', 'temperature', 'rain', 'cloud', 'wind', 'climate', 'meteorology'],
     'dictionary': ['words', 'definitions', 'meaning', 'vocabulary', 'thesaurus', 'synonyms', 'antonyms', 'pronunciation'],
     'link-shortener': ['url', 'shorten', 'tiny', 'link', 'gotiny', 'redirect', 'short', 'share'],
-    'countries': ['world', 'nations', 'flags', 'capitals', 'geography', 'borders', 'population', 'currencies', 'languages', 'maps', 'continents', 'regions']
+    'countries': ['world', 'nations', 'flags', 'capitals', 'geography', 'borders', 'population', 'currencies', 'languages', 'maps', 'continents', 'regions'],
+    'text-editor': ['edit', 'write', 'document', 'word', 'text', 'formatting', 'rich', 'editor', 'notepad', 'write'],
+    'yugioh': ['cards', 'trading', 'game', 'deck', 'monster', 'spell', 'trap', 'duel', 'ygoprodeck', 'database', 'search', 'filter', 'archetype'],
+    'vnstock': ['stock', 'market', 'vietnam', 'fireant', 'trading', 'shares', 'prices', 'hose', 'hnx', 'vn30', 'stocks', 'finance', 'investment']
   };
   return keywords[appId] || [];
 }

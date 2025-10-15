@@ -1,119 +1,265 @@
-<div class="credit-app">
-  <div class="header">
-    <h2>Credit Tracker</h2>
-    <div class="total-display">
-      <span class="total-label">Total Credits:</span>
-      <span class="total-amount">{{ formatCurrency(totalCredits()) }}</span>
+<div class="credits-app">
+  <!-- Hero Section - Project Info -->
+  <div class="hero-section">
+    <div class="hero-content">
+      <div class="avatar-container">
+        <div class="avatar-circle">
+          <span class="avatar-emoji">{{ projectInfo.icon }}</span>
+        </div>
+        <div class="status-indicator"></div>
+      </div>
+      
+      <div class="hero-text">
+        <h1 class="hero-name">{{ projectInfo.name }}</h1>
+        <p class="hero-username">Version {{ projectInfo.version }}</p>
+        <p class="hero-title">by {{ projectInfo.author }}</p>
+        <div class="hero-location">
+          <i class="pi pi-calendar"></i>
+          <span>Created {{ projectInfo.created }}</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="hero-bio">
+      <p>{{ projectInfo.description }}</p>
+    </div>
+
+    <!-- Project Statistics -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <i class="pi pi-code stat-icon"></i>
+        <div class="stat-content">
+          <div class="stat-value">{{ projectStats.linesOfCode }}</div>
+          <div class="stat-label">Lines of Code</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <i class="pi pi-file stat-icon"></i>
+        <div class="stat-content">
+          <div class="stat-value">{{ projectStats.totalFiles }}</div>
+          <div class="stat-label">Total Files</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <i class="pi pi-box stat-icon"></i>
+        <div class="stat-content">
+          <div class="stat-value">{{ projectStats.components }}</div>
+          <div class="stat-label">Components</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <i class="pi pi-th-large stat-icon"></i>
+        <div class="stat-content">
+          <div class="stat-value">{{ projectStats.apps }}</div>
+          <div class="stat-label">Applications</div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- About Me Button -->
+    <div class="about-me-section">
+      <button 
+        pButton 
+        label="About Me" 
+        icon="pi pi-user" 
+        class="p-button-lg p-button-success"
+        (click)="openMyInformation()"
+        pTooltip="Click to view personal information"
+        tooltipPosition="top">
+      </button>
+      <p class="about-me-hint">Want to know more about the developer?</p>
     </div>
   </div>
 
-  <div class="main-content">
-    <!-- Add New Entry Form -->
-    <div class="form-section">
-      <h3>Add New Credit Entry</h3>
-      <div class="form-row">
-        <div class="form-group">
-          <label for="description">Description:</label>
-          <input 
-            type="text" 
-            id="description"
-            [(ngModel)]="newEntry().description"
-            placeholder="Enter description"
-            class="form-input">
+  <!-- Main Content -->
+  <div class="content-section">
+    
+    <!-- File Statistics -->
+    <p-card class="section-card">
+      <ng-template pTemplate="header">
+        <div class="card-header">
+          <i class="pi pi-chart-bar"></i>
+          <h2>File Statistics</h2>
         </div>
-        <div class="form-group">
-          <label for="amount">Amount:</label>
-          <input 
-            type="number" 
-            id="amount"
-            [(ngModel)]="newEntry().amount"
-            placeholder="0.00"
-            min="0"
-            step="0.01"
-            class="form-input">
-        </div>
-        <div class="form-group">
-          <label for="category">Category:</label>
-          <select 
-            id="category"
-            [(ngModel)]="newEntry().category"
-            class="form-select">
-            <option *ngFor="let category of categories" [value]="category">
-              {{ category }}
-            </option>
-          </select>
-        </div>
-        <button 
-          type="button" 
-          (click)="addEntry()"
-          class="add-button"
-          [disabled]="!newEntry().description.trim() || newEntry().amount <= 0">
-          Add Entry
-        </button>
-      </div>
-    </div>
-
-    <!-- Category Filter -->
-    <div class="filter-section">
-      <h3>Filter by Category</h3>
-      <div class="category-filters">
-        <button 
-          *ngFor="let category of getAllCategories()"
-          (click)="setCategory(category)"
-          [class.active]="selectedCategory() === category"
-          class="category-filter">
-          {{ category }}
-          <span *ngIf="category !== 'All'" class="category-count">
-            ({{ categoryTotals()[category] || 0 | currency:'USD':'symbol':'1.0-0' }})
-          </span>
-        </button>
-      </div>
-    </div>
-
-    <!-- Credit Entries List -->
-    <div class="entries-section">
-      <h3>Credit Entries</h3>
-      <div class="entries-list">
-        <div 
-          *ngFor="let entry of filteredEntries(); trackBy: trackByEntryId"
-          class="entry-item">
-          <div class="entry-info">
-            <div class="entry-description">{{ entry.description }}</div>
-            <div class="entry-details">
-              <span class="entry-category">{{ entry.category }}</span>
-              <span class="entry-date">{{ formatDate(entry.date) }}</span>
-            </div>
+      </ng-template>
+      
+      <div class="file-stats-grid">
+        <div class="file-stat-item">
+          <i class="pi pi-file-edit"></i>
+          <div>
+            <div class="file-stat-value">{{ projectStats.typeScriptFiles }}</div>
+            <div class="file-stat-label">TypeScript Files</div>
           </div>
-          <div class="entry-amount">
-            {{ formatCurrency(entry.amount) }}
+        </div>
+        <div class="file-stat-item">
+          <i class="pi pi-file"></i>
+          <div>
+            <div class="file-stat-value">{{ projectStats.htmlFiles }}</div>
+            <div class="file-stat-label">HTML Templates</div>
           </div>
-          <button 
-            (click)="deleteEntry(entry.id)"
-            class="delete-button"
-            title="Delete entry">
-            <i class="pi pi-trash"></i>
-          </button>
+        </div>
+        <div class="file-stat-item">
+          <i class="pi pi-palette"></i>
+          <div>
+            <div class="file-stat-value">{{ projectStats.scssFiles }}</div>
+            <div class="file-stat-label">SCSS Stylesheets</div>
+          </div>
+        </div>
+        <div class="file-stat-item">
+          <i class="pi pi-server"></i>
+          <div>
+            <div class="file-stat-value">{{ projectStats.services }}</div>
+            <div class="file-stat-label">Services</div>
+          </div>
+        </div>
+      </div>
+    </p-card>
+
+    <!-- Dependencies -->
+    <p-card class="section-card">
+      <ng-template pTemplate="header">
+        <div class="card-header">
+          <i class="pi pi-box"></i>
+          <h2>Core Dependencies</h2>
+        </div>
+      </ng-template>
+      
+      <div class="dependencies-grid">
+        <div class="dependency-item" *ngFor="let dep of dependencies | keyvalue">
+          <div class="dependency-header">
+            <i class="pi pi-circle-fill" [style.color]="'#3b82f6'"></i>
+            <span class="dependency-name">{{ dep.value.name }}</span>
+          </div>
+          <div class="dependency-details">
+            <span class="dependency-version">{{ dep.value.version }}</span>
+            <span class="dependency-category">{{ dep.value.category }}</span>
+          </div>
+        </div>
+      </div>
+    </p-card>
+
+    <!-- Runtime Environment -->
+    <p-card class="section-card">
+      <ng-template pTemplate="header">
+        <div class="card-header">
+          <i class="pi pi-cog"></i>
+          <h2>Runtime Environment</h2>
+        </div>
+      </ng-template>
+      
+      <div class="environment-list">
+        <div class="env-item">
+          <span class="env-label">Node.js:</span>
+          <span class="env-value">{{ environment.nodejs }}</span>
+        </div>
+        <div class="env-item">
+          <span class="env-label">Angular CLI:</span>
+          <span class="env-value">{{ environment.angularCli }}</span>
+        </div>
+        <div class="env-item">
+          <span class="env-label">TypeScript:</span>
+          <span class="env-value">{{ environment.typescript }}</span>
+        </div>
+        <div class="env-item">
+          <span class="env-label">Package Manager:</span>
+          <span class="env-value">{{ environment.packageManager }}</span>
+        </div>
+      </div>
+    </p-card>
+
+    <!-- Tech Stack -->
+    <p-card class="section-card">
+      <ng-template pTemplate="header">
+        <div class="card-header">
+          <i class="pi pi-briefcase"></i>
+          <h2>Technology Stack</h2>
+        </div>
+      </ng-template>
+      
+      <div class="tech-stack-container">
+        <div class="tech-category">
+          <h3><i class="pi pi-code"></i> Frontend</h3>
+          <div class="tech-chips">
+            <p-chip *ngFor="let tech of techStack.frontend" [label]="tech" styleClass="tech-chip"></p-chip>
+          </div>
         </div>
         
-        <div *ngIf="filteredEntries().length === 0" class="no-entries">
-          <i class="pi pi-info-circle"></i>
-          <p>No credit entries found for the selected category.</p>
+        <p-divider></p-divider>
+        
+        <div class="tech-category">
+          <h3><i class="pi pi-star"></i> Features</h3>
+          <div class="tech-chips">
+            <p-chip *ngFor="let feature of techStack.features" [label]="feature" styleClass="feature-chip"></p-chip>
+          </div>
+        </div>
+        
+        <p-divider></p-divider>
+        
+        <div class="tech-category">
+          <h3><i class="pi pi-wrench"></i> Tools</h3>
+          <div class="tech-chips">
+            <p-chip *ngFor="let tool of techStack.tools" [label]="tool" styleClass="tool-chip"></p-chip>
+          </div>
+        </div>
+        
+        <p-divider></p-divider>
+        
+        <div class="tech-category">
+          <h3><i class="pi pi-cloud"></i> Deployment</h3>
+          <div class="tech-chips">
+            <p-chip *ngFor="let deploy of techStack.deployment" [label]="deploy" styleClass="deploy-chip"></p-chip>
+          </div>
         </div>
       </div>
-    </div>
+    </p-card>
 
-    <!-- Category Summary -->
-    <div class="summary-section">
-      <h3>Category Summary</h3>
-      <div class="category-summary">
-        <div 
-          *ngFor="let category of categories"
-          class="summary-item"
-          [style.display]="categoryTotals()[category] ? 'flex' : 'none'">
-          <span class="summary-category">{{ category }}</span>
-          <span class="summary-amount">{{ formatCurrency(categoryTotals()[category] || 0) }}</span>
+    <!-- Featured Applications -->
+    <p-card class="section-card">
+      <ng-template pTemplate="header">
+        <div class="card-header">
+          <i class="pi pi-th-large"></i>
+          <h2>Featured Applications</h2>
+        </div>
+      </ng-template>
+      
+      <div class="apps-grid">
+        <div class="app-card" *ngFor="let app of featuredApps">
+          <i [class]="app.icon + ' app-icon'"></i>
+          <h4>{{ app.name }}</h4>
+          <p>{{ app.description }}</p>
         </div>
       </div>
-    </div>
+    </p-card>
+
+    <!-- Core Technologies (Skills) -->
+    <p-card class="section-card">
+      <ng-template pTemplate="header">
+        <div class="card-header">
+          <i class="pi pi-star-fill"></i>
+          <h2>Core Technologies</h2>
+        </div>
+      </ng-template>
+      
+      <div class="skills-container">
+        <div class="skill-item" *ngFor="let skill of coreSkills">
+          <div class="skill-header">
+            <span class="skill-name">
+              <i [class]="skill.icon"></i>
+              {{ skill.name }}
+            </span>
+            <span class="skill-percentage">{{ skill.level }}%</span>
+          </div>
+          <div class="skill-bar">
+            <div 
+              class="skill-progress" 
+              [style.width]="getSkillWidth(skill.level)"
+              [style.background-color]="skill.color">
+            </div>
+          </div>
+          <span class="skill-category">{{ skill.category }}</span>
+        </div>
+      </div>
+    </p-card>
+
   </div>
 </div>

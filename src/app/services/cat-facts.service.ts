@@ -5,7 +5,7 @@ import { map, catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
 
 export interface CatFact {
-  _id: string;
+  _id?: string;
   text: string;
   type?: string;
   updatedAt?: string;
@@ -14,34 +14,43 @@ export interface CatFact {
   sentCount?: number;
 }
 
+export interface MeowFactsResponse {
+  data: string[];
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class CatFactsService {
-  private apiUrl = 'https://cat-fact.herokuapp.com';
+  private apiUrl = 'https://meowfacts.herokuapp.com';
 
   constructor(private http: HttpClient) {}
 
   /**
-   * Get random cat facts
-   * Based on: https://alexwohlbruck.github.io/cat-facts/docs/endpoints/facts.html
-   * @param amount Number of facts to retrieve (default: 1, max: 500)
-   * @param animalType Type of animal (default: 'cat')
+   * Get random cat facts from MeowFacts API
+   * Based on: https://meowfacts.herokuapp.com/
+   * @param count Number of facts to retrieve (default: 1)
    */
-  getRandomFacts(amount: number = 1, animalType: string = 'cat'): Observable<CatFact | CatFact[]> {
-    const params = new HttpParams()
-      .set('animal_type', animalType)
-      .set('amount', amount.toString());
-
-    return this.http.get<CatFact | CatFact[]>(`${this.apiUrl}/facts/random`, { params }).pipe(
+  getRandomFacts(count: number = 1): Observable<CatFact[]> {
+    return this.http.get<MeowFactsResponse>(`${this.apiUrl}/?count=${count}`).pipe(
+      map(response => {
+        // Convert string array to CatFact array
+        return response.data.map((fact, index) => ({
+          _id: `meow-${Date.now()}-${index}`,
+          text: fact,
+          type: 'cat',
+          source: 'meowfacts'
+        } as CatFact));
+      }),
       catchError(error => {
         console.error('Cat Facts API error:', error);
         // Return fallback fact
-        return of({
+        return of([{
           _id: 'fallback',
           text: 'Cats spend 70% of their lives sleeping, which means a nine-year-old cat has been awake for only three years of its life.',
-          type: 'cat'
-        } as CatFact);
+          type: 'cat',
+          source: 'fallback'
+        } as CatFact]);
       })
     );
   }
@@ -49,26 +58,17 @@ export class CatFactsService {
   /**
    * Get a single random cat fact
    */
-  getSingleRandomFact(animalType: string = 'cat'): Observable<CatFact> {
-    return this.getRandomFacts(1, animalType).pipe(
-      map(result => Array.isArray(result) ? result[0] : result)
+  getSingleRandomFact(): Observable<CatFact> {
+    return this.getRandomFacts(1).pipe(
+      map(facts => facts[0])
     );
   }
 
   /**
-   * Get fact by ID
+   * Get multiple cat facts at once
    */
-  getFactById(factId: string): Observable<CatFact> {
-    return this.http.get<CatFact>(`${this.apiUrl}/facts/${factId}`).pipe(
-      catchError(error => {
-        console.error('Cat Fact by ID error:', error);
-        return of({
-          _id: factId,
-          text: 'Unable to load this fact.',
-          type: 'cat'
-        } as CatFact);
-      })
-    );
+  getMultipleFacts(count: number = 3): Observable<CatFact[]> {
+    return this.getRandomFacts(count);
   }
 }
 

@@ -17,20 +17,21 @@ export interface Country {
   subregion?: string;
   languages?: { [key: string]: string };
   currencies?: { [key: string]: { name: string; symbol: string } };
-  population: number;
-  area: number;
-  flags: {
-    png: string;
-    svg: string;
+  population?: number;
+  area?: number;
+  flag?: string;
+  flags?: {
+    png?: string;
+    svg?: string;
     alt?: string;
   };
   coatOfArms?: {
     png?: string;
     svg?: string;
   };
-  maps: {
-    googleMaps: string;
-    openStreetMaps: string;
+  maps?: {
+    googleMaps?: string;
+    openStreetMaps?: string;
   };
   timezones: string[];
   continents: string[];
@@ -251,7 +252,8 @@ export class CountriesService {
   /**
    * Format population number
    */
-  formatPopulation(population: number): string {
+  formatPopulation(population?: number): string {
+    if (!population && population !== 0) return 'N/A';
     if (population >= 1000000000) {
       return (population / 1000000000).toFixed(2) + 'B';
     } else if (population >= 1000000) {
@@ -265,7 +267,8 @@ export class CountriesService {
   /**
    * Format area number
    */
-  formatArea(area: number): string {
+  formatArea(area?: number): string {
+    if (!area && area !== 0) return 'N/A';
     return area.toLocaleString('en-US') + ' km²';
   }
 
