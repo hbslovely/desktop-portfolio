@@ -1,9 +1,9 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { FireantService, StockData, Industry, SymbolFundamental, SymbolInfo, SymbolPost, HistoricalQuote, InstitutionProfile, MacroIndicator, TopMover } from '../../../services/fireant.service';
+import { FireantService, StockData, Industry, SymbolFundamental, SymbolInfo, SymbolPost, HistoricalQuote, InstitutionProfile, MacroIndicator, TopMover, SearchResult } from '../../../services/fireant.service';
 import { Subject, interval } from 'rxjs';
-import { takeUntil, switchMap } from 'rxjs/operators';
+import { takeUntil, switchMap, debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
 type TabType = 'movers' | 'market' | 'industries' | 'fundamentals';
 type MarketSubView = 'macro' | 'contributors' | 'topMovers';
@@ -105,12 +105,18 @@ export class VnstockAppComponent implements OnInit, OnDestroy {
   // Historical data settings
   historicalDays = 30; // Last 30 days by default
   
+  // Search autocomplete
+  searchResults: SearchResult[] = [];
+  showSearchResults = false;
+  private searchSubject = new Subject<string>();
+  
   private destroy$ = new Subject<void>();
 
   constructor(private fireantService: FireantService) {}
 
   ngOnInit() {
     this.initializeApp();
+    this.setupSearchAutocomplete();
   }
 
   ngOnDestroy() {
@@ -152,6 +158,50 @@ export class VnstockAppComponent implements OnInit, OnDestroy {
     } finally {
       this.loading = false;
     }
+  }
+
+  setupSearchAutocomplete() {
+    this.searchSubject.pipe(
+      debounceTime(300),
+      distinctUntilChanged(),
+      takeUntil(this.destroy$)
+    ).subscribe(query => {
+      if (query && query.trim().length >= 1) {
+        // Search for symbols only, limit to 10 results
+        this.fireantService.searchSymbols(query.trim(), 'symbol', 0, 10).subscribe(
+          results => {
+            this.searchResults = results;
+            this.showSearchResults = true;
+          },
+          error => {
+            console.error('Search error:', error);
+            this.searchResults = [];
+            this.showSearchResults = false;
+          }
+        );
+      } else {
+        this.searchResults = [];
+        this.showSearchResults = false;
+      }
+    });
+  }
+
+  onSearchInput(query: string) {
+    this.searchSubject.next(query);
+  }
+
+  selectSearchResult(result: SearchResult) {
+    this.fundamentalSymbol = result.key || result.symbol || '';
+    this.showSearchResults = false;
+    this.searchResults = [];
+    this.searchFundamental();
+  }
+
+  hideSearchResults() {
+    // Delay to allow click event on result
+    setTimeout(() => {
+      this.showSearchResults = false;
+    }, 200);
   }
 
   async loadTabData() {
