@@ -1,11 +1,12 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { FireantService, StockData, Industry, SymbolFundamental, SymbolInfo, SymbolPost, HistoricalQuote, InstitutionProfile } from '../../../services/fireant.service';
+import { FireantService, StockData, Industry, SymbolFundamental, SymbolInfo, SymbolPost, HistoricalQuote, InstitutionProfile, MacroIndicator, TopMover } from '../../../services/fireant.service';
 import { Subject, interval } from 'rxjs';
 import { takeUntil, switchMap } from 'rxjs/operators';
 
-type TabType = 'movers' | 'contributors' | 'industries' | 'fundamentals';
+type TabType = 'movers' | 'market' | 'industries' | 'fundamentals';
+type MarketSubView = 'macro' | 'contributors' | 'topMovers';
 
 @Component({
   selector: 'app-vnstock-app',
@@ -16,12 +17,20 @@ type TabType = 'movers' | 'contributors' | 'industries' | 'fundamentals';
 })
 export class VnstockAppComponent implements OnInit, OnDestroy {
   // Tab management
-  activeTab: TabType = 'contributors';
+  activeTab: TabType = 'market';
   tabs = [
-    { id: 'contributors' as TabType, name: 'Top Đóng Góp', icon: '📈' },
+    { id: 'market' as TabType, name: 'Thị trường', icon: '📈' },
     { id: 'movers' as TabType, name: 'Danh Sách CP', icon: '📋' },
     { id: 'industries' as TabType, name: 'Ngành', icon: '🏢' },
     { id: 'fundamentals' as TabType, name: 'Cơ Bản', icon: '📊' }
+  ];
+
+  // Market sub-view management
+  activeMarketView: MarketSubView = 'contributors';
+  marketViews = [
+    { id: 'macro' as MarketSubView, name: 'Dữ liệu vĩ mô', icon: '🌐' },
+    { id: 'contributors' as MarketSubView, name: 'Top đóng góp', icon: '🔝' },
+    { id: 'topMovers' as MarketSubView, name: 'Top biến động', icon: '⚡' }
   ];
 
   // Common data
@@ -38,6 +47,22 @@ export class VnstockAppComponent implements OnInit, OnDestroy {
   // Exchange/Index selection
   selectedExchange = 'HOSE'; // For movers
   selectedIndex = 'VNINDEX'; // For top contributors
+
+  // Macro indicators
+  macroIndicators: MacroIndicator[] = [];
+  filteredMacroIndicators: MacroIndicator[] = [];
+
+  // Top movers
+  topMovers: TopMover[] = [];
+  filteredTopMovers: TopMover[] = [];
+  selectedMoverType: string = 'gainer'; // 'gainer', 'loser', 'active', 'breakout', 'foreign'
+  moverTypes = [
+    { code: 'gainer', name: 'Tăng mạnh', icon: '📈' },
+    { code: 'loser', name: 'Giảm mạnh', icon: '📉' },
+    { code: 'active', name: 'Giao dịch khủng', icon: '🔥' },
+    { code: 'breakout', name: 'Breakout', icon: '🚀' },
+    { code: 'foreign', name: 'Khối ngoại', icon: '🌍' }
+  ];
   
   exchanges = [
     { code: 'HOSE', name: 'HOSE', description: 'Sở Giao dịch Chứng khoán TP.HCM' },
@@ -121,8 +146,8 @@ export class VnstockAppComponent implements OnInit, OnDestroy {
 
   async loadTabData() {
     switch (this.activeTab) {
-      case 'contributors':
-        await this.loadTopContributors();
+      case 'market':
+        await this.loadMarketData();
         break;
       case 'movers':
         await this.loadStockData();
@@ -134,6 +159,26 @@ export class VnstockAppComponent implements OnInit, OnDestroy {
         // Don't auto-load, user needs to search
         break;
     }
+  }
+
+  async loadMarketData() {
+    switch (this.activeMarketView) {
+      case 'macro':
+        await this.loadMacroIndicators();
+        break;
+      case 'contributors':
+        await this.loadTopContributors();
+        break;
+      case 'topMovers':
+        await this.loadTopMovers();
+        break;
+    }
+  }
+
+  switchMarketView(view: MarketSubView) {
+    this.activeMarketView = view;
+    this.error = '';
+    this.loadMarketData();
   }
 
   switchTab(tab: TabType) {
@@ -193,6 +238,66 @@ export class VnstockAppComponent implements OnInit, OnDestroy {
   async changeIndex(index: string) {
     this.selectedIndex = index;
     await this.loadTopContributors();
+  }
+
+  async changeMoverType(type: string) {
+    this.selectedMoverType = type;
+    await this.loadTopMovers();
+  }
+
+  async loadMacroIndicators(): Promise<void> {
+    this.loading = true;
+    this.error = '';
+    
+    try {
+      console.log('Loading macro indicators...');
+      const indicators = await this.fireantService.getMacroIndicators().toPromise();
+      
+      if (!indicators || indicators.length === 0) {
+        this.error = 'Không tìm thấy dữ liệu vĩ mô.';
+        this.macroIndicators = [];
+        this.filteredMacroIndicators = [];
+      } else {
+        this.macroIndicators = indicators;
+        this.filteredMacroIndicators = [...this.macroIndicators];
+        this.lastUpdate = new Date();
+        console.log(`✅ Loaded ${indicators.length} macro indicators`);
+      }
+    } catch (error: any) {
+      this.handleApiError(error);
+    } finally {
+      this.loading = false;
+    }
+  }
+
+  async loadTopMovers(): Promise<void> {
+    this.loading = true;
+    this.error = '';
+    
+    try {
+      console.log(`Loading top movers (${this.selectedMoverType})...`);
+      const movers = await this.fireantService.getTopMovers(this.selectedMoverType).toPromise();
+      
+      if (!movers || movers.length === 0) {
+        this.error = `Không tìm thấy dữ liệu cho ${this.getMoverTypeName()}.`;
+        this.topMovers = [];
+        this.filteredTopMovers = [];
+      } else {
+        this.topMovers = movers;
+        this.filteredTopMovers = [...this.topMovers];
+        this.lastUpdate = new Date();
+        console.log(`✅ Loaded ${movers.length} top movers`);
+      }
+    } catch (error: any) {
+      this.handleApiError(error);
+    } finally {
+      this.loading = false;
+    }
+  }
+
+  getMoverTypeName(): string {
+    const type = this.moverTypes.find(t => t.code === this.selectedMoverType);
+    return type ? type.name : 'N/A';
   }
 
   async loadTopContributors(): Promise<void> {
@@ -592,6 +697,13 @@ export class VnstockAppComponent implements OnInit, OnDestroy {
     if (!text) return '';
     const decoded = this.decodeHtml(text);
     return decoded.split('\n').filter(p => p.trim()).map(p => `<p>${p.trim()}</p>`).join('');
+  }
+
+  // Navigate to stock detail (fundamentals tab)
+  viewStockDetail(symbol: string) {
+    this.activeTab = 'fundamentals';
+    this.fundamentalSymbol = symbol;
+    this.searchFundamental();
   }
 
   // Get change class for tagged symbols

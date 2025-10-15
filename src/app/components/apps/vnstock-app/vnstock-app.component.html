@@ -42,8 +42,51 @@
     <p>Đang tải dữ liệu...</p>
   </div>
 
-  <!-- TAB 1: Top Contributors -->
-  <div class="tab-content" *ngIf="activeTab === 'contributors' && !loading">
+  <!-- TAB 1: Market (Thị trường) - With Sub-navigation -->
+  <div class="tab-content" *ngIf="activeTab === 'market' && !loading">
+    <!-- Market Sub-Navigation -->
+    <div class="market-sub-nav">
+      <button 
+        *ngFor="let view of marketViews"
+        class="market-sub-btn"
+        [class.active]="activeMarketView === view.id"
+        (click)="switchMarketView(view.id)"
+      >
+        <span class="sub-icon">{{view.icon}}</span>
+        <span class="sub-name">{{view.name}}</span>
+      </button>
+    </div>
+
+    <!-- Macro Indicators View -->
+    <div *ngIf="activeMarketView === 'macro'">
+      <div class="info-bar" *ngIf="lastUpdate">
+        <span class="info-item">🌐 Dữ liệu vĩ mô</span>
+        <span class="info-item">⏰ {{lastUpdate | date:'HH:mm:ss dd/MM/yyyy'}}</span>
+        <span class="info-item">📊 {{filteredMacroIndicators.length}} chỉ số</span>
+      </div>
+
+      <div class="macro-grid">
+        <div class="macro-card" *ngFor="let indicator of filteredMacroIndicators">
+          <div class="macro-header">
+            <span class="macro-name">{{indicator.name}}</span>
+            <span class="macro-period" *ngIf="indicator.period">{{indicator.period}}</span>
+          </div>
+          <div class="macro-value">
+            {{formatNumber(indicator.value || 0)}} 
+            <span class="macro-unit" *ngIf="indicator.unit">{{indicator.unit}}</span>
+          </div>
+          <div class="macro-change" [class]="getPriceChangeClass(indicator.changePercent || 0)" *ngIf="indicator.changePercent">
+            {{formatPercent(indicator.changePercent)}}
+          </div>
+        </div>
+        <div *ngIf="filteredMacroIndicators.length === 0" class="no-results-content">
+          <p>📊 Không có dữ liệu vĩ mô</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Top Contributors View -->
+    <div *ngIf="activeMarketView === 'contributors'">
     <div class="sub-header">
       <div class="index-selector">
         <button 
@@ -111,6 +154,80 @@
         </tbody>
       </table>
     </div>
+
+    <!-- Top Movers View -->
+    <div *ngIf="activeMarketView === 'topMovers'">
+      <div class="sub-header">
+        <div class="mover-type-selector">
+          <button 
+            *ngFor="let type of moverTypes"
+            class="mover-type-btn"
+            [class.active]="selectedMoverType === type.code"
+            (click)="changeMoverType(type.code)"
+          >
+            <span class="type-icon">{{type.icon}}</span>
+            <span class="type-name">{{type.name}}</span>
+          </button>
+        </div>
+        <div class="search-box">
+          <input
+            type="text"
+            [(ngModel)]="searchTerm"
+            (input)="filterStocks()"
+            placeholder="Tìm kiếm mã CP..."
+            class="search-input"
+          />
+        </div>
+      </div>
+
+      <div class="info-bar" *ngIf="lastUpdate">
+        <span class="info-item">⚡ {{getMoverTypeName()}}</span>
+        <span class="info-item">⏰ {{lastUpdate | date:'HH:mm:ss dd/MM/yyyy'}}</span>
+        <span class="info-item">📈 {{filteredTopMovers.length}} cổ phiếu</span>
+      </div>
+
+      <div class="table-container">
+        <table class="stock-table">
+          <thead>
+            <tr>
+              <th>Mã CP</th>
+              <th>Tên công ty</th>
+              <th class="text-right">Giá</th>
+              <th class="text-right">+/-</th>
+              <th class="text-right">%</th>
+              <th class="text-right">KL</th>
+              <th class="text-right">Cao</th>
+              <th class="text-right">Thấp</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let mover of filteredTopMovers" class="stock-row">
+              <td class="symbol clickable" (click)="viewStockDetail(mover.symbol)">{{mover.symbol}}</td>
+              <td class="name">{{mover.name}}</td>
+              <td class="price text-right" [class]="getPriceChangeClass(mover.change)">
+                {{formatPrice(mover.price)}}
+              </td>
+              <td class="change text-right" [class]="getPriceChangeClass(mover.change)">
+                {{mover.change > 0 ? '+' : ''}}{{formatPrice(mover.change)}}
+              </td>
+              <td class="change-percent text-right" [class]="getPriceChangeClass(mover.change)">
+                {{formatPercent(mover.changePercent)}}
+              </td>
+              <td class="volume text-right">{{formatNumber(mover.volume)}}</td>
+              <td class="high text-right">{{formatPrice(mover.high)}}</td>
+              <td class="low text-right">{{formatPrice(mover.low)}}</td>
+            </tr>
+            <tr *ngIf="filteredTopMovers.length === 0" class="no-results">
+              <td colspan="8">
+                <div class="no-results-content">
+                  <p>📊 Không tìm thấy cổ phiếu nào</p>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
 
   <!-- TAB 2: All Instruments (Danh sách mã chứng khoán) -->
@@ -159,7 +276,7 @@
         </thead>
         <tbody>
           <tr *ngFor="let stock of filteredStocks" class="stock-row">
-            <td class="symbol">{{stock.symbol}}</td>
+            <td class="symbol clickable" (click)="viewStockDetail(stock.symbol)">{{stock.symbol}}</td>
             <td class="name">{{stock.name}}</td>
             <td class="price text-right" [class]="getPriceChangeClass(stock.change)">
               {{formatPrice(stock.price)}}
@@ -237,7 +354,7 @@
               </thead>
               <tbody>
                 <tr *ngFor="let stock of filteredStocks; trackBy: trackByStockSymbol" class="stock-row">
-                  <td class="symbol">{{stock.symbol}}</td>
+                  <td class="symbol clickable" (click)="viewStockDetail(stock.symbol)">{{stock.symbol}}</td>
                   <td class="name">{{stock.name}}</td>
                   <td class="price text-right" [class]="getPriceChangeClass(stock.change)">
                     {{formatPrice(stock.price)}}
