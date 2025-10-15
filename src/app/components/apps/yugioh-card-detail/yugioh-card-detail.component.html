@@ -16,7 +16,9 @@
   </div>
 
   <!-- Card Content -->
-  <div *ngIf="card() && !isLoading() && !error()" class="card-content">
+  <div *ngIf="card() && !isLoading() && !error()" 
+       class="card-content"
+       [class]="getFrameTypeClass(card()!.frameType)">
     <!-- Left Column - Card Image -->
     <div class="card-image-section">
       <div class="image-wrapper" [class]="getFrameTypeClass(card()!.frameType)">

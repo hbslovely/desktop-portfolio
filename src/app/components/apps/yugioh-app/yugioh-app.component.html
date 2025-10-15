@@ -196,7 +196,7 @@
   <!-- Detail View -->
   <div *ngIf="currentView() === 'detail' && selectedCard()" class="detail-view-container">
     <!-- Back Button Header -->
-    <div class="detail-header">
+    <div class="detail-header" [class]="getFrameTypeClass(selectedCard()!.frameType)">
       <button class="btn-back" (click)="backToList()">
         <i class="pi pi-arrow-left"></i>
         Back to List
@@ -205,7 +205,7 @@
     </div>
 
     <!-- Card Detail Component -->
-    <div class="detail-content">
+    <div class="detail-content" [class]="getFrameTypeClass(selectedCard()!.frameType)">
       <app-yugioh-card-detail 
         [cardId]="selectedCard()!.id"
         [cardName]="selectedCard()!.name">

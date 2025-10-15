@@ -88,14 +88,25 @@
     <!-- Top Contributors View -->
     <div *ngIf="activeMarketView === 'contributors'">
     <div class="sub-header">
-      <div class="index-selector">
+      <div class="exchange-selector">
         <button 
-          *ngFor="let index of indices"
-          class="index-btn"
-          [class.active]="selectedIndex === index.code"
-          (click)="changeIndex(index.code)"
+          *ngFor="let exchange of exchanges"
+          class="exchange-btn"
+          [class.active]="selectedExchange === exchange.code"
+          (click)="changeExchange(exchange.code)"
         >
-          {{index.name}}
+          {{exchange.name}}
+        </button>
+      </div>
+      <div class="contributor-type-selector">
+        <button 
+          *ngFor="let type of contributorTypes"
+          class="contributor-type-btn"
+          [class.active]="selectedContributorType === type.code"
+          (click)="changeContributorType(type.code)"
+        >
+          <span class="type-icon">{{type.icon}}</span>
+          <span class="type-name">{{type.name}}</span>
         </button>
       </div>
       <div class="search-box">
@@ -110,7 +121,8 @@
     </div>
 
     <div class="info-bar" *ngIf="lastUpdate">
-      <span class="info-item">📊 Chỉ số: <strong>{{getSelectedIndexName()}}</strong></span>
+      <span class="info-item">📊 Sàn: <strong>{{getSelectedExchangeName()}}</strong></span>
+      <span class="info-item">🔝 {{getSelectedContributorTypeName()}}</span>
       <span class="info-item">⏰ {{lastUpdate | date:'HH:mm:ss dd/MM/yyyy'}}</span>
       <span class="info-item">📈 {{filteredStocks.length}} / {{stocks.length}} cổ phiếu</span>
     </div>
@@ -130,7 +142,7 @@
         </thead>
         <tbody>
           <tr *ngFor="let stock of filteredStocks" class="stock-row">
-            <td class="symbol">{{stock.symbol}}</td>
+            <td class="symbol clickable" (click)="viewStockDetail(stock.symbol)">{{stock.symbol}}</td>
             <td class="name">{{stock.name}}</td>
             <td class="price text-right" [class]="getPriceChangeClass(stock.change)">
               {{formatPrice(stock.price)}}
@@ -154,19 +166,42 @@
         </tbody>
       </table>
     </div>
+    </div>
 
     <!-- Top Movers View -->
     <div *ngIf="activeMarketView === 'topMovers'">
       <div class="sub-header">
-        <div class="mover-type-selector">
+        <div class="mover-top-type-selector">
           <button 
-            *ngFor="let type of moverTypes"
-            class="mover-type-btn"
-            [class.active]="selectedMoverType === type.code"
-            (click)="changeMoverType(type.code)"
+            *ngFor="let type of moverTopTypes"
+            class="mover-top-type-btn"
+            [class.active]="selectedMoverTopType === type.code"
+            (click)="changeMoverTopType(type.code)"
           >
             <span class="type-icon">{{type.icon}}</span>
             <span class="type-name">{{type.name}}</span>
+          </button>
+        </div>
+        <div class="mover-exchange-selector">
+          <button 
+            *ngFor="let exchange of moverExchanges"
+            class="mover-exchange-btn"
+            [class.active]="selectedMoverExchange === exchange.code"
+            (click)="changeMoverExchange(exchange.code)"
+          >
+            <span class="exchange-icon">{{exchange.icon}}</span>
+            <span class="exchange-name">{{exchange.name}}</span>
+          </button>
+        </div>
+        <div class="mover-security-type-selector">
+          <button 
+            *ngFor="let type of moverSecurityTypes"
+            class="mover-security-type-btn"
+            [class.active]="selectedMoverSecurityType === type.code"
+            (click)="changeMoverSecurityType(type.code)"
+          >
+            <span class="security-icon">{{type.icon}}</span>
+            <span class="security-name">{{type.name}}</span>
           </button>
         </div>
         <div class="search-box">
@@ -181,9 +216,11 @@
       </div>
 
       <div class="info-bar" *ngIf="lastUpdate">
-        <span class="info-item">⚡ {{getMoverTypeName()}}</span>
+        <span class="info-item">⚡ {{getMoverTopTypeName()}}</span>
+        <span class="info-item">🏢 {{getMoverExchangeName()}}</span>
+        <span class="info-item">📊 {{getMoverSecurityTypeName()}}</span>
         <span class="info-item">⏰ {{lastUpdate | date:'HH:mm:ss dd/MM/yyyy'}}</span>
-        <span class="info-item">📈 {{filteredTopMovers.length}} cổ phiếu</span>
+        <span class="info-item">📈 {{filteredTopMovers.length}} chứng khoán</span>
       </div>
 
       <div class="table-container">
@@ -414,17 +451,18 @@
         <div class="overview-cards">
           <div class="overview-card price-card">
             <div class="card-label">Giá hiện tại</div>
-            <div class="card-value large" [class]="getPriceChangeClass(symbolInfo.priceChange || 0)">
-              {{formatPrice(symbolInfo.lastPrice || 0)}}
+            <div class="card-value large" [class]="getPriceChangeClass(getCurrentPriceInfo()?.priceChange || 0)">
+              {{formatPrice(getCurrentPriceInfo()?.lastPrice || 0)}}
             </div>
-            <div class="card-change" [class]="getPriceChangeClass(symbolInfo.priceChange || 0)">
-              {{formatPrice(symbolInfo.priceChange || 0)}} ({{formatPercent(symbolInfo.perPriceChange || 0)}})
+            <div class="card-change" [class]="getPriceChangeClass(getCurrentPriceInfo()?.priceChange || 0)">
+              {{getCurrentPriceInfo()?.priceChange ? (getCurrentPriceInfo()!.priceChange > 0 ? '+' : '') + formatPrice(getCurrentPriceInfo()!.priceChange) : '0'}} 
+              ({{getCurrentPriceInfo()?.perPriceChange ? formatPercent(getCurrentPriceInfo()!.perPriceChange) : '0.00%'}})
             </div>
           </div>
           
           <div class="overview-card">
             <div class="card-label">Khối lượng</div>
-            <div class="card-value">{{formatNumber(symbolInfo.totalVolume || 0)}}</div>
+            <div class="card-value">{{formatNumber(getCurrentVolume())}}</div>
           </div>
           
           <div class="overview-card">

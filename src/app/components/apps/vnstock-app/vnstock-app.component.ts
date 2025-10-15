@@ -45,8 +45,12 @@ export class VnstockAppComponent implements OnInit, OnDestroy {
   lastUpdate: Date | null = null;
   
   // Exchange/Index selection
-  selectedExchange = 'HOSE'; // For movers
-  selectedIndex = 'VNINDEX'; // For top contributors
+  selectedExchange = 'HOSE'; // For movers and contributors
+  selectedContributorType = 1; // 1: Đóng góp tăng index, 2: Đóng góp giảm index
+  contributorTypes = [
+    { code: 1, name: 'Đóng góp tăng', icon: '📈' },
+    { code: 2, name: 'Đóng góp giảm', icon: '📉' }
+  ];
 
   // Macro indicators
   macroIndicators: MacroIndicator[] = [];
@@ -55,26 +59,32 @@ export class VnstockAppComponent implements OnInit, OnDestroy {
   // Top movers
   topMovers: TopMover[] = [];
   filteredTopMovers: TopMover[] = [];
-  selectedMoverType: string = 'gainer'; // 'gainer', 'loser', 'active', 'breakout', 'foreign'
-  moverTypes = [
-    { code: 'gainer', name: 'Tăng mạnh', icon: '📈' },
-    { code: 'loser', name: 'Giảm mạnh', icon: '📉' },
-    { code: 'active', name: 'Giao dịch khủng', icon: '🔥' },
-    { code: 'breakout', name: 'Breakout', icon: '🚀' },
-    { code: 'foreign', name: 'Khối ngoại', icon: '🌍' }
+  selectedMoverTopType: string = 'Gainers'; // 'Gainers', 'Losers', 'Actives'
+  selectedMoverExchange: string = ''; // '', 'HSX', 'HNX', 'UPCOM'
+  selectedMoverSecurityType: string = 'stock'; // 'stock', 'warrant', 'crypto'
+  
+  moverTopTypes = [
+    { code: 'Gainers', name: 'Tăng mạnh', icon: '📈' },
+    { code: 'Losers', name: 'Giảm mạnh', icon: '📉' },
+    { code: 'Actives', name: 'Giao dịch khủng', icon: '🔥' }
+  ];
+  
+  moverExchanges = [
+    { code: '', name: 'Tất cả', icon: '🌐' },
+    { code: 'HSX', name: 'HSX', icon: '🏢' },
+    { code: 'HNX', name: 'HNX', icon: '🏛️' },
+    { code: 'UPCOM', name: 'UPCOM', icon: '📊' }
+  ];
+  
+  moverSecurityTypes = [
+    { code: 'stock', name: 'Cổ phiếu', icon: '📈' },
+    { code: 'warrant', name: 'Chứng quyền', icon: '📜' }
   ];
   
   exchanges = [
-    { code: 'HOSE', name: 'HOSE', description: 'Sở Giao dịch Chứng khoán TP.HCM' },
+    { code: 'HSX', name: 'HSX', description: 'Sở Giao dịch Chứng khoán TP.HCM' },
     { code: 'HNX', name: 'HNX', description: 'Sở Giao dịch Chứng khoán Hà Nội' },
     { code: 'UPCOM', name: 'UPCOM', description: 'Thị trường Cổ phiếu chưa niêm yết' }
-  ];
-
-  indices = [
-    { code: 'VNINDEX', name: 'VN-INDEX', description: 'Chỉ số VN-Index' },
-    { code: 'HNX-INDEX', name: 'HNX-INDEX', description: 'Chỉ số HNX-Index' },
-    { code: 'UPCOM-INDEX', name: 'UPCOM-INDEX', description: 'Chỉ số UPCOM-Index' },
-    { code: 'VN30', name: 'VN30', description: 'Chỉ số VN30' }
   ];
   
   // Industries tab
@@ -232,16 +242,30 @@ export class VnstockAppComponent implements OnInit, OnDestroy {
 
   async changeExchange(exchange: string) {
     this.selectedExchange = exchange;
-    await this.loadStockData();
+    if (this.activeTab === 'movers') {
+      await this.loadStockData();
+    } else if (this.activeTab === 'market' && this.activeMarketView === 'contributors') {
+      await this.loadTopContributors();
+    }
   }
 
-  async changeIndex(index: string) {
-    this.selectedIndex = index;
+  async changeContributorType(type: number) {
+    this.selectedContributorType = type;
     await this.loadTopContributors();
   }
 
-  async changeMoverType(type: string) {
-    this.selectedMoverType = type;
+  async changeMoverTopType(topType: string) {
+    this.selectedMoverTopType = topType;
+    await this.loadTopMovers();
+  }
+
+  async changeMoverExchange(exchange: string) {
+    this.selectedMoverExchange = exchange;
+    await this.loadTopMovers();
+  }
+
+  async changeMoverSecurityType(type: string) {
+    this.selectedMoverSecurityType = type;
     await this.loadTopMovers();
   }
 
@@ -275,11 +299,16 @@ export class VnstockAppComponent implements OnInit, OnDestroy {
     this.error = '';
     
     try {
-      console.log(`Loading top movers (${this.selectedMoverType})...`);
-      const movers = await this.fireantService.getTopMovers(this.selectedMoverType).toPromise();
+      console.log(`Loading top movers (${this.selectedMoverTopType}, ${this.selectedMoverExchange || 'ALL'}, ${this.selectedMoverSecurityType})...`);
+      const movers = await this.fireantService.getTopMovers(
+        this.selectedMoverExchange,
+        this.selectedMoverSecurityType,
+        this.selectedMoverTopType,
+        20
+      ).toPromise();
       
       if (!movers || movers.length === 0) {
-        this.error = `Không tìm thấy dữ liệu cho ${this.getMoverTypeName()}.`;
+        this.error = `Không tìm thấy dữ liệu cho ${this.getMoverTopTypeName()}.`;
         this.topMovers = [];
         this.filteredTopMovers = [];
       } else {
@@ -295,8 +324,18 @@ export class VnstockAppComponent implements OnInit, OnDestroy {
     }
   }
 
-  getMoverTypeName(): string {
-    const type = this.moverTypes.find(t => t.code === this.selectedMoverType);
+  getMoverTopTypeName(): string {
+    const type = this.moverTopTypes.find(t => t.code === this.selectedMoverTopType);
+    return type ? type.name : 'N/A';
+  }
+
+  getMoverExchangeName(): string {
+    const exchange = this.moverExchanges.find(e => e.code === this.selectedMoverExchange);
+    return exchange ? exchange.name : 'N/A';
+  }
+
+  getMoverSecurityTypeName(): string {
+    const type = this.moverSecurityTypes.find(t => t.code === this.selectedMoverSecurityType);
     return type ? type.name : 'N/A';
   }
 
@@ -305,11 +344,11 @@ export class VnstockAppComponent implements OnInit, OnDestroy {
     this.error = '';
     
     try {
-      console.log(`Loading top contributors for ${this.selectedIndex}...`);
-      const stocks = await this.fireantService.getTopContributors(this.selectedIndex).toPromise();
+      console.log(`Loading top contributors for ${this.selectedExchange} (type: ${this.selectedContributorType})...`);
+      const stocks = await this.fireantService.getTopContributors(this.selectedExchange, this.selectedContributorType, 20).toPromise();
       
       if (!stocks || stocks.length === 0) {
-        this.error = `Không tìm thấy dữ liệu cho chỉ số ${this.selectedIndex}.`;
+        this.error = `Không tìm thấy dữ liệu cho sàn ${this.selectedExchange}.`;
         this.stocks = [];
         this.filteredStocks = [];
       } else {
@@ -494,6 +533,9 @@ export class VnstockAppComponent implements OnInit, OnDestroy {
       
       if (!hasAnyData) {
         this.error = `Không tìm thấy thông tin cho mã ${symbol}`;
+      } else {
+        // Calculate price change from historical data if needed
+        this.calculatePriceChangeFromHistory();
       }
       
     } catch (error: any) {
@@ -610,9 +652,9 @@ export class VnstockAppComponent implements OnInit, OnDestroy {
     return exchange ? exchange.name : 'N/A';
   }
 
-  getSelectedIndexName(): string {
-    const index = this.indices.find(i => i.code === this.selectedIndex);
-    return index ? index.name : 'N/A';
+  getSelectedContributorTypeName(): string {
+    const type = this.contributorTypes.find(t => t.code === this.selectedContributorType);
+    return type ? type.name : 'N/A';
   }
 
   formatCurrency(value: number): string {
@@ -704,6 +746,95 @@ export class VnstockAppComponent implements OnInit, OnDestroy {
     this.activeTab = 'fundamentals';
     this.fundamentalSymbol = symbol;
     this.searchFundamental();
+  }
+
+  // Calculate price change from historical data if not available
+  calculatePriceChangeFromHistory(): void {
+    if (this.symbolInfo && this.historicalQuotes.length >= 2) {
+      // Get today's close price (most recent)
+      const todayQuote = this.historicalQuotes[0];
+      const todayClose = todayQuote.close || todayQuote.priceBasic?.close || 0;
+      
+      // Get yesterday's close price (previous day)
+      const yesterdayQuote = this.historicalQuotes[1];
+      const yesterdayClose = yesterdayQuote.close || yesterdayQuote.priceBasic?.close || 0;
+      
+      // If we don't have change data, calculate from historical data
+      if ((!this.symbolInfo.priceChange || this.symbolInfo.priceChange === 0) && yesterdayClose > 0 && todayClose > 0) {
+        this.symbolInfo.lastPrice = todayClose; // Update last price to today's close
+        this.symbolInfo.priceChange = todayClose - yesterdayClose;
+        this.symbolInfo.perPriceChange = ((todayClose - yesterdayClose) / yesterdayClose) * 100;
+        
+        console.log(`📊 Calculated price from history: Today=${todayClose}, Yesterday=${yesterdayClose}, Change=${this.symbolInfo.priceChange} (${this.symbolInfo.perPriceChange.toFixed(2)}%)`);
+      }
+    }
+  }
+
+  // Get current price info with calculated change from historical data
+  getCurrentPriceInfo() {
+    if (!this.symbolInfo) return null;
+    
+    let lastPrice = this.symbolInfo.lastPrice || 0;
+    let priceChange = this.symbolInfo.priceChange || 0;
+    let perPriceChange = this.symbolInfo.perPriceChange || 0;
+    
+    // Always prioritize historical data if available (need at least 2 days to compare)
+    if (this.historicalQuotes.length >= 2) {
+      const todayQuote = this.historicalQuotes[0];
+      const todayClose = todayQuote.close || todayQuote.priceBasic?.close || 0;
+      
+      const yesterdayQuote = this.historicalQuotes[1];
+      const yesterdayClose = yesterdayQuote.close || yesterdayQuote.priceBasic?.close || 0;
+      
+      if (todayClose > 0 && yesterdayClose > 0) {
+        // Use today's close price as the current price
+        lastPrice = todayClose;
+        // Calculate change: today's close - yesterday's close
+        priceChange = todayClose - yesterdayClose;
+        // Calculate percent change based on yesterday's close
+        perPriceChange = ((todayClose - yesterdayClose) / yesterdayClose) * 100;
+        
+        console.log(`📊 Using historical data: Today=${todayClose}, Yesterday=${yesterdayClose}, Change=${priceChange}, %=${perPriceChange.toFixed(2)}`);
+      }
+    } else if (this.historicalQuotes.length === 1) {
+      // If only today's data is available, use open price for comparison
+      const todayQuote = this.historicalQuotes[0];
+      const todayClose = todayQuote.close || todayQuote.priceBasic?.close || 0;
+      const todayOpen = todayQuote.open || todayQuote.priceBasic?.open || 0;
+      
+      if (todayClose > 0 && todayOpen > 0) {
+        lastPrice = todayClose;
+        priceChange = todayClose - todayOpen;
+        perPriceChange = ((todayClose - todayOpen) / todayOpen) * 100;
+        
+        console.log(`📊 Only today's data available: Close=${todayClose}, Open=${todayOpen}, Change=${priceChange}`);
+      }
+    }
+    
+    return {
+      lastPrice,
+      priceChange,
+      perPriceChange
+    };
+  }
+
+  // Get current volume from historical data if not available
+  getCurrentVolume(): number {
+    if (!this.symbolInfo) return 0;
+    
+    let volume = this.symbolInfo.totalVolume || 0;
+    
+    // If no volume data and we have historical quotes, get from latest quote
+    if ((!volume || volume === 0) && this.historicalQuotes.length > 0) {
+      const latestQuote = this.historicalQuotes[0];
+      volume = latestQuote.volume || latestQuote.priceBasic?.volume || 0;
+      
+      if (volume > 0) {
+        console.log(`📊 Got volume from historical data: ${volume}`);
+      }
+    }
+    
+    return volume;
   }
 
   // Get change class for tagged symbols

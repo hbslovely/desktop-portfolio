@@ -1,8 +1,9 @@
 .card-detail-container {
   height: 100%;
   overflow-y: auto;
-  background: linear-gradient(135deg, #1e1e2e 0%, #2d2d44 100%);
+  background: transparent;
   padding: 20px;
+  transition: background 0.3s ease;
 }
 
 // Loading State
@@ -87,6 +88,138 @@
   
   @media (max-width: 1024px) {
     grid-template-columns: 1fr;
+  }
+}
+
+// Frame Type Color Themes
+.card-content {
+  // Effect Monster - Orange theme
+  &.frame-effect {
+    .card-header { 
+      border-left-color: #fb923c;
+      background: linear-gradient(135deg, rgba(251, 146, 60, 0.15), rgba(249, 115, 22, 0.1));
+    }
+    .card-id { background: rgba(251, 146, 60, 0.2); color: #fed7aa; }
+    .monster-stats { background: linear-gradient(135deg, rgba(251, 146, 60, 0.1), rgba(249, 115, 22, 0.05)); }
+    .card-description { background: linear-gradient(135deg, rgba(251, 146, 60, 0.08), rgba(249, 115, 22, 0.04)); }
+    .card-sets .set-item { border-left-color: #fb923c; }
+    .btn-external { background: linear-gradient(135deg, #fb923c 0%, #f97316 100%); }
+  }
+  
+  // Normal Monster - Yellow/Beige theme
+  &.frame-normal {
+    .card-header { 
+      border-left-color: #fde68a;
+      background: linear-gradient(135deg, rgba(253, 230, 138, 0.15), rgba(252, 211, 77, 0.1));
+    }
+    .card-id { background: rgba(253, 230, 138, 0.2); color: #fef3c7; }
+    .monster-stats { background: linear-gradient(135deg, rgba(253, 230, 138, 0.1), rgba(252, 211, 77, 0.05)); }
+    .card-description { background: linear-gradient(135deg, rgba(253, 230, 138, 0.08), rgba(252, 211, 77, 0.04)); }
+    .card-sets .set-item { border-left-color: #fde68a; }
+    .btn-external { background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); }
+  }
+  
+  // Ritual Monster - Light Blue theme
+  &.frame-ritual {
+    .card-header { 
+      border-left-color: #60a5fa;
+      background: linear-gradient(135deg, rgba(96, 165, 250, 0.15), rgba(59, 130, 246, 0.1));
+    }
+    .card-id { background: rgba(96, 165, 250, 0.2); color: #dbeafe; }
+    .monster-stats { background: linear-gradient(135deg, rgba(96, 165, 250, 0.1), rgba(59, 130, 246, 0.05)); }
+    .card-description { background: linear-gradient(135deg, rgba(96, 165, 250, 0.08), rgba(59, 130, 246, 0.04)); }
+    .card-sets .set-item { border-left-color: #60a5fa; }
+    .btn-external { background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%); }
+  }
+  
+  // Fusion Monster - Purple theme
+  &.frame-fusion {
+    .card-header { 
+      border-left-color: #a78bfa;
+      background: linear-gradient(135deg, rgba(167, 139, 250, 0.15), rgba(139, 92, 246, 0.1));
+    }
+    .card-id { background: rgba(167, 139, 250, 0.2); color: #ede9fe; }
+    .monster-stats { background: linear-gradient(135deg, rgba(167, 139, 250, 0.1), rgba(139, 92, 246, 0.05)); }
+    .card-description { background: linear-gradient(135deg, rgba(167, 139, 250, 0.08), rgba(139, 92, 246, 0.04)); }
+    .card-sets .set-item { border-left-color: #a78bfa; }
+    .btn-external { background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%); }
+  }
+  
+  // Synchro Monster - White/Silver theme
+  &.frame-synchro {
+    .card-header { 
+      border-left-color: #e5e7eb;
+      background: linear-gradient(135deg, rgba(229, 231, 235, 0.15), rgba(209, 213, 219, 0.1));
+    }
+    .card-id { background: rgba(229, 231, 235, 0.2); color: #f9fafb; }
+    .monster-stats { background: linear-gradient(135deg, rgba(229, 231, 235, 0.1), rgba(209, 213, 219, 0.05)); }
+    .card-description { background: linear-gradient(135deg, rgba(229, 231, 235, 0.08), rgba(209, 213, 219, 0.04)); }
+    .card-sets .set-item { border-left-color: #e5e7eb; }
+    .btn-external { background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%); }
+  }
+  
+  // XYZ Monster - Black/Dark theme
+  &.frame-xyz {
+    .card-header { 
+      border-left-color: #4b5563;
+      background: linear-gradient(135deg, rgba(75, 85, 99, 0.15), rgba(55, 65, 81, 0.1));
+    }
+    .card-id { background: rgba(75, 85, 99, 0.3); color: #d1d5db; }
+    .monster-stats { background: linear-gradient(135deg, rgba(75, 85, 99, 0.15), rgba(55, 65, 81, 0.08)); }
+    .card-description { background: linear-gradient(135deg, rgba(75, 85, 99, 0.1), rgba(55, 65, 81, 0.05)); }
+    .card-sets .set-item { border-left-color: #4b5563; }
+    .btn-external { background: linear-gradient(135deg, #4b5563 0%, #374151 100%); }
+  }
+  
+  // Link Monster - Dark Blue theme
+  &.frame-link {
+    .card-header { 
+      border-left-color: #3b82f6;
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(30, 64, 175, 0.1));
+    }
+    .card-id { background: rgba(59, 130, 246, 0.2); color: #bfdbfe; }
+    .monster-stats { background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(30, 64, 175, 0.05)); }
+    .card-description { background: linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(30, 64, 175, 0.04)); }
+    .card-sets .set-item { border-left-color: #3b82f6; }
+    .btn-external { background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%); }
+  }
+  
+  // Spell Card - Blue theme (user's preference)
+  &.frame-spell {
+    .card-header { 
+      border-left-color: #3b82f6;
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(37, 99, 235, 0.15));
+    }
+    .card-id { background: rgba(59, 130, 246, 0.25); color: #dbeafe; }
+    .card-description { 
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(37, 99, 235, 0.1));
+      border-left: 3px solid #3b82f6;
+    }
+    .card-sets .set-item { border-left-color: #3b82f6; }
+    .card-prices .price-item { 
+      background: rgba(59, 130, 246, 0.1); 
+      border-color: rgba(59, 130, 246, 0.3);
+    }
+    .btn-external { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); }
+  }
+  
+  // Trap Card - Pink/Magenta theme
+  &.frame-trap {
+    .card-header { 
+      border-left-color: #ec4899;
+      background: linear-gradient(135deg, rgba(236, 72, 153, 0.2), rgba(219, 39, 119, 0.15));
+    }
+    .card-id { background: rgba(236, 72, 153, 0.25); color: #fce7f3; }
+    .card-description { 
+      background: linear-gradient(135deg, rgba(236, 72, 153, 0.15), rgba(219, 39, 119, 0.1));
+      border-left: 3px solid #ec4899;
+    }
+    .card-sets .set-item { border-left-color: #ec4899; }
+    .card-prices .price-item { 
+      background: rgba(236, 72, 153, 0.1); 
+      border-color: rgba(236, 72, 153, 0.3);
+    }
+    .btn-external { background: linear-gradient(135deg, #ec4899 0%, #db2777 100%); }
   }
 }
 
@@ -223,7 +356,7 @@
   gap: 20px;
   
   h3 {
-    color: #fff;
+    color: #1f2937;
     font-size: 16px;
     margin-bottom: 12px;
     font-weight: 600;
@@ -233,10 +366,11 @@
 }
 
 .card-header {
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(255, 255, 255, 0.9);
   padding: 20px;
   border-radius: 12px;
   border-left: 4px solid #6366f1;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   
   .header-top {
     display: flex;
@@ -246,15 +380,15 @@
     
     .card-name {
       font-size: 28px;
-      color: #fff;
+      color: #111827;
       font-weight: 700;
       margin: 0;
       flex: 1;
     }
     
     .card-id {
-      background: rgba(99, 102, 241, 0.2);
-      color: #a5b4fc;
+      background: rgba(99, 102, 241, 0.15);
+      color: #4f46e5;
       padding: 6px 12px;
       border-radius: 6px;
       font-size: 12px;
@@ -277,37 +411,38 @@
     }
     
     .card-icon {
-      background: rgba(99, 102, 241, 0.2);
-      color: #a5b4fc;
+      background: rgba(99, 102, 241, 0.15);
+      color: #4f46e5;
       text-transform: capitalize;
       
       // Frame type specific colors
-      &.frame-effect { background: rgba(255, 139, 83, 0.2); color: #ffc4a8; }
-      &.frame-ritual { background: rgba(157, 181, 204, 0.2); color: #b8d4ed; }
-      &.frame-fusion { background: rgba(160, 134, 183, 0.2); color: #c9b5d9; }
-      &.frame-synchro { background: rgba(204, 204, 204, 0.2); color: #e5e5e5; }
-      &.frame-xyz { background: rgba(51, 51, 51, 0.3); color: #999; }
-      &.frame-link { background: rgba(0, 0, 139, 0.3); color: #6b8cff; }
-      &.frame-spell { background: rgba(29, 158, 116, 0.2); color: #6ee7b7; }
-      &.frame-trap { background: rgba(188, 90, 132, 0.2); color: #f9a8d4; }
+      &.frame-effect { background: rgba(251, 146, 60, 0.2); color: #ea580c; }
+      &.frame-ritual { background: rgba(96, 165, 250, 0.2); color: #2563eb; }
+      &.frame-fusion { background: rgba(167, 139, 250, 0.2); color: #7c3aed; }
+      &.frame-synchro { background: rgba(156, 163, 175, 0.3); color: #4b5563; }
+      &.frame-xyz { background: rgba(55, 65, 81, 0.3); color: #1f2937; }
+      &.frame-link { background: rgba(59, 130, 246, 0.2); color: #1e40af; }
+      &.frame-spell { background: rgba(59, 130, 246, 0.2); color: #1d4ed8; }
+      &.frame-trap { background: rgba(236, 72, 153, 0.2); color: #be185d; }
     }
     
     .card-race {
-      background: rgba(255, 255, 255, 0.1);
-      color: rgba(255, 255, 255, 0.9);
+      background: rgba(107, 114, 128, 0.15);
+      color: #374151;
     }
     
     .card-attribute {
-      background: rgba(139, 92, 246, 0.2);
-      color: #c4b5fd;
+      background: rgba(139, 92, 246, 0.15);
+      color: #7c3aed;
     }
   }
 }
 
 .monster-stats {
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(255, 255, 255, 0.8);
   padding: 20px;
   border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   
   .stat-group {
     display: grid;
@@ -321,14 +456,14 @@
       
       .stat-label {
         font-size: 12px;
-        color: rgba(255, 255, 255, 0.6);
+        color: #6b7280;
         text-transform: uppercase;
         letter-spacing: 0.5px;
       }
       
       .stat-value {
         font-size: 20px;
-        color: #fff;
+        color: #111827;
         font-weight: 700;
       }
     }
@@ -336,12 +471,13 @@
 }
 
 .card-description {
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(255, 255, 255, 0.8);
   padding: 20px;
   border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   
   .desc-text {
-    color: rgba(255, 255, 255, 0.9);
+    color: #374151;
     line-height: 1.8;
     font-size: 14px;
     white-space: pre-line;
@@ -349,30 +485,32 @@
 }
 
 .card-archetype {
-  background: rgba(139, 92, 246, 0.2);
+  background: rgba(139, 92, 246, 0.15);
   padding: 15px 20px;
   border-radius: 12px;
   display: flex;
   gap: 10px;
   align-items: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   
   .archetype-label {
-    color: rgba(255, 255, 255, 0.6);
+    color: #6b7280;
     font-size: 13px;
     font-weight: 600;
   }
   
   .archetype-value {
-    color: #c4b5fd;
+    color: #7c3aed;
     font-size: 14px;
     font-weight: 700;
   }
 }
 
 .card-sets {
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(255, 255, 255, 0.8);
   padding: 20px;
   border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   
   .sets-list {
     display: flex;
@@ -381,12 +519,12 @@
     
     .set-item {
       padding: 12px;
-      background: rgba(255, 255, 255, 0.05);
+      background: rgba(99, 102, 241, 0.05);
       border-radius: 8px;
       border-left: 3px solid #6366f1;
       
       .set-name {
-        color: #fff;
+        color: #111827;
         font-size: 14px;
         font-weight: 600;
         margin-bottom: 6px;
@@ -398,19 +536,19 @@
         font-size: 12px;
         
         .set-code {
-          color: #a5b4fc;
+          color: #4f46e5;
           font-weight: 600;
         }
         
         .set-rarity {
-          color: rgba(255, 255, 255, 0.6);
+          color: #6b7280;
         }
       }
     }
     
     .more-sets {
       text-align: center;
-      color: rgba(255, 255, 255, 0.5);
+      color: #9ca3af;
       font-size: 13px;
       font-style: italic;
       padding: 8px;
@@ -419,9 +557,10 @@
 }
 
 .card-prices {
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(255, 255, 255, 0.8);
   padding: 20px;
   border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   
   .prices-grid {
     display: grid;
@@ -435,17 +574,17 @@
       padding: 12px;
       background: rgba(34, 197, 94, 0.1);
       border-radius: 8px;
-      border: 1px solid rgba(34, 197, 94, 0.2);
+      border: 1px solid rgba(34, 197, 94, 0.3);
       
       .price-label {
         font-size: 12px;
-        color: rgba(255, 255, 255, 0.6);
+        color: #6b7280;
         font-weight: 600;
       }
       
       .price-value {
         font-size: 18px;
-        color: #4ade80;
+        color: #16a34a;
         font-weight: 700;
       }
     }
@@ -453,9 +592,10 @@
 }
 
 .link-markers {
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(255, 255, 255, 0.8);
   padding: 20px;
   border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   
   .markers-list {
     display: flex;
@@ -464,12 +604,12 @@
     
     .marker-badge {
       padding: 8px 16px;
-      background: rgba(0, 0, 139, 0.3);
-      color: #6b8cff;
+      background: rgba(59, 130, 246, 0.15);
+      color: #1e40af;
       border-radius: 20px;
       font-size: 13px;
       font-weight: 600;
-      border: 2px solid rgba(107, 140, 255, 0.3);
+      border: 2px solid rgba(59, 130, 246, 0.3);
     }
   }
 }
