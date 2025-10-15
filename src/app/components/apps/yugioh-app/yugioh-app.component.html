@@ -1,0 +1,260 @@
+<div class="yugioh-app-container">
+  <!-- Header -->
+  <div class="app-header">
+    <div class="header-title">
+      <h1>Yu-Gi-Oh! Card Database</h1>
+      <p class="subtitle">Powered by YGOPRODeck API</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn-icon" (click)="getRandomCard()" title="Random Card">
+        <i class="pi pi-refresh"></i>
+      </button>
+      <button class="btn-icon" (click)="toggleViewMode()" title="Toggle View">
+        <i [class]="viewMode() === 'grid' ? 'pi pi-list' : 'pi pi-th-large'"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Statistics Bar -->
+  <div class="stats-bar">
+    <div class="stat-item">
+      <span class="stat-label">Total:</span>
+      <span class="stat-value">{{ totalCards() }}</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-label">Monsters:</span>
+      <span class="stat-value">{{ monsterCards() }}</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-label">Spells:</span>
+      <span class="stat-value">{{ spellCards() }}</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-label">Traps:</span>
+      <span class="stat-value">{{ trapCards() }}</span>
+    </div>
+  </div>
+
+  <!-- Search and Filters -->
+  <div class="filters-section">
+    <div class="search-box">
+      <i class="pi pi-search"></i>
+      <input 
+        type="text" 
+        [(ngModel)]="searchQuery"
+        (ngModelChange)="onSearchChange()"
+        placeholder="Search by name or description..."
+        class="search-input">
+      <button 
+        *ngIf="searchQuery()" 
+        class="clear-search"
+        (click)="searchQuery.set(''); onSearchChange()">
+        <i class="pi pi-times"></i>
+      </button>
+    </div>
+
+    <div class="filter-row">
+      <select [(ngModel)]="selectedFrameType" (ngModelChange)="onFilterChange()" class="filter-select">
+        <option value="">All Frame Types</option>
+        <option *ngFor="let frameType of availableFrameTypes()" [value]="frameType">
+          {{ frameType }}
+        </option>
+      </select>
+
+      <select [(ngModel)]="selectedType" (ngModelChange)="onFilterChange()" class="filter-select">
+        <option value="">All Types</option>
+        <option *ngFor="let type of availableTypes()" [value]="type">
+          {{ type }}
+        </option>
+      </select>
+
+      <select [(ngModel)]="selectedRace" (ngModelChange)="onFilterChange()" class="filter-select">
+        <option value="">All Races</option>
+        <option *ngFor="let race of availableRaces()" [value]="race">
+          {{ race }}
+        </option>
+      </select>
+
+      <select [(ngModel)]="selectedAttribute" (ngModelChange)="onFilterChange()" class="filter-select">
+        <option value="">All Attributes</option>
+        <option *ngFor="let attribute of availableAttributes()" [value]="attribute">
+          {{ attribute }}
+        </option>
+      </select>
+
+      <select [(ngModel)]="selectedSort" (ngModelChange)="onFilterChange()" class="filter-select">
+        <option value="name">Sort by Name</option>
+        <option value="atk">Sort by ATK</option>
+        <option value="def">Sort by DEF</option>
+        <option value="level">Sort by Level</option>
+        <option value="type">Sort by Type</option>
+      </select>
+
+      <button class="btn-clear-filters" (click)="clearFilters()">
+        <i class="pi pi-filter-slash"></i>
+        Clear Filters
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div class="loading-overlay" *ngIf="isLoading()">
+    <div class="loading-spinner">
+      <i class="pi pi-spin pi-spinner"></i>
+    </div>
+    <p>Loading Yu-Gi-Oh! cards...</p>
+  </div>
+
+  <!-- Cards Content -->
+  <div class="cards-content" *ngIf="!isLoading()">
+    <!-- Grid View -->
+    <div class="cards-grid" *ngIf="viewMode() === 'grid'">
+      <div 
+        *ngFor="let card of paginatedCards()" 
+        class="card-item"
+        [class]="getFrameTypeClass(card.frameType)"
+        (click)="openCardDetail(card)">
+        <div class="card-image-wrapper">
+          <img 
+            [src]="getCardImageUrl(card, 'small')" 
+            [alt]="card.name"
+            class="card-image"
+            loading="lazy">
+        </div>
+        <div class="card-info">
+          <h3 class="card-name">{{ card.name }}</h3>
+          <div class="card-meta">
+            <span class="card-type">{{ card.race }}</span>
+            <span class="card-attribute" *ngIf="card.attribute">
+              {{ getAttributeIcon(card.attribute) }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- List View -->
+    <div class="cards-list" *ngIf="viewMode() === 'list'">
+      <div 
+        *ngFor="let card of paginatedCards()" 
+        class="list-item"
+        [class]="getFrameTypeClass(card.frameType)"
+        (click)="openCardDetail(card)">
+        <img 
+          [src]="getCardImageUrl(card, 'cropped')" 
+          [alt]="card.name"
+          class="list-image"
+          loading="lazy">
+        <div class="list-info">
+          <h3 class="list-name">{{ card.name }}</h3>
+          <p class="list-type">{{ card.type }} • {{ card.race }}</p>
+          <p class="list-desc">{{ card.desc | slice:0:150 }}{{ card.desc.length > 150 ? '...' : '' }}</p>
+          <div class="list-stats" *ngIf="card.atk !== undefined">
+            <span>ATK: {{ card.atk }}</span>
+            <span *ngIf="card.def !== undefined">DEF: {{ card.def }}</span>
+            <span *ngIf="card.level">Level: {{ card.level }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination" *ngIf="totalPages() > 1">
+      <button 
+        class="page-btn"
+        [disabled]="currentPage() === 1"
+        (click)="prevPage()">
+        <i class="pi pi-chevron-left"></i>
+      </button>
+      
+      <span class="page-info">
+        Page {{ currentPage() }} of {{ totalPages() }}
+      </span>
+      
+      <button 
+        class="page-btn"
+        [disabled]="currentPage() === totalPages()"
+        (click)="nextPage()">
+        <i class="pi pi-chevron-right"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Empty State -->
+  <div class="empty-state" *ngIf="!isLoading() && filteredCards().length === 0">
+    <i class="pi pi-search"></i>
+    <h3>No cards found</h3>
+    <p>Try adjusting your search or filters</p>
+    <button class="btn-primary" (click)="clearFilters()">Clear Filters</button>
+  </div>
+</div>
+
+<!-- Card Detail Modal -->
+<div class="card-detail-overlay" *ngIf="showCardDetail()" (click)="closeCardDetail()">
+  <div class="card-detail-modal" (click)="$event.stopPropagation()" *ngIf="selectedCard()">
+    <button class="close-btn" (click)="closeCardDetail()">
+      <i class="pi pi-times"></i>
+    </button>
+    
+    <div class="detail-content">
+      <div class="detail-image">
+        <img 
+          [src]="getCardImageUrl(selectedCard()!, 'normal')" 
+          [alt]="selectedCard()!.name"
+          class="detail-card-image">
+      </div>
+      
+      <div class="detail-info">
+        <h2>{{ selectedCard()!.name }}</h2>
+        
+        <div class="detail-badges">
+          <span class="badge badge-type">{{ selectedCard()!.type }}</span>
+          <span class="badge badge-race">{{ selectedCard()!.race }}</span>
+          <span class="badge badge-attribute" *ngIf="selectedCard()!.attribute">
+            {{ getAttributeIcon(selectedCard()!.attribute) }} {{ selectedCard()!.attribute }}
+          </span>
+        </div>
+
+        <div class="detail-stats" *ngIf="selectedCard()!.atk !== undefined">
+          <div class="stat">
+            <label>ATK:</label>
+            <span>{{ selectedCard()!.atk }}</span>
+          </div>
+          <div class="stat" *ngIf="selectedCard()!.def !== undefined">
+            <label>DEF:</label>
+            <span>{{ selectedCard()!.def }}</span>
+          </div>
+          <div class="stat" *ngIf="selectedCard()!.level">
+            <label>Level:</label>
+            <span>{{ selectedCard()!.level }}</span>
+          </div>
+          <div class="stat" *ngIf="selectedCard()!.scale">
+            <label>Scale:</label>
+            <span>{{ selectedCard()!.scale }}</span>
+          </div>
+        </div>
+
+        <div class="detail-description">
+          <h4>Card Description</h4>
+          <p>{{ selectedCard()!.desc }}</p>
+        </div>
+
+        <div class="detail-archetype" *ngIf="selectedCard()!.archetype">
+          <h4>Archetype</h4>
+          <p>{{ selectedCard()!.archetype }}</p>
+        </div>
+
+        <div class="detail-actions">
+          <a 
+            [href]="'https://db.ygoprodeck.com/card/?search=' + selectedCard()!.id" 
+            target="_blank"
+            class="btn-external">
+            <i class="pi pi-external-link"></i>
+            View on YGOPRODeck
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
