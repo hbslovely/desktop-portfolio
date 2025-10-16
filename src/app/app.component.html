@@ -491,125 +491,6 @@
     (onContextMenu)="onDesktopIconContextMenu($event)">
   </app-desktop-icon>
 
-  <!-- Desktop Widgets -->
-  <div *ngIf="showDesktopWidgets()" class="desktop-widgets">
-    <!-- Weather Widget -->
-    <div class="widget weather-widget">
-      <div class="widget-header">
-        <i class="pi pi-cloud"></i>
-        <span>Weather</span>
-        <button (click)="loadWeatherWidget()" class="refresh-widget-btn" title="Refresh Weather">
-          <i class="pi pi-refresh"></i>
-        </button>
-      </div>
-      <div class="widget-body">
-        <div class="weather-compact">
-          <div class="weather-main-compact">
-            <img *ngIf="currentWeather().iconUrl" [src]="currentWeather().iconUrl" class="weather-icon-compact" [alt]="currentWeather().condition">
-            <div class="weather-info-compact">
-              <div class="weather-temp-compact">{{ currentWeather().temp }}°C</div>
-              <div class="weather-location-compact">{{ currentWeather().location }}</div>
-            </div>
-          </div>
-          <div class="weather-condition-text">{{ currentWeather().condition }}</div>
-          <div class="weather-details-compact">
-            <span><i class="pi pi-percentage"></i> {{ currentWeather().humidity }}%</span>
-            <span><i class="pi pi-compass"></i> {{ currentWeather().wind }} m/s</span>
-          </div>
-          <button (click)="openWeatherApp()" class="open-weather-app-btn">
-            <i class="pi pi-external-link"></i>
-            Open Weather App
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Cat Facts Widget -->
-    <div class="widget cat-facts-widget">
-      <div class="widget-header">
-        <i class="pi pi-info-circle"></i>
-        <span>Cat Fact</span>
-        <button (click)="loadCatFact()" class="refresh-widget-btn" [disabled]="catFactLoading()" title="New Cat Fact">
-          <i class="pi pi-refresh" [class.pi-spin]="catFactLoading()"></i>
-        </button>
-      </div>
-      <div class="widget-body">
-        <div class="cat-fact-content">
-          <div class="cat-icon">🐱</div>
-          <p class="fact-text">{{ catFact() }}</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Daily Advice Widget -->
-    <div class="widget advice-widget">
-      <div class="widget-header">
-        <i class="pi pi-lightbulb"></i>
-        <span>Daily Advice</span>
-        <button (click)="loadDailyAdvice()" class="refresh-widget-btn" [disabled]="adviceLoading()" title="New Advice">
-          <i class="pi pi-refresh" [class.pi-spin]="adviceLoading()"></i>
-        </button>
-      </div>
-      <div class="widget-body">
-        <div class="advice-content">
-          <div class="advice-icon">💡</div>
-          <p class="advice-text">{{ dailyAdvice() }}</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- System Stats Widget -->
-    <div class="widget stats-widget">
-      <div class="widget-header">
-        <i class="pi pi-chart-bar"></i>
-        <span>System</span>
-      </div>
-      <div class="widget-body">
-        <div class="stat-item">
-          <span class="stat-label">CPU Usage</span>
-          <div class="stat-bar">
-            <div class="stat-fill" style="width: 45%"></div>
-          </div>
-          <span class="stat-value">45%</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-label">Memory</span>
-          <div class="stat-bar">
-            <div class="stat-fill" style="width: 62%"></div>
-          </div>
-          <span class="stat-value">62%</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-label">Storage</span>
-          <div class="stat-bar">
-            <div class="stat-fill" style="width: 38%"></div>
-          </div>
-          <span class="stat-value">38%</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Random Fox Widget -->
-    <div class="widget fox-widget">
-      <div class="widget-header">
-        <i class="pi pi-image"></i>
-        <span>Random Fox</span>
-        <button (click)="loadRandomFox()" class="refresh-widget-btn" [disabled]="foxLoading()" title="New Fox">
-          <i class="pi pi-refresh" [class.pi-spin]="foxLoading()"></i>
-        </button>
-      </div>
-      <div class="widget-body fox-body">
-        <div class="fox-image-container" (click)="openFoxLink()">
-          <img [src]="randomFox().image" alt="Random Fox" class="fox-image" />
-          <div class="fox-overlay">
-            <i class="pi pi-external-link"></i>
-            <span>View Full Size</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <!-- Taskbar -->
   <div class="taskbar">
     <!-- Start Button -->
@@ -746,52 +627,28 @@
         <span>News</span>
       </button>
 
+      <!-- Dynamic Windows from WindowManager Service -->
+      <button
+        *ngFor="let window of windowManager.windowList()"
+        class="taskbar-app"
+        [class.active]="windowManager.isWindowFocused(window.id)"
+        [class.minimized]="window.isMinimized"
+        (click)="toggleWindowManagerWindow(window.id)"
+        [title]="window.title">
+        <i [class]="window.icon"></i>
+        <span>{{ window.title }}</span>
+      </button>
+
     </div>
 
     <!-- System Tray -->
     <div class="system-tray">
-      <button class="widgets-button" (click)="toggleWidgets()" title="Toggle Desktop Widgets">
-        <i class="pi pi-th"></i>
-      </button>
-      <button class="notifications-button" (click)="toggleNotificationsPanel()" title="Notifications">
-        <i class="pi pi-bell"></i>
-        <span *ngIf="notifications().length > 0" class="notification-badge">{{ notifications().length }}</span>
-      </button>
       <button class="lock-button" (click)="lockScreen()" title="Lock Screen">
         <i class="pi pi-lock"></i>
       </button>
       <div class="clock-widget" (click)="openClockWindow()" title="Click to open Clock">
         <div class="clock-time">{{ currentTime }}</div>
         <div class="clock-date">{{ currentShortDate }}</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Notifications Panel -->
-  <div *ngIf="showNotificationsPanel()" class="notifications-panel">
-    <div class="notifications-header">
-      <h3>Notifications</h3>
-      <button (click)="clearAllNotifications()" class="clear-all-btn" *ngIf="notifications().length > 0">
-        Clear All
-      </button>
-    </div>
-    <div class="notifications-body">
-      <div *ngIf="notifications().length === 0" class="no-notifications">
-        <i class="pi pi-check-circle"></i>
-        <p>No notifications</p>
-      </div>
-      <div *ngFor="let notification of notifications()" class="notification-item">
-        <div class="notification-icon">
-          <i [class]="notification.icon"></i>
-        </div>
-        <div class="notification-content">
-          <h4>{{ notification.title }}</h4>
-          <p>{{ notification.message }}</p>
-          <span class="notification-time">{{ notification.time }}</span>
-        </div>
-        <button (click)="clearNotification(notification.id)" class="notification-close">
-          <i class="pi pi-times"></i>
-        </button>
       </div>
     </div>
   </div>

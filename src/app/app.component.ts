@@ -30,10 +30,6 @@ import { SettingsDialogComponent } from "./components/settings-dialog/settings-d
 import { APP_ICONS, APP_SEARCH_CONFIG } from './config/app-icons.config';
 import { SearchService, SearchResult } from './services/search.service';
 import { WindowManagerService } from './services/window-manager.service';
-import { WeatherService, WeatherData } from './services/weather.service';
-import { CatFactsService, CatFact } from './services/cat-facts.service';
-import { RandomFoxService, RandomFox } from './services/random-fox.service';
-import { AdviceSlipService } from './services/advice-slip.service';
 import { getWindowDefinition } from './config/window-registry';
 import { SystemRestartService, BootMessage } from './services/system-restart.service';
 import { FileSystemService } from './services/file-system.service';
@@ -66,19 +62,11 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     private sanitizer: DomSanitizer,
     private cdr: ChangeDetectorRef,
     private searchService: SearchService,
-    private weatherService: WeatherService,
-    private catFactsService: CatFactsService,
-    private randomFoxService: RandomFoxService,
-    private adviceSlipService: AdviceSlipService,
     private systemRestartService: SystemRestartService,
     private fileSystemService: FileSystemService
   ) {
     this.updateTime();
     this.timeInterval = window.setInterval(() => this.updateTime(), 1000);
-    this.loadWeatherWidget();
-    this.loadCatFact();
-    this.loadRandomFox();
-    this.loadDailyAdvice();
 
     // Listen for restart requests from lock screen
     this.systemRestartHandler = () => this.restartSystem();
@@ -186,35 +174,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
 
   // Selected desktop icon
   selectedIconId = signal<string | null>(null);
-
-  // Desktop widgets
-  showDesktopWidgets = signal(true);
-  currentWeather = signal({
-    temp: 25,
-    condition: 'Loading...',
-    icon: 'pi pi-sun',
-    location: 'Current Location',
-    humidity: 0,
-    wind: 0,
-    feelsLike: 25,
-    iconUrl: ''
-  });
-  weekForecast = signal<any[]>([]);
-  catFact = signal<string>('Loading cat fact...');
-  catFactLoading = signal<boolean>(false);
-  randomFox = signal<{ image: string; link: string }>({
-    image: 'https://randomfox.ca/images/1.jpg',
-    link: 'https://randomfox.ca/?i=1'
-  });
-  foxLoading = signal<boolean>(false);
-  dailyAdvice = signal<string>('Loading advice...');
-  adviceLoading = signal<boolean>(false);
-  quickNotes = signal<string[]>(['Welcome to Desktop Portfolio!', 'Click to add notes']);
-  showNotificationsPanel = signal(false);
-  notifications = signal([
-    { id: 1, title: 'System Update', message: 'New features available', time: '5m ago', icon: 'pi pi-info-circle' },
-    { id: 2, title: 'Welcome', message: 'Thanks for using Desktop Portfolio', time: '1h ago', icon: 'pi pi-heart' }
-  ]);
 
   // Start menu configuration
   startMenuGroups = [
@@ -1103,6 +1062,23 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     }
   }
 
+  // Toggle WindowManager windows (for apps opened via WindowManager service)
+  toggleWindowManagerWindow(windowId: string) {
+    const window = this.windowManager.getWindow(windowId);
+    if (!window) return;
+
+    if (window.isMinimized) {
+      // Restore if minimized
+      this.windowManager.restoreWindow(windowId);
+    } else if (this.windowManager.isWindowFocused(windowId)) {
+      // Minimize if already focused
+      this.windowManager.minimizeWindow(windowId);
+    } else {
+      // Focus if not focused
+      this.windowManager.focusWindow(windowId);
+    }
+  }
+
   // Toggle window: minimize if focused, restore/focus if not focused, open if closed
   toggleTaskbarApp(windowId: string) {
 
@@ -1357,148 +1333,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     this.secondAngle = seconds * 6; // 6 degrees per second
   }
 
-  openWeatherApp() {
-    this.windowManager.openWindow({
-      id: 'weather',
-      title: 'Weather Forecast',
-      icon: 'pi pi-cloud',
-      component: 'weather',
-      initialWidth: 900,
-      initialHeight: 700,
-      initialX: 250,
-      initialY: 80
-    });
-  }
-
-  async loadWeatherWidget() {
-    try {
-      const weatherObservable = await this.weatherService.getWeatherForCurrentLocation(
-        ['current', 'daily'],
-        'metric'
-      );
-
-      const sub = weatherObservable.subscribe({
-        next: async (data: WeatherData) => {
-          // Update current weather
-          this.currentWeather.set({
-            temp: Math.round(data.current.temperature),
-            condition: data.current.summary,
-            icon: this.weatherService.getWeatherIconClass(data.current.icon_num),
-            location: await this.getLocationName(data.lat, data.lon),
-            humidity: data.current.humidity,
-            wind: Math.round(data.current.wind.speed),
-            feelsLike: Math.round(data.current.feels_like),
-            iconUrl: this.weatherService.getWeatherIcon(data.current.icon_num)
-          });
-
-          // Update week forecast (next 7 days)
-          if (data.daily?.data) {
-            const forecast = data.daily.data.slice(0, 7).map(day => ({
-              day: this.formatDayShort(day.day),
-              icon: this.weatherService.getWeatherIcon(day.icon),
-              tempMax: Math.round(day.all_day.temperature_max),
-              tempMin: Math.round(day.all_day.temperature_min)
-            }));
-            this.weekForecast.set(forecast);
-          }
-        },
-        error: (err) => {
-
-        }
-      });
-    } catch (err) {
-
-    }
-  }
-
-  async getLocationName(lat: number, lon: number): Promise<string> {
-    try {
-      // Ensure lat and lon are proper numbers without any suffixes
-      const cleanLat = parseFloat(String(lat).replace(/[NSEW]/gi, ''));
-      const cleanLon = parseFloat(String(lon).replace(/[NSEW]/gi, ''));
-
-      const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${cleanLat}&lon=${cleanLon}&zoom=10`, {
-        headers: {
-          'User-Agent': 'DesktopPortfolioApp/1.0'
-        }
-      });
-      const data = await response.json();
-
-      if (data.error) {
-
-        return 'Current Location';
-      }
-
-      if (data.address) {
-        const city = data.address.city || data.address.town || data.address.village;
-        return city || data.address.state || 'Current Location';
-      }
-      return 'Current Location';
-    } catch (error) {
-
-      return 'Current Location';
-    }
-  }
-
-  formatDayShort(dateString: string): string {
-    const date = new Date(dateString);
-    const today = new Date();
-
-    if (date.toDateString() === today.toDateString()) {
-      return 'Today';
-    }
-    return date.toLocaleDateString('en-US', { weekday: 'short' });
-  }
-
-  loadCatFact() {
-    this.catFactLoading.set(true);
-    const sub = this.catFactsService.getSingleRandomFact().subscribe({
-      next: (fact: CatFact) => {
-        this.catFact.set(fact.text);
-        this.catFactLoading.set(false);
-      },
-      error: (err) => {
-
-        this.catFact.set('Unable to load cat fact. Click refresh to try again.');
-        this.catFactLoading.set(false);
-      }
-    });
-  }
-
-  loadRandomFox() {
-    this.foxLoading.set(true);
-    const sub = this.randomFoxService.getRandomFox().subscribe({
-      next: (fox) => {
-        this.randomFox.set(fox);
-        this.foxLoading.set(false);
-      },
-      error: (err) => {
-
-        this.foxLoading.set(false);
-      }
-    });
-    this.subscriptions.push(sub);
-  }
-
-  openFoxLink() {
-    window.open(this.randomFox().link, '_blank');
-  }
-
-  loadDailyAdvice() {
-    this.adviceLoading.set(true);
-    const sub = this.adviceSlipService.getRandomAdvice().subscribe({
-      next: (advice) => {
-        this.dailyAdvice.set(advice.advice);
-        this.adviceLoading.set(false);
-      },
-      error: (err) => {
-
-        this.dailyAdvice.set('Believe in yourself and all that you are.');
-        this.adviceLoading.set(false);
-      }
-    });
-    this.subscriptions.push(sub);
-  }
 
 
   openClockWindow() {
@@ -1843,36 +1677,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     } else if (this.selectedSearchIndex >= this.searchResults.length) {
       this.selectedSearchIndex = 0;
     }
-  }
-
-  toggleNotificationsPanel() {
-    this.showNotificationsPanel.set(!this.showNotificationsPanel());
-  }
-
-  clearNotification(id: number) {
-    const currentNotifications = this.notifications();
-    this.notifications.set(currentNotifications.filter(n => n.id !== id));
-  }
-
-  clearAllNotifications() {
-    this.notifications.set([]);
-  }
-
-  toggleWidgets() {
-    this.showDesktopWidgets.set(!this.showDesktopWidgets());
-  }
-
-  addQuickNote() {
-    const note = prompt('Enter a quick note:');
-    if (note) {
-      const currentNotes = this.quickNotes();
-      this.quickNotes.set([...currentNotes, note]);
-    }
-  }
-
-  removeQuickNote(index: number) {
-    const currentNotes = this.quickNotes();
-    this.quickNotes.set(currentNotes.filter((_, i) => i !== index));
   }
 
   getResultIndex(type: string, localIndex: number): number {

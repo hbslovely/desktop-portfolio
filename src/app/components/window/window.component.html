@@ -1,9 +1,9 @@
 <div 
   class="window" 
-  [class.maximized]="windowState().isMaximized"
-  [class.minimized]="windowState().isMinimized || isMinimizedExternal"
+  [class.maximized]="isMaximized()"
+  [class.minimized]="isMinimized()"
   [class.focused]="isFocused"
-  [ngStyle]="windowStyles()"
+  [style]="windowCssVars()"
   (click)="onWindowClick()"
   (mousedown)="onWindowClick()">
   
@@ -11,7 +11,8 @@
   <div 
     class="title-bar" 
     (mousedown)="onTitleBarMouseDown($event)"
-    (dblclick)="onTitleBarDoubleClick()">
+    (dblclick)="onTitleBarDoubleClick()"
+    [class.dragging]="isDragging">
     
     <!-- Left side - Icon and Title -->
     <div class="title-section">
@@ -39,9 +40,9 @@
       <button 
         *ngIf="maximizable"
         class="control-btn maximize-btn" 
-        (click)="windowState().isMaximized ? restore() : maximize()"
-        [title]="windowState().isMaximized ? 'Restore Down' : 'Maximize'">
-        <span class="maximize-icon" [class.restore]="windowState().isMaximized">⬜</span>
+        (click)="isMaximized() ? restore() : maximize()"
+        [title]="isMaximized() ? 'Restore Down' : 'Maximize'">
+        <span class="maximize-icon" [class.restore]="isMaximized()">⬜</span>
       </button>
       
       <button 
@@ -67,14 +68,14 @@
     </div>
     
     <div class="status-actions">
-      <span class="resize-handle-corner" *ngIf="resizable && !windowState().isMaximized">
+      <span class="resize-handle-corner" *ngIf="resizable && !isMaximized()">
         <i class="pi pi-angle-double-down"></i>
       </span>
     </div>
   </div>
 
   <!-- Resize Handles -->
-  <div *ngIf="resizable && !windowState().isMaximized" class="resize-handles">
+  <div *ngIf="resizable && !isMaximized()" class="resize-handles">
     <!-- Corner handles -->
     <div class="resize-handle nw" (mousedown)="onResizeStart($event, 'nw')"></div>
     <div class="resize-handle ne" (mousedown)="onResizeStart($event, 'ne')"></div>

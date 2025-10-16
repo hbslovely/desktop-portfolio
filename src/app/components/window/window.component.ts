@@ -61,42 +61,24 @@ export class WindowComponent implements OnInit, OnDestroy, OnChanges {
     size: { width: this.initialWidth, height: this.initialHeight }
   });
 
-  // Computed styles
-  windowStyles = computed(() => {
+  // Computed CSS variables for positioning (much simpler than inline styles)
+  windowCssVars = computed(() => {
     const state = this.windowState();
-    const isMinimized = state.isMinimized || this.isMinimizedExternal;
-    const baseStyles = {
-      zIndex: this._zIndex().toString()
-    };
-    
-    if (isMinimized) {
-      return {
-        ...baseStyles,
-        display: 'none'
-      };
-    }
-    
-    if (state.isMaximized) {
-      return {
-        ...baseStyles,
-        left: '0px',
-        top: '0px',
-        width: '100vw',
-        height: 'calc(100vh - 48px)', // Subtract taskbar height
-        transform: 'none'
-      };
-    }
     return {
-      ...baseStyles,
-      left: `${state.position.x}px`,
-      top: `${state.position.y}px`,
-      width: `${state.size.width}px`,
-      height: `${state.size.height}px`,
-      transform: 'none'
+      '--window-x': `${state.position.x}px`,
+      '--window-y': `${state.position.y}px`,
+      '--window-width': `${state.size.width}px`,
+      '--window-height': `${state.size.height}px`,
+      '--window-z-index': this._zIndex().toString()
     };
   });
 
-  private isDragging = false;
+  // Simple computed classes
+  isMinimized = computed(() => this.windowState().isMinimized || this.isMinimizedExternal);
+  isMaximized = computed(() => this.windowState().isMaximized);
+
+  // Make isDragging public for template access
+  isDragging = false;
   private dragOffset = { x: 0, y: 0 };
   private isResizing = false;
   private resizeDirection = '';
@@ -119,11 +101,8 @@ export class WindowComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   ngOnChanges() {
-
-    
     // Check if external minimize state changed from true to false
     if (this.previousIsMinimizedExternal && !this.isMinimizedExternal) {
-
       this.resetMinimizeState();
     }
     
@@ -174,12 +153,21 @@ export class WindowComponent implements OnInit, OnDestroy, OnChanges {
       if (!this.pendingUpdate) {
         this.pendingUpdate = true;
         this.animationFrameId = requestAnimationFrame(() => {
-          this.updateWindowPosition(event.clientX - this.dragOffset.x, event.clientY - this.dragOffset.y);
+          const newX = event.clientX - this.dragOffset.x;
+          const newY = event.clientY - this.dragOffset.y;
+          this.updateWindowPosition(newX, newY);
           this.pendingUpdate = false;
         });
       }
     } else if (this.isResizing) {
-      this.handleResize(event);
+      // Use requestAnimationFrame for smooth resize too
+      if (!this.pendingUpdate) {
+        this.pendingUpdate = true;
+        this.animationFrameId = requestAnimationFrame(() => {
+          this.handleResize(event);
+          this.pendingUpdate = false;
+        });
+      }
     }
   };
 
@@ -237,12 +225,10 @@ export class WindowComponent implements OnInit, OnDestroy, OnChanges {
 
   // Reset minimize state (called externally)
   resetMinimizeState() {
-    console.log('Resetting window minimize state - before:', this.windowState().isMinimized);
     this.windowState.update(state => ({ 
       ...state, 
       isMinimized: false 
     }));
-    console.log('Resetting window minimize state - after:', this.windowState().isMinimized);
   }
 
   close() {

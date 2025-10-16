@@ -19,14 +19,14 @@ export const APP_ICONS: DesktopIconData[] = [
   {
     id: 'calculator',
     name: 'Calculator',
-    icon: 'assets/images/icons/calculator.png',
+    icon: 'pi pi-calculator',
     type: 'application',
     position: { x: 20, y: 220 }
   },
   {
     id: 'paint',
     name: 'Paint',
-    icon: 'assets/images/icons/paint.png',
+    icon: 'pi pi-palette',
     type: 'application',
     position: { x: 20, y: 320 }
   },

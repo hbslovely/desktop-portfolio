@@ -4,7 +4,14 @@
 // ============================================
 
 .window {
+  // Use CSS variables for positioning (set from TypeScript)
   position: absolute;
+  left: var(--window-x, 100px);
+  top: var(--window-y, 100px);
+  width: var(--window-width, 800px);
+  height: var(--window-height, 600px);
+  z-index: var(--window-z-index, 1000);
+  
   background: #ffffff;
   border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 12px;
@@ -13,11 +20,11 @@
     0 2px 8px rgba(0, 0, 0, 0.08);
   display: flex;
   flex-direction: column;
-  z-index: 1000;
   overflow: hidden;
   user-select: none;
-  will-change: transform, left, top, width, height;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  
+  // Only transition box-shadow for smooth performance
+  transition: box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 
   // Subtle outer glow
   &::before {
@@ -42,7 +49,6 @@
     box-shadow: 
       0 12px 48px rgba(0, 0, 0, 0.15),
       0 4px 16px rgba(0, 0, 0, 0.1);
-    transform: translateY(-2px);
 
     &::before {
       opacity: 1;
@@ -50,11 +56,15 @@
   }
 
   &.maximized {
+    // Override CSS variables for maximized state
+    left: 0 !important;
+    top: 0 !important;
+    width: 100vw !important;
+    height: calc(100vh - 48px) !important; // Subtract taskbar height
+    
     border-radius: 0;
     border: none;
     box-shadow: none;
-    will-change: auto;
-    transform: none !important;
 
     &::before {
       display: none;
@@ -87,14 +97,10 @@
 
       // Animated gradient
       background-size: 200% 100%;
-      animation: shimmer 3s ease-in-out infinite;
 
       &:hover {
-        background: linear-gradient(135deg, 
-          #1084d8 0%, 
-          #1a8de0 50%, 
-          #7278ea 100%);
-        background-size: 200% 100%;
+        // Remove animation on hover to prevent flashing
+        animation: none;
       }
 
       &:active {
