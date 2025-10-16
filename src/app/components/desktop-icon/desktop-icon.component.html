@@ -3,10 +3,10 @@
   [class.selected]="isSelected"
   [class.dragging]="isDragging()"
   [ngStyle]="iconPosition()"
-  (click)="onIconClick()"
+  (click)="onIconClick(); $event.stopPropagation()"
   (dblclick)="onIconDoubleClick()"
   (mousedown)="onIconMouseDown($event)"
-  (contextmenu)="onIconRightClick($event)">
+  (contextmenu)="onIconRightClick($event); $event.stopPropagation()">
   
   <!-- Icon Image -->
   <div class="icon-image">

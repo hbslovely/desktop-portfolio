@@ -14,14 +14,10 @@ export class CalculatorComponent {
   previousValue = signal(0);
   currentOperation = signal('');
   waitingForOperand = signal(false);
-  memory = signal(0);
-  history = signal<string[]>([]);
-  showHistory = signal(false);
   
-  // Button layout - Enhanced with more features
+  // Modern simplified button layout
   buttons = [
-    ['MC', 'MR', 'M+', 'M-', 'C', '⌫'],
-    ['√', 'x²', '1/x', '%', '÷'],
+    ['C', '⌫', '%', '÷'],
     ['7', '8', '9', '×'],
     ['4', '5', '6', '-'],
     ['1', '2', '3', '+'],
@@ -29,8 +25,6 @@ export class CalculatorComponent {
   ];
 
   displayValue = computed(() => this.display());
-  memoryIndicator = computed(() => this.memory() !== 0 ? 'M' : '');
-  historyList = computed(() => this.history());
 
   onButtonClick(value: string) {
     if (this.isNumber(value)) {
@@ -49,20 +43,6 @@ export class CalculatorComponent {
       this.percentage();
     } else if (value === '⌫') {
       this.backspace();
-    } else if (value === '√') {
-      this.squareRoot();
-    } else if (value === 'x²') {
-      this.square();
-    } else if (value === '1/x') {
-      this.reciprocal();
-    } else if (value === 'MC') {
-      this.memoryClear();
-    } else if (value === 'MR') {
-      this.memoryRecall();
-    } else if (value === 'M+') {
-      this.memoryAdd();
-    } else if (value === 'M-') {
-      this.memorySubtract();
     }
   }
 
@@ -116,21 +96,11 @@ export class CalculatorComponent {
     if (currentValue !== 0 && this.currentOperation()) {
       const newValue = this.performCalculation(currentValue, inputValue, this.currentOperation());
       
-      // Add to history
-      const historyEntry = `${currentValue} ${this.currentOperation()} ${inputValue} = ${newValue}`;
-      this.addToHistory(historyEntry);
-      
       this.display.set(String(newValue));
       this.previousValue.set(0);
       this.currentOperation.set('');
       this.waitingForOperand.set(true);
     }
-  }
-  
-  private addToHistory(entry: string) {
-    const currentHistory = this.history();
-    const newHistory = [entry, ...currentHistory].slice(0, 10); // Keep last 10
-    this.history.set(newHistory);
   }
 
   private performCalculation(firstValue: number, secondValue: number, operator: string): number {
@@ -173,97 +143,14 @@ export class CalculatorComponent {
       this.display.set('0');
     }
   }
-  
-  private squareRoot() {
-    const value = parseFloat(this.display());
-    if (value < 0) {
-      this.display.set('Error');
-    } else {
-      const result = Math.sqrt(value);
-      this.display.set(String(result));
-      this.addToHistory(`√${value} = ${result}`);
-    }
-  }
-  
-  private square() {
-    const value = parseFloat(this.display());
-    const result = value * value;
-    this.display.set(String(result));
-    this.addToHistory(`${value}² = ${result}`);
-  }
-  
-  private reciprocal() {
-    const value = parseFloat(this.display());
-    if (value === 0) {
-      this.display.set('Error');
-    } else {
-      const result = 1 / value;
-      this.display.set(String(result));
-      this.addToHistory(`1/${value} = ${result}`);
-    }
-  }
-  
-  // Memory functions
-  private memoryClear() {
-    this.memory.set(0);
-  }
-  
-  private memoryRecall() {
-    this.display.set(String(this.memory()));
-    this.waitingForOperand.set(true);
-  }
-  
-  private memoryAdd() {
-    // If there's a pending operation, calculate it first
-    if (this.currentOperation() && this.previousValue() !== 0) {
-      const inputValue = parseFloat(this.display());
-      const currentValue = this.previousValue();
-      const result = this.performCalculation(currentValue, inputValue, this.currentOperation());
-      this.display.set(String(result));
-      this.previousValue.set(0);
-      this.currentOperation.set('');
-      this.memory.update(m => m + result);
-    } else {
-      const value = parseFloat(this.display());
-      this.memory.update(m => m + value);
-    }
-    this.waitingForOperand.set(true);
-  }
-  
-  private memorySubtract() {
-    // If there's a pending operation, calculate it first
-    if (this.currentOperation() && this.previousValue() !== 0) {
-      const inputValue = parseFloat(this.display());
-      const currentValue = this.previousValue();
-      const result = this.performCalculation(currentValue, inputValue, this.currentOperation());
-      this.display.set(String(result));
-      this.previousValue.set(0);
-      this.currentOperation.set('');
-      this.memory.update(m => m - result);
-    } else {
-      const value = parseFloat(this.display());
-      this.memory.update(m => m - value);
-    }
-    this.waitingForOperand.set(true);
-  }
-  
-  toggleHistory() {
-    this.showHistory.update(v => !v);
-  }
-  
-  clearHistory() {
-    this.history.set([]);
-  }
 
   getButtonClass(button: string): string {
     if (this.isNumber(button) || button === '.') {
       return 'number';
-    } else if (this.isOperator(button) || button === '=') {
+    } else if (this.isOperator(button)) {
       return 'operator';
-    } else if (['MC', 'MR', 'M+', 'M-'].includes(button)) {
-      return 'memory';
-    } else if (['√', 'x²', '1/x'].includes(button)) {
-      return 'scientific';
+    } else if (button === '=') {
+      return 'equals';
     } else {
       return 'function';
     }
