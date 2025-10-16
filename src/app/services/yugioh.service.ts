@@ -95,7 +95,7 @@ export class YugiohService {
         return response.data;
       }),
       catchError(error => {
-        console.error('Error fetching Yu-Gi-Oh! cards:', error);
+
         return of([]);
       })
     );
@@ -137,7 +137,7 @@ export class YugiohService {
     return this.http.get<YugiohApiResponse>(`${this.API_BASE_URL}/cardinfo.php`, { params }).pipe(
       map(response => response.data),
       catchError(error => {
-        console.error('Error searching Yu-Gi-Oh! cards:', error);
+
         return of([]);
       })
     );
@@ -151,7 +151,7 @@ export class YugiohService {
     return this.http.get<YugiohApiResponse>(`${this.API_BASE_URL}/cardinfo.php?name=${encodeURIComponent(name)}`).pipe(
       map(response => response.data[0] || null),
       catchError(error => {
-        console.error('Error fetching card by name:', error);
+
         return of(null);
       })
     );
@@ -164,7 +164,7 @@ export class YugiohService {
     return this.http.get<YugiohApiResponse>(`${this.API_BASE_URL}/cardinfo.php?id=${id}`).pipe(
       map(response => response.data[0] || null),
       catchError(error => {
-        console.error('Error fetching card by ID:', error);
+
         return of(null);
       })
     );
@@ -176,7 +176,7 @@ export class YugiohService {
   getRandomCard(): Observable<YugiohCard | null> {
     return this.http.get<YugiohCard>(`${this.API_BASE_URL}/randomcard.php`).pipe(
       catchError(error => {
-        console.error('Error fetching random card:', error);
+
         return of(null);
       })
     );
@@ -188,7 +188,7 @@ export class YugiohService {
   getAllCardSets(): Observable<any[]> {
     return this.http.get<any[]>(`${this.API_BASE_URL}/cardsets.php`).pipe(
       catchError(error => {
-        console.error('Error fetching card sets:', error);
+
         return of([]);
       })
     );
@@ -200,7 +200,7 @@ export class YugiohService {
   getAllArchetypes(): Observable<any[]> {
     return this.http.get<any[]>(`${this.API_BASE_URL}/archetypes.php`).pipe(
       catchError(error => {
-        console.error('Error fetching archetypes:', error);
+
         return of([]);
       })
     );

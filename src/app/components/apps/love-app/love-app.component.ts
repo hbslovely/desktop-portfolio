@@ -1,4 +1,4 @@
-import { Component, Input, signal, computed } from '@angular/core';
+import { Component, Input, signal, computed, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 
@@ -7,7 +7,8 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
   standalone: true,
   imports: [CommonModule],
   templateUrl: './love-app.component.html',
-  styleUrl: './love-app.component.scss'
+  styleUrl: './love-app.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class LoveAppComponent {
   @Input() set url(value: string) {

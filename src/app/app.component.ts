@@ -1,4 +1,4 @@
-import { Component, signal, computed, ViewChild, AfterViewInit, ChangeDetectorRef, ElementRef, inject, HostListener } from '@angular/core';
+import { Component, signal, computed, ViewChild, AfterViewInit, OnDestroy, ChangeDetectorRef, ElementRef, inject, HostListener } from '@angular/core';
 import { WindowComponent } from './components/window/window.component';
 import { DesktopIconComponent, DesktopIconData } from './components/desktop-icon/desktop-icon.component';
 import { CalculatorComponent } from './components/apps/calculator/calculator.component';
@@ -9,16 +9,13 @@ import { TextViewerComponent } from './components/apps/text-viewer/text-viewer.c
 import { ImageViewerComponent } from './components/apps/image-viewer/image-viewer.component';
 import { PdfViewerComponent } from './components/apps/pdf-viewer/pdf-viewer.component';
 import { MachineInfoComponent } from './components/apps/machine-info/machine-info.component';
-import { CreditAppComponent } from './components/apps/credit-app/credit-app.component';
 import { PaintAppComponent } from './components/apps/paint-app/paint-app.component';
-import { CreditsAppComponent } from './components/apps/credits-app/credits-app.component';
 import { HcmcAppComponent } from './components/apps/hcmc-app/hcmc-app.component';
 import { NewsAppComponent } from './components/apps/news-app/news-app.component';
 import { SettingsAppComponent } from './components/apps/settings-app/settings-app.component';
 import { TaskManagerComponent } from './components/apps/task-manager/task-manager.component';
 import { WeatherAppComponent } from './components/apps/weather-app/weather-app.component';
 import { DictionaryAppComponent } from './components/apps/dictionary-app/dictionary-app.component';
-import { LinkShortenerComponent } from './components/apps/link-shortener/link-shortener.component';
 import { CountriesAppComponent } from './components/apps/countries-app/countries-app.component';
 import { YugiohAppComponent } from './components/apps/yugioh-app/yugioh-app.component';
 import { YugiohCardDetailComponent } from './components/apps/yugioh-card-detail/yugioh-card-detail.component';
@@ -43,15 +40,19 @@ import { FileSystemService } from './services/file-system.service';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [ WelcomeScreenComponent, WindowComponent, DesktopIconComponent, CalculatorComponent, IframeAppComponent, LoveAppComponent, ExplorerComponent, TextViewerComponent, ImageViewerComponent, PdfViewerComponent, MachineInfoComponent, CreditAppComponent, PaintAppComponent, CreditsAppComponent, HcmcAppComponent, NewsAppComponent, SettingsAppComponent, TaskManagerComponent, WeatherAppComponent, DictionaryAppComponent, LinkShortenerComponent, CountriesAppComponent, YugiohAppComponent, YugiohCardDetailComponent, AboutMeComponent, VnstockAppComponent, CommonModule, FormsModule, SettingsDialogComponent ],
+  imports: [ WelcomeScreenComponent, WindowComponent, DesktopIconComponent, CalculatorComponent, IframeAppComponent, LoveAppComponent, ExplorerComponent, TextViewerComponent, ImageViewerComponent, PdfViewerComponent, MachineInfoComponent, PaintAppComponent, HcmcAppComponent, NewsAppComponent, SettingsAppComponent, TaskManagerComponent, WeatherAppComponent, DictionaryAppComponent, CountriesAppComponent, YugiohAppComponent, YugiohCardDetailComponent, AboutMeComponent, VnstockAppComponent, CommonModule, FormsModule, SettingsDialogComponent ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
 })
-export class AppComponent implements AfterViewInit {
+export class AppComponent implements AfterViewInit, OnDestroy {
   @ViewChild(WelcomeScreenComponent) welcomeScreen!: WelcomeScreenComponent;
   @ViewChild('searchInput', { static: false }) searchInput!: ElementRef<HTMLInputElement>;
 
   windowManager = inject(WindowManagerService);
+
+  // Track intervals and subscriptions for cleanup
+  private timeInterval?: number;
+  private subscriptions: any[] = [];
 
   // Restart state
   showRestartScreen = signal(false);
@@ -72,17 +73,18 @@ export class AppComponent implements AfterViewInit {
     private fileSystemService: FileSystemService
   ) {
     this.updateTime();
-    setInterval(() => this.updateTime(), 1000);
+    this.timeInterval = window.setInterval(() => this.updateTime(), 1000);
     this.loadWeatherWidget();
     this.loadCatFact();
     this.loadRandomFox();
     this.loadDailyAdvice();
-    
+
     // Listen for restart requests from lock screen
-    window.addEventListener('system-restart-requested', () => {
-      this.restartSystem();
-    });
+    this.systemRestartHandler = () => this.restartSystem();
+    window.addEventListener('system-restart-requested', this.systemRestartHandler);
   }
+
+  private systemRestartHandler!: () => void;
 
   title = 'Desktop Portfolio';
 
@@ -183,9 +185,9 @@ export class AppComponent implements AfterViewInit {
 
   // Desktop widgets
   showDesktopWidgets = signal(true);
-  currentWeather = signal({ 
-    temp: 25, 
-    condition: 'Loading...', 
+  currentWeather = signal({
+    temp: 25,
+    condition: 'Loading...',
     icon: 'pi pi-sun',
     location: 'Current Location',
     humidity: 0,
@@ -196,9 +198,9 @@ export class AppComponent implements AfterViewInit {
   weekForecast = signal<any[]>([]);
   catFact = signal<string>('Loading cat fact...');
   catFactLoading = signal<boolean>(false);
-  randomFox = signal<{ image: string; link: string }>({ 
-    image: 'https://randomfox.ca/images/1.jpg', 
-    link: 'https://randomfox.ca/?i=1' 
+  randomFox = signal<{ image: string; link: string }>({
+    image: 'https://randomfox.ca/images/1.jpg',
+    link: 'https://randomfox.ca/?i=1'
   });
   foxLoading = signal<boolean>(false);
   dailyAdvice = signal<string>('Loading advice...');
@@ -262,14 +264,14 @@ export class AppComponent implements AfterViewInit {
   // Filtered groups based on search
   filteredStartMenuGroups = computed(() => {
     const search = this.startMenuSearch().toLowerCase().trim();
-    
+
     if (!search) {
       return this.startMenuGroups;
     }
 
     return this.startMenuGroups.map(group => ({
       ...group,
-      apps: group.apps.filter(app => 
+      apps: group.apps.filter(app =>
         app.name.toLowerCase().includes(search) ||
         app.id.toLowerCase().includes(search)
       )
@@ -285,16 +287,16 @@ export class AppComponent implements AfterViewInit {
   }
 
   onMinimizeTestWindow() {
-    console.log('Calculator window minimized');
+
     this.minimizedWindows.update(set => new Set(set).add('calculator'));
   }
 
   onMaximizeTestWindow() {
-    console.log('Window maximized');
+
   }
 
   onRestoreTestWindow() {
-    console.log('Calculator window restored');
+
     this.minimizedWindows.update(set => {
       const newSet = new Set(set);
       newSet.delete('calculator');
@@ -303,7 +305,7 @@ export class AppComponent implements AfterViewInit {
   }
 
   onFocusTestWindow() {
-    console.log('Calculator window focused');
+
     this.focusWindow('calculator');
   }
 
@@ -316,16 +318,16 @@ export class AppComponent implements AfterViewInit {
   }
 
   onMinimizeMyInfoWindow() {
-    console.log('My Info window minimized');
+
     this.minimizedWindows.update(set => new Set(set).add('my-info'));
   }
 
   onMaximizeMyInfoWindow() {
-    console.log('My Info window maximized');
+
   }
 
   onRestoreMyInfoWindow() {
-    console.log('My Info window restored');
+
     this.minimizedWindows.update(set => {
       const newSet = new Set(set);
       newSet.delete('my-info');
@@ -334,7 +336,7 @@ export class AppComponent implements AfterViewInit {
   }
 
   onFocusMyInfoWindow() {
-    console.log('My Info window focused');
+
     this.focusWindow('my-info');
   }
 
@@ -348,16 +350,16 @@ export class AppComponent implements AfterViewInit {
   }
 
   onMinimizeLoveWindow() {
-    console.log('Love window minimized');
+
     this.minimizedWindows.update(set => new Set(set).add('love'));
   }
 
   onMaximizeLoveWindow() {
-    console.log('Love window maximized');
+
   }
 
   onRestoreLoveWindow() {
-    console.log('Love window restored');
+
     this.minimizedWindows.update(set => {
       const newSet = new Set(set);
       newSet.delete('love');
@@ -366,7 +368,7 @@ export class AppComponent implements AfterViewInit {
   }
 
   onFocusLoveWindow() {
-    console.log('Love window focused');
+
     this.focusWindow('love');
   }
 
@@ -379,16 +381,16 @@ export class AppComponent implements AfterViewInit {
   }
 
   onMinimizeExplorerWindow() {
-    console.log('Explorer window minimized');
+
     this.minimizedWindows.update(set => new Set(set).add('explorer'));
   }
 
   onMaximizeExplorerWindow() {
-    console.log('Explorer window maximized');
+
   }
 
   onRestoreExplorerWindow() {
-    console.log('Explorer window restored');
+
     this.minimizedWindows.update(set => {
       const newSet = new Set(set);
       newSet.delete('explorer');
@@ -397,7 +399,7 @@ export class AppComponent implements AfterViewInit {
   }
 
   onFocusExplorerWindow() {
-    console.log('Explorer window focused');
+
     this.focusWindow('explorer');
   }
 
@@ -410,16 +412,16 @@ export class AppComponent implements AfterViewInit {
   }
 
   onMinimizeCreditWindow() {
-    console.log('Credit window minimized');
+
     this.minimizedWindows.update(set => new Set(set).add('credit'));
   }
 
   onMaximizeCreditWindow() {
-    console.log('Credit window maximized');
+
   }
 
   onRestoreCreditWindow() {
-    console.log('Credit window restored');
+
     this.minimizedWindows.update(set => {
       const newSet = new Set(set);
       newSet.delete('credit');
@@ -428,7 +430,7 @@ export class AppComponent implements AfterViewInit {
   }
 
   onFocusCreditWindow() {
-    console.log('Credit window focused');
+
     this.focusWindow('credit');
   }
 
@@ -441,16 +443,16 @@ export class AppComponent implements AfterViewInit {
   }
 
   onMinimizePaintWindow() {
-    console.log('Paint window minimized');
+
     this.minimizedWindows.update(set => new Set(set).add('paint'));
   }
 
   onMaximizePaintWindow() {
-    console.log('Paint window maximized');
+
   }
 
   onRestorePaintWindow() {
-    console.log('Paint window restored');
+
     this.minimizedWindows.update(set => {
       const newSet = new Set(set);
       newSet.delete('paint');
@@ -459,7 +461,7 @@ export class AppComponent implements AfterViewInit {
   }
 
   onFocusPaintWindow() {
-    console.log('Paint window focused');
+
     this.focusWindow('paint');
   }
 
@@ -472,16 +474,16 @@ export class AppComponent implements AfterViewInit {
   }
 
   onMinimizeCreditsWindow() {
-    console.log('Credits window minimized');
+
     this.minimizedWindows.update(set => new Set(set).add('credits'));
   }
 
   onMaximizeCreditsWindow() {
-    console.log('Credits window maximized');
+
   }
 
   onRestoreCreditsWindow() {
-    console.log('Credits window restored');
+
     this.minimizedWindows.update(set => {
       const newSet = new Set(set);
       newSet.delete('credits');
@@ -490,7 +492,7 @@ export class AppComponent implements AfterViewInit {
   }
 
   onFocusCreditsWindow() {
-    console.log('Credits window focused');
+
     this.focusWindow('credits');
   }
 
@@ -503,16 +505,16 @@ export class AppComponent implements AfterViewInit {
   }
 
   onMinimizeHcmcWindow() {
-    console.log('HCMC window minimized');
+
     this.minimizedWindows.update(set => new Set(set).add('hcmc'));
   }
 
   onMaximizeHcmcWindow() {
-    console.log('HCMC window maximized');
+
   }
 
   onRestoreHcmcWindow() {
-    console.log('HCMC window restored');
+
     this.minimizedWindows.update(set => {
       const newSet = new Set(set);
       newSet.delete('hcmc');
@@ -521,7 +523,7 @@ export class AppComponent implements AfterViewInit {
   }
 
   onFocusHcmcWindow() {
-    console.log('HCMC window focused');
+
     this.focusWindow('hcmc');
   }
 
@@ -534,16 +536,16 @@ export class AppComponent implements AfterViewInit {
   }
 
   onMinimizeNewsWindow() {
-    console.log('News window minimized');
+
     this.minimizedWindows.update(set => new Set(set).add('news'));
   }
 
   onMaximizeNewsWindow() {
-    console.log('News window maximized');
+
   }
 
   onRestoreNewsWindow() {
-    console.log('News window restored');
+
     this.minimizedWindows.update(set => {
       const newSet = new Set(set);
       newSet.delete('news');
@@ -552,7 +554,7 @@ export class AppComponent implements AfterViewInit {
   }
 
   onFocusNewsWindow() {
-    console.log('News window focused');
+
     this.focusWindow('news');
   }
 
@@ -566,16 +568,16 @@ export class AppComponent implements AfterViewInit {
   }
 
   onMinimizeTextViewerWindow() {
-    console.log('Text viewer window minimized');
+
     this.minimizedWindows.update(set => new Set(set).add('text-viewer'));
   }
 
   onMaximizeTextViewerWindow() {
-    console.log('Text viewer window maximized');
+
   }
 
   onRestoreTextViewerWindow() {
-    console.log('Text viewer window restored');
+
     this.minimizedWindows.update(set => {
       const newSet = new Set(set);
       newSet.delete('text-viewer');
@@ -584,7 +586,7 @@ export class AppComponent implements AfterViewInit {
   }
 
   onFocusTextViewerWindow() {
-    console.log('Text viewer window focused');
+
     this.focusWindow('text-viewer');
   }
 
@@ -598,16 +600,16 @@ export class AppComponent implements AfterViewInit {
   }
 
   onMinimizeImageViewerWindow() {
-    console.log('Image viewer window minimized');
+
     this.minimizedWindows.update(set => new Set(set).add('image-viewer'));
   }
 
   onMaximizeImageViewerWindow() {
-    console.log('Image viewer window maximized');
+
   }
 
   onRestoreImageViewerWindow() {
-    console.log('Image viewer window restored');
+
     this.minimizedWindows.update(set => {
       const newSet = new Set(set);
       newSet.delete('image-viewer');
@@ -616,7 +618,7 @@ export class AppComponent implements AfterViewInit {
   }
 
   onFocusImageViewerWindow() {
-    console.log('Image viewer window focused');
+
     this.focusWindow('image-viewer');
   }
 
@@ -630,7 +632,7 @@ export class AppComponent implements AfterViewInit {
   }
 
   onMinimizePdfViewerWindow() {
-    console.log('Minimizing PDF viewer window');
+
     this.minimizedWindows.update(set => new Set(set).add('pdf-viewer'));
     if (this.focusedWindow() === 'pdf-viewer') {
       this.focusedWindow.set(null);
@@ -638,7 +640,7 @@ export class AppComponent implements AfterViewInit {
   }
 
   onRestorePdfViewerWindow() {
-    console.log('Restoring PDF viewer window');
+
     this.minimizedWindows.update(set => {
       const newSet = new Set(set);
       newSet.delete('pdf-viewer');
@@ -647,11 +649,11 @@ export class AppComponent implements AfterViewInit {
   }
 
   onMaximizePdfViewerWindow() {
-    console.log('PDF viewer window maximized');
+
   }
 
   onFocusPdfViewerWindow() {
-    console.log('PDF viewer window focused');
+
     this.focusWindow('pdf-viewer');
   }
 
@@ -664,16 +666,16 @@ export class AppComponent implements AfterViewInit {
   }
 
   onMinimizeMachineInfoWindow() {
-    console.log('Machine info window minimized');
+
     this.minimizedWindows.update(set => new Set(set).add('machine-info'));
   }
 
   onMaximizeMachineInfoWindow() {
-    console.log('Machine info window maximized');
+
   }
 
   onRestoreMachineInfoWindow() {
-    console.log('Machine info window restored');
+
     this.minimizedWindows.update(set => {
       const newSet = new Set(set);
       newSet.delete('machine-info');
@@ -682,15 +684,15 @@ export class AppComponent implements AfterViewInit {
   }
 
   onFocusMachineInfoWindow() {
-    console.log('Machine info window focused');
+
     this.focusWindow('machine-info');
   }
 
   // File Open Handler
   onExplorerFileOpen(event: FileOpenEvent) {
     const { item, fileType, extension } = event;
-    console.log('Opening file from Explorer:', item.name, 'Type:', fileType);
-    console.log('Item content:', item.content);
+
+
 
     if (fileType === 'text') {
       // Open all text files in text viewer
@@ -719,7 +721,7 @@ export class AppComponent implements AfterViewInit {
       this.focusWindow('pdf-viewer');
     } else {
       // Unknown file type
-      console.log('Unknown file type:', extension);
+
       alert(`Cannot open ${item.name}. File type .${extension} is not supported.`);
     }
   }
@@ -727,7 +729,7 @@ export class AppComponent implements AfterViewInit {
   // Context Menu Handler
   onExplorerContextMenu(event: ContextMenuEvent) {
     const { action, item, newName } = event;
-    console.log('Explorer context menu action:', action, item.name);
+
 
     switch (action) {
       case 'edit':
@@ -737,7 +739,7 @@ export class AppComponent implements AfterViewInit {
 
       case 'rename':
         if (newName) {
-          console.log(`Renamed "${item.name}" to "${newName}"`);
+
           // Update the item name in the file system
           item.name = newName;
         }
@@ -745,20 +747,20 @@ export class AppComponent implements AfterViewInit {
 
       case 'delete':
         if (confirm(`Are you sure you want to delete "${item.name}"?`)) {
-          console.log(`Deleted "${item.name}"`);
+
           // Remove the item from its parent's children array
           this.deleteFileSystemItem(item);
         }
         break;
 
       case 'copy':
-        console.log(`Copied "${item.name}"`);
+
         this.clipboardItem.set(item);
         this.clipboardAction.set('copy');
         break;
 
       case 'cut':
-        console.log(`Cut "${item.name}"`);
+
         this.clipboardItem.set(item);
         this.clipboardAction.set('cut');
         break;
@@ -767,7 +769,7 @@ export class AppComponent implements AfterViewInit {
         const clipboardItem = this.clipboardItem();
         const clipboardAction = this.clipboardAction();
         if (clipboardItem && clipboardAction) {
-          console.log(`Pasted "${clipboardItem.name}"`);
+
           this.pasteFileSystemItem(clipboardItem, clipboardAction);
         }
         break;
@@ -782,12 +784,12 @@ export class AppComponent implements AfterViewInit {
   deleteFileSystemItem(item: any) {
     // Find and remove the item from its parent's children array
     // This is a simplified implementation - in a real app, you'd need to traverse the file system
-    console.log('Deleting file system item:', item.name);
+
     // For now, we'll just log the action since we don't have a direct reference to the parent
   }
 
   pasteFileSystemItem(item: any, action: 'copy' | 'cut') {
-    console.log(`Pasting ${action} item:`, item.name);
+
 
     if (action === 'cut') {
       // Remove the original item after pasting
@@ -802,7 +804,7 @@ export class AppComponent implements AfterViewInit {
   // Set image as wallpaper
   setImageAsWallpaper(item: any) {
     const imagePath = item.content || `assets/explorer${item.path}`;
-    console.log('Setting wallpaper to:', imagePath);
+
 
     // Apply the wallpaper immediately
     const wallpaperElement = document.querySelector('.wallpaper') as HTMLElement;
@@ -828,20 +830,20 @@ export class AppComponent implements AfterViewInit {
   }
 
   onDesktopIconSelect(icon: DesktopIconData) {
-    console.log('Desktop icon selected:', icon.name);
+
     // Single click only selects the icon, doesn't open the app
     // This is handled by the desktop-icon component itself
   }
 
   onDesktopIconDoubleClick(icon: DesktopIconData) {
-    console.log('Desktop icon double-clicked:', icon.name);
+
     // Double-click opens the app
     this.openTestApp(icon);
   }
 
   openTestApp(icon: DesktopIconData) {
-    console.log('Opening app:', icon.name);
-    
+
+
     // Try to use the new WindowManager system first
     const definition = getWindowDefinition(icon.id);
     if (definition) {
@@ -859,7 +861,7 @@ export class AppComponent implements AfterViewInit {
       });
       return;
     }
-    
+
     // Fallback to old system for apps not yet in window registry
     if (icon.id === 'calculator') {
       this.showTestWindow.set(true);
@@ -896,7 +898,7 @@ export class AppComponent implements AfterViewInit {
 
   onDesktopIconContextMenu(event: any) {
     const { action, icon } = event;
-    console.log('Desktop icon context menu action:', action, icon.name);
+
 
     switch (action) {
       case 'open':
@@ -907,22 +909,22 @@ export class AppComponent implements AfterViewInit {
         break;
       case 'rename':
         // Rename is handled by the icon component itself
-        console.log('Icon renamed to:', icon.name);
+
         break;
       case 'restore':
         // Handle restore if needed
-        console.log('Restore icon:', icon.name);
+
         break;
       case 'copy':
-        console.log('Copied desktop icon:', icon.name);
+
         // Copy is handled by the icon component itself
         break;
       case 'cut':
-        console.log('Cut desktop icon:', icon.name);
+
         // Cut is handled by the icon component itself
         break;
       case 'paste':
-        console.log('Pasting desktop icon:', icon.name);
+
         this.pasteDesktopIcon(icon);
         break;
     }
@@ -942,7 +944,7 @@ export class AppComponent implements AfterViewInit {
 
     // Add the new icon to the desktop
     this.testIcons = [...this.testIcons, newIcon];
-    console.log('Pasted desktop icon:', newIcon.name);
+
   }
 
   deleteDesktopIcon(icon: DesktopIconData) {
@@ -950,7 +952,7 @@ export class AppComponent implements AfterViewInit {
     const index = this.testIcons.findIndex(i => i.id === icon.id);
     if (index > -1) {
       this.testIcons.splice(index, 1);
-      console.log('Deleted icon:', icon.name);
+
 
       // Close the associated window if it's open
       if (icon.id === 'calculator' && this.showTestWindow()) {
@@ -987,7 +989,7 @@ export class AppComponent implements AfterViewInit {
 
   openApp(appId: string, data?: any) {
     this.closeStartMenu();
-    
+
     // Use WindowManager for new system
     const definition = getWindowDefinition(appId);
     if (definition) {
@@ -1006,7 +1008,7 @@ export class AppComponent implements AfterViewInit {
       });
       return;
     }
-    
+
     // Fallback to old system for compatibility
     if (appId === 'calculator') {
       this.showTestWindow.set(true);
@@ -1040,7 +1042,7 @@ export class AppComponent implements AfterViewInit {
 
   // Restore a minimized window
   restoreWindow(windowId: string) {
-    console.log('Restoring window:', windowId);
+
     this.minimizedWindows.update(set => {
       const newSet = new Set(set);
       newSet.delete(windowId);
@@ -1050,7 +1052,7 @@ export class AppComponent implements AfterViewInit {
 
   // Minimize a window
   minimizeWindow(windowId: string) {
-    console.log('Minimizing window:', windowId);
+
     this.minimizedWindows.update(set => new Set(set).add(windowId));
 
     // Clear focus if this was the focused window
@@ -1060,7 +1062,7 @@ export class AppComponent implements AfterViewInit {
   }
 
   focusWindow(windowId: string) {
-    console.log('Focusing window:', windowId);
+
     console.log('Previous focused window:', this.focusedWindow());
     console.log('Previous max z-index:', this.maxZIndex());
 
@@ -1094,14 +1096,14 @@ export class AppComponent implements AfterViewInit {
     if (windowElement) {
       const zIndex = this.getWindowZIndex(windowId);
       windowElement.style.zIndex = zIndex.toString();
-      console.log('Directly updated DOM z-index for', windowId, 'to', zIndex);
+
     }
   }
 
   // Toggle window: minimize if focused, restore/focus if not focused, open if closed
   toggleTaskbarApp(windowId: string) {
-    console.log('=== Toggle Taskbar App ===');
-    console.log('Toggling taskbar app:', windowId);
+
+
     console.log('Current focused window:', this.focusedWindow());
     console.log('Minimized windows:', Array.from(this.minimizedWindows()));
     console.log('Current max z-index:', this.maxZIndex());
@@ -1114,20 +1116,20 @@ export class AppComponent implements AfterViewInit {
 
         if (this.showTestWindow()) {
           if (this.isWindowMinimized('calculator')) {
-            console.log('Calculator is minimized, restoring and focusing...');
+
             // Window is minimized, restore and focus it
             this.focusWindow('calculator');
           } else if (this.focusedWindow() === 'calculator') {
-            console.log('Calculator is focused, minimizing...');
+
             // Window is focused, minimize it
             this.minimizeWindow('calculator');
           } else {
-            console.log('Calculator is open but not focused, focusing...');
+
             // Window is open but not focused, focus it
             this.focusWindow('calculator');
           }
         } else {
-          console.log('Calculator is closed, opening...');
+
           // Window is closed, open it
           this.showTestWindow.set(true);
           this.focusWindow('calculator');
@@ -1372,7 +1374,7 @@ export class AppComponent implements AfterViewInit {
         'metric'
       );
 
-      weatherObservable.subscribe({
+      const sub = weatherObservable.subscribe({
         next: async (data: WeatherData) => {
           // Update current weather
           this.currentWeather.set({
@@ -1398,11 +1400,11 @@ export class AppComponent implements AfterViewInit {
           }
         },
         error: (err) => {
-          console.error('Widget weather error:', err);
+
         }
       });
     } catch (err) {
-      console.error('Widget location error:', err);
+
     }
   }
 
@@ -1411,26 +1413,26 @@ export class AppComponent implements AfterViewInit {
       // Ensure lat and lon are proper numbers without any suffixes
       const cleanLat = parseFloat(String(lat).replace(/[NSEW]/gi, ''));
       const cleanLon = parseFloat(String(lon).replace(/[NSEW]/gi, ''));
-      
+
       const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${cleanLat}&lon=${cleanLon}&zoom=10`, {
         headers: {
           'User-Agent': 'DesktopPortfolioApp/1.0'
         }
       });
       const data = await response.json();
-      
+
       if (data.error) {
-        console.error('Geocoding API error:', data.error);
+
         return 'Current Location';
       }
-      
+
       if (data.address) {
         const city = data.address.city || data.address.town || data.address.village;
         return city || data.address.state || 'Current Location';
       }
       return 'Current Location';
     } catch (error) {
-      console.error('Reverse geocoding error:', error);
+
       return 'Current Location';
     }
   }
@@ -1438,7 +1440,7 @@ export class AppComponent implements AfterViewInit {
   formatDayShort(dateString: string): string {
     const date = new Date(dateString);
     const today = new Date();
-    
+
     if (date.toDateString() === today.toDateString()) {
       return 'Today';
     }
@@ -1447,13 +1449,13 @@ export class AppComponent implements AfterViewInit {
 
   loadCatFact() {
     this.catFactLoading.set(true);
-    this.catFactsService.getSingleRandomFact().subscribe({
+    const sub = this.catFactsService.getSingleRandomFact().subscribe({
       next: (fact: CatFact) => {
         this.catFact.set(fact.text);
         this.catFactLoading.set(false);
       },
       error: (err) => {
-        console.error('Cat fact error:', err);
+
         this.catFact.set('Unable to load cat fact. Click refresh to try again.');
         this.catFactLoading.set(false);
       }
@@ -1462,16 +1464,17 @@ export class AppComponent implements AfterViewInit {
 
   loadRandomFox() {
     this.foxLoading.set(true);
-    this.randomFoxService.getRandomFox().subscribe({
+    const sub = this.randomFoxService.getRandomFox().subscribe({
       next: (fox) => {
         this.randomFox.set(fox);
         this.foxLoading.set(false);
       },
       error: (err) => {
-        console.error('Random fox error:', err);
+
         this.foxLoading.set(false);
       }
     });
+    this.subscriptions.push(sub);
   }
 
   openFoxLink() {
@@ -1480,17 +1483,18 @@ export class AppComponent implements AfterViewInit {
 
   loadDailyAdvice() {
     this.adviceLoading.set(true);
-    this.adviceSlipService.getRandomAdvice().subscribe({
+    const sub = this.adviceSlipService.getRandomAdvice().subscribe({
       next: (advice) => {
         this.dailyAdvice.set(advice.advice);
         this.adviceLoading.set(false);
       },
       error: (err) => {
-        console.error('Daily advice error:', err);
+
         this.dailyAdvice.set('Believe in yourself and all that you are.');
         this.adviceLoading.set(false);
       }
     });
+    this.subscriptions.push(sub);
   }
 
 
@@ -1520,7 +1524,7 @@ export class AppComponent implements AfterViewInit {
 
   openSettings() {
     this.hideDesktopContextMenu();
-    console.log('Opening settings dialog...');
+
     this.showSettingsDialog.set(true);
     console.log('Settings dialog state:', this.showSettingsDialog());
   }
@@ -1531,7 +1535,7 @@ export class AppComponent implements AfterViewInit {
 
 
   onSettingsChange(settings: any) {
-    console.log('Settings changed:', settings);
+
 
     // Apply wallpaper change
     if (settings.wallpaper) {
@@ -1589,15 +1593,15 @@ export class AppComponent implements AfterViewInit {
         wallpaperPath = 'assets/images/lib/wallpaper/1.png';
     }
 
-    console.log('Setting wallpaper styles:', wallpaperId, wallpaperPath);
-    console.log('Wallpaper element found:', !!element);
+
+
 
     element.style.backgroundImage = `url('${wallpaperPath}')`;
     element.style.backgroundSize = 'cover';
     element.style.backgroundPosition = 'center';
     element.style.backgroundRepeat = 'no-repeat';
 
-    console.log('Wallpaper applied successfully:', wallpaperId, wallpaperPath);
+
   }
 
   applyTheme(theme: string) {
@@ -1631,7 +1635,7 @@ export class AppComponent implements AfterViewInit {
       }
     }
 
-    console.log('Theme applied:', theme);
+
   }
 
   applyThemeColor(color: string) {
@@ -1645,7 +1649,7 @@ export class AppComponent implements AfterViewInit {
       element.style.backgroundColor = color;
     });
 
-    console.log('Theme color applied:', color);
+
   }
 
   applyBackdrop(enabled: boolean) {
@@ -1668,7 +1672,7 @@ export class AppComponent implements AfterViewInit {
       }
     }
 
-    console.log('Backdrop applied:', enabled);
+
   }
 
   loadSettingsOnInit() {
@@ -1676,7 +1680,7 @@ export class AppComponent implements AfterViewInit {
     if (savedSettings) {
       try {
         const settings = JSON.parse(savedSettings);
-        console.log('Loading settings on app init:', settings);
+
 
         // Apply wallpaper
         if (settings.wallpaper) {
@@ -1702,14 +1706,14 @@ export class AppComponent implements AfterViewInit {
         }
 
         // Apply other settings as needed
-        console.log('Settings loaded and applied on app initialization');
+
       } catch (error) {
-        console.error('Error loading settings on init:', error);
+
         // Apply default wallpaper on error
         this.applyWallpaper('1');
       }
     } else {
-      console.log('No saved settings found, using defaults');
+
       // Create and save default settings
       const defaultSettings = {
         wallpaper: '1',
@@ -1726,7 +1730,7 @@ export class AppComponent implements AfterViewInit {
 
   refreshDesktop() {
     this.hideDesktopContextMenu();
-    console.log('Refreshing desktop...');
+
   }
 
   // Search methods
@@ -1891,7 +1895,7 @@ export class AppComponent implements AfterViewInit {
     this.showCursor.set(true);
 
     // Start the restart animation - type messages character by character
-    this.systemRestartService.startRestart().subscribe({
+    const sub = this.systemRestartService.startRestart().subscribe({
       next: (message) => {
         this.typeMessage(message);
       },
@@ -1900,7 +1904,7 @@ export class AppComponent implements AfterViewInit {
         setTimeout(() => {
           this.showCursor.set(false);
           this.cdr.detectChanges();
-          
+
           // Wait another second then complete restart
           setTimeout(() => {
             this.completeRestart();
@@ -1908,6 +1912,7 @@ export class AppComponent implements AfterViewInit {
         }, 500);
       }
     });
+    this.subscriptions.push(sub);
   }
 
   // Type message character by character
@@ -1915,7 +1920,7 @@ export class AppComponent implements AfterViewInit {
     const fullText = message.text;
     const timestamp = message.timestamp;
     let charIndex = 0;
-    
+
     // If empty line, just add it immediately
     if (!fullText) {
       this.restartMessages = [...this.restartMessages, message];
@@ -1931,11 +1936,11 @@ export class AppComponent implements AfterViewInit {
       type: message.type,
       timestamp: timestamp
     };
-    
+
     // Add the message container
     this.restartMessages = [...this.restartMessages, typingMessage];
     const messageIndex = this.restartMessages.length - 1;
-    
+
     // Set this message as currently typing
     this.currentTypingIndex.set(messageIndex);
 
@@ -1945,7 +1950,7 @@ export class AppComponent implements AfterViewInit {
         typingMessage.text += fullText[charIndex];
         this.restartMessages = [...this.restartMessages]; // Trigger change detection
         charIndex++;
-        
+
         // Auto-scroll terminal to bottom
         setTimeout(() => {
           const terminalBody = document.querySelector('.terminal-body');
@@ -1966,10 +1971,25 @@ export class AppComponent implements AfterViewInit {
     this.showRestartScreen.set(false);
     this.restartMessages = [];
     this.systemRestartService.completeRestart();
-    
+
     // Lock the screen after restart
     if (this.welcomeScreen) {
       this.welcomeScreen.lockScreenFromParent();
+    }
+  }
+
+  ngOnDestroy() {
+    // Clear interval
+    if (this.timeInterval) {
+      clearInterval(this.timeInterval);
+    }
+
+    // Unsubscribe from all subscriptions
+    this.subscriptions.forEach(sub => sub?.unsubscribe());
+
+    // Remove event listener
+    if (this.systemRestartHandler) {
+      window.removeEventListener('system-restart-requested', this.systemRestartHandler);
     }
   }
 }

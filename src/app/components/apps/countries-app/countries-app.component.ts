@@ -2,6 +2,8 @@ import { Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CountriesService, Country } from '../../../services/countries.service';
+import { FormatPopulationPipe } from '../../../pipes/format-population.pipe';
+import { FormatAreaPipe } from '../../../pipes/format-area.pipe';
 
 type ViewMode = 'list' | 'detail';
 type FilterType = 'all' | 'name' | 'region' | 'capital' | 'language';
@@ -12,9 +14,9 @@ type GroupType = 'none' | 'region' | 'population' | 'size' | 'name';
 @Component({
   selector: 'app-countries-app',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, FormatPopulationPipe, FormatAreaPipe],
   templateUrl: './countries-app.component.html',
-  styleUrls: ['./countries-app.component.scss']
+  styleUrls: ['./countries-app.component.scss'],
 })
 export class CountriesAppComponent implements OnInit {
   countries = signal<Country[]>([]);
@@ -197,7 +199,7 @@ export class CountriesAppComponent implements OnInit {
       error: (err) => {
         this.error.set('Failed to load countries data. Please try again.');
         this.loading.set(false);
-        console.error('Countries error:', err);
+
       }
     });
   }
@@ -298,7 +300,7 @@ export class CountriesAppComponent implements OnInit {
         this.loadingDetail.set(false);
       },
       error: (err) => {
-        console.error('Error fetching full country details:', err);
+
         // Keep the basic country data and still load borders
         this.loadBorderCountries(country);
         this.loadingDetail.set(false);
@@ -317,7 +319,7 @@ export class CountriesAppComponent implements OnInit {
         this.borderCountries.set(data);
       },
       error: (err) => {
-        console.error('Error loading border countries:', err);
+
         this.borderCountries.set([]);
       }
     });
@@ -352,30 +354,8 @@ export class CountriesAppComponent implements OnInit {
   }
 
   // Helper methods
-  formatPopulation(population?: number): string {
-    return this.countriesService.formatPopulation(population);
-  }
-
-  formatArea(area?: number): string {
-    return this.countriesService.formatArea(area);
-  }
-
-  getLanguages(country: Country): string {
-    return this.countriesService.getLanguagesString(country.languages);
-  }
-
-  getCurrencies(country: Country): string {
-    return this.countriesService.getCurrenciesString(country.currencies);
-  }
-
   getCapital(country: Country): string {
     return this.countriesService.getCapitalString(country.capital);
-  }
-
-  getNativeName(country: Country): string {
-    if (!country.name?.nativeName) return country.name?.common || 'N/A';
-    const firstNative = Object.values(country.name.nativeName)[0];
-    return firstNative ? firstNative.common : country.name?.common || 'N/A';
   }
 
   getNativeNames(country: Country): { lang: string; official: string; common: string }[] {
@@ -465,15 +445,6 @@ export class CountriesAppComponent implements OnInit {
     return unique.filter(s => s !== country.name.common && s !== country.cca2 && s !== country.cca3);
   }
 
-  getTranslations(country: Country): { lang: string; name: string }[] {
-    if (!country.translations) return [];
-    return Object.entries(country.translations)
-      .slice(0, 8)
-      .map(([code, trans]) => ({
-        lang: code.toUpperCase(),
-        name: trans.common
-      }));
-  }
 
   getAllTranslations(country: Country): { lang: string; common: string; official: string }[] {
     if (!country.translations) return [];
@@ -537,4 +508,3 @@ export class CountriesAppComponent implements OnInit {
     this.loadAllCountries();
   }
 }
-

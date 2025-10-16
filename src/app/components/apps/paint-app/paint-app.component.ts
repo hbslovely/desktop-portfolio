@@ -19,7 +19,7 @@ interface DrawingPath {
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './paint-app.component.html',
-  styleUrl: './paint-app.component.scss'
+  styleUrl: './paint-app.component.scss',
 })
 export class PaintAppComponent implements AfterViewInit {
   @ViewChild('canvas', { static: false }) canvasRef!: ElementRef<HTMLCanvasElement>;

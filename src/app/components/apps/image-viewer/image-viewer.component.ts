@@ -6,7 +6,7 @@ import { CommonModule } from '@angular/common';
   standalone: true,
   imports: [CommonModule],
   templateUrl: './image-viewer.component.html',
-  styleUrl: './image-viewer.component.scss'
+  styleUrl: './image-viewer.component.scss',
 })
 export class ImageViewerComponent implements OnInit {
   @Input() imagePath = '';

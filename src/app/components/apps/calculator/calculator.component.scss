@@ -1,50 +1,75 @@
 .calculator {
   background: #000000;
-  padding: 20px;
+  padding: 15px;
   border-radius: 8px;
   width: 100%;
-  max-width: 300px;
-  margin: 0 auto;
+  height: 100%;
   box-sizing: border-box;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .display {
   background: #000000;
   color: #ffffff;
-  font-size: 36px;
+  padding: 12px 15px;
+  margin-bottom: 8px;
+  border-radius: 4px;
+  min-height: 50px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.memory-indicator {
+  position: absolute;
+  top: 6px;
+  left: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #ff9500;
+  background: rgba(255, 149, 0, 0.2);
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+.display-value {
+  font-size: 28px;
   font-weight: 300;
   text-align: right;
-  padding: 20px;
-  margin-bottom: 10px;
-  border-radius: 4px;
-  min-height: 60px;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  overflow: hidden;
+  width: 100%;
+  word-break: break-all;
 }
 
 .buttons {
   display: flex;
   flex-direction: column;
   gap: 1px;
+  flex: 1;
+  overflow-y: auto;
 }
 
 .button-row {
   display: flex;
   gap: 1px;
+  flex: 1;
+  min-height: 45px;
 }
 
 .calc-button {
   flex: 1;
-  height: 60px;
   border: none;
-  font-size: 24px;
+  font-size: 18px;
   font-weight: 400;
   cursor: pointer;
   transition: all 0.1s ease;
   border-radius: 0;
+  min-height: 45px;
   
   &:hover {
     opacity: 0.8;
@@ -68,9 +93,33 @@
   &.function {
     background: #a6a6a6;
     color: #000000;
+    font-size: 20px;
     
     &:hover {
       background: #b8b8b8;
+    }
+  }
+  
+  // Memory buttons (blue-gray)
+  &.memory {
+    background: #4a90e2;
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 500;
+    
+    &:hover {
+      background: #5ba3f5;
+    }
+  }
+  
+  // Scientific buttons (purple)
+  &.scientific {
+    background: #9b59b6;
+    color: #ffffff;
+    font-size: 15px;
+    
+    &:hover {
+      background: #ae6fc9;
     }
   }
   
@@ -109,5 +158,122 @@
   
   &:last-child {
     border-bottom-right-radius: 4px;
+  }
+}
+
+// History Toggle
+.history-toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  gap: 8px;
+  flex-shrink: 0;
+  
+  .toggle-btn {
+    flex: 1;
+    background: #2c2c2c;
+    color: #ffffff;
+    border: 1px solid #444;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+    
+    &:hover {
+      background: #3a3a3a;
+      border-color: #666;
+    }
+    
+    &.active {
+      background: #ff9500;
+      border-color: #ff9500;
+      color: #000;
+    }
+    
+    i {
+      font-size: 10px;
+    }
+  }
+  
+  .clear-history-btn {
+    background: #e74c3c;
+    color: #ffffff;
+    border: none;
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    
+    &:hover {
+      background: #c0392b;
+    }
+    
+    i {
+      font-size: 10px;
+    }
+  }
+}
+
+// History Panel
+.history-panel {
+  background: #1a1a1a;
+  border-radius: 4px;
+  margin-bottom: 8px;
+  max-height: 150px;
+  overflow-y: auto;
+  border: 1px solid #333;
+  flex-shrink: 0;
+  
+  .history-empty {
+    padding: 20px 15px;
+    text-align: center;
+    color: #666;
+    font-size: 12px;
+  }
+  
+  .history-list {
+    padding: 8px 0;
+  }
+  
+  .history-item {
+    padding: 8px 15px;
+    color: #ffffff;
+    font-size: 12px;
+    font-family: 'Courier New', monospace;
+    border-bottom: 1px solid #2a2a2a;
+    transition: background 0.2s ease;
+    
+    &:last-child {
+      border-bottom: none;
+    }
+    
+    &:hover {
+      background: #2a2a2a;
+    }
+  }
+  
+  // Custom scrollbar
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: #1a1a1a;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: #444;
+    border-radius: 4px;
+    
+    &:hover {
+      background: #666;
+    }
   }
 }

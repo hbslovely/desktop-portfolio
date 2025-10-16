@@ -121,29 +121,6 @@
     </app-explorer>
   </app-window>
 
-  <!-- Family Finance Tracker Window -->
-  <app-window
-    *ngIf="showCreditWindow()"
-    title="Family Finance Tracker"
-    icon="pi pi-wallet"
-    statusText="Ready"
-    [initialWidth]="900"
-    [initialHeight]="700"
-    [initialX]="200"
-    [initialY]="100"
-    [maximizable]="true"
-    [zIndex]="getWindowZIndex('credit')"
-    [isFocused]="isWindowFocused('credit')"
-    [isMinimizedExternal]="isWindowMinimized('credit')"
-    (onClose)="onCloseCreditWindow()"
-    (onMinimize)="onMinimizeCreditWindow()"
-    (onMaximize)="onMaximizeCreditWindow()"
-    (onRestore)="onRestoreCreditWindow()"
-    (onFocus)="onFocusCreditWindow()">
-
-    <app-credit-app (onOpenMyInfo)="openApp('my-info')"></app-credit-app>
-  </app-window>
-
   <!-- Paint Window -->
   <app-window
     *ngIf="showPaintWindow()"
@@ -165,29 +142,6 @@
     (onFocus)="onFocusPaintWindow()">
 
     <app-paint-app></app-paint-app>
-  </app-window>
-
-  <!-- Credits Window -->
-  <app-window
-    *ngIf="showCreditsWindow()"
-    title="Credits"
-    icon="pi pi-star"
-    statusText="Rolling..."
-    [initialWidth]="1000"
-    [initialHeight]="700"
-    [initialX]="100"
-    [initialY]="50"
-    [maximizable]="true"
-    [zIndex]="getWindowZIndex('credits')"
-    [isFocused]="isWindowFocused('credits')"
-    [isMinimizedExternal]="isWindowMinimized('credits')"
-    (onClose)="onCloseCreditsWindow()"
-    (onMinimize)="onMinimizeCreditsWindow()"
-    (onMaximize)="onMaximizeCreditsWindow()"
-    (onRestore)="onRestoreCreditsWindow()"
-    (onFocus)="onFocusCreditsWindow()">
-
-    <app-credits-app></app-credits-app>
   </app-window>
 
   <!-- Ho Chi Minh City Window -->
@@ -748,17 +702,6 @@
       </button>
 
       <button
-        *ngIf="showCreditWindow() || isWindowMinimized('credit')"
-        class="taskbar-app"
-        [class.active]="isWindowFocused('credit')"
-        [class.minimized]="isWindowMinimized('credit')"
-        (click)="toggleTaskbarApp('credit')"
-        title="Finance Tracker">
-        <i class="pi pi-wallet"></i>
-        <span>Finance Tracker</span>
-      </button>
-
-      <button
         *ngIf="showPaintWindow() || isWindowMinimized('paint')"
         class="taskbar-app"
         [class.active]="isWindowFocused('paint')"
@@ -1053,11 +996,7 @@
 
       <app-machine-info *ngSwitchCase="'machine-info'"></app-machine-info>
 
-      <app-credit-app *ngSwitchCase="'credit'" (onOpenMyInfo)="openApp('my-info')"></app-credit-app>
-
       <app-paint-app *ngSwitchCase="'paint'"></app-paint-app>
-
-      <app-credits-app *ngSwitchCase="'credits'"></app-credits-app>
 
       <app-hcmc-app *ngSwitchCase="'hcmc'"></app-hcmc-app>
 
@@ -1069,12 +1008,11 @@
       <app-task-manager *ngSwitchCase="'task-manager'"></app-task-manager>
       <app-weather-app *ngSwitchCase="'weather'"></app-weather-app>
       <app-dictionary-app *ngSwitchCase="'dictionary'"></app-dictionary-app>
-      <app-link-shortener *ngSwitchCase="'link-shortener'"></app-link-shortener>
       <app-countries-app *ngSwitchCase="'countries'"></app-countries-app>
 
       <app-yugioh-app *ngSwitchCase="'yugioh'"></app-yugioh-app>
 
-      <app-yugioh-card-detail 
+      <app-yugioh-card-detail
         *ngSwitchCase="'yugioh-card-detail'"
         [cardId]="window.data?.cardId"
         [cardName]="window.data?.cardName">

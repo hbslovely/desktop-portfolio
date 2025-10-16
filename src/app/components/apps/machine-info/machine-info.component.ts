@@ -6,7 +6,7 @@ import { CommonModule } from '@angular/common';
   standalone: true,
   imports: [CommonModule],
   templateUrl: './machine-info.component.html',
-  styleUrl: './machine-info.component.scss'
+  styleUrl: './machine-info.component.scss',
 })
 export class MachineInfoComponent implements OnInit {
   // System information
@@ -116,7 +116,7 @@ export class MachineInfoComponent implements OnInit {
   copyToClipboard(text: string) {
     navigator.clipboard.writeText(text).then(() => {
       // Could add a toast notification here
-      console.log('Copied to clipboard:', text);
+
     });
   }
 }

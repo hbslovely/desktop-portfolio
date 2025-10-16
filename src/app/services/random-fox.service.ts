@@ -25,7 +25,7 @@ export class RandomFoxService {
   getRandomFox(): Observable<RandomFox> {
     return this.http.get<RandomFox>(this.apiUrl).pipe(
       catchError(error => {
-        console.error('Random Fox API error:', error);
+
         // Return fallback image
         return of({
           image: 'https://randomfox.ca/images/1.jpg',
@@ -48,7 +48,7 @@ export class RandomFoxService {
           foxes.push(fox);
         }
       } catch (error) {
-        console.error(`Error fetching fox ${i + 1}:`, error);
+
       }
     }
     

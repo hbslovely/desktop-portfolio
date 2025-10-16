@@ -48,7 +48,7 @@ export class SearchService {
       .pipe(
         map(data => this.flattenFileSystem(data.fileSystem)),
         catchError(error => {
-          console.error('Error loading file system data:', error);
+
           return of([]);
         })
       )

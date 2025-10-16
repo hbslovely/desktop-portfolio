@@ -29,7 +29,7 @@ export class SettingsDialogComponent implements OnChanges {
   @Output() onSettingsChange = new EventEmitter<SettingsData>();
 
   ngOnChanges() {
-    console.log('Settings dialog visibility changed:', this.isVisible);
+
     
     // Reload settings when dialog becomes visible
     if (this.isVisible) {
@@ -113,7 +113,7 @@ export class SettingsDialogComponent implements OnChanges {
   ngOnInit() {
     // Load saved settings from localStorage
     this.loadSettings();
-    console.log('Settings dialog component initialized');
+
   }
 
   loadSettings() {
@@ -121,7 +121,7 @@ export class SettingsDialogComponent implements OnChanges {
     if (savedSettings) {
       try {
         const settings = JSON.parse(savedSettings);
-        console.log('Loading settings from localStorage:', settings);
+
         
         // Store original settings for cancel functionality
         this.originalSettings.set(settings);
@@ -135,7 +135,7 @@ export class SettingsDialogComponent implements OnChanges {
         // Emit the loaded settings to parent component
         this.onSettingsChange.emit(settings);
       } catch (error) {
-        console.error('Error loading settings:', error);
+
         // Use default settings if there's an error
         this.setDefaultSettings();
       }
@@ -167,7 +167,7 @@ export class SettingsDialogComponent implements OnChanges {
 
   saveSettings() {
     const settings = this.settingsData();
-    console.log('Saving settings to localStorage:', settings);
+
     this.saveSettingsToStorage(settings);
     this.onSettingsChange.emit(settings);
   }
@@ -227,7 +227,7 @@ export class SettingsDialogComponent implements OnChanges {
   // Apply button - save settings but keep dialog open
   onApply() {
     const settings = this.settingsData();
-    console.log('Applying settings:', settings);
+
     this.saveSettingsToStorage(settings);
     
     // Update original settings to current values

@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, OnDestroy, signal, computed } from '@angular/core';
+import { Component, Input, OnInit, OnDestroy, signal, computed, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 
@@ -7,7 +7,8 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
   standalone: true,
   imports: [CommonModule],
   templateUrl: './iframe-app.component.html',
-  styleUrl: './iframe-app.component.scss'
+  styleUrl: './iframe-app.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class IframeAppComponent implements OnInit, OnDestroy {
   @Input() set url(value: string) {
@@ -59,7 +60,7 @@ export class IframeAppComponent implements OnInit, OnDestroy {
     // Set timeout to detect if iframe fails to load after 10 seconds
     this.loadingTimeout = setTimeout(() => {
       if (this.isLoading()) {
-        console.warn('Iframe loading timeout - treating as error');
+
         this.isLoading.set(false);
         this.hasError.set(true);
       }
@@ -67,7 +68,7 @@ export class IframeAppComponent implements OnInit, OnDestroy {
   }
   
   onIframeLoad() {
-    console.log('Iframe loaded successfully');
+
     if (this.loadingTimeout) {
       clearTimeout(this.loadingTimeout);
     }
@@ -76,7 +77,7 @@ export class IframeAppComponent implements OnInit, OnDestroy {
   }
   
   onIframeError() {
-    console.error('Iframe error occurred');
+
     if (this.loadingTimeout) {
       clearTimeout(this.loadingTimeout);
     }

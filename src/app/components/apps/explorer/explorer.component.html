@@ -116,11 +116,11 @@
               </div>
               
               <div class="item-size">
-                {{ item.type === 'folder' ? '—' : formatFileSize(item.size) }}
+                {{ item.type === 'folder' ? '—' : item.size }}
               </div>
               
               <div class="item-date">
-                {{ formatDate(item.modified) }}
+                {{ item.modified | formatDate }}
               </div>
             </div>
           </div>
@@ -176,7 +176,7 @@
           <div class="folder-info">
             <p><strong>Type:</strong> Folder</p>
             <p><strong>Items:</strong> {{ selectedItem()?.children?.length || 0 }}</p>
-            <p><strong>Modified:</strong> {{ formatDate(selectedItem()?.modified) }}</p>
+            <p><strong>Modified:</strong> {{ selectedItem()?.modified | formatDate }}</p>
           </div>
         </div>
         
@@ -186,8 +186,8 @@
           </div>
           <div class="file-info">
             <p><strong>Type:</strong> {{ getFileTypeDisplay(selectedItem()?.name || '') }}</p>
-            <p><strong>Size:</strong> {{ formatFileSize(selectedItem()?.size) }}</p>
-            <p><strong>Modified:</strong> {{ formatDate(selectedItem()?.modified) }}</p>
+            <p><strong>Size:</strong> {{ selectedItem()?.size | formatFileSize }}</p>
+            <p><strong>Modified:</strong> {{ selectedItem()?.modified | formatDate }}</p>
           </div>
           
           <!-- Image Preview -->
@@ -213,7 +213,7 @@
       <span *ngIf="isSearching()" class="search-status">{{ searchStatus }}</span>
     </div>
     <div class="selected-info" *ngIf="selectedItem()">
-      <span>{{ selectedItem()?.name }} - {{ selectedItem()?.type === 'file' ? formatFileSize(selectedItem()?.size) : 'Folder' }}</span>
+      <span>{{ selectedItem()?.name }} - {{ selectedItem()?.type === 'file' ? (selectedItem()?.size | formatFileSize) : 'Folder' }}</span>
     </div>
   </div>
 

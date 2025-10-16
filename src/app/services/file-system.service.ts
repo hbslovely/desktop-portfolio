@@ -58,14 +58,14 @@ export class FileSystemService {
   
   private async loadFileSystemFromJson(): Promise<void> {
     try {
-      console.log('FileSystemService: Loading file system from JSON...');
+
       const data = await firstValueFrom(
         this.http.get<{fileSystem: FileSystemItem}>('assets/json/explore.json')
       );
       this.fileSystemSignal.set(data.fileSystem);
-      console.log('FileSystemService: File system loaded successfully');
+
     } catch (error) {
-      console.error('FileSystemService: Failed to load file system:', error);
+
       throw error;
     } finally {
       this.loadPromise = null;
@@ -79,17 +79,17 @@ export class FileSystemService {
     
     const fs = this.fileSystemSignal();
     if (!fs) {
-      console.error('File system not initialized after loading attempt');
+
       return;
     }
     
-    console.log('Adding file to file system:', newFile);
+
     
     // Find the parent folder
     const parentPath = newFile.path.substring(0, newFile.path.lastIndexOf('/')) || '/';
     const parent = parentPath === '/' ? fs : this.findItemByPath(fs, parentPath);
     
-    console.log('Parent path:', parentPath, 'Parent found:', !!parent);
+
     
     if (parent) {
       // Ensure children array exists
@@ -113,11 +113,11 @@ export class FileSystemService {
       
       if (existingIndex >= 0) {
         // Update existing file
-        console.log('Updating existing file at index:', existingIndex);
+
         parent.children[existingIndex] = fileItem;
       } else {
         // Add new file
-        console.log('Adding new file to parent');
+
         parent.children.push(fileItem);
       }
       
@@ -128,9 +128,9 @@ export class FileSystemService {
       // This ensures Angular's change detection picks up the change
       const updatedFs = JSON.parse(JSON.stringify(fs));
       this.fileSystemSignal.set(updatedFs);
-      console.log('File system updated, new file count in parent:', parent.children.length);
+
     } else {
-      console.error('Parent folder not found:', parentPath);
+
     }
   }
   

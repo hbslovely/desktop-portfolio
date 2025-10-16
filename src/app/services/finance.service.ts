@@ -284,7 +284,7 @@ export class FinanceService {
         }));
         this.transactionsSubject.next(transactions);
       } catch (error) {
-        console.error('Error loading from storage:', error);
+
         this.loadSampleData();
       }
     } else {

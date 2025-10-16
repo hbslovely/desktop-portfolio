@@ -56,7 +56,7 @@ export class YugiohCardDetailComponent implements OnInit {
           this.isLoading.set(false);
         },
         error: (err) => {
-          console.error('Error loading card:', err);
+
           this.error.set('Failed to load card details');
           this.isLoading.set(false);
         }
@@ -72,7 +72,7 @@ export class YugiohCardDetailComponent implements OnInit {
           this.isLoading.set(false);
         },
         error: (err) => {
-          console.error('Error loading card:', err);
+
           this.error.set('Failed to load card details');
           this.isLoading.set(false);
         }

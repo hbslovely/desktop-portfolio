@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, signal, computed, OnDestroy } from '@angular/core';
+import { Component, Input, Output, EventEmitter, signal, computed, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 export interface DesktopIconData {
@@ -20,7 +20,8 @@ export interface IconContextMenuEvent {
   standalone: true,
   imports: [CommonModule],
   templateUrl: './desktop-icon.component.html',
-  styleUrl: './desktop-icon.component.scss'
+  styleUrl: './desktop-icon.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class DesktopIconComponent implements OnDestroy {
   @Input() iconData!: DesktopIconData;
@@ -78,7 +79,7 @@ export class DesktopIconComponent implements OnDestroy {
   onIconDoubleClick() {
     // Prevent double-click if we just finished dragging or are renaming
     if (!this.isRenaming() && !this.dragStarted()) {
-      console.log('Double-click detected on:', this.iconData.name);
+
       this.onDoubleClick.emit(this.iconData);
     }
   }

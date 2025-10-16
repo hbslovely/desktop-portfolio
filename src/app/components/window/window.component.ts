@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, signal, computed, OnInit, OnDestroy, OnChanges } from '@angular/core';
+import { Component, Input, Output, EventEmitter, signal, computed, OnInit, OnDestroy, OnChanges, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 export interface WindowState {
@@ -13,7 +13,8 @@ export interface WindowState {
   standalone: true,
   imports: [CommonModule],
   templateUrl: './window.component.html',
-  styleUrl: './window.component.scss'
+  styleUrl: './window.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class WindowComponent implements OnInit, OnDestroy, OnChanges {
   @Input() title = 'Window';
@@ -118,11 +119,11 @@ export class WindowComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   ngOnChanges() {
-    console.log('Window component ngOnChanges - isMinimizedExternal:', this.isMinimizedExternal, 'previous:', this.previousIsMinimizedExternal);
+
     
     // Check if external minimize state changed from true to false
     if (this.previousIsMinimizedExternal && !this.isMinimizedExternal) {
-      console.log('External minimize state changed from true to false, resetting internal state');
+
       this.resetMinimizeState();
     }
     

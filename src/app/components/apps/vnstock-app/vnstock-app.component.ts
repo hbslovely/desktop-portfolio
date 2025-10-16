@@ -4,13 +4,14 @@ import { FormsModule } from '@angular/forms';
 import { FireantService, StockData, SymbolFundamental, SymbolInfo, SymbolPost, HistoricalQuote, InstitutionProfile, SearchResult, SymbolEvent, MacroDataType, MacroDataInfo, SymbolHolder } from '../../../services/fireant.service';
 import { Subject, interval } from 'rxjs';
 import { takeUntil, debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { FormatNumberVNPipe } from '../../../pipes/format-number-vn.pipe';
 
 type TabType = 'search' | 'macro';
 
 @Component({
   selector: 'app-vnstock-app',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, FormatNumberVNPipe],
   templateUrl: './vnstock-app.component.html',
   styleUrls: ['./vnstock-app.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -100,13 +101,13 @@ export class VnstockAppComponent implements OnInit, OnDestroy {
               this.loadTabData();
             },
             error => {
-              console.error('Auto-refresh error:', error);
+
             }
           );
       }
     } catch (error) {
       this.error = 'Không thể kết nối đến FireAnt API. Vui lòng kiểm tra kết nối mạng và thử lại.';
-      console.error('Initialization error:', error);
+
       this.stocks = [];
       this.filteredStocks = [];
       this.markForCheck();
@@ -131,7 +132,7 @@ export class VnstockAppComponent implements OnInit, OnDestroy {
             this.markForCheck();
           },
           error => {
-            console.error('Search error:', error);
+
             this.searchResults = [];
             this.showSearchResults = false;
             this.markForCheck();
@@ -182,7 +183,7 @@ export class VnstockAppComponent implements OnInit, OnDestroy {
     this.error = '';
 
     try {
-      console.log('Loading macro data types...');
+
       const types = await this.fireantService.getMacroDataTypes().toPromise();
 
       if (!types || types.length === 0) {
@@ -191,7 +192,7 @@ export class VnstockAppComponent implements OnInit, OnDestroy {
       } else {
         this.macroDataTypes = types;
         this.lastUpdate = new Date();
-        console.log(`✅ Loaded ${types.length} macro data types`);
+
 
         // Auto-load first type if available
         if (types.length > 0 && !this.selectedMacroType) {
@@ -213,7 +214,7 @@ export class VnstockAppComponent implements OnInit, OnDestroy {
     this.error = '';
 
     try {
-      console.log(`Loading macro data info for ${type}...`);
+
       const info = await this.fireantService.getMacroDataInfo(type).toPromise();
 
       if (!info || info.length === 0) {
@@ -224,7 +225,7 @@ export class VnstockAppComponent implements OnInit, OnDestroy {
         this.macroDataInfo = info;
         this.filteredMacroDataInfo = [...this.macroDataInfo];
         this.lastUpdate = new Date();
-        console.log(`✅ Loaded ${info.length} macro data items`);
+
       }
     } catch (error: any) {
       this.handleApiError(error);
@@ -280,7 +281,7 @@ export class VnstockAppComponent implements OnInit, OnDestroy {
 
     try {
       const symbol = this.fundamentalSymbol.trim().toUpperCase();
-      console.log(`🔍 Searching comprehensive data for ${symbol}...`);
+
 
       // Calculate date range for historical data
       const endDate = new Date();
@@ -313,43 +314,43 @@ export class VnstockAppComponent implements OnInit, OnDestroy {
       // Handle fundamental data
       if (fundamental.status === 'fulfilled' && fundamental.value) {
         this.fundamentalData = fundamental.value;
-        console.log('✅ Fundamental data loaded');
+
       }
 
       // Handle symbol info
       if (symbolInfoData.status === 'fulfilled' && symbolInfoData.value) {
         this.symbolInfo = symbolInfoData.value;
-        console.log('✅ Symbol info loaded');
+
       }
 
       // Handle posts
       if (posts.status === 'fulfilled' && posts.value) {
         this.symbolPosts = posts.value;
-        console.log(`✅ Loaded ${this.symbolPosts.length} posts`);
+
       }
 
       // Handle events
       if (events.status === 'fulfilled' && events.value) {
         this.symbolEvents = events.value;
-        console.log(`✅ Loaded ${this.symbolEvents.length} events`);
+
       }
 
       // Handle holders
       if (holders.status === 'fulfilled' && holders.value) {
         this.symbolHolders = holders.value;
-        console.log(`✅ Loaded ${this.symbolHolders.length} major holders`);
+
       }
 
       // Handle historical quotes
       if (historical.status === 'fulfilled' && historical.value) {
         this.historicalQuotes = historical.value;
-        console.log(`✅ Loaded ${this.historicalQuotes.length} historical quotes`);
+
       }
 
       // Handle institution profile
       if (institution.status === 'fulfilled' && institution.value) {
         this.institutionProfile = institution.value;
-        console.log('✅ Institution profile loaded');
+
       }
 
       // Check if we got at least some data
@@ -369,7 +370,7 @@ export class VnstockAppComponent implements OnInit, OnDestroy {
 
     } catch (error: any) {
       this.error = `Không tìm thấy thông tin cho mã ${this.fundamentalSymbol}`;
-      console.error('Error loading fundamental data:', error);
+
     } finally {
       this.fundamentalLoading = false;
       this.markForCheck();
@@ -392,7 +393,7 @@ export class VnstockAppComponent implements OnInit, OnDestroy {
     } else {
       this.error = `Lỗi khi tải dữ liệu (${error.status || 'Unknown'}). Vui lòng thử lại.`;
     }
-    console.error('API Error:', error);
+
     this.stocks = [];
     this.filteredStocks = [];
   }
@@ -401,10 +402,6 @@ export class VnstockAppComponent implements OnInit, OnDestroy {
     if (change > 0) return 'positive';
     if (change < 0) return 'negative';
     return 'neutral';
-  }
-
-  formatNumber(value: number): string {
-    return new Intl.NumberFormat('vi-VN').format(value);
   }
 
   formatPrice(value: number): string {
@@ -547,7 +544,7 @@ export class VnstockAppComponent implements OnInit, OnDestroy {
         priceChange = todayClose - todayOpen;
         perPriceChange = ((todayClose - todayOpen) / todayOpen) * 100;
 
-        console.log(`📊 Only today's data available: Close=${todayClose}, Open=${todayOpen}, Change=${priceChange}`);
+
       }
     }
 
@@ -570,7 +567,7 @@ export class VnstockAppComponent implements OnInit, OnDestroy {
       volume = latestQuote.volume || latestQuote.priceBasic?.volume || 0;
 
       if (volume > 0) {
-        console.log(`📊 Got volume from historical data: ${volume}`);
+
       }
     }
 

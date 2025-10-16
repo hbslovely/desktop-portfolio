@@ -1,6 +1,7 @@
-import { Component, OnInit, signal, computed } from '@angular/core';
+import { Component, OnInit, signal, computed, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
+import { FormatNumberPipe } from '../../../pipes/format-number.pipe';
 
 // Article interface for Dev.to
 interface Article {
@@ -55,9 +56,10 @@ interface DevToTag {
 @Component({
   selector: 'app-news-app',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormatNumberPipe],
   templateUrl: './news-app.component.html',
-  styleUrl: './news-app.component.scss'
+  styleUrl: './news-app.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class NewsAppComponent implements OnInit {
   private readonly DEVTO_API = 'https://dev.to/api/articles';
@@ -175,7 +177,7 @@ export class NewsAppComponent implements OnInit {
         this.loading.set(false);
       },
       error: (err) => {
-        console.error('DEV.to API error:', err);
+
         this.error.set('Failed to load articles. Please try again later.');
         this.loading.set(false);
       }
@@ -217,7 +219,7 @@ export class NewsAppComponent implements OnInit {
         }
       });
     } catch (error) {
-      console.error('Error fetching article details:', error);
+
       this.articleError.set('Failed to load article details.');
       this.articleLoading.set(false);
     }
@@ -282,12 +284,5 @@ export class NewsAppComponent implements OnInit {
 
   clearSearch() {
     this.searchTerm.set('');
-  }
-
-  formatNumber(num: number): string {
-    if (num >= 1000) {
-      return (num / 1000).toFixed(1) + 'k';
-    }
-    return num.toString();
   }
 }

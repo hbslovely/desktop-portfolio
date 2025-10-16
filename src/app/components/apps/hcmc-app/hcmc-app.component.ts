@@ -25,7 +25,7 @@ interface FoodItem {
   standalone: true,
   imports: [CommonModule],
   templateUrl: './hcmc-app.component.html',
-  styleUrl: './hcmc-app.component.scss'
+  styleUrl: './hcmc-app.component.scss',
 })
 export class HcmcAppComponent {
   // Navigation

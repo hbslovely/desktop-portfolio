@@ -7,7 +7,7 @@ import { WeatherService, WeatherData, HourlyData, DailyData } from '../../../ser
   standalone: true,
   imports: [CommonModule],
   templateUrl: './weather-app.component.html',
-  styleUrls: ['./weather-app.component.scss']
+  styleUrls: ['./weather-app.component.scss'],
 })
 export class WeatherAppComponent implements OnInit {
   weatherData = signal<WeatherData | null>(null);
@@ -42,13 +42,13 @@ export class WeatherAppComponent implements OnInit {
         error: (err) => {
           this.error.set('Failed to load weather data. Please try again.');
           this.loading.set(false);
-          console.error('Weather error:', err);
+
         }
       });
     } catch (err) {
       this.error.set('Failed to get location. Please enable location services.');
       this.loading.set(false);
-      console.error('Location error:', err);
+
     }
   }
 
@@ -67,7 +67,7 @@ export class WeatherAppComponent implements OnInit {
       const data = await response.json();
       
       if (data.error) {
-        console.error('Geocoding API error:', data.error);
+
         this.locationName.set(`${cleanLat.toFixed(2)}°, ${cleanLon.toFixed(2)}°`);
         return;
       }
@@ -80,7 +80,7 @@ export class WeatherAppComponent implements OnInit {
         this.locationName.set(`${cleanLat.toFixed(2)}°, ${cleanLon.toFixed(2)}°`);
       }
     } catch (error) {
-      console.error('Reverse geocoding error:', error);
+
       const cleanLat = parseFloat(String(lat).replace(/[NSEW]/gi, ''));
       const cleanLon = parseFloat(String(lon).replace(/[NSEW]/gi, ''));
       this.locationName.set(`${cleanLat.toFixed(2)}°, ${cleanLon.toFixed(2)}°`);
@@ -163,4 +163,3 @@ export class WeatherAppComponent implements OnInit {
     return new Date().toLocaleTimeString();
   }
 }
-

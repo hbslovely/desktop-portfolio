@@ -104,7 +104,7 @@ export class CountriesService {
       .pipe(
         map(countries => this.sortCountries(countries)),
         catchError(error => {
-          console.error('Error fetching all countries:', error);
+
           return of([]);
         })
       );
@@ -121,7 +121,7 @@ export class CountriesService {
       .pipe(
         map(countries => this.sortCountries(countries)),
         catchError(error => {
-          console.error('Error searching by name:', error);
+
           return of([]);
         })
       );
@@ -135,7 +135,7 @@ export class CountriesService {
       .pipe(
         map(countries => this.sortCountries(countries)),
         catchError(error => {
-          console.error('Error fetching by region:', error);
+
           return of([]);
         })
       );
@@ -149,7 +149,7 @@ export class CountriesService {
       .pipe(
         map(countries => this.sortCountries(countries)),
         catchError(error => {
-          console.error('Error fetching by subregion:', error);
+
           return of([]);
         })
       );
@@ -166,7 +166,7 @@ export class CountriesService {
       .pipe(
         map(countries => this.sortCountries(countries)),
         catchError(error => {
-          console.error('Error searching by capital:', error);
+
           return of([]);
         })
       );
@@ -180,7 +180,7 @@ export class CountriesService {
       .pipe(
         map(countries => this.sortCountries(countries)),
         catchError(error => {
-          console.error('Error fetching by currency:', error);
+
           return of([]);
         })
       );
@@ -194,7 +194,7 @@ export class CountriesService {
       .pipe(
         map(countries => this.sortCountries(countries)),
         catchError(error => {
-          console.error('Error fetching by language:', error);
+
           return of([]);
         })
       );
@@ -209,7 +209,7 @@ export class CountriesService {
       .pipe(
         map(country => country || null),
         catchError(error => {
-          console.error('Error fetching by code:', error);
+
           return of(null);
         })
       );
@@ -227,7 +227,7 @@ export class CountriesService {
       .pipe(
         map(countries => this.sortCountries(countries)),
         catchError(error => {
-          console.error('Error fetching by codes:', error);
+
           return of([]);
         })
       );

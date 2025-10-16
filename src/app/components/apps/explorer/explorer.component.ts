@@ -2,6 +2,8 @@ import { Component, OnInit, Output, EventEmitter, Input, signal, computed, effec
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { FileSystemService } from '../../../services/file-system.service';
+import { FormatDatePipe } from '../../../pipes/format-date.pipe';
+import { FormatFileSizePipe } from '../../../pipes/format-file-size.pipe';
 
 export interface FileSystemItem {
   type: 'file' | 'folder';
@@ -36,9 +38,9 @@ export interface ContextMenuEvent {
 @Component({
   selector: 'app-explorer',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormatDatePipe, FormatFileSizePipe],
   templateUrl: './explorer.component.html',
-  styleUrl: './explorer.component.scss'
+  styleUrl: './explorer.component.scss',
 })
 export class ExplorerComponent implements OnInit {
   @Input() externalFileSystem: FileSystemItem | null = null;
@@ -84,11 +86,11 @@ export class ExplorerComponent implements OnInit {
     effect(() => {
       const sharedFileSystem = this.fileSystemService.getFileSystem()();
       if (sharedFileSystem) {
-        console.log('Explorer: Received file system update from service');
+
         // Always update from shared file system if available
         if (!this.externalFileSystem) {
           this.fileSystem.set(sharedFileSystem);
-          console.log('Explorer: Local file system updated');
+
         }
       }
     }, { allowSignalWrites: true });
@@ -224,14 +226,14 @@ export class ExplorerComponent implements OnInit {
     this.http.get<{fileSystem: FileSystemItem}>('assets/json/explore.json')
       .subscribe({
         next: (data) => {
-          console.log('Explorer: Loaded file system from JSON');
+
           this.fileSystem.set(data.fileSystem);
           // Also update the shared file system service
           this.fileSystemService.setFileSystem(data.fileSystem);
-          console.log('Explorer: Shared file system service updated');
+
         },
         error: (error) => {
-          console.error('Failed to load file system:', error);
+
         }
       });
   }
@@ -298,17 +300,15 @@ export class ExplorerComponent implements OnInit {
     const fileName = item.name.toLowerCase();
     const fileExtension = fileName.split('.').pop() || '';
     
-    console.log('Opening file:', item.name, 'Extension:', fileExtension);
-    console.log('File content path:', item.content);
     
     // Check if this is a virtual file
     if (item.content?.startsWith('virtual-file://')) {
       const virtualPath = item.content.replace('virtual-file://', '');
-      console.log('Loading virtual file from localStorage:', virtualPath);
+
       
       const content = this.fileSystemService.loadVirtualFile(virtualPath);
       if (content) {
-        console.log('Virtual file content loaded successfully');
+
         // Create a modified item with the actual content
         const itemWithContent = {
           ...item,
@@ -323,7 +323,7 @@ export class ExplorerComponent implements OnInit {
         });
         return;
       } else {
-        console.error('Failed to load virtual file content');
+
       }
     }
     
@@ -387,14 +387,6 @@ export class ExplorerComponent implements OnInit {
     this.viewMode.set(this.viewMode() === 'list' ? 'icons' : 'list');
   }
   
-  formatFileSize(size: string | undefined): string {
-    return size || '';
-  }
-  
-  formatDate(dateStr: string | undefined): string {
-    if (!dateStr) return '';
-    return new Date(dateStr).toLocaleDateString();
-  }
 
   // Context menu methods
   onItemRightClick(event: MouseEvent, item: FileSystemItem) {

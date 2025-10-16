@@ -122,11 +122,11 @@
           <div class="featured-stats">
             <span class="stat" *ngIf="filteredArticles()[0].reactions">
               <i class="pi pi-heart-fill"></i>
-              {{ formatNumber(filteredArticles()[0].reactions!) }}
+              {{ filteredArticles()[0].reactions! | formatNumber }}
             </span>
             <span class="stat" *ngIf="filteredArticles()[0].comments_count">
               <i class="pi pi-comment"></i>
-              {{ formatNumber(filteredArticles()[0].comments_count!) }}
+              {{ filteredArticles()[0].comments_count! | formatNumber }}
             </span>
           </div>
         </div>
@@ -161,11 +161,11 @@
             <div class="article-metrics">
               <span class="metric" *ngIf="article.reactions">
                 <i class="pi pi-heart"></i>
-                {{ formatNumber(article.reactions) }}
+                {{ article.reactions | formatNumber }}
               </span>
               <span class="metric" *ngIf="article.comments_count">
                 <i class="pi pi-comment"></i>
-                {{ formatNumber(article.comments_count) }}
+                {{ article.comments_count | formatNumber }}
               </span>
               <span class="metric" *ngIf="article.reading_time">
                 <i class="pi pi-clock"></i>
@@ -250,11 +250,11 @@
             <div class="meta-stats">
               <span class="stat-pill" *ngIf="selectedArticle()?.reactions">
                 <i class="pi pi-heart-fill"></i>
-                {{ formatNumber(selectedArticle()!.reactions!) }}
+                {{ selectedArticle()!.reactions! | formatNumber }}
               </span>
               <span class="stat-pill" *ngIf="selectedArticle()?.comments_count">
                 <i class="pi pi-comment"></i>
-                {{ formatNumber(selectedArticle()!.comments_count!) }}
+                {{ selectedArticle()!.comments_count! | formatNumber }}
               </span>
             </div>
           </div>

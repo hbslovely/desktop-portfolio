@@ -12,7 +12,7 @@ interface CreditItem {
   standalone: true,
   imports: [CommonModule],
   templateUrl: './credits-app.component.html',
-  styleUrl: './credits-app.component.scss'
+  styleUrl: './credits-app.component.scss',
 })
 export class CreditsAppComponent implements OnInit, OnDestroy {
   // Animation settings
@@ -125,13 +125,9 @@ export class CreditsAppComponent implements OnInit, OnDestroy {
     this.startCredits();
   }
   
-  setSpeed(speed: number) {
-    this.scrollSpeed.set(speed);
-  }
-
   onSpeedChange(event: Event) {
     const target = event.target as HTMLInputElement;
-    this.setSpeed(+target.value);
+    this.scrollSpeed.set(+target.value);
   }
   
   private animate() {
@@ -170,7 +166,7 @@ export class CreditsAppComponent implements OnInit, OnDestroy {
     return `translateY(${this.scrollPosition()}px)`;
   }
 
-  trackByIndex(index: number, item: CreditItem): number {
+  trackByIndex(index: number): number {
     return index;
   }
 }

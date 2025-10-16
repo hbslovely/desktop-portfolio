@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, computed } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { YugiohService, YugiohCard, FilterOptions } from '../../../services/yugioh.service';
@@ -9,15 +9,17 @@ import { YugiohCardDetailComponent } from '../yugioh-card-detail/yugioh-card-det
   standalone: true,
   imports: [CommonModule, FormsModule, YugiohCardDetailComponent],
   templateUrl: './yugioh-app.component.html',
-  styleUrl: './yugioh-app.component.scss'
+  styleUrl: './yugioh-app.component.scss',
 })
-export class YugiohAppComponent implements OnInit {
+export class YugiohAppComponent implements OnInit, OnDestroy {
   // State signals
   allCards = signal<YugiohCard[]>([]);
   displayedCards = signal<YugiohCard[]>([]); // Cards currently displayed (lazy loaded)
   filteredCards = signal<YugiohCard[]>([]);
   isLoading = signal(false);
   isLoadingMore = signal(false);
+  
+  private subscriptions: any[] = [];
   
   // Filter state
   searchQuery = signal('');
@@ -76,17 +78,18 @@ export class YugiohAppComponent implements OnInit {
   loadInitialBatch() {
     this.isLoading.set(true);
     // Load all cards for filtering purposes, but only display first batch
-    this.yugiohService.getAllCards().subscribe({
+    const sub = this.yugiohService.getAllCards().subscribe({
       next: (cards) => {
         this.allCards.set(cards);
         this.applyFilters();
         this.isLoading.set(false);
       },
       error: (error) => {
-        console.error('Error loading cards:', error);
+
         this.isLoading.set(false);
       }
     });
+    this.subscriptions.push(sub);
   }
 
   loadMoreCards() {
@@ -150,7 +153,7 @@ export class YugiohAppComponent implements OnInit {
     }
     if (this.selectedAttribute()) filters.attribute = this.selectedAttribute();
     
-    this.yugiohService.searchCards(filters).subscribe({
+    const sub = this.yugiohService.searchCards(filters).subscribe({
       next: (cards) => {
         // Apply frameType filter client-side if needed
         let filteredCards = cards;
@@ -163,10 +166,11 @@ export class YugiohAppComponent implements OnInit {
         this.isLoading.set(false);
       },
       error: (error) => {
-        console.error('Error searching cards:', error);
+
         this.isLoading.set(false);
       }
     });
+    this.subscriptions.push(sub);
   }
 
   sortCards(cards: YugiohCard[], sortBy: string): YugiohCard[] {
@@ -232,16 +236,15 @@ export class YugiohAppComponent implements OnInit {
   }
 
   getRandomCard() {
-    this.yugiohService.getRandomCard().subscribe({
+    const sub = this.yugiohService.getRandomCard().subscribe({
       next: (card) => {
         if (card) {
           this.openCardDetail(card);
         }
       }
     });
+    this.subscriptions.push(sub);
   }
-
-
   getCardImageUrl(card: YugiohCard, size: 'normal' | 'small' | 'cropped' = 'small'): string {
     // Use local images - use the first image ID from card_images array
     const imageId = card.card_images[0]?.id || card.id;
@@ -265,5 +268,14 @@ export class YugiohAppComponent implements OnInit {
     };
     return icons[attribute.toUpperCase()] || '';
   }
+  
+  ngOnDestroy() {
+    // Unsubscribe from all subscriptions
+    this.subscriptions.forEach(sub => sub?.unsubscribe());
+    
+    // Clear large data structures to free memory
+    this.allCards.set([]);
+    this.filteredCards.set([]);
+    this.displayedCards.set([]);
+  }
 }
-
