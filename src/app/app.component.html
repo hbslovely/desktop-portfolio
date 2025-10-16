@@ -290,49 +290,6 @@
     <app-machine-info></app-machine-info>
   </app-window>
 
-  <!-- Floating Clock Widget -->
-  <div *ngIf="showClockWindow()" class="floating-clock-widget">
-    <div class="clock-widget-header">
-      <span class="clock-title">Clock</span>
-      <div class="clock-controls">
-        <button class="mode-toggle-btn" (click)="toggleClockMode()" [title]="clockMode === 'digital' ? 'Switch to Analog' : 'Switch to Digital'">
-          <i [class]="clockMode === 'digital' ? 'pi pi-clock' : 'pi pi-calendar-times'"></i>
-        </button>
-        <button class="close-btn" (click)="onCloseClockWindow()" title="Close">
-          <i class="pi pi-times"></i>
-        </button>
-      </div>
-    </div>
-    <div class="clock-app">
-      <!-- Digital Clock Mode -->
-      <div *ngIf="clockMode === 'digital'" class="digital-clock">
-        <div class="time-display">{{ currentTime }}</div>
-        <div class="date-display">{{ currentDate }}</div>
-      </div>
-
-      <!-- Analog Clock Mode -->
-      <div *ngIf="clockMode === 'analog'" class="analog-clock">
-        <div class="clock-face">
-          <!-- Hour tick marks -->
-          <div class="tick-marks">
-            <div class="tick" *ngFor="let tick of [1,2,3,4,5,6,7,8,9,10,11,12]" [style.transform]="'rotate(' + (tick * 30) + 'deg)'"></div>
-          </div>
-          <!-- Clock numbers -->
-          <div class="clock-numbers">
-            <div class="number" *ngFor="let num of clockNumbers" [style.transform]="'rotate(' + (num * 30) + 'deg) translateY(-75px) rotate(' + (-num * 30) + 'deg)'">{{ num }}</div>
-          </div>
-          <!-- Clock hands -->
-          <div class="clock-hands">
-            <div class="hour-hand" [style.transform]="'rotate(' + hourAngle + 'deg)'"></div>
-            <div class="minute-hand" [style.transform]="'rotate(' + minuteAngle + 'deg)'"></div>
-            <div class="second-hand" [style.transform]="'rotate(' + secondAngle + 'deg)'"></div>
-            <div class="center-dot"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <!-- Search Window -->
   <div *ngIf="showSearchWindow()" class="search-window" (click)="closeSearchWindow()">
     <div class="search-content" (click)="$event.stopPropagation()">
@@ -646,10 +603,6 @@
       <button class="lock-button" (click)="lockScreen()" title="Lock Screen">
         <i class="pi pi-lock"></i>
       </button>
-      <div class="clock-widget" (click)="openClockWindow()" title="Click to open Clock">
-        <div class="clock-time">{{ currentTime }}</div>
-        <div class="clock-date">{{ currentShortDate }}</div>
-      </div>
     </div>
   </div>
 
