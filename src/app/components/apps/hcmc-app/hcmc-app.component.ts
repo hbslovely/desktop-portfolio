@@ -262,6 +262,7 @@ export class HcmcAppComponent {
 
   onImageError(event: Event) {
     const target = event.target as HTMLImageElement;
-    target.src = 'assets/images/placeholder.jpg';
+    // Hide broken image instead of showing 404 placeholder
+    target.style.display = 'none';
   }
 }
