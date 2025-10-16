@@ -21,7 +21,7 @@
   <!-- Main Tab Navigation -->
   <div class="tab-navigation">
     <button 
-      *ngFor="let tab of tabs"
+      *ngFor="let tab of tabs; trackBy: trackByTabId"
       class="tab-btn"
       [class.active]="activeTab === tab.id"
       (click)="switchTab(tab.id)"
@@ -47,7 +47,7 @@
     <!-- Macro Type Selector -->
     <div class="macro-type-nav">
       <button 
-        *ngFor="let type of macroDataTypes"
+        *ngFor="let type of macroDataTypes; trackBy: trackByMacroType"
         class="macro-type-btn"
         [class.active]="selectedMacroType === type.type"
         (click)="changeMacroType(type.type)"
@@ -77,7 +77,7 @@
       </div>
 
       <div class="macro-grid">
-        <div class="macro-card" *ngFor="let info of filteredMacroDataInfo">
+        <div class="macro-card" *ngFor="let info of filteredMacroDataInfo; trackBy: trackByMacroInfoId">
           <div class="macro-header">
             <span class="macro-name">{{info.nameVN || info.name}}</span>
             <span class="macro-period" *ngIf="info.frequency">{{info.frequency}}</span>
@@ -143,7 +143,7 @@
             <div class="search-results-dropdown" *ngIf="showSearchResults && searchResults.length > 0">
               <div 
                 class="search-result-item" 
-                *ngFor="let result of searchResults"
+                *ngFor="let result of searchResults; trackBy: trackBySearchResultKey"
                 (mousedown)="selectSearchResult(result)"
               >
                 <div class="result-symbol">{{result.key}}</div>
@@ -384,7 +384,7 @@
               <span class="event-count">{{symbolEvents.length}}</span>
             </div>
             <div class="events-list">
-              <div class="event-card" *ngFor="let event of symbolEvents.slice(0, 10)">
+              <div class="event-card" *ngFor="let event of symbolEvents.slice(0, 10); trackBy: trackByEventId">
                 <div class="event-header">
                   <span class="event-date">{{formatHistoricalDate(event.eventDate || '')}}</span>
                   <span class="event-type" *ngIf="event.eventType">{{event.eventType}}</span>
@@ -405,7 +405,7 @@
               <span class="holder-count">{{symbolHolders.length}}</span>
             </div>
             <div class="holders-list">
-              <div class="holder-card" *ngFor="let holder of symbolHolders.slice(0, 15)">
+              <div class="holder-card" *ngFor="let holder of symbolHolders.slice(0, 15); trackBy: trackByHolderId">
                 <div class="holder-header">
                   <div class="holder-name-section">
                     <span class="holder-name">{{holder.name}}</span>
@@ -449,7 +449,7 @@
               <span class="post-count">{{symbolPosts.length}}</span>
             </div>
             <div class="posts-list">
-              <div class="post-card" *ngFor="let post of symbolPosts">
+              <div class="post-card" *ngFor="let post of symbolPosts; trackBy: trackByPostId">
                 <!-- User Info -->
                 <div class="post-header" *ngIf="post.user">
                   <div class="user-avatar">
@@ -481,7 +481,7 @@
 
                   <!-- Images -->
                   <div class="post-images" *ngIf="post.images && post.images.length > 0">
-                    <img *ngFor="let img of post.images" [src]="img.imageUrl" alt="Post image" class="post-image">
+                    <img *ngFor="let img of post.images; trackBy: trackByImageId" [src]="img.imageUrl" alt="Post image" class="post-image">
                   </div>
                 </div>
 
@@ -531,7 +531,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let quote of historicalQuotes; let i = index" class="history-row">
+              <tr *ngFor="let quote of historicalQuotes; let i = index; trackBy: trackByQuoteDate" class="history-row">
                 <td class="td-date">
                   <div class="date-wrapper">
                     <span class="date-text">{{formatHistoricalDate(quote.date || '')}}</span>

@@ -240,18 +240,6 @@ export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
     maximizable: true,
     statusText: 'Explore countries around the world'
   },
-  'text-editor': {
-    id: 'text-editor',
-    title: 'Text Editor',
-    icon: 'pi pi-file-edit',
-    component: 'text-editor',
-    defaultWidth: 1000,
-    defaultHeight: 700,
-    defaultX: 200,
-    defaultY: 80,
-    maximizable: true,
-    statusText: 'Rich text editor with formatting'
-  },
   'yugioh': {
     id: 'yugioh',
     title: 'Yu-Gi-Oh! Cards',

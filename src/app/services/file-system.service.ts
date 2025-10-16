@@ -1,4 +1,6 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, signal, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
 
 export interface FileSystemItem {
   type: 'file' | 'folder';
@@ -22,8 +24,11 @@ export interface NewFileData {
   providedIn: 'root'
 })
 export class FileSystemService {
+  private http = inject(HttpClient);
+  
   // Global file system signal that all Explorer instances can share
   private fileSystemSignal = signal<FileSystemItem | null>(null);
+  private loadPromise: Promise<void> | null = null;
   
   // Observable for file system changes
   getFileSystem() {
@@ -34,16 +39,64 @@ export class FileSystemService {
     this.fileSystemSignal.set(fileSystem);
   }
   
+  // Ensure file system is loaded
+  async ensureFileSystemLoaded(): Promise<void> {
+    // If already loaded, return immediately
+    if (this.fileSystemSignal()) {
+      return Promise.resolve();
+    }
+    
+    // If already loading, return the existing promise
+    if (this.loadPromise) {
+      return this.loadPromise;
+    }
+    
+    // Start loading
+    this.loadPromise = this.loadFileSystemFromJson();
+    return this.loadPromise;
+  }
+  
+  private async loadFileSystemFromJson(): Promise<void> {
+    try {
+      console.log('FileSystemService: Loading file system from JSON...');
+      const data = await firstValueFrom(
+        this.http.get<{fileSystem: FileSystemItem}>('assets/json/explore.json')
+      );
+      this.fileSystemSignal.set(data.fileSystem);
+      console.log('FileSystemService: File system loaded successfully');
+    } catch (error) {
+      console.error('FileSystemService: Failed to load file system:', error);
+      throw error;
+    } finally {
+      this.loadPromise = null;
+    }
+  }
+  
   // Add a new file to the file system
-  addFile(newFile: NewFileData) {
+  async addFile(newFile: NewFileData): Promise<void> {
+    // Ensure file system is loaded
+    await this.ensureFileSystemLoaded();
+    
     const fs = this.fileSystemSignal();
-    if (!fs) return;
+    if (!fs) {
+      console.error('File system not initialized after loading attempt');
+      return;
+    }
+    
+    console.log('Adding file to file system:', newFile);
     
     // Find the parent folder
     const parentPath = newFile.path.substring(0, newFile.path.lastIndexOf('/')) || '/';
     const parent = parentPath === '/' ? fs : this.findItemByPath(fs, parentPath);
     
-    if (parent && parent.children) {
+    console.log('Parent path:', parentPath, 'Parent found:', !!parent);
+    
+    if (parent) {
+      // Ensure children array exists
+      if (!parent.children) {
+        parent.children = [];
+      }
+      
       // Check if file already exists
       const existingIndex = parent.children.findIndex(item => item.path === newFile.path);
       
@@ -60,17 +113,24 @@ export class FileSystemService {
       
       if (existingIndex >= 0) {
         // Update existing file
+        console.log('Updating existing file at index:', existingIndex);
         parent.children[existingIndex] = fileItem;
       } else {
         // Add new file
+        console.log('Adding new file to parent');
         parent.children.push(fileItem);
       }
       
       // Store the actual content in localStorage
       this.saveVirtualFile(newFile.path, newFile.htmlContent, newFile.content);
       
-      // Trigger update by creating a new object reference
-      this.fileSystemSignal.set({...fs});
+      // Trigger update by creating a deep copy of the file system
+      // This ensures Angular's change detection picks up the change
+      const updatedFs = JSON.parse(JSON.stringify(fs));
+      this.fileSystemSignal.set(updatedFs);
+      console.log('File system updated, new file count in parent:', parent.children.length);
+    } else {
+      console.error('Parent folder not found:', parentPath);
     }
   }
   

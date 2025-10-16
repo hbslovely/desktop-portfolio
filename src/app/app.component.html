@@ -1072,13 +1072,6 @@
       <app-link-shortener *ngSwitchCase="'link-shortener'"></app-link-shortener>
       <app-countries-app *ngSwitchCase="'countries'"></app-countries-app>
 
-      <app-text-editor *ngSwitchCase="'text-editor'"
-        [filePath]="window.data?.path"
-        [fileName]="window.data?.name"
-        [mode]="window.data?.mode || 'new'"
-        (onFileSave)="onTextEditorFileSave($event)">
-      </app-text-editor>
-
       <app-yugioh-app *ngSwitchCase="'yugioh'"></app-yugioh-app>
 
       <app-yugioh-card-detail 

@@ -118,13 +118,6 @@ export const APP_ICONS: DesktopIconData[] = [
   },
   // Column 4 (x: 320)
   {
-    id: 'text-editor',
-    name: 'Text Editor',
-    icon: 'assets/images/icons/book.png',
-    type: 'application',
-    position: { x: 320, y: 20 }
-  },
-  {
     id: 'yugioh',
     name: 'Yu-Gi-Oh! Cards',
     icon: 'assets/images/icons/yugi.png',
@@ -162,7 +155,6 @@ function getAppDescription(appId: string): string {
     'dictionary': 'Look up word definitions, pronunciations, and synonyms',
     'link-shortener': 'Shorten long URLs quickly and easily with GoTiny',
     'countries': 'Explore detailed information about countries around the world',
-    'text-editor': 'Create and edit rich text documents with formatting',
     'yugioh': 'Browse and search the complete Yu-Gi-Oh! card database with filters',
     'vnstock': 'View real-time Vietnam stock market prices and data from FireAnt'
   };
@@ -186,7 +178,6 @@ function getAppKeywords(appId: string): string[] {
     'dictionary': ['words', 'definitions', 'meaning', 'vocabulary', 'thesaurus', 'synonyms', 'antonyms', 'pronunciation'],
     'link-shortener': ['url', 'shorten', 'tiny', 'link', 'gotiny', 'redirect', 'short', 'share'],
     'countries': ['world', 'nations', 'flags', 'capitals', 'geography', 'borders', 'population', 'currencies', 'languages', 'maps', 'continents', 'regions'],
-    'text-editor': ['edit', 'write', 'document', 'word', 'text', 'formatting', 'rich', 'editor', 'notepad', 'write'],
     'yugioh': ['cards', 'trading', 'game', 'deck', 'monster', 'spell', 'trap', 'duel', 'ygoprodeck', 'database', 'search', 'filter', 'archetype'],
     'vnstock': ['stock', 'market', 'vietnam', 'fireant', 'trading', 'shares', 'prices', 'hose', 'hnx', 'vn30', 'stocks', 'finance', 'investment']
   };

@@ -2,7 +2,7 @@ import { Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 
-// Generic Article interface to support multiple sources
+// Article interface for Dev.to
 interface Article {
   id: string;
   title: string;
@@ -13,38 +13,18 @@ interface Article {
   published_at: string;
   featured?: boolean;
   category?: string;
-  type: 'news' | 'blog' | 'report';
   // Detailed content
   body?: string;
   author?: string;
   tags?: string[];
   reading_time?: number;
+  reactions?: number;
+  comments_count?: number;
+  positive_reactions_count?: number;
 }
 
-// Spaceflight News API interfaces
-interface SpaceflightArticle {
-  id: number;
-  title: string;
-  url: string;
-  image_url: string;
-  news_site: string;
-  summary: string;
-  published_at: string;
-  updated_at: string;
-  featured: boolean;
-  launches: any[];
-  events: any[];
-}
-
-interface SpaceflightResponse {
-  count: number;
-  next: string | null;
-  previous: string | null;
-  results: SpaceflightArticle[];
-}
-
-// Dev.to Blog API interfaces
-interface DevToBlogArticle {
+// Dev.to API interfaces
+interface DevToArticle {
   id: number;
   title: string;
   url: string;
@@ -52,6 +32,7 @@ interface DevToBlogArticle {
   user: {
     name: string;
     username: string;
+    profile_image?: string;
   };
   description: string;
   published_at: string;
@@ -59,23 +40,16 @@ interface DevToBlogArticle {
   body_html?: string;
   body_markdown?: string;
   reading_time_minutes?: number;
+  public_reactions_count?: number;
+  comments_count?: number;
+  positive_reactions_count?: number;
 }
 
-// GitHub API for reports (using README as report content)
-interface GitHubRepo {
+interface DevToTag {
   id: number;
   name: string;
-  full_name: string;
-  description: string;
-  html_url: string;
-  owner: {
-    login: string;
-    avatar_url: string;
-  };
-  created_at: string;
-  updated_at: string;
-  stargazers_count: number;
-  language: string;
+  bg_color_hex?: string;
+  text_color_hex?: string;
 }
 
 @Component({
@@ -86,16 +60,15 @@ interface GitHubRepo {
   styleUrl: './news-app.component.scss'
 })
 export class NewsAppComponent implements OnInit {
-  private readonly SPACEFLIGHT_API = 'https://api.spaceflightnewsapi.net/v4/articles/';
   private readonly DEVTO_API = 'https://dev.to/api/articles';
-  private readonly GITHUB_API = 'https://api.github.com/search/repositories';
   
   articles = signal<Article[]>([]);
   loading = signal<boolean>(true);
   error = signal<string | null>(null);
-  selectedSource = signal<string>('all');
+  selectedCategory = signal<string>('latest');
   selectedFilter = signal<string>('all');
   searchTerm = signal<string>('');
+  viewMode = signal<'grid' | 'list' | 'compact'>('list');
   
   // Article viewer state
   showArticleViewer = signal<boolean>(false);
@@ -103,16 +76,24 @@ export class NewsAppComponent implements OnInit {
   articleLoading = signal<boolean>(false);
   articleError = signal<string | null>(null);
 
-  sources = [
-    { id: 'all', name: 'All Sources', icon: 'pi pi-th-large' },
-    { id: 'news', name: 'Space News', icon: 'pi pi-globe' },
-    { id: 'blog', name: 'Dev Blogs', icon: 'pi pi-bookmark' },
-    { id: 'report', name: 'Tech Reports', icon: 'pi pi-file-pdf' }
+  viewModes = [
+    { id: 'list' as const, name: 'List View - Compact Flattened', icon: 'pi pi-list', tooltip: 'Compact horizontal list' },
+    { id: 'grid' as const, name: 'Grid View - Image Overlay', icon: 'pi pi-th-large', tooltip: 'Grid with image background' },
+    { id: 'compact' as const, name: 'Large View - Detailed', icon: 'pi pi-bars', tooltip: 'Large cards with more details' }
+  ];
+
+  categories = [
+    { id: 'latest', name: 'Latest', icon: 'pi pi-clock', tag: '', per_page: 40 },
+    { id: 'trending', name: 'Trending', icon: 'pi pi-bolt', tag: '', per_page: 40, top: 7 },
+    { id: 'javascript', name: 'JavaScript', icon: 'pi pi-code', tag: 'javascript', per_page: 30 },
+    { id: 'webdev', name: 'Web Dev', icon: 'pi pi-globe', tag: 'webdev', per_page: 30 },
+    { id: 'ai', name: 'AI & ML', icon: 'pi pi-microchip', tag: 'ai', per_page: 30 },
+    { id: 'career', name: 'Career', icon: 'pi pi-briefcase', tag: 'career', per_page: 30 }
   ];
 
   filters = [
     { id: 'all', name: 'All', icon: 'pi pi-list' },
-    { id: 'featured', name: 'Featured', icon: 'pi pi-star-fill' },
+    { id: 'popular', name: 'Popular', icon: 'pi pi-star-fill' },
     { id: 'recent', name: 'Recent', icon: 'pi pi-clock' }
   ];
 
@@ -121,18 +102,12 @@ export class NewsAppComponent implements OnInit {
     const articles = this.articles();
     const filter = this.selectedFilter();
     const search = this.searchTerm().toLowerCase();
-    const source = this.selectedSource();
 
     let filtered = articles;
 
-    // Apply source filter
-    if (source !== 'all') {
-      filtered = filtered.filter(a => a.type === source);
-    }
-
     // Apply filter
-    if (filter === 'featured') {
-      filtered = filtered.filter(a => a.featured);
+    if (filter === 'popular') {
+      filtered = filtered.sort((a, b) => (b.reactions || 0) - (a.reactions || 0));
     } else if (filter === 'recent') {
       filtered = filtered.sort((a, b) => 
         new Date(b.published_at).getTime() - new Date(a.published_at).getTime()
@@ -144,7 +119,8 @@ export class NewsAppComponent implements OnInit {
       filtered = filtered.filter(a => 
         a.title.toLowerCase().includes(search) || 
         a.summary.toLowerCase().includes(search) ||
-        a.source.toLowerCase().includes(search)
+        a.source.toLowerCase().includes(search) ||
+        a.tags?.some(tag => tag.toLowerCase().includes(search))
       );
     }
 
@@ -154,123 +130,55 @@ export class NewsAppComponent implements OnInit {
   constructor(private http: HttpClient) {}
 
   ngOnInit() {
-    this.loadAllContent();
+    this.loadArticles();
   }
 
-  loadAllContent() {
+  loadArticles() {
+    const category = this.categories.find(c => c.id === this.selectedCategory());
+    if (!category) return;
+
     this.loading.set(true);
     this.error.set(null);
+    this.articles.set([]);
+
+    let url = `${this.DEVTO_API}?per_page=${category.per_page}`;
     
-    // Load all content types in parallel
-    Promise.all([
-      this.loadSpaceflightNews(),
-      this.loadDevToBlogs(),
-      this.loadGitHubReports()
-    ]).then(() => {
-      this.loading.set(false);
-    }).catch((err) => {
-      console.error('Error loading content:', err);
-      this.error.set('Failed to load content. Please try again later.');
-      this.loading.set(false);
-    });
-  }
+    if (category.top) {
+      url += `&top=${category.top}`;
+    }
+    
+    if (category.tag) {
+      url += `&tag=${category.tag}`;
+    }
 
-  async loadSpaceflightNews(): Promise<void> {
-    return new Promise((resolve, reject) => {
-      const url = `${this.SPACEFLIGHT_API}?limit=30`;
-      
-      this.http.get<SpaceflightResponse>(url).subscribe({
-        next: (response) => {
-          const newsArticles: Article[] = response.results.map(article => ({
-            id: `news-${article.id}`,
-            title: article.title,
-            url: article.url,
-            image_url: article.image_url,
-            source: article.news_site,
-            summary: article.summary,
-            published_at: article.published_at,
-            featured: article.featured,
-            type: 'news' as const,
-            author: article.news_site,
-            tags: []
-          }));
-          
-          this.articles.update(current => [...current, ...newsArticles]);
-          resolve();
-        },
-        error: (err) => {
-          console.error('Space news error:', err);
-          reject(err);
-        }
-      });
-    });
-  }
-
-  async loadDevToBlogs(): Promise<void> {
-    return new Promise((resolve, reject) => {
-      const url = `${this.DEVTO_API}?per_page=30&top=7`;
-      
-      this.http.get<DevToBlogArticle[]>(url).subscribe({
-        next: (response) => {
-          const blogArticles: Article[] = response.map(article => ({
-            id: `blog-${article.id}`,
-            title: article.title,
-            url: article.url,
-            image_url: article.cover_image || this.getPlaceholderImage('blog'),
-            source: article.user.name,
-            summary: article.description || 'Developer blog post',
-            published_at: article.published_at,
-            featured: false,
-            category: article.tag_list[0],
-            type: 'blog' as const,
-            author: article.user.name,
-            tags: article.tag_list,
-            reading_time: article.reading_time_minutes
-          }));
-          
-          this.articles.update(current => [...current, ...blogArticles]);
-          resolve();
-        },
-        error: (err) => {
-          console.error('Dev.to blog error:', err);
-          reject(err);
-        }
-      });
-    });
-  }
-
-  async loadGitHubReports(): Promise<void> {
-    return new Promise((resolve, reject) => {
-      // Search for popular repositories with good documentation (as "reports")
-      const topics = ['artificial-intelligence', 'machine-learning', 'data-science', 'blockchain'];
-      const topic = topics[Math.floor(Math.random() * topics.length)];
-      const url = `${this.GITHUB_API}?q=topic:${topic}+stars:>1000&sort=stars&order=desc&per_page=15`;
-      
-      this.http.get<{ items: GitHubRepo[] }>(url).subscribe({
-        next: (response) => {
-          const reportArticles: Article[] = response.items.map(repo => ({
-            id: `report-${repo.id}`,
-            title: repo.name.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-            url: repo.html_url,
-            image_url: repo.owner.avatar_url || this.getPlaceholderImage('report'),
-            source: repo.owner.login,
-            summary: repo.description || 'Technical repository and documentation',
-            published_at: repo.updated_at,
-            featured: repo.stargazers_count > 5000,
-            category: repo.language,
-            type: 'report' as const,
-            author: repo.owner.login,
-            tags: [repo.language].filter(Boolean)
-          }));
-          
-          this.articles.update(current => [...current, ...reportArticles]);
-          resolve();
-        },
-        error: (err) => {
-          console.error('GitHub reports error:', err);
-          reject(err);
-        }
-      });
+    this.http.get<DevToArticle[]>(url).subscribe({
+      next: (response) => {
+        const articles: Article[] = response.map(article => ({
+          id: `${article.id}`,
+          title: article.title,
+          url: article.url,
+          image_url: article.cover_image || this.getPlaceholderImage(),
+          source: article.user.name,
+          summary: article.description || 'Read more on DEV Community',
+          published_at: article.published_at,
+          featured: (article.public_reactions_count || 0) > 50,
+          category: article.tag_list[0],
+          author: article.user.name,
+          tags: article.tag_list,
+          reading_time: article.reading_time_minutes,
+          reactions: article.public_reactions_count || 0,
+          comments_count: article.comments_count || 0,
+          positive_reactions_count: article.positive_reactions_count || 0
+        }));
+        
+        this.articles.set(articles);
+        this.loading.set(false);
+      },
+      error: (err) => {
+        console.error('DEV.to API error:', err);
+        this.error.set('Failed to load articles. Please try again later.');
+        this.loading.set(false);
+      }
     });
   }
 
@@ -281,21 +189,33 @@ export class NewsAppComponent implements OnInit {
     this.articleError.set(null);
 
     try {
-      // Fetch detailed content based on article type
-      let detailedArticle: Article;
+      // Fetch full article content
+      const articleId = article.id;
+      const url = `${this.DEVTO_API}/${articleId}`;
 
-      if (article.type === 'news') {
-        detailedArticle = await this.fetchNewsDetail(article);
-      } else if (article.type === 'blog') {
-        detailedArticle = await this.fetchBlogDetail(article);
-      } else if (article.type === 'report') {
-        detailedArticle = await this.fetchReportDetail(article);
-      } else {
-        detailedArticle = article;
-      }
-
-      this.selectedArticle.set(detailedArticle);
-      this.articleLoading.set(false);
+      this.http.get<DevToArticle>(url).subscribe({
+        next: (response) => {
+          const detailedArticle: Article = {
+            ...article,
+            body: response.body_html || article.summary,
+            author: response.user.name,
+            tags: response.tag_list,
+            reading_time: response.reading_time_minutes,
+            reactions: response.public_reactions_count || 0,
+            comments_count: response.comments_count || 0
+          };
+          this.selectedArticle.set(detailedArticle);
+          this.articleLoading.set(false);
+        },
+        error: () => {
+          // Fallback to summary if full content fails
+          this.selectedArticle.set({
+            ...article,
+            body: `<p>${article.summary}</p>`
+          });
+          this.articleLoading.set(false);
+        }
+      });
     } catch (error) {
       console.error('Error fetching article details:', error);
       this.articleError.set('Failed to load article details.');
@@ -303,144 +223,8 @@ export class NewsAppComponent implements OnInit {
     }
   }
 
-  async fetchNewsDetail(article: Article): Promise<Article> {
-    return new Promise((resolve) => {
-      const articleId = article.id.replace('news-', '');
-      const url = `${this.SPACEFLIGHT_API}${articleId}/`;
-
-      this.http.get<SpaceflightArticle>(url).subscribe({
-        next: (response) => {
-          resolve({
-            ...article,
-            body: this.formatNewsBody(response),
-            author: response.news_site
-          });
-        },
-        error: () => {
-          resolve({
-            ...article,
-            body: article.summary
-          });
-        }
-      });
-    });
-  }
-
-  async fetchBlogDetail(article: Article): Promise<Article> {
-    return new Promise((resolve) => {
-      const articleId = article.id.replace('blog-', '');
-      const url = `${this.DEVTO_API}/${articleId}`;
-
-      this.http.get<DevToBlogArticle>(url).subscribe({
-        next: (response) => {
-          resolve({
-            ...article,
-            body: response.body_html || response.body_markdown || article.summary,
-            author: response.user.name,
-            tags: response.tag_list,
-            reading_time: response.reading_time_minutes
-          });
-        },
-        error: () => {
-          resolve({
-            ...article,
-            body: article.summary
-          });
-        }
-      });
-    });
-  }
-
-  async fetchReportDetail(article: Article): Promise<Article> {
-    return new Promise((resolve) => {
-      const repoPath = article.url.replace('https://github.com/', '');
-      const url = `https://api.github.com/repos/${repoPath}/readme`;
-
-      this.http.get<{ content: string; encoding: string }>(url).subscribe({
-        next: (response) => {
-          // Decode base64 content
-          const decodedContent = atob(response.content);
-          resolve({
-            ...article,
-            body: this.formatMarkdownToHtml(decodedContent),
-            author: article.source
-          });
-        },
-        error: () => {
-          resolve({
-            ...article,
-            body: `<p>${article.summary}</p><p><a href="${article.url}" target="_blank" rel="noopener noreferrer">View on GitHub →</a></p>`
-          });
-        }
-      });
-    });
-  }
-
-  formatNewsBody(article: SpaceflightArticle): string {
-    let html = `<div class="article-detail">`;
-    html += `<p class="article-summary">${article.summary}</p>`;
-    
-    if (article.launches && article.launches.length > 0) {
-      html += `<div class="article-section"><h3>Related Launches</h3><ul>`;
-      article.launches.forEach((launch: any) => {
-        html += `<li>${launch.name || 'Launch information'}</li>`;
-      });
-      html += `</ul></div>`;
-    }
-
-    if (article.events && article.events.length > 0) {
-      html += `<div class="article-section"><h3>Related Events</h3><ul>`;
-      article.events.forEach((event: any) => {
-        html += `<li>${event.name || 'Event information'}</li>`;
-      });
-      html += `</ul></div>`;
-    }
-
-    html += `<div class="article-footer-link">`;
-    html += `<a href="${article.url}" target="_blank" rel="noopener noreferrer">Read full article on ${article.news_site} →</a>`;
-    html += `</div>`;
-    html += `</div>`;
-
-    return html;
-  }
-
-  formatMarkdownToHtml(markdown: string): string {
-    // Basic markdown to HTML conversion
-    let html = markdown;
-    
-    // Headers
-    html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
-    html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
-    html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
-    
-    // Bold
-    html = html.replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>');
-    
-    // Italic
-    html = html.replace(/\*(.*?)\*/gim, '<em>$1</em>');
-    
-    // Links
-    html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/gim, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
-    
-    // Line breaks
-    html = html.replace(/\n\n/g, '</p><p>');
-    html = html.replace(/\n/g, '<br>');
-    
-    // Wrap in paragraphs
-    html = '<p>' + html + '</p>';
-    
-    // Code blocks
-    html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
-    
-    return html;
-  }
-
-  getPlaceholderImage(type: string): string {
-    const placeholders: Record<string, string> = {
-      'blog': 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect fill="%233b82f6" width="400" height="300"/%3E%3Ctext fill="%23ffffff" font-family="sans-serif" font-size="24" dy="10.5" font-weight="bold" x="50%25" y="50%25" text-anchor="middle"%3EDev Blog%3C/text%3E%3C/svg%3E',
-      'report': 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect fill="%23f59e0b" width="400" height="300"/%3E%3Ctext fill="%23ffffff" font-family="sans-serif" font-size="24" dy="10.5" font-weight="bold" x="50%25" y="50%25" text-anchor="middle"%3ETech Report%3C/text%3E%3C/svg%3E'
-    };
-    return placeholders[type] || placeholders['blog'];
+  getPlaceholderImage(): string {
+    return 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect fill="%23ff6b6b" width="400" height="300"/%3E%3Ctext fill="%23ffffff" font-family="sans-serif" font-size="24" dy="10.5" font-weight="bold" x="50%25" y="50%25" text-anchor="middle"%3EDEV Article%3C/text%3E%3C/svg%3E';
   }
 
   closeArticleViewer() {
@@ -456,12 +240,17 @@ export class NewsAppComponent implements OnInit {
     }
   }
 
-  selectSource(source: string) {
-    this.selectedSource.set(source);
+  selectCategory(category: string) {
+    this.selectedCategory.set(category);
+    this.loadArticles();
   }
 
   selectFilter(filter: string) {
     this.selectedFilter.set(filter);
+  }
+
+  setViewMode(mode: 'grid' | 'list' | 'compact') {
+    this.viewMode.set(mode);
   }
 
   getTimeAgo(dateString: string): string {
@@ -479,12 +268,11 @@ export class NewsAppComponent implements OnInit {
 
   onImageError(event: Event) {
     const img = event.target as HTMLImageElement;
-    img.src = this.getPlaceholderImage('blog');
+    img.src = this.getPlaceholderImage();
   }
 
   refreshNews() {
-    this.articles.set([]);
-    this.loadAllContent();
+    this.loadArticles();
   }
 
   onSearchChange(event: Event) {
@@ -496,21 +284,10 @@ export class NewsAppComponent implements OnInit {
     this.searchTerm.set('');
   }
 
-  getArticleTypeLabel(type: string): string {
-    const labels: Record<string, string> = {
-      'news': 'News',
-      'blog': 'Blog',
-      'report': 'Report'
-    };
-    return labels[type] || type;
-  }
-
-  getArticleTypeColor(type: string): string {
-    const colors: Record<string, string> = {
-      'news': '#10b981',
-      'blog': '#3b82f6',
-      'report': '#f59e0b'
-    };
-    return colors[type] || '#6b7280';
+  formatNumber(num: number): string {
+    if (num >= 1000) {
+      return (num / 1000).toFixed(1) + 'k';
+    }
+    return num.toString();
   }
 }

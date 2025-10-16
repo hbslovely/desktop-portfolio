@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FireantService, StockData, SymbolFundamental, SymbolInfo, SymbolPost, HistoricalQuote, InstitutionProfile, SearchResult, SymbolEvent, MacroDataType, MacroDataInfo, SymbolHolder } from '../../../services/fireant.service';
@@ -12,7 +12,8 @@ type TabType = 'search' | 'macro';
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './vnstock-app.component.html',
-  styleUrls: ['./vnstock-app.component.scss']
+  styleUrls: ['./vnstock-app.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class VnstockAppComponent implements OnInit, OnDestroy {
   // Tab management
@@ -58,7 +59,14 @@ export class VnstockAppComponent implements OnInit, OnDestroy {
 
   private destroy$ = new Subject<void>();
 
-  constructor(private fireantService: FireantService) {}
+  // Cache for computed values to avoid recalculation
+  private priceInfoCache: { symbol: string; value: any } | null = null;
+  private volumeCache: { symbol: string; value: number } | null = null;
+
+  constructor(
+    private fireantService: FireantService,
+    private cdr: ChangeDetectorRef
+  ) {}
 
   ngOnInit() {
     this.initializeApp();
@@ -101,8 +109,10 @@ export class VnstockAppComponent implements OnInit, OnDestroy {
       console.error('Initialization error:', error);
       this.stocks = [];
       this.filteredStocks = [];
+      this.markForCheck();
     } finally {
       this.loading = false;
+      this.markForCheck();
     }
   }
 
@@ -118,16 +128,19 @@ export class VnstockAppComponent implements OnInit, OnDestroy {
           results => {
             this.searchResults = results;
             this.showSearchResults = true;
+            this.markForCheck();
           },
           error => {
             console.error('Search error:', error);
             this.searchResults = [];
             this.showSearchResults = false;
+            this.markForCheck();
           }
         );
       } else {
         this.searchResults = [];
         this.showSearchResults = false;
+        this.markForCheck();
       }
     });
   }
@@ -139,6 +152,7 @@ export class VnstockAppComponent implements OnInit, OnDestroy {
   selectSearchResult(result: SearchResult) {
     this.fundamentalSymbol = result.key || result.symbol || '';
     this.showSearchResults = false;
+    this.markForCheck();
     this.searchResults = [];
     this.searchFundamental();
   }
@@ -147,6 +161,7 @@ export class VnstockAppComponent implements OnInit, OnDestroy {
     // Delay to allow click event on result
     setTimeout(() => {
       this.showSearchResults = false;
+      this.markForCheck();
     }, 200);
   }
 
@@ -188,6 +203,7 @@ export class VnstockAppComponent implements OnInit, OnDestroy {
       this.handleApiError(error);
     } finally {
       this.loading = false;
+      this.markForCheck();
     }
   }
 
@@ -214,6 +230,7 @@ export class VnstockAppComponent implements OnInit, OnDestroy {
       this.handleApiError(error);
     } finally {
       this.loading = false;
+      this.markForCheck();
     }
   }
 
@@ -355,6 +372,10 @@ export class VnstockAppComponent implements OnInit, OnDestroy {
       console.error('Error loading fundamental data:', error);
     } finally {
       this.fundamentalLoading = false;
+      this.markForCheck();
+      // Clear caches
+      this.priceInfoCache = null;
+      this.volumeCache = null;
     }
   }
 
@@ -570,6 +591,50 @@ export class VnstockAppComponent implements OnInit, OnDestroy {
     const currentClose = currentQuote.close || 0;
     const previousClose = previousQuote.close || 1;
     return ((currentClose - previousClose) / previousClose) * 100;
+  }
+
+  // ==================== TRACKBY FUNCTIONS FOR PERFORMANCE ====================
+  // These prevent unnecessary re-rendering of lists
+
+  trackByTabId(index: number, tab: { id: TabType; name: string; icon: string }): TabType {
+    return tab.id;
+  }
+
+  trackByMacroType(index: number, type: MacroDataType): string {
+    return type.type;
+  }
+
+  trackByMacroInfoId(index: number, info: MacroDataInfo): number {
+    return info.id;
+  }
+
+  trackBySearchResultKey(index: number, result: SearchResult): string {
+    return result.key || result.id || index.toString();
+  }
+
+  trackByEventId(index: number, event: SymbolEvent): string {
+    return event.eventID || event.eventDate || index.toString();
+  }
+
+  trackByHolderId(index: number, holder: SymbolHolder): number {
+    return holder.majorHolderID || holder.institutionHolderID || holder.individualHolderID || index;
+  }
+
+  trackByPostId(index: number, post: SymbolPost): string {
+    return post.id || index.toString();
+  }
+
+  trackByImageId(index: number, img: any): number {
+    return img.imageID || index;
+  }
+
+  trackByQuoteDate(index: number, quote: HistoricalQuote): string {
+    return quote.date || index.toString();
+  }
+
+  // Trigger change detection manually when needed
+  private markForCheck() {
+    this.cdr.markForCheck();
   }
 }
 
