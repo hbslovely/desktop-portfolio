@@ -29,7 +29,7 @@ export interface SettingsData {
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './settings-app.component.html',
-  styleUrl: './settings-app.component.scss'
+  styleUrl: './settings-app.component.scss',
 })
 export class SettingsAppComponent implements OnInit {
   @Output() onSettingsChange = new EventEmitter<SettingsData>();
@@ -155,7 +155,7 @@ export class SettingsAppComponent implements OnInit {
         
         this.onSettingsChange.emit(settings);
       } catch (error) {
-        console.error('Error loading settings:', error);
+
         this.setDefaultSettings();
       }
     } else {
@@ -281,4 +281,3 @@ export class SettingsAppComponent implements OnInit {
     }
   }
 }
-

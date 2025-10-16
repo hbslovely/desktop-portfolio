@@ -25,7 +25,7 @@ interface HistoryPoint {
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './task-manager.component.html',
-  styleUrls: ['./task-manager.component.scss']
+  styleUrls: ['./task-manager.component.scss'],
 })
 export class TaskManagerComponent implements OnInit, OnDestroy {
   windowManager = inject(WindowManagerService);
@@ -345,7 +345,7 @@ export class TaskManagerComponent implements OnInit, OnDestroy {
       this.closeWindow(windowId);
       setTimeout(() => {
         // Would need to reopen the window - placeholder for now
-        console.log('Restart task:', process.title);
+
       }, 500);
     }
   }
@@ -404,4 +404,3 @@ export class TaskManagerComponent implements OnInit, OnDestroy {
     }
   }
 }
-

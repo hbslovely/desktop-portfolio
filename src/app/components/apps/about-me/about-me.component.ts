@@ -14,7 +14,7 @@ interface AppLink {
   standalone: true,
   imports: [CommonModule],
   templateUrl: './about-me.component.html',
-  styleUrl: './about-me.component.scss'
+  styleUrl: './about-me.component.scss',
 })
 export class AboutMeComponent {
   @Output() onOpenApp = new EventEmitter<string>();
@@ -102,4 +102,3 @@ export class AboutMeComponent {
     this.onOpenApp.emit(appId);
   }
 }
-

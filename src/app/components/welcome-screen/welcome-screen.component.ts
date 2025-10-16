@@ -1,4 +1,4 @@
-import { Component, signal, OnInit } from '@angular/core';
+import { Component, signal, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
@@ -7,9 +7,10 @@ import { FormsModule } from '@angular/forms';
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './welcome-screen.component.html',
-  styleUrl: './welcome-screen.component.scss'
+  styleUrl: './welcome-screen.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class WelcomeScreenComponent implements OnInit {
+export class WelcomeScreenComponent implements OnInit, OnDestroy {
   // Password input
   password = signal('');
   showPassword = signal(false);
@@ -30,10 +31,12 @@ export class WelcomeScreenComponent implements OnInit {
     'Welcome Back!', 'Hello There!', 'Good to See You!', 
     'Ready to Create?', 'Let\'s Get Started!', 'Nice to See You Again!'
   ];
+  
+  private timeInterval?: number;
 
   constructor() {
     this.updateTime();
-    setInterval(() => this.updateTime(), 1000);
+    this.timeInterval = window.setInterval(() => this.updateTime(), 1000);
     this.greeting.set(this.greetings[Math.floor(Math.random() * this.greetings.length)]);
   }
 
@@ -158,5 +161,11 @@ export class WelcomeScreenComponent implements OnInit {
   onRestartRequest() {
     // Emit custom event that parent can listen to
     window.dispatchEvent(new CustomEvent('system-restart-requested'));
+  }
+  
+  ngOnDestroy() {
+    if (this.timeInterval) {
+      clearInterval(this.timeInterval);
+    }
   }
 }

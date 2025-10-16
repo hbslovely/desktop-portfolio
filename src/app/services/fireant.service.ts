@@ -271,7 +271,7 @@ export class FireantService {
       'Content-Type': 'application/json'
     });
 
-    console.log('🔐 Attempting anonymous login to FireAnt API...');
+
 
     return this.http.post<FireAntAuthResponse>(
       `${this.apiUrl}/authentication/anonymous-login`,
@@ -279,16 +279,16 @@ export class FireantService {
       { headers }
     ).pipe(
       tap(response => {
-        console.log('FireAnt login response:', response);
+
         if (response && response.accessToken) {
           this.tokenSubject.next(response.accessToken);
-          console.log('✅ Authentication successful');
+
         } else {
-          console.error('❌ No access token in response');
+
         }
       }),
       catchError(error => {
-        console.error('❌ FireAnt login error:', error);
+
         console.error('Error details:', {
           status: error.status,
           statusText: error.statusText,
@@ -308,7 +308,7 @@ export class FireantService {
     const token = this.tokenSubject.value;
     
     if (!token) {
-      console.error('❌ No authentication token available. Please login first.');
+
       return throwError(() => new Error('No authentication token'));
     }
 
@@ -321,7 +321,7 @@ export class FireantService {
     const url = exchange 
       ? `${this.apiUrl}/instruments?exchange=${exchange}`
       : `${this.apiUrl}/instruments`;
-    console.log(`📊 Fetching instruments from: ${url}`);
+
 
     return this.http.get<any>(url, { headers }).pipe(
       map(response => {
@@ -339,11 +339,11 @@ export class FireantService {
         }
 
         if (!Array.isArray(dataArray)) {
-          console.error('❌ Unexpected API response format:', response);
+
           throw new Error('Invalid API response format');
         }
 
-        console.log(`✅ Received ${dataArray.length} instruments${exchange ? ' from ' + exchange : ''}`);
+
         
         // Log raw data structure for debugging
         if (dataArray.length > 0) {
@@ -376,7 +376,7 @@ export class FireantService {
         return stocks;
       }),
       catchError(error => {
-        console.error(`❌ Error fetching instruments${exchange ? ' for ' + exchange : ''}:`, error);
+
         console.error('Error details:', {
           status: error.status,
           statusText: error.statusText,
@@ -403,7 +403,7 @@ export class FireantService {
     const token = this.tokenSubject.value;
     
     if (!token) {
-      console.error('❌ No authentication token available');
+
       return throwError(() => new Error('No authentication token'));
     }
 
@@ -412,11 +412,11 @@ export class FireantService {
       'Content-Type': 'application/json'
     });
 
-    console.log('📊 Fetching all symbols...');
+
 
     return this.http.get<any>(`${this.apiUrl}/symbols`, { headers }).pipe(
       map(response => {
-        console.log('✅ All symbols response:', response);
+
         let dataArray = response;
         
         if (response && response.data) {
@@ -438,7 +438,7 @@ export class FireantService {
         }));
       }),
       catchError(error => {
-        console.error('❌ Error fetching all symbols:', error);
+
         throw error;
       })
     );
@@ -451,7 +451,7 @@ export class FireantService {
     const token = this.tokenSubject.value;
     
     if (!token) {
-      console.error('❌ No authentication token available');
+
       return throwError(() => new Error('No authentication token'));
     }
 
@@ -460,12 +460,12 @@ export class FireantService {
       'Content-Type': 'application/json'
     });
 
-    console.log(`🔍 Searching for stock: ${symbol}`);
+
 
     return this.http.get<any>(`${this.apiUrl}/symbols/${symbol}`, { headers }).pipe(
       tap(response => console.log('✅ Stock search result:', response)),
       catchError(error => {
-        console.error(`❌ Error searching stock ${symbol}:`, error);
+
         throw error;
       })
     );
@@ -481,7 +481,7 @@ export class FireantService {
     const token = this.tokenSubject.value;
     
     if (!token) {
-      console.error('❌ No authentication token available');
+
       return throwError(() => new Error('No authentication token'));
     }
 
@@ -495,7 +495,7 @@ export class FireantService {
 
     return this.http.get<any>(url, { headers }).pipe(
       map(response => {
-        console.log('✅ Top Contributors Response:', response);
+
         let dataArray = response;
         
         if (response && response.data) {
@@ -505,11 +505,11 @@ export class FireantService {
         }
 
         if (!Array.isArray(dataArray)) {
-          console.error('❌ Unexpected API response format:', response);
+
           throw new Error('Invalid API response format');
         }
 
-        console.log(`✅ Received ${dataArray.length} top contributors`);
+
         
         // Log raw data structure for debugging
         if (dataArray.length > 0) {
@@ -534,7 +534,7 @@ export class FireantService {
         });
       }),
       catchError(error => {
-        console.error(`❌ Error fetching top contributors for ${exchange}:`, error);
+
         throw error;
       })
     );
@@ -547,7 +547,7 @@ export class FireantService {
     const token = this.tokenSubject.value;
     
     if (!token) {
-      console.error('❌ No authentication token available');
+
       return throwError(() => new Error('No authentication token'));
     }
 
@@ -556,11 +556,11 @@ export class FireantService {
       'Content-Type': 'application/json'
     });
 
-    console.log('📊 Fetching industries...');
+
 
     return this.http.get<any>(`${this.apiUrl}/industries`, { headers }).pipe(
       map(response => {
-        console.log('✅ Industries Response:', response);
+
         let dataArray = response;
         
         if (response && response.data) {
@@ -573,7 +573,7 @@ export class FireantService {
           dataArray = [];
         }
 
-        console.log(`✅ Received ${dataArray.length} industries`);
+
         
         // Log first industry for debugging
         if (dataArray.length > 0) {
@@ -590,14 +590,14 @@ export class FireantService {
           
           // Log if icbCode is missing
           if (!industry.icbCode) {
-            console.warn('⚠️ Industry missing icbCode:', item);
+
           }
           
           return industry;
         });
       }),
       catchError(error => {
-        console.error('❌ Error fetching industries:', error);
+
         throw error;
       })
     );
@@ -611,7 +611,7 @@ export class FireantService {
     const token = this.tokenSubject.value;
     
     if (!token) {
-      console.error('❌ No authentication token available');
+
       return throwError(() => new Error('No authentication token'));
     }
 
@@ -620,11 +620,11 @@ export class FireantService {
       'Content-Type': 'application/json'
     });
 
-    console.log(`📊 Fetching fundamental data for ${symbol}...`);
+
 
     return this.http.get<any>(`${this.apiUrl}/symbols/${symbol}/fundamental`, { headers }).pipe(
       map(response => {
-        console.log('✅ Fundamental Response:', response);
+
         const data = response.data || response;
 
         return {
@@ -644,7 +644,7 @@ export class FireantService {
         };
       }),
       catchError(error => {
-        console.error(`❌ Error fetching fundamental for ${symbol}:`, error);
+
         throw error;
       })
     );
@@ -658,7 +658,7 @@ export class FireantService {
     const token = this.tokenSubject.value;
     
     if (!token) {
-      console.error('❌ No authentication token available');
+
       return throwError(() => new Error('No authentication token'));
     }
 
@@ -668,11 +668,11 @@ export class FireantService {
     });
 
     const url = `${this.apiUrl}/icb/${icbCode}/symbols`;
-    console.log(`📊 Fetching symbols by industry ${icbCode}: ${url}`);
+
 
     return this.http.get<any>(url, { headers }).pipe(
       map(response => {
-        console.log('✅ Symbols by Industry Response:', response);
+
         let dataArray = response;
         
         if (response && response.data) {
@@ -685,7 +685,7 @@ export class FireantService {
           dataArray = [];
         }
 
-        console.log(`✅ Received ${dataArray.length} symbols in industry`);
+
         
         // Log raw data structure for debugging
         if (dataArray.length > 0) {
@@ -710,7 +710,7 @@ export class FireantService {
         });
       }),
       catchError(error => {
-        console.error(`❌ Error fetching symbols by industry ${icbCode}:`, error);
+
         throw error;
       })
     );
@@ -724,7 +724,7 @@ export class FireantService {
     const token = this.tokenSubject.value;
     
     if (!token) {
-      console.error('❌ No authentication token available');
+
       return throwError(() => new Error('No authentication token'));
     }
 
@@ -733,11 +733,11 @@ export class FireantService {
       'Content-Type': 'application/json'
     });
 
-    console.log(`📊 Fetching symbol info for ${symbol}...`);
+
 
     return this.http.get<any>(`${this.apiUrl}/symbols/${symbol}`, { headers }).pipe(
       map(response => {
-        console.log('✅ Symbol Info Response:', response);
+
         const data = response.data || response;
         return {
           symbol: data.symbol || data.ticker || symbol,
@@ -756,7 +756,7 @@ export class FireantService {
         };
       }),
       catchError(error => {
-        console.error(`❌ Error fetching symbol info for ${symbol}:`, error);
+
         throw error;
       })
     );
@@ -771,7 +771,7 @@ export class FireantService {
     const token = this.tokenSubject.value;
     
     if (!token) {
-      console.error('❌ No authentication token available');
+
       return throwError(() => new Error('No authentication token'));
     }
 
@@ -780,11 +780,11 @@ export class FireantService {
       'Content-Type': 'application/json'
     });
 
-    console.log(`📰 Fetching posts for ${symbol}...`);
+
 
     return this.http.get<any>(`${this.apiUrl}/symbols/${symbol}/posts?limit=${limit}`, { headers }).pipe(
       map(response => {
-        console.log('✅ Symbol Posts Response:', response);
+
         let dataArray = response;
         
         if (response && response.data) {
@@ -797,7 +797,7 @@ export class FireantService {
           dataArray = [];
         }
 
-        console.log(`✅ Received ${dataArray.length} posts`);
+
 
         return dataArray.map((item: any) => ({
           id: item.postID || item.id || item.postId || '',
@@ -812,7 +812,7 @@ export class FireantService {
         }));
       }),
       catchError(error => {
-        console.error(`❌ Error fetching posts for ${symbol}:`, error);
+
         throw error;
       })
     );
@@ -828,7 +828,7 @@ export class FireantService {
     const token = this.tokenSubject.value;
     
     if (!token) {
-      console.error('❌ No authentication token available');
+
       return throwError(() => new Error('No authentication token'));
     }
 
@@ -837,14 +837,14 @@ export class FireantService {
       'Content-Type': 'application/json'
     });
 
-    console.log(`📈 Fetching historical quotes for ${symbol} from ${startDate} to ${endDate}...`);
+
 
     return this.http.get<any>(
       `${this.apiUrl}/symbols/${symbol}/historical-quotes?startDate=${startDate}&endDate=${endDate}`, 
       { headers }
     ).pipe(
       map(response => {
-        console.log('✅ Historical Quotes Response:', response);
+
         let dataArray = response;
         
         if (response && response.data) {
@@ -857,7 +857,7 @@ export class FireantService {
           dataArray = [];
         }
 
-        console.log(`✅ Received ${dataArray.length} historical quotes`);
+
 
         return dataArray.map((item: any) => ({
           date: item.date || item.tradingDate || '',
@@ -871,7 +871,7 @@ export class FireantService {
         }));
       }),
       catchError(error => {
-        console.error(`❌ Error fetching historical quotes for ${symbol}:`, error);
+
         throw error;
       })
     );
@@ -884,7 +884,7 @@ export class FireantService {
     const token = this.tokenSubject.value;
     
     if (!token) {
-      console.error('❌ No authentication token available');
+
       return throwError(() => new Error('No authentication token'));
     }
 
@@ -893,11 +893,11 @@ export class FireantService {
       'Content-Type': 'application/json'
     });
 
-    console.log('📊 Fetching macro indicators...');
+
 
     return this.http.get<any>(`${this.apiUrl}/macro/indicators`, { headers }).pipe(
       map(response => {
-        console.log('✅ Macro Indicators Response:', response);
+
         let dataArray = response;
         
         if (response && response.data) {
@@ -910,7 +910,7 @@ export class FireantService {
           dataArray = [];
         }
 
-        console.log(`✅ Received ${dataArray.length} macro indicators`);
+
 
         return dataArray.map((item: any) => ({
           indicatorID: item.indicatorID || item.id || '',
@@ -924,7 +924,7 @@ export class FireantService {
         }));
       }),
       catchError(error => {
-        console.error('❌ Error fetching macro indicators:', error);
+
         throw error;
       })
     );
@@ -941,7 +941,7 @@ export class FireantService {
     const token = this.tokenSubject.value;
     
     if (!token) {
-      console.error('❌ No authentication token available');
+
       return throwError(() => new Error('No authentication token'));
     }
 
@@ -963,7 +963,7 @@ export class FireantService {
 
     return this.http.get<any>(url, { headers }).pipe(
       map(response => {
-        console.log('✅ Top Movers Response:', response);
+
         let dataArray = response;
         
         if (response && response.data) {
@@ -976,7 +976,7 @@ export class FireantService {
           dataArray = [];
         }
 
-        console.log(`✅ Received ${dataArray.length} top movers`);
+
 
         return dataArray.map((item: any) => {
           const priceData = item.priceBasic || item;
@@ -1014,7 +1014,7 @@ export class FireantService {
     const token = this.tokenSubject.value;
     
     if (!token) {
-      console.error('❌ No authentication token available');
+
       return throwError(() => new Error('No authentication token'));
     }
 
@@ -1037,7 +1037,7 @@ export class FireantService {
 
     return this.http.get<any>(url, { headers }).pipe(
       map(response => {
-        console.log('✅ Search Response:', response);
+
         let dataArray = response;
         
         if (response && response.data) {
@@ -1050,7 +1050,7 @@ export class FireantService {
           dataArray = [];
         }
 
-        console.log(`✅ Found ${dataArray.length} results`);
+
 
         return dataArray.map((item: any) => ({
           id: item.id || null,
@@ -1068,7 +1068,7 @@ export class FireantService {
         }));
       }),
       catchError(error => {
-        console.error(`❌ Error searching for ${keywords}:`, error);
+
         return throwError(() => error);
       })
     );
@@ -1082,7 +1082,7 @@ export class FireantService {
     const token = this.tokenSubject.value;
     
     if (!token) {
-      console.error('❌ No authentication token available');
+
       return throwError(() => new Error('No authentication token'));
     }
 
@@ -1091,11 +1091,11 @@ export class FireantService {
       'Content-Type': 'application/json'
     });
 
-    console.log(`🏢 Fetching institution profile for ${symbol}...`);
+
 
     return this.http.get<any>(`${this.apiUrl}/symbols/${symbol}/profile`, { headers }).pipe(
       map(response => {
-        console.log('✅ Institution Profile Response:', response);
+
         const data = response.data || response;
 
         return {
@@ -1132,7 +1132,7 @@ export class FireantService {
         };
       }),
       catchError(error => {
-        console.error(`❌ Error fetching institution profile for ${symbol}:`, error);
+
         throw error;
       })
     );
@@ -1145,7 +1145,7 @@ export class FireantService {
     const token = this.tokenSubject.value;
     
     if (!token) {
-      console.error('❌ No authentication token available');
+
       return throwError(() => new Error('No authentication token'));
     }
 
@@ -1154,11 +1154,11 @@ export class FireantService {
       'Content-Type': 'application/json'
     });
 
-    console.log(`👥 Fetching major holders for ${symbol}...`);
+
 
     return this.http.get<any>(`${this.apiUrl}/symbols/${symbol}/holders`, { headers }).pipe(
       map(response => {
-        console.log('✅ Symbol Holders Response:', response);
+
         const data = response.data || response;
         
         if (Array.isArray(data)) {
@@ -1182,7 +1182,7 @@ export class FireantService {
         return [];
       }),
       catchError(error => {
-        console.error(`❌ Error fetching holders for ${symbol}:`, error);
+
         return throwError(() => error);
       })
     );
@@ -1198,7 +1198,7 @@ export class FireantService {
     const token = this.tokenSubject.value;
     
     if (!token) {
-      console.error('❌ No authentication token available');
+
       return throwError(() => new Error('No authentication token'));
     }
 
@@ -1214,11 +1214,11 @@ export class FireantService {
     const queryString = params.join('&');
     const url = `${this.apiUrl}/events/search?${queryString}`;
 
-    console.log(`📅 Fetching events for ${symbol}...`);
+
 
     return this.http.get<any>(url, { headers }).pipe(
       map(response => {
-        console.log('✅ Events Response:', response);
+
         let dataArray = response;
         
         if (response && response.data) {
@@ -1231,7 +1231,7 @@ export class FireantService {
           dataArray = [];
         }
 
-        console.log(`✅ Found ${dataArray.length} events`);
+
 
         return dataArray.map((item: any) => ({
           eventID: item.eventID || item.id || '',
@@ -1246,7 +1246,7 @@ export class FireantService {
         }));
       }),
       catchError(error => {
-        console.error(`❌ Error fetching events for ${symbol}:`, error);
+
         return throwError(() => error);
       })
     );
@@ -1259,7 +1259,7 @@ export class FireantService {
     const token = this.tokenSubject.value;
     
     if (!token) {
-      console.error('❌ No authentication token available');
+
       return throwError(() => new Error('No authentication token'));
     }
 
@@ -1268,11 +1268,11 @@ export class FireantService {
       'Content-Type': 'application/json'
     });
 
-    console.log('🌐 Fetching macro data types...');
+
 
     return this.http.get<any>(`${this.apiUrl}/macro-data/types`, { headers }).pipe(
       map(response => {
-        console.log('✅ Macro Data Types Response:', response);
+
         let dataArray = response;
         
         if (response && response.data) {
@@ -1285,7 +1285,7 @@ export class FireantService {
           dataArray = [];
         }
 
-        console.log(`✅ Found ${dataArray.length} macro data types`);
+
 
         return dataArray.map((item: any) => ({
           type: item.type || '',
@@ -1294,7 +1294,7 @@ export class FireantService {
         }));
       }),
       catchError(error => {
-        console.error('❌ Error fetching macro data types:', error);
+
         return throwError(() => error);
       })
     );
@@ -1308,7 +1308,7 @@ export class FireantService {
     const token = this.tokenSubject.value;
     
     if (!token) {
-      console.error('❌ No authentication token available');
+
       return throwError(() => new Error('No authentication token'));
     }
 
@@ -1317,11 +1317,11 @@ export class FireantService {
       'Content-Type': 'application/json'
     });
 
-    console.log(`🌐 Fetching macro data info for type: ${type}...`);
+
 
     return this.http.get<any>(`${this.apiUrl}/macro-data/${type}/info`, { headers }).pipe(
       map(response => {
-        console.log('✅ Macro Data Info Response:', response);
+
         let dataArray = response;
         
         if (response && response.data) {
@@ -1334,7 +1334,7 @@ export class FireantService {
           dataArray = [];
         }
 
-        console.log(`✅ Found ${dataArray.length} macro data items`);
+
 
         return dataArray.map((item: any) => ({
           id: item.id || 0,
@@ -1362,7 +1362,7 @@ export class FireantService {
         }));
       }),
       catchError(error => {
-        console.error(`❌ Error fetching macro data info for ${type}:`, error);
+
         return throwError(() => error);
       })
     );

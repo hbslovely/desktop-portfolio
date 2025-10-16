@@ -7,7 +7,7 @@ import { WindowManagerService, WindowConfig } from '../../services/window-manage
   standalone: true,
   imports: [CommonModule],
   templateUrl: './window-overview.component.html',
-  styleUrl: './window-overview.component.scss'
+  styleUrl: './window-overview.component.scss',
 })
 export class WindowOverviewComponent {
   @Output() onClose = new EventEmitter<void>();
@@ -44,4 +44,3 @@ export class WindowOverviewComponent {
     this.onClose.emit();
   }
 }
-

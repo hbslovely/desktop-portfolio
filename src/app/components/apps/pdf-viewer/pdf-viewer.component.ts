@@ -7,7 +7,7 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
   standalone: true,
   imports: [CommonModule],
   templateUrl: './pdf-viewer.component.html',
-  styleUrl: './pdf-viewer.component.scss'
+  styleUrl: './pdf-viewer.component.scss',
 })
 export class PdfViewerComponent {
   @Input() set pdfPath(value: string) {
@@ -47,4 +47,3 @@ export class PdfViewerComponent {
     }
   }
 }
-

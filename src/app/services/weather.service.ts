@@ -134,7 +134,7 @@ export class WeatherService {
         },
         (error) => {
           // Fallback to a default location (Ho Chi Minh City)
-          console.warn('Geolocation error, using default location:', error);
+
           resolve({
             lat: 10.8231,
             lon: 106.6297,
@@ -169,7 +169,7 @@ export class WeatherService {
 
     return this.http.get<WeatherData>(`${this.apiUrl}/point`, { params }).pipe(
       catchError(error => {
-        console.error('Weather API error:', error);
+
         return throwError(() => new Error('Failed to fetch weather data'));
       })
     );

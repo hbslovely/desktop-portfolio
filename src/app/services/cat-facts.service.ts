@@ -43,7 +43,7 @@ export class CatFactsService {
         } as CatFact));
       }),
       catchError(error => {
-        console.error('Cat Facts API error:', error);
+
         // Return fallback fact
         return of([{
           _id: 'fallback',

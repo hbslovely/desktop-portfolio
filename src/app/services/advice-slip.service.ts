@@ -33,7 +33,7 @@ export class AdviceSlipService {
         advice: response.slip.advice
       })),
       catchError(error => {
-        console.error('Error fetching advice:', error);
+
         // Return a default advice if API fails
         return of({
           id: 0,
@@ -53,7 +53,7 @@ export class AdviceSlipService {
         advice: response.slip.advice
       })),
       catchError(error => {
-        console.error('Error fetching advice by ID:', error);
+
         return of({
           id: 0,
           advice: 'Believe in yourself and all that you are.'

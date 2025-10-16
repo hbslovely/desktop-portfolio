@@ -162,7 +162,7 @@
                   </div>
                   <div class="detail-row" *ngIf="country.population != null">
                     <i class="pi pi-users"></i>
-                    <span>{{ formatPopulation(country.population) }}</span>
+                    <span>{{ country.population | formatPopulation }}</span>
                   </div>
                   <div class="detail-row" *ngIf="displayType() === 'list' && country.area != null">
                     <i class="pi pi-globe"></i>
@@ -265,7 +265,7 @@
               <i class="pi pi-map stat-icon"></i>
               <div class="stat-content">
                 <span class="stat-label">Area</span>
-                <span class="stat-value">{{ formatArea(selectedCountry()?.area) }}</span>
+                <span class="stat-value">{{ selectedCountry()?.area | formatArea }}</span>
               </div>
             </div>
             <div class="stat-card" *ngIf="selectedCountry()!.population != null && selectedCountry()!.area != null">
@@ -324,7 +324,7 @@
               </div>
               <div class="info-item" *ngIf="selectedCountry()!.area != null">
                 <span class="info-label">Area</span>
-                <span class="info-value">{{ formatArea(selectedCountry()?.area) }}</span>
+                <span class="info-value">{{ selectedCountry()?.area | formatArea }}</span>
               </div>
               <div class="info-item" *ngIf="selectedCountry()!.population != null && selectedCountry()!.area != null">
                 <span class="info-label">Population Density</span>
@@ -606,7 +606,7 @@
                   </div>
                   <div class="border-details">
                     <span class="border-detail"><i class="pi pi-map-marker"></i> {{ border.region }}</span>
-                    <span class="border-detail" *ngIf="border.population != null"><i class="pi pi-users"></i> {{ formatPopulation(border.population) }}</span>
+                    <span class="border-detail" *ngIf="border.population != null"><i class="pi pi-users"></i> {{ border.population | formatPopulation }}</span>
                   </div>
                   <div class="border-capital" *ngIf="border.capital && border.capital.length > 0">
                     <i class="pi pi-building"></i> Capital: {{ getCapital(border) }}

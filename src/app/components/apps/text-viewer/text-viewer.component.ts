@@ -7,7 +7,7 @@ import { HttpClient } from '@angular/common/http';
   standalone: true,
   imports: [CommonModule],
   templateUrl: './text-viewer.component.html',
-  styleUrl: './text-viewer.component.scss'
+  styleUrl: './text-viewer.component.scss',
 })
 export class TextViewerComponent implements OnInit {
   @Input() filePath = '';
@@ -55,7 +55,7 @@ export class TextViewerComponent implements OnInit {
           this.isLoading.set(false);
         },
         error: (error) => {
-          console.error('Error loading file:', error);
+
           this.hasError.set(true);
           this.errorMessage.set(`Failed to load ${this.fileName}`);
           this.isLoading.set(false);

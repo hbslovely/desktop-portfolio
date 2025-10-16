@@ -108,18 +108,6 @@ export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
     maximizable: true,
     statusText: 'Ready'
   },
-  credit: {
-    id: 'credit',
-    title: 'About',
-    icon: 'pi pi-info-circle',
-    component: 'credit',
-    defaultWidth: 1100,
-    defaultHeight: 750,
-    defaultX: 150,
-    defaultY: 60,
-    maximizable: true,
-    statusText: 'About this project'
-  },
   paint: {
     id: 'paint',
     title: 'Paint',
@@ -215,18 +203,6 @@ export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
     defaultY: 60,
     maximizable: true,
     statusText: 'Look up word definitions'
-  },
-  'link-shortener': {
-    id: 'link-shortener',
-    title: 'Link Shortener',
-    icon: 'pi pi-link',
-    component: 'link-shortener',
-    defaultWidth: 950,
-    defaultHeight: 800,
-    defaultX: 200,
-    defaultY: 50,
-    maximizable: true,
-    statusText: 'Shorten long URLs quickly'
   },
   'countries': {
     id: 'countries',

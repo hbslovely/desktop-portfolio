@@ -1,7 +1,30 @@
 <div class="calculator">
   <!-- Display -->
   <div class="display">
-    {{ displayValue() }}
+    <div class="memory-indicator" *ngIf="memoryIndicator()">{{ memoryIndicator() }}</div>
+    <div class="display-value">{{ displayValue() }}</div>
+  </div>
+  
+  <!-- History Toggle -->
+  <div class="history-toggle">
+    <button class="toggle-btn" (click)="toggleHistory()" [class.active]="showHistory()">
+      <i class="pi pi-history"></i> History
+    </button>
+    <button class="clear-history-btn" *ngIf="showHistory() && historyList().length > 0" (click)="clearHistory()">
+      <i class="pi pi-trash"></i>
+    </button>
+  </div>
+  
+  <!-- History Panel -->
+  <div class="history-panel" *ngIf="showHistory()">
+    <div class="history-empty" *ngIf="historyList().length === 0">
+      No calculation history yet
+    </div>
+    <div class="history-list" *ngIf="historyList().length > 0">
+      <div class="history-item" *ngFor="let item of historyList()">
+        {{ item }}
+      </div>
+    </div>
   </div>
   
   <!-- Buttons -->

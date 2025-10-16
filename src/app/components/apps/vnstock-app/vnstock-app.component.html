@@ -83,7 +83,7 @@
             <span class="macro-period" *ngIf="info.frequency">{{info.frequency}}</span>
           </div>
           <div class="macro-value">
-            {{formatNumber(info.lastValue || 0)}} 
+            {{(info.lastValue || 0) | formatNumberVN}} 
             <span class="macro-unit" *ngIf="info.unit">{{info.unit}}</span>
           </div>
           <div class="macro-meta">
@@ -96,15 +96,15 @@
           <div class="macro-stats" *ngIf="info.minValue || info.maxValue || info.averageValue">
             <div class="stat-row">
               <span class="stat-label">Min:</span>
-              <span class="stat-value">{{formatNumber(info.minValue || 0)}}</span>
+              <span class="stat-value">{{(info.minValue || 0) | formatNumberVN}}</span>
             </div>
             <div class="stat-row">
               <span class="stat-label">Max:</span>
-              <span class="stat-value">{{formatNumber(info.maxValue || 0)}}</span>
+              <span class="stat-value">{{(info.maxValue || 0) | formatNumberVN}}</span>
             </div>
             <div class="stat-row" *ngIf="info.averageValue">
               <span class="stat-label">Avg:</span>
-              <span class="stat-value">{{formatNumber(info.averageValue)}}</span>
+              <span class="stat-value">{{info.averageValue | formatNumberVN}}</span>
             </div>
           </div>
         </div>
@@ -194,7 +194,7 @@
           
           <div class="overview-card">
             <div class="card-label">Khối lượng</div>
-            <div class="card-value">{{formatNumber(getCurrentVolume())}}</div>
+            <div class="card-value">{{getCurrentVolume() | formatNumberVN}}</div>
           </div>
           
           <div class="overview-card">
@@ -216,7 +216,7 @@
           </div>
           <div class="fundamental-card">
             <div class="card-label">CP lưu hành</div>
-            <div class="card-value">{{formatNumber(fundamentalData.sharesOutstanding || 0)}}</div>
+            <div class="card-value">{{(fundamentalData.sharesOutstanding || 0) | formatNumberVN}}</div>
           </div>
           <div class="fundamental-card">
             <div class="card-label">EPS</div>
@@ -270,7 +270,7 @@
             <div class="stat-icon">👥</div>
             <div class="stat-content">
               <div class="stat-label">Nhân viên</div>
-              <div class="stat-value">{{formatNumber(institutionProfile.employees)}}</div>
+              <div class="stat-value">{{institutionProfile.employees | formatNumberVN}}</div>
             </div>
           </div>
           <div class="stat-item" *ngIf="institutionProfile.branches">
@@ -424,7 +424,7 @@
                   </div>
                   <div class="holder-detail-item" *ngIf="holder.shares">
                     <span class="detail-label">Số CP:</span>
-                    <span class="detail-value">{{formatNumber(holder.shares)}}</span>
+                    <span class="detail-value">{{holder.shares | formatNumberVN}}</span>
                   </div>
                   <div class="holder-detail-item" *ngIf="holder.institutionHolderSymbol">
                     <span class="detail-label">Mã CK:</span>
@@ -550,7 +550,7 @@
                   <span class="price-value close">{{formatPrice(quote.close || 0)}}</span>
                 </td>
                 <td class="td-volume">
-                  <span class="volume-value">{{formatNumber(quote.volume || 0)}}</span>
+                  <span class="volume-value">{{(quote.volume || 0) | formatNumberVN}}</span>
                 </td>
                 <td class="td-change">
                   <span class="change-value" [class]="getPriceChangeClass(getPriceChange(quote, historicalQuotes[i+1]))" *ngIf="i < historicalQuotes.length - 1">

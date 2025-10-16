@@ -34,7 +34,7 @@ interface WordData {
   standalone: true,
   imports: [CommonModule],
   templateUrl: './dictionary-app.component.html',
-  styleUrl: './dictionary-app.component.scss'
+  styleUrl: './dictionary-app.component.scss',
 })
 export class DictionaryAppComponent implements AfterViewInit {
   @ViewChild('searchInput') searchInput!: ElementRef<HTMLInputElement>;
@@ -86,7 +86,7 @@ export class DictionaryAppComponent implements AfterViewInit {
         }
       },
       error: (err) => {
-        console.error('Dictionary API error:', err);
+
         if (err.status === 404) {
           this.error.set(`No definition found for "${trimmedWord}". Please check the spelling.`);
         } else {
@@ -128,7 +128,7 @@ export class DictionaryAppComponent implements AfterViewInit {
     this.currentAudio.set(audio);
     
     audio.play().catch(err => {
-      console.error('Audio playback error:', err);
+
     });
 
     audio.onended = () => {
@@ -165,7 +165,7 @@ export class DictionaryAppComponent implements AfterViewInit {
         const history = JSON.parse(stored);
         this.searchHistory.set(history);
       } catch (err) {
-        console.error('Error loading search history:', err);
+
       }
     }
   }
@@ -211,4 +211,3 @@ export class DictionaryAppComponent implements AfterViewInit {
     return data.phonetics.find(p => p.audio && p.audio.length > 0) || null;
   }
 }
-
