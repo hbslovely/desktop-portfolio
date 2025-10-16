@@ -47,8 +47,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
 
   windowManager = inject(WindowManagerService);
 
-  // Track intervals and subscriptions for cleanup
-  private timeInterval?: number;
+  // Track subscriptions for cleanup
   private subscriptions: any[] = [];
 
   // Restart state
@@ -65,9 +64,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     private systemRestartService: SystemRestartService,
     private fileSystemService: FileSystemService
   ) {
-    this.updateTime();
-    this.timeInterval = window.setInterval(() => this.updateTime(), 1000);
-
     // Listen for restart requests from lock screen
     this.systemRestartHandler = () => this.restartSystem();
     window.addEventListener('system-restart-requested', this.systemRestartHandler);
@@ -90,7 +86,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   showCreditsWindow = signal(false);
   showHcmcWindow = signal(false);
   showNewsWindow = signal(false);
-  showClockWindow = signal(false);
 
   // File viewer data
   currentTextFile = signal<{ path: string; name: string; type: 'txt' | 'md' } | null>(null);
@@ -118,16 +113,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
 
   // Settings dialog state
   showSettingsDialog = signal(false);
-  currentTime = '';
-  currentDate = '';
-  currentShortDate = '';
-
-  // Clock properties
-  clockNumbers = [ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 ];
-  hourAngle = 0;
-  minuteAngle = 0;
-  secondAngle = 0;
-  clockMode: 'analog' | 'digital' = 'digital'; // Default to digital mode
 
   // Search properties
   searchQuery = '';
@@ -784,14 +769,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     alert(`"${item.name}" has been set as your wallpaper!`);
   }
 
-  onCloseClockWindow() {
-    this.showClockWindow.set(false);
-    // Clear focus if this was the focused window
-    if (this.focusedWindow() === 'clock') {
-      this.focusedWindow.set(null);
-    }
-  }
-
   onDesktopIconSelect(icon: DesktopIconData) {
     // Single click only selects the icon, doesn't open the app
     this.selectedIconId.set(icon.id);
@@ -1304,45 +1281,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     return this.focusedWindow() === windowId;
   }
 
-  updateTime() {
-    const now = new Date();
-    this.currentTime = now.toLocaleTimeString([], {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true
-    });
-    this.currentDate = now.toLocaleDateString([], {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-    this.currentShortDate = now.toLocaleDateString([], {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    });
-
-    // Calculate clock hand angles
-    const hours = now.getHours() % 12;
-    const minutes = now.getMinutes();
-    const seconds = now.getSeconds();
-
-    this.hourAngle = (hours * 30) + (minutes * 0.5); // 30 degrees per hour + minute adjustment
-    this.minuteAngle = minutes * 6; // 6 degrees per minute
-    this.secondAngle = seconds * 6; // 6 degrees per second
-  }
-
-
-
-  openClockWindow() {
-    this.showClockWindow.set(true);
-  }
-
-  toggleClockMode() {
-    this.clockMode = this.clockMode === 'analog' ? 'digital' : 'analog';
-  }
-
   // Desktop context menu methods
   onDesktopRightClick(event: MouseEvent) {
     event.preventDefault();
@@ -1793,11 +1731,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    // Clear interval
-    if (this.timeInterval) {
-      clearInterval(this.timeInterval);
-    }
-
     // Unsubscribe from all subscriptions
     this.subscriptions.forEach(sub => sub?.unsubscribe());
 
