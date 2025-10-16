@@ -187,6 +187,66 @@ export interface SearchResult {
   [key: string]: any;
 }
 
+export interface SymbolEvent {
+  eventID?: string;
+  symbol?: string;
+  eventTitle?: string;
+  eventDesc?: string;
+  eventDate?: string;
+  notifyDate?: string;
+  eventType?: string;
+  attachedFile?: string;
+  [key: string]: any;
+}
+
+export interface MacroDataType {
+  type: string;
+  name: string;
+  description?: string;
+}
+
+export interface MacroDataInfo {
+  id: number;
+  type: string;
+  name: string;
+  nameVN?: string;
+  description?: string;
+  lastValue?: number;
+  lastDate?: string;
+  previousValue?: number;
+  previousDate?: string;
+  firstDate?: string;
+  maxValue?: number;
+  maxDate?: string;
+  minValue?: number;
+  minDate?: string;
+  averageValue?: number;
+  unit?: string;
+  frequency?: string;
+  range?: string;
+  nextRelease?: string;
+  source?: string;
+  historicalValue?: any;
+  [key: string]: any;
+}
+
+export interface SymbolHolder {
+  majorHolderID?: number;
+  individualHolderID?: number;
+  institutionHolderID?: number;
+  institutionHolderSymbol?: string;
+  institutionHolderExchange?: string;
+  name?: string;
+  position?: string;
+  shares?: number;
+  ownership?: number;
+  isOrganization?: boolean;
+  isForeigner?: boolean;
+  isFounder?: boolean;
+  reported?: string;
+  [key: string]: any;
+}
+
 export interface FireAntAuthResponse {
   accessToken: string;
   tokenType?: string;
@@ -1074,6 +1134,236 @@ export class FireantService {
       catchError(error => {
         console.error(`❌ Error fetching institution profile for ${symbol}:`, error);
         throw error;
+      })
+    );
+  }
+
+  /**
+   * Get major holders (shareholders) for a symbol
+   */
+  getSymbolHolders(symbol: string): Observable<SymbolHolder[]> {
+    const token = this.tokenSubject.value;
+    
+    if (!token) {
+      console.error('❌ No authentication token available');
+      return throwError(() => new Error('No authentication token'));
+    }
+
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    });
+
+    console.log(`👥 Fetching major holders for ${symbol}...`);
+
+    return this.http.get<any>(`${this.apiUrl}/symbols/${symbol}/holders`, { headers }).pipe(
+      map(response => {
+        console.log('✅ Symbol Holders Response:', response);
+        const data = response.data || response;
+        
+        if (Array.isArray(data)) {
+          return data.map(holder => ({
+            majorHolderID: holder.majorHolderID || 0,
+            individualHolderID: holder.individualHolderID || 0,
+            institutionHolderID: holder.institutionHolderID || 0,
+            institutionHolderSymbol: holder.institutionHolderSymbol || '',
+            institutionHolderExchange: holder.institutionHolderExchange || '',
+            name: holder.name || '',
+            position: holder.position || '',
+            shares: holder.shares || 0,
+            ownership: holder.ownership || 0,
+            isOrganization: holder.isOrganization || false,
+            isForeigner: holder.isForeigner || false,
+            isFounder: holder.isFounder || false,
+            reported: holder.reported || '',
+            ...holder
+          }));
+        }
+        return [];
+      }),
+      catchError(error => {
+        console.error(`❌ Error fetching holders for ${symbol}:`, error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  /**
+   * Get symbol events
+   * @param symbol - Stock symbol
+   * @param startDate - Start date (optional)
+   * @param endDate - End date (optional)
+   */
+  getSymbolEvents(symbol: string, startDate?: string, endDate?: string): Observable<SymbolEvent[]> {
+    const token = this.tokenSubject.value;
+    
+    if (!token) {
+      console.error('❌ No authentication token available');
+      return throwError(() => new Error('No authentication token'));
+    }
+
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    });
+
+    const params: string[] = [`symbol=${encodeURIComponent(symbol)}`];
+    if (startDate) params.push(`startDate=${encodeURIComponent(startDate)}`);
+    if (endDate) params.push(`endDate=${encodeURIComponent(endDate)}`);
+    
+    const queryString = params.join('&');
+    const url = `${this.apiUrl}/events/search?${queryString}`;
+
+    console.log(`📅 Fetching events for ${symbol}...`);
+
+    return this.http.get<any>(url, { headers }).pipe(
+      map(response => {
+        console.log('✅ Events Response:', response);
+        let dataArray = response;
+        
+        if (response && response.data) {
+          dataArray = Array.isArray(response.data) ? response.data : [response.data];
+        } else if (response && Array.isArray(response)) {
+          dataArray = response;
+        }
+
+        if (!Array.isArray(dataArray)) {
+          dataArray = [];
+        }
+
+        console.log(`✅ Found ${dataArray.length} events`);
+
+        return dataArray.map((item: any) => ({
+          eventID: item.eventID || item.id || '',
+          symbol: item.symbol || symbol,
+          eventTitle: item.eventTitle || item.title || '',
+          eventDesc: item.eventDesc || item.description || '',
+          eventDate: item.eventDate || '',
+          notifyDate: item.notifyDate || '',
+          eventType: item.eventType || '',
+          attachedFile: item.attachedFile || '',
+          ...item
+        }));
+      }),
+      catchError(error => {
+        console.error(`❌ Error fetching events for ${symbol}:`, error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  /**
+   * Get macro data types
+   */
+  getMacroDataTypes(): Observable<MacroDataType[]> {
+    const token = this.tokenSubject.value;
+    
+    if (!token) {
+      console.error('❌ No authentication token available');
+      return throwError(() => new Error('No authentication token'));
+    }
+
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    });
+
+    console.log('🌐 Fetching macro data types...');
+
+    return this.http.get<any>(`${this.apiUrl}/macro-data/types`, { headers }).pipe(
+      map(response => {
+        console.log('✅ Macro Data Types Response:', response);
+        let dataArray = response;
+        
+        if (response && response.data) {
+          dataArray = Array.isArray(response.data) ? response.data : [response.data];
+        } else if (response && Array.isArray(response)) {
+          dataArray = response;
+        }
+
+        if (!Array.isArray(dataArray)) {
+          dataArray = [];
+        }
+
+        console.log(`✅ Found ${dataArray.length} macro data types`);
+
+        return dataArray.map((item: any) => ({
+          type: item.type || '',
+          name: item.name || '',
+          description: item.description || ''
+        }));
+      }),
+      catchError(error => {
+        console.error('❌ Error fetching macro data types:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  /**
+   * Get macro data info by type
+   * @param type - Macro data type
+   */
+  getMacroDataInfo(type: string): Observable<MacroDataInfo[]> {
+    const token = this.tokenSubject.value;
+    
+    if (!token) {
+      console.error('❌ No authentication token available');
+      return throwError(() => new Error('No authentication token'));
+    }
+
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    });
+
+    console.log(`🌐 Fetching macro data info for type: ${type}...`);
+
+    return this.http.get<any>(`${this.apiUrl}/macro-data/${type}/info`, { headers }).pipe(
+      map(response => {
+        console.log('✅ Macro Data Info Response:', response);
+        let dataArray = response;
+        
+        if (response && response.data) {
+          dataArray = Array.isArray(response.data) ? response.data : [response.data];
+        } else if (response && Array.isArray(response)) {
+          dataArray = response;
+        }
+
+        if (!Array.isArray(dataArray)) {
+          dataArray = [];
+        }
+
+        console.log(`✅ Found ${dataArray.length} macro data items`);
+
+        return dataArray.map((item: any) => ({
+          id: item.id || 0,
+          type: item.type || type,
+          name: item.name || '',
+          nameVN: item.nameVN || item.name || '',
+          description: item.description || '',
+          lastValue: item.lastValue || 0,
+          lastDate: item.lastDate || '',
+          previousValue: item.previousValue || 0,
+          previousDate: item.previousDate || '',
+          firstDate: item.firstDate || '',
+          maxValue: item.maxValue || 0,
+          maxDate: item.maxDate || '',
+          minValue: item.minValue || 0,
+          minDate: item.minDate || '',
+          averageValue: item.averageValue || 0,
+          unit: item.unit || '',
+          frequency: item.frequency || '',
+          range: item.range || '',
+          nextRelease: item.nextRelease || '',
+          source: item.source || '',
+          historicalValue: item.historicalValue || {},
+          ...item
+        }));
+      }),
+      catchError(error => {
+        console.error(`❌ Error fetching macro data info for ${type}:`, error);
+        return throwError(() => error);
       })
     );
   }
