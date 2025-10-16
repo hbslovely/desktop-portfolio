@@ -1,114 +1,113 @@
 import { DesktopIconData } from '../components/desktop-icon/desktop-icon.component';
 
 export const APP_ICONS: DesktopIconData[] = [
-  // Column 1 (x: 20)
-  {
-    id: 'calculator',
-    name: 'Calculator',
-    icon: 'assets/images/icons/calculator.png',
-    type: 'application',
-    position: { x: 20, y: 20 }
-  },
+  // Column 1 (x: 20) - Personal & Core Apps
   {
     id: 'my-info',
     name: 'My Information',
     icon: 'assets/images/icons/profile.png',
     type: 'application',
-    position: { x: 20, y: 120 }
-  },
-  {
-    id: 'love',
-    name: 'Love',
-    icon: 'assets/images/icons/love.png',
-    type: 'application',
-    position: { x: 20, y: 220 }
+    position: { x: 20, y: 20 }
   },
   {
     id: 'explorer',
     name: 'Explorer',
     icon: 'assets/images/icons/explorer.png',
     type: 'application',
+    position: { x: 20, y: 120 }
+  },
+  {
+    id: 'calculator',
+    name: 'Calculator',
+    icon: 'assets/images/icons/calculator.png',
+    type: 'application',
+    position: { x: 20, y: 220 }
+  },
+  {
+    id: 'paint',
+    name: 'Paint',
+    icon: 'assets/images/icons/paint.png',
+    type: 'application',
     position: { x: 20, y: 320 }
+  },
+  {
+    id: 'task-manager',
+    name: 'Task Manager',
+    icon: 'assets/images/icons/system.png',
+    type: 'application',
+    position: { x: 20, y: 420 }
   },
   {
     id: 'machine-info',
     name: 'System Info',
     icon: 'assets/images/icons/info.png',
     type: 'application',
-    position: { x: 20, y: 420 }
-  },
-  {
-    id: 'vnstock',
-    name: 'VNStock',
-    icon: 'assets/images/icons/stock.png',
-    type: 'application',
     position: { x: 20, y: 520 }
   },
-  // Column 2 (x: 120)
-  {
-    id: 'paint',
-    name: 'Paint',
-    icon: 'assets/images/icons/paint.png',
-    type: 'application',
-    position: { x: 120, y: 20 }
-  },
-  {
-    id: 'credits',
-    name: 'Credits',
-    icon: 'assets/images/icons/star.png',
-    type: 'application',
-    position: { x: 120, y: 220 }
-  },
-  {
-    id: 'hcmc',
-    name: 'Ho Chi Minh City',
-    icon: 'assets/images/icons/globe.png',
-    type: 'application',
-    position: { x: 120, y: 320 }
-  },
+  // Column 2 (x: 120) - Information & Reference
   {
     id: 'news',
     name: 'News',
     icon: 'assets/images/icons/news.png',
     type: 'application',
-    position: { x: 120, y: 420 }
-  },
-  // Column 3 (x: 220)
-  {
-    id: 'task-manager',
-    name: 'Task Manager',
-    icon: 'assets/images/icons/system.png',
-    type: 'application',
-    position: { x: 220, y: 20 }
+    position: { x: 120, y: 20 }
   },
   {
     id: 'weather',
     name: 'Weather',
     icon: 'assets/images/icons/weather.png',
     type: 'application',
-    position: { x: 220, y: 120 }
+    position: { x: 120, y: 120 }
   },
   {
     id: 'dictionary',
     name: 'Dictionary',
     icon: 'assets/images/icons/book.png',
     type: 'application',
-    position: { x: 220, y: 220 }
+    position: { x: 120, y: 220 }
   },
   {
     id: 'countries',
     name: 'Countries',
     icon: 'assets/images/icons/world.png',
     type: 'application',
-    position: { x: 220, y: 320 }
+    position: { x: 120, y: 320 }
   },
-  // Column 4 (x: 320)
+  {
+    id: 'hcmc',
+    name: 'Ho Chi Minh City',
+    icon: 'assets/images/icons/globe.png',
+    type: 'application',
+    position: { x: 120, y: 420 }
+  },
+  // Column 3 (x: 220) - Special Apps
+  {
+    id: 'calendar',
+    name: 'Lịch Việt Nam',
+    icon: 'assets/images/icons/calendar.png',
+    type: 'application',
+    position: { x: 220, y: 20 }
+  },
+  {
+    id: 'vnstock',
+    name: 'VNStock',
+    icon: 'assets/images/icons/stock.png',
+    type: 'application',
+    position: { x: 220, y: 120 }
+  },
   {
     id: 'yugioh',
     name: 'Yu-Gi-Oh! Cards',
     icon: 'assets/images/icons/yugi.png',
     type: 'application',
-    position: { x: 320, y: 120 }
+    position: { x: 220, y: 220 }
+  },
+  {
+    id: 'love',
+    name: 'Love',
+    icon: 'assets/images/icons/love.png',
+    type: 'application',
+    position: { x: 220, y: 320 }
   }
 ];
 
@@ -132,7 +131,6 @@ function getAppDescription(appId: string): string {
     'explorer': 'Browse and manage files and folders',
     'machine-info': 'View system information and device details',
     'paint': 'Create drawings and artwork with various tools',
-    'credits': 'View project credits and acknowledgments',
     'hcmc': 'Explore Ho Chi Minh City attractions and culture',
     'news': 'Read latest news headlines from around the world',
     'task-manager': 'View and manage all open windows and processes',
@@ -140,7 +138,8 @@ function getAppDescription(appId: string): string {
     'dictionary': 'Look up word definitions, pronunciations, and synonyms',
     'countries': 'Explore detailed information about countries around the world',
     'yugioh': 'Browse and search the complete Yu-Gi-Oh! card database with filters',
-    'vnstock': 'View real-time Vietnam stock market prices and data from FireAnt'
+    'vnstock': 'View real-time Vietnam stock market prices and data from FireAnt',
+    'calendar': 'Lịch Việt Nam với âm lịch, ngày lễ tết, con giáp, ngày đẹp, tính ngày'
   };
   return descriptions[appId] || 'Application';
 }
@@ -153,7 +152,6 @@ function getAppKeywords(appId: string): string[] {
     'explorer': ['files', 'folders', 'browse', 'manage', 'directory'],
     'machine-info': ['system', 'device', 'hardware', 'specs', 'info'],
     'paint': ['draw', 'art', 'design', 'canvas', 'creative'],
-    'credits': ['acknowledgments', 'thanks', 'contributors', 'team'],
     'hcmc': ['vietnam', 'saigon', 'city', 'travel', 'culture', 'attractions'],
     'news': ['headlines', 'articles', 'media', 'journalism', 'current', 'events'],
     'task-manager': ['processes', 'windows', 'performance', 'monitor', 'manager', 'tasks'],
@@ -161,7 +159,8 @@ function getAppKeywords(appId: string): string[] {
     'dictionary': ['words', 'definitions', 'meaning', 'vocabulary', 'thesaurus', 'synonyms', 'antonyms', 'pronunciation'],
     'countries': ['world', 'nations', 'flags', 'capitals', 'geography', 'borders', 'population', 'currencies', 'languages', 'maps', 'continents', 'regions'],
     'yugioh': ['cards', 'trading', 'game', 'deck', 'monster', 'spell', 'trap', 'duel', 'ygoprodeck', 'database', 'search', 'filter', 'archetype'],
-    'vnstock': ['stock', 'market', 'vietnam', 'fireant', 'trading', 'shares', 'prices', 'hose', 'hnx', 'vn30', 'stocks', 'finance', 'investment']
+    'vnstock': ['stock', 'market', 'vietnam', 'fireant', 'trading', 'shares', 'prices', 'hose', 'hnx', 'vn30', 'stocks', 'finance', 'investment'],
+    'calendar': ['lich', 'lịch', 'am lich', 'âm lịch', 'ngay le', 'ngày lễ', 'tet', 'tết', 'con giap', 'con giáp', 'ngay dep', 'ngày đẹp', 'tinh ngay', 'tính ngày', 'dem ngay', 'đếm ngày', 'vietnam', 'lunar', 'holiday']
   };
   return keywords[appId] || [];
 }

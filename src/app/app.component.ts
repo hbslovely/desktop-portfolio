@@ -21,6 +21,7 @@ import { YugiohAppComponent } from './components/apps/yugioh-app/yugioh-app.comp
 import { YugiohCardDetailComponent } from './components/apps/yugioh-card-detail/yugioh-card-detail.component';
 import { AboutMeComponent } from './components/apps/about-me/about-me.component';
 import { VnstockAppComponent } from './components/apps/vnstock-app/vnstock-app.component';
+import { CalendarAppComponent } from './components/apps/calendar-app/calendar-app.component';
 import { WelcomeScreenComponent } from './components/welcome-screen/welcome-screen.component';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -40,7 +41,7 @@ import { FileSystemService } from './services/file-system.service';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [ WelcomeScreenComponent, WindowComponent, DesktopIconComponent, CalculatorComponent, IframeAppComponent, LoveAppComponent, ExplorerComponent, TextViewerComponent, ImageViewerComponent, PdfViewerComponent, MachineInfoComponent, PaintAppComponent, HcmcAppComponent, NewsAppComponent, SettingsAppComponent, TaskManagerComponent, WeatherAppComponent, DictionaryAppComponent, CountriesAppComponent, YugiohAppComponent, YugiohCardDetailComponent, AboutMeComponent, VnstockAppComponent, CommonModule, FormsModule, SettingsDialogComponent ],
+  imports: [ WelcomeScreenComponent, WindowComponent, DesktopIconComponent, CalculatorComponent, IframeAppComponent, LoveAppComponent, ExplorerComponent, TextViewerComponent, ImageViewerComponent, PdfViewerComponent, MachineInfoComponent, PaintAppComponent, HcmcAppComponent, NewsAppComponent, SettingsAppComponent, TaskManagerComponent, WeatherAppComponent, DictionaryAppComponent, CountriesAppComponent, YugiohAppComponent, YugiohCardDetailComponent, AboutMeComponent, VnstockAppComponent, CalendarAppComponent, CommonModule, FormsModule, SettingsDialogComponent ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
 })
@@ -182,6 +183,9 @@ export class AppComponent implements AfterViewInit, OnDestroy {
 
   // Desktop icons from configuration
   testIcons: DesktopIconData[] = APP_ICONS;
+
+  // Selected desktop icon
+  selectedIconId = signal<string | null>(null);
 
   // Desktop widgets
   showDesktopWidgets = signal(true);
@@ -830,9 +834,8 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   }
 
   onDesktopIconSelect(icon: DesktopIconData) {
-
     // Single click only selects the icon, doesn't open the app
-    // This is handled by the desktop-icon component itself
+    this.selectedIconId.set(icon.id);
   }
 
   onDesktopIconDoubleClick(icon: DesktopIconData) {
@@ -1516,6 +1519,13 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     });
     // Close start menu if open
     this.showStartMenu.set(false);
+    // Clear icon selection on desktop right-click
+    this.selectedIconId.set(null);
+  }
+
+  onDesktopClick(event: MouseEvent) {
+    // Clear icon selection when clicking on empty desktop area
+    this.selectedIconId.set(null);
   }
 
   hideDesktopContextMenu() {

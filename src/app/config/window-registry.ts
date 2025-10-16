@@ -18,7 +18,7 @@ export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
     icon: 'pi pi-calculator',
     component: 'calculator',
     defaultWidth: 350,
-    defaultHeight: 500,
+    defaultHeight: 600,
     defaultX: 100,
     defaultY: 100,
     maximizable: false,
@@ -251,6 +251,18 @@ export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
     defaultY: 50,
     maximizable: true,
     statusText: 'Vietnam stock prices from FireAnt'
+  },
+  'calendar': {
+    id: 'calendar',
+    title: 'Lịch Việt Nam',
+    icon: 'pi pi-calendar',
+    component: 'calendar',
+    defaultWidth: 750,
+    defaultHeight: 650,
+    defaultX: 200,
+    defaultY: 80,
+    maximizable: true,
+    statusText: 'Vietnamese Calendar'
   }
 };
 
