@@ -83,10 +83,15 @@ export class ExplorerComponent implements OnInit {
     // Watch for changes in the shared file system
     effect(() => {
       const sharedFileSystem = this.fileSystemService.getFileSystem()();
-      if (sharedFileSystem && !this.externalFileSystem) {
-        this.fileSystem.set(sharedFileSystem);
+      if (sharedFileSystem) {
+        console.log('Explorer: Received file system update from service');
+        // Always update from shared file system if available
+        if (!this.externalFileSystem) {
+          this.fileSystem.set(sharedFileSystem);
+          console.log('Explorer: Local file system updated');
+        }
       }
-    });
+    }, { allowSignalWrites: true });
   }
   
   ngOnInit() {
@@ -219,9 +224,11 @@ export class ExplorerComponent implements OnInit {
     this.http.get<{fileSystem: FileSystemItem}>('assets/json/explore.json')
       .subscribe({
         next: (data) => {
+          console.log('Explorer: Loaded file system from JSON');
           this.fileSystem.set(data.fileSystem);
           // Also update the shared file system service
           this.fileSystemService.setFileSystem(data.fileSystem);
+          console.log('Explorer: Shared file system service updated');
         },
         error: (error) => {
           console.error('Failed to load file system:', error);
@@ -292,6 +299,33 @@ export class ExplorerComponent implements OnInit {
     const fileExtension = fileName.split('.').pop() || '';
     
     console.log('Opening file:', item.name, 'Extension:', fileExtension);
+    console.log('File content path:', item.content);
+    
+    // Check if this is a virtual file
+    if (item.content?.startsWith('virtual-file://')) {
+      const virtualPath = item.content.replace('virtual-file://', '');
+      console.log('Loading virtual file from localStorage:', virtualPath);
+      
+      const content = this.fileSystemService.loadVirtualFile(virtualPath);
+      if (content) {
+        console.log('Virtual file content loaded successfully');
+        // Create a modified item with the actual content
+        const itemWithContent = {
+          ...item,
+          content: content
+        };
+        
+        // Emit file open event with the loaded content
+        this.onFileOpen.emit({
+          item: itemWithContent,
+          fileType: this.getFileType(fileExtension),
+          extension: fileExtension
+        });
+        return;
+      } else {
+        console.error('Failed to load virtual file content');
+      }
+    }
     
     // Emit file open event to parent component
     this.onFileOpen.emit({

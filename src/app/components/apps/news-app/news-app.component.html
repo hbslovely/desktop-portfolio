@@ -1,219 +1,273 @@
-<div class="news-hub" [class.viewing-article]="showArticleViewer()">
+<div class="news-hub-v2" [class.viewing-article]="showArticleViewer()">
   <!-- Main Content View -->
   <div class="main-view" *ngIf="!showArticleViewer()">
-    <!-- Compact Header -->
-    <div class="compact-header">
-      <div class="header-left">
-        <i class="pi pi-bookmark"></i>
-        <h2>Content Hub</h2>
-        <span class="article-count">{{ filteredArticles().length }} items</span>
+    
+    <!-- Top Bar -->
+    <div class="top-bar">
+      <div class="brand">
+        <i class="pi pi-bolt"></i>
+        <span class="brand-text">DEV<span class="highlight">News</span></span>
       </div>
-      <button (click)="refreshNews()" class="icon-btn" [class.loading]="loading()" title="Refresh">
-        <i class="pi pi-refresh"></i>
-      </button>
-    </div>
-
-    <!-- Compact Controls -->
-    <div class="compact-controls">
-      <!-- Source Tabs -->
-      <div class="source-tabs">
-        <button
-          *ngFor="let source of sources"
-          (click)="selectSource(source.id)"
-          [class.active]="selectedSource() === source.id"
-          class="tab-btn">
-          <i [class]="source.icon"></i>
-          <span>{{ source.name }}</span>
-        </button>
-      </div>
-
-      <!-- Search & Filters -->
-      <div class="compact-search-filters">
-        <div class="search-compact">
+      
+      <div class="top-controls">
+        <!-- Search -->
+        <div class="search-box">
           <i class="pi pi-search"></i>
           <input 
             type="text" 
-            placeholder="Search..." 
+            placeholder="Search articles..." 
             [value]="searchTerm()"
             (input)="onSearchChange($event)">
-          <button *ngIf="searchTerm()" (click)="clearSearch()" class="clear-btn">
+          <button *ngIf="searchTerm()" (click)="clearSearch()" class="clear-search" title="Clear search">
             <i class="pi pi-times"></i>
           </button>
         </div>
 
-        <div class="filter-btns">
+        <!-- View Modes -->
+        <div class="view-modes">
           <button
-            *ngFor="let filter of filters"
-            (click)="selectFilter(filter.id)"
-            [class.active]="selectedFilter() === filter.id"
-            class="filter-chip"
-            [title]="filter.name">
-            <i [class]="filter.icon"></i>
+            *ngFor="let mode of viewModes"
+            (click)="setViewMode(mode.id)"
+            [class.active]="viewMode() === mode.id"
+            class="mode-btn"
+            [title]="mode.tooltip">
+            <i [class]="mode.icon"></i>
           </button>
         </div>
+
+        <!-- Refresh -->
+        <button (click)="refreshNews()" class="refresh-btn" [class.loading]="loading()" title="Refresh articles">
+          <i class="pi pi-refresh"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Category Pills -->
+    <div class="category-bar">
+      <div class="category-scroll">
+        <button
+          *ngFor="let category of categories"
+          (click)="selectCategory(category.id)"
+          [class.active]="selectedCategory() === category.id"
+          class="category-pill"
+          [title]="'Show ' + category.name + ' articles'">
+          <i [class]="category.icon"></i>
+          <span>{{ category.name }}</span>
+        </button>
+      </div>
+      
+      <!-- Filter Dropdown -->
+      <div class="filter-dropdown">
+        <button
+          *ngFor="let filter of filters"
+          (click)="selectFilter(filter.id)"
+          [class.active]="selectedFilter() === filter.id"
+          class="filter-btn"
+          [title]="'Filter by ' + filter.name">
+          <i [class]="filter.icon"></i>
+        </button>
       </div>
     </div>
 
     <!-- Loading State -->
-    <div *ngIf="loading()" class="loading-compact">
-      <div class="spinner-small"></div>
-      <p>Loading content...</p>
+    <div *ngIf="loading()" class="loading-state">
+      <div class="spinner-modern"></div>
+      <p>Loading amazing content...</p>
     </div>
 
     <!-- Error State -->
-    <div *ngIf="error() && !loading()" class="error-compact">
-      <i class="pi pi-exclamation-triangle"></i>
+    <div *ngIf="error() && !loading()" class="error-state">
+      <i class="pi pi-exclamation-circle"></i>
+      <h3>Oops! Something went wrong</h3>
       <p>{{ error() }}</p>
-      <button (click)="refreshNews()" class="retry-compact">
+      <button (click)="refreshNews()" class="retry-btn">
         <i class="pi pi-refresh"></i>
-        Retry
+        Try Again
       </button>
     </div>
 
-    <!-- Compact Articles List -->
-    <div *ngIf="!loading() && !error()" class="articles-compact">
+    <!-- Articles Grid -->
+    <div *ngIf="!loading() && !error()" class="articles-grid" [attr.data-view]="viewMode()">
+      
+      <!-- Featured Article (First one if available) -->
+      <div *ngIf="filteredArticles().length > 0" class="featured-article" (click)="openArticle(filteredArticles()[0])">
+        <div class="featured-image">
+          <img 
+            [src]="filteredArticles()[0].image_url" 
+            [alt]="filteredArticles()[0].title"
+            (error)="onImageError($event)">
+          <div class="featured-overlay"></div>
+          <div class="featured-badge" *ngIf="filteredArticles()[0].featured">
+            <i class="pi pi-star-fill"></i>
+            <span>Featured</span>
+          </div>
+        </div>
+        <div class="featured-content">
+          <div class="featured-meta">
+            <span class="author">
+              <i class="pi pi-user"></i>
+              {{ filteredArticles()[0].source }}
+            </span>
+            <span class="time">{{ getTimeAgo(filteredArticles()[0].published_at) }}</span>
+            <span class="reading" *ngIf="filteredArticles()[0].reading_time">
+              <i class="pi pi-clock"></i>
+              {{ filteredArticles()[0].reading_time }} min
+            </span>
+          </div>
+          <h2 class="featured-title">{{ filteredArticles()[0].title }}</h2>
+          <p class="featured-summary">{{ filteredArticles()[0].summary }}</p>
+          <div class="featured-tags" *ngIf="filteredArticles()[0].tags && filteredArticles()[0].tags!.length > 0">
+            <span *ngFor="let tag of filteredArticles()[0].tags!.slice(0, 3)" class="tag">#{{ tag }}</span>
+          </div>
+          <div class="featured-stats">
+            <span class="stat" *ngIf="filteredArticles()[0].reactions">
+              <i class="pi pi-heart-fill"></i>
+              {{ formatNumber(filteredArticles()[0].reactions!) }}
+            </span>
+            <span class="stat" *ngIf="filteredArticles()[0].comments_count">
+              <i class="pi pi-comment"></i>
+              {{ formatNumber(filteredArticles()[0].comments_count!) }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Regular Articles (Skip first one) -->
       <div 
-        *ngFor="let article of filteredArticles()" 
-        class="article-compact"
+        *ngFor="let article of filteredArticles().slice(1)" 
+        class="article-item"
         (click)="openArticle(article)">
-        <div class="article-thumb">
+        <div class="article-image">
           <img 
             [src]="article.image_url" 
             [alt]="article.title"
-            (error)="onImageError($event)"
-            loading="lazy">
-          <span 
-            class="type-badge" 
-            [style.background]="getArticleTypeColor(article.type)">
-            {{ getArticleTypeLabel(article.type) }}
+            (error)="onImageError($event)">
+          <div class="image-overlay"></div>
+          <span class="featured-star" *ngIf="article.featured">
+            <i class="pi pi-star-fill"></i>
           </span>
         </div>
-        <div class="article-info">
-          <div class="article-meta-compact">
-            <span class="source-compact">{{ article.source }}</span>
-            <span class="dot">•</span>
-            <span class="time-compact">{{ getTimeAgo(article.published_at) }}</span>
-            <span *ngIf="article.featured" class="featured-star">
-              <i class="pi pi-star-fill"></i>
-            </span>
-            <span *ngIf="article.reading_time" class="reading-time">
-              <i class="pi pi-clock"></i>
-              {{ article.reading_time }}min
-            </span>
+        <div class="article-content">
+          <div class="article-header">
+            <span class="article-author">{{ article.source }}</span>
+            <span class="article-time">{{ getTimeAgo(article.published_at) }}</span>
           </div>
-          <h3 class="article-title-compact">{{ article.title }}</h3>
-          <p class="article-summary-compact">{{ article.summary }}</p>
-          <div class="article-footer-compact">
-            <div class="tags-compact" *ngIf="article.tags && article.tags.length > 0">
-              <span *ngFor="let tag of article.tags.slice(0, 3)" class="tag-chip">
-                {{ tag }}
+          <h3 class="article-title">{{ article.title }}</h3>
+          <p class="article-excerpt">{{ article.summary }}</p>
+          <div class="article-footer">
+            <div class="article-tags" *ngIf="article.tags && article.tags.length > 0">
+              <span *ngFor="let tag of article.tags.slice(0, 2)" class="mini-tag">#{{ tag }}</span>
+            </div>
+            <div class="article-metrics">
+              <span class="metric" *ngIf="article.reactions">
+                <i class="pi pi-heart"></i>
+                {{ formatNumber(article.reactions) }}
+              </span>
+              <span class="metric" *ngIf="article.comments_count">
+                <i class="pi pi-comment"></i>
+                {{ formatNumber(article.comments_count) }}
+              </span>
+              <span class="metric" *ngIf="article.reading_time">
+                <i class="pi pi-clock"></i>
+                {{ article.reading_time }}m
               </span>
             </div>
-            <span class="read-link">
-              Read article
-              <i class="pi pi-arrow-right"></i>
-            </span>
           </div>
         </div>
       </div>
 
       <!-- Empty State -->
-      <div *ngIf="filteredArticles().length === 0" class="empty-compact">
-        <i class="pi pi-inbox"></i>
-        <p>No articles found</p>
-        <button (click)="selectSource('all'); selectFilter('all'); clearSearch()" class="reset-compact">
-          Reset Filters
+      <div *ngIf="filteredArticles().length === 0" class="empty-state">
+        <div class="empty-icon">
+          <i class="pi pi-inbox"></i>
+        </div>
+        <h3>No articles found</h3>
+        <p>Try adjusting your search or filters</p>
+        <button (click)="clearSearch(); selectFilter('all')" class="clear-btn">
+          Clear Filters
         </button>
       </div>
     </div>
   </div>
 
-  <!-- Article Viewer with Direct Content -->
+  <!-- Article Viewer -->
   <div class="article-viewer" *ngIf="showArticleViewer()">
     <div class="viewer-header">
-      <div class="viewer-info">
-        <button (click)="closeArticleViewer()" class="back-btn">
-          <i class="pi pi-arrow-left"></i>
-          Back
-        </button>
-        <div class="viewer-meta">
-          <span 
-            class="type-badge-viewer" 
-            [style.background]="getArticleTypeColor(selectedArticle()?.type || 'news')">
-            {{ getArticleTypeLabel(selectedArticle()?.type || 'news') }}
-          </span>
-          <span class="viewer-source">{{ selectedArticle()?.source }}</span>
-        </div>
-      </div>
+      <button (click)="closeArticleViewer()" class="back-button" title="Back to articles">
+        <i class="pi pi-arrow-left"></i>
+        <span>Back</span>
+      </button>
       <div class="viewer-actions">
-        <button (click)="openInNewTab()" class="icon-btn" title="Open in new tab">
+        <button (click)="openInNewTab()" class="action-btn" title="Open in new tab">
           <i class="pi pi-external-link"></i>
         </button>
-        <button (click)="closeArticleViewer()" class="icon-btn" title="Close">
+        <button (click)="closeArticleViewer()" class="action-btn close" title="Close article">
           <i class="pi pi-times"></i>
         </button>
       </div>
     </div>
 
     <div class="viewer-content">
-      <!-- Loading State -->
+      <!-- Loading -->
       <div *ngIf="articleLoading()" class="article-loading">
-        <div class="spinner-small"></div>
+        <div class="spinner-modern"></div>
         <p>Loading article...</p>
       </div>
 
-      <!-- Error State -->
+      <!-- Error -->
       <div *ngIf="articleError() && !articleLoading()" class="article-error">
         <i class="pi pi-exclamation-triangle"></i>
         <p>{{ articleError() }}</p>
-        <button (click)="openInNewTab()" class="open-external-btn">
+        <button (click)="openInNewTab()" class="open-external">
           <i class="pi pi-external-link"></i>
           Open in Browser
         </button>
       </div>
 
       <!-- Article Content -->
-      <div *ngIf="!articleLoading() && !articleError() && selectedArticle()" class="article-content-detail">
-        <!-- Article Header -->
-        <div class="article-header-detail">
-          <img 
-            *ngIf="selectedArticle()?.image_url"
-            [src]="selectedArticle()!.image_url" 
-            [alt]="selectedArticle()!.title"
-            class="article-cover-image"
-            (error)="onImageError($event)">
-          
-          <div class="article-title-section">
-            <h1 class="article-title-detail">{{ selectedArticle()?.title }}</h1>
-            <div class="article-meta-detail">
-              <div class="meta-left">
-                <span class="author">
-                  <i class="pi pi-user"></i>
-                  {{ selectedArticle()?.author || selectedArticle()?.source }}
-                </span>
-                <span class="dot">•</span>
-                <span class="date">{{ getTimeAgo(selectedArticle()!.published_at) }}</span>
-                <span *ngIf="selectedArticle()?.reading_time" class="dot">•</span>
-                <span *ngIf="selectedArticle()?.reading_time" class="reading-time">
-                  <i class="pi pi-clock"></i>
-                  {{ selectedArticle()?.reading_time }} min read
-                </span>
-              </div>
-              <div class="meta-tags" *ngIf="selectedArticle()?.tags && selectedArticle()!.tags!.length > 0">
-                <span *ngFor="let tag of selectedArticle()?.tags?.slice(0, 5)" class="tag-detail">
-                  #{{ tag }}
-                </span>
-              </div>
-            </div>
-          </div>
+      <article *ngIf="!articleLoading() && !articleError() && selectedArticle()" class="article-detail">
+        <div class="article-hero" *ngIf="selectedArticle()?.image_url">
+          <img [src]="selectedArticle()!.image_url" [alt]="selectedArticle()!.title">
+          <div class="hero-overlay"></div>
         </div>
 
-        <!-- Article Body -->
-        <div 
-          class="article-body-detail" 
-          [innerHTML]="selectedArticle()?.body || selectedArticle()?.summary">
+        <div class="article-container">
+          <div class="article-meta-bar">
+            <div class="meta-left">
+              <span class="author-pill">
+                <i class="pi pi-user"></i>
+                {{ selectedArticle()?.author || selectedArticle()?.source }}
+              </span>
+              <span class="date-pill">
+                <i class="pi pi-calendar"></i>
+                {{ getTimeAgo(selectedArticle()!.published_at) }}
+              </span>
+              <span class="time-pill" *ngIf="selectedArticle()?.reading_time">
+                <i class="pi pi-clock"></i>
+                {{ selectedArticle()?.reading_time }} min read
+              </span>
+            </div>
+            <div class="meta-stats">
+              <span class="stat-pill" *ngIf="selectedArticle()?.reactions">
+                <i class="pi pi-heart-fill"></i>
+                {{ formatNumber(selectedArticle()!.reactions!) }}
+              </span>
+              <span class="stat-pill" *ngIf="selectedArticle()?.comments_count">
+                <i class="pi pi-comment"></i>
+                {{ formatNumber(selectedArticle()!.comments_count!) }}
+              </span>
+            </div>
+          </div>
+
+          <h1 class="article-heading">{{ selectedArticle()?.title }}</h1>
+
+          <div class="article-tags-row" *ngIf="selectedArticle()?.tags && selectedArticle()!.tags!.length > 0">
+            <span *ngFor="let tag of selectedArticle()?.tags" class="article-tag">#{{ tag }}</span>
+          </div>
+
+          <div class="article-body" [innerHTML]="selectedArticle()?.body || selectedArticle()?.summary"></div>
         </div>
-      </div>
+      </article>
     </div>
   </div>
 </div>

@@ -5,7 +5,6 @@ import { CalculatorComponent } from './components/apps/calculator/calculator.com
 import { IframeAppComponent } from './components/apps/iframe-app/iframe-app.component';
 import { LoveAppComponent } from './components/apps/love-app/love-app.component';
 import { ExplorerComponent, FileOpenEvent, ContextMenuEvent, NewFileData } from './components/apps/explorer/explorer.component';
-import { SaveFileEvent } from './components/apps/text-editor/text-editor.component';
 import { TextViewerComponent } from './components/apps/text-viewer/text-viewer.component';
 import { ImageViewerComponent } from './components/apps/image-viewer/image-viewer.component';
 import { PdfViewerComponent } from './components/apps/pdf-viewer/pdf-viewer.component';
@@ -21,7 +20,6 @@ import { WeatherAppComponent } from './components/apps/weather-app/weather-app.c
 import { DictionaryAppComponent } from './components/apps/dictionary-app/dictionary-app.component';
 import { LinkShortenerComponent } from './components/apps/link-shortener/link-shortener.component';
 import { CountriesAppComponent } from './components/apps/countries-app/countries-app.component';
-import { TextEditorComponent } from './components/apps/text-editor/text-editor.component';
 import { YugiohAppComponent } from './components/apps/yugioh-app/yugioh-app.component';
 import { YugiohCardDetailComponent } from './components/apps/yugioh-card-detail/yugioh-card-detail.component';
 import { AboutMeComponent } from './components/apps/about-me/about-me.component';
@@ -45,7 +43,7 @@ import { FileSystemService } from './services/file-system.service';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [ WelcomeScreenComponent, WindowComponent, DesktopIconComponent, CalculatorComponent, IframeAppComponent, LoveAppComponent, ExplorerComponent, TextViewerComponent, ImageViewerComponent, PdfViewerComponent, MachineInfoComponent, CreditAppComponent, PaintAppComponent, CreditsAppComponent, HcmcAppComponent, NewsAppComponent, SettingsAppComponent, TaskManagerComponent, WeatherAppComponent, DictionaryAppComponent, LinkShortenerComponent, CountriesAppComponent, TextEditorComponent, YugiohAppComponent, YugiohCardDetailComponent, AboutMeComponent, VnstockAppComponent, CommonModule, FormsModule, SettingsDialogComponent ],
+  imports: [ WelcomeScreenComponent, WindowComponent, DesktopIconComponent, CalculatorComponent, IframeAppComponent, LoveAppComponent, ExplorerComponent, TextViewerComponent, ImageViewerComponent, PdfViewerComponent, MachineInfoComponent, CreditAppComponent, PaintAppComponent, CreditsAppComponent, HcmcAppComponent, NewsAppComponent, SettingsAppComponent, TaskManagerComponent, WeatherAppComponent, DictionaryAppComponent, LinkShortenerComponent, CountriesAppComponent, YugiohAppComponent, YugiohCardDetailComponent, AboutMeComponent, VnstockAppComponent, CommonModule, FormsModule, SettingsDialogComponent ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
 })
@@ -222,7 +220,6 @@ export class AppComponent implements AfterViewInit {
         { id: 'calculator', name: 'Calculator', icon: 'pi pi-calculator' },
         { id: 'credit', name: 'Finance Tracker', icon: 'pi pi-wallet' },
         { id: 'explorer', name: 'File Explorer', icon: 'pi pi-folder' },
-        { id: 'text-editor', name: 'Text Editor', icon: 'pi pi-file-edit' },
         { id: 'dictionary', name: 'Dictionary', icon: 'pi pi-book' },
         { id: 'link-shortener', name: 'Link Shortener', icon: 'pi pi-link' }
       ]
@@ -693,9 +690,10 @@ export class AppComponent implements AfterViewInit {
   onExplorerFileOpen(event: FileOpenEvent) {
     const { item, fileType, extension } = event;
     console.log('Opening file from Explorer:', item.name, 'Type:', fileType);
+    console.log('Item content:', item.content);
 
     if (fileType === 'text') {
-      // Open text file
+      // Open all text files in text viewer
       this.currentTextFile.set({
         path: item.content || `assets/explorer${item.path}`,
         name: item.name,
@@ -733,8 +731,8 @@ export class AppComponent implements AfterViewInit {
 
     switch (action) {
       case 'edit':
-        // Open the text editor with this file
-        this.openFileInEditor(item);
+        // Text editor has been removed
+        alert('Text editor is not available. Use text viewer to view files.');
         break;
 
       case 'rename':
@@ -778,59 +776,6 @@ export class AppComponent implements AfterViewInit {
         this.setImageAsWallpaper(item);
         break;
     }
-  }
-
-  openFileInEditor(item: any) {
-    const fileName = item.name.toLowerCase();
-    const fileExtension = fileName.split('.').pop() || '';
-    
-    // Check if it's a virtual file
-    let filePath = item.content || `assets/explorer${item.path}`;
-    if (filePath.startsWith('virtual-file://')) {
-      // Load from localStorage
-      const virtualPath = filePath.replace('virtual-file://', '');
-      const virtualFiles = JSON.parse(localStorage.getItem('virtual-files') || '{}');
-      const virtualFile = virtualFiles[virtualPath];
-      
-      if (virtualFile) {
-        // Create a data URL for the virtual file
-        const blob = new Blob([virtualFile.htmlContent], { type: 'text/html' });
-        filePath = URL.createObjectURL(blob);
-      }
-    }
-    
-    // Open the text editor with file data
-    this.windowManager.openWindow({
-      id: `text-editor-${Date.now()}`, // Unique ID for each editor instance
-      title: `Text Editor - ${item.name}`,
-      icon: 'pi pi-file-edit',
-      component: 'text-editor',
-      initialWidth: 1000,
-      initialHeight: 700,
-      initialX: 200,
-      initialY: 80,
-      maximizable: true,
-      statusText: 'Editing file',
-      data: {
-        path: filePath,
-        name: item.name,
-        mode: 'edit'
-      }
-    });
-  }
-  
-  onTextEditorFileSave(event: SaveFileEvent) {
-    console.log('Text editor file save:', event);
-    
-    // Use the FileSystemService to add the file to the shared file system
-    this.fileSystemService.addFile({
-      fileName: event.fileName,
-      path: event.path,
-      content: event.content,
-      htmlContent: event.htmlContent
-    });
-    
-    console.log('File saved to virtual file system:', event.path);
   }
 
   // File system operations
