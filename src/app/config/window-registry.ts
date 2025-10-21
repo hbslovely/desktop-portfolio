@@ -294,7 +294,3 @@ export function getWindowDefinition(id: string): WindowDefinition | undefined {
   return WINDOW_REGISTRY[id];
 }
 
-export function getAllWindowDefinitions(): WindowDefinition[] {
-  return Object.values(WINDOW_REGISTRY);
-}
-

@@ -63,9 +63,7 @@
     (onRestore)="onRestoreMyInfoWindow()"
     (onFocus)="onFocusMyInfoWindow()">
 
-    <app-about-me
-      (onOpenApp)="openApp($event)">
-    </app-about-me>
+    <app-machine-info></app-machine-info>
   </app-window>
 
 
@@ -612,7 +610,7 @@
       <!-- Search Bar -->
       <div class="start-menu-search">
         <i class="pi pi-search"></i>
-        <input type="text" placeholder="Type to search apps..." [(ngModel)]="startMenuSearch">
+        <input #startMenuSearchInput type="text" placeholder="Type to search apps..." [(ngModel)]="startMenuSearch">
       </div>
 
       <!-- Scrollable Content -->

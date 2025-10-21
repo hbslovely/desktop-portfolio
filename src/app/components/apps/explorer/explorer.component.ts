@@ -46,38 +46,38 @@ export class ExplorerComponent implements OnInit {
   @Input() externalFileSystem: FileSystemItem | null = null;
   @Output() onFileOpen = new EventEmitter<FileOpenEvent>();
   @Output() onContextMenuAction = new EventEmitter<ContextMenuEvent>();
-  
+
   fileSystem = signal<FileSystemItem | null>(null);
   currentPath = signal<string>('/');
   selectedItem = signal<FileSystemItem | null>(null);
   viewMode = signal<'list' | 'icons'>('list');
-  
+
   // Navigation history
   navigationHistory = signal<string[]>(['/']);
   historyIndex = signal<number>(0);
-  
+
   // Context menu state
   showContextMenu = signal(false);
   contextMenuPosition = signal({ x: 0, y: 0 });
   contextMenuItem = signal<FileSystemItem | null>(null);
-  
+
   // Clipboard state
   clipboardItem = signal<FileSystemItem | null>(null);
   clipboardAction = signal<'copy' | 'cut' | null>(null);
-  
+
   // Rename state
   renamingItem = signal<FileSystemItem | null>(null);
   newItemName = signal('');
-  
+
   // Search state
   searchQuery = signal('');
   isSearching = signal(false);
   searchResults = signal<FileSystemItem[]>([]);
-  
+
   // Click tracking for double-click detection
   private lastClickTime = 0;
   private lastClickItem: FileSystemItem | null = null;
-  
+
   constructor(
     private http: HttpClient,
     private fileSystemService: FileSystemService
@@ -95,7 +95,7 @@ export class ExplorerComponent implements OnInit {
       }
     }, { allowSignalWrites: true });
   }
-  
+
   ngOnInit() {
     if (this.externalFileSystem) {
       this.fileSystem.set(this.externalFileSystem);
@@ -103,53 +103,13 @@ export class ExplorerComponent implements OnInit {
       this.loadFileSystem();
     }
   }
-  
+
   ngOnChanges() {
     if (this.externalFileSystem) {
       this.fileSystem.set(this.externalFileSystem);
     }
   }
-  
-  // Method to add a new file to the file system
-  addFileToSystem(newFile: NewFileData) {
-    const fs = this.fileSystem();
-    if (!fs) return;
-    
-    // Find the parent folder
-    const parentPath = newFile.path.substring(0, newFile.path.lastIndexOf('/')) || '/';
-    const parent = parentPath === '/' ? fs : this.findItemByPath(fs, parentPath);
-    
-    if (parent && parent.children) {
-      // Check if file already exists
-      const existingIndex = parent.children.findIndex(item => item.path === newFile.path);
-      
-      const fileExtension = newFile.fileName.split('.').pop()?.toLowerCase() || 'html';
-      const fileItem: FileSystemItem = {
-        type: 'file',
-        name: newFile.fileName,
-        path: newFile.path,
-        icon: this.getIconForFileType(fileExtension),
-        size: `${Math.ceil(newFile.htmlContent.length / 1024)} KB`,
-        modified: new Date().toISOString(),
-        content: `virtual-file://${newFile.path}` // Mark as virtual file
-      };
-      
-      if (existingIndex >= 0) {
-        // Update existing file
-        parent.children[existingIndex] = fileItem;
-      } else {
-        // Add new file
-        parent.children.push(fileItem);
-      }
-      
-      // Store the actual content in localStorage
-      this.saveVirtualFile(newFile.path, newFile.htmlContent, newFile.content);
-      
-      // Trigger update
-      this.fileSystem.set({...fs});
-    }
-  }
-  
+
   private getIconForFileType(extension: string): string {
     const iconMap: {[key: string]: string} = {
       'txt': 'pi pi-file',
@@ -167,7 +127,7 @@ export class ExplorerComponent implements OnInit {
     };
     return iconMap[extension] || 'pi pi-file';
   }
-  
+
   private saveVirtualFile(path: string, htmlContent: string, textContent: string) {
     const virtualFiles = JSON.parse(localStorage.getItem('virtual-files') || '{}');
     virtualFiles[path] = {
@@ -177,51 +137,51 @@ export class ExplorerComponent implements OnInit {
     };
     localStorage.setItem('virtual-files', JSON.stringify(virtualFiles));
   }
-  
+
   private loadVirtualFile(path: string): string | null {
     const virtualFiles = JSON.parse(localStorage.getItem('virtual-files') || '{}');
     return virtualFiles[path]?.htmlContent || virtualFiles[path]?.textContent || null;
   }
-  
+
   // Computed current folder items
   currentItems = computed(() => {
     // If searching, return search results
     if (this.isSearching() && this.searchQuery().trim()) {
       return this.searchResults();
     }
-    
+
     const fs = this.fileSystem();
     if (!fs) return [];
-    
+
     const path = this.currentPath();
     if (path === '/') {
       return fs.children || [];
     }
-    
+
     return this.findItemByPath(fs, path)?.children || [];
   });
-  
+
   // Computed navigation state
   canGoBack = computed(() => this.historyIndex() > 0);
   canGoForward = computed(() => this.historyIndex() < this.navigationHistory().length - 1);
-  
+
   // Computed breadcrumb path
   breadcrumbs = computed(() => {
     const path = this.currentPath();
     if (path === '/') return [{ name: 'Explorer', path: '/' }];
-    
+
     const parts = path.split('/').filter(part => part);
     const breadcrumbs = [{ name: 'Explorer', path: '/' }];
-    
+
     let currentPath = '';
     for (const part of parts) {
       currentPath += '/' + part;
       breadcrumbs.push({ name: part, path: currentPath });
     }
-    
+
     return breadcrumbs;
   });
-  
+
   private loadFileSystem() {
     this.http.get<{fileSystem: FileSystemItem}>('assets/json/explore.json')
       .subscribe({
@@ -237,57 +197,57 @@ export class ExplorerComponent implements OnInit {
         }
       });
   }
-  
+
   private findItemByPath(root: FileSystemItem, path: string): FileSystemItem | null {
     if (root.path === path) return root;
-    
+
     if (root.children) {
       for (const child of root.children) {
         const found = this.findItemByPath(child, path);
         if (found) return found;
       }
     }
-    
+
     return null;
   }
-  
+
   navigateToPath(path: string) {
     this.currentPath.set(path);
     this.selectedItem.set(null);
-    
+
     // Update navigation history
     const history = this.navigationHistory();
     const currentIndex = this.historyIndex();
-    
+
     // Remove forward history if we're navigating from middle
     const newHistory = history.slice(0, currentIndex + 1);
     newHistory.push(path);
-    
+
     this.navigationHistory.set(newHistory);
     this.historyIndex.set(newHistory.length - 1);
   }
-  
+
   onItemClick(item: FileSystemItem) {
     const currentTime = Date.now();
     const timeSinceLastClick = currentTime - this.lastClickTime;
-    
+
     // If this is a double-click (same item, within 300ms), don't show preview
     if (this.lastClickItem === item && timeSinceLastClick < 300) {
       return;
     }
-    
+
     // Update click tracking
     this.lastClickTime = currentTime;
     this.lastClickItem = item;
-    
+
     // Show preview panel for single click
     this.selectedItem.set(item);
   }
-  
+
   onItemDoubleClick(item: FileSystemItem) {
     // Clear the selected item to hide preview panel
     this.selectedItem.set(null);
-    
+
     if (item.type === 'folder') {
       this.navigateToPath(item.path);
     } else {
@@ -295,17 +255,17 @@ export class ExplorerComponent implements OnInit {
       this.openFile(item);
     }
   }
-  
+
   openFile(item: FileSystemItem) {
     const fileName = item.name.toLowerCase();
     const fileExtension = fileName.split('.').pop() || '';
-    
-    
+
+
     // Check if this is a virtual file
     if (item.content?.startsWith('virtual-file://')) {
       const virtualPath = item.content.replace('virtual-file://', '');
 
-      
+
       const content = this.fileSystemService.loadVirtualFile(virtualPath);
       if (content) {
 
@@ -314,7 +274,7 @@ export class ExplorerComponent implements OnInit {
           ...item,
           content: content
         };
-        
+
         // Emit file open event with the loaded content
         this.onFileOpen.emit({
           item: itemWithContent,
@@ -326,7 +286,7 @@ export class ExplorerComponent implements OnInit {
 
       }
     }
-    
+
     // Emit file open event to parent component
     this.onFileOpen.emit({
       item,
@@ -334,12 +294,12 @@ export class ExplorerComponent implements OnInit {
       extension: fileExtension
     });
   }
-  
+
   private getFileType(extension: string): 'text' | 'image' | 'pdf' | 'unknown' {
     const textExtensions = ['txt', 'md', 'markdown', 'json', 'csv', 'log', 'xml', 'html', 'css', 'js', 'ts', 'py', 'java', 'cpp', 'c', 'h', 'rtf'];
     const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp', 'ico'];
     const pdfExtensions = ['pdf'];
-    
+
     if (textExtensions.includes(extension)) {
       return 'text';
     } else if (imageExtensions.includes(extension)) {
@@ -347,10 +307,10 @@ export class ExplorerComponent implements OnInit {
     } else if (pdfExtensions.includes(extension)) {
       return 'pdf';
     }
-    
+
     return 'unknown';
   }
-  
+
   goBack() {
     if (this.canGoBack()) {
       const newIndex = this.historyIndex() - 1;
@@ -360,7 +320,7 @@ export class ExplorerComponent implements OnInit {
       this.selectedItem.set(null);
     }
   }
-  
+
   goForward() {
     if (this.canGoForward()) {
       const newIndex = this.historyIndex() + 1;
@@ -370,29 +330,29 @@ export class ExplorerComponent implements OnInit {
       this.selectedItem.set(null);
     }
   }
-  
+
   goUp() {
     const currentPath = this.currentPath();
     if (currentPath === '/') return;
-    
+
     const parentPath = currentPath.split('/').slice(0, -1).join('/') || '/';
     this.navigateToPath(parentPath);
   }
-  
+
   refresh() {
     this.loadFileSystem();
   }
-  
+
   toggleViewMode() {
     this.viewMode.set(this.viewMode() === 'list' ? 'icons' : 'list');
   }
-  
+
 
   // Context menu methods
   onItemRightClick(event: MouseEvent, item: FileSystemItem) {
     event.preventDefault();
     event.stopPropagation();
-    
+
     this.contextMenuItem.set(item);
     this.contextMenuPosition.set({ x: event.clientX, y: event.clientY });
     this.showContextMenu.set(true);
@@ -434,7 +394,7 @@ export class ExplorerComponent implements OnInit {
   startRename(item: FileSystemItem) {
     this.renamingItem.set(item);
     this.newItemName.set(item.name);
-    
+
     // Focus the input after a short delay
     setTimeout(() => {
       const input = document.querySelector('.rename-input') as HTMLInputElement;
@@ -448,7 +408,7 @@ export class ExplorerComponent implements OnInit {
   finishRename() {
     const item = this.renamingItem();
     const newName = this.newItemName().trim();
-    
+
     if (item && newName && newName !== item.name) {
       // Emit rename event to parent
       this.onContextMenuAction.emit({
@@ -456,11 +416,11 @@ export class ExplorerComponent implements OnInit {
         item,
         newName
       });
-      
+
       // Update the item name locally
       item.name = newName;
     }
-    
+
     this.cancelRename();
   }
 
@@ -512,7 +472,7 @@ export class ExplorerComponent implements OnInit {
   pasteItem() {
     const clipboardItem = this.clipboardItem();
     const action = this.clipboardAction();
-    
+
     if (clipboardItem && action) {
       this.onContextMenuAction.emit({
         action: 'paste',
@@ -577,7 +537,7 @@ export class ExplorerComponent implements OnInit {
     const target = event.target as HTMLInputElement;
     const query = target.value.trim();
     this.searchQuery.set(query);
-    
+
     if (query.length > 0) {
       this.performSearch(query);
     } else {
@@ -588,11 +548,11 @@ export class ExplorerComponent implements OnInit {
   performSearch(query: string) {
     this.isSearching.set(true);
     const results: FileSystemItem[] = [];
-    
+
     if (this.fileSystem()) {
       this.searchInDirectory(this.fileSystem()!, query.toLowerCase(), results);
     }
-    
+
     this.searchResults.set(results);
   }
 
@@ -603,7 +563,7 @@ export class ExplorerComponent implements OnInit {
         if (item.name.toLowerCase().includes(query)) {
           results.push(item);
         }
-        
+
         // Recursively search in subdirectories
         if (item.type === 'folder' && item.children) {
           this.searchInDirectory(item, query, results);
