@@ -263,6 +263,18 @@ export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
     defaultY: 80,
     maximizable: true,
     statusText: 'Vietnamese Calendar'
+  },
+  'angular-love': {
+    id: 'angular-love',
+    title: 'Angular.love',
+    icon: 'pi pi-heart-fill',
+    component: 'angular-love',
+    defaultWidth: 1200,
+    defaultHeight: 800,
+    defaultX: 100,
+    defaultY: 50,
+    maximizable: true,
+    statusText: 'Angular InDepth Articles'
   }
 };
 

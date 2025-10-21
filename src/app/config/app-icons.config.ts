@@ -108,6 +108,13 @@ export const APP_ICONS: DesktopIconData[] = [
     icon: 'assets/images/icons/love.png',
     type: 'application',
     position: { x: 220, y: 320 }
+  },
+  {
+    id: 'angular-love',
+    name: 'Angular news',
+    icon: 'assets/images/icons/angular.png',
+    type: 'application',
+    position: { x: 220, y: 420 }
   }
 ];
 
@@ -139,7 +146,8 @@ function getAppDescription(appId: string): string {
     'countries': 'Explore detailed information about countries around the world',
     'yugioh': 'Browse and search the complete Yu-Gi-Oh! card database with filters',
     'vnstock': 'View real-time Vietnam stock market prices and data from FireAnt',
-    'calendar': 'Lịch Việt Nam với âm lịch, ngày lễ tết, con giáp, ngày đẹp, tính ngày'
+    'calendar': 'Lịch Việt Nam với âm lịch, ngày lễ tết, con giáp, ngày đẹp, tính ngày',
+    'angular-love': 'Browse and read Angular InDepth articles, tutorials, and RxJS guides'
   };
   return descriptions[appId] || 'Application';
 }
@@ -160,7 +168,8 @@ function getAppKeywords(appId: string): string[] {
     'countries': ['world', 'nations', 'flags', 'capitals', 'geography', 'borders', 'population', 'currencies', 'languages', 'maps', 'continents', 'regions'],
     'yugioh': ['cards', 'trading', 'game', 'deck', 'monster', 'spell', 'trap', 'duel', 'ygoprodeck', 'database', 'search', 'filter', 'archetype'],
     'vnstock': ['stock', 'market', 'vietnam', 'fireant', 'trading', 'shares', 'prices', 'hose', 'hnx', 'vn30', 'stocks', 'finance', 'investment'],
-    'calendar': ['lich', 'lịch', 'am lich', 'âm lịch', 'ngay le', 'ngày lễ', 'tet', 'tết', 'con giap', 'con giáp', 'ngay dep', 'ngày đẹp', 'tinh ngay', 'tính ngày', 'dem ngay', 'đếm ngày', 'vietnam', 'lunar', 'holiday']
+    'calendar': ['lich', 'lịch', 'am lich', 'âm lịch', 'ngay le', 'ngày lễ', 'tet', 'tết', 'con giap', 'con giáp', 'ngay dep', 'ngày đẹp', 'tinh ngay', 'tính ngày', 'dem ngay', 'đếm ngày', 'vietnam', 'lunar', 'holiday'],
+    'angular-love': ['angular', 'rxjs', 'tutorials', 'articles', 'blog', 'indepth', 'in-depth', 'web', 'development', 'typescript', 'frontend', 'framework', 'programming', 'coding', 'education', 'learning']
   };
   return keywords[appId] || [];
 }
