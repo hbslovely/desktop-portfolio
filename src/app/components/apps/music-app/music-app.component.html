@@ -1,0 +1,200 @@
+<div class="music-app">
+  <!-- Player Section -->
+  <div class="player-section">
+    <div class="player-container" *ngIf="currentVideo()">
+      <iframe 
+        [src]="safeVideoUrl()"
+        frameborder="0"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowfullscreen
+        class="video-player">
+      </iframe>
+      
+      <div class="now-playing">
+        <div class="track-info">
+          <h2 class="track-title">{{ currentVideo()!.title }}</h2>
+          <p class="track-artist">{{ currentVideo()!.artist }}</p>
+        </div>
+        
+        <div class="player-controls">
+          <button 
+            class="control-btn"
+            [class.active]="isShuffleOn()"
+            (click)="toggleShuffle()" 
+            title="Shuffle">
+            <i class="pi pi-shuffle"></i>
+          </button>
+          
+          <button class="control-btn" (click)="playPrevious()" title="Previous">
+            <i class="pi pi-step-backward"></i>
+          </button>
+          
+          <button class="control-btn play-btn" title="Playing on YouTube">
+            <i class="pi pi-play"></i>
+          </button>
+          
+          <button class="control-btn" (click)="playNext()" title="Next">
+            <i class="pi pi-step-forward"></i>
+          </button>
+          
+          <button 
+            class="control-btn"
+            [class.active]="isRepeatOn()"
+            (click)="toggleRepeat()" 
+            title="Repeat">
+            <i class="pi pi-refresh"></i>
+          </button>
+          
+          <button 
+            class="control-btn like-btn"
+            [class.liked]="isCurrentVideoLiked()"
+            (click)="toggleLike(currentVideo()!.id)" 
+            title="Like">
+            <i class="pi" [ngClass]="isCurrentVideoLiked() ? 'pi-heart-fill' : 'pi-heart'"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="empty-player" *ngIf="!currentVideo()">
+      <i class="pi pi-music"></i>
+      <p>Select a song to start playing</p>
+    </div>
+  </div>
+
+  <!-- Main Content Area -->
+  <div class="main-content">
+    <!-- Playlists Sidebar -->
+    <div class="playlists-sidebar" *ngIf="showPlaylists()">
+      <div class="playlists-header">
+        <h3><i class="pi pi-list"></i> Playlists</h3>
+      </div>
+      
+      <div class="playlists-list">
+        <button 
+          *ngFor="let playlist of playlists()"
+          class="playlist-item"
+          [class.active]="selectedPlaylist() === playlist.id"
+          (click)="changePlaylist(playlist.id)">
+          <i class="pi" [ngClass]="playlist.icon"></i>
+          <span class="playlist-name">{{ playlist.name }}</span>
+          <span class="playlist-count">{{ playlist.count }}</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Library Section -->
+    <div class="library-section">
+      <!-- Top Bar -->
+      <div class="top-bar">
+        <button 
+          class="toggle-playlists-btn"
+          (click)="togglePlaylists()"
+          title="Toggle playlists sidebar">
+          <i class="pi" [ngClass]="showPlaylists() ? 'pi-times' : 'pi-bars'"></i>
+        </button>
+
+        <div class="search-box">
+          <i class="pi pi-search"></i>
+          <input 
+            type="text" 
+            [(ngModel)]="searchQuery"
+            placeholder="Search songs, artists, or genres..."
+            class="search-input">
+          <button 
+            *ngIf="searchQuery()"
+            class="clear-search-btn"
+            (click)="clearSearch()"
+            title="Clear search">
+            <i class="pi pi-times"></i>
+          </button>
+        </div>
+
+        <div class="search-results-count" *ngIf="searchQuery()">
+          <span>{{ searchResultsCount() }} songs</span>
+        </div>
+
+        <div class="view-controls">
+          <button 
+            class="view-btn"
+            [class.active]="viewMode() === 'grid'"
+            (click)="changeViewMode('grid')"
+            title="Grid view">
+            <i class="pi pi-th-large"></i>
+          </button>
+          <button 
+            class="view-btn"
+            [class.active]="viewMode() === 'list'"
+            (click)="changeViewMode('list')"
+            title="List view">
+            <i class="pi pi-list"></i>
+          </button>
+          <button 
+            class="view-btn"
+            [class.active]="viewMode() === 'compact'"
+            (click)="changeViewMode('compact')"
+            title="Compact view">
+            <i class="pi pi-table"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Category Bar -->
+      <div class="category-bar">
+        <button 
+          *ngFor="let cat of categories"
+          class="category-btn"
+          [class.active]="selectedCategory() === cat.value"
+          (click)="changeCategory(cat.value)">
+          <i class="pi" [ngClass]="cat.icon"></i>
+          <span>{{ cat.label }}</span>
+        </button>
+      </div>
+
+      <!-- Video Grid/List -->
+      <div class="videos-container" [attr.data-view]="viewMode()">
+        <div class="videos-grid">
+          <div 
+            *ngFor="let video of filteredVideos()"
+            class="video-card"
+            [class.active]="currentVideo()?.id === video.id">
+            <div class="video-thumbnail" (click)="playVideo(video)">
+              <img [src]="video.thumbnail" [alt]="video.title">
+              <div class="play-overlay">
+                <i class="pi pi-play"></i>
+              </div>
+              <span class="duration-badge">{{ video.duration }}</span>
+            </div>
+            
+            <div class="video-info">
+              <div class="video-header">
+                <div class="video-text" (click)="playVideo(video)">
+                  <h3 class="video-title">{{ video.title }}</h3>
+                  <p class="video-artist">{{ video.artist }}</p>
+                </div>
+                <button 
+                  class="like-icon-btn"
+                  [class.liked]="video.liked"
+                  (click)="toggleLike(video.id); $event.stopPropagation()"
+                  title="Like">
+                  <i class="pi" [ngClass]="video.liked ? 'pi-heart-fill' : 'pi-heart'"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Empty State -->
+        <div class="empty-state" *ngIf="filteredVideos().length === 0">
+          <i class="pi pi-search"></i>
+          <h3>No songs found</h3>
+          <p>Try adjusting your search or category filter</p>
+          <button class="clear-btn" (click)="clearSearch(); changeCategory('all'); changePlaylist('all')">
+            <i class="pi pi-refresh"></i>
+            Show All Songs
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

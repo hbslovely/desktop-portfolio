@@ -115,6 +115,13 @@ export const APP_ICONS: DesktopIconData[] = [
     icon: 'assets/images/icons/angular.png',
     type: 'application',
     position: { x: 220, y: 420 }
+  },
+  {
+    id: 'music',
+    name: 'Music Player',
+    icon: 'pi pi-youtube',
+    type: 'application',
+    position: { x: 220, y: 520 }
   }
 ];
 
@@ -147,7 +154,8 @@ function getAppDescription(appId: string): string {
     'yugioh': 'Browse and search the complete Yu-Gi-Oh! card database with filters',
     'vnstock': 'View real-time Vietnam stock market prices and data from FireAnt',
     'calendar': 'Lịch Việt Nam với âm lịch, ngày lễ tết, con giáp, ngày đẹp, tính ngày',
-    'angular-love': 'Browse and read Angular InDepth articles, tutorials, and RxJS guides'
+    'angular-love': 'Browse and read Angular InDepth articles, tutorials, and RxJS guides',
+    'music': 'Listen to music videos from YouTube with a curated playlist'
   };
   return descriptions[appId] || 'Application';
 }
@@ -169,7 +177,8 @@ function getAppKeywords(appId: string): string[] {
     'yugioh': ['cards', 'trading', 'game', 'deck', 'monster', 'spell', 'trap', 'duel', 'ygoprodeck', 'database', 'search', 'filter', 'archetype'],
     'vnstock': ['stock', 'market', 'vietnam', 'fireant', 'trading', 'shares', 'prices', 'hose', 'hnx', 'vn30', 'stocks', 'finance', 'investment'],
     'calendar': ['lich', 'lịch', 'am lich', 'âm lịch', 'ngay le', 'ngày lễ', 'tet', 'tết', 'con giap', 'con giáp', 'ngay dep', 'ngày đẹp', 'tinh ngay', 'tính ngày', 'dem ngay', 'đếm ngày', 'vietnam', 'lunar', 'holiday'],
-    'angular-love': ['angular', 'rxjs', 'tutorials', 'articles', 'blog', 'indepth', 'in-depth', 'web', 'development', 'typescript', 'frontend', 'framework', 'programming', 'coding', 'education', 'learning']
+    'angular-love': ['angular', 'rxjs', 'tutorials', 'articles', 'blog', 'indepth', 'in-depth', 'web', 'development', 'typescript', 'frontend', 'framework', 'programming', 'coding', 'education', 'learning'],
+    'music': ['youtube', 'video', 'songs', 'audio', 'player', 'playlist', 'stream', 'listen', 'pop', 'rock', 'jazz', 'classical', 'electronic', 'artist', 'album', 'track']
   };
   return keywords[appId] || [];
 }

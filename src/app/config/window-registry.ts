@@ -275,6 +275,18 @@ export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
     defaultY: 50,
     maximizable: true,
     statusText: 'Angular InDepth Articles'
+  },
+  'music': {
+    id: 'music',
+    title: 'Music Player',
+    icon: 'pi pi-youtube',
+    component: 'music',
+    defaultWidth: 1100,
+    defaultHeight: 800,
+    defaultX: 150,
+    defaultY: 60,
+    maximizable: true,
+    statusText: 'YouTube Music Player'
   }
 };
 
