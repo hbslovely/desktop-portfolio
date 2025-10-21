@@ -74,7 +74,7 @@ export interface FilterOptions {
 export class YugiohService {
   private readonly API_BASE_URL = 'https://db.ygoprodeck.com/api/v7';
   private readonly IMAGE_BASE_URL = 'assets/images/yugi'; // Local images
-  
+
   // Cache for all cards
   private allCardsCache: YugiohCard[] | null = null;
 
@@ -107,30 +107,30 @@ export class YugiohService {
    */
   searchCards(filters: FilterOptions): Observable<YugiohCard[]> {
     let params = new HttpParams();
-    
+
     // Exact name match
     if (filters.name) params = params.set('name', filters.name);
-    
+
     // Fuzzy name search
     if (filters.fname) params = params.set('fname', filters.fname);
-    
+
     // Type filters
     if (filters.type) params = params.set('type', filters.type);
     if (filters.race) params = params.set('race', filters.race);
     if (filters.attribute) params = params.set('attribute', filters.attribute);
     if (filters.frameType) params = params.set('frameType', filters.frameType);
-    
+
     // Stat filters
     if (filters.level) params = params.set('level', filters.level);
     if (filters.atk) params = params.set('atk', filters.atk);
     if (filters.def) params = params.set('def', filters.def);
     if (filters.scale) params = params.set('scale', filters.scale);
     if (filters.linkmarker) params = params.set('linkmarker', filters.linkmarker);
-    
+
     // Other filters
     if (filters.archetype) params = params.set('archetype', filters.archetype);
     if (filters.format) params = params.set('format', filters.format);
-    
+
     // Sorting
     if (filters.sort) params = params.set('sort', filters.sort);
 
@@ -178,30 +178,6 @@ export class YugiohService {
       catchError(error => {
 
         return of(null);
-      })
-    );
-  }
-
-  /**
-   * Get all card sets
-   */
-  getAllCardSets(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.API_BASE_URL}/cardsets.php`).pipe(
-      catchError(error => {
-
-        return of([]);
-      })
-    );
-  }
-
-  /**
-   * Get all archetypes
-   */
-  getAllArchetypes(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.API_BASE_URL}/archetypes.php`).pipe(
-      catchError(error => {
-
-        return of([]);
       })
     );
   }

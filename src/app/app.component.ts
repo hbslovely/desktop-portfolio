@@ -4,7 +4,7 @@ import { DesktopIconComponent, DesktopIconData } from './components/desktop-icon
 import { CalculatorComponent } from './components/apps/calculator/calculator.component';
 import { IframeAppComponent } from './components/apps/iframe-app/iframe-app.component';
 import { LoveAppComponent } from './components/apps/love-app/love-app.component';
-import { ExplorerComponent, FileOpenEvent, ContextMenuEvent, NewFileData } from './components/apps/explorer/explorer.component';
+import { ExplorerComponent, FileOpenEvent, ContextMenuEvent } from './components/apps/explorer/explorer.component';
 import { TextViewerComponent } from './components/apps/text-viewer/text-viewer.component';
 import { ImageViewerComponent } from './components/apps/image-viewer/image-viewer.component';
 import { PdfViewerComponent } from './components/apps/pdf-viewer/pdf-viewer.component';
@@ -19,7 +19,6 @@ import { DictionaryAppComponent } from './components/apps/dictionary-app/diction
 import { CountriesAppComponent } from './components/apps/countries-app/countries-app.component';
 import { YugiohAppComponent } from './components/apps/yugioh-app/yugioh-app.component';
 import { YugiohCardDetailComponent } from './components/apps/yugioh-card-detail/yugioh-card-detail.component';
-import { AboutMeComponent } from './components/apps/about-me/about-me.component';
 import { VnstockAppComponent } from './components/apps/vnstock-app/vnstock-app.component';
 import { CalendarAppComponent } from './components/apps/calendar-app/calendar-app.component';
 import { AngularLoveAppComponent } from './components/apps/angular-love-app/angular-love-app.component';
@@ -39,13 +38,14 @@ import { FileSystemService } from './services/file-system.service';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [ WelcomeScreenComponent, WindowComponent, DesktopIconComponent, CalculatorComponent, IframeAppComponent, LoveAppComponent, ExplorerComponent, TextViewerComponent, ImageViewerComponent, PdfViewerComponent, MachineInfoComponent, PaintAppComponent, HcmcAppComponent, NewsAppComponent, SettingsAppComponent, TaskManagerComponent, WeatherAppComponent, DictionaryAppComponent, CountriesAppComponent, YugiohAppComponent, YugiohCardDetailComponent, AboutMeComponent, VnstockAppComponent, CalendarAppComponent, AngularLoveAppComponent, MusicAppComponent, CommonModule, FormsModule, SettingsDialogComponent ],
+  imports: [ WelcomeScreenComponent, WindowComponent, DesktopIconComponent, CalculatorComponent, IframeAppComponent, LoveAppComponent, ExplorerComponent, TextViewerComponent, ImageViewerComponent, PdfViewerComponent, MachineInfoComponent, PaintAppComponent, HcmcAppComponent, NewsAppComponent, SettingsAppComponent, TaskManagerComponent, WeatherAppComponent, DictionaryAppComponent, CountriesAppComponent, YugiohAppComponent, YugiohCardDetailComponent, VnstockAppComponent, CalendarAppComponent, AngularLoveAppComponent, MusicAppComponent, CommonModule, FormsModule, SettingsDialogComponent ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
 })
 export class AppComponent implements AfterViewInit, OnDestroy {
   @ViewChild(WelcomeScreenComponent) welcomeScreen!: WelcomeScreenComponent;
   @ViewChild('searchInput', { static: false }) searchInput!: ElementRef<HTMLInputElement>;
+  @ViewChild('startMenuSearchInput', { static: false }) startMenuSearchInput!: ElementRef<HTMLInputElement>;
 
   windowManager = inject(WindowManagerService);
 
@@ -921,6 +921,16 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   // Taskbar methods
   toggleStartMenu() {
     this.showStartMenu.set(!this.showStartMenu());
+    
+    // Focus and select all text in search input when opening
+    if (this.showStartMenu()) {
+      setTimeout(() => {
+        if (this.startMenuSearchInput?.nativeElement) {
+          this.startMenuSearchInput.nativeElement.focus();
+          this.startMenuSearchInput.nativeElement.select();
+        }
+      }, 0);
+    }
   }
 
   closeStartMenu() {
@@ -931,7 +941,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   openApp(appId: string, data?: any) {
     this.closeStartMenu();
 
-    // Use WindowManager for new system
+    // Use WindowManager system
     const definition = getWindowDefinition(appId);
     if (definition) {
       this.windowManager.openWindow({
@@ -947,37 +957,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
         statusText: definition.statusText,
         data
       });
-      return;
-    }
-
-    // Fallback to old system for compatibility
-    if (appId === 'calculator') {
-      this.showTestWindow.set(true);
-      this.focusWindow('calculator');
-    } else if (appId === 'my-info') {
-      this.showMyInfoWindow.set(true);
-      this.focusWindow('my-info');
-    } else if (appId === 'love') {
-      this.showLoveWindow.set(true);
-      this.focusWindow('love');
-    } else if (appId === 'explorer') {
-      this.showExplorerWindow.set(true);
-      this.focusWindow('explorer');
-    } else if (appId === 'credit') {
-      this.showCreditWindow.set(true);
-      this.focusWindow('credit');
-    } else if (appId === 'paint') {
-      this.showPaintWindow.set(true);
-      this.focusWindow('paint');
-    } else if (appId === 'credits') {
-      this.showCreditsWindow.set(true);
-      this.focusWindow('credits');
-    } else if (appId === 'hcmc') {
-      this.showHcmcWindow.set(true);
-      this.focusWindow('hcmc');
-    } else if (appId === 'news') {
-      this.showNewsWindow.set(true);
-      this.focusWindow('news');
     }
   }
 
