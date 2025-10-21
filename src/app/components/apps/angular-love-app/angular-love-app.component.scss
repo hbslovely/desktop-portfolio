@@ -941,6 +941,7 @@ $code-border: #e1e4e8;
 .viewer-content {
   flex: 1;
   overflow-y: auto;
+  scroll-behavior: smooth;
 
   &::-webkit-scrollbar {
     width: 8px;
@@ -1248,11 +1249,66 @@ $code-border: #e1e4e8;
     &:hover {
       border-bottom-color: $love-primary;
     }
+
+    // Internal article links
+    &.internal-article-link {
+      font-weight: 600;
+      position: relative;
+      
+      .internal-link-icon {
+        transition: transform 0.2s ease;
+      }
+
+      &:hover {
+        .internal-link-icon {
+          transform: translateX(3px);
+        }
+      }
+    }
   }
 
   strong {
     color: $text-primary;
     font-weight: 700;
+  }
+
+  // Iframe styling
+  iframe {
+    max-width: 100%;
+    width: 100%;
+    min-height: 500px;
+    border: 2px solid $border-color;
+    border-radius: 8px;
+    margin: 2em 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  // Paragraph containing iframe (common pattern from CMS)
+  p iframe {
+    display: block;
+    margin: 2em auto;
+  }
+
+  // Responsive iframe containers
+  .embed-container,
+  .iframe-container {
+    position: relative;
+    padding-bottom: 56.25%; // 16:9 aspect ratio
+    height: 0;
+    overflow: hidden;
+    max-width: 100%;
+    margin: 2em 0;
+    border-radius: 8px;
+
+    iframe {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      min-height: 0;
+    }
   }
 
   code {
@@ -1817,6 +1873,44 @@ table {
 
   em, i {
     font-style: italic;
+  }
+
+  // Iframe styling
+  iframe {
+    max-width: 100%;
+    width: 100%;
+    min-height: 500px;
+    border: 2px solid $border-color;
+    border-radius: 8px;
+    margin: 2em 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  // Paragraph containing iframe (common pattern from CMS)
+  p iframe {
+    display: block;
+    margin: 2em auto;
+  }
+
+  // Responsive iframe containers
+  .embed-container,
+  .iframe-container {
+    position: relative;
+    padding-bottom: 56.25%; // 16:9 aspect ratio
+    height: 0;
+    overflow: hidden;
+    max-width: 100%;
+    margin: 2em 0;
+    border-radius: 8px;
+
+    iframe {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      margin: 0;
+    }
   }
 }
 

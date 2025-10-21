@@ -1,7 +1,8 @@
-import { Component, OnInit, signal, ViewEncapsulation } from '@angular/core';
+import { Component, OnInit, signal, ViewEncapsulation, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import {
   AngularLoveService,
   AngularLoveArticle,
@@ -52,7 +53,39 @@ export class AngularLoveAppComponent implements OnInit {
     { value: '', label: 'All Articles', icon: 'pi-th-large' }
   ];
 
-  constructor(private angularLoveService: AngularLoveService) {}
+  // Computed property for sanitized article content
+  sanitizedContent = computed(() => {
+    const article = this.selectedArticle();
+    if (!article?.content) return null;
+    return this.sanitizer.bypassSecurityTrustHtml(article.content);
+  });
+
+  // Computed property for sanitized author name
+  sanitizedAuthorName = computed(() => {
+    const article = this.selectedArticle();
+    if (!article?.author?.name) return '';
+    return this.sanitizer.bypassSecurityTrustHtml(article.author.name);
+  });
+
+  // Computed property for sanitized author description
+  sanitizedAuthorDescription = computed(() => {
+    const article = this.selectedArticle();
+    if (!article?.author?.description) return null;
+    return this.sanitizer.bypassSecurityTrustHtml(article.author.description);
+  });
+
+  // Computed property for sanitized author detail description
+  sanitizedAuthorDetailDescription = computed(() => {
+    const author = this.selectedAuthor();
+    if (!author?.description) return null;
+    const desc = author.description.en || author.description.pl || '';
+    return this.sanitizer.bypassSecurityTrustHtml(desc);
+  });
+
+  constructor(
+    private angularLoveService: AngularLoveService,
+    private sanitizer: DomSanitizer
+  ) {}
 
   ngOnInit(): void {
     this.loadArticles();
@@ -113,8 +146,9 @@ export class AngularLoveAppComponent implements OnInit {
         next: (detail) => {
           this.selectedArticle.set(detail);
           this.articleLoading.set(false);
-          // Setup code blocks after content is loaded
+          // Setup code blocks and internal links after content is loaded
           this.setupCodeBlocks();
+          this.setupInternalLinks();
         },
         error: (err) => {
           console.error('Error loading article detail:', err);
@@ -393,6 +427,117 @@ export class AngularLoveAppComponent implements OnInit {
         button.innerHTML = '<i class="pi pi-copy" style="font-size: 13px; line-height: 1;"></i><span style="line-height: 1;">Copy</span>';
       }, 2000);
     });
+  }
+
+  /**
+   * Setup internal link handling (call after article content is rendered)
+   */
+  setupInternalLinks(): void {
+    setTimeout(() => {
+      const links = document.querySelectorAll('.article-body a[href]');
+      links.forEach((link) => {
+        const anchor = link as HTMLAnchorElement;
+        const href = anchor.getAttribute('href');
+        
+        if (href && this.isInternalArticleLink(href)) {
+          // Mark as internal link
+          anchor.classList.add('internal-article-link');
+          
+          // Add click handler
+          anchor.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const slug = this.extractSlugFromUrl(href);
+            if (slug) {
+              this.openArticleBySlug(slug);
+            }
+          };
+          
+          // Add visual indicator
+          if (!anchor.querySelector('.internal-link-icon')) {
+            const icon = document.createElement('i');
+            icon.className = 'pi pi-arrow-right internal-link-icon';
+            icon.style.cssText = 'margin-left: 4px; font-size: 0.85em; opacity: 0.7;';
+            anchor.appendChild(icon);
+          }
+        }
+      });
+    }, 300);
+  }
+
+  /**
+   * Check if URL is an internal article link
+   */
+  isInternalArticleLink(url: string): boolean {
+    try {
+      // Check for angular.love domain or relative paths
+      return url.includes('angular.love/') && 
+             !url.includes('#') && // Not an anchor link
+             !url.includes('angular.love/authors/') && // Not an author link
+             !url.includes('angular.love/tag/') && // Not a tag link
+             url !== 'https://angular.love/' && // Not homepage
+             url !== 'https://angular.love'; // Not homepage
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Extract article slug from URL
+   */
+  extractSlugFromUrl(url: string): string | null {
+    try {
+      // Handle both absolute and relative URLs
+      let path = url;
+      
+      if (url.startsWith('http')) {
+        const urlObj = new URL(url);
+        path = urlObj.pathname;
+      }
+      
+      // Remove leading/trailing slashes and extract slug
+      const segments = path.split('/').filter(s => s.length > 0);
+      
+      // The slug should be the last meaningful segment
+      if (segments.length > 0) {
+        return segments[segments.length - 1];
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Error extracting slug from URL:', url, error);
+      return null;
+    }
+  }
+
+  /**
+   * Open article by slug
+   */
+  openArticleBySlug(slug: string): void {
+    this.articleLoading.set(true);
+    this.articleError.set(null);
+
+    this.angularLoveService.getArticleBySlug(slug)
+      .subscribe({
+        next: (detail) => {
+          this.selectedArticle.set(detail);
+          this.articleLoading.set(false);
+          this.setupCodeBlocks();
+          this.setupInternalLinks();
+          
+          // Scroll to top of article
+          const articleBody = document.querySelector('.article-detail');
+          if (articleBody) {
+            articleBody.scrollTop = 0;
+          }
+        },
+        error: (err) => {
+          console.error('Error loading article by slug:', err);
+          this.articleError.set('Failed to load the linked article.');
+          this.articleLoading.set(false);
+        }
+      });
   }
 }
 

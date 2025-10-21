@@ -4,7 +4,7 @@ export const APP_ICONS: DesktopIconData[] = [
   // Column 1 (x: 20) - Personal & Core Apps
   {
     id: 'my-info',
-    name: 'My Information',
+    name: 'About Me',
     icon: 'assets/images/icons/profile.png',
     type: 'application',
     position: { x: 20, y: 20 }

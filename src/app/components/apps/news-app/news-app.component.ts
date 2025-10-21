@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, computed, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, signal, computed, ChangeDetectionStrategy, ViewEncapsulation } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { FormatNumberPipe } from '../../../pipes/format-number.pipe';
@@ -59,7 +59,8 @@ interface DevToTag {
   imports: [CommonModule, FormatNumberPipe],
   templateUrl: './news-app.component.html',
   styleUrl: './news-app.component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  encapsulation: ViewEncapsulation.None
 })
 export class NewsAppComponent implements OnInit {
   private readonly DEVTO_API = 'https://dev.to/api/articles';
@@ -208,6 +209,7 @@ export class NewsAppComponent implements OnInit {
           };
           this.selectedArticle.set(detailedArticle);
           this.articleLoading.set(false);
+          this.setupCodeBlocks();
         },
         error: () => {
           // Fallback to summary if full content fails
@@ -284,5 +286,121 @@ export class NewsAppComponent implements OnInit {
 
   clearSearch() {
     this.searchTerm.set('');
+  }
+
+  /**
+   * Setup code blocks with copy buttons (call after article content is rendered)
+   */
+  setupCodeBlocks(): void {
+    setTimeout(() => {
+      const codeBlocks = document.querySelectorAll('.article-body pre');
+      codeBlocks.forEach((pre) => {
+        if (!pre.querySelector('.code-copy-btn')) {
+          // Create copy button
+          const copyBtn = document.createElement('button');
+          copyBtn.className = 'code-copy-btn';
+          copyBtn.type = 'button';
+          
+          // Add inline styles to ensure it displays correctly
+          copyBtn.style.cssText = `
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 8px 14px;
+            background: white;
+            border: 2px solid #dfe3e8;
+            border-radius: 6px;
+            color: #5a6c7d;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            z-index: 999;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            line-height: 1;
+            white-space: nowrap;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+          `;
+          
+          copyBtn.innerHTML = '<i class="pi pi-copy" style="font-size: 13px; line-height: 1;"></i><span style="line-height: 1;">Copy</span>';
+
+          const code = pre.querySelector('code');
+          if (code) {
+            copyBtn.onclick = (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              this.copyCode(code as HTMLElement, copyBtn);
+            };
+            
+            // Add hover effect
+            copyBtn.onmouseenter = () => {
+              copyBtn.style.background = '#ff6b6b';
+              copyBtn.style.borderColor = '#ff6b6b';
+              copyBtn.style.color = 'white';
+              copyBtn.style.transform = 'translateY(-1px)';
+              copyBtn.style.boxShadow = '0 4px 8px rgba(255, 107, 107, 0.2)';
+            };
+            
+            copyBtn.onmouseleave = () => {
+              if (!copyBtn.classList.contains('copied')) {
+                copyBtn.style.background = 'white';
+                copyBtn.style.borderColor = '#dfe3e8';
+                copyBtn.style.color = '#5a6c7d';
+                copyBtn.style.transform = 'translateY(0)';
+                copyBtn.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
+              }
+            };
+          }
+
+          // Make sure pre is positioned relatively
+          const preElement = pre as HTMLElement;
+          preElement.style.position = 'relative';
+          
+          // Insert button at the beginning of pre
+          pre.insertBefore(copyBtn, pre.firstChild);
+        }
+      });
+    }, 300);
+  }
+
+  /**
+   * Copy code to clipboard
+   */
+  copyCode(codeElement: HTMLElement, button: HTMLElement): void {
+    const code = codeElement.textContent || '';
+    navigator.clipboard.writeText(code).then(() => {
+      // Add visual feedback
+      const originalHTML = button.innerHTML;
+      button.classList.add('copied');
+      button.style.background = '#4caf50';
+      button.style.borderColor = '#4caf50';
+      button.style.color = 'white';
+      button.innerHTML = '<i class="pi pi-check" style="font-size: 13px; line-height: 1; color: white;"></i><span style="line-height: 1;">Copied!</span>';
+
+      setTimeout(() => {
+        button.classList.remove('copied');
+        button.style.background = 'white';
+        button.style.borderColor = '#dfe3e8';
+        button.style.color = '#5a6c7d';
+        button.innerHTML = originalHTML;
+      }, 2000);
+    }).catch(err => {
+      console.error('Failed to copy code:', err);
+      button.style.background = '#f44336';
+      button.style.borderColor = '#f44336';
+      button.style.color = 'white';
+      button.innerHTML = '<i class="pi pi-times" style="font-size: 13px; line-height: 1;"></i><span style="line-height: 1;">Failed</span>';
+      
+      setTimeout(() => {
+        button.style.background = 'white';
+        button.style.borderColor = '#dfe3e8';
+        button.style.color = '#5a6c7d';
+        button.innerHTML = '<i class="pi pi-copy" style="font-size: 13px; line-height: 1;"></i><span style="line-height: 1;">Copy</span>';
+      }, 2000);
+    });
   }
 }
