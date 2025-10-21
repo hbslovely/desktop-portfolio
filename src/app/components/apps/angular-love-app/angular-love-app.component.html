@@ -293,7 +293,7 @@
           </div>
 
           <!-- Article Body -->
-          <div class="article-body" [innerHTML]="selectedArticle()?.content"></div>
+          <div class="article-body" [innerHTML]="sanitizedContent()"></div>
 
           <!-- Author Section -->
           <div class="author-card" *ngIf="selectedArticle()?.author">
@@ -302,10 +302,10 @@
               [alt]="selectedArticle()!.author.name"
               class="author-card-avatar">
             <div class="author-card-content">
-              <h4 [innerHTML]="selectedArticle()?.author?.name"></h4>
+              <h4 [innerHTML]="sanitizedAuthorName()"></h4>
               <div *ngIf="selectedArticle()?.author?.description" 
                    class="author-description"
-                   [innerHTML]="selectedArticle()?.author?.description"></div>
+                   [innerHTML]="sanitizedAuthorDescription()"></div>
               <div class="author-social" *ngIf="selectedArticle()?.author?.github || selectedArticle()?.author?.twitter || selectedArticle()?.author?.linkedin">
                 <a *ngIf="selectedArticle()?.author?.github" [href]="selectedArticle()!.author.github!" target="_blank" class="social-link">
                   <i class="pi pi-github"></i>
@@ -407,7 +407,7 @@
           <h2>About</h2>
           <div 
             class="author-description-content" 
-            [innerHTML]="selectedAuthor()?.description?.en || selectedAuthor()?.description?.pl || ''">
+            [innerHTML]="sanitizedAuthorDetailDescription()">
           </div>
         </div>
       </div>
