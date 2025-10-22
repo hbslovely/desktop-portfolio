@@ -14,6 +14,11 @@ export interface SettingsData {
   theme: 'light' | 'dark' | 'auto';
   themeColor: string;
   backdropEnabled: boolean;
+  windowColor: string;
+  windowOpacity: number;
+  animations: boolean;
+  fontSize: 'small' | 'medium' | 'large';
+  taskbarPosition: 'bottom' | 'top';
 }
 
 @Component({
@@ -42,6 +47,11 @@ export class SettingsDialogComponent implements OnChanges {
   selectedTheme = signal<'light' | 'dark' | 'auto'>('auto');
   selectedThemeColor = signal<string>('#007bff');
   backdropEnabled = signal<boolean>(false);
+  selectedWindowColor = signal<string>('#1e3a5f');
+  windowOpacity = signal<number>(95);
+  animations = signal<boolean>(true);
+  fontSize = signal<'small' | 'medium' | 'large'>('medium');
+  taskbarPosition = signal<'bottom' | 'top'>('bottom');
 
   // Original settings - used to restore on cancel
   originalSettings = signal<SettingsData | null>(null);
@@ -87,12 +97,40 @@ export class SettingsDialogComponent implements OnChanges {
     { value: '#e83e8c', label: 'Pink', color: '#e83e8c' }
   ];
 
+  // Window color options
+  windowColors = [
+    { value: '#1e3a5f', label: 'Navy Blue', color: '#1e3a5f' },
+    { value: '#2d2d2d', label: 'Dark Grey', color: '#2d2d2d' },
+    { value: '#1a1a1a', label: 'Black', color: '#1a1a1a' },
+    { value: '#2c3e50', label: 'Dark Blue', color: '#2c3e50' },
+    { value: '#34495e', label: 'Slate', color: '#34495e' },
+    { value: '#1e272e', label: 'Dark Navy', color: '#1e272e' }
+  ];
+
+  // Font size options
+  fontSizes = [
+    { value: 'small', label: 'Small' },
+    { value: 'medium', label: 'Medium' },
+    { value: 'large', label: 'Large' }
+  ];
+
+  // Taskbar position options
+  taskbarPositions = [
+    { value: 'bottom', label: 'Bottom', icon: 'pi pi-arrow-down' },
+    { value: 'top', label: 'Top', icon: 'pi pi-arrow-up' }
+  ];
+
   // Computed settings data
   settingsData = computed(() => ({
     wallpaper: this.selectedWallpaper(),
     theme: this.selectedTheme(),
     themeColor: this.selectedThemeColor(),
-    backdropEnabled: this.backdropEnabled()
+    backdropEnabled: this.backdropEnabled(),
+    windowColor: this.selectedWindowColor(),
+    windowOpacity: this.windowOpacity(),
+    animations: this.animations(),
+    fontSize: this.fontSize(),
+    taskbarPosition: this.taskbarPosition()
   }));
 
   // Check if there are unsaved changes
@@ -100,14 +138,9 @@ export class SettingsDialogComponent implements OnChanges {
     const current = this.settingsData();
     const original = this.originalSettings();
     
-    if (!original) return true; // If no original settings, consider as changed
+    if (!original) return true;
     
-    return (
-      current.wallpaper !== original.wallpaper ||
-      current.theme !== original.theme ||
-      current.themeColor !== original.themeColor ||
-      current.backdropEnabled !== original.backdropEnabled
-    );
+    return JSON.stringify(current) !== JSON.stringify(original);
   });
 
   ngOnInit() {
@@ -121,7 +154,6 @@ export class SettingsDialogComponent implements OnChanges {
     if (savedSettings) {
       try {
         const settings = JSON.parse(savedSettings);
-
         
         // Store original settings for cancel functionality
         this.originalSettings.set(settings);
@@ -131,11 +163,15 @@ export class SettingsDialogComponent implements OnChanges {
         this.selectedTheme.set(settings.theme || 'auto');
         this.selectedThemeColor.set(settings.themeColor || '#007bff');
         this.backdropEnabled.set(settings.backdropEnabled || false);
+        this.selectedWindowColor.set(settings.windowColor || '#1e3a5f');
+        this.windowOpacity.set(settings.windowOpacity || 95);
+        this.animations.set(settings.animations !== false);
+        this.fontSize.set(settings.fontSize || 'medium');
+        this.taskbarPosition.set(settings.taskbarPosition || 'bottom');
         
         // Emit the loaded settings to parent component
         this.onSettingsChange.emit(settings);
       } catch (error) {
-
         // Use default settings if there's an error
         this.setDefaultSettings();
       }
@@ -146,11 +182,16 @@ export class SettingsDialogComponent implements OnChanges {
   }
 
   setDefaultSettings() {
-    const defaultSettings = {
+    const defaultSettings: SettingsData = {
       wallpaper: '1',
-      theme: 'auto' as 'light' | 'dark' | 'auto',
+      theme: 'auto',
       themeColor: '#007bff',
-      backdropEnabled: false
+      backdropEnabled: false,
+      windowColor: '#1e3a5f',
+      windowOpacity: 95,
+      animations: true,
+      fontSize: 'medium',
+      taskbarPosition: 'bottom'
     };
     
     // Store original settings
@@ -160,6 +201,11 @@ export class SettingsDialogComponent implements OnChanges {
     this.selectedTheme.set(defaultSettings.theme);
     this.selectedThemeColor.set(defaultSettings.themeColor);
     this.backdropEnabled.set(defaultSettings.backdropEnabled);
+    this.selectedWindowColor.set(defaultSettings.windowColor);
+    this.windowOpacity.set(defaultSettings.windowOpacity);
+    this.animations.set(defaultSettings.animations);
+    this.fontSize.set(defaultSettings.fontSize);
+    this.taskbarPosition.set(defaultSettings.taskbarPosition);
     
     // Save default settings
     this.saveSettingsToStorage(defaultSettings);
@@ -196,7 +242,32 @@ export class SettingsDialogComponent implements OnChanges {
 
   onBackdropToggle() {
     this.backdropEnabled.update(enabled => !enabled);
-    // Apply changes immediately for preview but don't save
+    this.applySettingsPreview();
+  }
+
+  onWindowColorChange(color: string) {
+    this.selectedWindowColor.set(color);
+    this.applySettingsPreview();
+  }
+
+  onWindowOpacityChange(event: Event) {
+    const value = parseInt((event.target as HTMLInputElement).value);
+    this.windowOpacity.set(value);
+    this.applySettingsPreview();
+  }
+
+  onAnimationsToggle() {
+    this.animations.update(enabled => !enabled);
+    this.applySettingsPreview();
+  }
+
+  onFontSizeChange(size: 'small' | 'medium' | 'large') {
+    this.fontSize.set(size);
+    this.applySettingsPreview();
+  }
+
+  onTaskbarPositionChange(position: 'bottom' | 'top') {
+    this.taskbarPosition.set(position);
     this.applySettingsPreview();
   }
 
@@ -210,11 +281,16 @@ export class SettingsDialogComponent implements OnChanges {
   onCancel() {
     const original = this.originalSettings();
     if (original) {
-      // Restore original settings
+      // Restore all original settings
       this.selectedWallpaper.set(original.wallpaper);
       this.selectedTheme.set(original.theme);
       this.selectedThemeColor.set(original.themeColor);
       this.backdropEnabled.set(original.backdropEnabled);
+      this.selectedWindowColor.set(original.windowColor);
+      this.windowOpacity.set(original.windowOpacity);
+      this.animations.set(original.animations);
+      this.fontSize.set(original.fontSize);
+      this.taskbarPosition.set(original.taskbarPosition);
       
       // Apply the restored settings
       this.onSettingsChange.emit(original);

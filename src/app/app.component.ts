@@ -1298,8 +1298,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
 
 
   onSettingsChange(settings: any) {
-
-
     // Apply wallpaper change
     if (settings.wallpaper) {
       this.applyWallpaper(settings.wallpaper);
@@ -1318,6 +1316,31 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     // Apply backdrop change
     if (settings.backdropEnabled !== undefined) {
       this.applyBackdrop(settings.backdropEnabled);
+    }
+
+    // Apply window color
+    if (settings.windowColor) {
+      this.applyWindowColor(settings.windowColor);
+    }
+
+    // Apply window opacity
+    if (settings.windowOpacity !== undefined) {
+      this.applyWindowOpacity(settings.windowOpacity);
+    }
+
+    // Apply animations
+    if (settings.animations !== undefined) {
+      this.applyAnimations(settings.animations);
+    }
+
+    // Apply font size
+    if (settings.fontSize) {
+      this.applyFontSize(settings.fontSize);
+    }
+
+    // Apply taskbar position
+    if (settings.taskbarPosition) {
+      this.applyTaskbarPosition(settings.taskbarPosition);
     }
   }
 
@@ -1434,8 +1457,63 @@ export class AppComponent implements AfterViewInit, OnDestroy {
         backdropElement.style.display = 'none';
       }
     }
+  }
 
+  applyWindowColor(color: string) {
+    // Apply window color to all window headers
+    document.documentElement.style.setProperty('--window-header-bg', color);
+    
+    const windowHeaders = document.querySelectorAll('.window-header');
+    windowHeaders.forEach((header: any) => {
+      header.style.backgroundColor = color;
+    });
+  }
 
+  applyWindowOpacity(opacity: number) {
+    // Apply opacity to window bodies
+    document.documentElement.style.setProperty('--window-opacity', `${opacity / 100}`);
+    
+    const windows = document.querySelectorAll('.window');
+    windows.forEach((window: any) => {
+      window.style.opacity = `${opacity / 100}`;
+    });
+  }
+
+  applyAnimations(enabled: boolean) {
+    // Enable or disable animations globally
+    if (enabled) {
+      document.documentElement.classList.remove('no-animations');
+    } else {
+      document.documentElement.classList.add('no-animations');
+    }
+  }
+
+  applyFontSize(size: 'small' | 'medium' | 'large') {
+    // Apply font size to the entire application
+    const fontSizes = {
+      'small': '13px',
+      'medium': '14px',
+      'large': '16px'
+    };
+    
+    document.documentElement.style.setProperty('--base-font-size', fontSizes[size]);
+    document.documentElement.style.fontSize = fontSizes[size];
+  }
+
+  applyTaskbarPosition(position: 'bottom' | 'top') {
+    // Apply taskbar position
+    const desktop = document.querySelector('.desktop') as HTMLElement;
+    const taskbar = document.querySelector('.taskbar') as HTMLElement;
+    
+    if (desktop && taskbar) {
+      if (position === 'top') {
+        desktop.style.flexDirection = 'column-reverse';
+        taskbar.style.order = '-1';
+      } else {
+        desktop.style.flexDirection = 'column';
+        taskbar.style.order = '1';
+      }
+    }
   }
 
   loadSettingsOnInit() {
@@ -1468,26 +1546,57 @@ export class AppComponent implements AfterViewInit, OnDestroy {
           this.applyBackdrop(settings.backdropEnabled);
         }
 
-        // Apply other settings as needed
+        // Apply window color
+        if (settings.windowColor) {
+          this.applyWindowColor(settings.windowColor);
+        }
+
+        // Apply window opacity
+        if (settings.windowOpacity !== undefined) {
+          this.applyWindowOpacity(settings.windowOpacity);
+        }
+
+        // Apply animations
+        if (settings.animations !== undefined) {
+          this.applyAnimations(settings.animations);
+        }
+
+        // Apply font size
+        if (settings.fontSize) {
+          this.applyFontSize(settings.fontSize);
+        }
+
+        // Apply taskbar position
+        if (settings.taskbarPosition) {
+          this.applyTaskbarPosition(settings.taskbarPosition);
+        }
 
       } catch (error) {
-
         // Apply default wallpaper on error
         this.applyWallpaper('1');
       }
     } else {
-
       // Create and save default settings
       const defaultSettings = {
         wallpaper: '1',
         theme: 'auto',
         themeColor: '#007bff',
-        backdropEnabled: false
+        backdropEnabled: false,
+        windowColor: '#1e3a5f',
+        windowOpacity: 95,
+        animations: true,
+        fontSize: 'medium',
+        taskbarPosition: 'bottom'
       };
       localStorage.setItem('desktop-portfolio-settings', JSON.stringify(defaultSettings));
 
-      // Apply default wallpaper when no settings exist
+      // Apply default settings
       this.applyWallpaper('1');
+      this.applyWindowColor('#1e3a5f');
+      this.applyWindowOpacity(95);
+      this.applyAnimations(true);
+      this.applyFontSize('medium');
+      this.applyTaskbarPosition('bottom');
     }
   }
 

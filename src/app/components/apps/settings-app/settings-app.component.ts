@@ -14,14 +14,11 @@ export interface SettingsData {
   theme: 'light' | 'dark' | 'auto';
   themeColor: string;
   backdropEnabled: boolean;
-  // New settings
+  windowColor: string;
+  windowOpacity: number;
   animations: boolean;
-  soundEffects: boolean;
-  notifications: boolean;
-  autoSave: boolean;
-  language: string;
   fontSize: 'small' | 'medium' | 'large';
-  transparency: number;
+  taskbarPosition: 'bottom' | 'top';
 }
 
 @Component({
@@ -34,33 +31,19 @@ export interface SettingsData {
 export class SettingsAppComponent implements OnInit {
   @Output() onSettingsChange = new EventEmitter<SettingsData>();
 
-  // Active tab
-  activeTab = signal<string>('appearance');
-
   // Settings state
   selectedWallpaper = signal<string>('1');
   selectedTheme = signal<'light' | 'dark' | 'auto'>('auto');
   selectedThemeColor = signal<string>('#007bff');
   backdropEnabled = signal<boolean>(false);
+  selectedWindowColor = signal<string>('#1e3a5f');
+  windowOpacity = signal<number>(95);
   animations = signal<boolean>(true);
-  soundEffects = signal<boolean>(false);
-  notifications = signal<boolean>(true);
-  autoSave = signal<boolean>(true);
-  language = signal<string>('en');
   fontSize = signal<'small' | 'medium' | 'large'>('medium');
-  transparency = signal<number>(90);
+  taskbarPosition = signal<'bottom' | 'top'>('bottom');
 
   // Original settings for reset/cancel
   originalSettings = signal<SettingsData | null>(null);
-
-  // Tabs configuration
-  tabs = [
-    { id: 'appearance', name: 'Appearance', icon: 'pi pi-palette' },
-    { id: 'personalization', name: 'Personalization', icon: 'pi pi-user' },
-    { id: 'system', name: 'System', icon: 'pi pi-cog' },
-    { id: 'accessibility', name: 'Accessibility', icon: 'pi pi-eye' },
-    { id: 'about', name: 'About', icon: 'pi pi-info-circle' }
-  ];
 
   // Available wallpapers
   wallpapers: WallpaperOption[] = [
@@ -88,13 +71,14 @@ export class SettingsAppComponent implements OnInit {
     { value: '#e83e8c', label: 'Pink', color: '#e83e8c' }
   ];
 
-  // Languages
-  languages = [
-    { value: 'en', label: 'English' },
-    { value: 'es', label: 'Español' },
-    { value: 'fr', label: 'Français' },
-    { value: 'de', label: 'Deutsch' },
-    { value: 'vi', label: 'Tiếng Việt' }
+  // Window colors
+  windowColors = [
+    { value: '#1e3a5f', label: 'Navy Blue', color: '#1e3a5f' },
+    { value: '#2d2d2d', label: 'Dark Grey', color: '#2d2d2d' },
+    { value: '#1a1a1a', label: 'Black', color: '#1a1a1a' },
+    { value: '#2c3e50', label: 'Dark Blue', color: '#2c3e50' },
+    { value: '#34495e', label: 'Slate', color: '#34495e' },
+    { value: '#1e272e', label: 'Dark Navy', color: '#1e272e' }
   ];
 
   // Font sizes
@@ -104,19 +88,23 @@ export class SettingsAppComponent implements OnInit {
     { value: 'large', label: 'Large' }
   ];
 
+  // Taskbar positions
+  taskbarPositions = [
+    { value: 'bottom', label: 'Bottom', icon: 'pi pi-arrow-down' },
+    { value: 'top', label: 'Top', icon: 'pi pi-arrow-up' }
+  ];
+
   // Computed settings data
   settingsData = computed(() => ({
     wallpaper: this.selectedWallpaper(),
     theme: this.selectedTheme(),
     themeColor: this.selectedThemeColor(),
     backdropEnabled: this.backdropEnabled(),
+    windowColor: this.selectedWindowColor(),
+    windowOpacity: this.windowOpacity(),
     animations: this.animations(),
-    soundEffects: this.soundEffects(),
-    notifications: this.notifications(),
-    autoSave: this.autoSave(),
-    language: this.language(),
     fontSize: this.fontSize(),
-    transparency: this.transparency()
+    taskbarPosition: this.taskbarPosition()
   }));
 
   // Check for unsaved changes
@@ -145,17 +133,14 @@ export class SettingsAppComponent implements OnInit {
         this.selectedTheme.set(settings.theme || 'auto');
         this.selectedThemeColor.set(settings.themeColor || '#007bff');
         this.backdropEnabled.set(settings.backdropEnabled || false);
+        this.selectedWindowColor.set(settings.windowColor || '#1e3a5f');
+        this.windowOpacity.set(settings.windowOpacity || 95);
         this.animations.set(settings.animations !== false);
-        this.soundEffects.set(settings.soundEffects || false);
-        this.notifications.set(settings.notifications !== false);
-        this.autoSave.set(settings.autoSave !== false);
-        this.language.set(settings.language || 'en');
         this.fontSize.set(settings.fontSize || 'medium');
-        this.transparency.set(settings.transparency || 90);
+        this.taskbarPosition.set(settings.taskbarPosition || 'bottom');
         
         this.onSettingsChange.emit(settings);
       } catch (error) {
-
         this.setDefaultSettings();
       }
     } else {
@@ -169,21 +154,15 @@ export class SettingsAppComponent implements OnInit {
       theme: 'auto',
       themeColor: '#007bff',
       backdropEnabled: false,
+      windowColor: '#1e3a5f',
+      windowOpacity: 95,
       animations: true,
-      soundEffects: false,
-      notifications: true,
-      autoSave: true,
-      language: 'en',
       fontSize: 'medium',
-      transparency: 90
+      taskbarPosition: 'bottom'
     };
     
     this.originalSettings.set(defaultSettings);
     this.saveSettingsToStorage(defaultSettings);
-  }
-
-  selectTab(tabId: string) {
-    this.activeTab.set(tabId);
   }
 
   onWallpaperChange(wallpaperId: string) {
@@ -201,13 +180,14 @@ export class SettingsAppComponent implements OnInit {
     this.applySettingsPreview();
   }
 
-  toggleSetting(setting: 'backdropEnabled' | 'animations' | 'soundEffects' | 'notifications' | 'autoSave') {
-    this[setting].update(val => !val);
+  onWindowColorChange(color: string) {
+    this.selectedWindowColor.set(color);
     this.applySettingsPreview();
   }
 
-  onLanguageChange(lang: string) {
-    this.language.set(lang);
+  onWindowOpacityChange(event: Event) {
+    const value = parseInt((event.target as HTMLInputElement).value);
+    this.windowOpacity.set(value);
     this.applySettingsPreview();
   }
 
@@ -216,9 +196,13 @@ export class SettingsAppComponent implements OnInit {
     this.applySettingsPreview();
   }
 
-  onTransparencyChange(event: Event) {
-    const value = parseInt((event.target as HTMLInputElement).value);
-    this.transparency.set(value);
+  onTaskbarPositionChange(position: 'bottom' | 'top') {
+    this.taskbarPosition.set(position);
+    this.applySettingsPreview();
+  }
+
+  toggleSetting(setting: 'backdropEnabled' | 'animations') {
+    this[setting].update(val => !val);
     this.applySettingsPreview();
   }
 
@@ -242,42 +226,6 @@ export class SettingsAppComponent implements OnInit {
     if (confirm('Are you sure you want to reset all settings to default?')) {
       this.setDefaultSettings();
       this.loadSettings();
-    }
-  }
-
-  exportSettings() {
-    const settings = this.settingsData();
-    const dataStr = JSON.stringify(settings, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(dataBlob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'desktop-portfolio-settings.json';
-    link.click();
-    URL.revokeObjectURL(url);
-  }
-
-  importSettings(event: Event) {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        try {
-          const settings = JSON.parse(e.target?.result as string);
-          // Apply imported settings
-          Object.entries(settings).forEach(([key, value]) => {
-            if (key in this.settingsData()) {
-              (this as any)[key].set(value);
-            }
-          });
-          this.saveSettings();
-          alert('Settings imported successfully!');
-        } catch (error) {
-          alert('Failed to import settings. Invalid file format.');
-        }
-      };
-      reader.readAsText(file);
     }
   }
 }

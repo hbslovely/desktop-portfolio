@@ -6,6 +6,16 @@
   --text-color: #000000;
   --window-bg: #f8f9fa;
   --border-color: #dee2e6;
+  --window-header-bg: #1e3a5f;
+  --window-opacity: 0.95;
+  --base-font-size: 14px;
+}
+
+// Disable animations globally
+.no-animations,
+.no-animations * {
+  animation-duration: 0s !important;
+  transition-duration: 0s !important;
 }
 
 // Restart Screen Styles - Full Screen Terminal
