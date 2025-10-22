@@ -13,100 +13,163 @@
   
   <!-- Dialog Header -->
   <div class="settings-header">
-    <div class="header-left">
-      <i class="pi pi-cog settings-icon"></i>
-      <h2>Settings</h2>
+    <div class="header-content">
+      <i class="pi pi-cog"></i>
+      <span>Settings</span>
     </div>
-    <button class="close-btn" (click)="onCloseDialog()" title="Close Settings">
+    <button class="close-btn" (click)="onCloseDialog()">
       <i class="pi pi-times"></i>
     </button>
   </div>
 
   <!-- Dialog Content -->
-  <div class="settings-content">
+  <div class="settings-body">
     
-    <!-- Wallpaper Section -->
-    <div class="settings-section">
-      <div class="section-header">
-        <i class="pi pi-image section-icon"></i>
-        <h3>Wallpaper</h3>
+    <!-- Wallpaper -->
+    <div class="setting-group">
+      <div class="setting-title">
+        <i class="pi pi-image"></i>
+        <span>Wallpaper</span>
       </div>
-      <div class="section-content">
-        <p class="section-description">Choose your desktop wallpaper</p>
-        <div class="wallpaper-grid">
-          <div 
-            *ngFor="let wallpaper of wallpapers" 
-            class="wallpaper-option"
-            [class.selected]="selectedWallpaper() === wallpaper.id"
-            (click)="onWallpaperChange(wallpaper.id)">
-            <div class="wallpaper-preview">
-              <img [src]="wallpaper.preview" [alt]="wallpaper.name">
-              <div class="wallpaper-overlay">
-                <i class="pi pi-check" *ngIf="selectedWallpaper() === wallpaper.id"></i>
-              </div>
-            </div>
-            <span class="wallpaper-name">{{ wallpaper.name }}</span>
-          </div>
+      <div class="wallpaper-grid">
+        <div 
+          *ngFor="let wallpaper of wallpapers" 
+          class="wallpaper-card"
+          [class.active]="selectedWallpaper() === wallpaper.id"
+          (click)="onWallpaperChange(wallpaper.id)">
+          <img [src]="wallpaper.preview" [alt]="wallpaper.name">
+          <i class="pi pi-check check-icon" *ngIf="selectedWallpaper() === wallpaper.id"></i>
         </div>
       </div>
     </div>
 
-    <!-- Theme Section -->
-    <div class="settings-section">
-      <div class="section-header">
-        <i class="pi pi-palette section-icon"></i>
-        <h3>Theme</h3>
+    <!-- Theme -->
+    <div class="setting-group">
+      <div class="setting-title">
+        <i class="pi pi-palette"></i>
+        <span>Theme</span>
       </div>
-      <div class="section-content">
-        <p class="section-description">Choose your preferred theme</p>
-        <div class="theme-options">
-          <div 
-            *ngFor="let theme of themes" 
-            class="theme-option"
-            [class.selected]="selectedTheme() === theme.value"
-            (click)="onThemeChange(theme.value)">
-            <i [class]="theme.icon"></i>
-            <span>{{ theme.label }}</span>
-          </div>
-        </div>
+      <div class="button-group">
+        <button 
+          *ngFor="let theme of themes" 
+          class="option-btn"
+          [class.active]="selectedTheme() === theme.value"
+          (click)="onThemeChange(theme.value)">
+          <i [class]="theme.icon"></i>
+          <span>{{ theme.label }}</span>
+        </button>
       </div>
     </div>
 
-    <!-- Theme Color Section -->
-    <div class="settings-section">
-      <div class="section-header">
-        <i class="pi pi-palette section-icon"></i>
-        <h3>Theme Color</h3>
+    <!-- Theme Color -->
+    <div class="setting-group">
+      <div class="setting-title">
+        <i class="pi pi-star"></i>
+        <span>Accent Color</span>
       </div>
-      <div class="section-content">
-        <p class="section-description">Choose the accent color for window titles and UI elements</p>
-        <div class="color-grid">
-          <div 
-            *ngFor="let color of themeColors" 
-            class="color-option"
-            [class.selected]="selectedThemeColor() === color.value"
-            [style.background-color]="color.color"
-            (click)="onThemeColorChange(color.value)"
-            [title]="color.label">
-          </div>
-        </div>
+      <div class="color-grid">
+        <button 
+          *ngFor="let color of themeColors" 
+          class="color-btn"
+          [class.active]="selectedThemeColor() === color.value"
+          [style.background-color]="color.color"
+          (click)="onThemeColorChange(color.value)"
+          [title]="color.label">
+          <i class="pi pi-check" *ngIf="selectedThemeColor() === color.value"></i>
+        </button>
       </div>
     </div>
 
-    <!-- Backdrop Section -->
-    <div class="settings-section">
-      <div class="section-header">
-        <i class="pi pi-eye section-icon"></i>
-        <h3>Backdrop</h3>
+    <!-- Window Color -->
+    <div class="setting-group">
+      <div class="setting-title">
+        <i class="pi pi-window-maximize"></i>
+        <span>Window Color</span>
       </div>
-      <div class="section-content">
-        <div class="toggle-setting">
-          <div class="setting-info">
-            <span class="setting-label">Enable backdrop overlay</span>
-            <span class="setting-description">Add a subtle overlay above the wallpaper</span>
+      <div class="color-grid">
+        <button 
+          *ngFor="let color of windowColors" 
+          class="color-btn"
+          [class.active]="selectedWindowColor() === color.value"
+          [style.background-color]="color.color"
+          (click)="onWindowColorChange(color.value)"
+          [title]="color.label">
+          <i class="pi pi-check" *ngIf="selectedWindowColor() === color.value"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Window Opacity -->
+    <div class="setting-group">
+      <div class="setting-title">
+        <i class="pi pi-eye"></i>
+        <span>Window Opacity</span>
+        <span class="setting-value">{{ windowOpacity() }}%</span>
+      </div>
+      <input 
+        type="range" 
+        min="60" 
+        max="100" 
+        [value]="windowOpacity()" 
+        (input)="onWindowOpacityChange($event)"
+        class="range-slider">
+    </div>
+
+    <!-- Font Size -->
+    <div class="setting-group">
+      <div class="setting-title">
+        <i class="pi pi-font"></i>
+        <span>Font Size</span>
+      </div>
+      <div class="button-group">
+        <button 
+          *ngFor="let size of fontSizes" 
+          class="option-btn"
+          [class.active]="fontSize() === size.value"
+          (click)="onFontSizeChange(size.value)">
+          {{ size.label }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Taskbar Position -->
+    <div class="setting-group">
+      <div class="setting-title">
+        <i class="pi pi-th-large"></i>
+        <span>Taskbar Position</span>
+      </div>
+      <div class="button-group">
+        <button 
+          *ngFor="let position of taskbarPositions" 
+          class="option-btn"
+          [class.active]="taskbarPosition() === position.value"
+          (click)="onTaskbarPositionChange(position.value)">
+          <i [class]="position.icon"></i>
+          <span>{{ position.label }}</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Toggle Settings -->
+    <div class="setting-group">
+      <div class="toggle-row">
+        <div class="toggle-item" (click)="onBackdropToggle()">
+          <div class="toggle-info">
+            <i class="pi pi-image"></i>
+            <span>Backdrop Overlay</span>
           </div>
-          <div class="toggle-switch" [class.active]="backdropEnabled()" (click)="onBackdropToggle()">
-            <div class="toggle-slider"></div>
+          <div class="toggle-switch" [class.active]="backdropEnabled()">
+            <div class="toggle-knob"></div>
+          </div>
+        </div>
+        
+        <div class="toggle-item" (click)="onAnimationsToggle()">
+          <div class="toggle-info">
+            <i class="pi pi-replay"></i>
+            <span>Animations</span>
+          </div>
+          <div class="toggle-switch" [class.active]="animations()">
+            <div class="toggle-knob"></div>
           </div>
         </div>
       </div>
@@ -116,16 +179,14 @@
 
   <!-- Dialog Footer -->
   <div class="settings-footer">
-    <div class="footer-buttons">
-      <button class="btn-cancel" (click)="onCancel()">
-        Cancel
-      </button>
-      <button class="btn-apply" (click)="onApply()" [disabled]="!hasUnsavedChanges()">
-        Apply
-      </button>
-      <button class="btn-save" (click)="onSave()" [disabled]="!hasUnsavedChanges()">
-        Save
-      </button>
-    </div>
+    <button class="footer-btn cancel-btn" (click)="onCancel()">
+      Cancel
+    </button>
+    <button class="footer-btn apply-btn" (click)="onApply()" [disabled]="!hasUnsavedChanges()">
+      Apply
+    </button>
+    <button class="footer-btn save-btn" (click)="onSave()" [disabled]="!hasUnsavedChanges()">
+      Save
+    </button>
   </div>
 </div>
