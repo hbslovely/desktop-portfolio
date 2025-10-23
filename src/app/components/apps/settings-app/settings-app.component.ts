@@ -82,17 +82,17 @@ export class SettingsAppComponent implements OnInit {
   ];
 
   // Font sizes
-  fontSizes = [
-    { value: 'small', label: 'Small' },
-    { value: 'medium', label: 'Medium' },
-    { value: 'large', label: 'Large' }
-  ];
+  readonly fontSizes = [
+    { value: 'small' as const, label: 'Small' },
+    { value: 'medium' as const, label: 'Medium' },
+    { value: 'large' as const, label: 'Large' }
+  ] as const;
 
   // Taskbar positions
-  taskbarPositions = [
-    { value: 'bottom', label: 'Bottom', icon: 'pi pi-arrow-down' },
-    { value: 'top', label: 'Top', icon: 'pi pi-arrow-up' }
-  ];
+  readonly taskbarPositions = [
+    { value: 'bottom' as const, label: 'Bottom', icon: 'pi pi-arrow-down' },
+    { value: 'top' as const, label: 'Top', icon: 'pi pi-arrow-up' }
+  ] as const;
 
   // Computed settings data
   settingsData = computed(() => ({
@@ -191,13 +191,13 @@ export class SettingsAppComponent implements OnInit {
     this.applySettingsPreview();
   }
 
-  onFontSizeChange(size: 'small' | 'medium' | 'large') {
-    this.fontSize.set(size);
+  onFontSizeChange(size: string) {
+    this.fontSize.set(size as 'small' | 'medium' | 'large');
     this.applySettingsPreview();
   }
 
-  onTaskbarPositionChange(position: 'bottom' | 'top') {
-    this.taskbarPosition.set(position);
+  onTaskbarPositionChange(position: string) {
+    this.taskbarPosition.set(position as 'bottom' | 'top');
     this.applySettingsPreview();
   }
 

@@ -23,6 +23,8 @@ import { VnstockAppComponent } from './components/apps/vnstock-app/vnstock-app.c
 import { CalendarAppComponent } from './components/apps/calendar-app/calendar-app.component';
 import { AngularLoveAppComponent } from './components/apps/angular-love-app/angular-love-app.component';
 import { MusicAppComponent } from './components/apps/music-app/music-app.component';
+import { FireantAppComponent } from './components/apps/fireant-app/fireant-app.component';
+import { AngularGuidelinesAppComponent } from './components/apps/angular-guidelines-app/angular-guidelines-app.component';
 import { WelcomeScreenComponent } from './components/welcome-screen/welcome-screen.component';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -38,7 +40,7 @@ import { FileSystemService } from './services/file-system.service';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [ WelcomeScreenComponent, WindowComponent, DesktopIconComponent, CalculatorComponent, IframeAppComponent, LoveAppComponent, ExplorerComponent, TextViewerComponent, ImageViewerComponent, PdfViewerComponent, MachineInfoComponent, PaintAppComponent, HcmcAppComponent, NewsAppComponent, SettingsAppComponent, TaskManagerComponent, WeatherAppComponent, DictionaryAppComponent, CountriesAppComponent, YugiohAppComponent, YugiohCardDetailComponent, VnstockAppComponent, CalendarAppComponent, AngularLoveAppComponent, MusicAppComponent, CommonModule, FormsModule, SettingsDialogComponent ],
+  imports: [ WelcomeScreenComponent, WindowComponent, DesktopIconComponent, CalculatorComponent, IframeAppComponent, LoveAppComponent, ExplorerComponent, TextViewerComponent, ImageViewerComponent, PdfViewerComponent, MachineInfoComponent, PaintAppComponent, HcmcAppComponent, NewsAppComponent, SettingsAppComponent, TaskManagerComponent, WeatherAppComponent, DictionaryAppComponent, CountriesAppComponent, YugiohAppComponent, YugiohCardDetailComponent, VnstockAppComponent, CalendarAppComponent, AngularLoveAppComponent, MusicAppComponent, FireantAppComponent, AngularGuidelinesAppComponent, CommonModule, FormsModule, SettingsDialogComponent ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
 })
