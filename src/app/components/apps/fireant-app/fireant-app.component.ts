@@ -108,7 +108,7 @@ export class FireantAppComponent implements OnInit, OnDestroy {
     const token = this.fireantService.getToken();
     return `${this.WS_BASE_URL}?access_token=${token}`;
   }
-  
+
   /**
    * Send SignalR handshake message
    * Must be sent first before any other messages
@@ -119,17 +119,17 @@ export class FireantAppComponent implements OnInit, OnDestroy {
         protocol: 'messagepack',
         version: 1
       }) + '\x1E'; // SignalR uses \x1E as record separator
-      
+
       this.ws.send(handshake);
       console.log('🤝 Sent handshake:', handshake);
-      
+
       // Wait a bit for handshake to complete, then subscribe
       setTimeout(() => {
         this.subscribeToSymbols(this.popularSymbols);
       }, 100);
     }
   }
-  
+
   /**
    * Build subscribe message for FireAnt WebSocket
    * Format: '\x1E\x95\x01\x80¡0¯SubscribeQuotes\x91§SYMBOLS'
@@ -139,7 +139,7 @@ export class FireantAppComponent implements OnInit, OnDestroy {
     const symbolsStr = symbols.join(',');
     // FireAnt WebSocket uses MessagePack-like binary format
     const message = `\x1E\x95\x01\x80\xa10\xafSubscribeQuotes\x91\xa7${symbolsStr}`;
-    
+
     // Convert string to binary ArrayBuffer
     const encoder = new TextEncoder();
     return encoder.encode(message).buffer;
@@ -153,7 +153,7 @@ export class FireantAppComponent implements OnInit, OnDestroy {
       const wsUrl = this.buildWebSocketUrl();
       console.log('📡 Connecting to WebSocket with dynamic token...');
       this.ws = new WebSocket(wsUrl);
-      
+
       // Set binary type to handle binary messages
       this.ws.binaryType = 'arraybuffer';
 
@@ -170,10 +170,10 @@ export class FireantAppComponent implements OnInit, OnDestroy {
           if (event.data instanceof ArrayBuffer) {
             // Binary data - decode MessagePack format
             const uint8Array = new Uint8Array(event.data);
-            
+
             // Log binary data for debugging
             console.log('📨 Received binary message:', uint8Array.length, 'bytes');
-            
+
             // Try to decode as text and parse as JSON (if possible)
             try {
               const decoder = new TextDecoder();
@@ -183,9 +183,9 @@ export class FireantAppComponent implements OnInit, OnDestroy {
             } catch {
               // If not JSON, it's MessagePack binary format
               // For now, log the raw data
-              console.log('📦 MessagePack data (first 50 bytes):', 
+              console.log('📦 MessagePack data (first 50 bytes):',
                 Array.from(uint8Array.slice(0, 50)).map(b => b.toString(16).padStart(2, '0')).join(' '));
-              
+
               // TODO: Implement MessagePack parser if needed
               // For now, we'll wait to see the actual format from the server
             }
@@ -211,13 +211,6 @@ export class FireantAppComponent implements OnInit, OnDestroy {
       this.ws.onclose = () => {
         console.log('🔌 WebSocket disconnected');
         this.isConnected.set(false);
-
-        // Reconnect after 5 seconds
-        setTimeout(() => {
-          if (!this.ws || this.ws.readyState === WebSocket.CLOSED) {
-            this.connectWebSocket();
-          }
-        }, 5000);
       };
     } catch (error) {
       console.error('Error creating WebSocket:', error);
@@ -242,7 +235,7 @@ export class FireantAppComponent implements OnInit, OnDestroy {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       const binaryMessage = this.buildSubscribeMessage(symbols);
       this.ws.send(binaryMessage);
-      
+
       // Log for debugging
       const uint8Array = new Uint8Array(binaryMessage);
       console.log('📡 Subscribed to symbols:', symbols);
