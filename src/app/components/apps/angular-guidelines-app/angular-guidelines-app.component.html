@@ -1,0 +1,213 @@
+<div class="angular-guidelines-app">
+  <!-- Sidebar -->
+  <aside class="sidebar" [class.collapsed]="sidebarCollapsed()">
+    <div class="sidebar-header">
+      <div class="header-content">
+        <div class="logo">
+          <i class="pi pi-book"></i>
+          @if (!sidebarCollapsed()) {
+            <span>Angular Guides</span>
+          }
+        </div>
+        <button class="toggle-btn" (click)="toggleSidebar()" title="Toggle sidebar">
+          <i class="pi" [class.pi-angle-left]="!sidebarCollapsed()" [class.pi-angle-right]="sidebarCollapsed()"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="sidebar-content">
+      <div class="categories-list">
+        @for (category of categories(); track category.id) {
+          <button 
+            class="category-item"
+            [class.active]="selectedCategory() === category.id"
+            (click)="loadCategory(category.id)"
+            [title]="category.name">
+            <i [class]="category.icon"></i>
+            @if (!sidebarCollapsed()) {
+              <span>{{ category.name }}</span>
+            }
+          </button>
+        }
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content" [class.sidebar-collapsed]="sidebarCollapsed()">
+    @if (viewMode() === 'browse') {
+      <!-- Browse Mode -->
+      <div class="browse-view">
+        <!-- Header -->
+        <div class="content-header">
+          <div class="header-top">
+            <div class="title-section">
+              <h1>Angular Official Documentation</h1>
+              <p class="subtitle">
+                {{ getGreeting() }}! Explore comprehensive guides and best practices from Angular.dev
+              </p>
+            </div>
+          </div>
+
+          <!-- Search Bar -->
+          <div class="search-section">
+            <div class="search-box">
+              <i class="pi pi-search search-icon"></i>
+              <input
+                type="text"
+                placeholder="Search guidelines..."
+                [value]="searchTerm()"
+                (input)="onSearchChange($event)"
+                class="search-input"
+              />
+              @if (searchTerm()) {
+                <button class="clear-search-btn" (click)="clearSearch()" title="Clear search">
+                  <i class="pi pi-times"></i>
+                </button>
+              }
+            </div>
+            <button class="refresh-btn" (click)="refreshGuidelines()" title="Refresh guidelines">
+              <i class="pi pi-refresh"></i>
+            </button>
+          </div>
+
+          <!-- Category Info -->
+          @if (getCategoryById(selectedCategory())) {
+            <div class="category-info">
+              <div class="category-badge">
+                <i [class]="getCategoryById(selectedCategory())!.icon"></i>
+                <span>{{ getCategoryById(selectedCategory())!.name }}</span>
+              </div>
+              <div class="results-count">
+                {{ filteredGuidelines().length }} 
+                {{ filteredGuidelines().length === 1 ? 'guideline' : 'guidelines' }}
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- Loading State -->
+        @if (loading()) {
+          <div class="loading-state">
+            <div class="spinner"></div>
+            <p>Loading guidelines from Angular.dev...</p>
+          </div>
+        }
+
+        <!-- Error State -->
+        @if (error() && !loading()) {
+          <div class="error-state">
+            <i class="pi pi-exclamation-triangle"></i>
+            <p>{{ error() }}</p>
+            <button class="retry-btn" (click)="refreshGuidelines()">
+              <i class="pi pi-refresh"></i>
+              Try Again
+            </button>
+          </div>
+        }
+
+        <!-- Guidelines Grid -->
+        @if (!loading() && !error() && filteredGuidelines().length > 0) {
+          <div class="guidelines-grid">
+            @for (guideline of filteredGuidelines(); track guideline.id) {
+              <article class="guideline-card" (click)="openGuideline(guideline)">
+                <div class="card-header">
+                  <h3 class="card-title">{{ guideline.title }}</h3>
+                  <div class="card-category">
+                    <i class="pi pi-folder"></i>
+                    <span>{{ guideline.category }}</span>
+                  </div>
+                </div>
+                
+                @if (guideline.description) {
+                  <p class="card-description">{{ guideline.description }}</p>
+                }
+
+                @if (guideline.tags && guideline.tags.length > 0) {
+                  <div class="card-tags">
+                    @for (tag of guideline.tags.slice(0, 4); track tag) {
+                      <span class="tag">{{ tag }}</span>
+                    }
+                  </div>
+                }
+
+                <div class="card-footer">
+                  <span class="read-more">
+                    Read guideline
+                    <i class="pi pi-arrow-right"></i>
+                  </span>
+                </div>
+              </article>
+            }
+          </div>
+        }
+
+        <!-- Empty State -->
+        @if (!loading() && !error() && filteredGuidelines().length === 0) {
+          <div class="empty-state">
+            <i class="pi pi-search"></i>
+            <h3>No guidelines found</h3>
+            <p>Try adjusting your search or select a different category</p>
+          </div>
+        }
+      </div>
+    } @else {
+      <!-- Viewer Mode -->
+      <div class="viewer-mode">
+        <!-- Viewer Header -->
+        <div class="viewer-header">
+          <button class="back-btn" (click)="closeViewer()">
+            <i class="pi pi-arrow-left"></i>
+            Back to guidelines
+          </button>
+
+          @if (selectedGuideline()) {
+            <div class="viewer-title">
+              <h2>{{ selectedGuideline()!.title }}</h2>
+              <div class="viewer-meta">
+                <span class="category-badge">
+                  <i class="pi pi-folder"></i>
+                  {{ selectedGuideline()!.category }}
+                </span>
+              </div>
+            </div>
+          }
+
+          <button class="open-external-btn" (click)="openInNewTab()" title="Open on Angular.dev">
+            <i class="pi pi-external-link"></i>
+            Open on Angular.dev
+          </button>
+        </div>
+
+        <!-- Guideline Content -->
+        @if (selectedGuideline()) {
+          <div class="guideline-viewer">
+            <article class="guideline-content" [innerHTML]="selectedGuideline()!.content">
+            </article>
+          </div>
+        }
+
+        <!-- Loading State for Viewer -->
+        @if (guidelineLoading()) {
+          <div class="loading-state">
+            <div class="spinner"></div>
+            <p>Loading guideline content...</p>
+          </div>
+        }
+
+        <!-- Error State for Viewer -->
+        @if (guidelineError()) {
+          <div class="error-state">
+            <i class="pi pi-exclamation-triangle"></i>
+            <p>{{ guidelineError() }}</p>
+            <button class="retry-btn" (click)="closeViewer()">
+              <i class="pi pi-arrow-left"></i>
+              Go Back
+            </button>
+          </div>
+        }
+      </div>
+    }
+  </main>
+</div>
+

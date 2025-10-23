@@ -287,6 +287,30 @@ export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
     defaultY: 60,
     maximizable: true,
     statusText: 'YouTube Music Player'
+  },
+  'fireant': {
+    id: 'fireant',
+    title: 'FireAnt Stock Market',
+    icon: 'pi pi-chart-line',
+    component: 'fireant',
+    defaultWidth: 1000,
+    defaultHeight: 750,
+    defaultX: 200,
+    defaultY: 80,
+    maximizable: true,
+    statusText: 'Vietnamese Stock Market Data'
+  },
+  'angular-guidelines': {
+    id: 'angular-guidelines',
+    title: 'Angular Guidelines',
+    icon: 'pi pi-book',
+    component: 'angular-guidelines',
+    defaultWidth: 1200,
+    defaultHeight: 800,
+    defaultX: 100,
+    defaultY: 50,
+    maximizable: true,
+    statusText: 'Official Angular Documentation'
   }
 };
 

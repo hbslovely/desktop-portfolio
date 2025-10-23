@@ -1,0 +1,321 @@
+<div class="fireant-terminal">
+  <!-- Top Bar -->
+  <div class="terminal-topbar">
+    <div class="topbar-left">
+      <div class="logo">
+        <svg class="logo-icon" viewBox="0 0 24 24" fill="none">
+          <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2"/>
+          <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2"/>
+          <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2"/>
+        </svg>
+        <span>FireAnt Terminal</span>
+      </div>
+      <div class="connection-status" [class.connected]="isConnected()" [class.disconnected]="!isConnected()">
+        <span class="status-dot"></span>
+        <span>{{ isConnected() ? 'Live' : 'Offline' }}</span>
+      </div>
+    </div>
+    
+    <div class="topbar-center">
+      <!-- Search Bar -->
+      <div class="search-bar">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none">
+          <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/>
+          <path d="M21 21L16.65 16.65" stroke="currentColor" stroke-width="2"/>
+        </svg>
+        <input 
+          type="text" 
+          placeholder="Tìm mã CP..."
+          [ngModel]="searchKeyword()"
+          (ngModelChange)="searchKeyword.set($event)"
+          (keydown)="onSearchKeyDown($event)">
+        <div class="search-results-dropdown" *ngIf="searchResults().length > 0">
+          <button 
+            *ngFor="let result of searchResults()" 
+            class="search-result-item"
+            (click)="viewStockDetail(result)">
+            <span class="result-symbol">{{ result.symbol }}</span>
+            <span class="result-name">{{ result.organName || result.name }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <div class="topbar-right">
+      <button class="icon-btn" (click)="backToMarket()" *ngIf="currentView() === 'stock'">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M3 12h18M3 12l6-6m-6 6l6 6" stroke="currentColor" stroke-width="2"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Main Content Area -->
+  <div class="terminal-content">
+    <!-- Market Overview Grid -->
+    <div class="market-grid" *ngIf="currentView() === 'market'">
+      <div class="stock-tile" 
+           *ngFor="let stock of marketStocks()" 
+           (click)="viewStockDetail(stock.symbol)"
+           [class.price-up]="(stock.priceChange || 0) > 0"
+           [class.price-down]="(stock.priceChange || 0) < 0">
+        <div class="tile-header">
+          <span class="tile-symbol">{{ stock.symbol }}</span>
+          <span class="tile-exchange">{{ stock.floor || stock.exchange }}</span>
+        </div>
+        <div class="tile-price">{{ formatNumber(stock.lastPrice || stock.matchedPrice) }}</div>
+        <div class="tile-change">
+          <span>{{ formatNumber(stock.priceChange || 0) }}</span>
+          <span class="tile-percent">{{ formatPercent(stock.priceChangePercent || stock.perPriceChange || 0) }}</span>
+        </div>
+        <div class="tile-stats">
+          <span>V: {{ formatLargeNumber(stock.totalVolume || stock.volume) }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stock Detail View - Full Width Terminal Style -->
+    <div class="stock-detail-terminal" *ngIf="currentView() === 'stock' && selectedStock() as stock">
+      <!-- Stock Header Row -->
+      <div class="detail-header-row">
+        <div class="stock-identity">
+          <h1 class="stock-symbol">{{ stock.symbol }}</h1>
+          <p class="stock-company">{{ stock.organName || stock.name }}</p>
+        </div>
+        <div class="stock-price-panel" [ngClass]="getPriceChangeClass(stock.priceChange || 0)">
+          <div class="price-large">{{ formatNumber(stock.lastPrice || stock.matchedPrice) }}</div>
+          <div class="price-change-row">
+            <span class="change-value">{{ formatNumber(stock.priceChange || 0) }}</span>
+            <span class="change-percent">{{ formatPercent(stock.priceChangePercent || stock.perPriceChange || 0) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabs Navigation - Sticky -->
+      <div class="tabs-nav sticky-tabs">
+        <button class="tab" [class.active]="activeTab() === 'overview'" (click)="switchTab('overview')">Tổng hợp</button>
+        <button class="tab" [class.active]="activeTab() === 'fundamental'" (click)="switchTab('fundamental')">Số liệu</button>
+        <button class="tab" [class.active]="activeTab() === 'profile'" (click)="switchTab('profile')">Hồ sơ</button>
+        <button class="tab" [class.active]="activeTab() === 'posts'" (click)="switchTab('posts')">Thảo luận</button>
+      </div>
+
+      <!-- Tab Content - Full Width -->
+      <div class="tabs-content">
+        <!-- Overview Tab - 2 Column Layout -->
+        <div class="overview-layout" *ngIf="activeTab() === 'overview'">
+          <div class="data-column">
+            <div class="data-section">
+              <h3 class="section-heading">Giá giao dịch</h3>
+              <div class="data-grid">
+                <div class="data-item">
+                  <span class="label">Tham chiếu</span>
+                  <span class="value ref">{{ formatNumber(stock.refPrice) }}</span>
+                </div>
+                <div class="data-item">
+                  <span class="label">Mở cửa</span>
+                  <span class="value" [ngClass]="getPriceChangeClass((stock.lastPrice || 0) - (stock.refPrice || 0))">
+                    {{ formatNumber(stock.lastPrice) }}
+                  </span>
+                </div>
+                <div class="data-item">
+                  <span class="label">Sàn</span>
+                  <span class="value down">{{ formatNumber(stock.floorPrice) }}</span>
+                </div>
+                <div class="data-item">
+                  <span class="label">Trần</span>
+                  <span class="value up">{{ formatNumber(stock.ceilingPrice) }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="data-section">
+              <h3 class="section-heading">Khối lượng & Giá trị</h3>
+              <div class="data-grid">
+                <div class="data-item">
+                  <span class="label">Khối lượng</span>
+                  <span class="value">{{ formatNumber(stock.totalVolume || stock.volume) }}</span>
+                </div>
+                <div class="data-item">
+                  <span class="label">Giá trị GD</span>
+                  <span class="value">{{ formatLargeNumber(stock.totalValue) }}</span>
+                </div>
+                <div class="data-item" *ngIf="stock.avgVolume10d">
+                  <span class="label">KLTB 10 ngày</span>
+                  <span class="value">{{ formatNumber(stock.avgVolume10d) }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="data-column">
+            <div class="data-section">
+              <h3 class="section-heading">Chỉ số định giá</h3>
+              <div class="data-grid">
+                <div class="data-item" *ngIf="stock.pe">
+                  <span class="label">P/E</span>
+                  <span class="value">{{ stock.pe.toFixed(2) }}</span>
+                </div>
+                <div class="data-item" *ngIf="stock.pb">
+                  <span class="label">P/B</span>
+                  <span class="value">{{ stock.pb.toFixed(2) }}</span>
+                </div>
+                <div class="data-item" *ngIf="stock.eps">
+                  <span class="label">EPS</span>
+                  <span class="value">{{ formatNumber(stock.eps) }}</span>
+                </div>
+                <div class="data-item" *ngIf="stock.beta">
+                  <span class="label">Beta</span>
+                  <span class="value">{{ stock.beta.toFixed(2) }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="data-section">
+              <h3 class="section-heading">Vốn hóa</h3>
+              <div class="data-grid">
+                <div class="data-item">
+                  <span class="label">Thị giá vốn</span>
+                  <span class="value">{{ formatLargeNumber(stock.marketCap) }}</span>
+                </div>
+                <div class="data-item" *ngIf="stock.sharesOutstanding">
+                  <span class="label">Số CP lưu hành</span>
+                  <span class="value">{{ formatNumber(stock.sharesOutstanding) }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Fundamental Tab -->
+        <div class="fundamental-layout" *ngIf="activeTab() === 'fundamental'">
+          <div class="loading-spinner" *ngIf="isLoadingDetails()">
+            <div class="spinner"></div>
+            <p>Đang tải...</p>
+          </div>
+
+          <div class="data-column-full" *ngIf="!isLoadingDetails() && stockFundamental() as fundamental">
+            <div class="data-grid-compact">
+              <div class="data-item" *ngIf="fundamental.marketCap">
+                <span class="label">Vốn hóa</span>
+                <span class="value">{{ formatLargeNumber(fundamental.marketCap) }}</span>
+              </div>
+              <div class="data-item" *ngIf="fundamental.sharesOutstanding">
+                <span class="label">Số CP</span>
+                <span class="value">{{ formatNumber(fundamental.sharesOutstanding) }}</span>
+              </div>
+              <div class="data-item" *ngIf="fundamental.eps">
+                <span class="label">EPS</span>
+                <span class="value">{{ formatNumber(fundamental.eps) }}</span>
+              </div>
+              <div class="data-item" *ngIf="fundamental.pe">
+                <span class="label">P/E</span>
+                <span class="value">{{ fundamental.pe.toFixed(2) }}</span>
+              </div>
+              <div class="data-item" *ngIf="fundamental.pb">
+                <span class="label">P/B</span>
+                <span class="value">{{ fundamental.pb.toFixed(2) }}</span>
+              </div>
+              <div class="data-item" *ngIf="fundamental.roe">
+                <span class="label">ROE</span>
+                <span class="value">{{ fundamental.roe.toFixed(2) }}%</span>
+              </div>
+              <div class="data-item" *ngIf="fundamental.roa">
+                <span class="label">ROA</span>
+                <span class="value">{{ fundamental.roa.toFixed(2) }}%</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="empty-message" *ngIf="!isLoadingDetails() && !stockFundamental()">
+            Không có dữ liệu số liệu
+          </div>
+        </div>
+
+        <!-- Profile Tab -->
+        <div class="profile-layout" *ngIf="activeTab() === 'profile'">
+          <div class="loading-spinner" *ngIf="isLoadingDetails()">
+            <div class="spinner"></div>
+            <p>Đang tải...</p>
+          </div>
+
+          <div class="profile-grid" *ngIf="!isLoadingDetails() && stockProfile() as profile">
+            <div class="profile-section">
+              <h3>Thông tin công ty</h3>
+              <div class="profile-info">
+                <p *ngIf="profile.companyName"><strong>Tên:</strong> {{ profile.companyName }}</p>
+                <p *ngIf="profile.exchange"><strong>Sàn:</strong> {{ profile.exchange }}</p>
+                <p *ngIf="profile.employees"><strong>Nhân viên:</strong> {{ formatNumber(profile.employees) }}</p>
+              </div>
+            </div>
+
+            <div class="profile-section" *ngIf="profile.overview">
+              <h3>Tổng quan</h3>
+              <p class="profile-text">{{ profile.overview }}</p>
+            </div>
+
+            <div class="profile-section" *ngIf="profile.headQuarters || profile.phone || profile.email">
+              <h3>Liên hệ</h3>
+              <div class="contact-list">
+                <p *ngIf="profile.headQuarters">📍 {{ profile.headQuarters }}</p>
+                <p *ngIf="profile.phone">📞 {{ profile.phone }}</p>
+                <p *ngIf="profile.email">✉️ {{ profile.email }}</p>
+                <p *ngIf="profile.webAddress">🌐 <a [href]="profile.webAddress" target="_blank">{{ profile.webAddress }}</a></p>
+              </div>
+            </div>
+          </div>
+
+          <div class="empty-message" *ngIf="!isLoadingDetails() && !stockProfile()">
+            Không có thông tin hồ sơ
+          </div>
+        </div>
+
+        <!-- Posts Tab -->
+        <div class="posts-layout" *ngIf="activeTab() === 'posts'">
+          <div class="loading-spinner" *ngIf="isLoadingDetails() && stockPosts().length === 0">
+            <div class="spinner"></div>
+            <p>Đang tải...</p>
+          </div>
+
+          <div class="posts-scroll-container" 
+               *ngIf="stockPosts().length > 0"
+               (scroll)="onPostsScroll($event)">
+            <div class="posts-grid">
+              <div class="post-card" *ngFor="let post of stockPosts()">
+                <div class="post-meta">
+                  <span class="post-author">{{ post.user?.name || 'Ẩn danh' }}</span>
+                  <span class="post-date">{{ post.publishDate || post.date }}</span>
+                </div>
+                <h4 class="post-title" *ngIf="post.title">{{ post.title }}</h4>
+                <!-- Render HTML content -->
+                <div class="post-content-html" 
+                     *ngIf="post.content" 
+                     [innerHTML]="post.content"></div>
+                <div class="post-actions">
+                  <span *ngIf="post.totalLikes">👍 {{ post.totalLikes }}</span>
+                  <span *ngIf="post.totalReplies">💬 {{ post.totalReplies }}</span>
+                  <span *ngIf="post.totalShares">↗️ {{ post.totalShares }}</span>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Loading more indicator -->
+            <div class="loading-more" *ngIf="isLoadingMorePosts()">
+              <div class="spinner-small"></div>
+              <span>Đang tải thêm...</span>
+            </div>
+            
+            <!-- End of posts -->
+            <div class="end-message" *ngIf="!hasMorePosts() && !isLoadingMorePosts()">
+              <span>• • •</span>
+              <p>Đã hiển thị tất cả bài viết</p>
+            </div>
+          </div>
+
+          <div class="empty-message" *ngIf="!isLoadingDetails() && stockPosts().length === 0">
+            Chưa có bài thảo luận
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

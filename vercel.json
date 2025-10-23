@@ -1,6 +1,78 @@
 {
   "buildCommand": "npm run build",
   "outputDirectory": "dist/desktop-portfolio/browser",
-  "framework": "angular"
+  "framework": "angular",
+  "rewrites": [
+    {
+      "source": "/api/angular-dev/:path*",
+      "destination": "https://angular.dev/:path*"
+    },
+    {
+      "source": "/api/fireant-api/:path*",
+      "destination": "https://restv2.fireant.vn/:path*"
+    },
+    {
+      "source": "/api/fireant-static/:path*",
+      "destination": "https://static.fireant.vn/:path*"
+    },
+    {
+      "source": "/api/fireant",
+      "destination": "https://fireant.vn"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/api/angular-dev/:path*",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "Content-Type"
+        }
+      ]
+    },
+    {
+      "source": "/api/fireant-api/:path*",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, POST, PUT, DELETE, OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "Content-Type, Authorization"
+        }
+      ]
+    },
+    {
+      "source": "/api/fireant-static/:path*",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        }
+      ]
+    },
+    {
+      "source": "/api/fireant",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        }
+      ]
+    }
+  ]
 }
 

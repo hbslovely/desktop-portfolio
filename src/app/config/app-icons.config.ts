@@ -122,6 +122,21 @@ export const APP_ICONS: DesktopIconData[] = [
     icon: 'pi pi-youtube',
     type: 'application',
     position: { x: 220, y: 520 }
+  },
+  // Column 4 (x: 320) - Additional Apps
+  {
+    id: 'fireant',
+    name: 'FireAnt Stock',
+    icon: 'pi pi-chart-line',
+    type: 'application',
+    position: { x: 320, y: 20 }
+  },
+  {
+    id: 'angular-guidelines',
+    name: 'Angular Guidelines',
+    icon: 'assets/images/icons/angular.png',
+    type: 'application',
+    position: { x: 320, y: 120 }
   }
 ];
 
@@ -155,7 +170,9 @@ function getAppDescription(appId: string): string {
     'vnstock': 'View real-time Vietnam stock market prices and data from FireAnt',
     'calendar': 'Lịch Việt Nam với âm lịch, ngày lễ tết, con giáp, ngày đẹp, tính ngày',
     'angular-love': 'Browse and read Angular InDepth articles, tutorials, and RxJS guides',
-    'music': 'Listen to music videos from YouTube with a curated playlist'
+    'music': 'Listen to music videos from YouTube with a curated playlist',
+    'fireant': 'Search and view real-time Vietnamese stock market data with FireAnt API',
+    'angular-guidelines': 'Comprehensive Angular official documentation and guidelines from Angular.dev'
   };
   return descriptions[appId] || 'Application';
 }
@@ -178,7 +195,9 @@ function getAppKeywords(appId: string): string[] {
     'vnstock': ['stock', 'market', 'vietnam', 'fireant', 'trading', 'shares', 'prices', 'hose', 'hnx', 'vn30', 'stocks', 'finance', 'investment'],
     'calendar': ['lich', 'lịch', 'am lich', 'âm lịch', 'ngay le', 'ngày lễ', 'tet', 'tết', 'con giap', 'con giáp', 'ngay dep', 'ngày đẹp', 'tinh ngay', 'tính ngày', 'dem ngay', 'đếm ngày', 'vietnam', 'lunar', 'holiday'],
     'angular-love': ['angular', 'rxjs', 'tutorials', 'articles', 'blog', 'indepth', 'in-depth', 'web', 'development', 'typescript', 'frontend', 'framework', 'programming', 'coding', 'education', 'learning'],
-    'music': ['youtube', 'video', 'songs', 'audio', 'player', 'playlist', 'stream', 'listen', 'pop', 'rock', 'jazz', 'classical', 'electronic', 'artist', 'album', 'track']
+    'music': ['youtube', 'video', 'songs', 'audio', 'player', 'playlist', 'stream', 'listen', 'pop', 'rock', 'jazz', 'classical', 'electronic', 'artist', 'album', 'track'],
+    'fireant': ['stock', 'market', 'vietnam', 'vietnamese', 'fireant', 'trading', 'shares', 'prices', 'hose', 'hnx', 'vn30', 'stocks', 'finance', 'investment', 'api', 'real-time', 'search', 'symbol'],
+    'angular-guidelines': ['angular', 'documentation', 'docs', 'guide', 'guidelines', 'tutorial', 'official', 'components', 'directives', 'services', 'routing', 'forms', 'http', 'signals', 'dependency injection', 'best practices', 'security', 'performance', 'angular.dev']
   };
   return keywords[appId] || [];
 }

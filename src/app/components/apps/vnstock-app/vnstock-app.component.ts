@@ -250,7 +250,7 @@ export class VnstockAppComponent implements OnInit, OnDestroy {
       this.filteredMacroDataInfo = this.macroDataInfo.filter(item =>
         (item.nameVN || '').toLowerCase().includes(term) ||
         (item.name || '').toLowerCase().includes(term) ||
-        (item.description || '').toLowerCase().includes(term)
+        (item['description'] || '').toLowerCase().includes(term)
       );
     }
   }
@@ -497,7 +497,7 @@ export class VnstockAppComponent implements OnInit, OnDestroy {
       const yesterdayClose = yesterdayQuote.close || yesterdayQuote.priceBasic?.close || 0;
 
       // If we don't have change data, calculate from historical data
-      if ((!this.symbolInfo.priceChange || this.symbolInfo.priceChange === 0) && yesterdayClose > 0 && todayClose > 0) {
+      if ((!this.symbolInfo['priceChange'] || this.symbolInfo.priceChange === 0) && yesterdayClose > 0 && todayClose > 0) {
         this.symbolInfo.lastPrice = todayClose; // Update last price to today's close
         this.symbolInfo.priceChange = todayClose - yesterdayClose;
         this.symbolInfo.perPriceChange = ((todayClose - yesterdayClose) / yesterdayClose) * 100;
@@ -601,24 +601,24 @@ export class VnstockAppComponent implements OnInit, OnDestroy {
     return type.type;
   }
 
-  trackByMacroInfoId(index: number, info: MacroDataInfo): number {
-    return info.id;
+  trackByMacroInfoId(index: number, info: MacroDataInfo): any {
+    return info['id'];
   }
 
-  trackBySearchResultKey(index: number, result: SearchResult): string {
+  trackBySearchResultKey(index: number, result: SearchResult): any {
     return result.key || result.id || index.toString();
   }
 
-  trackByEventId(index: number, event: SymbolEvent): string {
+  trackByEventId(index: number, event: SymbolEvent): any {
     return event.eventID || event.eventDate || index.toString();
   }
 
-  trackByHolderId(index: number, holder: SymbolHolder): number {
+  trackByHolderId(index: number, holder: SymbolHolder): string | number {
     return holder.majorHolderID || holder.institutionHolderID || holder.individualHolderID || index;
   }
 
   trackByPostId(index: number, post: SymbolPost): string {
-    return post.id || index.toString();
+    return post.id as any || index.toString();
   }
 
   trackByImageId(index: number, img: any): number {

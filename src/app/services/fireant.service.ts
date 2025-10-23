@@ -1,35 +1,58 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable, BehaviorSubject, throwError } from 'rxjs';
-import { tap, catchError, map } from 'rxjs/operators';
+import { Observable, BehaviorSubject, firstValueFrom, throwError } from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
 
+interface StoredToken {
+  token: string;
+  timestamp: number;
+}
+
+export interface FireAntSearchResult {
+  symbol: string;
+  organCode: string;
+  organName: string;
+  organShortName: string;
+  comGroupCode: string;
+  icbCode: string;
+}
+
+export interface FireAntSearchResponse {
+  data: FireAntSearchResult[];
+  total: number;
+}
+
+export interface FireAntStockInfo {
+  symbol: string;
+  organCode: string;
+  organName: string;
+  organShortName: string;
+  floor: string;
+  lastPrice: number;
+  priceChange: number;
+  priceChangePercent: number;
+  ceilingPrice: number;
+  floorPrice: number;
+  refPrice: number;
+  totalVolume: number;
+  totalValue: number;
+  marketCap: number;
+  pe: number;
+  eps: number;
+  beta: number;
+}
+
+// Interfaces for VNStock app compatibility
 export interface StockData {
   symbol: string;
-  name: string;
   price: number;
   change: number;
   changePercent: number;
   volume: number;
-  high: number;
-  low: number;
-  open: number;
-  contributionToIndex?: number; // For top contributors
-  industry?: string; // For industry filter
-}
-
-export interface Industry {
-  icbCode: string;
-  icbName: string;
-  orderNo?: number;
-  level?: number;
 }
 
 export interface SymbolFundamental {
   symbol: string;
-  companyName: string;
-  exchange: string;
-  industry: string;
-  icbCode?: string;
   marketCap?: number;
   sharesOutstanding?: number;
   eps?: number;
@@ -37,81 +60,55 @@ export interface SymbolFundamental {
   pb?: number;
   roe?: number;
   roa?: number;
-  [key: string]: any;
+  exchange?: string;
 }
 
 export interface SymbolInfo {
   symbol: string;
-  organName?: string;
+  organCode: string;
+  organName: string;
   organShortName?: string;
-  organCode?: string;
+  exchange?: string;
   icbName?: string;
-  comGroupCode?: string;
   lastPrice?: number;
   priceChange?: number;
   perPriceChange?: number;
   totalVolume?: number;
-  ticker?: string;
-  exchange?: string;
-  [key: string]: any;
 }
 
 export interface SymbolPost {
-  id?: string;
+  id?: string | number;
+  user?: {
+    name?: string;
+    isAuthentic?: boolean;
+  };
+  publishDate?: string;
+  date?: string;
   title?: string;
   content?: string;
   originalContent?: string;
-  summary?: string;
-  publishDate?: string;
-  date?: string;
-  source?: string;
-  url?: string;
-  imageUrl?: string;
-  user?: {
-    id?: string;
-    name?: string;
-    bio?: string;
-    isAuthentic?: boolean;
-    followed?: boolean;
-  };
   link?: string;
   linkImage?: string;
   linkTitle?: string;
   linkDescription?: string;
-  images?: Array<{
-    imageID?: number;
-    base64Image?: string;
-    imageUrl?: string;
-  }>;
+  images?: any[];
   totalLikes?: number;
   totalReplies?: number;
   totalShares?: number;
-  taggedSymbols?: Array<{
-    symbol?: string;
-    price?: number;
-    change?: number;
-    percentChange?: number;
-    changeSince?: number;
-    percentChangeSince?: number;
-  }>;
-  [key: string]: any;
 }
 
 export interface HistoricalQuote {
   date?: string;
-  priceBasic?: {
-    open?: number;
-    high?: number;
-    low?: number;
-    close?: number;
-    volume?: number;
-  };
   open?: number;
   high?: number;
   low?: number;
   close?: number;
   volume?: number;
-  [key: string]: any;
+  priceBasic?: {
+    open?: number;
+    close?: number;
+    volume?: number;
+  };
 }
 
 export interface InstitutionProfile {
@@ -130,7 +127,7 @@ export interface InstitutionProfile {
   history?: string;
   businessAreas?: string;
   employees?: number;
-  branches?: number;
+  branches?: number | null;
   establishmentDate?: string;
   businessLicenseNumber?: string;
   dateOfIssue?: string;
@@ -144,1227 +141,402 @@ export interface InstitutionProfile {
   foreignOwnership?: number;
   otherOwnership?: number;
   isListed?: boolean;
-  [key: string]: any;
-}
-
-export interface MacroIndicator {
-  indicatorID?: string;
-  name?: string;
-  value?: number;
-  unit?: string;
-  period?: string;
-  lastUpdate?: string;
-  changePercent?: number;
-  [key: string]: any;
-}
-
-export interface TopMover {
-  symbol: string;
-  name: string;
-  price: number;
-  change: number;
-  changePercent: number;
-  volume: number;
-  high: number;
-  low: number;
-  open: number;
-  type?: string; // 'gainer', 'loser', 'active'
-  [key: string]: any;
 }
 
 export interface SearchResult {
-  id?: string | null;
-  type?: string;
-  key?: string;          // Symbol code
-  name?: string;         // Company name
-  description?: string;  // Exchange (HSX, HNX, WORLD...)
-  symbol?: string;       // Fallback for symbol
-  organCode?: string;
+  symbol?: string;
   organName?: string;
-  organShortName?: string;
-  comGroupCode?: string;
-  icbCode?: string;
-  [key: string]: any;
+  name?: string;
+  key?: string;
+  id?: string | number | null;
+  description?: string;
+  type?: string;
 }
 
 export interface SymbolEvent {
-  eventID?: string;
-  symbol?: string;
+  eventID?: string | number;
+  eventDate?: string;
+  eventType?: string;
   eventTitle?: string;
   eventDesc?: string;
-  eventDate?: string;
-  notifyDate?: string;
-  eventType?: string;
   attachedFile?: string;
-  [key: string]: any;
 }
 
 export interface MacroDataType {
   type: string;
-  name: string;
+  name?: string;
+  nameVN?: string;
   description?: string;
+  id?: string | number;
 }
 
 export interface MacroDataInfo {
-  id: number;
-  type: string;
-  name: string;
   nameVN?: string;
+  name?: string;
   description?: string;
+  id?: string | number;
+  frequency?: string;
   lastValue?: number;
+  unit?: string;
   lastDate?: string;
   previousValue?: number;
-  previousDate?: string;
-  firstDate?: string;
-  maxValue?: number;
-  maxDate?: string;
   minValue?: number;
-  minDate?: string;
+  maxValue?: number;
   averageValue?: number;
-  unit?: string;
-  frequency?: string;
-  range?: string;
-  nextRelease?: string;
-  source?: string;
-  historicalValue?: any;
-  [key: string]: any;
 }
 
 export interface SymbolHolder {
-  majorHolderID?: number;
-  individualHolderID?: number;
-  institutionHolderID?: number;
-  institutionHolderSymbol?: string;
-  institutionHolderExchange?: string;
-  name?: string;
-  position?: string;
-  shares?: number;
-  ownership?: number;
+  institutionHolderID?: string | number;
+  individualHolderID?: string | number;
+  majorHolderID?: string | number;
   isOrganization?: boolean;
   isForeigner?: boolean;
   isFounder?: boolean;
+  ownership?: number;
+  position?: string;
+  shares?: number;
+  institutionHolderSymbol?: string;
   reported?: string;
-  [key: string]: any;
-}
-
-export interface FireAntAuthResponse {
-  accessToken: string;
-  tokenType?: string;
-  expiresIn?: number;
+  name?: string;
 }
 
 @Injectable({
   providedIn: 'root'
 })
 export class FireantService {
-  private apiUrl = 'https://api.fireant.vn';
-  private tokenSubject = new BehaviorSubject<string | null>(null);
+  private tokenSubject = new BehaviorSubject<string>('');
   public token$ = this.tokenSubject.asObservable();
 
-  constructor(private http: HttpClient) {}
+  // Base URL for FireAnt API (using proxy to avoid CORS)
+  private readonly BASE_URL = '/api/fireant-api';
+
+  // Storage key for localStorage
+  private readonly STORAGE_KEY = 'fireant_jwt_token';
+
+  // Expiration time: 3 days in milliseconds
+  private readonly EXPIRATION_TIME = 3 * 24 * 60 * 60 * 1000;
+
+  constructor(private http: HttpClient) {
+    // Initialize token from localStorage or fetch new one
+    this.initializeToken();
+  }
 
   /**
-   * Anonymous login to FireAnt API
+   * Get current token value
    */
-  loginAnonymous(): Observable<FireAntAuthResponse> {
-    const headers = new HttpHeaders({
-      'Content-Type': 'application/json'
-    });
+  getToken(): string {
+    return this.tokenSubject.value;
+  }
 
-
-
-    return this.http.post<FireAntAuthResponse>(
-      `${this.apiUrl}/authentication/anonymous-login`,
-      {}, // Empty body for anonymous login
-      { headers }
-    ).pipe(
-      tap(response => {
-
-        if (response && response.accessToken) {
-          this.tokenSubject.next(response.accessToken);
-
+  /**
+   * Initialize JWT token from localStorage or fetch new one
+   */
+  private initializeToken(): void {
+    const stored = this.getStoredToken();
+    if (stored && !this.isExpired(stored.timestamp)) {
+      // Use stored token if not expired
+      this.tokenSubject.next(stored.token);
+      console.log('Using cached FireAnt token');
         } else {
-
-        }
-      }),
-      catchError(error => {
-
-        console.error('Error details:', {
-          status: error.status,
-          statusText: error.statusText,
-          message: error.message,
-          url: error.url
-        });
-        throw error;
-      })
-    );
-  }
-
-  /**
-   * Get all instruments (all stock symbols)
-   * @param exchange - Optional exchange filter (HOSE, HNX, UPCOM)
-   */
-  getAllInstruments(exchange?: string): Observable<StockData[]> {
-    const token = this.tokenSubject.value;
-    
-    if (!token) {
-
-      return throwError(() => new Error('No authentication token'));
+      // Fetch new token if expired or not found
+      console.log('Cached token expired or not found, fetching new one...');
+      this.fetchAndStoreToken();
     }
-
-    const headers = new HttpHeaders({
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    });
-
-    // Use the /instruments endpoint to get all symbols
-    const url = exchange 
-      ? `${this.apiUrl}/instruments?exchange=${exchange}`
-      : `${this.apiUrl}/instruments`;
-
-
-    return this.http.get<any>(url, { headers }).pipe(
-      map(response => {
-        console.log('✅ FireAnt API Response (Instruments):', response);
-        
-        // Handle different response structures
-        let dataArray = response;
-        
-        if (response && response.data) {
-          dataArray = Array.isArray(response.data) ? response.data : [response.data];
-        } else if (response && Array.isArray(response)) {
-          dataArray = response;
-        } else if (response && response.items) {
-          dataArray = response.items;
-        }
-
-        if (!Array.isArray(dataArray)) {
-
-          throw new Error('Invalid API response format');
-        }
-
-
-        
-        // Log raw data structure for debugging
-        if (dataArray.length > 0) {
-          console.log('📋 Sample raw item:', JSON.stringify(dataArray[0], null, 2));
-        }
-
-        // Transform the API response to our StockData format
-        const stocks = dataArray.map((item: any) => {
-          // Extract nested priceBasic if it exists
-          const priceData = item.priceBasic || item;
-          
-          return {
-            symbol: item.symbol || item.ticker || item.code || '',
-            name: item.organName || item.companyName || item.name || item.organShortName || '',
-            price: priceData.matchPrice || priceData.lastPrice || item.lastPrice || item.price || 
-                   priceData.closePrice || item.closePrice || priceData.close || item.close || 0,
-            change: priceData.change || item.change || item.priceChange || item.changePrice || 0,
-            changePercent: priceData.changePc || item.changePc || item.changePercent || 
-                          item.perPriceChange || item.pctChange || item.percentChange || 0,
-            volume: item.totalMatchVol || priceData.totalMatchVol || item.volume || 
-                   item.totalVol || item.matchedVolume || item.totalVolume || 0,
-            high: priceData.highest || item.highest || item.high || item.highPrice || 0,
-            low: priceData.lowest || item.lowest || item.low || item.lowPrice || 0,
-            open: priceData.open || item.open || item.openPrice || item.openingPrice || 0,
-            industry: item.icbName || item.industry || ''
-          };
-        });
-
-        console.log('✅ Transformed instruments (sample):', stocks.slice(0, 2));
-        return stocks;
-      }),
-      catchError(error => {
-
-        console.error('Error details:', {
-          status: error.status,
-          statusText: error.statusText,
-          message: error.message,
-          url: error.url
-        });
-        throw error;
-      })
-    );
   }
 
   /**
-   * Get stock market data by exchange (using /instruments endpoint)
-   * @param exchange - The exchange code (HOSE, HNX, UPCOM)
+   * Get stored token from localStorage
    */
-  getStockMarketData(exchange: string = 'HOSE'): Observable<StockData[]> {
-    return this.getAllInstruments(exchange);
-  }
-
-  /**
-   * Get all symbols (no exchange filter)
-   */
-  getAllSymbols(): Observable<StockData[]> {
-    const token = this.tokenSubject.value;
-    
-    if (!token) {
-
-      return throwError(() => new Error('No authentication token'));
+  private getStoredToken(): StoredToken | null {
+    try {
+      const stored = localStorage.getItem(this.STORAGE_KEY);
+      if (stored) {
+        return JSON.parse(stored) as StoredToken;
+      }
+    } catch (error) {
+      console.error('Error reading FireAnt token from localStorage:', error);
     }
-
-    const headers = new HttpHeaders({
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    });
-
-
-
-    return this.http.get<any>(`${this.apiUrl}/symbols`, { headers }).pipe(
-      map(response => {
-
-        let dataArray = response;
-        
-        if (response && response.data) {
-          dataArray = Array.isArray(response.data) ? response.data : [response.data];
-        } else if (response && Array.isArray(response)) {
-          dataArray = response;
-        }
-
-        return dataArray.map((item: any) => ({
-          symbol: item.symbol || item.code || '',
-          name: item.name || item.companyName || item.organName || '',
-          price: item.lastPrice || item.price || 0,
-          change: item.change || 0,
-          changePercent: item.changePercent || item.pctChange || 0,
-          volume: item.volume || item.totalVol || 0,
-          high: item.high || item.highPrice || 0,
-          low: item.low || item.lowPrice || 0,
-          open: item.open || item.openPrice || 0
-        }));
-      }),
-      catchError(error => {
-
-        throw error;
-      })
-    );
+    return null;
   }
 
   /**
-   * Search for stocks by symbol
+   * Store token in localStorage with timestamp
    */
-  searchStock(symbol: string): Observable<any> {
-    const token = this.tokenSubject.value;
-    
-    if (!token) {
-
-      return throwError(() => new Error('No authentication token'));
+  private storeToken(token: string): void {
+    try {
+      const data: StoredToken = {
+        token,
+        timestamp: Date.now()
+      };
+      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
+      console.log('FireAnt token cached for 3 days');
+    } catch (error) {
+      console.error('Error writing FireAnt token to localStorage:', error);
     }
-
-    const headers = new HttpHeaders({
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    });
-
-
-
-    return this.http.get<any>(`${this.apiUrl}/symbols/${symbol}`, { headers }).pipe(
-      tap(response => console.log('✅ Stock search result:', response)),
-      catchError(error => {
-
-        throw error;
-      })
-    );
   }
 
   /**
-   * Get top contributors to index (contribute-to-index endpoint)
-   * @param exchange - Exchange code (HSX, HNX, UPCOM)
-   * @param type - Type (1: Đóng góp tăng index, 2: Đóng góp giảm index)
-   * @param count - Number of records (default 20)
+   * Check if stored timestamp is expired (older than 3 days)
    */
-  getTopContributors(exchange: string = 'HSX', type: number = 1, count: number = 20): Observable<StockData[]> {
-    const token = this.tokenSubject.value;
-    
-    if (!token) {
-
-      return throwError(() => new Error('No authentication token'));
-    }
-
-    const headers = new HttpHeaders({
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    });
-
-    const url = `${this.apiUrl}/symbols/contribute-to-index?exchange=${exchange}&type=${type}&count=${count}`;
-    console.log(`📊 Fetching top contributors for ${exchange} (type: ${type}): ${url}`);
-
-    return this.http.get<any>(url, { headers }).pipe(
-      map(response => {
-
-        let dataArray = response;
-        
-        if (response && response.data) {
-          dataArray = Array.isArray(response.data) ? response.data : [response.data];
-        } else if (response && Array.isArray(response)) {
-          dataArray = response;
-        }
-
-        if (!Array.isArray(dataArray)) {
-
-          throw new Error('Invalid API response format');
-        }
-
-
-        
-        // Log raw data structure for debugging
-        if (dataArray.length > 0) {
-          console.log('📋 Sample contributor:', JSON.stringify(dataArray[0], null, 2));
-        }
-
-        return dataArray.map((item: any) => {
-          const priceData = item.priceBasic || item;
-          
-          return {
-            symbol: item.symbol || item.ticker || item.code || '',
-            name: item.organName || item.name || item.companyName || item.organShortName || '',
-            price: priceData.matchPrice || item.lastPrice || item.price || priceData.lastPrice || 0,
-            change: priceData.change || item.change || item.priceChange || 0,
-            changePercent: priceData.changePc || item.changePc || item.changePercent || item.perPriceChange || 0,
-            volume: item.totalMatchVol || priceData.totalMatchVol || item.volume || 0,
-            high: priceData.highest || item.highest || item.high || 0,
-            low: priceData.lowest || item.lowest || item.low || 0,
-            open: priceData.open || item.open || 0,
-            contributionToIndex: item.contributionToIndex || item.indexContribution || item.indexImpact || item.contribution || 0
-          };
-        });
-      }),
-      catchError(error => {
-
-        throw error;
-      })
-    );
+  private isExpired(timestamp: number): boolean {
+    return Date.now() - timestamp > this.EXPIRATION_TIME;
   }
 
   /**
-   * Get all industries
+   * Fetch and store new JWT token
    */
-  getIndustries(): Observable<Industry[]> {
-    const token = this.tokenSubject.value;
-    
-    if (!token) {
-
-      return throwError(() => new Error('No authentication token'));
-    }
-
-    const headers = new HttpHeaders({
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
+  private fetchAndStoreToken(): void {
+    this.fetchToken().then(() => {
+      const currentToken = this.tokenSubject.value;
+      if (currentToken) {
+        this.storeToken(currentToken);
+      }
+    }).catch(error => {
+      console.error('Failed to fetch FireAnt token:', error);
     });
+  }
 
+  /**
+   * Fetch the JWT token from FireAnt's JavaScript files
+   */
+  private async fetchToken(): Promise<void> {
+    try {
+      // Fetch the main HTML page to get script references (using proxy to avoid CORS)
+      const htmlResponse = await firstValueFrom(
+        this.http.get('/api/fireant', { responseType: 'text' })
+      );
 
+      // Look for script tags with _app-*.js pattern
+      const scriptMatches = htmlResponse.match(/_app-[a-f0-9]+\.js/g);
 
-    return this.http.get<any>(`${this.apiUrl}/industries`, { headers }).pipe(
-      map(response => {
+      if (!scriptMatches) {
+        throw new Error('No _app script files found');
+      }
 
-        let dataArray = response;
-        
-        if (response && response.data) {
-          dataArray = Array.isArray(response.data) ? response.data : [response.data];
-        } else if (response && Array.isArray(response)) {
-          dataArray = response;
-        }
+      // Try to find the token in the script files
+      for (const scriptFile of scriptMatches) {
+        try {
+          const scriptUrl = `/api/fireant-static/web/v1/_next/static/chunks/pages/${scriptFile}`;
+          const scriptContent = await firstValueFrom(
+            this.http.get(scriptUrl, { responseType: 'text' })
+          );
 
-        if (!Array.isArray(dataArray)) {
-          dataArray = [];
-        }
+          // Look for JWT token pattern: let em = "eyJ..."
+          const tokenMatch = scriptContent.match(/let\s+em\s*=\s*"(eyJ[^"]+)"/);
 
-
-        
-        // Log first industry for debugging
-        if (dataArray.length > 0) {
-          console.log('📋 Sample industry:', JSON.stringify(dataArray[0], null, 2));
-        }
-
-        return dataArray.map((item: any) => {
-          const industry = {
-            icbCode: item.industryCode || item.icbCode || item.code || '',
-            icbName: item.name || item.icbName || item.industryName || '',
-            orderNo: item.orderNo || 0,
-            level: item.level || 0
-          };
-          
-          // Log if icbCode is missing
-          if (!industry.icbCode) {
-
+          if (tokenMatch && tokenMatch[1]) {
+            const token = tokenMatch[1];
+            this.tokenSubject.next(token);
+            console.log('✅ Found and updated FireAnt token');
+            return;
           }
-          
-          return industry;
-        });
-      }),
-      catchError(error => {
+        } catch (error) {
+          // Continue to next file if this one fails
+          console.log(`⏭️  Skipping ${scriptFile}, continuing...`);
+          continue;
+        }
+      }
 
+      console.warn('⚠️ JWT token not found in any script files');
+    } catch (error) {
+      console.error('❌ Error fetching FireAnt token:', error);
         throw error;
-      })
-    );
+    }
   }
 
   /**
-   * Get symbol fundamental data
-   * @param symbol - Stock symbol
+   * Handle API call failure by fetching new token
    */
-  getSymbolFundamental(symbol: string): Observable<SymbolFundamental> {
-    const token = this.tokenSubject.value;
-    
-    if (!token) {
-
-      return throwError(() => new Error('No authentication token'));
-    }
-
-    const headers = new HttpHeaders({
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    });
-
-
-
-    return this.http.get<any>(`${this.apiUrl}/symbols/${symbol}/fundamental`, { headers }).pipe(
-      map(response => {
-
-        const data = response.data || response;
-
-        return {
-          symbol: data.symbol || symbol,
-          companyName: data.companyName || data.organName || '',
-          exchange: data.exchange || data.floor || '',
-          industry: data.industry || data.icbName || '',
-          icbCode: data.icbCode || '',
-          marketCap: data.marketCap || data.marketCapitalization || 0,
-          sharesOutstanding: data.sharesOutstanding || data.outstandingShare || 0,
-          eps: data.eps || data.basicEps || 0,
-          pe: data.pe || data.priceToEarning || 0,
-          pb: data.pb || data.priceToBook || 0,
-          roe: data.roe || data.returnOnEquity || 0,
-          roa: data.roa || data.returnOnAssets || 0,
-          ...data
-        };
-      }),
-      catchError(error => {
-
-        throw error;
-      })
-    );
+  private handleApiFailure(): void {
+    console.warn('FireAnt API call failed, attempting to refresh token...');
+    this.fetchAndStoreToken();
   }
 
   /**
-   * Get symbols by industry
-   * @param icbCode - Industry ICB code
+   * Get the current token
    */
-  getSymbolsByIndustry(icbCode: string): Observable<StockData[]> {
-    const token = this.tokenSubject.value;
-    
-    if (!token) {
-
-      return throwError(() => new Error('No authentication token'));
-    }
-
-    const headers = new HttpHeaders({
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    });
-
-    const url = `${this.apiUrl}/icb/${icbCode}/symbols`;
-
-
-    return this.http.get<any>(url, { headers }).pipe(
-      map(response => {
-
-        let dataArray = response;
-        
-        if (response && response.data) {
-          dataArray = Array.isArray(response.data) ? response.data : [response.data];
-        } else if (response && Array.isArray(response)) {
-          dataArray = response;
-        }
-
-        if (!Array.isArray(dataArray)) {
-          dataArray = [];
-        }
-
-
-        
-        // Log raw data structure for debugging
-        if (dataArray.length > 0) {
-          console.log('📋 Sample industry symbol:', JSON.stringify(dataArray[0], null, 2));
-        }
-
-        return dataArray.map((item: any) => {
-          const priceData = item.priceBasic || item;
-          
-          return {
-            symbol: item.symbol || item.ticker || item.code || '',
-            name: item.organName || item.name || item.companyName || item.organShortName || '',
-            price: priceData.matchPrice || item.lastPrice || item.price || priceData.lastPrice || 0,
-            change: priceData.change || item.change || item.priceChange || 0,
-            changePercent: priceData.changePc || item.changePc || item.changePercent || item.perPriceChange || 0,
-            volume: item.totalMatchVol || priceData.totalMatchVol || item.volume || 0,
-            high: priceData.highest || item.highest || item.high || 0,
-            low: priceData.lowest || item.lowest || item.low || 0,
-            open: priceData.open || item.open || 0,
-            industry: item.icbName || item.industry || ''
-          };
-        });
-      }),
-      catchError(error => {
-
-        throw error;
-      })
-    );
+  private getCurrentToken(): string {
+    return this.tokenSubject.value;
   }
 
   /**
-   * Get symbol info (detailed info about a stock symbol)
-   * @param symbol - Stock symbol
+   * Get headers with authorization token
    */
-  getSymbolInfo(symbol: string): Observable<SymbolInfo> {
-    const token = this.tokenSubject.value;
-    
-    if (!token) {
-
-      return throwError(() => new Error('No authentication token'));
-    }
-
-    const headers = new HttpHeaders({
-      'Authorization': `Bearer ${token}`,
+  private getHeaders(): HttpHeaders {
+    return new HttpHeaders({
+      'Authorization': `Bearer ${this.getCurrentToken()}`,
       'Content-Type': 'application/json'
     });
-
-
-
-    return this.http.get<any>(`${this.apiUrl}/symbols/${symbol}`, { headers }).pipe(
-      map(response => {
-
-        const data = response.data || response;
-        return {
-          symbol: data.symbol || data.ticker || symbol,
-          organName: data.organName || data.companyName || '',
-          organShortName: data.organShortName || data.shortName || '',
-          organCode: data.organCode || '',
-          icbName: data.icbName || data.industry || '',
-          comGroupCode: data.comGroupCode || '',
-          lastPrice: data.lastPrice || data.price || 0,
-          priceChange: data.priceChange || data.change || 0,
-          perPriceChange: data.perPriceChange || data.changePercent || 0,
-          totalVolume: data.totalVolume || data.volume || 0,
-          ticker: data.ticker || data.symbol || symbol,
-          exchange: data.exchange || data.floor || '',
-          ...data
-        };
-      }),
-      catchError(error => {
-
-        throw error;
-      })
-    );
   }
 
   /**
-   * Get symbol posts/news
-   * @param symbol - Stock symbol
-   * @param limit - Number of posts to fetch (default 10)
+   * Search for stocks/symbols
    */
-  getSymbolPosts(symbol: string, limit: number = 10): Observable<SymbolPost[]> {
-    const token = this.tokenSubject.value;
-    
-    if (!token) {
-
-      return throwError(() => new Error('No authentication token'));
-    }
-
-    const headers = new HttpHeaders({
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    });
-
-
-
-    return this.http.get<any>(`${this.apiUrl}/symbols/${symbol}/posts?limit=${limit}`, { headers }).pipe(
-      map(response => {
-
-        let dataArray = response;
-        
-        if (response && response.data) {
-          dataArray = Array.isArray(response.data) ? response.data : [response.data];
-        } else if (response && Array.isArray(response)) {
-          dataArray = response;
-        }
-
-        if (!Array.isArray(dataArray)) {
-          dataArray = [];
-        }
-
-
-
-        return dataArray.map((item: any) => ({
-          id: item.postID || item.id || item.postId || '',
-          title: item.title || '',
-          content: item.originalContent || item.content || '',
-          summary: item.summary || item.description || '',
-          publishDate: item.date || item.publishDate || item.createdDate || '',
-          source: item.postSource || item.source || item.sourceName || '',
-          url: item.contentURL || item.url || item.link || '',
-          imageUrl: item.linkImage || item.imageUrl || item.thumbnail || '',
-          ...item
-        }));
-      }),
-      catchError(error => {
-
-        throw error;
-      })
-    );
-  }
-
-  /**
-   * Get historical quotes (price history)
-   * @param symbol - Stock symbol
-   * @param startDate - Start date (format: YYYY-MM-DD)
-   * @param endDate - End date (format: YYYY-MM-DD)
-   */
-  getHistoricalQuotes(symbol: string, startDate: string, endDate: string): Observable<HistoricalQuote[]> {
-    const token = this.tokenSubject.value;
-    
-    if (!token) {
-
-      return throwError(() => new Error('No authentication token'));
-    }
-
-    const headers = new HttpHeaders({
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    });
-
-
-
-    return this.http.get<any>(
-      `${this.apiUrl}/symbols/${symbol}/historical-quotes?startDate=${startDate}&endDate=${endDate}`, 
-      { headers }
-    ).pipe(
-      map(response => {
-
-        let dataArray = response;
-        
-        if (response && response.data) {
-          dataArray = Array.isArray(response.data) ? response.data : [response.data];
-        } else if (response && Array.isArray(response)) {
-          dataArray = response;
-        }
-
-        if (!Array.isArray(dataArray)) {
-          dataArray = [];
-        }
-
-
-
-        return dataArray.map((item: any) => ({
-          date: item.date || item.tradingDate || '',
-          open: item.priceOpen || item.open || item.priceBasic?.open || 0,
-          high: item.priceHigh || item.high || item.highest || item.priceBasic?.high || 0,
-          low: item.priceLow || item.low || item.lowest || item.priceBasic?.low || 0,
-          close: item.priceClose || item.close || item.priceBasic?.close || item.priceBasic || 0,
-          volume: item.totalVolume || item.dealVolume || item.volume || item.priceBasic?.volume || 0,
-          priceBasic: item.priceBasic,
-          ...item
-        }));
-      }),
-      catchError(error => {
-
-        throw error;
-      })
-    );
-  }
-
-  /**
-   * Get macro indicators
-   */
-  getMacroIndicators(): Observable<MacroIndicator[]> {
-    const token = this.tokenSubject.value;
-    
-    if (!token) {
-
-      return throwError(() => new Error('No authentication token'));
-    }
-
-    const headers = new HttpHeaders({
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    });
-
-
-
-    return this.http.get<any>(`${this.apiUrl}/macro/indicators`, { headers }).pipe(
-      map(response => {
-
-        let dataArray = response;
-        
-        if (response && response.data) {
-          dataArray = Array.isArray(response.data) ? response.data : [response.data];
-        } else if (response && Array.isArray(response)) {
-          dataArray = response;
-        }
-
-        if (!Array.isArray(dataArray)) {
-          dataArray = [];
-        }
-
-
-
-        return dataArray.map((item: any) => ({
-          indicatorID: item.indicatorID || item.id || '',
-          name: item.name || item.indicatorName || '',
-          value: item.value || item.latestValue || 0,
-          unit: item.unit || '',
-          period: item.period || item.periodName || '',
-          lastUpdate: item.lastUpdate || item.updateDate || '',
-          changePercent: item.changePercent || item.percentChange || 0,
-          ...item
-        }));
-      }),
-      catchError(error => {
-
-        throw error;
-      })
-    );
-  }
-
-  /**
-   * Get top movers (gainers, losers, most active)
-   * @param exchange - Exchange (HSX, HNX, UPCOM or empty for all)
-   * @param type - Security type (stock, warrant, crypto...)
-   * @param topType - Top type (Actives, Gainers, Losers)
-   * @param count - Number of records (default 20)
-   */
-  getTopMovers(exchange: string = '', type: string = 'stock', topType: string = 'Gainers', count: number = 20): Observable<TopMover[]> {
-    const token = this.tokenSubject.value;
-    
-    if (!token) {
-
-      return throwError(() => new Error('No authentication token'));
-    }
-
-    const headers = new HttpHeaders({
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    });
-
-    // Build query params
-    const params: string[] = [];
-    if (exchange) params.push(`exchange=${exchange}`);
-    if (type) params.push(`type=${type}`);
-    if (topType) params.push(`topType=${topType}`);
-    if (count) params.push(`count=${count}`);
-    
-    const queryString = params.length > 0 ? `?${params.join('&')}` : '';
-    const url = `${this.apiUrl}/symbols/movers${queryString}`;
-    console.log(`📊 Fetching top movers (${topType}): ${url}`);
-
-    return this.http.get<any>(url, { headers }).pipe(
-      map(response => {
-
-        let dataArray = response;
-        
-        if (response && response.data) {
-          dataArray = Array.isArray(response.data) ? response.data : [response.data];
-        } else if (response && Array.isArray(response)) {
-          dataArray = response;
-        }
-
-        if (!Array.isArray(dataArray)) {
-          dataArray = [];
-        }
-
-
-
-        return dataArray.map((item: any) => {
-          const priceData = item.priceBasic || item;
-          
-          return {
-            symbol: item.symbol || item.ticker || item.code || '',
-            name: item.organName || item.name || item.companyName || item.organShortName || '',
-            price: priceData.matchPrice || item.lastPrice || item.price || priceData.lastPrice || 0,
-            change: priceData.change || item.change || item.priceChange || 0,
-            changePercent: priceData.changePc || item.changePc || item.changePercent || item.perPriceChange || 0,
-            volume: item.totalMatchVol || priceData.totalMatchVol || item.volume || item.totalVolume || 0,
-            high: priceData.highest || item.highest || item.high || 0,
-            low: priceData.lowest || item.lowest || item.low || 0,
-            open: priceData.open || item.open || 0,
-            type: topType,
-            ...item
-          };
-        });
-      }),
-      catchError(error => {
-        console.error(`❌ Error fetching top movers (${topType}):`, error);
-        throw error;
-      })
-    );
-  }
-
-  /**
-   * Search for symbols (autocomplete)
-   * @param keywords - Search keywords (required)
-   * @param type - Result type (symbol, individual, hashtag, user, room, post) - default "symbol"
-   * @param offset - Pagination offset (default 0)
-   * @param limit - Max results (default 20)
-   */
-  searchSymbols(keywords: string, type: string = 'symbol', offset: number = 0, limit: number = 20): Observable<SearchResult[]> {
-    const token = this.tokenSubject.value;
-    
-    if (!token) {
-
-      return throwError(() => new Error('No authentication token'));
-    }
-
-    const headers = new HttpHeaders({
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    });
-
-    // Build query params
-    const params: string[] = [];
-    params.push(`keywords=${encodeURIComponent(keywords)}`);
-    if (type) params.push(`type=${type}`);
-    if (offset) params.push(`offset=${offset}`);
-    if (limit) params.push(`limit=${limit}`);
-    
-    const queryString = params.join('&');
-    const url = `${this.apiUrl}/search?${queryString}`;
-    
-    console.log(`🔍 Searching for: ${keywords} (type: ${type})`);
-
-    return this.http.get<any>(url, { headers }).pipe(
-      map(response => {
-
-        let dataArray = response;
-        
-        if (response && response.data) {
-          dataArray = Array.isArray(response.data) ? response.data : [response.data];
-        } else if (response && Array.isArray(response)) {
-          dataArray = response;
-        }
-
-        if (!Array.isArray(dataArray)) {
-          dataArray = [];
-        }
-
-
-
-        return dataArray.map((item: any) => ({
-          id: item.id || null,
-          type: item.type || 'symbol',
-          key: item.key || item.symbol || item.ticker || '',
-          name: item.name || item.organName || item.companyName || '',
-          description: item.description || item.exchange || '',
-          symbol: item.key || item.symbol || item.ticker || '',
-          organCode: item.organCode || '',
-          organName: item.name || item.organName || item.companyName || '',
-          organShortName: item.organShortName || item.shortName || '',
-          comGroupCode: item.comGroupCode || '',
-          icbCode: item.icbCode || '',
-          ...item
-        }));
-      }),
-      catchError(error => {
-
-        return throwError(() => error);
-      })
-    );
-  }
-
-  /**
-   * Get institution profile
-   * @param symbol - Stock symbol
-   */
-  getInstitutionProfile(symbol: string): Observable<InstitutionProfile> {
-    const token = this.tokenSubject.value;
-    
-    if (!token) {
-
-      return throwError(() => new Error('No authentication token'));
-    }
-
-    const headers = new HttpHeaders({
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    });
-
-
-
-    return this.http.get<any>(`${this.apiUrl}/symbols/${symbol}/profile`, { headers }).pipe(
-      map(response => {
-
-        const data = response.data || response;
-
-        return {
-          institutionID: data.institutionID || 0,
-          symbol: data.symbol || symbol,
-          icbCode: data.icbCode || '',
-          companyName: data.companyName || '',
-          shortName: data.shortName || '',
-          internationalName: data.internationalName || '',
-          headQuarters: data.headQuarters || '',
-          phone: data.phone || '',
-          fax: data.fax || '',
-          email: data.email || '',
-          webAddress: data.webAddress || '',
-          overview: data.overview || '',
-          history: data.history || '',
-          businessAreas: data.businessAreas || '',
-          employees: data.employees || 0,
-          branches: data.branches || 0,
-          establishmentDate: data.establishmentDate || data.establishmentDate || '',
-          businessLicenseNumber: data.businessLicenseNumber || '',
-          dateOfIssue: data.dateOfIssue || '',
-          taxIDNumber: data.taxIDNumber || '',
-          charterCapital: data.charterCapital || 0,
-          dateOfListing: data.dateOfListing || '',
-          exchange: data.exchange || '',
-          initialListingPrice: data.initialListingPrice || 0,
-          listingVolume: data.listingVolume || 0,
-          stateOwnership: data.stateOwnership || 0,
-          foreignOwnership: data.foreignOwnership || 0,
-          otherOwnership: data.otherOwnership || 0,
-          isListed: data.isListed || false,
-          ...data
-        };
-      }),
-      catchError(error => {
-
-        throw error;
-      })
-    );
-  }
-
-  /**
-   * Get major holders (shareholders) for a symbol
-   */
-  getSymbolHolders(symbol: string): Observable<SymbolHolder[]> {
-    const token = this.tokenSubject.value;
-    
-    if (!token) {
-
-      return throwError(() => new Error('No authentication token'));
-    }
-
-    const headers = new HttpHeaders({
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    });
-
-
-
-    return this.http.get<any>(`${this.apiUrl}/symbols/${symbol}/holders`, { headers }).pipe(
-      map(response => {
-
-        const data = response.data || response;
-        
-        if (Array.isArray(data)) {
-          return data.map(holder => ({
-            majorHolderID: holder.majorHolderID || 0,
-            individualHolderID: holder.individualHolderID || 0,
-            institutionHolderID: holder.institutionHolderID || 0,
-            institutionHolderSymbol: holder.institutionHolderSymbol || '',
-            institutionHolderExchange: holder.institutionHolderExchange || '',
-            name: holder.name || '',
-            position: holder.position || '',
-            shares: holder.shares || 0,
-            ownership: holder.ownership || 0,
-            isOrganization: holder.isOrganization || false,
-            isForeigner: holder.isForeigner || false,
-            isFounder: holder.isFounder || false,
-            reported: holder.reported || '',
-            ...holder
-          }));
-        }
-        return [];
-      }),
-      catchError(error => {
-
-        return throwError(() => error);
-      })
-    );
-  }
-
-  /**
-   * Get symbol events
-   * @param symbol - Stock symbol
-   * @param startDate - Start date (optional)
-   * @param endDate - End date (optional)
-   */
-  getSymbolEvents(symbol: string, startDate?: string, endDate?: string): Observable<SymbolEvent[]> {
-    const token = this.tokenSubject.value;
-    
-    if (!token) {
-
-      return throwError(() => new Error('No authentication token'));
-    }
-
-    const headers = new HttpHeaders({
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    });
-
-    const params: string[] = [`symbol=${encodeURIComponent(symbol)}`];
-    if (startDate) params.push(`startDate=${encodeURIComponent(startDate)}`);
-    if (endDate) params.push(`endDate=${encodeURIComponent(endDate)}`);
-    
-    const queryString = params.join('&');
-    const url = `${this.apiUrl}/events/search?${queryString}`;
-
-
-
-    return this.http.get<any>(url, { headers }).pipe(
-      map(response => {
-
-        let dataArray = response;
-        
-        if (response && response.data) {
-          dataArray = Array.isArray(response.data) ? response.data : [response.data];
-        } else if (response && Array.isArray(response)) {
-          dataArray = response;
-        }
-
-        if (!Array.isArray(dataArray)) {
-          dataArray = [];
-        }
-
-
-
-        return dataArray.map((item: any) => ({
-          eventID: item.eventID || item.id || '',
-          symbol: item.symbol || symbol,
-          eventTitle: item.eventTitle || item.title || '',
-          eventDesc: item.eventDesc || item.description || '',
-          eventDate: item.eventDate || '',
-          notifyDate: item.notifyDate || '',
-          eventType: item.eventType || '',
-          attachedFile: item.attachedFile || '',
-          ...item
-        }));
-      }),
-      catchError(error => {
-
-        return throwError(() => error);
-      })
-    );
-  }
-
-  /**
-   * Get macro data types
-   */
-  getMacroDataTypes(): Observable<MacroDataType[]> {
-    const token = this.tokenSubject.value;
-    
-    if (!token) {
-
-      return throwError(() => new Error('No authentication token'));
-    }
-
-    const headers = new HttpHeaders({
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    });
-
-
-
-    return this.http.get<any>(`${this.apiUrl}/macro-data/types`, { headers }).pipe(
-      map(response => {
-
-        let dataArray = response;
-        
-        if (response && response.data) {
-          dataArray = Array.isArray(response.data) ? response.data : [response.data];
-        } else if (response && Array.isArray(response)) {
-          dataArray = response;
-        }
-
-        if (!Array.isArray(dataArray)) {
-          dataArray = [];
-        }
-
-
-
-        return dataArray.map((item: any) => ({
-          type: item.type || '',
-          name: item.name || '',
-          description: item.description || ''
-        }));
-      }),
-      catchError(error => {
-
-        return throwError(() => error);
-      })
-    );
-  }
-
-  /**
-   * Get macro data info by type
-   * @param type - Macro data type
-   */
-  getMacroDataInfo(type: string): Observable<MacroDataInfo[]> {
-    const token = this.tokenSubject.value;
-    
-    if (!token) {
-
-      return throwError(() => new Error('No authentication token'));
-    }
-
-    const headers = new HttpHeaders({
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    });
-
-
-
-    return this.http.get<any>(`${this.apiUrl}/macro-data/${type}/info`, { headers }).pipe(
-      map(response => {
-
-        let dataArray = response;
-        
-        if (response && response.data) {
-          dataArray = Array.isArray(response.data) ? response.data : [response.data];
-        } else if (response && Array.isArray(response)) {
-          dataArray = response;
-        }
-
-        if (!Array.isArray(dataArray)) {
-          dataArray = [];
-        }
-
-
-
-        return dataArray.map((item: any) => ({
-          id: item.id || 0,
-          type: item.type || type,
-          name: item.name || '',
-          nameVN: item.nameVN || item.name || '',
+  search(keywords: string, type: string = 'symbol', offset: number = 0, limit: number = 20): Observable<SearchResult[]> {
+    const url = `${this.BASE_URL}/search?keywords=${encodeURIComponent(keywords)}&type=${type}&offset=${offset}&limit=${limit}`;
+
+    return this.http.get<any[]>(url, { headers: this.getHeaders() }).pipe(
+      map((results: any[]) => {
+        // API returns array directly, map to SearchResult format
+        return results.map((item: any) => ({
+          symbol: item.symbol || item.key || '',
+          organName: item.organName || item.name || '',
+          name: item.name || item.organName || '',
+          key: item.key || item.symbol || '',
+          id: item.id,
           description: item.description || '',
-          lastValue: item.lastValue || 0,
-          lastDate: item.lastDate || '',
-          previousValue: item.previousValue || 0,
-          previousDate: item.previousDate || '',
-          firstDate: item.firstDate || '',
-          maxValue: item.maxValue || 0,
-          maxDate: item.maxDate || '',
-          minValue: item.minValue || 0,
-          minDate: item.minDate || '',
-          averageValue: item.averageValue || 0,
-          unit: item.unit || '',
-          frequency: item.frequency || '',
-          range: item.range || '',
-          nextRelease: item.nextRelease || '',
-          source: item.source || '',
-          historicalValue: item.historicalValue || {},
-          ...item
+          type: item.type || 'symbol',
+          ...item // Include all other properties from API
         }));
       }),
-      catchError(error => {
-
+      catchError((error) => {
+        console.error('Failed to search FireAnt:', error);
+        this.handleApiFailure();
         return throwError(() => error);
       })
     );
+  }
+
+  /**
+   * Get stock information by symbol
+   */
+  getStockInfo(symbol: string): Observable<any> {
+    const url = `${this.BASE_URL}/symbols/${symbol}`;
+
+    return this.http.get<any>(url, { headers: this.getHeaders() }).pipe(
+      catchError((error) => {
+        console.error('Failed to get stock info:', error);
+        this.handleApiFailure();
+        return throwError(() => error);
+      })
+    );
+  }
+
+  /**
+   * Get stock chart data
+   */
+  getChartData(symbol: string, startDate: string, endDate: string): Observable<any> {
+    const url = `${this.BASE_URL}/symbols/${symbol}/historical-quotes?startDate=${startDate}&endDate=${endDate}`;
+
+    return this.http.get<any>(url, { headers: this.getHeaders() }).pipe(
+      catchError((error) => {
+        console.error('Failed to get chart data:', error);
+        this.handleApiFailure();
+        return throwError(() => error);
+      })
+    );
+  }
+
+  /**
+   * Get company financial data
+   */
+  getFinancialData(organCode: string): Observable<any> {
+    const url = `${this.BASE_URL}/companies/${organCode}/financial-reports`;
+
+    return this.http.get<any>(url, { headers: this.getHeaders() }).pipe(
+      catchError((error) => {
+        console.error('Failed to get financial data:', error);
+        this.handleApiFailure();
+        return throwError(() => error);
+      })
+    );
+  }
+
+  // Additional methods for VNStock app compatibility
+  loginAnonymous(): Observable<any> {
+    // Token is already managed, just return success
+    return new Observable(observer => {
+      observer.next({ success: true });
+      observer.complete();
+    });
+  }
+
+  getSymbolFundamental(symbol: string): Observable<any> {
+    const url = `${this.BASE_URL}/symbols/${symbol}/fundamental`;
+    return this.http.get<any>(url, { headers: this.getHeaders() }).pipe(
+      catchError((error) => {
+        console.error('Failed to get symbol fundamental:', error);
+        this.handleApiFailure();
+        return throwError(() => error);
+      })
+    );
+  }
+
+  getSymbolInfo(symbol: string): Observable<any> {
+    return this.getStockInfo(symbol);
+  }
+
+  getSymbolPosts(symbol: string, limit: number = 10): Observable<any> {
+    const url = `${this.BASE_URL}/symbols/${symbol}/posts?limit=${limit}`;
+    return this.http.get<any>(url, { headers: this.getHeaders() }).pipe(
+      catchError((error) => {
+        console.error('Failed to get symbol posts:', error);
+        this.handleApiFailure();
+        return throwError(() => error);
+      })
+    );
+  }
+
+  getSymbolEvents(symbol: string, startDate: string, endDate: string): Observable<any> {
+    const url = `${this.BASE_URL}/symbols/${symbol}/events?startDate=${startDate}&endDate=${endDate}`;
+    return this.http.get<any>(url, { headers: this.getHeaders() }).pipe(
+      catchError((error) => {
+        console.error('Failed to get symbol events:', error);
+        this.handleApiFailure();
+        return throwError(() => error);
+      })
+    );
+  }
+
+  getSymbolHolders(symbol: string): Observable<any> {
+    const url = `${this.BASE_URL}/symbols/${symbol}/holders`;
+    return this.http.get<any>(url, { headers: this.getHeaders() }).pipe(
+      catchError((error) => {
+        console.error('Failed to get symbol holders:', error);
+        this.handleApiFailure();
+        return throwError(() => error);
+      })
+    );
+  }
+
+  getHistoricalQuotes(symbol: string, startDate: string, endDate: string): Observable<any> {
+    return this.getChartData(symbol, startDate, endDate);
+  }
+
+  getInstitutionProfile(symbol: string): Observable<any> {
+    const url = `${this.BASE_URL}/symbols/${symbol}/institution-profile`;
+    return this.http.get<any>(url, { headers: this.getHeaders() }).pipe(
+      catchError((error) => {
+        console.error('Failed to get institution profile:', error);
+        this.handleApiFailure();
+        return throwError(() => error);
+      })
+    );
+  }
+
+  getMacroDataTypes(): Observable<any> {
+    const url = `${this.BASE_URL}/macro/types`;
+    return this.http.get<any>(url, { headers: this.getHeaders() }).pipe(
+      catchError((error) => {
+        console.error('Failed to get macro data types:', error);
+        this.handleApiFailure();
+        return throwError(() => error);
+      })
+    );
+  }
+
+  getMacroDataInfo(type: string): Observable<any> {
+    const url = `${this.BASE_URL}/macro/${type}`;
+    return this.http.get<any>(url, { headers: this.getHeaders() }).pipe(
+      catchError((error) => {
+        console.error('Failed to get macro data info:', error);
+        this.handleApiFailure();
+        return throwError(() => error);
+      })
+    );
+  }
+
+  searchSymbols(keywords: string, type: string = 'symbol', offset: number = 0, limit: number = 20): Observable<SearchResult[]> {
+    return this.search(keywords, type, offset, limit);
   }
 }

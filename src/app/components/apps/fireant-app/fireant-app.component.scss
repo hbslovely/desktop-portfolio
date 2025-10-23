@@ -1,0 +1,842 @@
+// FireAnt Terminal - Professional Trading Style
+// Full Width, Flat, Clean, Bright
+
+// Colors
+$primary: #3b82f6;
+$primary-dark: #2563eb;
+$success: #10b981;
+$danger: #ef4444;
+$warning: #f59e0b;
+$neutral: #6b7280;
+
+$bg: #f8fafc;
+$bg-dark: #1e293b;
+$bg-card: #ffffff;
+$text: #0f172a;
+$text-light: #64748b;
+$text-lighter: #94a3af;
+$border: #e2e8f0;
+
+$shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+
+// Terminal Container
+.fireant-terminal {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: $bg;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Inter', sans-serif;
+  overflow: hidden;
+}
+
+// ===================
+// Top Bar
+// ===================
+.terminal-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  background: $bg-card;
+  border-bottom: 1px solid $border;
+  box-shadow: $shadow;
+  z-index: 100;
+  flex-shrink: 0;
+
+  .topbar-left, .topbar-center, .topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .topbar-center {
+    flex: 1;
+    max-width: 600px;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+    font-size: 16px;
+    color: $text;
+
+    .logo-icon {
+      width: 24px;
+      height: 24px;
+      color: $primary;
+    }
+  }
+
+  .connection-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    &.connected {
+      background: rgba(16, 185, 129, 0.1);
+      color: $success;
+
+      .status-dot {
+        background: $success;
+        animation: pulse 2s infinite;
+      }
+    }
+
+    &.disconnected {
+      background: rgba(239, 68, 68, 0.1);
+      color: $danger;
+
+      .status-dot {
+        background: $danger;
+      }
+    }
+  }
+
+  .search-bar {
+    position: relative;
+    width: 100%;
+
+    .search-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 18px;
+      height: 18px;
+      color: $text-lighter;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px 16px 10px 40px;
+      border: 2px solid $border;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      color: $text;
+      transition: all 0.2s;
+
+      &:focus {
+        outline: none;
+        border-color: $primary;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+      }
+
+      &::placeholder {
+        color: $text-lighter;
+      }
+    }
+
+    .search-results-dropdown {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      right: 0;
+      background: $bg-card;
+      border: 1px solid $border;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      max-height: 300px;
+      overflow-y: auto;
+      z-index: 200;
+
+      .search-result-item {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        transition: background 0.15s;
+        text-align: left;
+
+        &:hover {
+          background: $bg;
+        }
+
+        .result-symbol {
+          font-weight: 700;
+          color: $primary;
+          min-width: 60px;
+        }
+
+        .result-name {
+          color: $text-light;
+          font-size: 14px;
+        }
+      }
+    }
+  }
+
+  .icon-btn {
+    padding: 8px;
+    border: 1px solid $border;
+    border-radius: 6px;
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.2s;
+
+    svg {
+      width: 20px;
+      height: 20px;
+      color: $text;
+    }
+
+    &:hover {
+      background: $bg;
+      border-color: $primary;
+
+      svg {
+        color: $primary;
+      }
+    }
+  }
+}
+
+// ===================
+// Main Content
+// ===================
+.terminal-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: $bg;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: $border;
+    border-radius: 4px;
+
+    &:hover {
+      background: $text-lighter;
+    }
+  }
+}
+
+// ===================
+// Market Grid
+// ===================
+.market-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+  max-width: 1600px;
+  margin: 0 auto;
+
+  .stock-tile {
+    background: $bg-card;
+    border: 2px solid transparent;
+    border-radius: 8px;
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+
+    &:hover {
+      border-color: $primary;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    &.price-up {
+      border-left: 3px solid $success;
+    }
+
+    &.price-down {
+      border-left: 3px solid $danger;
+    }
+
+    .tile-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .tile-symbol {
+      font-size: 16px;
+      font-weight: 800;
+      color: $text;
+    }
+
+    .tile-exchange {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 6px;
+      background: $bg;
+      color: $text-light;
+      border-radius: 4px;
+    }
+
+    .tile-price {
+      font-size: 20px;
+      font-weight: 800;
+      color: $text;
+      margin-bottom: 4px;
+    }
+
+    .tile-change {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 8px;
+
+      .tile-percent {
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 12px;
+      }
+    }
+
+    &.price-up .tile-change {
+      color: $success;
+
+      .tile-percent {
+        background: rgba(16, 185, 129, 0.1);
+      }
+    }
+
+    &.price-down .tile-change {
+      color: $danger;
+
+      .tile-percent {
+        background: rgba(239, 68, 68, 0.1);
+      }
+    }
+
+    .tile-stats {
+      padding-top: 8px;
+      border-top: 1px solid $border;
+      font-size: 11px;
+      color: $text-light;
+      font-weight: 600;
+    }
+  }
+}
+
+// ===================
+// Stock Detail Terminal
+// ===================
+.stock-detail-terminal {
+  max-width: 1600px;
+  margin: 0 auto;
+
+  .detail-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    background: $bg-card;
+    border-radius: 8px;
+    padding: 24px;
+    margin-bottom: 20px;
+    box-shadow: $shadow;
+
+    .stock-identity {
+      .stock-symbol {
+        font-size: 32px;
+        font-weight: 900;
+        color: $text;
+        margin: 0 0 4px 0;
+      }
+
+      .stock-company {
+        font-size: 14px;
+        color: $text-light;
+        margin: 0;
+      }
+    }
+
+    .stock-price-panel {
+      text-align: right;
+
+      .price-large {
+        font-size: 36px;
+        font-weight: 900;
+        margin-bottom: 8px;
+      }
+
+      .price-change-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        justify-content: flex-end;
+        font-size: 16px;
+        font-weight: 700;
+
+        .change-percent {
+          padding: 4px 10px;
+          border-radius: 6px;
+        }
+      }
+
+      &.price-up {
+        color: $success;
+
+        .change-percent {
+          background: rgba(16, 185, 129, 0.1);
+        }
+      }
+
+      &.price-down {
+        color: $danger;
+
+        .change-percent {
+          background: rgba(239, 68, 68, 0.1);
+        }
+      }
+
+      &.price-neutral {
+        color: $warning;
+
+        .change-percent {
+          background: rgba(245, 158, 11, 0.1);
+        }
+      }
+    }
+  }
+
+  .tabs-nav {
+    display: flex;
+    gap: 4px;
+    background: $bg-card;
+    border-radius: 8px;
+    padding: 4px;
+    margin-bottom: 20px;
+    box-shadow: $shadow;
+
+    &.sticky-tabs {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .tab {
+      flex: 1;
+      padding: 10px 20px;
+      border: none;
+      background: transparent;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      color: $text-light;
+      cursor: pointer;
+      transition: all 0.2s;
+
+      &:hover {
+        background: $bg;
+        color: $text;
+      }
+
+      &.active {
+        background: $primary;
+        color: white;
+      }
+    }
+  }
+
+  .tabs-content {
+    background: $bg-card;
+    border-radius: 8px;
+    padding: 24px;
+    box-shadow: $shadow;
+  }
+
+  .overview-layout {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 24px;
+  }
+
+  .data-column, .data-column-full {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .data-section {
+    .section-heading {
+      font-size: 14px;
+      font-weight: 700;
+      color: $text-light;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin: 0 0 12px 0;
+      padding-bottom: 8px;
+      border-bottom: 2px solid $border;
+    }
+  }
+
+  .data-grid, .data-grid-compact {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 12px;
+
+    .data-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      background: $bg;
+      border-radius: 6px;
+      border-left: 3px solid transparent;
+
+      .label {
+        font-size: 13px;
+        font-weight: 600;
+        color: $text-light;
+      }
+
+      .value {
+        font-size: 15px;
+        font-weight: 800;
+        color: $text;
+
+        &.ref {
+          color: $warning;
+        }
+
+        &.up {
+          color: $success;
+        }
+
+        &.down {
+          color: $danger;
+        }
+
+        &.price-up {
+          color: $success;
+        }
+
+        &.price-down {
+          color: $danger;
+        }
+      }
+    }
+  }
+
+  .profile-grid {
+    display: grid;
+    gap: 24px;
+
+    .profile-section {
+      h3 {
+        font-size: 16px;
+        font-weight: 700;
+        color: $text;
+        margin: 0 0 12px 0;
+      }
+
+      .profile-info, .profile-text, .contact-list {
+        p {
+          margin: 8px 0;
+          font-size: 14px;
+          color: $text-light;
+          line-height: 1.6;
+        }
+
+        a {
+          color: $primary;
+          text-decoration: none;
+
+          &:hover {
+            text-decoration: underline;
+          }
+        }
+      }
+    }
+  }
+
+  .posts-scroll-container {
+    max-height: 600px;
+    overflow-y: auto;
+    padding-right: 8px;
+
+    &::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: $bg;
+      border-radius: 4px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: $border;
+      border-radius: 4px;
+
+      &:hover {
+        background: $text-lighter;
+      }
+    }
+  }
+
+  .posts-grid {
+    display: grid;
+    gap: 16px;
+
+    .post-card {
+      padding: 16px;
+      background: $bg;
+      border-radius: 8px;
+      border-left: 3px solid $primary;
+      transition: all 0.2s;
+
+      &:hover {
+        background: rgba(59, 130, 246, 0.05);
+        transform: translateX(4px);
+      }
+
+      .post-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+        font-size: 12px;
+
+        .post-author {
+          font-weight: 700;
+          color: $text;
+        }
+
+        .post-date {
+          color: $text-lighter;
+        }
+      }
+
+      .post-title {
+        font-size: 15px;
+        font-weight: 700;
+        color: $text;
+        margin: 0 0 8px 0;
+      }
+
+      .post-content-html {
+        font-size: 14px;
+        color: $text-light;
+        margin: 0 0 12px 0;
+        line-height: 1.6;
+        word-wrap: break-word;
+
+        // Style HTML content
+        a {
+          color: $primary;
+          text-decoration: none;
+          font-weight: 600;
+
+          &:hover {
+            text-decoration: underline;
+          }
+        }
+
+        p {
+          margin: 8px 0;
+        }
+
+        strong, b {
+          font-weight: 700;
+          color: $text;
+        }
+
+        em, i {
+          font-style: italic;
+        }
+
+        ul, ol {
+          margin: 8px 0;
+          padding-left: 24px;
+        }
+
+        img {
+          max-width: 100%;
+          height: auto;
+          border-radius: 6px;
+          margin: 8px 0;
+        }
+      }
+
+      .post-actions {
+        display: flex;
+        gap: 16px;
+        padding-top: 8px;
+        border-top: 1px solid $border;
+        font-size: 13px;
+        color: $text-light;
+      }
+    }
+  }
+
+  .loading-more {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 20px;
+    color: $text-light;
+    font-size: 14px;
+
+    .spinner-small {
+      width: 20px;
+      height: 20px;
+      border: 2px solid $border;
+      border-top-color: $primary;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+  }
+
+  .end-message {
+    text-align: center;
+    padding: 32px 20px;
+    color: $text-lighter;
+
+    span {
+      font-size: 20px;
+      letter-spacing: 8px;
+      display: block;
+      margin-bottom: 8px;
+    }
+
+    p {
+      margin: 0;
+      font-size: 13px;
+      font-weight: 600;
+    }
+  }
+
+  .loading-spinner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px;
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid $border;
+      border-top-color: $primary;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-bottom: 16px;
+    }
+
+    p {
+      font-size: 14px;
+      color: $text-light;
+      margin: 0;
+    }
+  }
+
+  .empty-message {
+    text-align: center;
+    padding: 60px;
+    font-size: 15px;
+    color: $text-light;
+  }
+}
+
+// ===================
+// Animations
+// ===================
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// ===================
+// Responsive
+// ===================
+@media (max-width: 1024px) {
+  .terminal-topbar {
+    flex-wrap: wrap;
+
+    .topbar-center {
+      order: 3;
+      width: 100%;
+      max-width: none;
+      margin-top: 12px;
+    }
+  }
+
+  .market-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 10px;
+  }
+
+  .stock-detail-terminal {
+    .detail-header-row {
+      flex-direction: column;
+      gap: 16px;
+
+      .stock-price-panel {
+        text-align: left;
+        width: 100%;
+
+        .price-change-row {
+          justify-content: flex-start;
+        }
+      }
+    }
+
+    .overview-layout {
+      grid-template-columns: 1fr;
+    }
+
+    .data-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .terminal-content {
+    padding: 12px;
+  }
+
+  .market-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .tabs-nav {
+    .tab {
+      padding: 8px 12px;
+      font-size: 13px;
+    }
+  }
+
+  .tabs-content {
+    padding: 16px;
+  }
+}
