@@ -18,6 +18,18 @@
     {
       "source": "/api/fireant",
       "destination": "https://fireant.vn"
+    },
+    {
+      "source": "/api/booking-graphql",
+      "destination": "https://www.booking.com/dml/graphql"
+    },
+    {
+      "source": "/api/booking-home",
+      "destination": "https://www.booking.com"
+    },
+    {
+      "source": "/api/booking-search",
+      "destination": "https://www.booking.com/searchresults.en-gb.html"
     }
   ],
   "headers": [
@@ -70,6 +82,49 @@
         {
           "key": "Access-Control-Allow-Origin",
           "value": "*"
+        }
+      ]
+    },
+    {
+      "source": "/api/booking-graphql",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, POST, OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "Content-Type, Authorization"
+        }
+      ]
+    },
+    {
+      "source": "/api/booking-home",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, OPTIONS"
+        }
+      ]
+    },
+    {
+      "source": "/api/booking-search",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, OPTIONS"
         }
       ]
     }
