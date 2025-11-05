@@ -18,7 +18,6 @@ export interface SettingsData {
   windowOpacity: number;
   animations: boolean;
   fontSize: 'small' | 'medium' | 'large';
-  taskbarPosition: 'bottom' | 'top';
 }
 
 @Component({
@@ -51,7 +50,6 @@ export class SettingsDialogComponent implements OnChanges {
   windowOpacity = signal<number>(95);
   animations = signal<boolean>(true);
   fontSize = signal<'small' | 'medium' | 'large'>('medium');
-  taskbarPosition = signal<'bottom' | 'top'>('bottom');
 
   // Original settings - used to restore on cancel
   originalSettings = signal<SettingsData | null>(null);
@@ -114,12 +112,6 @@ export class SettingsDialogComponent implements OnChanges {
     { value: 'large' as const, label: 'Large' }
   ] as const;
 
-  // Taskbar position options
-  readonly taskbarPositions = [
-    { value: 'bottom' as const, label: 'Bottom', icon: 'pi pi-arrow-down' },
-    { value: 'top' as const, label: 'Top', icon: 'pi pi-arrow-up' }
-  ] as const;
-
   // Computed settings data
   settingsData = computed(() => ({
     wallpaper: this.selectedWallpaper(),
@@ -129,8 +121,7 @@ export class SettingsDialogComponent implements OnChanges {
     windowColor: this.selectedWindowColor(),
     windowOpacity: this.windowOpacity(),
     animations: this.animations(),
-    fontSize: this.fontSize(),
-    taskbarPosition: this.taskbarPosition()
+    fontSize: this.fontSize()
   }));
 
   // Check if there are unsaved changes
@@ -167,7 +158,6 @@ export class SettingsDialogComponent implements OnChanges {
         this.windowOpacity.set(settings.windowOpacity || 95);
         this.animations.set(settings.animations !== false);
         this.fontSize.set(settings.fontSize || 'medium');
-        this.taskbarPosition.set(settings.taskbarPosition || 'bottom');
         
         // Emit the loaded settings to parent component
         this.onSettingsChange.emit(settings);
@@ -190,8 +180,7 @@ export class SettingsDialogComponent implements OnChanges {
       windowColor: '#1e3a5f',
       windowOpacity: 95,
       animations: true,
-      fontSize: 'medium',
-      taskbarPosition: 'bottom'
+      fontSize: 'medium'
     };
     
     // Store original settings
@@ -205,7 +194,6 @@ export class SettingsDialogComponent implements OnChanges {
     this.windowOpacity.set(defaultSettings.windowOpacity);
     this.animations.set(defaultSettings.animations);
     this.fontSize.set(defaultSettings.fontSize);
-    this.taskbarPosition.set(defaultSettings.taskbarPosition);
     
     // Save default settings
     this.saveSettingsToStorage(defaultSettings);
@@ -266,11 +254,6 @@ export class SettingsDialogComponent implements OnChanges {
     this.applySettingsPreview();
   }
 
-  onTaskbarPositionChange(position: string) {
-    this.taskbarPosition.set(position as 'bottom' | 'top');
-    this.applySettingsPreview();
-  }
-
   // Apply settings preview (temporary changes)
   applySettingsPreview() {
     const settings = this.settingsData();
@@ -290,7 +273,6 @@ export class SettingsDialogComponent implements OnChanges {
       this.windowOpacity.set(original.windowOpacity);
       this.animations.set(original.animations);
       this.fontSize.set(original.fontSize);
-      this.taskbarPosition.set(original.taskbarPosition);
       
       // Apply the restored settings
       this.onSettingsChange.emit(original);

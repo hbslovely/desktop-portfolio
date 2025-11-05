@@ -18,7 +18,6 @@ export interface SettingsData {
   windowOpacity: number;
   animations: boolean;
   fontSize: 'small' | 'medium' | 'large';
-  taskbarPosition: 'bottom' | 'top';
 }
 
 @Component({
@@ -40,7 +39,6 @@ export class SettingsAppComponent implements OnInit {
   windowOpacity = signal<number>(95);
   animations = signal<boolean>(true);
   fontSize = signal<'small' | 'medium' | 'large'>('medium');
-  taskbarPosition = signal<'bottom' | 'top'>('bottom');
 
   // Original settings for reset/cancel
   originalSettings = signal<SettingsData | null>(null);
@@ -88,12 +86,6 @@ export class SettingsAppComponent implements OnInit {
     { value: 'large' as const, label: 'Large' }
   ] as const;
 
-  // Taskbar positions
-  readonly taskbarPositions = [
-    { value: 'bottom' as const, label: 'Bottom', icon: 'pi pi-arrow-down' },
-    { value: 'top' as const, label: 'Top', icon: 'pi pi-arrow-up' }
-  ] as const;
-
   // Computed settings data
   settingsData = computed(() => ({
     wallpaper: this.selectedWallpaper(),
@@ -103,8 +95,7 @@ export class SettingsAppComponent implements OnInit {
     windowColor: this.selectedWindowColor(),
     windowOpacity: this.windowOpacity(),
     animations: this.animations(),
-    fontSize: this.fontSize(),
-    taskbarPosition: this.taskbarPosition()
+    fontSize: this.fontSize()
   }));
 
   // Check for unsaved changes
@@ -137,7 +128,6 @@ export class SettingsAppComponent implements OnInit {
         this.windowOpacity.set(settings.windowOpacity || 95);
         this.animations.set(settings.animations !== false);
         this.fontSize.set(settings.fontSize || 'medium');
-        this.taskbarPosition.set(settings.taskbarPosition || 'bottom');
         
         this.onSettingsChange.emit(settings);
       } catch (error) {
@@ -157,8 +147,7 @@ export class SettingsAppComponent implements OnInit {
       windowColor: '#1e3a5f',
       windowOpacity: 95,
       animations: true,
-      fontSize: 'medium',
-      taskbarPosition: 'bottom'
+      fontSize: 'medium'
     };
     
     this.originalSettings.set(defaultSettings);
@@ -193,11 +182,6 @@ export class SettingsAppComponent implements OnInit {
 
   onFontSizeChange(size: string) {
     this.fontSize.set(size as 'small' | 'medium' | 'large');
-    this.applySettingsPreview();
-  }
-
-  onTaskbarPositionChange(position: string) {
-    this.taskbarPosition.set(position as 'bottom' | 'top');
     this.applySettingsPreview();
   }
 

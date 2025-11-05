@@ -22,9 +22,12 @@
   flex-direction: column;
   overflow: hidden;
   user-select: none;
+  
+  // Use CSS variable for window opacity
+  opacity: var(--window-opacity, 1);
 
   // Only transition box-shadow for smooth performance
-  transition: box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: box-shadow 0.2s cubic-bezier(0, 0, 0.2, 1), opacity 0.3s ease;
 
   // Subtle outer glow
   &::before {
@@ -85,10 +88,8 @@
     }
 
     .title-bar {
-      background: linear-gradient(135deg,
-        #0078d4 0%,
-        #1084d8 50%,
-        #6a6ee5 100%);
+      // Use CSS custom property for accent color, fallback to blue gradient
+      background: var(--accent-color, linear-gradient(135deg, #0078d4 0%, #1084d8 50%, #6a6ee5 100%));
       color: #ffffff;
       border-bottom: 1px solid rgba(0, 0, 0, 0.1);
       box-shadow:
@@ -104,10 +105,8 @@
       }
 
       &:active {
-        background: linear-gradient(135deg,
-          #005a9e 0%,
-          #0066b2 50%,
-          #5054c8 100%);
+        background: var(--accent-color, linear-gradient(135deg, #005a9e 0%, #0066b2 50%, #5054c8 100%));
+        filter: brightness(0.9);
       }
     }
 
