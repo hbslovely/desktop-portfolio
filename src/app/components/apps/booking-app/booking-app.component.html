@@ -1,0 +1,361 @@
+<div class="booking-app">
+  <!-- Header -->
+  <div class="booking-header">
+    <div class="header-brand">
+      <i class="pi pi-map"></i>
+      <div class="brand-text">
+        <span class="brand-title">Travel</span>
+        <span class="brand-subtitle">Search</span>
+      </div>
+    </div>
+    <div class="header-tagline">Discover your next adventure</div>
+  </div>
+
+  <!-- Search Section -->
+  <div class="search-section">
+    <div class="search-container">
+      <div class="search-box" [class.has-value]="searchQuery()">
+        <div class="search-icon">
+          <i class="pi pi-search"></i>
+        </div>
+        
+        <input
+          type="text"
+          class="search-input"
+          placeholder="Where do you want to go?"
+          [value]="searchQuery()"
+          (input)="onSearchInput($event)"
+          (focus)="showSuggestions.set(true)"
+          (blur)="closeSuggestions()"
+          autocomplete="off"
+        />
+
+        <button
+          *ngIf="searchQuery()"
+          class="clear-btn"
+          (click)="clearSearch()"
+          title="Clear search">
+          <i class="pi pi-times"></i>
+        </button>
+
+        <div class="search-divider" *ngIf="searchQuery()"></div>
+
+        <button
+          *ngIf="selectedDestination()"
+          class="search-btn"
+          (click)="searchOnBooking()"
+          title="Search on Booking.com">
+          <i class="pi pi-arrow-right"></i>
+          <span>Search</span>
+        </button>
+      </div>
+
+      <!-- Loading Indicator -->
+      <div class="search-loading" *ngIf="loading()">
+        <div class="loading-spinner"></div>
+        <span>Searching...</span>
+      </div>
+
+      <!-- Suggestions Dropdown -->
+      <div class="suggestions-dropdown" *ngIf="showSuggestions() && (suggestions().length > 0 || loading())">
+        <div class="suggestions-list" *ngIf="!loading()">
+          <div
+            *ngFor="let suggestion of suggestions()"
+            class="suggestion-item"
+            (click)="selectDestination(suggestion)">
+            
+            <!-- Country Flag -->
+            <div class="suggestion-flag">
+              {{ getCountryFlag(suggestion.destination.countryCode) }}
+            </div>
+
+            <!-- Suggestion Content -->
+            <div class="suggestion-content">
+              <div class="suggestion-title">
+                {{ suggestion.displayInfo.title }}
+              </div>
+              <div class="suggestion-subtitle">
+                {{ suggestion.displayInfo.subTitle }}
+              </div>
+            </div>
+
+            <!-- Destination Type Badge -->
+            <div class="suggestion-badge">
+              <i class="pi" [ngClass]="getDestTypeIcon(suggestion.destination.destType)"></i>
+              <span>{{ formatDestType(suggestion.destination.destType) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Empty State -->
+        <div class="suggestions-empty" *ngIf="!loading() && suggestions().length === 0">
+          <i class="pi pi-inbox"></i>
+          <p>No destinations found</p>
+          <small>Try a different search term</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Search Hints -->
+    <div class="search-hints" *ngIf="!searchQuery()">
+      <span class="hint-label">Popular searches:</span>
+      <button class="hint-chip" (click)="quickSearch('Paris')">
+        🇫🇷 Paris
+      </button>
+      <button class="hint-chip" (click)="quickSearch('Tokyo')">
+        🇯🇵 Tokyo
+      </button>
+      <button class="hint-chip" (click)="quickSearch('New York')">
+        🇺🇸 New York
+      </button>
+      <button class="hint-chip" (click)="quickSearch('London')">
+        🇬🇧 London
+      </button>
+      <button class="hint-chip" (click)="quickSearch('Barcelona')">
+        🇪🇸 Barcelona
+      </button>
+    </div>
+  </div>
+
+  <!-- Selected Destination Info & Search Parameters -->
+  <div class="destination-info" *ngIf="selectedDestination() && !showResults()">
+    <div class="info-card">
+      <div class="info-header">
+        <div class="info-flag">
+          {{ getCountryFlag(selectedDestination()!.destination.countryCode) }}
+        </div>
+        <div class="info-content">
+          <h3 class="info-title">{{ selectedDestination()!.displayInfo.title }}</h3>
+          <p class="info-subtitle">{{ selectedDestination()!.displayInfo.subTitle }}</p>
+        </div>
+      </div>
+
+      <!-- Search Parameters -->
+      <div class="search-params">
+        <h4 class="params-title">
+          <i class="pi pi-sliders-h"></i>
+          <span>Search Parameters</span>
+        </h4>
+
+        <div class="params-grid">
+          <!-- Check-in Date -->
+          <div class="param-group">
+            <label class="param-label">
+              <i class="pi pi-calendar"></i>
+              <span>Check-in</span>
+            </label>
+            <input
+              type="date"
+              class="param-input"
+              [min]="getTodayDate()"
+              [(ngModel)]="checkin"
+              (ngModelChange)="checkin.set($event)"
+            />
+          </div>
+
+          <!-- Check-out Date -->
+          <div class="param-group">
+            <label class="param-label">
+              <i class="pi pi-calendar"></i>
+              <span>Check-out</span>
+            </label>
+            <input
+              type="date"
+              class="param-input"
+              [min]="checkin() || getTomorrowDate()"
+              [(ngModel)]="checkout"
+              (ngModelChange)="checkout.set($event)"
+            />
+          </div>
+
+          <!-- Adults -->
+          <div class="param-group">
+            <label class="param-label">
+              <i class="pi pi-users"></i>
+              <span>Adults</span>
+            </label>
+            <div class="counter-input">
+              <button (click)="adults.set(Math.max(1, adults() - 1))" class="counter-btn">-</button>
+              <input
+                type="number"
+                min="1"
+                max="30"
+                class="param-input counter-value"
+                [(ngModel)]="adults"
+                (ngModelChange)="adults.set($event)"
+              />
+              <button (click)="adults.set(Math.min(30, adults() + 1))" class="counter-btn">+</button>
+            </div>
+          </div>
+
+          <!-- Rooms -->
+          <div class="param-group">
+            <label class="param-label">
+              <i class="pi pi-home"></i>
+              <span>Rooms</span>
+            </label>
+            <div class="counter-input">
+              <button (click)="rooms.set(Math.max(1, rooms() - 1))" class="counter-btn">-</button>
+              <input
+                type="number"
+                min="1"
+                max="30"
+                class="param-input counter-value"
+                [(ngModel)]="rooms"
+                (ngModelChange)="rooms.set($event)"
+              />
+              <button (click)="rooms.set(Math.min(30, rooms() + 1))" class="counter-btn">+</button>
+            </div>
+          </div>
+
+          <!-- Children -->
+          <div class="param-group">
+            <label class="param-label">
+              <i class="pi pi-user"></i>
+              <span>Children</span>
+            </label>
+            <div class="counter-input">
+              <button (click)="children.set(Math.max(0, children() - 1))" class="counter-btn">-</button>
+              <input
+                type="number"
+                min="0"
+                max="10"
+                class="param-input counter-value"
+                [(ngModel)]="children"
+                (ngModelChange)="children.set($event)"
+              />
+              <button (click)="children.set(Math.min(10, children() + 1))" class="counter-btn">+</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="info-actions">
+        <button class="action-btn primary" (click)="searchHotels()" [disabled]="searchingHotels()">
+          <i class="pi" [ngClass]="searchingHotels() ? 'pi-spin pi-spinner' : 'pi-search'"></i>
+          <span>{{ searchingHotels() ? 'Searching...' : 'Search Hotels' }}</span>
+        </button>
+        <button class="action-btn secondary" (click)="clearSearch()">
+          <i class="pi pi-times"></i>
+          <span>Cancel</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hotel Results -->
+  <div class="hotel-results" *ngIf="showResults()">
+    <div class="results-header">
+      <div class="results-title">
+        <i class="pi pi-building"></i>
+        <h3>Found {{ hotelResults().length }} hotels</h3>
+      </div>
+      <button class="back-btn" (click)="showResults.set(false)">
+        <i class="pi pi-arrow-left"></i>
+        <span>Back to Search</span>
+      </button>
+    </div>
+
+    <div class="results-grid" *ngIf="hotelResults().length > 0">
+      <div class="hotel-card" *ngFor="let hotel of hotelResults()" (click)="openHotelDetail(hotel)">
+        <div class="hotel-image">
+          <img [src]="hotel.imageUrl" [alt]="hotel.title" />
+          <div class="hotel-badge" *ngIf="hotel.breakfastIncluded">
+            <i class="pi pi-check"></i>
+            <span>Breakfast</span>
+          </div>
+        </div>
+
+        <div class="hotel-content">
+          <h4 class="hotel-title">{{ hotel.title }}</h4>
+          
+          <div class="hotel-meta">
+            <div class="hotel-address" *ngIf="hotel.address">
+              <i class="pi pi-map-marker"></i>
+              <span>{{ hotel.address }}</span>
+            </div>
+            <div class="hotel-distance" *ngIf="hotel.distance">
+              <i class="pi pi-compass"></i>
+              <span>{{ hotel.distance }}</span>
+            </div>
+          </div>
+
+          <div class="hotel-review" *ngIf="hotel.reviewScore">
+            <div class="review-badge">{{ hotel.reviewScore }}</div>
+            <div class="review-info">
+              <span class="review-word">{{ hotel.reviewScoreWord }}</span>
+              <span class="review-count" *ngIf="hotel.reviewCount">{{ hotel.reviewCount }}</span>
+            </div>
+          </div>
+
+          <div class="hotel-room" *ngIf="hotel.roomType">
+            <i class="pi pi-home"></i>
+            <span>{{ hotel.roomType }}</span>
+          </div>
+
+          <div class="hotel-bed" *ngIf="hotel.bedInfo">
+            <i class="pi pi-moon"></i>
+            <span>{{ hotel.bedInfo }}</span>
+          </div>
+
+          <div class="hotel-pricing">
+            <div class="price-info">
+              <div class="price-old" *ngIf="hotel.originalPrice && hotel.originalPrice !== hotel.currentPrice">
+                {{ hotel.originalPrice }}
+              </div>
+              <div class="price-current">{{ hotel.currentPrice }}</div>
+              <div class="price-taxes" *ngIf="hotel.taxesInfo">{{ hotel.taxesInfo }}</div>
+            </div>
+            <button class="view-btn" (click)="openHotelDetail(hotel); $event.stopPropagation()">
+              <span>View Details</span>
+              <i class="pi pi-arrow-right"></i>
+            </button>
+          </div>
+
+          <div class="hotel-availability" *ngIf="hotel.availability">
+            <i class="pi pi-exclamation-circle"></i>
+            <span>{{ hotel.availability }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="results-empty" *ngIf="hotelResults().length === 0">
+      <i class="pi pi-inbox"></i>
+      <p>No hotels found</p>
+      <small>Try adjusting your search parameters</small>
+    </div>
+  </div>
+
+  <!-- Empty State -->
+  <div class="empty-state" *ngIf="!searchQuery() && !selectedDestination()">
+    <div class="empty-icon">
+      <i class="pi pi-map"></i>
+    </div>
+    <h3>Where will your journey take you?</h3>
+    <p>Search for cities, regions, hotels, or landmarks to start planning your trip</p>
+    <div class="empty-features">
+      <div class="feature-item">
+        <i class="pi pi-search"></i>
+        <span>Smart Search</span>
+      </div>
+      <div class="feature-item">
+        <i class="pi pi-globe"></i>
+        <span>Worldwide</span>
+      </div>
+      <div class="feature-item">
+        <i class="pi pi-bolt"></i>
+        <span>Instant Results</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="booking-footer">
+    <div class="footer-info">
+      <i class="pi pi-info-circle"></i>
+      <span>Powered by Booking.com API</span>
+    </div>
+  </div>
+</div>
+

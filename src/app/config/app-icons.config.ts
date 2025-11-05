@@ -130,6 +130,13 @@ export const APP_ICONS: DesktopIconData[] = [
     icon: 'assets/images/icons/angular.png',
     type: 'application',
     position: { x: 320, y: 120 }
+  },
+  {
+    id: 'booking',
+    name: 'Travel Search',
+    icon: 'pi pi-map',
+    type: 'application',
+    position: { x: 320, y: 220 }
   }
 ];
 
@@ -164,7 +171,8 @@ function getAppDescription(appId: string): string {
     'angular-love': 'Browse and read Angular InDepth articles, tutorials, and RxJS guides',
     'music': 'Listen to music videos from YouTube with a curated playlist',
     'fireant': 'Search and view real-time Vietnamese stock market data with FireAnt API',
-    'angular-guidelines': 'Comprehensive Angular official documentation and guidelines from Angular.dev'
+    'angular-guidelines': 'Comprehensive Angular official documentation and guidelines from Angular.dev',
+    'booking': 'Search for travel destinations, hotels, and landmarks worldwide with Booking.com API'
   };
   return descriptions[appId] || 'Application';
 }
@@ -188,7 +196,8 @@ function getAppKeywords(appId: string): string[] {
     'angular-love': ['angular', 'rxjs', 'tutorials', 'articles', 'blog', 'indepth', 'in-depth', 'web', 'development', 'typescript', 'frontend', 'framework', 'programming', 'coding', 'education', 'learning'],
     'music': ['youtube', 'video', 'songs', 'audio', 'player', 'playlist', 'stream', 'listen', 'pop', 'rock', 'jazz', 'classical', 'electronic', 'artist', 'album', 'track'],
     'fireant': ['stock', 'market', 'vietnam', 'vietnamese', 'fireant', 'trading', 'shares', 'prices', 'hose', 'hnx', 'vn30', 'stocks', 'finance', 'investment', 'api', 'real-time', 'search', 'symbol'],
-    'angular-guidelines': ['angular', 'documentation', 'docs', 'guide', 'guidelines', 'tutorial', 'official', 'components', 'directives', 'services', 'routing', 'forms', 'http', 'signals', 'dependency injection', 'best practices', 'security', 'performance', 'angular.dev']
+    'angular-guidelines': ['angular', 'documentation', 'docs', 'guide', 'guidelines', 'tutorial', 'official', 'components', 'directives', 'services', 'routing', 'forms', 'http', 'signals', 'dependency injection', 'best practices', 'security', 'performance', 'angular.dev'],
+    'booking': ['travel', 'hotel', 'booking', 'accommodation', 'vacation', 'destination', 'trip', 'tourism', 'city', 'country', 'flights', 'search', 'autocomplete', 'landmark', 'airport', 'region', 'worldwide', 'booking.com']
   };
   return keywords[appId] || [];
 }
