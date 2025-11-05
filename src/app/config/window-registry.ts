@@ -299,6 +299,18 @@ export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
     defaultY: 50,
     maximizable: true,
     statusText: 'Official Angular Documentation'
+  },
+  'booking': {
+    id: 'booking',
+    title: 'Travel Search',
+    icon: 'pi pi-map',
+    component: 'booking',
+    defaultWidth: 1000,
+    defaultHeight: 750,
+    defaultX: 150,
+    defaultY: 80,
+    maximizable: true,
+    statusText: 'Search destinations with Booking.com'
   }
 };
 
