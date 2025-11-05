@@ -203,13 +203,17 @@ export class CountriesService {
   /**
    * Get country by code (alpha2 or alpha3)
    * This endpoint returns full country details without field restrictions
+   * Note: API returns an array with a single country object
    */
   getByCode(code: string): Observable<Country | null> {
-    return this.http.get<Country>(`${this.BASE_URL}/alpha/${encodeURIComponent(code)}`)
+    return this.http.get<Country[]>(`${this.BASE_URL}/alpha/${encodeURIComponent(code)}`)
       .pipe(
-        map(country => country || null),
+        map(countries => {
+          // API returns an array, get the first element
+          return (countries && countries.length > 0) ? countries[0] : null;
+        }),
         catchError(error => {
-
+          console.error('Error fetching country by code:', error);
           return of(null);
         })
       );

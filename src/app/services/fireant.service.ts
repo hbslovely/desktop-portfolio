@@ -302,9 +302,26 @@ export class FireantService {
   private async fetchToken(): Promise<void> {
     try {
       // Fetch the main HTML page to get script references (using proxy to avoid CORS)
-      const htmlResponse = await firstValueFrom(
+      let htmlResponse = await firstValueFrom(
         this.http.get('/api/fireant', { responseType: 'text' })
       );
+
+      // Check if response is a redirect page with jskey
+      const redirectMatch = htmlResponse.match(/window\.location\.href\s*=\s*["']([^"']+)["']/);
+      if (redirectMatch && redirectMatch[1]) {
+        const redirectUrl = redirectMatch[1];
+        console.log('🔄 Detected redirect, fetching from:', redirectUrl);
+        
+        // Extract the path and query from the redirect URL
+        // Example: "https://fireant.vn/?jskey=..." -> "/?jskey=..."
+        const urlObj = new URL(redirectUrl);
+        const pathWithQuery = urlObj.pathname + urlObj.search;
+        
+        // Fetch the redirected page through proxy
+        htmlResponse = await firstValueFrom(
+          this.http.get(`/api/fireant${pathWithQuery}`, { responseType: 'text' })
+        );
+      }
 
       // Look for script tags with _app-*.js pattern
       const scriptMatches = htmlResponse.match(/_app-[a-f0-9]+\.js/g);

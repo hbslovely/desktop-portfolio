@@ -240,18 +240,6 @@ export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
     maximizable: true,
     statusText: 'View detailed card information'
   },
-  'vnstock': {
-    id: 'vnstock',
-    title: 'VNStock - Vietnam Stock Market',
-    icon: 'pi pi-chart-line',
-    component: 'vnstock',
-    defaultWidth: 1200,
-    defaultHeight: 800,
-    defaultX: 100,
-    defaultY: 50,
-    maximizable: true,
-    statusText: 'Vietnam stock prices from FireAnt'
-  },
   'calendar': {
     id: 'calendar',
     title: 'Lịch Việt Nam',
