@@ -1,8 +1,10 @@
-import { Component, OnInit, signal, ViewEncapsulation, computed } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal, ViewEncapsulation, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { Subscription } from 'rxjs';
+import { distinctUntilChanged, skip } from 'rxjs/operators';
 import {
   AngularLoveService,
   AngularLoveArticle,
@@ -19,9 +21,12 @@ import {
   styleUrl: './angular-love-app.component.scss',
   encapsulation: ViewEncapsulation.None
 })
-export class AngularLoveAppComponent implements OnInit {
+export class AngularLoveAppComponent implements OnInit, OnDestroy {
   // Make Math available in template
   Math = Math;
+
+  // Subscription for API URL changes
+  private baseUrlSubscription?: Subscription;
 
   // Signals for state management
   articles = signal<AngularLoveArticle[]>([]);
@@ -88,7 +93,27 @@ export class AngularLoveAppComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    // Initial load
     this.loadArticles();
+
+    // Subscribe to API URL changes and reload articles when URL updates
+    // Use skip(1) to avoid reloading on initial value, distinctUntilChanged to avoid duplicate reloads
+    this.baseUrlSubscription = this.angularLoveService.baseUrl$
+      .pipe(
+        skip(1), // Skip the initial value (already loaded above)
+        distinctUntilChanged() // Only trigger when URL actually changes
+      )
+      .subscribe((newUrl) => {
+        console.log('API URL updated, reloading articles:', newUrl);
+        this.refreshArticles();
+      });
+  }
+
+  ngOnDestroy(): void {
+    // Clean up subscription
+    if (this.baseUrlSubscription) {
+      this.baseUrlSubscription.unsubscribe();
+    }
   }
 
   /**

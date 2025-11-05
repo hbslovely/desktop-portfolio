@@ -19,7 +19,6 @@ import { DictionaryAppComponent } from './components/apps/dictionary-app/diction
 import { CountriesAppComponent } from './components/apps/countries-app/countries-app.component';
 import { YugiohAppComponent } from './components/apps/yugioh-app/yugioh-app.component';
 import { YugiohCardDetailComponent } from './components/apps/yugioh-card-detail/yugioh-card-detail.component';
-import { VnstockAppComponent } from './components/apps/vnstock-app/vnstock-app.component';
 import { CalendarAppComponent } from './components/apps/calendar-app/calendar-app.component';
 import { AngularLoveAppComponent } from './components/apps/angular-love-app/angular-love-app.component';
 import { MusicAppComponent } from './components/apps/music-app/music-app.component';
@@ -40,7 +39,7 @@ import { FileSystemService } from './services/file-system.service';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [ WelcomeScreenComponent, WindowComponent, DesktopIconComponent, CalculatorComponent, IframeAppComponent, LoveAppComponent, ExplorerComponent, TextViewerComponent, ImageViewerComponent, PdfViewerComponent, MachineInfoComponent, PaintAppComponent, HcmcAppComponent, NewsAppComponent, SettingsAppComponent, TaskManagerComponent, WeatherAppComponent, DictionaryAppComponent, CountriesAppComponent, YugiohAppComponent, YugiohCardDetailComponent, VnstockAppComponent, CalendarAppComponent, AngularLoveAppComponent, MusicAppComponent, FireantAppComponent, AngularGuidelinesAppComponent, CommonModule, FormsModule, SettingsDialogComponent ],
+  imports: [ WelcomeScreenComponent, WindowComponent, DesktopIconComponent, CalculatorComponent, IframeAppComponent, LoveAppComponent, ExplorerComponent, TextViewerComponent, ImageViewerComponent, PdfViewerComponent, MachineInfoComponent, PaintAppComponent, HcmcAppComponent, NewsAppComponent, SettingsAppComponent, TaskManagerComponent, WeatherAppComponent, DictionaryAppComponent, CountriesAppComponent, YugiohAppComponent, YugiohCardDetailComponent, CalendarAppComponent, AngularLoveAppComponent, MusicAppComponent, FireantAppComponent, AngularGuidelinesAppComponent, CommonModule, FormsModule, SettingsDialogComponent ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
 })
@@ -197,8 +196,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
         { id: 'hcmc', name: 'Ho Chi Minh City', icon: 'pi pi-globe' },
         { id: 'news', name: 'News Headlines', icon: 'pi pi-globe' },
         { id: 'weather', name: 'Weather Forecast', icon: 'pi pi-cloud' },
-        { id: 'yugioh', name: 'Yu-Gi-Oh! Cards', icon: 'pi pi-images' },
-        { id: 'vnstock', name: 'VNStock', icon: 'pi pi-chart-line' }
+        { id: 'yugioh', name: 'Yu-Gi-Oh! Cards', icon: 'pi pi-images' }
       ]
     },
     {

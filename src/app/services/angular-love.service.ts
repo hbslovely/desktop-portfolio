@@ -87,13 +87,13 @@ interface StoredApiUrl {
 export class AngularLoveService {
   private baseUrlSubject = new BehaviorSubject<string>('https://0dd7e866-blog-bff.contact-ef8.workers.dev');
   public baseUrl$ = this.baseUrlSubject.asObservable();
-  
+
   // Fallback URL in case fetching fails
   private readonly FALLBACK_URL = 'https://0dd7e866-blog-bff.contact-ef8.workers.dev';
-  
+
   // Storage key for localStorage
   private readonly STORAGE_KEY = 'angular_love_api_url';
-  
+
   // Expiration time: 3 days in milliseconds
   private readonly EXPIRATION_TIME = 3 * 24 * 60 * 60 * 1000;
 
@@ -107,7 +107,7 @@ export class AngularLoveService {
    */
   private initializeApiUrl(): void {
     const stored = this.getStoredApiUrl();
-    
+
     if (stored && !this.isExpired(stored.timestamp)) {
       // Use stored URL if not expired
       this.baseUrlSubject.next(stored.url);
@@ -171,6 +171,7 @@ export class AngularLoveService {
 
   /**
    * Fetch the API URL from angular.love's JavaScript files
+   * Recursively scans chunk and main files to find AL_API_URL
    */
   private async fetchApiUrl(): Promise<void> {
     try {
@@ -178,42 +179,78 @@ export class AngularLoveService {
       const htmlResponse = await firstValueFrom(
         this.http.get('https://angular.love/news', { responseType: 'text' })
       );
-      
-      // Look for script tags to find the chunk file that might contain config
-      // We're looking for chunk-OCQ5UGTF.js or similar pattern
-      const scriptMatches = htmlResponse.match(/chunk-[A-Z0-9]+\.js/g);
-      
-      if (!scriptMatches) {
-        throw new Error('No chunk files found');
+
+      // Look for script tags to find chunk/main files
+      // Pattern matches: chunk-ABC123.js or main-ABC123.js
+      const initialMatches = htmlResponse.match(/(chunk|main)-[A-Z0-9]+\.js/gi);
+
+      if (!initialMatches) {
+        throw new Error('No chunk or main files found');
       }
 
-      // Try to find the config chunk (usually contains AL_API_URL)
-      for (const scriptFile of scriptMatches) {
+      // Use a Set to track files we've already scanned (avoid duplicates)
+      const scannedFiles = new Set<string>();
+      
+      // Queue of files to scan
+      const filesToScan: string[] = [...initialMatches];
+
+      console.log(`Starting recursive scan with ${filesToScan.length} initial files`);
+
+      // Recursively scan all files
+      while (filesToScan.length > 0) {
+        const scriptFile = filesToScan.shift()!;
+
+        // Skip if already scanned
+        if (scannedFiles.has(scriptFile)) {
+          continue;
+        }
+
+        // Mark as scanned
+        scannedFiles.add(scriptFile);
+
         try {
           const scriptUrl = `https://angular.love/${scriptFile}`;
+          console.log(`Scanning: ${scriptFile}`);
+          
           const scriptContent = await firstValueFrom(
             this.http.get(scriptUrl, { responseType: 'text' })
           );
 
           // Look for AL_API_URL in the script content
           const apiUrlMatch = scriptContent.match(/AL_API_URL\s*:\s*"([^"]+)"/);
-          
+
           if (apiUrlMatch && apiUrlMatch[1]) {
             const newUrl = apiUrlMatch[1];
             this.baseUrlSubject.next(newUrl);
-            console.log('Found and updated API URL:', newUrl);
+            console.log(`✅ Found API URL in ${scriptFile}:`, newUrl);
+            console.log(`Total files scanned: ${scannedFiles.size}`);
             return;
           }
+
+          // Look for references to other chunk/main files in this script
+          // Patterns: "chunk-ABC123.js", 'main-XYZ789.js', etc.
+          const referencedFiles = scriptContent.match(/(chunk|main)-[A-Z0-9]+\.js/gi);
+          
+          if (referencedFiles) {
+            // Add newly discovered files to the scan queue
+            for (const referencedFile of referencedFiles) {
+              if (!scannedFiles.has(referencedFile) && !filesToScan.includes(referencedFile)) {
+                console.log(`  ↳ Found reference to: ${referencedFile}`);
+                filesToScan.push(referencedFile);
+              }
+            }
+          }
         } catch (error) {
+          console.log(`⏭️  Skipping ${scriptFile} (error loading), continuing...`);
           // Continue to next file if this one fails
           continue;
         }
       }
-      
-      console.warn('AL_API_URL not found in any chunk files, using fallback');
+
+      console.warn(`⚠️ AL_API_URL not found in any of ${scannedFiles.size} scanned files, using fallback`);
       this.baseUrlSubject.next(this.FALLBACK_URL);
     } catch (error) {
-      console.error('Error fetching API URL:', error);
+      console.error('❌ Error fetching API URL:', error);
       this.baseUrlSubject.next(this.FALLBACK_URL);
     }
   }
@@ -240,7 +277,7 @@ export class AngularLoveService {
     let params = new HttpParams()
       .set('take', take.toString())
       .set('skip', skip.toString());
-    
+
     if (category) {
       params = params.set('category', category);
     }
