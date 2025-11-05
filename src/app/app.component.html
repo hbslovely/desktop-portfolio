@@ -14,7 +14,9 @@
 <!-- Welcome Screen with Desktop Environment -->
 <app-welcome-screen>
   <!-- Desktop Environment -->
-  <div class="desktop" (contextmenu)="onDesktopRightClick($event)" (click)="onDesktopClick($event); hideDesktopContextMenu()">
+  <div class="desktop"
+       (contextmenu)="onDesktopRightClick($event)"
+       (click)="onDesktopClick($event); hideDesktopContextMenu()">
   <!-- Desktop Wallpaper -->
   <div class="wallpaper"></div>
 

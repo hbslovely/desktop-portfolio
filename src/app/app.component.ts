@@ -117,7 +117,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
 
   // Settings dialog state
   showSettingsDialog = signal(false);
-
+  
   // Search properties
   searchQuery = '';
   searchResults: SearchResult[] = [];
@@ -1338,11 +1338,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     if (settings.fontSize) {
       this.applyFontSize(settings.fontSize);
     }
-
-    // Apply taskbar position
-    if (settings.taskbarPosition) {
-      this.applyTaskbarPosition(settings.taskbarPosition);
-    }
   }
 
   applyWallpaper(wallpaperId: string) {
@@ -1426,17 +1421,35 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   }
 
   applyThemeColor(color: string) {
+    // Create a gradient from the selected color
+    const gradient = `linear-gradient(135deg, ${color} 0%, ${this.adjustColorBrightness(color, 10)} 50%, ${this.adjustColorBrightness(color, -20)} 100%)`;
+    
     // Apply theme color to CSS custom properties
     document.documentElement.style.setProperty('--primary-color', color);
-    document.documentElement.style.setProperty('--accent-color', color);
+    document.documentElement.style.setProperty('--accent-color', gradient);
+  }
 
-    // Update window title bar colors
-    const windowElements = document.querySelectorAll('.window-header');
-    windowElements.forEach((element: any) => {
-      element.style.backgroundColor = color;
-    });
+  // Helper function to adjust color brightness
+  private adjustColorBrightness(color: string, percent: number): string {
+    // Convert hex to RGB
+    const hex = color.replace('#', '');
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
 
+    // Adjust brightness
+    const adjustValue = (val: number) => {
+      const adjusted = Math.round(val + (255 - val) * (percent / 100));
+      return Math.max(0, Math.min(255, adjusted));
+    };
 
+    const newR = adjustValue(r);
+    const newG = adjustValue(g);
+    const newB = adjustValue(b);
+
+    // Convert back to hex
+    const toHex = (n: number) => n.toString(16).padStart(2, '0');
+    return `#${toHex(newR)}${toHex(newG)}${toHex(newB)}`;
   }
 
   applyBackdrop(enabled: boolean) {
@@ -1461,23 +1474,15 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   }
 
   applyWindowColor(color: string) {
-    // Apply window color to all window headers
+    // Apply window color to CSS custom property
+    // This affects window backgrounds through the CSS variable
+    document.documentElement.style.setProperty('--window-bg-color', color);
     document.documentElement.style.setProperty('--window-header-bg', color);
-    
-    const windowHeaders = document.querySelectorAll('.window-header');
-    windowHeaders.forEach((header: any) => {
-      header.style.backgroundColor = color;
-    });
   }
 
   applyWindowOpacity(opacity: number) {
-    // Apply opacity to window bodies
+    // Apply opacity to window bodies through CSS variable
     document.documentElement.style.setProperty('--window-opacity', `${opacity / 100}`);
-    
-    const windows = document.querySelectorAll('.window');
-    windows.forEach((window: any) => {
-      window.style.opacity = `${opacity / 100}`;
-    });
   }
 
   applyAnimations(enabled: boolean) {
@@ -1499,22 +1504,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     
     document.documentElement.style.setProperty('--base-font-size', fontSizes[size]);
     document.documentElement.style.fontSize = fontSizes[size];
-  }
-
-  applyTaskbarPosition(position: 'bottom' | 'top') {
-    // Apply taskbar position
-    const desktop = document.querySelector('.desktop') as HTMLElement;
-    const taskbar = document.querySelector('.taskbar') as HTMLElement;
-    
-    if (desktop && taskbar) {
-      if (position === 'top') {
-        desktop.style.flexDirection = 'column-reverse';
-        taskbar.style.order = '-1';
-      } else {
-        desktop.style.flexDirection = 'column';
-        taskbar.style.order = '1';
-      }
-    }
   }
 
   loadSettingsOnInit() {
@@ -1567,11 +1556,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
           this.applyFontSize(settings.fontSize);
         }
 
-        // Apply taskbar position
-        if (settings.taskbarPosition) {
-          this.applyTaskbarPosition(settings.taskbarPosition);
-        }
-
       } catch (error) {
         // Apply default wallpaper on error
         this.applyWallpaper('1');
@@ -1586,8 +1570,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
         windowColor: '#1e3a5f',
         windowOpacity: 95,
         animations: true,
-        fontSize: 'medium',
-        taskbarPosition: 'bottom'
+        fontSize: 'medium'
       };
       localStorage.setItem('desktop-portfolio-settings', JSON.stringify(defaultSettings));
 
@@ -1597,7 +1580,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
       this.applyWindowOpacity(95);
       this.applyAnimations(true);
       this.applyFontSize('medium');
-      this.applyTaskbarPosition('bottom');
     }
   }
 

@@ -121,24 +121,6 @@
       </div>
     </div>
 
-    <!-- Taskbar Position -->
-    <div class="setting-group">
-      <div class="setting-title">
-        <i class="pi pi-th-large"></i>
-        <span>Taskbar Position</span>
-      </div>
-      <div class="button-group">
-        <button 
-          *ngFor="let position of taskbarPositions" 
-          class="option-btn"
-          [class.active]="taskbarPosition() === position.value"
-          (click)="onTaskbarPositionChange(position.value)">
-          <i [class]="position.icon"></i>
-          <span>{{ position.label }}</span>
-        </button>
-      </div>
-    </div>
-
     <!-- Toggle Settings -->
     <div class="setting-group">
       <div class="toggle-row">
