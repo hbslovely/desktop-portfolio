@@ -1,0 +1,197 @@
+<div class="tuoitre-news-app" [class.viewing-article]="showArticleViewer()">
+  <!-- Main News List View -->
+  <div class="main-view" *ngIf="!showArticleViewer()">
+    
+    <!-- Header -->
+    <div class="app-header">
+      <div class="header-left">
+        <i class="pi pi-newspaper"></i>
+        <h1>Tin tức hôm nay</h1>
+      </div>
+      <div class="header-right">
+        <!-- Search -->
+        <div class="search-box">
+          <i class="pi pi-search"></i>
+          <input 
+            type="text" 
+            placeholder="Tìm kiếm tin tức..." 
+            [value]="searchTerm()"
+            (input)="onSearchChange($event)"
+            (keydown.enter)="onSearchSubmit()">
+          <button *ngIf="searchTerm()" (click)="clearSearch()" class="clear-search" title="Xóa tìm kiếm">
+            <i class="pi pi-times"></i>
+          </button>
+          <button (click)="onSearchSubmit()" class="search-btn" title="Tìm kiếm">
+            <i class="pi pi-search"></i>
+          </button>
+        </div>
+        
+        <!-- Refresh -->
+        <button (click)="refreshNews()" class="refresh-btn" [class.loading]="loading()" title="Làm mới">
+          <i class="pi pi-refresh"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Categories -->
+    <div class="categories-bar">
+      <button
+        (click)="selectCategory('all')"
+        [class.active]="selectedCategory() === 'all'"
+        class="category-btn">
+        <i class="pi pi-home"></i>
+        <span>Tất cả</span>
+      </button>
+      <button
+        *ngFor="let category of categories()"
+        (click)="selectCategory(category.id)"
+        [class.active]="selectedCategory() === category.id"
+        class="category-btn">
+        <span>{{ category.name }}</span>
+      </button>
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="loading()" class="loading-state">
+      <div class="spinner"></div>
+      <p>Đang tải tin tức...</p>
+    </div>
+
+    <!-- Error State -->
+    <div *ngIf="error() && !loading()" class="error-state">
+      <i class="pi pi-exclamation-circle"></i>
+      <h3>Lỗi</h3>
+      <p>{{ error() }}</p>
+      <button (click)="refreshNews()" class="retry-btn">
+        <i class="pi pi-refresh"></i>
+        Thử lại
+      </button>
+    </div>
+
+    <!-- News Grid -->
+    <div *ngIf="!loading() && !error()" class="news-grid">
+      <div 
+        *ngFor="let item of filteredNewsItems()" 
+        class="news-card"
+        (click)="openArticle(item)">
+        <div class="news-image" *ngIf="item.imageUrl">
+          <img 
+            [src]="item.imageUrl" 
+            [alt]="item.title"
+            (error)="onImageError($event)">
+        </div>
+        <div class="news-content">
+          <div class="news-meta">
+            <span class="news-category" *ngIf="item.category">{{ item.category }}</span>
+            <span class="news-date" *ngIf="item.publishedAt">{{ getTimeAgo(item.publishedAt) }}</span>
+          </div>
+          <h3 class="news-title" [innerHTML]="item.title"></h3>
+          <p class="news-summary" *ngIf="item.summary">{{ item.summary }}</p>
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div *ngIf="filteredNewsItems().length === 0" class="empty-state">
+        <i class="pi pi-inbox"></i>
+        <h3>Không tìm thấy tin tức</h3>
+        <p>Thử điều chỉnh từ khóa tìm kiếm</p>
+        <button (click)="clearSearch()" class="clear-btn">
+          Xóa tìm kiếm
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Article Viewer -->
+  <div class="article-viewer" *ngIf="showArticleViewer()">
+    <div class="viewer-header">
+      <div class="header-left">
+        <button (click)="closeArticleViewer()" class="back-button" title="Quay lại">
+          <i class="pi pi-arrow-left"></i>
+          <span>Quay lại danh sách</span>
+        </button>
+        <div class="header-title" *ngIf="selectedArticle()">
+          <i class="pi pi-file"></i>
+          <span>Đang đọc bài viết</span>
+        </div>
+      </div>
+      <div class="viewer-actions">
+        <button (click)="openInNewTab()" class="action-btn" title="Mở trong tab mới">
+          <i class="pi pi-external-link"></i>
+          <span>Mở tab mới</span>
+        </button>
+        <button (click)="closeArticleViewer()" class="action-btn close" title="Đóng">
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Zoom Controls in Status Bar -->
+    <div class="viewer-status-bar">
+      <div class="status-left">
+        <span class="status-text">Đang xem bài viết</span>
+      </div>
+      <div class="status-right">
+        <div class="zoom-controls">
+          <button (click)="zoomOut()" class="zoom-btn" [disabled]="zoomLevel() <= minZoom" title="Thu nhỏ">
+            <i class="pi pi-minus"></i>
+          </button>
+          <span class="zoom-level">{{ zoomLevel() }}%</span>
+          <button (click)="zoomIn()" class="zoom-btn" [disabled]="zoomLevel() >= maxZoom" title="Phóng to">
+            <i class="pi pi-plus"></i>
+          </button>
+          <button (click)="resetZoom()" class="zoom-reset" title="Đặt lại">
+            <i class="pi pi-refresh"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="viewer-content">
+      <!-- Loading -->
+      <div *ngIf="articleLoading()" class="article-loading">
+        <div class="spinner"></div>
+        <p>Đang tải bài viết...</p>
+      </div>
+
+      <!-- Error -->
+      <div *ngIf="articleError() && !articleLoading()" class="article-error">
+        <i class="pi pi-exclamation-triangle"></i>
+        <p>{{ articleError() }}</p>
+        <button (click)="openInNewTab()" class="open-external">
+          <i class="pi pi-external-link"></i>
+          Mở trong trình duyệt
+        </button>
+      </div>
+
+      <!-- Article Content -->
+      <article *ngIf="!articleLoading() && !articleError() && selectedArticle()" class="article-detail">
+        <div class="article-hero" *ngIf="selectedArticle()?.imageUrl">
+          <img [src]="selectedArticle()!.imageUrl" [alt]="selectedArticle()!.title">
+        </div>
+
+        <div class="article-container">
+          <div class="article-meta">
+            <span class="meta-item" *ngIf="selectedArticle()?.author">
+              <i class="pi pi-user"></i>
+              {{ selectedArticle()!.author }}
+            </span>
+            <span class="meta-item" *ngIf="selectedArticle()?.publishedAt">
+              <i class="pi pi-calendar"></i>
+              {{ getTimeAgo(selectedArticle()!.publishedAt) }}
+            </span>
+            <span class="meta-item" *ngIf="selectedArticle()?.category">
+              <i class="pi pi-tag"></i>
+              {{ selectedArticle()!.category }}
+            </span>
+          </div>
+
+          <h1 class="article-title" [innerHTML]="selectedArticle()?.title"></h1>
+
+          <div class="article-content" [innerHTML]="selectedArticle()?.content"></div>
+        </div>
+      </article>
+    </div>
+  </div>
+</div>
+

@@ -30,6 +30,10 @@
     {
       "source": "/api/booking-search",
       "destination": "https://www.booking.com/searchresults.en-gb.html"
+    },
+    {
+      "source": "/api/tuoitre/:path*",
+      "destination": "https://tuoitre.vn/:path*"
     }
   ],
   "headers": [
