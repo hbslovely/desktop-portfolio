@@ -311,6 +311,18 @@ export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
     defaultY: 80,
     maximizable: true,
     statusText: 'Search destinations with Booking.com'
+  },
+  'tuoitre-news': {
+    id: 'tuoitre-news',
+    title: 'Tin tức hôm nay',
+    icon: 'pi pi-newspaper',
+    component: 'tuoitre-news',
+    defaultWidth: 1200,
+    defaultHeight: 800,
+    defaultX: 100,
+    defaultY: 50,
+    maximizable: true,
+    statusText: 'Tin tức từ Tuổi Trẻ Online'
   }
 };
 
