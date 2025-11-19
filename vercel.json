@@ -34,6 +34,10 @@
     {
       "source": "/api/tuoitre/:path*",
       "destination": "https://tuoitre.vn/:path*"
+    },
+    {
+      "source": "/api/google-apps-script",
+      "destination": "https://script.google.com/macros/s/AKfycbwRpjkR_zWjSJUNhXBHhTO5bxq18iYMaJEYvOKaQlE6v-ofJgj5xNlHc-v9RuIRXqg0EA/exec"
     }
   ],
   "headers": [
@@ -129,6 +133,23 @@
         {
           "key": "Access-Control-Allow-Methods",
           "value": "GET, OPTIONS"
+        }
+      ]
+    },
+    {
+      "source": "/api/google-apps-script",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, POST, OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "Content-Type, Authorization"
         }
       ]
     }
