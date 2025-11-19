@@ -18,7 +18,7 @@
       "prefix": "app",
       "architect": {
         "build": {
-          "builder": "@angular-devkit/build-angular:application",
+          "builder": "@ngx-env/builder:browser",
           "options": {
             "outputPath": "dist/desktop-portfolio",
             "index": "src/index.html",
@@ -62,7 +62,7 @@
           "defaultConfiguration": "production"
         },
         "serve": {
-          "builder": "@angular-devkit/build-angular:dev-server",
+          "builder": "@ngx-env/builder:browser",
           "options": {
             "proxyConfig": "proxy.conf.json"
           },
