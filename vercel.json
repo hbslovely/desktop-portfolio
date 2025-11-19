@@ -153,6 +153,9 @@
         }
       ]
     }
-  ]
+  ],
+  "build": {
+    "outputDirectory": "dist/desktop-portfolio"
+  }
 }
 
