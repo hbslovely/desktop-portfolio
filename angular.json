@@ -18,7 +18,7 @@
       "prefix": "app",
       "architect": {
         "build": {
-          "builder": "@ngx-env/builder:browser",
+          "builder": "@ngx-env/builder:application",
           "options": {
             "outputPath": "dist/desktop-portfolio",
             "index": "src/index.html",
