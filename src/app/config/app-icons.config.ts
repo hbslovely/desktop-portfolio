@@ -144,6 +144,13 @@ export const APP_ICONS: DesktopIconData[] = [
     icon: 'assets/images/icons/tin-tuc.png',
     type: 'application',
     position: { x: 320, y: 320 }
+  },
+  {
+    id: 'expense',
+    name: 'Quản lý Chi tiêu',
+    icon: 'pi pi-wallet',
+    type: 'application',
+    position: { x: 320, y: 420 }
   }
 ];
 
@@ -180,7 +187,8 @@ function getAppDescription(appId: string): string {
     'fireant': 'Search and view real-time Vietnamese stock market data with FireAnt API',
     'angular-guidelines': 'Comprehensive Angular official documentation and guidelines from Angular.dev',
     'booking': 'Search for travel destinations, hotels, and landmarks worldwide with Booking.com API',
-    'tuoitre-news': 'Read latest Vietnamese news from Tuổi Trẻ Online with categories and full articles'
+    'tuoitre-news': 'Read latest Vietnamese news from Tuổi Trẻ Online with categories and full articles',
+    'expense': 'Manage family expenses with Google Sheets integration, view spending history, and add new expenses'
   };
   return descriptions[appId] || 'Application';
 }
@@ -206,7 +214,8 @@ function getAppKeywords(appId: string): string[] {
     'fireant': ['stock', 'market', 'vietnam', 'vietnamese', 'fireant', 'trading', 'shares', 'prices', 'hose', 'hnx', 'vn30', 'stocks', 'finance', 'investment', 'api', 'real-time', 'search', 'symbol'],
     'angular-guidelines': ['angular', 'documentation', 'docs', 'guide', 'guidelines', 'tutorial', 'official', 'components', 'directives', 'services', 'routing', 'forms', 'http', 'signals', 'dependency injection', 'best practices', 'security', 'performance', 'angular.dev'],
     'booking': ['travel', 'hotel', 'booking', 'accommodation', 'vacation', 'destination', 'trip', 'tourism', 'city', 'country', 'flights', 'search', 'autocomplete', 'landmark', 'airport', 'region', 'worldwide', 'booking.com'],
-    'tuoitre-news': ['news', 'tin tức', 'tuoitre', 'tuổi trẻ', 'vietnam', 'vietnamese', 'newspaper', 'articles', 'thời sự', 'thế giới', 'pháp luật', 'kinh doanh', 'công nghệ', 'xe', 'du lịch', 'văn hóa', 'giải trí', 'thể thao', 'giáo dục', 'sức khỏe']
+    'tuoitre-news': ['news', 'tin tức', 'tuoitre', 'tuổi trẻ', 'vietnam', 'vietnamese', 'newspaper', 'articles', 'thời sự', 'thế giới', 'pháp luật', 'kinh doanh', 'công nghệ', 'xe', 'du lịch', 'văn hóa', 'giải trí', 'thể thao', 'giáo dục', 'sức khỏe'],
+    'expense': ['expense', 'chi tiêu', 'quản lý', 'tài chính', 'spending', 'budget', 'money', 'finance', 'google sheets', 'gia đình', 'family', 'tiền', 'giao dịch', 'transaction']
   };
   return keywords[appId] || [];
 }

@@ -323,6 +323,18 @@ export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
     defaultY: 50,
     maximizable: true,
     statusText: 'Tin tức từ Tuổi Trẻ Online'
+  },
+  'expense': {
+    id: 'expense',
+    title: 'Quản lý Chi tiêu',
+    icon: 'pi pi-wallet',
+    component: 'expense',
+    defaultWidth: 1000,
+    defaultHeight: 750,
+    defaultX: 200,
+    defaultY: 80,
+    maximizable: true,
+    statusText: 'Quản lý chi tiêu gia đình'
   }
 };
 

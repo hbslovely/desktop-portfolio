@@ -118,6 +118,20 @@
       "Accept-Language": "vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7",
       "Referer": "https://tuoitre.vn/"
     }
+  },
+  "/api/google-apps-script": {
+    "target": "https://script.google.com",
+    "secure": true,
+    "changeOrigin": true,
+    "logLevel": "debug",
+    "pathRewrite": {
+      "^/api/google-apps-script": "/macros/s/AKfycbwRpjkR_zWjSJUNhXBHhTO5bxq18iYMaJEYvOKaQlE6v-ofJgj5xNlHc-v9RuIRXqg0EA/exec"
+    },
+    "headers": {
+      "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      "Accept": "application/json, text/plain, */*",
+      "Content-Type": "application/json"
+    }
   }
 }
 

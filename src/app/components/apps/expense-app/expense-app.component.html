@@ -1,0 +1,1263 @@
+<div class="expense-app">
+  <!-- Authentication Screen -->
+  <div class="auth-screen" *ngIf="!isAuthenticated()">
+    <div class="auth-container">
+      <div class="auth-icon">
+        <i class="pi pi-lock"></i>
+      </div>
+      <h2>Quản lý Chi tiêu</h2>
+      <p class="auth-hint">Nhập mật khẩu để truy cập</p>
+
+      <div class="password-input-group">
+        <input
+          type="password"
+          class="password-input"
+          [value]="password()"
+          (input)="password.set($any($event.target).value)"
+          (keydown)="onPasswordKeyDown($event)"
+          placeholder="Nhập mật khẩu"
+          autofocus>
+        <button class="login-btn" (click)="authenticate()">
+          <i class="pi pi-sign-in"></i>
+          Đăng nhập
+        </button>
+      </div>
+
+      <div class="password-error" *ngIf="passwordError()">
+        <i class="pi pi-exclamation-triangle"></i>
+        {{ passwordError() }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Main App Screen -->
+  <div class="main-screen" *ngIf="isAuthenticated()">
+          <!-- Header -->
+          <div class="app-header">
+            <div class="header-left">
+              <i class="pi pi-wallet"></i>
+              <h1>Quản lý Chi tiêu</h1>
+            </div>
+            <div class="header-right">
+              <button (click)="showAddExpenseForm()" class="add-expense-header-btn">
+                <i class="pi pi-plus"></i>
+                <span>Thêm chi tiêu mới</span>
+              </button>
+              <button (click)="loadExpenses()" class="refresh-btn" [class.loading]="isLoading()" title="Làm mới">
+                <i class="pi pi-refresh"></i>
+              </button>
+              <button (click)="logout()" class="logout-btn" title="Đăng xuất">
+                <i class="pi pi-sign-out"></i>
+              </button>
+            </div>
+          </div>
+
+    <!-- Date Filter (affects all tabs) -->
+    <div class="date-filter-section">
+      <!-- Quick Filter Buttons -->
+      <div class="quick-filters">
+        <button (click)="filterToday()" class="quick-filter-btn" [class.active]="isTodayActive()">
+          <i class="pi pi-calendar-check"></i>
+          <span>Hôm nay</span>
+        </button>
+        <button (click)="filterYesterday()" class="quick-filter-btn" [class.active]="isYesterdayActive()">
+          <i class="pi pi-calendar-minus"></i>
+          <span>Hôm qua</span>
+        </button>
+        <button (click)="filterLast7Days()" class="quick-filter-btn" [class.active]="isLast7DaysActive()">
+          <i class="pi pi-calendar"></i>
+          <span>7 ngày qua</span>
+        </button>
+        <button (click)="filterLast30Days()" class="quick-filter-btn" [class.active]="isLast30DaysActive()">
+          <i class="pi pi-calendar-times"></i>
+          <span>30 ngày qua</span>
+        </button>
+        <button (click)="filterCurrentMonth()" class="quick-filter-btn" [class.active]="isCurrentMonthActive()">
+          <i class="pi pi-calendar-clock"></i>
+          <span>Tháng này</span>
+        </button>
+        <button (click)="showCustomDateRangeDialog()" class="quick-filter-btn custom">
+          <i class="pi pi-sliders-h"></i>
+          <span>Tùy chỉnh</span>
+        </button>
+      </div>
+
+      <!-- Date Range Display -->
+      <div class="date-range-display" *ngIf="filterDateFrom() || filterDateTo()">
+        <i class="pi pi-calendar"></i>
+        <span *ngIf="filterDateFrom() && filterDateTo()">
+          {{ formatDate(filterDateFrom()) }} - {{ formatDate(filterDateTo()) }}
+        </span>
+        <span *ngIf="filterDateFrom() && !filterDateTo()">
+          Từ {{ formatDate(filterDateFrom()) }}
+        </span>
+        <span *ngIf="!filterDateFrom() && filterDateTo()">
+          Đến {{ formatDate(filterDateTo()) }}
+        </span>
+        <button (click)="filterDateFrom.set(''); filterDateTo.set('')" class="clear-date-btn">
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs-section">
+      <button
+        (click)="switchTab('list')"
+        class="tab-btn"
+        [class.active]="activeTab() === 'list'">
+        <i class="pi pi-list"></i>
+        <span>Danh sách</span>
+      </button>
+      <button
+        (click)="switchTab('summary')"
+        class="tab-btn"
+        [class.active]="activeTab() === 'summary'">
+        <i class="pi pi-chart-bar"></i>
+        <span>Tổng hợp</span>
+      </button>
+    </div>
+
+    <!-- Filters (only show in list tab) -->
+    <div class="filters-section" *ngIf="activeTab() === 'list'">
+      <!-- Search Bar -->
+      <div class="search-bar">
+        <i class="pi pi-search"></i>
+        <input
+          type="text"
+          [ngModel]="searchText()"
+          (ngModelChange)="searchText.set($event)"
+          class="search-input"
+          placeholder="Tìm kiếm theo nội dung hoặc phân loại...">
+        <button *ngIf="searchText()" (click)="searchText.set('')" class="clear-search-btn">
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+
+      <div class="filter-row">
+        <div class="filter-group">
+          <label>Phân loại:</label>
+          <select [ngModel]="filterCategory()" (ngModelChange)="filterCategory.set($event)" class="filter-select">
+            <option value="">Tất cả</option>
+            <option *ngFor="let cat of categories()" [value]="cat">{{ cat }}</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label>Số tiền từ:</label>
+          <input
+            type="number"
+            [ngModel]="filterAmountMin()"
+            (ngModelChange)="filterAmountMin.set($event ? Number($event) : null)"
+            class="filter-input"
+            placeholder="Min">
+        </div>
+
+        <div class="filter-group">
+          <label>Đến:</label>
+          <input
+            type="number"
+            [ngModel]="filterAmountMax()"
+            (ngModelChange)="filterAmountMax.set($event ? Number($event) : null)"
+            class="filter-input"
+            placeholder="Max">
+        </div>
+
+        <button (click)="clearFilters()" class="clear-filters-btn"
+                *ngIf="filterCategory() || searchText() || filterAmountMin() !== null || filterAmountMax() !== null">
+          <i class="pi pi-times"></i>
+          Xóa bộ lọc
+        </button>
+      </div>
+    </div>
+
+    <!-- Tab Content: List -->
+    <div class="tab-content" *ngIf="activeTab() === 'list'">
+      <!-- Summary Cards -->
+      <div class="summary-section">
+          <div class="summary-card">
+            <div class="summary-icon">
+              <i class="pi pi-money-bill"></i>
+            </div>
+            <div class="summary-content">
+              <div class="summary-label">Tổng chi tiêu</div>
+              <div class="summary-value">{{ formatAmount(totalAmount()) }}</div>
+              <div class="summary-change" *ngIf="periodComparison()">
+                <i class="pi" [class.pi-arrow-up]="periodComparison()!.change > 0"
+                   [class.pi-arrow-down]="periodComparison()!.change < 0"
+                   [class.pi-minus]="periodComparison()!.change === 0"></i>
+                <span [class.positive]="periodComparison()!.change > 0"
+                      [class.negative]="periodComparison()!.change < 0">
+                  {{ Math.abs(periodComparison()!.change) }}%
+                </span>
+                <span class="change-label">vs {{ periodComparison()!.period }} trước</span>
+              </div>
+            </div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-icon">
+              <i class="pi pi-list"></i>
+            </div>
+            <div class="summary-content">
+              <div class="summary-label">Số giao dịch</div>
+              <div class="summary-value">{{ filteredExpenses().length }}</div>
+            </div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-icon">
+              <i class="pi pi-chart-line"></i>
+            </div>
+            <div class="summary-content">
+              <div class="summary-label">Trung bình/giao dịch</div>
+              <div class="summary-value">{{ formatAmount(averageExpense()) }}</div>
+            </div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-icon">
+              <i class="pi pi-calendar"></i>
+            </div>
+            <div class="summary-content">
+              <div class="summary-label">Trung bình/ngày</div>
+              <div class="summary-value">{{ formatAmount(averageDailyExpense()) }}</div>
+            </div>
+          </div>
+      </div>
+
+      <!-- Error Message -->
+      <div class="error-message" *ngIf="error()">
+        <i class="pi pi-exclamation-triangle"></i>
+        {{ error() }}
+      </div>
+
+      <!-- Expenses List -->
+      <div class="expenses-list-container" *ngIf="!isLoading() && filteredExpenses().length > 0">
+        <!-- Sort Controls -->
+        <div class="sort-controls">
+          <span class="sort-label">Sắp xếp:</span>
+          <button
+            class="sort-btn"
+            [class.active]="sortField() === 'date'"
+            (click)="sortBy('date')"
+            title="Sắp xếp theo ngày">
+            <i class="pi" [ngClass]="getSortIcon('date')"></i>
+            <span>Ngày</span>
+          </button>
+          <button
+            class="sort-btn"
+            [class.active]="sortField() === 'amount'"
+            (click)="sortBy('amount')"
+            title="Sắp xếp theo số tiền">
+            <i class="pi" [ngClass]="getSortIcon('amount')"></i>
+            <span>Số tiền</span>
+          </button>
+          <button
+            class="sort-btn"
+            [class.active]="sortField() === 'category'"
+            (click)="sortBy('category')"
+            title="Sắp xếp theo phân loại">
+            <i class="pi" [ngClass]="getSortIcon('category')"></i>
+            <span>Phân loại</span>
+          </button>
+          <button
+            class="sort-btn"
+            [class.active]="sortField() === 'content'"
+            (click)="sortBy('content')"
+            title="Sắp xếp theo nội dung">
+            <i class="pi" [ngClass]="getSortIcon('content')"></i>
+            <span>Nội dung</span>
+          </button>
+        </div>
+
+        <div class="expenses-list">
+          <div
+            class="expense-item"
+            *ngFor="let expense of filteredExpenses(); let i = index"
+            [class.highlight-above-average]="isAboveAverage(expense.amount)">
+            <div class="expense-date">
+              <i class="pi pi-calendar"></i>
+              <span>{{ formatDate(expense.date) }}</span>
+            </div>
+            <div class="expense-content">
+              <div class="expense-category">
+                <i class="pi pi-tag"></i>
+                <span>{{ expense.category }}</span>
+              </div>
+              <div class="expense-details">{{ expense.content }}</div>
+              <div class="expense-note" *ngIf="expense.note">
+                <i class="pi pi-comment"></i>
+                <span>{{ expense.note }}</span>
+              </div>
+            </div>
+            <div class="expense-actions">
+              <button class="edit-btn" (click)="showEditExpenseForm(expense, i)" title="Chỉnh sửa">
+                <i class="pi pi-pencil"></i>
+              </button>
+              <div class="expense-amount" [class.high-amount]="isAboveAverage(expense.amount)">
+                <i class="pi pi-exclamation-triangle amount-warning-icon" *ngIf="isAboveAverage(expense.amount)"
+                   [title]="'Cao hơn ' + getPercentageAboveAverage(expense.amount) + '% so với trung bình'"></i>
+                <span class="amount-value">{{ formatAmount(expense.amount) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div class="empty-state" *ngIf="!isLoading() && filteredExpenses().length === 0">
+        <i class="pi pi-inbox"></i>
+        <p>Không có chi tiêu nào</p>
+      </div>
+
+      <!-- Loading State -->
+      <div class="loading-state" *ngIf="isLoading()">
+        <i class="pi pi-spin pi-spinner"></i>
+        <p>Đang tải...</p>
+      </div>
+    </div>
+
+    <!-- Tab Content: Summary -->
+    <div class="tab-content summary-tab" *ngIf="activeTab() === 'summary'">
+      <div class="summary-view">
+        <!-- Overall Summary -->
+        <div class="summary-section">
+          <div class="summary-card">
+            <div class="summary-icon">
+              <i class="pi pi-money-bill"></i>
+            </div>
+            <div class="summary-content">
+              <div class="summary-label">Tổng chi tiêu</div>
+              <div class="summary-value">{{ formatAmount(totalAmount()) }}</div>
+              <div class="summary-change" *ngIf="periodComparison()">
+                <i class="pi" [class.pi-arrow-up]="periodComparison()!.change > 0"
+                   [class.pi-arrow-down]="periodComparison()!.change < 0"
+                   [class.pi-minus]="periodComparison()!.change === 0"></i>
+                <span [class.positive]="periodComparison()!.change > 0"
+                      [class.negative]="periodComparison()!.change < 0">
+                  {{ Math.abs(periodComparison()!.change) }}%
+                </span>
+                <span class="change-label">so với {{ periodComparison()!.period }} trước</span>
+              </div>
+            </div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-icon">
+              <i class="pi pi-list"></i>
+            </div>
+            <div class="summary-content">
+              <div class="summary-label">Số giao dịch</div>
+              <div class="summary-value">{{ filteredExpenses().length }}</div>
+            </div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-icon">
+              <i class="pi pi-calendar"></i>
+            </div>
+            <div class="summary-content">
+              <div class="summary-label">Trung bình/ngày</div>
+              <div class="summary-value">{{ formatAmount(averageDailyExpense()) }}</div>
+            </div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-icon">
+              <i class="pi pi-chart-line"></i>
+            </div>
+            <div class="summary-content">
+              <div class="summary-label">Trung bình/giao dịch</div>
+              <div class="summary-value">{{ formatAmount(averageExpense()) }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div class="statistics-section" *ngIf="!isLoading() && filteredExpenses().length > 0">
+          <div class="stat-card">
+            <div class="stat-icon">
+              <i class="pi pi-arrow-up"></i>
+            </div>
+            <div class="stat-content">
+              <div class="stat-label">Chi tiêu lớn nhất</div>
+              <div class="stat-value" *ngIf="maxExpense()">
+                {{ formatAmount(maxExpense()!.amount) }}
+              </div>
+              <div class="stat-detail" *ngIf="maxExpense()">
+                {{ maxExpense()!.content }}
+              </div>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon">
+              <i class="pi pi-arrow-down"></i>
+            </div>
+            <div class="stat-content">
+              <div class="stat-label">Chi tiêu nhỏ nhất</div>
+              <div class="stat-value" *ngIf="minExpense()">
+                {{ formatAmount(minExpense()!.amount) }}
+              </div>
+              <div class="stat-detail" *ngIf="minExpense()">
+                {{ minExpense()!.content }}
+              </div>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon">
+              <i class="pi pi-chart-line"></i>
+            </div>
+            <div class="stat-content">
+              <div class="stat-label">Trung vị</div>
+              <div class="stat-value">{{ formatAmount(medianExpense()) }}</div>
+              <div class="stat-detail">Giá trị ở giữa</div>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon" [class.trend-up]="expenseTrend() === 'increasing'"
+                 [class.trend-down]="expenseTrend() === 'decreasing'"
+                 [class.trend-stable]="expenseTrend() === 'stable'">
+              <i class="pi" [class.pi-arrow-up]="expenseTrend() === 'increasing'"
+                 [class.pi-arrow-down]="expenseTrend() === 'decreasing'"
+                 [class.pi-minus]="expenseTrend() === 'stable'"></i>
+            </div>
+            <div class="stat-content">
+              <div class="stat-label">Xu hướng</div>
+              <div class="stat-value">
+                <span *ngIf="expenseTrend() === 'increasing'">Tăng</span>
+                <span *ngIf="expenseTrend() === 'decreasing'">Giảm</span>
+                <span *ngIf="expenseTrend() === 'stable'">Ổn định</span>
+              </div>
+              <div class="stat-detail">7 ngày gần nhất</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Top Spending Section -->
+        <div class="top-spending-section" *ngIf="!isLoading() && !isSingleDayFilter() && (topSpendingDays().length > 0 || bottomSpendingDays().length > 0 || topExpenses().length > 0 || bottomExpenses().length > 0)">
+          <h3>Top chi tiêu</h3>
+          <div class="top-spending-grid">
+            <!-- 5 ngày cao nhất -->
+            <div class="top-column">
+              <h4>5 ngày cao nhất</h4>
+              <div class="top-list">
+                <div class="top-card" *ngFor="let day of topSpendingDays(); let i = index" (click)="showDayDetailDialog(day.date)">
+                  <div class="rank-badge">#{{ i + 1 }}</div>
+                  <div class="card-content">
+                    <div class="card-label">{{ formatDateWithDayOfWeek(day.date) }}</div>
+                    <div class="card-value">{{ formatAmount(day.total) }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 5 ngày thấp nhất -->
+            <div class="top-column">
+              <h4>5 ngày thấp nhất</h4>
+              <div class="top-list">
+                <div class="top-card low-card" *ngFor="let day of bottomSpendingDays(); let i = index" (click)="showDayDetailDialog(day.date)">
+                  <div class="rank-badge">#{{ i + 1 }}</div>
+                  <div class="card-content">
+                    <div class="card-label">{{ formatDateWithDayOfWeek(day.date) }}</div>
+                    <div class="card-value">{{ formatAmount(day.total) }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 5 giao dịch cao nhất -->
+            <div class="top-column">
+              <h4>5 giao dịch cao nhất</h4>
+              <div class="top-list">
+                <div class="top-card" *ngFor="let expense of topExpenses(); let i = index">
+                  <div class="rank-badge">#{{ i + 1 }}</div>
+                  <div class="card-content">
+                    <div class="card-label">{{ expense.content }}</div>
+                    <div class="card-sub-label">{{ expense.category }}</div>
+                    <div class="card-date">{{ formatDateWithDayOfWeek(expense.date) }}</div>
+                    <div class="card-value">{{ formatAmount(expense.amount) }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 5 giao dịch thấp nhất -->
+            <div class="top-column">
+              <h4>5 giao dịch thấp nhất</h4>
+              <div class="top-list">
+                <div class="top-card low-card" *ngFor="let expense of bottomExpenses(); let i = index">
+                  <div class="rank-badge">#{{ i + 1 }}</div>
+                  <div class="card-content">
+                    <div class="card-label">{{ expense.content }}</div>
+                    <div class="card-sub-label">{{ expense.category }}</div>
+                    <div class="card-date">{{ formatDateWithDayOfWeek(expense.date) }}</div>
+                    <div class="card-value">{{ formatAmount(expense.amount) }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Spending by Day of Week -->
+        <div class="day-of-week-section" *ngIf="!isLoading() && !isSingleDayFilter() && spendingByDayOfWeek().length > 0">
+          <h3>Thống kê theo thứ</h3>
+          <div class="day-of-week-grid">
+            <div class="day-of-week-card" *ngFor="let dayData of spendingByDayOfWeek()" (click)="showDayOfWeekDetailDialog(dayData.day)">
+              <div class="day-name">{{ dayData.day }}</div>
+              <div class="day-stats">
+                <div class="stat-item">
+                  <div class="stat-label">Tổng</div>
+                  <div class="stat-value">{{ formatAmount(dayData.total) }}</div>
+                </div>
+                <div class="stat-item">
+                  <div class="stat-label">Trung bình</div>
+                  <div class="stat-value">{{ formatAmount(dayData.average) }}</div>
+                </div>
+                <div class="stat-item">
+                  <div class="stat-label">Số giao dịch</div>
+                  <div class="stat-value">{{ dayData.count }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="charts-section" *ngIf="!isLoading() && filteredExpenses().length > 0">
+          <!-- Category Pie Chart -->
+          <div class="chart-container" *ngIf="totalByCategory().length > 0">
+            <h3>Chi tiêu theo phân loại</h3>
+            <div class="chart-wrapper">
+              <canvas #categoryChart></canvas>
+            </div>
+          </div>
+
+          <!-- Category Bar Chart -->
+          <div class="chart-container" *ngIf="totalByCategory().length > 0 && !isSingleDayFilter()">
+            <h3>Chi tiêu theo phân loại (Cột)</h3>
+            <div class="chart-wrapper">
+              <canvas #categoryBarChart></canvas>
+            </div>
+          </div>
+
+          <!-- Daily Line Chart -->
+          <div class="chart-container" *ngIf="dailyExpenses().length > 0 && !isSingleDayFilter()">
+            <h3>Chi tiêu theo ngày</h3>
+            <div class="chart-wrapper">
+              <canvas #dailyChart></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Category Breakdown -->
+        <div class="category-breakdown" *ngIf="!isLoading() && totalByCategory().length > 0">
+          <h3>Chi tiết theo phân loại</h3>
+          <div class="category-list">
+            <div class="category-item" *ngFor="let item of totalByCategory()" (click)="showCategoryDetailDialog(item.category)">
+              <div class="category-info">
+                <div class="category-name">{{ item.category }}</div>
+                <div class="category-percentage">
+                  {{ ((item.total / totalAmount()) * 100).toFixed(1) }}%
+                </div>
+              </div>
+              <div class="category-amount">{{ formatAmount(item.total) }}</div>
+              <div class="category-bar">
+                <div
+                  class="category-bar-fill"
+                  [style.width.%]="(item.total / totalAmount()) * 100">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Expense Suggestions -->
+        <div class="suggestions-section" *ngIf="!isLoading()">
+          <h3>Gợi ý chi tiêu</h3>
+          <div class="suggestions-list">
+            <div class="suggestion-item" *ngFor="let suggestion of expenseSuggestions()">
+              <i class="pi pi-info-circle"></i>
+              <span>{{ suggestion }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Empty State -->
+        <div class="empty-state" *ngIf="!isLoading() && filteredExpenses().length === 0">
+          <i class="pi pi-chart-bar"></i>
+          <p>Không có dữ liệu để tổng hợp</p>
+        </div>
+
+        <!-- Loading State -->
+        <div class="loading-state" *ngIf="isLoading()">
+          <i class="pi pi-spin pi-spinner"></i>
+          <p>Đang tải...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Category Detail Dialog -->
+    <div class="dialog-overlay" *ngIf="showCategoryDetail()" (click)="hideCategoryDetailDialog()">
+      <div class="dialog-container category-detail-dialog" (click)="$event.stopPropagation()">
+        <div class="dialog-header day-detail-header">
+          <div class="header-content">
+            <div class="header-icon">
+              <i class="pi pi-tag"></i>
+            </div>
+            <div class="header-text">
+              <h3>Chi tiết phân loại</h3>
+              <p class="header-date">{{ selectedCategory() }}</p>
+            </div>
+          </div>
+          <button (click)="hideCategoryDetailDialog()" class="close-btn">
+            <i class="pi pi-times"></i>
+          </button>
+        </div>
+
+        <div class="dialog-body day-detail-body">
+          <!-- Summary -->
+          <div class="day-detail-summary">
+            <div class="detail-summary-card total-card">
+              <div class="card-icon">
+                <i class="pi pi-money-bill"></i>
+              </div>
+              <div class="card-content">
+                <div class="detail-summary-label">Tổng chi tiêu</div>
+                <div class="detail-summary-value">{{ formatAmount(categoryDetailTotal()) }}</div>
+              </div>
+            </div>
+            <div class="detail-summary-card count-card">
+              <div class="card-icon">
+                <i class="pi pi-list"></i>
+              </div>
+              <div class="card-content">
+                <div class="detail-summary-label">Số giao dịch</div>
+                <div class="detail-summary-value">{{ categoryTotalTransactions() }}</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Statistics -->
+          <div class="category-statistics" *ngIf="categoryDetailExpenses().length > 0">
+            <h4>Thống kê chi tiêu</h4>
+            <div class="statistics-grid">
+              <div class="stat-item">
+                <div class="stat-icon">
+                  <i class="pi pi-shopping-cart"></i>
+                </div>
+                <div class="stat-content">
+                  <div class="stat-label">Trung bình 1 lần</div>
+                  <div class="stat-value">{{ formatAmount(categoryAveragePerTransaction()) }}</div>
+                  <div class="stat-note">{{ categoryTotalTransactions() }} giao dịch</div>
+                </div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-icon">
+                  <i class="pi pi-calendar"></i>
+                </div>
+                <div class="stat-content">
+                  <div class="stat-label">Trung bình/ngày</div>
+                  <div class="stat-value">{{ formatAmount(categoryAveragePerDay()) }}</div>
+                  <div class="stat-note">{{ categoryTotalDays() }} ngày có chi tiêu</div>
+                </div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-icon">
+                  <i class="pi pi-calendar-times"></i>
+                </div>
+                <div class="stat-content">
+                  <div class="stat-label">Trung bình/tháng</div>
+                  <div class="stat-value">{{ formatAmount(categoryAveragePerMonth()) }}</div>
+                  <div class="stat-note">{{ categoryTotalMonths() }} tháng</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Chart -->
+          <div class="category-detail-chart" *ngIf="categoryDetailByDate().length > 0">
+            <h4>Phân bố chi tiêu theo ngày</h4>
+            <div class="chart-wrapper">
+              <canvas id="categoryDetailChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Expense List by Date -->
+          <div class="day-detail-list" *ngIf="categoryDetailByDate().length > 0">
+            <div class="list-header">
+              <h4>
+                <i class="pi pi-list-check"></i>
+                Chi tiết theo ngày
+              </h4>
+              <span class="list-count">{{ categoryDetailByDate().length }} ngày</span>
+            </div>
+            <div class="expense-list-detail">
+              <div class="date-group-item" *ngFor="let dateGroup of categoryDetailByDate()">
+                <div class="date-group-header">
+                  <span class="date-label">{{ formatDateWithDayOfWeek(dateGroup.date) }}</span>
+                  <span class="date-total">{{ formatAmount(dateGroup.total) }}</span>
+                </div>
+                <div class="date-expenses-list">
+                     <div class="expense-item-detail" *ngFor="let expense of dateGroup.items; let i = index">
+                       <div class="expense-number">{{ i + 1 }}</div>
+                       <div class="expense-info">
+                         <div class="expense-content-detail">{{ expense.content }}</div>
+                         <div class="expense-note-detail" *ngIf="expense.note">
+                           <i class="pi pi-comment"></i>
+                           <span>{{ expense.note }}</span>
+                         </div>
+                       </div>
+                       <div class="expense-amount-detail">
+                         <span class="amount-value">{{ formatAmount(expense.amount) }}</span>
+                       </div>
+                     </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Empty State -->
+          <div class="empty-state" *ngIf="categoryDetailByDate().length === 0">
+            <i class="pi pi-inbox"></i>
+            <p>Không có dữ liệu</p>
+          </div>
+        </div>
+
+        <div class="dialog-footer day-detail-footer">
+          <button (click)="hideCategoryDetailDialog()" class="close-detail-btn">
+            <i class="pi pi-check"></i>
+            Đóng
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add Expense Dialog -->
+    <div class="dialog-overlay" *ngIf="showAddForm()" (click)="hideAddExpenseForm()">
+      <div class="dialog-container add-expense-dialog" (click)="$event.stopPropagation()">
+        <div class="dialog-header">
+          <h3>Thêm chi tiêu mới</h3>
+          <button (click)="hideAddExpenseForm()" class="close-btn">
+            <i class="pi pi-times"></i>
+          </button>
+        </div>
+
+        <div class="dialog-body">
+          <!-- Success Message -->
+          <div class="success-message" *ngIf="showSuccessMessage()">
+            <div class="success-content">
+              <i class="pi pi-check-circle"></i>
+              <span *ngIf="inputMode() === 'single'">Thêm chi tiêu thành công!</span>
+              <span *ngIf="inputMode() === 'multiple'">Đã lưu {{ savingProgress().total }} chi tiêu thành công!</span>
+            </div>
+          </div>
+
+          <!-- Input Mode Toggle -->
+          <div class="input-mode-toggle">
+            <button 
+              (click)="switchInputMode('single')" 
+              class="mode-btn" 
+              [class.active]="inputMode() === 'single'">
+              <i class="pi pi-plus"></i>
+              <span>Nhập đơn</span>
+            </button>
+            <button 
+              (click)="switchInputMode('multiple')" 
+              class="mode-btn" 
+              [class.active]="inputMode() === 'multiple'">
+              <i class="pi pi-table"></i>
+              <span>Nhập nhiều</span>
+            </button>
+          </div>
+
+          <!-- Single Input Mode -->
+          <div class="single-input-mode" *ngIf="inputMode() === 'single'">
+            <div class="form-group">
+              <label>Ngày:</label>
+              <input type="date" [(ngModel)]="newExpense.date" class="form-input">
+            </div>
+
+            <div class="form-group">
+              <label>Nội dung:</label>
+              <input type="text" [(ngModel)]="newExpense.content" class="form-input" placeholder="Nhập nội dung chi tiêu">
+            </div>
+
+            <div class="form-group">
+              <label>Số tiền:</label>
+              <input type="number" [(ngModel)]="newExpense.amount" class="form-input" placeholder="0" min="0">
+            </div>
+
+            <div class="form-group">
+              <label>Phân loại:</label>
+              <select [(ngModel)]="newExpense.category" class="form-input">
+                <option value="">Chọn phân loại</option>
+                <option *ngFor="let cat of categories()" [value]="cat">{{ cat }}</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Ghi chú:</label>
+              <textarea [(ngModel)]="newExpense.note" class="form-input" placeholder="Nhập ghi chú (tùy chọn)" rows="3"></textarea>
+            </div>
+
+            <div class="form-group checkbox-group">
+              <label class="checkbox-label">
+                <input type="checkbox" [ngModel]="createAnother()" (ngModelChange)="createAnother.set($event)" class="checkbox-input">
+                <span class="checkbox-text">Tạo thêm cái nữa</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Multiple Input Mode -->
+          <div class="multiple-input-mode" *ngIf="inputMode() === 'multiple'">
+            <!-- Progress Bar -->
+            <div class="saving-progress" *ngIf="savingProgress().saving">
+              <div class="progress-info">
+                <span>Đang lưu: {{ savingProgress().current }}/{{ savingProgress().total }}</span>
+                <span class="progress-percent">{{ Math.round((savingProgress().current / savingProgress().total) * 100) }}%</span>
+              </div>
+              <div class="progress-bar">
+                <div class="progress-fill" [style.width.%]="(savingProgress().current / savingProgress().total) * 100"></div>
+              </div>
+            </div>
+
+            <!-- Total Summary -->
+            <div class="multiple-total-summary">
+              <div class="total-info">
+                <span class="total-label">Tổng số hàng:</span>
+                <span class="total-value">{{ multipleExpenses().length }}</span>
+              </div>
+              <div class="total-info">
+                <span class="total-label">Tổng tiền:</span>
+                <span class="total-value amount">{{ formatAmount(getMultipleExpensesTotal()) }}</span>
+              </div>
+            </div>
+
+            <!-- Expenses Table -->
+            <div class="expenses-table-container">
+              <table class="expenses-table">
+                <thead>
+                  <tr>
+                    <th style="width: 50px;">#</th>
+                    <th>Ngày</th>
+                    <th>Nội dung</th>
+                    <th>Số tiền</th>
+                    <th>Phân loại</th>
+                    <th>Ghi chú</th>
+                    <th style="width: 60px;">Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let expense of multipleExpenses(); let i = index" [class.invalid-row]="!expense.content.trim() || !expense.amount || !expense.category || !expense.date">
+                    <td class="row-number">{{ i + 1 }}</td>
+                    <td>
+                      <input type="date" [(ngModel)]="expense.date" class="table-input">
+                    </td>
+                    <td>
+                      <input type="text" [(ngModel)]="expense.content" class="table-input" placeholder="Nội dung">
+                    </td>
+                    <td>
+                      <input type="number" [(ngModel)]="expense.amount" class="table-input" placeholder="0" min="0">
+                    </td>
+                    <td>
+                      <select [(ngModel)]="expense.category" class="table-input">
+                        <option value="">Chọn</option>
+                        <option *ngFor="let cat of categories()" [value]="cat">{{ cat }}</option>
+                      </select>
+                    </td>
+                    <td>
+                      <input type="text" [(ngModel)]="expense.note" class="table-input" placeholder="Ghi chú">
+                    </td>
+                    <td class="action-cell">
+                      <button (click)="removeExpenseRow(i)" class="remove-row-btn" [disabled]="multipleExpenses().length === 1" title="Xóa hàng">
+                        <i class="pi pi-trash"></i>
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Add Row Button -->
+            <div class="add-row-section">
+              <button (click)="addExpenseRow()" class="add-row-btn">
+                <i class="pi pi-plus"></i>
+                <span>Thêm hàng</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="dialog-footer">
+          <button (click)="hideAddExpenseForm()" class="cancel-btn" [disabled]="savingProgress().saving">Hủy</button>
+          <button 
+            *ngIf="inputMode() === 'single'"
+            (click)="addExpense()" 
+            class="save-btn" 
+            [disabled]="isLoading() || savingProgress().saving">
+            <i class="pi pi-save"></i>
+            Lưu
+          </button>
+          <button 
+            *ngIf="inputMode() === 'multiple'"
+            (click)="addMultipleExpenses()" 
+            class="save-btn" 
+            [disabled]="isLoading() || savingProgress().saving">
+            <i class="pi pi-save"></i>
+            <span *ngIf="!savingProgress().saving">Lưu tất cả ({{ multipleExpenses().length }})</span>
+            <span *ngIf="savingProgress().saving">Đang lưu...</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit Expense Dialog -->
+    <div class="dialog-overlay" *ngIf="showEditForm()" (click)="hideEditExpenseForm()">
+      <div class="dialog-container" (click)="$event.stopPropagation()">
+        <div class="dialog-header">
+          <h3>Chỉnh sửa chi tiêu</h3>
+          <button (click)="hideEditExpenseForm()" class="close-btn">
+            <i class="pi pi-times"></i>
+          </button>
+        </div>
+
+        <div class="dialog-body">
+          <div class="form-group">
+            <label>Ngày:</label>
+            <input type="date" [(ngModel)]="editExpense.date" class="form-input">
+          </div>
+
+          <div class="form-group">
+            <label>Nội dung:</label>
+            <input type="text" [(ngModel)]="editExpense.content" class="form-input" placeholder="Nhập nội dung chi tiêu">
+          </div>
+
+          <div class="form-group">
+            <label>Số tiền:</label>
+            <input type="number" [(ngModel)]="editExpense.amount" class="form-input" placeholder="0" min="0">
+          </div>
+
+          <div class="form-group">
+            <label>Phân loại:</label>
+            <select [(ngModel)]="editExpense.category" class="form-input">
+              <option value="">Chọn phân loại</option>
+              <option *ngFor="let cat of categories()" [value]="cat">{{ cat }}</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Ghi chú:</label>
+            <textarea [(ngModel)]="editExpense.note" class="form-input" placeholder="Nhập ghi chú (tùy chọn)" rows="3"></textarea>
+          </div>
+        </div>
+
+        <div class="dialog-footer">
+          <button (click)="hideEditExpenseForm()" class="cancel-btn">Hủy</button>
+          <button (click)="updateExpense()" class="save-btn" [disabled]="isLoading()">
+            <i class="pi pi-save"></i>
+            Lưu
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notification Dialog -->
+    <div class="dialog-overlay notification-overlay" *ngIf="showNotification()" (click)="hideNotificationDialog()">
+      <div class="notification-dialog" [class.success]="notificationType() === 'success'" [class.error]="notificationType() === 'error'" (click)="$event.stopPropagation()">
+        <div class="notification-icon">
+          <i class="pi" [ngClass]="notificationType() === 'success' ? 'pi-check-circle' : 'pi-exclamation-triangle'"></i>
+        </div>
+        <div class="notification-message">{{ notificationMessage() }}</div>
+        <button (click)="hideNotificationDialog()" class="notification-close-btn">
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Custom Date Range Dialog -->
+    <div class="dialog-overlay" *ngIf="showCustomDateDialog()" (click)="hideCustomDateRangeDialog()">
+      <div class="dialog-container custom-date-dialog" (click)="$event.stopPropagation()">
+        <div class="dialog-header">
+          <h3>Tùy chỉnh khoảng thời gian</h3>
+          <button (click)="hideCustomDateRangeDialog()" class="close-btn">
+            <i class="pi pi-times"></i>
+          </button>
+        </div>
+
+        <div class="dialog-body">
+          <!-- Preset Options -->
+          <div class="preset-section">
+            <label class="preset-label">Chọn nhanh:</label>
+            <div class="preset-grid">
+              <button (click)="setDateRangeLast3Days()" class="preset-btn">
+                <i class="pi pi-calendar"></i>
+                <span>3 ngày qua</span>
+              </button>
+              <button (click)="setDateRangeLast10Days()" class="preset-btn">
+                <i class="pi pi-calendar"></i>
+                <span>10 ngày qua</span>
+              </button>
+              <button (click)="setDateRangeLast7Days()" class="preset-btn">
+                <i class="pi pi-calendar"></i>
+                <span>7 ngày qua</span>
+              </button>
+              <button (click)="setDateRangeLast30Days()" class="preset-btn">
+                <i class="pi pi-calendar-times"></i>
+                <span>30 ngày qua</span>
+              </button>
+              <button (click)="setDateRangeThisMonth()" class="preset-btn">
+                <i class="pi pi-calendar-times"></i>
+                <span>Tháng này</span>
+              </button>
+              <button (click)="setDateRangeLastMonth()" class="preset-btn">
+                <i class="pi pi-calendar-minus"></i>
+                <span>Tháng trước</span>
+              </button>
+              <button (click)="setDateRangeLast3Months()" class="preset-btn">
+                <i class="pi pi-calendar-plus"></i>
+                <span>3 tháng qua</span>
+              </button>
+              <button (click)="setDateRangeLast6Months()" class="preset-btn">
+                <i class="pi pi-calendar-plus"></i>
+                <span>6 tháng qua</span>
+              </button>
+              <button (click)="setDateRangeThisYear()" class="preset-btn">
+                <i class="pi pi-calendar"></i>
+                <span>Năm nay</span>
+              </button>
+              <button (click)="setDateRangeLastYear()" class="preset-btn">
+                <i class="pi pi-calendar-minus"></i>
+                <span>Năm trước</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <!-- Custom Date Inputs -->
+          <div class="custom-date-section">
+            <label class="custom-date-label">Hoặc chọn khoảng thời gian tùy chỉnh:</label>
+            <div class="date-inputs-row">
+              <div class="form-group date-input-group">
+                <label>Từ ngày:</label>
+                <input type="date" [ngModel]="filterDateFrom()" (ngModelChange)="filterDateFrom.set($event)" class="form-input">
+              </div>
+
+              <div class="form-group date-input-group">
+                <label>Đến ngày:</label>
+                <input type="date" [ngModel]="filterDateTo()" (ngModelChange)="filterDateTo.set($event)" class="form-input">
+              </div>
+            </div>
+          </div>
+
+          <!-- Current Selection Display -->
+          <div class="current-selection" *ngIf="filterDateFrom() || filterDateTo()">
+            <div class="selection-content">
+              <div class="selection-label">Khoảng thời gian đã chọn:</div>
+              <div class="selection-value">
+                <span *ngIf="filterDateFrom() && filterDateTo()">
+                  {{ formatDate(filterDateFrom()) }} - {{ formatDate(filterDateTo()) }}
+                </span>
+                <span *ngIf="filterDateFrom() && !filterDateTo()">
+                  Từ {{ formatDate(filterDateFrom()) }}
+                </span>
+                <span *ngIf="!filterDateFrom() && filterDateTo()">
+                  Đến {{ formatDate(filterDateTo()) }}
+                </span>
+              </div>
+            </div>
+            <button (click)="clearDateRange()" class="clear-selection-btn">
+              <i class="pi pi-times"></i>
+              <span>Xóa</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="dialog-footer">
+          <button (click)="clearDateRange()" class="clear-btn" *ngIf="filterDateFrom() || filterDateTo()">
+            <i class="pi pi-trash"></i>
+            Xóa bộ lọc
+          </button>
+          <button (click)="hideCustomDateRangeDialog()" class="cancel-btn">Hủy</button>
+          <button (click)="applyCustomDateRange()" class="save-btn">Áp dụng</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Day Detail Dialog -->
+    <div class="dialog-overlay" *ngIf="showDayDetail()" (click)="hideDayDetailDialog()">
+      <div class="dialog-container day-detail-dialog" (click)="$event.stopPropagation()">
+        <div class="dialog-header day-detail-header">
+          <div class="header-content">
+            <div class="header-icon">
+              <i class="pi pi-calendar"></i>
+            </div>
+            <div class="header-text">
+              <h3>Chi tiết ngày</h3>
+              <p class="header-date">{{ formatDate(selectedDay()) }}</p>
+            </div>
+          </div>
+          <button (click)="hideDayDetailDialog()" class="close-btn">
+            <i class="pi pi-times"></i>
+          </button>
+        </div>
+
+        <div class="dialog-body day-detail-body">
+          <div class="day-detail-summary">
+            <div class="detail-summary-card total-card">
+              <div class="card-icon">
+                <i class="pi pi-money-bill"></i>
+              </div>
+              <div class="card-content">
+                <div class="detail-summary-label">Tổng chi tiêu</div>
+                <div class="detail-summary-value">{{ formatAmount(selectedDayTotal()) }}</div>
+              </div>
+            </div>
+            <div class="detail-summary-card count-card">
+              <div class="card-icon">
+                <i class="pi pi-list"></i>
+              </div>
+              <div class="card-content">
+                <div class="detail-summary-label">Số giao dịch</div>
+                <div class="detail-summary-value">{{ selectedDayExpenses().length }}</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="day-detail-list" *ngIf="selectedDayExpenses().length > 0">
+            <div class="list-header">
+              <h4>
+                <i class="pi pi-list-check"></i>
+                Danh sách chi tiêu
+              </h4>
+              <span class="list-count">{{ selectedDayExpenses().length }} mục</span>
+            </div>
+            <div class="expense-list-detail">
+              <div class="expense-item-detail" *ngFor="let expense of selectedDayExpenses(); let i = index">
+                <div class="expense-number">{{ i + 1 }}</div>
+                <div class="expense-info">
+                  <div class="expense-category-detail">
+                    <i class="pi pi-tag"></i>
+                    <span class="category-badge">{{ expense.category }}</span>
+                  </div>
+                  <div class="expense-content-detail">{{ expense.content }}</div>
+                  <div class="expense-note-detail" *ngIf="expense.note">
+                    <i class="pi pi-comment"></i>
+                    <span>{{ expense.note }}</span>
+                  </div>
+                </div>
+                <div class="expense-amount-detail">
+                  <span class="amount-value">{{ formatAmount(expense.amount) }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="empty-state" *ngIf="selectedDayExpenses().length === 0">
+            <div class="empty-icon">
+              <i class="pi pi-inbox"></i>
+            </div>
+            <p>Không có chi tiêu nào trong ngày này</p>
+          </div>
+        </div>
+
+        <div class="dialog-footer day-detail-footer">
+          <button (click)="hideDayDetailDialog()" class="close-detail-btn">
+            <i class="pi pi-check"></i>
+            Đóng
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Day of Week Detail Dialog -->
+    <div class="dialog-overlay" *ngIf="showDayOfWeekDetail()" (click)="hideDayOfWeekDetailDialog()">
+      <div class="dialog-container day-detail-dialog" (click)="$event.stopPropagation()">
+        <div class="dialog-header day-detail-header">
+          <div class="header-content">
+            <div class="header-icon">
+              <i class="pi pi-calendar-clock"></i>
+            </div>
+            <div class="header-text">
+              <h3>Chi tiết thống kê</h3>
+              <p class="header-date">{{ selectedDayOfWeek() }}</p>
+            </div>
+          </div>
+          <button (click)="hideDayOfWeekDetailDialog()" class="close-btn">
+            <i class="pi pi-times"></i>
+          </button>
+        </div>
+
+        <div class="dialog-body day-detail-body">
+          <div class="day-detail-summary">
+            <div class="detail-summary-card total-card">
+              <div class="card-icon">
+                <i class="pi pi-money-bill"></i>
+              </div>
+              <div class="card-content">
+                <div class="detail-summary-label">Tổng chi tiêu</div>
+                <div class="detail-summary-value">{{ formatAmount(selectedDayOfWeekTotal()) }}</div>
+              </div>
+            </div>
+            <div class="detail-summary-card count-card">
+              <div class="card-icon">
+                <i class="pi pi-list"></i>
+              </div>
+              <div class="card-content">
+                <div class="detail-summary-label">Số giao dịch</div>
+                <div class="detail-summary-value">{{ selectedDayOfWeekExpenses().length }}</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="day-detail-list" *ngIf="selectedDayOfWeekExpenses().length > 0">
+            <div class="list-header">
+              <h4>
+                <i class="pi pi-list-check"></i>
+                Danh sách chi tiêu
+              </h4>
+              <span class="list-count">{{ selectedDayOfWeekExpenses().length }} mục</span>
+            </div>
+            <div class="expense-list-detail">
+                 <div class="expense-item-detail" *ngFor="let expense of selectedDayOfWeekExpenses(); let i = index">
+                   <div class="expense-number">{{ i + 1 }}</div>
+                   <div class="expense-info">
+                     <div class="expense-date-detail">
+                       <i class="pi pi-calendar"></i>
+                       <span>{{ formatDateDDMMYYYY(expense.date) }}</span>
+                     </div>
+                     <div class="expense-category-detail">
+                       <i class="pi pi-tag"></i>
+                       <span class="category-badge">{{ expense.category }}</span>
+                     </div>
+                     <div class="expense-content-detail">{{ expense.content }}</div>
+                     <div class="expense-note-detail" *ngIf="expense.note">
+                       <i class="pi pi-comment"></i>
+                       <span>{{ expense.note }}</span>
+                     </div>
+                   </div>
+                   <div class="expense-amount-detail">
+                     <span class="amount-value">{{ formatAmount(expense.amount) }}</span>
+                   </div>
+                 </div>
+            </div>
+          </div>
+
+          <div class="empty-state" *ngIf="selectedDayOfWeekExpenses().length === 0">
+            <div class="empty-icon">
+              <i class="pi pi-inbox"></i>
+            </div>
+            <p>Không có chi tiêu nào trong {{ selectedDayOfWeek() }}</p>
+          </div>
+        </div>
+
+        <div class="dialog-footer day-detail-footer">
+          <button (click)="hideDayOfWeekDetailDialog()" class="close-detail-btn">
+            <i class="pi pi-check"></i>
+            Đóng
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
