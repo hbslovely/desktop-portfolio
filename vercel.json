@@ -1,6 +1,6 @@
 {
   "buildCommand": "npm run build",
-  "outputDirectory": "dist/desktop-portfolio/browser",
+  "outputDirectory": "dist/desktop-portfolio",
   "framework": "angular",
   "rewrites": [
     {
@@ -153,9 +153,6 @@
         }
       ]
     }
-  ],
-  "build": {
-    "outputDirectory": "dist/desktop-portfolio"
-  }
+  ]
 }
 
