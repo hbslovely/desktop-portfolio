@@ -640,6 +640,24 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         }, 100);
       }
     });
+
+    // Load saved column widths from localStorage
+    const savedWidths = localStorage.getItem('expense-column-widths');
+    if (savedWidths) {
+      try {
+        const widths = JSON.parse(savedWidths);
+        this.columnWidths.set({
+          date: widths.date || 150,
+          content: widths.content || 0,
+          actions: widths.actions || 160
+        });
+      } catch (e) {
+        console.error('Error loading column widths:', e);
+      }
+    }
+
+    // Calculate content width based on container
+    this.updateContentWidth();
   }
 
   ngOnInit(): void {
@@ -1518,6 +1536,86 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   // Expose Math and Number for template
   Math = Math;
   Number = Number;
+
+  // Column widths for resize functionality
+  columnWidths = signal<{ date: number; content: number; actions: number }>({
+    date: 150,  // Increased from 100px
+    content: 0, // Will be calculated
+    actions: 160
+  });
+
+  private isResizing = false;
+  private resizingColumn: 'date' | 'content' | 'actions' | null = null;
+  private startX = 0;
+  private startWidth = 0;
+
+  /**
+   * Update content column width to fill remaining space
+   */
+  private updateContentWidth(): void {
+    // Content width will be calculated dynamically via CSS flex: 1
+    // No need to set explicit width for content column
+  }
+
+  /**
+   * Start resizing a column
+   */
+  startResize(event: MouseEvent, column: 'date' | 'content' | 'actions'): void {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    this.isResizing = true;
+    this.resizingColumn = column;
+    this.startX = event.clientX;
+    
+    const widths = this.columnWidths();
+    if (column === 'date') {
+      this.startWidth = widths.date;
+    } else if (column === 'content') {
+      this.startWidth = widths.content;
+    } else if (column === 'actions') {
+      this.startWidth = widths.actions;
+    }
+
+    document.addEventListener('mousemove', this.handleResize);
+    document.addEventListener('mouseup', this.stopResize);
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  }
+
+  /**
+   * Handle column resize
+   */
+  private handleResize = (event: MouseEvent): void => {
+    if (!this.isResizing || !this.resizingColumn) return;
+
+    const diff = event.clientX - this.startX;
+    const newWidth = Math.max(80, this.startWidth + diff); // Minimum width 80px
+
+    const widths = this.columnWidths();
+    
+    if (this.resizingColumn === 'date') {
+      this.columnWidths.set({ ...widths, date: newWidth });
+    } else if (this.resizingColumn === 'actions') {
+      this.columnWidths.set({ ...widths, actions: newWidth });
+    }
+    // Content column width is handled by flex: 1, so we don't need to set it explicitly
+
+    // Save to localStorage
+    localStorage.setItem('expense-column-widths', JSON.stringify(this.columnWidths()));
+  };
+
+  /**
+   * Stop resizing
+   */
+  private stopResize = (): void => {
+    this.isResizing = false;
+    this.resizingColumn = null;
+    document.removeEventListener('mousemove', this.handleResize);
+    document.removeEventListener('mouseup', this.stopResize);
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+  };
 
 
   /**

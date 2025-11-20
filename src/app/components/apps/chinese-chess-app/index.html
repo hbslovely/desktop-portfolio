@@ -1,0 +1,1302 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kỳ Vương - Cờ Tướng & Cờ Úp</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700&family=Cinzel:wght@700&display=swap');
+
+    :root {
+      --primary-color: #d4af37;
+      --bg-overlay: rgba(0, 0, 0, 0.85);
+    }
+
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: 'Noto Serif TC', serif;
+      color: var(--primary-color);
+      background-color: #1a1a1a;
+      transition: background 0.5s ease;
+    }
+
+    /* --- BACKGROUNDS (Set dynamically via JS) --- */
+
+    #game-wrapper {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #game-container {
+      position: relative;
+      box-shadow: 0 30px 60px rgba(0, 0, 0, 0.9);
+      border-radius: 12px;
+      border: 8px solid #5d4037;
+      transition: border-color 0.5s ease;
+    }
+
+    /* --- UI COMPONENTS --- */
+    .glass-panel {
+      background: rgba(30, 30, 30, 0.8);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+
+    .btn-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: 0.3s;
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .btn-icon:hover {
+      background: rgba(255, 255, 255, 0.2);
+      transform: scale(1.1);
+    }
+
+    /* --- MAIN MENU --- */
+    #main-menu {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: var(--bg-overlay);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+      transition: opacity 0.5s, transform 0.5s;
+    }
+
+    .menu-hidden {
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(1.1);
+    }
+
+    .title-text {
+      font-family: 'Cinzel', serif;
+      font-size: 5rem;
+      background: linear-gradient(to bottom, #f1c40f, #b7950b);
+      -webkit-background-clip: text;
+      color: transparent;
+      text-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
+      margin-bottom: 3rem;
+      text-transform: uppercase;
+      letter-spacing: 8px;
+      filter: drop-shadow(0 0 10px rgba(241, 196, 15, 0.3));
+    }
+
+    .menu-btn {
+      position: relative;
+      background: linear-gradient(90deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.1));
+      border: 1px solid rgba(212, 175, 55, 0.3);
+      color: #f1c40f;
+      padding: 18px 40px;
+      margin: 12px;
+      font-size: 1.3rem;
+      font-weight: bold;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.3s;
+      width: 280px;
+      text-align: center;
+      overflow: hidden;
+    }
+
+    .menu-btn:hover {
+      background: linear-gradient(90deg, rgba(212, 175, 55, 0.2), rgba(212, 175, 55, 0.1));
+      border-color: #f1c40f;
+      box-shadow: 0 0 20px rgba(241, 196, 15, 0.2);
+      letter-spacing: 2px;
+    }
+
+    /* --- SETTINGS MODAL --- */
+    #settings-modal {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.9);
+      width: 400px;
+      padding: 30px;
+      border-radius: 16px;
+      z-index: 300;
+      opacity: 0;
+      pointer-events: none;
+      transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    #settings-modal.active {
+      opacity: 1;
+      pointer-events: all;
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    .setting-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      padding-bottom: 10px;
+    }
+
+    .theme-option {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: 0.2s;
+    }
+
+    .theme-option.active {
+      border-color: #fff;
+      transform: scale(1.2);
+    }
+
+    /* --- IN-GAME UI --- */
+    .ui-panel {
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 10px 40px;
+      border-radius: 50px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      z-index: 100;
+      pointer-events: none;
+    }
+
+    .in-game-controls {
+      position: absolute;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 20px;
+      z-index: 100;
+    }
+
+    .game-btn {
+      background: rgba(0, 0, 0, 0.6);
+      color: #d4af37;
+      border: 1px solid rgba(212, 175, 55, 0.3);
+      padding: 10px 24px;
+      border-radius: 30px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: 0.2s;
+      backdrop-filter: blur(4px);
+    }
+
+    .game-btn:hover {
+      background: rgba(212, 175, 55, 0.2);
+      border-color: #f1c40f;
+    }
+
+    /* --- TOAST --- */
+    #toast {
+      position: fixed;
+      top: 40%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.9);
+      color: #fff;
+      padding: 20px 40px;
+      border-radius: 8px;
+      font-size: 1.5rem;
+      border: 1px solid #d4af37;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+      z-index: 400;
+    }
+
+    #toast.show {
+      opacity: 1;
+    }
+
+    /* --- PUZZLE MENU --- */
+    #puzzle-menu {
+      display: none;
+      width: 100%;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .puzzle-item {
+      padding: 15px;
+      margin: 8px;
+      width: 70%;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid transparent;
+      border-radius: 8px;
+      cursor: pointer;
+      text-align: center;
+      transition: 0.2s;
+    }
+
+    .puzzle-item:hover {
+      border-color: #d4af37;
+      background: rgba(255, 255, 255, 0.1);
+    }
+  </style>
+</head>
+<body>
+
+<!-- SETTINGS MODAL -->
+<div id="settings-modal" class="glass-panel">
+  <div class="flex justify-between items-center mb-6">
+    <h2 class="text-2xl font-bold text-amber-400">Cài Đặt</h2>
+    <div onclick="toggleSettings()" class="btn-icon hover:text-red-400"><i class="fas fa-times"></i></div>
+  </div>
+
+  <div class="setting-row">
+    <span>Âm Thanh (SFX)</span>
+    <div class="relative inline-block w-12 align-middle select-none">
+      <input type="checkbox" id="toggle-sfx" checked
+             class="absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-300"
+             style="top:0; left:0;"/>
+      <label for="toggle-sfx" class="block overflow-hidden h-6 rounded-full bg-gray-600 cursor-pointer"></label>
+    </div>
+  </div>
+
+  <div class="setting-row">
+    <span>Nhạc Nền</span>
+    <div class="relative inline-block w-12 align-middle select-none">
+      <input type="checkbox" id="toggle-music"
+             class="absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-300"
+             style="top:0; left:0;"/>
+      <label for="toggle-music" class="block overflow-hidden h-6 rounded-full bg-gray-600 cursor-pointer"></label>
+    </div>
+  </div>
+
+  <div class="mb-2 text-sm text-gray-400 uppercase tracking-wider">Giao Diện Bàn Cờ</div>
+  <div class="flex gap-4 justify-center mb-4">
+    <!-- Wood Theme -->
+    <div class="theme-option active" onclick="setTheme('wood')" id="theme-wood" style="background: #e0c39a;"></div>
+    <!-- Jade Theme -->
+    <div class="theme-option" onclick="setTheme('jade')" id="theme-jade" style="background: #a3d2ca;"></div>
+    <!-- Ink Theme -->
+    <div class="theme-option" onclick="setTheme('ink')" id="theme-ink" style="background: #ecf0f1;"></div>
+  </div>
+</div>
+
+<div id="game-wrapper">
+
+  <!-- MAIN MENU -->
+  <div id="main-menu">
+    <div class="absolute top-6 right-6 btn-icon" onclick="toggleSettings()"><i class="fas fa-cog text-xl"></i></div>
+    <div class="title-text">Kỳ Vương</div>
+
+    <div id="main-buttons">
+      <div class="menu-btn" onclick="startGame('xiangqi')">Cờ Tướng</div>
+      <div class="menu-btn" onclick="startGame('coups')">Cờ Úp</div>
+      <div class="menu-btn" onclick="showPuzzleMenu()">Phá Thế Cờ</div>
+    </div>
+
+    <div id="puzzle-menu">
+      <h2 class="text-2xl text-amber-400 mb-6 font-bold uppercase tracking-widest">Thế Cờ Danh Bất Hư Truyền</h2>
+      <div class="puzzle-item" onclick="startPuzzle(0)">
+        <div class="font-bold text-amber-300">1. Mã Hậu Pháo</div>
+        <div class="text-xs text-gray-400">Sát cục trong 3 nước</div>
+      </div>
+      <div class="puzzle-item" onclick="startPuzzle(1)">
+        <div class="font-bold text-amber-300">2. Lưỡng Chiếu</div>
+        <div class="text-xs text-gray-400">Phối hợp Xe Mã</div>
+      </div>
+      <div class="puzzle-item" onclick="startPuzzle(2)">
+        <div class="font-bold text-amber-300">3. Khổng Minh Tá Tiễn</div>
+        <div class="text-xs text-gray-400">Thế cờ kinh điển</div>
+      </div>
+      <div class="menu-btn mt-8" onclick="backToMain()">Quay Lại</div>
+    </div>
+  </div>
+
+  <!-- IN GAME UI -->
+  <div id="game-ui" style="display: none;">
+    <!-- Settings Button In-Game -->
+    <div class="absolute top-6 right-6 btn-icon z-50 glass-panel" onclick="toggleSettings()"><i class="fas fa-cog"></i>
+    </div>
+
+    <div class="ui-panel glass-panel">
+      <div id="game-title" class="text-xs uppercase text-gray-400 tracking-widest mb-1">Kỳ Vương</div>
+      <div id="status-text" class="text-xl text-amber-400 font-bold">Lượt của bạn</div>
+    </div>
+
+    <div class="in-game-controls">
+      <button class="game-btn" onclick="undo()"><i class="fas fa-undo mr-2"></i>Hoàn Tác</button>
+      <button class="game-btn" onclick="getHint()" id="hint-btn"><i class="fas fa-lightbulb mr-2"></i>Gợi Ý</button>
+      <button class="game-btn" onclick="backToMenu()"><i class="fas fa-home mr-2"></i>Thoát</button>
+    </div>
+  </div>
+
+  <!-- CANVAS -->
+  <div id="game-container">
+    <canvas id="board"></canvas>
+  </div>
+
+  <div id="toast"></div>
+</div>
+
+<script>
+  /**
+   * XIANGQI MASTER ENGINE - CONFIG & THEMES
+   */
+
+// --- CONFIG & THEMES ---
+  const THEMES = {
+    wood: {
+      name: 'Gỗ Mộc',
+      boardBase: '#e0c39a', boardDark: '#d4b484', line: '#5d4037',
+      red: '#c0392b', black: '#2d3436',
+      highlight: 'rgba(46, 204, 113, 0.6)',
+      borderColor: '#5d4037',
+      bg: "url('https://www.transparenttextures.com/patterns/wood-pattern.png'), radial-gradient(#3a3a3a, #1a1a1a)"
+    },
+    jade: {
+      name: 'Ngọc Bích',
+      boardBase: '#a3d2ca', boardDark: '#5eaaa8', line: '#056674',
+      red: '#d63031', black: '#2d3436',
+      highlight: 'rgba(255, 234, 167, 0.6)',
+      borderColor: '#056674',
+      bg: "linear-gradient(to bottom, #004e92, #000428)"
+    },
+    ink: {
+      name: 'Thủy Mặc',
+      boardBase: '#ecf0f1', boardDark: '#bdc3c7', line: '#2c3e50',
+      red: '#e74c3c', black: '#000',
+      highlight: 'rgba(52, 152, 219, 0.5)',
+      borderColor: '#2c3e50',
+      bg: "radial-gradient(circle, #95a5a6, #2c3e50)"
+    }
+  };
+
+  let activeTheme = THEMES.wood;
+  let config = {
+    sfx: true,
+    music: false
+  };
+
+  // --- GAME CONSTANTS ---
+  const COLS = 9;
+  const ROWS = 10;
+
+  const RED = 8;
+  const BLACK = 16;
+  const HIDDEN = 32;
+
+  const PIECE_KING = 1;
+  const PIECE_ADVISOR = 2;
+  const PIECE_ELEPHANT = 3;
+  const PIECE_HORSE = 4;
+  const PIECE_ROOK = 5;
+  const PIECE_CANNON = 6;
+  const PIECE_PAWN = 7;
+
+  const TRUE_TYPE_SHIFT = 6;
+
+  // --- AUDIO SYSTEM ---
+  const AudioContext = window.AudioContext || window.webkitAudioContext;
+  const audioCtx = new AudioContext();
+  let musicOscillators = [];
+
+  function playSound(type) {
+    if (!config.sfx) return;
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+
+    const osc = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+    osc.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    const now = audioCtx.currentTime;
+
+    if (type === 'move') {
+      // Wood click sound
+      osc.frequency.setValueAtTime(600, now);
+      osc.frequency.exponentialRampToValueAtTime(100, now + 0.08);
+      gainNode.gain.setValueAtTime(0.3, now);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+      osc.start();
+      osc.stop(now + 0.1);
+    } else if (type === 'capture') {
+      // Sharp strike
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(200, now);
+      osc.frequency.exponentialRampToValueAtTime(50, now + 0.15);
+      gainNode.gain.setValueAtTime(0.3, now);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+      osc.start();
+      osc.stop(now + 0.15);
+    } else if (type === 'reveal') {
+      // Magical shimmer
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(400, now);
+      osc.frequency.linearRampToValueAtTime(800, now + 0.2);
+      gainNode.gain.setValueAtTime(0.1, now);
+      gainNode.gain.linearRampToValueAtTime(0, now + 0.2);
+      osc.start();
+      osc.stop(now + 0.2);
+    }
+  }
+
+  function toggleMusic(enabled) {
+    config.music = enabled;
+    if (enabled) {
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      startAmbientMusic();
+    } else {
+      stopAmbientMusic();
+    }
+  }
+
+  function startAmbientMusic() {
+    // Simple pentatonic ambient loop using oscillators
+    // Notes: D, F, G, A, C (Pentatonic D minorish)
+    const freqs = [293.66, 349.23, 392.00, 440.00, 523.25];
+
+    // Create a gentle drone
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = 146.83; // Low D
+    gain.gain.value = 0.05;
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    musicOscillators.push({
+      stop: () => {
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 2);
+        osc.stop(audioCtx.currentTime + 2);
+      }
+    });
+
+    // Add random wind chimes
+    const chimeInterval = setInterval(() => {
+      if (!config.music) {
+        clearInterval(chimeInterval);
+        return;
+      }
+      const f = freqs[Math.floor(Math.random() * freqs.length)];
+      const cOsc = audioCtx.createOscillator();
+      const cGain = audioCtx.createGain();
+      cOsc.frequency.value = f * (Math.random() > 0.5 ? 2 : 1);
+      cGain.gain.value = 0.03;
+      cGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 2);
+      cOsc.connect(cGain);
+      cGain.connect(audioCtx.destination);
+      cOsc.start();
+      cOsc.stop(audioCtx.currentTime + 2);
+    }, 4000);
+  }
+
+  function stopAmbientMusic() {
+    musicOscillators.forEach(o => o.stop());
+    musicOscillators = [];
+  }
+
+  // --- STATE ---
+  let board = [];
+  let turn = RED;
+  let gameMode = 'xiangqi';
+  let selectedPiece = null;
+  let possibleMoves = [];
+  let moveHistory = [];
+  let boardHistory = {};
+  let gameOver = false;
+  let lastMove = null;
+  let animating = false;
+  let animState = null;
+  let hintMove = null;
+
+  const canvas = document.getElementById('board');
+  const ctx = canvas.getContext('2d');
+  let CELL_SIZE, MARGIN, PIECE_RADIUS;
+
+  // --- SETTINGS LOGIC ---
+  function toggleSettings() {
+    const modal = document.getElementById('settings-modal');
+    modal.classList.toggle('active');
+  }
+
+  function setTheme(key) {
+    activeTheme = THEMES[key];
+
+    // Update UI classes
+    document.querySelectorAll('.theme-option').forEach(el => el.classList.remove('active'));
+    document.getElementById('theme-' + key).classList.add('active');
+
+    // Apply styles
+    document.body.style.background = activeTheme.bg;
+    document.getElementById('game-container').style.borderColor = activeTheme.borderColor;
+
+    // Redraw
+    draw();
+  }
+
+  document.getElementById('toggle-sfx').addEventListener('change', (e) => config.sfx = e.target.checked);
+  document.getElementById('toggle-music').addEventListener('change', (e) => toggleMusic(e.target.checked));
+
+  // --- GAME LOGIC (Preserving Rules) ---
+
+  function backToMenu() {
+    document.getElementById('main-menu').classList.remove('menu-hidden');
+    document.getElementById('game-ui').style.display = 'none';
+    gameOver = true;
+  }
+
+  function backToMain() {
+    document.getElementById('puzzle-menu').style.display = 'none';
+    document.getElementById('main-buttons').style.display = 'flex';
+  }
+
+  function showPuzzleMenu() {
+    document.getElementById('main-buttons').style.display = 'none';
+    document.getElementById('puzzle-menu').style.display = 'flex';
+  }
+
+  function startGame(mode) {
+    gameMode = mode;
+    document.getElementById('main-menu').classList.add('menu-hidden');
+    document.getElementById('game-ui').style.display = 'block';
+
+    let title = "Cờ Tướng";
+    if (mode === 'coups') title = "Cờ Úp";
+    if (mode === 'puzzle') title = "Phá Thế Cờ";
+    document.getElementById('game-title').innerText = title;
+
+    if (mode === 'coups') initHiddenChess();
+    else initStandardChess();
+
+    resize();
+  }
+
+  function startPuzzle(index) {
+    gameMode = 'puzzle';
+    document.getElementById('main-menu').classList.add('menu-hidden');
+    document.getElementById('game-ui').style.display = 'block';
+    document.getElementById('game-title').innerText = "Thế Cờ #" + (index + 1);
+    initPuzzle(index);
+    resize();
+  }
+
+  function initStandardChess() {
+    const b = BLACK, r = RED;
+    board = [
+      [b | 5, b | 4, b | 3, b | 2, b | 1, b | 2, b | 3, b | 4, b | 5],
+      [0, 0, 0, 0, 0, 0, 0, 0, 0],
+      [0, b | 6, 0, 0, 0, 0, 0, b | 6, 0],
+      [b | 7, 0, b | 7, 0, b | 7, 0, b | 7, 0, b | 7],
+      [0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0],
+      [r | 7, 0, r | 7, 0, r | 7, 0, r | 7, 0, r | 7],
+      [0, r | 6, 0, 0, 0, 0, 0, r | 6, 0],
+      [0, 0, 0, 0, 0, 0, 0, 0, 0],
+      [r | 5, r | 4, r | 3, r | 2, r | 1, r | 2, r | 3, r | 4, r | 5]
+    ];
+    resetGameState();
+  }
+
+  function getStandardType(r, c) {
+    const row = (r > 4) ? 9 - r : r;
+    const col = c;
+    if (row === 0) {
+      if (col === 0 || col === 8) return PIECE_ROOK;
+      if (col === 1 || col === 7) return PIECE_HORSE;
+      if (col === 2 || col === 6) return PIECE_ELEPHANT;
+      if (col === 3 || col === 5) return PIECE_ADVISOR;
+      if (col === 4) return PIECE_KING;
+    }
+    if (row === 2 && (col === 1 || col === 7)) return PIECE_CANNON;
+    if (row === 3 && col % 2 === 0) return PIECE_PAWN;
+    return PIECE_PAWN;
+  }
+
+  function initHiddenChess() {
+    const types = [2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 7, 7, 7];
+
+    function createSide(color) {
+      const pool = [...types];
+      for (let i = pool.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [pool[i], pool[j]] = [pool[j], pool[i]];
+      }
+      return pool;
+    }
+
+    const bPool = createSide(BLACK);
+    const rPool = createSide(RED);
+    board = Array(10).fill(null).map(() => Array(9).fill(0));
+    board[0][4] = BLACK | PIECE_KING;
+    board[9][4] = RED | PIECE_KING;
+
+    const pos = [
+      [0, 0], [0, 1], [0, 2], [0, 3], [0, 5], [0, 6], [0, 7], [0, 8],
+      [2, 1], [2, 7],
+      [3, 0], [3, 2], [3, 4], [3, 6], [3, 8]
+    ];
+
+    pos.forEach((p, i) => {
+      const trueType = bPool[i];
+      const functionalType = getStandardType(p[0], p[1]);
+      board[p[0]][p[1]] = BLACK | HIDDEN | functionalType | (trueType << TRUE_TYPE_SHIFT);
+    });
+
+    pos.forEach((p, i) => {
+      const trueType = rPool[i];
+      const r = 9 - p[0];
+      const c = p[1];
+      const functionalType = getStandardType(r, c);
+      board[r][c] = RED | HIDDEN | functionalType | (trueType << TRUE_TYPE_SHIFT);
+    });
+
+    resetGameState();
+  }
+
+  function initPuzzle(id) {
+    const b = BLACK, r = RED;
+    board = Array(10).fill(null).map(() => Array(9).fill(0));
+    if (id === 0) { // Mã Hậu Pháo
+      board[0][3] = b | PIECE_KING;
+      board[0][4] = b | PIECE_ADVISOR;
+      board[2][4] = r | PIECE_HORSE;
+      board[1][4] = r | PIECE_CANNON;
+      board[7][4] = r | PIECE_KING;
+    } else if (id === 1) { // Lưỡng Chiếu
+      board[0][4] = b | PIECE_KING;
+      board[1][4] = b | PIECE_ROOK;
+      board[2][5] = r | PIECE_HORSE;
+      board[9][4] = r | PIECE_KING;
+      board[2][2] = r | PIECE_ROOK;
+    } else { // Kongming
+      board[0][3] = b | 1;
+      board[0][5] = b | 2;
+      board[9][4] = r | 1;
+      board[3][4] = r | 5;
+      board[2][4] = b | 5;
+    }
+    resetGameState();
+  }
+
+  function resetGameState() {
+    turn = RED;
+    gameOver = false;
+    selectedPiece = null;
+    possibleMoves = [];
+    moveHistory = [];
+    boardHistory = {};
+    lastMove = null;
+    hintMove = null;
+    boardHistory[getBoardHash()] = 1;
+    updateStatus("Lượt của bạn (Đỏ)");
+  }
+
+  function getPiece(r, c) {
+    if (r < 0 || r >= ROWS || c < 0 || c >= COLS) return -1;
+    return board[r][c];
+  }
+
+  function getColor(p) {
+    if (p & RED) return RED;
+    if (p & BLACK) return BLACK;
+    return 0;
+  }
+
+  function getType(p) {
+    return p & 7;
+  }
+
+  function getTrueType(p) {
+    if (p & HIDDEN) return (p >> TRUE_TYPE_SHIFT) & 7;
+    return p & 7;
+  }
+
+  function isHidden(p) {
+    return (p & HIDDEN) !== 0;
+  }
+
+  function generateMoves(r, c, checkSafety = true) {
+    const p = board[r][c];
+    const type = getType(p);
+    const color = getColor(p);
+    let moves = [];
+    if (color === 0) return [];
+
+    const add = (tr, tc) => {
+      if (tr < 0 || tr >= ROWS || tc < 0 || tc >= COLS) return;
+      const t = board[tr][tc];
+      if (getColor(t) === color) return;
+      moves.push({r: tr, c: tc});
+    };
+
+    if (type === PIECE_KING || type === PIECE_ADVISOR) {
+      const isK = (type === PIECE_KING);
+      const isFreeAdvisor = (gameMode === 'coups' && !isHidden(p) && type === PIECE_ADVISOR);
+      const dr = isK ? [-1, 1, 0, 0] : [-1, -1, 1, 1];
+      const dc = isK ? [0, 0, -1, 1] : [-1, 1, -1, 1];
+      for (let i = 0; i < 4; i++) {
+        const nr = r + dr[i], nc = c + dc[i];
+        if (!isFreeAdvisor) {
+          if (nc < 3 || nc > 5) continue;
+          if (color === RED && (nr < 7 || nr > 9)) continue;
+          if (color === BLACK && (nr < 0 || nr > 2)) continue;
+        }
+        add(nr, nc);
+      }
+    } else if (type === PIECE_ELEPHANT) {
+      const isFreeElephant = (gameMode === 'coups' && !isHidden(p));
+      const dr = [-2, -2, 2, 2], dc = [-2, 2, -2, 2], er = [-1, -1, 1, 1], ec = [-1, 1, -1, 1];
+      for (let i = 0; i < 4; i++) {
+        const nr = r + dr[i], nc = c + dc[i];
+        if (!isFreeElephant) {
+          if (color === RED && nr < 5) continue;
+          if (color === BLACK && nr > 4) continue;
+        }
+        if (getPiece(r + er[i], c + ec[i]) === 0) add(nr, nc);
+      }
+    } else if (type === PIECE_HORSE) {
+      const dr = [-2, -1, 1, 2, 2, 1, -1, -2], dc = [1, 2, 2, 1, -1, -2, -2, -1];
+      const lr = [-1, 0, 0, 1, 1, 0, 0, -1], lc = [0, 1, 1, 0, 0, -1, -1, 0];
+      for (let i = 0; i < 8; i++) if (getPiece(r + lr[i], c + lc[i]) === 0) add(r + dr[i], c + dc[i]);
+    } else if (type === PIECE_ROOK || type === PIECE_CANNON) {
+      const dr = [-1, 1, 0, 0], dc = [0, 0, -1, 1];
+      for (let i = 0; i < 4; i++) {
+        let nr = r + dr[i], nc = c + dc[i], jumped = false;
+        while (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS) {
+          const t = board[nr][nc];
+          if (type === PIECE_ROOK) {
+            if (t === 0) moves.push({r: nr, c: nc});
+            else {
+              if (getColor(t) !== color) moves.push({r: nr, c: nc});
+              break;
+            }
+          } else {
+            if (!jumped) {
+              if (t === 0) moves.push({r: nr, c: nc}); else jumped = true;
+            } else {
+              if (t !== 0) {
+                if (getColor(t) !== color) moves.push({r: nr, c: nc});
+                break;
+              }
+            }
+          }
+          nr += dr[i];
+          nc += dc[i];
+        }
+      }
+    } else if (type === PIECE_PAWN) {
+      const fwd = (color === RED) ? -1 : 1;
+      add(r + fwd, c);
+      if ((color === RED && r <= 4) || (color === BLACK && r >= 5)) {
+        add(r, c - 1);
+        add(r, c + 1);
+      }
+    }
+
+    if (!checkSafety) return moves;
+    const valid = [];
+    for (let m of moves) {
+      const cap = board[m.r][m.c];
+      board[m.r][m.c] = board[r][c];
+      board[r][c] = 0;
+      if (!kingsFacing() && !inCheck(color)) valid.push(m);
+      board[r][c] = board[m.r][m.c];
+      board[m.r][m.c] = cap;
+    }
+    return valid;
+  }
+
+  function kingsFacing() {
+    let rK = null, bK = null;
+    for (let r = 0; r < ROWS; r++) for (let c = 3; c <= 5; c++) {
+      const p = board[r][c];
+      if (getType(p) === PIECE_KING) {
+        if (getColor(p) === RED) rK = {r, c}; else bK = {r, c};
+      }
+    }
+    if (!rK || !bK || rK.c !== bK.c) return false;
+    for (let r = Math.min(rK.r, bK.r) + 1; r < Math.max(rK.r, bK.r); r++) if (board[r][rK.c] !== 0) return false;
+    return true;
+  }
+
+  function inCheck(color) {
+    let k = null;
+    for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++)
+      if (getType(board[r][c]) === PIECE_KING && getColor(board[r][c]) === color) {
+        k = {r, c};
+        break;
+      }
+    if (!k) return true;
+    const eCol = (color === RED) ? BLACK : RED;
+    for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+      if (getColor(board[r][c]) === eCol) {
+        const ms = generateMoves(r, c, false);
+        for (let m of ms) if (m.r === k.r && m.c === k.c) return true;
+      }
+    }
+    return false;
+  }
+
+  const VALUES = {
+    [PIECE_KING]: 10000,
+    [PIECE_ROOK]: 900,
+    [PIECE_CANNON]: 450,
+    [PIECE_HORSE]: 400,
+    [PIECE_ELEPHANT]: 20,
+    [PIECE_ADVISOR]: 20,
+    [PIECE_PAWN]: 10
+  };
+
+  function evaluate() {
+    let s = 0;
+    for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+      const p = board[r][c];
+      if (p === 0) continue;
+      let val = VALUES[getType(p)];
+      if (isHidden(p)) val = 30;
+      if (c > 2 && c < 6) val += 5;
+      if (getColor(p) === BLACK) s += val; else s -= val;
+    }
+    return s;
+  }
+
+  function minimax(depth, isMax, alpha, beta) {
+    if (depth === 0) return evaluate();
+    let moves = [];
+    for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++)
+      if (getColor(board[r][c]) === (isMax ? BLACK : RED))
+        generateMoves(r, c, true).forEach(t => moves.push({fromR: r, fromC: c, toR: t.r, toC: t.c}));
+
+    if (moves.length === 0) return isMax ? -20000 : 20000;
+
+    if (isMax) {
+      let max = -Infinity;
+      for (let m of moves) {
+        const cap = board[m.toR][m.toC];
+        board[m.toR][m.toC] = board[m.fromR][m.fromC];
+        board[m.fromR][m.fromC] = 0;
+        const v = minimax(depth - 1, false, alpha, beta);
+        board[m.fromR][m.fromC] = board[m.toR][m.toC];
+        board[m.toR][m.toC] = cap;
+        max = Math.max(max, v);
+        alpha = Math.max(alpha, v);
+        if (beta <= alpha) break;
+      }
+      return max;
+    } else {
+      let min = Infinity;
+      for (let m of moves) {
+        const cap = board[m.toR][m.toC];
+        board[m.toR][m.toC] = board[m.fromR][m.fromC];
+        board[m.fromR][m.fromC] = 0;
+        const v = minimax(depth - 1, true, alpha, beta);
+        board[m.fromR][m.fromC] = board[m.toR][m.toC];
+        board[m.toR][m.toC] = cap;
+        min = Math.min(min, v);
+        beta = Math.min(beta, v);
+        if (beta <= alpha) break;
+      }
+      return min;
+    }
+  }
+
+  function getBestMove() {
+    let moves = [];
+    for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++)
+      if (getColor(board[r][c]) === BLACK)
+        generateMoves(r, c, true).forEach(t => moves.push({fromR: r, fromC: c, toR: t.r, toC: t.c}));
+
+    let best = null, max = -Infinity;
+    for (let m of moves) {
+      const cap = board[m.toR][m.toC];
+      board[m.toR][m.toC] = board[m.fromR][m.fromC];
+      board[m.fromR][m.fromC] = 0;
+      const v = minimax(2, false, -Infinity, Infinity);
+      board[m.fromR][m.fromC] = board[m.toR][m.toC];
+      board[m.toR][m.toC] = cap;
+      if (v > max) {
+        max = v;
+        best = m;
+      }
+    }
+    return best;
+  }
+
+  function startMoveAnimation(m, callback) {
+    animating = true;
+    const piece = board[m.fromR][m.fromC];
+    const cap = board[m.toR][m.toC];
+    animState = {
+      piece: piece, captured: cap,
+      fromR: m.fromR, fromC: m.fromC, toR: m.toR, toC: m.toC,
+      startTime: performance.now(), duration: 200,
+      callback: callback
+    };
+    playSound(cap ? 'capture' : 'move');
+    moveHistory.push({
+      fromR: m.fromR, fromC: m.fromC, toR: m.toR, toC: m.toC,
+      piece: piece, captured: cap, lastMoveState: lastMove,
+      boardHash: getBoardHash()
+    });
+    board[m.toR][m.toC] = piece;
+    board[m.fromR][m.fromC] = 0;
+    lastMove = m;
+    requestAnimationFrame(animLoop);
+  }
+
+  function animLoop(time) {
+    if (!animating) return;
+    const el = time - animState.startTime;
+    const prog = Math.min(el / animState.duration, 1);
+    animState.progress = prog * (2 - prog);
+    draw();
+    if (prog < 1) requestAnimationFrame(animLoop);
+    else {
+      animating = false;
+      const cb = animState.callback;
+      animState = null;
+      cb();
+    }
+  }
+
+  function finalizeMove() {
+    const {toR, toC} = lastMove;
+    const p = board[toR][toC];
+    if (isHidden(p)) {
+      const trueType = getTrueType(p);
+      const color = getColor(p);
+      board[toR][toC] = color | trueType;
+      playSound('reveal');
+    }
+    turn = (turn === RED) ? BLACK : RED;
+    selectedPiece = null;
+    possibleMoves = [];
+
+    const rKing = findKing(RED);
+    const bKing = findKing(BLACK);
+    if (!rKing) {
+      end("Bạn Thua!");
+      return;
+    }
+    if (!bKing) {
+      end("Bạn Thắng!");
+      return;
+    }
+
+    updateStatus(turn === RED ? "Lượt của bạn" : "Máy đang nghĩ...");
+    draw();
+
+    if (turn === BLACK && !gameOver) {
+      setTimeout(() => {
+        const best = getBestMove();
+        if (best) startMoveAnimation(best, finalizeMove);
+        else end("Bạn Thắng!");
+      }, 300);
+    }
+  }
+
+  function findKing(color) {
+    for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++)
+      if (getType(board[r][c]) === PIECE_KING && getColor(board[r][c]) === color) return true;
+    return false;
+  }
+
+  function end(msg) {
+    gameOver = true;
+    updateStatus(msg);
+    const t = document.getElementById('toast');
+    t.innerText = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+
+  function handleClick(e) {
+    if (gameOver || turn !== RED || animating) return;
+    const rect = canvas.getBoundingClientRect();
+    const c = Math.round((e.clientX - rect.left - MARGIN) / CELL_SIZE);
+    const r = Math.round((e.clientY - rect.top - MARGIN) / CELL_SIZE);
+    if (r < 0 || r >= ROWS || c < 0 || c >= COLS) return;
+
+    const p = board[r][c];
+    const color = getColor(p);
+
+    if (selectedPiece) {
+      const m = possibleMoves.find(x => x.r === r && x.c === c);
+      if (m) {
+        startMoveAnimation({fromR: selectedPiece.r, fromC: selectedPiece.c, toR: r, toC: c}, finalizeMove);
+        return;
+      }
+    }
+    if (color === RED) {
+      selectedPiece = {r, c};
+      possibleMoves = generateMoves(r, c, true);
+      draw();
+    } else {
+      selectedPiece = null;
+      possibleMoves = [];
+      draw();
+    }
+  }
+
+  function undo() {
+    if (animating || moveHistory.length < 2 || gameOver) return;
+    undoOne();
+    undoOne();
+    draw();
+  }
+
+  function undoOne() {
+    const m = moveHistory.pop();
+    if (!m) return;
+    board[m.fromR][m.fromC] = m.piece;
+    board[m.toR][m.toC] = m.captured;
+    lastMove = m.lastMoveState;
+    turn = (turn === RED) ? BLACK : RED;
+  }
+
+  function getHint() {
+    if (turn !== RED) return;
+    let moves = [];
+    for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++)
+      if (getColor(board[r][c]) === RED)
+        generateMoves(r, c, true).forEach(t => moves.push({fromR: r, fromC: c, toR: t.r, toC: t.c}));
+    let best = null, min = Infinity;
+    for (let m of moves) {
+      const cap = board[m.toR][m.toC];
+      board[m.toR][m.toC] = board[m.fromR][m.fromC];
+      board[m.fromR][m.fromC] = 0;
+      const v = minimax(1, true, -Infinity, Infinity);
+      if (v < min) {
+        min = v;
+        best = m;
+      }
+      board[m.fromR][m.fromC] = board[m.toR][m.toC];
+      board[m.toR][m.toC] = cap;
+    }
+    hintMove = best;
+    draw();
+  }
+
+  function getBoardHash() {
+    return turn + JSON.stringify(board);
+  }
+
+  function updateStatus(msg) {
+    document.getElementById('status-text').innerText = msg;
+  }
+
+  // --- DRAWING ---
+  function resize() {
+    const h = window.innerHeight;
+    const w = window.innerWidth;
+    const size = Math.min(w, h) * 0.9;
+    canvas.width = size * 0.9;
+    canvas.height = size;
+    CELL_SIZE = canvas.width / (COLS + 1);
+    MARGIN = CELL_SIZE;
+    PIECE_RADIUS = CELL_SIZE * 0.4;
+    draw();
+  }
+
+  function draw() {
+    const theme = activeTheme;
+    const grd = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+    grd.addColorStop(0, theme.boardBase);
+    grd.addColorStop(1, theme.boardDark);
+    ctx.fillStyle = grd;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.strokeStyle = theme.line;
+    ctx.lineWidth = 2;
+    for (let i = 0; i < ROWS; i++) {
+      ctx.beginPath();
+      ctx.moveTo(MARGIN, MARGIN + i * CELL_SIZE);
+      ctx.lineTo(canvas.width - MARGIN, MARGIN + i * CELL_SIZE);
+      ctx.stroke();
+    }
+    for (let i = 0; i < COLS; i++) {
+      if (i === 0 || i === COLS - 1) {
+        ctx.beginPath();
+        ctx.moveTo(MARGIN + i * CELL_SIZE, MARGIN);
+        ctx.lineTo(MARGIN + i * CELL_SIZE, canvas.height - MARGIN);
+        ctx.stroke();
+      } else {
+        ctx.beginPath();
+        ctx.moveTo(MARGIN + i * CELL_SIZE, MARGIN);
+        ctx.lineTo(MARGIN + i * CELL_SIZE, MARGIN + 4 * CELL_SIZE);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(MARGIN + i * CELL_SIZE, MARGIN + 5 * CELL_SIZE);
+        ctx.lineTo(MARGIN + i * CELL_SIZE, canvas.height - MARGIN);
+        ctx.stroke();
+      }
+    }
+    const drawX = (rStart) => {
+      const y = MARGIN + rStart * CELL_SIZE;
+      ctx.beginPath();
+      ctx.moveTo(MARGIN + 3 * CELL_SIZE, y);
+      ctx.lineTo(MARGIN + 5 * CELL_SIZE, y + 2 * CELL_SIZE);
+      ctx.moveTo(MARGIN + 5 * CELL_SIZE, y);
+      ctx.lineTo(MARGIN + 3 * CELL_SIZE, y + 2 * CELL_SIZE);
+      ctx.stroke();
+    };
+    drawX(0);
+    drawX(7);
+
+    ctx.fillStyle = theme.line;
+    ctx.globalAlpha = 0.4;
+    ctx.font = `italic bold ${CELL_SIZE * 0.6}px serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText("SỞ HÀ   ⚔   HÁN GIỚI", canvas.width / 2, MARGIN + 4.5 * CELL_SIZE);
+    ctx.globalAlpha = 1.0;
+
+    if (lastMove) {
+      highlightSq(lastMove.fromR, lastMove.fromC, 'rgba(52, 152, 219, 0.3)');
+      highlightSq(lastMove.toR, lastMove.toC, 'rgba(52, 152, 219, 0.3)');
+    }
+    if (selectedPiece) highlightSq(selectedPiece.r, selectedPiece.c, theme.highlight);
+
+    for (let m of possibleMoves) {
+      ctx.fillStyle = theme.highlight;
+      ctx.beginPath();
+      ctx.arc(MARGIN + m.c * CELL_SIZE, MARGIN + m.r * CELL_SIZE, PIECE_RADIUS * 0.3, 0, 6.28);
+      ctx.fill();
+    }
+
+    if (hintMove && turn === RED) {
+      ctx.strokeStyle = 'gold';
+      ctx.lineWidth = 4;
+      const x1 = MARGIN + hintMove.fromC * CELL_SIZE, y1 = MARGIN + hintMove.fromR * CELL_SIZE;
+      const x2 = MARGIN + hintMove.toC * CELL_SIZE, y2 = MARGIN + hintMove.toR * CELL_SIZE;
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(x2, y2, 5, 0, 6.28);
+      ctx.fillStyle = 'gold';
+      ctx.fill();
+    }
+
+    for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+      const p = board[r][c];
+      if (animating && animState && animState.toR === r && animState.toC === c) continue;
+      if (p !== 0) drawPiece(r, c, p);
+    }
+
+    if (animating && animState) {
+      const {fromR, fromC, toR, toC, progress, piece} = animState;
+      const x1 = MARGIN + fromC * CELL_SIZE, y1 = MARGIN + fromR * CELL_SIZE;
+      const x2 = MARGIN + toC * CELL_SIZE, y2 = MARGIN + toR * CELL_SIZE;
+      const curX = x1 + (x2 - x1) * progress;
+      const curY = y1 + (y2 - y1) * progress;
+      drawPieceRaw(curX, curY, piece, true);
+    }
+  }
+
+  function highlightSq(r, c, color) {
+    const x = MARGIN + c * CELL_SIZE, y = MARGIN + r * CELL_SIZE;
+    ctx.fillStyle = color;
+    ctx.fillRect(x - CELL_SIZE / 2 + 2, y - CELL_SIZE / 2 + 2, CELL_SIZE - 4, CELL_SIZE - 4);
+  }
+
+  function drawPiece(r, c, p) {
+    const x = MARGIN + c * CELL_SIZE;
+    const y = MARGIN + r * CELL_SIZE;
+    drawPieceRaw(x, y, p);
+  }
+
+  function drawPieceRaw(x, y, p, lift = false) {
+    const theme = activeTheme;
+    const color = getColor(p);
+    const type = getType(p);
+    const hidden = isHidden(p);
+    const r = lift ? PIECE_RADIUS * 1.1 : PIECE_RADIUS;
+    const offset = lift ? 5 : 2;
+
+    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    ctx.beginPath();
+    ctx.arc(x + offset, y + offset, r, 0, 6.28);
+    ctx.fill();
+
+    const grd = ctx.createRadialGradient(x - r / 3, y - r / 3, r / 10, x, y, r);
+    if (hidden) {
+      grd.addColorStop(0, '#95a5a6');
+      grd.addColorStop(1, '#34495e');
+    } else {
+      if (activeTheme === THEMES.wood) {
+        grd.addColorStop(0, '#f9e79f');
+        grd.addColorStop(1, '#d4ac0d');
+      } else if (activeTheme === THEMES.jade) {
+        grd.addColorStop(0, '#e8f8f5');
+        grd.addColorStop(1, '#a3e4d7');
+      } else {
+        grd.addColorStop(0, '#fff');
+        grd.addColorStop(1, '#bdc3c7');
+      }
+    }
+    ctx.fillStyle = grd;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, 6.28);
+    ctx.fill();
+
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = (hidden) ? '#2c3e50' : (color === RED ? theme.red : theme.black);
+    ctx.stroke();
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = hidden ? '#7f8c8d' : theme.line;
+    ctx.beginPath();
+    ctx.arc(x, y, r * 0.85, 0, 6.28);
+    ctx.stroke();
+
+    if (hidden) {
+      ctx.fillStyle = 'rgba(255,255,255,0.2)';
+      ctx.font = `${r * 1.5}px serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText("?", x, y + r * 0.1);
+    } else {
+      ctx.fillStyle = (color === RED) ? theme.red : theme.black;
+      ctx.font = `bold ${r * 1.1}px 'Noto Serif TC', serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const chars = color === RED
+        ? ["", "帥", "仕", "相", "傌", "俥", "炮", "兵"]
+        : ["", "將", "士", "象", "馬", "車", "砲", "卒"];
+      ctx.fillText(chars[type], x, y + r * 0.1);
+    }
+
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.beginPath();
+    ctx.arc(x, y, r * 0.9, -0.5, 1.0);
+    ctx.fill();
+  }
+
+  window.addEventListener('resize', resize);
+  canvas.addEventListener('mousedown', handleClick);
+  canvas.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    handleClick(e.touches[0])
+  }, {passive: false});
+
+</script>
+</body>
+</html>
