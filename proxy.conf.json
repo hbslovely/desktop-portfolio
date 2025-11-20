@@ -139,7 +139,7 @@
     "changeOrigin": true,
     "logLevel": "debug",
     "pathRewrite": {
-      "^/api/business-apps-script": "/macros/s/AKfycbyD_WZaCOT72FaodbYX9T9P4nti9z78wBbL7bBmmoVbjhnQsYZnqSd4l1Km7DjaLgrZrQ/exec"
+      "^/api/business-apps-script": "/macros/s/AKfycbyKnNIlpv9kCW6Zr6BztEkpyWYfdeS1ZRkX6TBTcLxLdC-l4puvg5st_nbyVuM_t7SWog/exec"
     },
     "headers": {
       "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",

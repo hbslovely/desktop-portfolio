@@ -187,75 +187,101 @@ export class BusinessService {
 
   /**
    * Add new item to sheet
+   * Uses Google Sheets API directly (similar to expense.service.ts)
    */
   addItem(sheetName: SheetName, item: BusinessItem): Observable<any> {
-    if (this.APPS_SCRIPT_URL) {
-      return this.http.post(this.APPS_SCRIPT_URL, {
-        action: 'add',
-        sheetName: sheetName,
-        item: item
-      }, {
-        headers: new HttpHeaders({
-          'Content-Type': 'application/json'
-        })
-      }).pipe(
-        catchError((error) => {
-          console.error(`Failed to add item to ${sheetName}:`, error);
-          return throwError(() => new Error(`Không thể thêm dữ liệu vào ${sheetName}. Vui lòng kiểm tra cấu hình Google Apps Script.`));
-        })
-      );
+    // Try Google Sheets API first (fallback to Apps Script if needed)
+    let range: string;
+    let values: string[][];
+
+    if (sheetName === 'Đầu vào đầu ra') {
+      range = `${sheetName}!A:F`;
+      values = [[
+        item.tenChiPhi || '',
+        item.soTien || '',
+        item.tongChiPhi || '',
+        item.phanLoai || '',
+        item.san || ''
+      ]];
+    } else if (sheetName === 'Nguồn vật liệu') {
+      range = `${sheetName}!A:D`;
+      values = [[
+        item.monHang || '',
+        item.giaTien || '',
+        item.khoiLuong || '',
+        item.thuongHieu || ''
+      ]];
+    } else if (sheetName === 'Nguồn nguyên liệu') {
+      range = `${sheetName}!A:F`;
+      values = [[
+        item.soThuTu || '',
+        item.monHangNguyenLieu || '',
+        item.giaGoc || '',
+        item.donViTinh || '',
+        item.thuongHieuNguyenLieu || '',
+        item.soLuongVien || ''
+      ]];
+    } else if (sheetName === 'Menu') {
+      range = `${sheetName}!A:E`;
+      values = [[
+        item.tenMon || '',
+        item.moTa || '',
+        item.danhMuc || '',
+        item.giaBan || '',
+        item.cachCheBien || ''
+      ]];
+    } else {
+      range = `${sheetName}!A:G`;
+      values = [[
+        item.tenChiPhi || '',
+        item.soTien || '',
+        item.tongChiPhi || '',
+        item.phanLoai || '',
+        item.san || '',
+        item.note || '',
+        item.date || ''
+      ]];
     }
 
-    return throwError(() => new Error('Google Apps Script URL is not configured'));
-  }
+    const url = `${this.BASE_URL}/values/${range}:append?valueInputOption=USER_ENTERED&key=${this.API_KEY}`;
+    const body = { values: values };
 
-  /**
-   * Update existing item in sheet
-   */
-  updateItem(sheetName: SheetName, item: BusinessItem, rowIndex: number): Observable<any> {
-    if (this.APPS_SCRIPT_URL) {
-      return this.http.post(this.APPS_SCRIPT_URL, {
-        action: 'update',
-        sheetName: sheetName,
-        item: item,
-        rowIndex: rowIndex
-      }, {
-        headers: new HttpHeaders({
-          'Content-Type': 'application/json'
-        })
-      }).pipe(
-        catchError((error) => {
-          console.error(`Failed to update item in ${sheetName}:`, error);
-          return throwError(() => new Error(`Không thể cập nhật dữ liệu trong ${sheetName}. Vui lòng kiểm tra cấu hình Google Apps Script.`));
-        })
-      );
-    }
+    // Clear cache after adding
+    this.clearCache(sheetName);
 
-    return throwError(() => new Error('Google Apps Script URL is not configured'));
-  }
-
-  /**
-   * Delete item from sheet
-   */
-  deleteItem(sheetName: SheetName, rowIndex: number): Observable<any> {
-    if (this.APPS_SCRIPT_URL) {
-      return this.http.post(this.APPS_SCRIPT_URL, {
-        action: 'delete',
-        sheetName: sheetName,
-        rowIndex: rowIndex
-      }, {
-        headers: new HttpHeaders({
-          'Content-Type': 'application/json'
-        })
-      }).pipe(
-        catchError((error) => {
-          console.error(`Failed to delete item from ${sheetName}:`, error);
-          return throwError(() => new Error(`Không thể xóa dữ liệu từ ${sheetName}. Vui lòng kiểm tra cấu hình Google Apps Script.`));
-        })
-      );
-    }
-
-    return throwError(() => new Error('Google Apps Script URL is not configured'));
+    return this.http.post(url, body, {
+      headers: new HttpHeaders({
+        'Content-Type': 'application/json'
+      })
+    }).pipe(
+      catchError((error) => {
+        console.error(`Failed to add item to ${sheetName} via API:`, error);
+        // Fallback to Apps Script if API fails
+        if (this.APPS_SCRIPT_URL) {
+          return this.http.post(this.APPS_SCRIPT_URL, {
+            action: 'add',
+            sheetName: sheetName,
+            item: item
+          }, {
+            headers: new HttpHeaders({
+              'Content-Type': 'application/json'
+            })
+          }).pipe(
+            catchError((appsScriptError) => {
+              console.error(`Failed to add item via Apps Script:`, appsScriptError);
+              if (error.status === 401 || error.status === 403) {
+                return throwError(() => new Error(`API Key không thể ghi dữ liệu. Vui lòng thiết lập Google Apps Script.`));
+              }
+              return throwError(() => new Error(`Không thể thêm dữ liệu vào ${sheetName}. Vui lòng kiểm tra cấu hình.`));
+            })
+          );
+        }
+        if (error.status === 401 || error.status === 403) {
+          return throwError(() => new Error(`API Key không thể ghi dữ liệu. Vui lòng thiết lập Google Apps Script.`));
+        }
+        return throwError(() => new Error(`Không thể thêm dữ liệu vào ${sheetName}.`));
+      })
+    );
   }
 
   /**
