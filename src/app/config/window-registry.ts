@@ -335,6 +335,18 @@ export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
     defaultY: 80,
     maximizable: true,
     statusText: 'Quản lý chi tiêu gia đình'
+  },
+  'business': {
+    id: 'business',
+    title: 'Quản lý Bán hàng',
+    icon: 'pi pi-shopping-cart',
+    component: 'business',
+    defaultWidth: 1200,
+    defaultHeight: 800,
+    defaultX: 150,
+    defaultY: 60,
+    maximizable: true,
+    statusText: 'Quản lý bán hàng và chi phí'
   }
 };
 

@@ -151,6 +151,13 @@ export const APP_ICONS: DesktopIconData[] = [
     icon: 'pi pi-wallet',
     type: 'application',
     position: { x: 320, y: 420 }
+  },
+  {
+    id: 'business',
+    name: 'Quản lý Bán hàng',
+    icon: 'pi pi-shopping-cart',
+    type: 'application',
+    position: { x: 320, y: 520 }
   }
 ];
 
@@ -188,7 +195,8 @@ function getAppDescription(appId: string): string {
     'angular-guidelines': 'Comprehensive Angular official documentation and guidelines from Angular.dev',
     'booking': 'Search for travel destinations, hotels, and landmarks worldwide with Booking.com API',
     'tuoitre-news': 'Read latest Vietnamese news from Tuổi Trẻ Online with categories and full articles',
-    'expense': 'Manage family expenses with Google Sheets integration, view spending history, and add new expenses'
+    'expense': 'Manage family expenses with Google Sheets integration, view spending history, and add new expenses',
+    'business': 'Manage sales, materials, and costs with Google Sheets integration across multiple tabs (Menu, Materials, Costs)'
   };
   return descriptions[appId] || 'Application';
 }
@@ -215,7 +223,8 @@ function getAppKeywords(appId: string): string[] {
     'angular-guidelines': ['angular', 'documentation', 'docs', 'guide', 'guidelines', 'tutorial', 'official', 'components', 'directives', 'services', 'routing', 'forms', 'http', 'signals', 'dependency injection', 'best practices', 'security', 'performance', 'angular.dev'],
     'booking': ['travel', 'hotel', 'booking', 'accommodation', 'vacation', 'destination', 'trip', 'tourism', 'city', 'country', 'flights', 'search', 'autocomplete', 'landmark', 'airport', 'region', 'worldwide', 'booking.com'],
     'tuoitre-news': ['news', 'tin tức', 'tuoitre', 'tuổi trẻ', 'vietnam', 'vietnamese', 'newspaper', 'articles', 'thời sự', 'thế giới', 'pháp luật', 'kinh doanh', 'công nghệ', 'xe', 'du lịch', 'văn hóa', 'giải trí', 'thể thao', 'giáo dục', 'sức khỏe'],
-    'expense': ['expense', 'chi tiêu', 'quản lý', 'tài chính', 'spending', 'budget', 'money', 'finance', 'google sheets', 'gia đình', 'family', 'tiền', 'giao dịch', 'transaction']
+    'expense': ['expense', 'chi tiêu', 'quản lý', 'tài chính', 'spending', 'budget', 'money', 'finance', 'google sheets', 'gia đình', 'family', 'tiền', 'giao dịch', 'transaction'],
+    'business': ['business', 'bán hàng', 'quản lý', 'sales', 'materials', 'costs', 'menu', 'nguyên liệu', 'vật liệu', 'chi phí', 'google sheets', 'inventory', 'kho', 'sản phẩm']
   };
   return keywords[appId] || [];
 }
