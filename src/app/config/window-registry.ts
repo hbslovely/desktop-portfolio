@@ -17,11 +17,11 @@ export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
     title: 'Calculator',
     icon: 'pi pi-calculator',
     component: 'calculator',
-    defaultWidth: 350,
-    defaultHeight: 600,
+    defaultWidth: 480,
+    defaultHeight: 720,
     defaultX: 100,
     defaultY: 100,
-    maximizable: false,
+    maximizable: true,
     statusText: 'Ready'
   },
   'my-info': {
@@ -347,6 +347,18 @@ export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
     defaultY: 60,
     maximizable: true,
     statusText: 'Quản lý bán hàng và chi phí'
+  },
+  'chinese-chess': {
+    id: 'chinese-chess',
+    title: 'Kỳ Vương - Cờ Tướng',
+    icon: 'pi pi-th-large',
+    component: 'chinese-chess',
+    defaultWidth: 1200,
+    defaultHeight: 800,
+    defaultX: 150,
+    defaultY: 60,
+    maximizable: true,
+    statusText: 'Cờ Tướng & Cờ Úp'
   }
 };
 

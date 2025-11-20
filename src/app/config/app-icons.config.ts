@@ -89,6 +89,13 @@ export const APP_ICONS: DesktopIconData[] = [
     position: { x: 220, y: 20 }
   },
   {
+    id: 'chinese-chess',
+    name: 'Cờ Tướng',
+    icon: 'assets/images/icons/chess.png',
+    type: 'application',
+    position: { x: 220, y: 120 }
+  },
+  {
     id: 'yugioh',
     name: 'Yu-Gi-Oh! Cards',
     icon: 'assets/images/icons/yugi.png',
@@ -196,7 +203,8 @@ function getAppDescription(appId: string): string {
     'booking': 'Search for travel destinations, hotels, and landmarks worldwide with Booking.com API',
     'tuoitre-news': 'Read latest Vietnamese news from Tuổi Trẻ Online with categories and full articles',
     'expense': 'Manage family expenses with Google Sheets integration, view spending history, and add new expenses',
-    'business': 'Manage sales, materials, and costs with Google Sheets integration across multiple tabs (Menu, Materials, Costs)'
+    'business': 'Manage sales, materials, and costs with Google Sheets integration across multiple tabs (Menu, Materials, Costs)',
+    'chinese-chess': 'Chơi cờ tướng và cờ úp với AI, phá thế cờ, nhiều giao diện đẹp mắt'
   };
   return descriptions[appId] || 'Application';
 }
@@ -224,7 +232,8 @@ function getAppKeywords(appId: string): string[] {
     'booking': ['travel', 'hotel', 'booking', 'accommodation', 'vacation', 'destination', 'trip', 'tourism', 'city', 'country', 'flights', 'search', 'autocomplete', 'landmark', 'airport', 'region', 'worldwide', 'booking.com'],
     'tuoitre-news': ['news', 'tin tức', 'tuoitre', 'tuổi trẻ', 'vietnam', 'vietnamese', 'newspaper', 'articles', 'thời sự', 'thế giới', 'pháp luật', 'kinh doanh', 'công nghệ', 'xe', 'du lịch', 'văn hóa', 'giải trí', 'thể thao', 'giáo dục', 'sức khỏe'],
     'expense': ['expense', 'chi tiêu', 'quản lý', 'tài chính', 'spending', 'budget', 'money', 'finance', 'google sheets', 'gia đình', 'family', 'tiền', 'giao dịch', 'transaction'],
-    'business': ['business', 'bán hàng', 'quản lý', 'sales', 'materials', 'costs', 'menu', 'nguyên liệu', 'vật liệu', 'chi phí', 'google sheets', 'inventory', 'kho', 'sản phẩm']
+    'business': ['business', 'bán hàng', 'quản lý', 'sales', 'materials', 'costs', 'menu', 'nguyên liệu', 'vật liệu', 'chi phí', 'google sheets', 'inventory', 'kho', 'sản phẩm'],
+    'chinese-chess': ['cờ tướng', 'co tuong', 'xiangqi', 'cờ úp', 'co up', 'ky vuong', 'kỳ vương', 'chess', 'game', 'board game', 'trò chơi', 'puzzle', 'thế cờ', 'the co', 'chinese chess', 'vietnam chess']
   };
   return keywords[appId] || [];
 }

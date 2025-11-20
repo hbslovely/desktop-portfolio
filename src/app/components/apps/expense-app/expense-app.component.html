@@ -100,26 +100,8 @@
       </div>
     </div>
 
-    <!-- Tabs -->
-    <div class="tabs-section">
-      <button
-        (click)="switchTab('list')"
-        class="tab-btn"
-        [class.active]="activeTab() === 'list'">
-        <i class="pi pi-list"></i>
-        <span>Danh sách</span>
-      </button>
-      <button
-        (click)="switchTab('summary')"
-        class="tab-btn"
-        [class.active]="activeTab() === 'summary'">
-        <i class="pi pi-chart-bar"></i>
-        <span>Tổng hợp</span>
-      </button>
-    </div>
-
-    <!-- Filters (only show in list tab) -->
-    <div class="filters-section" *ngIf="activeTab() === 'list'">
+    <!-- Search and Filters (affects all tabs) -->
+    <div class="filters-section">
       <!-- Search Bar -->
       <div class="search-bar">
         <i class="pi pi-search"></i>
@@ -144,23 +126,20 @@
         </div>
 
         <div class="filter-group">
-          <label>Số tiền từ:</label>
+          <label>Số tiền:</label>
           <input
             type="number"
             [ngModel]="filterAmountMin()"
             (ngModelChange)="filterAmountMin.set($event ? Number($event) : null)"
             class="filter-input"
-            placeholder="Min">
-        </div>
-
-        <div class="filter-group">
-          <label>Đến:</label>
+            placeholder="Từ">
+          <span class="filter-separator">-</span>
           <input
             type="number"
             [ngModel]="filterAmountMax()"
             (ngModelChange)="filterAmountMax.set($event ? Number($event) : null)"
             class="filter-input"
-            placeholder="Max">
+            placeholder="Đến">
         </div>
 
         <button (click)="clearFilters()" class="clear-filters-btn"
@@ -171,10 +150,28 @@
       </div>
     </div>
 
+    <!-- Tabs -->
+    <div class="tabs-section">
+      <button
+        (click)="switchTab('list')"
+        class="tab-btn"
+        [class.active]="activeTab() === 'list'">
+        <i class="pi pi-list"></i>
+        <span>Danh sách</span>
+      </button>
+      <button
+        (click)="switchTab('summary')"
+        class="tab-btn"
+        [class.active]="activeTab() === 'summary'">
+        <i class="pi pi-chart-bar"></i>
+        <span>Tổng hợp</span>
+      </button>
+    </div>
+
     <!-- Tab Content: List -->
     <div class="tab-content" *ngIf="activeTab() === 'list'">
-      <!-- Summary Cards -->
-      <div class="summary-section">
+      <!-- Summary Cards - Compact -->
+      <div class="summary-section compact">
           <div class="summary-card">
             <div class="summary-icon">
               <i class="pi pi-money-bill"></i>
@@ -208,7 +205,7 @@
               <i class="pi pi-chart-line"></i>
             </div>
             <div class="summary-content">
-              <div class="summary-label">Trung bình/giao dịch</div>
+              <div class="summary-label">TB/giao dịch</div>
               <div class="summary-value">{{ formatAmount(averageExpense()) }}</div>
             </div>
           </div>
@@ -217,7 +214,7 @@
               <i class="pi pi-calendar"></i>
             </div>
             <div class="summary-content">
-              <div class="summary-label">Trung bình/ngày</div>
+              <div class="summary-label">TB/ngày</div>
               <div class="summary-value">{{ formatAmount(averageDailyExpense()) }}</div>
             </div>
           </div>
@@ -269,11 +266,26 @@
         </div>
 
         <div class="expenses-list">
+          <!-- Header with resize handles -->
+          <div class="expense-header">
+            <div class="expense-header-date" [style.width.px]="columnWidths().date">
+              <span>Ngày</span>
+              <div class="resize-handle" (mousedown)="startResize($event, 'date')"></div>
+            </div>
+            <div class="expense-header-content">
+              <span>Nội dung</span>
+              <div class="resize-handle" (mousedown)="startResize($event, 'content')"></div>
+            </div>
+            <div class="expense-header-actions" [style.width.px]="columnWidths().actions">
+              <span>Thao tác</span>
+            </div>
+          </div>
+          
           <div
             class="expense-item"
             *ngFor="let expense of filteredExpenses(); let i = index"
             [class.highlight-above-average]="isAboveAverage(expense.amount)">
-            <div class="expense-date">
+            <div class="expense-date" [style.width.px]="columnWidths().date">
               <i class="pi pi-calendar"></i>
               <span>{{ formatDate(expense.date) }}</span>
             </div>
@@ -288,7 +300,7 @@
                 <span>{{ expense.note }}</span>
               </div>
             </div>
-            <div class="expense-actions">
+            <div class="expense-actions" [style.width.px]="columnWidths().actions">
               <button class="edit-btn" (click)="showEditExpenseForm(expense, i)" title="Chỉnh sửa">
                 <i class="pi pi-pencil"></i>
               </button>
@@ -318,8 +330,8 @@
     <!-- Tab Content: Summary -->
     <div class="tab-content summary-tab" *ngIf="activeTab() === 'summary'">
       <div class="summary-view">
-        <!-- Overall Summary -->
-        <div class="summary-section">
+        <!-- Overall Summary - Compact -->
+        <div class="summary-section compact">
           <div class="summary-card">
             <div class="summary-icon">
               <i class="pi pi-money-bill"></i>
@@ -335,7 +347,7 @@
                       [class.negative]="periodComparison()!.change < 0">
                   {{ Math.abs(periodComparison()!.change) }}%
                 </span>
-                <span class="change-label">so với {{ periodComparison()!.period }} trước</span>
+                <span class="change-label">vs {{ periodComparison()!.period }} trước</span>
               </div>
             </div>
           </div>
@@ -353,7 +365,7 @@
               <i class="pi pi-calendar"></i>
             </div>
             <div class="summary-content">
-              <div class="summary-label">Trung bình/ngày</div>
+              <div class="summary-label">TB/ngày</div>
               <div class="summary-value">{{ formatAmount(averageDailyExpense()) }}</div>
             </div>
           </div>
@@ -362,7 +374,7 @@
               <i class="pi pi-chart-line"></i>
             </div>
             <div class="summary-content">
-              <div class="summary-label">Trung bình/giao dịch</div>
+              <div class="summary-label">TB/giao dịch</div>
               <div class="summary-value">{{ formatAmount(averageExpense()) }}</div>
             </div>
           </div>
