@@ -23,57 +23,150 @@
       transition: background 0.5s ease;
     }
 
-    /* --- BACKGROUNDS (Set dynamically via JS) --- */
-
+    /* --- BACKGROUNDS --- */
     #game-wrapper {
       position: relative;
       width: 100vw;
       height: 100vh;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
     }
 
     #game-container {
       position: relative;
-      box-shadow: 0 30px 60px rgba(0, 0, 0, 0.9);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9);
       border-radius: 12px;
       border: 8px solid #5d4037;
       transition: border-color 0.5s ease;
+      z-index: 10;
     }
 
     /* --- UI COMPONENTS --- */
     .glass-panel {
-      background: rgba(30, 30, 30, 0.8);
+      background: rgba(30, 30, 30, 0.9);
       backdrop-filter: blur(12px);
       border: 1px solid rgba(255, 255, 255, 0.1);
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
     }
 
     .btn-icon {
-      width: 40px;
-      height: 40px;
+      width: 40px; height: 40px;
       border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      display: flex; align-items: center; justify-content: center;
       cursor: pointer;
       transition: 0.3s;
-      background: rgba(255, 255, 255, 0.1);
+      background: rgba(255,255,255,0.1);
+    }
+    .btn-icon:hover { background: rgba(255,255,255,0.2); transform: scale(1.1); }
+
+    /* --- STRATEGY NOTIFICATION --- */
+    #strategy-toast {
+      position: absolute;
+      top: 15%;
+      left: 50%;
+      transform: translateX(-50%) translateY(-20px);
+      background: linear-gradient(90deg, #c0392b, #e74c3c);
+      color: white;
+      padding: 10px 25px;
+      border-radius: 50px;
+      font-weight: bold;
+      font-size: 1.1rem;
+      box-shadow: 0 0 15px rgba(231, 76, 60, 0.6);
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.5s;
+      z-index: 150;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      white-space: nowrap;
+    }
+    #strategy-toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
     }
 
-    .btn-icon:hover {
-      background: rgba(255, 255, 255, 0.2);
-      transform: scale(1.1);
+    /* --- RESULT MODAL --- */
+    #result-modal {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%) scale(0.9);
+      width: 500px;
+      padding: 30px;
+      border-radius: 16px;
+      z-index: 400;
+      opacity: 0;
+      pointer-events: none;
+      transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
     }
+    #result-modal.active {
+      opacity: 1;
+      pointer-events: all;
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    .notation-box {
+      width: 100%;
+      height: 200px;
+      background: rgba(0,0,0,0.3);
+      border: 1px solid #555;
+      color: #ddd;
+      padding: 10px;
+      font-family: monospace;
+      border-radius: 8px;
+      resize: none;
+      font-size: 0.9rem;
+    }
+
+    /* --- CAPTURED PIECES UI --- */
+    .captured-group {
+      position: absolute;
+      left: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      pointer-events: none;
+      z-index: 90;
+    }
+    .captured-group.top { top: 30px; }
+    .captured-group.bottom { bottom: 30px; }
+
+    .captured-label {
+      font-size: 0.75rem;
+      color: rgba(255,255,255,0.5);
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+
+    .captured-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      width: 140px;
+    }
+
+    .captured-piece {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      font-size: 14px;
+      display: flex; justify-content: center; align-items: center;
+      border: 2px solid rgba(0,0,0,0.3);
+      box-shadow: 1px 1px 4px rgba(0,0,0,0.5);
+      font-weight: bold;
+      position: relative;
+    }
+    .cp-red { background: radial-gradient(#f9e79f, #d4ac0d); color: #c0392b; border-color: #c0392b; }
+    .cp-black { background: radial-gradient(#f9e79f, #d4ac0d); color: #2d3436; border-color: #2d3436; }
 
     /* --- MAIN MENU --- */
     #main-menu {
       position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
+      top: 0; left: 0; width: 100%; height: 100%;
       background: var(--bg-overlay);
       display: flex;
       flex-direction: column;
@@ -82,12 +175,7 @@
       z-index: 200;
       transition: opacity 0.5s, transform 0.5s;
     }
-
-    .menu-hidden {
-      opacity: 0;
-      pointer-events: none;
-      transform: scale(1.1);
-    }
+    .menu-hidden { opacity: 0; pointer-events: none; transform: scale(1.1); }
 
     .title-text {
       font-family: 'Cinzel', serif;
@@ -95,7 +183,7 @@
       background: linear-gradient(to bottom, #f1c40f, #b7950b);
       -webkit-background-clip: text;
       color: transparent;
-      text-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
+      text-shadow: 0 4px 20px rgba(0,0,0,0.8);
       margin-bottom: 3rem;
       text-transform: uppercase;
       letter-spacing: 8px;
@@ -104,7 +192,7 @@
 
     .menu-btn {
       position: relative;
-      background: linear-gradient(90deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.1));
+      background: linear-gradient(90deg, rgba(255,255,255,0.05), rgba(255,255,255,0.1));
       border: 1px solid rgba(212, 175, 55, 0.3);
       color: #f1c40f;
       padding: 18px 40px;
@@ -118,7 +206,6 @@
       text-align: center;
       overflow: hidden;
     }
-
     .menu-btn:hover {
       background: linear-gradient(90deg, rgba(212, 175, 55, 0.2), rgba(212, 175, 55, 0.1));
       border-color: #f1c40f;
@@ -129,8 +216,7 @@
     /* --- SETTINGS MODAL --- */
     #settings-modal {
       position: absolute;
-      top: 50%;
-      left: 50%;
+      top: 50%; left: 50%;
       transform: translate(-50%, -50%) scale(0.9);
       width: 400px;
       padding: 30px;
@@ -140,63 +226,50 @@
       pointer-events: none;
       transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
-
     #settings-modal.active {
       opacity: 1;
       pointer-events: all;
       transform: translate(-50%, -50%) scale(1);
     }
-
     .setting-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+      display: flex; justify-content: space-between; align-items: center;
       margin-bottom: 20px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      border-bottom: 1px solid rgba(255,255,255,0.1);
       padding-bottom: 10px;
     }
-
     .theme-option {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      cursor: pointer;
-      border: 2px solid transparent;
+      width: 40px; height: 40px; border-radius: 50%;
+      cursor: pointer; border: 2px solid transparent;
       transition: 0.2s;
     }
-
-    .theme-option.active {
-      border-color: #fff;
-      transform: scale(1.2);
-    }
+    .theme-option.active { border-color: #fff; transform: scale(1.2); }
 
     /* --- IN-GAME UI --- */
-    .ui-panel {
-      position: absolute;
-      top: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      padding: 10px 40px;
-      border-radius: 50px;
+    #bottom-panel {
       display: flex;
       flex-direction: column;
       align-items: center;
-      z-index: 100;
-      pointer-events: none;
+      margin-top: 20px;
+      width: 100%;
+      z-index: 20;
     }
 
-    .in-game-controls {
-      position: absolute;
-      bottom: 30px;
-      left: 50%;
-      transform: translateX(-50%);
+    .status-bar {
+      padding: 8px 40px;
+      border-radius: 50px;
+      margin-bottom: 15px;
+      display: flex; flex-direction: column; align-items: center;
+      transition: 0.3s;
+    }
+
+    .controls-row {
       display: flex;
       gap: 20px;
-      z-index: 100;
+      justify-content: center;
     }
 
     .game-btn {
-      background: rgba(0, 0, 0, 0.6);
+      background: rgba(0,0,0,0.6);
       color: #d4af37;
       border: 1px solid rgba(212, 175, 55, 0.3);
       padding: 10px 24px;
@@ -206,58 +279,36 @@
       transition: 0.2s;
       backdrop-filter: blur(4px);
     }
-
-    .game-btn:hover {
-      background: rgba(212, 175, 55, 0.2);
-      border-color: #f1c40f;
-    }
+    .game-btn:hover { background: rgba(212, 175, 55, 0.2); border-color: #f1c40f; }
 
     /* --- TOAST --- */
     #toast {
-      position: fixed;
-      top: 40%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: rgba(0, 0, 0, 0.9);
-      color: #fff;
-      padding: 20px 40px;
-      border-radius: 8px;
-      font-size: 1.5rem;
-      border: 1px solid #d4af37;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.3s;
-      z-index: 400;
+      position: fixed; top: 40%; left: 50%; transform: translate(-50%, -50%);
+      background: rgba(0,0,0,0.9); color: #fff;
+      padding: 20px 40px; border-radius: 8px;
+      font-size: 1.5rem; border: 1px solid #d4af37;
+      opacity: 0; pointer-events: none; transition: opacity 0.3s; z-index: 400;
     }
-
-    #toast.show {
-      opacity: 1;
-    }
+    #toast.show { opacity: 1; }
 
     /* --- PUZZLE MENU --- */
-    #puzzle-menu {
-      display: none;
+    #puzzle-menu { display: none; width: 100%; height: 80%; flex-direction: column; align-items: center; overflow-y: auto; }
+    .puzzle-list-container {
       width: 100%;
+      max-height: 60vh;
+      overflow-y: auto;
+      display: flex;
       flex-direction: column;
       align-items: center;
+      padding-bottom: 20px;
     }
-
     .puzzle-item {
-      padding: 15px;
-      margin: 8px;
-      width: 70%;
-      background: rgba(255, 255, 255, 0.05);
+      padding: 15px; margin: 8px; width: 70%;
+      background: rgba(255,255,255,0.05);
       border: 1px solid transparent;
-      border-radius: 8px;
-      cursor: pointer;
-      text-align: center;
-      transition: 0.2s;
+      border-radius: 8px; cursor: pointer; text-align: center; transition: 0.2s;
     }
-
-    .puzzle-item:hover {
-      border-color: #d4af37;
-      background: rgba(255, 255, 255, 0.1);
-    }
+    .puzzle-item:hover { border-color: #d4af37; background: rgba(255,255,255,0.1); }
   </style>
 </head>
 <body>
@@ -272,9 +323,7 @@
   <div class="setting-row">
     <span>Âm Thanh (SFX)</span>
     <div class="relative inline-block w-12 align-middle select-none">
-      <input type="checkbox" id="toggle-sfx" checked
-             class="absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-300"
-             style="top:0; left:0;"/>
+      <input type="checkbox" id="toggle-sfx" checked class="absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-300" style="top:0; left:0;"/>
       <label for="toggle-sfx" class="block overflow-hidden h-6 rounded-full bg-gray-600 cursor-pointer"></label>
     </div>
   </div>
@@ -282,21 +331,31 @@
   <div class="setting-row">
     <span>Nhạc Nền</span>
     <div class="relative inline-block w-12 align-middle select-none">
-      <input type="checkbox" id="toggle-music"
-             class="absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-300"
-             style="top:0; left:0;"/>
+      <input type="checkbox" id="toggle-music" class="absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-300" style="top:0; left:0;"/>
       <label for="toggle-music" class="block overflow-hidden h-6 rounded-full bg-gray-600 cursor-pointer"></label>
     </div>
   </div>
 
   <div class="mb-2 text-sm text-gray-400 uppercase tracking-wider">Giao Diện Bàn Cờ</div>
   <div class="flex gap-4 justify-center mb-4">
-    <!-- Wood Theme -->
     <div class="theme-option active" onclick="setTheme('wood')" id="theme-wood" style="background: #e0c39a;"></div>
-    <!-- Jade Theme -->
     <div class="theme-option" onclick="setTheme('jade')" id="theme-jade" style="background: #a3d2ca;"></div>
-    <!-- Ink Theme -->
     <div class="theme-option" onclick="setTheme('ink')" id="theme-ink" style="background: #ecf0f1;"></div>
+  </div>
+</div>
+
+<!-- RESULT MODAL -->
+<div id="result-modal" class="glass-panel">
+  <h2 class="text-3xl font-bold text-center text-amber-400 mb-2" id="result-title">Kết Quả</h2>
+  <div class="text-center text-gray-300 mb-4" id="result-message"></div>
+
+  <div class="text-xs text-gray-400 uppercase">Biên Bản Ván Đấu (Kỳ Phổ)</div>
+  <textarea id="pgn-area" class="notation-box" readonly></textarea>
+
+  <div class="flex gap-2 justify-center mt-2">
+    <button class="game-btn text-sm" onclick="copyPGN()"><i class="fas fa-copy mr-2"></i>Copy</button>
+    <button class="game-btn text-sm" onclick="downloadPGN()"><i class="fas fa-download mr-2"></i>Tải Về</button>
+    <button class="game-btn text-sm" style="border-color: #e74c3c; color:#e74c3c" onclick="closeResult()"><i class="fas fa-times mr-2"></i>Đóng</button>
   </div>
 </div>
 
@@ -310,42 +369,35 @@
     <div id="main-buttons">
       <div class="menu-btn" onclick="startGame('xiangqi')">Cờ Tướng</div>
       <div class="menu-btn" onclick="startGame('coups')">Cờ Úp</div>
-      <div class="menu-btn" onclick="showPuzzleMenu()">Phá Thế Cờ</div>
+      <div class="menu-btn" onclick="showPuzzleMenu()">Luyện Sát Pháp</div>
     </div>
 
     <div id="puzzle-menu">
-      <h2 class="text-2xl text-amber-400 mb-6 font-bold uppercase tracking-widest">Thế Cờ Danh Bất Hư Truyền</h2>
-      <div class="puzzle-item" onclick="startPuzzle(0)">
-        <div class="font-bold text-amber-300">1. Mã Hậu Pháo</div>
-        <div class="text-xs text-gray-400">Sát cục trong 3 nước</div>
+      <h2 class="text-2xl text-amber-400 mb-6 font-bold uppercase tracking-widest">36 Kế Sát Pháp</h2>
+      <div class="puzzle-list-container" id="puzzle-list">
+        <!-- JS will populate this -->
       </div>
-      <div class="puzzle-item" onclick="startPuzzle(1)">
-        <div class="font-bold text-amber-300">2. Lưỡng Chiếu</div>
-        <div class="text-xs text-gray-400">Phối hợp Xe Mã</div>
-      </div>
-      <div class="puzzle-item" onclick="startPuzzle(2)">
-        <div class="font-bold text-amber-300">3. Khổng Minh Tá Tiễn</div>
-        <div class="text-xs text-gray-400">Thế cờ kinh điển</div>
-      </div>
-      <div class="menu-btn mt-8" onclick="backToMain()">Quay Lại</div>
+      <div class="menu-btn mt-4" onclick="backToMain()">Quay Lại</div>
     </div>
   </div>
 
-  <!-- IN GAME UI -->
-  <div id="game-ui" style="display: none;">
-    <!-- Settings Button In-Game -->
-    <div class="absolute top-6 right-6 btn-icon z-50 glass-panel" onclick="toggleSettings()"><i class="fas fa-cog"></i>
+  <!-- GAME OVERLAYS -->
+  <div id="game-overlays" style="display: none;">
+    <!-- Settings Button -->
+    <div class="absolute top-6 right-6 btn-icon z-50 glass-panel" onclick="toggleSettings()"><i class="fas fa-cog"></i></div>
+
+    <!-- Strategy Alert -->
+    <div id="strategy-toast"><i class="fas fa-book-open"></i> Tuyệt Chiêu!</div>
+
+    <!-- Captured Pieces -->
+    <div class="captured-group top">
+      <div class="captured-label">Đỏ bị ăn</div>
+      <div class="captured-row" id="captured-red-graveyard"></div>
     </div>
 
-    <div class="ui-panel glass-panel">
-      <div id="game-title" class="text-xs uppercase text-gray-400 tracking-widest mb-1">Kỳ Vương</div>
-      <div id="status-text" class="text-xl text-amber-400 font-bold">Lượt của bạn</div>
-    </div>
-
-    <div class="in-game-controls">
-      <button class="game-btn" onclick="undo()"><i class="fas fa-undo mr-2"></i>Hoàn Tác</button>
-      <button class="game-btn" onclick="getHint()" id="hint-btn"><i class="fas fa-lightbulb mr-2"></i>Gợi Ý</button>
-      <button class="game-btn" onclick="backToMenu()"><i class="fas fa-home mr-2"></i>Thoát</button>
+    <div class="captured-group bottom">
+      <div class="captured-label">Đen bị ăn</div>
+      <div class="captured-row" id="captured-black-graveyard"></div>
     </div>
   </div>
 
@@ -354,12 +406,27 @@
     <canvas id="board"></canvas>
   </div>
 
+  <!-- BOTTOM UI -->
+  <div id="bottom-panel" style="display: none;">
+    <div class="status-bar glass-panel">
+      <div id="game-title" class="text-xs uppercase text-gray-400 tracking-widest mb-1">Kỳ Vương</div>
+      <div id="status-text" class="text-xl text-amber-400 font-bold">Lượt của bạn</div>
+    </div>
+
+    <div class="controls-row">
+      <button class="game-btn" onclick="undo()"><i class="fas fa-undo mr-2"></i>Hoàn Tác</button>
+      <button class="game-btn" onclick="getHint()" id="hint-btn"><i class="fas fa-lightbulb mr-2"></i>Gợi Ý</button>
+      <button class="game-btn hidden" onclick="solvePuzzle()" id="solve-btn"><i class="fas fa-play mr-2"></i>Xem Lời Giải</button>
+      <button class="game-btn" onclick="backToMenu()"><i class="fas fa-home mr-2"></i>Thoát</button>
+    </div>
+  </div>
+
   <div id="toast"></div>
 </div>
 
 <script>
   /**
-   * XIANGQI MASTER ENGINE - CONFIG & THEMES
+   * XIANGQI MASTER ENGINE
    */
 
 // --- CONFIG & THEMES ---
@@ -391,19 +458,14 @@
   };
 
   let activeTheme = THEMES.wood;
-  let config = {
-    sfx: true,
-    music: false
-  };
+  let config = { sfx: true, music: false };
 
-  // --- GAME CONSTANTS ---
+  // --- CONSTANTS ---
   const COLS = 9;
   const ROWS = 10;
-
   const RED = 8;
   const BLACK = 16;
   const HIDDEN = 32;
-
   const PIECE_KING = 1;
   const PIECE_ADVISOR = 2;
   const PIECE_ELEPHANT = 3;
@@ -411,10 +473,51 @@
   const PIECE_ROOK = 5;
   const PIECE_CANNON = 6;
   const PIECE_PAWN = 7;
-
   const TRUE_TYPE_SHIFT = 6;
 
-  // --- AUDIO SYSTEM ---
+  // --- STRATEGY & TACTICS (36 Kế) ---
+  // FEN format used for static lookup
+  function generateFEN() {
+    let fen = "";
+    for(let r=0; r<ROWS; r++) {
+      let empty = 0;
+      for(let c=0; c<COLS; c++) {
+        const p = board[r][c];
+        if(p === 0) {
+          empty++;
+        } else {
+          if(empty > 0) { fen += empty; empty = 0; }
+          const color = getColor(p);
+          const type = getType(p);
+          const char = "KAEHRCP"[type-1];
+          fen += (color === RED) ? char.toUpperCase() : char.toLowerCase();
+        }
+      }
+      if(empty > 0) fen += empty;
+      if(r < ROWS-1) fen += "/";
+    }
+    return fen;
+  }
+
+  const OPENING_BOOK = {
+    "rheakaehr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RHEAKAEHR": {fromR:7, fromC:1, toR:7, toC:4},
+    "rheakaehr/9/1c5c1/p1p1p1p1p/9/9/P1P1C1P1P/1C7/9/RHEAKAEHR": {fromR:0, fromC:1, toR:2, toC:2},
+    "rheakaehr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RHEAKA2R": {fromR:2, fromC:1, toR:2, toC:4},
+  };
+
+  // --- 36 KILLING STRATEGIES (Luyện Sát Pháp) ---
+  const PUZZLE_DB = [
+    { name: "Thiết Môn Thuyên", desc: "Xe chặn cửa, Pháo bắn xuyên tâm.", setup: (b) => { b[0][4]=BLACK|1; b[0][3]=BLACK|2; b[0][5]=BLACK|2; b[2][4]=RED|6; b[0][8]=RED|5; b[9][4]=RED|1; }},
+    { name: "Đại Đao Oa Tâm", desc: "Xe cắm thẳng tim Tướng.", setup: (b) => { b[0][4]=BLACK|1; b[0][3]=BLACK|2; b[0][5]=BLACK|2; b[1][4]=RED|5; b[2][4]=RED|7; b[2][5]=RED|6; b[9][4]=RED|1; }},
+    { name: "Mã Ngọa Tào", desc: "Mã nằm chuồng, khóa đường Tướng.", setup: (b) => { b[0][4]=BLACK|1; b[0][3]=BLACK|2; b[2][2]=RED|4; b[2][4]=RED|5; b[9][4]=RED|1; }},
+    { name: "Thiên Địa Pháo", desc: "Một pháo đầu, một pháo giác.", setup: (b) => { b[0][4]=BLACK|1; b[0][3]=BLACK|2; b[2][4]=RED|6; b[1][8]=RED|5; b[8][4]=RED|6; b[9][4]=RED|1; /*Simulated*/ }},
+    { name: "Tam Tử Quy Biên", desc: "Xe Pháo Mã tập kích 1 cánh.", setup: (b) => { b[0][3]=BLACK|1; b[0][4]=BLACK|2; b[1][0]=RED|5; b[2][1]=RED|4; b[2][0]=RED|6; b[9][4]=RED|1; }},
+    { name: "Song Xe Lệch", desc: "Hai xe so le tấn công.", setup: (b) => { b[0][4]=BLACK|1; b[0][3]=BLACK|2; b[1][4]=RED|5; b[1][6]=RED|5; b[9][4]=RED|1; }},
+    { name: "Giáp Xe Pháo", desc: "Xe và Pháo kẹp cổ.", setup: (b) => { b[0][4]=BLACK|1; b[0][3]=BLACK|2; b[0][5]=BLACK|2; b[0][6]=RED|5; b[2][4]=RED|6; b[9][4]=RED|1; }},
+    { name: "Mã Hậu Pháo", desc: "Mã làm ngòi, Pháo bắn.", setup: (b) => { b[0][3]=BLACK|1; b[2][4]=RED|4; b[1][4]=RED|6; b[7][4]=RED|1; }}
+  ];
+
+  // --- AUDIO ---
   const AudioContext = window.AudioContext || window.webkitAudioContext;
   const audioCtx = new AudioContext();
   let musicOscillators = [];
@@ -422,39 +525,38 @@
   function playSound(type) {
     if (!config.sfx) return;
     if (audioCtx.state === 'suspended') audioCtx.resume();
-
     const osc = audioCtx.createOscillator();
     const gainNode = audioCtx.createGain();
-    osc.connect(gainNode);
-    gainNode.connect(audioCtx.destination);
+    osc.connect(gainNode); gainNode.connect(audioCtx.destination);
     const now = audioCtx.currentTime;
 
     if (type === 'move') {
-      // Wood click sound
       osc.frequency.setValueAtTime(600, now);
       osc.frequency.exponentialRampToValueAtTime(100, now + 0.08);
       gainNode.gain.setValueAtTime(0.3, now);
       gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
-      osc.start();
-      osc.stop(now + 0.1);
+      osc.start(); osc.stop(now + 0.1);
     } else if (type === 'capture') {
-      // Sharp strike
       osc.type = 'square';
       osc.frequency.setValueAtTime(200, now);
       osc.frequency.exponentialRampToValueAtTime(50, now + 0.15);
       gainNode.gain.setValueAtTime(0.3, now);
       gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
-      osc.start();
-      osc.stop(now + 0.15);
+      osc.start(); osc.stop(now + 0.15);
+    } else if (type === 'strategy') {
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(300, now);
+      osc.frequency.linearRampToValueAtTime(600, now + 0.3);
+      gainNode.gain.setValueAtTime(0.1, now);
+      gainNode.gain.linearRampToValueAtTime(0, now + 0.5);
+      osc.start(); osc.stop(now + 0.5);
     } else if (type === 'reveal') {
-      // Magical shimmer
       osc.type = 'sine';
       osc.frequency.setValueAtTime(400, now);
       osc.frequency.linearRampToValueAtTime(800, now + 0.2);
       gainNode.gain.setValueAtTime(0.1, now);
       gainNode.gain.linearRampToValueAtTime(0, now + 0.2);
-      osc.start();
-      osc.stop(now + 0.2);
+      osc.start(); osc.stop(now + 0.2);
     }
   }
 
@@ -469,45 +571,28 @@
   }
 
   function startAmbientMusic() {
-    // Simple pentatonic ambient loop using oscillators
-    // Notes: D, F, G, A, C (Pentatonic D minorish)
     const freqs = [293.66, 349.23, 392.00, 440.00, 523.25];
-
-    // Create a gentle drone
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
-    osc.type = 'sine';
-    osc.frequency.value = 146.83; // Low D
-    gain.gain.value = 0.05;
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
+    osc.type = 'sine'; osc.frequency.value = 146.83; gain.gain.value = 0.05;
+    osc.connect(gain); gain.connect(audioCtx.destination);
     osc.start();
-    musicOscillators.push({
-      stop: () => {
-        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 2);
-        osc.stop(audioCtx.currentTime + 2);
-      }
-    });
-
-    // Add random wind chimes
+    musicOscillators.push({stop: () => {
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime+2);
+        osc.stop(audioCtx.currentTime+2);
+      }});
     const chimeInterval = setInterval(() => {
-      if (!config.music) {
-        clearInterval(chimeInterval);
-        return;
-      }
+      if (!config.music) { clearInterval(chimeInterval); return; }
       const f = freqs[Math.floor(Math.random() * freqs.length)];
       const cOsc = audioCtx.createOscillator();
       const cGain = audioCtx.createGain();
       cOsc.frequency.value = f * (Math.random() > 0.5 ? 2 : 1);
       cGain.gain.value = 0.03;
       cGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 2);
-      cOsc.connect(cGain);
-      cGain.connect(audioCtx.destination);
-      cOsc.start();
-      cOsc.stop(audioCtx.currentTime + 2);
+      cOsc.connect(cGain); cGain.connect(audioCtx.destination);
+      cOsc.start(); cOsc.stop(audioCtx.currentTime + 2);
     }, 4000);
   }
-
   function stopAmbientMusic() {
     musicOscillators.forEach(o => o.stop());
     musicOscillators = [];
@@ -526,62 +611,151 @@
   let animating = false;
   let animState = null;
   let hintMove = null;
+  let currentPuzzleIndex = -1;
+  let capturedState = { redCaptures: [], blackCaptures: [] };
+  let aiPreference = 'BALANCED';
 
   const canvas = document.getElementById('board');
   const ctx = canvas.getContext('2d');
   let CELL_SIZE, MARGIN, PIECE_RADIUS;
 
-  // --- SETTINGS LOGIC ---
   function toggleSettings() {
-    const modal = document.getElementById('settings-modal');
-    modal.classList.toggle('active');
+    document.getElementById('settings-modal').classList.toggle('active');
   }
 
   function setTheme(key) {
     activeTheme = THEMES[key];
-
-    // Update UI classes
     document.querySelectorAll('.theme-option').forEach(el => el.classList.remove('active'));
-    document.getElementById('theme-' + key).classList.add('active');
-
-    // Apply styles
+    document.getElementById('theme-'+key).classList.add('active');
     document.body.style.background = activeTheme.bg;
     document.getElementById('game-container').style.borderColor = activeTheme.borderColor;
-
-    // Redraw
     draw();
   }
 
   document.getElementById('toggle-sfx').addEventListener('change', (e) => config.sfx = e.target.checked);
   document.getElementById('toggle-music').addEventListener('change', (e) => toggleMusic(e.target.checked));
 
-  // --- GAME LOGIC (Preserving Rules) ---
+  // --- NOTATION & EXPORT ---
+  function getMoveNotation(m) {
+    // Simplified Standard Notation (C2.5, H8+7 etc)
+    // Columns: Red 9..1 (R to L), Black 1..9 (L to R)
+    const piece = board[m.toR][m.toC]; // This is called AFTER move on board usually, wait
+    // Actually we record this before update or construct it.
+    // Let's use the piece that moved.
+    const p = m.piece;
+    const type = getType(p);
+    const color = getColor(p);
+
+    // Char
+    const chars = ["","K","A","E","H","R","C","P"];
+    const char = chars[type];
+
+    // Cols (1-9)
+    // Red: c=0 is 9, c=8 is 1.  => col = 9 - c
+    // Black: c=0 is 1, c=8 is 9. => col = c + 1
+    const fromCol = (color === RED) ? (9 - m.fromC) : (m.fromC + 1);
+    const toCol = (color === RED) ? (9 - m.toC) : (m.toC + 1);
+
+    // Dir
+    let dir = "."; // Traverse
+    if (color === RED) {
+      if (m.toR < m.fromR) dir = "+"; // Forward (index decreases for Red up)
+      else if (m.toR > m.fromR) dir = "-";
+    } else {
+      if (m.toR > m.fromR) dir = "+"; // Forward (index increases for Black down)
+      else if (m.toR < m.fromR) dir = "-";
+    }
+
+    // Dest char: If traverse, use toCol. If vertical, use distance.
+    // Horses/Elephants always traverse. Rook/Cannon/Pawn/King can go straight.
+    let dest = toCol;
+    if ((type === PIECE_ROOK || type === PIECE_CANNON || type === PIECE_PAWN || type === PIECE_KING) && m.fromC === m.toC) {
+      dest = Math.abs(m.toR - m.fromR); // Distance
+    }
+
+    return char + fromCol + dir + dest;
+  }
+
+  function generatePGN() {
+    let pgn = "";
+    moveHistory.forEach((m, i) => {
+      if (i % 2 === 0) pgn += `${(i/2)+1}. `;
+      pgn += m.notation + " ";
+    });
+    return pgn;
+  }
+
+  function showResultModal(msg) {
+    document.getElementById('result-modal').classList.add('active');
+    document.getElementById('result-message').innerText = msg;
+    document.getElementById('pgn-area').value = generatePGN();
+  }
+
+  function closeResult() {
+    document.getElementById('result-modal').classList.remove('active');
+  }
+
+  function copyPGN() {
+    const copyText = document.getElementById("pgn-area");
+    copyText.select();
+    document.execCommand("copy");
+    alert("Đã copy kỳ phổ!");
+  }
+
+  function downloadPGN() {
+    const text = document.getElementById("pgn-area").value;
+    const blob = new Blob([text], { type: "text/plain"});
+    const anchor = document.createElement("a");
+    anchor.download = "ky_vuong_match.txt";
+    anchor.href = window.URL.createObjectURL(blob);
+    anchor.target = "_blank";
+    anchor.style.display = "none";
+    document.body.appendChild(anchor);
+    anchor.click();
+    document.body.removeChild(anchor);
+  }
+
+  // --- GAME LOGIC ---
 
   function backToMenu() {
     document.getElementById('main-menu').classList.remove('menu-hidden');
-    document.getElementById('game-ui').style.display = 'none';
+    document.getElementById('game-overlays').style.display = 'none';
+    document.getElementById('bottom-panel').style.display = 'none';
+    closeResult();
     gameOver = true;
   }
-
   function backToMain() {
     document.getElementById('puzzle-menu').style.display = 'none';
     document.getElementById('main-buttons').style.display = 'flex';
   }
-
   function showPuzzleMenu() {
     document.getElementById('main-buttons').style.display = 'none';
     document.getElementById('puzzle-menu').style.display = 'flex';
+
+    const list = document.getElementById('puzzle-list');
+    list.innerHTML = PUZZLE_DB.map((p, idx) => `
+        <div class="puzzle-item" onclick="startPuzzle(${idx})">
+            <div class="font-bold text-amber-300">${idx+1}. ${p.name}</div>
+            <div class="text-xs text-gray-400">${p.desc}</div>
+        </div>
+    `).join('');
   }
 
   function startGame(mode) {
     gameMode = mode;
     document.getElementById('main-menu').classList.add('menu-hidden');
-    document.getElementById('game-ui').style.display = 'block';
+    document.getElementById('game-overlays').style.display = 'block';
+    document.getElementById('bottom-panel').style.display = 'flex';
+    document.getElementById('solve-btn').classList.add('hidden');
+    closeResult();
 
     let title = "Cờ Tướng";
-    if (mode === 'coups') title = "Cờ Úp";
-    if (mode === 'puzzle') title = "Phá Thế Cờ";
+    if(mode === 'coups') title = "Cờ Úp";
+    if(mode === 'puzzle') title = "Phá Thế Cờ";
     document.getElementById('game-title').innerText = title;
+
+    const types = ['BALANCED', 'CHARIOT', 'CANNON_HORSE'];
+    aiPreference = types[Math.floor(Math.random() * types.length)];
 
     if (mode === 'coups') initHiddenChess();
     else initStandardChess();
@@ -591,25 +765,49 @@
 
   function startPuzzle(index) {
     gameMode = 'puzzle';
+    currentPuzzleIndex = index;
     document.getElementById('main-menu').classList.add('menu-hidden');
-    document.getElementById('game-ui').style.display = 'block';
-    document.getElementById('game-title').innerText = "Thế Cờ #" + (index + 1);
+    document.getElementById('game-overlays').style.display = 'block';
+    document.getElementById('bottom-panel').style.display = 'flex';
+    document.getElementById('solve-btn').classList.remove('hidden');
+    closeResult();
+
+    document.getElementById('game-title').innerText = "Thế: " + PUZZLE_DB[index].name;
     initPuzzle(index);
     resize();
+  }
+
+  function solvePuzzle() {
+    if (gameMode !== 'puzzle' || gameOver) return;
+    document.getElementById('status-text').innerText = "Đang giải...";
+
+    const solveLoop = () => {
+      if (gameOver) return;
+      const best = getBestMoveForCurrentTurn();
+      if (best) {
+        startMoveAnimation(best, () => {
+          finalizeMove();
+          setTimeout(solveLoop, 800);
+        });
+      } else {
+        end("Kết thúc giải!");
+      }
+    };
+    solveLoop();
   }
 
   function initStandardChess() {
     const b = BLACK, r = RED;
     board = [
-      [b | 5, b | 4, b | 3, b | 2, b | 1, b | 2, b | 3, b | 4, b | 5],
-      [0, 0, 0, 0, 0, 0, 0, 0, 0],
-      [0, b | 6, 0, 0, 0, 0, 0, b | 6, 0],
-      [b | 7, 0, b | 7, 0, b | 7, 0, b | 7, 0, b | 7],
-      [0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0],
-      [r | 7, 0, r | 7, 0, r | 7, 0, r | 7, 0, r | 7],
-      [0, r | 6, 0, 0, 0, 0, 0, r | 6, 0],
-      [0, 0, 0, 0, 0, 0, 0, 0, 0],
-      [r | 5, r | 4, r | 3, r | 2, r | 1, r | 2, r | 3, r | 4, r | 5]
+      [b|5, b|4, b|3, b|2, b|1, b|2, b|3, b|4, b|5],
+      [0,0,0,0,0,0,0,0,0],
+      [0,b|6,0,0,0,0,0,b|6,0],
+      [b|7,0,b|7,0,b|7,0,b|7,0,b|7],
+      [0,0,0,0,0,0,0,0,0], [0,0,0,0,0,0,0,0,0],
+      [r|7,0,r|7,0,r|7,0,r|7,0,r|7],
+      [0,r|6,0,0,0,0,0,r|6,0],
+      [0,0,0,0,0,0,0,0,0],
+      [r|5, r|4, r|3, r|2, r|1, r|2, r|3, r|4, r|5]
     ];
     resetGameState();
   }
@@ -630,8 +828,7 @@
   }
 
   function initHiddenChess() {
-    const types = [2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 7, 7, 7];
-
+    const types = [2,2, 3,3, 4,4, 5,5, 6,6, 7,7,7,7,7];
     function createSide(color) {
       const pool = [...types];
       for (let i = pool.length - 1; i > 0; i--) {
@@ -640,7 +837,6 @@
       }
       return pool;
     }
-
     const bPool = createSide(BLACK);
     const rPool = createSide(RED);
     board = Array(10).fill(null).map(() => Array(9).fill(0));
@@ -648,9 +844,9 @@
     board[9][4] = RED | PIECE_KING;
 
     const pos = [
-      [0, 0], [0, 1], [0, 2], [0, 3], [0, 5], [0, 6], [0, 7], [0, 8],
-      [2, 1], [2, 7],
-      [3, 0], [3, 2], [3, 4], [3, 6], [3, 8]
+      [0,0],[0,1],[0,2],[0,3],[0,5],[0,6],[0,7],[0,8],
+      [2,1],[2,7],
+      [3,0],[3,2],[3,4],[3,6],[3,8]
     ];
 
     pos.forEach((p, i) => {
@@ -670,27 +866,10 @@
     resetGameState();
   }
 
-  function initPuzzle(id) {
-    const b = BLACK, r = RED;
+  function initPuzzle(index) {
     board = Array(10).fill(null).map(() => Array(9).fill(0));
-    if (id === 0) { // Mã Hậu Pháo
-      board[0][3] = b | PIECE_KING;
-      board[0][4] = b | PIECE_ADVISOR;
-      board[2][4] = r | PIECE_HORSE;
-      board[1][4] = r | PIECE_CANNON;
-      board[7][4] = r | PIECE_KING;
-    } else if (id === 1) { // Lưỡng Chiếu
-      board[0][4] = b | PIECE_KING;
-      board[1][4] = b | PIECE_ROOK;
-      board[2][5] = r | PIECE_HORSE;
-      board[9][4] = r | PIECE_KING;
-      board[2][2] = r | PIECE_ROOK;
-    } else { // Kongming
-      board[0][3] = b | 1;
-      board[0][5] = b | 2;
-      board[9][4] = r | 1;
-      board[3][4] = r | 5;
-      board[2][4] = b | 5;
+    if (PUZZLE_DB[index]) {
+      PUZZLE_DB[index].setup(board);
     }
     resetGameState();
   }
@@ -704,33 +883,32 @@
     boardHistory = {};
     lastMove = null;
     hintMove = null;
+    capturedState = { redCaptures: [], blackCaptures: [] };
+    renderCaptured();
     boardHistory[getBoardHash()] = 1;
     updateStatus("Lượt của bạn (Đỏ)");
   }
 
-  function getPiece(r, c) {
-    if (r < 0 || r >= ROWS || c < 0 || c >= COLS) return -1;
-    return board[r][c];
+  function renderCaptured() {
+    const chars = ["","將","士","象","馬","車","砲","卒"];
+    const charsRed = ["","帥","仕","相","傌","俥","炮","兵"];
+
+    const redContainer = document.getElementById('captured-black-graveyard');
+    redContainer.innerHTML = capturedState.redCaptures.map(type =>
+      `<div class="captured-piece cp-black">${chars[type]}</div>`
+    ).join('');
+
+    const blackContainer = document.getElementById('captured-red-graveyard');
+    blackContainer.innerHTML = capturedState.blackCaptures.map(type =>
+      `<div class="captured-piece cp-red">${charsRed[type]}</div>`
+    ).join('');
   }
 
-  function getColor(p) {
-    if (p & RED) return RED;
-    if (p & BLACK) return BLACK;
-    return 0;
-  }
-
-  function getType(p) {
-    return p & 7;
-  }
-
-  function getTrueType(p) {
-    if (p & HIDDEN) return (p >> TRUE_TYPE_SHIFT) & 7;
-    return p & 7;
-  }
-
-  function isHidden(p) {
-    return (p & HIDDEN) !== 0;
-  }
+  function getPiece(r, c) { if (r<0||r>=ROWS||c<0||c>=COLS) return -1; return board[r][c]; }
+  function getColor(p) { if (p & RED) return RED; if (p & BLACK) return BLACK; return 0; }
+  function getType(p) { return p & 7; }
+  function getTrueType(p) { if (p & HIDDEN) return (p >> TRUE_TYPE_SHIFT) & 7; return p & 7; }
+  function isHidden(p) { return (p & HIDDEN) !== 0; }
 
   function generateMoves(r, c, checkSafety = true) {
     const p = board[r][c];
@@ -740,200 +918,257 @@
     if (color === 0) return [];
 
     const add = (tr, tc) => {
-      if (tr < 0 || tr >= ROWS || tc < 0 || tc >= COLS) return;
+      if (tr<0||tr>=ROWS||tc<0||tc>=COLS) return;
       const t = board[tr][tc];
       if (getColor(t) === color) return;
-      moves.push({r: tr, c: tc});
+      moves.push({r:tr, c:tc});
     };
 
     if (type === PIECE_KING || type === PIECE_ADVISOR) {
       const isK = (type === PIECE_KING);
       const isFreeAdvisor = (gameMode === 'coups' && !isHidden(p) && type === PIECE_ADVISOR);
-      const dr = isK ? [-1, 1, 0, 0] : [-1, -1, 1, 1];
-      const dc = isK ? [0, 0, -1, 1] : [-1, 1, -1, 1];
-      for (let i = 0; i < 4; i++) {
-        const nr = r + dr[i], nc = c + dc[i];
+      const dr = isK?[-1,1,0,0]:[-1,-1,1,1];
+      const dc = isK?[0,0,-1,1]:[-1,1,-1,1];
+      for(let i=0;i<4;i++){
+        const nr=r+dr[i], nc=c+dc[i];
         if (!isFreeAdvisor) {
-          if (nc < 3 || nc > 5) continue;
-          if (color === RED && (nr < 7 || nr > 9)) continue;
-          if (color === BLACK && (nr < 0 || nr > 2)) continue;
+          if(nc<3||nc>5) continue;
+          if(color===RED&&(nr<7||nr>9)) continue;
+          if(color===BLACK&&(nr<0||nr>2)) continue;
         }
-        add(nr, nc);
+        add(nr,nc);
       }
     } else if (type === PIECE_ELEPHANT) {
       const isFreeElephant = (gameMode === 'coups' && !isHidden(p));
-      const dr = [-2, -2, 2, 2], dc = [-2, 2, -2, 2], er = [-1, -1, 1, 1], ec = [-1, 1, -1, 1];
-      for (let i = 0; i < 4; i++) {
-        const nr = r + dr[i], nc = c + dc[i];
+      const dr=[-2,-2,2,2], dc=[-2,2,-2,2], er=[-1,-1,1,1], ec=[-1,1,-1,1];
+      for(let i=0;i<4;i++) {
+        const nr=r+dr[i], nc=c+dc[i];
         if (!isFreeElephant) {
-          if (color === RED && nr < 5) continue;
-          if (color === BLACK && nr > 4) continue;
+          if(color===RED&&nr<5)continue; if(color===BLACK&&nr>4)continue;
         }
-        if (getPiece(r + er[i], c + ec[i]) === 0) add(nr, nc);
+        if(getPiece(r+er[i], c+ec[i])===0) add(nr,nc);
       }
     } else if (type === PIECE_HORSE) {
-      const dr = [-2, -1, 1, 2, 2, 1, -1, -2], dc = [1, 2, 2, 1, -1, -2, -2, -1];
-      const lr = [-1, 0, 0, 1, 1, 0, 0, -1], lc = [0, 1, 1, 0, 0, -1, -1, 0];
-      for (let i = 0; i < 8; i++) if (getPiece(r + lr[i], c + lc[i]) === 0) add(r + dr[i], c + dc[i]);
+      const dr=[-2,-1,1,2,2,1,-1,-2], dc=[1,2,2,1,-1,-2,-2,-1];
+      const lr=[-1,0,0,1,1,0,0,-1], lc=[0,1,1,0,0,-1,-1,0];
+      for(let i=0;i<8;i++) if(getPiece(r+lr[i], c+lc[i])===0) add(r+dr[i], c+dc[i]);
     } else if (type === PIECE_ROOK || type === PIECE_CANNON) {
-      const dr = [-1, 1, 0, 0], dc = [0, 0, -1, 1];
-      for (let i = 0; i < 4; i++) {
-        let nr = r + dr[i], nc = c + dc[i], jumped = false;
-        while (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS) {
-          const t = board[nr][nc];
-          if (type === PIECE_ROOK) {
-            if (t === 0) moves.push({r: nr, c: nc});
-            else {
-              if (getColor(t) !== color) moves.push({r: nr, c: nc});
-              break;
-            }
+      const dr=[-1,1,0,0], dc=[0,0,-1,1];
+      for(let i=0;i<4;i++){
+        let nr=r+dr[i], nc=c+dc[i], jumped=false;
+        while(nr>=0&&nr<ROWS&&nc>=0&&nc<COLS){
+          const t=board[nr][nc];
+          if(type===PIECE_ROOK){
+            if(t===0) moves.push({r:nr, c:nc});
+            else { if(getColor(t)!==color) moves.push({r:nr,c:nc}); break; }
           } else {
-            if (!jumped) {
-              if (t === 0) moves.push({r: nr, c: nc}); else jumped = true;
-            } else {
-              if (t !== 0) {
-                if (getColor(t) !== color) moves.push({r: nr, c: nc});
-                break;
-              }
-            }
+            if(!jumped){ if(t===0) moves.push({r:nr,c:nc}); else jumped=true; }
+            else { if(t!==0){ if(getColor(t)!==color) moves.push({r:nr,c:nc}); break; } }
           }
-          nr += dr[i];
-          nc += dc[i];
+          nr+=dr[i]; nc+=dc[i];
         }
       }
     } else if (type === PIECE_PAWN) {
-      const fwd = (color === RED) ? -1 : 1;
-      add(r + fwd, c);
-      if ((color === RED && r <= 4) || (color === BLACK && r >= 5)) {
-        add(r, c - 1);
-        add(r, c + 1);
+      const fwd = (color===RED)?-1:1;
+      add(r+fwd, c);
+      if ((color===RED && r<=4) || (color===BLACK && r>=5)) {
+        add(r, c-1); add(r, c+1);
       }
     }
 
     if (!checkSafety) return moves;
     const valid = [];
-    for (let m of moves) {
+    for(let m of moves) {
       const cap = board[m.r][m.c];
-      board[m.r][m.c] = board[r][c];
-      board[r][c] = 0;
-      if (!kingsFacing() && !inCheck(color)) valid.push(m);
-      board[r][c] = board[m.r][m.c];
-      board[m.r][m.c] = cap;
+      board[m.r][m.c] = board[r][c]; board[r][c] = 0;
+      if(!kingsFacing() && !inCheck(color)) valid.push(m);
+      board[r][c] = board[m.r][m.c]; board[m.r][m.c] = cap;
     }
     return valid;
   }
 
   function kingsFacing() {
-    let rK = null, bK = null;
-    for (let r = 0; r < ROWS; r++) for (let c = 3; c <= 5; c++) {
-      const p = board[r][c];
-      if (getType(p) === PIECE_KING) {
-        if (getColor(p) === RED) rK = {r, c}; else bK = {r, c};
+    let rK=null, bK=null;
+    for(let r=0;r<ROWS;r++) for(let c=3;c<=5;c++) {
+      const p=board[r][c];
+      if (getType(p)===PIECE_KING) {
+        if(getColor(p)===RED) rK={r,c}; else bK={r,c};
       }
     }
-    if (!rK || !bK || rK.c !== bK.c) return false;
-    for (let r = Math.min(rK.r, bK.r) + 1; r < Math.max(rK.r, bK.r); r++) if (board[r][rK.c] !== 0) return false;
+    if(!rK||!bK||rK.c!==bK.c) return false;
+    for(let r=Math.min(rK.r, bK.r)+1; r<Math.max(rK.r, bK.r); r++) if(board[r][rK.c]!==0) return false;
     return true;
   }
 
   function inCheck(color) {
-    let k = null;
-    for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++)
-      if (getType(board[r][c]) === PIECE_KING && getColor(board[r][c]) === color) {
-        k = {r, c};
-        break;
-      }
-    if (!k) return true;
-    const eCol = (color === RED) ? BLACK : RED;
-    for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
-      if (getColor(board[r][c]) === eCol) {
-        const ms = generateMoves(r, c, false);
-        for (let m of ms) if (m.r === k.r && m.c === k.c) return true;
+    let k=null;
+    for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++)
+      if(getType(board[r][c])===PIECE_KING && getColor(board[r][c])===color) { k={r,c}; break; }
+    if(!k) return true;
+    const eCol = (color===RED)?BLACK:RED;
+    for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) {
+      if(getColor(board[r][c])===eCol) {
+        const ms = generateMoves(r,c,false);
+        for(let m of ms) if(m.r===k.r && m.c===k.c) return true;
       }
     }
     return false;
   }
 
-  const VALUES = {
-    [PIECE_KING]: 10000,
-    [PIECE_ROOK]: 900,
-    [PIECE_CANNON]: 450,
-    [PIECE_HORSE]: 400,
-    [PIECE_ELEPHANT]: 20,
-    [PIECE_ADVISOR]: 20,
-    [PIECE_PAWN]: 10
-  };
+  // --- EVALUATION & AI (Enhanced with Tactics) ---
+  const VALUES = { [PIECE_KING]:10000, [PIECE_ROOK]:900, [PIECE_CANNON]:450, [PIECE_HORSE]:400, [PIECE_ELEPHANT]:20, [PIECE_ADVISOR]:20, [PIECE_PAWN]:10 };
 
   function evaluate() {
     let s = 0;
-    for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+    let blackKing = null, redKing = null;
+
+    // Find Kings first for relative positioning
+    for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) {
       const p = board[r][c];
-      if (p === 0) continue;
-      let val = VALUES[getType(p)];
+      if (getType(p)===PIECE_KING) {
+        if (getColor(p)===BLACK) blackKing = {r,c}; else redKing = {r,c};
+      }
+    }
+
+    for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) {
+      const p = board[r][c];
+      if(p===0) continue;
+      const type = getType(p);
+      const color = getColor(p);
+      let val = VALUES[type];
       if (isHidden(p)) val = 30;
-      if (c > 2 && c < 6) val += 5;
-      if (getColor(p) === BLACK) s += val; else s -= val;
+
+      // AI Personality Bias
+      if (aiPreference === 'CHARIOT' && type === PIECE_ROOK) val *= 1.1;
+      if (aiPreference === 'CANNON_HORSE' && (type === PIECE_CANNON || type === PIECE_HORSE)) val *= 1.1;
+
+      // --- 36 TACTICAL HEURISTICS (Sát Pháp) ---
+      // If Black (AI) pieces are in key attacking positions against Red King
+      if (color === BLACK && redKing) {
+        const dr = Math.abs(r - redKing.r);
+        const dc = Math.abs(c - redKing.c);
+
+        // 1. Mã Ngọa Tào (Horse at 3,7 or 3,3 relative to Red Palace)
+        // Red King is usually at 9,4. "Ngoa Tao" points are approx (7,3), (7,5), (8,2), (8,6)
+        if (type === PIECE_HORSE && r >= 7 && (c===3 || c===5 || c===2 || c===6)) {
+          val += 200; // Huge bonus for Horse checkmate position
+        }
+
+        // 2. Pháo Trùng (Cannon behind Cannon on King's file)
+        if (type === PIECE_CANNON && c === redKing.c) {
+          val += 100; // Control center file
+        }
+
+        // 3. Xe Cắm Đáy (Rook at bottom rank)
+        if (type === PIECE_ROOK && r === 9 && dc <= 2) {
+          val += 150; // Threatening mate
+        }
+
+        // 4. General aggression (Close to King)
+        if (dr <= 2 && dc <= 2) val += 50;
+      }
+
+      if(c>2 && c<6) val += 10; // Center control
+
+      if(color===BLACK) s+=val; else s-=val;
     }
     return s;
   }
 
   function minimax(depth, isMax, alpha, beta) {
-    if (depth === 0) return evaluate();
+    if(depth===0) return evaluate();
     let moves = [];
-    for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++)
-      if (getColor(board[r][c]) === (isMax ? BLACK : RED))
-        generateMoves(r, c, true).forEach(t => moves.push({fromR: r, fromC: c, toR: t.r, toC: t.c}));
+    for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++)
+      if(getColor(board[r][c])===(isMax?BLACK:RED))
+        generateMoves(r,c,true).forEach(t=>moves.push({fromR:r,fromC:c,toR:t.r,toC:t.c}));
 
-    if (moves.length === 0) return isMax ? -20000 : 20000;
+    if(moves.length===0) return isMax?-20000:20000;
 
-    if (isMax) {
+    if(isMax) {
       let max = -Infinity;
-      for (let m of moves) {
-        const cap = board[m.toR][m.toC];
-        board[m.toR][m.toC] = board[m.fromR][m.fromC];
-        board[m.fromR][m.fromC] = 0;
-        const v = minimax(depth - 1, false, alpha, beta);
-        board[m.fromR][m.fromC] = board[m.toR][m.toC];
-        board[m.toR][m.toC] = cap;
-        max = Math.max(max, v);
-        alpha = Math.max(alpha, v);
-        if (beta <= alpha) break;
+      for(let m of moves) {
+        const cap=board[m.toR][m.toC];
+        board[m.toR][m.toC]=board[m.fromR][m.fromC]; board[m.fromR][m.fromC]=0;
+        const v = minimax(depth-1, false, alpha, beta);
+        board[m.fromR][m.fromC]=board[m.toR][m.toC]; board[m.toR][m.toC]=cap;
+        max=Math.max(max,v); alpha=Math.max(alpha,v);
+        if(beta<=alpha) break;
       }
       return max;
     } else {
       let min = Infinity;
-      for (let m of moves) {
-        const cap = board[m.toR][m.toC];
-        board[m.toR][m.toC] = board[m.fromR][m.fromC];
-        board[m.fromR][m.fromC] = 0;
-        const v = minimax(depth - 1, true, alpha, beta);
-        board[m.fromR][m.fromC] = board[m.toR][m.toC];
-        board[m.toR][m.toC] = cap;
-        min = Math.min(min, v);
-        beta = Math.min(beta, v);
-        if (beta <= alpha) break;
+      for(let m of moves) {
+        const cap=board[m.toR][m.toC];
+        board[m.toR][m.toC]=board[m.fromR][m.fromC]; board[m.fromR][m.fromC]=0;
+        const v = minimax(depth-1, true, alpha, beta);
+        board[m.fromR][m.fromC]=board[m.toR][m.toC]; board[m.toR][m.toC]=cap;
+        min=Math.min(min,v); beta=Math.min(beta,v);
+        if(beta<=alpha) break;
       }
       return min;
     }
   }
 
   function getBestMove() {
-    let moves = [];
-    for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++)
-      if (getColor(board[r][c]) === BLACK)
-        generateMoves(r, c, true).forEach(t => moves.push({fromR: r, fromC: c, toR: t.r, toC: t.c}));
+    const fen = generateFEN();
+    if (OPENING_BOOK[fen]) {
+      const bookMove = OPENING_BOOK[fen];
+      showStrategyToast();
+      return bookMove;
+    }
 
-    let best = null, max = -Infinity;
-    for (let m of moves) {
-      const cap = board[m.toR][m.toC];
-      board[m.toR][m.toC] = board[m.fromR][m.fromC];
-      board[m.fromR][m.fromC] = 0;
+    let moves=[];
+    for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++)
+      if(getColor(board[r][c])===BLACK)
+        generateMoves(r,c,true).forEach(t=>moves.push({fromR:r,fromC:c,toR:t.r,toC:t.c}));
+
+    let best=null, max=-Infinity;
+
+    for(let m of moves) {
+      const cap=board[m.toR][m.toC];
+      board[m.toR][m.toC]=board[m.fromR][m.fromC]; board[m.fromR][m.fromC]=0;
       const v = minimax(2, false, -Infinity, Infinity);
-      board[m.fromR][m.fromC] = board[m.toR][m.toC];
-      board[m.toR][m.toC] = cap;
-      if (v > max) {
-        max = v;
-        best = m;
+      board[m.fromR][m.fromC]=board[m.toR][m.toC]; board[m.toR][m.toC]=cap;
+      if(v>max) { max=v; best=m; }
+    }
+    return best;
+  }
+
+  function showStrategyToast() {
+    const t = document.getElementById('strategy-toast');
+    t.classList.add('show');
+    playSound('strategy');
+    setTimeout(() => t.classList.remove('show'), 2000);
+  }
+
+  function getBestMoveForCurrentTurn() {
+    const fen = generateFEN();
+    if (OPENING_BOOK[fen]) return OPENING_BOOK[fen];
+
+    let moves=[];
+    let isRed = (turn === RED);
+    for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++)
+      if(getColor(board[r][c])===turn)
+        generateMoves(r,c,true).forEach(t=>moves.push({fromR:r,fromC:c,toR:t.r,toC:t.c}));
+
+    let best=null;
+    if (isRed) {
+      let min=Infinity;
+      for(let m of moves) {
+        const cap=board[m.toR][m.toC];
+        board[m.toR][m.toC]=board[m.fromR][m.fromC]; board[m.fromR][m.fromC]=0;
+        const v = minimax(1, true, -Infinity, Infinity);
+        if(v<min) { min=v; best=m; }
+        board[m.fromR][m.fromC]=board[m.toR][m.toC]; board[m.toR][m.toC]=cap;
+      }
+    } else {
+      let max=-Infinity;
+      for(let m of moves) {
+        const cap=board[m.toR][m.toC];
+        board[m.toR][m.toC]=board[m.fromR][m.fromC]; board[m.fromR][m.fromC]=0;
+        const v = minimax(1, false, -Infinity, Infinity);
+        if(v>max) { max=v; best=m; }
+        board[m.fromR][m.fromC]=board[m.toR][m.toC]; board[m.toR][m.toC]=cap;
       }
     }
     return best;
@@ -943,6 +1178,18 @@
     animating = true;
     const piece = board[m.fromR][m.fromC];
     const cap = board[m.toR][m.toC];
+
+    if (cap !== 0) {
+      const capColor = getColor(cap);
+      const displayType = isHidden(cap) ? getTrueType(cap) : getType(cap);
+      if (capColor === RED) {
+        capturedState.blackCaptures.push(displayType);
+      } else {
+        capturedState.redCaptures.push(displayType);
+      }
+      renderCaptured();
+    }
+
     animState = {
       piece: piece, captured: cap,
       fromR: m.fromR, fromC: m.fromC, toR: m.toR, toC: m.toC,
@@ -950,34 +1197,37 @@
       callback: callback
     };
     playSound(cap ? 'capture' : 'move');
+
+    // Record notation
+    const notation = getMoveNotation({fromR: m.fromR, fromC: m.fromC, toR: m.toR, toC: m.toC, piece: piece});
+
     moveHistory.push({
       fromR: m.fromR, fromC: m.fromC, toR: m.toR, toC: m.toC,
       piece: piece, captured: cap, lastMoveState: lastMove,
-      boardHash: getBoardHash()
+      notation: notation,
+      boardHash: getBoardHash(),
+      capturedStateSnapshot: JSON.parse(JSON.stringify(capturedState))
     });
-    board[m.toR][m.toC] = piece;
-    board[m.fromR][m.fromC] = 0;
+
+    board[m.toR][m.toC] = piece; board[m.fromR][m.fromC] = 0;
     lastMove = m;
     requestAnimationFrame(animLoop);
   }
 
   function animLoop(time) {
-    if (!animating) return;
+    if(!animating) return;
     const el = time - animState.startTime;
     const prog = Math.min(el / animState.duration, 1);
     animState.progress = prog * (2 - prog);
     draw();
-    if (prog < 1) requestAnimationFrame(animLoop);
+    if(prog<1) requestAnimationFrame(animLoop);
     else {
-      animating = false;
-      const cb = animState.callback;
-      animState = null;
-      cb();
+      animating = false; const cb = animState.callback; animState = null; cb();
     }
   }
 
   function finalizeMove() {
-    const {toR, toC} = lastMove;
+    const { toR, toC } = lastMove;
     const p = board[toR][toC];
     if (isHidden(p)) {
       const trueType = getTrueType(p);
@@ -985,237 +1235,205 @@
       board[toR][toC] = color | trueType;
       playSound('reveal');
     }
-    turn = (turn === RED) ? BLACK : RED;
-    selectedPiece = null;
-    possibleMoves = [];
+    turn = (turn===RED)?BLACK:RED;
+    selectedPiece = null; possibleMoves = [];
 
     const rKing = findKing(RED);
     const bKing = findKing(BLACK);
-    if (!rKing) {
-      end("Bạn Thua!");
-      return;
-    }
-    if (!bKing) {
-      end("Bạn Thắng!");
-      return;
-    }
+    if(!rKing) { end("Bạn Thua! (Đỏ bị chiếu bí)"); return; }
+    if(!bKing) { end("Bạn Thắng! (Đen bị chiếu bí)"); return; }
 
-    updateStatus(turn === RED ? "Lượt của bạn" : "Máy đang nghĩ...");
+    updateStatus(turn===RED?"Lượt của bạn":"Máy đang nghĩ...");
     draw();
 
-    if (turn === BLACK && !gameOver) {
+    if(turn===BLACK && !gameOver && gameMode !== 'puzzle') {
       setTimeout(() => {
         const best = getBestMove();
-        if (best) startMoveAnimation(best, finalizeMove);
-        else end("Bạn Thắng!");
+        if(best) startMoveAnimation(best, finalizeMove);
+        else end("Bạn Thắng! (Máy hết nước đi)");
       }, 300);
     }
   }
 
   function findKing(color) {
-    for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++)
-      if (getType(board[r][c]) === PIECE_KING && getColor(board[r][c]) === color) return true;
+    for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++)
+      if(getType(board[r][c])===PIECE_KING && getColor(board[r][c])===color) return true;
     return false;
   }
 
   function end(msg) {
     gameOver = true;
     updateStatus(msg);
-    const t = document.getElementById('toast');
-    t.innerText = msg;
-    t.classList.add('show');
-    setTimeout(() => t.classList.remove('show'), 3000);
+    showResultModal(msg);
+    playSound('strategy'); // Reuse win sound
   }
 
   function handleClick(e) {
-    if (gameOver || turn !== RED || animating) return;
+    if(gameOver || animating) return;
+    if (gameMode !== 'puzzle' && turn!==RED) return;
+    if (turn !== RED) return;
+
     const rect = canvas.getBoundingClientRect();
-    const c = Math.round((e.clientX - rect.left - MARGIN) / CELL_SIZE);
-    const r = Math.round((e.clientY - rect.top - MARGIN) / CELL_SIZE);
-    if (r < 0 || r >= ROWS || c < 0 || c >= COLS) return;
+    const c = Math.round((e.clientX - rect.left - MARGIN)/CELL_SIZE);
+    const r = Math.round((e.clientY - rect.top - MARGIN)/CELL_SIZE);
+    if(r<0||r>=ROWS||c<0||c>=COLS) return;
 
     const p = board[r][c];
     const color = getColor(p);
 
-    if (selectedPiece) {
-      const m = possibleMoves.find(x => x.r === r && x.c === c);
-      if (m) {
-        startMoveAnimation({fromR: selectedPiece.r, fromC: selectedPiece.c, toR: r, toC: c}, finalizeMove);
+    if(selectedPiece) {
+      const m = possibleMoves.find(x=>x.r===r && x.c===c);
+      if(m) {
+        startMoveAnimation({fromR:selectedPiece.r, fromC:selectedPiece.c, toR:r, toC:c}, () => {
+          finalizeMove();
+          if (gameMode === 'puzzle' && !gameOver) {
+            setTimeout(() => {
+              const best = getBestMove();
+              if(best) startMoveAnimation(best, finalizeMove);
+              else end("Bạn Thắng!");
+            }, 600);
+          }
+        });
         return;
       }
     }
-    if (color === RED) {
-      selectedPiece = {r, c};
-      possibleMoves = generateMoves(r, c, true);
+    if(color === RED) {
+      selectedPiece = {r,c};
+      possibleMoves = generateMoves(r,c,true);
       draw();
     } else {
-      selectedPiece = null;
-      possibleMoves = [];
-      draw();
+      selectedPiece = null; possibleMoves = []; draw();
     }
   }
 
   function undo() {
-    if (animating || moveHistory.length < 2 || gameOver) return;
-    undoOne();
-    undoOne();
-    draw();
+    if(animating || moveHistory.length<2 || gameOver) return;
+    undoOne(); undoOne(); draw();
   }
-
   function undoOne() {
     const m = moveHistory.pop();
-    if (!m) return;
+    if(!m) return;
     board[m.fromR][m.fromC] = m.piece;
     board[m.toR][m.toC] = m.captured;
     lastMove = m.lastMoveState;
-    turn = (turn === RED) ? BLACK : RED;
+    if (m.capturedStateSnapshot) {
+      capturedState = m.capturedStateSnapshot;
+      renderCaptured();
+    }
+    turn = (turn===RED)?BLACK:RED;
   }
 
   function getHint() {
-    if (turn !== RED) return;
-    let moves = [];
-    for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++)
-      if (getColor(board[r][c]) === RED)
-        generateMoves(r, c, true).forEach(t => moves.push({fromR: r, fromC: c, toR: t.r, toC: t.c}));
-    let best = null, min = Infinity;
-    for (let m of moves) {
-      const cap = board[m.toR][m.toC];
-      board[m.toR][m.toC] = board[m.fromR][m.fromC];
-      board[m.fromR][m.fromC] = 0;
+    if(turn!==RED) return;
+    const fen = generateFEN();
+    if (OPENING_BOOK[fen]) {
+      hintMove = OPENING_BOOK[fen];
+      showStrategyToast();
+      draw();
+      return;
+    }
+
+    let moves=[];
+    for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++)
+      if(getColor(board[r][c])===RED)
+        generateMoves(r,c,true).forEach(t=>moves.push({fromR:r,fromC:c,toR:t.r,toC:t.c}));
+    let best=null, min=Infinity;
+    for(let m of moves) {
+      const cap=board[m.toR][m.toC];
+      board[m.toR][m.toC]=board[m.fromR][m.fromC]; board[m.fromR][m.fromC]=0;
       const v = minimax(1, true, -Infinity, Infinity);
-      if (v < min) {
-        min = v;
-        best = m;
-      }
-      board[m.fromR][m.fromC] = board[m.toR][m.toC];
-      board[m.toR][m.toC] = cap;
+      if(v<min) { min=v; best=m; }
+      board[m.fromR][m.fromC]=board[m.toR][m.toC]; board[m.toR][m.toC]=cap;
     }
     hintMove = best;
     draw();
   }
 
-  function getBoardHash() {
-    return turn + JSON.stringify(board);
-  }
-
-  function updateStatus(msg) {
-    document.getElementById('status-text').innerText = msg;
-  }
+  function getBoardHash() { return turn + JSON.stringify(board); }
+  function updateStatus(msg) { document.getElementById('status-text').innerText = msg; }
 
   // --- DRAWING ---
   function resize() {
-    const h = window.innerHeight;
-    const w = window.innerWidth;
-    const size = Math.min(w, h) * 0.9;
-    canvas.width = size * 0.9;
-    canvas.height = size;
-    CELL_SIZE = canvas.width / (COLS + 1);
-    MARGIN = CELL_SIZE;
-    PIECE_RADIUS = CELL_SIZE * 0.4;
+    const h = window.innerHeight; const w = window.innerWidth;
+    const size = Math.min(w * 0.95, h - 180);
+    canvas.width = size * 0.9; canvas.height = size;
+    CELL_SIZE = canvas.width / (COLS+1);
+    MARGIN = CELL_SIZE; PIECE_RADIUS = CELL_SIZE * 0.4;
     draw();
   }
 
   function draw() {
     const theme = activeTheme;
-    const grd = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-    grd.addColorStop(0, theme.boardBase);
-    grd.addColorStop(1, theme.boardDark);
-    ctx.fillStyle = grd;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    const grd = ctx.createLinearGradient(0,0,canvas.width,canvas.height);
+    grd.addColorStop(0, theme.boardBase); grd.addColorStop(1, theme.boardDark);
+    ctx.fillStyle = grd; ctx.fillRect(0,0,canvas.width,canvas.height);
 
-    ctx.strokeStyle = theme.line;
-    ctx.lineWidth = 2;
-    for (let i = 0; i < ROWS; i++) {
-      ctx.beginPath();
-      ctx.moveTo(MARGIN, MARGIN + i * CELL_SIZE);
-      ctx.lineTo(canvas.width - MARGIN, MARGIN + i * CELL_SIZE);
-      ctx.stroke();
+    ctx.strokeStyle = theme.line; ctx.lineWidth = 2;
+    for(let i=0;i<ROWS;i++) {
+      ctx.beginPath(); ctx.moveTo(MARGIN, MARGIN+i*CELL_SIZE); ctx.lineTo(canvas.width-MARGIN, MARGIN+i*CELL_SIZE); ctx.stroke();
     }
-    for (let i = 0; i < COLS; i++) {
-      if (i === 0 || i === COLS - 1) {
-        ctx.beginPath();
-        ctx.moveTo(MARGIN + i * CELL_SIZE, MARGIN);
-        ctx.lineTo(MARGIN + i * CELL_SIZE, canvas.height - MARGIN);
-        ctx.stroke();
+    for(let i=0;i<COLS;i++) {
+      if(i===0||i===COLS-1) {
+        ctx.beginPath(); ctx.moveTo(MARGIN+i*CELL_SIZE, MARGIN); ctx.lineTo(MARGIN+i*CELL_SIZE, canvas.height-MARGIN); ctx.stroke();
       } else {
-        ctx.beginPath();
-        ctx.moveTo(MARGIN + i * CELL_SIZE, MARGIN);
-        ctx.lineTo(MARGIN + i * CELL_SIZE, MARGIN + 4 * CELL_SIZE);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(MARGIN + i * CELL_SIZE, MARGIN + 5 * CELL_SIZE);
-        ctx.lineTo(MARGIN + i * CELL_SIZE, canvas.height - MARGIN);
-        ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(MARGIN+i*CELL_SIZE, MARGIN); ctx.lineTo(MARGIN+i*CELL_SIZE, MARGIN+4*CELL_SIZE); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(MARGIN+i*CELL_SIZE, MARGIN+5*CELL_SIZE); ctx.lineTo(MARGIN+i*CELL_SIZE, canvas.height-MARGIN); ctx.stroke();
       }
     }
     const drawX = (rStart) => {
-      const y = MARGIN + rStart * CELL_SIZE;
+      const y = MARGIN + rStart*CELL_SIZE;
       ctx.beginPath();
-      ctx.moveTo(MARGIN + 3 * CELL_SIZE, y);
-      ctx.lineTo(MARGIN + 5 * CELL_SIZE, y + 2 * CELL_SIZE);
-      ctx.moveTo(MARGIN + 5 * CELL_SIZE, y);
-      ctx.lineTo(MARGIN + 3 * CELL_SIZE, y + 2 * CELL_SIZE);
+      ctx.moveTo(MARGIN+3*CELL_SIZE, y); ctx.lineTo(MARGIN+5*CELL_SIZE, y+2*CELL_SIZE);
+      ctx.moveTo(MARGIN+5*CELL_SIZE, y); ctx.lineTo(MARGIN+3*CELL_SIZE, y+2*CELL_SIZE);
       ctx.stroke();
     };
-    drawX(0);
-    drawX(7);
+    drawX(0); drawX(7);
 
-    ctx.fillStyle = theme.line;
-    ctx.globalAlpha = 0.4;
-    ctx.font = `italic bold ${CELL_SIZE * 0.6}px serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText("SỞ HÀ   ⚔   HÁN GIỚI", canvas.width / 2, MARGIN + 4.5 * CELL_SIZE);
-    ctx.globalAlpha = 1.0;
+    ctx.fillStyle = theme.line; ctx.globalAlpha=0.4;
+    ctx.font = `italic bold ${CELL_SIZE*0.6}px serif`;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText("SỞ HÀ   ⚔   HÁN GIỚI", canvas.width/2, MARGIN+4.5*CELL_SIZE);
+    ctx.globalAlpha=1.0;
 
-    if (lastMove) {
+    if(lastMove) {
       highlightSq(lastMove.fromR, lastMove.fromC, 'rgba(52, 152, 219, 0.3)');
       highlightSq(lastMove.toR, lastMove.toC, 'rgba(52, 152, 219, 0.3)');
     }
-    if (selectedPiece) highlightSq(selectedPiece.r, selectedPiece.c, theme.highlight);
+    if(selectedPiece) highlightSq(selectedPiece.r, selectedPiece.c, theme.highlight);
 
-    for (let m of possibleMoves) {
+    for(let m of possibleMoves) {
       ctx.fillStyle = theme.highlight;
-      ctx.beginPath();
-      ctx.arc(MARGIN + m.c * CELL_SIZE, MARGIN + m.r * CELL_SIZE, PIECE_RADIUS * 0.3, 0, 6.28);
-      ctx.fill();
+      ctx.beginPath(); ctx.arc(MARGIN+m.c*CELL_SIZE, MARGIN+m.r*CELL_SIZE, PIECE_RADIUS*0.3, 0, 6.28); ctx.fill();
     }
 
-    if (hintMove && turn === RED) {
-      ctx.strokeStyle = 'gold';
-      ctx.lineWidth = 4;
-      const x1 = MARGIN + hintMove.fromC * CELL_SIZE, y1 = MARGIN + hintMove.fromR * CELL_SIZE;
-      const x2 = MARGIN + hintMove.toC * CELL_SIZE, y2 = MARGIN + hintMove.toR * CELL_SIZE;
-      ctx.beginPath();
-      ctx.moveTo(x1, y1);
-      ctx.lineTo(x2, y2);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.arc(x2, y2, 5, 0, 6.28);
-      ctx.fillStyle = 'gold';
-      ctx.fill();
+    if(hintMove && turn===RED) {
+      ctx.strokeStyle = 'gold'; ctx.lineWidth=4;
+      const x1=MARGIN+hintMove.fromC*CELL_SIZE, y1=MARGIN+hintMove.fromR*CELL_SIZE;
+      const x2=MARGIN+hintMove.toC*CELL_SIZE, y2=MARGIN+hintMove.toR*CELL_SIZE;
+      ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(x2,y2, 5, 0, 6.28); ctx.fillStyle='gold'; ctx.fill();
     }
 
-    for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+    for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) {
       const p = board[r][c];
-      if (animating && animState && animState.toR === r && animState.toC === c) continue;
-      if (p !== 0) drawPiece(r, c, p);
+      if(animating && animState && animState.toR===r && animState.toC===c) continue;
+      if(p!==0) drawPiece(r, c, p);
     }
 
-    if (animating && animState) {
-      const {fromR, fromC, toR, toC, progress, piece} = animState;
-      const x1 = MARGIN + fromC * CELL_SIZE, y1 = MARGIN + fromR * CELL_SIZE;
-      const x2 = MARGIN + toC * CELL_SIZE, y2 = MARGIN + toR * CELL_SIZE;
-      const curX = x1 + (x2 - x1) * progress;
-      const curY = y1 + (y2 - y1) * progress;
+    if(animating && animState) {
+      const { fromR, fromC, toR, toC, progress, piece } = animState;
+      const x1 = MARGIN + fromC*CELL_SIZE, y1 = MARGIN + fromR*CELL_SIZE;
+      const x2 = MARGIN + toC*CELL_SIZE, y2 = MARGIN + toR*CELL_SIZE;
+      const curX = x1 + (x2-x1)*progress;
+      const curY = y1 + (y2-y1)*progress;
       drawPieceRaw(curX, curY, piece, true);
     }
   }
 
   function highlightSq(r, c, color) {
-    const x = MARGIN + c * CELL_SIZE, y = MARGIN + r * CELL_SIZE;
+    const x = MARGIN+c*CELL_SIZE, y=MARGIN+r*CELL_SIZE;
     ctx.fillStyle = color;
-    ctx.fillRect(x - CELL_SIZE / 2 + 2, y - CELL_SIZE / 2 + 2, CELL_SIZE - 4, CELL_SIZE - 4);
+    ctx.fillRect(x-CELL_SIZE/2+2, y-CELL_SIZE/2+2, CELL_SIZE-4, CELL_SIZE-4);
   }
 
   function drawPiece(r, c, p) {
@@ -1224,78 +1442,60 @@
     drawPieceRaw(x, y, p);
   }
 
-  function drawPieceRaw(x, y, p, lift = false) {
+  function drawPieceRaw(x, y, p, lift=false) {
     const theme = activeTheme;
     const color = getColor(p);
     const type = getType(p);
     const hidden = isHidden(p);
-    const r = lift ? PIECE_RADIUS * 1.1 : PIECE_RADIUS;
+    const r = lift ? PIECE_RADIUS*1.1 : PIECE_RADIUS;
     const offset = lift ? 5 : 2;
 
     ctx.fillStyle = 'rgba(0,0,0,0.4)';
-    ctx.beginPath();
-    ctx.arc(x + offset, y + offset, r, 0, 6.28);
-    ctx.fill();
+    ctx.beginPath(); ctx.arc(x+offset, y+offset, r, 0, 6.28); ctx.fill();
 
-    const grd = ctx.createRadialGradient(x - r / 3, y - r / 3, r / 10, x, y, r);
+    const grd = ctx.createRadialGradient(x-r/3,y-r/3, r/10, x,y,r);
     if (hidden) {
-      grd.addColorStop(0, '#95a5a6');
-      grd.addColorStop(1, '#34495e');
+      grd.addColorStop(0, '#95a5a6'); grd.addColorStop(1, '#34495e');
     } else {
       if (activeTheme === THEMES.wood) {
-        grd.addColorStop(0, '#f9e79f');
-        grd.addColorStop(1, '#d4ac0d');
+        grd.addColorStop(0, '#f9e79f'); grd.addColorStop(1, '#d4ac0d');
       } else if (activeTheme === THEMES.jade) {
-        grd.addColorStop(0, '#e8f8f5');
-        grd.addColorStop(1, '#a3e4d7');
+        grd.addColorStop(0, '#e8f8f5'); grd.addColorStop(1, '#a3e4d7');
       } else {
-        grd.addColorStop(0, '#fff');
-        grd.addColorStop(1, '#bdc3c7');
+        grd.addColorStop(0, '#fff'); grd.addColorStop(1, '#bdc3c7');
       }
     }
     ctx.fillStyle = grd;
-    ctx.beginPath();
-    ctx.arc(x, y, r, 0, 6.28);
-    ctx.fill();
+    ctx.beginPath(); ctx.arc(x,y,r,0,6.28); ctx.fill();
 
     ctx.lineWidth = 3;
-    ctx.strokeStyle = (hidden) ? '#2c3e50' : (color === RED ? theme.red : theme.black);
+    ctx.strokeStyle = (hidden) ? '#2c3e50' : (color===RED?theme.red:theme.black);
     ctx.stroke();
-    ctx.lineWidth = 1;
-    ctx.strokeStyle = hidden ? '#7f8c8d' : theme.line;
-    ctx.beginPath();
-    ctx.arc(x, y, r * 0.85, 0, 6.28);
-    ctx.stroke();
+    ctx.lineWidth = 1; ctx.strokeStyle= hidden ? '#7f8c8d' : theme.line;
+    ctx.beginPath(); ctx.arc(x,y,r*0.85,0,6.28); ctx.stroke();
 
     if (hidden) {
       ctx.fillStyle = 'rgba(255,255,255,0.2)';
-      ctx.font = `${r * 1.5}px serif`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText("?", x, y + r * 0.1);
+      ctx.font = `${r*1.5}px serif`;
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText("?", x, y+r*0.1);
     } else {
-      ctx.fillStyle = (color === RED) ? theme.red : theme.black;
-      ctx.font = `bold ${r * 1.1}px 'Noto Serif TC', serif`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      const chars = color === RED
-        ? ["", "帥", "仕", "相", "傌", "俥", "炮", "兵"]
-        : ["", "將", "士", "象", "馬", "車", "砲", "卒"];
-      ctx.fillText(chars[type], x, y + r * 0.1);
+      ctx.fillStyle = (color===RED)?theme.red:theme.black;
+      ctx.font = `bold ${r*1.1}px 'Noto Serif TC', serif`;
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      const chars = color===RED
+        ? ["","帥","仕","相","傌","俥","炮","兵"]
+        : ["","將","士","象","馬","車","砲","卒"];
+      ctx.fillText(chars[type], x, y+r*0.1);
     }
 
     ctx.fillStyle = 'rgba(255,255,255,0.4)';
-    ctx.beginPath();
-    ctx.arc(x, y, r * 0.9, -0.5, 1.0);
-    ctx.fill();
+    ctx.beginPath(); ctx.arc(x,y,r*0.9, -0.5, 1.0); ctx.fill();
   }
 
   window.addEventListener('resize', resize);
   canvas.addEventListener('mousedown', handleClick);
-  canvas.addEventListener('touchstart', (e) => {
-    e.preventDefault();
-    handleClick(e.touches[0])
-  }, {passive: false});
+  canvas.addEventListener('touchstart', (e)=>{e.preventDefault(); handleClick(e.touches[0])}, {passive:false});
 
 </script>
 </body>
