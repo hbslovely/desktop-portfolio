@@ -203,6 +203,7 @@
     [zIndex]="getWindowZIndex('text-viewer')"
     [isFocused]="isWindowFocused('text-viewer')"
     [isMinimizedExternal]="isWindowMinimized('text-viewer')"
+    windowId="text-viewer"
     (onClose)="onCloseTextViewerWindow()"
     (onMinimize)="onMinimizeTextViewerWindow()"
     (onMaximize)="onMaximizeTextViewerWindow()"
@@ -230,6 +231,7 @@
     [zIndex]="getWindowZIndex('image-viewer')"
     [isFocused]="isWindowFocused('image-viewer')"
     [isMinimizedExternal]="isWindowMinimized('image-viewer')"
+    windowId="image-viewer"
     (onClose)="onCloseImageViewerWindow()"
     (onMinimize)="onMinimizeImageViewerWindow()"
     (onMaximize)="onMaximizeImageViewerWindow()"
@@ -256,6 +258,7 @@
     [zIndex]="getWindowZIndex('pdf-viewer')"
     [isFocused]="isWindowFocused('pdf-viewer')"
     [isMinimizedExternal]="isWindowMinimized('pdf-viewer')"
+    windowId="pdf-viewer"
     (onClose)="onClosePdfViewerWindow()"
     (onMinimize)="onMinimizePdfViewerWindow()"
     (onMaximize)="onMaximizePdfViewerWindow()"
@@ -835,11 +838,10 @@
 
       <app-music-app *ngSwitchCase="'music'"></app-music-app>
 
-      <app-fireant-app *ngSwitchCase="'fireant'"></app-fireant-app>
 
       <app-angular-guidelines-app *ngSwitchCase="'angular-guidelines'"></app-angular-guidelines-app>
 
-      <app-booking-app *ngSwitchCase="'booking'"></app-booking-app>
+      <app-angular-learning-app *ngSwitchCase="'angular-learning'"></app-angular-learning-app>
 
       <app-tuoitre-news-app *ngSwitchCase="'tuoitre-news'"></app-tuoitre-news-app>
 

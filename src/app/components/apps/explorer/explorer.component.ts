@@ -265,25 +265,45 @@ export class ExplorerComponent implements OnInit {
     if (item.content?.startsWith('virtual-file://')) {
       const virtualPath = item.content.replace('virtual-file://', '');
 
+      // Check if it's an image file
+      const isImage = ['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(fileExtension.toLowerCase());
+      
+      if (isImage) {
+        // Load image data
+        const imageData = this.fileSystemService.loadVirtualImageFile(virtualPath);
+        if (imageData) {
+          // Create a modified item with the image data URL
+          const itemWithContent = {
+            ...item,
+            content: imageData
+          };
 
-      const content = this.fileSystemService.loadVirtualFile(virtualPath);
-      if (content) {
-
-        // Create a modified item with the actual content
-        const itemWithContent = {
-          ...item,
-          content: content
-        };
-
-        // Emit file open event with the loaded content
-        this.onFileOpen.emit({
-          item: itemWithContent,
-          fileType: this.getFileType(fileExtension),
-          extension: fileExtension
-        });
-        return;
+          // Emit file open event with the loaded image data
+          this.onFileOpen.emit({
+            item: itemWithContent,
+            fileType: 'image',
+            extension: fileExtension
+          });
+          return;
+        }
       } else {
+        // Load text/html content
+        const content = this.fileSystemService.loadVirtualFile(virtualPath);
+        if (content) {
+          // Create a modified item with the actual content
+          const itemWithContent = {
+            ...item,
+            content: content
+          };
 
+          // Emit file open event with the loaded content
+          this.onFileOpen.emit({
+            item: itemWithContent,
+            fileType: this.getFileType(fileExtension),
+            extension: fileExtension
+          });
+          return;
+        }
       }
     }
 

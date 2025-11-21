@@ -276,18 +276,6 @@ export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
     maximizable: true,
     statusText: 'YouTube Music Player'
   },
-  'fireant': {
-    id: 'fireant',
-    title: 'FireAnt Stock Market',
-    icon: 'pi pi-chart-line',
-    component: 'fireant',
-    defaultWidth: 1000,
-    defaultHeight: 750,
-    defaultX: 200,
-    defaultY: 80,
-    maximizable: true,
-    statusText: 'Vietnamese Stock Market Data'
-  },
   'angular-guidelines': {
     id: 'angular-guidelines',
     title: 'Angular Guidelines',
@@ -300,17 +288,17 @@ export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
     maximizable: true,
     statusText: 'Official Angular Documentation'
   },
-  'booking': {
-    id: 'booking',
-    title: 'Travel Search',
-    icon: 'pi pi-map',
-    component: 'booking',
-    defaultWidth: 1000,
-    defaultHeight: 750,
-    defaultX: 150,
-    defaultY: 80,
+  'angular-learning': {
+    id: 'angular-learning',
+    title: 'Học Angular',
+    icon: 'pi pi-graduation-cap',
+    component: 'angular-learning',
+    defaultWidth: 1400,
+    defaultHeight: 900,
+    defaultX: 100,
+    defaultY: 50,
     maximizable: true,
-    statusText: 'Search destinations with Booking.com'
+    statusText: 'Học Angular từ đầu với ví dụ thực hành'
   },
   'tuoitre-news': {
     id: 'tuoitre-news',
