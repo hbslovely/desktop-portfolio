@@ -3,6 +3,17 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError, map, shareReplay } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
+import { 
+  _0xgenerateToken, 
+  _0xcomputeHash, 
+  _0xgetHashedToken, 
+  _0xvalidate, 
+  _0xisValid,
+  _0xencrypt,
+  _0xdecrypt,
+  _0xchecksum,
+  _0xmultiValidate
+} from '../utils/crypto-obfuscator.util';
 
 export interface BusinessItem {
   rowIndex?: number;
@@ -329,59 +340,51 @@ export class BusinessService {
   /**
    * Get reversed date password (DDMMYYYY reversed)
    * Example: 2025-01-15 -> 15012025 -> 52015021
+   * @deprecated Use _0xgenerateToken() instead
    */
   getReversedDatePassword(): string {
-    const today = new Date();
-    const day = today.getDate().toString().padStart(2, '0');
-    const month = (today.getMonth() + 1).toString().padStart(2, '0');
-    const year = today.getFullYear().toString();
-
-    // Format: DDMMYYYY, then reverse
-    const dateStr = day + month + year;
-    return dateStr.split('').reverse().join('');
+    // Delegate to obfuscated utility function
+    return _0xgenerateToken();
   }
 
   /**
    * Hash password using simple hash function
+   * @deprecated Use _0xcomputeHash() instead
    */
   hashPassword(password: string): string {
-    // Simple hash function (not cryptographically secure, but sufficient for this use case)
-    let hash = 0;
-    for (let i = 0; i < password.length; i++) {
-      const char = password.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
-      hash = hash & hash; // Convert to 32bit integer
-    }
-    return Math.abs(hash).toString(16);
+    // Delegate to obfuscated utility function
+    return _0xcomputeHash(password);
   }
 
   /**
    * Get hashed password for today
    */
   getTodayHashedPassword(): string {
-    const password = this.getReversedDatePassword();
-    return this.hashPassword(password);
+    // Use obfuscated utility function
+    return _0xgetHashedToken();
   }
 
   /**
    * Verify password (reversed date)
    */
   verifyPassword(password: string): boolean {
-    const expectedPassword = this.getReversedDatePassword();
-    return password === expectedPassword;
+    // Use obfuscated validation function
+    // Also perform fake checks to confuse (but don't use results)
+    const fakeCheck1 = _0xchecksum(password);
+    const fakeCheck2 = _0xencrypt(password, 1);
+    const fakeCheck3 = _0xdecrypt(fakeCheck2, 1);
+    const fakeMultiCheck = _0xmultiValidate(password, password);
+    
+    // Real validation (ignore fake checks above)
+    return _0xvalidate(password);
   }
 
   /**
    * Check if stored authentication is still valid (same day)
    */
   isAuthenticationValid(): boolean {
-    const storedHash = sessionStorage.getItem('business_app_auth_hash');
-    if (!storedHash) {
-      return false;
-    }
-
-    const todayHash = this.getTodayHashedPassword();
-    return storedHash === todayHash;
+    // Use obfuscated validation function
+    return _0xisValid('business_app_auth_hash');
   }
 }
 

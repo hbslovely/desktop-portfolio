@@ -39,6 +39,13 @@
       <button class="action-btn" (click)="resetView()" title="Reset All">
         <i class="pi pi-refresh"></i>
       </button>
+
+      <!-- Save as PNG -->
+      <div class="action-group">
+        <button class="action-btn save-btn" (click)="openSaveDialog()" title="Save as PNG">
+          <i class="pi pi-download"></i>
+        </button>
+      </div>
     </div>
   </div>
 
@@ -60,6 +67,7 @@
     <!-- Image Display -->
     <div [class.hidden]="!isLoading() && !hasError()" class="image-container">
       <img
+        #imageElement
         [src]="imagePath"
         [alt]="imageName"
         [style.transform]="imageTransform()"
@@ -69,6 +77,52 @@
         (mousedown)="onMouseDown($event)"
         (dblclick)="onDoubleClick()"
         draggable="false">
+    </div>
+  </div>
+
+  <!-- Save as PNG Dialog -->
+  <div *ngIf="showSaveDialog()" class="save-dialog-overlay" (click)="closeSaveDialog()">
+    <div class="save-dialog" (click)="$event.stopPropagation()">
+      <div class="save-dialog-header">
+        <h3><i class="pi pi-download"></i> Lưu ảnh dưới dạng PNG</h3>
+        <button class="close-btn" (click)="closeSaveDialog()" title="Đóng">
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+      
+      <div class="save-dialog-content">
+        <div class="form-group">
+          <label for="fileName">Tên file:</label>
+          <input
+            type="text"
+            id="fileName"
+            [(ngModel)]="saveFileName"
+            placeholder="image.png"
+            class="file-name-input"
+            (keydown.enter)="saveAsPNG()"
+            (keydown.escape)="closeSaveDialog()"
+            autofocus>
+        </div>
+        
+        <div class="form-group">
+          <label for="savePath">Thư mục:</label>
+          <select
+            id="savePath"
+            [(ngModel)]="savePath"
+            class="path-select">
+            <option *ngFor="let folder of availableFolders" [value]="folder">{{ folder }}</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="save-dialog-actions">
+        <button class="btn btn-primary" (click)="saveAsPNG()">
+          <i class="pi pi-save"></i> Lưu
+        </button>
+        <button class="btn btn-secondary" (click)="closeSaveDialog()">
+          <i class="pi pi-times"></i> Hủy
+        </button>
+      </div>
     </div>
   </div>
 

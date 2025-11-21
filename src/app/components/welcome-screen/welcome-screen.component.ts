@@ -27,6 +27,9 @@ export class WelcomeScreenComponent implements OnInit, OnDestroy {
   // Greeting
   greeting = signal<string>('');
 
+  // Particles for background animation
+  particles = Array.from({ length: 10 }, (_, i) => i + 1);
+
   private greetings = [
     'Welcome Back!', 'Hello There!', 'Good to See You!', 
     'Ready to Create?', 'Let\'s Get Started!', 'Nice to See You Again!'
