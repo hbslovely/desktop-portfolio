@@ -244,6 +244,22 @@
     }
     .theme-option.active { border-color: #fff; transform: scale(1.2); }
 
+    .diff-btn {
+      padding: 5px 10px;
+      border: 1px solid #555;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      color: #aaa;
+      transition: 0.2s;
+    }
+    .diff-btn.active {
+      background: #d4af37;
+      color: #1a1a1a;
+      border-color: #d4af37;
+      font-weight: bold;
+    }
+
     /* --- IN-GAME UI --- */
     #bottom-panel {
       display: flex;
@@ -321,6 +337,16 @@
   </div>
 
   <div class="setting-row">
+    <span>Độ Khó AI</span>
+    <div class="flex gap-2">
+      <div class="diff-btn" onclick="setDifficulty(2)" id="diff-2">Dễ</div>
+      <div class="diff-btn" onclick="setDifficulty(3)" id="diff-3">Vừa</div>
+      <div class="diff-btn active" onclick="setDifficulty(4)" id="diff-4">Khó</div>
+      <div class="diff-btn" onclick="setDifficulty(5)" id="diff-5">Kỳ Thánh</div>
+    </div>
+  </div>
+
+  <div class="setting-row">
     <span>Âm Thanh (SFX)</span>
     <div class="relative inline-block w-12 align-middle select-none">
       <input type="checkbox" id="toggle-sfx" checked class="absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-300" style="top:0; left:0;"/>
@@ -373,7 +399,7 @@
     </div>
 
     <div id="puzzle-menu">
-      <h2 class="text-2xl text-amber-400 mb-6 font-bold uppercase tracking-widest">36 Kế Sát Pháp</h2>
+      <h2 class="text-2xl text-amber-400 mb-6 font-bold uppercase tracking-widest">Danh Sách Thế Cờ</h2>
       <div class="puzzle-list-container" id="puzzle-list">
         <!-- JS will populate this -->
       </div>
@@ -458,7 +484,7 @@
   };
 
   let activeTheme = THEMES.wood;
-  let config = { sfx: true, music: false };
+  let config = { sfx: true, music: false, difficulty: 4 };
 
   // --- CONSTANTS ---
   const COLS = 9;
@@ -476,7 +502,6 @@
   const TRUE_TYPE_SHIFT = 6;
 
   // --- STRATEGY & TACTICS (36 Kế) ---
-  // FEN format used for static lookup
   function generateFEN() {
     let fen = "";
     for(let r=0; r<ROWS; r++) {
@@ -505,7 +530,6 @@
     "rheakaehr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RHEAKA2R": {fromR:2, fromC:1, toR:2, toC:4},
   };
 
-  // --- 36 KILLING STRATEGIES (Luyện Sát Pháp) ---
   const PUZZLE_DB = [
     { name: "Thiết Môn Thuyên", desc: "Xe chặn cửa, Pháo bắn xuyên tâm.", setup: (b) => { b[0][4]=BLACK|1; b[0][3]=BLACK|2; b[0][5]=BLACK|2; b[2][4]=RED|6; b[0][8]=RED|5; b[9][4]=RED|1; }},
     { name: "Đại Đao Oa Tâm", desc: "Xe cắm thẳng tim Tướng.", setup: (b) => { b[0][4]=BLACK|1; b[0][3]=BLACK|2; b[0][5]=BLACK|2; b[1][4]=RED|5; b[2][4]=RED|7; b[2][5]=RED|6; b[9][4]=RED|1; }},
@@ -632,54 +656,41 @@
     draw();
   }
 
+  function setDifficulty(d) {
+    config.difficulty = d;
+    document.querySelectorAll('.diff-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById('diff-'+d).classList.add('active');
+  }
+
   document.getElementById('toggle-sfx').addEventListener('change', (e) => config.sfx = e.target.checked);
   document.getElementById('toggle-music').addEventListener('change', (e) => toggleMusic(e.target.checked));
 
   // --- NOTATION & EXPORT ---
   function getMoveNotation(m) {
-    // Simplified Standard Notation (C2.5, H8+7 etc)
-    // Columns: Red 9..1 (R to L), Black 1..9 (L to R)
-    const piece = board[m.toR][m.toC]; // This is called AFTER move on board usually, wait
-    // Actually we record this before update or construct it.
-    // Let's use the piece that moved.
-    const p = m.piece;
-    const type = getType(p);
-    const color = getColor(p);
-
-    // Char
+    const piece = m.piece;
+    const type = getType(piece);
+    const color = getColor(piece);
     const chars = ["","K","A","E","H","R","C","P"];
     const char = chars[type];
-
-    // Cols (1-9)
-    // Red: c=0 is 9, c=8 is 1.  => col = 9 - c
-    // Black: c=0 is 1, c=8 is 9. => col = c + 1
     const fromCol = (color === RED) ? (9 - m.fromC) : (m.fromC + 1);
     const toCol = (color === RED) ? (9 - m.toC) : (m.toC + 1);
-
-    // Dir
-    let dir = "."; // Traverse
+    let dir = ".";
     if (color === RED) {
-      if (m.toR < m.fromR) dir = "+"; // Forward (index decreases for Red up)
-      else if (m.toR > m.fromR) dir = "-";
+      if (m.toR < m.fromR) dir = "+"; else if (m.toR > m.fromR) dir = "-";
     } else {
-      if (m.toR > m.fromR) dir = "+"; // Forward (index increases for Black down)
-      else if (m.toR < m.fromR) dir = "-";
+      if (m.toR > m.fromR) dir = "+"; else if (m.toR < m.fromR) dir = "-";
     }
-
-    // Dest char: If traverse, use toCol. If vertical, use distance.
-    // Horses/Elephants always traverse. Rook/Cannon/Pawn/King can go straight.
     let dest = toCol;
     if ((type === PIECE_ROOK || type === PIECE_CANNON || type === PIECE_PAWN || type === PIECE_KING) && m.fromC === m.toC) {
-      dest = Math.abs(m.toR - m.fromR); // Distance
+      dest = Math.abs(m.toR - m.fromR);
     }
-
     return char + fromCol + dir + dest;
   }
 
   function generatePGN() {
     let pgn = "";
     moveHistory.forEach((m, i) => {
-      if (i % 2 === 0) pgn += `${(i/2)+1}. `;
+      if (i % 2 === 0) pgn += `${Math.floor(i/2)+1}. `;
       pgn += m.notation + " ";
     });
     return pgn;
@@ -1015,14 +1026,12 @@
     return false;
   }
 
-  // --- EVALUATION & AI (Enhanced with Tactics) ---
   const VALUES = { [PIECE_KING]:10000, [PIECE_ROOK]:900, [PIECE_CANNON]:450, [PIECE_HORSE]:400, [PIECE_ELEPHANT]:20, [PIECE_ADVISOR]:20, [PIECE_PAWN]:10 };
 
   function evaluate() {
     let s = 0;
     let blackKing = null, redKing = null;
 
-    // Find Kings first for relative positioning
     for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) {
       const p = board[r][c];
       if (getType(p)===PIECE_KING) {
@@ -1038,51 +1047,43 @@
       let val = VALUES[type];
       if (isHidden(p)) val = 30;
 
-      // AI Personality Bias
       if (aiPreference === 'CHARIOT' && type === PIECE_ROOK) val *= 1.1;
       if (aiPreference === 'CANNON_HORSE' && (type === PIECE_CANNON || type === PIECE_HORSE)) val *= 1.1;
 
-      // --- 36 TACTICAL HEURISTICS (Sát Pháp) ---
-      // If Black (AI) pieces are in key attacking positions against Red King
       if (color === BLACK && redKing) {
         const dr = Math.abs(r - redKing.r);
         const dc = Math.abs(c - redKing.c);
-
-        // 1. Mã Ngọa Tào (Horse at 3,7 or 3,3 relative to Red Palace)
-        // Red King is usually at 9,4. "Ngoa Tao" points are approx (7,3), (7,5), (8,2), (8,6)
-        if (type === PIECE_HORSE && r >= 7 && (c===3 || c===5 || c===2 || c===6)) {
-          val += 200; // Huge bonus for Horse checkmate position
-        }
-
-        // 2. Pháo Trùng (Cannon behind Cannon on King's file)
-        if (type === PIECE_CANNON && c === redKing.c) {
-          val += 100; // Control center file
-        }
-
-        // 3. Xe Cắm Đáy (Rook at bottom rank)
-        if (type === PIECE_ROOK && r === 9 && dc <= 2) {
-          val += 150; // Threatening mate
-        }
-
-        // 4. General aggression (Close to King)
+        if (type === PIECE_HORSE && r >= 7 && (c===3 || c===5 || c===2 || c===6)) val += 200;
+        if (type === PIECE_CANNON && c === redKing.c) val += 100;
+        if (type === PIECE_ROOK && r === 9 && dc <= 2) val += 150;
         if (dr <= 2 && dc <= 2) val += 50;
       }
 
-      if(c>2 && c<6) val += 10; // Center control
-
-      if(color===BLACK) s+=val; else s-=val;
+      if(c>2 && c<6) val += 10;
+      if(getColor(p)===BLACK) s+=val; else s-=val;
     }
     return s;
   }
 
+  function sortMoves(moves) {
+    return moves.sort((a, b) => {
+      const valA = board[a.toR][a.toC] !== 0 ? VALUES[getType(board[a.toR][a.toC])] : 0;
+      const valB = board[b.toR][b.toC] !== 0 ? VALUES[getType(board[b.toR][b.toC])] : 0;
+      return valB - valA;
+    });
+  }
+
   function minimax(depth, isMax, alpha, beta) {
     if(depth===0) return evaluate();
+
     let moves = [];
     for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++)
       if(getColor(board[r][c])===(isMax?BLACK:RED))
         generateMoves(r,c,true).forEach(t=>moves.push({fromR:r,fromC:c,toR:t.r,toC:t.c}));
 
     if(moves.length===0) return isMax?-20000:20000;
+
+    moves = sortMoves(moves);
 
     if(isMax) {
       let max = -Infinity;
@@ -1123,11 +1124,15 @@
         generateMoves(r,c,true).forEach(t=>moves.push({fromR:r,fromC:c,toR:t.r,toC:t.c}));
 
     let best=null, max=-Infinity;
+    moves = sortMoves(moves);
+
+    // Use configured depth
+    const searchDepth = config.difficulty || 4;
 
     for(let m of moves) {
       const cap=board[m.toR][m.toC];
       board[m.toR][m.toC]=board[m.fromR][m.fromC]; board[m.fromR][m.fromC]=0;
-      const v = minimax(2, false, -Infinity, Infinity);
+      const v = minimax(searchDepth - 1, false, -Infinity, Infinity); // -1 because this loop is depth 1
       board[m.fromR][m.fromC]=board[m.toR][m.toC]; board[m.toR][m.toC]=cap;
       if(v>max) { max=v; best=m; }
     }
@@ -1151,13 +1156,16 @@
       if(getColor(board[r][c])===turn)
         generateMoves(r,c,true).forEach(t=>moves.push({fromR:r,fromC:c,toR:t.r,toC:t.c}));
 
+    moves = sortMoves(moves);
+    const searchDepth = config.difficulty || 4;
+
     let best=null;
     if (isRed) {
       let min=Infinity;
       for(let m of moves) {
         const cap=board[m.toR][m.toC];
         board[m.toR][m.toC]=board[m.fromR][m.fromC]; board[m.fromR][m.fromC]=0;
-        const v = minimax(1, true, -Infinity, Infinity);
+        const v = minimax(searchDepth - 1, true, -Infinity, Infinity);
         if(v<min) { min=v; best=m; }
         board[m.fromR][m.fromC]=board[m.toR][m.toC]; board[m.toR][m.toC]=cap;
       }
@@ -1166,7 +1174,7 @@
       for(let m of moves) {
         const cap=board[m.toR][m.toC];
         board[m.toR][m.toC]=board[m.fromR][m.fromC]; board[m.fromR][m.fromC]=0;
-        const v = minimax(1, false, -Infinity, Infinity);
+        const v = minimax(searchDepth - 1, false, -Infinity, Infinity);
         if(v>max) { max=v; best=m; }
         board[m.fromR][m.fromC]=board[m.toR][m.toC]; board[m.toR][m.toC]=cap;
       }
@@ -1198,7 +1206,6 @@
     };
     playSound(cap ? 'capture' : 'move');
 
-    // Record notation
     const notation = getMoveNotation({fromR: m.fromR, fromC: m.fromC, toR: m.toR, toC: m.toC, piece: piece});
 
     moveHistory.push({
@@ -1243,7 +1250,7 @@
     if(!rKing) { end("Bạn Thua! (Đỏ bị chiếu bí)"); return; }
     if(!bKing) { end("Bạn Thắng! (Đen bị chiếu bí)"); return; }
 
-    updateStatus(turn===RED?"Lượt của bạn":"Máy đang nghĩ...");
+    updateStatus(turn===RED?"Lượt của bạn":"Máy đang tính sâu...");
     draw();
 
     if(turn===BLACK && !gameOver && gameMode !== 'puzzle') {
@@ -1265,7 +1272,7 @@
     gameOver = true;
     updateStatus(msg);
     showResultModal(msg);
-    playSound('strategy'); // Reuse win sound
+    playSound('strategy');
   }
 
   function handleClick(e) {
@@ -1337,11 +1344,15 @@
     for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++)
       if(getColor(board[r][c])===RED)
         generateMoves(r,c,true).forEach(t=>moves.push({fromR:r,fromC:c,toR:t.r,toC:t.c}));
+
+    moves = sortMoves(moves);
+    const searchDepth = config.difficulty || 4;
     let best=null, min=Infinity;
+
     for(let m of moves) {
       const cap=board[m.toR][m.toC];
       board[m.toR][m.toC]=board[m.fromR][m.fromC]; board[m.fromR][m.fromC]=0;
-      const v = minimax(1, true, -Infinity, Infinity);
+      const v = minimax(searchDepth - 1, true, -Infinity, Infinity);
       if(v<min) { min=v; best=m; }
       board[m.fromR][m.fromC]=board[m.toR][m.toC]; board[m.toR][m.toC]=cap;
     }
