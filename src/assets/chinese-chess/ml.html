@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CS Studio v6.0: DP Pathfinding & Knapsack</title>
+  <style>
+    :root { --primary: #6366f1; --secondary: #ec4899; --accent: #10b981; --bg: #0f172a; --panel: #1e293b; --text: #f8fafc; }
+    body { font-family: 'Segoe UI', monospace, sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+
+    /* NAVBAR */
+    .navbar { display: flex; background: #1e293b; border-bottom: 1px solid #334155; padding: 0 20px; overflow-x: auto; user-select: none; }
+    .nav-item { padding: 15px 20px; cursor: pointer; font-weight: bold; color: #94a3b8; border-bottom: 3px solid transparent; transition: 0.2s; white-space: nowrap; }
+    .nav-item:hover { color: #fff; background: #334155; }
+    .nav-item.active { color: var(--accent); border-bottom-color: var(--accent); background: rgba(16, 185, 129, 0.1); }
+
+    /* LAYOUT */
+    .container { display: flex; flex: 1; height: 100%; }
+    .sidebar { width: 320px; background: var(--panel); padding: 20px; border-right: 1px solid #334155; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; }
+    .main-view { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; background: #0f172a; flex-direction: column; }
+
+    /* CONTROLS */
+    h2 { margin: 0 0 5px 0; font-size: 1.1rem; color: var(--accent); }
+    h3 { margin: 15px 0 5px 0; font-size: 0.85rem; color: #cbd5e1; border-bottom: 1px solid #334155; padding-bottom: 5px; text-transform: uppercase; letter-spacing: 1px;}
+    p { font-size: 0.85rem; color: #94a3b8; margin-bottom: 10px; line-height: 1.4; }
+
+    button { background: var(--primary); color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; margin-bottom: 8px; font-size: 0.9rem; transition: 0.2s;}
+    button:hover { filter: brightness(1.1); }
+    button.secondary { background: #334155; color: #cbd5e1; }
+    button.accent { background: var(--secondary); }
+    button.outline { background: transparent; border: 1px solid #475569; }
+
+    .stat-box { background: #0f172a; padding: 10px; border-radius: 6px; border: 1px solid #334155; font-family: monospace; font-size: 0.8rem; margin-top: auto; }
+
+    /* Sub-Tabs for DP */
+    .sub-tabs { display: flex; gap: 5px; margin-bottom: 10px; }
+    .sub-tab { flex: 1; padding: 8px; background: #334155; color: #94a3b8; text-align: center; border-radius: 4px; cursor: pointer; font-size: 0.8rem; }
+    .sub-tab.active { background: var(--primary); color: white; }
+
+    canvas { border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); background: #172033; max-width: 100%; max-height: 90%; }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+<div class="navbar">
+  <div class="nav-item active" onclick="App.switchTab('dp')">1. Dynamic Programming</div>
+  <div class="nav-item" onclick="App.switchTab('vision')">2. Computer Vision</div>
+  <div class="nav-item" onclick="App.switchTab('ml')">3. Machine Learning</div>
+  <div class="nav-item" onclick="App.switchTab('sorting')">4. Sorting</div>
+</div>
+
+<div class="container">
+  <div class="sidebar">
+    <div id="ctrl-dp" class="ctrl-group">
+      <h2>Dynamic Programming</h2>
+      <div class="sub-tabs">
+        <div class="sub-tab active" onclick="DP.setMode('grid')">Min Path (Grid)</div>
+        <div class="sub-tab" onclick="DP.setMode('knapsack')">Knapsack (Túi)</div>
+      </div>
+
+      <div id="dp-grid-controls">
+        <p>Find lowest cost path from Top-Left to Bottom-Right.</p>
+        <button onclick="DP.resetGrid()">New Grid</button>
+        <button class="accent" onclick="DP.runGrid()">Run + Highlight Path</button>
+      </div>
+
+      <div id="dp-knapsack-controls" class="hidden">
+        <p><b>Knapsack Problem:</b> Maximize value ($) without breaking the bag (Max Kg).</p>
+        <button onclick="DP.resetKnapsack()">New Items</button>
+        <button class="accent" onclick="DP.runKnapsack()">Solve Knapsack</button>
+      </div>
+
+      <div class="stat-box" id="dp-stats">Select a problem mode.</div>
+    </div>
+
+    <div id="ctrl-vision" class="ctrl-group hidden">
+      <h2>Computer Vision</h2>
+      <p>Upload images to detect edges and objects.</p>
+      <input type="file" id="imgUpload" accept="image/*" onchange="Vision.handleUpload(this)" style="color:#ccc; width:100%; margin-bottom:10px;">
+      <button onclick="Vision.reset()">Reset</button>
+      <button class="accent" onclick="Vision.findObjects()">Detect Objects</button>
+    </div>
+    <div id="ctrl-ml" class="ctrl-group hidden"><h2>ML: K-Means</h2><button onclick="ML.reset()">Reset</button><button class="accent" onclick="ML.step()">Step</button></div>
+    <div id="ctrl-sorting" class="ctrl-group hidden"><h2>Sorting</h2><button onclick="Sort.reset()">Reset</button><button class="accent" onclick="Sort.bubbleSort()">Bubble Sort</button></div>
+  </div>
+
+  <div class="main-view">
+    <canvas id="canvas" width="800" height="500"></canvas>
+  </div>
+</div>
+
+<script>
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+  const width = 800, height = 500;
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+  const App = {
+    switchTab: function(tab) {
+      document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+      event.target.classList.add('active');
+      document.querySelectorAll('.ctrl-group').forEach(el => el.classList.add('hidden'));
+      document.getElementById('ctrl-' + tab).classList.remove('hidden');
+
+      ctx.clearRect(0,0,width,height);
+      if(tab === 'dp') DP.resetGrid();
+      if(tab === 'ml') ML.reset();
+      if(tab === 'sorting') Sort.reset();
+      if(tab === 'vision') Vision.init();
+    }
+  };
+
+  // ==========================================
+  // 1. DYNAMIC PROGRAMMING (ENHANCED)
+  // ==========================================
+  const DP = {
+    mode: 'grid', // 'grid' or 'knapsack'
+
+    // GRID STATE
+    grid: [], dpGrid: [], path: [], rows: 5, cols: 8, cellSize: 80,
+
+    // KNAPSACK STATE
+    items: [], capacity: 7, dpBag: [], selectedItems: [],
+
+    setMode: function(m) {
+      this.mode = m;
+      // UI Toggle
+      document.querySelectorAll('.sub-tab').forEach(el => el.classList.remove('active'));
+      event.target.classList.add('active');
+      document.getElementById('dp-grid-controls').classList.toggle('hidden', m !== 'grid');
+      document.getElementById('dp-knapsack-controls').classList.toggle('hidden', m !== 'knapsack');
+
+      if(m === 'grid') this.resetGrid();
+      else this.resetKnapsack();
+    },
+
+    // --- GRID LOGIC ---
+    resetGrid: function() {
+      this.grid = []; this.dpGrid = []; this.path = [];
+      for(let r=0; r<this.rows; r++) {
+        let row = [], dpRow = [];
+        for(let c=0; c<this.cols; c++) { row.push(Math.floor(Math.random()*9)+1); dpRow.push(0); }
+        this.grid.push(row); this.dpGrid.push(dpRow);
+      }
+      this.drawGrid();
+      document.getElementById('dp-stats').innerText = "Grid: Top-Left to Bottom-Right.";
+    },
+
+    drawGrid: function(activeR=-1, activeC=-1) {
+      ctx.clearRect(0,0,width,height);
+      let offX = (width-(this.cols*this.cellSize))/2, offY = (height-(this.rows*this.cellSize))/2;
+
+      // Draw Path Line
+      if (this.path.length > 0) {
+        ctx.beginPath();
+        ctx.lineWidth = 8;
+        ctx.strokeStyle = "#f59e0b"; // Yellow path
+        ctx.lineCap = "round";
+        this.path.forEach((p, i) => {
+          let x = offX + p.c * this.cellSize + this.cellSize/2;
+          let y = offY + p.r * this.cellSize + this.cellSize/2;
+          if (i===0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        });
+        ctx.stroke();
+      }
+
+      // Draw Cells
+      for(let r=0; r<this.rows; r++) {
+        for(let c=0; c<this.cols; c++) {
+          let x = offX+c*this.cellSize, y = offY+r*this.cellSize;
+
+          // Determine Color
+          let bg = '#1e293b'; // Default
+          if(r===activeR && c===activeC) bg = '#ec4899'; // Active
+          else if(this.path.some(p => p.r===r && p.c===c)) bg = 'rgba(245, 158, 11, 0.2)'; // On Path
+          else if(this.dpGrid[r][c] > 0) bg = '#334155'; // Processed
+
+          ctx.fillStyle=bg; ctx.fillRect(x, y, this.cellSize-4, this.cellSize-4);
+
+          // Cost
+          ctx.fillStyle='#94a3b8'; ctx.font="12px monospace";
+          ctx.fillText(`Cost:${this.grid[r][c]}`, x+10, y+25);
+
+          // DP Sum
+          if(this.dpGrid[r][c]>0) {
+            ctx.fillStyle='#fff'; ctx.font="20px bold sans-serif";
+            ctx.fillText(this.dpGrid[r][c], x+25, y+55);
+          }
+        }
+      }
+    },
+
+    runGrid: async function() {
+      this.path = [];
+      // 1. Calculate DP Table
+      for(let i=0; i<this.rows; i++) {
+        for(let j=0; j<this.cols; j++) {
+          let cost = this.grid[i][j], minP = 0;
+          if(i===0 && j===0) minP=0;
+          else if(i===0) minP=this.dpGrid[i][j-1];
+          else if(j===0) minP=this.dpGrid[i-1][j];
+          else minP=Math.min(this.dpGrid[i-1][j], this.dpGrid[i][j-1]);
+          this.dpGrid[i][j] = minP+cost;
+          this.drawGrid(i, j);
+          await sleep(30); // Fast calc
+        }
+      }
+
+      // 2. Backtrack to find Path (The Arrow Logic)
+      document.getElementById('dp-stats').innerText = "Backtracking path...";
+      let r = this.rows-1, c = this.cols-1;
+      this.path.push({r, c});
+
+      while(r>0 || c>0) {
+        await sleep(100);
+        if(r===0) c--;
+        else if(c===0) r--;
+        else {
+          if(this.dpGrid[r-1][c] < this.dpGrid[r][c-1]) r--;
+          else c--;
+        }
+        this.path.push({r, c});
+        this.drawGrid();
+      }
+      document.getElementById('dp-stats').innerText = `Min Cost: ${this.dpGrid[this.rows-1][this.cols-1]}. Path Highlighted.`;
+    },
+
+    // --- KNAPSACK LOGIC ---
+    resetKnapsack: function() {
+      this.items = [];
+      const colors = ["#ef4444", "#f97316", "#eab308", "#3b82f6", "#8b5cf6"];
+      for(let i=0; i<5; i++) {
+        this.items.push({
+          id: i+1,
+          w: Math.floor(Math.random()*3)+1, // Weight 1-3
+          v: Math.floor(Math.random()*50)+10, // Value 10-60
+          color: colors[i]
+        });
+      }
+      this.dpBag = [];
+      this.selectedItems = [];
+
+      // Init DP table [items+1][capacity+1]
+      for(let i=0; i<=5; i++) {
+        this.dpBag.push(new Array(this.capacity+1).fill(0));
+      }
+
+      this.drawKnapsack(-1, -1);
+      document.getElementById('dp-stats').innerText = `Bag Capacity: ${this.capacity}kg. Items generated.`;
+    },
+
+    drawKnapsack: function(currItemIdx, currCap) {
+      ctx.clearRect(0,0,width,height);
+
+      // Draw Items Area (Left)
+      ctx.fillStyle = "#fff"; ctx.font = "16px sans-serif";
+      ctx.fillText("Items Available:", 20, 30);
+
+      this.items.forEach((item, i) => {
+        let y = 50 + i * 60;
+        // Highlight selected at end
+        if(this.selectedItems.includes(item.id)) {
+          ctx.strokeStyle = "#fff"; ctx.lineWidth = 3; ctx.strokeRect(20, y, 100, 50);
+        }
+        ctx.fillStyle = item.color;
+        ctx.fillRect(20, y, 100, 50);
+        ctx.fillStyle = "#fff"; ctx.font = "14px sans-serif";
+        ctx.fillText(`$${item.v}`, 30, y+20);
+        ctx.fillText(`${item.w}kg`, 30, y+40);
+      });
+
+      // Draw DP Table (Right)
+      let startX = 150, startY = 50, cellW = 60, cellH = 40;
+
+      // Table Headers (Capacity)
+      for(let w=0; w<=this.capacity; w++) {
+        ctx.fillStyle = "#94a3b8"; ctx.font = "12px monospace";
+        ctx.fillText(`${w}kg`, startX + w*cellW + 15, startY - 10);
+      }
+
+      for(let i=0; i<=5; i++) {
+        // Row Label
+        if(i>0) {
+          ctx.fillStyle = this.items[i-1].color;
+          ctx.fillRect(startX - 10, startY + i*cellH + 5, 5, 30);
+        }
+
+        for(let w=0; w<=this.capacity; w++) {
+          let x = startX + w*cellW;
+          let y = startY + i*cellH;
+
+          let color = '#1e293b';
+          if (i === currItemIdx && w === currCap) color = '#ec4899'; // Active calc
+
+          ctx.fillStyle = color;
+          ctx.fillRect(x, y, cellW-2, cellH-2);
+
+          // Value
+          if(i > 0 || w > 0) { // Skip 0,0 usually 0
+            ctx.fillStyle = "#fff"; ctx.font = "14px sans-serif";
+            ctx.fillText(this.dpBag[i][w], x+15, y+25);
+          }
+        }
+      }
+    },
+
+    runKnapsack: async function() {
+      // DP Logic
+      // i = current item index (1-based in DP, 0-based in items array)
+      // w = current capacity check
+      for (let i = 1; i <= 5; i++) {
+        let item = this.items[i-1];
+        for (let w = 0; w <= this.capacity; w++) {
+
+          if (item.w <= w) {
+            // Max of (Not taking item, Taking item + remaining space value)
+            this.dpBag[i][w] = Math.max(
+              this.dpBag[i-1][w],
+              this.dpBag[i-1][w - item.w] + item.v
+            );
+          } else {
+            this.dpBag[i][w] = this.dpBag[i-1][w];
+          }
+
+          this.drawKnapsack(i, w);
+          await sleep(50);
+        }
+      }
+
+      // Backtracking to find selected items
+      document.getElementById('dp-stats').innerText = "Backtracking to find items...";
+      let res = this.dpBag[5][this.capacity];
+      let w = this.capacity;
+
+      for (let i = 5; i > 0 && res > 0; i--) {
+        // If value came from the top (dp[i-1][w]), item wasn't included
+        if (res === this.dpBag[i-1][w]) continue;
+        else {
+          // Item was included
+          let item = this.items[i-1];
+          this.selectedItems.push(item.id);
+          res -= item.v;
+          w -= item.w;
+          await sleep(300);
+          this.drawKnapsack(-1, -1);
+        }
+      }
+      document.getElementById('dp-stats').innerText = `Max Value: $${this.dpBag[5][this.capacity]}. Items highlighted.`;
+    }
+  };
+
+  // --- PLACEHOLDERS FOR OTHER TABS ---
+  const ML = { reset:()=>ctx.clearRect(0,0,width,height), step:()=>{} };
+  const Sort = { reset:()=>ctx.clearRect(0,0,width,height), bubbleSort:()=>{} };
+  const Vision = {
+    init:()=>{ ctx.fillStyle='#fff'; ctx.fillText("Vision Module (Code hidden for brevity)", 300, 250); },
+    handleUpload:(el)=>{}, reset:()=>{}, findObjects:()=>{}
+  };
+
+  // Start
+  App.switchTab('dp');
+
+</script>
+</body>
+</html>

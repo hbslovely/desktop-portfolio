@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Caro (Gomoku) - High Visibility UI</title>
+  <style>
+    /* --- CSS STYLES --- */
+    body {
+      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background-color: #2c3e50; /* Dark blue-grey background */
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 0;
+      padding: 20px;
+      min-height: 100vh;
+    }
+
+    h1 { margin-bottom: 15px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+
+    .controls {
+      background: #34495e;
+      padding: 15px 20px;
+      border-radius: 12px;
+      margin-bottom: 25px;
+      display: flex;
+      gap: 15px;
+      align-items: center;
+      box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .control-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    label { font-weight: 600; color: #bdc3c7; }
+
+    select, button {
+      padding: 10px 15px;
+      border-radius: 6px;
+      border: 2px solid #2c3e50;
+      cursor: pointer;
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+    }
+
+    select { background-color: #ecf0f1; color: #2c3e50; font-weight: bold;}
+    select:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    button {
+      background-color: #27ae60;
+      color: white;
+      font-weight: bold;
+      border: none;
+      transition: all 0.2s;
+      box-shadow: 0 4px #219a52;
+    }
+
+    button:hover { background-color: #2ecc71; margin-top: -2px; box-shadow: 0 6px #219a52; }
+    button:active { margin-top: 2px; box-shadow: 0 2px #219a52; }
+
+    #statusPanel {
+      font-size: 1.4em;
+      margin-bottom: 20px;
+      font-weight: bold;
+      padding: 10px 25px;
+      background: rgba(0,0,0,0.2);
+      border-radius: 50px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .status-icon {
+      display: inline-block;
+      width: 24px; height: 24px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.5);
+    }
+
+    .game-container {
+      position: relative;
+      padding: 15px;
+      background: linear-gradient(45deg, #d4a76a, #eac888); /* Richer wood gradient */
+      border-radius: 8px;
+      box-shadow:
+        inset 0 0 20px rgba(0,0,0,0.2),
+        0 15px 30px rgba(0,0,0,0.5);
+      border: 5px solid #a67c52;
+    }
+
+    canvas {
+      background-color: #eabb79;
+      background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='0.08'/%3E%3C/svg%3E");
+      cursor: crosshair;
+      display: block;
+      border-radius: 4px;
+      box-shadow: inset 2px 2px 5px rgba(0,0,0,0.3);
+    }
+  </style>
+</head>
+<body>
+
+<h1>Master Caro (Gomoku)</h1>
+
+<div class="controls">
+  <div class="control-group">
+    <label for="modeSelect">Chế độ:</label>
+    <select id="modeSelect" onchange="toggleLevel()">
+      <option value="ai">Đấu với AI</option>
+      <option value="pvp">2 Người chơi</option>
+    </select>
+  </div>
+
+  <div class="control-group">
+    <label id="lvlLabel" for="levelSelect">Độ khó AI:</label>
+    <select id="levelSelect">
+      <option value="easy">Dễ (Easy)</option>
+      <option value="medium" selected>Vừa (Medium)</option>
+      <option value="hard">Khó (Hard)</option>
+      <option value="nightmare">Ác mộng (Nightmare)</option>
+    </select>
+  </div>
+
+  <button onclick="resetGame()">Ván Mới</button>
+</div>
+
+<div id="statusPanel">
+  <span class="status-icon" style="background:#222;"></span>
+  <span id="statusText">Lượt của X</span>
+</div>
+
+<div class="game-container">
+  <canvas id="board" width="600" height="600"></canvas>
+</div>
+
+<script>
+  // --- CẤU HÌNH CƠ BẢN ---
+  const BOARD_SIZE = 15;
+  const CELL_SIZE = 40;
+  const CANVAS_SIZE = BOARD_SIZE * CELL_SIZE;
+
+  // Màu sắc
+  const GRID_COLOR = '#8a6238';
+  const P1_COLOR_START = "#333333"; const P1_COLOR_END = "#000000"; const P1_TEXT_COLOR = "#ffffff";
+  const P2_COLOR_START = "#ffffff"; const P2_COLOR_END = "#e0e0e0"; const P2_TEXT_COLOR = "#000000";
+
+  // --- TRẠNG THÁI GAME ---
+  let board = [];
+  let currentPlayer = 1;
+  let gameOver = false;
+  let lastMove = null;
+  let isAiThinking = false;
+
+  // --- DOM ELEMENTS ---
+  const canvas = document.getElementById('board');
+  const ctx = canvas.getContext('2d');
+  const statusTextBtn = document.getElementById('statusText');
+  const statusIcon = document.querySelector('.status-icon');
+  const modeSelect = document.getElementById('modeSelect');
+  const levelSelect = document.getElementById('levelSelect');
+
+  // --- KHỞI TẠO ---
+  function init() {
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = CANVAS_SIZE * dpr;
+    canvas.height = CANVAS_SIZE * dpr;
+    ctx.scale(dpr, dpr);
+    canvas.style.width = `${CANVAS_SIZE}px`;
+    canvas.style.height = `${CANVAS_SIZE}px`;
+    canvas.addEventListener('mousedown', handleClick);
+    toggleLevel();
+    resetGame();
+  }
+
+  function resetGame() {
+    board = Array(BOARD_SIZE).fill().map(() => Array(BOARD_SIZE).fill(0));
+    currentPlayer = 1;
+    gameOver = false;
+    lastMove = null;
+    isAiThinking = false;
+    updateStatus();
+    drawBoard();
+  }
+
+  function toggleLevel() {
+    const isPvP = modeSelect.value === 'pvp';
+    levelSelect.disabled = isPvP;
+    document.getElementById('lvlLabel').style.opacity = isPvP ? '0.5' : '1';
+  }
+
+  // --- VẼ (UI) ---
+  function drawBoard() {
+    ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+    ctx.strokeStyle = GRID_COLOR;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    for (let i = 0; i < BOARD_SIZE; i++) {
+      let pos = i * CELL_SIZE + CELL_SIZE/2;
+      ctx.moveTo(pos, CELL_SIZE/2); ctx.lineTo(pos, CANVAS_SIZE - CELL_SIZE/2);
+      ctx.moveTo(CELL_SIZE/2, pos); ctx.lineTo(CELL_SIZE/2 + CANVAS_SIZE - CELL_SIZE, pos);
+    }
+    ctx.stroke();
+
+    const dots = [3, 7, 11];
+    ctx.fillStyle = GRID_COLOR;
+    for(let r of dots) for(let c of dots) {
+      ctx.beginPath(); ctx.arc(c*CELL_SIZE+CELL_SIZE/2, r*CELL_SIZE+CELL_SIZE/2, 3, 0, Math.PI*2); ctx.fill();
+    }
+
+    for (let r = 0; r < BOARD_SIZE; r++) {
+      for (let c = 0; c < BOARD_SIZE; c++) {
+        if (board[r][c] !== 0) {
+          const isLast = lastMove && lastMove.r === r && lastMove.c === c;
+          drawPiece(r, c, board[r][c], isLast);
+        }
+      }
+    }
+  }
+
+  function drawPiece(r, c, player, isLastMove) {
+    const x = c * CELL_SIZE + CELL_SIZE/2;
+    const y = r * CELL_SIZE + CELL_SIZE/2;
+    const radius = CELL_SIZE / 2 - 3;
+
+    ctx.save();
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+    ctx.shadowBlur = 6; ctx.shadowOffsetX = 3; ctx.shadowOffsetY = 3;
+    ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI * 2);
+
+    let grd = ctx.createRadialGradient(x - radius/3, y - radius/3, radius/10, x, y, radius);
+    if (player === 1) { grd.addColorStop(0, P1_COLOR_START); grd.addColorStop(1, P1_COLOR_END); }
+    else { grd.addColorStop(0, P2_COLOR_START); grd.addColorStop(1, P2_COLOR_END); }
+    ctx.fillStyle = grd; ctx.fill();
+    ctx.strokeStyle = (player === 1) ? '#000' : '#ccc'; ctx.lineWidth = 1; ctx.stroke();
+    ctx.restore();
+
+    if (isLastMove) {
+      ctx.save(); ctx.beginPath(); ctx.arc(x, y, radius + 2, 0, Math.PI * 2);
+      ctx.lineWidth = 3; ctx.strokeStyle = '#e74c3c'; ctx.shadowColor = '#e74c3c'; ctx.shadowBlur = 10; ctx.stroke(); ctx.restore();
+    }
+
+    ctx.fillStyle = player === 1 ? P1_TEXT_COLOR : P2_TEXT_COLOR;
+    ctx.font = "900 24px Arial, sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText(player === 1 ? "X" : "O", x, y + 1);
+  }
+
+  // --- LOGIC GAME ---
+  function handleClick(e) {
+    if (gameOver || isAiThinking) return;
+    if (modeSelect.value === 'ai' && currentPlayer === 2) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width; const scaleY = canvas.height / rect.height;
+    const x = (e.clientX - rect.left) * (canvas.width / rect.width) / scaleX;
+    const y = (e.clientY - rect.top) * (canvas.height / rect.height) / scaleY;
+    const c = Math.floor(x / CELL_SIZE); const r = Math.floor(y / CELL_SIZE);
+
+    if (r >= 0 && r < BOARD_SIZE && c >= 0 && c < BOARD_SIZE && board[r][c] === 0) {
+      makeMove(r, c);
+    }
+  }
+
+  function makeMove(r, c) {
+    board[r][c] = currentPlayer;
+    lastMove = {r, c};
+    drawBoard();
+
+    if (checkWin(r, c, currentPlayer)) {
+      endGame(currentPlayer === 1 ? "X (Đen) Thắng!" : "O (Trắng) Thắng!", currentPlayer);
+      return;
+    }
+    if (checkDraw()) { endGame("Hòa!", 0); return; }
+
+    currentPlayer = currentPlayer === 1 ? 2 : 1;
+    updateStatus();
+
+    if (modeSelect.value === 'ai' && currentPlayer === 2 && !gameOver) {
+      isAiThinking = true;
+      statusTextBtn.innerText = "AI đang tính...";
+      setTimeout(() => { aiMove(); isAiThinking = false; }, 50);
+    }
+  }
+
+  function updateStatus() {
+    if (gameOver) return;
+    if (currentPlayer === 1) {
+      statusTextBtn.innerText = "Lượt của X (Đen)"; statusTextBtn.style.color = "#fff";
+      statusIcon.style.background = "#333";
+    } else {
+      const name = modeSelect.value === 'ai' ? "AI" : "Người chơi 2";
+      statusTextBtn.innerText = `Lượt của O (${name})`; statusTextBtn.style.color = "#f1c40f";
+      statusIcon.style.background = "#fff";
+    }
+  }
+
+  function endGame(message, winner) {
+    gameOver = true;
+    statusTextBtn.innerText = message;
+    statusTextBtn.style.color = winner === 1 ? "#2ecc71" : (winner === 2 ? "#e74c3c" : "#f39c12");
+  }
+
+  function checkWin(r, c, player) {
+    const directions = [[0, 1], [1, 0], [1, 1], [1, -1]];
+    for (let [dr, dc] of directions) {
+      let count = 1;
+      for (let i = 1; i < 5; i++) {
+        if (r+dr*i >= 0 && r+dr*i < BOARD_SIZE && c+dc*i >= 0 && c+dc*i < BOARD_SIZE && board[r+dr*i][c+dc*i] === player) count++; else break;
+      }
+      for (let i = 1; i < 5; i++) {
+        if (r-dr*i >= 0 && r-dr*i < BOARD_SIZE && c-dc*i >= 0 && c-dc*i < BOARD_SIZE && board[r-dr*i][c-dc*i] === player) count++; else break;
+      }
+      if (count >= 5) return true;
+    }
+    return false;
+  }
+  function checkDraw() { return board.every(row => row.every(cell => cell !== 0)); }
+
+  // ================== AGGRESSIVE AI ENGINE ==================
+
+  function aiMove() {
+    const level = levelSelect.value;
+    let move;
+
+    if (level === 'easy') move = getRandomMove();
+    else if (level === 'medium') move = getMediumMove();
+    else if (level === 'hard') move = getHardMove();
+    else move = getNightmareMove();
+
+    if (move) makeMove(move.r, move.c);
+  }
+
+  function getRelevantCells(dist = 2) {
+    let candidates = new Set();
+    let hasPieces = false;
+    for(let r=0; r<BOARD_SIZE; r++){
+      for(let c=0; c<BOARD_SIZE; c++){
+        if(board[r][c] !== 0) {
+          hasPieces = true;
+          for(let dr=-dist; dr<=dist; dr++){
+            for(let dc=-dist; dc<=dist; dc++){
+              let nr = r+dr, nc = c+dc;
+              if(nr>=0 && nr<BOARD_SIZE && nc>=0 && nc<BOARD_SIZE && board[nr][nc]===0){
+                candidates.add((nr<<8) | nc);
+              }
+            }
+          }
+        }
+      }
+    }
+    if(!hasPieces) return [{r: 7, c: 7}];
+    return Array.from(candidates).map(k => ({r: k>>8, c: k&0xFF}));
+  }
+
+  // --- Easy/Medium/Hard Handlers ---
+  function getRandomMove() {
+    let moves = getRelevantCells(1);
+    return moves[Math.floor(Math.random() * moves.length)];
+  }
+  function getMediumMove() {
+    let moves = getRelevantCells(1);
+    for(let m of moves) { // Simple Block/Win
+      board[m.r][m.c] = 2; if(checkWin(m.r,m.c,2)){ board[m.r][m.c]=0; return m;} board[m.r][m.c]=0;
+      board[m.r][m.c] = 1; if(checkWin(m.r,m.c,1)){ board[m.r][m.c]=0; return m;} board[m.r][m.c]=0;
+    }
+    return getRandomMove();
+  }
+  function getHardMove() {
+    let moves = getRelevantCells(1);
+    let bestScore = -Infinity;
+    let bestMove = moves[0];
+    for(let m of moves) { // Just look for best immediate position
+      let score = evaluatePoint(m.r, m.c, 2) * 1.2 + evaluatePoint(m.r, m.c, 1);
+      if(score > bestScore) { bestScore = score; bestMove = m; }
+    }
+    return bestMove;
+  }
+
+  // --- NIGHTMARE: AGGRESSIVE BLOCKING LOGIC ---
+
+  function getNightmareMove() {
+    let moves = getRelevantCells(2);
+
+    // --- LỚP 1: KẾT LIỄU NGAY (MÌNH THẮNG) ---
+    for(let m of moves) {
+      board[m.r][m.c] = 2;
+      if(checkWin(m.r,m.c,2)) { board[m.r][m.c]=0; return m; }
+      board[m.r][m.c]=0;
+    }
+
+    // --- LỚP 2: CHẶN ĐỐI PHƯƠNG THẮNG (4 CON) ---
+    for(let m of moves) {
+      board[m.r][m.c] = 1;
+      if(checkWin(m.r,m.c,1)) { board[m.r][m.c]=0; return m; }
+      board[m.r][m.c]=0;
+    }
+
+    // --- LỚP 3: CHẶN HIỂM HỌA (OPEN 3 / LIVE 3) ---
+    // Đây là lớp quan trọng bị thiếu trước đây.
+    // Nếu đối phương có 3 con liên tiếp không bị chặn, họ sẽ thắng ở nước sau.
+    let bestCriticalMove = null;
+    let maxCriticalScore = -1;
+
+    for(let m of moves) {
+      // Giả sử đối phương đánh vào đây, họ có tạo ra đường nguy hiểm không?
+      let p1Score = evaluatePoint(m.r, m.c, 1);
+      // Điểm số 50,000 tương ứng với Live 3 trong hàm evaluatePoint bên dưới
+      if (p1Score >= 40000) {
+        return m; // CHẶN NGAY, không cần suy nghĩ thêm
+      }
+    }
+
+    // --- LỚP 4: CHIẾN THUẬT (MINIMAX) ---
+    // Nếu không có nguy hiểm chết người, dùng trí tuệ nhân tạo
+
+    // Sắp xếp nước đi để cắt tỉa Alpha-Beta tốt hơn
+    moves.sort((a, b) => {
+      let scoreA = evaluatePoint(a.r, a.c, 2) + evaluatePoint(a.r, a.c, 1);
+      let scoreB = evaluatePoint(b.r, b.c, 2) + evaluatePoint(b.r, b.c, 1);
+      return scoreB - scoreA;
+    });
+
+    let topMoves = moves.slice(0, 8); // Chỉ xét 8 nước tốt nhất để không bị lag
+    let bestScore = -Infinity;
+    let bestMove = topMoves[0];
+    let alpha = -Infinity;
+    let beta = Infinity;
+
+    for (let m of topMoves) {
+      board[m.r][m.c] = 2;
+      let score = minimax(m, 3, alpha, beta, false);
+      board[m.r][m.c] = 0;
+
+      if (score > bestScore) {
+        bestScore = score;
+        bestMove = m;
+      }
+      alpha = Math.max(alpha, score);
+    }
+
+    return bestMove;
+  }
+
+  function minimax(lastMove, depth, alpha, beta, isMaximizing) {
+    if (checkWin(lastMove.r, lastMove.c, isMaximizing ? 1 : 2)) {
+      return isMaximizing ? -1000000 : 1000000;
+    }
+    if (depth === 0) return 0;
+
+    let moves = getRelevantCells(1);
+    // Heuristic sort for speed
+    moves.sort((a, b) => {
+      let sA = evaluatePoint(a.r, a.c, isMaximizing ? 2 : 1);
+      let sB = evaluatePoint(b.r, b.c, isMaximizing ? 2 : 1);
+      return sB - sA;
+    });
+
+    let branchCount = 5; // Giới hạn nhánh con
+    moves = moves.slice(0, branchCount);
+
+    if (isMaximizing) { // AI Turn (2)
+      let maxEval = -Infinity;
+      for (let m of moves) {
+        board[m.r][m.c] = 2;
+        let eval = minimax(m, depth - 1, alpha, beta, false);
+        board[m.r][m.c] = 0;
+        maxEval = Math.max(maxEval, eval);
+        alpha = Math.max(alpha, eval);
+        if (beta <= alpha) break;
+      }
+      return maxEval;
+    } else { // Player Turn (1)
+      let minEval = Infinity;
+      for (let m of moves) {
+        board[m.r][m.c] = 1;
+        let eval = minimax(m, depth - 1, alpha, beta, true);
+        board[m.r][m.c] = 0;
+        minEval = Math.min(minEval, eval);
+        beta = Math.min(beta, eval);
+        if (beta <= alpha) break;
+      }
+      return minEval;
+    }
+  }
+
+  // --- HỆ THỐNG ĐIỂM (Đã tinh chỉnh để ưu tiên chặn) ---
+  function evaluatePoint(r, c, player) {
+    let score = 0;
+    const directions = [[0,1], [1,0], [1,1], [1,-1]];
+
+    for (let [dr, dc] of directions) {
+      let consecutive = 0;
+      let openEnds = 0;
+
+      // Check forward
+      for (let k = 1; k < 5; k++) {
+        let nr = r + dr*k, nc = c + dc*k;
+        if (nr >=0 && nr < BOARD_SIZE && nc >= 0 && nc < BOARD_SIZE) {
+          if(board[nr][nc] === player) consecutive++;
+          else if(board[nr][nc] === 0) { openEnds++; break; }
+          else break;
+        } else break;
+      }
+      // Check backward
+      for (let k = 1; k < 5; k++) {
+        let nr = r - dr*k, nc = c - dc*k;
+        if (nr >=0 && nr < BOARD_SIZE && nc >= 0 && nc < BOARD_SIZE) {
+          if(board[nr][nc] === player) consecutive++;
+          else if(board[nr][nc] === 0) { openEnds++; break; }
+          else break;
+        } else break;
+      }
+
+      // --- TRỌNG SỐ MỚI: CỰC KỲ GHÉT ĐỐI THỦ CÓ OPEN 3/4 ---
+      if (consecutive >= 4) score += 1000000;         // Thắng chắc
+      else if (consecutive === 3 && openEnds === 2) score += 50000; // LIVE 3 (Nguy hiểm chết người)
+      else if (consecutive === 3 && openEnds === 1) score += 5000;  // Dead 4
+      else if (consecutive === 2 && openEnds === 2) score += 3000;  // Live 2 (Tiềm năng)
+      else if (consecutive === 2 && openEnds === 1) score += 200;
+      else if (consecutive === 1 && openEnds === 2) score += 50;
+    }
+    return score;
+  }
+
+  init();
+</script>
+
+</body>
+</html>
