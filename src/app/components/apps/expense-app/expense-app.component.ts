@@ -110,12 +110,15 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   ]);
 
   // Filter
-  filterCategory = signal<string>('');
+  filterCategory = signal<string[]>([]);
   filterDateFrom = signal<string>('');
   filterDateTo = signal<string>('');
   searchText = signal<string>('');
   filterAmountMin = signal<number | null>(null);
   filterAmountMax = signal<number | null>(null);
+  
+  // Category filter dropdown state
+  showCategoryDropdown = signal<boolean>(false);
 
   // Check if filter is single day
   isSingleDayFilter = computed(() => {
@@ -145,9 +148,9 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     let filtered = [...allExpenses];
 
-    // Filter by category
-    if (category) {
-      filtered = filtered.filter(expense => expense.category === category);
+    // Filter by category (multiple selection)
+    if (category.length > 0) {
+      filtered = filtered.filter(expense => category.includes(expense.category));
     }
 
     // Filter by date range
@@ -680,6 +683,12 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
    */
   @HostListener('document:keydown.escape', ['$event'])
   handleEscapeKey(event: KeyboardEvent): void {
+    // Close category dropdown
+    if (this.showCategoryDropdown()) {
+      this.showCategoryDropdown.set(false);
+      return;
+    }
+
     // Don't close if create dialog is open
     if (this.showAddForm()) {
       return;
@@ -698,6 +707,17 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       this.hideCustomDateRangeDialog();
     } else if (this.showNotification()) {
       this.hideNotificationDialog();
+    }
+  }
+
+  /**
+   * Close category dropdown when clicking outside
+   */
+  @HostListener('document:click', ['$event'])
+  handleDocumentClick(event: MouseEvent): void {
+    const target = event.target as HTMLElement;
+    if (!target.closest('.category-filter-dropdown')) {
+      this.showCategoryDropdown.set(false);
     }
   }
 
@@ -1524,12 +1544,42 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
    * Clear filters
    */
   clearFilters(): void {
-    this.filterCategory.set('');
+    this.filterCategory.set([]);
     this.filterDateFrom.set('');
     this.filterDateTo.set('');
     this.searchText.set('');
     this.filterAmountMin.set(null);
     this.filterAmountMax.set(null);
+  }
+  
+  /**
+   * Toggle category selection
+   */
+  toggleCategory(category: string): void {
+    const current = this.filterCategory();
+    if (current.includes(category)) {
+      this.filterCategory.set(current.filter(c => c !== category));
+    } else {
+      this.filterCategory.set([...current, category]);
+    }
+  }
+  
+  /**
+   * Check if category is selected
+   */
+  isCategorySelected(category: string): boolean {
+    return this.filterCategory().includes(category);
+  }
+  
+  /**
+   * Get selected categories display text
+   */
+  getSelectedCategoriesText(): string {
+    const selected = this.filterCategory();
+    if (selected.length === 0) return 'Tất cả';
+    if (selected.length === 1) return selected[0];
+    if (selected.length <= 3) return selected.join(', ');
+    return `${selected.length} phân loại`;
   }
 
   /**

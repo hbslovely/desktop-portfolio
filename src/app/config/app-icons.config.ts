@@ -118,39 +118,25 @@ export const APP_ICONS: DesktopIconData[] = [
   },
   // Column 4 (x: 320) - Additional Apps
   {
-    id: 'fireant',
-    name: 'FireAnt Stock',
-    icon: 'pi pi-chart-line',
-    type: 'application',
-    position: { x: 320, y: 20 }
-  },
-  {
     id: 'angular-guidelines',
     name: 'Angular Guidelines',
     icon: 'assets/images/icons/angular.png',
     type: 'application',
-    position: { x: 320, y: 120 }
-  },
-  {
-    id: 'booking',
-    name: 'Travel Search',
-    icon: 'pi pi-map',
-    type: 'application',
-    position: { x: 320, y: 220 }
+    position: { x: 320, y: 20 }
   },
   {
     id: 'tuoitre-news',
     name: 'Tin tức hôm nay',
     icon: 'assets/images/icons/tin-tuc.png',
     type: 'application',
-    position: { x: 320, y: 320 }
+    position: { x: 320, y: 120 }
   },
   {
     id: 'expense',
     name: 'Quản lý Chi tiêu',
     icon: 'pi pi-wallet',
     type: 'application',
-    position: { x: 320, y: 420 }
+    position: { x: 320, y: 220 }
   }
 ];
 
@@ -184,9 +170,7 @@ function getAppDescription(appId: string): string {
     'calendar': 'Lịch Việt Nam với âm lịch, ngày lễ tết, con giáp, ngày đẹp, tính ngày',
     'angular-love': 'Browse and read Angular InDepth articles, tutorials, and RxJS guides',
     'music': 'Listen to music videos from YouTube with a curated playlist',
-    'fireant': 'Search and view real-time Vietnamese stock market data with FireAnt API',
     'angular-guidelines': 'Comprehensive Angular official documentation and guidelines from Angular.dev',
-    'booking': 'Search for travel destinations, hotels, and landmarks worldwide with Booking.com API',
     'tuoitre-news': 'Read latest Vietnamese news from Tuổi Trẻ Online with categories and full articles',
     'expense': 'Manage family expenses with Google Sheets integration, view spending history, and add new expenses'
   };
@@ -211,9 +195,7 @@ function getAppKeywords(appId: string): string[] {
     'calendar': ['lich', 'lịch', 'am lich', 'âm lịch', 'ngay le', 'ngày lễ', 'tet', 'tết', 'con giap', 'con giáp', 'ngay dep', 'ngày đẹp', 'tinh ngay', 'tính ngày', 'dem ngay', 'đếm ngày', 'vietnam', 'lunar', 'holiday'],
     'angular-love': ['angular', 'rxjs', 'tutorials', 'articles', 'blog', 'indepth', 'in-depth', 'web', 'development', 'typescript', 'frontend', 'framework', 'programming', 'coding', 'education', 'learning'],
     'music': ['youtube', 'video', 'songs', 'audio', 'player', 'playlist', 'stream', 'listen', 'pop', 'rock', 'jazz', 'classical', 'electronic', 'artist', 'album', 'track'],
-    'fireant': ['stock', 'market', 'vietnam', 'vietnamese', 'fireant', 'trading', 'shares', 'prices', 'hose', 'hnx', 'vn30', 'stocks', 'finance', 'investment', 'api', 'real-time', 'search', 'symbol'],
     'angular-guidelines': ['angular', 'documentation', 'docs', 'guide', 'guidelines', 'tutorial', 'official', 'components', 'directives', 'services', 'routing', 'forms', 'http', 'signals', 'dependency injection', 'best practices', 'security', 'performance', 'angular.dev'],
-    'booking': ['travel', 'hotel', 'booking', 'accommodation', 'vacation', 'destination', 'trip', 'tourism', 'city', 'country', 'flights', 'search', 'autocomplete', 'landmark', 'airport', 'region', 'worldwide', 'booking.com'],
     'tuoitre-news': ['news', 'tin tức', 'tuoitre', 'tuổi trẻ', 'vietnam', 'vietnamese', 'newspaper', 'articles', 'thời sự', 'thế giới', 'pháp luật', 'kinh doanh', 'công nghệ', 'xe', 'du lịch', 'văn hóa', 'giải trí', 'thể thao', 'giáo dục', 'sức khỏe'],
     'expense': ['expense', 'chi tiêu', 'quản lý', 'tài chính', 'spending', 'budget', 'money', 'finance', 'google sheets', 'gia đình', 'family', 'tiền', 'giao dịch', 'transaction']
   };
