@@ -89,6 +89,13 @@ export const APP_ICONS: DesktopIconData[] = [
     position: { x: 220, y: 20 }
   },
   {
+    id: 'chinese-chess',
+    name: 'Cờ Tướng',
+    icon: 'assets/images/icons/chess.png',
+    type: 'application',
+    position: { x: 220, y: 120 }
+  },
+  {
     id: 'yugioh',
     name: 'Yu-Gi-Oh! Cards',
     icon: 'assets/images/icons/yugi.png',
@@ -122,21 +129,35 @@ export const APP_ICONS: DesktopIconData[] = [
     name: 'Angular Guidelines',
     icon: 'assets/images/icons/angular.png',
     type: 'application',
-    position: { x: 320, y: 20 }
+    position: { x: 320, y: 120 }
+  },
+  {
+    id: 'angular-learning',
+    name: 'Học Angular',
+    icon: 'pi pi-graduation-cap',
+    type: 'application',
+    position: { x: 320, y: 220 }
   },
   {
     id: 'tuoitre-news',
     name: 'Tin tức hôm nay',
     icon: 'assets/images/icons/tin-tuc.png',
     type: 'application',
-    position: { x: 320, y: 120 }
+    position: { x: 320, y: 320 }
   },
   {
     id: 'expense',
     name: 'Quản lý Chi tiêu',
     icon: 'pi pi-wallet',
     type: 'application',
-    position: { x: 320, y: 220 }
+    position: { x: 320, y: 420 }
+  },
+  {
+    id: 'business',
+    name: 'Quản lý Bán hàng',
+    icon: 'pi pi-shopping-cart',
+    type: 'application',
+    position: { x: 320, y: 520 }
   }
 ];
 
@@ -171,8 +192,11 @@ function getAppDescription(appId: string): string {
     'angular-love': 'Browse and read Angular InDepth articles, tutorials, and RxJS guides',
     'music': 'Listen to music videos from YouTube with a curated playlist',
     'angular-guidelines': 'Comprehensive Angular official documentation and guidelines from Angular.dev',
+    'angular-learning': 'Học Angular từ đầu với code editor, build và chạy code để xem kết quả',
     'tuoitre-news': 'Read latest Vietnamese news from Tuổi Trẻ Online with categories and full articles',
-    'expense': 'Manage family expenses with Google Sheets integration, view spending history, and add new expenses'
+    'expense': 'Manage family expenses with Google Sheets integration, view spending history, and add new expenses',
+    'business': 'Manage sales, materials, and costs with Google Sheets integration across multiple tabs (Menu, Materials, Costs)',
+    'chinese-chess': 'Chơi cờ tướng và cờ úp với AI, phá thế cờ, nhiều giao diện đẹp mắt'
   };
   return descriptions[appId] || 'Application';
 }
@@ -196,8 +220,11 @@ function getAppKeywords(appId: string): string[] {
     'angular-love': ['angular', 'rxjs', 'tutorials', 'articles', 'blog', 'indepth', 'in-depth', 'web', 'development', 'typescript', 'frontend', 'framework', 'programming', 'coding', 'education', 'learning'],
     'music': ['youtube', 'video', 'songs', 'audio', 'player', 'playlist', 'stream', 'listen', 'pop', 'rock', 'jazz', 'classical', 'electronic', 'artist', 'album', 'track'],
     'angular-guidelines': ['angular', 'documentation', 'docs', 'guide', 'guidelines', 'tutorial', 'official', 'components', 'directives', 'services', 'routing', 'forms', 'http', 'signals', 'dependency injection', 'best practices', 'security', 'performance', 'angular.dev'],
+    'angular-learning': ['angular', 'học', 'hoc', 'learning', 'học angular', 'tutorial', 'code editor', 'build', 'run', 'thực hành', 'thuc hanh', 'ví dụ', 'vi du', 'example', 'practice', 'editor', 'preview'],
     'tuoitre-news': ['news', 'tin tức', 'tuoitre', 'tuổi trẻ', 'vietnam', 'vietnamese', 'newspaper', 'articles', 'thời sự', 'thế giới', 'pháp luật', 'kinh doanh', 'công nghệ', 'xe', 'du lịch', 'văn hóa', 'giải trí', 'thể thao', 'giáo dục', 'sức khỏe'],
-    'expense': ['expense', 'chi tiêu', 'quản lý', 'tài chính', 'spending', 'budget', 'money', 'finance', 'google sheets', 'gia đình', 'family', 'tiền', 'giao dịch', 'transaction']
+    'expense': ['expense', 'chi tiêu', 'quản lý', 'tài chính', 'spending', 'budget', 'money', 'finance', 'google sheets', 'gia đình', 'family', 'tiền', 'giao dịch', 'transaction'],
+    'business': ['business', 'bán hàng', 'quản lý', 'sales', 'materials', 'costs', 'menu', 'nguyên liệu', 'vật liệu', 'chi phí', 'google sheets', 'inventory', 'kho', 'sản phẩm'],
+    'chinese-chess': ['cờ tướng', 'co tuong', 'xiangqi', 'cờ úp', 'co up', 'ky vuong', 'kỳ vương', 'chess', 'game', 'board game', 'trò chơi', 'puzzle', 'thế cờ', 'the co', 'chinese chess', 'vietnam chess']
   };
   return keywords[appId] || [];
 }

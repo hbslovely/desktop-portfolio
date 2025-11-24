@@ -1,23 +1,122 @@
 .calculator {
-  background: linear-gradient(145deg, #1e1e2e 0%, #2a2a3e 100%);
+  background: linear-gradient(145deg, #0f0f1e 0%, #1a1a2e 100%);
   padding: 20px;
-  border-radius: 20px;
+  border-radius: 24px;
   width: 100%;
   height: 100%;
   box-sizing: border-box;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'SF Pro Display', sans-serif;
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  gap: 12px;
+  box-shadow: 
+    0 20px 60px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  position: relative;
+  overflow: hidden;
+  min-height: 0; // Important for flex children
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, 
+      transparent 0%, 
+      rgba(139, 92, 246, 0.5) 50%, 
+      transparent 100%);
+    animation: shimmer 3s infinite;
+  }
 }
 
-.display {
-  background: linear-gradient(145deg, #252538 0%, #2d2d45 100%);
+@keyframes shimmer {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+
+// Header
+.calculator-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  z-index: 1;
+}
+
+.header-left {
+  display: flex;
+  gap: 8px;
+}
+
+.header-right {
+  display: flex;
+  gap: 8px;
+}
+
+.mode-toggle,
+.angle-toggle,
+.history-toggle {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(145deg, #2a2a3e 0%, #1e1e2e 100%);
   color: #ffffff;
-  padding: 30px 20px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+
+  &:hover {
+    background: linear-gradient(145deg, #3a3a52 0%, #2a2a3e 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+
+  &.active {
+    background: linear-gradient(145deg, #8b5cf6 0%, #7c3aed 100%);
+    box-shadow: 0 4px 16px rgba(139, 92, 246, 0.4);
+  }
+}
+
+.history-toggle,
+.copy-button {
+  padding: 8px 12px;
+  font-size: 16px;
+}
+
+.copy-button {
+  &:hover {
+    background: linear-gradient(145deg, #3a3a52 0%, #2a2a3e 100%);
+  }
+}
+
+// Expression display
+.expression {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 14px;
+  text-align: right;
+  padding: 8px 16px;
+  min-height: 20px;
+  font-weight: 400;
+  letter-spacing: 0.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// Display
+.display {
+  background: linear-gradient(145deg, #1a1a2e 0%, #0f0f1e 100%);
+  color: #ffffff;
+  padding: 20px 18px;
   border-radius: 16px;
   min-height: 80px;
+  max-height: 120px;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
@@ -26,48 +125,235 @@
   position: relative;
   flex-shrink: 0;
   box-shadow: 
-    inset 0 2px 10px rgba(0, 0, 0, 0.3),
-    0 4px 12px rgba(0, 0, 0, 0.2);
+    inset 0 4px 20px rgba(0, 0, 0, 0.4),
+    0 8px 24px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(180deg, 
+      rgba(139, 92, 246, 0.03) 0%, 
+      transparent 100%);
+    pointer-events: none;
+  }
+  
+  &:hover {
+    cursor: pointer;
+    opacity: 0.9;
+  }
 }
 
 .display-value {
-  font-size: 42px;
+  font-size: clamp(28px, 4vw, 42px);
   font-weight: 300;
   text-align: right;
   width: 100%;
   word-break: break-all;
   letter-spacing: 1px;
-  text-shadow: 0 2px 8px rgba(255, 255, 255, 0.1);
+  text-shadow: 0 2px 12px rgba(255, 255, 255, 0.15);
+  z-index: 1;
+  transition: all 0.3s ease;
+  line-height: 1.2;
+  max-height: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
+// Memory indicator
+.memory-indicator {
+  color: rgba(139, 92, 246, 0.8);
+  font-size: 12px;
+  text-align: right;
+  padding: 4px 16px;
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+
+// History panel
+.history-panel {
+  background: linear-gradient(145deg, #1a1a2e 0%, #0f0f1e 100%);
+  border-radius: 16px;
+  padding: 12px;
+  max-height: 200px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-shadow: inset 0 2px 12px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  animation: slideDown 0.3s ease;
+  flex-shrink: 0;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 3px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(139, 92, 246, 0.5);
+    border-radius: 3px;
+
+    &:hover {
+      background: rgba(139, 92, 246, 0.7);
+    }
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+
+  h3 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.9);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+}
+
+.clear-history {
+  padding: 4px 12px;
+  border: none;
+  border-radius: 8px;
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: rgba(239, 68, 68, 0.3);
+    transform: translateY(-1px);
+  }
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.history-item {
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+
+  &:hover {
+    background: rgba(139, 92, 246, 0.1);
+    transform: translateX(4px);
+    border-color: rgba(139, 92, 246, 0.3);
+  }
+}
+
+.history-expression {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 4px;
+  font-family: 'Courier New', monospace;
+}
+
+.history-result {
+  font-size: 16px;
+  color: #ffffff;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.history-time {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.history-empty {
+  text-align: center;
+  padding: 24px;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 14px;
+}
+
+// Memory buttons
+.memory-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 4px;
+  flex-shrink: 0;
+}
+
+// Constants row
+.constants-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 4px;
+  flex-shrink: 0;
+}
+
+// Buttons container
 .buttons {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  flex: 1;
+  gap: 8px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .button-row {
   display: flex;
-  gap: 12px;
-  flex: 1;
-  min-height: 60px;
+  gap: 10px;
+  flex: 1 1 0;
+  min-height: 50px;
 }
 
 .calc-button {
-  flex: 1;
+  flex: 1 1 0;
   border: none;
-  font-size: 24px;
+  font-size: clamp(18px, 2.5vw, 22px);
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  border-radius: 16px;
-  min-height: 60px;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 14px;
+  min-height: 50px;
+  min-width: 50px;
+  aspect-ratio: 1;
   box-shadow: 
-    0 4px 12px rgba(0, 0, 0, 0.2),
-    inset 0 -2px 4px rgba(0, 0, 0, 0.1);
+    0 4px 12px rgba(0, 0, 0, 0.3),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.2);
   position: relative;
   overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   
   &::before {
     content: '';
@@ -76,15 +362,28 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.15) 0%, transparent 50%);
     opacity: 0;
     transition: opacity 0.2s ease;
   }
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.4s ease, height 0.4s ease;
+  }
   
   &:hover {
-    transform: translateY(-2px);
+    transform: translateY(-2px) scale(1.02);
     box-shadow: 
-      0 6px 16px rgba(0, 0, 0, 0.3),
+      0 8px 20px rgba(0, 0, 0, 0.4),
       inset 0 -2px 4px rgba(0, 0, 0, 0.1);
     
     &::before {
@@ -93,33 +392,41 @@
   }
   
   &:active {
-    transform: translateY(0);
+    transform: translateY(0) scale(0.98);
     box-shadow: 
-      0 2px 8px rgba(0, 0, 0, 0.2),
-      inset 0 2px 4px rgba(0, 0, 0, 0.2);
+      0 2px 8px rgba(0, 0, 0, 0.3),
+      inset 0 2px 6px rgba(0, 0, 0, 0.3);
+
+    &::after {
+      width: 200px;
+      height: 200px;
+    }
   }
   
-  // Number buttons (dark gradient)
+  // Number buttons
   &.number {
-    background: linear-gradient(145deg, #3a3a52 0%, #2d2d45 100%);
+    background: linear-gradient(145deg, #2a2a3e 0%, #1e1e2e 100%);
     color: #ffffff;
     
     &:hover {
-      background: linear-gradient(145deg, #45455f 0%, #35354f 100%);
+      background: linear-gradient(145deg, #3a3a52 0%, #2a2a3e 100%);
     }
     
     &:active {
-      background: linear-gradient(145deg, #2d2d45 0%, #252538 100%);
+      background: linear-gradient(145deg, #1e1e2e 0%, #151520 100%);
     }
   }
   
-  // Function buttons (purple gradient)
+  // Function buttons
   &.function {
     background: linear-gradient(145deg, #8b5cf6 0%, #7c3aed 100%);
     color: #ffffff;
     
     &:hover {
       background: linear-gradient(145deg, #9d71f7 0%, #8b5cf6 100%);
+      box-shadow: 
+        0 8px 24px rgba(139, 92, 246, 0.4),
+        inset 0 -2px 4px rgba(0, 0, 0, 0.1);
     }
     
     &:active {
@@ -127,13 +434,16 @@
     }
   }
   
-  // Operator buttons (blue gradient)
+  // Operator buttons
   &.operator {
     background: linear-gradient(145deg, #3b82f6 0%, #2563eb 100%);
     color: #ffffff;
     
     &:hover {
       background: linear-gradient(145deg, #60a5fa 0%, #3b82f6 100%);
+      box-shadow: 
+        0 8px 24px rgba(59, 130, 246, 0.4),
+        inset 0 -2px 4px rgba(0, 0, 0, 0.1);
     }
     
     &:active {
@@ -141,14 +451,75 @@
     }
   }
   
-  // Equals button (vibrant gradient)
+  // Scientific function buttons
+  &.scientific {
+    background: linear-gradient(145deg, #ec4899 0%, #db2777 100%);
+    color: #ffffff;
+    font-size: clamp(12px, 1.6vw, 16px);
+    font-weight: 600;
+    
+    &:hover {
+      background: linear-gradient(145deg, #f472b6 0%, #ec4899 100%);
+      box-shadow: 
+        0 8px 24px rgba(236, 72, 153, 0.4),
+        inset 0 -2px 4px rgba(0, 0, 0, 0.1);
+    }
+    
+    &:active {
+      background: linear-gradient(145deg, #db2777 0%, #be185d 100%);
+    }
+  }
+
+  // Memory buttons
+  &.memory {
+    background: linear-gradient(145deg, #f59e0b 0%, #d97706 100%);
+    color: #ffffff;
+    font-size: clamp(11px, 1.5vw, 14px);
+    font-weight: 600;
+    
+    &:hover {
+      background: linear-gradient(145deg, #fbbf24 0%, #f59e0b 100%);
+      box-shadow: 
+        0 8px 24px rgba(245, 158, 11, 0.4),
+        inset 0 -2px 4px rgba(0, 0, 0, 0.1);
+    }
+    
+    &:active {
+      background: linear-gradient(145deg, #d97706 0%, #b45309 100%);
+    }
+  }
+  
+  // Constant buttons
+  &.constant {
+    background: linear-gradient(145deg, #06b6d4 0%, #0891b2 100%);
+    color: #ffffff;
+    font-size: clamp(14px, 1.8vw, 18px);
+    font-weight: 600;
+    
+    &:hover {
+      background: linear-gradient(145deg, #22d3ee 0%, #06b6d4 100%);
+      box-shadow: 
+        0 8px 24px rgba(6, 182, 212, 0.4),
+        inset 0 -2px 4px rgba(0, 0, 0, 0.1);
+    }
+    
+    &:active {
+      background: linear-gradient(145deg, #0891b2 0%, #0e7490 100%);
+    }
+  }
+  
+  // Equals button
   &.equals {
     background: linear-gradient(145deg, #10b981 0%, #059669 100%);
     color: #ffffff;
-    font-size: 28px;
+    font-size: clamp(20px, 2.8vw, 24px);
+    font-weight: 600;
     
     &:hover {
       background: linear-gradient(145deg, #34d399 0%, #10b981 100%);
+      box-shadow: 
+        0 8px 24px rgba(16, 185, 129, 0.4),
+        inset 0 -2px 4px rgba(0, 0, 0, 0.1);
     }
     
     &:active {
@@ -158,7 +529,8 @@
   
   // Zero button spans two columns
   &.zero {
-    flex: 2;
+    flex: 2 1 0;
+    aspect-ratio: 2 / 1;
   }
 }
 
@@ -166,34 +538,96 @@
 @media (max-width: 768px) {
   .calculator {
     padding: 16px;
-    gap: 16px;
+    gap: 10px;
   }
   
   .display {
-    padding: 24px 16px;
-    min-height: 70px;
+    padding: 20px 16px;
+    min-height: 80px;
   }
   
   .display-value {
-    font-size: 36px;
+    font-size: clamp(28px, 5vw, 36px);
+  }
+
+  .expression {
+    font-size: 12px;
+    padding: 6px 12px;
   }
   
   .buttons {
-    gap: 10px;
+    gap: 8px;
   }
   
   .button-row {
-    gap: 10px;
-    min-height: 50px;
+    gap: 8px;
+    min-height: 48px;
   }
   
   .calc-button {
-    font-size: 20px;
-    min-height: 50px;
+    min-height: 48px;
+    min-width: 48px;
+    font-size: clamp(16px, 2.2vw, 20px);
     border-radius: 12px;
     
-    &.equals {
-      font-size: 24px;
+    &.scientific {
+      font-size: clamp(12px, 1.6vw, 16px);
     }
+
+    &.memory {
+      font-size: clamp(11px, 1.5vw, 14px);
+    }
+  }
+
+  .history-panel {
+    max-height: 200px;
+    padding: 12px;
+  }
+}
+
+// Small windows - ensure buttons don't get too small
+@media (max-width: 400px) {
+  .calc-button {
+    min-height: 44px;
+    min-width: 44px;
+    font-size: 16px;
+    
+    &.scientific {
+      font-size: 12px;
+    }
+
+    &.memory {
+      font-size: 11px;
+    }
+  }
+}
+
+// Very small screens
+@media (max-height: 600px) {
+  .calculator {
+    padding: 12px;
+    gap: 8px;
+  }
+  
+  .display {
+    padding: 16px 12px;
+    min-height: 70px;
+  }
+
+  .display-value {
+    font-size: clamp(24px, 4vw, 32px);
+  }
+  
+  .button-row {
+    min-height: 44px;
+  }
+
+  .calc-button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  .history-panel {
+    max-height: 150px;
   }
 }

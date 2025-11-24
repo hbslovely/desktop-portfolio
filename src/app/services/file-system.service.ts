@@ -20,6 +20,13 @@ export interface NewFileData {
   htmlContent: string;
 }
 
+export interface NewImageFileData {
+  fileName: string;
+  path: string;
+  imageData: string; // Base64 data URL
+  fileType: 'png' | 'jpg' | 'jpeg' | 'gif';
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -178,6 +185,76 @@ export class FileSystemService {
   loadVirtualFile(path: string): string | null {
     const virtualFiles = JSON.parse(localStorage.getItem('virtual-files') || '{}');
     return virtualFiles[path]?.htmlContent || virtualFiles[path]?.textContent || null;
+  }
+
+  // Add an image file to the file system
+  async addImageFile(newFile: NewImageFileData): Promise<void> {
+    // Ensure file system is loaded
+    await this.ensureFileSystemLoaded();
+    
+    const fs = this.fileSystemSignal();
+    if (!fs) {
+      return;
+    }
+    
+    // Find the parent folder
+    const parentPath = newFile.path.substring(0, newFile.path.lastIndexOf('/')) || '/';
+    const parent = parentPath === '/' ? fs : this.findItemByPath(fs, parentPath);
+    
+    if (parent) {
+      // Ensure children array exists
+      if (!parent.children) {
+        parent.children = [];
+      }
+      
+      // Check if file already exists
+      const existingIndex = parent.children.findIndex(item => item.path === newFile.path);
+      
+      // Calculate file size from base64 data
+      const base64Data = newFile.imageData.split(',')[1] || newFile.imageData;
+      const sizeInBytes = (base64Data.length * 3) / 4;
+      const sizeInKB = Math.ceil(sizeInBytes / 1024);
+      
+      const fileItem: FileSystemItem = {
+        type: 'file',
+        name: newFile.fileName,
+        path: newFile.path,
+        icon: this.getIconForFileType(newFile.fileType),
+        size: `${sizeInKB} KB`,
+        modified: new Date().toISOString(),
+        content: `virtual-file://${newFile.path}` // Mark as virtual file
+      };
+      
+      if (existingIndex >= 0) {
+        // Update existing file
+        parent.children[existingIndex] = fileItem;
+      } else {
+        // Add new file
+        parent.children.push(fileItem);
+      }
+      
+      // Store the image data in localStorage
+      this.saveVirtualImageFile(newFile.path, newFile.imageData);
+      
+      // Trigger update by creating a deep copy of the file system
+      const updatedFs = JSON.parse(JSON.stringify(fs));
+      this.fileSystemSignal.set(updatedFs);
+    }
+  }
+
+  private saveVirtualImageFile(path: string, imageData: string) {
+    const virtualFiles = JSON.parse(localStorage.getItem('virtual-files') || '{}');
+    virtualFiles[path] = {
+      imageData,
+      savedAt: new Date().toISOString(),
+      type: 'image'
+    };
+    localStorage.setItem('virtual-files', JSON.stringify(virtualFiles));
+  }
+
+  loadVirtualImageFile(path: string): string | null {
+    const virtualFiles = JSON.parse(localStorage.getItem('virtual-files') || '{}');
+    return virtualFiles[path]?.imageData || null;
   }
 }
 

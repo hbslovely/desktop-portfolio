@@ -26,11 +26,11 @@
     title="Calculator"
     icon="calculator"
     statusText="Ready"
-    [initialWidth]="320"
-    [initialHeight]="480"
+    [initialWidth]="480"
+    [initialHeight]="720"
     [initialX]="100"
     [initialY]="100"
-    [maximizable]="false"
+    [maximizable]="true"
     [zIndex]="getWindowZIndex('calculator')"
     [isFocused]="isWindowFocused('calculator')"
     [isMinimizedExternal]="isWindowMinimized('calculator')"
@@ -203,6 +203,7 @@
     [zIndex]="getWindowZIndex('text-viewer')"
     [isFocused]="isWindowFocused('text-viewer')"
     [isMinimizedExternal]="isWindowMinimized('text-viewer')"
+    windowId="text-viewer"
     (onClose)="onCloseTextViewerWindow()"
     (onMinimize)="onMinimizeTextViewerWindow()"
     (onMaximize)="onMaximizeTextViewerWindow()"
@@ -230,6 +231,7 @@
     [zIndex]="getWindowZIndex('image-viewer')"
     [isFocused]="isWindowFocused('image-viewer')"
     [isMinimizedExternal]="isWindowMinimized('image-viewer')"
+    windowId="image-viewer"
     (onClose)="onCloseImageViewerWindow()"
     (onMinimize)="onMinimizeImageViewerWindow()"
     (onMaximize)="onMaximizeImageViewerWindow()"
@@ -256,6 +258,7 @@
     [zIndex]="getWindowZIndex('pdf-viewer')"
     [isFocused]="isWindowFocused('pdf-viewer')"
     [isMinimizedExternal]="isWindowMinimized('pdf-viewer')"
+    windowId="pdf-viewer"
     (onClose)="onClosePdfViewerWindow()"
     (onMinimize)="onMinimizePdfViewerWindow()"
     (onMaximize)="onMaximizePdfViewerWindow()"
@@ -835,11 +838,18 @@
 
       <app-music-app *ngSwitchCase="'music'"></app-music-app>
 
+
       <app-angular-guidelines-app *ngSwitchCase="'angular-guidelines'"></app-angular-guidelines-app>
+
+      <app-angular-learning-app *ngSwitchCase="'angular-learning'"></app-angular-learning-app>
 
       <app-tuoitre-news-app *ngSwitchCase="'tuoitre-news'"></app-tuoitre-news-app>
 
       <app-expense-app *ngSwitchCase="'expense'"></app-expense-app>
+
+      <app-business-app *ngSwitchCase="'business'"></app-business-app>
+
+      <app-chinese-chess-app *ngSwitchCase="'chinese-chess'"></app-chinese-chess-app>
     </ng-container>
   </app-window>
 </ng-container>

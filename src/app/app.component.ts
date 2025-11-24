@@ -23,8 +23,11 @@ import { CalendarAppComponent } from './components/apps/calendar-app/calendar-ap
 import { AngularLoveAppComponent } from './components/apps/angular-love-app/angular-love-app.component';
 import { MusicAppComponent } from './components/apps/music-app/music-app.component';
 import { AngularGuidelinesAppComponent } from './components/apps/angular-guidelines-app/angular-guidelines-app.component';
+import { AngularLearningAppComponent } from './components/apps/angular-learning-app/angular-learning-app.component';
 import { TuoiTreNewsAppComponent } from './components/apps/tuoitre-news-app/tuoitre-news-app.component';
 import { ExpenseAppComponent } from './components/apps/expense-app/expense-app.component';
+import { BusinessAppComponent } from './components/apps/business-app/business-app.component';
+import { ChineseChessAppComponent } from './components/apps/chinese-chess-app/chinese-chess-app.component';
 import { WelcomeScreenComponent } from './components/welcome-screen/welcome-screen.component';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -40,7 +43,7 @@ import { FileSystemService } from './services/file-system.service';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [ WelcomeScreenComponent, WindowComponent, DesktopIconComponent, CalculatorComponent, IframeAppComponent, LoveAppComponent, ExplorerComponent, TextViewerComponent, ImageViewerComponent, PdfViewerComponent, MachineInfoComponent, PaintAppComponent, HcmcAppComponent, NewsAppComponent, SettingsAppComponent, TaskManagerComponent, WeatherAppComponent, DictionaryAppComponent, CountriesAppComponent, YugiohAppComponent, YugiohCardDetailComponent, CalendarAppComponent, AngularLoveAppComponent, MusicAppComponent, AngularGuidelinesAppComponent, TuoiTreNewsAppComponent, ExpenseAppComponent, CommonModule, FormsModule, SettingsDialogComponent ],
+  imports: [ WelcomeScreenComponent, WindowComponent, DesktopIconComponent, CalculatorComponent, IframeAppComponent, LoveAppComponent, ExplorerComponent, TextViewerComponent, ImageViewerComponent, PdfViewerComponent, MachineInfoComponent, PaintAppComponent, HcmcAppComponent, NewsAppComponent, SettingsAppComponent, TaskManagerComponent, WeatherAppComponent, DictionaryAppComponent, CountriesAppComponent, YugiohAppComponent, YugiohCardDetailComponent, CalendarAppComponent, AngularLoveAppComponent, MusicAppComponent, AngularGuidelinesAppComponent, AngularLearningAppComponent, TuoiTreNewsAppComponent, ExpenseAppComponent, BusinessAppComponent, ChineseChessAppComponent, CommonModule, FormsModule, SettingsDialogComponent ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
 })
@@ -100,7 +103,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
 
   // Window management
   focusedWindow = signal<string | null>(null);
-  maxZIndex = signal(1000); // Track the maximum z-index used
+  maxZIndex = signal(1040); // Track the maximum z-index used
 
   // Track minimized state for each window
   minimizedWindows = signal<Set<string>>(new Set());
@@ -117,7 +120,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
 
   // Settings dialog state
   showSettingsDialog = signal(false);
-  
+
   // Search properties
   searchQuery = '';
   searchResults: SearchResult[] = [];
@@ -653,7 +656,13 @@ export class AppComponent implements AfterViewInit, OnDestroy {
         type: extension === 'md' || extension === 'markdown' ? 'md' : 'txt'
       });
       this.showTextViewerWindow.set(true);
-      this.focusWindow('text-viewer');
+      // Wait for window to be rendered before focusing
+      // Use forceHighZIndex to ensure file viewer is above explorer
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          this.focusWindow('text-viewer', true);
+        });
+      });
     } else if (fileType === 'image') {
       // Open image file
       this.currentImageFile.set({
@@ -661,7 +670,13 @@ export class AppComponent implements AfterViewInit, OnDestroy {
         name: item.name
       });
       this.showImageViewerWindow.set(true);
-      this.focusWindow('image-viewer');
+      // Wait for window to be rendered before focusing
+      // Use forceHighZIndex to ensure file viewer is above explorer
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          this.focusWindow('image-viewer', true);
+        });
+      });
     } else if (fileType === 'pdf') {
       // Open PDF file
       this.currentPdfFile.set({
@@ -669,7 +684,13 @@ export class AppComponent implements AfterViewInit, OnDestroy {
         name: item.name
       });
       this.showPdfViewerWindow.set(true);
-      this.focusWindow('pdf-viewer');
+      // Wait for window to be rendered before focusing
+      // Use forceHighZIndex to ensure file viewer is above explorer
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          this.focusWindow('pdf-viewer', true);
+        });
+      });
     } else {
       // Unknown file type
 
@@ -922,7 +943,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   // Taskbar methods
   toggleStartMenu() {
     this.showStartMenu.set(!this.showStartMenu());
-    
+
     // Focus and select all text in search input when opening
     if (this.showStartMenu()) {
       setTimeout(() => {
@@ -982,7 +1003,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-  focusWindow(windowId: string) {
+  focusWindow(windowId: string, forceHighZIndex: boolean = false) {
 
     console.log('Previous focused window:', this.focusedWindow());
     console.log('Previous max z-index:', this.maxZIndex());
@@ -996,7 +1017,13 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     this.focusedWindow.set(windowId);
 
     // Increment the max z-index for the focused window to bring it to front
-    this.maxZIndex.update(max => max + 1);
+    // If forceHighZIndex is true (e.g., when opening file from explorer),
+    // increment more to ensure it's above all other windows
+    if (forceHighZIndex) {
+      this.maxZIndex.update(max => max + 10);
+    } else {
+      this.maxZIndex.update(max => max + 1);
+    }
 
     console.log('New focused window:', this.focusedWindow());
     console.log('New max z-index:', this.maxZIndex());
@@ -1012,12 +1039,16 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   }
 
   // Directly update window z-index in DOM as fallback
-  private updateWindowZIndex(windowId: string) {
+  private updateWindowZIndex(windowId: string, retryCount: number = 0) {
     const windowElement = document.querySelector(`[data-window-id="${windowId}"]`) as HTMLElement;
     if (windowElement) {
       const zIndex = this.getWindowZIndex(windowId);
       windowElement.style.zIndex = zIndex.toString();
-
+    } else if (retryCount < 5) {
+      // Retry if element not found (window might still be rendering)
+      setTimeout(() => {
+        this.updateWindowZIndex(windowId, retryCount + 1);
+      }, 50);
     }
   }
 
@@ -1423,7 +1454,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   applyThemeColor(color: string) {
     // Create a gradient from the selected color
     const gradient = `linear-gradient(135deg, ${color} 0%, ${this.adjustColorBrightness(color, 10)} 50%, ${this.adjustColorBrightness(color, -20)} 100%)`;
-    
+
     // Apply theme color to CSS custom properties
     document.documentElement.style.setProperty('--primary-color', color);
     document.documentElement.style.setProperty('--accent-color', gradient);
@@ -1501,7 +1532,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
       'medium': '14px',
       'large': '16px'
     };
-    
+
     document.documentElement.style.setProperty('--base-font-size', fontSizes[size]);
     document.documentElement.style.fontSize = fontSizes[size];
   }

@@ -107,6 +107,23 @@
       color: #cccccc;
     }
   }
+
+  &.save-btn {
+    background: #4caf50;
+    color: white;
+    
+    i {
+      color: white;
+    }
+    
+    &:hover:not(:disabled) {
+      background: #45a049;
+    }
+    
+    &:active:not(:disabled) {
+      background: #3d8b40;
+    }
+  }
 }
 
 // Image Area
@@ -290,6 +307,191 @@
   }
 }
 
+// Save Dialog
+.save-dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.save-dialog {
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  width: 90%;
+  max-width: 500px;
+  animation: slideUp 0.3s ease;
+  overflow: hidden;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.save-dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e0e0e0;
+  background: #f8f9fa;
+  
+  h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #333333;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    
+    i {
+      color: #4caf50;
+    }
+  }
+  
+  .close-btn {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: transparent;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+    
+    i {
+      font-size: 18px;
+      color: #666666;
+    }
+    
+    &:hover {
+      background: #e0e0e0;
+      
+      i {
+        color: #333333;
+      }
+    }
+  }
+}
+
+.save-dialog-content {
+  padding: 20px;
+  
+  .form-group {
+    margin-bottom: 20px;
+    
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      color: #333333;
+    }
+    
+    .file-name-input,
+    .path-select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #d0d0d0;
+      border-radius: 4px;
+      font-size: 14px;
+      font-family: inherit;
+      transition: border-color 0.15s ease;
+      
+      &:focus {
+        outline: none;
+        border-color: #4caf50;
+        box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+      }
+    }
+    
+    .path-select {
+      cursor: pointer;
+    }
+  }
+}
+
+.save-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 20px;
+  border-top: 1px solid #e0e0e0;
+  background: #f8f9fa;
+  
+  .btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.15s ease;
+    
+    i {
+      font-size: 14px;
+    }
+    
+    &.btn-primary {
+      background: #4caf50;
+      color: white;
+      
+      &:hover {
+        background: #45a049;
+      }
+      
+      &:active {
+        background: #3d8b40;
+        transform: scale(0.98);
+      }
+    }
+    
+    &.btn-secondary {
+      background: #e0e0e0;
+      color: #333333;
+      
+      &:hover {
+        background: #d0d0d0;
+      }
+      
+      &:active {
+        background: #c0c0c0;
+        transform: scale(0.98);
+      }
+    }
+  }
+}
+
 // Dark theme support (if needed)
 @media (prefers-color-scheme: dark) {
   .image-viewer-container {
@@ -355,6 +557,52 @@
     
     .status-left span {
       color: #ffffff;
+    }
+  }
+
+  .save-dialog {
+    background: #3c3c3c;
+  }
+
+  .save-dialog-header {
+    background: #2d2d2d;
+    border-bottom-color: #555555;
+    
+    h3 {
+      color: #ffffff;
+    }
+  }
+
+  .save-dialog-content {
+    .form-group {
+      label {
+        color: #cccccc;
+      }
+      
+      .file-name-input,
+      .path-select {
+        background: #2d2d2d;
+        border-color: #555555;
+        color: #ffffff;
+        
+        &:focus {
+          border-color: #4caf50;
+        }
+      }
+    }
+  }
+
+  .save-dialog-actions {
+    background: #2d2d2d;
+    border-top-color: #555555;
+    
+    .btn-secondary {
+      background: #555555;
+      color: #cccccc;
+      
+      &:hover {
+        background: #666666;
+      }
     }
   }
 }

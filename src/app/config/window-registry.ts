@@ -17,11 +17,11 @@ export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
     title: 'Calculator',
     icon: 'pi pi-calculator',
     component: 'calculator',
-    defaultWidth: 350,
-    defaultHeight: 600,
+    defaultWidth: 480,
+    defaultHeight: 720,
     defaultX: 100,
     defaultY: 100,
-    maximizable: false,
+    maximizable: true,
     statusText: 'Ready'
   },
   'my-info': {
@@ -288,6 +288,18 @@ export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
     maximizable: true,
     statusText: 'Official Angular Documentation'
   },
+  'angular-learning': {
+    id: 'angular-learning',
+    title: 'Học Angular',
+    icon: 'pi pi-graduation-cap',
+    component: 'angular-learning',
+    defaultWidth: 1400,
+    defaultHeight: 900,
+    defaultX: 100,
+    defaultY: 50,
+    maximizable: true,
+    statusText: 'Học Angular từ đầu với ví dụ thực hành'
+  },
   'tuoitre-news': {
     id: 'tuoitre-news',
     title: 'Tin tức hôm nay',
@@ -311,6 +323,30 @@ export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
     defaultY: 80,
     maximizable: true,
     statusText: 'Quản lý chi tiêu gia đình'
+  },
+  'business': {
+    id: 'business',
+    title: 'Quản lý Bán hàng',
+    icon: 'pi pi-shopping-cart',
+    component: 'business',
+    defaultWidth: 1200,
+    defaultHeight: 800,
+    defaultX: 150,
+    defaultY: 60,
+    maximizable: true,
+    statusText: 'Quản lý bán hàng và chi phí'
+  },
+  'chinese-chess': {
+    id: 'chinese-chess',
+    title: 'Kỳ Vương - Cờ Tướng',
+    icon: 'pi pi-th-large',
+    component: 'chinese-chess',
+    defaultWidth: 1200,
+    defaultHeight: 800,
+    defaultX: 150,
+    defaultY: 60,
+    maximizable: true,
+    statusText: 'Cờ Tướng & Cờ Úp'
   }
 };
 

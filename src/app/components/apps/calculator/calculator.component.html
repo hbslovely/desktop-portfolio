@@ -1,12 +1,89 @@
 <div class="calculator">
-  <!-- Display -->
-  <div class="display">
+  <!-- Header with mode toggle and settings -->
+  <div class="calculator-header">
+    <div class="header-left">
+      <button class="mode-toggle" (click)="toggleMode()" [class.active]="isScientificMode()">
+        <span *ngIf="!isScientificMode()">Basic</span>
+        <span *ngIf="isScientificMode()">Scientific</span>
+      </button>
+      <button class="angle-toggle" *ngIf="isScientificMode()" (click)="toggleAngleMode()">
+        {{ angleMode() }}
+      </button>
+    </div>
+    <div class="header-right">
+      <button class="copy-button" (click)="copyToClipboard()" title="Copy result">
+        📋
+      </button>
+      <button class="history-toggle" (click)="toggleHistory()" [class.active]="showHistory()">
+        📜
+      </button>
+    </div>
+  </div>
+
+  <!-- Expression display -->
+  <div class="expression" *ngIf="expression()">
+    {{ expression() }}
+  </div>
+
+  <!-- Main display -->
+  <div class="display" (click)="copyToClipboard()" title="Click to copy">
     <div class="display-value">{{ displayValue() }}</div>
   </div>
+
+  <!-- Memory indicator -->
+  <div class="memory-indicator" *ngIf="memory() !== 0">
+    M: {{ memory() }}
+  </div>
   
-  <!-- Buttons -->
+  <!-- History panel -->
+  <div class="history-panel" *ngIf="showHistory()">
+    <div class="history-header">
+      <h3>Calculation History</h3>
+      <button class="clear-history" (click)="clearHistory()">Clear</button>
+    </div>
+    <div class="history-list">
+      <div 
+        class="history-item" 
+        *ngFor="let entry of history(); let i = index"
+        (click)="useHistoryEntry(entry)">
+        <div class="history-expression">{{ entry.expression }}</div>
+        <div class="history-result">{{ entry.result }}</div>
+        <div class="history-time">{{ entry.timestamp | date:'short' }}</div>
+      </div>
+      <div class="history-empty" *ngIf="history().length === 0">
+        No calculations yet
+      </div>
+    </div>
+  </div>
+
+  <!-- Memory buttons (always visible) -->
+  <div class="memory-buttons" *ngIf="isScientificMode()">
+    <div class="button-row">
+      <button 
+        *ngFor="let button of memoryButtons[0]"
+        class="calc-button memory"
+        (click)="onButtonClick(button)">
+        {{ button }}
+      </button>
+    </div>
+  </div>
+  
+  <!-- Constants row (scientific mode) -->
+  <div class="constants-row" *ngIf="isScientificMode()">
+    <div class="button-row">
+      <button 
+        *ngFor="let constant of constants"
+        class="calc-button constant"
+        (click)="onButtonClick(constant.value)"
+        [title]="constant.name">
+        {{ constant.label }}
+      </button>
+    </div>
+  </div>
+  
+  <!-- Main buttons -->
   <div class="buttons">
-    <div class="button-row" *ngFor="let row of buttons">
+    <div class="button-row" *ngFor="let row of getButtons()">
       <button 
         *ngFor="let button of row"
         class="calc-button"

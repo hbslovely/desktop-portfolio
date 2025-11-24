@@ -8,5 +8,6 @@ export const environment = {
   googleClientId: import.meta.env['NG_APP_GOOGLE_CLIENT_ID'],
   googleClientSecret: import.meta.env['NG_APP_GOOGLE_CLIENT_SECRET'],
   googleAppsScriptUrl: import.meta.env['NG_APP_GOOGLE_APPS_SCRIPT_URL'],
+  googleBusinessAppsScriptUrl: import.meta.env['NG_APP_GOOGLE_BUSINESS_APPS_SCRIPT_URL'],
 };
 

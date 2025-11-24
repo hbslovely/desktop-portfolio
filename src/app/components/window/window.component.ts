@@ -31,6 +31,7 @@ export class WindowComponent implements OnInit, OnDestroy, OnChanges {
   @Input() closable = true;
   @Input() isFocused = false;
   @Input() isMinimizedExternal = false;
+  @Input() windowId = ''; // Window ID for DOM selection
 
   // Track previous external minimize state to detect changes
   private previousIsMinimizedExternal = false;
