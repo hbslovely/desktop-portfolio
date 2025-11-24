@@ -2,6 +2,8 @@ import { Component, OnInit, OnDestroy, signal, computed, ViewChild, ElementRef, 
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ExpenseService, Expense } from '../../../services/expense.service';
+import { ExpenseSettingsService, ExpenseTheme, ExpenseFontSize, ExpenseLayout } from '../../../services/expense-settings.service';
+import { ExpenseSettingsDialogComponent } from './expense-settings-dialog.component';
 import { Chart, ChartConfiguration, registerables } from 'chart.js';
 
 Chart.register(...registerables);
@@ -9,7 +11,7 @@ Chart.register(...registerables);
 @Component({
   selector: 'app-expense-app',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ExpenseSettingsDialogComponent],
   templateUrl: './expense-app.component.html',
   styleUrl: './expense-app.component.scss'
 })
@@ -39,7 +41,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   createAnother = signal<boolean>(false);
   showSuccessMessage = signal<boolean>(false);
   inputMode = signal<'single' | 'multiple'>('single'); // Single or multiple input mode
-  
+
   // Multiple expenses input
   multipleExpenses = signal<Expense[]>([]);
   savingProgress = signal<{ current: number; total: number; saving: boolean }>({ current: 0, total: 0, saving: false });
@@ -53,6 +55,17 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   showDayDetail = signal<boolean>(false);
   selectedDay = signal<string>('');
   selectedDayExpenses = signal<Expense[]>([]);
+
+  // Matrix detail dialog
+  showMatrixDetail = signal<boolean>(false);
+  selectedMatrixDate = signal<string>('');
+  selectedMatrixCategory = signal<string>('');
+  selectedMatrixExpenses = signal<Expense[]>([]);
+
+  // Computed total for selected matrix expenses
+  selectedMatrixTotal = computed(() => {
+    return this.selectedMatrixExpenses().reduce((sum, expense) => sum + expense.amount, 0);
+  });
 
   // Computed total for selected day expenses
   selectedDayTotal = computed(() => {
@@ -96,6 +109,15 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   notificationMessage = signal<string>('');
   notificationType = signal<'success' | 'error'>('success');
 
+  // Settings dialog
+  showSettings = signal<boolean>(false);
+
+  // Filter dialog (for v2)
+  showFilterDialog = signal<boolean>(false);
+
+  // Metric dialog (for v2)
+  showMetricDialog = signal<boolean>(false);
+
   // Categories (from the sheet data)
   categories = signal<string[]>([
     'Kinh doanh',
@@ -106,7 +128,14 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     'Đi lại - xăng xe',
     'Gia đình/Bạn bè',
     'Điện - nước',
-    'Pet/Thú cưng/Vật nuôi khác'
+    'Pet/Thú cưng/Vật nuôi khác',
+    'Sức khỏe',
+    'Thời trang / Mỹ Phẩm/ Làm đẹp',
+    'Mua sắm / Mua sắm online',
+    'Sữa/vitamin/chất bổ/Thuốc khác',
+    'Điện - nước',
+    'Từ thiện',
+    'Điện thoại'
   ]);
 
   // Filter
@@ -116,7 +145,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   searchText = signal<string>('');
   filterAmountMin = signal<number | null>(null);
   filterAmountMax = signal<number | null>(null);
-  
+
   // Category filter dropdown state
   showCategoryDropdown = signal<boolean>(false);
 
@@ -128,7 +157,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   });
 
   // Tabs
-  activeTab = signal<'list' | 'summary'>('list');
+  activeTab = signal<'list' | 'summary' | 'matrix'>('list');
 
   // Sorting for expenses list
   sortField = signal<'date' | 'amount' | 'category' | 'content'>('date');
@@ -222,6 +251,107 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       category,
       total: totals[category]
     })).sort((a, b) => b.total - a.total);
+  });
+
+  // Get all unique categories from expenses
+  uniqueCategories = computed(() => {
+    const categorySet = new Set<string>();
+    this.filteredExpenses().forEach(expense => {
+      if (expense.category) {
+        categorySet.add(expense.category);
+      }
+    });
+    return Array.from(categorySet).sort();
+  });
+
+  // Get all unique dates
+  uniqueDates = computed(() => {
+    const dateSet = new Set<string>();
+    this.filteredExpenses().forEach(expense => {
+      dateSet.add(expense.date);
+    });
+    return Array.from(dateSet).sort();
+  });
+
+  // Calculate total amount per date for matrix
+  dateTotals = computed(() => {
+    const totals: { [date: string]: number } = {};
+    this.filteredExpenses().forEach(expense => {
+      totals[expense.date] = (totals[expense.date] || 0) + expense.amount;
+    });
+    return totals;
+  });
+
+  // Calculate average expense per day (for matrix comparison)
+  dailyAverages = computed(() => {
+    const dates = this.uniqueDates();
+    const matrix = this.matrixData();
+    const averages: { [date: string]: number } = {};
+
+    dates.forEach(date => {
+      const dayData = matrix[date];
+      if (!dayData) {
+        averages[date] = 0;
+        return;
+      }
+
+      // Count categories with expenses and calculate average
+      const categoriesWithExpenses = Object.values(dayData).filter(val => val > 0);
+      if (categoriesWithExpenses.length === 0) {
+        averages[date] = 0;
+        return;
+      }
+
+      const total = categoriesWithExpenses.reduce((sum, val) => sum + val, 0);
+      averages[date] = total / categoriesWithExpenses.length;
+    });
+
+    return averages;
+  });
+
+  // Calculate average amount per category
+  categoryAverages = computed(() => {
+    const averages: { [key: string]: number } = {};
+    const categoryCounts: { [key: string]: number } = {};
+    const categoryTotals: { [key: string]: number } = {};
+
+    this.filteredExpenses().forEach(expense => {
+      if (expense.category) {
+        categoryCounts[expense.category] = (categoryCounts[expense.category] || 0) + 1;
+        categoryTotals[expense.category] = (categoryTotals[expense.category] || 0) + expense.amount;
+      }
+    });
+
+    Object.keys(categoryTotals).forEach(category => {
+      averages[category] = Math.round(categoryTotals[category] / categoryCounts[category]);
+    });
+
+    return averages;
+  });
+
+  // Matrix data: date x category
+  matrixData = computed(() => {
+    const dates = this.uniqueDates();
+    const cats = this.uniqueCategories();
+    const expenses = this.filteredExpenses();
+    const matrix: { [date: string]: { [category: string]: number } } = {};
+
+    // Initialize matrix
+    dates.forEach(date => {
+      matrix[date] = {};
+      cats.forEach(category => {
+        matrix[date][category] = 0;
+      });
+    });
+
+    // Fill matrix with expense data
+    expenses.forEach(expense => {
+      if (expense.category && matrix[expense.date]) {
+        matrix[expense.date][expense.category] = (matrix[expense.date][expense.category] || 0) + expense.amount;
+      }
+    });
+
+    return matrix;
   });
 
   dailyExpenses = computed(() => {
@@ -628,7 +758,29 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     return monthlySet.size;
   });
 
-  constructor(private expenseService: ExpenseService) {
+  // Settings
+  settingsService = signal<ExpenseSettingsService | null>(null);
+  currentLayout = signal<ExpenseLayout>('v1');
+  currentTheme = signal<ExpenseTheme>('compact');
+  currentFontSize = signal<ExpenseFontSize>('medium');
+
+  constructor(
+    private expenseService: ExpenseService,
+    private expenseSettingsService: ExpenseSettingsService
+  ) {
+    this.settingsService.set(expenseSettingsService);
+    this.currentLayout.set(expenseSettingsService.layout());
+    this.currentTheme.set(expenseSettingsService.theme());
+    this.currentFontSize.set(expenseSettingsService.fontSize());
+
+    // Listen to settings changes
+    effect(() => {
+      const settings = expenseSettingsService.settings();
+      this.currentLayout.set(settings.layout);
+      this.currentTheme.set('compact'); // Always use compact theme (like v1)
+      this.currentFontSize.set(settings.fontSize);
+      setTimeout(() => this.applySettings(), 0);
+    });
     // Effect to update charts when filtered expenses or filters change
     effect(() => {
       // Track filtered expenses and active tab to trigger chart updates
@@ -667,6 +819,9 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     // Set default date to today
     this.newExpense.date = this.expenseService.getTodayDate();
 
+    // Apply settings
+    this.applySettings();
+
     // Check if already authenticated and still valid (same day)
     if (this.expenseService.isAuthenticationValid()) {
       this.isAuthenticated.set(true);
@@ -679,6 +834,10 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
   ngAfterViewInit(): void {
     // Charts will be initialized when data is loaded
+    // Apply settings after view init to ensure DOM is ready
+    setTimeout(() => {
+      this.applySettings();
+    }, 0);
   }
 
   ngOnDestroy(): void {
@@ -1018,7 +1177,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   /**
    * Switch tab
    */
-  switchTab(tab: 'list' | 'summary'): void {
+  switchTab(tab: 'list' | 'summary' | 'matrix'): void {
     this.activeTab.set(tab);
     if (tab === 'summary') {
       // Initialize charts when switching to summary tab
@@ -1398,12 +1557,12 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
    */
   addMultipleExpenses(): void {
     const expenses = this.multipleExpenses();
-    
+
     // Filter out empty rows
-    const validExpenses = expenses.filter(expense => 
-      expense.content.trim() && 
-      expense.amount > 0 && 
-      expense.category && 
+    const validExpenses = expenses.filter(expense =>
+      expense.content.trim() &&
+      expense.amount > 0 &&
+      expense.category &&
       expense.date
     );
 
@@ -1449,13 +1608,13 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       // All expenses saved
       this.savingProgress.set({ current: expenses.length, total: expenses.length, saving: false });
       this.isLoading.set(false);
-      
+
       // Reload expenses
       this.loadExpenses(true);
-      
+
       // Show success message
       this.showSuccessMessage.set(true);
-      
+
       // Close dialog after showing success message
       setTimeout(() => {
         this.hideAddExpenseForm();
@@ -1546,11 +1705,100 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     return `${dayName}, ${day}/${month}/${year}`;
   }
 
+
   /**
    * Format amount for display
    */
   formatAmount(amount: number): string {
     return `${amount.toLocaleString('vi-VN')} đ`;
+  }
+
+  /**
+   * Format number with thousand separators for input display
+   */
+  formatNumberInput(value: number | null | undefined): string {
+    if (value === null || value === undefined || isNaN(value)) {
+      return '';
+    }
+    return value.toLocaleString('vi-VN');
+  }
+
+  /**
+   * Parse number from formatted string (remove thousand separators)
+   */
+  parseNumberInput(value: string): number {
+    if (!value || value.trim() === '') {
+      return 0;
+    }
+    // Remove all non-digit characters except decimal point
+    const cleaned = value.replace(/[^\d]/g, '');
+    const parsed = parseInt(cleaned, 10);
+    return isNaN(parsed) ? 0 : parsed;
+  }
+
+  /**
+   * Handle amount input change for new expense
+   */
+  onNewAmountInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const cursorPosition = input.selectionStart || 0;
+    const value = input.value;
+    const parsed = this.parseNumberInput(value);
+    this.newExpense.amount = parsed;
+    
+    // Format the display
+    const formatted = this.formatNumberInput(parsed);
+    input.value = formatted;
+    
+    // Restore cursor position (approximate)
+    const newPosition = Math.min(cursorPosition, formatted.length);
+    setTimeout(() => {
+      input.setSelectionRange(newPosition, newPosition);
+    }, 0);
+  }
+
+  /**
+   * Handle amount input change for edit expense
+   */
+  onEditAmountInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const cursorPosition = input.selectionStart || 0;
+    const value = input.value;
+    const parsed = this.parseNumberInput(value);
+    this.editExpense.amount = parsed;
+    
+    // Format the display
+    const formatted = this.formatNumberInput(parsed);
+    input.value = formatted;
+    
+    // Restore cursor position (approximate)
+    const newPosition = Math.min(cursorPosition, formatted.length);
+    setTimeout(() => {
+      input.setSelectionRange(newPosition, newPosition);
+    }, 0);
+  }
+
+  /**
+   * Handle amount input change for multiple expenses
+   */
+  onMultipleAmountInput(event: Event, index: number): void {
+    const input = event.target as HTMLInputElement;
+    const cursorPosition = input.selectionStart || 0;
+    const value = input.value;
+    const parsed = this.parseNumberInput(value);
+    const expenses = this.multipleExpenses();
+    expenses[index].amount = parsed;
+    this.multipleExpenses.set([...expenses]);
+    
+    // Format the display
+    const formatted = this.formatNumberInput(parsed);
+    input.value = formatted;
+    
+    // Restore cursor position (approximate)
+    const newPosition = Math.min(cursorPosition, formatted.length);
+    setTimeout(() => {
+      input.setSelectionRange(newPosition, newPosition);
+    }, 0);
   }
 
   // Expose Math and Number for template
@@ -1583,11 +1831,11 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   startResize(event: MouseEvent, column: 'date' | 'content' | 'actions'): void {
     event.preventDefault();
     event.stopPropagation();
-    
+
     this.isResizing = true;
     this.resizingColumn = column;
     this.startX = event.clientX;
-    
+
     const widths = this.columnWidths();
     if (column === 'date') {
       this.startWidth = widths.date;
@@ -1613,7 +1861,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const newWidth = Math.max(80, this.startWidth + diff); // Minimum width 80px
 
     const widths = this.columnWidths();
-    
+
     if (this.resizingColumn === 'date') {
       this.columnWidths.set({ ...widths, date: newWidth });
     } else if (this.resizingColumn === 'actions') {
@@ -1649,7 +1897,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     this.filterAmountMin.set(null);
     this.filterAmountMax.set(null);
   }
-  
+
   /**
    * Toggle category selection
    */
@@ -1661,14 +1909,14 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       this.filterCategory.set([...current, category]);
     }
   }
-  
+
   /**
    * Check if category is selected
    */
   isCategorySelected(category: string): boolean {
     return this.filterCategory().includes(category);
   }
-  
+
   /**
    * Get selected categories display text
    */
@@ -2041,6 +2289,68 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   /**
+   * Show matrix detail dialog
+   */
+  showMatrixDetailDialog(date: string, category: string): void {
+    const expenses = this.filteredExpenses().filter(
+      expense => expense.date === date && expense.category === category
+    );
+    this.selectedMatrixDate.set(date);
+    this.selectedMatrixCategory.set(category);
+    this.selectedMatrixExpenses.set(expenses);
+    this.showMatrixDetail.set(true);
+  }
+
+  /**
+   * Hide matrix detail dialog
+   */
+  hideMatrixDetailDialog(): void {
+    this.showMatrixDetail.set(false);
+    this.selectedMatrixDate.set('');
+    this.selectedMatrixCategory.set('');
+    this.selectedMatrixExpenses.set([]);
+  }
+
+  /**
+   * Get matrix cell class based on value compared to daily average
+   */
+  getMatrixCellClass(value: number, date: string): string {
+    if (value === 0) {
+      return 'matrix-cell-empty';
+    }
+
+    const dailyAverage = this.dailyAverages()[date] || 0;
+    if (dailyAverage === 0) {
+      return 'matrix-cell-normal-light';
+    }
+
+    const percentage = (value / dailyAverage) * 100;
+
+    // Xanh lá đậm: ít chi tiêu nhất (< 50% trung bình)
+    if (percentage < 50) {
+      return 'matrix-cell-very-low';
+    }
+
+    // Xanh lá nhạt: chi tiêu hơi nhiều nhưng < trung bình (50-100%)
+    if (percentage < 100) {
+      return 'matrix-cell-low';
+    }
+
+    // Vàng: chi tiêu nhiều hơn trung bình 5% (100-105%)
+    if (percentage <= 105) {
+      return 'matrix-cell-medium';
+    }
+
+    // Đỏ nhạt: chi tiêu nhiều hơn trung bình 15-20% (115-120%)
+    if (percentage <= 120) {
+      return 'matrix-cell-high';
+    }
+
+    // Đỏ đậm: chi tiêu nhiều >25% (>125%)
+    return 'matrix-cell-very-high';
+  }
+
+  /**
    * Initialize category detail chart
    */
   initCategoryDetailChart(): void {
@@ -2104,6 +2414,62 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const chartElement = document.getElementById('categoryDetailChart') as HTMLCanvasElement;
     if (chartElement) {
       this.categoryDetailChart = new Chart(chartElement, config);
+    }
+  }
+
+  /**
+   * Show settings dialog
+   */
+  showSettingsDialog(): void {
+    this.showSettings.set(true);
+  }
+
+  /**
+   * Hide settings dialog
+   */
+  hideSettingsDialog(): void {
+    this.showSettings.set(false);
+  }
+
+  /**
+   * Handle settings save
+   */
+  onSettingsSave(settings: { layout: ExpenseLayout; fontSize: ExpenseFontSize }): void {
+    this.currentLayout.set(settings.layout);
+    this.currentTheme.set('compact'); // Always use compact theme (like v1)
+    this.currentFontSize.set(settings.fontSize);
+    // Apply settings to component class
+    this.applySettings();
+  }
+
+  /**
+   * Get active filter count
+   */
+  getActiveFilterCount(): number {
+    let count = 0;
+    if (this.filterDateFrom() || this.filterDateTo()) count++;
+    if (this.filterCategory().length > 0) count++;
+    if (this.searchText()) count++;
+    if (this.filterAmountMin() !== null) count++;
+    if (this.filterAmountMax() !== null) count++;
+    return count;
+  }
+
+  /**
+   * Apply settings to component
+   */
+  private applySettings(): void {
+    const componentElement = document.querySelector('.expense-app');
+    if (componentElement) {
+      // Remove old classes
+      componentElement.classList.remove('layout-v1', 'layout-v2');
+      componentElement.classList.remove('theme-compact', 'theme-spacious');
+      componentElement.classList.remove('font-small', 'font-medium', 'font-large');
+      
+      // Add new classes
+      componentElement.classList.add(`layout-${this.currentLayout()}`);
+      componentElement.classList.add('theme-compact'); // Always use compact theme (like v1)
+      componentElement.classList.add(`font-${this.currentFontSize()}`);
     }
   }
 }

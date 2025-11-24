@@ -70,7 +70,8 @@ export class WindowComponent implements OnInit, OnDestroy, OnChanges {
       '--window-y': `${state.position.y}px`,
       '--window-width': `${state.size.width}px`,
       '--window-height': `${state.size.height}px`,
-      '--window-z-index': this._zIndex().toString()
+      '--window-z-index': this._zIndex().toString(),
+      '--window-opacity': '1'
     };
   });
 
