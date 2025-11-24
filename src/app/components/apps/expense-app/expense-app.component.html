@@ -52,8 +52,93 @@
             </div>
           </div>
 
-    <!-- Date Filter (affects all tabs) -->
+    <!-- Filters Section (affects all tabs) -->
     <div class="date-filter-section">
+      <!-- All Filters Row -->
+      <div class="filters-row-compact">
+        <!-- Search Bar -->
+        <div class="search-bar-compact">
+          <i class="pi pi-search"></i>
+          <input
+            type="text"
+            [ngModel]="searchText()"
+            (ngModelChange)="searchText.set($event)"
+            class="search-input-compact"
+            placeholder="Tìm kiếm...">
+          <button *ngIf="searchText()" (click)="searchText.set('')" class="clear-search-btn-compact">
+            <i class="pi pi-times"></i>
+          </button>
+        </div>
+
+        <!-- Category Filter -->
+        <div class="filter-group-compact category-filter-dropdown">
+          <label>Phân loại:</label>
+          <div class="category-select-wrapper">
+            <button 
+              type="button"
+              class="category-select-btn"
+              (click)="showCategoryDropdown.set(!showCategoryDropdown())"
+              [class.has-selection]="filterCategory().length > 0">
+              <span class="category-select-text">{{ getSelectedCategoriesText() }}</span>
+              <i class="pi" [ngClass]="showCategoryDropdown() ? 'pi-chevron-up' : 'pi-chevron-down'"></i>
+            </button>
+            <div class="category-dropdown-menu" *ngIf="showCategoryDropdown()" (click)="$event.stopPropagation()">
+              <div class="category-dropdown-header">
+                <span>Chọn phân loại</span>
+                <button 
+                  type="button"
+                  class="category-clear-all-btn"
+                  (click)="filterCategory.set([])"
+                  *ngIf="filterCategory().length > 0">
+                  <i class="pi pi-times"></i>
+                  Xóa tất cả
+                </button>
+              </div>
+              <div class="category-dropdown-list">
+                <label 
+                  *ngFor="let cat of categories()" 
+                  class="category-checkbox-item">
+                  <input 
+                    type="checkbox" 
+                    [checked]="isCategorySelected(cat)"
+                    (change)="toggleCategory(cat)"
+                    (click)="$event.stopPropagation()">
+                  <span class="checkbox-label">{{ cat }}</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Amount Filters -->
+        <div class="filter-group-compact">
+          <label>Từ:</label>
+          <input
+            type="number"
+            [ngModel]="filterAmountMin()"
+            (ngModelChange)="filterAmountMin.set($event ? Number($event) : null)"
+            class="filter-input-compact"
+            placeholder="Min">
+        </div>
+
+        <div class="filter-group-compact">
+          <label>Đến:</label>
+          <input
+            type="number"
+            [ngModel]="filterAmountMax()"
+            (ngModelChange)="filterAmountMax.set($event ? Number($event) : null)"
+            class="filter-input-compact"
+            placeholder="Max">
+        </div>
+
+        <!-- Clear Filters Button -->
+        <button (click)="clearFilters()" class="clear-filters-btn-compact"
+                *ngIf="filterCategory().length > 0 || searchText() || filterAmountMin() !== null || filterAmountMax() !== null">
+          <i class="pi pi-times"></i>
+          <span>Xóa</span>
+        </button>
+      </div>
+
       <!-- Quick Filter Buttons -->
       <div class="quick-filters">
         <button (click)="filterToday()" class="quick-filter-btn" [class.active]="isTodayActive()">
@@ -118,58 +203,6 @@
       </button>
     </div>
 
-    <!-- Filters (only show in list tab) -->
-    <div class="filters-section" *ngIf="activeTab() === 'list'">
-      <!-- Search Bar -->
-      <div class="search-bar">
-        <i class="pi pi-search"></i>
-        <input
-          type="text"
-          [ngModel]="searchText()"
-          (ngModelChange)="searchText.set($event)"
-          class="search-input"
-          placeholder="Tìm kiếm theo nội dung hoặc phân loại...">
-        <button *ngIf="searchText()" (click)="searchText.set('')" class="clear-search-btn">
-          <i class="pi pi-times"></i>
-        </button>
-      </div>
-
-      <div class="filter-row">
-        <div class="filter-group">
-          <label>Phân loại:</label>
-          <select [ngModel]="filterCategory()" (ngModelChange)="filterCategory.set($event)" class="filter-select">
-            <option value="">Tất cả</option>
-            <option *ngFor="let cat of categories()" [value]="cat">{{ cat }}</option>
-          </select>
-        </div>
-
-        <div class="filter-group">
-          <label>Số tiền từ:</label>
-          <input
-            type="number"
-            [ngModel]="filterAmountMin()"
-            (ngModelChange)="filterAmountMin.set($event ? Number($event) : null)"
-            class="filter-input"
-            placeholder="Min">
-        </div>
-
-        <div class="filter-group">
-          <label>Đến:</label>
-          <input
-            type="number"
-            [ngModel]="filterAmountMax()"
-            (ngModelChange)="filterAmountMax.set($event ? Number($event) : null)"
-            class="filter-input"
-            placeholder="Max">
-        </div>
-
-        <button (click)="clearFilters()" class="clear-filters-btn"
-                *ngIf="filterCategory() || searchText() || filterAmountMin() !== null || filterAmountMax() !== null">
-          <i class="pi pi-times"></i>
-          Xóa bộ lọc
-        </button>
-      </div>
-    </div>
 
     <!-- Tab Content: List -->
     <div class="tab-content" *ngIf="activeTab() === 'list'">
