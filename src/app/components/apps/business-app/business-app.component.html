@@ -1,0 +1,697 @@
+<div class="business-app">
+  <!-- Authentication Screen -->
+  <div class="auth-screen" *ngIf="!isAuthenticated()">
+    <div class="auth-container">
+      <div class="auth-icon">
+        <i class="pi pi-lock"></i>
+      </div>
+      <h2>Quản lý Bán hàng</h2>
+      <p class="auth-hint">Nhập mật khẩu để truy cập</p>
+
+      <div class="password-input-group">
+        <input
+          type="password"
+          class="password-input"
+          [value]="password()"
+          (input)="password.set($any($event.target).value)"
+          (keydown)="onPasswordKeyDown($event)"
+          placeholder="Nhập mật khẩu"
+          autofocus>
+        <button class="login-btn" (click)="authenticate()">
+          <i class="pi pi-sign-in"></i>
+          Đăng nhập
+        </button>
+      </div>
+
+      <div class="password-error" *ngIf="passwordError()">
+        <i class="pi pi-exclamation-triangle"></i>
+        {{ passwordError() }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Main App Screen -->
+  <div class="main-screen" *ngIf="isAuthenticated()">
+  <!-- Header -->
+  <div class="app-header">
+    <div class="header-left">
+      <i class="pi pi-shopping-cart"></i>
+      <h1>Quản lý Bán hàng</h1>
+    </div>
+    <div class="header-right">
+      <button (click)="toggleGlobalSearch()" class="search-btn" [class.active]="showGlobalSearch()" title="Tìm kiếm toàn bộ">
+        <i class="pi pi-search"></i>
+      </button>
+      <button (click)="showAddItemForm()" class="add-item-btn">
+        <i class="pi pi-plus"></i>
+        <span>Thêm mới</span>
+      </button>
+      <button (click)="loadItems(true); loadAllSheetsData()" class="refresh-btn" [class.loading]="isLoading()" title="Làm mới">
+        <i class="pi pi-refresh"></i>
+      </button>
+      <button (click)="exportToCSV()" class="export-btn" title="Xuất CSV" *ngIf="items().length > 0">
+        <i class="pi pi-download"></i>
+      </button>
+      <button (click)="showStatistics()" class="stats-btn" title="Thống kê" *ngIf="items().length > 0">
+        <i class="pi pi-chart-pie"></i>
+      </button>
+      <button (click)="showReport()" class="report-header-btn" title="Báo cáo">
+        <i class="pi pi-chart-bar"></i>
+      </button>
+      <button (click)="logout()" class="logout-btn" title="Đăng xuất">
+        <i class="pi pi-sign-out"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Sheet Tabs -->
+  <div class="sheet-tabs">
+    <button 
+      *ngFor="let sheet of sheets" 
+      (click)="switchSheet(sheet)" 
+      class="sheet-tab" 
+      [class.active]="activeSheet() === sheet">
+      <i class="pi" [ngClass]="getSheetIcon(sheet)"></i>
+      <span>{{ getSheetDisplayName(sheet) }}</span>
+    </button>
+  </div>
+
+  <!-- Summary Cards - Only for Đầu vào đầu ra -->
+  <div class="summary-section" *ngIf="isIncomeExpenseSheet() && !isLoading() && items().length > 0">
+    <div class="summary-card">
+      <div class="summary-icon">
+        <i class="pi pi-arrow-down"></i>
+      </div>
+      <div class="summary-content">
+        <div class="summary-label">Tổng Thu Vào</div>
+        <div class="summary-value">{{ formatAmount(totalThuVao()) }}</div>
+      </div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-icon">
+        <i class="pi pi-arrow-up"></i>
+      </div>
+      <div class="summary-content">
+        <div class="summary-label">Tổng Chi Ra</div>
+        <div class="summary-value">{{ formatAmount(totalChiRa()) }}</div>
+      </div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-icon">
+        <i class="pi pi-calculator"></i>
+      </div>
+      <div class="summary-content">
+        <div class="summary-label">Còn Lại</div>
+        <div class="summary-value">
+          {{ formatAmount(totalChiPhi()) }}
+        </div>
+      </div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-icon">
+        <i class="pi pi-list"></i>
+      </div>
+      <div class="summary-content">
+        <div class="summary-label">Số mục</div>
+        <div class="summary-value">{{ items().length }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Error Message -->
+  <div class="error-message" *ngIf="error()">
+    <i class="pi pi-exclamation-triangle"></i>
+    {{ error() }}
+  </div>
+
+  <!-- Global Search -->
+  <div class="global-search-container" *ngIf="showGlobalSearch()">
+    <div class="global-search-box">
+      <i class="pi pi-search"></i>
+      <input 
+        type="text" 
+        [(ngModel)]="globalSearchQuery" 
+        (input)="performGlobalSearch()"
+        class="global-search-input" 
+        placeholder="Tìm kiếm toàn bộ dữ liệu..."
+        (keyup.enter)="performGlobalSearch()">
+      <button (click)="toggleGlobalSearch()" class="close-search-btn">
+        <i class="pi pi-times"></i>
+      </button>
+    </div>
+    
+    <!-- Search Results -->
+    <div class="global-search-results" *ngIf="globalSearchQuery().trim() && globalSearchResults().length > 0">
+      <div class="search-result-group" *ngFor="let result of globalSearchResults()">
+        <div class="search-result-header">
+          <i class="pi" [ngClass]="getSheetIcon(result.sheet)"></i>
+          <span class="result-sheet-name">{{ result.sheet }}</span>
+          <span class="result-count">({{ result.items.length }})</span>
+        </div>
+        <div class="search-result-items">
+          <div 
+            class="search-result-item" 
+            *ngFor="let item of result.items"
+            (click)="navigateToSearchResult(result.sheet, item)">
+            <div class="result-item-content">
+              <div class="result-item-title">
+                <span *ngIf="result.sheet === 'Menu'">{{ item.tenMon }}</span>
+                <span *ngIf="result.sheet === 'Nguồn nguyên liệu'">{{ item.monHangNguyenLieu }}</span>
+                <span *ngIf="result.sheet === 'Nguồn vật liệu'">{{ item.monHang }}</span>
+                <span *ngIf="result.sheet === 'Đầu vào đầu ra'">{{ item.tenChiPhi }}</span>
+              </div>
+              <div class="result-item-details">
+                <span *ngIf="result.sheet === 'Menu' && item.danhMuc" class="result-tag">{{ item.danhMuc }}</span>
+                <span *ngIf="result.sheet === 'Nguồn nguyên liệu' && item.thuongHieuNguyenLieu" class="result-tag">{{ item.thuongHieuNguyenLieu }}</span>
+                <span *ngIf="result.sheet === 'Nguồn vật liệu' && item.thuongHieu" class="result-tag">{{ item.thuongHieu }}</span>
+                <span *ngIf="result.sheet === 'Đầu vào đầu ra' && item.phanLoai" class="result-tag">{{ item.phanLoai }}</span>
+              </div>
+            </div>
+            <i class="pi pi-arrow-right"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- No Results -->
+    <div class="global-search-no-results" *ngIf="globalSearchQuery().trim() && globalSearchResults().length === 0">
+      <i class="pi pi-search"></i>
+      <p>Không tìm thấy kết quả</p>
+    </div>
+  </div>
+
+  <!-- Search and Filter for Nguồn nguyên liệu -->
+  <div class="filter-section" *ngIf="isIngredientSheet() && !isLoading()">
+    <div class="filter-row">
+      <div class="filter-group">
+        <i class="pi pi-search"></i>
+        <input 
+          type="text" 
+          [(ngModel)]="searchQuery" 
+          class="filter-input" 
+          placeholder="Tìm kiếm món hàng (không phân biệt dấu, hoa thường)">
+      </div>
+      <div class="filter-group">
+        <label>Sắp xếp:</label>
+        <select [(ngModel)]="sortBy" class="filter-select">
+          <option value="">Mặc định</option>
+          <option value="giaCot-asc">Giá cốt: Tăng dần</option>
+          <option value="giaCot-desc">Giá cốt: Giảm dần</option>
+          <option value="monHang-asc">Tên: A-Z</option>
+          <option value="monHang-desc">Tên: Z-A</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Giá cốt tối đa:</label>
+        <input 
+          type="text" 
+          [(ngModel)]="maxGiaCot" 
+          class="filter-input" 
+          placeholder="VD: 50000">
+      </div>
+      <button (click)="clearFilters()" class="clear-filters-btn" *ngIf="searchQuery() || selectedBrands().length > 0 || maxGiaCot()">
+        <i class="pi pi-filter-slash"></i>
+        Xóa bộ lọc
+      </button>
+    </div>
+    <div class="filter-row" *ngIf="availableBrands().length > 0">
+      <div class="filter-group brands-filter">
+        <label>Thương hiệu:</label>
+        <div class="brands-checkboxes">
+          <label *ngFor="let brand of availableBrands()" class="brand-checkbox">
+            <input 
+              type="checkbox" 
+              [checked]="selectedBrands().includes(brand)"
+              (change)="toggleBrand(brand)">
+            <span>{{ brand }}</span>
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Income/Expense Tabs for Đầu vào đầu ra -->
+  <div class="income-expense-tabs" *ngIf="isIncomeExpenseSheet()">
+    <button 
+      (click)="switchIncomeExpenseTab('all')" 
+      class="ie-tab" 
+      [class.active]="incomeExpenseTab() === 'all'">
+      <i class="pi pi-list"></i>
+      <span>Tất cả</span>
+    </button>
+    <button 
+      (click)="switchIncomeExpenseTab('income')" 
+      class="ie-tab" 
+      [class.active]="incomeExpenseTab() === 'income'">
+      <i class="pi pi-arrow-down"></i>
+      <span>Đầu vào</span>
+    </button>
+    <button 
+      (click)="switchIncomeExpenseTab('expense')" 
+      class="ie-tab" 
+      [class.active]="incomeExpenseTab() === 'expense'">
+      <i class="pi pi-arrow-up"></i>
+      <span>Đầu ra</span>
+    </button>
+    <button 
+      (click)="showReport()" 
+      class="ie-tab report-btn">
+      <i class="pi pi-chart-bar"></i>
+      <span>Báo cáo</span>
+    </button>
+  </div>
+
+  <!-- Items List -->
+  <div class="items-list-container" *ngIf="!isLoading() && items().length > 0" #itemsContainer>
+    <!-- Đầu vào đầu ra Table -->
+    <table class="items-table" *ngIf="isIncomeExpenseSheet()">
+      <thead>
+        <tr>
+          <th>STT</th>
+          <th>Tên chi phí</th>
+          <th>Số tiền</th>
+          <th>Phân loại</th>
+          <th>Sàn</th>
+          <th>Thao tác</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of filteredIncomeExpenseItems(); let i = index">
+          <td class="stt-cell">{{ i + 1 }}</td>
+          <td class="name-cell">{{ item.tenChiPhi }}</td>
+          <td class="amount-cell" [class.negative]="isNegativeAmount(item.soTien || '')" [class.positive]="!isNegativeAmount(item.soTien || '')">
+            {{ item.soTien }}
+          </td>
+          <td class="category-cell">{{ item.phanLoai }}</td>
+          <td class="platform-cell">{{ item.san || '-' }}</td>
+          <td class="actions-cell">
+            <button (click)="copyItemToClipboard(item)" class="copy-btn" title="Sao chép">
+              <i class="pi pi-copy"></i>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Nguồn vật liệu Table -->
+    <table class="items-table" *ngIf="isMaterialSheet()">
+      <thead>
+        <tr>
+          <th>STT</th>
+          <th>Món hàng</th>
+          <th>Giá tiền</th>
+          <th>Khối lượng</th>
+          <th>Thương hiệu</th>
+          <th>Thao tác</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of items(); let i = index">
+          <td class="stt-cell">{{ i + 1 }}</td>
+          <td class="name-cell">{{ item.monHang }}</td>
+          <td class="amount-cell">{{ item.giaTien }}</td>
+          <td class="category-cell">{{ item.khoiLuong }}</td>
+          <td class="platform-cell">{{ item.thuongHieu || '-' }}</td>
+          <td class="actions-cell">
+            <button (click)="copyItemToClipboard(item)" class="copy-btn" title="Sao chép">
+              <i class="pi pi-copy"></i>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Nguồn nguyên liệu Table -->
+    <table class="items-table" *ngIf="isIngredientSheet()">
+      <thead>
+        <tr>
+          <th>STT</th>
+          <th>Món hàng</th>
+          <th>Giá gốc</th>
+          <th>Đơn vị tính</th>
+          <th>Thương hiệu</th>
+          <th>Số lượng viên</th>
+          <th>Giá cốt</th>
+          <th>Giá bán đề xuất</th>
+          <th>Giá bán lẻ đề xuất</th>
+          <th>Thao tác</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of filteredItems(); let i = index">
+          <td class="stt-cell">{{ i + 1 }}</td>
+          <td class="name-cell">{{ item.monHangNguyenLieu }}</td>
+          <td class="amount-cell">{{ item.giaGoc }}</td>
+          <td class="category-cell">{{ item.donViTinh }}</td>
+          <td class="platform-cell">{{ item.thuongHieuNguyenLieu || '-' }}</td>
+          <td class="category-cell">{{ item.soLuongVien }}</td>
+          <td class="amount-cell">{{ item.giaCot }}</td>
+          <td class="amount-cell">{{ item.giaBanDeXuat }}</td>
+          <td class="amount-cell">{{ item.giaBanLeDeXuat }}</td>
+          <td class="actions-cell">
+            <button (click)="copyItemToClipboard(item)" class="copy-btn" title="Sao chép">
+              <i class="pi pi-copy"></i>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Menu Table -->
+    <table class="items-table" *ngIf="isMenuSheet()">
+      <thead>
+        <tr>
+          <th>STT</th>
+          <th>Tên và mô tả</th>
+          <th>Phân loại</th>
+          <th>Giá tiền</th>
+          <th>Thao tác</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of items(); let i = index">
+          <td class="stt-cell">{{ i + 1 }}</td>
+          <td class="name-desc-cell">
+            <div class="menu-name">{{ item.tenMon }}</div>
+            <div class="menu-desc" *ngIf="item.moTa">{{ item.moTa }}</div>
+          </td>
+          <td class="category-cell">
+            <span class="category-tag" *ngIf="item.danhMuc">{{ item.danhMuc }}</span>
+          </td>
+          <td class="amount-cell">{{ item.giaBan }}</td>
+          <td class="actions-cell">
+            <button (click)="copyItemToClipboard(item)" class="copy-btn" title="Sao chép">
+              <i class="pi pi-copy"></i>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Empty State -->
+  <div class="empty-state" *ngIf="!isLoading() && items().length === 0">
+    <i class="pi pi-inbox"></i>
+    <p>Chưa có dữ liệu trong {{ activeSheet() }}</p>
+    <button (click)="showAddItemForm()" class="add-first-btn">
+      <i class="pi pi-plus"></i>
+      <span>Thêm mục đầu tiên</span>
+    </button>
+  </div>
+
+  <!-- Loading State -->
+  <div class="loading-state" *ngIf="isLoading()">
+    <i class="pi pi-spin pi-spinner"></i>
+    <p>Đang tải...</p>
+  </div>
+
+  <!-- Add Item Dialog -->
+  <div class="dialog-overlay" *ngIf="showAddForm()" (click)="hideAddItemForm()">
+    <div class="dialog-container" (click)="$event.stopPropagation()">
+      <div class="dialog-header">
+        <h3>Thêm mới - {{ activeSheet() }}</h3>
+        <button (click)="hideAddItemForm()" class="close-btn">
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+
+      <div class="dialog-body">
+        <!-- Đầu vào đầu ra Form -->
+        <ng-container *ngIf="isIncomeExpenseSheet()">
+          <div class="form-group">
+            <label>Tên chi phí:</label>
+            <input type="text" [(ngModel)]="newItem.tenChiPhi" class="form-input" placeholder="Nhập tên chi phí">
+          </div>
+          <div class="form-group">
+            <label>Số tiền:</label>
+            <input type="text" [(ngModel)]="newItem.soTien" class="form-input" placeholder="Nhập số tiền (âm = ra, dương = thu vào)">
+            <small class="form-hint">Số âm = tiền ra, số dương = tiền thu vào</small>
+          </div>
+          <div class="form-group">
+            <label>Phân loại:</label>
+            <input type="text" [(ngModel)]="newItem.phanLoai" class="form-input" placeholder="Mua hay vào/ra">
+          </div>
+          <div class="form-group">
+            <label>Sàn:</label>
+            <input type="text" [(ngModel)]="newItem.san" class="form-input" placeholder="Be/Shopee/Xanh SM (nếu là tiền vào)">
+          </div>
+        </ng-container>
+
+        <!-- Nguồn vật liệu Form -->
+        <ng-container *ngIf="isMaterialSheet()">
+          <div class="form-group">
+            <label>Món hàng:</label>
+            <input type="text" [(ngModel)]="newItem.monHang" class="form-input" placeholder="Loại nguyên liệu mua">
+          </div>
+          <div class="form-group">
+            <label>Giá tiền:</label>
+            <input type="text" [(ngModel)]="newItem.giaTien" class="form-input" placeholder="Chi phí mua">
+          </div>
+          <div class="form-group">
+            <label>Khối lượng:</label>
+            <input type="text" [(ngModel)]="newItem.khoiLuong" class="form-input" placeholder="Đơn vị tính">
+          </div>
+          <div class="form-group">
+            <label>Thương hiệu:</label>
+            <input type="text" [(ngModel)]="newItem.thuongHieu" class="form-input" placeholder="Loại/hiện">
+          </div>
+        </ng-container>
+
+        <!-- Nguồn nguyên liệu Form -->
+        <ng-container *ngIf="isIngredientSheet()">
+          <div class="form-group">
+            <label>Số thứ tự:</label>
+            <input type="text" [(ngModel)]="newItem.soThuTu" class="form-input" placeholder="Số thứ tự (tùy chọn)">
+          </div>
+          <div class="form-group">
+            <label>Món hàng:</label>
+            <input type="text" [(ngModel)]="newItem.monHangNguyenLieu" class="form-input" placeholder="Tên hàng">
+          </div>
+          <div class="form-group">
+            <label>Giá gốc:</label>
+            <input type="text" [(ngModel)]="newItem.giaGoc" class="form-input" placeholder="Giá gốc cho mỗi đơn vị">
+          </div>
+          <div class="form-group">
+            <label>Đơn vị tính:</label>
+            <input type="text" [(ngModel)]="newItem.donViTinh" class="form-input" placeholder="Đơn vị tính cho mỗi giá">
+          </div>
+          <div class="form-group">
+            <label>Thương hiệu:</label>
+            <input type="text" [(ngModel)]="newItem.thuongHieuNguyenLieu" class="form-input" placeholder="Thương hiệu">
+          </div>
+          <div class="form-group">
+            <label>Số lượng viên:</label>
+            <input type="text" [(ngModel)]="newItem.soLuongVien" class="form-input" placeholder="Số lượng viên mỗi đơn vị">
+            <small class="form-hint">Giá cốt, Giá bán đề xuất và Giá bán lẻ sẽ được tính tự động</small>
+          </div>
+        </ng-container>
+
+        <!-- Menu Form -->
+        <ng-container *ngIf="isMenuSheet()">
+          <div class="form-group">
+            <label>Tên món:</label>
+            <input type="text" [(ngModel)]="newItem.tenMon" class="form-input" placeholder="Nhập tên món">
+          </div>
+          <div class="form-group">
+            <label>Mô tả:</label>
+            <textarea [(ngModel)]="newItem.moTa" class="form-input" placeholder="Mô tả của món" rows="3"></textarea>
+          </div>
+          <div class="form-group">
+            <label>Danh mục:</label>
+            <input type="text" [(ngModel)]="newItem.danhMuc" class="form-input" placeholder="Danh mục món">
+          </div>
+          <div class="form-group">
+            <label>Giá bán:</label>
+            <input type="text" [(ngModel)]="newItem.giaBan" class="form-input" placeholder="Giá bán">
+          </div>
+          <div class="form-group">
+            <label>Cách chế biến:</label>
+            <textarea [(ngModel)]="newItem.cachCheBien" class="form-input" placeholder="Cách chế biến" rows="3"></textarea>
+          </div>
+        </ng-container>
+      </div>
+
+      <div class="dialog-footer">
+        <button (click)="hideAddItemForm()" class="cancel-btn">Hủy</button>
+        <button (click)="addItem()" class="save-btn" [disabled]="isLoading()">
+          <i class="pi pi-save"></i>
+          Lưu
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notification Dialog -->
+  <div class="dialog-overlay notification-overlay" *ngIf="showNotification()" (click)="hideNotificationDialog()">
+    <div class="notification-dialog" [class.success]="notificationType() === 'success'" [class.error]="notificationType() === 'error'" (click)="$event.stopPropagation()">
+      <div class="notification-icon">
+        <i class="pi" [ngClass]="notificationType() === 'success' ? 'pi-check-circle' : 'pi-exclamation-triangle'"></i>
+      </div>
+      <div class="notification-message">{{ notificationMessage() }}</div>
+      <button (click)="hideNotificationDialog()" class="notification-close-btn">
+        <i class="pi pi-times"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Statistics Dialog -->
+  <div class="dialog-overlay" *ngIf="showStatisticsDialog()" (click)="hideStatistics()">
+    <div class="dialog-container report-dialog" (click)="$event.stopPropagation()">
+      <div class="dialog-header">
+        <h3>Thống kê - {{ activeSheet() }}</h3>
+        <button (click)="hideStatistics()" class="close-btn">
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+
+      <div class="dialog-body report-body">
+        <div class="report-summary" *ngIf="getStatistics()">
+          <div class="report-summary-item" *ngFor="let stat of getStatistics() | keyvalue">
+            <div class="report-label">{{ stat.key }}</div>
+            <div class="report-value">
+              {{ getStatisticValue(stat) }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dialog-footer">
+        <button (click)="hideStatistics()" class="cancel-btn">Đóng</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Report Dialog -->
+  <div class="dialog-overlay" *ngIf="showReportDialog() && reportData()" (click)="hideReport()">
+    <div class="dialog-container report-dialog" (click)="$event.stopPropagation()">
+      <div class="dialog-header">
+        <h3>Báo cáo Tổng hợp - {{ activeSheet() }}</h3>
+        <button (click)="hideReport()" class="close-btn">
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+
+      <div class="dialog-body report-body">
+        <!-- Đầu vào đầu ra Report -->
+        <ng-container *ngIf="reportData()?.type === 'income-expense'">
+          <div class="report-summary">
+            <div class="report-summary-item">
+              <div class="report-label">Tổng Thu Vào</div>
+              <div class="report-value positive">{{ formatAmount(getReportTotalIncome()) }}</div>
+              <div class="report-count">{{ getReportIncomeCount() }} giao dịch</div>
+            </div>
+            <div class="report-summary-item">
+              <div class="report-label">Tổng Chi Ra</div>
+              <div class="report-value negative">{{ formatAmount(getReportTotalExpense()) }}</div>
+              <div class="report-count">{{ getReportExpenseCount() }} giao dịch</div>
+            </div>
+            <div class="report-summary-item">
+              <div class="report-label">Còn Lại</div>
+              <div class="report-value" [class.positive]="getReportNetAmount() >= 0" [class.negative]="getReportNetAmount() < 0">
+                {{ formatAmount(getReportNetAmount()) }}
+              </div>
+            </div>
+          </div>
+
+          <div class="report-section" *ngIf="getReportIncomeByPlatform().length > 0">
+            <h4>Thu vào theo Sàn</h4>
+            <div class="report-list">
+              <div class="report-item" *ngFor="let item of getReportIncomeByPlatform()">
+                <div class="report-item-label">{{ item.platform }}</div>
+                <div class="report-item-value positive">{{ formatAmount(item.amount || 0) }}</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="report-section" *ngIf="getReportExpenseByCategory().length > 0">
+            <h4>Chi ra theo Phân loại</h4>
+            <div class="report-list">
+              <div class="report-item" *ngFor="let item of getReportExpenseByCategory()">
+                <div class="report-item-label">{{ item.category }}</div>
+                <div class="report-item-value negative">{{ formatAmount(item.amount || 0) }}</div>
+              </div>
+            </div>
+          </div>
+        </ng-container>
+
+        <!-- Nguồn nguyên liệu Report -->
+        <ng-container *ngIf="reportData()?.type === 'ingredient'">
+          <div class="report-summary">
+            <div class="report-summary-item">
+              <div class="report-label">Tổng Số Mục</div>
+              <div class="report-value">{{ getReportTotalItems() }}</div>
+            </div>
+          </div>
+
+          <div class="report-section" *ngIf="getReportByBrand().length > 0">
+            <h4>Theo Thương hiệu</h4>
+            <div class="report-list">
+              <div class="report-item" *ngFor="let item of getReportByBrand()">
+                <div class="report-item-label">{{ item.brand }} ({{ item.count || 0 }} mục)</div>
+                <div class="report-item-value">
+                  <div>TB Giá cốt: {{ formatAmount(item.avgGiaCot || 0) }}</div>
+                  <div>Tổng giá gốc: {{ formatAmount(item.totalGiaGoc || 0) }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </ng-container>
+
+        <!-- Nguồn vật liệu Report -->
+        <ng-container *ngIf="reportData()?.type === 'material'">
+          <div class="report-summary">
+            <div class="report-summary-item">
+              <div class="report-label">Tổng Số Mục</div>
+              <div class="report-value">{{ getReportTotalItems() }}</div>
+            </div>
+            <div class="report-summary-item">
+              <div class="report-label">Tổng Giá Tiền</div>
+              <div class="report-value">{{ formatAmount(getReportTotalGiaTien()) }}</div>
+            </div>
+          </div>
+
+          <div class="report-section" *ngIf="getReportByBrand().length > 0">
+            <h4>Theo Thương hiệu</h4>
+            <div class="report-list">
+              <div class="report-item" *ngFor="let item of getReportByBrand()">
+                <div class="report-item-label">{{ item.brand }} ({{ item.count || 0 }} mục)</div>
+                <div class="report-item-value">{{ formatAmount(item.totalGiaTien || 0) }}</div>
+              </div>
+            </div>
+          </div>
+        </ng-container>
+
+        <!-- Menu Report -->
+        <ng-container *ngIf="reportData()?.type === 'menu'">
+          <div class="report-summary">
+            <div class="report-summary-item">
+              <div class="report-label">Tổng Số Món</div>
+              <div class="report-value">{{ getReportTotalItems() }}</div>
+            </div>
+            <div class="report-summary-item">
+              <div class="report-label">Tổng Giá Bán</div>
+              <div class="report-value">{{ formatAmount(getReportTotalGiaBan()) }}</div>
+            </div>
+          </div>
+
+          <div class="report-section" *ngIf="getReportByCategory().length > 0">
+            <h4>Theo Danh mục</h4>
+            <div class="report-list">
+              <div class="report-item" *ngFor="let item of getReportByCategory()">
+                <div class="report-item-label">{{ item.category }} ({{ item.count || 0 }} món)</div>
+                <div class="report-item-value">{{ formatAmount(item.totalGiaBan || 0) }}</div>
+              </div>
+            </div>
+          </div>
+        </ng-container>
+      </div>
+
+      <div class="dialog-footer">
+        <button (click)="hideReport()" class="cancel-btn">Đóng</button>
+      </div>
+    </div>
+  </div>
+  </div>
+  <!-- End Main App Screen -->
+</div>
+

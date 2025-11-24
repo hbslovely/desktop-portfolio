@@ -1,16 +1,21 @@
-import { Component, Input, OnInit, signal, computed, HostListener } from '@angular/core';
+import { Component, Input, OnInit, signal, computed, HostListener, ViewChild, ElementRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { FileSystemService } from '../../../services/file-system.service';
 
 @Component({
   selector: 'app-image-viewer',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './image-viewer.component.html',
   styleUrl: './image-viewer.component.scss',
 })
 export class ImageViewerComponent implements OnInit {
   @Input() imagePath = '';
   @Input() imageName = '';
+  @ViewChild('imageElement', { static: false }) imageElement!: ElementRef<HTMLImageElement>;
+  
+  private fileSystemService = inject(FileSystemService);
   
   isLoading = signal(true);
   hasError = signal(false);
@@ -25,6 +30,12 @@ export class ImageViewerComponent implements OnInit {
   isDragging = signal(false);
   dragStart = signal({ x: 0, y: 0 });
   initialPosition = signal({ x: 0, y: 0 });
+  
+  // Save dialog states
+  showSaveDialog = signal(false);
+  saveFileName = signal('');
+  savePath = signal('/Pictures');
+  availableFolders = ['/Pictures', '/Documents', '/Downloads'];
   
   // Computed properties
   imageTransform = computed(() => {
@@ -150,5 +161,94 @@ export class ImageViewerComponent implements OnInit {
     if (!this.imageName) return '';
     const parts = this.imageName.split('.');
     return parts.length > 1 ? parts.pop()?.toUpperCase() || '' : '';
+  }
+
+  // Save as PNG functionality
+  openSaveDialog() {
+    if (this.hasError() || this.isLoading()) {
+      alert('Không thể lưu ảnh. Vui lòng đợi ảnh tải xong hoặc kiểm tra lại ảnh!');
+      return;
+    }
+    
+    // Generate default filename from current image name
+    const baseName = this.imageName.split('.')[0] || 'image';
+    this.saveFileName.set(`${baseName}.png`);
+    this.showSaveDialog.set(true);
+  }
+
+  closeSaveDialog() {
+    this.showSaveDialog.set(false);
+    this.saveFileName.set('');
+  }
+
+  async saveAsPNG() {
+    const fileName = this.saveFileName().trim();
+    const savePath = this.savePath();
+    
+    if (!fileName) {
+      alert('Vui lòng nhập tên file!');
+      return;
+    }
+
+    if (!fileName.toLowerCase().endsWith('.png')) {
+      this.saveFileName.set(fileName + '.png');
+    }
+
+    try {
+      // Get the image element
+      const img = this.imageElement?.nativeElement;
+      if (!img) {
+        alert('Không thể tải ảnh. Vui lòng thử lại!');
+        return;
+      }
+
+      // Create a canvas to convert image to PNG
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      
+      if (!ctx) {
+        alert('Không thể tạo canvas. Vui lòng thử lại!');
+        return;
+      }
+
+      // Set canvas size to match image
+      canvas.width = img.naturalWidth || img.width;
+      canvas.height = img.naturalHeight || img.height;
+
+      // Apply transformations if needed
+      ctx.save();
+      
+      // Apply rotation
+      if (this.rotation() !== 0) {
+        ctx.translate(canvas.width / 2, canvas.height / 2);
+        ctx.rotate((this.rotation() * Math.PI) / 180);
+        ctx.translate(-canvas.width / 2, -canvas.height / 2);
+      }
+
+      // Draw the image
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      ctx.restore();
+
+      // Convert canvas to PNG data URL
+      const pngDataUrl = canvas.toDataURL('image/png');
+
+      // Save to file system
+      const finalPath = `${savePath}/${this.saveFileName()}`;
+      await this.fileSystemService.addImageFile({
+        fileName: this.saveFileName(),
+        path: finalPath,
+        imageData: pngDataUrl,
+        fileType: 'png'
+      });
+
+      // Show success message
+      alert(`Đã lưu file PNG thành công!\nĐường dẫn: ${finalPath}`);
+      
+      // Close dialog
+      this.closeSaveDialog();
+    } catch (error) {
+      console.error('Error saving PNG:', error);
+      alert('Có lỗi xảy ra khi lưu file PNG. Vui lòng thử lại!');
+    }
   }
 }

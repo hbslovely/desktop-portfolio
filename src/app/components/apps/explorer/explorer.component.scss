@@ -207,6 +207,7 @@
   display: flex;
   flex: 1;
   overflow: hidden;
+  position: relative;
 }
 
 .file-panel {
@@ -214,10 +215,6 @@
   display: flex;
   flex-direction: column;
   transition: all 0.3s ease;
-  
-  &.with-preview {
-    flex: 0 0 60%;
-  }
 }
 
 .file-list-container {
@@ -442,12 +439,18 @@
 
 // Preview Panel
 .preview-panel {
-  flex: 0 0 40%;
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 400px;
+  height: 100%;
   background: white;
   border-left: 1px solid #dee2e6;
   display: flex;
   flex-direction: column;
   animation: slideIn 0.3s ease;
+  z-index: 10;
+  box-shadow: -4px 0 12px rgba(0, 0, 0, 0.1);
 }
 
 @keyframes slideIn {

@@ -52,93 +52,8 @@
             </div>
           </div>
 
-    <!-- Filters Section (affects all tabs) -->
+    <!-- Date Filter (affects all tabs) -->
     <div class="date-filter-section">
-      <!-- All Filters Row -->
-      <div class="filters-row-compact">
-        <!-- Search Bar -->
-        <div class="search-bar-compact">
-          <i class="pi pi-search"></i>
-          <input
-            type="text"
-            [ngModel]="searchText()"
-            (ngModelChange)="searchText.set($event)"
-            class="search-input-compact"
-            placeholder="Tìm kiếm...">
-          <button *ngIf="searchText()" (click)="searchText.set('')" class="clear-search-btn-compact">
-            <i class="pi pi-times"></i>
-          </button>
-        </div>
-
-        <!-- Category Filter -->
-        <div class="filter-group-compact category-filter-dropdown">
-          <label>Phân loại:</label>
-          <div class="category-select-wrapper">
-            <button 
-              type="button"
-              class="category-select-btn"
-              (click)="showCategoryDropdown.set(!showCategoryDropdown())"
-              [class.has-selection]="filterCategory().length > 0">
-              <span class="category-select-text">{{ getSelectedCategoriesText() }}</span>
-              <i class="pi" [ngClass]="showCategoryDropdown() ? 'pi-chevron-up' : 'pi-chevron-down'"></i>
-            </button>
-            <div class="category-dropdown-menu" *ngIf="showCategoryDropdown()" (click)="$event.stopPropagation()">
-              <div class="category-dropdown-header">
-                <span>Chọn phân loại</span>
-                <button 
-                  type="button"
-                  class="category-clear-all-btn"
-                  (click)="filterCategory.set([])"
-                  *ngIf="filterCategory().length > 0">
-                  <i class="pi pi-times"></i>
-                  Xóa tất cả
-                </button>
-              </div>
-              <div class="category-dropdown-list">
-                <label 
-                  *ngFor="let cat of categories()" 
-                  class="category-checkbox-item">
-                  <input 
-                    type="checkbox" 
-                    [checked]="isCategorySelected(cat)"
-                    (change)="toggleCategory(cat)"
-                    (click)="$event.stopPropagation()">
-                  <span class="checkbox-label">{{ cat }}</span>
-                </label>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Amount Filters -->
-        <div class="filter-group-compact">
-          <label>Từ:</label>
-          <input
-            type="number"
-            [ngModel]="filterAmountMin()"
-            (ngModelChange)="filterAmountMin.set($event ? Number($event) : null)"
-            class="filter-input-compact"
-            placeholder="Min">
-        </div>
-
-        <div class="filter-group-compact">
-          <label>Đến:</label>
-          <input
-            type="number"
-            [ngModel]="filterAmountMax()"
-            (ngModelChange)="filterAmountMax.set($event ? Number($event) : null)"
-            class="filter-input-compact"
-            placeholder="Max">
-        </div>
-
-        <!-- Clear Filters Button -->
-        <button (click)="clearFilters()" class="clear-filters-btn-compact"
-                *ngIf="filterCategory().length > 0 || searchText() || filterAmountMin() !== null || filterAmountMax() !== null">
-          <i class="pi pi-times"></i>
-          <span>Xóa</span>
-        </button>
-      </div>
-
       <!-- Quick Filter Buttons -->
       <div class="quick-filters">
         <button (click)="filterToday()" class="quick-filter-btn" [class.active]="isTodayActive()">
@@ -185,6 +100,56 @@
       </div>
     </div>
 
+    <!-- Search and Filters (affects all tabs) -->
+    <div class="filters-section">
+      <!-- Search Bar -->
+      <div class="search-bar">
+        <i class="pi pi-search"></i>
+        <input
+          type="text"
+          [ngModel]="searchText()"
+          (ngModelChange)="searchText.set($event)"
+          class="search-input"
+          placeholder="Tìm kiếm theo nội dung hoặc phân loại...">
+        <button *ngIf="searchText()" (click)="searchText.set('')" class="clear-search-btn">
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+
+      <div class="filter-row">
+        <div class="filter-group">
+          <label>Phân loại:</label>
+          <select [ngModel]="filterCategory()" (ngModelChange)="filterCategory.set($event)" class="filter-select">
+            <option value="">Tất cả</option>
+            <option *ngFor="let cat of categories()" [value]="cat">{{ cat }}</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label>Số tiền:</label>
+          <input
+            type="number"
+            [ngModel]="filterAmountMin()"
+            (ngModelChange)="filterAmountMin.set($event ? Number($event) : null)"
+            class="filter-input"
+            placeholder="Từ">
+          <span class="filter-separator">-</span>
+          <input
+            type="number"
+            [ngModel]="filterAmountMax()"
+            (ngModelChange)="filterAmountMax.set($event ? Number($event) : null)"
+            class="filter-input"
+            placeholder="Đến">
+        </div>
+
+        <button (click)="clearFilters()" class="clear-filters-btn"
+                *ngIf="filterCategory() || searchText() || filterAmountMin() !== null || filterAmountMax() !== null">
+          <i class="pi pi-times"></i>
+          Xóa bộ lọc
+        </button>
+      </div>
+    </div>
+
     <!-- Tabs -->
     <div class="tabs-section">
       <button
@@ -203,11 +168,10 @@
       </button>
     </div>
 
-
     <!-- Tab Content: List -->
     <div class="tab-content" *ngIf="activeTab() === 'list'">
-      <!-- Summary Cards -->
-      <div class="summary-section">
+      <!-- Summary Cards - Compact -->
+      <div class="summary-section compact">
           <div class="summary-card">
             <div class="summary-icon">
               <i class="pi pi-money-bill"></i>
@@ -241,7 +205,7 @@
               <i class="pi pi-chart-line"></i>
             </div>
             <div class="summary-content">
-              <div class="summary-label">Trung bình/giao dịch</div>
+              <div class="summary-label">TB/giao dịch</div>
               <div class="summary-value">{{ formatAmount(averageExpense()) }}</div>
             </div>
           </div>
@@ -250,7 +214,7 @@
               <i class="pi pi-calendar"></i>
             </div>
             <div class="summary-content">
-              <div class="summary-label">Trung bình/ngày</div>
+              <div class="summary-label">TB/ngày</div>
               <div class="summary-value">{{ formatAmount(averageDailyExpense()) }}</div>
             </div>
           </div>
@@ -302,11 +266,26 @@
         </div>
 
         <div class="expenses-list">
+          <!-- Header with resize handles -->
+          <div class="expense-header">
+            <div class="expense-header-date" [style.width.px]="columnWidths().date">
+              <span>Ngày</span>
+              <div class="resize-handle" (mousedown)="startResize($event, 'date')"></div>
+            </div>
+            <div class="expense-header-content">
+              <span>Nội dung</span>
+              <div class="resize-handle" (mousedown)="startResize($event, 'content')"></div>
+            </div>
+            <div class="expense-header-actions" [style.width.px]="columnWidths().actions">
+              <span>Thao tác</span>
+            </div>
+          </div>
+
           <div
             class="expense-item"
             *ngFor="let expense of filteredExpenses(); let i = index"
             [class.highlight-above-average]="isAboveAverage(expense.amount)">
-            <div class="expense-date">
+            <div class="expense-date" [style.width.px]="columnWidths().date">
               <i class="pi pi-calendar"></i>
               <span>{{ formatDate(expense.date) }}</span>
             </div>
@@ -321,7 +300,7 @@
                 <span>{{ expense.note }}</span>
               </div>
             </div>
-            <div class="expense-actions">
+            <div class="expense-actions" [style.width.px]="columnWidths().actions">
               <button class="edit-btn" (click)="showEditExpenseForm(expense, i)" title="Chỉnh sửa">
                 <i class="pi pi-pencil"></i>
               </button>
@@ -351,8 +330,8 @@
     <!-- Tab Content: Summary -->
     <div class="tab-content summary-tab" *ngIf="activeTab() === 'summary'">
       <div class="summary-view">
-        <!-- Overall Summary -->
-        <div class="summary-section">
+        <!-- Overall Summary - Compact -->
+        <div class="summary-section compact">
           <div class="summary-card">
             <div class="summary-icon">
               <i class="pi pi-money-bill"></i>
@@ -368,7 +347,7 @@
                       [class.negative]="periodComparison()!.change < 0">
                   {{ Math.abs(periodComparison()!.change) }}%
                 </span>
-                <span class="change-label">so với {{ periodComparison()!.period }} trước</span>
+                <span class="change-label">vs {{ periodComparison()!.period }} trước</span>
               </div>
             </div>
           </div>
@@ -386,7 +365,7 @@
               <i class="pi pi-calendar"></i>
             </div>
             <div class="summary-content">
-              <div class="summary-label">Trung bình/ngày</div>
+              <div class="summary-label">TB/ngày</div>
               <div class="summary-value">{{ formatAmount(averageDailyExpense()) }}</div>
             </div>
           </div>
@@ -395,7 +374,7 @@
               <i class="pi pi-chart-line"></i>
             </div>
             <div class="summary-content">
-              <div class="summary-label">Trung bình/giao dịch</div>
+              <div class="summary-label">TB/giao dịch</div>
               <div class="summary-value">{{ formatAmount(averageExpense()) }}</div>
             </div>
           </div>
@@ -786,16 +765,16 @@
 
           <!-- Input Mode Toggle -->
           <div class="input-mode-toggle">
-            <button 
-              (click)="switchInputMode('single')" 
-              class="mode-btn" 
+            <button
+              (click)="switchInputMode('single')"
+              class="mode-btn"
               [class.active]="inputMode() === 'single'">
               <i class="pi pi-plus"></i>
               <span>Nhập đơn</span>
             </button>
-            <button 
-              (click)="switchInputMode('multiple')" 
-              class="mode-btn" 
+            <button
+              (click)="switchInputMode('multiple')"
+              class="mode-btn"
               [class.active]="inputMode() === 'multiple'">
               <i class="pi pi-table"></i>
               <span>Nhập nhiều</span>
@@ -922,18 +901,18 @@
 
         <div class="dialog-footer">
           <button (click)="hideAddExpenseForm()" class="cancel-btn" [disabled]="savingProgress().saving">Hủy</button>
-          <button 
+          <button
             *ngIf="inputMode() === 'single'"
-            (click)="addExpense()" 
-            class="save-btn" 
+            (click)="addExpense()"
+            class="save-btn"
             [disabled]="isLoading() || savingProgress().saving">
             <i class="pi pi-save"></i>
             Lưu
           </button>
-          <button 
+          <button
             *ngIf="inputMode() === 'multiple'"
-            (click)="addMultipleExpenses()" 
-            class="save-btn" 
+            (click)="addMultipleExpenses()"
+            class="save-btn"
             [disabled]="isLoading() || savingProgress().saving">
             <i class="pi pi-save"></i>
             <span *ngIf="!savingProgress().saving">Lưu tất cả ({{ multipleExpenses().length }})</span>
