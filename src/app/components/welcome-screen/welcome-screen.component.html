@@ -1,5 +1,23 @@
+<!-- Boot Screen -->
+<div class="boot-screen" *ngIf="isBooting()">
+  <div class="boot-content">
+    <div class="boot-logo">
+      <div class="logo-circle">
+        <div class="logo-inner"></div>
+      </div>
+    </div>
+    <div class="boot-text">Desktop Portfolio</div>
+    <div class="boot-progress-container">
+      <div class="boot-progress-bar">
+        <div class="boot-progress-fill" [style.width.%]="bootProgress()"></div>
+      </div>
+    </div>
+    <div class="boot-status">Đang khởi động hệ thống...</div>
+  </div>
+</div>
+
 <!-- Welcome/Lock Screen -->
-<div class="welcome-screen" *ngIf="!isAuthenticated()">
+<div class="welcome-screen" *ngIf="!isAuthenticated() && !isBooting()">
   <!-- Animated Background -->
   <div class="welcome-background">
     <div class="wallpaper"></div>
@@ -34,7 +52,6 @@
           <div class="user-avatar">
             <div class="avatar-glow"></div>
             <img src="assets/images/icons/profile.png" alt="User Avatar" class="avatar-image">
-            <div class="avatar-ring"></div>
           </div>
 
           <!-- Password Input Section -->
@@ -50,7 +67,7 @@
                 [value]="password()"
                 (input)="onPasswordInput($event)"
                 (keypress)="onKeyPress($event)"
-                placeholder="Nhập mật khẩu để mở khóa"
+                placeholder="Mật khẩu"
                 autofocus>
               <button 
                 type="button" 

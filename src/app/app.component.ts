@@ -1828,9 +1828,9 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     this.restartMessages = [];
     this.systemRestartService.completeRestart();
 
-    // Lock the screen after restart
+    // Show boot screen after restart
     if (this.welcomeScreen) {
-      this.welcomeScreen.lockScreenFromParent();
+      this.welcomeScreen.showBootScreen();
     }
   }
 
