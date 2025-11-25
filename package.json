@@ -4,13 +4,12 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
-    "build": "ng build --configuration production && node scripts/obfuscate-build.js",
+    "build": "ng build --configuration production",
     "build:dev": "ng build --configuration development",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "download-yugioh-images": "node scripts/download-yugioh-images.js",
-    "check-yugioh-progress": "./scripts/check-download-progress.sh",
-    "obfuscate": "node scripts/obfuscate-build.js"
+    "check-yugioh-progress": "./scripts/check-download-progress.sh"
   },
   "private": true,
   "dependencies": {
