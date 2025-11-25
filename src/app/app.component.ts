@@ -51,6 +51,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   @ViewChild(WelcomeScreenComponent) welcomeScreen!: WelcomeScreenComponent;
   @ViewChild('searchInput', { static: false }) searchInput!: ElementRef<HTMLInputElement>;
   @ViewChild('startMenuSearchInput', { static: false }) startMenuSearchInput!: ElementRef<HTMLInputElement>;
+  @ViewChild('previewContainer', { static: false }) previewContainer!: ElementRef<HTMLDivElement>;
 
   windowManager = inject(WindowManagerService);
 
@@ -121,6 +122,15 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   // Settings dialog state
   showSettingsDialog = signal(false);
 
+  // Window switcher state (Command+Tab)
+  showWindowSwitcher = signal(false);
+  windowSwitcherSelectedIndex = signal(0);
+  private isCommandTabPressed = false;
+  windowPreviewContent = signal<HTMLElement | null>(null);
+  
+  // Check if running on Mac
+  isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+
   // Search properties
   searchQuery = '';
   searchResults: SearchResult[] = [];
@@ -158,6 +168,42 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     if (event.ctrlKey && event.shiftKey && event.key === 'Escape') {
       event.preventDefault();
       this.openApp('task-manager');
+      return;
+    }
+
+    // Use Option/Alt + Arrow Left/Right for window switcher (doesn't conflict with browser or macOS)
+    const isOptionKey = this.isMac ? event.altKey : event.altKey; // Option on Mac = Alt on Windows
+    const isArrowLeft = event.key === 'ArrowLeft';
+    const isArrowRight = event.key === 'ArrowRight';
+    
+    if (isOptionKey && (isArrowLeft || isArrowRight)) {
+      event.preventDefault();
+      
+      if (!this.isCommandTabPressed) {
+        // First press - show switcher
+        this.isCommandTabPressed = true;
+        this.openWindowSwitcher();
+      }
+      
+      // Cycle through windows based on arrow direction
+      const direction = isArrowRight ? 1 : -1;
+      this.cycleWindowSwitcher(direction);
+      return;
+    }
+
+    // Release Option/Alt key - close switcher and select window
+    if (this.isCommandTabPressed && !isOptionKey) {
+      this.closeWindowSwitcher(true);
+    }
+  }
+
+  @HostListener('window:keyup', ['$event'])
+  handleGlobalKeyUp(event: KeyboardEvent) {
+    const isOptionKey = event.altKey; // Option on Mac = Alt on Windows
+    
+    // Release Option/Alt key - close switcher and select window
+    if (this.isCommandTabPressed && !isOptionKey) {
+      this.closeWindowSwitcher(true);
     }
   }
 
@@ -1832,6 +1878,322 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     if (this.welcomeScreen) {
       this.welcomeScreen.showBootScreen();
     }
+  }
+
+  // Window Switcher Methods
+  getAllOpenWindows(): Array<{ id: string; title: string; icon: string; isWindowManager: boolean; isMinimized: boolean; statusText?: string }> {
+    const windows: Array<{ id: string; title: string; icon: string; isWindowManager: boolean; isMinimized: boolean; statusText?: string }> = [];
+
+    // Add windows from WindowManagerService (including minimized)
+    const windowManagerWindows = this.windowManager.windowList(); // Get all windows, not just open ones
+    windowManagerWindows.forEach(w => {
+      windows.push({
+        id: w.id,
+        title: w.title,
+        icon: w.icon,
+        isWindowManager: true,
+        isMinimized: w.isMinimized,
+        statusText: w.statusText
+      });
+    });
+
+    // Add legacy windows (old system) - including minimized
+    const legacyWindows = [
+      { id: 'calculator', title: 'Calculator', icon: 'pi pi-calculator', show: this.showTestWindow },
+      { id: 'my-info', title: 'About Me', icon: 'pi pi-user', show: this.showMyInfoWindow },
+      { id: 'love', title: 'Love', icon: 'pi pi-heart', show: this.showLoveWindow },
+      { id: 'explorer', title: 'File Explorer', icon: 'pi pi-folder', show: this.showExplorerWindow },
+      { id: 'text-viewer', title: 'Text Viewer', icon: 'pi pi-file', show: this.showTextViewerWindow },
+      { id: 'image-viewer', title: 'Image Viewer', icon: 'pi pi-image', show: this.showImageViewerWindow },
+      { id: 'pdf-viewer', title: 'PDF Viewer', icon: 'pi pi-file-pdf', show: this.showPdfViewerWindow },
+      { id: 'machine-info', title: 'System Info', icon: 'pi pi-desktop', show: this.showMachineInfoWindow },
+      { id: 'credit', title: 'Finance Tracker', icon: 'pi pi-wallet', show: this.showCreditWindow },
+      { id: 'paint', title: 'Paint', icon: 'pi pi-palette', show: this.showPaintWindow },
+      { id: 'credits', title: 'Credits', icon: 'pi pi-star', show: this.showCreditsWindow },
+      { id: 'hcmc', title: 'Ho Chi Minh City', icon: 'pi pi-globe', show: this.showHcmcWindow },
+      { id: 'news', title: 'News Headlines', icon: 'pi pi-globe', show: this.showNewsWindow }
+    ];
+
+    legacyWindows.forEach(w => {
+      if (w.show()) {
+        windows.push({
+          id: w.id,
+          title: w.title,
+          icon: w.icon,
+          isWindowManager: false,
+          isMinimized: this.isWindowMinimized(w.id)
+        });
+      }
+    });
+
+    // Sort by z-index (focused windows first, then by z-index)
+    return windows.sort((a, b) => {
+      const aWindow = a.isWindowManager ? this.windowManager.getWindow(a.id) : null;
+      const bWindow = b.isWindowManager ? this.windowManager.getWindow(b.id) : null;
+      
+      const aZIndex = aWindow?.zIndex || 0;
+      const bZIndex = bWindow?.zIndex || 0;
+      
+      return bZIndex - aZIndex; // Higher z-index first
+    });
+  }
+
+  getSelectedWindowPreview() {
+    const windows = this.getAllOpenWindows();
+    const selectedIndex = this.windowSwitcherSelectedIndex();
+    
+    if (selectedIndex >= 0 && selectedIndex < windows.length) {
+      return windows[selectedIndex];
+    }
+    
+    return null;
+  }
+
+  openWindowSwitcher() {
+    const windows = this.getAllOpenWindows();
+    if (windows.length === 0) {
+      this.isCommandTabPressed = false;
+      return;
+    }
+
+    // Find current focused window index
+    const currentFocused = this.windowManager.focusedWindow();
+    const currentFocusedId = currentFocused?.id || this.focusedWindow();
+    
+    let currentIndex = windows.findIndex(w => w.id === currentFocusedId);
+    if (currentIndex === -1) {
+      currentIndex = 0;
+    }
+
+    this.windowSwitcherSelectedIndex.set(currentIndex);
+    this.showWindowSwitcher.set(true);
+    this.updateWindowPreview();
+  }
+
+  cycleWindowSwitcher(direction: number) {
+    const windows = this.getAllOpenWindows();
+    if (windows.length === 0) {
+      this.closeWindowSwitcher(false);
+      return;
+    }
+
+    let newIndex = this.windowSwitcherSelectedIndex() + direction;
+    
+    // Wrap around
+    if (newIndex < 0) {
+      newIndex = windows.length - 1;
+    } else if (newIndex >= windows.length) {
+      newIndex = 0;
+    }
+
+    this.windowSwitcherSelectedIndex.set(newIndex);
+    this.updateWindowPreview();
+  }
+
+  updateWindowPreview() {
+    const selected = this.getSelectedWindowPreview();
+    if (!selected || !this.previewContainer) {
+      this.windowPreviewContent.set(null);
+      if (this.previewContainer) {
+        this.previewContainer.nativeElement.innerHTML = '';
+      }
+      return;
+    }
+
+    // Clear previous preview
+    this.windowPreviewContent.set(null);
+    this.previewContainer.nativeElement.innerHTML = '';
+
+    // Get window element and clone content
+    setTimeout(() => {
+      let windowElement: HTMLElement | null = null;
+      
+      if (selected.isWindowManager) {
+        windowElement = document.querySelector(`app-window[data-window-id="${selected.id}"]`) as HTMLElement;
+      } else {
+        windowElement = document.querySelector(`[data-window-id="${selected.id}"]`) as HTMLElement;
+      }
+
+      if (!windowElement) {
+        return;
+      }
+
+      // Get window content
+      const contentElement = windowElement.querySelector('.window-content') as HTMLElement;
+      if (!contentElement) {
+        return;
+      }
+
+      // Clone the content for preview
+      try {
+        const clone = contentElement.cloneNode(true) as HTMLElement;
+        const originalWidth = contentElement.offsetWidth;
+        const originalHeight = contentElement.offsetHeight;
+        const scale = 0.35; // Scale down to 35%
+        
+        clone.style.width = originalWidth + 'px';
+        clone.style.height = originalHeight + 'px';
+        clone.style.transform = `scale(${scale})`;
+        clone.style.transformOrigin = 'top left';
+        clone.style.overflow = 'hidden';
+        clone.style.pointerEvents = 'none';
+        clone.style.userSelect = 'none';
+        clone.style.position = 'absolute';
+        clone.style.top = '0';
+        clone.style.left = '0';
+        clone.style.background = 'white';
+        clone.style.borderRadius = '4px';
+        clone.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)';
+        
+        // Disable all interactive elements
+        const interactiveElements = clone.querySelectorAll('button, input, select, textarea, a, [onclick]');
+        interactiveElements.forEach(el => {
+          (el as HTMLElement).style.pointerEvents = 'none';
+          (el as HTMLElement).style.cursor = 'default';
+        });
+
+        // Append to preview container
+        this.previewContainer.nativeElement.appendChild(clone);
+        this.windowPreviewContent.set(clone);
+      } catch (err) {
+        console.error('Error cloning window content:', err);
+      }
+    }, 100);
+  }
+
+  closeWindowSwitcher(selectWindow: boolean) {
+    if (!this.showWindowSwitcher()) {
+      this.isCommandTabPressed = false;
+      return;
+    }
+
+    if (selectWindow) {
+      const windows = this.getAllOpenWindows();
+      const selectedIndex = this.windowSwitcherSelectedIndex();
+      
+      if (selectedIndex >= 0 && selectedIndex < windows.length) {
+        const selectedWindow = windows[selectedIndex];
+        this.switchToWindow(selectedWindow.id, selectedWindow.isWindowManager);
+      }
+    }
+
+    this.showWindowSwitcher.set(false);
+    this.isCommandTabPressed = false;
+  }
+
+  switchToWindow(windowId: string, isWindowManager: boolean) {
+    if (isWindowManager) {
+      const window = this.windowManager.getWindow(windowId);
+      if (window) {
+        if (window.isMinimized) {
+          this.windowManager.restoreWindow(windowId);
+        } else {
+          this.windowManager.focusWindow(windowId);
+        }
+      }
+    } else {
+      // Legacy window system
+      if (this.isWindowMinimized(windowId)) {
+        this.restoreWindow(windowId);
+      }
+      this.focusWindow(windowId);
+    }
+  }
+
+  getWindowElement(windowId: string): HTMLElement | null {
+    return document.querySelector(`[data-window-id="${windowId}"]`) as HTMLElement;
+  }
+
+  getWindowPreview(windowId: string, isWindowManager: boolean): string | null {
+    // Try to get window element
+    let windowElement: HTMLElement | null = null;
+    
+    if (isWindowManager) {
+      windowElement = document.querySelector(`app-window[data-window-id="${windowId}"]`) as HTMLElement;
+    } else {
+      windowElement = document.querySelector(`[data-window-id="${windowId}"]`) as HTMLElement;
+    }
+
+    if (!windowElement) {
+      return null;
+    }
+
+    // Get window content area
+    const contentElement = windowElement.querySelector('.window-content') as HTMLElement;
+    if (!contentElement) {
+      return null;
+    }
+
+    // Create a temporary canvas to capture the preview
+    try {
+      const rect = contentElement.getBoundingClientRect();
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      
+      if (!ctx) {
+        return null;
+      }
+
+      // Set canvas size (scaled down for preview)
+      const scale = 0.3; // Scale down to 30% for preview
+      canvas.width = rect.width * scale;
+      canvas.height = rect.height * scale;
+
+      // Fill with background
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Try to capture using html2canvas-like approach (simplified)
+      // For now, return a flag that we have content
+      return 'has-content';
+    } catch (err) {
+      return null;
+    }
+  }
+
+  captureWindowPreview(windowId: string, isWindowManager: boolean): Promise<string | null> {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        let windowElement: HTMLElement | null = null;
+        
+        if (isWindowManager) {
+          windowElement = document.querySelector(`app-window[data-window-id="${windowId}"]`) as HTMLElement;
+        } else {
+          windowElement = document.querySelector(`[data-window-id="${windowId}"]`) as HTMLElement;
+        }
+
+        if (!windowElement) {
+          resolve(null);
+          return;
+        }
+
+        // Get window content
+        const contentElement = windowElement.querySelector('.window-content') as HTMLElement;
+        if (!contentElement) {
+          resolve(null);
+          return;
+        }
+
+        // Clone the content and create preview
+        try {
+          const clone = contentElement.cloneNode(true) as HTMLElement;
+          clone.style.transform = 'scale(0.3)';
+          clone.style.transformOrigin = 'top left';
+          clone.style.width = contentElement.offsetWidth + 'px';
+          clone.style.height = contentElement.offsetHeight + 'px';
+          clone.style.position = 'absolute';
+          clone.style.top = '0';
+          clone.style.left = '0';
+          clone.style.opacity = '0';
+          clone.style.pointerEvents = 'none';
+          
+          // Return a marker that we can use to show cloned content
+          resolve('cloned');
+        } catch (err) {
+          resolve(null);
+        }
+      }, 100);
+    });
   }
 
   ngOnDestroy() {

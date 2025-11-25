@@ -230,5 +230,52 @@ export class WindowManagerService {
       return true;
     });
   }
+
+  // Get windows sorted by z-index (highest first) for window switcher
+  getWindowsByZIndex(): WindowConfig[] {
+    return this.windowList()
+      .filter(w => !w.isMinimized)
+      .sort((a, b) => b.zIndex - a.zIndex);
+  }
+
+  // Get next window in the switcher (circular)
+  getNextWindow(currentWindowId: string | null): WindowConfig | null {
+    const windows = this.getWindowsByZIndex();
+    if (windows.length === 0) return null;
+    if (windows.length === 1) return windows[0];
+
+    if (!currentWindowId) {
+      return windows[0];
+    }
+
+    const currentIndex = windows.findIndex(w => w.id === currentWindowId);
+    if (currentIndex === -1) {
+      return windows[0];
+    }
+
+    // Get next window (circular)
+    const nextIndex = (currentIndex + 1) % windows.length;
+    return windows[nextIndex];
+  }
+
+  // Get previous window in the switcher (circular)
+  getPreviousWindow(currentWindowId: string | null): WindowConfig | null {
+    const windows = this.getWindowsByZIndex();
+    if (windows.length === 0) return null;
+    if (windows.length === 1) return windows[0];
+
+    if (!currentWindowId) {
+      return windows[windows.length - 1];
+    }
+
+    const currentIndex = windows.findIndex(w => w.id === currentWindowId);
+    if (currentIndex === -1) {
+      return windows[windows.length - 1];
+    }
+
+    // Get previous window (circular)
+    const prevIndex = currentIndex === 0 ? windows.length - 1 : currentIndex - 1;
+    return windows[prevIndex];
+  }
 }
 

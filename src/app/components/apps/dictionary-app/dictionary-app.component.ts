@@ -47,6 +47,10 @@ export class DictionaryAppComponent implements AfterViewInit {
   error = signal<string | null>(null);
   searchHistory = signal<string[]>([]);
   currentAudio = signal<HTMLAudioElement | null>(null);
+  bookmarkedWords = signal<string[]>([]);
+  wordOfTheDay = signal<string>('');
+  showCopyNotification = signal(false);
+  showBookmarkNotification = signal(false);
 
   // Popular words to suggest
   popularWords = [
@@ -55,8 +59,20 @@ export class DictionaryAppComponent implements AfterViewInit {
     'integrity', 'wisdom', 'courage', 'harmony'
   ];
 
+  // Word of the Day list
+  wordOfTheDayList = [
+    'serendipity', 'ephemeral', 'eloquent', 'resilient', 'paradigm',
+    'ubiquitous', 'innovation', 'perspective', 'integrity', 'wisdom',
+    'courage', 'harmony', 'magnificent', 'extraordinary', 'brilliant',
+    'wonderful', 'remarkable', 'exceptional', 'outstanding', 'phenomenal',
+    'splendid', 'marvelous', 'fantastic', 'incredible', 'amazing',
+    'beautiful', 'elegant', 'graceful', 'sophisticated', 'refined'
+  ];
+
   constructor(private http: HttpClient) {
     this.loadSearchHistory();
+    this.loadBookmarks();
+    this.setWordOfTheDay();
   }
 
   ngAfterViewInit() {
@@ -209,5 +225,181 @@ export class DictionaryAppComponent implements AfterViewInit {
     if (!data) return null;
 
     return data.phonetics.find(p => p.audio && p.audio.length > 0) || null;
+  }
+
+  // Bookmark functionality
+  isBookmarked(word: string): boolean {
+    return this.bookmarkedWords().includes(word.toLowerCase());
+  }
+
+  toggleBookmark(word: string) {
+    const wordLower = word.toLowerCase();
+    const bookmarks = this.bookmarkedWords();
+    
+    if (this.isBookmarked(wordLower)) {
+      const updated = bookmarks.filter(w => w !== wordLower);
+      this.bookmarkedWords.set(updated);
+      this.saveBookmarks(updated);
+    } else {
+      const updated = [...bookmarks, wordLower];
+      this.bookmarkedWords.set(updated);
+      this.saveBookmarks(updated);
+      this.showBookmarkNotification.set(true);
+      setTimeout(() => this.showBookmarkNotification.set(false), 2000);
+    }
+  }
+
+  private loadBookmarks() {
+    const stored = localStorage.getItem('dictionary-bookmarks');
+    if (stored) {
+      try {
+        const bookmarks = JSON.parse(stored);
+        this.bookmarkedWords.set(bookmarks);
+      } catch (err) {
+        // Ignore parse errors
+      }
+    }
+  }
+
+  private saveBookmarks(bookmarks: string[]) {
+    localStorage.setItem('dictionary-bookmarks', JSON.stringify(bookmarks));
+  }
+
+  removeBookmark(word: string) {
+    const updated = this.bookmarkedWords().filter(w => w !== word.toLowerCase());
+    this.bookmarkedWords.set(updated);
+    this.saveBookmarks(updated);
+  }
+
+  // Word of the Day
+  setWordOfTheDay() {
+    const today = new Date();
+    const dayOfYear = Math.floor((today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / 86400000);
+    const wordIndex = dayOfYear % this.wordOfTheDayList.length;
+    this.wordOfTheDay.set(this.wordOfTheDayList[wordIndex]);
+  }
+
+  searchWordOfTheDay() {
+    this.searchTerm.set(this.wordOfTheDay());
+    this.searchWord(this.wordOfTheDay());
+  }
+
+  // Copy definition to clipboard
+  copyDefinition() {
+    const data = this.wordData();
+    if (!data) return;
+
+    let text = `📖 ${data.word}\n\n`;
+    
+    if (data.phonetic) {
+      text += `Pronunciation: ${data.phonetic}\n\n`;
+    }
+
+    if (data.origin) {
+      text += `Origin: ${data.origin}\n\n`;
+    }
+
+    data.meanings.forEach((meaning, i) => {
+      text += `${meaning.partOfSpeech.toUpperCase()}\n`;
+      meaning.definitions.forEach((def, j) => {
+        text += `${j + 1}. ${def.definition}\n`;
+        if (def.example) {
+          text += `   Example: "${def.example}"\n`;
+        }
+      });
+      text += '\n';
+    });
+
+    if (this.getAllSynonyms().length > 0) {
+      text += `Synonyms: ${this.getAllSynonyms().join(', ')}\n`;
+    }
+
+    if (this.getAllAntonyms().length > 0) {
+      text += `Antonyms: ${this.getAllAntonyms().join(', ')}\n`;
+    }
+
+    navigator.clipboard.writeText(text).then(() => {
+      this.showCopyNotification.set(true);
+      setTimeout(() => this.showCopyNotification.set(false), 2000);
+    }).catch(err => {
+      console.error('Failed to copy:', err);
+    });
+  }
+
+  // Share definition
+  shareDefinition() {
+    const data = this.wordData();
+    if (!data) return;
+
+    const text = `Check out the definition of "${data.word}" in the Dictionary app!`;
+    const url = window.location.href;
+
+    if (navigator.share) {
+      navigator.share({
+        title: `Definition: ${data.word}`,
+        text: text,
+        url: url
+      }).catch(err => {
+        console.error('Error sharing:', err);
+      });
+    } else {
+      // Fallback: copy to clipboard
+      navigator.clipboard.writeText(`${text}\n${url}`).then(() => {
+        this.showCopyNotification.set(true);
+        setTimeout(() => this.showCopyNotification.set(false), 2000);
+      });
+    }
+  }
+
+  // Export definition as text file
+  exportDefinition() {
+    const data = this.wordData();
+    if (!data) return;
+
+    let text = `Dictionary Definition\n`;
+    text += `===================\n\n`;
+    text += `Word: ${data.word}\n`;
+    
+    if (data.phonetic) {
+      text += `Pronunciation: ${data.phonetic}\n`;
+    }
+
+    if (data.origin) {
+      text += `Origin: ${data.origin}\n`;
+    }
+
+    text += `\nDefinitions:\n`;
+    text += `------------\n\n`;
+
+    data.meanings.forEach((meaning, i) => {
+      text += `${meaning.partOfSpeech.toUpperCase()}\n`;
+      meaning.definitions.forEach((def, j) => {
+        text += `${j + 1}. ${def.definition}\n`;
+        if (def.example) {
+          text += `   Example: "${def.example}"\n`;
+        }
+      });
+      text += '\n';
+    });
+
+    if (this.getAllSynonyms().length > 0) {
+      text += `Synonyms: ${this.getAllSynonyms().join(', ')}\n\n`;
+    }
+
+    if (this.getAllAntonyms().length > 0) {
+      text += `Antonyms: ${this.getAllAntonyms().join(', ')}\n\n`;
+    }
+
+    text += `\nExported on: ${new Date().toLocaleString()}\n`;
+
+    const blob = new Blob([text], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${data.word}-definition.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   }
 }
