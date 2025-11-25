@@ -19,6 +19,8 @@ export class WelcomeScreenComponent implements OnInit, OnDestroy {
   errorMessage = signal('');
   isLoading = signal(false);
   isLocked = signal(false);
+  isBooting = signal(true);
+  bootProgress = signal(0);
 
   // Current time and date
   currentTime = signal('');
@@ -44,7 +46,29 @@ export class WelcomeScreenComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    this.checkAuthenticationStatus();
+    this.startBootSequence();
+  }
+
+  startBootSequence() {
+    // Simulate boot process
+    const bootDuration = 2500; // 2.5 seconds
+    const steps = 100;
+    const interval = bootDuration / steps;
+    let currentStep = 0;
+
+    const bootInterval = setInterval(() => {
+      currentStep++;
+      this.bootProgress.set(currentStep);
+
+      if (currentStep >= steps) {
+        clearInterval(bootInterval);
+        // After boot completes, check authentication
+        setTimeout(() => {
+          this.isBooting.set(false);
+          this.checkAuthenticationStatus();
+        }, 300);
+      }
+    }, interval);
   }
 
   checkAuthenticationStatus() {
@@ -76,6 +100,7 @@ export class WelcomeScreenComponent implements OnInit, OnDestroy {
   lockScreen() {
     this.isLocked.set(true);
     this.isAuthenticated.set(false);
+    this.isBooting.set(false); // Don't show boot screen when manually locking
     this.password.set('');
     this.errorMessage.set('');
     // Clear storage when manually locking
@@ -164,6 +189,15 @@ export class WelcomeScreenComponent implements OnInit, OnDestroy {
   onRestartRequest() {
     // Emit custom event that parent can listen to
     window.dispatchEvent(new CustomEvent('system-restart-requested'));
+  }
+
+  // Method to be called when restart completes - show boot screen again
+  public showBootScreen() {
+    this.isBooting.set(true);
+    this.bootProgress.set(0);
+    this.isAuthenticated.set(false);
+    this.isLocked.set(false);
+    this.startBootSequence();
   }
   
   ngOnDestroy() {
