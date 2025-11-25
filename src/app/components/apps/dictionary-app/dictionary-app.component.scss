@@ -288,6 +288,154 @@
     font-weight: 400;
   }
 
+  // Word of the Day Section
+  .word-of-day-section {
+    margin-bottom: 40px;
+    display: flex;
+    justify-content: center;
+  }
+
+  .word-of-day-card {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 24px 32px;
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    border-radius: 16px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    max-width: 500px;
+    width: 100%;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4);
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+  }
+
+  .word-of-day-icon {
+    width: 64px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    backdrop-filter: blur(10px);
+
+    i {
+      font-size: 32px;
+      color: white;
+    }
+  }
+
+  .word-of-day-content {
+    flex: 1;
+    text-align: left;
+
+    h4 {
+      margin: 0 0 8px 0;
+      font-size: 14px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.9);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+
+    .word-of-day-word {
+      margin: 0 0 6px 0;
+      font-size: 28px;
+      font-weight: 700;
+      color: white;
+      letter-spacing: -0.5px;
+    }
+
+    .word-of-day-hint {
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.8);
+      font-weight: 400;
+    }
+  }
+
+  // Bookmarks Section
+  .bookmarks-section {
+    margin-bottom: 36px;
+    text-align: left;
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+
+      h3 {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 600;
+        color: #212529;
+        text-align: left;
+        letter-spacing: -0.2px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+
+        i {
+          font-size: 16px;
+          color: #f59e0b;
+        }
+      }
+    }
+
+    .bookmark-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: flex-start;
+    }
+
+    .bookmark-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 16px;
+      border-radius: 8px;
+      border: 1.5px solid #fbbf24;
+      background: #fef3c7;
+      color: #92400e;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 1px 2px rgba(251, 191, 36, 0.2);
+
+      i {
+        font-size: 12px;
+        color: #f59e0b;
+      }
+
+      &:hover {
+        border-color: #f59e0b;
+        background: #fde68a;
+        color: #78350f;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(251, 191, 36, 0.3);
+
+        i {
+          color: #d97706;
+        }
+      }
+
+      &:active {
+        transform: translateY(0);
+      }
+    }
+  }
+
   .history-section,
   .suggestions-section {
     margin-bottom: 36px;
@@ -423,17 +571,95 @@
 
   .word-title-section {
     display: flex;
-    align-items: baseline;
+    flex-direction: column;
     gap: 16px;
-    flex-wrap: wrap;
 
-    .word-title {
-      margin: 0;
-      font-size: 36px;
-      font-weight: 700;
-      color: #1e293b;
-      letter-spacing: -0.8px;
-      line-height: 1.2;
+    .word-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+
+      .word-title {
+        margin: 0;
+        font-size: 36px;
+        font-weight: 700;
+        color: #1e293b;
+        letter-spacing: -0.8px;
+        line-height: 1.2;
+        flex: 1;
+        min-width: 200px;
+      }
+
+      .word-actions {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+
+      .action-btn {
+        width: 40px;
+        height: 40px;
+        border: 1.5px solid #e9ecef;
+        border-radius: 8px;
+        background: white;
+        color: #6c757d;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+
+        i {
+          font-size: 16px;
+        }
+
+        &:hover {
+          background: #f8f9fa;
+          border-color: #dee2e6;
+          color: #495057;
+          transform: translateY(-1px);
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+        }
+
+        &:active {
+          transform: translateY(0);
+        }
+
+        &.bookmark-btn {
+          &.bookmarked {
+            background: #fef3c7;
+            border-color: #fbbf24;
+            color: #f59e0b;
+
+            &:hover {
+              background: #fde68a;
+              border-color: #f59e0b;
+              color: #d97706;
+            }
+          }
+        }
+
+        &.copy-btn:hover {
+          background: #e0f2fe;
+          border-color: #7dd3fc;
+          color: #0284c7;
+        }
+
+        &.share-btn:hover {
+          background: #f0fdf4;
+          border-color: #86efac;
+          color: #16a34a;
+        }
+
+        &.export-btn:hover {
+          background: #fef3c7;
+          border-color: #fbbf24;
+          color: #f59e0b;
+        }
+      }
     }
 
     .phonetic-section {
@@ -806,6 +1032,66 @@
 
   .origin-section {
     padding: 14px 16px;
+  }
+
+  .word-title-row {
+    flex-direction: column;
+    align-items: flex-start;
+
+    .word-actions {
+      width: 100%;
+      justify-content: flex-start;
+    }
+  }
+}
+
+// Notifications
+.notification {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  animation: slideInRight 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid #e9ecef;
+
+  i {
+    font-size: 20px;
+  }
+
+  span {
+    font-size: 14px;
+    font-weight: 500;
+    color: #212529;
+  }
+
+  &.copy-notification {
+    i {
+      color: #10b981;
+    }
+  }
+
+  &.bookmark-notification {
+    i {
+      color: #f59e0b;
+    }
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(100px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
   }
 }
 

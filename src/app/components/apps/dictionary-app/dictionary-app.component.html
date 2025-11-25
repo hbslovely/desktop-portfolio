@@ -56,6 +56,39 @@
       <h2>Dictionary</h2>
       <p class="welcome-subtitle">Search for word definitions, pronunciations, and more</p>
 
+      <!-- Word of the Day -->
+      <div class="word-of-day-section">
+        <div class="word-of-day-card" (click)="searchWordOfTheDay()">
+          <div class="word-of-day-icon">
+            <i class="pi pi-calendar"></i>
+          </div>
+          <div class="word-of-day-content">
+            <h4>Word of the Day</h4>
+            <p class="word-of-day-word">{{ wordOfTheDay() }}</p>
+            <span class="word-of-day-hint">Click to explore</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bookmarked Words -->
+      <div *ngIf="bookmarkedWords().length > 0" class="bookmarks-section">
+        <div class="section-header">
+          <h3>
+            <i class="pi pi-bookmark"></i>
+            Bookmarked Words
+          </h3>
+        </div>
+        <div class="bookmark-chips">
+          <button 
+            *ngFor="let word of bookmarkedWords()" 
+            (click)="searchSuggestion(word)"
+            class="bookmark-chip">
+            <i class="pi pi-bookmark-fill"></i>
+            {{ word }}
+          </button>
+        </div>
+      </div>
+
       <!-- Search History -->
       <div *ngIf="searchHistory().length > 0" class="history-section">
         <div class="section-header">
@@ -95,7 +128,36 @@
       <!-- Word Header -->
       <div class="word-header">
         <div class="word-title-section">
-          <h1 class="word-title">{{ wordData()?.word }}</h1>
+          <div class="word-title-row">
+            <h1 class="word-title">{{ wordData()?.word }}</h1>
+            <div class="word-actions">
+              <button 
+                (click)="toggleBookmark(wordData()!.word)"
+                class="action-btn bookmark-btn"
+                [class.bookmarked]="isBookmarked(wordData()!.word)"
+                [title]="isBookmarked(wordData()!.word) ? 'Remove bookmark' : 'Bookmark word'">
+                <i [class]="isBookmarked(wordData()!.word) ? 'pi pi-bookmark-fill' : 'pi pi-bookmark'"></i>
+              </button>
+              <button 
+                (click)="copyDefinition()"
+                class="action-btn copy-btn"
+                title="Copy definition">
+                <i class="pi pi-copy"></i>
+              </button>
+              <button 
+                (click)="shareDefinition()"
+                class="action-btn share-btn"
+                title="Share definition">
+                <i class="pi pi-share-alt"></i>
+              </button>
+              <button 
+                (click)="exportDefinition()"
+                class="action-btn export-btn"
+                title="Export as text file">
+                <i class="pi pi-download"></i>
+              </button>
+            </div>
+          </div>
           <div class="phonetic-section" *ngIf="wordData()?.phonetic || getPhoneticWithAudio()">
             <span class="phonetic-text">{{ wordData()?.phonetic || getPhoneticWithAudio()?.text }}</span>
             <button 
@@ -188,6 +250,17 @@
         </div>
       </div>
     </div>
+  </div>
+
+  <!-- Notifications -->
+  <div *ngIf="showCopyNotification()" class="notification copy-notification">
+    <i class="pi pi-check-circle"></i>
+    <span>Copied to clipboard!</span>
+  </div>
+
+  <div *ngIf="showBookmarkNotification()" class="notification bookmark-notification">
+    <i class="pi pi-bookmark-fill"></i>
+    <span>Word bookmarked!</span>
   </div>
 </div>
 

@@ -758,6 +758,31 @@
   (onSettingsChange)="onSettingsChange($event)">
 </app-settings-dialog>
 
+<!-- Window Switcher (Option+Arrow) -->
+<div *ngIf="showWindowSwitcher()" class="window-switcher-overlay">
+  <div class="window-switcher-container">
+    <!-- Window List -->
+    <div class="window-switcher-windows">
+      <div 
+        *ngFor="let window of getAllOpenWindows(); let i = index"
+        class="window-switcher-item"
+        [class.selected]="i === windowSwitcherSelectedIndex()"
+        [class.minimized]="window.isMinimized">
+        <div class="window-switcher-icon">
+          <i [class]="window.icon"></i>
+        </div>
+        <div class="window-switcher-title">{{ window.title }}</div>
+        <div *ngIf="window.isMinimized" class="window-switcher-badge">
+          <i class="pi pi-window-minimize"></i>
+        </div>
+      </div>
+    </div>
+    <div class="window-switcher-hint">
+      <span>Press ← → to switch • Release {{ isMac ? '⌥' : 'Alt' }} to select</span>
+    </div>
+  </div>
+</div>
+
 <!-- Dynamic Windows from WindowManager -->
 <ng-container *ngFor="let window of windowManager.windowList()">
   <app-window
