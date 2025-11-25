@@ -135,7 +135,8 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     'Sữa/vitamin/chất bổ/Thuốc khác',
     'Điện - nước',
     'Từ thiện',
-    'Điện thoại'
+    'Điện thoại',
+    'Sinh hoạt (Lee)'
   ]);
 
   // Filter
@@ -1745,11 +1746,10 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const value = input.value;
     const parsed = this.parseNumberInput(value);
     this.newExpense.amount = parsed;
-    
     // Format the display
     const formatted = this.formatNumberInput(parsed);
     input.value = formatted;
-    
+
     // Restore cursor position (approximate)
     const newPosition = Math.min(cursorPosition, formatted.length);
     setTimeout(() => {
@@ -1766,11 +1766,10 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const value = input.value;
     const parsed = this.parseNumberInput(value);
     this.editExpense.amount = parsed;
-    
     // Format the display
     const formatted = this.formatNumberInput(parsed);
     input.value = formatted;
-    
+
     // Restore cursor position (approximate)
     const newPosition = Math.min(cursorPosition, formatted.length);
     setTimeout(() => {
@@ -1789,11 +1788,10 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const expenses = this.multipleExpenses();
     expenses[index].amount = parsed;
     this.multipleExpenses.set([...expenses]);
-    
     // Format the display
     const formatted = this.formatNumberInput(parsed);
     input.value = formatted;
-    
+
     // Restore cursor position (approximate)
     const newPosition = Math.min(cursorPosition, formatted.length);
     setTimeout(() => {
@@ -2465,7 +2463,6 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       componentElement.classList.remove('layout-v1', 'layout-v2');
       componentElement.classList.remove('theme-compact', 'theme-spacious');
       componentElement.classList.remove('font-small', 'font-medium', 'font-large');
-      
       // Add new classes
       componentElement.classList.add(`layout-${this.currentLayout()}`);
       componentElement.classList.add('theme-compact'); // Always use compact theme (like v1)
