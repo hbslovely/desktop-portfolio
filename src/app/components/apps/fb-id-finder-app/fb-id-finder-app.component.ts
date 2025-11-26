@@ -2,9 +2,18 @@ import { Component, signal, ViewChild, ElementRef, AfterViewInit } from '@angula
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 
 interface ApiResponse {
   data?: string;
+}
+
+interface FacebookProfile {
+  id: string;
+  link: string;
+  name?: string;
+  profileImage?: string;
+  about?: string;
 }
 
 @Component({
@@ -24,8 +33,13 @@ export class FbIdFinderAppComponent implements AfterViewInit {
   loading = signal<boolean>(false);
   error = signal<string | null>(null);
   searchHistory = signal<string[]>([]);
+  facebookProfile = signal<FacebookProfile | null>(null);
+  loadingProfile = signal<boolean>(false);
 
-  constructor(private http: HttpClient) {
+  constructor(
+    private http: HttpClient,
+    private sanitizer: DomSanitizer
+  ) {
     this.loadSearchHistory();
   }
 
@@ -63,12 +77,33 @@ export class FbIdFinderAppComponent implements AfterViewInit {
         this.loading.set(false);
         
         // Handle both text and JSON responses
+        let fbId = '';
         if (typeof response === 'string') {
-          this.result.set(response);
+          fbId = response.trim();
+          this.result.set(fbId);
         } else if (response && typeof response === 'object' && 'data' in response) {
-          this.result.set(response.data || '');
+          fbId = (response.data || '').trim();
+          this.result.set(fbId);
         } else {
-          this.result.set(JSON.stringify(response, null, 2));
+          const resultStr = JSON.stringify(response, null, 2);
+          this.result.set(resultStr);
+          // Try to extract ID from JSON
+          const idMatch = resultStr.match(/"id"\s*:\s*"([^"]+)"/i) || resultStr.match(/(\d{10,})/);
+          if (idMatch) {
+            fbId = idMatch[1];
+          }
+        }
+
+        // If we have a valid ID, create Facebook link and fetch profile info
+        if (fbId && /^\d+$/.test(fbId)) {
+          const profile: FacebookProfile = {
+            id: fbId,
+            link: `https://facebook.com/${fbId}`
+          };
+          this.facebookProfile.set(profile);
+          this.fetchFacebookProfile(fbId);
+        } else {
+          this.facebookProfile.set(null);
         }
 
         this.addToHistory(phoneNumber);
@@ -162,6 +197,86 @@ export class FbIdFinderAppComponent implements AfterViewInit {
         console.error('Failed to copy:', err);
       });
     }
+  }
+
+  copyFacebookLink() {
+    const profile = this.facebookProfile();
+    if (profile?.link) {
+      navigator.clipboard.writeText(profile.link).then(() => {
+        // Show temporary notification
+        const originalLink = profile.link;
+        this.facebookProfile.set({ ...profile, link: '✓ Đã sao chép link!' });
+        setTimeout(() => {
+          this.facebookProfile.set({ ...profile, link: originalLink });
+        }, 1000);
+      }).catch(err => {
+        console.error('Failed to copy:', err);
+      });
+    }
+  }
+
+  openFacebookLink() {
+    const profile = this.facebookProfile();
+    if (profile?.link) {
+      window.open(profile.link, '_blank');
+    }
+  }
+
+  fetchFacebookProfile(fbId: string) {
+    this.loadingProfile.set(true);
+    const profileUrl = `/api/facebook/${fbId}`;
+    
+    this.http.get(profileUrl, { 
+      responseType: 'text',
+      headers: new HttpHeaders({
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+      })
+    }).subscribe({
+      next: (html) => {
+        this.loadingProfile.set(false);
+        this.parseFacebookProfile(html, fbId);
+      },
+      error: (err) => {
+        this.loadingProfile.set(false);
+        console.log('Could not fetch Facebook profile (this is normal due to Facebook restrictions):', err);
+        // Don't show error to user, just keep the link
+      }
+    });
+  }
+
+  parseFacebookProfile(html: string, fbId: string) {
+    const profile = this.facebookProfile();
+    if (!profile) return;
+
+    try {
+      // Try to extract name from og:title or title tag
+      const ogTitleMatch = html.match(/<meta\s+property="og:title"\s+content="([^"]+)"/i);
+      const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+      const nameMatch = ogTitleMatch || titleMatch;
+      if (nameMatch && nameMatch[1]) {
+        profile.name = nameMatch[1].replace(/\s*-\s*Facebook$/, '').trim();
+      }
+
+      // Try to extract profile image from og:image
+      const ogImageMatch = html.match(/<meta\s+property="og:image"\s+content="([^"]+)"/i);
+      if (ogImageMatch && ogImageMatch[1]) {
+        profile.profileImage = ogImageMatch[1];
+      }
+
+      // Try to extract about/description
+      const ogDescMatch = html.match(/<meta\s+property="og:description"\s+content="([^"]+)"/i);
+      if (ogDescMatch && ogDescMatch[1]) {
+        profile.about = ogDescMatch[1];
+      }
+
+      this.facebookProfile.set({ ...profile });
+    } catch (e) {
+      console.error('Error parsing Facebook profile:', e);
+    }
+  }
+
+  getSafeUrl(url: string): SafeResourceUrl {
+    return this.sanitizer.sanitize(1, url) as SafeResourceUrl || '';
   }
 }
 
