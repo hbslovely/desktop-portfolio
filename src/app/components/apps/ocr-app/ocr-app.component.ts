@@ -64,9 +64,8 @@ export class OcrAppComponent implements AfterViewInit, OnDestroy {
   async initializeWorker() {
     try {
       this.progressStatus.set('Đang khởi tạo OCR engine...');
-      this.worker = await createWorker();
-      await this.worker.loadLanguage(this.selectedLanguage());
-      await this.worker.initialize(this.selectedLanguage());
+      // In Tesseract.js v6+, pass language directly to createWorker
+      this.worker = await createWorker(this.selectedLanguage());
       this.progressStatus.set('Sẵn sàng');
     } catch (err) {
       console.error('Failed to initialize OCR worker:', err);
@@ -130,10 +129,14 @@ export class OcrAppComponent implements AfterViewInit, OnDestroy {
     this.progressStatus.set('Đang xử lý hình ảnh...');
 
     try {
-      // Reload worker with selected language if changed
+      // Ensure worker is initialized with current language
       const currentLang = this.selectedLanguage();
-      await this.worker.loadLanguage(currentLang);
-      await this.worker.initialize(currentLang);
+      if (!this.worker) {
+        this.worker = await createWorker(currentLang);
+      } else {
+        // Reinitialize with new language if changed
+        await this.worker.reinitialize(currentLang);
+      }
 
       // Perform OCR
       const { data } = await this.worker.recognize(imageUrl, {
@@ -230,8 +233,8 @@ export class OcrAppComponent implements AfterViewInit, OnDestroy {
     if (this.worker) {
       try {
         this.progressStatus.set('Đang thay đổi ngôn ngữ...');
-        await this.worker.loadLanguage(this.selectedLanguage());
-        await this.worker.initialize(this.selectedLanguage());
+        // In Tesseract.js v6+, use reinitialize to change language
+        await this.worker.reinitialize(this.selectedLanguage());
         this.progressStatus.set('Sẵn sàng');
       } catch (err) {
         console.error('Failed to change language:', err);
