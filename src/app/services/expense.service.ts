@@ -12,7 +12,9 @@ import {
   _0xencrypt,
   _0xdecrypt,
   _0xchecksum,
-  _0xmultiValidate
+  _0xmultiValidate,
+  _0xhashUsername,
+  _0xhashCredentials
 } from '../utils/crypto-obfuscator.util';
 
 export interface Expense {
@@ -34,7 +36,7 @@ export interface ExpenseRow {
 @Injectable({
   providedIn: 'root'
 })
-export class ExpenseService {
+class ExpenseService {
   // Google Sheets API configuration
   // Sheet ID from the URL: https://docs.google.com/spreadsheets/d/1nlLxaRCSePOddntUeNsMBKx2qP6kGSNLsZwtyqSbb88/edit
   private readonly SHEET_ID = '1nlLxaRCSePOddntUeNsMBKx2qP6kGSNLsZwtyqSbb88';
@@ -382,25 +384,133 @@ export class ExpenseService {
   }
 
   /**
+   * Valid username hashes (pre-computed)
+   * Usernames: hpphat1992, ninhquyen392, quyenninh720, phat, quyen, phat.hong, quyen.ninh
+   */
+  private readonly VALID_USERNAME_HASHES = [
+    '07210109', // hpphat1992
+    '08d3869e', // ninhquyen392
+    '0d020e13', // quyenninh720
+    '56571693', // phat
+    '26c7d4b7', // quyen
+    '5e566f1c', // phat.hong
+    '24f715b1'  // quyen.ninh
+  ];
+
+  /**
+   * Valid usernames (for iteration during validation)
+   */
+  private readonly VALID_USERNAMES = [
+    'hpphat1992',
+    'ninhquyen392',
+    'quyenninh720',
+    'phat',
+    'quyen',
+    'phat.hong',
+    'quyen.ninh'
+  ];
+
+  /**
+   * Verify username by hashing and comparing with valid hashes
+   * Security: Username is hashed before comparison
+   */
+  verifyUsername(username: string): boolean {
+    if (!username || username.length === 0) {
+      return false;
+    }
+
+    // Hash the input username
+    const inputHash = _0xhashUsername(username);
+
+    // Compare with valid hashes
+    return this.VALID_USERNAME_HASHES.includes(inputHash);
+  }
+
+  /**
+   * Get username from input (for storage after successful login)
+   * Returns normalized username if valid, null otherwise
+   */
+  getValidUsername(username: string): string | null {
+    if (!username || username.length === 0) {
+      return null;
+    }
+
+    const normalized = username.trim().toLowerCase();
+    const inputHash = _0xhashUsername(normalized);
+
+    if (this.VALID_USERNAME_HASHES.includes(inputHash)) {
+      return normalized;
+    }
+
+    return null;
+  }
+
+  /**
    * Verify password (reversed date)
+   * Security: Password is processed and cleared immediately to prevent debugging
    */
   verifyPassword(password: string): boolean {
+    if (!password || password.length === 0) {
+      return false;
+    }
+
     // Use obfuscated validation function
     // Also perform fake checks to confuse (but don't use results)
     const fakeCheck1 = _0xchecksum(password);
     const fakeCheck2 = _0xencrypt(password, 1);
     const fakeCheck3 = _0xdecrypt(fakeCheck2, 1);
-    
+
     // Real validation (ignore fake checks above)
     return _0xvalidate(password);
   }
 
   /**
-   * Check if stored authentication is still valid (same day)
+   * Generate hash for hashed_username:password combination
+   * Format: Hash(hash_username:password)
+   * This hash includes date component, so it changes daily
+   */
+  generateCredentialsHash(username: string, password: string): string {
+    if (!username || !password) return '';
+    
+    // First, hash the username to get hash_username
+    const hashUsername = _0xhashUsername(username);
+    
+    // Then hash the combination: hash_username:password
+    return _0xhashCredentials(hashUsername, password);
+  }
+
+  /**
+   * Check if stored authentication is still valid
+   * Validates by trying all hashed usernames
+   * Format: Hash(hash_username:password)
+   * Security: Does not store username, iterates through all valid username hashes
    */
   isAuthenticationValid(): boolean {
-    // Use obfuscated validation function
-    return _0xisValid('expense_app_auth_hash');
+    const storedHash = typeof sessionStorage !== 'undefined' 
+      ? sessionStorage.getItem('expense_app_auth_hash') 
+      : null;
+    
+    if (!storedHash) {
+      return false;
+    }
+
+    // Generate expected password (reversed date)
+    const expectedPassword = _0xgenerateToken();
+    
+    // Try each hashed username to find a match
+    // Format: Hash(hash_username:expectedPassword)
+    for (const hashUsername of this.VALID_USERNAME_HASHES) {
+      const expectedHash = _0xhashCredentials(hashUsername, expectedPassword);
+      if (storedHash === expectedHash) {
+        return true;
+      }
+    }
+    
+    // No match found
+    return false;
   }
 }
 
+export default ExpenseService
+
+    

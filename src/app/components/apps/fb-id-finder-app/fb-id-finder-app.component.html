@@ -1,0 +1,98 @@
+<div class="fb-id-finder-app">
+  <div class="app-header">
+    <div class="header-content">
+      <i class="pi pi-facebook"></i>
+      <h2>Tìm Facebook ID</h2>
+    </div>
+    <p class="header-subtitle">Tìm Facebook ID từ số điện thoại</p>
+  </div>
+
+  <div class="app-body">
+    <!-- Search Section -->
+    <div class="search-section">
+      <div class="search-box">
+        <div class="input-wrapper">
+          <i class="pi pi-phone"></i>
+          <input
+            #phoneInput
+            type="text"
+            [(ngModel)]="phone"
+            (keydown)="onPhoneKeyDown($event)"
+            class="phone-input"
+            placeholder="Nhập số điện thoại (ví dụ: 705604560)"
+            [disabled]="loading()">
+          <button
+            *ngIf="phone()"
+            (click)="clearPhone()"
+            class="clear-btn"
+            type="button">
+            <i class="pi pi-times"></i>
+          </button>
+        </div>
+        <button
+          (click)="searchFbId()"
+          class="search-btn"
+          [disabled]="loading() || !phone().trim()">
+          <i class="pi" [class.pi-spin]="loading()" [class.pi-spinner]="loading()" [class.pi-search]="!loading()"></i>
+          <span>{{ loading() ? 'Đang tìm...' : 'Tìm kiếm' }}</span>
+        </button>
+      </div>
+
+      <!-- Search History -->
+      <div class="history-section" *ngIf="searchHistory().length > 0">
+        <div class="history-header">
+          <span class="history-label">Lịch sử tìm kiếm:</span>
+          <button (click)="clearHistory()" class="clear-history-btn" type="button">
+            <i class="pi pi-trash"></i>
+            Xóa
+          </button>
+        </div>
+        <div class="history-list">
+          <button
+            *ngFor="let phone of searchHistory()"
+            (click)="useHistory(phone)"
+            class="history-item"
+            type="button">
+            <i class="pi pi-phone"></i>
+            <span>{{ phone }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Error Message -->
+    <div class="error-message" *ngIf="error()">
+      <i class="pi pi-exclamation-triangle"></i>
+      <span>{{ error() }}</span>
+    </div>
+
+    <!-- Result Section -->
+    <div class="result-section" *ngIf="result()">
+      <div class="result-header">
+        <h3>
+          <i class="pi pi-check-circle"></i>
+          Kết quả
+        </h3>
+        <button (click)="copyResult()" class="copy-btn" type="button" title="Sao chép">
+          <i class="pi pi-copy"></i>
+        </button>
+      </div>
+      <div class="result-content">
+        <pre>{{ result() }}</pre>
+      </div>
+    </div>
+
+    <!-- Empty State -->
+    <div class="empty-state" *ngIf="!loading() && !result() && !error()">
+      <i class="pi pi-info-circle"></i>
+      <p>Nhập số điện thoại và nhấn "Tìm kiếm" để tìm Facebook ID</p>
+    </div>
+
+    <!-- Loading State -->
+    <div class="loading-state" *ngIf="loading()">
+      <i class="pi pi-spin pi-spinner"></i>
+      <p>Đang tìm kiếm Facebook ID...</p>
+    </div>
+  </div>
+</div>
+

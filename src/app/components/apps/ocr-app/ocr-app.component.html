@@ -1,0 +1,191 @@
+<div class="ocr-app">
+  <div class="ocr-header">
+    <h2>
+      <i class="pi pi-image"></i>
+      Đọc nội dung từ hình ảnh (OCR)
+    </h2>
+    <div class="header-actions">
+      <button 
+        class="btn btn-secondary" 
+        (click)="showHistory.set(!showHistory())"
+        [class.active]="showHistory()">
+        <i class="pi pi-history"></i>
+        Lịch sử ({{ history().length }})
+      </button>
+    </div>
+  </div>
+
+  <div class="ocr-container" *ngIf="!showHistory(); else historyView">
+    <!-- Upload Section -->
+    <div class="upload-section">
+      <div class="upload-area" 
+           [class.has-image]="selectedImage()"
+           (click)="triggerFileInput()"
+           (dragover)="$event.preventDefault()"
+           (drop)="handleDrop($event)">
+        <input 
+          #fileInput
+          type="file" 
+          accept="image/*" 
+          (change)="onFileSelected($event)"
+          style="display: none;">
+        
+        <div *ngIf="!selectedImage()" class="upload-placeholder">
+          <i class="pi pi-cloud-upload" style="font-size: 48px; color: #666;"></i>
+          <p>Kéo thả hình ảnh vào đây hoặc click để chọn</p>
+          <p class="hint">Hỗ trợ: JPG, PNG, GIF (tối đa 10MB)</p>
+        </div>
+
+        <div *ngIf="selectedImage()" class="image-preview-container">
+          <img 
+            #imagePreview
+            [src]="selectedImage()!" 
+            alt="Preview"
+            class="image-preview">
+          <button class="btn-remove" (click)="clearImage(); $event.stopPropagation()">
+            <i class="pi pi-times"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Language Selection -->
+    <div class="language-section">
+      <label>
+        <i class="pi pi-globe"></i>
+        Ngôn ngữ:
+      </label>
+      <select 
+        [value]="selectedLanguage()" 
+        (change)="selectedLanguage.set($any($event.target).value); onLanguageChange()"
+        [disabled]="isProcessing()">
+        <option *ngFor="let lang of languages" [value]="lang.code">
+          {{ lang.name }}
+        </option>
+      </select>
+    </div>
+
+    <!-- Process Button -->
+    <div class="action-section">
+      <button 
+        class="btn btn-primary btn-process"
+        (click)="processImage()"
+        [disabled]="!selectedImage() || isProcessing()">
+        <i class="pi" [class.pi-spin]="isProcessing()" 
+           [class.pi-spinner]="isProcessing()" 
+           [class.pi-search]="!isProcessing()"></i>
+        {{ isProcessing() ? 'Đang xử lý...' : 'Đọc nội dung' }}
+      </button>
+    </div>
+
+    <!-- Progress -->
+    <div class="progress-section" *ngIf="isProcessing() || progress() > 0">
+      <div class="progress-bar">
+        <div class="progress-fill" [style.width.%]="progress()"></div>
+      </div>
+      <p class="progress-status">{{ progressStatus() }}</p>
+    </div>
+
+    <!-- Error Message -->
+    <div class="error-message" *ngIf="error()">
+      <i class="pi pi-exclamation-triangle"></i>
+      {{ error() }}
+    </div>
+
+    <!-- OCR Result -->
+    <div class="result-section" *ngIf="ocrResult()">
+      <div class="result-header">
+        <h3>
+          <i class="pi pi-check-circle"></i>
+          Kết quả nhận dạng
+        </h3>
+        <div class="result-meta">
+          <span class="confidence">
+            Độ chính xác: {{ ocrResult()!.confidence | number:'1.1-1' }}%
+          </span>
+        </div>
+      </div>
+
+      <div class="result-actions">
+        <button class="btn btn-icon" (click)="copyText()" title="Sao chép">
+          <i class="pi pi-copy"></i>
+          Sao chép
+        </button>
+        <button class="btn btn-icon" (click)="downloadText()" title="Tải xuống">
+          <i class="pi pi-download"></i>
+          Tải xuống
+        </button>
+      </div>
+
+      <div class="result-text">
+        <textarea 
+          readonly 
+          [value]="ocrResult()!.text"
+          class="text-output">
+        </textarea>
+      </div>
+
+      <div class="result-info">
+        <small>
+          <i class="pi pi-clock"></i>
+          {{ ocrResult()!.timestamp | date:'dd/MM/yyyy HH:mm:ss' }}
+        </small>
+      </div>
+    </div>
+  </div>
+
+  <!-- History View -->
+  <ng-template #historyView>
+    <div class="history-section">
+      <div class="history-header">
+        <h3>
+          <i class="pi pi-history"></i>
+          Lịch sử nhận dạng ({{ history().length }})
+        </h3>
+        <div class="history-actions">
+          <button class="btn btn-secondary" (click)="clearHistory()" *ngIf="history().length > 0">
+            <i class="pi pi-trash"></i>
+            Xóa tất cả
+          </button>
+          <button class="btn btn-secondary" (click)="showHistory.set(false)">
+            <i class="pi pi-arrow-left"></i>
+            Quay lại
+          </button>
+        </div>
+      </div>
+
+      <div class="history-list" *ngIf="history().length > 0; else noHistory">
+        <div class="history-item" *ngFor="let item of history(); let i = index">
+          <div class="history-content">
+            <div class="history-text">
+              <p>{{ item.text.substring(0, 200) }}{{ item.text.length > 200 ? '...' : '' }}</p>
+            </div>
+            <div class="history-meta">
+              <span class="confidence">{{ item.confidence | number:'1.1-1' }}%</span>
+              <span class="timestamp">{{ item.timestamp | date:'dd/MM/yyyy HH:mm' }}</span>
+              <span class="language" *ngIf="item.language">
+                {{ getLanguageName(item.language) }}
+              </span>
+            </div>
+          </div>
+          <div class="history-actions-item">
+            <button class="btn btn-sm" (click)="loadFromHistory(item)" title="Xem chi tiết">
+              <i class="pi pi-eye"></i>
+            </button>
+            <button class="btn btn-sm btn-danger" (click)="deleteFromHistory(i)" title="Xóa">
+              <i class="pi pi-trash"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <ng-template #noHistory>
+        <div class="no-history">
+          <i class="pi pi-inbox" style="font-size: 48px; color: #999;"></i>
+          <p>Chưa có lịch sử nào</p>
+        </div>
+      </ng-template>
+    </div>
+  </ng-template>
+</div>
+

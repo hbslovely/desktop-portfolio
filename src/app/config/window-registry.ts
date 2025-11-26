@@ -347,6 +347,30 @@ export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
     defaultY: 60,
     maximizable: true,
     statusText: 'Cờ Tướng & Cờ Úp'
+  },
+  'ocr': {
+    id: 'ocr',
+    title: 'Đọc hình ảnh (OCR)',
+    icon: 'pi pi-image',
+    component: 'ocr',
+    defaultWidth: 1000,
+    defaultHeight: 800,
+    defaultX: 200,
+    defaultY: 80,
+    maximizable: true,
+    statusText: 'Đọc nội dung từ hình ảnh'
+  },
+  'fb-id-finder': {
+    id: 'fb-id-finder',
+    title: 'Tìm Facebook ID',
+    icon: 'pi pi-facebook',
+    component: 'fb-id-finder',
+    defaultWidth: 600,
+    defaultHeight: 700,
+    defaultX: 300,
+    defaultY: 100,
+    maximizable: true,
+    statusText: 'Tìm Facebook ID từ số điện thoại'
   }
 };
 

@@ -9,27 +9,48 @@
           </div>
         </div>
         <h2>Quản lý Chi tiêu</h2>
-        <p class="auth-hint">Nhập mật khẩu để truy cập ứng dụng</p>
+        <p class="auth-hint">Đăng nhập để truy cập ứng dụng</p>
       </div>
 
       <div class="auth-form">
-        <div class="password-input-wrapper">
-          <div class="input-icon">
-            <i class="pi pi-lock"></i>
+        <div class="input-group">
+          <div class="input-wrapper">
+            <div class="input-icon">
+              <i class="pi pi-user"></i>
+            </div>
+            <input
+              type="text"
+              class="auth-input"
+              [class.error]="passwordError()"
+              [value]="username()"
+              (input)="username.set($any($event.target).value)"
+              (keydown)="onInputKeyDown($event)"
+              placeholder="Tên đăng nhập"
+              autofocus
+              autocomplete="username">
           </div>
-          <input
-            type="password"
-            class="password-input"
-            [class.error]="passwordError()"
-            [value]="password()"
-            (input)="password.set($any($event.target).value)"
-            (keydown)="onPasswordKeyDown($event)"
-            placeholder="Mật khẩu"
-            autofocus>
+        </div>
+
+        <div class="input-group">
+          <div class="input-wrapper">
+            <div class="input-icon">
+              <i class="pi pi-lock"></i>
+            </div>
+            <input
+              type="password"
+              class="auth-input"
+              [class.error]="passwordError()"
+              [value]="password()"
+              (input)="password.set($any($event.target).value)"
+              (keydown)="onInputKeyDown($event)"
+              (blur)="onPasswordBlur($event)"
+              placeholder="Mật khẩu"
+              autocomplete="current-password">
+          </div>
         </div>
 
         <button class="login-btn" (click)="authenticate()">
-          <i class="pi pi-arrow-right"></i>
+          <i class="pi pi-sign-in"></i>
           <span>Đăng nhập</span>
         </button>
 
@@ -142,10 +163,10 @@
               <div class="filter-group category-multi-select">
                 <label>Phân loại:</label>
                 <div class="category-select-wrapper">
-                  <button 
+                  <button
                     class="category-select-btn"
                     [class.has-selection]="filterCategory().length > 0"
-                    (click)="showCategoryDropdown.set(!showCategoryDropdown())">
+                    (click)="toggleDropdown()">
                     <span class="category-select-text">
                       <span *ngIf="filterCategory().length === 0">Tất cả</span>
                       <span *ngIf="filterCategory().length === 1">{{ filterCategory()[0] }}</span>
@@ -153,7 +174,6 @@
                     </span>
                     <i class="pi" [class.pi-chevron-down]="!showCategoryDropdown()" [class.pi-chevron-up]="showCategoryDropdown()"></i>
                   </button>
-                  
                   <div class="category-dropdown" *ngIf="showCategoryDropdown()">
                     <div class="category-dropdown-header">
                       <span>Chọn phân loại</span>
@@ -162,17 +182,55 @@
                         Xóa tất cả
                       </button>
                     </div>
+                    <div class="category-dropdown-search">
+                      <i class="pi pi-search"></i>
+                      <input
+                        type="text"
+                        [ngModel]="categorySearchText()"
+                        (ngModelChange)="categorySearchText.set($event)"
+                        (click)="$event.stopPropagation()"
+                        class="category-search-input"
+                        placeholder="Tìm kiếm phân loại...">
+                      <button
+                        *ngIf="categorySearchText()"
+                        (click)="categorySearchText.set(''); $event.stopPropagation()"
+                        class="clear-search-btn-small">
+                        <i class="pi pi-times"></i>
+                      </button>
+                    </div>
+                    <div class="category-select-all-section">
+                      <div
+                        class="category-checkbox-item select-all-item"
+                        (click)="toggleSelectAllFilteredCategories()">
+                        <input
+                          type="checkbox"
+                          [checked]="isAllFilteredCategoriesSelected()"
+                          [indeterminate]="isSomeFilteredCategoriesSelected()"
+                          (click)="$event.stopPropagation()"
+                          (change)="toggleSelectAllFilteredCategories()">
+                        <span class="checkbox-label select-all-label">
+                          <strong>Chọn tất cả</strong>
+                          <span class="select-all-count" *ngIf="filteredCategories().length > 0">
+                            ({{ filteredCategories().length }})
+                          </span>
+                        </span>
+                      </div>
+                    </div>
                     <div class="category-dropdown-list">
-                      <div 
+                      <div
                         class="category-checkbox-item"
-                        *ngFor="let cat of categories()"
+                        *ngFor="let cat of filteredCategories()"
                         (click)="toggleCategory(cat)">
-                        <input 
-                          type="checkbox" 
+                        <input
+                          type="checkbox"
                           [checked]="isCategorySelected(cat)"
                           (click)="$event.stopPropagation()"
                           (change)="toggleCategory(cat)">
                         <span class="checkbox-label">{{ cat }}</span>
+                      </div>
+                      <div class="no-results" *ngIf="filteredCategories().length === 0">
+                        <i class="pi pi-search"></i>
+                        <span>Không tìm thấy phân loại nào</span>
                       </div>
                     </div>
                   </div>
@@ -790,18 +848,18 @@
                       <div class="matrix-date-total">{{ formatAmount(dateTotals()[date] || 0) }}</div>
                     </div>
                   </td>
-                  <td 
+                  <td
                     *ngFor="let category of uniqueCategories()"
                     class="matrix-cell"
-                    [ngClass]="getMatrixCellClass(matrixData()[date]?.[category] || 0, date)"
-                    [class.matrix-cell-disabled]="!matrixData()[date]?.[category] || matrixData()[date][category] === 0"
-                    (click)="matrixData()[date]?.[category] && matrixData()[date][category] > 0 ? showMatrixDetailDialog(date, category) : null"
-                    [title]="matrixData()[date]?.[category] ? formatAmount(matrixData()[date][category]) : 'Không có dữ liệu'">
+                    [ngClass]="getMatrixCellClass(matrixData()[date][category] || 0, date)"
+                    [class.matrix-cell-disabled]="!matrixData()[date][category] || matrixData()[date][category] === 0"
+                    (click)="matrixData()[date][category] && matrixData()[date][category] > 0 ? showMatrixDetailDialog(date, category) : null"
+                    [title]="matrixData()[date][category] ? formatAmount(matrixData()[date][category]) : 'Không có dữ liệu'">
                     <div class="matrix-cell-content">
-                      <span class="matrix-cell-value" *ngIf="matrixData()[date]?.[category]">
+                      <span class="matrix-cell-value" *ngIf="matrixData()[date][category]">
                         {{ formatAmount(matrixData()[date][category]) }}
                       </span>
-                      <span class="matrix-cell-empty-text" *ngIf="!matrixData()[date]?.[category]">-</span>
+                      <span class="matrix-cell-empty-text" *ngIf="!matrixData()[date][category]">-</span>
                     </div>
                   </td>
                 </tr>
@@ -1040,11 +1098,11 @@
 
             <div class="form-group">
               <label>Số tiền:</label>
-              <input 
-                type="text" 
+              <input
+                type="text"
                 [value]="formatNumberInput(newExpense.amount)"
                 (input)="onNewAmountInput($event)"
-                class="form-input" 
+                class="form-input"
                 placeholder="0">
             </div>
 
@@ -1118,11 +1176,11 @@
                       <input type="text" [(ngModel)]="expense.content" class="table-input" placeholder="Nội dung">
                     </td>
                     <td>
-                      <input 
-                        type="text" 
+                      <input
+                        type="text"
                         [value]="formatNumberInput(expense.amount)"
                         (input)="onMultipleAmountInput($event, i)"
-                        class="table-input" 
+                        class="table-input"
                         placeholder="0">
                     </td>
                     <td>
@@ -1200,11 +1258,11 @@
 
           <div class="form-group">
             <label>Số tiền:</label>
-            <input 
-              type="text" 
+            <input
+              type="text"
               [value]="formatNumberInput(editExpense.amount)"
               (input)="onEditAmountInput($event)"
-              class="form-input" 
+              class="form-input"
               placeholder="0">
           </div>
 
@@ -1551,7 +1609,7 @@
               <i class="pi pi-calendar"></i>
               Lọc theo thời gian
             </h4>
-            
+
             <!-- Quick Filter Buttons -->
             <div class="quick-filters">
               <button (click)="filterToday()" class="quick-filter-btn" [class.active]="isTodayActive()">
@@ -1604,7 +1662,7 @@
               <i class="pi pi-search"></i>
               Tìm kiếm và phân loại
             </h4>
-            
+
             <!-- Search Bar -->
             <div class="search-bar">
               <i class="pi pi-search"></i>
@@ -1623,7 +1681,7 @@
               <div class="filter-group category-multi-select">
                 <label>Phân loại:</label>
                 <div class="category-select-wrapper">
-                  <button 
+                  <button
                     class="category-select-btn"
                     [class.has-selection]="filterCategory().length > 0"
                     (click)="showCategoryDropdown.set(!showCategoryDropdown())">
@@ -1634,7 +1692,7 @@
                     </span>
                     <i class="pi" [class.pi-chevron-down]="!showCategoryDropdown()" [class.pi-chevron-up]="showCategoryDropdown()"></i>
                   </button>
-                  
+
                   <div class="category-dropdown" *ngIf="showCategoryDropdown()">
                     <div class="category-dropdown-header">
                       <span>Chọn phân loại</span>
@@ -1643,17 +1701,55 @@
                         Xóa tất cả
                       </button>
                     </div>
+                    <div class="category-dropdown-search">
+                      <i class="pi pi-search"></i>
+                      <input
+                        type="text"
+                        [ngModel]="categorySearchText()"
+                        (ngModelChange)="categorySearchText.set($event)"
+                        (click)="$event.stopPropagation()"
+                        class="category-search-input"
+                        placeholder="Tìm kiếm phân loại...">
+                      <button
+                        *ngIf="categorySearchText()"
+                        (click)="categorySearchText.set(''); $event.stopPropagation()"
+                        class="clear-search-btn-small">
+                        <i class="pi pi-times"></i>
+                      </button>
+                    </div>
+                    <div class="category-select-all-section">
+                      <div
+                        class="category-checkbox-item select-all-item"
+                        (click)="toggleSelectAllFilteredCategories()">
+                        <input
+                          type="checkbox"
+                          [checked]="isAllFilteredCategoriesSelected()"
+                          [indeterminate]="isSomeFilteredCategoriesSelected()"
+                          (click)="$event.stopPropagation()"
+                          (change)="toggleSelectAllFilteredCategories()">
+                        <span class="checkbox-label select-all-label">
+                          <strong>Chọn tất cả</strong>
+                          <span class="select-all-count" *ngIf="filteredCategories().length > 0">
+                            ({{ filteredCategories().length }})
+                          </span>
+                        </span>
+                      </div>
+                    </div>
                     <div class="category-dropdown-list">
-                      <div 
+                      <div
                         class="category-checkbox-item"
-                        *ngFor="let cat of categories()"
+                        *ngFor="let cat of filteredCategories()"
                         (click)="toggleCategory(cat)">
-                        <input 
-                          type="checkbox" 
+                        <input
+                          type="checkbox"
                           [checked]="isCategorySelected(cat)"
                           (click)="$event.stopPropagation()"
                           (change)="toggleCategory(cat)">
                         <span class="checkbox-label">{{ cat }}</span>
+                      </div>
+                      <div class="no-results" *ngIf="filteredCategories().length === 0">
+                        <i class="pi pi-search"></i>
+                        <span>Không tìm thấy phân loại nào</span>
                       </div>
                     </div>
                   </div>
