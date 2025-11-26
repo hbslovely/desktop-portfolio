@@ -738,14 +738,144 @@
 
     <div class="context-menu-separator"></div>
 
+    <div class="context-menu-item" (click)="openQuickActionsMenu($event); $event.stopPropagation()">
+      <i class="pi pi-bolt"></i>
+      <span>Quick Actions</span>
+      <i class="pi pi-angle-right context-menu-arrow"></i>
+    </div>
+
+    <div class="context-menu-item" (click)="quickActionViewAllWindows()">
+      <i class="pi pi-th-large"></i>
+      <span>View All Windows</span>
+    </div>
+
+    <div class="context-menu-item" (click)="quickActionShowDesktop()">
+      <i class="pi pi-desktop"></i>
+      <span>Show Desktop</span>
+    </div>
+
+    <div class="context-menu-separator"></div>
+
+    <div class="context-menu-item" (click)="openApp('explorer')">
+      <i class="pi pi-folder"></i>
+      <span>File Explorer</span>
+    </div>
+
+    <div class="context-menu-item" (click)="openApp('calculator')">
+      <i class="pi pi-calculator"></i>
+      <span>Calculator</span>
+    </div>
+
+    <div class="context-menu-item" (click)="openApp('dictionary')">
+      <i class="pi pi-book"></i>
+      <span>Dictionary</span>
+    </div>
+
+    <div class="context-menu-separator"></div>
+
     <div class="context-menu-item" (click)="openSettings()">
       <i class="pi pi-cog"></i>
       <span>Settings</span>
     </div>
+
+    <div class="context-menu-item" (click)="openShortcutsViewer()">
+      <i class="pi pi-keyboard"></i>
+      <span>Keyboard Shortcuts</span>
+    </div>
+
+    <div class="context-menu-separator"></div>
+
+    <div class="context-menu-item" (click)="openApp('task-manager')">
+      <i class="pi pi-th-large"></i>
+      <span>Task Manager</span>
+    </div>
+
+    <div class="context-menu-item" (click)="lockScreen()">
+      <i class="pi pi-lock"></i>
+      <span>Lock Screen</span>
+    </div>
+  </div>
+
+  <!-- Quick Actions Menu -->
+  <div *ngIf="showQuickActionsMenu()" class="quick-actions-menu"
+       [ngStyle]="{
+         left: quickActionsMenuPosition().x + 'px',
+         top: quickActionsMenuPosition().y + 'px'
+       }"
+       (click)="$event.stopPropagation()">
+    
+    <div class="quick-actions-header">
+      <i class="pi pi-bolt"></i>
+      <span>Quick Actions</span>
+    </div>
+
+    <div class="quick-actions-separator"></div>
+
+    <div class="quick-action-item" (click)="quickActionViewAllWindows()">
+      <div class="quick-action-icon">
+        <i class="pi pi-th-large"></i>
+      </div>
+      <div class="quick-action-content">
+        <div class="quick-action-title">View All Windows</div>
+        <div class="quick-action-desc">See all open windows</div>
+      </div>
+    </div>
+
+    <div class="quick-action-item" (click)="quickActionShowDesktop()">
+      <div class="quick-action-icon">
+        <i class="pi pi-desktop"></i>
+      </div>
+      <div class="quick-action-content">
+        <div class="quick-action-title">Show Desktop</div>
+        <div class="quick-action-desc">Minimize all windows</div>
+      </div>
+    </div>
+
+    <div class="quick-action-item" (click)="quickActionMinimizeAll()">
+      <div class="quick-action-icon">
+        <i class="pi pi-window-minimize"></i>
+      </div>
+      <div class="quick-action-content">
+        <div class="quick-action-title">Minimize All</div>
+        <div class="quick-action-desc">Minimize all windows</div>
+      </div>
+    </div>
+
+    <div class="quick-actions-separator"></div>
+
+    <div class="quick-action-item" (click)="quickActionOpenExplorer()">
+      <div class="quick-action-icon">
+        <i class="pi pi-folder"></i>
+      </div>
+      <div class="quick-action-content">
+        <div class="quick-action-title">File Explorer</div>
+        <div class="quick-action-desc">Open file manager</div>
+      </div>
+    </div>
+
+    <div class="quick-action-item" (click)="quickActionOpenCalculator()">
+      <div class="quick-action-icon">
+        <i class="pi pi-calculator"></i>
+      </div>
+      <div class="quick-action-content">
+        <div class="quick-action-title">Calculator</div>
+        <div class="quick-action-desc">Open calculator</div>
+      </div>
+    </div>
+
+    <div class="quick-action-item" (click)="quickActionOpenDictionary()">
+      <div class="quick-action-icon">
+        <i class="pi pi-book"></i>
+      </div>
+      <div class="quick-action-content">
+        <div class="quick-action-title">Dictionary</div>
+        <div class="quick-action-desc">Look up words</div>
+      </div>
+    </div>
   </div>
 
   <!-- Desktop Context Menu Backdrop -->
-  <div *ngIf="showDesktopContextMenu()" class="context-menu-backdrop"
+  <div *ngIf="showDesktopContextMenu() || showQuickActionsMenu()" class="context-menu-backdrop"
        (click)="hideDesktopContextMenu()">
   </div>
   </div>
@@ -757,6 +887,37 @@
   (onClose)="closeSettingsDialog()"
   (onSettingsChange)="onSettingsChange($event)">
 </app-settings-dialog>
+
+<!-- Keyboard Shortcuts Viewer -->
+<div *ngIf="showShortcutsViewer()" class="shortcuts-viewer-overlay" (click)="closeShortcutsViewer()">
+  <div class="shortcuts-viewer-dialog" (click)="$event.stopPropagation()">
+    <div class="shortcuts-viewer-header">
+      <h2>
+        <i class="pi pi-keyboard"></i>
+        Keyboard Shortcuts
+      </h2>
+      <button class="close-btn" (click)="closeShortcutsViewer()" title="Close">
+        <i class="pi pi-times"></i>
+      </button>
+    </div>
+    <div class="shortcuts-viewer-content">
+      <div *ngFor="let category of keyboardShortcuts" class="shortcuts-category">
+        <h3 class="category-title">{{ category.category }}</h3>
+        <div class="shortcuts-list">
+          <div *ngFor="let shortcut of category.shortcuts" class="shortcut-item">
+            <div class="shortcut-keys">
+              <span *ngFor="let key of shortcut.keys; let last = last" class="key-badge">
+                {{ key === 'Option' ? (isMac ? '⌥' : 'Alt') : key === 'Ctrl' ? (isMac ? '⌃' : 'Ctrl') : key === 'Shift' ? '⇧' : key === 'Esc' ? 'Esc' : key === '←' ? '←' : key === '→' ? '→' : key }}
+                <span *ngIf="!last" class="key-separator">+</span>
+              </span>
+            </div>
+            <div class="shortcut-description">{{ shortcut.description }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- Window Switcher (Option+Arrow) -->
 <div *ngIf="showWindowSwitcher()" class="window-switcher-overlay">

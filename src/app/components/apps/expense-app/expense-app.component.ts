@@ -136,7 +136,8 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     'Điện - nước',
     'Từ thiện',
     'Điện thoại',
-    'Sinh hoạt (Lee)'
+    'Sinh hoạt (Lee)',
+    'Chi tiêu khác'
   ]);
 
   // Filter

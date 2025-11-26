@@ -127,6 +127,13 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   windowSwitcherSelectedIndex = signal(0);
   private isCommandTabPressed = false;
   windowPreviewContent = signal<HTMLElement | null>(null);
+
+  // Quick Actions Menu
+  showQuickActionsMenu = signal(false);
+  quickActionsMenuPosition = signal({ x: 0, y: 0 });
+
+  // Keyboard Shortcuts Viewer
+  showShortcutsViewer = signal(false);
   
   // Check if running on Mac
   isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
@@ -1361,6 +1368,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
 
   hideDesktopContextMenu() {
     this.showDesktopContextMenu.set(false);
+    this.closeQuickActionsMenu();
   }
 
   openSettings() {
@@ -1662,8 +1670,106 @@ export class AppComponent implements AfterViewInit, OnDestroy {
 
   refreshDesktop() {
     this.hideDesktopContextMenu();
-
+    // Force change detection to refresh desktop
+    this.cdr.detectChanges();
   }
+
+  // Quick Actions
+  openQuickActionsMenu(event: MouseEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    const rect = (event.target as HTMLElement).closest('.context-menu-item')?.getBoundingClientRect();
+    if (rect) {
+      this.showQuickActionsMenu.set(true);
+      this.quickActionsMenuPosition.set({
+        x: rect.right + 4,
+        y: rect.top
+      });
+    }
+  }
+
+  closeQuickActionsMenu() {
+    this.showQuickActionsMenu.set(false);
+  }
+
+  // Quick Actions handlers
+  quickActionViewAllWindows() {
+    this.openApp('task-manager');
+    this.closeQuickActionsMenu();
+  }
+
+  quickActionMinimizeAll() {
+    this.windowManager.minimizeAllWindows();
+    // Also minimize legacy windows
+    this.minimizedWindows.update(set => {
+      const allWindows = ['calculator', 'my-info', 'love', 'explorer', 'text-viewer', 
+                         'image-viewer', 'pdf-viewer', 'machine-info', 'credit', 
+                         'paint', 'credits', 'hcmc', 'news'];
+      return new Set(allWindows);
+    });
+    this.closeQuickActionsMenu();
+  }
+
+  quickActionShowDesktop() {
+    this.windowManager.minimizeAllWindows();
+    this.minimizedWindows.update(set => {
+      const allWindows = ['calculator', 'my-info', 'love', 'explorer', 'text-viewer', 
+                         'image-viewer', 'pdf-viewer', 'machine-info', 'credit', 
+                         'paint', 'credits', 'hcmc', 'news'];
+      return new Set(allWindows);
+    });
+    this.closeQuickActionsMenu();
+  }
+
+  quickActionOpenExplorer() {
+    this.openApp('explorer');
+    this.closeQuickActionsMenu();
+  }
+
+  quickActionOpenCalculator() {
+    this.openApp('calculator');
+    this.closeQuickActionsMenu();
+  }
+
+  quickActionOpenDictionary() {
+    this.openApp('dictionary');
+    this.closeQuickActionsMenu();
+  }
+
+  // Keyboard Shortcuts Viewer
+  openShortcutsViewer() {
+    this.showShortcutsViewer.set(true);
+    this.hideDesktopContextMenu();
+  }
+
+  closeShortcutsViewer() {
+    this.showShortcutsViewer.set(false);
+  }
+
+  // Keyboard shortcuts data
+  keyboardShortcuts = [
+    {
+      category: 'Window Management',
+      shortcuts: [
+        { keys: ['Option', '←'], description: 'Switch to previous window' },
+        { keys: ['Option', '→'], description: 'Switch to next window' },
+        { keys: ['Ctrl', 'Shift', 'Esc'], description: 'Open Task Manager' },
+      ]
+    },
+    {
+      category: 'Desktop',
+      shortcuts: [
+        { keys: ['Right Click'], description: 'Open desktop context menu' },
+        { keys: ['Click Start'], description: 'Open start menu' },
+      ]
+    },
+    {
+      category: 'System',
+      shortcuts: [
+        { keys: ['Esc'], description: 'Close dialogs/menus' },
+      ]
+    }
+  ];
 
   // Search methods
   openSearchWindow() {
