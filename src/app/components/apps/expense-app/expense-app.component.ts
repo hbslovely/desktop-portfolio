@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy, signal, computed, ViewChild, ElementRef, AfterViewInit, effect, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ExpenseService, Expense } from '../../../services/expense.service';
+import ExpenseService, { Expense } from '../../../services/expense.service';
 import { ExpenseSettingsService, ExpenseTheme, ExpenseFontSize, ExpenseLayout } from '../../../services/expense-settings.service';
 import { ExpenseSettingsDialogComponent } from './expense-settings-dialog.component';
 import { Chart, ChartConfiguration, registerables } from 'chart.js';
@@ -22,6 +22,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
   // Authentication
   isAuthenticated = signal<boolean>(false);
+  username = signal<string>('');
   password = signal<string>('');
   passwordError = signal<string>('');
 
@@ -150,6 +151,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
   // Category filter dropdown state
   showCategoryDropdown = signal<boolean>(false);
+  categorySearchText = signal<string>('');
 
   // Check if filter is single day
   isSingleDayFilter = computed(() => {
@@ -264,6 +266,41 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       }
     });
     return Array.from(categorySet).sort();
+  });
+
+  // Filtered categories based on search text
+  filteredCategories = computed(() => {
+    const search = this.categorySearchText().toLowerCase().trim();
+    const allCategories = this.categories();
+    
+    if (!search) {
+      return allCategories;
+    }
+    
+    return allCategories.filter(cat => 
+      cat.toLowerCase().includes(search)
+    );
+  });
+
+  // Check if all filtered categories are selected
+  isAllFilteredCategoriesSelected = computed(() => {
+    const filtered = this.filteredCategories();
+    const selected = this.filterCategory();
+    
+    if (filtered.length === 0) return false;
+    
+    return filtered.every(cat => selected.includes(cat));
+  });
+
+  // Check if some (but not all) filtered categories are selected (for indeterminate state)
+  isSomeFilteredCategoriesSelected = computed(() => {
+    const filtered = this.filteredCategories();
+    const selected = this.filterCategory();
+    
+    if (filtered.length === 0) return false;
+    
+    const selectedCount = filtered.filter(cat => selected.includes(cat)).length;
+    return selectedCount > 0 && selectedCount < filtered.length;
   });
 
   // Get all unique dates
@@ -824,13 +861,21 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     // Apply settings
     this.applySettings();
 
-    // Check if already authenticated and still valid (same day)
+    // Check if already authenticated and still valid
+    // Validates the stored hash by trying all valid usernames
     if (this.expenseService.isAuthenticationValid()) {
+      // Auto-login if hash is valid
       this.isAuthenticated.set(true);
       this.loadExpenses();
     } else {
-      // Clear invalid authentication
+      // Clear invalid authentication and logout
+      // Hash is invalid (wrong username:password or expired)
       sessionStorage.removeItem('expense_app_auth_hash');
+      this.isAuthenticated.set(false);
+      this.username.set('');
+      this.password.set('');
+      this.passwordError.set('');
+      this.expenses.set([]);
     }
   }
 
@@ -895,48 +940,77 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   @HostListener('document:click', ['$event'])
   handleDocumentClick(event: MouseEvent): void {
     const target = event.target as HTMLElement;
-    if (!target.closest('.category-filter-dropdown')) {
+    if (!target.closest('.category-select-wrapper')) {
       this.showCategoryDropdown.set(false);
     }
   }
 
   /**
-   * Authenticate with reversed date password
+   * Authenticate with username and reversed date password
+   * Security: Password is read once, verified, and cleared immediately to prevent debugging
+   * Security: Generic error message to prevent information disclosure
    */
   authenticate(): void {
+    // Read username and password once and clear signals immediately to prevent DevTools inspection
+    const inputUsername = this.username().trim().toLowerCase();
     const inputPassword = this.password().trim();
+    this.username.set(''); // Clear immediately
+    this.password.set(''); // Clear immediately - password no longer in signal
 
-    if (!inputPassword) {
-      this.passwordError.set('Vui lòng nhập mật khẩu');
+    // Generic error message for security (don't reveal which field is wrong)
+    const genericError = 'Tên đăng nhập hoặc mật khẩu không đúng';
+
+    if (!inputUsername || !inputPassword) {
+      this.passwordError.set(genericError);
       return;
     }
 
-    if (this.expenseService.verifyPassword(inputPassword)) {
+    // Verify username first
+    const isUsernameValid = this.expenseService.verifyUsername(inputUsername);
+
+    // Verify password using local variable (minimize time in memory)
+    // Password is only in local scope, not accessible via component signals
+    const isPasswordValid = this.expenseService.verifyPassword(inputPassword);
+
+    // Only authenticate if both are valid
+    // Use generic error message to prevent information disclosure
+    if (isUsernameValid && isPasswordValid) {
       this.isAuthenticated.set(true);
       this.passwordError.set('');
-      this.password.set('');
 
-      // Store hashed password in sessionStorage (expires next day)
-      const hashedPassword = this.expenseService.getTodayHashedPassword();
-      sessionStorage.setItem('expense_app_auth_hash', hashedPassword);
+      // Get valid username (normalized) for generating hash
+      const validUsername = this.expenseService.getValidUsername(inputUsername);
+
+      if (validUsername) {
+        // Store hash of username:password combination in sessionStorage
+        // This hash includes date component, so it changes daily
+        // Username is NOT stored - will be found by iterating through valid usernames
+        const credentialsHash = this.expenseService.generateCredentialsHash(validUsername, inputPassword);
+        sessionStorage.setItem('expense_app_auth_hash', credentialsHash);
+      }
 
       // Load expenses
       this.loadExpenses();
     } else {
-      this.passwordError.set('Mật khẩu không đúng');
+      // Generic error message - don't reveal which field is incorrect
+      this.passwordError.set(genericError);
     }
+    // inputPassword goes out of scope here - garbage collected
   }
 
   /**
    * Logout
+   * Security: Clears all authentication data including password
    */
   logout(): void {
     this.isAuthenticated.set(false);
-    this.password.set('');
+    this.username.set(''); // Clear username
+    this.password.set(''); // Clear password
     this.passwordError.set('');
     this.expenses.set([]);
     this.showAddForm.set(false);
     sessionStorage.removeItem('expense_app_auth_hash');
+    // Note: Username is not stored in sessionStorage, so no need to remove it
 
     // Destroy charts
     if (this.categoryChart) {
@@ -950,11 +1024,29 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   /**
-   * Handle password input keydown
+   * Handle input keydown (username or password)
+   * Security: Password is only stored in signal temporarily, cleared immediately after use
    */
-  onPasswordKeyDown(event: KeyboardEvent): void {
+  onInputKeyDown(event: KeyboardEvent): void {
     if (event.key === 'Enter') {
       this.authenticate();
+    }
+  }
+
+  /**
+   * Handle password input blur
+   * Security: Optionally clear password on blur to prevent inspection
+   * Note: This is optional - only clears if authentication failed
+   */
+  onPasswordBlur(event: FocusEvent): void {
+    // Only clear if there's an error (failed authentication attempt)
+    // This prevents accidental clearing while user is typing
+    if (this.passwordError()) {
+      const input = event.target as HTMLInputElement;
+      if (input) {
+        input.value = '';
+        this.password.set('');
+      }
     }
   }
 
@@ -1928,6 +2020,44 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   /**
+   * Select all filtered categories
+   */
+  selectAllFilteredCategories(): void {
+    const filtered = this.filteredCategories();
+    const current = this.filterCategory();
+    const newSelection = [...current];
+    
+    filtered.forEach(cat => {
+      if (!newSelection.includes(cat)) {
+        newSelection.push(cat);
+      }
+    });
+    
+    this.filterCategory.set(newSelection);
+  }
+
+  /**
+   * Deselect all filtered categories
+   */
+  deselectAllFilteredCategories(): void {
+    const filtered = this.filteredCategories();
+    const current = this.filterCategory();
+    
+    this.filterCategory.set(current.filter(cat => !filtered.includes(cat)));
+  }
+
+  /**
+   * Toggle select all for filtered categories
+   */
+  toggleSelectAllFilteredCategories(): void {
+    if (this.isAllFilteredCategoriesSelected()) {
+      this.deselectAllFilteredCategories();
+    } else {
+      this.selectAllFilteredCategories();
+    }
+  }
+
+  /**
    * Sort expenses by field
    */
   sortBy(field: 'date' | 'amount' | 'category' | 'content'): void {
@@ -2452,6 +2582,16 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     if (this.filterAmountMin() !== null) count++;
     if (this.filterAmountMax() !== null) count++;
     return count;
+  }
+
+  toggleDropdown(){
+    const newValue = !this.showCategoryDropdown();
+    this.showCategoryDropdown.set(newValue);
+    
+    // Clear search when closing dropdown
+    if (!newValue) {
+      this.categorySearchText.set('');
+    }
   }
 
   /**

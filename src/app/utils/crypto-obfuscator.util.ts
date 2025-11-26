@@ -71,6 +71,55 @@ export function _0xcomputeHash(input: string): string {
   return Math.abs(_0xacc).toString(16);
 }
 
+// Hash username (similar to password hash but with different seed)
+export function _0xhashUsername(username: string): string {
+  if (!username) return '';
+  const _0xnormalized = username.trim().toLowerCase();
+  let _0xacc = 0x12345678; // Different seed for username
+  
+  for (let _0xi = 0; _0xi < _0xnormalized.length; _0xi++) {
+    const _0xchar = _0xnormalized.charCodeAt(_0xi);
+    _0xacc = ((_0xacc << 7) - _0xacc) + _0xchar;
+    _0xacc = _0xacc & 0x7fffffff; // Force to 32-bit positive integer
+  }
+  
+  // Additional mixing
+  _0xacc = _0xacc ^ (_0xacc >>> 16);
+  _0xacc = _0xacc * 0x85ebca6b;
+  _0xacc = _0xacc ^ (_0xacc >>> 13);
+  
+  return Math.abs(_0xacc).toString(16).padStart(8, '0');
+}
+
+// Hash username:password combination
+export function _0xhashCredentials(username: string, password: string): string {
+  if (!username || !password) return '';
+  const _0xnormalized = username.trim().toLowerCase();
+  const _0xcombined = `${_0xnormalized}:${password}`;
+  let _0xacc = 0x9abcdef0; // Different seed for credentials
+  
+  for (let _0xi = 0; _0xi < _0xcombined.length; _0xi++) {
+    const _0xchar = _0xcombined.charCodeAt(_0xi);
+    _0xacc = ((_0xacc << 9) - _0xacc) + _0xchar;
+    _0xacc = _0xacc & 0x7fffffff; // Force to 32-bit positive integer
+  }
+  
+  // Additional mixing with date component
+  const _0xtoken = _0xgenerateToken();
+  for (let _0xi = 0; _0xi < _0xtoken.length; _0xi++) {
+    const _0xchar = _0xtoken.charCodeAt(_0xi);
+    _0xacc = ((_0xacc << 5) - _0xacc) + _0xchar;
+    _0xacc = _0xacc & 0x7fffffff;
+  }
+  
+  // Final mixing
+  _0xacc = _0xacc ^ (_0xacc >>> 18);
+  _0xacc = _0xacc * 0xc2b2ae35;
+  _0xacc = _0xacc ^ (_0xacc >>> 15);
+  
+  return Math.abs(_0xacc).toString(16).padStart(8, '0');
+}
+
 // Get hashed token for current temporal period
 export function _0xgetHashedToken(): string {
   const _0xtoken = _0xgenerateToken();
@@ -141,10 +190,13 @@ export const checkPassword = _0xvalidate;
 export const getPasswordHash = _0xgetHashedToken;
 export const verifyPassword = _0xvalidate;
 export const isAuthValid = _0xisValid;
+export const hashUsername = _0xhashUsername;
+export const hashCredentials = _0xhashCredentials;
 
 // Additional fake exports to confuse
 export const encryptData = _0xencrypt;
 export const decryptData = _0xdecrypt;
 export const computeChecksum = _0xchecksum;
 export const multiValidate = _0xmultiValidate;
+
 

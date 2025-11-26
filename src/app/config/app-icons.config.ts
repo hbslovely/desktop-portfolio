@@ -158,6 +158,20 @@ export const APP_ICONS: DesktopIconData[] = [
     icon: 'pi pi-shopping-cart',
     type: 'application',
     position: { x: 320, y: 520 }
+  },
+  {
+    id: 'ocr',
+    name: 'Đọc hình ảnh',
+    icon: 'pi pi-image',
+    type: 'application',
+    position: { x: 420, y: 20 }
+  },
+  {
+    id: 'fb-id-finder',
+    name: 'Tìm Facebook ID',
+    icon: 'pi pi-facebook',
+    type: 'application',
+    position: { x: 420, y: 120 }
   }
 ];
 
@@ -196,7 +210,9 @@ function getAppDescription(appId: string): string {
     'tuoitre-news': 'Read latest Vietnamese news from Tuổi Trẻ Online with categories and full articles',
     'expense': 'Manage family expenses with Google Sheets integration, view spending history, and add new expenses',
     'business': 'Manage sales, materials, and costs with Google Sheets integration across multiple tabs (Menu, Materials, Costs)',
-    'chinese-chess': 'Chơi cờ tướng và cờ úp với AI, phá thế cờ, nhiều giao diện đẹp mắt'
+    'chinese-chess': 'Chơi cờ tướng và cờ úp với AI, phá thế cờ, nhiều giao diện đẹp mắt',
+    'ocr': 'Đọc và trích xuất nội dung văn bản từ hình ảnh sử dụng công nghệ OCR (Optical Character Recognition)',
+    'fb-id-finder': 'Tìm Facebook ID từ số điện thoại, tra cứu thông tin Facebook'
   };
   return descriptions[appId] || 'Application';
 }
@@ -224,7 +240,9 @@ function getAppKeywords(appId: string): string[] {
     'tuoitre-news': ['news', 'tin tức', 'tuoitre', 'tuổi trẻ', 'vietnam', 'vietnamese', 'newspaper', 'articles', 'thời sự', 'thế giới', 'pháp luật', 'kinh doanh', 'công nghệ', 'xe', 'du lịch', 'văn hóa', 'giải trí', 'thể thao', 'giáo dục', 'sức khỏe'],
     'expense': ['expense', 'chi tiêu', 'quản lý', 'tài chính', 'spending', 'budget', 'money', 'finance', 'google sheets', 'gia đình', 'family', 'tiền', 'giao dịch', 'transaction'],
     'business': ['business', 'bán hàng', 'quản lý', 'sales', 'materials', 'costs', 'menu', 'nguyên liệu', 'vật liệu', 'chi phí', 'google sheets', 'inventory', 'kho', 'sản phẩm'],
-    'chinese-chess': ['cờ tướng', 'co tuong', 'xiangqi', 'cờ úp', 'co up', 'ky vuong', 'kỳ vương', 'chess', 'game', 'board game', 'trò chơi', 'puzzle', 'thế cờ', 'the co', 'chinese chess', 'vietnam chess']
+    'chinese-chess': ['cờ tướng', 'co tuong', 'xiangqi', 'cờ úp', 'co up', 'ky vuong', 'kỳ vương', 'chess', 'game', 'board game', 'trò chơi', 'puzzle', 'thế cờ', 'the co', 'chinese chess', 'vietnam chess'],
+    'ocr': ['ocr', 'đọc hình ảnh', 'doc hinh anh', 'nhận dạng văn bản', 'nhan dang van ban', 'text recognition', 'image to text', 'optical character recognition', 'trích xuất văn bản', 'trich xuat van ban', 'scan text', 'read image'],
+    'fb-id-finder': ['facebook', 'fb', 'id', 'tìm facebook id', 'tim facebook id', 'số điện thoại', 'so dien thoai', 'phone', 'find facebook id', 'facebook id finder', 'lookup', 'search facebook']
   };
   return keywords[appId] || [];
 }
