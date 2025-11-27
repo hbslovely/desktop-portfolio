@@ -172,6 +172,13 @@ export const APP_ICONS: DesktopIconData[] = [
     icon: 'pi pi-facebook',
     type: 'application',
     position: { x: 420, y: 120 }
+  },
+  {
+    id: 'graph-visualizer',
+    name: 'Đồ thị & Thuật toán',
+    icon: 'pi pi-sitemap',
+    type: 'application',
+    position: { x: 420, y: 220 }
   }
 ];
 
@@ -212,7 +219,8 @@ function getAppDescription(appId: string): string {
     'business': 'Manage sales, materials, and costs with Google Sheets integration across multiple tabs (Menu, Materials, Costs)',
     'chinese-chess': 'Chơi cờ tướng và cờ úp với AI, phá thế cờ, nhiều giao diện đẹp mắt',
     'ocr': 'Đọc và trích xuất nội dung văn bản từ hình ảnh sử dụng công nghệ OCR (Optical Character Recognition)',
-    'fb-id-finder': 'Tìm Facebook ID từ số điện thoại, tra cứu thông tin Facebook'
+    'fb-id-finder': 'Tìm Facebook ID từ số điện thoại, tra cứu thông tin Facebook',
+    'graph-visualizer': 'Tạo và phân tích đồ thị, tìm đường đi ngắn nhất với các thuật toán Dijkstra, Bellman-Ford, Floyd-Warshall, A*'
   };
   return descriptions[appId] || 'Application';
 }
@@ -242,7 +250,8 @@ function getAppKeywords(appId: string): string[] {
     'business': ['business', 'bán hàng', 'quản lý', 'sales', 'materials', 'costs', 'menu', 'nguyên liệu', 'vật liệu', 'chi phí', 'google sheets', 'inventory', 'kho', 'sản phẩm'],
     'chinese-chess': ['cờ tướng', 'co tuong', 'xiangqi', 'cờ úp', 'co up', 'ky vuong', 'kỳ vương', 'chess', 'game', 'board game', 'trò chơi', 'puzzle', 'thế cờ', 'the co', 'chinese chess', 'vietnam chess'],
     'ocr': ['ocr', 'đọc hình ảnh', 'doc hinh anh', 'nhận dạng văn bản', 'nhan dang van ban', 'text recognition', 'image to text', 'optical character recognition', 'trích xuất văn bản', 'trich xuat van ban', 'scan text', 'read image'],
-    'fb-id-finder': ['facebook', 'fb', 'id', 'tìm facebook id', 'tim facebook id', 'số điện thoại', 'so dien thoai', 'phone', 'find facebook id', 'facebook id finder', 'lookup', 'search facebook']
+    'fb-id-finder': ['facebook', 'fb', 'id', 'tìm facebook id', 'tim facebook id', 'số điện thoại', 'so dien thoai', 'phone', 'find facebook id', 'facebook id finder', 'lookup', 'search facebook'],
+    'graph-visualizer': ['graph', 'đồ thị', 'do thi', 'graph visualization', 'shortest path', 'đường đi ngắn nhất', 'duong di ngan nhat', 'dijkstra', 'bellman-ford', 'floyd-warshall', 'a-star', 'algorithm', 'thuật toán', 'thuat toan', 'node', 'edge', 'weighted graph', 'directed graph', 'undirected graph']
   };
   return keywords[appId] || [];
 }
