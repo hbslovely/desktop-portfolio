@@ -1,0 +1,1150 @@
+<div class="graph-visualizer-app">
+  <div class="app-header">
+    <h2>
+      <i class="pi pi-sitemap"></i>
+      Trình tạo và phân tích đồ thị
+    </h2>
+    <div class="header-actions">
+      <div class="mode-buttons">
+        <button
+          class="icon-btn"
+          [class.active]="mode() === 'create-node'"
+          (click)="mode.set('create-node')"
+          title="Tạo Node">
+          <i class="pi pi-plus-circle"></i>
+        </button>
+        <button
+          class="icon-btn"
+          [class.active]="mode() === 'move'"
+          (click)="mode.set('move')"
+          title="Di chuyển + Zoom">
+          <i class="pi pi-arrows-alt"></i>
+        </button>
+        <button
+          class="icon-btn"
+          [class.active]="mode() === 'add-edge'"
+          (click)="mode.set('add-edge')"
+          title="Tạo Edge">
+          <i class="pi pi-link"></i>
+        </button>
+        <button
+          class="icon-btn"
+          [class.active]="mode() === 'select'"
+          (click)="mode.set('select')"
+          title="Chọn nhiều Node">
+          <i class="pi pi-check-square"></i>
+        </button>
+      </div>
+      <div class="action-menu">
+        <button class="icon-btn menu-trigger" (click)="showActionMenu.set(!showActionMenu())" title="Thao tác">
+          <i class="pi pi-ellipsis-v"></i>
+        </button>
+        <div class="action-dropdown" *ngIf="showActionMenu()">
+          <button (click)="showGraphInputDialog.set(true); showActionMenu.set(false)">
+            <i class="pi pi-plus"></i>
+            Nhập đồ thị
+          </button>
+          <button (click)="showGraphTemplatesDialog.set(true); showActionMenu.set(false)">
+            <i class="pi pi-th-large"></i>
+            Mẫu đồ thị
+          </button>
+          <button (click)="showExportDialog.set(true); showActionMenu.set(false)">
+            <i class="pi pi-download"></i>
+            Xuất đồ thị
+          </button>
+          <button (click)="showImportDialog.set(true); showActionMenu.set(false)">
+            <i class="pi pi-upload"></i>
+            Nhập đồ thị
+          </button>
+          <div class="divider"></div>
+          <button (click)="showSettingsDialog.set(true); showActionMenu.set(false)">
+            <i class="pi pi-cog"></i>
+            Cài đặt
+          </button>
+          <button (click)="openHelpDialog(); showActionMenu.set(false)">
+            <i class="pi pi-question-circle"></i>
+            Trợ giúp
+          </button>
+          <div class="divider"></div>
+          <button (click)="clearGraph(); showActionMenu.set(false)" class="danger">
+            <i class="pi pi-trash"></i>
+            Xóa đồ thị
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="app-content">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <!-- Node Selection -->
+      <div class="control-section">
+        <h3>
+          <i class="pi pi-circle"></i>
+          Node
+        </h3>
+
+        <div class="control-group" *ngIf="selectedNode() && !showNodeConfig()">
+          <label>Node đã chọn: {{ selectedNode() }}</label>
+          <div class="button-group">
+            <button
+              class="btn btn-sm"
+              [class.btn-success]="startNode() === selectedNode()"
+              (click)="setStartNode(selectedNode()!)">
+              <i class="pi pi-play"></i>
+              Start
+            </button>
+            <button
+              class="btn btn-sm"
+              [class.btn-danger]="endNode() === selectedNode()"
+              (click)="setEndNode(selectedNode()!)">
+              <i class="pi pi-stop"></i>
+              End
+            </button>
+            <button
+              class="btn btn-sm btn-danger"
+              (click)="deleteNode(selectedNode()!)">
+              <i class="pi pi-trash"></i>
+              Xóa
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Node Configuration -->
+      <div class="control-section" *ngIf="showNodeConfig()">
+        <h3>
+          <i class="pi pi-pencil"></i>
+          Chỉnh sửa Node
+        </h3>
+
+        <div class="control-group">
+          <label>Tên Node:</label>
+          <input
+            type="text"
+            [(ngModel)]="nodeLabel"
+            class="input-control"
+            placeholder="Nhập tên node">
+        </div>
+
+        <div class="button-group">
+          <button class="btn btn-primary" (click)="saveNodeConfig()">
+            <i class="pi pi-check"></i>
+            Lưu
+          </button>
+          <button class="btn btn-secondary" (click)="showNodeConfig.set(false)">
+            <i class="pi pi-times"></i>
+            Hủy
+          </button>
+        </div>
+      </div>
+
+      <!-- Edge Configuration -->
+      <div class="control-section" *ngIf="showEdgeConfig()">
+        <h3>
+          <i class="pi pi-link"></i>
+          Cấu hình Edge
+        </h3>
+
+        <div class="control-group">
+          <label>Trọng số:</label>
+          <input
+            type="number"
+            [(ngModel)]="edgeWeight"
+            min="1"
+            step="1"
+            class="input-control">
+        </div>
+
+        <div class="control-group">
+          <label>Hướng:</label>
+          <select [(ngModel)]="edgeDirection" class="input-control">
+            <option value="forward">A → B (Một chiều)</option>
+            <option value="backward">B → A (Ngược lại)</option>
+            <option value="bidirectional">A ↔ B (Hai chiều)</option>
+          </select>
+        </div>
+
+        <div class="button-group">
+          <button class="btn btn-primary" (click)="saveEdgeConfig()">
+            <i class="pi pi-check"></i>
+            Lưu
+          </button>
+          <button class="btn btn-secondary" (click)="showEdgeConfig.set(false)">
+            <i class="pi pi-times"></i>
+            Hủy
+          </button>
+          <button class="btn btn-danger" (click)="deleteEdge(selectedEdge()!)">
+            <i class="pi pi-trash"></i>
+            Xóa
+          </button>
+        </div>
+      </div>
+
+      <!-- Algorithm Selection -->
+      <div class="control-section">
+        <h3>
+          <i class="pi pi-calculator"></i>
+          Thuật toán
+        </h3>
+
+        <div class="control-group">
+          <label>Chọn thuật toán:</label>
+          <select [(ngModel)]="selectedAlgorithm" class="input-control">
+            <option value="dijkstra">Dijkstra</option>
+            <option value="bellman-ford">Bellman-Ford</option>
+            <option value="floyd-warshall">Floyd-Warshall</option>
+            <option value="a-star">A* (A-Star)</option>
+          </select>
+        </div>
+
+        <div class="control-group">
+          <label>Start Node:</label>
+          <select
+            [(ngModel)]="startNode"
+            class="input-control"
+            [value]="startNode()">
+            <option [value]="null">-- Chọn --</option>
+            <option *ngFor="let node of nodes()" [value]="node.id">
+              {{ node.label }}
+            </option>
+          </select>
+        </div>
+
+        <div class="control-group">
+          <label>End Node:</label>
+          <select
+            [(ngModel)]="endNode"
+            class="input-control"
+            [value]="endNode()">
+            <option [value]="null">-- Chọn --</option>
+            <option *ngFor="let node of nodes()" [value]="node.id">
+              {{ node.label }}
+            </option>
+          </select>
+        </div>
+
+        <div class="button-group">
+          <button
+            class="btn btn-primary btn-large"
+            (click)="findShortestPath()"
+            [disabled]="!startNode() || !endNode() || isCalculating()">
+            <i class="pi" [class.pi-spin]="isCalculating()" [class.pi-spinner]="isCalculating()" [class.pi-search]="!isCalculating()"></i>
+            {{ isCalculating() ? 'Đang tính...' : 'Tìm đường đi ngắn nhất' }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Result -->
+      <div class="control-section" *ngIf="finalResult()">
+        <h3>
+          <i class="pi pi-check-circle"></i>
+          Kết quả
+        </h3>
+
+        <div class="result-info">
+          <div class="result-item">
+            <span class="label">Thuật toán:</span>
+            <span class="value">{{ finalResult()!.algorithm }}</span>
+          </div>
+          <div class="result-item">
+            <span class="label">Khoảng cách:</span>
+            <span class="value">{{ finalResult()!.distance }}</span>
+          </div>
+          <div class="result-item">
+            <span class="label">Đường đi:</span>
+            <span class="value path">{{ finalResult()!.path.join(' → ') }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Statistics -->
+      <div class="control-section">
+        <h3>
+          <i class="pi pi-chart-bar"></i>
+          Thống kê
+        </h3>
+
+        <div class="stats">
+          <div class="stat-item">
+            <span class="stat-label">Nodes:</span>
+            <span class="stat-value">{{ nodes().length }}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Edges:</span>
+            <span class="stat-value">{{ edges().length }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Canvas Area -->
+    <div class="canvas-container">
+      <canvas
+        #canvas
+        tabindex="0"
+        (mousedown)="onCanvasMouseDown($event)"
+        (mousemove)="onCanvasMouseMove($event)"
+        (mouseup)="onCanvasMouseUp($event)"
+        (mouseleave)="onCanvasMouseUp($event)"
+        (wheel)="onCanvasWheel($event)"
+        (contextmenu)="$event.preventDefault()">
+      </canvas>
+
+      <!-- Zoom Controls (only in move mode) -->
+      <div class="zoom-controls" *ngIf="mode() === 'move'">
+        <button class="zoom-btn" (click)="zoomIn()" title="Phóng to">
+          <i class="pi pi-plus"></i>
+        </button>
+        <div class="zoom-level">{{ (zoomLevel() * 100).toFixed(0) }}%</div>
+        <button class="zoom-btn" (click)="zoomOut()" title="Thu nhỏ">
+          <i class="pi pi-minus"></i>
+        </button>
+        <button class="zoom-btn" (click)="resetZoom()" title="Đặt lại zoom">
+          <i class="pi pi-refresh"></i>
+        </button>
+        <button class="zoom-btn" (click)="fitToView()" title="Fit to View - Hiển thị tất cả nodes">
+          <i class="pi pi-th-large"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Calculation Panel (Right Side) -->
+    <div class="calculation-panel" *ngIf="showCalculationPanel()">
+      <div class="panel-header">
+        <h3>
+          <i class="pi pi-calculator"></i>
+          Chi tiết tính toán
+        </h3>
+        <button class="btn-close" (click)="showCalculationPanel.set(false)">
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+
+      <div class="panel-content">
+        <!-- Algorithm Steps -->
+        <div class="steps-section" *ngIf="algorithmSteps().length > 0">
+          <h4>Các bước tính toán</h4>
+          <div class="steps-list">
+            <div
+              class="step-item-detailed"
+              *ngFor="let step of algorithmSteps(); let i = index"
+              [class.active]="i === currentStep()"
+              (click)="selectStep(i)">
+              <div class="step-header">
+                <span class="step-number">{{ i + 1 }}</span>
+                <span class="step-message">{{ step.message }}</span>
+              </div>
+
+              <!-- Distance Matrix Table -->
+              <div class="step-matrix" *ngIf="step.distances">
+                <table class="matrix-table">
+                  <thead>
+                    <tr>
+                      <th>Node</th>
+                      <th>Khoảng cách</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr
+                      *ngFor="let node of nodes()"
+                      [class.highlight]="step.current === node.id || step.updated === node.id"
+                      [class.visited]="step.visited && step.visited.includes(node.id)">
+                      <td>{{ node.label }}</td>
+                      <td>
+                        <span *ngIf="step.distances && step.distances[node.id] === Infinity">∞</span>
+                        <span *ngIf="step.distances && step.distances[node.id] !== Infinity">{{ step.distances[node.id] }}</span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Floyd-Warshall Matrix -->
+              <div class="step-matrix" *ngIf="step.distances && step.nodes && step.distances.length > 0">
+                <table class="matrix-table-large">
+                  <thead>
+                    <tr>
+                      <th></th>
+                      <th *ngFor="let nodeId of step.nodes">{{ getNodeLabel(nodeId) }}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let nodeId of step.nodes; let i = index">
+                      <th>{{ getNodeLabel(nodeId) }}</th>
+                      <td
+                        *ngFor="let nodeId2 of step.nodes; let j = index"
+                        [class.highlight]="step.intermediate === nodeId || step.intermediate === nodeId2">
+                        <span *ngIf="step.distances[i] && step.distances[i][j] === Infinity">∞</span>
+                        <span *ngIf="step.distances[i] && step.distances[i][j] !== Infinity">{{ step.distances[i][j] }}</span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Final Result -->
+        <div class="result-section" *ngIf="finalResult() && !isAnimating()">
+          <h4>Kết quả cuối cùng</h4>
+          <div class="final-result-info">
+            <div class="result-item">
+              <span class="label">Thuật toán:</span>
+              <span class="value">{{ finalResult()!.algorithm }}</span>
+            </div>
+            <div class="result-item">
+              <span class="label">Khoảng cách:</span>
+              <span class="value">{{ finalResult()!.distance }}</span>
+            </div>
+            <div class="result-item">
+              <span class="label">Đường đi:</span>
+              <span class="value path">{{ finalResult()!.path.join(' → ') }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Graph Input Dialog -->
+  <div class="dialog-overlay" *ngIf="showGraphInputDialog()" (click)="showGraphInputDialog.set(false)">
+    <div class="dialog-container graph-input-dialog" (click)="$event.stopPropagation()">
+      <div class="dialog-header">
+        <h3>
+          <i class="pi pi-plus-circle"></i>
+          Nhập đồ thị
+        </h3>
+        <button (click)="showGraphInputDialog.set(false)" class="close-btn">
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+
+      <div class="dialog-body">
+        <!-- Nodes Input -->
+        <div class="form-section">
+          <label>
+            <i class="pi pi-circle"></i>
+            Danh sách đỉnh (cách nhau bằng dấu phẩy):
+          </label>
+          <input
+            type="text"
+            [(ngModel)]="inputNodes"
+            (ngModelChange)="updatePreview()"
+            class="form-input"
+            placeholder="Ví dụ: A, B, C, D">
+          <small class="hint">Nhập tên các đỉnh, cách nhau bằng dấu phẩy</small>
+        </div>
+
+        <!-- Edges Table -->
+        <div class="form-section">
+          <label>
+            <i class="pi pi-link"></i>
+            Danh sách cạnh:
+          </label>
+          <div class="edges-table-container">
+            <table class="edges-table">
+              <thead>
+                <tr>
+                  <th>Đỉnh 1</th>
+                  <th>Đỉnh 2</th>
+                  <th>Khoảng cách</th>
+                  <th>Có hướng</th>
+                  <th>Thao tác</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let edge of inputEdges(); let i = index">
+                  <td>
+                    <input
+                      type="text"
+                      [(ngModel)]="edge.from"
+                      (ngModelChange)="updatePreview()"
+                      class="table-input"
+                      placeholder="Đỉnh 1">
+                  </td>
+                  <td>
+                    <input
+                      type="text"
+                      [(ngModel)]="edge.to"
+                      (ngModelChange)="updatePreview()"
+                      class="table-input"
+                      placeholder="Đỉnh 2">
+                  </td>
+                  <td>
+                    <input
+                      type="number"
+                      [(ngModel)]="edge.weight"
+                      (ngModelChange)="updatePreview()"
+                      class="table-input"
+                      min="1"
+                      step="1">
+                  </td>
+                  <td>
+                    <input
+                      type="checkbox"
+                      [(ngModel)]="edge.directed"
+                      (ngModelChange)="updatePreview()"
+                      class="checkbox-input">
+                  </td>
+                  <td>
+                    <button class="btn btn-sm btn-danger" (click)="removeInputEdge(i)">
+                      <i class="pi pi-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <button class="btn btn-secondary btn-sm" (click)="addInputEdge()">
+              <i class="pi pi-plus"></i>
+              Thêm cạnh
+            </button>
+          </div>
+        </div>
+
+        <!-- Preview -->
+        <div class="form-section">
+          <label>
+            <i class="pi pi-eye"></i>
+            Xem trước:
+          </label>
+          <div class="preview-container">
+            <canvas #previewCanvas class="preview-canvas"></canvas>
+          </div>
+          <div class="preview-info" *ngIf="previewNodes().length > 0">
+            <span>Nodes: {{ previewNodes().length }}</span>
+            <span>Edges: {{ previewEdges().length }}</span>
+          </div>
+          <div class="preview-errors" *ngIf="getPreviewErrors().length > 0">
+            <div class="error-item" *ngFor="let error of getPreviewErrors()">
+              <i class="pi pi-exclamation-triangle"></i>
+              {{ error }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dialog-footer">
+        <button (click)="showGraphInputDialog.set(false)" class="btn btn-secondary">
+          <i class="pi pi-times"></i>
+          Hủy
+        </button>
+        <button
+          (click)="applyGraphInput()"
+          class="btn btn-primary"
+          [disabled]="getPreviewErrors().length > 0 || previewNodes().length === 0">
+          <i class="pi pi-check"></i>
+          Áp dụng
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Graph Templates Dialog -->
+  <div class="dialog-overlay" *ngIf="showGraphTemplatesDialog()" (click)="showGraphTemplatesDialog.set(false)">
+    <div class="dialog-container graph-templates-dialog" (click)="$event.stopPropagation()">
+      <div class="dialog-header">
+        <h3>
+          <i class="pi pi-th-large"></i>
+          Mẫu đồ thị
+        </h3>
+        <button (click)="showGraphTemplatesDialog.set(false)" class="close-btn">
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+
+      <!-- Stepper -->
+      <div class="stepper-container">
+        <div class="stepper">
+          <div class="step" [class.active]="templateDialogStep() === 1" [class.completed]="templateDialogStep() > 1">
+            <div class="step-number">1</div>
+            <div class="step-label">Chọn mẫu</div>
+          </div>
+          <div class="step-line"></div>
+          <div class="step" [class.active]="templateDialogStep() === 2" [class.completed]="templateDialogStep() > 2">
+            <div class="step-number">2</div>
+            <div class="step-label">Cấu hình</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dialog-body">
+        <!-- Step 1: Template Selection -->
+        <div *ngIf="templateDialogStep() === 1" class="step-content">
+          <div class="templates-grid">
+            <div class="template-card" *ngFor="let template of graphTemplates" (click)="applyTemplate(template)">
+              <div class="template-icon">
+                <i [class]="template.icon"></i>
+              </div>
+              <div class="template-name">{{ template.name }}</div>
+              <div class="template-description">{{ template.description }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2: Configuration -->
+        <div *ngIf="templateDialogStep() === 2" class="step-content template-config-content">
+          <div class="template-config-left">
+            <div class="form-section">
+              <label>
+                <i class="pi pi-link"></i>
+                Trọng số cạnh:
+              </label>
+              <input
+                type="number"
+                [value]="templateConfig().edgeWeight || 1"
+                (input)="updateTemplateConfigEdgeWeight(+$any($event.target).value)"
+                min="1"
+                step="1"
+                class="form-input"
+                placeholder="1">
+              <small class="hint">Trọng số mặc định cho tất cả các cạnh</small>
+            </div>
+
+            <div class="form-section">
+              <label>
+                <i class="pi pi-arrows-h"></i>
+                Hướng cạnh:
+              </label>
+              <div class="select-wrapper">
+                <select
+                  [value]="templateConfig().direction || 'bidirectional'"
+                  (change)="updateTemplateConfigDirection($any($event.target).value)"
+                  class="form-input select-input">
+                  <option value="forward">Một chiều (A → B)</option>
+                  <option value="backward">Ngược lại (B → A)</option>
+                  <option value="bidirectional">Hai chiều (A ↔ B)</option>
+                </select>
+              </div>
+              <small class="hint">Hướng mặc định cho tất cả các cạnh</small>
+            </div>
+
+            <div class="form-section">
+              <label>
+                <i class="pi pi-th-large"></i>
+                Mật độ (khoảng cách):
+              </label>
+              <div class="select-wrapper">
+                <select
+                  [value]="templateConfig().density || 'medium'"
+                  (change)="updateTemplateConfigDensity($any($event.target).value)"
+                  class="form-input select-input">
+                  <option value="sparse">Thưa</option>
+                  <option value="medium">Vừa</option>
+                  <option value="dense">Hẹp</option>
+                  <option value="very-dense">Rất hẹp</option>
+                </select>
+              </div>
+              <small class="hint">Khoảng cách giữa các đỉnh trong đồ thị</small>
+            </div>
+
+          <div class="form-section" *ngIf="selectedTemplate()?.name === 'Đồ thị đầy đủ'">
+            <label>
+              <i class="pi pi-circle"></i>
+              Số lượng đỉnh:
+            </label>
+            <input
+              type="number"
+              [value]="templateConfig().nodeCount || 5"
+              (input)="updateTemplateConfigNodeCount(+$any($event.target).value)"
+              min="3"
+              max="10"
+              step="1"
+              class="form-input"
+              placeholder="5">
+            <small class="hint">Số lượng đỉnh trong đồ thị đầy đủ (3-10)</small>
+          </div>
+
+          <div class="form-section" *ngIf="selectedTemplate()?.name === 'Sao'">
+            <label>
+              <i class="pi pi-circle"></i>
+              Số lượng đỉnh ngoài:
+            </label>
+            <input
+              type="number"
+              [value]="(templateConfig().nodeCount || 6) - 1"
+              (input)="updateTemplateConfigStarOuterCount(+$any($event.target).value)"
+              min="3"
+              max="10"
+              step="1"
+              class="form-input"
+              placeholder="5">
+            <small class="hint">Số lượng đỉnh xung quanh đỉnh trung tâm (3-10)</small>
+          </div>
+
+          <div class="form-section" *ngIf="selectedTemplate()?.name === 'Vòng tròn' || selectedTemplate()?.name === 'Đường thẳng'">
+            <label>
+              <i class="pi pi-circle"></i>
+              Số lượng đỉnh:
+            </label>
+            <input
+              type="number"
+              [value]="templateConfig().nodeCount || 4"
+              (input)="updateTemplateConfigNodeCount(+$any($event.target).value)"
+              min="3"
+              max="10"
+              step="1"
+              class="form-input"
+              placeholder="4">
+            <small class="hint">Số lượng đỉnh trong đồ thị (3-10)</small>
+          </div>
+          </div>
+
+          <!-- Preview Panel -->
+          <div class="template-preview-panel">
+            <h4 class="preview-title">
+              <i class="pi pi-eye"></i>
+              Xem trước
+            </h4>
+            <div class="preview-canvas-container">
+              <canvas #templatePreviewCanvas id="template-preview-canvas" class="preview-canvas"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dialog-footer">
+        <button
+          *ngIf="templateDialogStep() === 2"
+          (click)="goBackToTemplateSelection()"
+          class="btn btn-secondary">
+          <i class="pi pi-arrow-left"></i>
+          Quay lại
+        </button>
+        <button (click)="showGraphTemplatesDialog.set(false)" class="btn btn-secondary">
+          <i class="pi pi-times"></i>
+          Hủy
+        </button>
+        <button
+          *ngIf="templateDialogStep() === 2"
+          (click)="applyTemplateWithConfig()"
+          class="btn btn-primary">
+          <i class="pi pi-check"></i>
+          Áp dụng
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Help Dialog -->
+  <div class="dialog-overlay" *ngIf="showHelpDialog()" (click)="showHelpDialog.set(false)">
+    <div class="dialog-container help-dialog" (click)="$event.stopPropagation()">
+      <div class="dialog-header">
+        <h3>
+          <i class="pi pi-question-circle"></i>
+          Hướng dẫn sử dụng
+        </h3>
+        <button (click)="closeHelpDialog()" class="close-btn">
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+
+      <div class="dialog-body help-body">
+        <div class="help-section">
+          <h4>
+            <i class="pi pi-plus-circle"></i>
+            Chế độ Tạo Node
+          </h4>
+          <p>Click vào canvas để tạo node mới. Node sẽ được đặt tên tự động theo chế độ bạn đã chọn trong cài đặt.</p>
+        </div>
+
+        <div class="help-section">
+          <h4>
+            <i class="pi pi-arrows-alt"></i>
+            Chế độ Di chuyển
+          </h4>
+          <ul>
+            <li><strong>Di chuyển node:</strong> Click và kéo node để di chuyển</li>
+            <li><strong>Pan đồ thị:</strong> Click và kéo trên vùng trống để di chuyển toàn bộ đồ thị</li>
+            <li><strong>Zoom:</strong> Sử dụng nút zoom ở góc dưới bên phải hoặc scroll chuột</li>
+            <li><strong>Chỉnh sửa:</strong> Double-click vào node hoặc edge để chỉnh sửa</li>
+          </ul>
+        </div>
+
+        <div class="help-section">
+          <h4>
+            <i class="pi pi-link"></i>
+            Chế độ Tạo Edge
+          </h4>
+          <ul>
+            <li>Click vào node đầu tiên để bắt đầu tạo edge</li>
+            <li>Kéo đến node thứ hai và thả để hoàn thành</li>
+            <li>Khi hover vào node, node sẽ được highlight để bạn biết có thể click</li>
+            <li>Bạn có thể tạo nhiều edge giữa 2 node (edge đầu tiên thẳng, các edge sau sẽ cong)</li>
+          </ul>
+        </div>
+
+        <div class="help-section">
+          <h4>
+            <i class="pi pi-calculator"></i>
+            Tìm đường đi ngắn nhất
+          </h4>
+          <ul>
+            <li>Chọn Start node và End node từ dropdown</li>
+            <li>Chọn thuật toán (Dijkstra, Bellman-Ford, Floyd-Warshall, A*)</li>
+            <li>Click "Tìm đường đi ngắn nhất" để chạy thuật toán</li>
+            <li>Xem chi tiết các bước tính toán trong panel bên phải</li>
+            <li>Click vào từng bước để highlight node/edge đang được xem xét</li>
+          </ul>
+        </div>
+
+        <div class="help-section">
+          <h4>
+            <i class="pi pi-th-large"></i>
+            Mẫu đồ thị
+          </h4>
+          <p>Sử dụng menu "Mẫu đồ thị" để tạo nhanh các đồ thị phổ biến như đường thẳng, vòng tròn, sao, lưới, v.v.</p>
+        </div>
+
+        <div class="help-section">
+          <h4>
+            <i class="pi pi-cog"></i>
+            Cài đặt
+          </h4>
+          <p>Tùy chỉnh giao diện đồ thị: màu sắc node, độ dày cạnh, bán kính node, chế độ đặt tên, v.v.</p>
+        </div>
+      </div>
+
+      <div class="dialog-footer">
+        <label class="dont-show-again">
+          <input
+            type="checkbox"
+            [(ngModel)]="dontShowHelpAgain"
+            [ngModelOptions]="{standalone: true}">
+          <span>Đừng hiển thị lại lần nữa</span>
+        </label>
+        <button (click)="closeHelpDialog()" class="btn btn-primary">
+          <i class="pi pi-check"></i>
+          Đã hiểu
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Dialog -->
+  <div class="dialog-overlay" *ngIf="showSettingsDialog()" (click)="showSettingsDialog.set(false)">
+    <div class="dialog-container settings-dialog" (click)="$event.stopPropagation()">
+      <div class="dialog-header">
+        <h3>
+          <i class="pi pi-cog"></i>
+          Cài đặt
+        </h3>
+        <button (click)="showSettingsDialog.set(false)" class="close-btn">
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+
+      <div class="dialog-body settings-body">
+        <div class="settings-content">
+          <div class="settings-left">
+            <!-- Node Naming -->
+            <div class="settings-group">
+              <h4 class="settings-group-title">
+                <i class="pi pi-tag"></i>
+                Đặt tên Node
+              </h4>
+              <div class="form-section">
+                <label>Chế độ đặt tên:</label>
+                <div class="select-wrapper">
+                  <select
+                    [value]="nodeNamingMode()"
+                    (change)="nodeNamingMode.set($any($event.target).value)"
+                    class="form-input select-input">
+                    <option value="indexed">N0, N1, N2, ...</option>
+                    <option value="numeric">1, 2, 3, ...</option>
+                    <option value="alphabetic">A, B, C, ..., Z, AA, AB, ...</option>
+                  </select>
+                </div>
+                <small class="hint">Chế độ đặt tên cho các node mới được tạo</small>
+              </div>
+
+          <div class="form-section">
+            <div class="preview-section">
+              <label>Xem trước:</label>
+              <div class="preview-nodes">
+                <span class="preview-node" *ngFor="let i of [0,1,2,3,4]">{{ getNodeLabelFromIndex(i) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+            <!-- Node Visual Settings -->
+            <div class="settings-group">
+              <h4 class="settings-group-title">
+                <i class="pi pi-circle"></i>
+                Giao diện Node
+              </h4>
+          <div class="form-section">
+            <label>Màu Node mặc định:</label>
+            <div class="color-input-group">
+              <input
+                type="color"
+                [value]="nodeColor()"
+                (input)="nodeColor.set($any($event.target).value)"
+                class="color-input">
+              <input
+                type="text"
+                [value]="nodeColor()"
+                (input)="nodeColor.set($any($event.target).value)"
+                class="color-text-input">
+            </div>
+          </div>
+
+          <div class="form-section">
+            <label>Bán kính Node:</label>
+            <input
+              type="range"
+              [value]="nodeRadius()"
+              (input)="nodeRadius.set(+$any($event.target).value)"
+              min="15"
+              max="40"
+              step="1"
+              class="range-input">
+            <div class="range-value">{{ nodeRadius() }}px</div>
+          </div>
+
+          <div class="form-section">
+            <label>Độ dày viền Node:</label>
+            <input
+              type="range"
+              [value]="nodeBorderWidth()"
+              (input)="nodeBorderWidth.set(+$any($event.target).value)"
+              min="1"
+              max="5"
+              step="1"
+              class="range-input">
+            <div class="range-value">{{ nodeBorderWidth() }}px</div>
+          </div>
+
+          <div class="form-section">
+            <label>Màu viền Node:</label>
+            <div class="color-input-group">
+              <input
+                type="color"
+                [value]="nodeBorderColor()"
+                (input)="nodeBorderColor.set($any($event.target).value)"
+                class="color-input">
+              <input
+                type="text"
+                [value]="nodeBorderColor()"
+                (input)="nodeBorderColor.set($any($event.target).value)"
+                class="color-text-input">
+            </div>
+          </div>
+
+          <div class="form-section">
+            <label>Màu Node Start:</label>
+            <div class="color-input-group">
+              <input
+                type="color"
+                [value]="startNodeColor()"
+                (input)="startNodeColor.set($any($event.target).value)"
+                class="color-input">
+              <input
+                type="text"
+                [value]="startNodeColor()"
+                (input)="startNodeColor.set($any($event.target).value)"
+                class="color-text-input">
+            </div>
+          </div>
+
+          <div class="form-section">
+            <label>Màu Node End:</label>
+            <div class="color-input-group">
+              <input
+                type="color"
+                [value]="endNodeColor()"
+                (input)="endNodeColor.set($any($event.target).value)"
+                class="color-input">
+              <input
+                type="text"
+                [value]="endNodeColor()"
+                (input)="endNodeColor.set($any($event.target).value)"
+                class="color-text-input">
+            </div>
+          </div>
+
+          <div class="form-section">
+            <label>Màu Node trong đường đi:</label>
+            <div class="color-input-group">
+              <input
+                type="color"
+                [value]="pathNodeColor()"
+                (input)="pathNodeColor.set($any($event.target).value)"
+                class="color-input">
+              <input
+                type="text"
+                [value]="pathNodeColor()"
+                (input)="pathNodeColor.set($any($event.target).value)"
+                class="color-text-input">
+            </div>
+          </div>
+        </div>
+
+            <!-- Edge Visual Settings -->
+            <div class="settings-group">
+              <h4 class="settings-group-title">
+                <i class="pi pi-link"></i>
+                Giao diện Cạnh
+              </h4>
+          <div class="form-section">
+            <label>Màu Cạnh mặc định:</label>
+            <div class="color-input-group">
+              <input
+                type="color"
+                [value]="edgeColor()"
+                (input)="edgeColor.set($any($event.target).value)"
+                class="color-input">
+              <input
+                type="text"
+                [value]="edgeColor()"
+                (input)="edgeColor.set($any($event.target).value)"
+                class="color-text-input">
+            </div>
+          </div>
+
+          <div class="form-section">
+            <label>Độ dày Cạnh:</label>
+            <input
+              type="range"
+              [value]="edgeThickness()"
+              (input)="edgeThickness.set(+$any($event.target).value)"
+              min="1"
+              max="5"
+              step="1"
+              class="range-input">
+            <div class="range-value">{{ edgeThickness() }}px</div>
+          </div>
+
+          <div class="form-section">
+            <label>Kích thước Mũi tên:</label>
+            <input
+              type="range"
+              [value]="edgeArrowSize()"
+              (input)="edgeArrowSize.set(+$any($event.target).value)"
+              min="5"
+              max="20"
+              step="1"
+              class="range-input">
+            <div class="range-value">{{ edgeArrowSize() }}px</div>
+          </div>
+
+          <div class="form-section">
+            <label>Màu Cạnh trong đường đi:</label>
+            <div class="color-input-group">
+              <input
+                type="color"
+                [value]="pathEdgeColor()"
+                (input)="pathEdgeColor.set($any($event.target).value)"
+                class="color-input">
+              <input
+                type="text"
+                [value]="pathEdgeColor()"
+                (input)="pathEdgeColor.set($any($event.target).value)"
+                class="color-text-input">
+            </div>
+          </div>
+        </div>
+          </div>
+
+          <!-- Preview Panel -->
+          <div class="settings-preview">
+            <h4 class="preview-title">
+              <i class="pi pi-eye"></i>
+              Xem trước
+            </h4>
+            <div class="preview-canvas-container">
+              <canvas id="settings-preview-canvas" class="preview-canvas"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dialog-footer">
+        <button (click)="showSettingsDialog.set(false)" class="btn btn-primary">
+          <i class="pi pi-check"></i>
+          Đóng
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Export Dialog -->
+  <div class="dialog-overlay" *ngIf="showExportDialog()" (click)="showExportDialog.set(false)">
+    <div class="dialog-container export-dialog" (click)="$event.stopPropagation()">
+      <div class="dialog-header">
+        <h3>
+          <i class="pi pi-download"></i>
+          Xuất đồ thị
+        </h3>
+        <button (click)="showExportDialog.set(false)" class="close-btn">
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+      <div class="dialog-body">
+        <div class="form-section">
+          <label>Định dạng:</label>
+          <select [(ngModel)]="exportFormat" class="form-input">
+            <option value="json">JSON</option>
+            <option value="matrix">Ma trận</option>
+          </select>
+        </div>
+        <div class="form-section">
+          <label>Dữ liệu:</label>
+          <textarea
+            [(ngModel)]="exportData"
+            class="form-input export-textarea"
+            readonly
+            rows="15"></textarea>
+        </div>
+      </div>
+      <div class="dialog-footer">
+        <button (click)="showExportDialog.set(false)" class="btn btn-secondary">
+          Đóng
+        </button>
+        <button (click)="copyExportData()" class="btn btn-primary">
+          <i class="pi pi-copy"></i>
+          Sao chép
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Import Dialog -->
+  <div class="dialog-overlay" *ngIf="showImportDialog()" (click)="showImportDialog.set(false)">
+    <div class="dialog-container import-dialog" (click)="$event.stopPropagation()">
+      <div class="dialog-header">
+        <h3>
+          <i class="pi pi-upload"></i>
+          Nhập đồ thị
+        </h3>
+        <button (click)="showImportDialog.set(false)" class="close-btn">
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+      <div class="dialog-body">
+        <div class="form-section">
+          <label>Dán dữ liệu (JSON hoặc Ma trận):</label>
+          <textarea
+            [(ngModel)]="importData"
+            class="form-input import-textarea"
+            rows="15"
+            placeholder='JSON: {"nodes": [...], "edges": [...]}&#10;Ma trận: Tab-separated values'></textarea>
+        </div>
+      </div>
+      <div class="dialog-footer">
+        <button (click)="showImportDialog.set(false)" class="btn btn-secondary">
+          Hủy
+        </button>
+        <button (click)="importGraph()" class="btn btn-primary">
+          <i class="pi pi-check"></i>
+          Nhập
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+

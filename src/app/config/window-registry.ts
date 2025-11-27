@@ -371,6 +371,18 @@ export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
     defaultY: 100,
     maximizable: true,
     statusText: 'Tìm Facebook ID từ số điện thoại'
+  },
+  'graph-visualizer': {
+    id: 'graph-visualizer',
+    title: 'Đồ thị & Thuật toán',
+    icon: 'pi pi-sitemap',
+    component: 'graph-visualizer',
+    defaultWidth: 1400,
+    defaultHeight: 900,
+    defaultX: 100,
+    defaultY: 50,
+    maximizable: true,
+    statusText: 'Tạo và phân tích đồ thị, tìm đường đi ngắn nhất'
   }
 };
 
