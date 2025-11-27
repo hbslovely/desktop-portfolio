@@ -77,7 +77,27 @@
 
   <div class="app-content">
     <!-- Sidebar -->
-    <div class="sidebar">
+    <div class="sidebar" [class.result-view]="sidebarView() === 'result'">
+      <!-- View Toggle -->
+      <div class="view-toggle" *ngIf="showCalculationPanel() || finalResult()">
+        <button 
+          class="toggle-btn" 
+          [class.active]="sidebarView() === 'control'"
+          (click)="sidebarView.set('control')">
+          <i class="pi pi-sliders-h"></i>
+          Điều khiển
+        </button>
+        <button 
+          class="toggle-btn" 
+          [class.active]="sidebarView() === 'result'"
+          (click)="sidebarView.set('result')">
+          <i class="pi pi-chart-bar"></i>
+          Kết quả
+        </button>
+      </div>
+
+      <!-- Control View -->
+      <div class="sidebar-content" *ngIf="sidebarView() === 'control'">
       <!-- Node Selection -->
       <div class="control-section">
         <h3>
@@ -303,12 +323,161 @@
           </div>
         </div>
       </div>
+      </div>
+
+      <!-- Result View -->
+      <div class="sidebar-content result-content" *ngIf="sidebarView() === 'result'">
+        <!-- Calculation Panel Content -->
+        <div class="calculation-panel-content" *ngIf="showCalculationPanel()">
+          <div class="panel-header">
+            <h3>
+              <i class="pi pi-calculator"></i>
+              Chi tiết tính toán
+            </h3>
+            <button class="close-btn" (click)="showCalculationPanel.set(false); sidebarView.set('control')" title="Đóng">
+              <i class="pi pi-times"></i>
+            </button>
+          </div>
+
+          <!-- Algorithm Steps -->
+          <div class="steps-section" *ngIf="algorithmSteps().length > 0">
+            <h4>Các bước thực hiện</h4>
+            <div class="steps-list">
+              <div
+                *ngFor="let step of algorithmSteps(); let i = index"
+                class="step-item-detailed"
+                [class.active]="i === currentStep()"
+                (click)="selectStep(i)">
+                <div class="step-header">
+                  <span class="step-number">{{ i + 1 }}</span>
+                  <span class="step-message">{{ step.message }}</span>
+                </div>
+
+                <!-- Distance Matrix Table -->
+                <div class="step-matrix" *ngIf="step.distances">
+                  <table class="matrix-table">
+                    <thead>
+                      <tr>
+                        <th>Node</th>
+                        <th>Khoảng cách</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr
+                        *ngFor="let node of nodes()"
+                        [class.highlight]="step.current === node.id || step.updated === node.id"
+                        [class.visited]="step.visited && step.visited.includes(node.id)">
+                        <td>{{ node.label }}</td>
+                        <td>
+                          <span *ngIf="step.distances && step.distances[node.id] === Infinity">∞</span>
+                          <span *ngIf="step.distances && step.distances[node.id] !== Infinity">{{ step.distances[node.id] }}</span>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <!-- Floyd-Warshall Matrix -->
+                <div class="step-matrix" *ngIf="step.distances && step.nodes && step.distances.length > 0">
+                  <table class="matrix-table-large">
+                    <thead>
+                      <tr>
+                        <th></th>
+                        <th *ngFor="let nodeId of step.nodes">{{ getNodeLabel(nodeId) }}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr *ngFor="let nodeId of step.nodes; let i = index">
+                        <th>{{ getNodeLabel(nodeId) }}</th>
+                        <td
+                          *ngFor="let nodeId2 of step.nodes; let j = index"
+                          [class.highlight]="step.intermediate === nodeId || step.intermediate === nodeId2">
+                          <span *ngIf="step.distances[i] && step.distances[i][j] === Infinity">∞</span>
+                          <span *ngIf="step.distances[i] && step.distances[i][j] !== Infinity">{{ step.distances[i][j] }}</span>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Final Result -->
+          <div class="result-section" *ngIf="finalResult() && !isAnimating()">
+            <h4>Kết quả cuối cùng</h4>
+            <div class="final-result-info">
+              <div class="result-item">
+                <span class="label">Thuật toán:</span>
+                <span class="value">{{ finalResult()!.algorithm }}</span>
+              </div>
+              <div class="result-item" *ngIf="finalResult()?.distance !== undefined && finalResult()!.distance !== Infinity">
+                <span class="label">Khoảng cách:</span>
+                <span class="value">{{ finalResult()!.distance }}</span>
+              </div>
+              <div class="result-item" *ngIf="finalResult()?.path">
+                <span class="label">Đường đi:</span>
+                <span class="value path">{{ finalResult()!.path.join(' → ') }}</span>
+              </div>
+              
+              <!-- Graph Coloring Result Visualization -->
+              <div class="result-item" *ngIf="selectedAlgorithm() === 'graph-coloring' && getGraphColoringResult()">
+                <span class="label">Màu sắc:</span>
+                <div class="color-legend">
+                  <div class="color-item" *ngFor="let colorEntry of getColorLegend()">
+                    <span class="color-box" [style.background-color]="colorEntry.color"></span>
+                    <span class="color-label">Màu {{ colorEntry.colorIndex }}: {{ colorEntry.nodes.join(', ') }}</span>
+                  </div>
+                </div>
+                <div class="result-item" *ngIf="getGraphColoringResult()?.chromaticNumber">
+                  <span class="label">Số sắc tố (Chromatic Number):</span>
+                  <span class="value">{{ getGraphColoringResult()!.chromaticNumber }}</span>
+                </div>
+              </div>
+              
+              <!-- Connected Components Result Visualization -->
+              <div class="result-item" *ngIf="(selectedAlgorithm() === 'connected-components' || selectedAlgorithm() === 'scc') && getConnectedComponentsResult()">
+                <span class="label">Thành phần:</span>
+                <div class="component-legend">
+                  <div class="component-item" *ngFor="let comp of getConnectedComponentsResult()!.components; let i = index">
+                    <span class="color-box" [style.background-color]="getComponentColor(i)"></span>
+                    <span class="component-label">Thành phần {{ i + 1 }}: {{ comp.join(', ') }}</span>
+                  </div>
+                </div>
+                <div class="result-item" *ngIf="getConnectedComponentsResult()?.count">
+                  <span class="label">Số thành phần:</span>
+                  <span class="value">{{ getConnectedComponentsResult()!.count }}</span>
+                </div>
+              </div>
+              
+              <!-- Cycle Detection Result Visualization -->
+              <div class="result-item" *ngIf="selectedAlgorithm() === 'cycle-detection' && getCycleDetectionResult()">
+                <span class="label">Chu trình:</span>
+                <div class="cycle-legend">
+                  <div class="cycle-item" *ngFor="let cycle of getCycleDetectionResult()!.cycles; let i = index">
+                    <span class="color-box" [style.background-color]="getCycleColor(i)"></span>
+                    <span class="cycle-label">Chu trình {{ i + 1 }}: {{ cycle.join(' → ') }}</span>
+                  </div>
+                </div>
+                <div class="result-item" *ngIf="getCycleDetectionResult()?.hamiltonCycles?.length">
+                  <span class="label">Chu trình Hamilton:</span>
+                  <span class="value">{{ getCycleDetectionResult()!.hamiltonCycles.length }}</span>
+                </div>
+                <div class="result-item" *ngIf="getCycleDetectionResult()?.eulerCycles?.length">
+                  <span class="label">Chu trình Euler:</span>
+                  <span class="value">{{ getCycleDetectionResult()!.eulerCycles.length }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Main Content Area -->
     <div class="main-content-wrapper">
       <!-- Canvas Area -->
-      <div class="canvas-container" [class.with-panel]="showCalculationPanel()">
+      <div class="canvas-container">
         <canvas
           #canvas
           tabindex="0"
@@ -319,25 +488,6 @@
           (wheel)="onCanvasWheel($event)"
           (contextmenu)="$event.preventDefault()">
         </canvas>
-        
-        <!-- Inline weight editor -->
-        <div 
-          *ngIf="editingWeight()" 
-          class="weight-editor-overlay"
-          [style.left.px]="editingWeight()!.x"
-          [style.top.px]="editingWeight()!.y">
-          <input
-            type="number"
-            #weightInput
-            [value]="getEdgeWeight(editingWeight()!.edgeId)"
-            (blur)="finishEditingWeight()"
-            (keydown.enter)="finishEditingWeight()"
-            (keydown.escape)="cancelEditingWeight()"
-            min="1"
-            step="1"
-            class="weight-input-inline"
-            autofocus>
-        </div>
 
         <!-- Zoom Controls (only in move mode) -->
         <div class="zoom-controls" *ngIf="mode() === 'move'">
@@ -356,105 +506,7 @@
           </button>
         </div>
       </div>
-
-      <!-- Calculation Panel (Right Side) -->
-      <div class="calculation-panel" *ngIf="showCalculationPanel()">
-      <div class="panel-header">
-        <h3>
-          <i class="pi pi-calculator"></i>
-          Chi tiết tính toán
-        </h3>
-        <button class="btn-close" (click)="showCalculationPanel.set(false)">
-          <i class="pi pi-times"></i>
-        </button>
-      </div>
-
-      <div class="panel-content">
-        <!-- Algorithm Steps -->
-        <div class="steps-section" *ngIf="algorithmSteps().length > 0">
-          <h4>Các bước tính toán</h4>
-          <div class="steps-list">
-            <div
-              class="step-item-detailed"
-              *ngFor="let step of algorithmSteps(); let i = index"
-              [class.active]="i === currentStep()"
-              (click)="selectStep(i)">
-              <div class="step-header">
-                <span class="step-number">{{ i + 1 }}</span>
-                <span class="step-message">{{ step.message }}</span>
-              </div>
-
-              <!-- Distance Matrix Table -->
-              <div class="step-matrix" *ngIf="step.distances">
-                <table class="matrix-table">
-                  <thead>
-                    <tr>
-                      <th>Node</th>
-                      <th>Khoảng cách</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr
-                      *ngFor="let node of nodes()"
-                      [class.highlight]="step.current === node.id || step.updated === node.id"
-                      [class.visited]="step.visited && step.visited.includes(node.id)">
-                      <td>{{ node.label }}</td>
-                      <td>
-                        <span *ngIf="step.distances && step.distances[node.id] === Infinity">∞</span>
-                        <span *ngIf="step.distances && step.distances[node.id] !== Infinity">{{ step.distances[node.id] }}</span>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-
-              <!-- Floyd-Warshall Matrix -->
-              <div class="step-matrix" *ngIf="step.distances && step.nodes && step.distances.length > 0">
-                <table class="matrix-table-large">
-                  <thead>
-                    <tr>
-                      <th></th>
-                      <th *ngFor="let nodeId of step.nodes">{{ getNodeLabel(nodeId) }}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr *ngFor="let nodeId of step.nodes; let i = index">
-                      <th>{{ getNodeLabel(nodeId) }}</th>
-                      <td
-                        *ngFor="let nodeId2 of step.nodes; let j = index"
-                        [class.highlight]="step.intermediate === nodeId || step.intermediate === nodeId2">
-                        <span *ngIf="step.distances[i] && step.distances[i][j] === Infinity">∞</span>
-                        <span *ngIf="step.distances[i] && step.distances[i][j] !== Infinity">{{ step.distances[i][j] }}</span>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Final Result -->
-        <div class="result-section" *ngIf="finalResult() && !isAnimating()">
-          <h4>Kết quả cuối cùng</h4>
-          <div class="final-result-info">
-            <div class="result-item">
-              <span class="label">Thuật toán:</span>
-              <span class="value">{{ finalResult()!.algorithm }}</span>
-            </div>
-            <div class="result-item" *ngIf="finalResult()?.distance !== undefined && finalResult()!.distance !== Infinity">
-              <span class="label">Khoảng cách:</span>
-              <span class="value">{{ finalResult()!.distance }}</span>
-            </div>
-            <div class="result-item" *ngIf="finalResult()?.path">
-              <span class="label">Đường đi:</span>
-              <span class="value path">{{ finalResult()!.path.join(' → ') }}</span>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
-  </div>
 
   <!-- Graph Input Dialog -->
   <div class="dialog-overlay" *ngIf="showGraphInputDialog()" (click)="showGraphInputDialog.set(false)">
@@ -797,7 +849,7 @@
             <i class="pi pi-plus-circle"></i>
             Chế độ Tạo Node
           </h4>
-          <p>Click vào canvas để tạo node mới. Node sẽ được đặt tên tự động theo chế độ bạn đã chọn trong cài đặt.</p>
+          <p>Click vào canvas để tạo node mới. Node sẽ được đặt tên tự động theo chế độ bạn đã chọn trong cài đặt (N0, N1... hoặc A, B, C... hoặc 1, 2, 3...).</p>
         </div>
 
         <div class="help-section">
@@ -808,8 +860,10 @@
           <ul>
             <li><strong>Di chuyển node:</strong> Click và kéo node để di chuyển</li>
             <li><strong>Pan đồ thị:</strong> Click và kéo trên vùng trống để di chuyển toàn bộ đồ thị</li>
-            <li><strong>Zoom:</strong> Sử dụng nút zoom ở góc dưới bên phải hoặc scroll chuột</li>
-            <li><strong>Chỉnh sửa:</strong> Double-click vào node hoặc edge để chỉnh sửa</li>
+            <li><strong>Zoom:</strong> Sử dụng nút zoom ở góc dưới bên phải hoặc scroll chuột (zoom mượt mà)</li>
+            <li><strong>Fit to View:</strong> Click nút "Fit to View" để tự động điều chỉnh zoom và pan để hiển thị tất cả nodes</li>
+            <li><strong>Chỉnh sửa:</strong> Click vào node hoặc edge để mở panel cấu hình bên trái</li>
+            <li><strong>Xóa:</strong> Chọn node/edge và nhấn phím Delete hoặc Backspace để xóa</li>
           </ul>
         </div>
 
@@ -821,22 +875,40 @@
           <ul>
             <li>Click vào node đầu tiên để bắt đầu tạo edge</li>
             <li>Kéo đến node thứ hai và thả để hoàn thành</li>
-            <li>Khi hover vào node, node sẽ được highlight để bạn biết có thể click</li>
+            <li>Khi hover vào node, node sẽ được highlight màu tím để bạn biết có thể click</li>
             <li>Bạn có thể tạo nhiều edge giữa 2 node (edge đầu tiên thẳng, các edge sau sẽ cong)</li>
+            <li>Edge có thể là một chiều (→), ngược lại (←) hoặc hai chiều (↔)</li>
+            <li>Click vào edge để chỉnh sửa trọng số và hướng trong panel bên trái</li>
+          </ul>
+        </div>
+
+        <div class="help-section">
+          <h4>
+            <i class="pi pi-check-square"></i>
+            Chế độ Chọn nhiều
+          </h4>
+          <ul>
+            <li>Click và kéo để vẽ hình chữ nhật chọn nhiều nodes</li>
+            <li>Giữ Ctrl/Shift khi click để thêm/bớt node khỏi selection</li>
+            <li>Nhấn Delete để xóa tất cả nodes đã chọn cùng lúc</li>
+            <li>Hữu ích khi cần xóa hoặc di chuyển nhiều nodes cùng lúc</li>
           </ul>
         </div>
 
         <div class="help-section">
           <h4>
             <i class="pi pi-calculator"></i>
-            Tìm đường đi ngắn nhất
+            Thuật toán
           </h4>
           <ul>
-            <li>Chọn Start node và End node từ dropdown</li>
-            <li>Chọn thuật toán (Dijkstra, Bellman-Ford, Floyd-Warshall, A*)</li>
-            <li>Click "Tìm đường đi ngắn nhất" để chạy thuật toán</li>
-            <li>Xem chi tiết các bước tính toán trong panel bên phải</li>
-            <li>Click vào từng bước để highlight node/edge đang được xem xét</li>
+            <li><strong>Tìm đường đi ngắn nhất:</strong> Dijkstra, Bellman-Ford, Floyd-Warshall, A*</li>
+            <li><strong>Tìm kiếm đồ thị:</strong> BFS (Tìm kiếm chiều rộng), DFS (Tìm kiếm chiều sâu)</li>
+            <li><strong>Phân tích đồ thị:</strong> Tô màu đồ thị, Thành phần liên thông, SCC, Phát hiện chu trình</li>
+            <li>Chọn thuật toán từ dropdown, chọn Start/End node (nếu cần), rồi click "Chạy thuật toán"</li>
+            <li>Thuật toán sẽ chạy với animation, highlight các node/edge đang được xử lý</li>
+            <li>Kết quả sẽ hiển thị trong tab "Kết quả" bên trái với chi tiết từng bước</li>
+            <li>Click vào từng bước để xem highlight node/edge tương ứng trên đồ thị</li>
+            <li>Chuyển đổi giữa tab "Điều khiển" và "Kết quả" để xem/ẩn màu sắc kết quả</li>
           </ul>
         </div>
 
@@ -845,7 +917,26 @@
             <i class="pi pi-th-large"></i>
             Mẫu đồ thị
           </h4>
-          <p>Sử dụng menu "Mẫu đồ thị" để tạo nhanh các đồ thị phổ biến như đường thẳng, vòng tròn, sao, lưới, v.v.</p>
+          <ul>
+            <li>Sử dụng menu "Mẫu đồ thị" để tạo nhanh các đồ thị phổ biến</li>
+            <li>Bước 1: Chọn loại đồ thị (Đường thẳng, Vòng tròn, Sao, Lưới, Cây nhị phân, v.v.)</li>
+            <li>Bước 2: Cấu hình số lượng node, trọng số, hướng, mật độ (thưa/vừa/dày)</li>
+            <li>Mẫu đồ thị sẽ được thêm vào đồ thị hiện tại (không xóa đồ thị cũ)</li>
+          </ul>
+        </div>
+
+        <div class="help-section">
+          <h4>
+            <i class="pi pi-download"></i>
+            Nhập/Xuất đồ thị
+          </h4>
+          <ul>
+            <li><strong>Xuất:</strong> Menu → "Xuất đồ thị" → Nhập tên file → Tải xuống file .grp</li>
+            <li><strong>Nhập:</strong> Menu → "Nhập đồ thị" → Chọn file .grp hoặc nhập trực tiếp ma trận/JSON</li>
+            <li>File .grp lưu dưới dạng ma trận kề với metadata về vị trí nodes</li>
+            <li>Hỗ trợ ma trận (tab/space-separated) hoặc JSON format</li>
+            <li>Ma trận 2 chiều sẽ tự động tạo edge hai chiều</li>
+          </ul>
         </div>
 
         <div class="help-section">
@@ -853,7 +944,28 @@
             <i class="pi pi-cog"></i>
             Cài đặt
           </h4>
-          <p>Tùy chỉnh giao diện đồ thị: màu sắc node, độ dày cạnh, bán kính node, chế độ đặt tên, v.v.</p>
+          <ul>
+            <li>Tùy chỉnh màu sắc: node, cạnh, node bắt đầu/kết thúc, đường đi</li>
+            <li>Điều chỉnh bán kính node, độ dày cạnh, kích thước mũi tên</li>
+            <li>Chọn chế độ đặt tên: N0, N1... (numeric) hoặc A, B, C... (alphabetic) hoặc 1, 2, 3... (indexed)</li>
+            <li>Xem trước thay đổi trong preview bên phải</li>
+          </ul>
+        </div>
+
+        <div class="help-section">
+          <h4>
+            <i class="pi pi-info-circle"></i>
+            Mẹo sử dụng
+          </h4>
+          <ul>
+            <li>Zoom mượt mà: Scroll chuột để zoom tại vị trí con trỏ</li>
+            <li>Pan nhanh: Click và kéo trên vùng trống</li>
+            <li>Xóa nhanh: Chọn node/edge và nhấn Delete</li>
+            <li>Xem kết quả: Chuyển sang tab "Kết quả" để xem màu sắc và chi tiết</li>
+            <li>Ẩn kết quả: Chuyển về tab "Điều khiển" để reset màu về bình thường</li>
+            <li>Animation: Thuật toán sẽ chạy với animation để dễ theo dõi</li>
+            <li>Multi-select: Sử dụng chế độ chọn nhiều để thao tác với nhiều nodes cùng lúc</li>
+          </ul>
         </div>
       </div>
 
