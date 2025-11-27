@@ -30,15 +30,16 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
   isSelecting = signal<boolean>(false);
   selectionRect = signal<{ x1: number; y1: number; x2: number; y2: number } | null>(null);
   creatingEdge = signal<{ from: string | null; to: string | null }>({ from: null, to: null });
+  editingWeight = signal<{ edgeId: string; x: number; y: number } | null>(null);
   mode = signal<'create-node' | 'move' | 'add-edge' | 'select'>('move'); // 'create-node', 'move', 'add-edge', 'select'
   zoomLevel = signal<number>(1);
   panOffset = signal<{ x: number; y: number }>({ x: 0, y: 0 });
 
   // Algorithm settings
-  selectedAlgorithm = signal<'dijkstra' | 'bellman-ford' | 'floyd-warshall' | 'a-star'>('dijkstra');
+  selectedAlgorithm = signal<'dijkstra' | 'bellman-ford' | 'floyd-warshall' | 'a-star' | 'graph-coloring' | 'bfs' | 'dfs' | 'cycle-detection' | 'connected-components' | 'scc'>('dijkstra');
   startNode = signal<string | null>(null);
   endNode = signal<string | null>(null);
-  pathResult = signal<PathResult | null>(null);
+  pathResult = signal<PathResult | any | null>(null);
   isCalculating = signal<boolean>(false);
 
   // UI state
@@ -78,9 +79,15 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
   // Dialog states
   showExportDialog = signal<boolean>(false);
   showImportDialog = signal<boolean>(false);
-  exportFormat = signal<'json' | 'matrix'>('json');
+  exportFormat = signal<'json' | 'matrix'>('matrix');
   importData = signal<string>('');
   exportData = signal<string>('');
+  exportFileName = signal<string>('graph');
+  importMode = signal<'file' | 'text'>('file');
+  selectedFileName = signal<string>('');
+  selectedFileContent = signal<string>('');
+  isDragOver = signal<boolean>(false);
+  @ViewChild('fileInput', { static: false }) fileInput?: ElementRef<HTMLInputElement>;
 
   // Template configuration
   showTemplateConfigDialog = signal<boolean>(false);
@@ -226,6 +233,42 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
       description: 'Lưới 3 hàng x 3 cột',
       icon: 'pi pi-table',
       template: () => this.createGridGraph(3, 3)
+    },
+    {
+      name: 'Lưới 4x4',
+      description: 'Lưới 4 hàng x 4 cột',
+      icon: 'pi pi-table',
+      template: () => this.createGridGraph(4, 4)
+    },
+    {
+      name: 'Cây nhị phân',
+      description: 'Cây nhị phân hoàn chỉnh',
+      icon: 'pi pi-sitemap',
+      template: () => this.createBinaryTree()
+    },
+    {
+      name: 'Đồ thị hai phía',
+      description: 'Bipartite graph',
+      icon: 'pi pi-objects-column',
+      template: () => this.createBipartiteGraph()
+    },
+    {
+      name: 'Đồ thị hình thang',
+      description: 'Trapezoid graph',
+      icon: 'pi pi-shapes',
+      template: () => this.createTrapezoidGraph()
+    },
+    {
+      name: 'Đồ thị bánh xe',
+      description: 'Wheel graph',
+      icon: 'pi pi-circle-fill',
+      template: () => this.createWheelGraph()
+    },
+    {
+      name: 'Đồ thị lục giác',
+      description: 'Hexagonal graph',
+      icon: 'pi pi-hexagon',
+      template: () => this.createHexagonalGraph()
     }
   ];
 
@@ -234,7 +277,60 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     setTimeout(() => {
       this.initCanvas();
       this.drawGraph();
+      this.setupResizeObserver();
     }, 0);
+
+    // Watch mode changes to reset edge creation
+    effect(() => {
+      const currentMode = this.mode();
+      const creating = this.creatingEdge();
+      
+      // If switching away from add-edge mode and edge creation is in progress, reset it
+      if (currentMode !== 'add-edge' && creating.from !== null) {
+        this.creatingEdge.set({ from: null, to: null });
+        this.selectedNode.set(null);
+        this.mousePosition.set(null);
+        this.drawGraph();
+      }
+    });
+
+    // Auto-save edge config when weight or direction changes
+    let autoSaveTimeout: any = null;
+    effect(() => {
+      const selectedEdgeId = this.selectedEdge();
+      const weight = this.edgeWeight();
+      const direction = this.edgeDirection();
+      
+      // Only auto-save if edge is selected and config panel is open
+      if (selectedEdgeId && this.showEdgeConfig()) {
+        // Debounce to avoid too many updates
+        if (autoSaveTimeout) {
+          clearTimeout(autoSaveTimeout);
+        }
+        autoSaveTimeout = setTimeout(() => {
+          this.updateEdge(selectedEdgeId);
+          this.drawGraph();
+        }, 300); // Wait 300ms after last change
+      }
+    });
+  }
+
+  setupResizeObserver() {
+    const canvas = this.canvasRef?.nativeElement;
+    if (!canvas) return;
+
+    const container = canvas.parentElement;
+    if (!container) return;
+
+    // Use ResizeObserver to detect container size changes
+    const resizeObserver = new ResizeObserver(() => {
+      this.handleResize();
+    });
+
+    resizeObserver.observe(container);
+    
+    // Store observer for cleanup
+    (this as any).resizeObserver = resizeObserver;
   }
 
   drawSettingsPreview() {
@@ -326,6 +422,11 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
   ngOnDestroy() {
     if (this.animationFrame) {
       cancelAnimationFrame(this.animationFrame);
+    }
+    
+    // Cleanup ResizeObserver
+    if ((this as any).resizeObserver) {
+      (this as any).resizeObserver.disconnect();
     }
   }
 
@@ -420,6 +521,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
       canvas.width = rect.width;
       canvas.height = rect.height;
 
+      // Re-render to prevent distortion
       this.drawGraph();
     }
   }
@@ -482,8 +584,26 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
       return;
     }
 
-    // Check if clicking on an edge (in move and add-edge modes)
+    // Check if clicking on weight label (in move and add-edge modes)
     if (currentMode === 'move' || currentMode === 'add-edge') {
+      const weightAt = this.getWeightAt(x, y);
+      if (weightAt) {
+        // Convert world coordinates to screen coordinates for overlay
+        const zoom = this.zoomLevel();
+        const pan = this.panOffset();
+        const screenX = (weightAt.weightX + pan.x) * zoom;
+        const screenY = (weightAt.weightY + pan.y) * zoom;
+        
+        this.editingWeight.set({
+          edgeId: weightAt.edge.id,
+          x: screenX - 25,
+          y: screenY - 10
+        });
+        this.drawGraph();
+        return;
+      }
+      
+      // Check if clicking on an edge
       const clickedEdge = this.getEdgeAt(x, y);
       if (clickedEdge) {
         // Double-click or single click to edit edge
@@ -574,6 +694,59 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     return null;
   }
 
+  getWeightAt(x: number, y: number): { edge: GraphEdge; weightX: number; weightY: number } | null {
+    const edges = this.edges();
+    const nodes = this.nodes();
+
+    // Find all edges between same nodes to check for curved edges
+    const edgeGroups = new Map<string, GraphEdge[]>();
+    edges.forEach(edge => {
+      const key = `${edge.from}-${edge.to}`;
+      if (!edgeGroups.has(key)) {
+        edgeGroups.set(key, []);
+      }
+      edgeGroups.get(key)!.push(edge);
+    });
+
+    for (const edge of edges) {
+      const fromNode = nodes.find(n => n.id === edge.from);
+      const toNode = nodes.find(n => n.id === edge.to);
+      if (!fromNode || !toNode) continue;
+
+      // Check if this is a curved edge (multiple edges between same nodes)
+      const sameEdges = edgeGroups.get(`${edge.from}-${edge.to}`) || [];
+      const isCurved = sameEdges.length > 1;
+      const edgeIndex = sameEdges.indexOf(edge);
+
+      let weightX: number, weightY: number;
+
+      if (isCurved && edgeIndex > 0) {
+        // Curved edge - calculate control point
+        const dx = toNode.x - fromNode.x;
+        const dy = toNode.y - fromNode.y;
+        const angle = Math.atan2(dy, dx);
+        const perpendicularAngle = angle + Math.PI / 2;
+        const curveDirection = edgeIndex % 2 === 0 ? 1 : -1;
+        const curveOffset = 40 * curveDirection * Math.ceil(edgeIndex / 2);
+        const midX = (fromNode.x + toNode.x) / 2;
+        const midY = (fromNode.y + toNode.y) / 2;
+        weightX = midX + Math.cos(perpendicularAngle) * curveOffset;
+        weightY = midY + Math.sin(perpendicularAngle) * curveOffset;
+      } else {
+        // Straight edge - use midpoint
+        weightX = (fromNode.x + toNode.x) / 2;
+        weightY = (fromNode.y + toNode.y) / 2;
+      }
+
+      // Check if click is near weight label (30x20 rectangle)
+      const distance = Math.sqrt((x - weightX) ** 2 + (y - weightY) ** 2);
+      if (distance <= 20) {
+        return { edge, weightX, weightY };
+      }
+    }
+    return null;
+  }
+
   distanceToLineSegment(px: number, py: number, x1: number, y1: number, x2: number, y2: number): number {
     const A = px - x1;
     const B = py - y1;
@@ -620,11 +793,80 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     this.drawGraph();
   }
 
+  getEdgeWeight(edgeId: string): number {
+    const edge = this.edges().find(e => e.id === edgeId);
+    return edge?.weight || 1;
+  }
+
+  finishEditingWeight() {
+    const editing = this.editingWeight();
+    if (!editing) return;
+
+    const input = document.querySelector('.weight-input-inline') as HTMLInputElement;
+    if (input) {
+      const newWeight = parseInt(input.value, 10);
+      if (!isNaN(newWeight) && newWeight >= 1) {
+        const edges = this.edges();
+        const edgeIndex = edges.findIndex(e => e.id === editing.edgeId);
+        if (edgeIndex !== -1) {
+          const updatedEdges = [...edges];
+          updatedEdges[edgeIndex] = {
+            ...updatedEdges[edgeIndex],
+            weight: newWeight
+          };
+          this.edges.set(updatedEdges);
+          this.drawGraph();
+        }
+      }
+    }
+    this.editingWeight.set(null);
+  }
+
+  cancelEditingWeight() {
+    this.editingWeight.set(null);
+    this.drawGraph();
+  }
+
   handleNodeClick(node: GraphNode) {
     this.selectedNode.set(node.id);
     this.nodeLabel.set(node.label);
     this.showNodeConfig.set(true);
     this.drawGraph();
+  }
+
+  getEdgeFromNode(edgeId: string): string {
+    const edge = this.edges().find(e => e.id === edgeId);
+    return edge?.from || '';
+  }
+
+  getEdgeToNode(edgeId: string): string {
+    const edge = this.edges().find(e => e.id === edgeId);
+    return edge?.to || '';
+  }
+
+  getAlgorithmButtonText(): string {
+    const algo = this.selectedAlgorithm();
+    switch (algo) {
+      case 'dijkstra':
+      case 'bellman-ford':
+      case 'floyd-warshall':
+      case 'a-star':
+        return 'Tìm đường đi ngắn nhất';
+      case 'bfs':
+        return 'Chạy BFS';
+      case 'dfs':
+        return 'Chạy DFS';
+      case 'graph-coloring':
+        return 'Tô màu đồ thị';
+      case 'connected-components':
+        return 'Tìm thành phần liên thông';
+      case 'scc':
+        return 'Tìm thành phần liên thông mạnh';
+      case 'cycle-detection':
+        return 'Phát hiện chu trình';
+      default:
+        return 'Chạy thuật toán';
+    }
   }
 
   getNodeLabelFromIndex(index: number): string {
@@ -786,8 +1028,13 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     if (!canvas) return;
 
     const oldZoom = this.zoomLevel();
-    const delta = event.deltaY > 0 ? 0.9 : 1.1;
-    const newZoom = Math.max(0.5, Math.min(3, oldZoom * delta));
+    
+    // Calculate smooth zoom factor based on scroll delta
+    // Use a smaller factor for smoother zooming (0.02 = 2% per scroll unit)
+    const zoomSensitivity = 0.02;
+    const zoomDelta = -event.deltaY * zoomSensitivity;
+    const zoomFactor = 1 + zoomDelta;
+    const newZoom = Math.max(0.5, Math.min(3, oldZoom * zoomFactor));
 
     // Get mouse position in screen coordinates
     const rect = canvas.getBoundingClientRect();
@@ -938,7 +1185,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
       const toNode = nodes.find(n => n.id === edge.to);
       if (!fromNode || !toNode) return;
 
-      const isHighlighted = pathResult?.path.some((nodeId, index) => {
+      const isHighlighted = pathResult?.path && Array.isArray(pathResult.path) && pathResult.path.some((nodeId: string, index: number) => {
         const nextId = pathResult.path[index + 1];
         return (edge.from === nodeId && edge.to === nextId) ||
                (edge.direction === 'bidirectional' && edge.from === nextId && edge.to === nodeId);
@@ -974,7 +1221,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     const selectedNodes = this.selectedNodes();
     nodes.forEach(node => {
       const isSelected = selectedNodeId === node.id || selectedNodes.has(node.id);
-      const isInPath = pathResult?.path.includes(node.id) || false;
+      const isInPath = pathResult?.path && Array.isArray(pathResult.path) && pathResult.path.includes(node.id) || false;
       const isStepHighlighted = highlightedStepNode === node.id;
       this.drawNode(node, isSelected, isInPath, isStepHighlighted);
     });
@@ -1105,24 +1352,33 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     }
 
     // Draw arrow based on direction
-    if (edge.direction === 'forward' || edge.direction === 'bidirectional') {
+    // For bidirectional edges, only draw one arrow (forward direction)
+    if (edge.direction === 'forward') {
       this.drawArrow(arrowEndX, arrowEndY, arrowAngle, isHighlighted || isStepHighlighted);
-    }
-    if (edge.direction === 'backward' || edge.direction === 'bidirectional') {
+    } else if (edge.direction === 'backward') {
       this.drawArrow(arrowStartX, arrowStartY, startArrowAngle, isHighlighted || isStepHighlighted);
+    } else if (edge.direction === 'bidirectional') {
+      // Bidirectional: only draw one arrow (forward direction) to avoid double arrows
+      this.drawArrow(arrowEndX, arrowEndY, arrowAngle, isHighlighted || isStepHighlighted);
     }
 
     // Draw weight - position on curve for curved edges
     const weightX = controlX;
     const weightY = controlY;
 
-    this.ctx.fillStyle = '#fff';
-    this.ctx.fillRect(weightX - 15, weightY - 10, 30, 20);
-    this.ctx.fillStyle = '#333';
-    this.ctx.font = '12px Arial';
-    this.ctx.textAlign = 'center';
-    this.ctx.textBaseline = 'middle';
-    this.ctx.fillText(edge.weight.toString(), weightX, weightY);
+    // Check if this weight is being edited
+    const editingWeight = this.editingWeight();
+    const isEditing = editingWeight && editingWeight.edgeId === edge.id;
+
+    if (!isEditing) {
+      this.ctx.fillStyle = '#fff';
+      this.ctx.fillRect(weightX - 15, weightY - 10, 30, 20);
+      this.ctx.fillStyle = '#333';
+      this.ctx.font = '12px Arial';
+      this.ctx.textAlign = 'center';
+      this.ctx.textBaseline = 'middle';
+      this.ctx.fillText(edge.weight.toString(), weightX, weightY);
+    }
   }
 
   drawArrow(x: number, y: number, angle: number, isHighlighted: boolean) {
@@ -1232,17 +1488,28 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
 
   // Algorithm implementations
   async findShortestPath() {
+    const algorithm = this.selectedAlgorithm();
     const start = this.startNode();
     const end = this.endNode();
 
-    if (!start || !end) {
-      alert('Vui lòng chọn Start và End node');
-      return;
-    }
+    // Algorithms that require start and end nodes
+    const requiresStartEnd = ['dijkstra', 'bellman-ford', 'floyd-warshall', 'a-star'];
+    
+    if (requiresStartEnd.includes(algorithm)) {
+      if (!start || !end) {
+        alert('Vui lòng chọn Start và End node');
+        return;
+      }
 
-    if (start === end) {
-      alert('Start và End node không thể giống nhau');
-      return;
+      if (start === end) {
+        alert('Start và End node không thể giống nhau');
+        return;
+      }
+    } else if (algorithm === 'bfs' || algorithm === 'dfs') {
+      if (!start) {
+        alert('Vui lòng chọn Start node');
+        return;
+      }
     }
 
     this.isCalculating.set(true);
@@ -1261,23 +1528,41 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
       await new Promise(resolve => setTimeout(resolve, 500));
     };
 
-    let result: AlgorithmResult;
+    let result: AlgorithmResult | any;
 
-    switch (this.selectedAlgorithm()) {
+    switch (algorithm) {
       case 'dijkstra':
-        result = await GraphAlgorithms.dijkstra(nodes, edges, start, end, onStep);
+        result = await GraphAlgorithms.dijkstra(nodes, edges, start!, end!, onStep);
         break;
       case 'bellman-ford':
-        result = await GraphAlgorithms.bellmanFord(nodes, edges, start, end, onStep);
+        result = await GraphAlgorithms.bellmanFord(nodes, edges, start!, end!, onStep);
         break;
       case 'floyd-warshall':
-        result = await GraphAlgorithms.floydWarshall(nodes, edges, start, end, onStep);
+        result = await GraphAlgorithms.floydWarshall(nodes, edges, start!, end!, onStep);
         break;
       case 'a-star':
-        result = await GraphAlgorithms.aStar(nodes, edges, start, end, onStep);
+        result = await GraphAlgorithms.aStar(nodes, edges, start!, end!, onStep);
+        break;
+      case 'graph-coloring':
+        result = await GraphAlgorithms.graphColoring(nodes, edges, onStep);
+        break;
+      case 'bfs':
+        result = await GraphAlgorithms.bfs(nodes, edges, start!, onStep);
+        break;
+      case 'dfs':
+        result = await GraphAlgorithms.dfs(nodes, edges, start!, onStep);
+        break;
+      case 'cycle-detection':
+        result = await GraphAlgorithms.detectCycles(nodes, edges, onStep);
+        break;
+      case 'connected-components':
+        result = await GraphAlgorithms.findConnectedComponents(nodes, edges, onStep);
+        break;
+      case 'scc':
+        result = await GraphAlgorithms.findStronglyConnectedComponents(nodes, edges, onStep);
         break;
       default:
-        result = await GraphAlgorithms.dijkstra(nodes, edges, start, end, onStep);
+        result = await GraphAlgorithms.dijkstra(nodes, edges, start!, end!, onStep);
     }
 
     this.pathResult.set(result);
@@ -1928,6 +2213,25 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     });
   }
 
+  getDensityValue(density: string): number {
+    switch (density) {
+      case 'sparse': return 1;
+      case 'medium': return 3;
+      case 'dense': return 4;
+      case 'very-dense': return 5;
+      default: return 3;
+    }
+  }
+
+  updateTemplateConfigDensityFromSlider(value: number) {
+    let density: 'sparse' | 'medium' | 'dense' | 'very-dense';
+    if (value <= 1) density = 'sparse';
+    else if (value <= 2) density = 'medium';
+    else if (value <= 4) density = 'dense';
+    else density = 'very-dense';
+    this.updateTemplateConfigDensity(density);
+  }
+
   applyTemplateWithConfig() {
     const template = this.selectedTemplate();
     const config = this.templateConfig();
@@ -1953,9 +2257,19 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
       this.createLinearGraph(config.nodeCount, config.edgeWeight || 1, config.direction || 'bidirectional', spacing);
     } else if (template.name.includes('Lưới')) {
       // Grid templates
-      const rows = template.name.includes('2x2') ? 2 : 3;
-      const cols = template.name.includes('2x2') ? 2 : 3;
+      const rows = template.name.includes('2x2') ? 2 : template.name.includes('3x3') ? 3 : 4;
+      const cols = template.name.includes('2x2') ? 2 : template.name.includes('3x3') ? 3 : 4;
       this.createGridGraph(rows, cols, config.edgeWeight || 1, config.direction || 'bidirectional', spacing);
+    } else if (template.name === 'Cây nhị phân') {
+      this.createBinaryTree(3, config.edgeWeight || 1, config.direction || 'bidirectional', spacing);
+    } else if (template.name === 'Đồ thị hai phía') {
+      this.createBipartiteGraph(3, 3, config.edgeWeight || 1, config.direction || 'bidirectional', spacing);
+    } else if (template.name === 'Đồ thị hình thang') {
+      this.createTrapezoidGraph(5, config.edgeWeight || 1, config.direction || 'bidirectional', spacing);
+    } else if (template.name === 'Đồ thị bánh xe') {
+      this.createWheelGraph(6, config.edgeWeight || 1, config.direction || 'bidirectional', radius);
+    } else if (template.name === 'Đồ thị lục giác') {
+      this.createHexagonalGraph(3, config.edgeWeight || 1, config.direction || 'bidirectional', spacing);
     } else {
       // For default, just apply and update edges
       template.template();
@@ -2029,6 +2343,58 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
   resetZoom() {
     this.zoomLevel.set(1);
     this.panOffset.set({ x: 0, y: 0 });
+    this.drawGraph();
+  }
+
+  fitToView() {
+    const canvas = this.canvasRef?.nativeElement;
+    if (!canvas) return;
+
+    const nodes = this.nodes();
+    if (nodes.length === 0) {
+      this.resetZoom();
+      return;
+    }
+
+    // Find bounding box of all nodes
+    let minX = Infinity, maxX = -Infinity;
+    let minY = Infinity, maxY = -Infinity;
+    const nodeRadius = this.nodeRadius();
+    const padding = 50; // Padding around nodes
+
+    nodes.forEach(node => {
+      minX = Math.min(minX, node.x - nodeRadius);
+      maxX = Math.max(maxX, node.x + nodeRadius);
+      minY = Math.min(minY, node.y - nodeRadius);
+      maxY = Math.max(maxY, node.y + nodeRadius);
+    });
+
+    // Add padding
+    minX -= padding;
+    maxX += padding;
+    minY -= padding;
+    maxY += padding;
+
+    const graphWidth = maxX - minX;
+    const graphHeight = maxY - minY;
+    const canvasWidth = canvas.width;
+    const canvasHeight = canvas.height;
+
+    // Calculate zoom level to fit graph in viewport
+    const zoomX = canvasWidth / graphWidth;
+    const zoomY = canvasHeight / graphHeight;
+    const newZoom = Math.min(zoomX, zoomY, 2); // Cap zoom at 2x
+
+    // Calculate center of graph
+    const centerX = (minX + maxX) / 2;
+    const centerY = (minY + maxY) / 2;
+
+    // Calculate pan offset to center graph
+    const newPanX = (canvasWidth / 2) / newZoom - centerX;
+    const newPanY = (canvasHeight / 2) / newZoom - centerY;
+
+    this.zoomLevel.set(newZoom);
+    this.panOffset.set({ x: newPanX, y: newPanY });
     this.drawGraph();
   }
 
@@ -2462,83 +2828,605 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     this.drawGraph();
   }
 
-  // Export/Import Methods
-  exportGraph(format: 'json' | 'matrix') {
-    const nodes = this.nodes();
-    const edges = this.edges();
-
-    if (format === 'json') {
-      const data = {
-        nodes: nodes.map(n => ({
-          id: n.id,
-          label: n.label,
-          x: n.x,
-          y: n.y,
-          isStart: n.isStart,
-          isEnd: n.isEnd
-        })),
-        edges: edges.map(e => ({
-          id: e.id,
-          from: e.from,
-          to: e.to,
-          weight: e.weight,
-          direction: e.direction
-        })),
-        startNode: this.startNode(),
-        endNode: this.endNode()
-      };
-      this.exportData.set(JSON.stringify(data, null, 2));
+  createBinaryTree(levels: number = 3, edgeWeight: number = 1, direction: 'forward' | 'backward' | 'bidirectional' = 'bidirectional', spacing: number = 120) {
+    const existingNodes = this.nodes();
+    const existingEdges = this.edges();
+    const nodes: GraphNode[] = [...existingNodes];
+    const edges: GraphEdge[] = [...existingEdges];
+    const canvas = this.canvasRef?.nativeElement;
+    
+    let startX = canvas ? canvas.width / 2 : 400;
+    let startY = 100;
+    
+    if (existingNodes.length > 0) {
+      const rightmostNode = existingNodes.reduce((max, node) => node.x > max.x ? node : max);
+      startX = rightmostNode.x + spacing * 3;
+      startY = rightmostNode.y;
     } else {
-      // Matrix format
-      const nodeIds = nodes.map(n => n.id);
-      const matrix: (number | string)[][] = [];
-
-      // Header row
-      matrix.push(['', ...nodeIds]);
-
-      // Data rows
-      nodeIds.forEach(fromId => {
-        const row: (number | string)[] = [fromId];
-        nodeIds.forEach(toId => {
-          if (fromId === toId) {
-            row.push(0);
-          } else {
-            const edge = edges.find(e =>
-              (e.from === fromId && e.to === toId && (e.direction === 'forward' || e.direction === 'bidirectional')) ||
-              (e.to === fromId && e.from === toId && (e.direction === 'backward' || e.direction === 'bidirectional'))
-            );
-            row.push(edge ? edge.weight : '∞');
-          }
-        });
-        matrix.push(row);
-      });
-
-      this.exportData.set(matrix.map(row => row.join('\t')).join('\n'));
+      const zoom = this.zoomLevel();
+      const pan = this.panOffset();
+      startX = (canvas ? canvas.width / 2 : 400) / zoom - pan.x;
+      startY = (canvas ? 100 : 100) / zoom - pan.y;
     }
 
-    this.exportFormat.set(format);
+    const currentMaxCounter = this.nodeCounter();
+    let nodeIndex = 0;
+    const nodeMap: Record<number, string> = {};
+
+    for (let level = 0; level < levels; level++) {
+      const nodesInLevel = Math.pow(2, level);
+      const levelWidth = nodesInLevel * spacing;
+      const levelStartX = startX - levelWidth / 2 + spacing / 2;
+
+      for (let i = 0; i < nodesInLevel; i++) {
+        const nodeId = this.getNodeLabelFromIndex(currentMaxCounter + nodeIndex);
+        const x = levelStartX + i * spacing;
+        const y = startY + level * spacing * 1.5;
+        
+        nodes.push({
+          id: nodeId,
+          x,
+          y,
+          label: nodeId,
+          isStart: level === 0 && i === 0 && existingNodes.length === 0,
+          isEnd: level === levels - 1 && i === nodesInLevel - 1 && existingNodes.length === 0
+        });
+
+        nodeMap[level * 100 + i] = nodeId;
+
+        if (level > 0) {
+          const parentIndex = Math.floor(i / 2);
+          const parentId = nodeMap[(level - 1) * 100 + parentIndex];
+          edges.push({
+            id: `edge-${this.edgeCounter() + nodeIndex}`,
+            from: parentId,
+            to: nodeId,
+            weight: edgeWeight,
+            direction: direction
+          });
+        }
+        nodeIndex++;
+      }
+    }
+
+    this.nodes.set(nodes);
+    this.edges.set(edges);
+    this.nodeCounter.set(currentMaxCounter + nodeIndex);
+    this.edgeCounter.set(this.edgeCounter() + nodeIndex - 1);
+    if (existingNodes.length === 0) {
+      this.startNode.set(this.getNodeLabelFromIndex(currentMaxCounter));
+      this.endNode.set(this.getNodeLabelFromIndex(currentMaxCounter + nodeIndex - 1));
+    }
+    this.drawGraph();
+  }
+
+  createBipartiteGraph(leftCount: number = 3, rightCount: number = 3, edgeWeight: number = 1, direction: 'forward' | 'backward' | 'bidirectional' = 'bidirectional', spacing: number = 120) {
+    const existingNodes = this.nodes();
+    const existingEdges = this.edges();
+    const nodes: GraphNode[] = [...existingNodes];
+    const edges: GraphEdge[] = [...existingEdges];
+    const canvas = this.canvasRef?.nativeElement;
+    
+    let centerX = canvas ? canvas.width / 2 : 400;
+    let centerY = canvas ? canvas.height / 2 : 300;
+    
+    if (existingNodes.length > 0) {
+      const rightmostNode = existingNodes.reduce((max, node) => node.x > max.x ? node : max);
+      centerX = rightmostNode.x + spacing * 2;
+      centerY = rightmostNode.y;
+    } else {
+      const zoom = this.zoomLevel();
+      const pan = this.panOffset();
+      centerX = (canvas ? canvas.width / 2 : 400) / zoom - pan.x;
+      centerY = (canvas ? canvas.height / 2 : 300) / zoom - pan.y;
+    }
+
+    const currentMaxCounter = this.nodeCounter();
+    const leftNodes: string[] = [];
+    const rightNodes: string[] = [];
+
+    // Create left nodes
+    for (let i = 0; i < leftCount; i++) {
+      const nodeId = this.getNodeLabelFromIndex(currentMaxCounter + i);
+      leftNodes.push(nodeId);
+      nodes.push({
+        id: nodeId,
+        x: centerX - spacing,
+        y: centerY - (leftCount - 1) * spacing / 2 + i * spacing,
+        label: nodeId,
+        isStart: i === 0 && existingNodes.length === 0
+      });
+    }
+
+    // Create right nodes
+    for (let i = 0; i < rightCount; i++) {
+      const nodeId = this.getNodeLabelFromIndex(currentMaxCounter + leftCount + i);
+      rightNodes.push(nodeId);
+      nodes.push({
+        id: nodeId,
+        x: centerX + spacing,
+        y: centerY - (rightCount - 1) * spacing / 2 + i * spacing,
+        label: nodeId,
+        isEnd: i === 0 && existingNodes.length === 0
+      });
+    }
+
+    // Connect all left nodes to all right nodes
+    let edgeIndex = 0;
+    for (const leftNode of leftNodes) {
+      for (const rightNode of rightNodes) {
+        edges.push({
+          id: `edge-${this.edgeCounter() + edgeIndex}`,
+          from: leftNode,
+          to: rightNode,
+          weight: edgeWeight,
+          direction: direction
+        });
+        edgeIndex++;
+      }
+    }
+
+    this.nodes.set(nodes);
+    this.edges.set(edges);
+    this.nodeCounter.set(currentMaxCounter + leftCount + rightCount);
+    this.edgeCounter.set(this.edgeCounter() + edgeIndex);
+    if (existingNodes.length === 0) {
+      this.startNode.set(leftNodes[0]);
+      this.endNode.set(rightNodes[0]);
+    }
+    this.drawGraph();
+  }
+
+  createTrapezoidGraph(nodeCount: number = 5, edgeWeight: number = 1, direction: 'forward' | 'backward' | 'bidirectional' = 'bidirectional', spacing: number = 120) {
+    const existingNodes = this.nodes();
+    const existingEdges = this.edges();
+    const nodes: GraphNode[] = [...existingNodes];
+    const edges: GraphEdge[] = [...existingEdges];
+    const canvas = this.canvasRef?.nativeElement;
+    
+    let centerX = canvas ? canvas.width / 2 : 400;
+    let centerY = canvas ? canvas.height / 2 : 300;
+    
+    if (existingNodes.length > 0) {
+      const rightmostNode = existingNodes.reduce((max, node) => node.x > max.x ? node : max);
+      centerX = rightmostNode.x + spacing * 2;
+      centerY = rightmostNode.y;
+    } else {
+      const zoom = this.zoomLevel();
+      const pan = this.panOffset();
+      centerX = (canvas ? canvas.width / 2 : 400) / zoom - pan.x;
+      centerY = (canvas ? canvas.height / 2 : 300) / zoom - pan.y;
+    }
+
+    const currentMaxCounter = this.nodeCounter();
+    const topNodes: string[] = [];
+    const bottomNodes: string[] = [];
+
+    // Top row
+    for (let i = 0; i < nodeCount; i++) {
+      const nodeId = this.getNodeLabelFromIndex(currentMaxCounter + i);
+      topNodes.push(nodeId);
+      nodes.push({
+        id: nodeId,
+        x: centerX - (nodeCount - 1) * spacing / 2 + i * spacing,
+        y: centerY - spacing,
+        label: nodeId,
+        isStart: i === 0 && existingNodes.length === 0
+      });
+    }
+
+    // Bottom row
+    for (let i = 0; i < nodeCount; i++) {
+      const nodeId = this.getNodeLabelFromIndex(currentMaxCounter + nodeCount + i);
+      bottomNodes.push(nodeId);
+      nodes.push({
+        id: nodeId,
+        x: centerX - (nodeCount - 1) * spacing / 2 + i * spacing,
+        y: centerY + spacing,
+        label: nodeId,
+        isEnd: i === 0 && existingNodes.length === 0
+      });
+    }
+
+    // Connect top to bottom
+    let edgeIndex = 0;
+    for (let i = 0; i < nodeCount; i++) {
+      edges.push({
+        id: `edge-${this.edgeCounter() + edgeIndex}`,
+        from: topNodes[i],
+        to: bottomNodes[i],
+        weight: edgeWeight,
+        direction: direction
+      });
+      edgeIndex++;
+    }
+
+    // Connect adjacent nodes in each row
+    for (let i = 0; i < nodeCount - 1; i++) {
+      edges.push({
+        id: `edge-${this.edgeCounter() + edgeIndex}`,
+        from: topNodes[i],
+        to: topNodes[i + 1],
+        weight: edgeWeight,
+        direction: direction
+      });
+      edgeIndex++;
+      edges.push({
+        id: `edge-${this.edgeCounter() + edgeIndex}`,
+        from: bottomNodes[i],
+        to: bottomNodes[i + 1],
+        weight: edgeWeight,
+        direction: direction
+      });
+      edgeIndex++;
+    }
+
+    this.nodes.set(nodes);
+    this.edges.set(edges);
+    this.nodeCounter.set(currentMaxCounter + nodeCount * 2);
+    this.edgeCounter.set(this.edgeCounter() + edgeIndex);
+    if (existingNodes.length === 0) {
+      this.startNode.set(topNodes[0]);
+      this.endNode.set(bottomNodes[0]);
+    }
+    this.drawGraph();
+  }
+
+  createWheelGraph(outerNodeCount: number = 6, edgeWeight: number = 1, direction: 'forward' | 'backward' | 'bidirectional' = 'bidirectional', radius: number = 120) {
+    const existingNodes = this.nodes();
+    const existingEdges = this.edges();
+    const nodes: GraphNode[] = [...existingNodes];
+    const edges: GraphEdge[] = [...existingEdges];
+    const canvas = this.canvasRef?.nativeElement;
+    
+    let centerX = canvas ? canvas.width / 2 : 400;
+    let centerY = canvas ? canvas.height / 2 : 300;
+    
+    if (existingNodes.length > 0) {
+      const rightmostNode = existingNodes.reduce((max, node) => node.x > max.x ? node : max);
+      centerX = rightmostNode.x + radius * 2;
+      centerY = rightmostNode.y;
+    } else {
+      const zoom = this.zoomLevel();
+      const pan = this.panOffset();
+      centerX = (canvas ? canvas.width / 2 : 400) / zoom - pan.x;
+      centerY = (canvas ? canvas.height / 2 : 300) / zoom - pan.y;
+    }
+
+    const currentMaxCounter = this.nodeCounter();
+    const centerNodeId = this.getNodeLabelFromIndex(currentMaxCounter);
+    const outerNodes: string[] = [];
+
+    // Center node
+    nodes.push({
+      id: centerNodeId,
+      x: centerX,
+      y: centerY,
+      label: centerNodeId,
+      isStart: existingNodes.length === 0
+    });
+
+    // Outer nodes
+    for (let i = 0; i < outerNodeCount; i++) {
+      const angle = (2 * Math.PI * i) / outerNodeCount;
+      const nodeId = this.getNodeLabelFromIndex(currentMaxCounter + 1 + i);
+      outerNodes.push(nodeId);
+      nodes.push({
+        id: nodeId,
+        x: centerX + radius * Math.cos(angle),
+        y: centerY + radius * Math.sin(angle),
+        label: nodeId,
+        isEnd: i === 0 && existingNodes.length === 0
+      });
+
+      // Connect to center
+      edges.push({
+        id: `edge-${this.edgeCounter() + i}`,
+        from: centerNodeId,
+        to: nodeId,
+        weight: edgeWeight,
+        direction: direction
+      });
+    }
+
+    // Connect outer nodes in cycle
+    let edgeIndex = outerNodeCount;
+    for (let i = 0; i < outerNodeCount; i++) {
+      edges.push({
+        id: `edge-${this.edgeCounter() + edgeIndex}`,
+        from: outerNodes[i],
+        to: outerNodes[(i + 1) % outerNodeCount],
+        weight: edgeWeight,
+        direction: direction
+      });
+      edgeIndex++;
+    }
+
+    this.nodes.set(nodes);
+    this.edges.set(edges);
+    this.nodeCounter.set(currentMaxCounter + 1 + outerNodeCount);
+    this.edgeCounter.set(this.edgeCounter() + edgeIndex);
+    if (existingNodes.length === 0) {
+      this.startNode.set(centerNodeId);
+      this.endNode.set(outerNodes[0]);
+    }
+    this.drawGraph();
+  }
+
+  createHexagonalGraph(hexCount: number = 3, edgeWeight: number = 1, direction: 'forward' | 'backward' | 'bidirectional' = 'bidirectional', spacing: number = 120) {
+    const existingNodes = this.nodes();
+    const existingEdges = this.edges();
+    const nodes: GraphNode[] = [...existingNodes];
+    const edges: GraphEdge[] = [...existingEdges];
+    const canvas = this.canvasRef?.nativeElement;
+    
+    let startX = canvas ? canvas.width / 2 : 400;
+    let startY = canvas ? canvas.height / 2 : 300;
+    
+    if (existingNodes.length > 0) {
+      const rightmostNode = existingNodes.reduce((max, node) => node.x > max.x ? node : max);
+      startX = rightmostNode.x + spacing * 2;
+      startY = rightmostNode.y;
+    } else {
+      const zoom = this.zoomLevel();
+      const pan = this.panOffset();
+      startX = (canvas ? canvas.width / 2 : 400) / zoom - pan.x;
+      startY = (canvas ? canvas.height / 2 : 300) / zoom - pan.y;
+    }
+
+    const currentMaxCounter = this.nodeCounter();
+    let nodeIndex = 0;
+    const hexRadius = spacing / 2;
+
+    // Create hexagonal pattern
+    for (let ring = 0; ring < hexCount; ring++) {
+      const ringRadius = ring * spacing * 1.5;
+      const nodesInRing = ring === 0 ? 1 : ring * 6;
+
+      for (let i = 0; i < nodesInRing; i++) {
+        const angle = ring === 0 ? 0 : (2 * Math.PI * i) / nodesInRing;
+        const nodeId = this.getNodeLabelFromIndex(currentMaxCounter + nodeIndex);
+        nodes.push({
+          id: nodeId,
+          x: startX + ringRadius * Math.cos(angle),
+          y: startY + ringRadius * Math.sin(angle),
+          label: nodeId,
+          isStart: ring === 0 && i === 0 && existingNodes.length === 0,
+          isEnd: ring === hexCount - 1 && i === nodesInRing - 1 && existingNodes.length === 0
+        });
+        nodeIndex++;
+      }
+    }
+
+    // Connect nodes (simplified - connect each node to nearest neighbors)
+    let edgeIndex = 0;
+    for (let i = 0; i < nodes.length - currentMaxCounter; i++) {
+      const node1 = nodes[nodes.length - nodeIndex + i];
+      for (let j = i + 1; j < nodes.length - currentMaxCounter; j++) {
+        const node2 = nodes[nodes.length - nodeIndex + j];
+        const dist = Math.sqrt((node1.x - node2.x) ** 2 + (node1.y - node2.y) ** 2);
+        if (dist < spacing * 1.2) {
+          edges.push({
+            id: `edge-${this.edgeCounter() + edgeIndex}`,
+            from: node1.id,
+            to: node2.id,
+            weight: edgeWeight,
+            direction: direction
+          });
+          edgeIndex++;
+        }
+      }
+    }
+
+    this.nodes.set(nodes);
+    this.edges.set(edges);
+    this.nodeCounter.set(currentMaxCounter + nodeIndex);
+    this.edgeCounter.set(this.edgeCounter() + edgeIndex);
+    if (existingNodes.length === 0) {
+      this.startNode.set(this.getNodeLabelFromIndex(currentMaxCounter));
+      this.endNode.set(this.getNodeLabelFromIndex(currentMaxCounter + nodeIndex - 1));
+    }
+    this.drawGraph();
+  }
+
+  // Export/Import Methods
+  getMatrixExportData(): string {
+    const nodes = this.nodes();
+    const edges = this.edges();
+    const nodeIds = nodes.map(n => n.id);
+    const matrix: (number | string)[][] = [];
+
+    // Header row
+    matrix.push(['', ...nodeIds]);
+
+    // Data rows
+    nodeIds.forEach(fromId => {
+      const row: (number | string)[] = [fromId];
+      nodeIds.forEach(toId => {
+        if (fromId === toId) {
+          row.push(0);
+        } else {
+          const edge = edges.find(e =>
+            (e.from === fromId && e.to === toId && (e.direction === 'forward' || e.direction === 'bidirectional')) ||
+            (e.to === fromId && e.from === toId && (e.direction === 'backward' || e.direction === 'bidirectional'))
+          );
+          row.push(edge ? edge.weight : '∞');
+        }
+      });
+      matrix.push(row);
+    });
+
+    return matrix.map(row => row.join('\t')).join('\n');
+  }
+
+  downloadGraphFile() {
+    const nodes = this.nodes();
+    const edges = this.edges();
+    
+    // Get matrix data
+    const matrixData = this.getMatrixExportData();
+    
+    // Calculate relative positions using first node as origin
+    const originNode = nodes[0];
+    const metadata: any = {
+      version: '1.0',
+      origin: {
+        nodeId: originNode?.id || '',
+        x: originNode?.x || 0,
+        y: originNode?.y || 0
+      },
+      nodes: nodes.map(node => ({
+        id: node.id,
+        label: node.label,
+        relativeX: originNode ? node.x - originNode.x : node.x,
+        relativeY: originNode ? node.y - originNode.y : node.y
+      })),
+      edges: edges.map(edge => ({
+        from: edge.from,
+        to: edge.to,
+        weight: edge.weight,
+        direction: edge.direction
+      })),
+      startNode: this.startNode(),
+      endNode: this.endNode()
+    };
+    
+    // Combine matrix data with metadata
+    const fileContent = `# Graph Matrix Data
+${matrixData}
+
+# Metadata (JSON)
+${JSON.stringify(metadata, null, 2)}`;
+    
+    const fileName = (this.exportFileName() || 'graph').replace(/[^a-zA-Z0-9_-]/g, '_') + '.grp';
+    
+    const blob = new Blob([fileContent], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+    
+    this.showExportDialog.set(false);
+  }
+
+  exportGraph(format: 'json' | 'matrix') {
+    // Always use matrix format for .grp files
+    this.exportFormat.set('matrix');
+    // Generate matrix data when opening dialog
+    this.exportData.set(this.getMatrixExportData());
     this.showExportDialog.set(true);
   }
 
-  copyExportData() {
-    const textarea = document.createElement('textarea');
-    textarea.value = this.exportData();
-    document.body.appendChild(textarea);
-    textarea.select();
-    document.execCommand('copy');
-    document.body.removeChild(textarea);
-    alert('Đã sao chép vào clipboard!');
+  onFileSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (file) {
+      this.selectedFileName.set(file.name);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const content = e.target?.result as string;
+        this.selectedFileContent.set(content);
+      };
+      reader.readAsText(file);
+    }
+  }
+
+  onDragOver(event: DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragOver.set(true);
+  }
+
+  onFileDrop(event: DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragOver.set(false);
+    
+    const files = event.dataTransfer?.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      if (file.name.endsWith('.grp') || file.name.endsWith('.json')) {
+        this.selectedFileName.set(file.name);
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const content = e.target?.result as string;
+          this.selectedFileContent.set(content);
+        };
+        reader.readAsText(file);
+      } else {
+        alert('Chỉ hỗ trợ file .grp hoặc .json');
+      }
+    }
+  }
+
+  clearSelectedFile() {
+    this.selectedFileName.set('');
+    this.selectedFileContent.set('');
+    if (this.fileInput?.nativeElement) {
+      this.fileInput.nativeElement.value = '';
+    }
   }
 
   importGraph() {
-    const data = this.importData().trim();
-    if (!data) {
-      alert('Vui lòng nhập dữ liệu');
-      return;
+    let data: string;
+    
+    // Get data from file or text input
+    if (this.importMode() === 'file') {
+      data = this.selectedFileContent().trim();
+      if (!data) {
+        alert('Vui lòng chọn file');
+        return;
+      }
+    } else {
+      data = this.importData().trim();
+      if (!data) {
+        alert('Vui lòng nhập dữ liệu');
+        return;
+      }
     }
 
     try {
-      // Try JSON first
+      // Check if file contains metadata section
+      const metadataMatch = data.match(/# Metadata \(JSON\)\s*\n([\s\S]*)$/);
+      if (metadataMatch) {
+        try {
+          const metadata = JSON.parse(metadataMatch[1]);
+          if (metadata.nodes && metadata.edges) {
+            // Restore nodes with relative positions
+            const originX = metadata.origin?.x || 0;
+            const originY = metadata.origin?.y || 0;
+            
+            const restoredNodes = metadata.nodes.map((nodeData: any) => ({
+              id: nodeData.id,
+              label: nodeData.label,
+              x: originX + (nodeData.relativeX || 0),
+              y: originY + (nodeData.relativeY || 0),
+              isStart: nodeData.id === metadata.startNode,
+              isEnd: nodeData.id === metadata.endNode
+            }));
+            
+            this.nodes.set(restoredNodes);
+            this.edges.set(metadata.edges);
+            if (metadata.startNode) this.startNode.set(metadata.startNode);
+            if (metadata.endNode) this.endNode.set(metadata.endNode);
+            this.nodeCounter.set(metadata.nodes.length);
+            this.edgeCounter.set(metadata.edges.length);
+            this.showImportDialog.set(false);
+            this.clearSelectedFile();
+            this.importData.set('');
+            this.drawGraph();
+            return;
+          }
+        } catch (e) {
+          // Metadata parse failed, continue to matrix parsing
+        }
+      }
+      
+      // Try JSON first (standalone JSON)
       const jsonData = JSON.parse(data);
       if (jsonData.nodes && jsonData.edges) {
         this.nodes.set(jsonData.nodes);
@@ -2548,19 +3436,52 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
         this.nodeCounter.set(jsonData.nodes.length);
         this.edgeCounter.set(jsonData.edges.length);
         this.showImportDialog.set(false);
+        this.clearSelectedFile();
+        this.importData.set('');
         this.drawGraph();
         return;
       }
     } catch (e) {
       // Not JSON, try matrix
-      const lines = data.split('\n').filter(l => l.trim());
+    }
+
+    // Parse matrix format
+    try {
+      // Remove metadata section if exists
+      let matrixData = data;
+      const metadataIndex = data.indexOf('# Metadata');
+      if (metadataIndex !== -1) {
+        matrixData = data.substring(0, metadataIndex).trim();
+      }
+      // Remove comment lines
+      const lines = matrixData.split('\n')
+        .filter(l => l.trim() && !l.trim().startsWith('#'))
+        .map(l => l.trim());
+        
       if (lines.length < 2) {
-        alert('Dữ liệu không hợp lệ');
+        alert('Dữ liệu không hợp lệ. Vui lòng kiểm tra định dạng ma trận.');
         return;
       }
 
-      const header = lines[0].split(/\s+/).filter(h => h);
-      const nodeIds = header.slice(1);
+      // Parse header - support both tab and space separated
+      const headerLine = lines[0];
+      let nodeIds: string[];
+      
+      // Try tab-separated first
+      if (headerLine.includes('\t')) {
+        nodeIds = headerLine.split('\t').filter(h => h && h.trim() !== '');
+        // Remove first empty element if exists
+        if (nodeIds[0] === '' || nodeIds[0].trim() === '') {
+          nodeIds.shift();
+        }
+      } else {
+        // Space-separated
+        nodeIds = headerLine.split(/\s+/).filter(h => h && h.trim() !== '');
+        // Remove first empty element if exists
+        if (nodeIds[0] === '' || nodeIds[0].trim() === '') {
+          nodeIds.shift();
+        }
+      }
 
       if (nodeIds.length === 0) {
         alert('Không tìm thấy đỉnh trong ma trận');
@@ -2587,9 +3508,20 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
         });
       });
 
-      // Parse matrix rows
+      // Parse matrix rows and detect symmetric (bidirectional) vs asymmetric (directed) edges
+      const edgeMap = new Map<string, { from: string; to: string; weight: number; isSymmetric: boolean }>();
+      
       for (let i = 1; i < lines.length; i++) {
-        const row = lines[i].split(/\s+/).filter(r => r);
+        let row: string[];
+        // Support both tab and space separated
+        if (lines[i].includes('\t')) {
+          row = lines[i].split('\t').filter(r => r !== '');
+        } else {
+          row = lines[i].split(/\s+/).filter(r => r && r.trim() !== '');
+        }
+        
+        if (row.length === 0) continue;
+        
         const fromId = row[0].trim();
         for (let j = 1; j < row.length && j <= nodeIds.length; j++) {
           const toId = nodeIds[j - 1].trim();
@@ -2598,17 +3530,51 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
           if (weightStr !== '∞' && weightStr !== 'Infinity' && weightStr !== '0' && fromId !== toId) {
             const weight = parseFloat(weightStr);
             if (!isNaN(weight) && weight > 0) {
-              edges.push({
-                id: `edge-${this.edgeCounter() + edges.length}`,
-                from: fromId,
-                to: toId,
-                weight: weight,
-                direction: 'bidirectional'
-              });
+              const edgeKey = `${fromId}-${toId}`;
+              const reverseKey = `${toId}-${fromId}`;
+              
+              // Check if reverse edge exists
+              const reverseEdge = edgeMap.get(reverseKey);
+              if (reverseEdge && reverseEdge.weight === weight) {
+                // Symmetric edge - mark as bidirectional
+                reverseEdge.isSymmetric = true;
+                edgeMap.set(reverseKey, reverseEdge);
+              } else {
+                // New edge - check if it will be symmetric later
+                edgeMap.set(edgeKey, {
+                  from: fromId,
+                  to: toId,
+                  weight: weight,
+                  isSymmetric: false
+                });
+              }
             }
           }
         }
       }
+
+      // Create edges from map
+      const processedPairs = new Set<string>();
+      edgeMap.forEach((edgeData, edgeKey) => {
+        const reverseKey = `${edgeData.to}-${edgeData.from}`;
+        const pairKey = [edgeData.from, edgeData.to].sort().join('-');
+        
+        // Only process each pair once
+        if (processedPairs.has(pairKey)) return;
+        processedPairs.add(pairKey);
+        
+        // Check if reverse edge exists with same weight
+        const reverseEdge = edgeMap.get(reverseKey);
+        const isBidirectional = reverseEdge && reverseEdge.weight === edgeData.weight;
+        
+        edges.push({
+          id: `edge-${this.edgeCounter() + edges.length}`,
+          from: edgeData.from,
+          to: edgeData.to,
+          weight: edgeData.weight,
+          direction: isBidirectional ? 'bidirectional' : 'forward'
+        });
+      });
 
       this.nodes.set(nodes);
       this.edges.set(edges);
@@ -2617,7 +3583,11 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
       this.startNode.set(nodeIds[0]);
       this.endNode.set(nodeIds[nodeIds.length - 1]);
       this.showImportDialog.set(false);
+      this.clearSelectedFile();
+      this.importData.set('');
       this.drawGraph();
+    } catch (e: any) {
+      alert('Lỗi khi nhập dữ liệu: ' + (e?.message || 'Dữ liệu không hợp lệ'));
     }
   }
 }

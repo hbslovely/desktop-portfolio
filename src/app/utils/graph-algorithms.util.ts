@@ -591,5 +591,580 @@ export class GraphAlgorithms {
       steps
     };
   }
+
+  /**
+   * Graph Coloring (Greedy Coloring Algorithm)
+   * Tô màu đồ thị: Tìm cách tô màu các đỉnh sao cho không có hai đỉnh kề nhau có cùng màu
+   */
+  static async graphColoring(
+    nodes: GraphNode[],
+    edges: GraphEdge[],
+    onStep?: (step: AlgorithmStep) => Promise<void>
+  ): Promise<{ colors: Record<string, number>; chromaticNumber: number; steps: AlgorithmStep[] }> {
+    const steps: AlgorithmStep[] = [];
+    const colors: Record<string, number> = {};
+    const usedColors = new Set<number>();
+
+    const initStep: AlgorithmStep = {
+      type: 'init',
+      message: `Bước 1 - Khởi tạo thuật toán tô màu đồ thị (Graph Coloring): Mục tiêu là tô màu các đỉnh sao cho không có hai đỉnh kề nhau có cùng màu. Sử dụng thuật toán Greedy: duyệt từng đỉnh, tìm màu nhỏ nhất chưa được sử dụng bởi các đỉnh kề. Khởi tạo: tất cả đỉnh chưa có màu (màu = -1).`,
+      nodes: nodes.map(n => n.id)
+    };
+    steps.push(initStep);
+    if (onStep) await onStep(initStep);
+
+    // For each node, find the smallest color not used by neighbors
+    for (let i = 0; i < nodes.length; i++) {
+      const node = nodes[i];
+      const neighborColors = new Set<number>();
+
+      // Find all neighbor colors
+      for (const edge of edges) {
+        let neighbor: string | null = null;
+        if (edge.from === node.id && (edge.direction === 'forward' || edge.direction === 'bidirectional')) {
+          neighbor = edge.to;
+        } else if (edge.to === node.id && (edge.direction === 'backward' || edge.direction === 'bidirectional')) {
+          neighbor = edge.from;
+        }
+
+        if (neighbor && colors[neighbor] !== undefined) {
+          neighborColors.add(colors[neighbor]);
+        }
+      }
+
+      // Find smallest available color
+      let color = 0;
+      while (neighborColors.has(color)) {
+        color++;
+      }
+
+      colors[node.id] = color;
+      usedColors.add(color);
+
+      const colorStep: AlgorithmStep = {
+        type: 'update',
+        message: `Bước ${i + 2} - Tô màu đỉnh ${node.id}: Xét các đỉnh kề của ${node.id}, các màu đã được sử dụng là: ${Array.from(neighborColors).join(', ') || 'không có'}. Chọn màu nhỏ nhất chưa được sử dụng = ${color}. Tô đỉnh ${node.id} bằng màu ${color}.`,
+        current: node.id,
+        nodes: nodes.map(n => n.id)
+      };
+      steps.push(colorStep);
+      if (onStep) await onStep(colorStep);
+    }
+
+    const resultStep: AlgorithmStep = {
+      type: 'result',
+      message: `Kết quả cuối cùng: Đã tô màu tất cả các đỉnh. Số màu tối thiểu cần dùng (số sắc tố - Chromatic Number) = ${usedColors.size}. Màu của từng đỉnh: ${Object.entries(colors).map(([id, c]) => `${id}: màu ${c}`).join(', ')}. Ứng dụng: Lập lịch thi, phân bổ tài nguyên, đăng ký tần số radio.`,
+      nodes: nodes.map(n => n.id)
+    };
+    steps.push(resultStep);
+    if (onStep) await onStep(resultStep);
+
+    return {
+      colors,
+      chromaticNumber: usedColors.size,
+      steps
+    };
+  }
+
+  /**
+   * Breadth-First Search (BFS)
+   * Tìm kiếm theo chiều rộng: Duyệt đồ thị theo từng lớp, từ gần đến xa
+   */
+  static async bfs(
+    nodes: GraphNode[],
+    edges: GraphEdge[],
+    start: string,
+    onStep?: (step: AlgorithmStep) => Promise<void>
+  ): Promise<{ visited: string[]; order: string[]; steps: AlgorithmStep[] }> {
+    const steps: AlgorithmStep[] = [];
+    const visited = new Set<string>();
+    const queue: string[] = [start];
+    const order: string[] = [];
+    const parent: Record<string, string | null> = { [start]: null };
+
+    const initStep: AlgorithmStep = {
+      type: 'init',
+      message: `Bước 1 - Khởi tạo BFS (Breadth-First Search - Tìm kiếm theo chiều rộng): BFS duyệt đồ thị theo từng lớp, từ gần đến xa. Sử dụng hàng đợi (queue) để lưu các đỉnh cần xét. Khởi tạo: thêm đỉnh bắt đầu ${start} vào queue, đánh dấu đã thăm, thêm vào danh sách thứ tự duyệt.`,
+      current: start,
+      nodes: nodes.map(n => n.id)
+    };
+    steps.push(initStep);
+    if (onStep) await onStep(initStep);
+
+    visited.add(start);
+    order.push(start);
+
+    while (queue.length > 0) {
+      const current = queue.shift()!;
+
+      const visitStep: AlgorithmStep = {
+        type: 'visit',
+        message: `Bước ${steps.length + 1} - Xét đỉnh ${current}: Lấy đỉnh đầu tiên trong queue (${current}). Đây là đỉnh ở lớp gần nhất chưa được xét. Bây giờ ta sẽ xét tất cả các đỉnh kề của ${current} chưa được thăm.`,
+        current: current,
+        visited: Array.from(visited),
+        nodes: nodes.map(n => n.id)
+      };
+      steps.push(visitStep);
+      if (onStep) await onStep(visitStep);
+
+      // Find all neighbors
+      for (const edge of edges) {
+        let neighbor: string | null = null;
+        if (edge.from === current && (edge.direction === 'forward' || edge.direction === 'bidirectional')) {
+          neighbor = edge.to;
+        } else if (edge.to === current && (edge.direction === 'backward' || edge.direction === 'bidirectional')) {
+          neighbor = edge.from;
+        }
+
+        if (neighbor && !visited.has(neighbor)) {
+          visited.add(neighbor);
+          queue.push(neighbor);
+          order.push(neighbor);
+          parent[neighbor] = current;
+
+          const discoverStep: AlgorithmStep = {
+            type: 'update',
+            message: `Phát hiện đỉnh mới ${neighbor}: Đỉnh ${neighbor} là đỉnh kề của ${current} và chưa được thăm. Thêm ${neighbor} vào cuối queue, đánh dấu đã thăm, lưu ${current} là đỉnh cha của ${neighbor}. Đỉnh ${neighbor} sẽ được xét sau khi xét hết các đỉnh ở lớp hiện tại.`,
+            current: current,
+            updated: neighbor,
+            visited: Array.from(visited),
+            nodes: nodes.map(n => n.id)
+          };
+          steps.push(discoverStep);
+          if (onStep) await onStep(discoverStep);
+        }
+      }
+    }
+
+    const resultStep: AlgorithmStep = {
+      type: 'result',
+      message: `Kết quả cuối cùng: BFS đã duyệt hết tất cả các đỉnh có thể đến được từ ${start}. Thứ tự duyệt: ${order.join(' → ')}. Tổng số đỉnh đã thăm: ${visited.size}. BFS đảm bảo tìm được đường đi ngắn nhất (theo số cạnh) trong đồ thị không trọng số. Ứng dụng: Tìm đường đi ngắn nhất, kiểm tra tính liên thông, tìm cây khung.`,
+      visited: Array.from(visited),
+      nodes: nodes.map(n => n.id)
+    };
+    steps.push(resultStep);
+    if (onStep) await onStep(resultStep);
+
+    return {
+      visited: Array.from(visited),
+      order,
+      steps
+    };
+  }
+
+  /**
+   * Depth-First Search (DFS)
+   * Tìm kiếm theo chiều sâu: Duyệt sâu nhất có thể trước khi quay lại
+   */
+  static async dfs(
+    nodes: GraphNode[],
+    edges: GraphEdge[],
+    start: string,
+    onStep?: (step: AlgorithmStep) => Promise<void>
+  ): Promise<{ visited: string[]; order: string[]; steps: AlgorithmStep[] }> {
+    const steps: AlgorithmStep[] = [];
+    const visited = new Set<string>();
+    const order: string[] = [];
+    const parent: Record<string, string | null> = { [start]: null };
+
+    const initStep: AlgorithmStep = {
+      type: 'init',
+      message: `Bước 1 - Khởi tạo DFS (Depth-First Search - Tìm kiếm theo chiều sâu): DFS duyệt đồ thị bằng cách đi sâu nhất có thể trước khi quay lại. Sử dụng đệ quy hoặc stack. Khởi tạo: bắt đầu từ đỉnh ${start}, đánh dấu đã thăm, thêm vào danh sách thứ tự duyệt.`,
+      current: start,
+      nodes: nodes.map(n => n.id)
+    };
+    steps.push(initStep);
+    if (onStep) await onStep(initStep);
+
+    const dfsVisit = async (node: string) => {
+      visited.add(node);
+      order.push(node);
+
+      const visitStep: AlgorithmStep = {
+        type: 'visit',
+        message: `Bước ${steps.length + 1} - Thăm đỉnh ${node}: Đánh dấu đỉnh ${node} đã được thăm. Bây giờ ta sẽ xét tất cả các đỉnh kề của ${node} chưa được thăm và gọi đệ quy để duyệt sâu vào từng nhánh.`,
+        current: node,
+        visited: Array.from(visited),
+        nodes: nodes.map(n => n.id)
+      };
+      steps.push(visitStep);
+      if (onStep) await onStep(visitStep);
+
+      // Find all neighbors
+      for (const edge of edges) {
+        let neighbor: string | null = null;
+        if (edge.from === node && (edge.direction === 'forward' || edge.direction === 'bidirectional')) {
+          neighbor = edge.to;
+        } else if (edge.to === node && (edge.direction === 'backward' || edge.direction === 'bidirectional')) {
+          neighbor = edge.from;
+        }
+
+        if (neighbor && !visited.has(neighbor)) {
+          parent[neighbor] = node;
+
+          const discoverStep: AlgorithmStep = {
+            type: 'update',
+            message: `Phát hiện đỉnh mới ${neighbor}: Đỉnh ${neighbor} là đỉnh kề của ${node} và chưa được thăm. Gọi đệ quy để duyệt sâu vào ${neighbor} ngay lập tức (không chờ xét các đỉnh khác). Lưu ${node} là đỉnh cha của ${neighbor}.`,
+            current: node,
+            updated: neighbor,
+            visited: Array.from(visited),
+            nodes: nodes.map(n => n.id)
+          };
+          steps.push(discoverStep);
+          if (onStep) await onStep(discoverStep);
+
+          await dfsVisit(neighbor);
+        }
+      }
+    };
+
+    await dfsVisit(start);
+
+    const resultStep: AlgorithmStep = {
+      type: 'result',
+      message: `Kết quả cuối cùng: DFS đã duyệt hết tất cả các đỉnh có thể đến được từ ${start}. Thứ tự duyệt: ${order.join(' → ')}. Tổng số đỉnh đã thăm: ${visited.size}. DFS tạo ra cây duyệt (DFS tree) với các cạnh nối từ đỉnh cha đến đỉnh con. Ứng dụng: Tìm chu trình, kiểm tra tính liên thông, topological sort, tìm thành phần liên thông.`,
+      visited: Array.from(visited),
+      nodes: nodes.map(n => n.id)
+    };
+    steps.push(resultStep);
+    if (onStep) await onStep(resultStep);
+
+    return {
+      visited: Array.from(visited),
+      order,
+      steps
+    };
+  }
+
+  /**
+   * Cycle Detection
+   * Tìm chu trình trong đồ thị
+   */
+  static async detectCycles(
+    nodes: GraphNode[],
+    edges: GraphEdge[],
+    onStep?: (step: AlgorithmStep) => Promise<void>
+  ): Promise<{ hasCycle: boolean; cycles: string[][]; steps: AlgorithmStep[] }> {
+    const steps: AlgorithmStep[] = [];
+    const visited = new Set<string>();
+    const recStack = new Set<string>();
+    const cycles: string[][] = [];
+    const parent: Record<string, string | null> = {};
+
+    const initStep: AlgorithmStep = {
+      type: 'init',
+      message: `Bước 1 - Khởi tạo phát hiện chu trình: Sử dụng DFS với một stack đệ quy (recursion stack) để phát hiện back edge. Nếu trong quá trình DFS, ta gặp một đỉnh đã có trong stack đệ quy (đang được xét), nghĩa là có chu trình. Khởi tạo: tất cả đỉnh chưa được thăm.`,
+      nodes: nodes.map(n => n.id)
+    };
+    steps.push(initStep);
+    if (onStep) await onStep(initStep);
+
+    const dfs = async (node: string, path: string[]): Promise<boolean> => {
+      visited.add(node);
+      recStack.add(node);
+      path.push(node);
+
+      const visitStep: AlgorithmStep = {
+        type: 'visit',
+        message: `Bước ${steps.length + 1} - Thăm đỉnh ${node}: Đánh dấu đã thăm, thêm vào recursion stack (đang xét), thêm vào đường đi hiện tại. Đường đi hiện tại: ${path.join(' → ')}.`,
+        current: node,
+        visited: Array.from(visited),
+        nodes: nodes.map(n => n.id)
+      };
+      steps.push(visitStep);
+      if (onStep) await onStep(visitStep);
+
+      for (const edge of edges) {
+        let neighbor: string | null = null;
+        if (edge.from === node && (edge.direction === 'forward' || edge.direction === 'bidirectional')) {
+          neighbor = edge.to;
+        } else if (edge.to === node && (edge.direction === 'backward' || edge.direction === 'bidirectional')) {
+          neighbor = edge.from;
+        }
+
+        if (neighbor) {
+          if (!visited.has(neighbor)) {
+            parent[neighbor] = node;
+            const hasCycle = await dfs(neighbor, [...path]);
+            if (hasCycle) return true;
+          } else if (recStack.has(neighbor)) {
+            // Found back edge - cycle detected
+            const cycleStart = path.indexOf(neighbor);
+            const cycle = path.slice(cycleStart).concat([neighbor]);
+
+            const cycleStep: AlgorithmStep = {
+              type: 'update',
+              message: `Phát hiện chu trình! Từ đỉnh ${node}, ta gặp lại đỉnh ${neighbor} đang có trong recursion stack. Điều này có nghĩa là có một đường đi từ ${neighbor} quay lại chính nó. Chu trình: ${cycle.join(' → ')}.`,
+              current: node,
+              updated: neighbor,
+              nodes: nodes.map(n => n.id)
+            };
+            steps.push(cycleStep);
+            if (onStep) await onStep(cycleStep);
+
+            cycles.push(cycle);
+          }
+        }
+      }
+
+      recStack.delete(node);
+      return false;
+    };
+
+    for (const node of nodes) {
+      if (!visited.has(node.id)) {
+        await dfs(node.id, []);
+      }
+    }
+
+    const resultStep: AlgorithmStep = {
+      type: 'result',
+      message: `Kết quả cuối cùng: ${cycles.length > 0 ? `Phát hiện ${cycles.length} chu trình: ${cycles.map(c => c.join(' → ')).join('; ')}` : 'Không có chu trình trong đồ thị'}. Ứng dụng: Kiểm tra DAG (Directed Acyclic Graph), phát hiện deadlock, kiểm tra tính hợp lệ của dependency graph.`,
+      nodes: nodes.map(n => n.id)
+    };
+    steps.push(resultStep);
+    if (onStep) await onStep(resultStep);
+
+    return {
+      hasCycle: cycles.length > 0,
+      cycles,
+      steps
+    };
+  }
+
+  /**
+   * Connected Components
+   * Tìm các thành phần liên thông trong đồ thị vô hướng
+   */
+  static async findConnectedComponents(
+    nodes: GraphNode[],
+    edges: GraphEdge[],
+    onStep?: (step: AlgorithmStep) => Promise<void>
+  ): Promise<{ components: string[][]; count: number; steps: AlgorithmStep[] }> {
+    const steps: AlgorithmStep[] = [];
+    const visited = new Set<string>();
+    const components: string[][] = [];
+
+    const initStep: AlgorithmStep = {
+      type: 'init',
+      message: `Bước 1 - Khởi tạo tìm thành phần liên thông: Một thành phần liên thông là một tập hợp các đỉnh mà từ bất kỳ đỉnh nào trong tập hợp, ta có thể đến được tất cả các đỉnh khác trong tập hợp. Sử dụng DFS hoặc BFS để tìm tất cả các thành phần. Khởi tạo: tất cả đỉnh chưa được thăm.`,
+      nodes: nodes.map(n => n.id)
+    };
+    steps.push(initStep);
+    if (onStep) await onStep(initStep);
+
+    const dfs = async (node: string, component: string[]) => {
+      visited.add(node);
+      component.push(node);
+
+      const visitStep: AlgorithmStep = {
+        type: 'visit',
+        message: `Thăm đỉnh ${node}: Thêm đỉnh ${node} vào thành phần liên thông hiện tại. Bây giờ ta sẽ tìm tất cả các đỉnh có thể đến được từ ${node} bằng DFS.`,
+        current: node,
+        visited: Array.from(visited),
+        nodes: nodes.map(n => n.id)
+      };
+      steps.push(visitStep);
+      if (onStep) await onStep(visitStep);
+
+      for (const edge of edges) {
+        let neighbor: string | null = null;
+        // For connected components, we treat all edges as bidirectional
+        if (edge.from === node) {
+          neighbor = edge.to;
+        } else if (edge.to === node) {
+          neighbor = edge.from;
+        }
+
+        if (neighbor && !visited.has(neighbor)) {
+          await dfs(neighbor, component);
+        }
+      }
+    };
+
+    let componentIndex = 0;
+    for (const node of nodes) {
+      if (!visited.has(node.id)) {
+        const component: string[] = [];
+        componentIndex++;
+
+        const startComponentStep: AlgorithmStep = {
+          type: 'init',
+          message: `Bắt đầu thành phần liên thông ${componentIndex}: Phát hiện đỉnh ${node.id} chưa được thăm, đây là đỉnh đầu tiên của một thành phần liên thông mới. Sử dụng DFS để tìm tất cả các đỉnh trong thành phần này.`,
+          current: node.id,
+          visited: Array.from(visited),
+          nodes: nodes.map(n => n.id)
+        };
+        steps.push(startComponentStep);
+        if (onStep) await onStep(startComponentStep);
+
+        await dfs(node.id, component);
+        components.push(component);
+
+        const endComponentStep: AlgorithmStep = {
+          type: 'result',
+          message: `Hoàn thành thành phần liên thông ${componentIndex}: Tìm được ${component.length} đỉnh: ${component.join(', ')}. Tất cả các đỉnh này có thể đến được lẫn nhau.`,
+          visited: Array.from(visited),
+          nodes: nodes.map(n => n.id)
+        };
+        steps.push(endComponentStep);
+        if (onStep) await onStep(endComponentStep);
+      }
+    }
+
+    const resultStep: AlgorithmStep = {
+      type: 'result',
+      message: `Kết quả cuối cùng: Tìm được ${components.length} thành phần liên thông. ${components.map((c, i) => `Thành phần ${i + 1}: ${c.join(', ')}`).join('; ')}. Ứng dụng: Phân tích mạng xã hội, phân cụm dữ liệu, kiểm tra tính liên thông của mạng.`,
+      nodes: nodes.map(n => n.id)
+    };
+    steps.push(resultStep);
+    if (onStep) await onStep(resultStep);
+
+    return {
+      components,
+      count: components.length,
+      steps
+    };
+  }
+
+  /**
+   * Strongly Connected Components (SCC) - Kosaraju's Algorithm
+   * Tìm các thành phần liên thông mạnh trong đồ thị có hướng
+   */
+  static async findStronglyConnectedComponents(
+    nodes: GraphNode[],
+    edges: GraphEdge[],
+    onStep?: (step: AlgorithmStep) => Promise<void>
+  ): Promise<{ components: string[][]; count: number; steps: AlgorithmStep[] }> {
+    const steps: AlgorithmStep[] = [];
+    const visited = new Set<string>();
+    const finishOrder: string[] = [];
+    const components: string[][] = [];
+
+    const initStep: AlgorithmStep = {
+      type: 'init',
+      message: `Bước 1 - Khởi tạo tìm thành phần liên thông mạnh (SCC - Strongly Connected Components): Một SCC là một tập hợp các đỉnh mà từ bất kỳ đỉnh nào, ta có thể đến được tất cả các đỉnh khác trong tập hợp (theo hướng của cạnh). Sử dụng thuật toán Kosaraju: 1) DFS để lấy thứ tự kết thúc, 2) Đảo ngược đồ thị, 3) DFS theo thứ tự ngược lại.`,
+      nodes: nodes.map(n => n.id)
+    };
+    steps.push(initStep);
+    if (onStep) await onStep(initStep);
+
+    // Step 1: First DFS to get finish order
+    const dfs1 = async (node: string) => {
+      visited.add(node);
+
+      const visitStep: AlgorithmStep = {
+        type: 'visit',
+        message: `DFS lần 1 - Thăm đỉnh ${node}: Đánh dấu đã thăm, tiếp tục DFS vào các đỉnh kề theo hướng của cạnh.`,
+        current: node,
+        visited: Array.from(visited),
+        nodes: nodes.map(n => n.id)
+      };
+      steps.push(visitStep);
+      if (onStep) await onStep(visitStep);
+
+      for (const edge of edges) {
+        if (edge.from === node && (edge.direction === 'forward' || edge.direction === 'bidirectional')) {
+          const neighbor = edge.to;
+          if (!visited.has(neighbor)) {
+            await dfs1(neighbor);
+          }
+        }
+      }
+
+      finishOrder.unshift(node); // Add to front (finish order)
+    };
+
+    for (const node of nodes) {
+      if (!visited.has(node.id)) {
+        await dfs1(node.id);
+      }
+    }
+
+    const finishOrderStep: AlgorithmStep = {
+      type: 'result',
+      message: `Hoàn thành DFS lần 1: Thứ tự kết thúc (finish order): ${finishOrder.join(' → ')}. Đỉnh kết thúc sau cùng sẽ được xét đầu tiên trong bước tiếp theo.`,
+      nodes: nodes.map(n => n.id)
+    };
+    steps.push(finishOrderStep);
+    if (onStep) await onStep(finishOrderStep);
+
+    // Step 2: DFS on reversed graph
+    visited.clear();
+    let componentIndex = 0;
+
+    const dfs2 = async (node: string, component: string[]) => {
+      visited.add(node);
+      component.push(node);
+
+      const visitStep: AlgorithmStep = {
+        type: 'visit',
+        message: `DFS lần 2 (đồ thị đảo) - Thăm đỉnh ${node}: Thêm đỉnh ${node} vào SCC hiện tại. Xét các cạnh đảo ngược (từ đích về nguồn).`,
+        current: node,
+        visited: Array.from(visited),
+        nodes: nodes.map(n => n.id)
+      };
+      steps.push(visitStep);
+      if (onStep) await onStep(visitStep);
+
+      for (const edge of edges) {
+        // Reverse edge direction
+        if (edge.to === node && (edge.direction === 'forward' || edge.direction === 'bidirectional')) {
+          const neighbor = edge.from;
+          if (!visited.has(neighbor)) {
+            await dfs2(neighbor, component);
+          }
+        } else if (edge.from === node && edge.direction === 'backward') {
+          const neighbor = edge.to;
+          if (!visited.has(neighbor)) {
+            await dfs2(neighbor, component);
+          }
+        }
+      }
+    };
+
+    for (const nodeId of finishOrder) {
+      if (!visited.has(nodeId)) {
+        const component: string[] = [];
+        componentIndex++;
+
+        const startSCCStep: AlgorithmStep = {
+          type: 'init',
+          message: `Bắt đầu SCC ${componentIndex}: Bắt đầu từ đỉnh ${nodeId} (theo thứ tự finish order). Sử dụng DFS trên đồ thị đảo để tìm tất cả các đỉnh trong SCC này.`,
+          current: nodeId,
+          visited: Array.from(visited),
+          nodes: nodes.map(n => n.id)
+        };
+        steps.push(startSCCStep);
+        if (onStep) await onStep(startSCCStep);
+
+        await dfs2(nodeId, component);
+        components.push(component);
+
+        const endSCCStep: AlgorithmStep = {
+          type: 'result',
+          message: `Hoàn thành SCC ${componentIndex}: Tìm được ${component.length} đỉnh: ${component.join(', ')}. Tất cả các đỉnh này có thể đến được lẫn nhau theo cả hai hướng.`,
+          visited: Array.from(visited),
+          nodes: nodes.map(n => n.id)
+        };
+        steps.push(endSCCStep);
+        if (onStep) await onStep(endSCCStep);
+      }
+    }
+
+    const resultStep: AlgorithmStep = {
+      type: 'result',
+      message: `Kết quả cuối cùng: Tìm được ${components.length} thành phần liên thông mạnh (SCC). ${components.map((c, i) => `SCC ${i + 1}: ${c.join(', ')}`).join('; ')}. Ứng dụng: Phân tích dependency graph, tối ưu hóa compiler, phân tích mạng xã hội có hướng.`,
+      nodes: nodes.map(n => n.id)
+    };
+    steps.push(resultStep);
+    if (onStep) await onStep(resultStep);
+
+    return {
+      components,
+      count: components.length,
+      steps
+    };
+  }
 }
 

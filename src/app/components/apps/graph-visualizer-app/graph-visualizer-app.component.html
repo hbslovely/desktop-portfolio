@@ -48,7 +48,7 @@
             <i class="pi pi-th-large"></i>
             Mẫu đồ thị
           </button>
-          <button (click)="showExportDialog.set(true); showActionMenu.set(false)">
+          <button (click)="exportGraph('matrix'); showActionMenu.set(false)">
             <i class="pi pi-download"></i>
             Xuất đồ thị
           </button>
@@ -161,9 +161,9 @@
         <div class="control-group">
           <label>Hướng:</label>
           <select [(ngModel)]="edgeDirection" class="input-control">
-            <option value="forward">A → B (Một chiều)</option>
-            <option value="backward">B → A (Ngược lại)</option>
-            <option value="bidirectional">A ↔ B (Hai chiều)</option>
+            <option [value]="'forward'">{{ getNodeLabel(selectedEdge() ? getEdgeFromNode(selectedEdge()!) : '') }} → {{ getNodeLabel(selectedEdge() ? getEdgeToNode(selectedEdge()!) : '') }} (Một chiều)</option>
+            <option [value]="'backward'">{{ getNodeLabel(selectedEdge() ? getEdgeToNode(selectedEdge()!) : '') }} → {{ getNodeLabel(selectedEdge() ? getEdgeFromNode(selectedEdge()!) : '') }} (Ngược lại)</option>
+            <option [value]="'bidirectional'">{{ getNodeLabel(selectedEdge() ? getEdgeFromNode(selectedEdge()!) : '') }} ↔ {{ getNodeLabel(selectedEdge() ? getEdgeToNode(selectedEdge()!) : '') }} (Hai chiều)</option>
           </select>
         </div>
 
@@ -193,14 +193,26 @@
         <div class="control-group">
           <label>Chọn thuật toán:</label>
           <select [(ngModel)]="selectedAlgorithm" class="input-control">
-            <option value="dijkstra">Dijkstra</option>
-            <option value="bellman-ford">Bellman-Ford</option>
-            <option value="floyd-warshall">Floyd-Warshall</option>
-            <option value="a-star">A* (A-Star)</option>
+            <optgroup label="Tìm đường đi ngắn nhất">
+              <option value="dijkstra">Dijkstra</option>
+              <option value="bellman-ford">Bellman-Ford</option>
+              <option value="floyd-warshall">Floyd-Warshall</option>
+              <option value="a-star">A* (A-Star)</option>
+            </optgroup>
+            <optgroup label="Tìm kiếm đồ thị">
+              <option value="bfs">BFS (Tìm kiếm chiều rộng)</option>
+              <option value="dfs">DFS (Tìm kiếm chiều sâu)</option>
+            </optgroup>
+            <optgroup label="Phân tích đồ thị">
+              <option value="graph-coloring">Tô màu đồ thị</option>
+              <option value="connected-components">Thành phần liên thông</option>
+              <option value="scc">Thành phần liên thông mạnh (SCC)</option>
+              <option value="cycle-detection">Phát hiện chu trình</option>
+            </optgroup>
           </select>
         </div>
 
-        <div class="control-group">
+        <div class="control-group" *ngIf="selectedAlgorithm() === 'dijkstra' || selectedAlgorithm() === 'bellman-ford' || selectedAlgorithm() === 'floyd-warshall' || selectedAlgorithm() === 'a-star'">
           <label>Start Node:</label>
           <select
             [(ngModel)]="startNode"
@@ -213,7 +225,7 @@
           </select>
         </div>
 
-        <div class="control-group">
+        <div class="control-group" *ngIf="selectedAlgorithm() === 'dijkstra' || selectedAlgorithm() === 'bellman-ford' || selectedAlgorithm() === 'floyd-warshall' || selectedAlgorithm() === 'a-star'">
           <label>End Node:</label>
           <select
             [(ngModel)]="endNode"
@@ -226,13 +238,26 @@
           </select>
         </div>
 
+        <div class="control-group" *ngIf="selectedAlgorithm() === 'bfs' || selectedAlgorithm() === 'dfs'">
+          <label>Start Node:</label>
+          <select
+            [(ngModel)]="startNode"
+            class="input-control"
+            [value]="startNode()">
+            <option [value]="null">-- Chọn --</option>
+            <option *ngFor="let node of nodes()" [value]="node.id">
+              {{ node.label }}
+            </option>
+          </select>
+        </div>
+
         <div class="button-group">
           <button
             class="btn btn-primary btn-large"
             (click)="findShortestPath()"
-            [disabled]="!startNode() || !endNode() || isCalculating()">
+            [disabled]="isCalculating() || (selectedAlgorithm() === 'dijkstra' || selectedAlgorithm() === 'bellman-ford' || selectedAlgorithm() === 'floyd-warshall' || selectedAlgorithm() === 'a-star') && (!startNode() || !endNode()) || (selectedAlgorithm() === 'bfs' || selectedAlgorithm() === 'dfs') && !startNode()">
             <i class="pi" [class.pi-spin]="isCalculating()" [class.pi-spinner]="isCalculating()" [class.pi-search]="!isCalculating()"></i>
-            {{ isCalculating() ? 'Đang tính...' : 'Tìm đường đi ngắn nhất' }}
+            {{ isCalculating() ? 'Đang tính...' : getAlgorithmButtonText() }}
           </button>
         </div>
       </div>
@@ -249,11 +274,11 @@
             <span class="label">Thuật toán:</span>
             <span class="value">{{ finalResult()!.algorithm }}</span>
           </div>
-          <div class="result-item">
+          <div class="result-item" *ngIf="finalResult()?.distance !== undefined && finalResult()!.distance !== Infinity">
             <span class="label">Khoảng cách:</span>
             <span class="value">{{ finalResult()!.distance }}</span>
           </div>
-          <div class="result-item">
+          <div class="result-item" *ngIf="finalResult()?.path">
             <span class="label">Đường đi:</span>
             <span class="value path">{{ finalResult()!.path.join(' → ') }}</span>
           </div>
@@ -280,39 +305,60 @@
       </div>
     </div>
 
-    <!-- Canvas Area -->
-    <div class="canvas-container">
-      <canvas
-        #canvas
-        tabindex="0"
-        (mousedown)="onCanvasMouseDown($event)"
-        (mousemove)="onCanvasMouseMove($event)"
-        (mouseup)="onCanvasMouseUp($event)"
-        (mouseleave)="onCanvasMouseUp($event)"
-        (wheel)="onCanvasWheel($event)"
-        (contextmenu)="$event.preventDefault()">
-      </canvas>
+    <!-- Main Content Area -->
+    <div class="main-content-wrapper">
+      <!-- Canvas Area -->
+      <div class="canvas-container" [class.with-panel]="showCalculationPanel()">
+        <canvas
+          #canvas
+          tabindex="0"
+          (mousedown)="onCanvasMouseDown($event)"
+          (mousemove)="onCanvasMouseMove($event)"
+          (mouseup)="onCanvasMouseUp($event)"
+          (mouseleave)="onCanvasMouseUp($event)"
+          (wheel)="onCanvasWheel($event)"
+          (contextmenu)="$event.preventDefault()">
+        </canvas>
+        
+        <!-- Inline weight editor -->
+        <div 
+          *ngIf="editingWeight()" 
+          class="weight-editor-overlay"
+          [style.left.px]="editingWeight()!.x"
+          [style.top.px]="editingWeight()!.y">
+          <input
+            type="number"
+            #weightInput
+            [value]="getEdgeWeight(editingWeight()!.edgeId)"
+            (blur)="finishEditingWeight()"
+            (keydown.enter)="finishEditingWeight()"
+            (keydown.escape)="cancelEditingWeight()"
+            min="1"
+            step="1"
+            class="weight-input-inline"
+            autofocus>
+        </div>
 
-      <!-- Zoom Controls (only in move mode) -->
-      <div class="zoom-controls" *ngIf="mode() === 'move'">
-        <button class="zoom-btn" (click)="zoomIn()" title="Phóng to">
-          <i class="pi pi-plus"></i>
-        </button>
-        <div class="zoom-level">{{ (zoomLevel() * 100).toFixed(0) }}%</div>
-        <button class="zoom-btn" (click)="zoomOut()" title="Thu nhỏ">
-          <i class="pi pi-minus"></i>
-        </button>
-        <button class="zoom-btn" (click)="resetZoom()" title="Đặt lại zoom">
-          <i class="pi pi-refresh"></i>
-        </button>
-        <button class="zoom-btn" (click)="fitToView()" title="Fit to View - Hiển thị tất cả nodes">
-          <i class="pi pi-th-large"></i>
-        </button>
+        <!-- Zoom Controls (only in move mode) -->
+        <div class="zoom-controls" *ngIf="mode() === 'move'">
+          <button class="zoom-btn" (click)="zoomIn()" title="Phóng to">
+            <i class="pi pi-plus"></i>
+          </button>
+          <div class="zoom-level">{{ (zoomLevel() * 100).toFixed(0) }}%</div>
+          <button class="zoom-btn" (click)="zoomOut()" title="Thu nhỏ">
+            <i class="pi pi-minus"></i>
+          </button>
+          <button class="zoom-btn" (click)="resetZoom()" title="Đặt lại zoom">
+            <i class="pi pi-refresh"></i>
+          </button>
+          <button class="zoom-btn" (click)="fitToView()" title="Fit to View - Hiển thị tất cả nodes">
+            <i class="pi pi-th-large"></i>
+          </button>
+        </div>
       </div>
-    </div>
 
-    <!-- Calculation Panel (Right Side) -->
-    <div class="calculation-panel" *ngIf="showCalculationPanel()">
+      <!-- Calculation Panel (Right Side) -->
+      <div class="calculation-panel" *ngIf="showCalculationPanel()">
       <div class="panel-header">
         <h3>
           <i class="pi pi-calculator"></i>
@@ -396,11 +442,11 @@
               <span class="label">Thuật toán:</span>
               <span class="value">{{ finalResult()!.algorithm }}</span>
             </div>
-            <div class="result-item">
+            <div class="result-item" *ngIf="finalResult()?.distance !== undefined && finalResult()!.distance !== Infinity">
               <span class="label">Khoảng cách:</span>
               <span class="value">{{ finalResult()!.distance }}</span>
             </div>
-            <div class="result-item">
+            <div class="result-item" *ngIf="finalResult()?.path">
               <span class="label">Đường đi:</span>
               <span class="value path">{{ finalResult()!.path.join(' → ') }}</span>
             </div>
@@ -627,16 +673,19 @@
                 <i class="pi pi-th-large"></i>
                 Mật độ (khoảng cách):
               </label>
-              <div class="select-wrapper">
-                <select
-                  [value]="templateConfig().density || 'medium'"
-                  (change)="updateTemplateConfigDensity($any($event.target).value)"
-                  class="form-input select-input">
-                  <option value="sparse">Thưa</option>
-                  <option value="medium">Vừa</option>
-                  <option value="dense">Hẹp</option>
-                  <option value="very-dense">Rất hẹp</option>
-                </select>
+              <input
+                type="range"
+                [value]="getDensityValue(templateConfig().density || 'medium')"
+                (input)="updateTemplateConfigDensityFromSlider(+$any($event.target).value)"
+                min="1"
+                max="5"
+                step="1"
+                class="range-input">
+              <div class="range-value">
+                <span [class.active]="templateConfig().density === 'sparse'">Thưa</span>
+                <span [class.active]="templateConfig().density === 'medium'">Vừa</span>
+                <span [class.active]="templateConfig().density === 'dense'">Hẹp</span>
+                <span [class.active]="templateConfig().density === 'very-dense'">Rất hẹp</span>
               </div>
               <small class="hint">Khoảng cách giữa các đỉnh trong đồ thị</small>
             </div>
@@ -1085,29 +1134,39 @@
         </button>
       </div>
       <div class="dialog-body">
-        <div class="form-section">
-          <label>Định dạng:</label>
-          <select [(ngModel)]="exportFormat" class="form-input">
-            <option value="json">JSON</option>
-            <option value="matrix">Ma trận</option>
-          </select>
+        <div class="export-info">
+          <div class="info-item">
+            <i class="pi pi-info-circle"></i>
+            <span>Đồ thị sẽ được xuất dưới dạng ma trận kề (file .grp)</span>
+          </div>
         </div>
         <div class="form-section">
-          <label>Dữ liệu:</label>
+          <label>Tên file:</label>
+          <input
+            type="text"
+            [(ngModel)]="exportFileName"
+            class="form-input"
+            placeholder="graph"
+            maxlength="50">
+          <small class="hint">File sẽ được lưu với phần mở rộng .grp</small>
+        </div>
+        <div class="form-section">
+          <label>Xem trước dữ liệu:</label>
           <textarea
-            [(ngModel)]="exportData"
+            [value]="getMatrixExportData()"
             class="form-input export-textarea"
             readonly
-            rows="15"></textarea>
+            rows="12"></textarea>
         </div>
       </div>
       <div class="dialog-footer">
         <button (click)="showExportDialog.set(false)" class="btn btn-secondary">
-          Đóng
+          <i class="pi pi-times"></i>
+          Hủy
         </button>
-        <button (click)="copyExportData()" class="btn btn-primary">
-          <i class="pi pi-copy"></i>
-          Sao chép
+        <button (click)="downloadGraphFile()" class="btn btn-primary">
+          <i class="pi pi-download"></i>
+          Tải xuống file (.grp)
         </button>
       </div>
     </div>
@@ -1126,22 +1185,78 @@
         </button>
       </div>
       <div class="dialog-body">
-        <div class="form-section">
-          <label>Dán dữ liệu (JSON hoặc Ma trận):</label>
-          <textarea
-            [(ngModel)]="importData"
-            class="form-input import-textarea"
-            rows="15"
-            placeholder='JSON: {"nodes": [...], "edges": [...]}&#10;Ma trận: Tab-separated values'></textarea>
+        <div class="import-tabs">
+          <button 
+            class="tab-btn" 
+            [class.active]="importMode() === 'file'"
+            (click)="importMode.set('file')">
+            <i class="pi pi-file"></i>
+            Chọn file (.grp)
+          </button>
+          <button 
+            class="tab-btn" 
+            [class.active]="importMode() === 'text'"
+            (click)="importMode.set('text')">
+            <i class="pi pi-pencil"></i>
+            Nhập trực tiếp
+          </button>
+        </div>
+
+        <!-- File Input Mode -->
+        <div class="import-content" *ngIf="importMode() === 'file'">
+          <div class="file-upload-area" 
+               (click)="fileInput?.click()"
+               (dragover)="onDragOver($event)"
+               (drop)="onFileDrop($event)"
+               [class.drag-over]="isDragOver()">
+            <input
+              #fileInput
+              type="file"
+              accept=".grp,.json"
+              (change)="onFileSelected($event)"
+              style="display: none">
+            <div class="upload-content">
+              <i class="pi pi-cloud-upload"></i>
+              <p class="upload-text">Kéo thả file vào đây hoặc click để chọn</p>
+              <p class="upload-hint">Hỗ trợ file .grp (ma trận) hoặc .json</p>
+            </div>
+          </div>
+          <div class="file-info" *ngIf="selectedFileName()">
+            <i class="pi pi-file"></i>
+            <span>{{ selectedFileName() }}</span>
+            <button (click)="clearSelectedFile()" class="clear-file-btn">
+              <i class="pi pi-times"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Text Input Mode -->
+        <div class="import-content" *ngIf="importMode() === 'text'">
+          <div class="form-section">
+            <label>Nhập dữ liệu (Ma trận hoặc JSON):</label>
+            <textarea
+              [(ngModel)]="importData"
+              class="form-input import-textarea"
+              rows="15"
+              placeholder='Ma trận (tab-separated):&#10;  N0  N1  N2&#10;N0  0   5   3&#10;N1  5   0   2&#10;N2  3   2   0&#10;&#10;Hoặc JSON:&#10;{"nodes": [...], "edges": [...]}'></textarea>
+            <small class="hint">
+              <i class="pi pi-info-circle"></i>
+              Ma trận: Dòng đầu là header (tên các node), các dòng sau là ma trận kề. Sử dụng tab hoặc space để phân cách.
+            </small>
+          </div>
         </div>
       </div>
       <div class="dialog-footer">
         <button (click)="showImportDialog.set(false)" class="btn btn-secondary">
+          <i class="pi pi-times"></i>
           Hủy
         </button>
-        <button (click)="importGraph()" class="btn btn-primary">
+        <button 
+          (click)="importGraph()" 
+          class="btn btn-primary"
+          [disabled]="importMode() === 'file' && !selectedFileName()">
           <i class="pi pi-check"></i>
-          Nhập
+          Nhập đồ thị
         </button>
       </div>
     </div>
