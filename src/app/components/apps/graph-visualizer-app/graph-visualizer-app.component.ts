@@ -30,7 +30,6 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
   isSelecting = signal<boolean>(false);
   selectionRect = signal<{ x1: number; y1: number; x2: number; y2: number } | null>(null);
   creatingEdge = signal<{ from: string | null; to: string | null }>({ from: null, to: null });
-  editingWeight = signal<{ edgeId: string; x: number; y: number } | null>(null);
   mode = signal<'create-node' | 'move' | 'add-edge' | 'select'>('move'); // 'create-node', 'move', 'add-edge', 'select'
   zoomLevel = signal<number>(1);
   panOffset = signal<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -67,9 +66,19 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
   currentStep = signal<number>(0);
   isAnimating = signal<boolean>(false);
   showCalculationPanel = signal<boolean>(false);
+  sidebarView = signal<'control' | 'result'>('control'); // 'control' or 'result'
   finalResult = signal<PathResult | null>(null);
   highlightedStepNode = signal<string | null>(null);
   highlightedStepEdge = signal<{ from: string; to: string } | null>(null);
+  animationProgress = signal<number>(0); // 0-1 for animation progress
+  visitedNodes = signal<Set<string>>(new Set()); // Nodes visited during algorithm
+  processingNodes = signal<Set<string>>(new Set()); // Nodes currently being processed
+  nodeColors = signal<Record<string, number>>({}); // For graph coloring result
+  componentColors = signal<Record<string, number>>({}); // For connected components highlighting
+  cycleColors = signal<Record<string, number>>({}); // For cycle detection highlighting
+  savedNodeColors = signal<Record<string, number>>({}); // Saved colors for restore
+  savedComponentColors = signal<Record<string, number>>({}); // Saved component colors for restore
+  savedCycleColors = signal<Record<string, number>>({}); // Saved cycle colors for restore
 
   private ctx: CanvasRenderingContext2D | null = null;
   private animationFrame: number | null = null;
@@ -109,11 +118,11 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
   // Settings
   showSettingsDialog = signal<boolean>(false);
   nodeNamingMode = signal<'numeric' | 'alphabetic' | 'indexed'>('indexed'); // N0, N1... | A, B, C... | 1, 2, 3...
-  
+
   // Help dialog
   showHelpDialog = signal<boolean>(false);
   dontShowHelpAgain = signal<boolean>(false);
-  
+
   // Visual settings
   nodeColor = signal<string>('#2196F3');
   nodeRadius = signal<number>(25);
@@ -160,7 +169,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
         this.endNodeColor();
         this.pathNodeColor();
         this.pathEdgeColor();
-        
+
         setTimeout(() => this.drawSettingsPreview(), 50);
       }
     });
@@ -187,6 +196,97 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
         this.showHelpDialog.set(true);
       }, 500);
     }
+
+    // Watch mode changes to reset edge creation
+    effect(() => {
+      const currentMode = this.mode();
+      const creating = this.creatingEdge();
+
+      // If switching away from add-edge mode and edge creation is in progress, reset it
+      if (currentMode !== 'add-edge' && creating.from !== null) {
+        this.creatingEdge.set({ from: null, to: null });
+        this.selectedNode.set(null);
+        this.mousePosition.set(null);
+        this.drawGraph();
+      }
+    }, { allowSignalWrites: true });
+
+    // Watch sidebar view changes to reset/restore colors
+    effect(() => {
+      const view = this.sidebarView();
+      const hasResult = this.finalResult() !== null;
+
+      if (view === 'control' && hasResult) {
+        // Reset colors when switching to control view
+        this.nodeColors.set({});
+        this.componentColors.set({});
+        this.cycleColors.set({});
+        // Use setTimeout to ensure drawGraph is called after state update
+        setTimeout(() => {
+          this.drawGraph();
+        }, 0);
+      } else if (view === 'result' && hasResult) {
+        // Restore colors when switching to result view
+        const savedNode = this.savedNodeColors();
+        const savedComponent = this.savedComponentColors();
+        const savedCycle = this.savedCycleColors();
+
+        // Only restore if we have saved colors
+        if (Object.keys(savedNode).length > 0 || Object.keys(savedComponent).length > 0 || Object.keys(savedCycle).length > 0) {
+          this.nodeColors.set(savedNode);
+          this.componentColors.set(savedComponent);
+          this.cycleColors.set(savedCycle);
+          // Use setTimeout to ensure drawGraph is called after state update
+          setTimeout(() => {
+            this.drawGraph();
+          }, 0);
+        }
+      }
+    }, { allowSignalWrites: true });
+
+    // Auto-save edge config when weight or direction changes
+    let autoSaveTimeout: any = null;
+    let isUpdatingEdge = false; // Flag to prevent infinite loop
+
+    effect(() => {
+      const selectedEdgeId = this.selectedEdge();
+      const weight = this.edgeWeight();
+      const direction = this.edgeDirection();
+
+      // Skip if currently updating to prevent loop
+      if (isUpdatingEdge) {
+        return;
+      }
+
+      // Only auto-save if edge is selected and config panel is open
+      if (selectedEdgeId && this.showEdgeConfig()) {
+        // Get current edge values
+        const currentEdge = this.edges().find(e => e.id === selectedEdgeId);
+        if (!currentEdge) return;
+
+        // Check if values actually changed from current edge
+        if (currentEdge.weight === weight && currentEdge.direction === direction) {
+          return; // No change, skip auto-save
+        }
+
+        // Debounce to avoid too many updates
+        if (autoSaveTimeout) {
+          clearTimeout(autoSaveTimeout);
+        }
+        autoSaveTimeout = setTimeout(() => {
+          // Double-check edge still exists and values are different
+          const edge = this.edges().find(e => e.id === selectedEdgeId);
+          if (edge && (edge.weight !== weight || edge.direction !== direction) && !isUpdatingEdge) {
+            isUpdatingEdge = true;
+            this.updateEdge(selectedEdgeId);
+            // Reset flag after update completes
+            setTimeout(() => {
+              isUpdatingEdge = false;
+            }, 50);
+          }
+        }, 300); // Wait 300ms after last change
+      }
+    }, { allowSignalWrites: true });
   }
 
   // Hover state for edge creation
@@ -279,40 +379,6 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
       this.drawGraph();
       this.setupResizeObserver();
     }, 0);
-
-    // Watch mode changes to reset edge creation
-    effect(() => {
-      const currentMode = this.mode();
-      const creating = this.creatingEdge();
-      
-      // If switching away from add-edge mode and edge creation is in progress, reset it
-      if (currentMode !== 'add-edge' && creating.from !== null) {
-        this.creatingEdge.set({ from: null, to: null });
-        this.selectedNode.set(null);
-        this.mousePosition.set(null);
-        this.drawGraph();
-      }
-    });
-
-    // Auto-save edge config when weight or direction changes
-    let autoSaveTimeout: any = null;
-    effect(() => {
-      const selectedEdgeId = this.selectedEdge();
-      const weight = this.edgeWeight();
-      const direction = this.edgeDirection();
-      
-      // Only auto-save if edge is selected and config panel is open
-      if (selectedEdgeId && this.showEdgeConfig()) {
-        // Debounce to avoid too many updates
-        if (autoSaveTimeout) {
-          clearTimeout(autoSaveTimeout);
-        }
-        autoSaveTimeout = setTimeout(() => {
-          this.updateEdge(selectedEdgeId);
-          this.drawGraph();
-        }, 300); // Wait 300ms after last change
-      }
-    });
   }
 
   setupResizeObserver() {
@@ -328,7 +394,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     });
 
     resizeObserver.observe(container);
-    
+
     // Store observer for cleanup
     (this as any).resizeObserver = resizeObserver;
   }
@@ -423,7 +489,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     if (this.animationFrame) {
       cancelAnimationFrame(this.animationFrame);
     }
-    
+
     // Cleanup ResizeObserver
     if ((this as any).resizeObserver) {
       (this as any).resizeObserver.disconnect();
@@ -441,7 +507,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     // Handle Delete key
     if (event.key === 'Delete' || event.key === 'Backspace' || event.keyCode === 46 || event.keyCode === 8) {
       event.preventDefault();
-      
+
       // Delete selected edge first (if any)
       const selectedEdgeId = this.selectedEdge();
       if (selectedEdgeId) {
@@ -461,15 +527,15 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
       if (selectedNodes.size > 0) {
         // Create a copy of the set to avoid modification during iteration
         const nodesToDelete = Array.from(selectedNodes);
-        
+
         // Delete all nodes and their edges at once
         const currentNodes = this.nodes();
         const currentEdges = this.edges();
         const nodesToKeep = currentNodes.filter(n => !nodesToDelete.includes(n.id));
-        const edgesToKeep = currentEdges.filter(e => 
+        const edgesToKeep = currentEdges.filter(e =>
           !nodesToDelete.includes(e.from) && !nodesToDelete.includes(e.to)
         );
-        
+
         // Update start/end nodes if they were deleted
         if (nodesToDelete.includes(this.startNode() || '')) {
           this.startNode.set(null);
@@ -477,7 +543,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
         if (nodesToDelete.includes(this.endNode() || '')) {
           this.endNode.set(null);
         }
-        
+
         this.nodes.set(nodesToKeep);
         this.edges.set(edgesToKeep);
         this.selectedNodes.set(new Set());
@@ -584,29 +650,11 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
       return;
     }
 
-    // Check if clicking on weight label (in move and add-edge modes)
+    // Check if clicking on an edge (in move and add-edge modes)
     if (currentMode === 'move' || currentMode === 'add-edge') {
-      const weightAt = this.getWeightAt(x, y);
-      if (weightAt) {
-        // Convert world coordinates to screen coordinates for overlay
-        const zoom = this.zoomLevel();
-        const pan = this.panOffset();
-        const screenX = (weightAt.weightX + pan.x) * zoom;
-        const screenY = (weightAt.weightY + pan.y) * zoom;
-        
-        this.editingWeight.set({
-          edgeId: weightAt.edge.id,
-          x: screenX - 25,
-          y: screenY - 10
-        });
-        this.drawGraph();
-        return;
-      }
-      
-      // Check if clicking on an edge
       const clickedEdge = this.getEdgeAt(x, y);
       if (clickedEdge) {
-        // Double-click or single click to edit edge
+        // Single click to edit edge (opens config panel)
         this.handleEdgeClick(clickedEdge);
         return;
       }
@@ -694,58 +742,6 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     return null;
   }
 
-  getWeightAt(x: number, y: number): { edge: GraphEdge; weightX: number; weightY: number } | null {
-    const edges = this.edges();
-    const nodes = this.nodes();
-
-    // Find all edges between same nodes to check for curved edges
-    const edgeGroups = new Map<string, GraphEdge[]>();
-    edges.forEach(edge => {
-      const key = `${edge.from}-${edge.to}`;
-      if (!edgeGroups.has(key)) {
-        edgeGroups.set(key, []);
-      }
-      edgeGroups.get(key)!.push(edge);
-    });
-
-    for (const edge of edges) {
-      const fromNode = nodes.find(n => n.id === edge.from);
-      const toNode = nodes.find(n => n.id === edge.to);
-      if (!fromNode || !toNode) continue;
-
-      // Check if this is a curved edge (multiple edges between same nodes)
-      const sameEdges = edgeGroups.get(`${edge.from}-${edge.to}`) || [];
-      const isCurved = sameEdges.length > 1;
-      const edgeIndex = sameEdges.indexOf(edge);
-
-      let weightX: number, weightY: number;
-
-      if (isCurved && edgeIndex > 0) {
-        // Curved edge - calculate control point
-        const dx = toNode.x - fromNode.x;
-        const dy = toNode.y - fromNode.y;
-        const angle = Math.atan2(dy, dx);
-        const perpendicularAngle = angle + Math.PI / 2;
-        const curveDirection = edgeIndex % 2 === 0 ? 1 : -1;
-        const curveOffset = 40 * curveDirection * Math.ceil(edgeIndex / 2);
-        const midX = (fromNode.x + toNode.x) / 2;
-        const midY = (fromNode.y + toNode.y) / 2;
-        weightX = midX + Math.cos(perpendicularAngle) * curveOffset;
-        weightY = midY + Math.sin(perpendicularAngle) * curveOffset;
-      } else {
-        // Straight edge - use midpoint
-        weightX = (fromNode.x + toNode.x) / 2;
-        weightY = (fromNode.y + toNode.y) / 2;
-      }
-
-      // Check if click is near weight label (30x20 rectangle)
-      const distance = Math.sqrt((x - weightX) ** 2 + (y - weightY) ** 2);
-      if (distance <= 20) {
-        return { edge, weightX, weightY };
-      }
-    }
-    return null;
-  }
 
   distanceToLineSegment(px: number, py: number, x1: number, y1: number, x2: number, y2: number): number {
     const A = px - x1;
@@ -786,9 +782,13 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
   }
 
   handleEdgeClick(edge: GraphEdge) {
+    // Prevent auto-save from triggering during initialization
     this.selectedEdge.set(edge.id);
-    this.edgeWeight.set(edge.weight);
-    this.edgeDirection.set(edge.direction);
+    // Use setTimeout to set values after edge is selected to avoid triggering auto-save
+    setTimeout(() => {
+      this.edgeWeight.set(edge.weight);
+      this.edgeDirection.set(edge.direction);
+    }, 0);
     this.showEdgeConfig.set(true);
     this.drawGraph();
   }
@@ -798,34 +798,6 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     return edge?.weight || 1;
   }
 
-  finishEditingWeight() {
-    const editing = this.editingWeight();
-    if (!editing) return;
-
-    const input = document.querySelector('.weight-input-inline') as HTMLInputElement;
-    if (input) {
-      const newWeight = parseInt(input.value, 10);
-      if (!isNaN(newWeight) && newWeight >= 1) {
-        const edges = this.edges();
-        const edgeIndex = edges.findIndex(e => e.id === editing.edgeId);
-        if (edgeIndex !== -1) {
-          const updatedEdges = [...edges];
-          updatedEdges[edgeIndex] = {
-            ...updatedEdges[edgeIndex],
-            weight: newWeight
-          };
-          this.edges.set(updatedEdges);
-          this.drawGraph();
-        }
-      }
-    }
-    this.editingWeight.set(null);
-  }
-
-  cancelEditingWeight() {
-    this.editingWeight.set(null);
-    this.drawGraph();
-  }
 
   handleNodeClick(node: GraphNode) {
     this.selectedNode.set(node.id);
@@ -926,11 +898,20 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     const edgeIndex = edges.findIndex(e => e.id === edgeId);
     if (edgeIndex === -1) return;
 
+    const newWeight = this.edgeWeight();
+    const newDirection = this.edgeDirection();
+
+    // Check if values actually changed to avoid unnecessary updates
+    const currentEdge = edges[edgeIndex];
+    if (currentEdge.weight === newWeight && currentEdge.direction === newDirection) {
+      return; // No change, skip update
+    }
+
     const updatedEdges = [...edges];
     updatedEdges[edgeIndex] = {
       ...updatedEdges[edgeIndex],
-      weight: this.edgeWeight(),
-      direction: this.edgeDirection()
+      weight: newWeight,
+      direction: newDirection
     };
 
     this.edges.set(updatedEdges);
@@ -984,7 +965,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     // Update mouse position for edge creation visualization (in add-edge mode)
     if (currentMode === 'add-edge') {
       this.mousePosition.set({ x, y });
-      
+
       // Check if hovering over a node
       const hoveredNode = this.getNodeAt(x, y);
       if (hoveredNode && this.creatingEdge().from !== null && hoveredNode.id !== this.creatingEdge().from) {
@@ -1008,7 +989,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
         const maxY = (canvas.height / this.zoomLevel()) - this.panOffset().y - nodeRadius;
         const minX = -this.panOffset().x + nodeRadius;
         const minY = -this.panOffset().y + nodeRadius;
-        
+
         updatedNodes[nodeIndex] = {
           ...updatedNodes[nodeIndex],
           x: Math.max(minX, Math.min(maxX, x)),
@@ -1028,7 +1009,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     if (!canvas) return;
 
     const oldZoom = this.zoomLevel();
-    
+
     // Calculate smooth zoom factor based on scroll delta
     // Use a smaller factor for smoother zooming (0.02 = 2% per scroll unit)
     const zoomSensitivity = 0.02;
@@ -1063,11 +1044,11 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
         const maxX = Math.max(rect.x1, rect.x2);
         const minY = Math.min(rect.y1, rect.y2);
         const maxY = Math.max(rect.y1, rect.y2);
-        
+
         const nodes = this.nodes();
         const selected = new Set(this.selectedNodes());
         const nodeRadius = this.nodeRadius();
-        
+
         nodes.forEach(node => {
           // Check if node center is inside selection rectangle
           if (node.x >= minX - nodeRadius && node.x <= maxX + nodeRadius &&
@@ -1084,7 +1065,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
             }
           }
         });
-        
+
         this.selectedNodes.set(selected);
       }
       this.isSelecting.set(false);
@@ -1172,7 +1153,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     edges.forEach(edge => {
       // Create a key for the edge pair (order-independent, use sorted node IDs)
       const nodePair = [edge.from, edge.to].sort().join('-');
-      
+
       if (!edgeGroups.has(nodePair)) {
         edgeGroups.set(nodePair, []);
       }
@@ -1185,14 +1166,18 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
       const toNode = nodes.find(n => n.id === edge.to);
       if (!fromNode || !toNode) return;
 
+      // Check if edge is part of shortest path
       const isHighlighted = pathResult?.path && Array.isArray(pathResult.path) && pathResult.path.some((nodeId: string, index: number) => {
         const nextId = pathResult.path[index + 1];
+        if (!nextId) return false;
+        // Check both directions for bidirectional edges
         return (edge.from === nodeId && edge.to === nextId) ||
-               (edge.direction === 'bidirectional' && edge.from === nextId && edge.to === nodeId);
+               (edge.direction === 'bidirectional' && edge.from === nextId && edge.to === nodeId) ||
+               (edge.direction === 'bidirectional' && edge.from === nodeId && edge.to === nextId);
       });
 
       // Check if edge is highlighted from step
-      const isStepHighlighted = highlightedStepEdge && 
+      const isStepHighlighted = highlightedStepEdge &&
         ((edge.from === highlightedStepEdge.from && edge.to === highlightedStepEdge.to) ||
          (edge.direction === 'bidirectional' && edge.from === highlightedStepEdge.to && edge.to === highlightedStepEdge.from));
 
@@ -1223,7 +1208,11 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
       const isSelected = selectedNodeId === node.id || selectedNodes.has(node.id);
       const isInPath = pathResult?.path && Array.isArray(pathResult.path) && pathResult.path.includes(node.id) || false;
       const isStepHighlighted = highlightedStepNode === node.id;
-      this.drawNode(node, isSelected, isInPath, isStepHighlighted);
+
+      // Get color from algorithm results
+      const nodeColorFromResult = this.getNodeColorFromResult(node.id);
+
+      this.drawNode(node, isSelected, isInPath, isStepHighlighted, nodeColorFromResult);
     });
 
     // Restore transform
@@ -1242,12 +1231,12 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
       const y1 = (selectionRect.y1 + pan.y) * zoom;
       const x2 = (selectionRect.x2 + pan.x) * zoom;
       const y2 = (selectionRect.y2 + pan.y) * zoom;
-      
+
       const minX = Math.min(x1, x2);
       const maxX = Math.max(x1, x2);
       const minY = Math.min(y1, y2);
       const maxY = Math.max(y1, y2);
-      
+
       this.ctx.strokeStyle = '#2196F3';
       this.ctx.lineWidth = 2;
       this.ctx.setLineDash([5, 5]);
@@ -1261,6 +1250,8 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
   drawEdge(from: GraphNode, to: GraphNode, edge: GraphEdge, isHighlighted: boolean, isSelected: boolean, isStepHighlighted: boolean = false, isCurved: boolean = false, curveIndex: number = 0) {
     if (!this.ctx) return;
 
+    const animationProgress = this.animationProgress();
+
     const dx = to.x - from.x;
     const dy = to.y - from.y;
     const angle = Math.atan2(dy, dx);
@@ -1273,19 +1264,28 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     const endX = to.x - Math.cos(angle) * nodeRadius;
     const endY = to.y - Math.sin(angle) * nodeRadius;
 
-    // Draw edge line - step highlight takes priority (red)
+    // Draw edge line with animation - step highlight takes priority (red)
     if (isStepHighlighted) {
-      this.ctx.strokeStyle = '#F44336';
-      this.ctx.lineWidth = 4;
+      // Animated red edge for step highlight
+      const edgeIntensity = 0.6 + (animationProgress * 0.4);
+      this.ctx.strokeStyle = this.adjustColorIntensity('#F44336', edgeIntensity);
+      this.ctx.lineWidth = 3 + (animationProgress * 3); // Animate from 3 to 6
+
+      // Add glow effect
+      this.ctx.shadowBlur = 15 * animationProgress;
+      this.ctx.shadowColor = '#F44336';
     } else if (isHighlighted) {
       this.ctx.strokeStyle = this.pathEdgeColor();
       this.ctx.lineWidth = Math.max(3, this.edgeThickness() + 2);
+      this.ctx.shadowBlur = 0;
     } else if (isSelected) {
       this.ctx.strokeStyle = '#2196F3';
       this.ctx.lineWidth = Math.max(2, this.edgeThickness() + 1);
+      this.ctx.shadowBlur = 0;
     } else {
       this.ctx.strokeStyle = this.edgeColor();
       this.ctx.lineWidth = this.edgeThickness();
+      this.ctx.shadowBlur = 0;
     }
 
     this.ctx.beginPath();
@@ -1298,7 +1298,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
       // Alternate curve direction: first curved edge goes up, second goes down, etc.
       const curveDirection = curveIndex % 2 === 0 ? 1 : -1;
       const curveOffset = 40 * curveDirection * Math.ceil((curveIndex) / 2);
-      
+
       // Control point for quadratic curve (perpendicular to the line)
       const midX = (from.x + to.x) / 2;
       const midY = (from.y + to.y) / 2;
@@ -1324,6 +1324,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     }
 
     this.ctx.stroke();
+    this.ctx.shadowBlur = 0; // Reset shadow after drawing
 
     // Calculate angle at end point for arrow (for curved edges)
     let arrowAngle = angle;
@@ -1332,19 +1333,19 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     let arrowEndY = endY;
     let arrowStartX = startX;
     let arrowStartY = startY;
-    
+
     if (isCurved) {
       // Use curve end points
       arrowEndX = to.x - Math.cos(angle) * nodeRadius;
       arrowEndY = to.y - Math.sin(angle) * nodeRadius;
       arrowStartX = from.x + Math.cos(angle) * nodeRadius;
       arrowStartY = from.y + Math.sin(angle) * nodeRadius;
-      
+
       // Calculate tangent angle at end point for curved edge
       const dx2 = arrowEndX - controlX;
       const dy2 = arrowEndY - controlY;
       arrowAngle = Math.atan2(dy2, dx2);
-      
+
       // Calculate tangent angle at start point for curved edge
       const dx3 = controlX - arrowStartX;
       const dy3 = controlY - arrowStartY;
@@ -1366,19 +1367,14 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     const weightX = controlX;
     const weightY = controlY;
 
-    // Check if this weight is being edited
-    const editingWeight = this.editingWeight();
-    const isEditing = editingWeight && editingWeight.edgeId === edge.id;
-
-    if (!isEditing) {
-      this.ctx.fillStyle = '#fff';
-      this.ctx.fillRect(weightX - 15, weightY - 10, 30, 20);
-      this.ctx.fillStyle = '#333';
-      this.ctx.font = '12px Arial';
-      this.ctx.textAlign = 'center';
-      this.ctx.textBaseline = 'middle';
-      this.ctx.fillText(edge.weight.toString(), weightX, weightY);
-    }
+    // Draw weight label
+    this.ctx.fillStyle = '#fff';
+    this.ctx.fillRect(weightX - 15, weightY - 10, 30, 20);
+    this.ctx.fillStyle = '#333';
+    this.ctx.font = '12px Arial';
+    this.ctx.textAlign = 'center';
+    this.ctx.textBaseline = 'middle';
+    this.ctx.fillText(edge.weight.toString(), weightX, weightY);
   }
 
   drawArrow(x: number, y: number, angle: number, isHighlighted: boolean) {
@@ -1425,7 +1421,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     this.ctx.setLineDash([]);
   }
 
-  drawNode(node: GraphNode, isSelected: boolean, isInPath: boolean, isStepHighlighted: boolean = false) {
+  drawNode(node: GraphNode, isSelected: boolean, isInPath: boolean, isStepHighlighted: boolean = false, customColor?: string | null) {
     if (!this.ctx) return;
 
     const radius = this.nodeRadius();
@@ -1434,14 +1430,70 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     const isStartHighlighted = startNode === node.id;
     const isEndHighlighted = endNode === node.id;
     const isHovered = this.hoveredNode() === node.id && this.mode() === 'add-edge' && this.creatingEdge().from !== null;
+    const visitedNodes = this.visitedNodes();
+    const processingNodes = this.processingNodes();
+    const animationProgress = this.animationProgress();
+    const hasResult = this.finalResult() !== null;
+    const isVisited = visitedNodes.has(node.id);
+    // Only consider processing if algorithm is still running (no final result yet)
+    const isProcessing = !hasResult && processingNodes.has(node.id);
+
+    // Calculate animated radius for pulse effect
+    let animatedRadius = radius;
+    if (isStepHighlighted || isProcessing) {
+      const pulseScale = 1 + (animationProgress * 0.3); // Pulse from 1.0 to 1.3
+      animatedRadius = radius * pulseScale;
+    }
+
+    // Draw glow effect for highlighted/processing nodes
+    if (isStepHighlighted || isProcessing) {
+      const glowIntensity = animationProgress * 0.5;
+      this.ctx.save();
+      this.ctx.shadowBlur = 20 * glowIntensity;
+      this.ctx.shadowColor = isStepHighlighted ? '#F44336' : '#2196F3';
+      this.ctx.beginPath();
+      this.ctx.arc(node.x, node.y, animatedRadius, 0, 2 * Math.PI);
+      this.ctx.fillStyle = 'rgba(0, 0, 0, 0)';
+      this.ctx.fill();
+      this.ctx.restore();
+    }
 
     // Draw node circle
     this.ctx.beginPath();
-    this.ctx.arc(node.x, node.y, radius, 0, 2 * Math.PI);
+    this.ctx.arc(node.x, node.y, animatedRadius, 0, 2 * Math.PI);
 
-    // Step highlight takes priority (red)
+    // Custom color from algorithm result takes priority (except step highlight)
+    const colorPalette = [
+      '#2196F3', // Blue
+      '#4CAF50', // Green
+      '#FF9800', // Orange
+      '#9C27B0', // Purple
+      '#F44336', // Red
+      '#00BCD4', // Cyan
+      '#FFEB3B', // Yellow
+      '#795548', // Brown
+      '#E91E63', // Pink
+      '#607D8B'  // Blue Grey
+    ];
+
+    // Step highlight takes priority (red with animation)
     if (isStepHighlighted) {
-      this.ctx.fillStyle = '#F44336';
+      // Animate color intensity
+      const baseColor = '#F44336';
+      const intensity = 0.7 + (animationProgress * 0.3);
+      this.ctx.fillStyle = this.adjustColorIntensity(baseColor, intensity);
+    } else if (isProcessing) {
+      // Processing nodes get blue pulse
+      const baseColor = '#2196F3';
+      const intensity = 0.6 + (animationProgress * 0.4);
+      this.ctx.fillStyle = this.adjustColorIntensity(baseColor, intensity);
+    } else if (customColor) {
+      // Use custom color from algorithm result (graph coloring, components, cycles)
+      // This takes priority over visited gray color
+      this.ctx.fillStyle = customColor;
+    } else if (isVisited && this.isAnimating() && this.selectedAlgorithm() !== 'graph-coloring') {
+      // Visited nodes during animation get gray color (except for graph coloring which uses custom colors)
+      this.ctx.fillStyle = '#9E9E9E'; // Gray color for visited nodes
     } else if (node.isStart || isStartHighlighted) {
       this.ctx.fillStyle = this.startNodeColor();
     } else if (node.isEnd || isEndHighlighted) {
@@ -1458,9 +1510,10 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     this.ctx.fill();
 
     if (isStepHighlighted) {
-      // Red border for step highlight
-      this.ctx.strokeStyle = '#D32F2F';
-      this.ctx.lineWidth = 5;
+      // Animated red border for step highlight
+      const borderIntensity = 0.5 + (animationProgress * 0.5);
+      this.ctx.strokeStyle = this.adjustColorIntensity('#D32F2F', borderIntensity);
+      this.ctx.lineWidth = 3 + (animationProgress * 4); // Animate from 3 to 7
     } else if (isSelected) {
       this.ctx.strokeStyle = '#FF5722';
       this.ctx.lineWidth = 3;
@@ -1494,7 +1547,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
 
     // Algorithms that require start and end nodes
     const requiresStartEnd = ['dijkstra', 'bellman-ford', 'floyd-warshall', 'a-star'];
-    
+
     if (requiresStartEnd.includes(algorithm)) {
       if (!start || !end) {
         alert('Vui lòng chọn Start và End node');
@@ -1517,6 +1570,11 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     this.pathResult.set(null);
     this.algorithmSteps.set([]);
     this.currentStep.set(0);
+    this.highlightedStepNode.set(null);
+    this.highlightedStepEdge.set(null);
+    this.visitedNodes.set(new Set());
+    this.processingNodes.set(new Set());
+    this.animationProgress.set(0);
 
     const nodes = this.nodes();
     const edges = this.edges();
@@ -1524,8 +1582,14 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     const onStep = async (step: any) => {
       this.algorithmSteps.set([...this.algorithmSteps(), step]);
       this.currentStep.set(this.algorithmSteps().length - 1);
+
+      // Extract information from step for animation
+      this.updateStepHighlight(step);
+
+      // Animate the step
+      await this.animateStep(step);
+
       this.drawGraph();
-      await new Promise(resolve => setTimeout(resolve, 500));
     };
 
     let result: AlgorithmResult | any;
@@ -1567,10 +1631,308 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
 
     this.pathResult.set(result);
     this.finalResult.set(result);
+
+    // Clear processing nodes when algorithm completes
+    this.processingNodes.set(new Set());
+    this.highlightedStepNode.set(null);
+    this.highlightedStepEdge.set(null);
+
+    // Process result for visualization
+    this.processAlgorithmResult(result, algorithm);
+
     this.isCalculating.set(false);
     this.isAnimating.set(false);
     this.showCalculationPanel.set(true);
-    this.drawGraph();
+    this.sidebarView.set('result'); // Switch to result view
+
+    // Ensure colors are applied after processing result
+    setTimeout(() => {
+      this.drawGraph();
+    }, 0);
+  }
+
+  processAlgorithmResult(result: any, algorithm: string) {
+    // Clear previous colors
+    this.nodeColors.set({});
+    this.componentColors.set({});
+    this.cycleColors.set({});
+    // Clear saved colors
+    this.savedNodeColors.set({});
+    this.savedComponentColors.set({});
+    this.savedCycleColors.set({});
+
+    if (algorithm === 'graph-coloring' && result.colors) {
+      // Graph coloring: assign random colors to nodes based on color index
+      // Map color indices to random colors from palette
+      const colorPalette = [
+        '#2196F3', '#4CAF50', '#FF9800', '#9C27B0', '#F44336',
+        '#00BCD4', '#FFEB3B', '#795548', '#E91E63', '#607D8B'
+      ];
+
+      // Create a mapping from color index to random color
+      const colorIndexToColor = new Map<number, number>();
+      const usedColorIndices = new Set<number>();
+
+      // For each unique color index, assign a random color from palette
+      Object.values(result.colors).forEach((colorIndex: any) => {
+        if (!colorIndexToColor.has(colorIndex)) {
+          // Find a random available color from palette
+          let randomColorIndex: number;
+          do {
+            randomColorIndex = Math.floor(Math.random() * colorPalette.length);
+          } while (usedColorIndices.has(randomColorIndex) && usedColorIndices.size < colorPalette.length);
+
+          // If all colors are used, reuse them
+          if (usedColorIndices.size >= colorPalette.length) {
+            randomColorIndex = Math.floor(Math.random() * colorPalette.length);
+          } else {
+            usedColorIndices.add(randomColorIndex);
+          }
+
+          colorIndexToColor.set(colorIndex, randomColorIndex);
+        }
+      });
+
+      // Map node colors to random palette colors
+      const mappedColors: Record<string, number> = {};
+      Object.entries(result.colors).forEach(([nodeId, colorIndex]: [string, any]) => {
+        mappedColors[nodeId] = colorIndexToColor.get(colorIndex) || 0;
+      });
+
+      this.nodeColors.set(mappedColors);
+      this.savedNodeColors.set(mappedColors); // Save for restore
+    } else if (algorithm === 'connected-components' && result.components) {
+      // Connected components: assign different colors to each component
+      const colorPalette = [
+        '#2196F3', '#4CAF50', '#FF9800', '#9C27B0', '#F44336',
+        '#00BCD4', '#FFEB3B', '#795548', '#E91E63', '#607D8B'
+      ];
+      const componentColorMap: Record<string, number> = {};
+      result.components.forEach((component: string[], index: number) => {
+        component.forEach(nodeId => {
+          componentColorMap[nodeId] = index;
+        });
+      });
+      this.componentColors.set(componentColorMap);
+      this.savedComponentColors.set(componentColorMap); // Save for restore
+    } else if (algorithm === 'scc' && result.components) {
+      // Strongly connected components: assign different colors to each SCC
+      const colorPalette = [
+        '#2196F3', '#4CAF50', '#FF9800', '#9C27B0', '#F44336',
+        '#00BCD4', '#FFEB3B', '#795548', '#E91E63', '#607D8B'
+      ];
+      const sccColorMap: Record<string, number> = {};
+      result.components.forEach((component: string[], index: number) => {
+        component.forEach(nodeId => {
+          sccColorMap[nodeId] = index;
+        });
+      });
+      this.componentColors.set(sccColorMap);
+      this.savedComponentColors.set(sccColorMap); // Save for restore
+    } else if (algorithm === 'cycle-detection' && result.cycles) {
+      // Cycle detection: assign different colors to nodes in different cycles
+      const colorPalette = [
+        '#2196F3', '#4CAF50', '#FF9800', '#9C27B0', '#F44336',
+        '#00BCD4', '#FFEB3B', '#795548', '#E91E63', '#607D8B'
+      ];
+      const cycleColorMap: Record<string, number> = {};
+      result.cycles.forEach((cycle: string[], index: number) => {
+        cycle.forEach(nodeId => {
+          if (!cycleColorMap[nodeId]) {
+            cycleColorMap[nodeId] = index;
+          }
+        });
+      });
+      this.cycleColors.set(cycleColorMap);
+      this.savedCycleColors.set(cycleColorMap); // Save for restore
+    }
+  }
+
+  getNodeColorFromResult(nodeId: string): string | null {
+    const colorPalette = [
+      '#2196F3', // Blue
+      '#4CAF50', // Green
+      '#FF9800', // Orange
+      '#9C27B0', // Purple
+      '#F44336', // Red
+      '#00BCD4', // Cyan
+      '#FFEB3B', // Yellow
+      '#795548', // Brown
+      '#E91E63', // Pink
+      '#607D8B'  // Blue Grey
+    ];
+
+    // Check graph coloring result
+    const nodeColors = this.nodeColors();
+    if (nodeColors[nodeId] !== undefined) {
+      return colorPalette[nodeColors[nodeId] % colorPalette.length];
+    }
+
+    // Check component colors
+    const componentColors = this.componentColors();
+    if (componentColors[nodeId] !== undefined) {
+      return colorPalette[componentColors[nodeId] % colorPalette.length];
+    }
+
+    // Check cycle colors
+    const cycleColors = this.cycleColors();
+    if (cycleColors[nodeId] !== undefined) {
+      return colorPalette[cycleColors[nodeId] % colorPalette.length];
+    }
+
+    return null;
+  }
+
+  getColorLegend(): Array<{ colorIndex: number; color: string; nodes: string[] }> {
+    const nodeColors = this.nodeColors();
+    const colorPalette = [
+      '#2196F3', '#4CAF50', '#FF9800', '#9C27B0', '#F44336',
+      '#00BCD4', '#FFEB3B', '#795548', '#E91E63', '#607D8B'
+    ];
+
+    const legend: Record<number, string[]> = {};
+    Object.entries(nodeColors).forEach(([nodeId, colorIndex]) => {
+      if (!legend[colorIndex]) {
+        legend[colorIndex] = [];
+      }
+      legend[colorIndex].push(nodeId);
+    });
+
+    return Object.entries(legend)
+      .map(([colorIndex, nodes]) => ({
+        colorIndex: parseInt(colorIndex),
+        color: colorPalette[parseInt(colorIndex) % colorPalette.length],
+        nodes: nodes.map(id => this.getNodeLabel(id))
+      }))
+      .sort((a, b) => a.colorIndex - b.colorIndex);
+  }
+
+  getComponentColor(index: number): string {
+    const colorPalette = [
+      '#2196F3', '#4CAF50', '#FF9800', '#9C27B0', '#F44336',
+      '#00BCD4', '#FFEB3B', '#795548', '#E91E63', '#607D8B'
+    ];
+    return colorPalette[index % colorPalette.length];
+  }
+
+  getCycleColor(index: number): string {
+    const colorPalette = [
+      '#2196F3', '#4CAF50', '#FF9800', '#9C27B0', '#F44336',
+      '#00BCD4', '#FFEB3B', '#795548', '#E91E63', '#607D8B'
+    ];
+    return colorPalette[index % colorPalette.length];
+  }
+
+  getGraphColoringResult(): any {
+    const result = this.finalResult();
+    return result && (result as any).colors ? result : null;
+  }
+
+  getConnectedComponentsResult(): any {
+    const result = this.finalResult();
+    return result && (result as any).components ? result : null;
+  }
+
+  getCycleDetectionResult(): any {
+    const result = this.finalResult();
+    return result && (result as any).cycles ? result : null;
+  }
+
+  updateStepHighlight(step: any) {
+    // Update highlighted node
+    if (step.current) {
+      this.highlightedStepNode.set(step.current);
+    } else if (step.updated) {
+      this.highlightedStepNode.set(step.updated);
+    }
+
+    // Update highlighted edge
+    if (step.edge) {
+      const edge = this.edges().find(e => e.id === step.edge);
+      if (edge) {
+        this.highlightedStepEdge.set({ from: edge.from, to: edge.to });
+      }
+    } else if (step.current && step.updated) {
+      // Check if there's an edge between current and updated
+      const edge = this.edges().find(e =>
+        (e.from === step.current && e.to === step.updated) ||
+        (e.to === step.current && e.from === step.updated)
+      );
+      if (edge) {
+        this.highlightedStepEdge.set({ from: edge.from, to: edge.to });
+      }
+    }
+
+    // Update visited nodes
+    if (step.visited) {
+      const visited = new Set(this.visitedNodes());
+      if (Array.isArray(step.visited)) {
+        step.visited.forEach((nodeId: string) => visited.add(nodeId));
+      } else if (typeof step.visited === 'object') {
+        Object.keys(step.visited).forEach((nodeId: string) => visited.add(nodeId));
+      }
+      this.visitedNodes.set(visited);
+    }
+
+    // For graph coloring, mark current node as visited
+    if (step.current && this.selectedAlgorithm() === 'graph-coloring') {
+      const visited = new Set(this.visitedNodes());
+      visited.add(step.current);
+      this.visitedNodes.set(visited);
+    }
+
+    // For connected components, update component colors in real-time
+    if ((this.selectedAlgorithm() === 'connected-components' || this.selectedAlgorithm() === 'scc') && step.component) {
+      const componentColors = { ...this.componentColors() };
+      const componentIndex = step.componentIndex !== undefined ? step.componentIndex : Object.keys(componentColors).length;
+      if (Array.isArray(step.component)) {
+        step.component.forEach((nodeId: string) => {
+          componentColors[nodeId] = componentIndex;
+        });
+      }
+      this.componentColors.set(componentColors);
+    }
+
+    // Update processing nodes
+    if (step.current) {
+      const processing = new Set(this.processingNodes());
+      processing.add(step.current);
+      this.processingNodes.set(processing);
+    }
+  }
+
+  async animateStep(step: any): Promise<void> {
+    const animationDuration = 800; // ms
+    const steps = 20;
+    const stepDuration = animationDuration / steps;
+
+    // Pulse animation
+    for (let i = 0; i <= steps; i++) {
+      const progress = i / steps;
+      // Create pulse effect: 0 -> 1 -> 0.5
+      const pulse = progress < 0.5 ? progress * 2 : 1 - (progress - 0.5) * 2;
+      this.animationProgress.set(pulse);
+      this.drawGraph();
+      await new Promise(resolve => setTimeout(resolve, stepDuration));
+    }
+
+    // Reset progress
+    this.animationProgress.set(0);
+  }
+
+  adjustColorIntensity(color: string, intensity: number): string {
+    // Parse hex color
+    const hex = color.replace('#', '');
+    const r = parseInt(hex.substr(0, 2), 16);
+    const g = parseInt(hex.substr(2, 2), 16);
+    const b = parseInt(hex.substr(4, 2), 16);
+
+    // Adjust intensity (0-1, where 1 is full intensity)
+    const newR = Math.round(r * intensity);
+    const newG = Math.round(g * intensity);
+    const newB = Math.round(b * intensity);
+
+    return `rgb(${newR}, ${newG}, ${newB})`;
   }
 
   // Removed unused methods - using GraphAlgorithms from util instead
@@ -1978,7 +2340,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     const density = config.density || 'medium';
     const baseSpacing = this.getDensitySpacing(density);
     const baseRadius = this.getDensityRadius(density);
-    
+
     // Scale for preview (smaller canvas)
     const previewSpacing = baseSpacing * 0.4;
     const previewRadius = baseRadius * 0.4;
@@ -2235,7 +2597,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
   applyTemplateWithConfig() {
     const template = this.selectedTemplate();
     const config = this.templateConfig();
-    
+
     if (!template || !template.template) return;
 
     const density = config.density || 'medium';
@@ -2485,11 +2847,11 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     const nodes: GraphNode[] = [...existingNodes];
     const edges: GraphEdge[] = [...existingEdges];
     const canvas = this.canvasRef?.nativeElement;
-    
+
     // Calculate starting position based on existing nodes or viewport center
     let startX = 100;
     let startY = canvas ? canvas.height / 2 : 300;
-    
+
     if (existingNodes.length > 0) {
       // Find the rightmost node and start from there
       const rightmostNode = existingNodes.reduce((max, node) => node.x > max.x ? node : max);
@@ -2547,11 +2909,11 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     const nodes: GraphNode[] = [...existingNodes];
     const edges: GraphEdge[] = [...existingEdges];
     const canvas = this.canvasRef?.nativeElement;
-    
+
     // Calculate center position based on existing nodes or viewport center
     let centerX = canvas ? canvas.width / 2 : 400;
     let centerY = canvas ? canvas.height / 2 : 300;
-    
+
     if (existingNodes.length > 0) {
       // Find the rightmost node and place cycle to the right
       const rightmostNode = existingNodes.reduce((max, node) => node.x > max.x ? node : max);
@@ -2606,11 +2968,11 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     const nodes: GraphNode[] = [...existingNodes];
     const edges: GraphEdge[] = [...existingEdges];
     const canvas = this.canvasRef?.nativeElement;
-    
+
     // Calculate center position based on existing nodes or viewport center
     let centerX = canvas ? canvas.width / 2 : 400;
     let centerY = canvas ? canvas.height / 2 : 300;
-    
+
     if (existingNodes.length > 0) {
       // Find the rightmost node and place star to the right
       const rightmostNode = existingNodes.reduce((max, node) => node.x > max.x ? node : max);
@@ -2677,11 +3039,11 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     const nodes: GraphNode[] = [...existingNodes];
     const edges: GraphEdge[] = [...existingEdges];
     const canvas = this.canvasRef?.nativeElement;
-    
+
     // Calculate center position based on existing nodes or viewport center
     let centerX = canvas ? canvas.width / 2 : 400;
     let centerY = canvas ? canvas.height / 2 : 300;
-    
+
     if (existingNodes.length > 0) {
       // Find the rightmost node and place complete graph to the right
       const rightmostNode = existingNodes.reduce((max, node) => node.x > max.x ? node : max);
@@ -2745,11 +3107,11 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     const nodes: GraphNode[] = [...existingNodes];
     const edges: GraphEdge[] = [...existingEdges];
     const canvas = this.canvasRef?.nativeElement;
-    
+
     // Calculate starting position based on existing nodes or viewport
     let startX = 150;
     let startY = 150;
-    
+
     if (existingNodes.length > 0) {
       // Find the rightmost node and place grid to the right
       const rightmostNode = existingNodes.reduce((max, node) => node.x > max.x ? node : max);
@@ -2834,10 +3196,10 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     const nodes: GraphNode[] = [...existingNodes];
     const edges: GraphEdge[] = [...existingEdges];
     const canvas = this.canvasRef?.nativeElement;
-    
+
     let startX = canvas ? canvas.width / 2 : 400;
     let startY = 100;
-    
+
     if (existingNodes.length > 0) {
       const rightmostNode = existingNodes.reduce((max, node) => node.x > max.x ? node : max);
       startX = rightmostNode.x + spacing * 3;
@@ -2862,7 +3224,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
         const nodeId = this.getNodeLabelFromIndex(currentMaxCounter + nodeIndex);
         const x = levelStartX + i * spacing;
         const y = startY + level * spacing * 1.5;
-        
+
         nodes.push({
           id: nodeId,
           x,
@@ -2906,10 +3268,10 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     const nodes: GraphNode[] = [...existingNodes];
     const edges: GraphEdge[] = [...existingEdges];
     const canvas = this.canvasRef?.nativeElement;
-    
+
     let centerX = canvas ? canvas.width / 2 : 400;
     let centerY = canvas ? canvas.height / 2 : 300;
-    
+
     if (existingNodes.length > 0) {
       const rightmostNode = existingNodes.reduce((max, node) => node.x > max.x ? node : max);
       centerX = rightmostNode.x + spacing * 2;
@@ -2983,10 +3345,10 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     const nodes: GraphNode[] = [...existingNodes];
     const edges: GraphEdge[] = [...existingEdges];
     const canvas = this.canvasRef?.nativeElement;
-    
+
     let centerX = canvas ? canvas.width / 2 : 400;
     let centerY = canvas ? canvas.height / 2 : 300;
-    
+
     if (existingNodes.length > 0) {
       const rightmostNode = existingNodes.reduce((max, node) => node.x > max.x ? node : max);
       centerX = rightmostNode.x + spacing * 2;
@@ -3078,10 +3440,10 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     const nodes: GraphNode[] = [...existingNodes];
     const edges: GraphEdge[] = [...existingEdges];
     const canvas = this.canvasRef?.nativeElement;
-    
+
     let centerX = canvas ? canvas.width / 2 : 400;
     let centerY = canvas ? canvas.height / 2 : 300;
-    
+
     if (existingNodes.length > 0) {
       const rightmostNode = existingNodes.reduce((max, node) => node.x > max.x ? node : max);
       centerX = rightmostNode.x + radius * 2;
@@ -3159,10 +3521,10 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     const nodes: GraphNode[] = [...existingNodes];
     const edges: GraphEdge[] = [...existingEdges];
     const canvas = this.canvasRef?.nativeElement;
-    
+
     let startX = canvas ? canvas.width / 2 : 400;
     let startY = canvas ? canvas.height / 2 : 300;
-    
+
     if (existingNodes.length > 0) {
       const rightmostNode = existingNodes.reduce((max, node) => node.x > max.x ? node : max);
       startX = rightmostNode.x + spacing * 2;
@@ -3262,10 +3624,10 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
   downloadGraphFile() {
     const nodes = this.nodes();
     const edges = this.edges();
-    
+
     // Get matrix data
     const matrixData = this.getMatrixExportData();
-    
+
     // Calculate relative positions using first node as origin
     const originNode = nodes[0];
     const metadata: any = {
@@ -3290,16 +3652,16 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
       startNode: this.startNode(),
       endNode: this.endNode()
     };
-    
+
     // Combine matrix data with metadata
     const fileContent = `# Graph Matrix Data
 ${matrixData}
 
 # Metadata (JSON)
 ${JSON.stringify(metadata, null, 2)}`;
-    
+
     const fileName = (this.exportFileName() || 'graph').replace(/[^a-zA-Z0-9_-]/g, '_') + '.grp';
-    
+
     const blob = new Blob([fileContent], { type: 'text/plain' });
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -3309,7 +3671,7 @@ ${JSON.stringify(metadata, null, 2)}`;
     link.click();
     document.body.removeChild(link);
     window.URL.revokeObjectURL(url);
-    
+
     this.showExportDialog.set(false);
   }
 
@@ -3345,7 +3707,7 @@ ${JSON.stringify(metadata, null, 2)}`;
     event.preventDefault();
     event.stopPropagation();
     this.isDragOver.set(false);
-    
+
     const files = event.dataTransfer?.files;
     if (files && files.length > 0) {
       const file = files[0];
@@ -3373,7 +3735,7 @@ ${JSON.stringify(metadata, null, 2)}`;
 
   importGraph() {
     let data: string;
-    
+
     // Get data from file or text input
     if (this.importMode() === 'file') {
       data = this.selectedFileContent().trim();
@@ -3399,7 +3761,7 @@ ${JSON.stringify(metadata, null, 2)}`;
             // Restore nodes with relative positions
             const originX = metadata.origin?.x || 0;
             const originY = metadata.origin?.y || 0;
-            
+
             const restoredNodes = metadata.nodes.map((nodeData: any) => ({
               id: nodeData.id,
               label: nodeData.label,
@@ -3408,7 +3770,7 @@ ${JSON.stringify(metadata, null, 2)}`;
               isStart: nodeData.id === metadata.startNode,
               isEnd: nodeData.id === metadata.endNode
             }));
-            
+
             this.nodes.set(restoredNodes);
             this.edges.set(metadata.edges);
             if (metadata.startNode) this.startNode.set(metadata.startNode);
@@ -3425,7 +3787,7 @@ ${JSON.stringify(metadata, null, 2)}`;
           // Metadata parse failed, continue to matrix parsing
         }
       }
-      
+
       // Try JSON first (standalone JSON)
       const jsonData = JSON.parse(data);
       if (jsonData.nodes && jsonData.edges) {
@@ -3457,7 +3819,7 @@ ${JSON.stringify(metadata, null, 2)}`;
       const lines = matrixData.split('\n')
         .filter(l => l.trim() && !l.trim().startsWith('#'))
         .map(l => l.trim());
-        
+
       if (lines.length < 2) {
         alert('Dữ liệu không hợp lệ. Vui lòng kiểm tra định dạng ma trận.');
         return;
@@ -3466,7 +3828,7 @@ ${JSON.stringify(metadata, null, 2)}`;
       // Parse header - support both tab and space separated
       const headerLine = lines[0];
       let nodeIds: string[];
-      
+
       // Try tab-separated first
       if (headerLine.includes('\t')) {
         nodeIds = headerLine.split('\t').filter(h => h && h.trim() !== '');
@@ -3510,7 +3872,7 @@ ${JSON.stringify(metadata, null, 2)}`;
 
       // Parse matrix rows and detect symmetric (bidirectional) vs asymmetric (directed) edges
       const edgeMap = new Map<string, { from: string; to: string; weight: number; isSymmetric: boolean }>();
-      
+
       for (let i = 1; i < lines.length; i++) {
         let row: string[];
         // Support both tab and space separated
@@ -3519,9 +3881,9 @@ ${JSON.stringify(metadata, null, 2)}`;
         } else {
           row = lines[i].split(/\s+/).filter(r => r && r.trim() !== '');
         }
-        
+
         if (row.length === 0) continue;
-        
+
         const fromId = row[0].trim();
         for (let j = 1; j < row.length && j <= nodeIds.length; j++) {
           const toId = nodeIds[j - 1].trim();
@@ -3532,7 +3894,7 @@ ${JSON.stringify(metadata, null, 2)}`;
             if (!isNaN(weight) && weight > 0) {
               const edgeKey = `${fromId}-${toId}`;
               const reverseKey = `${toId}-${fromId}`;
-              
+
               // Check if reverse edge exists
               const reverseEdge = edgeMap.get(reverseKey);
               if (reverseEdge && reverseEdge.weight === weight) {
@@ -3558,15 +3920,15 @@ ${JSON.stringify(metadata, null, 2)}`;
       edgeMap.forEach((edgeData, edgeKey) => {
         const reverseKey = `${edgeData.to}-${edgeData.from}`;
         const pairKey = [edgeData.from, edgeData.to].sort().join('-');
-        
+
         // Only process each pair once
         if (processedPairs.has(pairKey)) return;
         processedPairs.add(pairKey);
-        
+
         // Check if reverse edge exists with same weight
         const reverseEdge = edgeMap.get(reverseKey);
         const isBidirectional = reverseEdge && reverseEdge.weight === edgeData.weight;
-        
+
         edges.push({
           id: `edge-${this.edgeCounter() + edges.length}`,
           from: edgeData.from,

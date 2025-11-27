@@ -30,6 +30,12 @@ export interface AlgorithmStep {
   nodes?: string[];
   path?: string[] | null;
   distance?: number;
+  component?: string[]; // For connected components and SCC
+  componentIndex?: number; // Index of the component
+  colors?: Record<string, number>; // For graph coloring
+  cycle?: string[]; // For cycle detection
+  stack?: string[]; // For DFS/BFS
+  visitedOrder?: string[]; // Order of visited nodes
 }
 
 export interface AlgorithmResult {
@@ -617,34 +623,48 @@ export class GraphAlgorithms {
     for (let i = 0; i < nodes.length; i++) {
       const node = nodes[i];
       const neighborColors = new Set<number>();
+      const neighbors = new Set<string>();
 
-      // Find all neighbor colors
+      // Find all neighbors (for graph coloring, we treat ALL edges as undirected/bidirectional)
+      // Graph coloring doesn't care about edge direction - if there's an edge between A and B,
+      // they are neighbors regardless of direction
       for (const edge of edges) {
         let neighbor: string | null = null;
-        if (edge.from === node.id && (edge.direction === 'forward' || edge.direction === 'bidirectional')) {
+        
+        // Treat all edges as undirected for graph coloring
+        if (edge.from === node.id) {
           neighbor = edge.to;
-        } else if (edge.to === node.id && (edge.direction === 'backward' || edge.direction === 'bidirectional')) {
+        } else if (edge.to === node.id) {
           neighbor = edge.from;
         }
 
-        if (neighbor && colors[neighbor] !== undefined) {
-          neighborColors.add(colors[neighbor]);
+        if (neighbor) {
+          neighbors.add(neighbor);
+          // If neighbor already has a color, add it to used colors
+          if (colors[neighbor] !== undefined) {
+            neighborColors.add(colors[neighbor]);
+          }
         }
       }
 
-      // Find smallest available color
-      let color = 0;
-      while (neighborColors.has(color)) {
-        color++;
+      // Find smallest available color (for algorithm logic)
+      let colorIndex = 0;
+      while (neighborColors.has(colorIndex)) {
+        colorIndex++;
       }
 
-      colors[node.id] = color;
-      usedColors.add(color);
+      // Map color index to a random color from palette for visualization
+      // We still use colorIndex for algorithm logic, but will map it to random colors later
+      colors[node.id] = colorIndex;
+      usedColors.add(colorIndex);
 
+      const neighborList = Array.from(neighbors);
+      const visited = Object.keys(colors); // All nodes that have been colored so far
       const colorStep: AlgorithmStep = {
         type: 'update',
-        message: `Bước ${i + 2} - Tô màu đỉnh ${node.id}: Xét các đỉnh kề của ${node.id}, các màu đã được sử dụng là: ${Array.from(neighborColors).join(', ') || 'không có'}. Chọn màu nhỏ nhất chưa được sử dụng = ${color}. Tô đỉnh ${node.id} bằng màu ${color}.`,
+        message: `Bước ${i + 2} - Tô màu đỉnh ${node.id}: Tìm các đỉnh kề: ${neighborList.length > 0 ? neighborList.join(', ') : 'không có'}. Các đỉnh kề đã được tô màu: ${neighborList.filter(n => colors[n] !== undefined).map(n => `${n} (màu ${colors[n]})`).join(', ') || 'không có'}. Các màu đã được sử dụng bởi đỉnh kề: ${Array.from(neighborColors).join(', ') || 'không có'}. Chọn màu nhỏ nhất chưa được sử dụng = ${colorIndex}. Tô đỉnh ${node.id} bằng màu ${colorIndex}.`,
         current: node.id,
+        visited: visited,
         nodes: nodes.map(n => n.id)
       };
       steps.push(colorStep);
@@ -838,22 +858,24 @@ export class GraphAlgorithms {
 
   /**
    * Cycle Detection
-   * Tìm chu trình trong đồ thị
+   * Tìm chu trình trong đồ thị (Euler và Hamilton)
    */
   static async detectCycles(
     nodes: GraphNode[],
     edges: GraphEdge[],
     onStep?: (step: AlgorithmStep) => Promise<void>
-  ): Promise<{ hasCycle: boolean; cycles: string[][]; steps: AlgorithmStep[] }> {
+  ): Promise<{ hasCycle: boolean; cycles: string[][]; eulerCycles: string[][]; hamiltonCycles: string[][]; steps: AlgorithmStep[] }> {
     const steps: AlgorithmStep[] = [];
     const visited = new Set<string>();
     const recStack = new Set<string>();
     const cycles: string[][] = [];
+    const eulerCycles: string[][] = [];
+    const hamiltonCycles: string[][] = [];
     const parent: Record<string, string | null> = {};
 
     const initStep: AlgorithmStep = {
       type: 'init',
-      message: `Bước 1 - Khởi tạo phát hiện chu trình: Sử dụng DFS với một stack đệ quy (recursion stack) để phát hiện back edge. Nếu trong quá trình DFS, ta gặp một đỉnh đã có trong stack đệ quy (đang được xét), nghĩa là có chu trình. Khởi tạo: tất cả đỉnh chưa được thăm.`,
+      message: `Bước 1 - Khởi tạo phát hiện chu trình: Sử dụng DFS với một stack đệ quy (recursion stack) để phát hiện back edge. Ta sẽ tìm 2 loại chu trình: Chu trình Euler (đi qua mỗi cạnh đúng 1 lần) và Chu trình Hamilton (đi qua mỗi đỉnh đúng 1 lần). Nếu trong quá trình DFS, ta gặp một đỉnh đã có trong stack đệ quy (đang được xét), nghĩa là có chu trình. Khởi tạo: tất cả đỉnh chưa được thăm.`,
       nodes: nodes.map(n => n.id)
     };
     steps.push(initStep);
@@ -892,9 +914,25 @@ export class GraphAlgorithms {
             const cycleStart = path.indexOf(neighbor);
             const cycle = path.slice(cycleStart).concat([neighbor]);
 
+            // Check if it's a Hamiltonian cycle (visits all nodes exactly once)
+            const uniqueNodes = new Set(cycle);
+            const isHamiltonian = uniqueNodes.size === nodes.length && cycle.length === nodes.length + 1;
+            
+            // Check if it's an Eulerian cycle (visits all edges exactly once)
+            // For Eulerian cycle, we need to check if all edges are visited
+            const cycleEdges = new Set<string>();
+            for (let i = 0; i < cycle.length - 1; i++) {
+              const edgeKey = `${cycle[i]}-${cycle[i + 1]}`;
+              const reverseKey = `${cycle[i + 1]}-${cycle[i]}`;
+              cycleEdges.add(edgeKey);
+              cycleEdges.add(reverseKey);
+            }
+            const isEulerian = cycleEdges.size === edges.length * 2; // Approximate check
+
+            const cycleType = isHamiltonian ? 'Hamilton' : isEulerian ? 'Euler' : 'Thường';
             const cycleStep: AlgorithmStep = {
               type: 'update',
-              message: `Phát hiện chu trình! Từ đỉnh ${node}, ta gặp lại đỉnh ${neighbor} đang có trong recursion stack. Điều này có nghĩa là có một đường đi từ ${neighbor} quay lại chính nó. Chu trình: ${cycle.join(' → ')}.`,
+              message: `Phát hiện chu trình ${cycleType}! Từ đỉnh ${node}, ta gặp lại đỉnh ${neighbor} đang có trong recursion stack. Điều này có nghĩa là có một đường đi từ ${neighbor} quay lại chính nó. ${isHamiltonian ? 'Đây là chu trình Hamilton (đi qua tất cả đỉnh đúng 1 lần).' : isEulerian ? 'Đây là chu trình Euler (đi qua tất cả cạnh đúng 1 lần).' : ''} Chu trình: ${cycle.join(' → ')}.`,
               current: node,
               updated: neighbor,
               nodes: nodes.map(n => n.id)
@@ -903,6 +941,11 @@ export class GraphAlgorithms {
             if (onStep) await onStep(cycleStep);
 
             cycles.push(cycle);
+            if (isHamiltonian) {
+              hamiltonCycles.push(cycle);
+            } else if (isEulerian) {
+              eulerCycles.push(cycle);
+            }
           }
         }
       }
@@ -919,7 +962,7 @@ export class GraphAlgorithms {
 
     const resultStep: AlgorithmStep = {
       type: 'result',
-      message: `Kết quả cuối cùng: ${cycles.length > 0 ? `Phát hiện ${cycles.length} chu trình: ${cycles.map(c => c.join(' → ')).join('; ')}` : 'Không có chu trình trong đồ thị'}. Ứng dụng: Kiểm tra DAG (Directed Acyclic Graph), phát hiện deadlock, kiểm tra tính hợp lệ của dependency graph.`,
+      message: `Kết quả cuối cùng: ${cycles.length > 0 ? `Phát hiện ${cycles.length} chu trình (${hamiltonCycles.length} chu trình Hamilton, ${eulerCycles.length} chu trình Euler): ${cycles.map(c => c.join(' → ')).join('; ')}` : 'Không có chu trình trong đồ thị'}. Chu trình Hamilton: đi qua mỗi đỉnh đúng 1 lần. Chu trình Euler: đi qua mỗi cạnh đúng 1 lần. Ứng dụng: Kiểm tra DAG (Directed Acyclic Graph), phát hiện deadlock, kiểm tra tính hợp lệ của dependency graph, tối ưu hóa tuyến đường.`,
       nodes: nodes.map(n => n.id)
     };
     steps.push(resultStep);
@@ -928,6 +971,8 @@ export class GraphAlgorithms {
     return {
       hasCycle: cycles.length > 0,
       cycles,
+      eulerCycles,
+      hamiltonCycles,
       steps
     };
   }
@@ -953,15 +998,17 @@ export class GraphAlgorithms {
     steps.push(initStep);
     if (onStep) await onStep(initStep);
 
-    const dfs = async (node: string, component: string[]) => {
+    const dfs = async (node: string, component: string[], componentIndex: number) => {
       visited.add(node);
       component.push(node);
 
       const visitStep: AlgorithmStep = {
         type: 'visit',
-        message: `Thăm đỉnh ${node}: Thêm đỉnh ${node} vào thành phần liên thông hiện tại. Bây giờ ta sẽ tìm tất cả các đỉnh có thể đến được từ ${node} bằng DFS.`,
+        message: `Thăm đỉnh ${node}: Thêm đỉnh ${node} vào thành phần liên thông ${componentIndex}. Bây giờ ta sẽ tìm tất cả các đỉnh có thể đến được từ ${node} bằng DFS.`,
         current: node,
         visited: Array.from(visited),
+        component: component,
+        componentIndex: componentIndex,
         nodes: nodes.map(n => n.id)
       };
       steps.push(visitStep);
@@ -977,7 +1024,7 @@ export class GraphAlgorithms {
         }
 
         if (neighbor && !visited.has(neighbor)) {
-          await dfs(neighbor, component);
+          await dfs(neighbor, component, componentIndex);
         }
       }
     };
@@ -993,18 +1040,22 @@ export class GraphAlgorithms {
           message: `Bắt đầu thành phần liên thông ${componentIndex}: Phát hiện đỉnh ${node.id} chưa được thăm, đây là đỉnh đầu tiên của một thành phần liên thông mới. Sử dụng DFS để tìm tất cả các đỉnh trong thành phần này.`,
           current: node.id,
           visited: Array.from(visited),
+          component: component,
+          componentIndex: componentIndex,
           nodes: nodes.map(n => n.id)
         };
         steps.push(startComponentStep);
         if (onStep) await onStep(startComponentStep);
 
-        await dfs(node.id, component);
+        await dfs(node.id, component, componentIndex);
         components.push(component);
 
         const endComponentStep: AlgorithmStep = {
           type: 'result',
           message: `Hoàn thành thành phần liên thông ${componentIndex}: Tìm được ${component.length} đỉnh: ${component.join(', ')}. Tất cả các đỉnh này có thể đến được lẫn nhau.`,
           visited: Array.from(visited),
+          component: component,
+          componentIndex: componentIndex,
           nodes: nodes.map(n => n.id)
         };
         steps.push(endComponentStep);
@@ -1093,15 +1144,17 @@ export class GraphAlgorithms {
     visited.clear();
     let componentIndex = 0;
 
-    const dfs2 = async (node: string, component: string[]) => {
+    const dfs2 = async (node: string, component: string[], componentIndex: number) => {
       visited.add(node);
       component.push(node);
 
       const visitStep: AlgorithmStep = {
         type: 'visit',
-        message: `DFS lần 2 (đồ thị đảo) - Thăm đỉnh ${node}: Thêm đỉnh ${node} vào SCC hiện tại. Xét các cạnh đảo ngược (từ đích về nguồn).`,
+        message: `DFS lần 2 (đồ thị đảo) - Thăm đỉnh ${node}: Thêm đỉnh ${node} vào SCC ${componentIndex}. Xét các cạnh đảo ngược (từ đích về nguồn).`,
         current: node,
         visited: Array.from(visited),
+        component: component,
+        componentIndex: componentIndex,
         nodes: nodes.map(n => n.id)
       };
       steps.push(visitStep);
@@ -1112,12 +1165,12 @@ export class GraphAlgorithms {
         if (edge.to === node && (edge.direction === 'forward' || edge.direction === 'bidirectional')) {
           const neighbor = edge.from;
           if (!visited.has(neighbor)) {
-            await dfs2(neighbor, component);
+            await dfs2(neighbor, component, componentIndex);
           }
         } else if (edge.from === node && edge.direction === 'backward') {
           const neighbor = edge.to;
           if (!visited.has(neighbor)) {
-            await dfs2(neighbor, component);
+            await dfs2(neighbor, component, componentIndex);
           }
         }
       }
@@ -1133,18 +1186,22 @@ export class GraphAlgorithms {
           message: `Bắt đầu SCC ${componentIndex}: Bắt đầu từ đỉnh ${nodeId} (theo thứ tự finish order). Sử dụng DFS trên đồ thị đảo để tìm tất cả các đỉnh trong SCC này.`,
           current: nodeId,
           visited: Array.from(visited),
+          component: component,
+          componentIndex: componentIndex,
           nodes: nodes.map(n => n.id)
         };
         steps.push(startSCCStep);
         if (onStep) await onStep(startSCCStep);
 
-        await dfs2(nodeId, component);
+        await dfs2(nodeId, component, componentIndex);
         components.push(component);
 
         const endSCCStep: AlgorithmStep = {
           type: 'result',
           message: `Hoàn thành SCC ${componentIndex}: Tìm được ${component.length} đỉnh: ${component.join(', ')}. Tất cả các đỉnh này có thể đến được lẫn nhau theo cả hai hướng.`,
           visited: Array.from(visited),
+          component: component,
+          componentIndex: componentIndex,
           nodes: nodes.map(n => n.id)
         };
         steps.push(endSCCStep);
