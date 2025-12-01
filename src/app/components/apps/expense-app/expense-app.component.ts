@@ -1,6 +1,7 @@
 import { Component, OnInit, OnDestroy, signal, computed, ViewChild, ElementRef, AfterViewInit, effect, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { NgxMaskDirective, provideNgxMask } from 'ngx-mask';
 import ExpenseService, { Expense } from '../../../services/expense.service';
 import { ExpenseSettingsService, ExpenseTheme, ExpenseFontSize, ExpenseLayout } from '../../../services/expense-settings.service';
 import { ExpenseSettingsDialogComponent } from './expense-settings-dialog.component';
@@ -11,7 +12,8 @@ Chart.register(...registerables);
 @Component({
   selector: 'app-expense-app',
   standalone: true,
-  imports: [CommonModule, FormsModule, ExpenseSettingsDialogComponent],
+  imports: [CommonModule, FormsModule, ExpenseSettingsDialogComponent, NgxMaskDirective],
+  providers: [provideNgxMask()],
   templateUrl: './expense-app.component.html',
   styleUrl: './expense-app.component.scss'
 })
@@ -104,6 +106,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     category: '',
     note: ''
   };
+  editExpenseAmountDisplay = signal<string>(''); // String value for ngx-mask display
 
   // Notification dialog
   showNotification = signal<boolean>(false);
@@ -1162,6 +1165,9 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       category: expense.category,
       note: expense.note || ''
     };
+    // Set formatted amount for display - format immediately
+    const formatted = this.formatNumberInput(expense.amount);
+    this.editExpenseAmountDisplay.set(formatted);
     this.editingExpense.set(expense);
     this.editingExpenseIndex.set(index);
     this.showEditForm.set(true);
@@ -1181,6 +1187,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       category: '',
       note: ''
     };
+    this.editExpenseAmountDisplay.set('');
   }
 
   /**
@@ -1834,65 +1841,69 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   /**
-   * Handle amount input change for new expense
+   * Handle amount input change for new expense (only update model, no formatting)
    */
   onNewAmountInput(event: Event): void {
     const input = event.target as HTMLInputElement;
-    const cursorPosition = input.selectionStart || 0;
     const value = input.value;
     const parsed = this.parseNumberInput(value);
     this.newExpense.amount = parsed;
-    // Format the display
-    const formatted = this.formatNumberInput(parsed);
-    input.value = formatted;
-
-    // Restore cursor position (approximate)
-    const newPosition = Math.min(cursorPosition, formatted.length);
-    setTimeout(() => {
-      input.setSelectionRange(newPosition, newPosition);
-    }, 0);
   }
 
   /**
-   * Handle amount input change for edit expense
+   * Handle amount blur for new expense (format on blur using ngx-mask)
    */
-  onEditAmountInput(event: Event): void {
+  onNewAmountBlur(event: Event): void {
     const input = event.target as HTMLInputElement;
-    const cursorPosition = input.selectionStart || 0;
-    const value = input.value;
+    const parsed = this.newExpense.amount;
+    // Format the display using Vietnamese locale format (ngx-mask will handle the formatting)
+    const formatted = this.formatNumberInput(parsed);
+    input.value = formatted;
+  }
+
+  /**
+   * Handle amount input change for edit expense (only update model, no formatting)
+   */
+  onEditAmountInputChange(value: string): void {
+    // Update display value immediately (for ngx-mask)
+    this.editExpenseAmountDisplay.set(value);
+    // Parse and update the numeric amount
     const parsed = this.parseNumberInput(value);
     this.editExpense.amount = parsed;
-    // Format the display
-    const formatted = this.formatNumberInput(parsed);
-    input.value = formatted;
-
-    // Restore cursor position (approximate)
-    const newPosition = Math.min(cursorPosition, formatted.length);
-    setTimeout(() => {
-      input.setSelectionRange(newPosition, newPosition);
-    }, 0);
   }
 
   /**
-   * Handle amount input change for multiple expenses
+   * Handle amount blur for edit expense (format on blur using ngx-mask)
+   */
+  onEditAmountBlur(event: Event): void {
+    const parsed = this.editExpense.amount;
+    // Format the display using Vietnamese locale format
+    const formatted = this.formatNumberInput(parsed);
+    this.editExpenseAmountDisplay.set(formatted);
+  }
+
+  /**
+   * Handle amount input change for multiple expenses (only update model, no formatting)
    */
   onMultipleAmountInput(event: Event, index: number): void {
     const input = event.target as HTMLInputElement;
-    const cursorPosition = input.selectionStart || 0;
     const value = input.value;
     const parsed = this.parseNumberInput(value);
     const expenses = this.multipleExpenses();
     expenses[index].amount = parsed;
     this.multipleExpenses.set([...expenses]);
-    // Format the display
+  }
+
+  /**
+   * Handle amount blur for multiple expenses (format on blur using ngx-mask)
+   */
+  onMultipleAmountBlur(event: Event, index: number): void {
+    const input = event.target as HTMLInputElement;
+    const expenses = this.multipleExpenses();
+    const parsed = expenses[index].amount;
+    // Format the display using Vietnamese locale format (ngx-mask will handle the formatting)
     const formatted = this.formatNumberInput(parsed);
     input.value = formatted;
-
-    // Restore cursor position (approximate)
-    const newPosition = Math.min(cursorPosition, formatted.length);
-    setTimeout(() => {
-      input.setSelectionRange(newPosition, newPosition);
-    }, 0);
   }
 
   // Expose Math and Number for template
