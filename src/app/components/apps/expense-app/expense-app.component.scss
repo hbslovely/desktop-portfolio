@@ -746,6 +746,9 @@
               .select-all-item {
                 background: #f9fafb !important;
                 font-weight: 500;
+                display: flex;
+                justify-content: flex-start;
+                padding: 8px 11px;
 
                 &:hover {
                   background: #f3f4f6 !important;
@@ -755,6 +758,7 @@
                   display: flex;
                   align-items: center;
                   gap: 6px;
+                  margin-left: 10px;
 
                   .select-all-count {
                     font-weight: normal;
@@ -3206,6 +3210,9 @@
             .select-all-item {
               background: #f9fafb !important;
               font-weight: 500;
+              display: flex;
+              justify-content: flex-start;
+              padding: 8px 11px;
 
               &:hover {
                 background: #f3f4f6 !important;
@@ -3215,6 +3222,7 @@
                 display: flex;
                 align-items: center;
                 gap: 6px;
+                margin-left: 10px;
 
                 .select-all-count {
                   font-weight: normal;
@@ -4716,15 +4724,12 @@
                   }
 
                   .category-dropdown {
-                    position: absolute;
-                    top: calc(100% + 8px);
-                    left: 0;
-                    right: 0;
+                    position: fixed;
                     background: #ffffff;
                     border: 2px solid #e0e0e0;
                     border-radius: 8px;
                     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-                    z-index: 10000;
+                    z-index: 99999;
                     max-height: 300px;
                     display: flex;
                     flex-direction: column;
@@ -4834,6 +4839,9 @@
                       .select-all-item {
                         background: #f9fafb !important;
                         font-weight: 500;
+                        display: flex;
+                        justify-content: flex-start;
+                        padding: 8px 11px;
 
                         &:hover {
                           background: #f3f4f6 !important;
@@ -4843,6 +4851,8 @@
                           display: flex;
                           align-items: center;
                           gap: 8px;
+                          margin-left: 10px;
+
 
                           .select-all-count {
                             font-weight: normal;
