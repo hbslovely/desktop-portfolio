@@ -152,6 +152,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   // Category filter dropdown state
   showCategoryDropdown = signal<boolean>(false);
   categorySearchText = signal<string>('');
+  categoryDropdownPosition = signal<{ top: number; left: number } | null>(null);
 
   // Check if filter is single day
   isSingleDayFilter = computed(() => {
@@ -910,6 +911,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     // Close category dropdown
     if (this.showCategoryDropdown()) {
       this.showCategoryDropdown.set(false);
+      this.categoryDropdownPosition.set(null);
       return;
     }
 
@@ -942,6 +944,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const target = event.target as HTMLElement;
     if (!target.closest('.category-select-wrapper')) {
       this.showCategoryDropdown.set(false);
+      this.categoryDropdownPosition.set(null);
     }
   }
 
@@ -2584,13 +2587,41 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     return count;
   }
 
-  toggleDropdown(){
+  toggleDropdown(event?: Event){
     const newValue = !this.showCategoryDropdown();
     this.showCategoryDropdown.set(newValue);
+    
+    // Calculate position for v2 filter dialog when opening
+    if (newValue && this.currentLayout() === 'v2' && event) {
+      const button = event.target as HTMLElement;
+      const buttonElement = button.closest('.category-select-btn') as HTMLElement;
+      if (buttonElement) {
+        const rect = buttonElement.getBoundingClientRect();
+        // Position dropdown above the button
+        // Calculate after a small delay to ensure dropdown is rendered
+        setTimeout(() => {
+          const dropdown = document.querySelector('.filter-dialog-v2 .category-dropdown') as HTMLElement;
+          if (dropdown) {
+            const dropdownHeight = dropdown.offsetHeight || 300; // fallback to max-height
+            this.categoryDropdownPosition.set({
+              top: rect.top - dropdownHeight - 8, // 8px gap above button
+              left: rect.left
+            });
+          } else {
+            // Fallback: use estimated height
+            this.categoryDropdownPosition.set({
+              top: rect.top - 308, // 300px max-height + 8px gap
+              left: rect.left
+            });
+          }
+        }, 0);
+      }
+    }
     
     // Clear search when closing dropdown
     if (!newValue) {
       this.categorySearchText.set('');
+      this.categoryDropdownPosition.set(null);
     }
   }
 

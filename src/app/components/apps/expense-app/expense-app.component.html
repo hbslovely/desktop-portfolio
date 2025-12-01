@@ -1684,7 +1684,7 @@
                   <button
                     class="category-select-btn"
                     [class.has-selection]="filterCategory().length > 0"
-                    (click)="showCategoryDropdown.set(!showCategoryDropdown())">
+                    (click)="toggleDropdown($event)">
                     <span class="category-select-text">
                       <span *ngIf="filterCategory().length === 0">Tất cả</span>
                       <span *ngIf="filterCategory().length === 1">{{ filterCategory()[0] }}</span>
@@ -1693,7 +1693,12 @@
                     <i class="pi" [class.pi-chevron-down]="!showCategoryDropdown()" [class.pi-chevron-up]="showCategoryDropdown()"></i>
                   </button>
 
-                  <div class="category-dropdown" *ngIf="showCategoryDropdown()">
+                  <div class="category-dropdown" *ngIf="showCategoryDropdown()" 
+                       [ngStyle]="currentLayout() === 'v2' && categoryDropdownPosition() ? {
+                         'position': 'fixed',
+                         'top.px': categoryDropdownPosition()!.top,
+                         'left.px': categoryDropdownPosition()!.left
+                       } : {}">
                     <div class="category-dropdown-header">
                       <span>Chọn phân loại</span>
                       <button (click)="filterCategory.set([])" class="clear-all-categories-btn" *ngIf="filterCategory().length > 0">

@@ -47,12 +47,39 @@ export class OcrAppComponent implements AfterViewInit, OnDestroy {
   ];
 
   private worker: any = null;
+  private originalConsoleWarn: typeof console.warn | null = null;
 
   ngAfterViewInit() {
+    // Suppress Tesseract.js warnings about missing parameters
+    // These warnings don't affect functionality but clutter the console
+    this.suppressTesseractWarnings();
+    
     // Initialize Tesseract worker
     this.initializeWorker();
     // Load history
     this.loadHistory();
+  }
+
+  private suppressTesseractWarnings() {
+    // Store original console.warn
+    this.originalConsoleWarn = console.warn;
+    
+    // Override console.warn to filter Tesseract.js warnings
+    console.warn = (...args: any[]) => {
+      // Filter out Tesseract.js parameter warnings
+      const message = args[0]?.toString() || '';
+      if (
+        message.includes('Parameter not found: language_model_ngram_on') ||
+        message.includes('Parameter not found: classify_misfit_junk_penalty')
+      ) {
+        // Suppress these specific warnings
+        return;
+      }
+      // Call original warn for other messages
+      if (this.originalConsoleWarn) {
+        this.originalConsoleWarn.apply(console, args);
+      }
+    };
   }
 
   triggerFileInput() {
@@ -109,11 +136,69 @@ export class OcrAppComponent implements AfterViewInit, OnDestroy {
     
     reader.onload = (e) => {
       const imageUrl = e.target?.result as string;
-      this.selectedImage.set(imageUrl);
-      this.ocrResult.set(null);
+      // Resize image if too large to prevent app from expanding
+      this.resizeImageIfNeeded(imageUrl).then(resizedUrl => {
+        this.selectedImage.set(resizedUrl);
+        this.ocrResult.set(null);
+      }).catch(err => {
+        console.error('Error resizing image:', err);
+        // Fallback to original image if resize fails
+        this.selectedImage.set(imageUrl);
+        this.ocrResult.set(null);
+      });
     };
 
     reader.readAsDataURL(file);
+  }
+
+  private resizeImageIfNeeded(imageUrl: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const MAX_WIDTH = 1200;
+        const MAX_HEIGHT = 800;
+        
+        let width = img.width;
+        let height = img.height;
+        
+        // Check if resize is needed
+        if (width <= MAX_WIDTH && height <= MAX_HEIGHT) {
+          resolve(imageUrl);
+          return;
+        }
+        
+        // Calculate new dimensions maintaining aspect ratio
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height = (height * MAX_WIDTH) / width;
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width = (width * MAX_HEIGHT) / height;
+            height = MAX_HEIGHT;
+          }
+        }
+        
+        // Resize using canvas
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        
+        if (!ctx) {
+          reject(new Error('Could not get canvas context'));
+          return;
+        }
+        
+        ctx.drawImage(img, 0, 0, width, height);
+        const resizedUrl = canvas.toDataURL('image/jpeg', 0.9);
+        resolve(resizedUrl);
+      };
+      
+      img.onerror = () => reject(new Error('Failed to load image'));
+      img.src = imageUrl;
+    });
   }
 
   async processImage() {
@@ -128,6 +213,8 @@ export class OcrAppComponent implements AfterViewInit, OnDestroy {
     this.progress.set(0);
     this.progressStatus.set('Đang xử lý hình ảnh...');
 
+    let progressInterval: any = null;
+
     try {
       // Ensure worker is initialized with current language
       const currentLang = this.selectedLanguage();
@@ -139,14 +226,30 @@ export class OcrAppComponent implements AfterViewInit, OnDestroy {
       }
 
       // Perform OCR
-      const { data } = await this.worker.recognize(imageUrl, {
-        logger: (m: any) => {
-          if (m.status === 'recognizing text') {
-            this.progress.set(Math.round(m.progress * 100));
-            this.progressStatus.set(`Đang nhận dạng: ${Math.round(m.progress * 100)}%`);
-          }
+      // Note: Cannot pass logger function directly due to DataCloneError
+      // Tesseract.js handles progress internally, we'll simulate progress
+      this.progress.set(10);
+      this.progressStatus.set('Đang xử lý hình ảnh...');
+      
+      // Simulate progress while processing
+      progressInterval = setInterval(() => {
+        const current = this.progress();
+        if (current < 90) {
+          this.progress.set(Math.min(current + 10, 90));
+          this.progressStatus.set(`Đang nhận dạng: ${Math.min(current + 10, 90)}%`);
         }
-      });
+      }, 500);
+      
+      const { data } = await this.worker.recognize(imageUrl);
+      
+      if (progressInterval) {
+        clearInterval(progressInterval);
+        progressInterval = null;
+      }
+      
+      // Update progress to 100% after recognition completes
+      this.progress.set(100);
+      this.progressStatus.set('Đang nhận dạng: 100%');
 
       const result: OCRResult = {
         text: data.text,
@@ -168,6 +271,9 @@ export class OcrAppComponent implements AfterViewInit, OnDestroy {
     } catch (err: any) {
       console.error('OCR Error:', err);
       this.error.set(`Lỗi khi xử lý: ${err.message || 'Vui lòng thử lại'}`);
+      if (progressInterval) {
+        clearInterval(progressInterval);
+      }
     } finally {
       this.isProcessing.set(false);
       setTimeout(() => {
@@ -299,6 +405,11 @@ export class OcrAppComponent implements AfterViewInit, OnDestroy {
   ngOnDestroy() {
     if (this.worker) {
       this.worker.terminate();
+    }
+    
+    // Restore original console.warn
+    if (this.originalConsoleWarn) {
+      console.warn = this.originalConsoleWarn;
     }
   }
 }
