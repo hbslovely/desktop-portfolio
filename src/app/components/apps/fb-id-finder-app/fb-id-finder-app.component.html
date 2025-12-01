@@ -66,6 +66,55 @@
       <span>{{ error() }}</span>
     </div>
 
+    <!-- Facebook Profile Section -->
+    <div class="facebook-profile-section" *ngIf="facebookProfile()">
+      <div class="profile-header">
+        <h3>
+          <i class="pi pi-facebook"></i>
+          Facebook Profile
+        </h3>
+        <div class="profile-actions">
+          <button (click)="copyFacebookLink()" class="action-btn" type="button" title="Sao chép link">
+            <i class="pi pi-copy"></i>
+          </button>
+          <button (click)="openFacebookLink()" class="action-btn open-btn" type="button" title="Mở trong tab mới">
+            <i class="pi pi-external-link"></i>
+          </button>
+        </div>
+      </div>
+      <div class="profile-content">
+        <div class="profile-info">
+          <div class="profile-image-wrapper" *ngIf="facebookProfile()?.profileImage">
+            <img [src]="facebookProfile()!.profileImage" alt="Profile" class="profile-image" />
+          </div>
+          <div class="profile-details">
+            <div class="profile-name" *ngIf="facebookProfile()?.name">
+              <i class="pi pi-user"></i>
+              <span>{{ facebookProfile()!.name }}</span>
+            </div>
+            <div class="profile-id">
+              <i class="pi pi-id-card"></i>
+              <span>ID: {{ facebookProfile()!.id }}</span>
+            </div>
+            <div class="profile-link">
+              <i class="pi pi-link"></i>
+              <a [href]="facebookProfile()!.link" target="_blank" class="fb-link">
+                {{ facebookProfile()!.link }}
+              </a>
+            </div>
+            <div class="profile-about" *ngIf="facebookProfile()?.about">
+              <i class="pi pi-info-circle"></i>
+              <span>{{ facebookProfile()!.about }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="loading-profile" *ngIf="loadingProfile()">
+          <i class="pi pi-spin pi-spinner"></i>
+          <span>Đang tải thông tin profile...</span>
+        </div>
+      </div>
+    </div>
+
     <!-- Result Section -->
     <div class="result-section" *ngIf="result()">
       <div class="result-header">

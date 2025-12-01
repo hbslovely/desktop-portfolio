@@ -42,6 +42,10 @@
     {
       "source": "/api/business-apps-script",
       "destination": "https://script.google.com/macros/s/AKfycbyWFdurzG4dxdIgQi3F8LDsgHJ2-k5d8_tM5tU7B0ArjOPURF1ykkqd-rg1AL9LyJp0Nw/exec"
+    },
+    {
+      "source": "/api/facebook/:path*",
+      "destination": "https://www.facebook.com/:path*"
     }
   ],
   "headers": [
