@@ -71,14 +71,85 @@
       <div class="result-header">
         <h3>
           <i class="pi pi-check-circle"></i>
-          Kết quả
+          Kết quả tìm kiếm
         </h3>
-        <button (click)="copyResult()" class="copy-btn" type="button" title="Sao chép">
+        <button (click)="copyResult()" class="copy-btn" type="button" title="Sao chép ID">
           <i class="pi pi-copy"></i>
         </button>
       </div>
-      <div class="result-content">
-        <pre>{{ result() }}</pre>
+      
+      <!-- Facebook ID Display -->
+      <div class="fb-id-display">
+        <div class="fb-id-label">Facebook ID:</div>
+        <div class="fb-id-value">{{ result() }}</div>
+      </div>
+
+      <!-- Facebook Profile Section -->
+      <div class="profile-section" *ngIf="facebookProfile()">
+        <div class="profile-header">
+          <h4>
+            <i class="pi pi-user"></i>
+            Thông tin Facebook
+          </h4>
+          <div class="profile-actions">
+            <button 
+              (click)="copyFacebookLink()" 
+              class="action-btn" 
+              type="button" 
+              title="Sao chép link">
+              <i class="pi pi-copy"></i>
+            </button>
+            <button 
+              (click)="openFacebookLink()" 
+              class="action-btn primary" 
+              type="button" 
+              title="Mở trên Facebook">
+              <i class="pi pi-external-link"></i>
+              Mở Facebook
+            </button>
+          </div>
+        </div>
+
+        <!-- Profile Link -->
+        <div class="profile-link">
+          <i class="pi pi-link"></i>
+          <a [href]="facebookProfile()!.link" target="_blank" rel="noopener noreferrer">
+            {{ facebookProfile()!.link }}
+          </a>
+        </div>
+
+        <!-- Loading Profile -->
+        <div class="profile-loading" *ngIf="loadingProfile()">
+          <i class="pi pi-spin pi-spinner"></i>
+          <span>Đang tải thông tin người dùng...</span>
+        </div>
+
+        <!-- Profile Info -->
+        <div class="profile-info" *ngIf="!loadingProfile() && facebookProfile()">
+          <!-- Profile Image and Name -->
+          <div class="profile-main" *ngIf="facebookProfile()!.name || facebookProfile()!.profileImage">
+            <div class="profile-avatar" *ngIf="facebookProfile()!.profileImage">
+              <img [src]="facebookProfile()!.profileImage" [alt]="facebookProfile()!.name || 'Profile'" 
+                   onerror="this.style.display='none'">
+            </div>
+            <div class="profile-details">
+              <div class="profile-name" *ngIf="facebookProfile()!.name">
+                <i class="pi pi-user"></i>
+                <span>{{ facebookProfile()!.name }}</span>
+              </div>
+              <div class="profile-id">
+                <i class="pi pi-id-card"></i>
+                <span>ID: {{ facebookProfile()!.id }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- About/Description -->
+          <div class="profile-about" *ngIf="facebookProfile()!.about">
+            <i class="pi pi-info-circle"></i>
+            <p>{{ facebookProfile()!.about }}</p>
+          </div>
+        </div>
       </div>
     </div>
 

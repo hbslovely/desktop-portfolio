@@ -146,6 +146,32 @@
       "Accept": "application/json, text/plain, */*",
       "Content-Type": "application/json"
     }
+  },
+  "/api/facebook": {
+    "target": "https://www.facebook.com",
+    "secure": true,
+    "changeOrigin": true,
+    "logLevel": "debug",
+    "pathRewrite": {
+      "^/api/facebook": ""
+    },
+    "headers": {
+      "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36",
+      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+      "Accept-Language": "en,vi;q=0.9,en-US;q=0.8",
+      "Accept-Encoding": "gzip, deflate, br",
+      "Cache-Control": "max-age=0",
+      "Sec-CH-UA": "\"Chromium\";v=\"142\", \"Google Chrome\";v=\"142\", \"Not_A Brand\";v=\"99\"",
+      "Sec-CH-UA-Mobile": "?0",
+      "Sec-CH-UA-Platform": "\"macOS\"",
+      "Sec-CH-UA-Platform-Version": "\"15.7.1\"",
+      "Sec-Fetch-Dest": "document",
+      "Sec-Fetch-Mode": "navigate",
+      "Sec-Fetch-Site": "same-origin",
+      "Sec-Fetch-User": "?1",
+      "Upgrade-Insecure-Requests": "1",
+      "Referer": "https://www.facebook.com/"
+    }
   }
 }
 

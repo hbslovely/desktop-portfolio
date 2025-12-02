@@ -288,18 +288,6 @@ export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
     maximizable: true,
     statusText: 'Official Angular Documentation'
   },
-  'angular-learning': {
-    id: 'angular-learning',
-    title: 'Học Angular',
-    icon: 'pi pi-graduation-cap',
-    component: 'angular-learning',
-    defaultWidth: 1400,
-    defaultHeight: 900,
-    defaultX: 100,
-    defaultY: 50,
-    maximizable: true,
-    statusText: 'Học Angular từ đầu với ví dụ thực hành'
-  },
   'tuoitre-news': {
     id: 'tuoitre-news',
     title: 'Tin tức hôm nay',

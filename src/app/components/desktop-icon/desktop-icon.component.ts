@@ -40,6 +40,8 @@ export class DesktopIconComponent implements OnDestroy {
   dragPosition = signal({ x: 0, y: 0 });
   dragStarted = signal(false);
   dragThreshold = 5; // pixels to move before considering it a drag
+  gridSize = 20; // Grid size for snap-to-grid (20px)
+  snapToGrid = true; // Enable snap-to-grid
   
   // Context menu state
   showContextMenu = signal(false);
@@ -124,10 +126,22 @@ export class DesktopIconComponent implements OnDestroy {
     }
     
     if (this.isDragging()) {
-      const newPosition = {
+      let newPosition = {
         x: Math.max(0, Math.min(window.innerWidth - 80, event.clientX - this.dragOffset().x)),
         y: Math.max(0, Math.min(window.innerHeight - 80, event.clientY - this.dragOffset().y))
       };
+      
+      // Snap to grid if enabled
+      if (this.snapToGrid) {
+        newPosition = {
+          x: Math.round(newPosition.x / this.gridSize) * this.gridSize,
+          y: Math.round(newPosition.y / this.gridSize) * this.gridSize
+        };
+        
+        // Ensure position stays within bounds after snapping
+        newPosition.x = Math.max(0, Math.min(window.innerWidth - 80, newPosition.x));
+        newPosition.y = Math.max(0, Math.min(window.innerHeight - 80, newPosition.y));
+      }
       
       // Update drag position signal for smooth visual feedback
       this.dragPosition.set(newPosition);
@@ -142,8 +156,21 @@ export class DesktopIconComponent implements OnDestroy {
     if (this.isDragging()) {
       this.isDragging.set(false);
       
-      // Update the actual icon data position
-      const finalPosition = this.dragPosition();
+      // Update the actual icon data position with final snap-to-grid
+      let finalPosition = this.dragPosition();
+      
+      // Final snap-to-grid adjustment
+      if (this.snapToGrid) {
+        finalPosition = {
+          x: Math.round(finalPosition.x / this.gridSize) * this.gridSize,
+          y: Math.round(finalPosition.y / this.gridSize) * this.gridSize
+        };
+        
+        // Ensure position stays within bounds
+        finalPosition.x = Math.max(0, Math.min(window.innerWidth - 80, finalPosition.x));
+        finalPosition.y = Math.max(0, Math.min(window.innerHeight - 80, finalPosition.y));
+      }
+      
       this.iconData.position = finalPosition;
       
       this.onDragEnd.emit({

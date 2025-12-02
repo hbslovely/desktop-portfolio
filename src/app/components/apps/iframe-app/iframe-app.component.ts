@@ -48,7 +48,18 @@ export class IframeAppComponent implements OnInit, OnDestroy {
   // Convert to computed signal to prevent infinite loading
   safeUrl = computed(() => {
     const url = this._url();
-    return url ? this.sanitizer.bypassSecurityTrustResourceUrl(url) : null;
+    if (!url) return null;
+    
+    // Convert Facebook URLs to use proxy
+    let processedUrl = url;
+    if (url.includes('facebook.com')) {
+      // Replace https://www.facebook.com with /api/facebook
+      processedUrl = url.replace(/^https?:\/\/www\.facebook\.com/, '/api/facebook');
+      // Also handle facebook.com without www
+      processedUrl = processedUrl.replace(/^https?:\/\/facebook\.com/, '/api/facebook');
+    }
+    
+    return this.sanitizer.bypassSecurityTrustResourceUrl(processedUrl);
   });
   
   private startLoadingTimeout() {
