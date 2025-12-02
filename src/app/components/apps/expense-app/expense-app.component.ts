@@ -21,6 +21,14 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   @ViewChild('categoryChart') categoryChartRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('dailyChart') dailyChartRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('categoryBarChart') categoryBarChartRef!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('todayComparisonChart') todayComparisonChartRef!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('todayTrendChart') todayTrendChartRef!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('outlierChart') outlierChartRef!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('boxPlotChart') boxPlotChartRef!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('zScoreChart') zScoreChartRef!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('predictionChart') predictionChartRef!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('weeklyPredictionChart') weeklyPredictionChartRef!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('monthlyPredictionChart') monthlyPredictionChartRef!: ElementRef<HTMLCanvasElement>;
 
   // Authentication
   isAuthenticated = signal<boolean>(false);
@@ -38,6 +46,14 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   private dailyChart: Chart | null = null;
   private categoryDetailChart: Chart | null = null;
   private categoryBarChart: Chart | null = null;
+  private todayComparisonChart: Chart | null = null;
+  private todayTrendChart: Chart | null = null;
+  private outlierChart: Chart | null = null;
+  private boxPlotChart: Chart | null = null;
+  private zScoreChart: Chart | null = null;
+  private predictionChart: Chart | null = null;
+  private weeklyPredictionChart: Chart | null = null;
+  private monthlyPredictionChart: Chart | null = null;
 
   // Add expense form
   showAddForm = signal<boolean>(false);
@@ -166,6 +182,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
   // Tabs
   activeTab = signal<'list' | 'summary' | 'matrix'>('list');
+  predictionTab = signal<'thisWeek' | 'nextWeek' | 'thisMonth'>('thisWeek');
 
   // Sorting for expenses list
   sortField = signal<'date' | 'amount' | 'category' | 'content'>('date');
@@ -649,6 +666,829 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     );
   });
 
+  // Cash Flow Statistics - Weekly
+  weeklyExpenses = computed(() => {
+    const expenses = this.filteredExpenses();
+    if (expenses.length === 0) return [];
+
+    const weeklyMap: { [key: string]: { total: number; count: number; weekStart: string } } = {};
+
+    expenses.forEach(expense => {
+      const date = this.parseDate(expense.date);
+      if (!date) return;
+
+      // Get week start (Monday)
+      const dayOfWeek = date.getDay();
+      const diff = date.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1); // Adjust to Monday
+      const weekStart = new Date(date.setDate(diff));
+      weekStart.setHours(0, 0, 0, 0);
+      const weekKey = `${weekStart.getFullYear()}-W${this.getWeekNumber(weekStart)}`;
+
+      if (!weeklyMap[weekKey]) {
+        weeklyMap[weekKey] = {
+          total: 0,
+          count: 0,
+          weekStart: weekStart.toISOString().split('T')[0]
+        };
+      }
+      weeklyMap[weekKey].total += expense.amount;
+      weeklyMap[weekKey].count += 1;
+    });
+
+    return Object.keys(weeklyMap)
+      .sort()
+      .map(key => ({
+        weekKey: key,
+        weekStart: weeklyMap[key].weekStart,
+        total: weeklyMap[key].total,
+        count: weeklyMap[key].count,
+        average: Math.round(weeklyMap[key].total / weeklyMap[key].count)
+      }));
+  });
+
+  averageWeeklyExpense = computed(() => {
+    const weekly = this.weeklyExpenses();
+    if (weekly.length === 0) return 0;
+    const total = weekly.reduce((sum, week) => sum + week.total, 0);
+    return Math.round(total / weekly.length);
+  });
+
+  // Cash Flow Statistics - Monthly
+  monthlyExpenses = computed(() => {
+    const expenses = this.filteredExpenses();
+    if (expenses.length === 0) return [];
+
+    const monthlyMap: { [key: string]: { total: number; count: number; days: Set<string> } } = {};
+
+    expenses.forEach(expense => {
+      const date = this.parseDate(expense.date);
+      if (!date) return;
+
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+
+      if (!monthlyMap[monthKey]) {
+        monthlyMap[monthKey] = {
+          total: 0,
+          count: 0,
+          days: new Set()
+        };
+      }
+      monthlyMap[monthKey].total += expense.amount;
+      monthlyMap[monthKey].count += 1;
+      monthlyMap[monthKey].days.add(expense.date);
+    });
+
+    return Object.keys(monthlyMap)
+      .sort()
+      .map(key => ({
+        monthKey: key,
+        total: monthlyMap[key].total,
+        count: monthlyMap[key].count,
+        daysWithExpenses: monthlyMap[key].days.size,
+        averagePerDay: Math.round(monthlyMap[key].total / monthlyMap[key].days.size),
+        averagePerTransaction: Math.round(monthlyMap[key].total / monthlyMap[key].count)
+      }));
+  });
+
+  averageMonthlyExpense = computed(() => {
+    const monthly = this.monthlyExpenses();
+    if (monthly.length === 0) return 0;
+    const total = monthly.reduce((sum, month) => sum + month.total, 0);
+    return Math.round(total / monthly.length);
+  });
+
+  // Spending Frequency
+  spendingFrequency = computed(() => {
+    const expenses = this.filteredExpenses();
+    if (expenses.length === 0) return { daysWithExpenses: 0, totalDays: 0, frequency: 0 };
+
+    const uniqueDates = new Set(expenses.map(e => e.date));
+    const dates = this.uniqueDates();
+    const totalDays = dates.length;
+
+    return {
+      daysWithExpenses: uniqueDates.size,
+      totalDays: totalDays,
+      frequency: totalDays > 0 ? Math.round((uniqueDates.size / totalDays) * 100) : 0
+    };
+  });
+
+  // Transactions per day
+  transactionsPerDay = computed(() => {
+    const expenses = this.filteredExpenses();
+    const dates = this.uniqueDates();
+    if (dates.length === 0) return 0;
+    return Math.round((expenses.length / dates.length) * 10) / 10;
+  });
+
+  // Weekday vs Weekend comparison
+  weekdayWeekendComparison = computed(() => {
+    const expenses = this.filteredExpenses();
+    if (expenses.length === 0) {
+      return {
+        weekday: { total: 0, count: 0, average: 0 },
+        weekend: { total: 0, count: 0, average: 0 }
+      };
+    }
+
+    let weekdayTotal = 0;
+    let weekdayCount = 0;
+    let weekendTotal = 0;
+    let weekendCount = 0;
+
+    expenses.forEach(expense => {
+      const date = this.parseDate(expense.date);
+      if (!date) return;
+
+      const dayOfWeek = date.getDay();
+      const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+
+      if (isWeekend) {
+        weekendTotal += expense.amount;
+        weekendCount += 1;
+      } else {
+        weekdayTotal += expense.amount;
+        weekdayCount += 1;
+      }
+    });
+
+    return {
+      weekday: {
+        total: weekdayTotal,
+        count: weekdayCount,
+        average: weekdayCount > 0 ? Math.round(weekdayTotal / weekdayCount) : 0
+      },
+      weekend: {
+        total: weekendTotal,
+        count: weekendCount,
+        average: weekendCount > 0 ? Math.round(weekendTotal / weekendCount) : 0
+      }
+    };
+  });
+
+  // Projected monthly spending
+  projectedMonthlySpending = computed(() => {
+    const expenses = this.filteredExpenses();
+    if (expenses.length === 0) return 0;
+
+    const dates = this.uniqueDates();
+    if (dates.length === 0) return 0;
+
+    const total = this.totalAmount();
+    const avgDaily = total / dates.length;
+    return Math.round(avgDaily * 30);
+  });
+
+  // Largest spending streak (consecutive days with expenses)
+  largestSpendingStreak = computed(() => {
+    const dates = this.uniqueDates();
+    if (dates.length === 0) return { streak: 0, startDate: '', endDate: '' };
+
+    let maxStreak = 0;
+    let currentStreak = 1;
+    let streakStart = dates[0];
+    let maxStreakStart = dates[0];
+    let maxStreakEnd = dates[0];
+
+    for (let i = 1; i < dates.length; i++) {
+      const prevDate = this.parseDate(dates[i - 1]);
+      const currDate = this.parseDate(dates[i]);
+      if (!prevDate || !currDate) continue;
+
+      const daysDiff = Math.round((currDate.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24));
+
+      if (daysDiff === 1) {
+        currentStreak++;
+        if (currentStreak > maxStreak) {
+          maxStreak = currentStreak;
+          maxStreakStart = streakStart;
+          maxStreakEnd = dates[i];
+        }
+      } else {
+        currentStreak = 1;
+        streakStart = dates[i];
+      }
+    }
+
+    return {
+      streak: maxStreak,
+      startDate: maxStreakStart,
+      endDate: maxStreakEnd
+    };
+  });
+
+  // Helper function to get week number
+  private getWeekNumber(date: Date): number {
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+  }
+
+  // Statistical Analysis - Outliers and Anomalies
+  statisticalAnalysis = computed(() => {
+    const expenses = this.filteredExpenses();
+    if (expenses.length === 0) {
+      return {
+        mean: 0,
+        median: 0,
+        mode: 0,
+        standardDeviation: 0,
+        variance: 0,
+        q1: 0,
+        q2: 0,
+        q3: 0,
+        iqr: 0,
+        outliers: [],
+        zScores: [],
+        coefficientOfVariation: 0,
+        skewness: 0,
+        kurtosis: 0
+      };
+    }
+
+    const amounts = expenses.map(e => e.amount).sort((a, b) => a - b);
+    const n = amounts.length;
+
+    // Mean
+    const mean = amounts.reduce((sum, val) => sum + val, 0) / n;
+
+    // Median (Q2)
+    const q2 = n % 2 === 0
+      ? (amounts[n / 2 - 1] + amounts[n / 2]) / 2
+      : amounts[Math.floor(n / 2)];
+
+    // Q1 (25th percentile)
+    const q1Index = Math.floor(n * 0.25);
+    const q1 = n % 4 === 0
+      ? (amounts[q1Index - 1] + amounts[q1Index]) / 2
+      : amounts[q1Index];
+
+    // Q3 (75th percentile)
+    const q3Index = Math.floor(n * 0.75);
+    const q3 = n % 4 === 0
+      ? (amounts[q3Index - 1] + amounts[q3Index]) / 2
+      : amounts[q3Index];
+
+    // IQR
+    const iqr = q3 - q1;
+
+    // Variance and Standard Deviation
+    const variance = amounts.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / n;
+    const standardDeviation = Math.sqrt(variance);
+
+    // Mode (most frequent value within ranges)
+    const modeMap: { [key: number]: number } = {};
+    amounts.forEach(amount => {
+      const rounded = Math.round(amount / 10000) * 10000; // Round to nearest 10k
+      modeMap[rounded] = (modeMap[rounded] || 0) + 1;
+    });
+    const mode = Object.keys(modeMap).reduce((a, b) => 
+      modeMap[parseInt(a)] > modeMap[parseInt(b)] ? a : b
+    );
+
+    // Z-scores
+    const zScores = amounts.map(amount => ({
+      amount,
+      zScore: standardDeviation > 0 ? (amount - mean) / standardDeviation : 0
+    }));
+
+    // Outliers using IQR method
+    const lowerBound = q1 - 1.5 * iqr;
+    const upperBound = q3 + 1.5 * iqr;
+    
+    const outliers: Array<Expense & { zScore: number; isOutlier: boolean; outlierType: 'low' | 'high' | 'normal' }> = expenses
+      .map((expense, index) => ({
+        ...expense,
+        zScore: zScores[index]?.zScore || 0,
+        isOutlier: expense.amount < lowerBound || expense.amount > upperBound,
+        outlierType: (expense.amount < lowerBound ? 'low' : expense.amount > upperBound ? 'high' : 'normal') as 'low' | 'high' | 'normal'
+      }))
+      .filter(item => item.isOutlier)
+      .sort((a, b) => Math.abs(b.zScore) - Math.abs(a.zScore));
+
+    // Coefficient of Variation
+    const coefficientOfVariation = mean > 0 ? (standardDeviation / mean) * 100 : 0;
+
+    // Skewness
+    const skewness = n > 2 && standardDeviation > 0
+      ? (n / ((n - 1) * (n - 2))) * amounts.reduce((sum, val) => 
+          sum + Math.pow((val - mean) / standardDeviation, 3), 0)
+      : 0;
+
+    // Kurtosis
+    const kurtosis = n > 3 && standardDeviation > 0
+      ? ((n * (n + 1)) / ((n - 1) * (n - 2) * (n - 3))) * 
+        amounts.reduce((sum, val) => sum + Math.pow((val - mean) / standardDeviation, 4), 0) -
+        (3 * (n - 1) * (n - 1)) / ((n - 2) * (n - 3))
+      : 0;
+
+    return {
+      mean: Math.round(mean),
+      median: Math.round(q2),
+      mode: parseInt(mode),
+      standardDeviation: Math.round(standardDeviation),
+      variance: Math.round(variance),
+      q1: Math.round(q1),
+      q2: Math.round(q2),
+      q3: Math.round(q3),
+      iqr: Math.round(iqr),
+      outliers: outliers,
+      outliersTotal: outliers.reduce((sum, o) => sum + o.amount, 0),
+      zScores: zScores,
+      coefficientOfVariation: Math.round(coefficientOfVariation * 10) / 10,
+      skewness: Math.round(skewness * 100) / 100,
+      kurtosis: Math.round(kurtosis * 100) / 100,
+      lowerBound: Math.round(lowerBound),
+      upperBound: Math.round(upperBound)
+    };
+  });
+
+  // Outlier analysis by date
+  outlierAnalysisByDate = computed(() => {
+    const analysis = this.statisticalAnalysis();
+    if (analysis.outliers.length === 0) return [];
+
+    const dateMap: { [date: string]: Array<Expense & { zScore: number; isOutlier: boolean; outlierType: 'low' | 'high' | 'normal' }> } = {};
+    
+    analysis.outliers.forEach(outlier => {
+      if (!dateMap[outlier.date]) {
+        dateMap[outlier.date] = [];
+      }
+      dateMap[outlier.date].push(outlier);
+    });
+
+    return Object.keys(dateMap)
+      .sort()
+      .map(date => ({
+        date,
+        outliers: dateMap[date],
+        total: dateMap[date].reduce((sum, o) => sum + o.amount, 0),
+        count: dateMap[date].length,
+        avgZScore: dateMap[date].reduce((sum, o) => sum + Math.abs(o.zScore), 0) / dateMap[date].length
+      }));
+  });
+
+  // Future Prediction using Supervised Learning Algorithms
+  futurePredictions = computed(() => {
+    const allExpenses = this.expenses(); // Use all expenses for training
+    if (allExpenses.length < 7) {
+      return {
+        tomorrow: 0,
+        thisWeek: [],
+        nextWeek: [],
+        thisMonth: [],
+        nextMonth: [],
+        predictions: [],
+        confidence: 0,
+        method: 'insufficient_data'
+      };
+    }
+
+    // Prepare historical data (last 60 days)
+    const today = new Date();
+    const sixtyDaysAgo = new Date(today);
+    sixtyDaysAgo.setDate(today.getDate() - 60);
+    const sixtyDaysAgoStr = sixtyDaysAgo.toISOString().split('T')[0];
+
+    const historicalExpenses = allExpenses.filter(e => e.date >= sixtyDaysAgoStr);
+    
+    // Group by date
+    const dailyData: { [date: string]: number } = {};
+    historicalExpenses.forEach(expense => {
+      dailyData[expense.date] = (dailyData[expense.date] || 0) + expense.amount;
+    });
+
+    // Create sorted array of dates
+    const dates = Object.keys(dailyData).sort();
+    const values = dates.map(date => dailyData[date]);
+
+    if (values.length < 7) {
+      return {
+        tomorrow: 0,
+        thisWeek: [],
+        nextWeek: [],
+        thisMonth: [],
+        nextMonth: [],
+        predictions: [],
+        confidence: 0,
+        method: 'insufficient_data'
+      };
+    }
+
+    // Method 1: Linear Regression
+    const linearPrediction = this.linearRegression(dates, values);
+    
+    // Method 2: Moving Average (7-day)
+    const movingAvg7 = this.movingAverage(values, 7);
+    
+    // Method 3: Exponential Smoothing
+    const expSmoothing = this.exponentialSmoothing(values, 0.3);
+    
+    // Method 4: Seasonal Pattern (day of week)
+    const seasonalPattern = this.seasonalPattern(historicalExpenses);
+
+    // Combine predictions with weights
+    const weights = { linear: 0.3, moving: 0.3, exponential: 0.2, seasonal: 0.2 };
+    
+    // Predict tomorrow
+    const tomorrowDate = new Date(today);
+    tomorrowDate.setDate(today.getDate() + 1);
+    const tomorrowStr = tomorrowDate.toISOString().split('T')[0];
+    const dayOfWeek = tomorrowDate.getDay();
+    
+    const tomorrowLinear = linearPrediction.predict(dates.length);
+    const tomorrowMoving = movingAvg7[movingAvg7.length - 1] || values[values.length - 1];
+    const tomorrowExp = expSmoothing[expSmoothing.length - 1] || values[values.length - 1];
+    const tomorrowSeasonal = seasonalPattern[dayOfWeek] || 0;
+    
+    const tomorrow = Math.round(
+      tomorrowLinear * weights.linear +
+      tomorrowMoving * weights.moving +
+      tomorrowExp * weights.exponential +
+      tomorrowSeasonal * weights.seasonal
+    );
+
+    // Predict this week (next 7 days)
+    const thisWeek: Array<{ date: string; prediction: number; confidence: number }> = [];
+    for (let i = 1; i <= 7; i++) {
+      const futureDate = new Date(today);
+      futureDate.setDate(today.getDate() + i);
+      const futureDateStr = futureDate.toISOString().split('T')[0];
+      const futureDayOfWeek = futureDate.getDay();
+      const daysAhead = i;
+
+      const linearPred = linearPrediction.predict(dates.length + daysAhead - 1);
+      const movingPred = movingAvg7[movingAvg7.length - 1] || values[values.length - 1];
+      const expPred = expSmoothing[expSmoothing.length - 1] || values[values.length - 1];
+      const seasonalPred = seasonalPattern[futureDayOfWeek] || 0;
+
+      const prediction = Math.round(
+        linearPred * weights.linear +
+        movingPred * weights.moving +
+        expPred * weights.exponential +
+        seasonalPred * weights.seasonal
+      );
+
+      // Confidence decreases with time
+      const confidence = Math.max(0, 100 - (daysAhead * 5));
+
+      thisWeek.push({
+        date: futureDateStr,
+        prediction: Math.max(0, prediction),
+        confidence: confidence
+      });
+    }
+
+    // Predict next week (days 8-14)
+    const nextWeek: Array<{ date: string; prediction: number; confidence: number }> = [];
+    for (let i = 8; i <= 14; i++) {
+      const futureDate = new Date(today);
+      futureDate.setDate(today.getDate() + i);
+      const futureDateStr = futureDate.toISOString().split('T')[0];
+      const futureDayOfWeek = futureDate.getDay();
+      const daysAhead = i;
+
+      const linearPred = linearPrediction.predict(dates.length + daysAhead - 1);
+      const movingPred = movingAvg7[movingAvg7.length - 1] || values[values.length - 1];
+      const expPred = expSmoothing[expSmoothing.length - 1] || values[values.length - 1];
+      const seasonalPred = seasonalPattern[futureDayOfWeek] || 0;
+
+      const prediction = Math.round(
+        linearPred * weights.linear +
+        movingPred * weights.moving +
+        expPred * weights.exponential +
+        seasonalPred * weights.seasonal
+      );
+
+      const confidence = Math.max(0, 100 - (daysAhead * 5));
+
+      nextWeek.push({
+        date: futureDateStr,
+        prediction: Math.max(0, prediction),
+        confidence: confidence
+      });
+    }
+
+    // Predict this month (next 30 days)
+    const thisMonth: Array<{ date: string; prediction: number; confidence: number }> = [];
+    for (let i = 1; i <= 30; i++) {
+      const futureDate = new Date(today);
+      futureDate.setDate(today.getDate() + i);
+      const futureDateStr = futureDate.toISOString().split('T')[0];
+      const futureDayOfWeek = futureDate.getDay();
+      const daysAhead = i;
+
+      const linearPred = linearPrediction.predict(dates.length + daysAhead - 1);
+      const movingPred = movingAvg7[movingAvg7.length - 1] || values[values.length - 1];
+      const expPred = expSmoothing[expSmoothing.length - 1] || values[values.length - 1];
+      const seasonalPred = seasonalPattern[futureDayOfWeek] || 0;
+
+      const prediction = Math.round(
+        linearPred * weights.linear +
+        movingPred * weights.moving +
+        expPred * weights.exponential +
+        seasonalPred * weights.seasonal
+      );
+
+      const confidence = Math.max(0, 100 - (daysAhead * 3));
+
+      thisMonth.push({
+        date: futureDateStr,
+        prediction: Math.max(0, prediction),
+        confidence: confidence
+      });
+    }
+
+    // Predict next month (days 31-60)
+    const nextMonth: Array<{ date: string; prediction: number; confidence: number }> = [];
+    for (let i = 31; i <= 60; i++) {
+      const futureDate = new Date(today);
+      futureDate.setDate(today.getDate() + i);
+      const futureDateStr = futureDate.toISOString().split('T')[0];
+      const futureDayOfWeek = futureDate.getDay();
+      const daysAhead = i;
+
+      const linearPred = linearPrediction.predict(dates.length + daysAhead - 1);
+      const movingPred = movingAvg7[movingAvg7.length - 1] || values[values.length - 1];
+      const expPred = expSmoothing[expSmoothing.length - 1] || values[values.length - 1];
+      const seasonalPred = seasonalPattern[futureDayOfWeek] || 0;
+
+      const prediction = Math.round(
+        linearPred * weights.linear +
+        movingPred * weights.moving +
+        expPred * weights.exponential +
+        seasonalPred * weights.seasonal
+      );
+
+      const confidence = Math.max(0, 100 - (daysAhead * 2));
+
+      nextMonth.push({
+        date: futureDateStr,
+        prediction: Math.max(0, prediction),
+        confidence: confidence
+      });
+    }
+
+    // Overall confidence based on data quality
+    const dataQuality = Math.min(100, (values.length / 60) * 100);
+    const overallConfidence = Math.round(dataQuality * 0.8);
+
+    return {
+      tomorrow: Math.max(0, tomorrow),
+      thisWeek: thisWeek,
+      nextWeek: nextWeek,
+      thisMonth: thisMonth,
+      nextMonth: nextMonth,
+      predictions: [...thisWeek, ...nextWeek],
+      confidence: overallConfidence,
+      method: 'ensemble',
+      weeklyTotal: thisWeek.reduce((sum, d) => sum + d.prediction, 0),
+      monthlyTotal: thisMonth.reduce((sum, d) => sum + d.prediction, 0)
+    };
+  });
+
+  // Linear Regression
+  private linearRegression(dates: string[], values: number[]): { predict: (x: number) => number; slope: number; intercept: number } {
+    const n = values.length;
+    const x = dates.map((_, i) => i);
+    
+    const sumX = x.reduce((sum, val) => sum + val, 0);
+    const sumY = values.reduce((sum, val) => sum + val, 0);
+    const sumXY = x.reduce((sum, val, i) => sum + val * values[i], 0);
+    const sumXX = x.reduce((sum, val) => sum + val * val, 0);
+    
+    const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+    const intercept = (sumY - slope * sumX) / n;
+    
+    return {
+      predict: (x: number) => slope * x + intercept,
+      slope,
+      intercept
+    };
+  }
+
+  // Moving Average
+  private movingAverage(values: number[], period: number): number[] {
+    const result: number[] = [];
+    for (let i = 0; i < values.length; i++) {
+      if (i < period - 1) {
+        result.push(values[i]);
+      } else {
+        const sum = values.slice(i - period + 1, i + 1).reduce((a, b) => a + b, 0);
+        result.push(sum / period);
+      }
+    }
+    return result;
+  }
+
+  // Exponential Smoothing
+  private exponentialSmoothing(values: number[], alpha: number): number[] {
+    const result: number[] = [values[0]];
+    for (let i = 1; i < values.length; i++) {
+      result.push(alpha * values[i] + (1 - alpha) * result[i - 1]);
+    }
+    return result;
+  }
+
+  // Seasonal Pattern (by day of week)
+  private seasonalPattern(expenses: Expense[]): { [dayOfWeek: number]: number } {
+    const dayTotals: { [day: number]: { total: number; count: number } } = {};
+    
+    expenses.forEach(expense => {
+      const date = this.parseDate(expense.date);
+      if (!date) return;
+      const dayOfWeek = date.getDay();
+      
+      if (!dayTotals[dayOfWeek]) {
+        dayTotals[dayOfWeek] = { total: 0, count: 0 };
+      }
+      dayTotals[dayOfWeek].total += expense.amount;
+      dayTotals[dayOfWeek].count += 1;
+    });
+
+    const pattern: { [dayOfWeek: number]: number } = {};
+    for (let day = 0; day < 7; day++) {
+      if (dayTotals[day]) {
+        pattern[day] = Math.round(dayTotals[day].total / dayTotals[day].count);
+      } else {
+        // Use overall average if no data for this day
+        const allAvg = expenses.reduce((sum, e) => sum + e.amount, 0) / expenses.length;
+        pattern[day] = Math.round(allAvg);
+      }
+    }
+    
+    return pattern;
+  }
+
+  // Yesterday comparison
+  yesterdayComparison = computed(() => {
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
+    
+    const allExpenses = this.expenses();
+    
+    const todayExpenses = allExpenses.filter(e => e.date === todayStr);
+    const yesterdayExpenses = allExpenses.filter(e => e.date === yesterdayStr);
+    
+    const todayTotal = todayExpenses.reduce((sum, e) => sum + e.amount, 0);
+    const yesterdayTotal = yesterdayExpenses.reduce((sum, e) => sum + e.amount, 0);
+    const todayCount = todayExpenses.length;
+    const yesterdayCount = yesterdayExpenses.length;
+    
+    let change = 0;
+    let changePercent = 0;
+    let status: 'higher' | 'lower' | 'equal' = 'equal';
+    
+    if (yesterdayTotal > 0) {
+      change = todayTotal - yesterdayTotal;
+      changePercent = Math.round((change / yesterdayTotal) * 100);
+      if (change > 0) {
+        status = 'higher';
+      } else if (change < 0) {
+        status = 'lower';
+      } else {
+        status = 'equal';
+      }
+    } else if (todayTotal > 0) {
+      status = 'higher';
+      changePercent = 100;
+    }
+    
+    return {
+      todayTotal,
+      yesterdayTotal,
+      todayCount,
+      yesterdayCount,
+      change,
+      changePercent: Math.abs(changePercent),
+      status,
+      hasData: yesterdayTotal > 0 || todayTotal > 0
+    };
+  });
+
+  // Today's expense evaluation
+  todayExpenseEvaluation = computed(() => {
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+    const allExpenses = this.expenses(); // Use all expenses, not filtered
+    
+    // Get today's expenses
+    const todayExpenses = allExpenses.filter(e => e.date === todayStr);
+    const todayTotal = todayExpenses.reduce((sum, e) => sum + e.amount, 0);
+    const todayCount = todayExpenses.length;
+
+    // Calculate average of last 30 days (excluding today)
+    const thirtyDaysAgo = new Date(today);
+    thirtyDaysAgo.setDate(today.getDate() - 30);
+    const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().split('T')[0];
+    
+    const last30DaysExpenses = allExpenses.filter(e => {
+      return e.date >= thirtyDaysAgoStr && e.date < todayStr;
+    });
+
+    const last30DaysDates = new Set(last30DaysExpenses.map(e => e.date));
+    const last30DaysTotal = last30DaysExpenses.reduce((sum, e) => sum + e.amount, 0);
+    const last30DaysAvg = last30DaysDates.size > 0 ? last30DaysTotal / last30DaysDates.size : 0;
+
+    // Calculate average of last 7 days (excluding today)
+    const sevenDaysAgo = new Date(today);
+    sevenDaysAgo.setDate(today.getDate() - 7);
+    const sevenDaysAgoStr = sevenDaysAgo.toISOString().split('T')[0];
+    
+    const last7DaysExpenses = allExpenses.filter(e => {
+      return e.date >= sevenDaysAgoStr && e.date < todayStr;
+    });
+
+    const last7DaysDates = new Set(last7DaysExpenses.map(e => e.date));
+    const last7DaysTotal = last7DaysExpenses.reduce((sum, e) => sum + e.amount, 0);
+    const last7DaysAvg = last7DaysDates.size > 0 ? last7DaysTotal / last7DaysDates.size : 0;
+
+    // Calculate current week average (excluding today)
+    const weekStart = new Date(today);
+    const dayOfWeek = today.getDay();
+    const diff = today.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
+    weekStart.setDate(diff);
+    weekStart.setHours(0, 0, 0, 0);
+    const weekStartStr = weekStart.toISOString().split('T')[0];
+    
+    const currentWeekExpenses = allExpenses.filter(e => {
+      return e.date >= weekStartStr && e.date < todayStr;
+    });
+
+    const currentWeekDates = new Set(currentWeekExpenses.map(e => e.date));
+    const currentWeekTotal = currentWeekExpenses.reduce((sum, e) => sum + e.amount, 0);
+    const currentWeekAvg = currentWeekDates.size > 0 ? currentWeekTotal / currentWeekDates.size : 0;
+
+    // Calculate current month average (excluding today)
+    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+    const monthStartStr = monthStart.toISOString().split('T')[0];
+    
+    const currentMonthExpenses = allExpenses.filter(e => {
+      return e.date >= monthStartStr && e.date < todayStr;
+    });
+
+    const currentMonthDates = new Set(currentMonthExpenses.map(e => e.date));
+    const currentMonthTotal = currentMonthExpenses.reduce((sum, e) => sum + e.amount, 0);
+    const currentMonthAvg = currentMonthDates.size > 0 ? currentMonthTotal / currentMonthDates.size : 0;
+
+    // Calculate comparisons
+    const compare30Days = last30DaysAvg > 0 
+      ? Math.round(((todayTotal - last30DaysAvg) / last30DaysAvg) * 100) 
+      : 0;
+    const compare7Days = last7DaysAvg > 0 
+      ? Math.round(((todayTotal - last7DaysAvg) / last7DaysAvg) * 100) 
+      : 0;
+    const compareWeek = currentWeekAvg > 0 
+      ? Math.round(((todayTotal - currentWeekAvg) / currentWeekAvg) * 100) 
+      : 0;
+    const compareMonth = currentMonthAvg > 0 
+      ? Math.round(((todayTotal - currentMonthAvg) / currentMonthAvg) * 100) 
+      : 0;
+
+    // Determine overall status
+    let overallStatus: 'high' | 'normal' | 'low' = 'normal';
+    let overallMessage = '';
+    
+    if (last30DaysAvg > 0) {
+      const diff = todayTotal - last30DaysAvg;
+      const percentDiff = (diff / last30DaysAvg) * 100;
+      
+      if (percentDiff > 20) {
+        overallStatus = 'high';
+        overallMessage = `Cao hơn ${Math.round(percentDiff)}% so với TB 30 ngày`;
+      } else if (percentDiff < -20) {
+        overallStatus = 'low';
+        overallMessage = `Thấp hơn ${Math.round(Math.abs(percentDiff))}% so với TB 30 ngày`;
+      } else {
+        overallStatus = 'normal';
+        overallMessage = `Gần bằng trung bình 30 ngày`;
+      }
+    } else {
+      overallMessage = 'Chưa có dữ liệu 30 ngày để so sánh';
+    }
+
+    return {
+      todayTotal: todayTotal,
+      todayCount: todayCount,
+      last30DaysAvg: Math.round(last30DaysAvg),
+      last7DaysAvg: Math.round(last7DaysAvg),
+      currentWeekAvg: Math.round(currentWeekAvg),
+      currentMonthAvg: Math.round(currentMonthAvg),
+      compare30Days: compare30Days,
+      compare7Days: compare7Days,
+      compareWeek: compareWeek,
+      compareMonth: compareMonth,
+      overallStatus: overallStatus,
+      overallMessage: overallMessage,
+      hasData: last30DaysDates.size > 0
+    };
+  });
+
   expenseSuggestions = computed(() => {
     const suggestions: string[] = [];
     const expenses = this.filteredExpenses();
@@ -829,12 +1669,29 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       // Track filtered expenses and active tab to trigger chart updates
       const filtered = this.filteredExpenses();
       const tab = this.activeTab();
+      const evaluation = this.todayExpenseEvaluation();
 
       // Only update charts if we're on summary tab and have data
       if (tab === 'summary' && filtered.length > 0 && this.categoryChartRef?.nativeElement) {
         // Use setTimeout to ensure DOM is ready
         setTimeout(() => {
           this.initCharts();
+          // Also init today evaluation charts if data is available
+          if (evaluation.hasData) {
+            setTimeout(() => {
+              this.initTodayComparisonChart();
+              this.initTodayTrendChart();
+            }, 150);
+          }
+          // Init prediction charts
+          const predictions = this.futurePredictions();
+          if (predictions.method !== 'insufficient_data') {
+            setTimeout(() => {
+              this.initPredictionChart();
+              this.initWeeklyPredictionChart();
+              this.initMonthlyPredictionChart();
+            }, 200);
+          }
         }, 100);
       }
     });
@@ -903,6 +1760,30 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     }
     if (this.categoryBarChart) {
       this.categoryBarChart.destroy();
+    }
+    if (this.todayComparisonChart) {
+      this.todayComparisonChart.destroy();
+    }
+    if (this.todayTrendChart) {
+      this.todayTrendChart.destroy();
+    }
+    if (this.outlierChart) {
+      this.outlierChart.destroy();
+    }
+    if (this.boxPlotChart) {
+      this.boxPlotChart.destroy();
+    }
+    if (this.zScoreChart) {
+      this.zScoreChart.destroy();
+    }
+    if (this.predictionChart) {
+      this.predictionChart.destroy();
+    }
+    if (this.weeklyPredictionChart) {
+      this.weeklyPredictionChart.destroy();
+    }
+    if (this.monthlyPredictionChart) {
+      this.monthlyPredictionChart.destroy();
     }
   }
 
@@ -1086,6 +1967,14 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         setTimeout(() => {
           if (this.activeTab() === 'summary') {
             this.initCharts();
+            // Also init today evaluation charts if data is available
+            const evaluation = this.todayExpenseEvaluation();
+            if (evaluation.hasData) {
+              setTimeout(() => {
+                this.initTodayComparisonChart();
+                this.initTodayTrendChart();
+              }, 150);
+            }
           }
         }, 100);
       },
@@ -1287,6 +2176,23 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       // Initialize charts when switching to summary tab
       setTimeout(() => {
         this.initCharts();
+        // Also init today evaluation charts if data is available
+        const evaluation = this.todayExpenseEvaluation();
+        if (evaluation.hasData) {
+          setTimeout(() => {
+            this.initTodayComparisonChart();
+            this.initTodayTrendChart();
+          }, 150);
+        }
+        // Init prediction charts
+        const predictions = this.futurePredictions();
+        if (predictions.method !== 'insufficient_data') {
+          setTimeout(() => {
+            this.initPredictionChart();
+            this.initWeeklyPredictionChart();
+            this.initMonthlyPredictionChart();
+          }, 200);
+        }
       }, 100);
     }
   }
@@ -1300,6 +2206,14 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     this.initCategoryChart();
     this.initDailyChart();
     this.initCategoryBarChart();
+    this.initTodayComparisonChart();
+    this.initTodayTrendChart();
+    this.initOutlierChart();
+    this.initBoxPlotChart();
+    this.initZScoreChart();
+    this.initPredictionChart();
+    this.initWeeklyPredictionChart();
+    this.initMonthlyPredictionChart();
   }
 
   /**
@@ -1435,7 +2349,9 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
             beginAtZero: true,
             ticks: {
               callback: (value) => {
-                return this.formatAmount(Number(value));
+                if (value === null || value === undefined) return '';
+                const numValue = typeof value === 'number' ? value : 0;
+                return this.formatAmount(numValue);
               }
             }
           }
@@ -1515,7 +2431,9 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
             beginAtZero: true,
             ticks: {
               callback: (value) => {
-                return this.formatAmount(Number(value));
+                if (value === null || value === undefined) return '';
+                const numValue = typeof value === 'number' ? value : 0;
+                return this.formatAmount(numValue);
               }
             }
           }
@@ -1526,6 +2444,883 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     this.categoryBarChart = new Chart(this.categoryBarChartRef.nativeElement, config);
   }
 
+  /**
+   * Initialize today comparison chart
+   */
+  initTodayComparisonChart(): void {
+    if (!this.todayComparisonChartRef?.nativeElement) return;
+
+    const evaluation = this.todayExpenseEvaluation();
+    if (!evaluation.hasData) return;
+
+    // Destroy existing chart
+    if (this.todayComparisonChart) {
+      this.todayComparisonChart.destroy();
+    }
+
+    const config: ChartConfiguration = {
+      type: 'bar',
+      data: {
+        labels: ['Hôm nay', 'TB 7 ngày', 'TB 30 ngày', 'TB tuần này', 'TB tháng này'],
+        datasets: [{
+          label: 'Chi tiêu',
+          data: [
+            evaluation.todayTotal,
+            evaluation.last7DaysAvg,
+            evaluation.last30DaysAvg,
+            evaluation.currentWeekAvg,
+            evaluation.currentMonthAvg
+          ],
+          backgroundColor: [
+            evaluation.overallStatus === 'high' ? '#f44336' : 
+            evaluation.overallStatus === 'low' ? '#4caf50' : '#ff9800',
+            'rgba(33, 150, 243, 0.6)',
+            'rgba(33, 150, 243, 0.6)',
+            'rgba(33, 150, 243, 0.6)',
+            'rgba(33, 150, 243, 0.6)'
+          ],
+          borderColor: [
+            evaluation.overallStatus === 'high' ? '#d32f2f' : 
+            evaluation.overallStatus === 'low' ? '#388e3c' : '#f57c00',
+            '#2196F3',
+            '#2196F3',
+            '#2196F3',
+            '#2196F3'
+          ],
+          borderWidth: 2,
+          borderRadius: 8
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: false
+          },
+          tooltip: {
+            callbacks: {
+              label: (context) => {
+                const value = context.parsed.y;
+                return `Chi tiêu: ${this.formatAmount(typeof value === 'number' ? value : 0)}`;
+              }
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: (value) => {
+                if (value === null || value === undefined) return '';
+                const numValue = typeof value === 'number' ? value : 0;
+                return this.formatAmount(numValue);
+              }
+            }
+          }
+        }
+      }
+    };
+
+    this.todayComparisonChart = new Chart(this.todayComparisonChartRef.nativeElement, config);
+  }
+
+  /**
+   * Initialize today trend chart (last 30 days)
+   */
+  initTodayTrendChart(): void {
+    if (!this.todayTrendChartRef?.nativeElement) return;
+
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+    const thirtyDaysAgo = new Date(today);
+    thirtyDaysAgo.setDate(today.getDate() - 30);
+    const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().split('T')[0];
+    
+    const allExpenses = this.expenses();
+    const last30DaysExpenses = allExpenses.filter(e => {
+      return e.date >= thirtyDaysAgoStr && e.date <= todayStr;
+    });
+
+    if (last30DaysExpenses.length === 0) return;
+
+    // Group by date
+    const dailyMap: { [key: string]: number } = {};
+    last30DaysExpenses.forEach(expense => {
+      dailyMap[expense.date] = (dailyMap[expense.date] || 0) + expense.amount;
+    });
+
+    // Create array of last 30 days
+    const dates: string[] = [];
+    const values: number[] = [];
+    let todayIndex = -1;
+    
+    for (let i = 29; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(today.getDate() - i);
+      const dateStr = date.toISOString().split('T')[0];
+      dates.push(this.formatDateShort(dateStr));
+      values.push(dailyMap[dateStr] || 0);
+      if (dateStr === todayStr) {
+        todayIndex = 29 - i;
+      }
+    }
+
+    // Destroy existing chart
+    if (this.todayTrendChart) {
+      this.todayTrendChart.destroy();
+    }
+
+    const evaluation = this.todayExpenseEvaluation();
+    const avg30Days = evaluation.last30DaysAvg;
+
+    const config: ChartConfiguration = {
+      type: 'line',
+      data: {
+        labels: dates,
+        datasets: [
+          {
+            label: 'Chi tiêu hàng ngày',
+            data: values,
+            borderColor: '#2196F3',
+            backgroundColor: 'rgba(33, 150, 243, 0.1)',
+            borderWidth: 2,
+            fill: true,
+            tension: 0.4,
+            pointRadius: (context: any) => {
+              return todayIndex >= 0 && context.dataIndex === todayIndex ? 6 : 3;
+            },
+            pointBackgroundColor: (context: any) => {
+              return todayIndex >= 0 && context.dataIndex === todayIndex
+                ? (evaluation.overallStatus === 'high' ? '#f44336' : 
+                   evaluation.overallStatus === 'low' ? '#4caf50' : '#ff9800')
+                : '#2196F3';
+            },
+            pointBorderColor: '#ffffff',
+            pointBorderWidth: 2,
+            pointHoverRadius: 8
+          },
+          {
+            label: 'Trung bình 30 ngày',
+            data: Array(dates.length).fill(avg30Days),
+            borderColor: '#757575',
+            borderWidth: 2,
+            borderDash: [5, 5],
+            fill: false,
+            pointRadius: 0,
+            pointHoverRadius: 0
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: true,
+            position: 'top'
+          },
+          tooltip: {
+            callbacks: {
+              label: (context) => {
+                const value = context.parsed.y;
+                return `${context.dataset.label}: ${this.formatAmount(typeof value === 'number' ? value : 0)}`;
+              }
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: (value) => {
+                if (value === null || value === undefined) return '';
+                const numValue = typeof value === 'number' ? value : 0;
+                return this.formatAmount(numValue);
+              }
+            }
+          }
+        }
+      }
+    };
+
+    this.todayTrendChart = new Chart(this.todayTrendChartRef.nativeElement, config);
+  }
+
+  /**
+   * Initialize outlier detection chart
+   */
+  initOutlierChart(): void {
+    if (!this.outlierChartRef?.nativeElement) return;
+
+    const analysis = this.statisticalAnalysis();
+    const expenses = this.filteredExpenses();
+    if (expenses.length === 0 || analysis.outliers.length === 0) return;
+
+    // Destroy existing chart
+    if (this.outlierChart) {
+      this.outlierChart.destroy();
+    }
+
+    // Prepare data: show all expenses with outliers highlighted
+    const sortedExpenses = [...expenses].sort((a, b) => 
+      new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
+
+    const labels = sortedExpenses.map(e => this.formatDateShort(e.date));
+    const amounts = sortedExpenses.map(e => e.amount);
+    const isOutlier = sortedExpenses.map(e => 
+      analysis.outliers.some(o => o.date === e.date && o.content === e.content && o.amount === e.amount)
+    );
+
+    const config: ChartConfiguration = {
+      type: 'scatter',
+      data: {
+        datasets: [
+          {
+            label: 'Chi tiêu bình thường',
+            data: sortedExpenses
+              .map((e, i) => isOutlier[i] ? null : ({ x: i, y: e.amount }))
+              .filter((point): point is { x: number; y: number } => {
+                return point !== null && point.y !== undefined && typeof point.y === 'number';
+              })
+              .map(point => ({ x: point.x, y: point.y })),
+            backgroundColor: 'rgba(33, 150, 243, 0.6)',
+            borderColor: '#2196F3',
+            pointRadius: 4,
+            pointHoverRadius: 6
+          },
+          {
+            label: 'Chi tiêu đột biến (Cao)',
+            data: sortedExpenses
+              .map((e, i) => isOutlier[i] && e.amount > analysis.mean ? ({ x: i, y: e.amount }) : null)
+              .filter((point): point is { x: number; y: number } => {
+                return point !== null && point.y !== undefined && typeof point.y === 'number';
+              })
+              .map(point => ({ x: point.x, y: point.y })),
+            backgroundColor: 'rgba(244, 67, 54, 0.8)',
+            borderColor: '#f44336',
+            pointRadius: 8,
+            pointHoverRadius: 10
+          },
+          {
+            label: 'Chi tiêu đột biến (Thấp)',
+            data: sortedExpenses
+              .map((e, i) => isOutlier[i] && e.amount < analysis.mean ? ({ x: i, y: e.amount }) : null)
+              .filter((point): point is { x: number; y: number } => point !== null && typeof point.y === 'number'),
+            backgroundColor: 'rgba(76, 175, 80, 0.8)',
+            borderColor: '#4caf50',
+            pointRadius: 8,
+            pointHoverRadius: 10
+          },
+          {
+            label: 'Trung bình',
+            data: Array(sortedExpenses.length).fill(null).map((_, i) => ({ x: i, y: analysis.mean })),
+            type: 'line',
+            borderColor: '#757575',
+            borderWidth: 2,
+            borderDash: [5, 5],
+            pointRadius: 0,
+            fill: false
+          },
+          {
+            label: 'Ngưỡng trên (Q3 + 1.5*IQR)',
+            data: Array(sortedExpenses.length).fill(null).map((_, i) => ({ x: i, y: analysis.upperBound || 0 })),
+            type: 'line',
+            borderColor: '#ff9800',
+            borderWidth: 1,
+            borderDash: [3, 3],
+            pointRadius: 0,
+            fill: false
+          },
+          {
+            label: 'Ngưỡng dưới (Q1 - 1.5*IQR)',
+            data: Array(sortedExpenses.length).fill(null).map((_, i) => ({ x: i, y: analysis.lowerBound || 0 })),
+            type: 'line',
+            borderColor: '#ff9800',
+            borderWidth: 1,
+            borderDash: [3, 3],
+            pointRadius: 0,
+            fill: false
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: true,
+            position: 'top'
+          },
+          tooltip: {
+            callbacks: {
+              label: (context) => {
+                if (context.datasetIndex < 3) {
+                  const raw = context.raw as { x: number; y: number };
+                  const expense = sortedExpenses[raw.x];
+                  if (expense) {
+                    return `${context.dataset.label}: ${this.formatAmount(expense.amount)} - ${expense.content}`;
+                  }
+                }
+                const y = context.parsed.y;
+                return `${context.dataset.label}: ${this.formatAmount(y !== null && y !== undefined ? y : 0)}`;
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            type: 'linear',
+            position: 'bottom',
+            ticks: {
+              callback: (value) => {
+                const index = value as number;
+                return index >= 0 && index < labels.length ? labels[index] : '';
+              },
+              maxRotation: 45,
+              minRotation: 45
+            },
+            title: {
+              display: true,
+              text: 'Thời gian'
+            }
+          },
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: (value) => {
+                if (value === null || value === undefined) return '';
+                const numValue = typeof value === 'number' ? value : 0;
+                return this.formatAmount(numValue);
+              }
+            },
+            title: {
+              display: true,
+              text: 'Số tiền'
+            }
+          }
+        }
+      }
+    };
+
+    this.outlierChart = new Chart(this.outlierChartRef.nativeElement, config);
+  }
+
+  /**
+   * Initialize box plot chart
+   */
+  initBoxPlotChart(): void {
+    if (!this.boxPlotChartRef?.nativeElement) return;
+
+    const analysis = this.statisticalAnalysis();
+    if (analysis.iqr === 0) return;
+
+    // Destroy existing chart
+    if (this.boxPlotChart) {
+      this.boxPlotChart.destroy();
+    }
+
+    const expenses = this.filteredExpenses();
+    const amounts = expenses.map(e => e.amount).sort((a, b) => a - b);
+    const min = amounts[0];
+    const max = amounts[amounts.length - 1];
+
+    // Create box plot data
+    const boxPlotData = {
+      min: min,
+      q1: analysis.q1,
+      median: analysis.q2,
+      q3: analysis.q3,
+      max: max,
+      mean: analysis.mean,
+      outliers: analysis.outliers.map(o => o.amount)
+    };
+
+    const config: ChartConfiguration = {
+      type: 'bar',
+      data: {
+        labels: ['Phân bố chi tiêu'],
+        datasets: [
+          {
+            label: 'Min',
+            data: [min],
+            backgroundColor: 'rgba(76, 175, 80, 0.6)',
+            borderColor: '#4caf50',
+            borderWidth: 2
+          },
+          {
+            label: 'Q1',
+            data: [analysis.q1],
+            backgroundColor: 'rgba(33, 150, 243, 0.6)',
+            borderColor: '#2196F3',
+            borderWidth: 2
+          },
+          {
+            label: 'Median (Q2)',
+            data: [analysis.q2],
+            backgroundColor: 'rgba(255, 152, 0, 0.8)',
+            borderColor: '#ff9800',
+            borderWidth: 3
+          },
+          {
+            label: 'Q3',
+            data: [analysis.q3],
+            backgroundColor: 'rgba(33, 150, 243, 0.6)',
+            borderColor: '#2196F3',
+            borderWidth: 2
+          },
+          {
+            label: 'Max',
+            data: [max],
+            backgroundColor: 'rgba(244, 67, 54, 0.6)',
+            borderColor: '#f44336',
+            borderWidth: 2
+          },
+          {
+            label: 'Mean',
+            data: [analysis.mean],
+            type: 'line',
+            borderColor: '#9c27b0',
+            borderWidth: 2,
+            borderDash: [5, 5],
+            pointRadius: 0,
+            fill: false
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: true,
+            position: 'top'
+          },
+          tooltip: {
+            callbacks: {
+              label: (context) => {
+                const y = context.parsed.y;
+                const numValue = y !== null && y !== undefined ? y : 0;
+                return `${context.dataset.label}: ${this.formatAmount(numValue)}`;
+              }
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: (value) => {
+                if (value === null || value === undefined) return '';
+                const numValue = typeof value === 'number' ? value : 0;
+                return this.formatAmount(numValue);
+              }
+            }
+          }
+        }
+      }
+    };
+
+    this.boxPlotChart = new Chart(this.boxPlotChartRef.nativeElement, config);
+  }
+
+  /**
+   * Initialize Z-score distribution chart
+   */
+  initZScoreChart(): void {
+    if (!this.zScoreChartRef?.nativeElement) return;
+
+    const analysis = this.statisticalAnalysis();
+    if (analysis.zScores.length === 0) return;
+
+    // Destroy existing chart
+    if (this.zScoreChart) {
+      this.zScoreChart.destroy();
+    }
+
+    // Group Z-scores into bins
+    const bins: { [key: string]: number } = {};
+    analysis.zScores.forEach(z => {
+      const bin = Math.floor(z.zScore);
+      const binKey = `${bin} to ${bin + 1}`;
+      bins[binKey] = (bins[binKey] || 0) + 1;
+    });
+
+    const labels = Object.keys(bins).sort((a, b) => {
+      const aNum = parseInt(a.split(' ')[0]);
+      const bNum = parseInt(b.split(' ')[0]);
+      return aNum - bNum;
+    });
+    const data = labels.map(label => bins[label]);
+
+    const config: ChartConfiguration = {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Số lượng giao dịch',
+          data: data,
+          backgroundColor: labels.map(label => {
+            const num = Math.abs(parseInt(label.split(' ')[0]));
+            if (num >= 2) return 'rgba(244, 67, 54, 0.8)'; // Red for outliers
+            if (num >= 1) return 'rgba(255, 152, 0, 0.8)'; // Orange for moderate
+            return 'rgba(33, 150, 243, 0.6)'; // Blue for normal
+          }),
+          borderColor: labels.map(label => {
+            const num = Math.abs(parseInt(label.split(' ')[0]));
+            if (num >= 2) return '#f44336';
+            if (num >= 1) return '#ff9800';
+            return '#2196F3';
+          }),
+          borderWidth: 2,
+          borderRadius: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: false
+          },
+          tooltip: {
+            callbacks: {
+              label: (context) => {
+                return `Z-score ${context.label}: ${context.parsed.y} giao dịch`;
+              }
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              stepSize: 1
+            },
+            title: {
+              display: true,
+              text: 'Số lượng giao dịch'
+            }
+          },
+          x: {
+            title: {
+              display: true,
+              text: 'Z-score Range'
+            }
+          }
+        }
+      }
+    };
+
+    this.zScoreChart = new Chart(this.zScoreChartRef.nativeElement, config);
+  }
+
+  /**
+   * Initialize prediction chart (historical + future)
+   */
+  initPredictionChart(): void {
+    if (!this.predictionChartRef?.nativeElement) return;
+
+    const predictions = this.futurePredictions();
+    if (predictions.method === 'insufficient_data') return;
+
+    // Get historical data (last 30 days)
+    const today = new Date();
+    const thirtyDaysAgo = new Date(today);
+    thirtyDaysAgo.setDate(today.getDate() - 30);
+    const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().split('T')[0];
+
+    const allExpenses = this.expenses();
+    const historicalExpenses = allExpenses.filter(e => e.date >= thirtyDaysAgoStr && e.date <= today.toISOString().split('T')[0]);
+
+    const dailyData: { [date: string]: number } = {};
+    historicalExpenses.forEach(expense => {
+      dailyData[expense.date] = (dailyData[expense.date] || 0) + expense.amount;
+    });
+
+    const historicalDates = Object.keys(dailyData).sort();
+    const historicalValues = historicalDates.map(date => dailyData[date]);
+
+    // Future predictions (next 14 days)
+    const futureDates = predictions.predictions.map(p => this.formatDateShort(p.date));
+    const futureValues = predictions.predictions.map(p => p.prediction);
+    const confidenceValues = predictions.predictions.map(p => p.confidence);
+
+    // Destroy existing chart
+    if (this.predictionChart) {
+      this.predictionChart.destroy();
+    }
+
+    const config: ChartConfiguration = {
+      type: 'line',
+      data: {
+        labels: [...historicalDates.map(d => this.formatDateShort(d)), ...futureDates],
+        datasets: [
+          {
+            label: 'Chi tiêu thực tế',
+            data: [...historicalValues.map(v => v !== undefined && v !== null ? v : null), ...Array(futureDates.length).fill(null)],
+            borderColor: '#2196F3',
+            backgroundColor: 'rgba(33, 150, 243, 0.1)',
+            borderWidth: 2,
+            fill: true,
+            tension: 0.4,
+            pointRadius: 3
+          },
+          {
+            label: 'Dự đoán',
+            data: [...Array(historicalDates.length).fill(null), ...futureValues.map(v => v !== undefined && v !== null ? v : null)],
+            borderColor: '#ff9800',
+            backgroundColor: 'rgba(255, 152, 0, 0.1)',
+            borderWidth: 2,
+            borderDash: [5, 5],
+            fill: true,
+            tension: 0.4,
+            pointRadius: 4,
+            pointBackgroundColor: futureValues.map((_, i) => {
+              const conf = confidenceValues[i];
+              if (conf >= 80) return '#4caf50';
+              if (conf >= 60) return '#ff9800';
+              return '#f44336';
+            })
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: true,
+            position: 'top'
+          },
+          tooltip: {
+            callbacks: {
+              label: (context) => {
+                const value = context.parsed.y;
+                const numValue = value !== null && value !== undefined ? value : 0;
+                if (context.datasetIndex === 1 && context.dataIndex >= historicalDates.length) {
+                  const conf = confidenceValues[context.dataIndex - historicalDates.length];
+                  return `${context.dataset.label}: ${this.formatAmount(numValue)} (Độ tin cậy: ${conf}%)`;
+                }
+                return `${context.dataset.label}: ${this.formatAmount(numValue)}`;
+              }
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: (value) => {
+                if (value === null || value === undefined) return '';
+                const numValue = typeof value === 'number' ? value : 0;
+                return this.formatAmount(numValue);
+              }
+            }
+          },
+          x: {
+            ticks: {
+              maxRotation: 45,
+              minRotation: 45
+            }
+          }
+        }
+      }
+    };
+
+    this.predictionChart = new Chart(this.predictionChartRef.nativeElement, config);
+  }
+
+  /**
+   * Initialize weekly prediction chart
+   */
+  initWeeklyPredictionChart(): void {
+    if (!this.weeklyPredictionChartRef?.nativeElement) return;
+
+    const predictions = this.futurePredictions();
+    if (predictions.method === 'insufficient_data') return;
+
+    // Destroy existing chart
+    if (this.weeklyPredictionChart) {
+      this.weeklyPredictionChart.destroy();
+    }
+
+    const thisWeekLabels = predictions.thisWeek.map(p => this.formatDateShort(p.date));
+    const thisWeekValues = predictions.thisWeek.map(p => p.prediction);
+    const thisWeekConfidence = predictions.thisWeek.map(p => p.confidence);
+
+    const nextWeekLabels = predictions.nextWeek.map(p => this.formatDateShort(p.date));
+    const nextWeekValues = predictions.nextWeek.map(p => p.prediction);
+    const nextWeekConfidence = predictions.nextWeek.map(p => p.confidence);
+
+    const config: ChartConfiguration = {
+      type: 'bar',
+      data: {
+        labels: [...thisWeekLabels, ...nextWeekLabels],
+        datasets: [
+          {
+            label: 'Tuần này',
+            data: [...thisWeekValues.map(v => v !== undefined && v !== null ? v : null), ...Array(nextWeekLabels.length).fill(null)],
+            backgroundColor: 'rgba(33, 150, 243, 0.6)',
+            borderColor: '#2196F3',
+            borderWidth: 2,
+            borderRadius: 4
+          },
+          {
+            label: 'Tuần sau',
+            data: [...Array(thisWeekLabels.length).fill(null), ...nextWeekValues.map(v => v !== undefined && v !== null ? v : null)],
+            backgroundColor: 'rgba(255, 152, 0, 0.6)',
+            borderColor: '#ff9800',
+            borderWidth: 2,
+            borderRadius: 4
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: true,
+            position: 'top'
+          },
+          tooltip: {
+            callbacks: {
+              label: (context) => {
+                const value = context.parsed.y;
+                const index = context.dataIndex;
+                let conf = 0;
+                if (context.datasetIndex === 0 && index < thisWeekConfidence.length) {
+                  conf = thisWeekConfidence[index];
+                } else if (context.datasetIndex === 1 && index >= thisWeekLabels.length) {
+                  conf = nextWeekConfidence[index - thisWeekLabels.length];
+                }
+                const numValue = value !== null && value !== undefined ? value : 0;
+                return `${context.dataset.label}: ${this.formatAmount(numValue)} (TC: ${conf}%)`;
+              }
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: (value) => {
+                if (value === null || value === undefined) return '';
+                const numValue = typeof value === 'number' ? value : 0;
+                return this.formatAmount(numValue);
+              }
+            }
+          },
+          x: {
+            ticks: {
+              maxRotation: 45,
+              minRotation: 45
+            }
+          }
+        }
+      }
+    };
+
+    this.weeklyPredictionChart = new Chart(this.weeklyPredictionChartRef.nativeElement, config);
+  }
+
+  /**
+   * Initialize monthly prediction chart
+   */
+  initMonthlyPredictionChart(): void {
+    if (!this.monthlyPredictionChartRef?.nativeElement) return;
+
+    const predictions = this.futurePredictions();
+    if (predictions.method === 'insufficient_data') return;
+
+    // Destroy existing chart
+    if (this.monthlyPredictionChart) {
+      this.monthlyPredictionChart.destroy();
+    }
+
+    // Group by week for better visualization
+    const weeklyData: { week: string; total: number; days: number }[] = [];
+    let currentWeek: { week: string; total: number; days: number } | null = null;
+
+    predictions.thisMonth.forEach((pred, index) => {
+      const date = new Date(pred.date);
+      const weekStart = new Date(date);
+      weekStart.setDate(date.getDate() - date.getDay());
+      const weekKey = `${this.formatDateShort(weekStart.toISOString().split('T')[0])} - ${this.formatDateShort(pred.date)}`;
+
+      if (!currentWeek || currentWeek.week !== weekKey) {
+        if (currentWeek) weeklyData.push(currentWeek);
+        currentWeek = { week: weekKey, total: 0, days: 0 };
+      }
+      currentWeek.total += pred.prediction;
+      currentWeek.days += 1;
+    });
+    if (currentWeek) weeklyData.push(currentWeek);
+
+    const weekLabels = weeklyData.map(w => w.week);
+    const weekTotals = weeklyData.map(w => w.total);
+
+    const config: ChartConfiguration = {
+      type: 'bar',
+      data: {
+        labels: weekLabels,
+        datasets: [{
+          label: 'Dự đoán chi tiêu theo tuần',
+            data: weekTotals.map(v => v !== undefined && v !== null ? v : null),
+          backgroundColor: weekTotals.map((_, i) => {
+            const avg = weekTotals.reduce((a, b) => a + b, 0) / weekTotals.length;
+            return weekTotals[i] > avg ? 'rgba(244, 67, 54, 0.6)' : 'rgba(76, 175, 80, 0.6)';
+          }),
+          borderColor: weekTotals.map((_, i) => {
+            const avg = weekTotals.reduce((a, b) => a + b, 0) / weekTotals.length;
+            return weekTotals[i] > avg ? '#f44336' : '#4caf50';
+          }),
+          borderWidth: 2,
+          borderRadius: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: false
+          },
+          tooltip: {
+            callbacks: {
+              label: (context) => {
+                const y = context.parsed.y;
+                const numValue = y !== null && y !== undefined ? y : 0;
+                return `Dự đoán: ${this.formatAmount(numValue)}`;
+              }
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: (value) => {
+                if (value === null || value === undefined) return '';
+                const numValue = typeof value === 'number' ? value : 0;
+                return this.formatAmount(numValue);
+              }
+            }
+          },
+          x: {
+            ticks: {
+              maxRotation: 45,
+              minRotation: 45
+            }
+          }
+        }
+      }
+    };
+
+    this.monthlyPredictionChart = new Chart(this.monthlyPredictionChartRef.nativeElement, config);
+  }
 
   /**
    * Format date short (DD/MM)
@@ -2546,7 +4341,9 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
             beginAtZero: true,
             ticks: {
               callback: (value) => {
-                return this.formatAmount(Number(value));
+                if (value === null || value === undefined) return '';
+                const numValue = typeof value === 'number' ? value : 0;
+                return this.formatAmount(numValue);
               }
             }
           }

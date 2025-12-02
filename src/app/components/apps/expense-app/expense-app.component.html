@@ -519,6 +519,517 @@
               <div class="summary-value">{{ formatAmount(averageExpense()) }}</div>
             </div>
           </div>
+          <div class="summary-card" *ngIf="yesterdayComparison().hasData">
+            <div class="summary-icon">
+              <i class="pi pi-calendar-minus"></i>
+            </div>
+            <div class="summary-content">
+              <div class="summary-label">So với hôm qua</div>
+              <div class="summary-value" 
+                   [class.positive]="yesterdayComparison().status === 'lower'"
+                   [class.negative]="yesterdayComparison().status === 'higher'">
+                <i class="pi" 
+                   [class.pi-arrow-up]="yesterdayComparison().status === 'higher'"
+                   [class.pi-arrow-down]="yesterdayComparison().status === 'lower'"
+                   [class.pi-minus]="yesterdayComparison().status === 'equal'"></i>
+                {{ yesterdayComparison().changePercent }}%
+              </div>
+              <div class="summary-change">
+                <span *ngIf="yesterdayComparison().status === 'higher'">Cao hơn {{ formatAmount(Math.abs(yesterdayComparison().change)) }}</span>
+                <span *ngIf="yesterdayComparison().status === 'lower'">Thấp hơn {{ formatAmount(Math.abs(yesterdayComparison().change)) }}</span>
+                <span *ngIf="yesterdayComparison().status === 'equal'">Bằng nhau</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Today's Expense Evaluation -->
+        <div class="today-evaluation-section" *ngIf="!isLoading() && todayExpenseEvaluation().hasData">
+          <div class="evaluation-header">
+            <div class="header-left">
+              <i class="pi pi-calendar-check"></i>
+              <h3>Đánh giá chi tiêu hôm nay</h3>
+            </div>
+            <div class="evaluation-status" 
+                 [class.status-high]="todayExpenseEvaluation().overallStatus === 'high'"
+                 [class.status-low]="todayExpenseEvaluation().overallStatus === 'low'"
+                 [class.status-normal]="todayExpenseEvaluation().overallStatus === 'normal'">
+              <i class="pi" 
+                 [class.pi-arrow-up]="todayExpenseEvaluation().overallStatus === 'high'"
+                 [class.pi-arrow-down]="todayExpenseEvaluation().overallStatus === 'low'"
+                 [class.pi-minus]="todayExpenseEvaluation().overallStatus === 'normal'"></i>
+              <span>{{ todayExpenseEvaluation().overallMessage }}</span>
+            </div>
+          </div>
+
+          <div class="evaluation-summary">
+            <div class="evaluation-card today-card">
+              <div class="card-header">
+                <i class="pi pi-calendar-check"></i>
+                <span>Hôm nay</span>
+              </div>
+              <div class="card-value">{{ formatAmount(todayExpenseEvaluation().todayTotal) }}</div>
+              <div class="card-detail">{{ todayExpenseEvaluation().todayCount }} giao dịch</div>
+            </div>
+
+            <div class="evaluation-card comparison-card">
+              <div class="comparison-item">
+                <div class="comparison-label">vs TB 30 ngày</div>
+                <div class="comparison-value" 
+                     [class.positive]="todayExpenseEvaluation().compare30Days < 0"
+                     [class.negative]="todayExpenseEvaluation().compare30Days > 0">
+                  <i class="pi" 
+                     [class.pi-arrow-up]="todayExpenseEvaluation().compare30Days > 0"
+                     [class.pi-arrow-down]="todayExpenseEvaluation().compare30Days < 0"
+                     [class.pi-minus]="todayExpenseEvaluation().compare30Days === 0"></i>
+                  {{ Math.abs(todayExpenseEvaluation().compare30Days) }}%
+                </div>
+                <div class="comparison-amount">{{ formatAmount(todayExpenseEvaluation().last30DaysAvg) }}</div>
+              </div>
+
+              <div class="comparison-item">
+                <div class="comparison-label">vs TB 7 ngày</div>
+                <div class="comparison-value"
+                     [class.positive]="todayExpenseEvaluation().compare7Days < 0"
+                     [class.negative]="todayExpenseEvaluation().compare7Days > 0">
+                  <i class="pi"
+                     [class.pi-arrow-up]="todayExpenseEvaluation().compare7Days > 0"
+                     [class.pi-arrow-down]="todayExpenseEvaluation().compare7Days < 0"
+                     [class.pi-minus]="todayExpenseEvaluation().compare7Days === 0"></i>
+                  {{ Math.abs(todayExpenseEvaluation().compare7Days) }}%
+                </div>
+                <div class="comparison-amount">{{ formatAmount(todayExpenseEvaluation().last7DaysAvg) }}</div>
+              </div>
+
+              <div class="comparison-item">
+                <div class="comparison-label">vs TB tuần này</div>
+                <div class="comparison-value"
+                     [class.positive]="todayExpenseEvaluation().compareWeek < 0"
+                     [class.negative]="todayExpenseEvaluation().compareWeek > 0">
+                  <i class="pi"
+                     [class.pi-arrow-up]="todayExpenseEvaluation().compareWeek > 0"
+                     [class.pi-arrow-down]="todayExpenseEvaluation().compareWeek < 0"
+                     [class.pi-minus]="todayExpenseEvaluation().compareWeek === 0"></i>
+                  {{ Math.abs(todayExpenseEvaluation().compareWeek) }}%
+                </div>
+                <div class="comparison-amount">{{ formatAmount(todayExpenseEvaluation().currentWeekAvg) }}</div>
+              </div>
+
+              <div class="comparison-item">
+                <div class="comparison-label">vs TB tháng này</div>
+                <div class="comparison-value"
+                     [class.positive]="todayExpenseEvaluation().compareMonth < 0"
+                     [class.negative]="todayExpenseEvaluation().compareMonth > 0">
+                  <i class="pi"
+                     [class.pi-arrow-up]="todayExpenseEvaluation().compareMonth > 0"
+                     [class.pi-arrow-down]="todayExpenseEvaluation().compareMonth < 0"
+                     [class.pi-minus]="todayExpenseEvaluation().compareMonth === 0"></i>
+                  {{ Math.abs(todayExpenseEvaluation().compareMonth) }}%
+                </div>
+                <div class="comparison-amount">{{ formatAmount(todayExpenseEvaluation().currentMonthAvg) }}</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Comparison Charts -->
+          <div class="evaluation-charts">
+            <div class="chart-container comparison-chart">
+              <h4>So sánh với các mốc trung bình</h4>
+              <div class="chart-wrapper">
+                <canvas #todayComparisonChart></canvas>
+              </div>
+            </div>
+
+            <div class="chart-container trend-chart">
+              <h4>Xu hướng 30 ngày qua</h4>
+              <div class="chart-wrapper">
+                <canvas #todayTrendChart></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Statistical Analysis & Outlier Detection -->
+        <div class="statistical-analysis-section" *ngIf="!isLoading() && filteredExpenses().length > 0">
+          <div class="analysis-header">
+            <div class="header-left">
+              <i class="pi pi-chart-bar"></i>
+              <h3>Phân tích thống kê & Chi tiêu đột biến</h3>
+            </div>
+          </div>
+
+          <!-- Statistical Metrics -->
+          <div class="statistical-metrics">
+            <div class="metric-card">
+              <div class="metric-icon">
+                <i class="pi pi-calculator"></i>
+              </div>
+              <div class="metric-content">
+                <div class="metric-label">Trung bình (Mean)</div>
+                <div class="metric-value">{{ formatAmount(statisticalAnalysis().mean) }}</div>
+                <div class="metric-note">Giá trị trung bình</div>
+              </div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-icon">
+                <i class="pi pi-sort"></i>
+              </div>
+              <div class="metric-content">
+                <div class="metric-label">Trung vị (Median)</div>
+                <div class="metric-value">{{ formatAmount(statisticalAnalysis().median) }}</div>
+                <div class="metric-note">Giá trị ở giữa</div>
+              </div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-icon">
+                <i class="pi pi-chart-line"></i>
+              </div>
+              <div class="metric-content">
+                <div class="metric-label">Độ lệch chuẩn</div>
+                <div class="metric-value">{{ formatAmount(statisticalAnalysis().standardDeviation) }}</div>
+                <div class="metric-note">SD = {{ statisticalAnalysis().standardDeviation.toLocaleString() }}</div>
+              </div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-icon">
+                <i class="pi pi-percentage"></i>
+              </div>
+              <div class="metric-content">
+                <div class="metric-label">Hệ số biến thiên</div>
+                <div class="metric-value">{{ statisticalAnalysis().coefficientOfVariation }}%</div>
+                <div class="metric-note">CV = (SD/Mean) × 100</div>
+              </div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-icon">
+                <i class="pi pi-exclamation-triangle"></i>
+              </div>
+              <div class="metric-content">
+                <div class="metric-label">Chi tiêu đột biến</div>
+                <div class="metric-value">{{ statisticalAnalysis().outliers.length }}</div>
+                <div class="metric-note">Phát hiện bằng IQR method</div>
+              </div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-icon">
+                <i class="pi pi-chart-bar"></i>
+              </div>
+              <div class="metric-content">
+                <div class="metric-label">Độ lệch (Skewness)</div>
+                <div class="metric-value">{{ statisticalAnalysis().skewness }}</div>
+                <div class="metric-note">
+                  <span *ngIf="statisticalAnalysis().skewness > 0.5">Lệch phải</span>
+                  <span *ngIf="statisticalAnalysis().skewness < -0.5">Lệch trái</span>
+                  <span *ngIf="statisticalAnalysis().skewness >= -0.5 && statisticalAnalysis().skewness <= 0.5">Gần đối xứng</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quartiles Info -->
+          <div class="quartiles-section">
+            <h4>Phân vị (Quartiles)</h4>
+            <div class="quartiles-grid">
+              <div class="quartile-item">
+                <div class="quartile-label">Q1 (25%)</div>
+                <div class="quartile-value">{{ formatAmount(statisticalAnalysis().q1) }}</div>
+              </div>
+              <div class="quartile-item">
+                <div class="quartile-label">Q2 (50% - Median)</div>
+                <div class="quartile-value highlight">{{ formatAmount(statisticalAnalysis().q2) }}</div>
+              </div>
+              <div class="quartile-item">
+                <div class="quartile-label">Q3 (75%)</div>
+                <div class="quartile-value">{{ formatAmount(statisticalAnalysis().q3) }}</div>
+              </div>
+              <div class="quartile-item">
+                <div class="quartile-label">IQR</div>
+                <div class="quartile-value">{{ formatAmount(statisticalAnalysis().iqr) }}</div>
+                <div class="quartile-note">Q3 - Q1</div>
+              </div>
+            </div>
+            <div class="outlier-bounds">
+              <div class="bound-item">
+                <span class="bound-label">Ngưỡng dưới:</span>
+                <span class="bound-value">{{ formatAmount(statisticalAnalysis().lowerBound || 0) }}</span>
+                <span class="bound-formula">Q1 - 1.5 × IQR</span>
+              </div>
+              <div class="bound-item">
+                <span class="bound-label">Ngưỡng trên:</span>
+                <span class="bound-value">{{ formatAmount(statisticalAnalysis().upperBound || 0) }}</span>
+                <span class="bound-formula">Q3 + 1.5 × IQR</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Outlier Charts -->
+          <div class="outlier-charts-section">
+            <div class="chart-container outlier-chart">
+              <h4>Phát hiện chi tiêu đột biến</h4>
+              <p class="chart-description">Biểu đồ scatter hiển thị tất cả giao dịch, các điểm đỏ/xanh là chi tiêu đột biến</p>
+              <div class="chart-wrapper">
+                <canvas #outlierChart></canvas>
+              </div>
+            </div>
+
+            <div class="chart-container box-plot-chart">
+              <h4>Box Plot - Phân bố chi tiêu</h4>
+              <p class="chart-description">Hiển thị Min, Q1, Median, Q3, Max và Mean</p>
+              <div class="chart-wrapper">
+                <canvas #boxPlotChart></canvas>
+              </div>
+            </div>
+
+            <div class="chart-container zscore-chart">
+              <h4>Phân bố Z-score</h4>
+              <p class="chart-description">Z-score > 2 hoặc < -2 được coi là đột biến</p>
+              <div class="chart-wrapper">
+                <canvas #zScoreChart></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Outliers List -->
+          <div class="outliers-list-section" *ngIf="statisticalAnalysis().outliers.length > 0">
+            <h4>
+              <i class="pi pi-exclamation-triangle"></i>
+              Danh sách chi tiêu đột biến ({{ statisticalAnalysis().outliers.length }})
+            </h4>
+            <div class="outliers-table">
+              <div class="outlier-item" 
+                   *ngFor="let outlier of statisticalAnalysis().outliers.slice(0, 10)"
+                   [class.outlier-high]="outlier.outlierType === 'high'"
+                   [class.outlier-low]="outlier.outlierType === 'low'">
+                <div class="outlier-date">{{ formatDate(outlier.date) }}</div>
+                <div class="outlier-content">{{ outlier.content }}</div>
+                <div class="outlier-category">{{ outlier.category }}</div>
+                <div class="outlier-amount">{{ formatAmount(outlier.amount) }}</div>
+                <div class="outlier-zscore" 
+                     [class.zscore-high]="Math.abs(outlier.zScore) >= 2"
+                     [class.zscore-moderate]="Math.abs(outlier.zScore) >= 1 && Math.abs(outlier.zScore) < 2">
+                  Z: {{ outlier.zScore.toFixed(2) }}
+                </div>
+              </div>
+            </div>
+            <div class="outliers-summary">
+              <div class="summary-item">
+                <span class="summary-label">Tổng chi tiêu đột biến:</span>
+                <span class="summary-value">{{ formatAmount(statisticalAnalysis().outliersTotal || 0) }}</span>
+              </div>
+              <div class="summary-item">
+                <span class="summary-label">Tỷ lệ đột biến:</span>
+                <span class="summary-value">{{ ((statisticalAnalysis().outliers.length / filteredExpenses().length) * 100).toFixed(1) }}%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Future Predictions Section -->
+        <div class="predictions-section" *ngIf="!isLoading() && futurePredictions().method !== 'insufficient_data'">
+          <div class="predictions-header">
+            <div class="header-left">
+              <i class="pi pi-chart-line"></i>
+              <h3>Dự đoán chi tiêu tương lai (Machine Learning)</h3>
+            </div>
+            <div class="predictions-confidence">
+              <i class="pi pi-info-circle"></i>
+              <span>Độ tin cậy: {{ futurePredictions().confidence }}%</span>
+            </div>
+          </div>
+
+          <!-- Quick Predictions Summary -->
+          <div class="quick-predictions">
+            <div class="prediction-card tomorrow">
+              <div class="card-header">
+                <i class="pi pi-calendar-plus"></i>
+                <span>Ngày mai</span>
+              </div>
+              <div class="card-value">{{ formatAmount(futurePredictions().tomorrow) }}</div>
+              <div class="card-note">Dự đoán dựa trên thuật toán Ensemble</div>
+            </div>
+
+            <div class="prediction-card week">
+              <div class="card-header">
+                <i class="pi pi-calendar-times"></i>
+                <span>Tuần này (7 ngày)</span>
+              </div>
+              <div class="card-value">{{ formatAmount(futurePredictions().weeklyTotal || 0) }}</div>
+              <div class="card-note">TB: {{ formatAmount(Math.round((futurePredictions().weeklyTotal || 0) / 7)) }}/ngày</div>
+            </div>
+
+            <div class="prediction-card month">
+              <div class="card-header">
+                <i class="pi pi-calendar-clock"></i>
+                <span>Tháng này (30 ngày)</span>
+              </div>
+              <div class="card-value">{{ formatAmount(futurePredictions().monthlyTotal || 0) }}</div>
+              <div class="card-note">TB: {{ formatAmount(Math.round((futurePredictions().monthlyTotal || 0) / 30)) }}/ngày</div>
+            </div>
+          </div>
+
+          <!-- Prediction Methods Info -->
+          <div class="prediction-methods">
+            <h4>Thuật toán sử dụng:</h4>
+            <div class="methods-grid">
+              <div class="method-item">
+                <i class="pi pi-chart-line"></i>
+                <div class="method-info">
+                  <div class="method-name">Linear Regression (30%)</div>
+                  <div class="method-desc">Dự đoán xu hướng tuyến tính</div>
+                </div>
+              </div>
+              <div class="method-item">
+                <i class="pi pi-chart-bar"></i>
+                <div class="method-info">
+                  <div class="method-name">Moving Average (30%)</div>
+                  <div class="method-desc">Trung bình động 7 ngày</div>
+                </div>
+              </div>
+              <div class="method-item">
+                <i class="pi pi-chart-pie"></i>
+                <div class="method-info">
+                  <div class="method-name">Exponential Smoothing (20%)</div>
+                  <div class="method-desc">Làm mịn theo hàm mũ</div>
+                </div>
+              </div>
+              <div class="method-item">
+                <i class="pi pi-calendar"></i>
+                <div class="method-info">
+                  <div class="method-name">Seasonal Pattern (20%)</div>
+                  <div class="method-desc">Mẫu theo thứ trong tuần</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Prediction Charts -->
+          <div class="prediction-charts">
+            <div class="chart-container prediction-main-chart">
+              <h4>Dự đoán 14 ngày tới</h4>
+              <p class="chart-description">So sánh chi tiêu thực tế (xanh) và dự đoán (cam)</p>
+              <div class="chart-wrapper">
+                <canvas #predictionChart></canvas>
+              </div>
+            </div>
+
+            <div class="chart-container weekly-prediction-chart">
+              <h4>Dự đoán theo tuần</h4>
+              <p class="chart-description">Tuần này (xanh) và tuần sau (cam)</p>
+              <div class="chart-wrapper">
+                <canvas #weeklyPredictionChart></canvas>
+              </div>
+            </div>
+
+            <div class="chart-container monthly-prediction-chart">
+              <h4>Dự đoán theo tháng (theo tuần)</h4>
+              <p class="chart-description">Tổng chi tiêu dự đoán mỗi tuần trong tháng</p>
+              <div class="chart-wrapper">
+                <canvas #monthlyPredictionChart></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Detailed Predictions Table -->
+          <div class="detailed-predictions">
+            <h4>
+              <i class="pi pi-table"></i>
+              Dự đoán chi tiết theo ngày
+            </h4>
+            <div class="predictions-tabs">
+              <button class="tab-btn" 
+                      [class.active]="predictionTab() === 'thisWeek'"
+                      (click)="predictionTab.set('thisWeek')">
+                Tuần này
+              </button>
+              <button class="tab-btn"
+                      [class.active]="predictionTab() === 'nextWeek'"
+                      (click)="predictionTab.set('nextWeek')">
+                Tuần sau
+              </button>
+              <button class="tab-btn"
+                      [class.active]="predictionTab() === 'thisMonth'"
+                      (click)="predictionTab.set('thisMonth')">
+                Tháng này
+              </button>
+            </div>
+
+            <div class="predictions-table" *ngIf="predictionTab() === 'thisWeek'">
+              <div class="table-header">
+                <div class="col-date">Ngày</div>
+                <div class="col-prediction">Dự đoán</div>
+                <div class="col-confidence">Độ tin cậy</div>
+              </div>
+              <div class="table-body">
+                <div class="table-row" *ngFor="let pred of futurePredictions().thisWeek">
+                  <div class="col-date">{{ formatDate(pred.date) }}</div>
+                  <div class="col-prediction">{{ formatAmount(pred.prediction) }}</div>
+                  <div class="col-confidence">
+                    <div class="confidence-bar">
+                      <div class="confidence-fill" 
+                           [style.width.%]="pred.confidence"
+                           [class.high]="pred.confidence >= 80"
+                           [class.medium]="pred.confidence >= 60 && pred.confidence < 80"
+                           [class.low]="pred.confidence < 60"></div>
+                    </div>
+                    <span>{{ pred.confidence }}%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="predictions-table" *ngIf="predictionTab() === 'nextWeek'">
+              <div class="table-header">
+                <div class="col-date">Ngày</div>
+                <div class="col-prediction">Dự đoán</div>
+                <div class="col-confidence">Độ tin cậy</div>
+              </div>
+              <div class="table-body">
+                <div class="table-row" *ngFor="let pred of futurePredictions().nextWeek">
+                  <div class="col-date">{{ formatDate(pred.date) }}</div>
+                  <div class="col-prediction">{{ formatAmount(pred.prediction) }}</div>
+                  <div class="col-confidence">
+                    <div class="confidence-bar">
+                      <div class="confidence-fill" 
+                           [style.width.%]="pred.confidence"
+                           [class.high]="pred.confidence >= 80"
+                           [class.medium]="pred.confidence >= 60 && pred.confidence < 80"
+                           [class.low]="pred.confidence < 60"></div>
+                    </div>
+                    <span>{{ pred.confidence }}%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="predictions-table" *ngIf="predictionTab() === 'thisMonth'">
+              <div class="table-header">
+                <div class="col-date">Ngày</div>
+                <div class="col-prediction">Dự đoán</div>
+                <div class="col-confidence">Độ tin cậy</div>
+              </div>
+              <div class="table-body">
+                <div class="table-row" *ngFor="let pred of futurePredictions().thisMonth">
+                  <div class="col-date">{{ formatDate(pred.date) }}</div>
+                  <div class="col-prediction">{{ formatAmount(pred.prediction) }}</div>
+                  <div class="col-confidence">
+                    <div class="confidence-bar">
+                      <div class="confidence-fill" 
+                           [style.width.%]="pred.confidence"
+                           [class.high]="pred.confidence >= 80"
+                           [class.medium]="pred.confidence >= 60 && pred.confidence < 80"
+                           [class.low]="pred.confidence < 60"></div>
+                    </div>
+                    <span>{{ pred.confidence }}%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Enhanced Statistics for V2 -->
@@ -595,6 +1106,66 @@
                 </div>
               </div>
             </div>
+
+            <!-- Cash Flow Statistics Card -->
+            <div class="stat-card-large">
+              <div class="stat-header">
+                <i class="pi pi-wallet"></i>
+                <h4>Dòng tiền</h4>
+              </div>
+              <div class="stat-body">
+                <div class="stat-row">
+                  <span class="stat-label">TB/tuần:</span>
+                  <span class="stat-value">{{ formatAmount(averageWeeklyExpense()) }}</span>
+                  <span class="stat-detail">{{ weeklyExpenses().length }} tuần</span>
+                </div>
+                <div class="stat-row">
+                  <span class="stat-label">TB/tháng:</span>
+                  <span class="stat-value">{{ formatAmount(averageMonthlyExpense()) }}</span>
+                  <span class="stat-detail">{{ monthlyExpenses().length }} tháng</span>
+                </div>
+                <div class="stat-row">
+                  <span class="stat-label">Dự kiến/tháng:</span>
+                  <span class="stat-value">{{ formatAmount(projectedMonthlySpending()) }}</span>
+                  <span class="stat-detail">Dựa trên tốc độ hiện tại</span>
+                </div>
+                <div class="stat-row">
+                  <span class="stat-label">Tần suất chi tiêu:</span>
+                  <span class="stat-value">{{ spendingFrequency().frequency }}%</span>
+                  <span class="stat-detail">{{ spendingFrequency().daysWithExpenses }}/{{ spendingFrequency().totalDays }} ngày</span>
+                </div>
+                <div class="stat-row">
+                  <span class="stat-label">GD/ngày:</span>
+                  <span class="stat-value">{{ transactionsPerDay() }}</span>
+                  <span class="stat-detail">Giao dịch trung bình</span>
+                </div>
+                <div class="stat-row" *ngIf="largestSpendingStreak().streak > 0">
+                  <span class="stat-label">Chuỗi chi tiêu dài nhất:</span>
+                  <span class="stat-value">{{ largestSpendingStreak().streak }} ngày</span>
+                  <span class="stat-detail">{{ formatDateShort(largestSpendingStreak().startDate) }} - {{ formatDateShort(largestSpendingStreak().endDate) }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Weekday vs Weekend Card -->
+            <div class="stat-card-large">
+              <div class="stat-header">
+                <i class="pi pi-calendar-times"></i>
+                <h4>Ngày thường vs Cuối tuần</h4>
+              </div>
+              <div class="stat-body">
+                <div class="stat-row">
+                  <span class="stat-label">Ngày thường:</span>
+                  <span class="stat-value">{{ formatAmount(weekdayWeekendComparison().weekday.total) }}</span>
+                  <span class="stat-detail">{{ weekdayWeekendComparison().weekday.count }} GD, TB: {{ formatAmount(weekdayWeekendComparison().weekday.average) }}</span>
+                </div>
+                <div class="stat-row">
+                  <span class="stat-label">Cuối tuần:</span>
+                  <span class="stat-value">{{ formatAmount(weekdayWeekendComparison().weekend.total) }}</span>
+                  <span class="stat-detail">{{ weekdayWeekendComparison().weekend.count }} GD, TB: {{ formatAmount(weekdayWeekendComparison().weekend.average) }}</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -657,6 +1228,164 @@
                 <span *ngIf="expenseTrend() === 'stable'">Ổn định</span>
               </div>
               <div class="stat-detail">7 ngày gần nhất</div>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon">
+              <i class="pi pi-calendar-times"></i>
+            </div>
+            <div class="stat-content">
+              <div class="stat-label">TB/tuần</div>
+              <div class="stat-value">{{ formatAmount(averageWeeklyExpense()) }}</div>
+              <div class="stat-detail">{{ weeklyExpenses().length }} tuần</div>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon">
+              <i class="pi pi-calendar-clock"></i>
+            </div>
+            <div class="stat-content">
+              <div class="stat-label">TB/tháng</div>
+              <div class="stat-value">{{ formatAmount(averageMonthlyExpense()) }}</div>
+              <div class="stat-detail">{{ monthlyExpenses().length }} tháng</div>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon">
+              <i class="pi pi-chart-pie"></i>
+            </div>
+            <div class="stat-content">
+              <div class="stat-label">Tần suất</div>
+              <div class="stat-value">{{ spendingFrequency().frequency }}%</div>
+              <div class="stat-detail">{{ spendingFrequency().daysWithExpenses }}/{{ spendingFrequency().totalDays }} ngày</div>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon">
+              <i class="pi pi-list"></i>
+            </div>
+            <div class="stat-content">
+              <div class="stat-label">GD/ngày</div>
+              <div class="stat-value">{{ transactionsPerDay() }}</div>
+              <div class="stat-detail">Giao dịch TB</div>
+            </div>
+          </div>
+
+          <div class="stat-card" *ngIf="largestSpendingStreak().streak > 0">
+            <div class="stat-icon">
+              <i class="pi pi-arrow-right"></i>
+            </div>
+            <div class="stat-content">
+              <div class="stat-label">Chuỗi dài nhất</div>
+              <div class="stat-value">{{ largestSpendingStreak().streak }} ngày</div>
+              <div class="stat-detail">{{ formatDateShort(largestSpendingStreak().startDate) }}-{{ formatDateShort(largestSpendingStreak().endDate) }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cash Flow Analysis Section -->
+        <div class="cash-flow-section" *ngIf="!isLoading() && filteredExpenses().length > 0 && !isSingleDayFilter()">
+          <h3>Phân tích dòng tiền</h3>
+          <div class="cash-flow-grid">
+            <!-- Weekly Statistics -->
+            <div class="cash-flow-card" *ngIf="weeklyExpenses().length > 0">
+              <div class="cash-flow-header">
+                <i class="pi pi-calendar-times"></i>
+                <h4>Thống kê theo tuần</h4>
+              </div>
+              <div class="cash-flow-body">
+                <div class="cash-flow-summary">
+                  <div class="summary-item">
+                    <span class="summary-label">Trung bình/tuần:</span>
+                    <span class="summary-value">{{ formatAmount(averageWeeklyExpense()) }}</span>
+                  </div>
+                  <div class="summary-item">
+                    <span class="summary-label">Tổng số tuần:</span>
+                    <span class="summary-value">{{ weeklyExpenses().length }}</span>
+                  </div>
+                </div>
+                <div class="cash-flow-list">
+                  <div class="cash-flow-item" *ngFor="let week of weeklyExpenses().slice(-5)">
+                    <div class="item-label">{{ formatDateShort(week.weekStart) }}</div>
+                    <div class="item-value">{{ formatAmount(week.total) }}</div>
+                    <div class="item-detail">{{ week.count }} giao dịch</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Monthly Statistics -->
+            <div class="cash-flow-card" *ngIf="monthlyExpenses().length > 0">
+              <div class="cash-flow-header">
+                <i class="pi pi-calendar-clock"></i>
+                <h4>Thống kê theo tháng</h4>
+              </div>
+              <div class="cash-flow-body">
+                <div class="cash-flow-summary">
+                  <div class="summary-item">
+                    <span class="summary-label">Trung bình/tháng:</span>
+                    <span class="summary-value">{{ formatAmount(averageMonthlyExpense()) }}</span>
+                  </div>
+                  <div class="summary-item">
+                    <span class="summary-label">Tổng số tháng:</span>
+                    <span class="summary-value">{{ monthlyExpenses().length }}</span>
+                  </div>
+                </div>
+                <div class="cash-flow-list">
+                  <div class="cash-flow-item" *ngFor="let month of monthlyExpenses().slice(-5)">
+                    <div class="item-label">{{ month.monthKey }}</div>
+                    <div class="item-value">{{ formatAmount(month.total) }}</div>
+                    <div class="item-detail">{{ month.count }} GD, {{ month.daysWithExpenses }} ngày</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Projected Spending -->
+            <div class="cash-flow-card">
+              <div class="cash-flow-header">
+                <i class="pi pi-chart-line"></i>
+                <h4>Dự kiến chi tiêu</h4>
+              </div>
+              <div class="cash-flow-body">
+                <div class="projected-spending">
+                  <div class="projected-value">{{ formatAmount(projectedMonthlySpending()) }}</div>
+                  <div class="projected-label">Dự kiến chi tiêu/tháng</div>
+                  <div class="projected-note">Dựa trên tốc độ chi tiêu hiện tại</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Weekday vs Weekend -->
+            <div class="cash-flow-card">
+              <div class="cash-flow-header">
+                <i class="pi pi-calendar"></i>
+                <h4>Ngày thường vs Cuối tuần</h4>
+              </div>
+              <div class="cash-flow-body">
+                <div class="comparison-grid">
+                  <div class="comparison-item weekday">
+                    <div class="comparison-label">Ngày thường</div>
+                    <div class="comparison-value">{{ formatAmount(weekdayWeekendComparison().weekday.total) }}</div>
+                    <div class="comparison-detail">
+                      {{ weekdayWeekendComparison().weekday.count }} GD<br>
+                      TB: {{ formatAmount(weekdayWeekendComparison().weekday.average) }}
+                    </div>
+                  </div>
+                  <div class="comparison-item weekend">
+                    <div class="comparison-label">Cuối tuần</div>
+                    <div class="comparison-value">{{ formatAmount(weekdayWeekendComparison().weekend.total) }}</div>
+                    <div class="comparison-detail">
+                      {{ weekdayWeekendComparison().weekend.count }} GD<br>
+                      TB: {{ formatAmount(weekdayWeekendComparison().weekend.average) }}
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
