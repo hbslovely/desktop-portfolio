@@ -23,7 +23,6 @@ import { CalendarAppComponent } from './components/apps/calendar-app/calendar-ap
 import { AngularLoveAppComponent } from './components/apps/angular-love-app/angular-love-app.component';
 import { MusicAppComponent } from './components/apps/music-app/music-app.component';
 import { AngularGuidelinesAppComponent } from './components/apps/angular-guidelines-app/angular-guidelines-app.component';
-import { AngularLearningAppComponent } from './components/apps/angular-learning-app/angular-learning-app.component';
 import { TuoiTreNewsAppComponent } from './components/apps/tuoitre-news-app/tuoitre-news-app.component';
 import { ExpenseAppComponent } from './components/apps/expense-app/expense-app.component';
 import { BusinessAppComponent } from './components/apps/business-app/business-app.component';
@@ -46,7 +45,7 @@ import { FileSystemService } from './services/file-system.service';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [ WelcomeScreenComponent, WindowComponent, DesktopIconComponent, CalculatorComponent, IframeAppComponent, LoveAppComponent, ExplorerComponent, TextViewerComponent, ImageViewerComponent, PdfViewerComponent, MachineInfoComponent, PaintAppComponent, HcmcAppComponent, NewsAppComponent, SettingsAppComponent, TaskManagerComponent, WeatherAppComponent, DictionaryAppComponent, CountriesAppComponent, YugiohAppComponent, YugiohCardDetailComponent, CalendarAppComponent, AngularLoveAppComponent, MusicAppComponent, AngularGuidelinesAppComponent, AngularLearningAppComponent, TuoiTreNewsAppComponent, ExpenseAppComponent, BusinessAppComponent, ChineseChessAppComponent, OcrAppComponent, FbIdFinderAppComponent, GraphVisualizerAppComponent, CommonModule, FormsModule, SettingsDialogComponent ],
+  imports: [ WelcomeScreenComponent, WindowComponent, DesktopIconComponent, CalculatorComponent, IframeAppComponent, LoveAppComponent, ExplorerComponent, TextViewerComponent, ImageViewerComponent, PdfViewerComponent, MachineInfoComponent, PaintAppComponent, HcmcAppComponent, NewsAppComponent, SettingsAppComponent, TaskManagerComponent, WeatherAppComponent, DictionaryAppComponent, CountriesAppComponent, YugiohAppComponent, YugiohCardDetailComponent, CalendarAppComponent, AngularLoveAppComponent, MusicAppComponent, AngularGuidelinesAppComponent, TuoiTreNewsAppComponent, ExpenseAppComponent, BusinessAppComponent, ChineseChessAppComponent, OcrAppComponent, FbIdFinderAppComponent, GraphVisualizerAppComponent, CommonModule, FormsModule, SettingsDialogComponent ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
 })

@@ -98,7 +98,7 @@ export class FbIdFinderAppComponent implements AfterViewInit {
         if (fbId && /^\d+$/.test(fbId)) {
           const profile: FacebookProfile = {
             id: fbId,
-            link: `https://facebook.com/${fbId}`
+            link: `https://www.facebook.com/${fbId}`
           };
           this.facebookProfile.set(profile);
           this.fetchFacebookProfile(fbId);
@@ -229,7 +229,20 @@ export class FbIdFinderAppComponent implements AfterViewInit {
     this.http.get(profileUrl, { 
       responseType: 'text',
       headers: new HttpHeaders({
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+        'Accept-Language': 'en,vi;q=0.9,en-US;q=0.8',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Cache-Control': 'max-age=0',
+        'Sec-CH-UA': '"Chromium";v="142", "Google Chrome";v="142", "Not_A Brand";v="99"',
+        'Sec-CH-UA-Mobile': '?0',
+        'Sec-CH-UA-Platform': '"macOS"',
+        'Sec-CH-UA-Platform-Version': '"15.7.1"',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'same-origin',
+        'Sec-Fetch-User': '?1',
+        'Upgrade-Insecure-Requests': '1',
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36'
       })
     }).subscribe({
       next: (html) => {
@@ -254,7 +267,10 @@ export class FbIdFinderAppComponent implements AfterViewInit {
       const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
       const nameMatch = ogTitleMatch || titleMatch;
       if (nameMatch && nameMatch[1]) {
-        profile.name = nameMatch[1].replace(/\s*-\s*Facebook$/, '').trim();
+        let name = nameMatch[1].replace(/\s*-\s*Facebook$/, '').trim();
+        // Remove common Facebook suffixes
+        name = name.replace(/\s*\|?\s*Facebook$/, '').trim();
+        profile.name = name;
       }
 
       // Try to extract profile image from og:image
@@ -267,6 +283,25 @@ export class FbIdFinderAppComponent implements AfterViewInit {
       const ogDescMatch = html.match(/<meta\s+property="og:description"\s+content="([^"]+)"/i);
       if (ogDescMatch && ogDescMatch[1]) {
         profile.about = ogDescMatch[1];
+      }
+
+      // Try to extract from JSON-LD structured data
+      const jsonLdMatch = html.match(/<script[^>]*type=["']application\/ld\+json["'][^>]*>(.*?)<\/script>/is);
+      if (jsonLdMatch && jsonLdMatch[1]) {
+        try {
+          const jsonData = JSON.parse(jsonLdMatch[1]);
+          if (jsonData.name && !profile.name) {
+            profile.name = jsonData.name;
+          }
+          if (jsonData.image && !profile.profileImage) {
+            profile.profileImage = jsonData.image;
+          }
+          if (jsonData.description && !profile.about) {
+            profile.about = jsonData.description;
+          }
+        } catch (e) {
+          // Ignore JSON parse errors
+        }
       }
 
       this.facebookProfile.set({ ...profile });
