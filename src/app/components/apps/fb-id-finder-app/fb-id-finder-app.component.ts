@@ -2,7 +2,6 @@ import { Component, signal, ViewChild, ElementRef, AfterViewInit } from '@angula
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 
 interface ApiResponse {
   data?: string;
@@ -36,10 +35,7 @@ export class FbIdFinderAppComponent implements AfterViewInit {
   facebookProfile = signal<FacebookProfile | null>(null);
   loadingProfile = signal<boolean>(false);
 
-  constructor(
-    private http: HttpClient,
-    private sanitizer: DomSanitizer
-  ) {
+  constructor(private http: HttpClient) {
     this.loadSearchHistory();
   }
 
@@ -67,6 +63,7 @@ export class FbIdFinderAppComponent implements AfterViewInit {
     this.loading.set(true);
     this.error.set(null);
     this.result.set('');
+    this.facebookProfile.set(null);
 
     const headers = new HttpHeaders({
       'Content-Type': 'application/json'
@@ -140,6 +137,7 @@ export class FbIdFinderAppComponent implements AfterViewInit {
   clearResult() {
     this.result.set('');
     this.error.set(null);
+    this.facebookProfile.set(null);
   }
 
   clearPhone() {
@@ -308,10 +306,6 @@ export class FbIdFinderAppComponent implements AfterViewInit {
     } catch (e) {
       console.error('Error parsing Facebook profile:', e);
     }
-  }
-
-  getSafeUrl(url: string): SafeResourceUrl {
-    return this.sanitizer.sanitize(1, url) as SafeResourceUrl || '';
   }
 }
 

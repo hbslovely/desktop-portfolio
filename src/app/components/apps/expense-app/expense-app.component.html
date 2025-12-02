@@ -145,21 +145,21 @@
 
     <!-- Search and Filters (affects all tabs) - Hidden in V2 -->
     <div class="filters-section" [class.hidden-v2]="currentLayout() === 'v2'">
-      <!-- Search Bar -->
-      <div class="search-bar">
-        <i class="pi pi-search"></i>
-        <input
-          type="text"
-          [ngModel]="searchText()"
-          (ngModelChange)="searchText.set($event)"
-          class="search-input"
-          placeholder="Tìm kiếm theo nội dung hoặc phân loại...">
-        <button *ngIf="searchText()" (click)="searchText.set('')" class="clear-search-btn">
-          <i class="pi pi-times"></i>
-        </button>
-      </div>
-
             <div class="filter-row">
+
+              <!-- Search Bar -->
+              <div class="search-bar">
+                <i class="pi pi-search"></i>
+                <input
+                  type="text"
+                  [ngModel]="searchText()"
+                  (ngModelChange)="searchText.set($event)"
+                  class="search-input"
+                  placeholder="Tìm kiếm theo nội dung hoặc phân loại...">
+                <button *ngIf="searchText()" (click)="searchText.set('')" class="clear-search-btn">
+                  <i class="pi pi-times"></i>
+                </button>
+              </div>
               <div class="filter-group category-multi-select">
                 <label>Phân loại:</label>
                 <div class="category-select-wrapper">
@@ -1100,8 +1100,13 @@
               <label>Số tiền:</label>
               <input
                 type="text"
-                [value]="formatNumberInput(newExpense.amount)"
+                [value]="newExpense.amount || ''"
                 (input)="onNewAmountInput($event)"
+                (blur)="onNewAmountBlur($event)"
+                mask="separator"
+                thousandSeparator="."
+                [showMaskTyped]="false"
+                [dropSpecialCharacters]="false"
                 class="form-input"
                 placeholder="0">
             </div>
@@ -1180,6 +1185,11 @@
                         type="text"
                         [value]="formatNumberInput(expense.amount)"
                         (input)="onMultipleAmountInput($event, i)"
+                        (blur)="onMultipleAmountBlur($event, i)"
+                        mask="separator"
+                        thousandSeparator="."
+                        [showMaskTyped]="false"
+                        [dropSpecialCharacters]="false"
                         class="table-input"
                         placeholder="0">
                     </td>
@@ -1260,8 +1270,13 @@
             <label>Số tiền:</label>
             <input
               type="text"
-              [value]="formatNumberInput(editExpense.amount)"
-              (input)="onEditAmountInput($event)"
+              [ngModel]="editExpenseAmountDisplay()"
+              (ngModelChange)="onEditAmountInputChange($event)"
+              (blur)="onEditAmountBlur($event)"
+              mask="separator"
+              thousandSeparator="."
+              [showMaskTyped]="false"
+              [dropSpecialCharacters]="false"
               class="form-input"
               placeholder="0">
           </div>
@@ -1693,7 +1708,7 @@
                     <i class="pi" [class.pi-chevron-down]="!showCategoryDropdown()" [class.pi-chevron-up]="showCategoryDropdown()"></i>
                   </button>
 
-                  <div class="category-dropdown" *ngIf="showCategoryDropdown()" 
+                  <div class="category-dropdown" *ngIf="showCategoryDropdown()"
                        [ngStyle]="currentLayout() === 'v2' && categoryDropdownPosition() ? {
                          'position': 'fixed',
                          'top.px': categoryDropdownPosition()!.top,
