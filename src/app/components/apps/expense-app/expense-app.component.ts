@@ -153,7 +153,6 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     'Thời trang / Mỹ Phẩm/ Làm đẹp',
     'Mua sắm / Mua sắm online',
     'Sữa/vitamin/chất bổ/Thuốc khác',
-    'Điện - nước',
     'Từ thiện',
     'Điện thoại',
     'Sinh hoạt (Lee)',
@@ -293,12 +292,12 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   filteredCategories = computed(() => {
     const search = this.categorySearchText().toLowerCase().trim();
     const allCategories = this.categories();
-    
+
     if (!search) {
       return allCategories;
     }
-    
-    return allCategories.filter(cat => 
+
+    return allCategories.filter(cat =>
       cat.toLowerCase().includes(search)
     );
   });
@@ -307,9 +306,9 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   isAllFilteredCategoriesSelected = computed(() => {
     const filtered = this.filteredCategories();
     const selected = this.filterCategory();
-    
+
     if (filtered.length === 0) return false;
-    
+
     return filtered.every(cat => selected.includes(cat));
   });
 
@@ -317,9 +316,9 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   isSomeFilteredCategoriesSelected = computed(() => {
     const filtered = this.filteredCategories();
     const selected = this.filterCategory();
-    
+
     if (filtered.length === 0) return false;
-    
+
     const selectedCount = filtered.filter(cat => selected.includes(cat)).length;
     return selectedCount > 0 && selectedCount < filtered.length;
   });
@@ -944,7 +943,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       const rounded = Math.round(amount / 10000) * 10000; // Round to nearest 10k
       modeMap[rounded] = (modeMap[rounded] || 0) + 1;
     });
-    const mode = Object.keys(modeMap).reduce((a, b) => 
+    const mode = Object.keys(modeMap).reduce((a, b) =>
       modeMap[parseInt(a)] > modeMap[parseInt(b)] ? a : b
     );
 
@@ -957,7 +956,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     // Outliers using IQR method
     const lowerBound = q1 - 1.5 * iqr;
     const upperBound = q3 + 1.5 * iqr;
-    
+
     const outliers: Array<Expense & { zScore: number; isOutlier: boolean; outlierType: 'low' | 'high' | 'normal' }> = expenses
       .map((expense, index) => ({
         ...expense,
@@ -973,13 +972,13 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     // Skewness
     const skewness = n > 2 && standardDeviation > 0
-      ? (n / ((n - 1) * (n - 2))) * amounts.reduce((sum, val) => 
+      ? (n / ((n - 1) * (n - 2))) * amounts.reduce((sum, val) =>
           sum + Math.pow((val - mean) / standardDeviation, 3), 0)
       : 0;
 
     // Kurtosis
     const kurtosis = n > 3 && standardDeviation > 0
-      ? ((n * (n + 1)) / ((n - 1) * (n - 2) * (n - 3))) * 
+      ? ((n * (n + 1)) / ((n - 1) * (n - 2) * (n - 3))) *
         amounts.reduce((sum, val) => sum + Math.pow((val - mean) / standardDeviation, 4), 0) -
         (3 * (n - 1) * (n - 1)) / ((n - 2) * (n - 3))
       : 0;
@@ -1011,7 +1010,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     if (analysis.outliers.length === 0) return [];
 
     const dateMap: { [date: string]: Array<Expense & { zScore: number; isOutlier: boolean; outlierType: 'low' | 'high' | 'normal' }> } = {};
-    
+
     analysis.outliers.forEach(outlier => {
       if (!dateMap[outlier.date]) {
         dateMap[outlier.date] = [];
@@ -1053,7 +1052,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const sixtyDaysAgoStr = sixtyDaysAgo.toISOString().split('T')[0];
 
     const historicalExpenses = allExpenses.filter(e => e.date >= sixtyDaysAgoStr);
-    
+
     // Group by date
     const dailyData: { [date: string]: number } = {};
     historicalExpenses.forEach(expense => {
@@ -1079,30 +1078,30 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     // Method 1: Linear Regression
     const linearPrediction = this.linearRegression(dates, values);
-    
+
     // Method 2: Moving Average (7-day)
     const movingAvg7 = this.movingAverage(values, 7);
-    
+
     // Method 3: Exponential Smoothing
     const expSmoothing = this.exponentialSmoothing(values, 0.3);
-    
+
     // Method 4: Seasonal Pattern (day of week)
     const seasonalPattern = this.seasonalPattern(historicalExpenses);
 
     // Combine predictions with weights
     const weights = { linear: 0.3, moving: 0.3, exponential: 0.2, seasonal: 0.2 };
-    
+
     // Predict tomorrow
     const tomorrowDate = new Date(today);
     tomorrowDate.setDate(today.getDate() + 1);
     const tomorrowStr = tomorrowDate.toISOString().split('T')[0];
     const dayOfWeek = tomorrowDate.getDay();
-    
+
     const tomorrowLinear = linearPrediction.predict(dates.length);
     const tomorrowMoving = movingAvg7[movingAvg7.length - 1] || values[values.length - 1];
     const tomorrowExp = expSmoothing[expSmoothing.length - 1] || values[values.length - 1];
     const tomorrowSeasonal = seasonalPattern[dayOfWeek] || 0;
-    
+
     const tomorrow = Math.round(
       tomorrowLinear * weights.linear +
       tomorrowMoving * weights.moving +
@@ -1253,15 +1252,15 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   private linearRegression(dates: string[], values: number[]): { predict: (x: number) => number; slope: number; intercept: number } {
     const n = values.length;
     const x = dates.map((_, i) => i);
-    
+
     const sumX = x.reduce((sum, val) => sum + val, 0);
     const sumY = values.reduce((sum, val) => sum + val, 0);
     const sumXY = x.reduce((sum, val, i) => sum + val * values[i], 0);
     const sumXX = x.reduce((sum, val) => sum + val * val, 0);
-    
+
     const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
     const intercept = (sumY - slope * sumX) / n;
-    
+
     return {
       predict: (x: number) => slope * x + intercept,
       slope,
@@ -1295,12 +1294,12 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   // Seasonal Pattern (by day of week)
   private seasonalPattern(expenses: Expense[]): { [dayOfWeek: number]: number } {
     const dayTotals: { [day: number]: { total: number; count: number } } = {};
-    
+
     expenses.forEach(expense => {
       const date = this.parseDate(expense.date);
       if (!date) return;
       const dayOfWeek = date.getDay();
-      
+
       if (!dayTotals[dayOfWeek]) {
         dayTotals[dayOfWeek] = { total: 0, count: 0 };
       }
@@ -1318,7 +1317,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         pattern[day] = Math.round(allAvg);
       }
     }
-    
+
     return pattern;
   }
 
@@ -1329,21 +1328,21 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const yesterday = new Date(today);
     yesterday.setDate(today.getDate() - 1);
     const yesterdayStr = yesterday.toISOString().split('T')[0];
-    
+
     const allExpenses = this.expenses();
-    
+
     const todayExpenses = allExpenses.filter(e => e.date === todayStr);
     const yesterdayExpenses = allExpenses.filter(e => e.date === yesterdayStr);
-    
+
     const todayTotal = todayExpenses.reduce((sum, e) => sum + e.amount, 0);
     const yesterdayTotal = yesterdayExpenses.reduce((sum, e) => sum + e.amount, 0);
     const todayCount = todayExpenses.length;
     const yesterdayCount = yesterdayExpenses.length;
-    
+
     let change = 0;
     let changePercent = 0;
     let status: 'higher' | 'lower' | 'equal' = 'equal';
-    
+
     if (yesterdayTotal > 0) {
       change = todayTotal - yesterdayTotal;
       changePercent = Math.round((change / yesterdayTotal) * 100);
@@ -1358,7 +1357,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       status = 'higher';
       changePercent = 100;
     }
-    
+
     return {
       todayTotal,
       yesterdayTotal,
@@ -1376,7 +1375,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const today = new Date();
     const todayStr = today.toISOString().split('T')[0];
     const allExpenses = this.expenses(); // Use all expenses, not filtered
-    
+
     // Get today's expenses
     const todayExpenses = allExpenses.filter(e => e.date === todayStr);
     const todayTotal = todayExpenses.reduce((sum, e) => sum + e.amount, 0);
@@ -1386,7 +1385,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const thirtyDaysAgo = new Date(today);
     thirtyDaysAgo.setDate(today.getDate() - 30);
     const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().split('T')[0];
-    
+
     const last30DaysExpenses = allExpenses.filter(e => {
       return e.date >= thirtyDaysAgoStr && e.date < todayStr;
     });
@@ -1399,7 +1398,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const sevenDaysAgo = new Date(today);
     sevenDaysAgo.setDate(today.getDate() - 7);
     const sevenDaysAgoStr = sevenDaysAgo.toISOString().split('T')[0];
-    
+
     const last7DaysExpenses = allExpenses.filter(e => {
       return e.date >= sevenDaysAgoStr && e.date < todayStr;
     });
@@ -1415,7 +1414,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     weekStart.setDate(diff);
     weekStart.setHours(0, 0, 0, 0);
     const weekStartStr = weekStart.toISOString().split('T')[0];
-    
+
     const currentWeekExpenses = allExpenses.filter(e => {
       return e.date >= weekStartStr && e.date < todayStr;
     });
@@ -1427,7 +1426,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     // Calculate current month average (excluding today)
     const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
     const monthStartStr = monthStart.toISOString().split('T')[0];
-    
+
     const currentMonthExpenses = allExpenses.filter(e => {
       return e.date >= monthStartStr && e.date < todayStr;
     });
@@ -1437,27 +1436,27 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const currentMonthAvg = currentMonthDates.size > 0 ? currentMonthTotal / currentMonthDates.size : 0;
 
     // Calculate comparisons
-    const compare30Days = last30DaysAvg > 0 
-      ? Math.round(((todayTotal - last30DaysAvg) / last30DaysAvg) * 100) 
+    const compare30Days = last30DaysAvg > 0
+      ? Math.round(((todayTotal - last30DaysAvg) / last30DaysAvg) * 100)
       : 0;
-    const compare7Days = last7DaysAvg > 0 
-      ? Math.round(((todayTotal - last7DaysAvg) / last7DaysAvg) * 100) 
+    const compare7Days = last7DaysAvg > 0
+      ? Math.round(((todayTotal - last7DaysAvg) / last7DaysAvg) * 100)
       : 0;
-    const compareWeek = currentWeekAvg > 0 
-      ? Math.round(((todayTotal - currentWeekAvg) / currentWeekAvg) * 100) 
+    const compareWeek = currentWeekAvg > 0
+      ? Math.round(((todayTotal - currentWeekAvg) / currentWeekAvg) * 100)
       : 0;
-    const compareMonth = currentMonthAvg > 0 
-      ? Math.round(((todayTotal - currentMonthAvg) / currentMonthAvg) * 100) 
+    const compareMonth = currentMonthAvg > 0
+      ? Math.round(((todayTotal - currentMonthAvg) / currentMonthAvg) * 100)
       : 0;
 
     // Determine overall status
     let overallStatus: 'high' | 'normal' | 'low' = 'normal';
     let overallMessage = '';
-    
+
     if (last30DaysAvg > 0) {
       const diff = todayTotal - last30DaysAvg;
       const percentDiff = (diff / last30DaysAvg) * 100;
-      
+
       if (percentDiff > 20) {
         overallStatus = 'high';
         overallMessage = `Cao hơn ${Math.round(percentDiff)}% so với TB 30 ngày`;
@@ -2472,7 +2471,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
             evaluation.currentMonthAvg
           ],
           backgroundColor: [
-            evaluation.overallStatus === 'high' ? '#f44336' : 
+            evaluation.overallStatus === 'high' ? '#f44336' :
             evaluation.overallStatus === 'low' ? '#4caf50' : '#ff9800',
             'rgba(33, 150, 243, 0.6)',
             'rgba(33, 150, 243, 0.6)',
@@ -2480,7 +2479,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
             'rgba(33, 150, 243, 0.6)'
           ],
           borderColor: [
-            evaluation.overallStatus === 'high' ? '#d32f2f' : 
+            evaluation.overallStatus === 'high' ? '#d32f2f' :
             evaluation.overallStatus === 'low' ? '#388e3c' : '#f57c00',
             '#2196F3',
             '#2196F3',
@@ -2536,7 +2535,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const thirtyDaysAgo = new Date(today);
     thirtyDaysAgo.setDate(today.getDate() - 30);
     const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().split('T')[0];
-    
+
     const allExpenses = this.expenses();
     const last30DaysExpenses = allExpenses.filter(e => {
       return e.date >= thirtyDaysAgoStr && e.date <= todayStr;
@@ -2554,7 +2553,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const dates: string[] = [];
     const values: number[] = [];
     let todayIndex = -1;
-    
+
     for (let i = 29; i >= 0; i--) {
       const date = new Date(today);
       date.setDate(today.getDate() - i);
@@ -2592,7 +2591,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
             },
             pointBackgroundColor: (context: any) => {
               return todayIndex >= 0 && context.dataIndex === todayIndex
-                ? (evaluation.overallStatus === 'high' ? '#f44336' : 
+                ? (evaluation.overallStatus === 'high' ? '#f44336' :
                    evaluation.overallStatus === 'low' ? '#4caf50' : '#ff9800')
                 : '#2196F3';
             },
@@ -2663,13 +2662,13 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     }
 
     // Prepare data: show all expenses with outliers highlighted
-    const sortedExpenses = [...expenses].sort((a, b) => 
+    const sortedExpenses = [...expenses].sort((a, b) =>
       new Date(a.date).getTime() - new Date(b.date).getTime()
     );
 
     const labels = sortedExpenses.map(e => this.formatDateShort(e.date));
     const amounts = sortedExpenses.map(e => e.amount);
-    const isOutlier = sortedExpenses.map(e => 
+    const isOutlier = sortedExpenses.map(e =>
       analysis.outliers.some(o => o.date === e.date && o.content === e.content && o.amount === e.amount)
     );
 
@@ -3835,13 +3834,13 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const filtered = this.filteredCategories();
     const current = this.filterCategory();
     const newSelection = [...current];
-    
+
     filtered.forEach(cat => {
       if (!newSelection.includes(cat)) {
         newSelection.push(cat);
       }
     });
-    
+
     this.filterCategory.set(newSelection);
   }
 
@@ -3851,7 +3850,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   deselectAllFilteredCategories(): void {
     const filtered = this.filteredCategories();
     const current = this.filterCategory();
-    
+
     this.filterCategory.set(current.filter(cat => !filtered.includes(cat)));
   }
 
@@ -4398,7 +4397,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   toggleDropdown(event?: Event){
     const newValue = !this.showCategoryDropdown();
     this.showCategoryDropdown.set(newValue);
-    
+
     // Calculate position for v2 filter dialog when opening
     if (newValue && this.currentLayout() === 'v2' && event) {
       const button = event.target as HTMLElement;
@@ -4425,7 +4424,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         }, 0);
       }
     }
-    
+
     // Clear search when closing dropdown
     if (!newValue) {
       this.categorySearchText.set('');
