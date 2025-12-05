@@ -371,6 +371,18 @@ export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
     defaultY: 50,
     maximizable: true,
     statusText: 'Tạo và phân tích đồ thị, tìm đường đi ngắn nhất'
+  },
+  'stock': {
+    id: 'stock',
+    title: 'Chứng khoán DNSE',
+    icon: 'pi pi-chart-line',
+    component: 'stock',
+    defaultWidth: 1400,
+    defaultHeight: 900,
+    defaultX: 100,
+    defaultY: 50,
+    maximizable: true,
+    statusText: 'Quản lý và fetch dữ liệu cổ phiếu từ DNSE'
   }
 };
 

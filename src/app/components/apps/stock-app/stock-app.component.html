@@ -1,0 +1,330 @@
+<div class="stock-app">
+  <!-- Detail View -->
+  <div *ngIf="showDetailView() && selectedSymbol()" class="detail-view">
+    <div class="detail-header">
+      <button class="btn-back" (click)="closeDetailView()">
+        <i class="pi pi-arrow-left"></i>
+        Quay lại
+      </button>
+      <h2>
+        <i class="pi pi-chart-line"></i>
+        Chi tiết: {{ selectedSymbol()?.symbol }}
+      </h2>
+    </div>
+
+    <div class="detail-content-wrapper">
+      <div class="detail-loading" *ngIf="isLoadingDetail() || isLoadingPrice()">
+        <i class="pi pi-spin pi-spinner"></i>
+        <span>Đang tải dữ liệu...</span>
+      </div>
+
+      <div class="detail-content" *ngIf="selectedSymbol() && !isLoadingDetail()">
+        <!-- Basic Info Section -->
+        <div class="info-section" *ngIf="selectedSymbolData()">
+          <h3>Thông tin cơ bản</h3>
+          <div class="info-grid">
+            <div class="info-item">
+              <span class="info-label">Mã cổ phiếu:</span>
+              <span class="info-value">{{ selectedSymbol()?.symbol }}</span>
+            </div>
+            <div class="info-item" *ngIf="selectedSymbolData()?.pageProps?.companyInfo">
+              <span class="info-label">Tên công ty:</span>
+              <span class="info-value">{{ selectedSymbolData()?.pageProps?.companyInfo?.fullName || selectedSymbolData()?.pageProps?.companyInfo?.name || '-' }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Sàn:</span>
+              <span class="info-value">{{ exchangeNames[selectedSymbol()!.exchange] }}</span>
+            </div>
+            <div class="info-item" *ngIf="selectedSymbolData()?.pageProps?.priceSnapshot">
+              <span class="info-label">Giá khớp:</span>
+              <span class="info-value price-value">{{ selectedSymbolData()?.pageProps?.priceSnapshot?.matchPrice || '-' }}</span>
+            </div>
+            <div class="info-item" *ngIf="selectedSymbolData()?.pageProps?.priceSnapshot">
+              <span class="info-label">Thay đổi:</span>
+              <span class="info-value" [class]="(selectedSymbolData()?.pageProps?.priceSnapshot?.changedValue || 0) >= 0 ? 'change-positive' : 'change-negative'">
+                {{ selectedSymbolData()?.pageProps?.priceSnapshot?.changedValue || 0 }} 
+                ({{ selectedSymbolData()?.pageProps?.priceSnapshot?.changedRatio || 0 }}%)
+              </span>
+            </div>
+            <div class="info-item" *ngIf="selectedSymbolData()?.pageProps?.priceSnapshot">
+              <span class="info-label">Khối lượng:</span>
+              <span class="info-value">{{ selectedSymbolData()?.pageProps?.priceSnapshot?.totalVolumeTraded ? (selectedSymbolData()!.pageProps!.priceSnapshot!.totalVolumeTraded | number:'1.0-0') : '-' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Price History Section -->
+        <div class="info-section">
+          <h3>Lịch sử giá</h3>
+          <div class="price-controls">
+            <label>Chọn số năm:</label>
+            <select 
+              [value]="selectedYears()" 
+              (change)="selectedYears.set(+$any($event.target).value)"
+              class="years-select">
+              <option [value]="1">1 năm</option>
+              <option [value]="3">3 năm</option>
+              <option [value]="5">5 năm</option>
+            </select>
+            <button 
+              class="btn btn-primary btn-sm" 
+              (click)="fetchPriceDataOnly(selectedYears())"
+              [disabled]="isLoadingPrice()">
+              <i class="pi" [ngClass]="isLoadingPrice() ? 'pi-spin pi-spinner' : 'pi-download'"></i>
+              {{ isLoadingPrice() ? 'Đang tải...' : 'Fetch giá' }}
+            </button>
+          </div>
+          
+          <div class="price-loading" *ngIf="isLoadingPrice()">
+            <i class="pi pi-spin pi-spinner"></i>
+            <span>Đang tải dữ liệu giá...</span>
+          </div>
+          
+          <div class="price-data" *ngIf="selectedSymbolPriceData() && !isLoadingPrice()">
+            <div class="price-stats">
+              <div class="stat-item">
+                <span class="stat-label">Số ngày giao dịch:</span>
+                <span class="stat-value">{{ selectedSymbolPriceData()?.t?.length || 0 }}</span>
+              </div>
+              <div class="stat-item" *ngIf="selectedSymbolPriceData()?.c && selectedSymbolPriceData()!.c.length > 0">
+                <span class="stat-label">Giá đóng cửa gần nhất:</span>
+                <span class="stat-value">{{ (getLatestClosePrice() * 1000) | number:'1.0-0' }} đ</span>
+              </div>
+              <div class="stat-item" *ngIf="selectedSymbolPriceData()?.v">
+                <span class="stat-label">Tổng khối lượng:</span>
+                <span class="stat-value">{{ getTotalVolumeDisplay() | number:'1.0-0' }}</span>
+              </div>
+            </div>
+            
+            <!-- Candlestick Chart -->
+            <div class="chart-container">
+              <h4>Biểu đồ hình nến</h4>
+              <div class="chart-wrapper">
+                <canvas #candlestickChart></canvas>
+              </div>
+            </div>
+            
+            <div class="price-table-container">
+              <table class="price-table">
+                <thead>
+                  <tr>
+                    <th>Ngày</th>
+                    <th>Mở cửa</th>
+                    <th>Thấp nhất</th>
+                    <th>Cao nhất</th>
+                    <th>Đóng cửa</th>
+                    <th>Khối lượng</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let item of priceTableData()">
+                    <td>{{ item.date }}</td>
+                    <td>{{ (item.open * 1000) | number:'1.0-0' }} đ</td>
+                    <td>{{ (item.low * 1000) | number:'1.0-0' }} đ</td>
+                    <td>{{ (item.high * 1000) | number:'1.0-0' }} đ</td>
+                    <td>{{ (item.close * 1000) | number:'1.0-0' }} đ</td>
+                    <td>{{ item.volume | number:'1.0-0' }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="detail-actions">
+          <a 
+            [href]="'https://docs.google.com/spreadsheets/d/' + sheetId() + '/edit#gid=0'" 
+            target="_blank"
+            class="btn btn-primary">
+            <i class="pi pi-external-link"></i>
+            Mở Google Sheets
+          </a>
+          <button 
+            class="btn btn-secondary" 
+            (click)="fetchSymbol(selectedSymbol()!)">
+            <i class="pi pi-refresh"></i>
+            Fetch lại tất cả
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- List View -->
+  <div *ngIf="!showDetailView()" class="list-view">
+    <!-- Header -->
+    <div class="app-header">
+    <h2>
+      <i class="pi pi-chart-line"></i>
+      Chứng khoán DNSE
+    </h2>
+    <div class="header-stats">
+      <span class="stat-item">
+        <i class="pi pi-list"></i>
+        Tổng: {{ totalCount() }}
+      </span>
+      <span class="stat-item success">
+        <i class="pi pi-check-circle"></i>
+        Đã fetch: {{ fetchedCount() }}
+      </span>
+      <span class="stat-item warning">
+        <i class="pi pi-clock"></i>
+        Chưa fetch: {{ totalCount() - fetchedCount() }}
+      </span>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls">
+    <div class="control-group">
+      <label>Sàn giao dịch:</label>
+      <select 
+        [value]="selectedExchange()" 
+        (change)="onExchangeChange($any($event.target).value)"
+        class="exchange-select">
+        <option value="all">Tất cả ({{ fetchedCount() }}/{{ totalCount() }})</option>
+        <option *ngFor="let exchange of exchanges" [value]="exchange">
+          {{ getExchangeCountText(exchange) }}
+        </option>
+      </select>
+    </div>
+
+    <div class="control-group">
+      <label>Tìm kiếm:</label>
+      <input 
+        type="text" 
+        [value]="searchQuery()" 
+        (input)="onSearchChange($any($event.target).value)"
+        placeholder="Nhập mã cổ phiếu hoặc tên công ty..."
+        class="search-input">
+    </div>
+
+    <div class="control-actions">
+      <button 
+        class="btn btn-primary" 
+        (click)="fetchAllUnfetched()"
+        [disabled]="isLoading() || !hasUnfetchedSymbols()">
+        <i class="pi pi-download"></i>
+        Fetch tất cả chưa fetch
+      </button>
+      <button 
+        class="btn btn-secondary" 
+        (click)="loadSymbols()"
+        [disabled]="isLoading()">
+        <i class="pi pi-refresh"></i>
+        Tải lại danh sách
+      </button>
+      <button 
+        class="btn btn-danger" 
+        (click)="clearAllFetched()">
+        <i class="pi pi-trash"></i>
+        Xóa trạng thái
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="isLoading()" class="loading-container">
+    <i class="pi pi-spin pi-spinner"></i>
+    <span>Đang tải danh sách cổ phiếu...</span>
+  </div>
+
+  <!-- Symbols List -->
+  <div *ngIf="!isLoading()" class="symbols-container">
+    <div class="symbols-header">
+      <span class="symbol-col">Mã</span>
+      <span class="name-col">Tên công ty</span>
+      <span class="exchange-col">Sàn</span>
+      <span class="price-col">Giá</span>
+      <span class="change-col">Thay đổi</span>
+      <span class="status-col">Trạng thái</span>
+      <span class="actions-col">Thao tác</span>
+    </div>
+
+    <div class="symbols-list">
+      <div 
+        *ngFor="let symbol of filteredSymbols()" 
+        class="symbol-item"
+        [class.fetched]="symbol.isFetched"
+        [class.fetching]="symbol.isFetching">
+        <span class="symbol-col">
+          <strong>{{ symbol.symbol }}</strong>
+        </span>
+        <span class="name-col">
+          {{ symbol.basicInfo?.companyName || symbol.name || '-' }}
+        </span>
+        <span class="exchange-col">
+          <span class="exchange-badge" [attr.data-exchange]="symbol.exchange">
+            {{ exchangeNames[symbol.exchange] }}
+          </span>
+        </span>
+        <span class="price-col" *ngIf="symbol.isFetched && symbol.basicInfo && symbol.basicInfo.matchPrice">
+          <strong>{{ parseFloat(symbol.basicInfo.matchPrice) | number:'1.2-2' }}</strong>
+        </span>
+        <span class="price-col" *ngIf="!symbol.isFetched || !symbol.basicInfo || !symbol.basicInfo.matchPrice">
+          -
+        </span>
+        <span class="change-col" *ngIf="symbol.isFetched && symbol.basicInfo && symbol.basicInfo.changedValue">
+          <span [class]="parseFloat(symbol.basicInfo.changedValue) >= 0 ? 'change-positive' : 'change-negative'">
+            {{ parseFloat(symbol.basicInfo.changedValue) | number:'1.2-2' }} 
+            ({{ symbol.basicInfo.changedRatio ? (parseFloat(symbol.basicInfo.changedRatio) | number:'1.2-2') : '0' }}%)
+          </span>
+        </span>
+        <span class="change-col" *ngIf="!symbol.isFetched || !symbol.basicInfo || !symbol.basicInfo.changedValue">
+          -
+        </span>
+        <span class="status-col">
+          <span class="status-badge" [ngClass]="getStatusClass(symbol)">
+            <i class="pi" 
+               [ngClass]="{
+                 'pi-spin pi-spinner': symbol.isFetching,
+                 'pi-check-circle': symbol.isFetched && !symbol.isFetching,
+                 'pi-clock': !symbol.isFetched && !symbol.isFetching
+               }"></i>
+            {{ getStatusText(symbol) }}
+          </span>
+        </span>
+        <span class="actions-col">
+          <button 
+            *ngIf="!symbol.isFetched"
+            class="btn-icon btn-fetch" 
+            (click)="fetchSymbol(symbol)"
+            [disabled]="symbol.isFetching || fetchingSymbols().has(symbol.symbol)"
+            title="Fetch dữ liệu">
+            <i class="pi pi-download"></i>
+          </button>
+          <button 
+            *ngIf="symbol.isFetched"
+            class="btn-icon btn-view" 
+            (click)="viewStockDetail(symbol)"
+            title="Xem chi tiết">
+            <i class="pi pi-eye"></i>
+          </button>
+          <button 
+            *ngIf="symbol.isFetched"
+            class="btn-icon btn-refetch" 
+            (click)="fetchSymbol(symbol)"
+            [disabled]="symbol.isFetching || fetchingSymbols().has(symbol.symbol)"
+            title="Fetch lại">
+            <i class="pi pi-refresh"></i>
+          </button>
+          <button 
+            *ngIf="symbol.isFetched"
+            class="btn-icon btn-reset" 
+            (click)="markAsNotFetched(symbol)"
+            title="Xóa trạng thái">
+            <i class="pi pi-times"></i>
+          </button>
+        </span>
+      </div>
+    </div>
+
+    <div *ngIf="filteredSymbols().length === 0" class="empty-state">
+      <i class="pi pi-inbox"></i>
+      <p>Không tìm thấy mã cổ phiếu nào</p>
+    </div>
+  </div>
+
+</div>
+
