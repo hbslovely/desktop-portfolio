@@ -172,6 +172,13 @@ export const APP_ICONS: DesktopIconData[] = [
     icon: 'pi pi-sitemap',
     type: 'application',
     position: { x: 420, y: 220 }
+  },
+  {
+    id: 'stock',
+    name: 'Chứng khoán',
+    icon: 'pi pi-chart-line',
+    type: 'application',
+    position: { x: 420, y: 320 }
   }
 ];
 
@@ -212,7 +219,8 @@ function getAppDescription(appId: string): string {
     'chinese-chess': 'Chơi cờ tướng và cờ úp với AI, phá thế cờ, nhiều giao diện đẹp mắt',
     'ocr': 'Đọc và trích xuất nội dung văn bản từ hình ảnh sử dụng công nghệ OCR (Optical Character Recognition)',
     'fb-id-finder': 'Tìm Facebook ID từ số điện thoại, tra cứu thông tin Facebook',
-    'graph-visualizer': 'Tạo và phân tích đồ thị, tìm đường đi ngắn nhất với các thuật toán Dijkstra, Bellman-Ford, Floyd-Warshall, A*'
+    'graph-visualizer': 'Tạo và phân tích đồ thị, tìm đường đi ngắn nhất với các thuật toán Dijkstra, Bellman-Ford, Floyd-Warshall, A*',
+    'stock': 'Quản lý và fetch dữ liệu cổ phiếu từ DNSE, lưu vào Google Sheets. Hỗ trợ HOSE, HNX, UPCOM, VN30'
   };
   return descriptions[appId] || 'Application';
 }
@@ -242,7 +250,8 @@ function getAppKeywords(appId: string): string[] {
     'chinese-chess': ['cờ tướng', 'co tuong', 'xiangqi', 'cờ úp', 'co up', 'ky vuong', 'kỳ vương', 'chess', 'game', 'board game', 'trò chơi', 'puzzle', 'thế cờ', 'the co', 'chinese chess', 'vietnam chess'],
     'ocr': ['ocr', 'đọc hình ảnh', 'doc hinh anh', 'nhận dạng văn bản', 'nhan dang van ban', 'text recognition', 'image to text', 'optical character recognition', 'trích xuất văn bản', 'trich xuat van ban', 'scan text', 'read image'],
     'fb-id-finder': ['facebook', 'fb', 'id', 'tìm facebook id', 'tim facebook id', 'số điện thoại', 'so dien thoai', 'phone', 'find facebook id', 'facebook id finder', 'lookup', 'search facebook'],
-    'graph-visualizer': ['graph', 'đồ thị', 'do thi', 'graph visualization', 'shortest path', 'đường đi ngắn nhất', 'duong di ngan nhat', 'dijkstra', 'bellman-ford', 'floyd-warshall', 'a-star', 'algorithm', 'thuật toán', 'thuat toan', 'node', 'edge', 'weighted graph', 'directed graph', 'undirected graph']
+    'graph-visualizer': ['graph', 'đồ thị', 'do thi', 'graph visualization', 'shortest path', 'đường đi ngắn nhất', 'duong di ngan nhat', 'dijkstra', 'bellman-ford', 'floyd-warshall', 'a-star', 'algorithm', 'thuật toán', 'thuat toan', 'node', 'edge', 'weighted graph', 'directed graph', 'undirected graph'],
+    'stock': ['stock', 'chứng khoán', 'chung khoan', 'cổ phiếu', 'co phieu', 'dnse', 'hose', 'hnx', 'upcom', 'vn30', 'stock market', 'securities', 'trading', 'symbol', 'mã cổ phiếu', 'ma co phieu']
   };
   return keywords[appId] || [];
 }
