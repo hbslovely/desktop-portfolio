@@ -9,24 +9,6 @@ import { Chart, ChartConfiguration, registerables } from 'chart.js';
 
 Chart.register(...registerables);
 
-// Interface for storing past predictions
-interface PastPrediction {
-  date: string;
-  predicted: number;
-  actual: number | null;
-  error: number | null;
-  errorPercent: number | null;
-}
-
-// Interface for category frequency weights
-interface CategoryFrequency {
-  category: string;
-  frequency: number; // Number of transactions
-  totalAmount: number;
-  averageAmount: number;
-  weight: number; // Normalized weight based on frequency
-}
-
 @Component({
   selector: 'app-expense-app',
   standalone: true,
@@ -47,7 +29,6 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   @ViewChild('predictionChart') predictionChartRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('weeklyPredictionChart') weeklyPredictionChartRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('monthlyPredictionChart') monthlyPredictionChartRef!: ElementRef<HTMLCanvasElement>;
-  @ViewChild('historicalComparisonChart') historicalComparisonChartRef!: ElementRef<HTMLCanvasElement>;
 
   // Authentication
   isAuthenticated = signal<boolean>(false);
@@ -73,7 +54,6 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   private predictionChart: Chart | null = null;
   private weeklyPredictionChart: Chart | null = null;
   private monthlyPredictionChart: Chart | null = null;
-  private historicalComparisonChart: Chart | null = null;
 
   // Add expense form
   showAddForm = signal<boolean>(false);
@@ -173,7 +153,6 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     'Thời trang / Mỹ Phẩm/ Làm đẹp',
     'Mua sắm / Mua sắm online',
     'Sữa/vitamin/chất bổ/Thuốc khác',
-    'Điện - nước',
     'Từ thiện',
     'Điện thoại',
     'Sinh hoạt (Lee)',
@@ -313,12 +292,12 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   filteredCategories = computed(() => {
     const search = this.categorySearchText().toLowerCase().trim();
     const allCategories = this.categories();
-    
+
     if (!search) {
       return allCategories;
     }
-    
-    return allCategories.filter(cat => 
+
+    return allCategories.filter(cat =>
       cat.toLowerCase().includes(search)
     );
   });
@@ -327,9 +306,9 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   isAllFilteredCategoriesSelected = computed(() => {
     const filtered = this.filteredCategories();
     const selected = this.filterCategory();
-    
+
     if (filtered.length === 0) return false;
-    
+
     return filtered.every(cat => selected.includes(cat));
   });
 
@@ -337,9 +316,9 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   isSomeFilteredCategoriesSelected = computed(() => {
     const filtered = this.filteredCategories();
     const selected = this.filterCategory();
-    
+
     if (filtered.length === 0) return false;
-    
+
     const selectedCount = filtered.filter(cat => selected.includes(cat)).length;
     return selectedCount > 0 && selectedCount < filtered.length;
   });
@@ -964,7 +943,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       const rounded = Math.round(amount / 10000) * 10000; // Round to nearest 10k
       modeMap[rounded] = (modeMap[rounded] || 0) + 1;
     });
-    const mode = Object.keys(modeMap).reduce((a, b) => 
+    const mode = Object.keys(modeMap).reduce((a, b) =>
       modeMap[parseInt(a)] > modeMap[parseInt(b)] ? a : b
     );
 
@@ -977,7 +956,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     // Outliers using IQR method
     const lowerBound = q1 - 1.5 * iqr;
     const upperBound = q3 + 1.5 * iqr;
-    
+
     const outliers: Array<Expense & { zScore: number; isOutlier: boolean; outlierType: 'low' | 'high' | 'normal' }> = expenses
       .map((expense, index) => ({
         ...expense,
@@ -993,13 +972,13 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     // Skewness
     const skewness = n > 2 && standardDeviation > 0
-      ? (n / ((n - 1) * (n - 2))) * amounts.reduce((sum, val) => 
+      ? (n / ((n - 1) * (n - 2))) * amounts.reduce((sum, val) =>
           sum + Math.pow((val - mean) / standardDeviation, 3), 0)
       : 0;
 
     // Kurtosis
     const kurtosis = n > 3 && standardDeviation > 0
-      ? ((n * (n + 1)) / ((n - 1) * (n - 2) * (n - 3))) * 
+      ? ((n * (n + 1)) / ((n - 1) * (n - 2) * (n - 3))) *
         amounts.reduce((sum, val) => sum + Math.pow((val - mean) / standardDeviation, 4), 0) -
         (3 * (n - 1) * (n - 1)) / ((n - 2) * (n - 3))
       : 0;
@@ -1031,7 +1010,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     if (analysis.outliers.length === 0) return [];
 
     const dateMap: { [date: string]: Array<Expense & { zScore: number; isOutlier: boolean; outlierType: 'low' | 'high' | 'normal' }> } = {};
-    
+
     analysis.outliers.forEach(outlier => {
       if (!dateMap[outlier.date]) {
         dateMap[outlier.date] = [];
@@ -1050,172 +1029,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       }));
   });
 
-  // Store past predictions in localStorage
-  private getPastPredictions(): PastPrediction[] {
-    try {
-      const stored = localStorage.getItem('expense_past_predictions');
-      return stored ? JSON.parse(stored) : [];
-    } catch {
-      return [];
-    }
-  }
-
-  private savePastPrediction(prediction: PastPrediction): void {
-    try {
-      const past = this.getPastPredictions();
-      // Remove old prediction for same date if exists
-      const filtered = past.filter(p => p.date !== prediction.date);
-      filtered.push(prediction);
-      // Keep only last 90 days
-      const sorted = filtered.sort((a, b) => a.date.localeCompare(b.date));
-      const recent = sorted.slice(-90);
-      localStorage.setItem('expense_past_predictions', JSON.stringify(recent));
-    } catch (e) {
-      console.error('Failed to save past prediction:', e);
-    }
-  }
-
-  // Calculate frequency-based weights for categories
-  private calculateCategoryFrequencyWeights(expenses: Expense[]): Map<string, CategoryFrequency> {
-    const categoryStats = new Map<string, { count: number; total: number }>();
-    
-    expenses.forEach(expense => {
-      const cat = expense.category || 'Khác';
-      const stats = categoryStats.get(cat) || { count: 0, total: 0 };
-      stats.count += 1;
-      stats.total += expense.amount;
-      categoryStats.set(cat, stats);
-    });
-
-    const frequencies: CategoryFrequency[] = [];
-    let maxFrequency = 0;
-
-    categoryStats.forEach((stats, category) => {
-      frequencies.push({
-        category,
-        frequency: stats.count,
-        totalAmount: stats.total,
-        averageAmount: stats.total / stats.count,
-        weight: 0 // Will be calculated
-      });
-      maxFrequency = Math.max(maxFrequency, stats.count);
-    });
-
-    // Normalize weights: more frequent categories get higher weights
-    // Weight = (frequency / maxFrequency) ^ 0.7 (to avoid extreme weights)
-    frequencies.forEach(freq => {
-      freq.weight = Math.pow(freq.frequency / maxFrequency, 0.7);
-    });
-
-    // Normalize so sum of weights = 1
-    const totalWeight = frequencies.reduce((sum, f) => sum + f.weight, 0);
-    frequencies.forEach(freq => {
-      freq.weight = freq.weight / totalWeight;
-    });
-
-    const result = new Map<string, CategoryFrequency>();
-    frequencies.forEach(freq => {
-      result.set(freq.category, freq);
-    });
-
-    return result;
-  }
-
-  // Calculate weighted daily data based on category frequency
-  private calculateWeightedDailyData(expenses: Expense[], categoryWeights: Map<string, CategoryFrequency>): { [date: string]: number } {
-    const dailyData: { [date: string]: number } = {};
-    
-    expenses.forEach(expense => {
-      const cat = expense.category || 'Khác';
-      const weight = categoryWeights.get(cat)?.weight || 0.1; // Default weight for unknown categories
-      const weightedAmount = expense.amount * (1 + weight); // Increase weight for frequent categories
-      
-      dailyData[expense.date] = (dailyData[expense.date] || 0) + weightedAmount;
-    });
-
-    return dailyData;
-  }
-
-  // Update past predictions with actual results
-  private updatePastPredictionsWithActuals(): void {
-    const past = this.getPastPredictions();
-    const allExpenses = this.expenses();
-    const today = new Date();
-    
-    // Group actual expenses by date
-    const actualByDate = new Map<string, number>();
-    allExpenses.forEach(expense => {
-      const date = expense.date;
-      actualByDate.set(date, (actualByDate.get(date) || 0) + expense.amount);
-    });
-
-    // Update past predictions that have actual data now
-    const updated = past.map(pred => {
-      if (pred.actual === null && actualByDate.has(pred.date)) {
-        const actual = actualByDate.get(pred.date)!;
-        const error = actual - pred.predicted;
-        const errorPercent = pred.predicted > 0 ? (error / pred.predicted) * 100 : 0;
-        return {
-          ...pred,
-          actual,
-          error,
-          errorPercent
-        };
-      }
-      return pred;
-    });
-
-    // Save updated predictions
-    try {
-      localStorage.setItem('expense_past_predictions', JSON.stringify(updated));
-    } catch (e) {
-      console.error('Failed to update past predictions:', e);
-    }
-  }
-
-  // Use Linear Regression to optimize prediction weights based on historical errors
-  // Or use user-configured weights from settings
-  private optimizeWeightsWithLR(): { linear: number; moving: number; exponential: number; seasonal: number } {
-    // Get user-configured weights from settings
-    const predictionSettings = this.expenseSettingsService.predictionSettings();
-    if (predictionSettings) {
-      // Normalize weights to ensure they sum to 1
-      const weights = predictionSettings.weights;
-      const total = weights.linear + weights.moving + weights.exponential + weights.seasonal;
-      if (total > 0) {
-        return {
-          linear: weights.linear / total,
-          moving: weights.moving / total,
-          exponential: weights.exponential / total,
-          seasonal: weights.seasonal / total
-        };
-      }
-    }
-
-    // Fallback: Use LR optimization if no user settings
-    const past = this.getPastPredictions();
-    const valid = past.filter(p => p.actual !== null && p.error !== null);
-    
-    if (valid.length < 10) {
-      // Not enough data, use default weights
-      return { linear: 0.3, moving: 0.3, exponential: 0.2, seasonal: 0.2 };
-    }
-
-    // Use LR to find optimal weights that minimize error
-    const errors = valid.map(p => Math.abs(p.error!));
-    const avgError = errors.reduce((sum, e) => sum + e, 0) / errors.length;
-    
-    const baseWeights = { linear: 0.3, moving: 0.3, exponential: 0.2, seasonal: 0.2 };
-    
-    // If errors are high, give more weight to moving average (more stable)
-    if (avgError > 100000) {
-      return { linear: 0.2, moving: 0.4, exponential: 0.2, seasonal: 0.2 };
-    }
-    
-    return baseWeights;
-  }
-
-  // Future Prediction using Supervised Learning Algorithms with Frequency-Based Weighting
+  // Future Prediction using Supervised Learning Algorithms
   futurePredictions = computed(() => {
     const allExpenses = this.expenses(); // Use all expenses for training
     if (allExpenses.length < 7) {
@@ -1227,42 +1041,23 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         nextMonth: [],
         predictions: [],
         confidence: 0,
-        confidenceDetails: {
-          total: 0,
-          dataQuantity: 0,
-          stability: 0,
-          frequency: 0,
-          accuracy: 0,
-          coverage: 0,
-          suggestions: ['Cần ít nhất 7 ngày dữ liệu để có dự đoán']
-        },
-        method: 'insufficient_data',
-        categoryWeights: new Map<string, CategoryFrequency>(),
-        optimizedWeights: { linear: 0.3, moving: 0.3, exponential: 0.2, seasonal: 0.2 }
+        method: 'insufficient_data'
       };
     }
 
-    // Update past predictions with actual results
-    this.updatePastPredictionsWithActuals();
-
-    // Calculate category frequency weights
-    const categoryWeights = this.calculateCategoryFrequencyWeights(allExpenses);
-
-    // Prepare historical data (use configured days)
-    const predictionSettings = this.expenseSettingsService.predictionSettings();
-    const historicalDays = predictionSettings?.historicalDays || 60;
-    const movingPeriod = predictionSettings?.movingAveragePeriod || 7;
-    const expAlpha = predictionSettings?.exponentialAlpha || 0.3;
-    
+    // Prepare historical data (last 60 days)
     const today = new Date();
     const sixtyDaysAgo = new Date(today);
-    sixtyDaysAgo.setDate(today.getDate() - historicalDays);
+    sixtyDaysAgo.setDate(today.getDate() - 60);
     const sixtyDaysAgoStr = sixtyDaysAgo.toISOString().split('T')[0];
 
     const historicalExpenses = allExpenses.filter(e => e.date >= sixtyDaysAgoStr);
-    
-    // Calculate weighted daily data based on category frequency
-    const dailyData = this.calculateWeightedDailyData(historicalExpenses, categoryWeights);
+
+    // Group by date
+    const dailyData: { [date: string]: number } = {};
+    historicalExpenses.forEach(expense => {
+      dailyData[expense.date] = (dailyData[expense.date] || 0) + expense.amount;
+    });
 
     // Create sorted array of dates
     const dates = Object.keys(dailyData).sort();
@@ -1277,87 +1072,42 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         nextMonth: [],
         predictions: [],
         confidence: 0,
-        confidenceDetails: {
-          total: 0,
-          dataQuantity: 0,
-          stability: 0,
-          frequency: 0,
-          accuracy: 0,
-          coverage: 0,
-          suggestions: ['Cần ít nhất 7 ngày dữ liệu để có dự đoán']
-        },
-        method: 'insufficient_data',
-        categoryWeights: new Map<string, CategoryFrequency>(),
-        optimizedWeights: { linear: 0.3, moving: 0.3, exponential: 0.2, seasonal: 0.2 }
+        method: 'insufficient_data'
       };
     }
-    
-    // Method 1: Linear Regression
-    const linearPrediction = predictionSettings?.enableLinearRegression !== false 
-      ? this.linearRegression(dates, values)
-      : null;
-    
-    // Method 2: Moving Average
-    const movingAvg7 = predictionSettings?.enableMovingAverage !== false
-      ? this.movingAverage(values, movingPeriod)
-      : null;
-    
-    // Method 3: Exponential Smoothing
-    const expSmoothing = predictionSettings?.enableExponentialSmoothing !== false
-      ? this.exponentialSmoothing(values, expAlpha)
-      : null;
-    
-    // Method 4: Seasonal Pattern (day of week)
-    const seasonalPattern = predictionSettings?.enableSeasonalPattern !== false
-      ? this.seasonalPattern(historicalExpenses)
-      : null;
 
-    // Optimize weights using Linear Regression based on past prediction errors
-    const optimizedWeights = this.optimizeWeightsWithLR();
-    
+    // Method 1: Linear Regression
+    const linearPrediction = this.linearRegression(dates, values);
+
+    // Method 2: Moving Average (7-day)
+    const movingAvg7 = this.movingAverage(values, 7);
+
+    // Method 3: Exponential Smoothing
+    const expSmoothing = this.exponentialSmoothing(values, 0.3);
+
+    // Method 4: Seasonal Pattern (day of week)
+    const seasonalPattern = this.seasonalPattern(historicalExpenses);
+
+    // Combine predictions with weights
+    const weights = { linear: 0.3, moving: 0.3, exponential: 0.2, seasonal: 0.2 };
+
     // Predict tomorrow
     const tomorrowDate = new Date(today);
     tomorrowDate.setDate(today.getDate() + 1);
     const tomorrowStr = tomorrowDate.toISOString().split('T')[0];
     const dayOfWeek = tomorrowDate.getDay();
-    
-    const tomorrowLinear = linearPrediction ? linearPrediction.predict(dates.length) : 0;
-    const tomorrowMoving = movingAvg7 ? (movingAvg7[movingAvg7.length - 1] || values[values.length - 1]) : 0;
-    const tomorrowExp = expSmoothing ? (expSmoothing[expSmoothing.length - 1] || values[values.length - 1]) : 0;
-    const tomorrowSeasonal = seasonalPattern ? (seasonalPattern[dayOfWeek] || 0) : 0;
-    
-    // Calculate weighted sum only for enabled methods
-    let totalWeight = 0;
-    let weightedSum = 0;
-    
-    if (linearPrediction) {
-      weightedSum += tomorrowLinear * optimizedWeights.linear;
-      totalWeight += optimizedWeights.linear;
-    }
-    if (movingAvg7) {
-      weightedSum += tomorrowMoving * optimizedWeights.moving;
-      totalWeight += optimizedWeights.moving;
-    }
-    if (expSmoothing) {
-      weightedSum += tomorrowExp * optimizedWeights.exponential;
-      totalWeight += optimizedWeights.exponential;
-    }
-    if (seasonalPattern) {
-      weightedSum += tomorrowSeasonal * optimizedWeights.seasonal;
-      totalWeight += optimizedWeights.seasonal;
-    }
-    
-    const tomorrow = totalWeight > 0 ? Math.round(weightedSum / totalWeight) : Math.round(values[values.length - 1] || 0);
 
-    // Store prediction for tomorrow
-    const tomorrowPrediction: PastPrediction = {
-      date: tomorrowStr,
-      predicted: tomorrow,
-      actual: null,
-      error: null,
-      errorPercent: null
-    };
-    this.savePastPrediction(tomorrowPrediction);
+    const tomorrowLinear = linearPrediction.predict(dates.length);
+    const tomorrowMoving = movingAvg7[movingAvg7.length - 1] || values[values.length - 1];
+    const tomorrowExp = expSmoothing[expSmoothing.length - 1] || values[values.length - 1];
+    const tomorrowSeasonal = seasonalPattern[dayOfWeek] || 0;
+
+    const tomorrow = Math.round(
+      tomorrowLinear * weights.linear +
+      tomorrowMoving * weights.moving +
+      tomorrowExp * weights.exponential +
+      tomorrowSeasonal * weights.seasonal
+    );
 
     // Predict this week (next 7 days)
     const thisWeek: Array<{ date: string; prediction: number; confidence: number }> = [];
@@ -1368,33 +1118,17 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       const futureDayOfWeek = futureDate.getDay();
       const daysAhead = i;
 
-      const linearPred = linearPrediction ? linearPrediction.predict(dates.length + daysAhead - 1) : 0;
-      const movingPred = movingAvg7 ? (movingAvg7[movingAvg7.length - 1] || values[values.length - 1]) : 0;
-      const expPred = expSmoothing ? (expSmoothing[expSmoothing.length - 1] || values[values.length - 1]) : 0;
-      const seasonalPred = seasonalPattern ? (seasonalPattern[futureDayOfWeek] || 0) : 0;
+      const linearPred = linearPrediction.predict(dates.length + daysAhead - 1);
+      const movingPred = movingAvg7[movingAvg7.length - 1] || values[values.length - 1];
+      const expPred = expSmoothing[expSmoothing.length - 1] || values[values.length - 1];
+      const seasonalPred = seasonalPattern[futureDayOfWeek] || 0;
 
-      // Calculate weighted sum only for enabled methods
-      let totalWeight = 0;
-      let weightedSum = 0;
-      
-      if (linearPrediction) {
-        weightedSum += linearPred * optimizedWeights.linear;
-        totalWeight += optimizedWeights.linear;
-      }
-      if (movingAvg7) {
-        weightedSum += movingPred * optimizedWeights.moving;
-        totalWeight += optimizedWeights.moving;
-      }
-      if (expSmoothing) {
-        weightedSum += expPred * optimizedWeights.exponential;
-        totalWeight += optimizedWeights.exponential;
-      }
-      if (seasonalPattern) {
-        weightedSum += seasonalPred * optimizedWeights.seasonal;
-        totalWeight += optimizedWeights.seasonal;
-      }
-
-      const prediction = totalWeight > 0 ? Math.round(weightedSum / totalWeight) : Math.round(values[values.length - 1] || 0);
+      const prediction = Math.round(
+        linearPred * weights.linear +
+        movingPred * weights.moving +
+        expPred * weights.exponential +
+        seasonalPred * weights.seasonal
+      );
 
       // Confidence decreases with time
       const confidence = Math.max(0, 100 - (daysAhead * 5));
@@ -1404,16 +1138,6 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         prediction: Math.max(0, prediction),
         confidence: confidence
       });
-
-      // Store prediction for this date
-      const weekPrediction: PastPrediction = {
-        date: futureDateStr,
-        predicted: Math.max(0, prediction),
-        actual: null,
-        error: null,
-        errorPercent: null
-      };
-      this.savePastPrediction(weekPrediction);
     }
 
     // Predict next week (days 8-14)
@@ -1425,33 +1149,17 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       const futureDayOfWeek = futureDate.getDay();
       const daysAhead = i;
 
-      const linearPred = linearPrediction ? linearPrediction.predict(dates.length + daysAhead - 1) : 0;
-      const movingPred = movingAvg7 ? (movingAvg7[movingAvg7.length - 1] || values[values.length - 1]) : 0;
-      const expPred = expSmoothing ? (expSmoothing[expSmoothing.length - 1] || values[values.length - 1]) : 0;
-      const seasonalPred = seasonalPattern ? (seasonalPattern[futureDayOfWeek] || 0) : 0;
+      const linearPred = linearPrediction.predict(dates.length + daysAhead - 1);
+      const movingPred = movingAvg7[movingAvg7.length - 1] || values[values.length - 1];
+      const expPred = expSmoothing[expSmoothing.length - 1] || values[values.length - 1];
+      const seasonalPred = seasonalPattern[futureDayOfWeek] || 0;
 
-      // Calculate weighted sum only for enabled methods
-      let totalWeight = 0;
-      let weightedSum = 0;
-      
-      if (linearPrediction) {
-        weightedSum += linearPred * optimizedWeights.linear;
-        totalWeight += optimizedWeights.linear;
-      }
-      if (movingAvg7) {
-        weightedSum += movingPred * optimizedWeights.moving;
-        totalWeight += optimizedWeights.moving;
-      }
-      if (expSmoothing) {
-        weightedSum += expPred * optimizedWeights.exponential;
-        totalWeight += optimizedWeights.exponential;
-      }
-      if (seasonalPattern) {
-        weightedSum += seasonalPred * optimizedWeights.seasonal;
-        totalWeight += optimizedWeights.seasonal;
-      }
-
-      const prediction = totalWeight > 0 ? Math.round(weightedSum / totalWeight) : Math.round(values[values.length - 1] || 0);
+      const prediction = Math.round(
+        linearPred * weights.linear +
+        movingPred * weights.moving +
+        expPred * weights.exponential +
+        seasonalPred * weights.seasonal
+      );
 
       const confidence = Math.max(0, 100 - (daysAhead * 5));
 
@@ -1460,16 +1168,6 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         prediction: Math.max(0, prediction),
         confidence: confidence
       });
-
-      // Store prediction for this date
-      const nextWeekPrediction: PastPrediction = {
-        date: futureDateStr,
-        predicted: Math.max(0, prediction),
-        actual: null,
-        error: null,
-        errorPercent: null
-      };
-      this.savePastPrediction(nextWeekPrediction);
     }
 
     // Predict this month (next 30 days)
@@ -1481,33 +1179,17 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       const futureDayOfWeek = futureDate.getDay();
       const daysAhead = i;
 
-      const linearPred = linearPrediction ? linearPrediction.predict(dates.length + daysAhead - 1) : 0;
-      const movingPred = movingAvg7 ? (movingAvg7[movingAvg7.length - 1] || values[values.length - 1]) : 0;
-      const expPred = expSmoothing ? (expSmoothing[expSmoothing.length - 1] || values[values.length - 1]) : 0;
-      const seasonalPred = seasonalPattern ? (seasonalPattern[futureDayOfWeek] || 0) : 0;
+      const linearPred = linearPrediction.predict(dates.length + daysAhead - 1);
+      const movingPred = movingAvg7[movingAvg7.length - 1] || values[values.length - 1];
+      const expPred = expSmoothing[expSmoothing.length - 1] || values[values.length - 1];
+      const seasonalPred = seasonalPattern[futureDayOfWeek] || 0;
 
-      // Calculate weighted sum only for enabled methods
-      let totalWeight = 0;
-      let weightedSum = 0;
-      
-      if (linearPrediction) {
-        weightedSum += linearPred * optimizedWeights.linear;
-        totalWeight += optimizedWeights.linear;
-      }
-      if (movingAvg7) {
-        weightedSum += movingPred * optimizedWeights.moving;
-        totalWeight += optimizedWeights.moving;
-      }
-      if (expSmoothing) {
-        weightedSum += expPred * optimizedWeights.exponential;
-        totalWeight += optimizedWeights.exponential;
-      }
-      if (seasonalPattern) {
-        weightedSum += seasonalPred * optimizedWeights.seasonal;
-        totalWeight += optimizedWeights.seasonal;
-      }
-
-      const prediction = totalWeight > 0 ? Math.round(weightedSum / totalWeight) : Math.round(values[values.length - 1] || 0);
+      const prediction = Math.round(
+        linearPred * weights.linear +
+        movingPred * weights.moving +
+        expPred * weights.exponential +
+        seasonalPred * weights.seasonal
+      );
 
       const confidence = Math.max(0, 100 - (daysAhead * 3));
 
@@ -1527,33 +1209,17 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       const futureDayOfWeek = futureDate.getDay();
       const daysAhead = i;
 
-      const linearPred = linearPrediction ? linearPrediction.predict(dates.length + daysAhead - 1) : 0;
-      const movingPred = movingAvg7 ? (movingAvg7[movingAvg7.length - 1] || values[values.length - 1]) : 0;
-      const expPred = expSmoothing ? (expSmoothing[expSmoothing.length - 1] || values[values.length - 1]) : 0;
-      const seasonalPred = seasonalPattern ? (seasonalPattern[futureDayOfWeek] || 0) : 0;
+      const linearPred = linearPrediction.predict(dates.length + daysAhead - 1);
+      const movingPred = movingAvg7[movingAvg7.length - 1] || values[values.length - 1];
+      const expPred = expSmoothing[expSmoothing.length - 1] || values[values.length - 1];
+      const seasonalPred = seasonalPattern[futureDayOfWeek] || 0;
 
-      // Calculate weighted sum only for enabled methods
-      let totalWeight = 0;
-      let weightedSum = 0;
-      
-      if (linearPrediction) {
-        weightedSum += linearPred * optimizedWeights.linear;
-        totalWeight += optimizedWeights.linear;
-      }
-      if (movingAvg7) {
-        weightedSum += movingPred * optimizedWeights.moving;
-        totalWeight += optimizedWeights.moving;
-      }
-      if (expSmoothing) {
-        weightedSum += expPred * optimizedWeights.exponential;
-        totalWeight += optimizedWeights.exponential;
-      }
-      if (seasonalPattern) {
-        weightedSum += seasonalPred * optimizedWeights.seasonal;
-        totalWeight += optimizedWeights.seasonal;
-      }
-
-      const prediction = totalWeight > 0 ? Math.round(weightedSum / totalWeight) : Math.round(values[values.length - 1] || 0);
+      const prediction = Math.round(
+        linearPred * weights.linear +
+        movingPred * weights.moving +
+        expPred * weights.exponential +
+        seasonalPred * weights.seasonal
+      );
 
       const confidence = Math.max(0, 100 - (daysAhead * 2));
 
@@ -1564,13 +1230,9 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       });
     }
 
-    // Enhanced confidence calculation with multiple factors
-    const confidenceDetails = this.calculateEnhancedConfidence(
-      values,
-      dates,
-      historicalExpenses,
-      categoryWeights
-    );
+    // Overall confidence based on data quality
+    const dataQuality = Math.min(100, (values.length / 60) * 100);
+    const overallConfidence = Math.round(dataQuality * 0.8);
 
     return {
       tomorrow: Math.max(0, tomorrow),
@@ -1579,273 +1241,26 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       thisMonth: thisMonth,
       nextMonth: nextMonth,
       predictions: [...thisWeek, ...nextWeek],
-      confidence: confidenceDetails.total,
-      confidenceDetails: confidenceDetails,
+      confidence: overallConfidence,
       method: 'ensemble',
       weeklyTotal: thisWeek.reduce((sum, d) => sum + d.prediction, 0),
-      monthlyTotal: thisMonth.reduce((sum, d) => sum + d.prediction, 0),
-      categoryWeights: categoryWeights,
-      optimizedWeights: optimizedWeights
+      monthlyTotal: thisMonth.reduce((sum, d) => sum + d.prediction, 0)
     };
   });
-
-  // Computed signal for prediction comparison table
-  predictionComparison = computed(() => {
-    const past = this.getPastPredictions();
-    // Get predictions with actual results
-    const withActuals = past
-      .filter(p => p.actual !== null && p.error !== null)
-      .sort((a, b) => b.date.localeCompare(a.date)) // Most recent first
-      .slice(0, 30); // Last 30 predictions
-
-    // Calculate statistics
-    const total = withActuals.length;
-    if (total === 0) {
-      return {
-        predictions: [],
-        stats: {
-          total: 0,
-          avgError: 0,
-          avgErrorPercent: 0,
-          mae: 0, // Mean Absolute Error
-          mape: 0, // Mean Absolute Percentage Error
-          rmse: 0 // Root Mean Square Error
-        }
-      };
-    }
-
-    const errors = withActuals.map(p => Math.abs(p.error!));
-    const errorPercents = withActuals.map(p => Math.abs(p.errorPercent!));
-    
-    const avgError = errors.reduce((sum, e) => sum + e, 0) / total;
-    const avgErrorPercent = errorPercents.reduce((sum, e) => sum + e, 0) / total;
-    const mae = avgError;
-    const mape = avgErrorPercent;
-    const rmse = Math.sqrt(errors.reduce((sum, e) => sum + e * e, 0) / total);
-
-    return {
-      predictions: withActuals,
-      stats: {
-        total,
-        avgError: Math.round(avgError),
-        avgErrorPercent: Math.round(avgErrorPercent * 100) / 100,
-        mae: Math.round(mae),
-        mape: Math.round(mape * 100) / 100,
-        rmse: Math.round(rmse)
-      }
-    };
-  });
-
-  // Historical prediction comparison for last 7 days
-  historicalPredictionComparison = computed(() => {
-    const allExpenses = this.expenses();
-    if (allExpenses.length < 14) {
-      return {
-        comparisons: [],
-        correlation: 0,
-        stats: {
-          mae: 0,
-          mape: 0,
-          rmse: 0
-        }
-      };
-    }
-
-    const today = new Date();
-    const sevenDaysAgo = new Date(today);
-    sevenDaysAgo.setDate(today.getDate() - 7);
-    const sevenDaysAgoStr = sevenDaysAgo.toISOString().split('T')[0];
-    const todayStr = today.toISOString().split('T')[0];
-
-    // Get actual expenses for last 7 days
-    const last7DaysExpenses = allExpenses.filter(e => e.date >= sevenDaysAgoStr && e.date < todayStr);
-    
-    // Group by date
-    const actualByDate: { [date: string]: number } = {};
-    last7DaysExpenses.forEach(expense => {
-      actualByDate[expense.date] = (actualByDate[expense.date] || 0) + expense.amount;
-    });
-
-    // Get dates for last 7 days
-    const dates: string[] = [];
-    for (let i = 6; i >= 0; i--) {
-      const date = new Date(today);
-      date.setDate(today.getDate() - i);
-      dates.push(date.toISOString().split('T')[0]);
-    }
-
-    // Calculate predictions for each of the last 7 days
-    // For each day, use data BEFORE that day to predict
-    const comparisons: Array<{
-      date: string;
-      predicted: number;
-      actual: number;
-      error: number;
-      errorPercent: number;
-    }> = [];
-
-    dates.forEach(targetDate => {
-      // Get all expenses BEFORE target date
-      const beforeDateExpenses = allExpenses.filter(e => e.date < targetDate);
-      
-      if (beforeDateExpenses.length < 7) {
-        return; // Skip if not enough data
-      }
-
-      // Calculate category weights from data before target date
-      const categoryWeights = this.calculateCategoryFrequencyWeights(beforeDateExpenses);
-      
-      // Get historical data (use configured days)
-      const predictionSettings = this.expenseSettingsService.predictionSettings();
-      const historicalDays = predictionSettings?.historicalDays || 60;
-      const movingPeriod = predictionSettings?.movingAveragePeriod || 7;
-      const expAlpha = predictionSettings?.exponentialAlpha || 0.3;
-      
-      const targetDateObj = new Date(targetDate);
-      const sixtyDaysBefore = new Date(targetDateObj);
-      sixtyDaysBefore.setDate(targetDateObj.getDate() - historicalDays);
-      const sixtyDaysBeforeStr = sixtyDaysBefore.toISOString().split('T')[0];
-      
-      const historicalExpenses = beforeDateExpenses.filter(e => e.date >= sixtyDaysBeforeStr);
-      const dailyData = this.calculateWeightedDailyData(historicalExpenses, categoryWeights);
-      
-      const historicalDates = Object.keys(dailyData).sort();
-      const historicalValues = historicalDates.map(date => dailyData[date]);
-      
-      if (historicalValues.length < 7) {
-        return;
-      }
-
-      // Use same prediction methods with settings
-      const linearPrediction = predictionSettings?.enableLinearRegression !== false
-        ? this.linearRegression(historicalDates, historicalValues)
-        : null;
-      const movingAvg7 = predictionSettings?.enableMovingAverage !== false
-        ? this.movingAverage(historicalValues, movingPeriod)
-        : null;
-      const expSmoothing = predictionSettings?.enableExponentialSmoothing !== false
-        ? this.exponentialSmoothing(historicalValues, expAlpha)
-        : null;
-      const seasonalPattern = predictionSettings?.enableSeasonalPattern !== false
-        ? this.seasonalPattern(historicalExpenses)
-        : null;
-      const optimizedWeights = this.optimizeWeightsWithLR();
-      
-      // Predict for target date
-      const targetDateObj2 = new Date(targetDate);
-      const dayOfWeek = targetDateObj2.getDay();
-      const daysAhead = historicalDates.length;
-      
-      const linearPred = linearPrediction ? linearPrediction.predict(daysAhead) : 0;
-      const movingPred = movingAvg7 ? (movingAvg7[movingAvg7.length - 1] || historicalValues[historicalValues.length - 1]) : 0;
-      const expPred = expSmoothing ? (expSmoothing[expSmoothing.length - 1] || historicalValues[historicalValues.length - 1]) : 0;
-      const seasonalPred = seasonalPattern ? (seasonalPattern[dayOfWeek] || 0) : 0;
-      
-      // Calculate weighted sum only for enabled methods
-      let totalWeight = 0;
-      let weightedSum = 0;
-      
-      if (linearPrediction) {
-        weightedSum += linearPred * optimizedWeights.linear;
-        totalWeight += optimizedWeights.linear;
-      }
-      if (movingAvg7) {
-        weightedSum += movingPred * optimizedWeights.moving;
-        totalWeight += optimizedWeights.moving;
-      }
-      if (expSmoothing) {
-        weightedSum += expPred * optimizedWeights.exponential;
-        totalWeight += optimizedWeights.exponential;
-      }
-      if (seasonalPattern) {
-        weightedSum += seasonalPred * optimizedWeights.seasonal;
-        totalWeight += optimizedWeights.seasonal;
-      }
-      
-      const predicted = totalWeight > 0 ? Math.round(weightedSum / totalWeight) : Math.round(historicalValues[historicalValues.length - 1] || 0);
-
-      const actual = actualByDate[targetDate] || 0;
-      
-      if (actual > 0) {
-        const error = actual - predicted;
-        const errorPercent = (error / predicted) * 100;
-        
-        comparisons.push({
-          date: targetDate,
-          predicted,
-          actual,
-          error,
-          errorPercent
-        });
-      }
-    });
-
-    if (comparisons.length === 0) {
-      return {
-        comparisons: [],
-        correlation: 0,
-        stats: {
-          mae: 0,
-          mape: 0,
-          rmse: 0
-        }
-      };
-    }
-
-    // Calculate correlation coefficient
-    const predictedValues = comparisons.map(c => c.predicted);
-    const actualValues = comparisons.map(c => c.actual);
-    const correlation = this.calculateCorrelation(predictedValues, actualValues);
-
-    // Calculate statistics
-    const errors = comparisons.map(c => Math.abs(c.error));
-    const errorPercents = comparisons.map(c => Math.abs(c.errorPercent));
-    const mae = errors.reduce((sum, e) => sum + e, 0) / errors.length;
-    const mape = errorPercents.reduce((sum, e) => sum + e, 0) / errorPercents.length;
-    const rmse = Math.sqrt(errors.reduce((sum, e) => sum + e * e, 0) / errors.length);
-
-    return {
-      comparisons: comparisons.sort((a, b) => a.date.localeCompare(b.date)),
-      correlation: Math.round(correlation * 1000) / 1000,
-      stats: {
-        mae: Math.round(mae),
-        mape: Math.round(mape * 100) / 100,
-        rmse: Math.round(rmse)
-      }
-    };
-  });
-
-  // Calculate Pearson correlation coefficient
-  private calculateCorrelation(x: number[], y: number[]): number {
-    if (x.length !== y.length || x.length === 0) return 0;
-    
-    const n = x.length;
-    const sumX = x.reduce((sum, val) => sum + val, 0);
-    const sumY = y.reduce((sum, val) => sum + val, 0);
-    const sumXY = x.reduce((sum, val, i) => sum + val * y[i], 0);
-    const sumXX = x.reduce((sum, val) => sum + val * val, 0);
-    const sumYY = y.reduce((sum, val) => sum + val * val, 0);
-    
-    const numerator = n * sumXY - sumX * sumY;
-    const denominator = Math.sqrt((n * sumXX - sumX * sumX) * (n * sumYY - sumY * sumY));
-    
-    if (denominator === 0) return 0;
-    return numerator / denominator;
-  }
 
   // Linear Regression
   private linearRegression(dates: string[], values: number[]): { predict: (x: number) => number; slope: number; intercept: number } {
     const n = values.length;
     const x = dates.map((_, i) => i);
-    
+
     const sumX = x.reduce((sum, val) => sum + val, 0);
     const sumY = values.reduce((sum, val) => sum + val, 0);
     const sumXY = x.reduce((sum, val, i) => sum + val * values[i], 0);
     const sumXX = x.reduce((sum, val) => sum + val * val, 0);
-    
+
     const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
     const intercept = (sumY - slope * sumX) / n;
-    
+
     return {
       predict: (x: number) => slope * x + intercept,
       slope,
@@ -1876,113 +1291,15 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     return result;
   }
 
-  // Calculate enhanced confidence based on multiple factors
-  private calculateEnhancedConfidence(
-    values: number[],
-    dates: string[],
-    historicalExpenses: Expense[],
-    categoryWeights: Map<string, CategoryFrequency>
-  ): {
-    total: number;
-    dataQuantity: number;
-    stability: number;
-    frequency: number;
-    accuracy: number;
-    coverage: number;
-    suggestions: string[];
-  } {
-    // Factor 1: Data quantity (0-30 points)
-    // More days = higher confidence, but with diminishing returns
-    const dataDays = values.length;
-    const dataQuantityScore = Math.min(30, (dataDays / 60) * 30 + (dataDays >= 30 ? 5 : 0) + (dataDays >= 45 ? 5 : 0));
-    
-    // Factor 2: Data consistency/stability (0-25 points)
-    // Lower coefficient of variation = more stable = higher confidence
-    const mean = values.reduce((sum, v) => sum + v, 0) / values.length;
-    const variance = values.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0) / values.length;
-    const stdDev = Math.sqrt(variance);
-    const coefficientOfVariation = mean > 0 ? stdDev / mean : 1;
-    // CV < 0.3 = very stable (25 points), CV > 1.0 = unstable (5 points)
-    const stabilityScore = Math.max(5, Math.min(25, 25 - (coefficientOfVariation - 0.3) * 20));
-    
-    // Factor 3: Transaction frequency (0-20 points)
-    // More transactions per day = more reliable pattern
-    const totalTransactions = historicalExpenses.length;
-    const avgTransactionsPerDay = totalTransactions / dataDays;
-    // 3+ transactions/day = 20 points, 1 transaction/day = 10 points
-    const frequencyScore = Math.min(20, 10 + Math.min(10, (avgTransactionsPerDay - 1) * 5));
-    
-    // Factor 4: Historical prediction accuracy (0-15 points)
-    // Use past prediction errors to assess model reliability
-    const pastPredictions = this.getPastPredictions();
-    const validPredictions = pastPredictions.filter(p => p.actual !== null && p.error !== null);
-    let accuracyScore = 7.5; // Default middle score
-    if (validPredictions.length >= 5) {
-      const avgErrorPercent = validPredictions.reduce((sum, p) => sum + Math.abs(p.errorPercent!), 0) / validPredictions.length;
-      // MAPE < 10% = 15 points, MAPE < 20% = 12 points, MAPE < 30% = 8 points
-      if (avgErrorPercent < 10) {
-        accuracyScore = 15;
-      } else if (avgErrorPercent < 20) {
-        accuracyScore = 12;
-      } else if (avgErrorPercent < 30) {
-        accuracyScore = 8;
-      } else {
-        accuracyScore = 5;
-      }
-    }
-    
-    // Factor 5: Category coverage (0-10 points)
-    // More categories with good frequency = better pattern recognition
-    const categoryCount = categoryWeights.size;
-    const highFrequencyCategories = Array.from(categoryWeights.values()).filter(c => c.frequency >= 5).length;
-    // 5+ categories with good frequency = 10 points
-    const coverageScore = Math.min(10, (categoryCount / 10) * 5 + (highFrequencyCategories >= 5 ? 5 : highFrequencyCategories));
-    
-    // Calculate total confidence (0-100)
-    const totalScore = dataQuantityScore + stabilityScore + frequencyScore + accuracyScore + coverageScore;
-    
-    // Ensure minimum confidence if we have reasonable data
-    const minConfidence = dataDays >= 14 ? 50 : 30;
-    const finalConfidence = Math.max(minConfidence, Math.min(100, Math.round(totalScore)));
-    
-    // Generate suggestions to improve confidence
-    const suggestions: string[] = [];
-    if (dataQuantityScore < 25) {
-      suggestions.push(`📅 Thêm dữ liệu: Hiện có ${dataDays} ngày, cần thêm ${Math.max(0, 30 - dataDays)} ngày để đạt độ tin cậy tốt hơn`);
-    }
-    if (stabilityScore < 20) {
-      suggestions.push(`📊 Dữ liệu biến động nhiều: Chi tiêu không ổn định, khó dự đoán chính xác`);
-    }
-    if (frequencyScore < 15) {
-      suggestions.push(`🔄 Tăng tần suất ghi chép: Ghi chép đều đặn mỗi ngày sẽ cải thiện độ tin cậy`);
-    }
-    if (accuracyScore < 12) {
-      suggestions.push(`✅ Độ chính xác dự đoán quá khứ thấp: Hệ thống đang học và cải thiện từ dữ liệu thực tế`);
-    }
-    if (coverageScore < 7) {
-      suggestions.push(`🏷️ Đa dạng phân loại: Sử dụng nhiều phân loại khác nhau giúp nhận diện mẫu tốt hơn`);
-    }
-    
-    return {
-      total: finalConfidence,
-      dataQuantity: Math.round(dataQuantityScore),
-      stability: Math.round(stabilityScore),
-      frequency: Math.round(frequencyScore),
-      accuracy: Math.round(accuracyScore),
-      coverage: Math.round(coverageScore),
-      suggestions
-    };
-  }
-
   // Seasonal Pattern (by day of week)
   private seasonalPattern(expenses: Expense[]): { [dayOfWeek: number]: number } {
     const dayTotals: { [day: number]: { total: number; count: number } } = {};
-    
+
     expenses.forEach(expense => {
       const date = this.parseDate(expense.date);
       if (!date) return;
       const dayOfWeek = date.getDay();
-      
+
       if (!dayTotals[dayOfWeek]) {
         dayTotals[dayOfWeek] = { total: 0, count: 0 };
       }
@@ -2000,7 +1317,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         pattern[day] = Math.round(allAvg);
       }
     }
-    
+
     return pattern;
   }
 
@@ -2011,21 +1328,21 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const yesterday = new Date(today);
     yesterday.setDate(today.getDate() - 1);
     const yesterdayStr = yesterday.toISOString().split('T')[0];
-    
+
     const allExpenses = this.expenses();
-    
+
     const todayExpenses = allExpenses.filter(e => e.date === todayStr);
     const yesterdayExpenses = allExpenses.filter(e => e.date === yesterdayStr);
-    
+
     const todayTotal = todayExpenses.reduce((sum, e) => sum + e.amount, 0);
     const yesterdayTotal = yesterdayExpenses.reduce((sum, e) => sum + e.amount, 0);
     const todayCount = todayExpenses.length;
     const yesterdayCount = yesterdayExpenses.length;
-    
+
     let change = 0;
     let changePercent = 0;
     let status: 'higher' | 'lower' | 'equal' = 'equal';
-    
+
     if (yesterdayTotal > 0) {
       change = todayTotal - yesterdayTotal;
       changePercent = Math.round((change / yesterdayTotal) * 100);
@@ -2040,7 +1357,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       status = 'higher';
       changePercent = 100;
     }
-    
+
     return {
       todayTotal,
       yesterdayTotal,
@@ -2058,7 +1375,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const today = new Date();
     const todayStr = today.toISOString().split('T')[0];
     const allExpenses = this.expenses(); // Use all expenses, not filtered
-    
+
     // Get today's expenses
     const todayExpenses = allExpenses.filter(e => e.date === todayStr);
     const todayTotal = todayExpenses.reduce((sum, e) => sum + e.amount, 0);
@@ -2068,7 +1385,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const thirtyDaysAgo = new Date(today);
     thirtyDaysAgo.setDate(today.getDate() - 30);
     const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().split('T')[0];
-    
+
     const last30DaysExpenses = allExpenses.filter(e => {
       return e.date >= thirtyDaysAgoStr && e.date < todayStr;
     });
@@ -2081,7 +1398,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const sevenDaysAgo = new Date(today);
     sevenDaysAgo.setDate(today.getDate() - 7);
     const sevenDaysAgoStr = sevenDaysAgo.toISOString().split('T')[0];
-    
+
     const last7DaysExpenses = allExpenses.filter(e => {
       return e.date >= sevenDaysAgoStr && e.date < todayStr;
     });
@@ -2097,7 +1414,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     weekStart.setDate(diff);
     weekStart.setHours(0, 0, 0, 0);
     const weekStartStr = weekStart.toISOString().split('T')[0];
-    
+
     const currentWeekExpenses = allExpenses.filter(e => {
       return e.date >= weekStartStr && e.date < todayStr;
     });
@@ -2109,7 +1426,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     // Calculate current month average (excluding today)
     const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
     const monthStartStr = monthStart.toISOString().split('T')[0];
-    
+
     const currentMonthExpenses = allExpenses.filter(e => {
       return e.date >= monthStartStr && e.date < todayStr;
     });
@@ -2119,27 +1436,27 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const currentMonthAvg = currentMonthDates.size > 0 ? currentMonthTotal / currentMonthDates.size : 0;
 
     // Calculate comparisons
-    const compare30Days = last30DaysAvg > 0 
-      ? Math.round(((todayTotal - last30DaysAvg) / last30DaysAvg) * 100) 
+    const compare30Days = last30DaysAvg > 0
+      ? Math.round(((todayTotal - last30DaysAvg) / last30DaysAvg) * 100)
       : 0;
-    const compare7Days = last7DaysAvg > 0 
-      ? Math.round(((todayTotal - last7DaysAvg) / last7DaysAvg) * 100) 
+    const compare7Days = last7DaysAvg > 0
+      ? Math.round(((todayTotal - last7DaysAvg) / last7DaysAvg) * 100)
       : 0;
-    const compareWeek = currentWeekAvg > 0 
-      ? Math.round(((todayTotal - currentWeekAvg) / currentWeekAvg) * 100) 
+    const compareWeek = currentWeekAvg > 0
+      ? Math.round(((todayTotal - currentWeekAvg) / currentWeekAvg) * 100)
       : 0;
-    const compareMonth = currentMonthAvg > 0 
-      ? Math.round(((todayTotal - currentMonthAvg) / currentMonthAvg) * 100) 
+    const compareMonth = currentMonthAvg > 0
+      ? Math.round(((todayTotal - currentMonthAvg) / currentMonthAvg) * 100)
       : 0;
 
     // Determine overall status
     let overallStatus: 'high' | 'normal' | 'low' = 'normal';
     let overallMessage = '';
-    
+
     if (last30DaysAvg > 0) {
       const diff = todayTotal - last30DaysAvg;
       const percentDiff = (diff / last30DaysAvg) * 100;
-      
+
       if (percentDiff > 20) {
         overallStatus = 'high';
         overallMessage = `Cao hơn ${Math.round(percentDiff)}% so với TB 30 ngày`;
@@ -2372,7 +1689,6 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
               this.initPredictionChart();
               this.initWeeklyPredictionChart();
               this.initMonthlyPredictionChart();
-              this.initHistoricalComparisonChart();
             }, 200);
           }
         }, 100);
@@ -2467,9 +1783,6 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     }
     if (this.monthlyPredictionChart) {
       this.monthlyPredictionChart.destroy();
-    }
-    if (this.historicalComparisonChart) {
-      this.historicalComparisonChart.destroy();
     }
   }
 
@@ -2877,7 +2190,6 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
             this.initPredictionChart();
             this.initWeeklyPredictionChart();
             this.initMonthlyPredictionChart();
-            this.initHistoricalComparisonChart();
           }, 200);
         }
       }, 100);
@@ -2901,7 +2213,6 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     this.initPredictionChart();
     this.initWeeklyPredictionChart();
     this.initMonthlyPredictionChart();
-    this.initHistoricalComparisonChart();
   }
 
   /**
@@ -3160,7 +2471,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
             evaluation.currentMonthAvg
           ],
           backgroundColor: [
-            evaluation.overallStatus === 'high' ? '#f44336' : 
+            evaluation.overallStatus === 'high' ? '#f44336' :
             evaluation.overallStatus === 'low' ? '#4caf50' : '#ff9800',
             'rgba(33, 150, 243, 0.6)',
             'rgba(33, 150, 243, 0.6)',
@@ -3168,7 +2479,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
             'rgba(33, 150, 243, 0.6)'
           ],
           borderColor: [
-            evaluation.overallStatus === 'high' ? '#d32f2f' : 
+            evaluation.overallStatus === 'high' ? '#d32f2f' :
             evaluation.overallStatus === 'low' ? '#388e3c' : '#f57c00',
             '#2196F3',
             '#2196F3',
@@ -3224,7 +2535,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const thirtyDaysAgo = new Date(today);
     thirtyDaysAgo.setDate(today.getDate() - 30);
     const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().split('T')[0];
-    
+
     const allExpenses = this.expenses();
     const last30DaysExpenses = allExpenses.filter(e => {
       return e.date >= thirtyDaysAgoStr && e.date <= todayStr;
@@ -3242,7 +2553,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const dates: string[] = [];
     const values: number[] = [];
     let todayIndex = -1;
-    
+
     for (let i = 29; i >= 0; i--) {
       const date = new Date(today);
       date.setDate(today.getDate() - i);
@@ -3280,7 +2591,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
             },
             pointBackgroundColor: (context: any) => {
               return todayIndex >= 0 && context.dataIndex === todayIndex
-                ? (evaluation.overallStatus === 'high' ? '#f44336' : 
+                ? (evaluation.overallStatus === 'high' ? '#f44336' :
                    evaluation.overallStatus === 'low' ? '#4caf50' : '#ff9800')
                 : '#2196F3';
             },
@@ -3351,13 +2662,13 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     }
 
     // Prepare data: show all expenses with outliers highlighted
-    const sortedExpenses = [...expenses].sort((a, b) => 
+    const sortedExpenses = [...expenses].sort((a, b) =>
       new Date(a.date).getTime() - new Date(b.date).getTime()
     );
 
     const labels = sortedExpenses.map(e => this.formatDateShort(e.date));
     const amounts = sortedExpenses.map(e => e.amount);
-    const isOutlier = sortedExpenses.map(e => 
+    const isOutlier = sortedExpenses.map(e =>
       analysis.outliers.some(o => o.date === e.date && o.content === e.content && o.amount === e.amount)
     );
 
@@ -4011,108 +3322,6 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   /**
-   * Initialize historical comparison chart (last 7 days)
-   */
-  initHistoricalComparisonChart(): void {
-    if (!this.historicalComparisonChartRef?.nativeElement) return;
-
-    const comparison = this.historicalPredictionComparison();
-    if (comparison.comparisons.length === 0) return;
-
-    // Destroy existing chart
-    if (this.historicalComparisonChart) {
-      this.historicalComparisonChart.destroy();
-    }
-
-    const dates = comparison.comparisons.map((c: any) => this.formatDateShort(c.date));
-    const predictedValues = comparison.comparisons.map((c: any) => c.predicted);
-    const actualValues = comparison.comparisons.map((c: any) => c.actual);
-
-    const config: ChartConfiguration = {
-      type: 'line',
-      data: {
-        labels: dates,
-        datasets: [
-          {
-            label: 'Chi tiêu thực tế',
-            data: actualValues,
-            borderColor: '#2196F3',
-            backgroundColor: 'rgba(33, 150, 243, 0.1)',
-            borderWidth: 3,
-            fill: true,
-            tension: 0.4,
-            pointRadius: 5,
-            pointBackgroundColor: '#2196F3',
-            pointBorderColor: '#ffffff',
-            pointBorderWidth: 2
-          },
-          {
-            label: 'Dự đoán',
-            data: predictedValues,
-            borderColor: '#ff9800',
-            backgroundColor: 'rgba(255, 152, 0, 0.1)',
-            borderWidth: 3,
-            borderDash: [5, 5],
-            fill: true,
-            tension: 0.4,
-            pointRadius: 5,
-            pointBackgroundColor: '#ff9800',
-            pointBorderColor: '#ffffff',
-            pointBorderWidth: 2
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            display: true,
-            position: 'top'
-          },
-          tooltip: {
-            callbacks: {
-              label: (context) => {
-                const value = context.parsed.y;
-                const numValue = value !== null && value !== undefined ? value : 0;
-                return `${context.dataset.label}: ${this.formatAmount(numValue)}`;
-              }
-            }
-          },
-          title: {
-            display: true,
-            text: `Tương quan: ${(comparison.correlation * 100).toFixed(1)}%`,
-            font: {
-              size: 14,
-              weight: 'bold'
-            }
-          }
-        },
-        scales: {
-          y: {
-            beginAtZero: true,
-            ticks: {
-              callback: (value) => {
-                if (value === null || value === undefined) return '';
-                const numValue = typeof value === 'number' ? value : 0;
-                return this.formatAmount(numValue);
-              }
-            }
-          },
-          x: {
-            ticks: {
-              maxRotation: 45,
-              minRotation: 45
-            }
-          }
-        }
-      }
-    };
-
-    this.historicalComparisonChart = new Chart(this.historicalComparisonChartRef.nativeElement, config);
-  }
-
-  /**
    * Format date short (DD/MM)
    */
   formatDateShort(dateStr: string): string {
@@ -4403,33 +3612,6 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   /**
-   * Math.abs helper for template
-   */
-  abs(value: number): number {
-    return Math.abs(value);
-  }
-
-  /**
-   * Get top category weights for display
-   */
-  getTopCategoryWeights(): CategoryFrequency[] {
-    const predictions = this.futurePredictions();
-    if (!predictions.categoryWeights || predictions.categoryWeights.size === 0) {
-      return [];
-    }
-
-    const weights: CategoryFrequency[] = [];
-    predictions.categoryWeights.forEach((value) => {
-      weights.push(value);
-    });
-
-    // Sort by weight descending and take top 10
-    return weights
-      .sort((a, b) => b.weight - a.weight)
-      .slice(0, 10);
-  }
-
-  /**
    * Format number with thousand separators for input display
    */
   formatNumberInput(value: number | null | undefined): string {
@@ -4652,13 +3834,13 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const filtered = this.filteredCategories();
     const current = this.filterCategory();
     const newSelection = [...current];
-    
+
     filtered.forEach(cat => {
       if (!newSelection.includes(cat)) {
         newSelection.push(cat);
       }
     });
-    
+
     this.filterCategory.set(newSelection);
   }
 
@@ -4668,7 +3850,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   deselectAllFilteredCategories(): void {
     const filtered = this.filteredCategories();
     const current = this.filterCategory();
-    
+
     this.filterCategory.set(current.filter(cat => !filtered.includes(cat)));
   }
 
@@ -5215,7 +4397,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   toggleDropdown(event?: Event){
     const newValue = !this.showCategoryDropdown();
     this.showCategoryDropdown.set(newValue);
-    
+
     // Calculate position for v2 filter dialog when opening
     if (newValue && this.currentLayout() === 'v2' && event) {
       const button = event.target as HTMLElement;
@@ -5242,7 +4424,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         }, 0);
       }
     }
-    
+
     // Clear search when closing dropdown
     if (!newValue) {
       this.categorySearchText.set('');

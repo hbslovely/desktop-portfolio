@@ -30,6 +30,7 @@ import { ChineseChessAppComponent } from './components/apps/chinese-chess-app/ch
 import { OcrAppComponent } from './components/apps/ocr-app/ocr-app.component';
 import { FbIdFinderAppComponent } from './components/apps/fb-id-finder-app/fb-id-finder-app.component';
 import { GraphVisualizerAppComponent } from './components/apps/graph-visualizer-app/graph-visualizer-app.component';
+import { StockAppComponent } from './components/apps/stock-app/stock-app.component';
 import { WelcomeScreenComponent } from './components/welcome-screen/welcome-screen.component';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -45,7 +46,7 @@ import { FileSystemService } from './services/file-system.service';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [ WelcomeScreenComponent, WindowComponent, DesktopIconComponent, CalculatorComponent, IframeAppComponent, LoveAppComponent, ExplorerComponent, TextViewerComponent, ImageViewerComponent, PdfViewerComponent, MachineInfoComponent, PaintAppComponent, HcmcAppComponent, NewsAppComponent, SettingsAppComponent, TaskManagerComponent, WeatherAppComponent, DictionaryAppComponent, CountriesAppComponent, YugiohAppComponent, YugiohCardDetailComponent, CalendarAppComponent, AngularLoveAppComponent, MusicAppComponent, AngularGuidelinesAppComponent, TuoiTreNewsAppComponent, ExpenseAppComponent, BusinessAppComponent, ChineseChessAppComponent, OcrAppComponent, FbIdFinderAppComponent, GraphVisualizerAppComponent, CommonModule, FormsModule, SettingsDialogComponent ],
+  imports: [ WelcomeScreenComponent, WindowComponent, DesktopIconComponent, CalculatorComponent, IframeAppComponent, LoveAppComponent, ExplorerComponent, TextViewerComponent, ImageViewerComponent, PdfViewerComponent, MachineInfoComponent, PaintAppComponent, HcmcAppComponent, NewsAppComponent, SettingsAppComponent, TaskManagerComponent, WeatherAppComponent, DictionaryAppComponent, CountriesAppComponent, YugiohAppComponent, YugiohCardDetailComponent, CalendarAppComponent, AngularLoveAppComponent, MusicAppComponent, AngularGuidelinesAppComponent, TuoiTreNewsAppComponent, ExpenseAppComponent, BusinessAppComponent, ChineseChessAppComponent, OcrAppComponent, FbIdFinderAppComponent, GraphVisualizerAppComponent, StockAppComponent, CommonModule, FormsModule, SettingsDialogComponent ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
 })
