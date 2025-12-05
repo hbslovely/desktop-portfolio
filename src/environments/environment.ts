@@ -9,5 +9,6 @@ export const environment = {
   googleClientSecret: import.meta.env['NG_APP_GOOGLE_CLIENT_SECRET'],
   googleAppsScriptUrl: import.meta.env['NG_APP_GOOGLE_APPS_SCRIPT_URL'],
   googleBusinessAppsScriptUrl: import.meta.env['NG_APP_GOOGLE_BUSINESS_APPS_SCRIPT_URL'],
+  securitiesSheetScriptId: import.meta.env['NG_APP_SECURITIES_SHEET_SCRIPT_ID'] || '',
 };
 

@@ -42,6 +42,18 @@
     {
       "source": "/api/business-apps-script",
       "destination": "https://script.google.com/macros/s/AKfycbyWFdurzG4dxdIgQi3F8LDsgHJ2-k5d8_tM5tU7B0ArjOPURF1ykkqd-rg1AL9LyJp0Nw/exec"
+    },
+    {
+      "source": "/api/dnse-api/:path*",
+      "destination": "https://api.dnse.com.vn/:path*"
+    },
+    {
+      "source": "/api/dnse/:path*",
+      "destination": "https://www.dnse.com.vn/:path*"
+    },
+    {
+      "source": "/api/securities-apps-script/:scriptId/exec",
+      "destination": "https://script.google.com/macros/s/:scriptId/exec"
     }
   ],
   "headers": [
@@ -188,6 +200,57 @@
         {
           "key": "Access-Control-Allow-Headers",
           "value": "Content-Type, Accept, Accept-Language, User-Agent, Sec-CH-UA, Sec-CH-UA-Mobile, Sec-CH-UA-Platform, Sec-Fetch-Dest, Sec-Fetch-Mode, Sec-Fetch-Site, Sec-Fetch-User, Upgrade-Insecure-Requests, Cache-Control"
+        }
+      ]
+    },
+    {
+      "source": "/api/dnse-api/:path*",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "Content-Type, Accept, Accept-Language, User-Agent, Referer"
+        }
+      ]
+    },
+    {
+      "source": "/api/dnse/:path*",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "Content-Type, Accept, Accept-Language, User-Agent, Referer"
+        }
+      ]
+    },
+    {
+      "source": "/api/securities-apps-script/:path*",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, POST, OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "Content-Type, Authorization"
         }
       ]
     }
