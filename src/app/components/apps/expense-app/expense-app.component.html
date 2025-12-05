@@ -839,6 +839,36 @@
             <div class="predictions-confidence">
               <i class="pi pi-info-circle"></i>
               <span>Độ tin cậy: {{ futurePredictions().confidence }}%</span>
+              <div class="confidence-details" *ngIf="futurePredictions().confidenceDetails">
+                <div class="confidence-breakdown">
+                  <div class="breakdown-item">
+                    <span class="label">Số lượng dữ liệu:</span>
+                    <span class="value">{{ futurePredictions().confidenceDetails.dataQuantity }}/30</span>
+                  </div>
+                  <div class="breakdown-item">
+                    <span class="label">Độ ổn định:</span>
+                    <span class="value">{{ futurePredictions().confidenceDetails.stability }}/25</span>
+                  </div>
+                  <div class="breakdown-item">
+                    <span class="label">Tần suất giao dịch:</span>
+                    <span class="value">{{ futurePredictions().confidenceDetails.frequency }}/20</span>
+                  </div>
+                  <div class="breakdown-item">
+                    <span class="label">Độ chính xác:</span>
+                    <span class="value">{{ futurePredictions().confidenceDetails.accuracy }}/15</span>
+                  </div>
+                  <div class="breakdown-item">
+                    <span class="label">Độ phủ phân loại:</span>
+                    <span class="value">{{ futurePredictions().confidenceDetails.coverage }}/10</span>
+                  </div>
+                </div>
+                <div class="confidence-suggestions" *ngIf="futurePredictions().confidenceDetails.suggestions.length > 0">
+                  <h5>Cách cải thiện độ tin cậy:</h5>
+                  <ul>
+                    <li *ngFor="let suggestion of futurePredictions().confidenceDetails.suggestions">{{ suggestion }}</li>
+                  </ul>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -1025,6 +1055,231 @@
                            [class.low]="pred.confidence < 60"></div>
                     </div>
                     <span>{{ pred.confidence }}%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Prediction Comparison Table -->
+          <div class="prediction-comparison-section" *ngIf="predictionComparison().stats.total > 0">
+            <div class="comparison-header">
+              <div class="header-left">
+                <i class="pi pi-chart-bar"></i>
+                <h3>So sánh Dự đoán vs Thực tế</h3>
+              </div>
+              <div class="comparison-stats-summary">
+                <div class="stat-item">
+                  <span class="stat-label">Tổng số dự đoán:</span>
+                  <span class="stat-value">{{ predictionComparison().stats.total }}</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-label">Sai số TB:</span>
+                  <span class="stat-value">{{ formatAmount(predictionComparison().stats.avgError) }}</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-label">Sai số % TB:</span>
+                  <span class="stat-value">{{ predictionComparison().stats.avgErrorPercent }}%</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="comparison-metrics">
+              <div class="metric-card">
+                <div class="metric-label">MAE (Mean Absolute Error)</div>
+                <div class="metric-value">{{ formatAmount(predictionComparison().stats.mae) }}</div>
+                <div class="metric-desc">Sai số tuyệt đối trung bình</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-label">MAPE (Mean Absolute Percentage Error)</div>
+                <div class="metric-value">{{ predictionComparison().stats.mape }}%</div>
+                <div class="metric-desc">Sai số phần trăm trung bình</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-label">RMSE (Root Mean Square Error)</div>
+                <div class="metric-value">{{ formatAmount(predictionComparison().stats.rmse) }}</div>
+                <div class="metric-desc">Căn bậc hai của sai số bình phương trung bình</div>
+              </div>
+            </div>
+
+            <div class="comparison-table-container">
+              <div class="comparison-table-header">
+                <div class="col-comp-date">Ngày</div>
+                <div class="col-comp-predicted">Dự đoán</div>
+                <div class="col-comp-actual">Thực tế</div>
+                <div class="col-comp-error">Sai số</div>
+                <div class="col-comp-error-percent">Sai số %</div>
+                <div class="col-comp-status">Trạng thái</div>
+              </div>
+              <div class="comparison-table-body">
+                <div class="comparison-table-row" *ngFor="let pred of predictionComparison().predictions">
+                  <div class="col-comp-date">{{ formatDate(pred.date) }}</div>
+                  <div class="col-comp-predicted">{{ formatAmount(pred.predicted) }}</div>
+                  <div class="col-comp-actual">{{ formatAmount(pred.actual!) }}</div>
+                  <div class="col-comp-error" 
+                       [class.error-positive]="pred.error! > 0"
+                       [class.error-negative]="pred.error! < 0">
+                    {{ pred.error! > 0 ? '+' : '' }}{{ formatAmount(pred.error!) }}
+                  </div>
+                  <div class="col-comp-error-percent"
+                       [class.error-high]="abs(pred.errorPercent!) > 20"
+                       [class.error-medium]="abs(pred.errorPercent!) > 10 && abs(pred.errorPercent!) <= 20"
+                       [class.error-low]="abs(pred.errorPercent!) <= 10">
+                    {{ pred.errorPercent! > 0 ? '+' : '' }}{{ (pred.errorPercent! * 100).toFixed(1) }}%
+                  </div>
+                  <div class="col-comp-status">
+                    <span class="status-badge"
+                          [class.status-accurate]="abs(pred.errorPercent!) <= 10"
+                          [class.status-good]="abs(pred.errorPercent!) > 10 && abs(pred.errorPercent!) <= 20"
+                          [class.status-poor]="abs(pred.errorPercent!) > 20">
+                      <i class="pi" 
+                         [class.pi-check-circle]="abs(pred.errorPercent!) <= 10"
+                         [class.pi-exclamation-circle]="abs(pred.errorPercent!) > 10 && abs(pred.errorPercent!) <= 20"
+                         [class.pi-times-circle]="abs(pred.errorPercent!) > 20"></i>
+                      <span *ngIf="abs(pred.errorPercent!) <= 10">Chính xác</span>
+                      <span *ngIf="abs(pred.errorPercent!) > 10 && abs(pred.errorPercent!) <= 20">Tốt</span>
+                      <span *ngIf="abs(pred.errorPercent!) > 20">Cần cải thiện</span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Category Frequency Weights Info -->
+            <div class="category-weights-info" *ngIf="futurePredictions().categoryWeights && futurePredictions().categoryWeights.size > 0">
+              <h4>
+                <i class="pi pi-info-circle"></i>
+                Trọng số theo tần suất phân loại (Top 10)
+              </h4>
+              <div class="weights-grid">
+                <div class="weight-item" *ngFor="let weight of getTopCategoryWeights()">
+                  <div class="weight-category">{{ weight.category }}</div>
+                  <div class="weight-bar-container">
+                    <div class="weight-bar" [style.width.%]="weight.weight * 100"></div>
+                  </div>
+                  <div class="weight-stats">
+                    <span>Tần suất: {{ weight.frequency }}</span>
+                    <span>Trọng số: {{ (weight.weight * 100).toFixed(1) }}%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Optimized Weights Info -->
+            <div class="optimized-weights-info" *ngIf="futurePredictions().optimizedWeights">
+              <h4>
+                <i class="pi pi-cog"></i>
+                Trọng số tối ưu (Linear Regression)
+              </h4>
+              <div class="weights-display">
+                <div class="weight-method">
+                  <span class="method-name">Linear Regression:</span>
+                  <span class="method-weight">{{ (futurePredictions().optimizedWeights.linear * 100).toFixed(1) }}%</span>
+                </div>
+                <div class="weight-method">
+                  <span class="method-name">Moving Average:</span>
+                  <span class="method-weight">{{ (futurePredictions().optimizedWeights.moving * 100).toFixed(1) }}%</span>
+                </div>
+                <div class="weight-method">
+                  <span class="method-name">Exponential Smoothing:</span>
+                  <span class="method-weight">{{ (futurePredictions().optimizedWeights.exponential * 100).toFixed(1) }}%</span>
+                </div>
+                <div class="weight-method">
+                  <span class="method-name">Seasonal Pattern:</span>
+                  <span class="method-weight">{{ (futurePredictions().optimizedWeights.seasonal * 100).toFixed(1) }}%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Historical Prediction Comparison (Last 7 Days) -->
+          <div class="historical-comparison-section" *ngIf="historicalPredictionComparison().comparisons.length > 0">
+            <div class="comparison-header">
+              <div class="header-left">
+                <i class="pi pi-chart-line"></i>
+                <h3>Tương quan Dự đoán vs Thực tế (7 ngày qua)</h3>
+              </div>
+              <div class="correlation-badge" 
+                   [class.high]="abs(historicalPredictionComparison().correlation) >= 0.7"
+                   [class.medium]="abs(historicalPredictionComparison().correlation) >= 0.4 && abs(historicalPredictionComparison().correlation) < 0.7"
+                   [class.low]="abs(historicalPredictionComparison().correlation) < 0.4">
+                <i class="pi pi-info-circle"></i>
+                <span>Hệ số tương quan: {{ (historicalPredictionComparison().correlation * 100).toFixed(1) }}%</span>
+              </div>
+            </div>
+
+            <!-- Statistics Summary -->
+            <div class="historical-stats">
+              <div class="stat-card">
+                <div class="stat-label">MAE</div>
+                <div class="stat-value">{{ formatAmount(historicalPredictionComparison().stats.mae) }}</div>
+                <div class="stat-desc">Sai số tuyệt đối trung bình</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">MAPE</div>
+                <div class="stat-value">{{ historicalPredictionComparison().stats.mape }}%</div>
+                <div class="stat-desc">Sai số phần trăm trung bình</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">RMSE</div>
+                <div class="stat-value">{{ formatAmount(historicalPredictionComparison().stats.rmse) }}</div>
+                <div class="stat-desc">Căn bậc hai sai số bình phương</div>
+              </div>
+            </div>
+
+            <!-- Chart -->
+            <div class="historical-chart-container">
+              <h4>
+                <i class="pi pi-chart-line"></i>
+                Biểu đồ so sánh
+              </h4>
+              <div class="chart-wrapper">
+                <canvas #historicalComparisonChart></canvas>
+              </div>
+            </div>
+
+            <!-- Comparison Table -->
+            <div class="historical-table-container">
+              <h4>
+                <i class="pi pi-table"></i>
+                Bảng so sánh chi tiết
+              </h4>
+              <div class="historical-table">
+                <div class="table-header">
+                  <div class="col-hist-date">Ngày</div>
+                  <div class="col-hist-predicted">Dự đoán</div>
+                  <div class="col-hist-actual">Thực tế</div>
+                  <div class="col-hist-error">Sai số</div>
+                  <div class="col-hist-error-percent">Sai số %</div>
+                  <div class="col-hist-match">Độ khớp</div>
+                </div>
+                <div class="table-body">
+                  <div class="table-row" *ngFor="let comp of historicalPredictionComparison().comparisons">
+                    <div class="col-hist-date">{{ formatDate(comp.date) }}</div>
+                    <div class="col-hist-predicted">{{ formatAmount(comp.predicted) }}</div>
+                    <div class="col-hist-actual">{{ formatAmount(comp.actual) }}</div>
+                    <div class="col-hist-error"
+                         [class.error-positive]="comp.error > 0"
+                         [class.error-negative]="comp.error < 0">
+                      {{ comp.error > 0 ? '+' : '' }}{{ formatAmount(comp.error) }}
+                    </div>
+                    <div class="col-hist-error-percent"
+                         [class.error-high]="abs(comp.errorPercent) > 20"
+                         [class.error-medium]="abs(comp.errorPercent) > 10 && abs(comp.errorPercent) <= 20"
+                         [class.error-low]="abs(comp.errorPercent) <= 10">
+                      {{ comp.errorPercent > 0 ? '+' : '' }}{{ comp.errorPercent.toFixed(1) }}%
+                    </div>
+                    <div class="col-hist-match">
+                      <div class="match-bar">
+                        <div class="match-fill"
+                             [style.width.%]="Math.max(0, 100 - abs(comp.errorPercent))"
+                             [class.match-excellent]="abs(comp.errorPercent) <= 5"
+                             [class.match-good]="abs(comp.errorPercent) > 5 && abs(comp.errorPercent) <= 15"
+                             [class.match-fair]="abs(comp.errorPercent) > 15 && abs(comp.errorPercent) <= 30"
+                             [class.match-poor]="abs(comp.errorPercent) > 30"></div>
+                      </div>
+                      <span class="match-percent">{{ Math.max(0, 100 - abs(comp.errorPercent)).toFixed(0) }}%</span>
+                    </div>
                   </div>
                 </div>
               </div>
