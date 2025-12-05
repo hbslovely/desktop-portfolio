@@ -5,6 +5,7 @@ import { HttpClient } from '@angular/common/http';
 import { DnseService, DNSESymbol, DNSEStockData, DNSEOHLCData, ExchangeType } from '../../../services/dnse.service';
 import { environment } from '../../../../environments/environment';
 import { Chart, ChartConfiguration, registerables, TimeScale } from 'chart.js';
+// @ts-ignore - chartjs-chart-financial doesn't have proper type declarations
 import { CandlestickController, CandlestickElement } from 'chartjs-chart-financial';
 import 'chartjs-adapter-date-fns';
 
@@ -573,7 +574,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
       },
       error: (error) => {
         console.error(`❌ Lỗi khi lưu ${symbol}:`, error);
-        alert(`Lỗi khi lưu dữ liệu ${symbol}: ${error.message || 'Vui lòng kiểm tra lại cấu hình'}`);
+        // alert(`Lỗi khi lưu dữ liệu ${symbol}: ${error.message || 'Vui lòng kiểm tra lại cấu hình'}`);
       }
     });
   }
@@ -741,7 +742,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
         if (this.scriptId()) {
           this.savePriceDataToGoogleSheets(symbol, data);
         }
-        
+
         this.selectedSymbolPriceData.set(data);
         this.isLoadingPrice.set(false);
         // Initialize chart after data is loaded
@@ -791,7 +792,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     sheetData.forEach(row => {
       // Parse date - support both dd/mm/yyyy and ISO string formats
       let date: Date | null = null;
-      
+
       if (row.time instanceof Date) {
         date = row.time;
       } else if (typeof row.time === 'string') {
@@ -821,7 +822,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
       const parseNumber = (value: string | number | undefined | null): number => {
         if (value === null || value === undefined) return 0;
         if (typeof value === 'number') return value;
-        
+
         const str = value.toString();
         // Remove dots (thousand separators) and replace comma with dot (decimal separator)
         const cleaned = str.replace(/\./g, '').replace(',', '.');
@@ -964,8 +965,8 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
       c: (priceData.c[index] || 0) * 1000  // Close price * 1000
     }));
 
-    const config: ChartConfiguration<'candlestick'> = {
-      type: 'candlestick',
+    const config: ChartConfiguration<any, any, any> = {
+      type: 'candlestick' as any,
       data: {
         datasets: [{
           label: this.selectedSymbol()?.symbol || 'Giá cổ phiếu',
@@ -1030,7 +1031,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
       }
     };
 
-    this.candlestickChart = new Chart(this.candlestickChartRef.nativeElement, config);
+    this.candlestickChart = new Chart(this.candlestickChartRef.nativeElement, config as any);
   }
 
   /**
