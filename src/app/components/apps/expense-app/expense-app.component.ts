@@ -3702,6 +3702,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
   // Expose Math and Number for template
   Math = Math;
+  abs = Math.abs;
   Number = Number;
 
   // Column widths for resize functionality
