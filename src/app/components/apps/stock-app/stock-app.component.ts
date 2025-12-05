@@ -118,6 +118,27 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     return result.slice(-20).reverse();
   });
 
+  // Computed: company info from selected symbol data
+  companyInfo = computed(() => {
+    const data = this.selectedSymbolData();
+    if (!data) return null;
+    return this.extractCompanyInfo(data);
+  });
+
+  // Computed: price snapshot from selected symbol data
+  priceSnapshot = computed(() => {
+    const data = this.selectedSymbolData();
+    if (!data) return null;
+    return this.extractPriceSnapshot(data);
+  });
+
+  // Computed: pageProps from selected symbol data
+  pageProps = computed(() => {
+    const data = this.selectedSymbolData();
+    if (!data) return null;
+    return this.extractPageProps(data);
+  });
+
   constructor(
     private dnseService: DnseService,
     private http: HttpClient
@@ -1043,6 +1064,80 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0
     });
+  }
+
+  /**
+   * Extract company info from stock data (private helper)
+   * Supports both data.pageProps.companyInfo and data.fullData['pageProps.companyInfo....']
+   */
+  private extractCompanyInfo(data: DNSEStockData): any {
+    // Try fullData first (new structure)
+    if (data.fullData) {
+      // Look for keys that start with 'pageProps.companyInfo'
+      for (const key in data.fullData) {
+        if (key.startsWith('pageProps.companyInfo')) {
+          return data.fullData[key];
+        }
+      }
+    }
+    
+    // Fallback to pageProps.companyInfo (old structure)
+    if (data.pageProps?.companyInfo) {
+      return data.pageProps.companyInfo;
+    }
+    
+    return null;
+  }
+
+  /**
+   * Extract pageProps from stock data (private helper)
+   * Supports both data.pageProps and data.fullData['pageProps....']
+   */
+  private extractPageProps(data: DNSEStockData): any {
+    // Try fullData first (new structure)
+    if (data.fullData) {
+      // Look for keys that start with 'pageProps'
+      const pageProps: any = {};
+      for (const key in data.fullData) {
+        if (key.startsWith('pageProps.')) {
+          const propName = key.replace('pageProps.', '');
+          pageProps[propName] = data.fullData[key];
+        }
+      }
+      if (Object.keys(pageProps).length > 0) {
+        return pageProps;
+      }
+    }
+    
+    // Fallback to pageProps (old structure)
+    if (data.pageProps) {
+      return data.pageProps;
+    }
+    
+    return null;
+  }
+
+  /**
+   * Extract priceSnapshot from stock data (private helper)
+   * Supports both data.pageProps.priceSnapshot and data.fullData['pageProps.priceSnapshot....']
+   */
+  private extractPriceSnapshot(data: DNSEStockData): any {
+    // Try fullData first (new structure)
+    if (data.fullData) {
+      // Look for keys that start with 'pageProps.priceSnapshot'
+      for (const key in data.fullData) {
+        if (key.startsWith('pageProps.priceSnapshot')) {
+          return data.fullData[key];
+        }
+      }
+    }
+    
+    // Fallback to pageProps.priceSnapshot (old structure)
+    if (data.pageProps?.priceSnapshot) {
+      return data.pageProps.priceSnapshot;
+    }
+    
+    return null;
   }
 }
 

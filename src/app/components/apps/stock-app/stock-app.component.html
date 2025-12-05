@@ -27,28 +27,28 @@
               <span class="info-label">Mã cổ phiếu:</span>
               <span class="info-value">{{ selectedSymbol()?.symbol }}</span>
             </div>
-            <div class="info-item" *ngIf="selectedSymbolData()?.pageProps?.companyInfo">
+            <div class="info-item" *ngIf="companyInfo()">
               <span class="info-label">Tên công ty:</span>
-              <span class="info-value">{{ selectedSymbolData()?.pageProps?.companyInfo?.fullName || selectedSymbolData()?.pageProps?.companyInfo?.name || '-' }}</span>
+              <span class="info-value">{{ companyInfo()?.fullName || companyInfo()?.name || '-' }}</span>
             </div>
             <div class="info-item">
               <span class="info-label">Sàn:</span>
               <span class="info-value">{{ exchangeNames[selectedSymbol()!.exchange] }}</span>
             </div>
-            <div class="info-item" *ngIf="selectedSymbolData()?.pageProps?.priceSnapshot">
+            <div class="info-item" *ngIf="priceSnapshot()">
               <span class="info-label">Giá khớp:</span>
-              <span class="info-value price-value">{{ selectedSymbolData()?.pageProps?.priceSnapshot?.matchPrice || '-' }}</span>
+              <span class="info-value price-value">{{ priceSnapshot()?.matchPrice || '-' }}</span>
             </div>
-            <div class="info-item" *ngIf="selectedSymbolData()?.pageProps?.priceSnapshot">
+            <div class="info-item" *ngIf="priceSnapshot()">
               <span class="info-label">Thay đổi:</span>
-              <span class="info-value" [class]="(selectedSymbolData()?.pageProps?.priceSnapshot?.changedValue || 0) >= 0 ? 'change-positive' : 'change-negative'">
-                {{ selectedSymbolData()?.pageProps?.priceSnapshot?.changedValue || 0 }} 
-                ({{ selectedSymbolData()?.pageProps?.priceSnapshot?.changedRatio || 0 }}%)
+              <span class="info-value" [class]="(priceSnapshot()?.changedValue || 0) >= 0 ? 'change-positive' : 'change-negative'">
+                {{ priceSnapshot()?.changedValue || 0 }} 
+                ({{ priceSnapshot()?.changedRatio || 0 }}%)
               </span>
             </div>
-            <div class="info-item" *ngIf="selectedSymbolData()?.pageProps?.priceSnapshot">
+            <div class="info-item" *ngIf="priceSnapshot()">
               <span class="info-label">Khối lượng:</span>
-              <span class="info-value">{{ selectedSymbolData()?.pageProps?.priceSnapshot?.totalVolumeTraded ? (selectedSymbolData()!.pageProps!.priceSnapshot!.totalVolumeTraded | number:'1.0-0') : '-' }}</span>
+              <span class="info-value">{{ priceSnapshot()?.totalVolumeTraded ? (priceSnapshot()!.totalVolumeTraded | number:'1.0-0') : '-' }}</span>
             </div>
           </div>
         </div>

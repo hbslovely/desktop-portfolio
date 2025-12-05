@@ -12,7 +12,7 @@ export interface DNSESymbol {
 }
 
 export interface DNSEStockData {
-  pageProps: {
+  pageProps?: {
     symbol: string;
     instrumentSymbol: string;
     companyInfo: any;
@@ -21,6 +21,9 @@ export interface DNSEStockData {
     ticker: any;
     financialIndicators: any;
     financialReportOverall: any;
+    [key: string]: any;
+  };
+  fullData?: {
     [key: string]: any;
   };
   [key: string]: any;
