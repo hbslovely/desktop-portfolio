@@ -1,7 +1,7 @@
 import { Component, signal, Input, Output, EventEmitter, OnInit, OnChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ExpenseSettingsService, ExpenseTheme, ExpenseFontSize, ExpenseLayout } from '../../../services/expense-settings.service';
+import { ExpenseSettingsService, ExpenseTheme, ExpenseFontSize, ExpenseLayout, PredictionSettings } from '../../../services/expense-settings.service';
 
 @Component({
   selector: 'app-expense-settings-dialog',
@@ -110,6 +110,118 @@ import { ExpenseSettingsService, ExpenseTheme, ExpenseFontSize, ExpenseLayout } 
                 </div>
                 <span class="font-size-label">Lớn</span>
               </button>
+            </div>
+          </div>
+
+          <!-- Prediction Settings -->
+          <div class="settings-section">
+            <h4 class="section-title">
+              <i class="pi pi-chart-line"></i>
+              Cấu hình Dự đoán
+            </h4>
+            <p class="section-description">Điều chỉnh các thông số để tối ưu độ chính xác dự đoán</p>
+            
+            <!-- Enable/Disable Methods -->
+            <div class="prediction-methods-toggle">
+              <h5>Phương pháp dự đoán:</h5>
+              <div class="toggle-grid">
+                <label class="toggle-item">
+                  <input type="checkbox" [(ngModel)]="predictionSettings().enableLinearRegression">
+                  <span>Dự đoán xu hướng</span>
+                  <small>Phân tích xu hướng tăng/giảm theo thời gian</small>
+                </label>
+                <label class="toggle-item">
+                  <input type="checkbox" [(ngModel)]="predictionSettings().enableMovingAverage">
+                  <span>Trung bình động</span>
+                  <small>Dựa trên mức chi tiêu trung bình gần đây</small>
+                </label>
+                <label class="toggle-item">
+                  <input type="checkbox" [(ngModel)]="predictionSettings().enableExponentialSmoothing">
+                  <span>Làm mịn theo hàm mũ</span>
+                  <small>Ưu tiên dữ liệu gần đây hơn</small>
+                </label>
+                <label class="toggle-item">
+                  <input type="checkbox" [(ngModel)]="predictionSettings().enableSeasonalPattern">
+                  <span>Mẫu theo thứ trong tuần</span>
+                  <small>Học từ thói quen chi tiêu theo ngày</small>
+                </label>
+              </div>
+            </div>
+
+            <!-- Simple Slider Parameters -->
+            <div class="simple-params">
+              <div class="slider-param">
+                <div class="slider-header">
+                  <label>
+                    <i class="pi pi-calendar"></i>
+                    Số ngày lịch sử để phân tích
+                  </label>
+                  <span class="slider-value">{{ predictionSettings().historicalDays }} ngày</span>
+                </div>
+                <input type="range" 
+                       min="30" 
+                       max="180" 
+                       step="7"
+                       [(ngModel)]="predictionSettings().historicalDays"
+                       class="slider-input">
+                <div class="slider-labels">
+                  <span>30 ngày</span>
+                  <span>180 ngày</span>
+                </div>
+                <div class="slider-description">
+                  <i class="pi pi-info-circle"></i>
+                  <span>Càng nhiều ngày, dự đoán càng ổn định nhưng phản ứng chậm hơn với thay đổi</span>
+                </div>
+              </div>
+
+              <div class="slider-param">
+                <div class="slider-header">
+                  <label>
+                    <i class="pi pi-chart-bar"></i>
+                    Độ nhạy dự đoán
+                  </label>
+                  <span class="slider-value">{{ (predictionSettings().exponentialAlpha * 100).toFixed(0) }}%</span>
+                </div>
+                <input type="range" 
+                       min="0" 
+                       max="100" 
+                       step="5"
+                       [ngModel]="predictionSettings().exponentialAlpha * 100"
+                       (ngModelChange)="predictionSettings().exponentialAlpha = $event / 100"
+                       class="slider-input">
+                <div class="slider-labels">
+                  <span>Ổn định (0%)</span>
+                  <span>Nhạy cảm (100%)</span>
+                </div>
+                <div class="slider-description">
+                  <i class="pi pi-info-circle"></i>
+                  <span>Giá trị cao = phản ứng nhanh với thay đổi gần đây, giá trị thấp = ổn định hơn</span>
+                </div>
+              </div>
+
+              <div class="slider-param">
+                <div class="slider-header">
+                  <label>
+                    <i class="pi pi-clock"></i>
+                    Khoảng thời gian trung bình
+                  </label>
+                  <span class="slider-value">{{ predictionSettings().movingAveragePeriod }} ngày</span>
+                </div>
+                <input type="range" 
+                       min="3" 
+                       max="30" 
+                       step="1"
+                       [(ngModel)]="predictionSettings().movingAveragePeriod"
+                       class="slider-input">
+                <div class="slider-labels">
+                  <span>3 ngày</span>
+                  <span>30 ngày</span>
+                </div>
+                <div class="slider-description">
+                  <i class="pi pi-info-circle"></i>
+                  <span>Số ngày để tính trung bình: ít ngày = nhạy cảm, nhiều ngày = ổn định</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -434,6 +546,176 @@ import { ExpenseSettingsService, ExpenseTheme, ExpenseFontSize, ExpenseLayout } 
       }
     }
 
+    .prediction-methods-toggle {
+      margin-bottom: 32px;
+
+      h5 {
+        margin: 0 0 16px 0;
+        font-size: 14px;
+        font-weight: 600;
+        color: #212121;
+      }
+
+      .toggle-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+
+        .toggle-item {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+          padding: 14px;
+          background: #f5f5f5;
+          border-radius: 8px;
+          cursor: pointer;
+          transition: all 0.2s;
+          border: 2px solid transparent;
+
+          &:hover {
+            background: #eeeeee;
+            border-color: #e0e0e0;
+          }
+
+          input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            margin-bottom: 4px;
+          }
+
+          span {
+            font-size: 14px;
+            font-weight: 600;
+            color: #212121;
+          }
+
+          small {
+            font-size: 12px;
+            color: #757575;
+            line-height: 1.4;
+            display: block;
+          }
+        }
+      }
+    }
+
+    .simple-params {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+
+      .slider-param {
+        background: #f9f9f9;
+        border-radius: 12px;
+        padding: 20px;
+        border: 1px solid #e0e0e0;
+
+        .slider-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 16px;
+
+          label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #212121;
+
+            i {
+              color: #2196F3;
+              font-size: 16px;
+            }
+          }
+
+          .slider-value {
+            font-size: 16px;
+            font-weight: 700;
+            color: #2196F3;
+            background: #e3f2fd;
+            padding: 6px 12px;
+            border-radius: 20px;
+          }
+        }
+
+        .slider-input {
+          width: 100%;
+          height: 8px;
+          border-radius: 4px;
+          background: #e0e0e0;
+          outline: none;
+          -webkit-appearance: none;
+          margin-bottom: 8px;
+
+          &::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #2196F3;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            transition: all 0.2s;
+
+            &:hover {
+              background: #1976D2;
+              transform: scale(1.1);
+            }
+          }
+
+          &::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #2196F3;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            transition: all 0.2s;
+
+            &:hover {
+              background: #1976D2;
+              transform: scale(1.1);
+            }
+          }
+        }
+
+        .slider-labels {
+          display: flex;
+          justify-content: space-between;
+          font-size: 11px;
+          color: #757575;
+          margin-bottom: 12px;
+        }
+
+        .slider-description {
+          display: flex;
+          align-items: flex-start;
+          gap: 8px;
+          padding: 12px;
+          background: #e3f2fd;
+          border-radius: 6px;
+          font-size: 12px;
+          color: #1976D2;
+          line-height: 1.5;
+
+          i {
+            margin-top: 2px;
+            font-size: 14px;
+            flex-shrink: 0;
+          }
+
+          span {
+            flex: 1;
+          }
+        }
+      }
+    }
+
     .dialog-footer {
       display: flex;
       justify-content: space-between;
@@ -531,6 +813,16 @@ export class ExpenseSettingsDialogComponent implements OnInit, OnChanges {
 
   selectedLayout = signal<ExpenseLayout>('v1');
   selectedFontSize = signal<ExpenseFontSize>('medium');
+  predictionSettings = signal<PredictionSettings>({
+    weights: { linear: 0.3, moving: 0.3, exponential: 0.2, seasonal: 0.2 },
+    exponentialAlpha: 0.3,
+    movingAveragePeriod: 7,
+    historicalDays: 60,
+    enableLinearRegression: true,
+    enableMovingAverage: true,
+    enableExponentialSmoothing: true,
+    enableSeasonalPattern: true
+  });
 
   constructor(private settingsService: ExpenseSettingsService) {}
 
@@ -549,6 +841,9 @@ export class ExpenseSettingsDialogComponent implements OnInit, OnChanges {
     const settings = this.settingsService.settings();
     this.selectedLayout.set(settings.layout || 'v1');
     this.selectedFontSize.set(settings.fontSize);
+    if (settings.prediction) {
+      this.predictionSettings.set({ ...settings.prediction });
+    }
   }
 
   close(): void {
@@ -560,7 +855,8 @@ export class ExpenseSettingsDialogComponent implements OnInit, OnChanges {
     const settings = {
       layout: this.selectedLayout(),
       theme: 'compact' as ExpenseTheme, // Always use compact theme (like v1)
-      fontSize: this.selectedFontSize()
+      fontSize: this.selectedFontSize(),
+      prediction: this.predictionSettings()
     };
     this.settingsService.saveSettings(settings);
     this.onSave.emit({
@@ -574,5 +870,6 @@ export class ExpenseSettingsDialogComponent implements OnInit, OnChanges {
     this.settingsService.resetSettings();
     this.loadCurrentSettings();
   }
+
 }
 

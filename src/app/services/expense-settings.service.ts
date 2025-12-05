@@ -4,10 +4,29 @@ export type ExpenseTheme = 'compact' | 'spacious';
 export type ExpenseFontSize = 'small' | 'medium' | 'large';
 export type ExpenseLayout = 'v1' | 'v2';
 
+export interface PredictionWeights {
+  linear: number;
+  moving: number;
+  exponential: number;
+  seasonal: number;
+}
+
+export interface PredictionSettings {
+  weights: PredictionWeights;
+  exponentialAlpha: number; // 0-1, default 0.3
+  movingAveragePeriod: number; // default 7
+  historicalDays: number; // default 60
+  enableLinearRegression: boolean;
+  enableMovingAverage: boolean;
+  enableExponentialSmoothing: boolean;
+  enableSeasonalPattern: boolean;
+}
+
 export interface ExpenseSettings {
   layout: ExpenseLayout;
   theme: ExpenseTheme;
   fontSize: ExpenseFontSize;
+  prediction?: PredictionSettings;
 }
 
 @Injectable({
@@ -20,7 +39,22 @@ export class ExpenseSettingsService {
   private defaultSettings: ExpenseSettings = {
     layout: 'v1',
     theme: 'compact',
-    fontSize: 'medium'
+    fontSize: 'medium',
+    prediction: {
+      weights: {
+        linear: 0.3,
+        moving: 0.3,
+        exponential: 0.2,
+        seasonal: 0.2
+      },
+      exponentialAlpha: 0.3,
+      movingAveragePeriod: 7,
+      historicalDays: 60,
+      enableLinearRegression: true,
+      enableMovingAverage: true,
+      enableExponentialSmoothing: true,
+      enableSeasonalPattern: true
+    }
   };
 
   // Signals for reactive updates
@@ -28,6 +62,7 @@ export class ExpenseSettingsService {
   layout = signal<ExpenseLayout>(this.defaultSettings.layout);
   theme = signal<ExpenseTheme>(this.defaultSettings.theme);
   fontSize = signal<ExpenseFontSize>(this.defaultSettings.fontSize);
+  predictionSettings = signal<PredictionSettings>(this.defaultSettings.prediction!);
 
   constructor() {
     this.loadSettings();
@@ -45,10 +80,15 @@ export class ExpenseSettingsService {
         if (!settings.layout) {
           settings.layout = 'v1';
         }
+        // Ensure prediction settings exist (for backward compatibility)
+        if (!settings.prediction) {
+          settings.prediction = this.defaultSettings.prediction!;
+        }
         this.settings.set(settings);
         this.layout.set(settings.layout);
         this.theme.set(settings.theme);
         this.fontSize.set(settings.fontSize);
+        this.predictionSettings.set(settings.prediction);
       } else {
         this.settings.set(this.defaultSettings);
         this.layout.set(this.defaultSettings.layout);
@@ -61,6 +101,7 @@ export class ExpenseSettingsService {
       this.layout.set(this.defaultSettings.layout);
       this.theme.set(this.defaultSettings.theme);
       this.fontSize.set(this.defaultSettings.fontSize);
+      this.predictionSettings.set(this.defaultSettings.prediction!);
     }
   }
 
@@ -74,6 +115,7 @@ export class ExpenseSettingsService {
       this.layout.set(settings.layout);
       this.theme.set(settings.theme);
       this.fontSize.set(settings.fontSize);
+      this.predictionSettings.set(settings.prediction || this.defaultSettings.prediction!);
     } catch (error) {
       console.error('Error saving expense settings:', error);
     }
@@ -104,10 +146,26 @@ export class ExpenseSettingsService {
   }
 
   /**
+   * Update prediction settings
+   */
+  updatePredictionSettings(prediction: PredictionSettings): void {
+    const current = this.settings();
+    this.saveSettings({ ...current, prediction });
+  }
+
+  /**
    * Reset to default settings
    */
   resetSettings(): void {
     this.saveSettings(this.defaultSettings);
+  }
+
+  /**
+   * Reset prediction settings to default
+   */
+  resetPredictionSettings(): void {
+    const current = this.settings();
+    this.saveSettings({ ...current, prediction: this.defaultSettings.prediction! });
   }
 }
 
