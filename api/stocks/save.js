@@ -2,25 +2,17 @@ export const config = {
   runtime: 'nodejs',
 };
 
-interface StockData {
-  symbol: string;
-  basicInfo?: any;
-  priceData?: any;
-  fullData?: any;
-  updatedAt: string;
-}
-
 /**
  * Commit file to GitHub using GitHub API
  */
 async function commitToGitHub(
-  symbol: string,
-  content: string,
-  githubToken: string,
-  repoOwner: string,
-  repoName: string,
-  branch: string = 'master'
-): Promise<{ success: boolean; message?: string; sha?: string }> {
+  symbol,
+  content,
+  githubToken,
+  repoOwner,
+  repoName,
+  branch = 'master'
+) {
   const filePath = `src/assets/stocks/${symbol.toUpperCase()}.json`;
   const apiUrl = `https://api.github.com/repos/${repoOwner}/${repoName}/contents/${filePath}`;
 
@@ -33,7 +25,7 @@ async function commitToGitHub(
       },
     });
 
-    let sha: string | undefined;
+    let sha;
     if (checkResponse.ok) {
       const existingFile = await checkResponse.json();
       sha = existingFile.sha;
@@ -73,7 +65,7 @@ async function commitToGitHub(
       message: 'File committed successfully',
       sha: result.content.sha,
     };
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error committing to GitHub:', error);
     return {
       success: false,
@@ -82,34 +74,33 @@ async function commitToGitHub(
   }
 }
 
-export default async function handler(req: Request) {
-  // Handle CORS preflight
-  if (req.method === 'OPTIONS') {
-    return new Response(null, {
-      status: 200,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-      },
-    });
-  }
-
-  if (req.method !== 'POST') {
-    return new Response(
-      JSON.stringify({ success: false, error: 'Method not allowed' }),
-      {
-        status: 405,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-        },
-      }
-    );
-  }
-
+export default async function handler(req) {
   try {
-    const body: StockData = await req.json();
+    // Handle CORS preflight
+    if (req.method === 'OPTIONS') {
+      return new Response(null, {
+        status: 200,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        },
+      });
+    }
+
+    if (req.method !== 'POST') {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Method not allowed' }),
+        {
+          status: 405,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+          },
+        }
+      );
+    }
+    const body = await req.json();
     const { symbol, basicInfo, priceData, fullData } = body;
 
     if (!symbol) {
@@ -148,7 +139,7 @@ export default async function handler(req: Request) {
     }
 
     // Prepare stock data
-    const stockData: StockData = {
+    const stockData = {
       symbol: symbol.toUpperCase(),
       basicInfo,
       priceData,
@@ -200,12 +191,14 @@ export default async function handler(req: Request) {
         },
       }
     );
-  } catch (error: any) {
-    console.error('Error saving stock data:', error);
+  } catch (error) {
+    console.error('[save.js] Error saving stock data:', error);
+    console.error('[save.js] Error stack:', error?.stack);
+    // Always return a response, never throw
     return new Response(
       JSON.stringify({
         success: false,
-        error: error.message || 'Internal server error',
+        error: error?.message || 'Internal server error',
       }),
       {
         status: 500,
