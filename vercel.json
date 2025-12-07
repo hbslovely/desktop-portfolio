@@ -3,8 +3,7 @@
   "outputDirectory": "dist/desktop-portfolio",
   "framework": "angular",
   "builds": [
-    { "src": "api/**/*.js", "use": "@vercel/node" },
-    { "src": "src/app/*", "use": "@vercel/static-build" }
+    { "src": "api/**/*.js", "use": "@vercel/node" }
   ],
   "rewrites": [
     {
@@ -61,7 +60,7 @@
     },
     {
       "source": "/api/stocks/list",
-      "destination": "/api/stocks-list.js"
+      "destination": "/api/stocks/list.js"
     },
     {
       "source": "/api/stocks/save",
