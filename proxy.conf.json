@@ -216,6 +216,12 @@
       "Accept": "application/json, text/plain, */*",
       "Content-Type": "application/json"
     }
+  },
+  "/api/stocks": {
+    "target": "http://localhost:3001",
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "debug"
   }
 }
 

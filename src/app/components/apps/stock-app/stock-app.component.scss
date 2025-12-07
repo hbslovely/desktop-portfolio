@@ -648,17 +648,71 @@
     padding: 20px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 
-    h4 {
-      margin: 0 0 16px 0;
-      font-size: 18px;
-      font-weight: 600;
-      color: #667eea;
+    .chart-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+
+      h4 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 600;
+        color: #2e7d32;
+      }
+
+      .chart-controls {
+        display: flex;
+        gap: 8px;
+      }
+    }
+
+    .chart-legend {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 12px;
+      padding: 8px 12px;
+      background: #f5f5f5;
+      border-radius: 6px;
+      font-size: 12px;
+
+      .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+
+        .legend-color {
+          width: 16px;
+          height: 3px;
+          border-radius: 2px;
+
+          &.ma20 {
+            background: #ff9800;
+          }
+
+          &.ma50 {
+            background: #2196f3;
+          }
+        }
+      }
+
+      .legend-hint {
+        margin-left: auto;
+        color: #666;
+        font-style: italic;
+      }
     }
 
     .chart-wrapper {
       position: relative;
       height: 500px;
       width: 100%;
+      cursor: grab;
+
+      &:active {
+        cursor: grabbing;
+      }
     }
   }
 

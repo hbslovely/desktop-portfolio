@@ -3,7 +3,11 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve",
+    "start": "npm run dev",
+    "dev": "concurrently \"npm run dev:api\" \"npm run dev:angular\"",
+    "dev:api": "vercel dev --listen 3001",
+    "dev:angular": "ng serve --port 4200",
+    "dev:angular-only": "ng serve",
     "build": "ng build --configuration production",
     "build:dev": "ng build --configuration development",
     "watch": "ng build --watch --configuration development",
@@ -24,6 +28,7 @@
     "chart.js": "^4.5.1",
     "chartjs-adapter-date-fns": "^3.0.0",
     "chartjs-chart-financial": "^0.2.1",
+    "chartjs-plugin-zoom": "^2.2.0",
     "d3": "^7.8.5",
     "ngx-mask": "^20.0.3",
     "primeicons": "^7.0.0",
@@ -41,6 +46,7 @@
     "@ngx-env/builder": "^17.3.0",
     "@types/d3": "^7.4.3",
     "@types/jasmine": "~5.1.0",
+    "concurrently": "^9.2.1",
     "glob": "^13.0.0",
     "jasmine-core": "~5.1.0",
     "javascript-obfuscator": "^4.1.1",
@@ -50,6 +56,7 @@
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.1.0",
     "typescript": "~5.4.2",
+    "vercel": "^49.1.1",
     "webpack-obfuscator": "^3.5.1"
   }
 }

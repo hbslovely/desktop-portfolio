@@ -3,20 +3,22 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { DnseService, DNSESymbol, DNSEStockData, DNSEOHLCData, ExchangeType } from '../../../services/dnse.service';
-import { environment } from '../../../../environments/environment';
 import { Chart, ChartConfiguration, registerables, TimeScale } from 'chart.js';
 // @ts-ignore - chartjs-chart-financial doesn't have proper type declarations
 import { CandlestickController, CandlestickElement } from 'chartjs-chart-financial';
+import zoomPlugin from 'chartjs-plugin-zoom';
 import 'chartjs-adapter-date-fns';
 
 // Register Chart.js and financial chart components
 Chart.register(...registerables, TimeScale);
 Chart.register(CandlestickController, CandlestickElement);
+Chart.register(zoomPlugin);
 
 interface SymbolWithStatus extends DNSESymbol {
   exchange: ExchangeType;
   isFetched: boolean;
   isFetching?: boolean;
+  hasBasicInfo?: boolean; // Track if has full basic info data
   basicInfo?: {
     companyName?: string;
     exchange?: string;
@@ -31,6 +33,7 @@ interface SymbolWithStatus extends DNSESymbol {
     pb?: string;
     roe?: string;
     roa?: string;
+    fullData?: any; // Store full data for checking
   };
 }
 
@@ -61,10 +64,12 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
   // State
   selectedExchange = signal<ExchangeType | 'all'>('all');
+  filterMode = signal<'all' | 'unfetched' | 'missingBasicInfo'>('all');
   allSymbols = signal<SymbolWithStatus[]>([]);
   filteredSymbols = signal<SymbolWithStatus[]>([]);
   isLoading = signal(false);
   searchQuery = signal('');
+  isLoadingBasicInfoCheck = signal(false);
 
   // Fetching state
   fetchingSymbols = signal<Set<string>>(new Set());
@@ -79,10 +84,6 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
   // Exchange counts
   exchangeCounts = signal<Map<ExchangeType, ExchangeCount>>(new Map());
 
-  // Google Sheets configuration
-  sheetId = signal('17NW3ieBoMCpun6STz57AVoVHm7g7V5N7Dyu1gGG3Mi0');
-  scriptId = signal(environment.securitiesSheetScriptId || '');
-
   // Selected symbol for detail view
   selectedSymbol = signal<SymbolWithStatus | null>(null);
   selectedSymbolData = signal<DNSEStockData | null>(null);
@@ -92,17 +93,35 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
   isLoadingPrice = signal(false);
   selectedYears = signal<number>(3); // Default 3 years
 
-  // Computed: price table data (cached to avoid repeated calculations)
+  // Computed: price table data with reference price, ceiling, floor
   priceTableData = computed(() => {
     const priceData = this.selectedSymbolPriceData();
     if (!priceData || !priceData.t) return [];
 
-    const result: Array<{date: string, open: number, high: number, low: number, close: number, volume: number}> = [];
+    const result: Array<{
+      date: string, 
+      open: number, 
+      high: number, 
+      low: number, 
+      close: number, 
+      volume: number,
+      referencePrice: number,
+      ceilingPrice: number,
+      floorPrice: number
+    }> = [];
 
     for (let i = 0; i < priceData.t.length; i++) {
       const timestamp = priceData.t[i];
       const date = new Date(timestamp * 1000);
       const dateStr = this.formatDateVN(date);
+
+      // Reference price = previous day's close price
+      const referencePrice = i > 0 ? (priceData.c[i - 1] || 0) : (priceData.c[i] || 0);
+      
+      // Calculate ceiling and floor (typically ±7% for HOSE/HNX, ±10% for UPCOM)
+      // Using 7% as default
+      const ceilingPrice = referencePrice * 1.07;
+      const floorPrice = referencePrice * 0.93;
 
       result.push({
         date: dateStr,
@@ -110,7 +129,10 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
         high: priceData.h[i] || 0,
         low: priceData.l[i] || 0,
         close: priceData.c[i] || 0,
-        volume: priceData.v[i] || 0
+        volume: priceData.v[i] || 0,
+        referencePrice,
+        ceilingPrice,
+        floorPrice
       });
     }
 
@@ -146,7 +168,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
   ngOnInit() {
     this.loadSymbols();
-    this.checkFetchedStatusFromSheets();
+    this.checkFetchedStatus();
   }
 
   ngAfterViewInit() {
@@ -185,7 +207,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
         this.allSymbols.set(allSymbols);
         this.applyFilters();
-        this.checkFetchedStatusFromSheets();
+        this.checkFetchedStatus();
         this.isLoading.set(false);
       },
       error: (error) => {
@@ -196,24 +218,10 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   /**
-   * Check fetched status from Google Sheets and load basic info
+   * Check fetched status from Stock API and load basic info
    */
-  checkFetchedStatusFromSheets() {
-    if (!this.scriptId()) {
-      // Fallback to localStorage if scriptId not configured
-      this.allSymbols.update(symbols =>
-        symbols.map(s => ({
-          ...s,
-          isFetched: this.dnseService.isFetched(s.symbol)
-        }))
-      );
-      this.applyFilters();
-      this.updateFetchedCount();
-      this.updateExchangeCounts();
-      return;
-    }
-
-    this.dnseService.getAllFetchedSymbolsFromSheets(this.sheetId(), this.scriptId()).subscribe({
+  checkFetchedStatus() {
+    this.dnseService.getAllFetchedSymbols().subscribe({
       next: (fetchedSymbols) => {
         const fetchedSet = new Set(fetchedSymbols);
         this.allSymbols.update(symbols =>
@@ -246,87 +254,111 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   /**
-   * Load basic info for fetched symbols
+   * Load basic info for fetched symbols from Stock API
    */
   loadBasicInfoForFetchedSymbols(fetchedSymbols: string[]) {
-    if (!this.scriptId() || fetchedSymbols.length === 0) return;
+    if (fetchedSymbols.length === 0) return;
 
-    // Load all stocks basic info at once
-    this.dnseService.getAllStocksBasicInfoFromSheets(this.sheetId(), this.scriptId()).subscribe({
-      next: (response) => {
-        if (response.success && response.data && Array.isArray(response.data)) {
-          const basicInfoMap = new Map<string, any>();
-          response.data.forEach((info: any) => {
-            if (info.symbol) {
-              basicInfoMap.set(info.symbol, info);
-            }
-          });
+    // Load stock data for each symbol
+    let completed = 0;
+    const total = fetchedSymbols.length;
+    const basicInfoMap = new Map<string, any>();
 
-          // Update symbols with basic info
-          this.allSymbols.update(symbols =>
-            symbols.map(s => {
-              const basicInfo = basicInfoMap.get(s.symbol);
-              if (basicInfo) {
-                return {
-                  ...s,
-                  basicInfo: {
-                    companyName: basicInfo.companyName,
-                    exchange: basicInfo.exchange,
-                    matchPrice: basicInfo.matchPrice,
-                    changedValue: basicInfo.changedValue,
-                    changedRatio: basicInfo.changedRatio,
-                    totalVolume: basicInfo.totalVolume,
-                    marketCap: basicInfo.marketCap,
-                    beta: basicInfo.beta,
-                    eps: basicInfo.eps,
-                    pe: basicInfo.pe,
-                    pb: basicInfo.pb,
-                    roe: basicInfo.roe,
-                    roa: basicInfo.roa
-                  }
-                };
-              }
-              return s;
-            })
-          );
-          this.applyFilters();
+    fetchedSymbols.forEach(symbol => {
+      this.dnseService.getStockDataFromAPI(symbol).subscribe({
+        next: (data) => {
+          if (data) {
+            basicInfoMap.set(symbol, data);
+          }
+          
+          completed++;
+          if (completed === total) {
+            // Update all symbols with basic info
+            this.allSymbols.update(symbols =>
+              symbols.map(s => {
+                const stockData = basicInfoMap.get(s.symbol);
+                if (stockData) {
+                  const fullData = stockData.fullData || {};
+                  const hasFullName = fullData['pageProps.companyInfo.fullName'] || fullData['pageProps.companyInfo.name'];
+                  const hasFullNameEn = fullData['pageProps.companyInfo.fullNameEn'];
+                  const hasImage = fullData['pageProps.companyInfo.image'];
+                  const hasIntroduction = fullData['pageProps.companyInfo.introduction'];
+                  const hasNotes = fullData['pageProps.companyInfo.notes'];
+                  const hasPermanentAddress = fullData['pageProps.companyInfo.permanentAddress'];
+                  
+                  const hasBasicInfo = !!(hasFullName || hasFullNameEn || hasImage || hasIntroduction || hasNotes || hasPermanentAddress);
+                  
+                  // Extract basic info from stockData
+                  const basicInfo = stockData.basicInfo || {};
+                  
+                  return {
+                    ...s,
+                    hasBasicInfo,
+                    basicInfo: {
+                      companyName: basicInfo.companyName || fullData['pageProps.companyInfo.fullName'] || fullData['pageProps.companyInfo.name'],
+                      exchange: basicInfo.exchange || fullData['pageProps.companyInfo.exchange'],
+                      matchPrice: basicInfo.matchPrice || fullData['pageProps.priceSnapshot.matchPrice'],
+                      changedValue: basicInfo.changedValue || fullData['pageProps.priceSnapshot.changedValue'],
+                      changedRatio: basicInfo.changedRatio || fullData['pageProps.priceSnapshot.changedRatio'],
+                      totalVolume: basicInfo.totalVolume || fullData['pageProps.priceSnapshot.totalVolumeTraded'],
+                      marketCap: basicInfo.marketCap,
+                      beta: basicInfo.beta,
+                      eps: basicInfo.eps,
+                      pe: basicInfo.pe,
+                      pb: basicInfo.pb,
+                      roe: basicInfo.roe,
+                      roa: basicInfo.roa,
+                      fullData: fullData
+                    }
+                  };
+                }
+                return s;
+              })
+            );
+            this.applyFilters();
+          }
+        },
+        error: (error) => {
+          console.error(`Error loading basic info for ${symbol}:`, error);
+          completed++;
+          if (completed === total) {
+            this.applyFilters();
+          }
         }
-      },
-      error: (error) => {
-        console.error('Error loading basic info:', error);
-      }
+      });
     });
   }
 
   /**
-   * Load basic info for a single symbol
+   * Load basic info for a single symbol from Stock API
    */
   loadBasicInfoForSymbol(symbol: string) {
-    if (!this.scriptId()) return;
-
-    this.dnseService.getStockBasicInfoFromSheets(this.sheetId(), symbol, this.scriptId()).subscribe({
-      next: (response) => {
-        if (response.success && response.data) {
-          const basicInfo = response.data;
+    this.dnseService.getStockDataFromAPI(symbol).subscribe({
+      next: (data) => {
+        if (data) {
+          const fullData = data.fullData || {};
+          const basicInfo = data.basicInfo || {};
+          
           this.allSymbols.update(symbols =>
             symbols.map(s => {
-              if (s.symbol === symbol) {
+              if (s.symbol === symbol.toUpperCase()) {
                 return {
                   ...s,
                   basicInfo: {
-                    companyName: basicInfo.companyName,
-                    exchange: basicInfo.exchange,
-                    matchPrice: basicInfo.matchPrice,
-                    changedValue: basicInfo.changedValue,
-                    changedRatio: basicInfo.changedRatio,
-                    totalVolume: basicInfo.totalVolume,
+                    companyName: basicInfo.companyName || fullData['pageProps.companyInfo.fullName'] || fullData['pageProps.companyInfo.name'],
+                    exchange: basicInfo.exchange || fullData['pageProps.companyInfo.exchange'],
+                    matchPrice: basicInfo.matchPrice || fullData['pageProps.priceSnapshot.matchPrice'],
+                    changedValue: basicInfo.changedValue || fullData['pageProps.priceSnapshot.changedValue'],
+                    changedRatio: basicInfo.changedRatio || fullData['pageProps.priceSnapshot.changedRatio'],
+                    totalVolume: basicInfo.totalVolume || fullData['pageProps.priceSnapshot.totalVolumeTraded'],
                     marketCap: basicInfo.marketCap,
                     beta: basicInfo.beta,
                     eps: basicInfo.eps,
                     pe: basicInfo.pe,
                     pb: basicInfo.pb,
                     roe: basicInfo.roe,
-                    roa: basicInfo.roa
+                    roa: basicInfo.roa,
+                    fullData: fullData
                   }
                 };
               }
@@ -372,7 +404,124 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   /**
-   * Apply filters (exchange and search)
+   * Check if a symbol has basic info data
+   * Checks for: fullName, fullNameEn, image, introduction, notes, permanentAddress
+   */
+  hasBasicInfoData(symbol: SymbolWithStatus): boolean {
+    if (!symbol.isFetched) return false;
+    
+    // If already checked, return cached value
+    if (symbol.hasBasicInfo !== undefined) {
+      return symbol.hasBasicInfo;
+    }
+
+    // Check if we have fullData in basicInfo
+    if (symbol.basicInfo?.fullData) {
+      const fullData = symbol.basicInfo.fullData;
+      const hasFullName = fullData['pageProps.companyInfo.fullName'] || fullData['pageProps.companyInfo.name'];
+      const hasFullNameEn = fullData['pageProps.companyInfo.fullNameEn'];
+      const hasImage = fullData['pageProps.companyInfo.image'];
+      const hasIntroduction = fullData['pageProps.companyInfo.introduction'];
+      const hasNotes = fullData['pageProps.companyInfo.notes'];
+      const hasPermanentAddress = fullData['pageProps.companyInfo.permanentAddress'];
+      
+      // Consider has basic info if at least fullName exists
+      return !!(hasFullName || hasFullNameEn || hasImage || hasIntroduction || hasNotes || hasPermanentAddress);
+    }
+
+    return false;
+  }
+
+  /**
+   * Load and check basic info for all fetched symbols from Stock API
+   */
+  checkBasicInfoForAllSymbols() {
+    this.isLoadingBasicInfoCheck.set(true);
+    const fetchedSymbols = this.allSymbols().filter(s => s.isFetched && s.hasBasicInfo === undefined);
+
+    if (fetchedSymbols.length === 0) {
+      this.isLoadingBasicInfoCheck.set(false);
+      this.applyFilters();
+      return;
+    }
+
+    // Load full data for each symbol to check basic info
+    let completed = 0;
+    const total = fetchedSymbols.length;
+    const basicInfoMap = new Map<string, any>();
+
+    fetchedSymbols.forEach(symbol => {
+      this.dnseService.getStockDataFromAPI(symbol.symbol).subscribe({
+        next: (data) => {
+          if (data && data.fullData) {
+            basicInfoMap.set(symbol.symbol, data.fullData);
+          }
+          
+          completed++;
+          if (completed === total) {
+            // Update all symbols with basic info check
+            this.allSymbols.update(symbols =>
+              symbols.map(s => {
+                if (s.isFetched && s.hasBasicInfo === undefined) {
+                  const fullData = basicInfoMap.get(s.symbol);
+                  if (fullData) {
+                    const hasFullName = fullData['pageProps.companyInfo.fullName'] || fullData['pageProps.companyInfo.name'];
+                    const hasFullNameEn = fullData['pageProps.companyInfo.fullNameEn'];
+                    const hasImage = fullData['pageProps.companyInfo.image'];
+                    const hasIntroduction = fullData['pageProps.companyInfo.introduction'];
+                    const hasNotes = fullData['pageProps.companyInfo.notes'];
+                    const hasPermanentAddress = fullData['pageProps.companyInfo.permanentAddress'];
+                    
+                    const hasBasicInfo = !!(hasFullName || hasFullNameEn || hasImage || hasIntroduction || hasNotes || hasPermanentAddress);
+                    
+                    return {
+                      ...s,
+                      hasBasicInfo,
+                      basicInfo: {
+                        ...s.basicInfo,
+                        fullData: fullData
+                      }
+                    };
+                  } else {
+                    return {
+                      ...s,
+                      hasBasicInfo: false
+                    };
+                  }
+                }
+                return s;
+              })
+            );
+            this.isLoadingBasicInfoCheck.set(false);
+            this.applyFilters();
+          }
+        },
+        error: (error) => {
+          console.error(`Error checking basic info for ${symbol.symbol}:`, error);
+          completed++;
+          if (completed === total) {
+            // Mark as no basic info if error
+            this.allSymbols.update(symbols =>
+              symbols.map(s => {
+                if (s.isFetched && s.hasBasicInfo === undefined && !basicInfoMap.has(s.symbol)) {
+                  return {
+                    ...s,
+                    hasBasicInfo: false
+                  };
+                }
+                return s;
+              })
+            );
+            this.isLoadingBasicInfoCheck.set(false);
+            this.applyFilters();
+          }
+        }
+      });
+    });
+  }
+
+  /**
+   * Apply filters (exchange, search, and filter mode)
    */
   applyFilters() {
     let filtered = [...this.allSymbols()];
@@ -380,6 +529,18 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     // Filter by exchange
     if (this.selectedExchange() !== 'all') {
       filtered = filtered.filter(s => s.exchange === this.selectedExchange());
+    }
+
+    // Filter by filter mode
+    const filterMode = this.filterMode();
+    if (filterMode === 'unfetched') {
+      filtered = filtered.filter(s => !s.isFetched);
+    } else if (filterMode === 'missingBasicInfo') {
+      // Check basic info for symbols that haven't been checked yet
+      filtered = filtered.filter(s => {
+        if (!s.isFetched) return false;
+        return !this.hasBasicInfoData(s);
+      });
     }
 
     // Filter by search query
@@ -414,6 +575,19 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   /**
+   * Change filter mode
+   */
+  onFilterModeChange(mode: 'all' | 'unfetched' | 'missingBasicInfo') {
+    this.filterMode.set(mode);
+    if (mode === 'missingBasicInfo') {
+      // Check basic info when switching to this filter
+      this.checkBasicInfoForAllSymbols();
+    } else {
+      this.applyFilters();
+    }
+  }
+
+  /**
    * Fetch data for a single symbol
    */
   fetchSymbol(symbol: SymbolWithStatus) {
@@ -437,38 +611,66 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     // Fetch both detail data and price history
     this.dnseService.getStockData(symbol.symbol).subscribe({
       next: (data) => {
-        // Save detail data to Google Sheets
-        this.saveToGoogleSheets(symbol.symbol, data);
-
         // Fetch price history (3 years = 1095 days)
         this.dnseService.getOHLCDataLastDays(symbol.symbol, 1095, '1D').subscribe({
           next: (ohlcData) => {
-            // Save price data to Google Sheets
-            this.savePriceDataToGoogleSheets(symbol.symbol, ohlcData);
+            // Extract basic info from data
+            const basicInfo = this.extractBasicInfoFromStockData(data);
+            
+            // Save to Stock API
+            this.dnseService.saveStockData(
+              symbol.symbol,
+              basicInfo,
+              ohlcData,
+              data.fullData || data
+            ).subscribe({
+              next: (response) => {
+                console.log(`✅ Đã lưu dữ liệu ${symbol.symbol} vào Stock API`, response);
+                
+                // Mark as fetched
+                this.dnseService.markAsFetched(symbol.symbol);
 
-            // Mark as fetched
-            this.dnseService.markAsFetched(symbol.symbol);
+                // Update UI
+                this.allSymbols.update(symbols =>
+                  symbols.map(s =>
+                    s.symbol === symbol.symbol
+                      ? { ...s, isFetched: true, isFetching: false }
+                      : s
+                  )
+                );
+                this.applyFilters();
+                this.updateFetchedCount();
+                this.updateExchangeCounts();
 
-            // Update UI
-            this.allSymbols.update(symbols =>
-              symbols.map(s =>
-                s.symbol === symbol.symbol
-                  ? { ...s, isFetched: true, isFetching: false }
-                  : s
-              )
-            );
-            this.applyFilters();
-            this.updateFetchedCount();
-            this.updateExchangeCounts();
+                // Load basic info for this symbol
+                this.loadBasicInfoForSymbol(symbol.symbol);
 
-            // Load basic info for this symbol
-            this.loadBasicInfoForSymbol(symbol.symbol);
-
-            // Remove from fetching set
-            this.fetchingSymbols.update(set => {
-              const newSet = new Set(set);
-              newSet.delete(symbol.symbol);
-              return newSet;
+                // Remove from fetching set
+                this.fetchingSymbols.update(set => {
+                  const newSet = new Set(set);
+                  newSet.delete(symbol.symbol);
+                  return newSet;
+                });
+              },
+              error: (saveError) => {
+                console.error(`Error saving ${symbol.symbol} to API:`, saveError);
+                // Still mark as fetched even if save fails
+                this.dnseService.markAsFetched(symbol.symbol);
+                this.allSymbols.update(symbols =>
+                  symbols.map(s =>
+                    s.symbol === symbol.symbol
+                      ? { ...s, isFetched: true, isFetching: false }
+                      : s
+                  )
+                );
+                this.applyFilters();
+                this.updateFetchedCount();
+                this.fetchingSymbols.update(set => {
+                  const newSet = new Set(set);
+                  newSet.delete(symbol.symbol);
+                  return newSet;
+                });
+              }
             });
           },
           error: (error) => {
@@ -569,65 +771,28 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   /**
-   * Save data to Google Sheets via Apps Script
+   * Extract basic info from stock data
    */
-  saveToGoogleSheets(symbol: string, data: DNSEStockData) {
-    const scriptId = this.scriptId();
-    if (!scriptId) {
-      console.warn('Google Apps Script ID chưa được cấu hình');
-      alert('Vui lòng cấu hình NG_APP_SECURITIES_SHEET_SCRIPT_ID trong biến môi trường để lưu dữ liệu vào Google Sheets');
-      return;
-    }
-
-    // Use proxy in development, direct URL in production
-    const baseUrl = environment.production
-      ? `https://script.google.com/macros/s/${scriptId}/exec`
-      : `/api/securities-apps-script/${scriptId}/exec`;
-
-    this.http.post(baseUrl, {
-      action: 'saveStockData',
-      sheetId: this.sheetId(),
-      symbol: symbol,
-      data: data
-    }).subscribe({
-      next: (response) => {
-        console.log(`✅ Đã lưu dữ liệu ${symbol} vào Google Sheets`, response);
-      },
-      error: (error) => {
-        console.error(`❌ Lỗi khi lưu ${symbol}:`, error);
-        // alert(`Lỗi khi lưu dữ liệu ${symbol}: ${error.message || 'Vui lòng kiểm tra lại cấu hình'}`);
-      }
-    });
-  }
-
-  /**
-   * Save price data to Google Sheets via Apps Script
-   */
-  savePriceDataToGoogleSheets(symbol: string, ohlcData: DNSEOHLCData) {
-    const scriptId = this.scriptId();
-    if (!scriptId) {
-      console.warn('Google Apps Script ID chưa được cấu hình');
-      return;
-    }
-
-    // Use proxy in development, direct URL in production
-    const baseUrl = environment.production
-      ? `https://script.google.com/macros/s/${scriptId}/exec`
-      : `/api/securities-apps-script/${scriptId}/exec`;
-
-    this.http.post(baseUrl, {
-      action: 'savePriceData',
-      sheetId: this.sheetId(),
-      symbol: symbol,
-      ohlcData: ohlcData
-    }).subscribe({
-      next: (response) => {
-        console.log(`✅ Đã lưu dữ liệu giá ${symbol} vào Google Sheets`, response);
-      },
-      error: (error) => {
-        console.error(`❌ Lỗi khi lưu giá ${symbol}:`, error);
-      }
-    });
+  private extractBasicInfoFromStockData(data: DNSEStockData): any {
+    const companyInfo = this.extractCompanyInfo(data);
+    const priceSnapshot = this.extractPriceSnapshot(data);
+    const pageProps = this.extractPageProps(data);
+    
+    return {
+      companyName: companyInfo?.fullName || companyInfo?.name,
+      exchange: companyInfo?.exchange,
+      matchPrice: priceSnapshot?.matchPrice,
+      changedValue: priceSnapshot?.changedValue,
+      changedRatio: priceSnapshot?.changedRatio,
+      totalVolume: priceSnapshot?.totalVolumeTraded,
+      marketCap: companyInfo?.capital,
+      beta: companyInfo?.beta,
+      eps: pageProps?.financialIndicators?.indexes?.eps?.value,
+      pe: pageProps?.financialIndicators?.indexes?.pe?.value,
+      pb: pageProps?.financialIndicators?.indexes?.pb?.value,
+      roe: pageProps?.financialIndicators?.indexes?.roe?.value,
+      roa: pageProps?.financialIndicators?.indexes?.roa?.value
+    };
   }
 
   /**
@@ -659,135 +824,118 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     this.selectedSymbolData.set(null);
     this.selectedSymbolPriceData.set(null);
 
-    // Load basic info ONLY from Google Sheets (no DNSE API fallback)
-    if (this.scriptId()) {
-      this.dnseService.getStockBasicInfoFromSheets(this.sheetId(), symbol.symbol, this.scriptId()).subscribe({
-        next: (response) => {
-          if (response.success && response.data) {
-            // Convert basic info to DNSEStockData format for display
-            const basicInfo = response.data;
-            this.selectedSymbolData.set({
-              pageProps: {
-                symbol: symbol.symbol,
-                companyInfo: {
-                  name: basicInfo.companyName,
-                  fullName: basicInfo.companyName,
-                  exchange: basicInfo.exchange
-                },
-                priceSnapshot: {
-                  matchPrice: basicInfo.matchPrice,
-                  changedValue: basicInfo.changedValue,
-                  changedRatio: basicInfo.changedRatio,
-                  totalVolumeTraded: basicInfo.totalVolume
-                }
+    // Load basic info from Stock API
+    this.dnseService.getStockDataFromAPI(symbol.symbol).subscribe({
+      next: (data) => {
+        if (data) {
+          // Convert to DNSEStockData format for display
+          const fullData = data.fullData || {};
+          const basicInfo = data.basicInfo || {};
+          
+          this.selectedSymbolData.set({
+            pageProps: {
+              symbol: symbol.symbol,
+              companyInfo: {
+                name: basicInfo.companyName || fullData['pageProps.companyInfo.name'],
+                fullName: basicInfo.companyName || fullData['pageProps.companyInfo.fullName'],
+                exchange: basicInfo.exchange || fullData['pageProps.companyInfo.exchange']
+              },
+              priceSnapshot: {
+                matchPrice: basicInfo.matchPrice || fullData['pageProps.priceSnapshot.matchPrice'],
+                changedValue: basicInfo.changedValue || fullData['pageProps.priceSnapshot.changedValue'],
+                changedRatio: basicInfo.changedRatio || fullData['pageProps.priceSnapshot.changedRatio'],
+                totalVolumeTraded: basicInfo.totalVolume || fullData['pageProps.priceSnapshot.totalVolumeTraded']
               }
-            } as DNSEStockData);
+            },
+            fullData: fullData
+          } as DNSEStockData);
+          
+          // Set price data if available
+          if (data.priceData) {
+            this.selectedSymbolPriceData.set(data.priceData);
+            setTimeout(() => this.initCandlestickChart(), 100);
           }
-          this.isLoadingDetail.set(false);
-        },
-        error: (error) => {
-          console.error(`Error loading basic info for ${symbol.symbol}:`, error);
-          this.isLoadingDetail.set(false);
-          // Don't show alert, just show empty data
         }
-      });
-    } else {
-      this.isLoadingDetail.set(false);
-    }
+        this.isLoadingDetail.set(false);
+      },
+      error: (error) => {
+        console.error(`Error loading stock data for ${symbol.symbol}:`, error);
+        this.isLoadingDetail.set(false);
+        // Don't show alert, just show empty data
+      }
+    });
 
     // Load price data (3 years default)
     this.loadPriceData(symbol.symbol, 3);
   }
 
   /**
-   * Load price data for detail view
-   * Check if {SYMBOL}_Price tab exists first
-   * If exists, load from Google Sheets
-   * If not, fetch from DNSE API and save to Google Sheets
+   * Load price data for detail view from Stock API
+   * If not found in API, fetch from DNSE API and save to Stock API
    */
   loadPriceData(symbol: string, years: number) {
     this.isLoadingPrice.set(true);
 
-    // Check if price sheet exists
-    if (this.scriptId()) {
-      this.dnseService.checkPriceSheetExists(this.sheetId(), symbol, this.scriptId()).subscribe({
-        next: (priceSheetExists) => {
-          if (priceSheetExists) {
-            // Load from Google Sheets
-            this.dnseService.getPriceDataFromSheets(this.sheetId(), symbol, this.scriptId()).subscribe({
-              next: (response) => {
-                if (response.success && response.data && response.data.length > 0) {
-                  // Convert sheet data back to OHLC format
-                  const ohlcData = this.convertSheetDataToOHLC(response.data);
-                  this.selectedSymbolPriceData.set(ohlcData);
-                  this.isLoadingPrice.set(false);
-                  // Initialize chart after data is loaded
-                  setTimeout(() => this.initCandlestickChart(), 100);
-                } else {
-                  // Sheet exists but no data, fetch from API and save
-                  this.fetchPriceDataFromAPIAndSave(symbol, years);
-                }
-              },
-              error: (error) => {
-                console.error(`Error loading price data from sheets for ${symbol}:`, error);
-                // Fallback to API and save
-                this.fetchPriceDataFromAPIAndSave(symbol, years);
-              }
-            });
-          } else {
-            // Price sheet doesn't exist, fetch from API and save
-            this.fetchPriceDataFromAPIAndSave(symbol, years);
-          }
-        },
-        error: (error) => {
-          console.error(`Error checking price sheet for ${symbol}:`, error);
-          // Fallback to API and save
+    // Try to load from Stock API first
+    this.dnseService.getStockDataFromAPI(symbol).subscribe({
+      next: (data) => {
+        if (data && data.priceData && data.priceData.t && data.priceData.t.length > 0) {
+          // Use price data from API
+          this.selectedSymbolPriceData.set(data.priceData);
+          this.isLoadingPrice.set(false);
+          setTimeout(() => this.initCandlestickChart(), 100);
+        } else {
+          // No price data in API, fetch from DNSE and save
           this.fetchPriceDataFromAPIAndSave(symbol, years);
         }
-      });
-    } else {
-      // No script ID, fetch directly from API (but can't save)
-      this.fetchPriceDataFromAPI(symbol, years);
-    }
-  }
-
-  /**
-   * Fetch price data from API and save to Google Sheets
-   */
-  fetchPriceDataFromAPIAndSave(symbol: string, years: number) {
-    const days = years * 365;
-
-    this.dnseService.getOHLCDataLastDays(symbol, days, '1D').subscribe({
-      next: (data) => {
-        // Save to Google Sheets for caching
-        if (this.scriptId()) {
-          this.savePriceDataToGoogleSheets(symbol, data);
-        }
-
-        this.selectedSymbolPriceData.set(data);
-        this.isLoadingPrice.set(false);
-        // Initialize chart after data is loaded
-        setTimeout(() => this.initCandlestickChart(), 100);
       },
       error: (error) => {
-        console.error(`Error loading price data for ${symbol}:`, error);
-        this.isLoadingPrice.set(false);
-        alert(`Không thể tải dữ liệu giá cho ${symbol}`);
+        console.error(`Error loading price data from API for ${symbol}:`, error);
+        // Fallback to fetch from DNSE API
+        this.fetchPriceDataFromAPIAndSave(symbol, years);
       }
     });
   }
 
   /**
-   * Fetch price data from API (without saving - used when no script ID)
+   * Fetch price data from DNSE API and save to Stock API
    */
-  fetchPriceDataFromAPI(symbol: string, years: number) {
+  fetchPriceDataFromAPIAndSave(symbol: string, years: number) {
     const days = years * 365;
 
     this.dnseService.getOHLCDataLastDays(symbol, days, '1D').subscribe({
-      next: (data) => {
-        this.selectedSymbolPriceData.set(data);
+      next: (ohlcData) => {
+        // Load existing stock data to update
+        this.dnseService.getStockDataFromAPI(symbol).subscribe({
+          next: (existingData) => {
+            const basicInfo = existingData?.basicInfo || this.extractBasicInfoFromStockData({} as DNSEStockData);
+            const fullData = existingData?.fullData || {};
+            
+            // Save updated data with new price data
+            this.dnseService.saveStockData(symbol, basicInfo, ohlcData, fullData).subscribe({
+              next: () => {
+                console.log(`✅ Đã cập nhật price data cho ${symbol}`);
+              },
+              error: (saveError) => {
+                console.error(`Error saving price data for ${symbol}:`, saveError);
+              }
+            });
+          },
+          error: () => {
+            // No existing data, just save price data with empty basic info
+            this.dnseService.saveStockData(symbol, {}, ohlcData, {}).subscribe({
+              next: () => {
+                console.log(`✅ Đã lưu price data cho ${symbol}`);
+              },
+              error: (saveError) => {
+                console.error(`Error saving price data for ${symbol}:`, saveError);
+              }
+            });
+          }
+        });
+
+        this.selectedSymbolPriceData.set(ohlcData);
         this.isLoadingPrice.set(false);
-        // Initialize chart after data is loaded
         setTimeout(() => this.initCandlestickChart(), 100);
       },
       error: (error) => {
@@ -869,7 +1017,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   /**
-   * Fetch price data only (from detail view)
+   * Fetch price data only (from detail view) and save to Stock API
    */
   fetchPriceDataOnly(years: number) {
     const symbol = this.selectedSymbol();
@@ -879,12 +1027,38 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const days = years * 365;
 
     this.dnseService.getOHLCDataLastDays(symbol.symbol, days, '1D').subscribe({
-      next: (data) => {
-        // Save to Google Sheets
-        this.savePriceDataToGoogleSheets(symbol.symbol, data);
+      next: (ohlcData) => {
+        // Load existing stock data to update
+        this.dnseService.getStockDataFromAPI(symbol.symbol).subscribe({
+          next: (existingData) => {
+            const basicInfo = existingData?.basicInfo || this.extractBasicInfoFromStockData({} as DNSEStockData);
+            const fullData = existingData?.fullData || {};
+            
+            // Save updated data with new price data
+            this.dnseService.saveStockData(symbol.symbol, basicInfo, ohlcData, fullData).subscribe({
+              next: () => {
+                console.log(`✅ Đã cập nhật price data cho ${symbol.symbol}`);
+              },
+              error: (saveError) => {
+                console.error(`Error saving price data for ${symbol.symbol}:`, saveError);
+              }
+            });
+          },
+          error: () => {
+            // No existing data, just save price data with empty basic info
+            this.dnseService.saveStockData(symbol.symbol, {}, ohlcData, {}).subscribe({
+              next: () => {
+                console.log(`✅ Đã lưu price data cho ${symbol.symbol}`);
+              },
+              error: (saveError) => {
+                console.error(`Error saving price data for ${symbol.symbol}:`, saveError);
+              }
+            });
+          }
+        });
 
         // Update UI
-        this.selectedSymbolPriceData.set(data);
+        this.selectedSymbolPriceData.set(ohlcData);
         this.isLoadingPrice.set(false);
         this.selectedYears.set(years);
         // Update chart
@@ -959,6 +1133,162 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   /**
+   * Get price color class based on reference price, ceiling, floor
+   */
+  getPriceColorClass(price: number, referencePrice: number, ceilingPrice: number, floorPrice: number): string {
+    const tolerance = 0.01; // Small tolerance for floating point comparison
+    
+    // Check if price equals reference price (within tolerance)
+    if (Math.abs(price - referencePrice) < tolerance) {
+      return 'price-reference'; // Yellow
+    }
+    
+    // Check if price equals ceiling price
+    if (Math.abs(price - ceilingPrice) < tolerance) {
+      return 'price-ceiling'; // Purple
+    }
+    
+    // Check if price equals floor price
+    if (Math.abs(price - floorPrice) < tolerance) {
+      return 'price-floor'; // Cyan
+    }
+    
+    // Compare with reference price
+    if (price > referencePrice) {
+      return 'price-up'; // Green
+    } else {
+      return 'price-down'; // Red
+    }
+  }
+
+  /**
+   * Calculate Moving Average
+   */
+  calculateMA(prices: number[], period: number): number[] {
+    const ma: number[] = [];
+    for (let i = 0; i < prices.length; i++) {
+      if (i < period - 1) {
+        ma.push(NaN);
+      } else {
+        const sum = prices.slice(i - period + 1, i + 1).reduce((a, b) => a + b, 0);
+        ma.push(sum / period);
+      }
+    }
+    return ma;
+  }
+
+  /**
+   * Calculate RSI (Relative Strength Index)
+   */
+  calculateRSI(prices: number[], period: number = 14): number[] {
+    const rsi: number[] = [];
+    const changes: number[] = [];
+
+    // Calculate price changes
+    for (let i = 1; i < prices.length; i++) {
+      changes.push(prices[i] - prices[i - 1]);
+    }
+
+    // Calculate initial average gain and loss
+    let avgGain = 0;
+    let avgLoss = 0;
+    
+    for (let i = 0; i < period && i < changes.length; i++) {
+      if (changes[i] > 0) {
+        avgGain += changes[i];
+      } else {
+        avgLoss += Math.abs(changes[i]);
+      }
+    }
+    
+    avgGain /= period;
+    avgLoss /= period;
+
+    // First RSI values
+    for (let i = 0; i <= period; i++) {
+      rsi.push(NaN);
+    }
+
+    // Calculate RSI for remaining periods
+    for (let i = period; i < changes.length; i++) {
+      const change = changes[i];
+      const gain = change > 0 ? change : 0;
+      const loss = change < 0 ? Math.abs(change) : 0;
+
+      // Use Wilder's smoothing method
+      avgGain = (avgGain * (period - 1) + gain) / period;
+      avgLoss = (avgLoss * (period - 1) + loss) / period;
+
+      if (avgLoss === 0) {
+        rsi.push(100);
+      } else {
+        const rs = avgGain / avgLoss;
+        rsi.push(100 - (100 / (1 + rs)));
+      }
+    }
+
+    return rsi;
+  }
+
+  /**
+   * Calculate MACD
+   */
+  calculateMACD(prices: number[]): { macd: number[], signal: number[], histogram: number[] } {
+    const ema12 = this.calculateEMA(prices, 12);
+    const ema26 = this.calculateEMA(prices, 26);
+    
+    const macd: number[] = [];
+    for (let i = 0; i < prices.length; i++) {
+      if (isNaN(ema12[i]) || isNaN(ema26[i])) {
+        macd.push(NaN);
+      } else {
+        macd.push(ema12[i] - ema26[i]);
+      }
+    }
+    
+    const signal = this.calculateEMA(macd.filter(v => !isNaN(v)), 9);
+    const histogram: number[] = [];
+    
+    for (let i = 0; i < macd.length; i++) {
+      if (isNaN(macd[i]) || isNaN(signal[i])) {
+        histogram.push(NaN);
+      } else {
+        histogram.push(macd[i] - signal[i]);
+      }
+    }
+    
+    return { macd, signal, histogram };
+  }
+
+  /**
+   * Calculate EMA (Exponential Moving Average)
+   */
+  calculateEMA(prices: number[], period: number): number[] {
+    const ema: number[] = [];
+    const multiplier = 2 / (period + 1);
+    
+    // First EMA value is SMA
+    let sum = 0;
+    for (let i = 0; i < period && i < prices.length; i++) {
+      sum += prices[i];
+      if (i < period - 1) {
+        ema.push(NaN);
+      }
+    }
+    
+    if (prices.length >= period) {
+      ema.push(sum / period);
+      
+      // Calculate subsequent EMA values
+      for (let i = period; i < prices.length; i++) {
+        ema.push((prices[i] - ema[ema.length - 1]) * multiplier + ema[ema.length - 1]);
+      }
+    }
+    
+    return ema;
+  }
+
+  /**
    * Initialize candlestick chart
    */
   initCandlestickChart() {
@@ -978,6 +1308,12 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     // Prepare data for candlestick chart
     // Note: Prices are in thousands (1000đ), so multiply by 1000
+    const closePrices = priceData.c.map(p => p * 1000);
+    const ma20 = this.calculateMA(closePrices, 20);
+    const ma50 = this.calculateMA(closePrices, 50);
+    const rsi = this.calculateRSI(closePrices, 14);
+    const macdData = this.calculateMACD(closePrices);
+
     const chartData = priceData.t.map((timestamp, index) => ({
       x: timestamp * 1000, // Convert to milliseconds for Date
       o: (priceData.o[index] || 0) * 1000, // Open price * 1000
@@ -986,18 +1322,77 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
       c: (priceData.c[index] || 0) * 1000  // Close price * 1000
     }));
 
+    const ma20Data = priceData.t.map((timestamp, index) => ({
+      x: timestamp * 1000,
+      y: isNaN(ma20[index]) ? null : ma20[index]
+    })).filter(d => d.y !== null);
+
+    const ma50Data = priceData.t.map((timestamp, index) => ({
+      x: timestamp * 1000,
+      y: isNaN(ma50[index]) ? null : ma50[index]
+    })).filter(d => d.y !== null);
+
     const config: ChartConfiguration<any, any, any> = {
       type: 'candlestick' as any,
       data: {
-        datasets: [{
-          label: this.selectedSymbol()?.symbol || 'Giá cổ phiếu',
-          data: chartData as any,
-          color: {
-            up: '#4caf50',    // Green for up candles
-            down: '#f44336',  // Red for down candles
-            unchanged: '#999' // Gray for unchanged
+        datasets: [
+          {
+            label: this.selectedSymbol()?.symbol || 'Giá cổ phiếu',
+            data: chartData as any,
+            color: {
+              up: '#2e7d32',    // Dark green for up candles
+              down: '#d32f2f',  // Red for down candles
+              unchanged: '#757575' // Gray for unchanged
+            },
+            borderWidth: {
+              up: 1,
+              down: 1
+            },
+            borderColor: {
+              up: '#1b5e20',    // Darker green border
+              down: '#b71c1c'   // Darker red border
+            },
+            // Adjust candlestick width - set a fixed width in pixels
+            // For time scale, we calculate based on time unit
+            // Using barThickness to set approximate width
+            barThickness: 'flex' as any,
+            maxBarThickness: 6,
+            minBarLength: 0,
+            // Ensure wick (đuôi nến) is visible and styled
+            wick: {
+              up: {
+                color: '#1b5e20',
+                lineWidth: 1
+              },
+              down: {
+                color: '#b71c1c',
+                lineWidth: 1
+              }
+            }
+          } as any,
+          {
+            type: 'line',
+            label: 'MA20',
+            data: ma20Data,
+            borderColor: '#ff9800',
+            backgroundColor: 'transparent',
+            borderWidth: 2,
+            pointRadius: 0,
+            tension: 0.1,
+            yAxisID: 'y'
+          },
+          {
+            type: 'line',
+            label: 'MA50',
+            data: ma50Data,
+            borderColor: '#2196f3',
+            backgroundColor: 'transparent',
+            borderWidth: 2,
+            pointRadius: 0,
+            tension: 0.1,
+            yAxisID: 'y'
           }
-        } as any]
+        ]
       },
       options: {
         responsive: true,
@@ -1021,6 +1416,34 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
                 ];
               }
             }
+          },
+          zoom: {
+            zoom: {
+              wheel: {
+                enabled: true,
+                speed: 0.1
+              },
+              pinch: {
+                enabled: true
+              },
+              mode: 'x',
+              limits: {
+                x: {
+                  min: 'original',
+                  max: 'original'
+                }
+              }
+            },
+            pan: {
+              enabled: true,
+              mode: 'x',
+              limits: {
+                x: {
+                  min: 'original',
+                  max: 'original'
+                }
+              }
+            }
           }
         },
         scales: {
@@ -1035,7 +1458,10 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
             title: {
               display: true,
               text: 'Ngày'
-            }
+            },
+            // For time scale, we need to adjust the bar width differently
+            // The width is controlled by the dataset options
+            offset: false
           },
           y: {
             title: {
@@ -1048,11 +1474,25 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
               }
             }
           }
+        },
+        // Interaction settings for better zoom/pan
+        interaction: {
+          intersect: false,
+          mode: 'index'
         }
       }
     };
 
     this.candlestickChart = new Chart(this.candlestickChartRef.nativeElement, config as any);
+  }
+
+  /**
+   * Reset zoom to original view
+   */
+  resetZoom() {
+    if (this.candlestickChart) {
+      this.candlestickChart.resetZoom();
+    }
   }
 
   /**
