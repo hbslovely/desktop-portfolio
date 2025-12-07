@@ -2,6 +2,10 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist/desktop-portfolio",
   "framework": "angular",
+  "builds": [
+    { "src": "api/**/*.js", "use": "@vercel/node" },
+    { "src": "src/app/*", "use": "@vercel/static-build" }
+  ],
   "rewrites": [
     {
       "source": "/api/angular-dev/:path*",
@@ -54,7 +58,21 @@
     {
       "source": "/api/securities-apps-script/:scriptId/exec",
       "destination": "https://script.google.com/macros/s/:scriptId/exec"
-    }
+    },
+    {
+      "source": "/api/stocks/list",
+      "destination": "/api/stocks-list.js"
+    },
+    {
+      "source": "/api/stocks/save",
+      "destination": "/api/stocks/save.js"
+    },
+    {
+      "source": "/api/stocks/:symbol",
+      "destination": "/api/stocks/[symbol].js"
+    },
+    { "source": "/api/(.*)", "destination": "/api/$1.js" },
+    { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [
     {
@@ -183,23 +201,6 @@
         {
           "key": "Access-Control-Allow-Headers",
           "value": "Content-Type, Authorization"
-        }
-      ]
-    },
-    {
-      "source": "/api/facebook/:path*",
-      "headers": [
-        {
-          "key": "Access-Control-Allow-Origin",
-          "value": "*"
-        },
-        {
-          "key": "Access-Control-Allow-Methods",
-          "value": "GET, OPTIONS"
-        },
-        {
-          "key": "Access-Control-Allow-Headers",
-          "value": "Content-Type, Accept, Accept-Language, User-Agent, Sec-CH-UA, Sec-CH-UA-Mobile, Sec-CH-UA-Platform, Sec-Fetch-Dest, Sec-Fetch-Mode, Sec-Fetch-Site, Sec-Fetch-User, Upgrade-Insecure-Requests, Cache-Control"
         }
       ]
     },

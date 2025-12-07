@@ -6,12 +6,12 @@ export const config = {
  * Get stock data from GitHub raw URL or local assets
  */
 async function getStockDataFromGitHub(
-  symbol: string,
-  githubToken?: string,
-  repoOwner: string = 'hongphat',
-  repoName: string = 'desktop-portfolio',
-  branch: string = 'master'
-): Promise<{ success: boolean; data?: any; error?: string }> {
+  symbol,
+  githubToken,
+  repoOwner = 'hongphat',
+  repoName = 'desktop-portfolio',
+  branch = 'master'
+) {
   const filePath = `src/assets/stocks/${symbol.toUpperCase()}.json`;
   
   // Try to get from GitHub raw URL first (public access)
@@ -52,39 +52,38 @@ async function getStockDataFromGitHub(
     }
 
     return { success: false, error: 'File not found' };
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error fetching from GitHub:', error);
     return { success: false, error: error.message || 'Failed to fetch from GitHub' };
   }
 }
 
-export default async function handler(req: Request) {
-  // Handle CORS preflight
-  if (req.method === 'OPTIONS') {
-    return new Response(null, {
-      status: 200,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-      },
-    });
-  }
-
-  if (req.method !== 'GET') {
-    return new Response(
-      JSON.stringify({ success: false, error: 'Method not allowed' }),
-      {
-        status: 405,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-        },
-      }
-    );
-  }
-
+export default async function handler(req) {
   try {
+    // Handle CORS preflight
+    if (req.method === 'OPTIONS') {
+      return new Response(null, {
+        status: 200,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        },
+      });
+    }
+
+    if (req.method !== 'GET') {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Method not allowed' }),
+        {
+          status: 405,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+          },
+        }
+      );
+    }
     // Extract symbol from URL
     const url = new URL(req.url);
     const pathParts = url.pathname.split('/');
@@ -148,12 +147,14 @@ export default async function handler(req: Request) {
         },
       }
     );
-  } catch (error: any) {
-    console.error('Error fetching stock data:', error);
+  } catch (error) {
+    console.error('[symbol.js] Error fetching stock data:', error);
+    console.error('[symbol.js] Error stack:', error?.stack);
+    // Always return a response, never throw
     return new Response(
       JSON.stringify({
         success: false,
-        error: error.message || 'Internal server error',
+        error: error?.message || 'Internal server error',
       }),
       {
         status: 500,
