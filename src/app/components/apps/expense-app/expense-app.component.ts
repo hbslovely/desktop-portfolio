@@ -687,7 +687,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         weeklyMap[weekKey] = {
           total: 0,
           count: 0,
-          weekStart: weekStart.toISOString().split('T')[0]
+          weekStart: this.formatDateLocal(weekStart)
         };
       }
       weeklyMap[weekKey].total += expense.amount;
@@ -1049,7 +1049,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const today = new Date();
     const sixtyDaysAgo = new Date(today);
     sixtyDaysAgo.setDate(today.getDate() - 60);
-    const sixtyDaysAgoStr = sixtyDaysAgo.toISOString().split('T')[0];
+    const sixtyDaysAgoStr = this.formatDateLocal(sixtyDaysAgo);
 
     const historicalExpenses = allExpenses.filter(e => e.date >= sixtyDaysAgoStr);
 
@@ -1094,7 +1094,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     // Predict tomorrow
     const tomorrowDate = new Date(today);
     tomorrowDate.setDate(today.getDate() + 1);
-    const tomorrowStr = tomorrowDate.toISOString().split('T')[0];
+    const tomorrowStr = this.formatDateLocal(tomorrowDate);
     const dayOfWeek = tomorrowDate.getDay();
 
     const tomorrowLinear = linearPrediction.predict(dates.length);
@@ -1114,7 +1114,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     for (let i = 1; i <= 7; i++) {
       const futureDate = new Date(today);
       futureDate.setDate(today.getDate() + i);
-      const futureDateStr = futureDate.toISOString().split('T')[0];
+      const futureDateStr = this.formatDateLocal(futureDate);
       const futureDayOfWeek = futureDate.getDay();
       const daysAhead = i;
 
@@ -1145,7 +1145,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     for (let i = 8; i <= 14; i++) {
       const futureDate = new Date(today);
       futureDate.setDate(today.getDate() + i);
-      const futureDateStr = futureDate.toISOString().split('T')[0];
+      const futureDateStr = this.formatDateLocal(futureDate);
       const futureDayOfWeek = futureDate.getDay();
       const daysAhead = i;
 
@@ -1175,7 +1175,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     for (let i = 1; i <= 30; i++) {
       const futureDate = new Date(today);
       futureDate.setDate(today.getDate() + i);
-      const futureDateStr = futureDate.toISOString().split('T')[0];
+      const futureDateStr = this.formatDateLocal(futureDate);
       const futureDayOfWeek = futureDate.getDay();
       const daysAhead = i;
 
@@ -1205,7 +1205,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     for (let i = 31; i <= 60; i++) {
       const futureDate = new Date(today);
       futureDate.setDate(today.getDate() + i);
-      const futureDateStr = futureDate.toISOString().split('T')[0];
+      const futureDateStr = this.formatDateLocal(futureDate);
       const futureDayOfWeek = futureDate.getDay();
       const daysAhead = i;
 
@@ -1324,10 +1324,10 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   // Yesterday comparison
   yesterdayComparison = computed(() => {
     const today = new Date();
-    const todayStr = today.toISOString().split('T')[0];
+    const todayStr = this.formatDateLocal(today);
     const yesterday = new Date(today);
     yesterday.setDate(today.getDate() - 1);
-    const yesterdayStr = yesterday.toISOString().split('T')[0];
+    const yesterdayStr = this.formatDateLocal(yesterday);
 
     const allExpenses = this.expenses();
 
@@ -1373,7 +1373,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   // Today's expense evaluation
   todayExpenseEvaluation = computed(() => {
     const today = new Date();
-    const todayStr = today.toISOString().split('T')[0];
+    const todayStr = this.formatDateLocal(today);
     const allExpenses = this.expenses(); // Use all expenses, not filtered
 
     // Get today's expenses
@@ -1384,7 +1384,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     // Calculate average of last 30 days (excluding today)
     const thirtyDaysAgo = new Date(today);
     thirtyDaysAgo.setDate(today.getDate() - 30);
-    const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().split('T')[0];
+    const thirtyDaysAgoStr = this.formatDateLocal(thirtyDaysAgo);
 
     const last30DaysExpenses = allExpenses.filter(e => {
       return e.date >= thirtyDaysAgoStr && e.date < todayStr;
@@ -1397,7 +1397,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     // Calculate average of last 7 days (excluding today)
     const sevenDaysAgo = new Date(today);
     sevenDaysAgo.setDate(today.getDate() - 7);
-    const sevenDaysAgoStr = sevenDaysAgo.toISOString().split('T')[0];
+    const sevenDaysAgoStr = this.formatDateLocal(sevenDaysAgo);
 
     const last7DaysExpenses = allExpenses.filter(e => {
       return e.date >= sevenDaysAgoStr && e.date < todayStr;
@@ -1413,7 +1413,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const diff = today.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
     weekStart.setDate(diff);
     weekStart.setHours(0, 0, 0, 0);
-    const weekStartStr = weekStart.toISOString().split('T')[0];
+    const weekStartStr = this.formatDateLocal(weekStart);
 
     const currentWeekExpenses = allExpenses.filter(e => {
       return e.date >= weekStartStr && e.date < todayStr;
@@ -1425,7 +1425,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     // Calculate current month average (excluding today)
     const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-    const monthStartStr = monthStart.toISOString().split('T')[0];
+    const monthStartStr = this.formatDateLocal(monthStart);
 
     const currentMonthExpenses = allExpenses.filter(e => {
       return e.date >= monthStartStr && e.date < todayStr;
@@ -2531,10 +2531,10 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     if (!this.todayTrendChartRef?.nativeElement) return;
 
     const today = new Date();
-    const todayStr = today.toISOString().split('T')[0];
+    const todayStr = this.formatDateLocal(today);
     const thirtyDaysAgo = new Date(today);
     thirtyDaysAgo.setDate(today.getDate() - 30);
-    const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().split('T')[0];
+    const thirtyDaysAgoStr = this.formatDateLocal(thirtyDaysAgo);
 
     const allExpenses = this.expenses();
     const last30DaysExpenses = allExpenses.filter(e => {
@@ -2557,7 +2557,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     for (let i = 29; i >= 0; i--) {
       const date = new Date(today);
       date.setDate(today.getDate() - i);
-      const dateStr = date.toISOString().split('T')[0];
+      const dateStr = this.formatDateLocal(date);
       dates.push(this.formatDateShort(dateStr));
       values.push(dailyMap[dateStr] || 0);
       if (dateStr === todayStr) {
@@ -3028,10 +3028,10 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const today = new Date();
     const thirtyDaysAgo = new Date(today);
     thirtyDaysAgo.setDate(today.getDate() - 30);
-    const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().split('T')[0];
+    const thirtyDaysAgoStr = this.formatDateLocal(thirtyDaysAgo);
 
     const allExpenses = this.expenses();
-    const historicalExpenses = allExpenses.filter(e => e.date >= thirtyDaysAgoStr && e.date <= today.toISOString().split('T')[0]);
+    const historicalExpenses = allExpenses.filter(e => e.date >= thirtyDaysAgoStr && e.date <= this.formatDateLocal(today));
 
     const dailyData: { [date: string]: number } = {};
     historicalExpenses.forEach(expense => {
@@ -3247,7 +3247,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       const date = new Date(pred.date);
       const weekStart = new Date(date);
       weekStart.setDate(date.getDate() - date.getDay());
-      const weekKey = `${this.formatDateShort(weekStart.toISOString().split('T')[0])} - ${this.formatDateShort(pred.date)}`;
+      const weekKey = `${this.formatDateShort(this.formatDateLocal(weekStart))} - ${this.formatDateShort(pred.date)}`;
 
       if (!currentWeek || currentWeek.week !== weekKey) {
         if (currentWeek) weeklyData.push(currentWeek);
@@ -3907,11 +3907,21 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   /**
+   * Format date to YYYY-MM-DD in local timezone (not UTC)
+   */
+  private formatDateLocal(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  /**
    * Quick filter: Today
    */
   filterToday(): void {
     const today = new Date();
-    const todayStr = today.toISOString().split('T')[0];
+    const todayStr = this.formatDateLocal(today);
     this.filterDateFrom.set(todayStr);
     this.filterDateTo.set(todayStr);
   }
@@ -3923,7 +3933,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const today = new Date();
     const yesterday = new Date(today);
     yesterday.setDate(today.getDate() - 1);
-    const yesterdayStr = yesterday.toISOString().split('T')[0];
+    const yesterdayStr = this.formatDateLocal(yesterday);
     this.filterDateFrom.set(yesterdayStr);
     this.filterDateTo.set(yesterdayStr);
   }
@@ -3935,8 +3945,8 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const today = new Date();
     const last7Days = new Date(today);
     last7Days.setDate(today.getDate() - 7);
-    this.filterDateFrom.set(last7Days.toISOString().split('T')[0]);
-    this.filterDateTo.set(today.toISOString().split('T')[0]);
+    this.filterDateFrom.set(this.formatDateLocal(last7Days));
+    this.filterDateTo.set(this.formatDateLocal(today));
   }
 
   /**
@@ -3946,8 +3956,8 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const today = new Date();
     const last30Days = new Date(today);
     last30Days.setDate(today.getDate() - 30);
-    this.filterDateFrom.set(last30Days.toISOString().split('T')[0]);
-    this.filterDateTo.set(today.toISOString().split('T')[0]);
+    this.filterDateFrom.set(this.formatDateLocal(last30Days));
+    this.filterDateTo.set(this.formatDateLocal(today));
   }
 
   /**
@@ -3956,8 +3966,8 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   filterCurrentMonth(): void {
     const today = new Date();
     const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-    this.filterDateFrom.set(firstDay.toISOString().split('T')[0]);
-    this.filterDateTo.set(today.toISOString().split('T')[0]);
+    this.filterDateFrom.set(this.formatDateLocal(firstDay));
+    this.filterDateTo.set(this.formatDateLocal(today));
   }
 
   /**
@@ -3988,8 +3998,8 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const today = new Date();
     const last3Days = new Date(today);
     last3Days.setDate(today.getDate() - 3);
-    this.filterDateFrom.set(last3Days.toISOString().split('T')[0]);
-    this.filterDateTo.set(today.toISOString().split('T')[0]);
+    this.filterDateFrom.set(this.formatDateLocal(last3Days));
+    this.filterDateTo.set(this.formatDateLocal(today));
   }
 
   /**
@@ -3999,8 +4009,8 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const today = new Date();
     const last10Days = new Date(today);
     last10Days.setDate(today.getDate() - 10);
-    this.filterDateFrom.set(last10Days.toISOString().split('T')[0]);
-    this.filterDateTo.set(today.toISOString().split('T')[0]);
+    this.filterDateFrom.set(this.formatDateLocal(last10Days));
+    this.filterDateTo.set(this.formatDateLocal(today));
   }
 
   /**
@@ -4010,8 +4020,8 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const today = new Date();
     const last7Days = new Date(today);
     last7Days.setDate(today.getDate() - 7);
-    this.filterDateFrom.set(last7Days.toISOString().split('T')[0]);
-    this.filterDateTo.set(today.toISOString().split('T')[0]);
+    this.filterDateFrom.set(this.formatDateLocal(last7Days));
+    this.filterDateTo.set(this.formatDateLocal(today));
   }
 
   /**
@@ -4021,8 +4031,8 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const today = new Date();
     const last30Days = new Date(today);
     last30Days.setDate(today.getDate() - 30);
-    this.filterDateFrom.set(last30Days.toISOString().split('T')[0]);
-    this.filterDateTo.set(today.toISOString().split('T')[0]);
+    this.filterDateFrom.set(this.formatDateLocal(last30Days));
+    this.filterDateTo.set(this.formatDateLocal(today));
   }
 
   /**
@@ -4031,8 +4041,8 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   setDateRangeThisMonth(): void {
     const today = new Date();
     const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-    this.filterDateFrom.set(firstDay.toISOString().split('T')[0]);
-    this.filterDateTo.set(today.toISOString().split('T')[0]);
+    this.filterDateFrom.set(this.formatDateLocal(firstDay));
+    this.filterDateTo.set(this.formatDateLocal(today));
   }
 
   /**
@@ -4042,8 +4052,8 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const today = new Date();
     const firstDayLastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
     const lastDayLastMonth = new Date(today.getFullYear(), today.getMonth(), 0);
-    this.filterDateFrom.set(firstDayLastMonth.toISOString().split('T')[0]);
-    this.filterDateTo.set(lastDayLastMonth.toISOString().split('T')[0]);
+    this.filterDateFrom.set(this.formatDateLocal(firstDayLastMonth));
+    this.filterDateTo.set(this.formatDateLocal(lastDayLastMonth));
   }
 
   /**
@@ -4053,8 +4063,8 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const today = new Date();
     const threeMonthsAgo = new Date(today);
     threeMonthsAgo.setMonth(today.getMonth() - 3);
-    this.filterDateFrom.set(threeMonthsAgo.toISOString().split('T')[0]);
-    this.filterDateTo.set(today.toISOString().split('T')[0]);
+    this.filterDateFrom.set(this.formatDateLocal(threeMonthsAgo));
+    this.filterDateTo.set(this.formatDateLocal(today));
   }
 
   /**
@@ -4064,8 +4074,8 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const today = new Date();
     const sixMonthsAgo = new Date(today);
     sixMonthsAgo.setMonth(today.getMonth() - 6);
-    this.filterDateFrom.set(sixMonthsAgo.toISOString().split('T')[0]);
-    this.filterDateTo.set(today.toISOString().split('T')[0]);
+    this.filterDateFrom.set(this.formatDateLocal(sixMonthsAgo));
+    this.filterDateTo.set(this.formatDateLocal(today));
   }
 
   /**
@@ -4074,8 +4084,8 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   setDateRangeThisYear(): void {
     const today = new Date();
     const firstDayYear = new Date(today.getFullYear(), 0, 1);
-    this.filterDateFrom.set(firstDayYear.toISOString().split('T')[0]);
-    this.filterDateTo.set(today.toISOString().split('T')[0]);
+    this.filterDateFrom.set(this.formatDateLocal(firstDayYear));
+    this.filterDateTo.set(this.formatDateLocal(today));
   }
 
   /**
@@ -4085,8 +4095,8 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const today = new Date();
     const firstDayLastYear = new Date(today.getFullYear() - 1, 0, 1);
     const lastDayLastYear = new Date(today.getFullYear() - 1, 11, 31);
-    this.filterDateFrom.set(firstDayLastYear.toISOString().split('T')[0]);
-    this.filterDateTo.set(lastDayLastYear.toISOString().split('T')[0]);
+    this.filterDateFrom.set(this.formatDateLocal(firstDayLastYear));
+    this.filterDateTo.set(this.formatDateLocal(lastDayLastYear));
   }
 
   /**
@@ -4103,7 +4113,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   isTodayActive(): boolean {
     if (!this.filterDateFrom() || !this.filterDateTo()) return false;
     const today = new Date();
-    const todayStr = today.toISOString().split('T')[0];
+    const todayStr = this.formatDateLocal(today);
     return this.filterDateFrom() === todayStr && this.filterDateTo() === todayStr;
   }
 
@@ -4115,7 +4125,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const today = new Date();
     const yesterday = new Date(today);
     yesterday.setDate(today.getDate() - 1);
-    const yesterdayStr = yesterday.toISOString().split('T')[0];
+    const yesterdayStr = this.formatDateLocal(yesterday);
     return this.filterDateFrom() === yesterdayStr && this.filterDateTo() === yesterdayStr;
   }
 
@@ -4127,8 +4137,8 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const today = new Date();
     const last7Days = new Date(today);
     last7Days.setDate(today.getDate() - 7);
-    return this.filterDateFrom() === last7Days.toISOString().split('T')[0] &&
-           this.filterDateTo() === today.toISOString().split('T')[0];
+    return this.filterDateFrom() === this.formatDateLocal(last7Days) &&
+           this.filterDateTo() === this.formatDateLocal(today);
   }
 
   /**
@@ -4139,8 +4149,8 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const today = new Date();
     const last30Days = new Date(today);
     last30Days.setDate(today.getDate() - 30);
-    return this.filterDateFrom() === last30Days.toISOString().split('T')[0] &&
-           this.filterDateTo() === today.toISOString().split('T')[0];
+    return this.filterDateFrom() === this.formatDateLocal(last30Days) &&
+           this.filterDateTo() === this.formatDateLocal(today);
   }
 
   /**
@@ -4150,8 +4160,8 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     if (!this.filterDateFrom() || !this.filterDateTo()) return false;
     const today = new Date();
     const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-    return this.filterDateFrom() === firstDay.toISOString().split('T')[0] &&
-           this.filterDateTo() === today.toISOString().split('T')[0];
+    return this.filterDateFrom() === this.formatDateLocal(firstDay) &&
+           this.filterDateTo() === this.formatDateLocal(today);
   }
 
   /**

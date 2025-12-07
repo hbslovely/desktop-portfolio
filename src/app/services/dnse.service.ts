@@ -2,7 +2,6 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
-import { environment } from '../../environments/environment';
 
 export interface DNSESymbol {
   symbol: string;
@@ -205,83 +204,10 @@ export class DnseService {
   }
 
   /**
-   * Check if a symbol has been fetched (from Google Sheets)
+   * Get all fetched symbols from Stock API
    */
-  checkSheetExists(sheetId: string, symbol: string, scriptId?: string): Observable<boolean> {
-    const scriptIdToUse = scriptId || '';
-    if (!scriptIdToUse) {
-      // Fallback to localStorage if scriptId not configured
-      return new Observable(observer => {
-        observer.next(this.getFetchedSymbols().includes(symbol));
-        observer.complete();
-      });
-    }
-
-    const baseUrl = environment.production
-      ? `https://script.google.com/macros/s/${scriptIdToUse}/exec`
-      : `/api/securities-apps-script/${scriptIdToUse}/exec`;
-
-    return this.http.post<any>(baseUrl, {
-      action: 'checkSheetExists',
-      sheetId: sheetId,
-      symbol: symbol
-    }).pipe(
-      map((response: any) => {
-        return response.success && response.exists === true;
-      }),
-      catchError((error) => {
-        console.error(`Error checking sheet for ${symbol}:`, error);
-        // Fallback to localStorage on error
-        return of(this.getFetchedSymbols().includes(symbol));
-      })
-    );
-  }
-
-  /**
-   * Check if price sheet ({SYMBOL}_Price) exists
-   */
-  checkPriceSheetExists(sheetId: string, symbol: string, scriptId?: string): Observable<boolean> {
-    const scriptIdToUse = scriptId || '';
-    if (!scriptIdToUse) {
-      return of(false);
-    }
-
-    const baseUrl = environment.production
-      ? `https://script.google.com/macros/s/${scriptIdToUse}/exec`
-      : `/api/securities-apps-script/${scriptIdToUse}/exec`;
-
-    return this.http.post<any>(baseUrl, {
-      action: 'checkSheetExists',
-      sheetId: sheetId,
-      symbol: `${symbol}_Price`
-    }).pipe(
-      map((response: any) => {
-        return response.success && response.exists === true;
-      }),
-      catchError((error) => {
-        console.error(`Error checking price sheet for ${symbol}:`, error);
-        return of(false);
-      })
-    );
-  }
-
-  /**
-   * Get all fetched symbols from Google Sheets
-   */
-  getAllFetchedSymbolsFromSheets(sheetId: string, scriptId?: string): Observable<string[]> {
-    const scriptIdToUse = scriptId || '';
-    if (!scriptIdToUse) {
-      return of(this.getFetchedSymbols());
-    }
-
-    const baseUrl = environment.production
-      ? `https://script.google.com/macros/s/${scriptIdToUse}/exec`
-      : `/api/securities-apps-script/${scriptIdToUse}/exec`;
-
-    return this.http.post<any>(baseUrl, {
-      action: 'getAllSymbols',
-      sheetId: sheetId
-    }).pipe(
+  getAllFetchedSymbols(): Observable<string[]> {
+    return this.http.get<any>('/api/stocks/list').pipe(
       map((response: any) => {
         if (response.success && Array.isArray(response.symbols)) {
           return response.symbols;
@@ -289,7 +215,8 @@ export class DnseService {
         return [];
       }),
       catchError((error) => {
-        console.error('Error getting all symbols from sheets:', error);
+        console.error('Error getting all symbols from API:', error);
+        // Fallback to localStorage on error
         return of(this.getFetchedSymbols());
       })
     );
@@ -317,74 +244,35 @@ export class DnseService {
   }
 
   /**
-   * Get price data from Google Sheets
+   * Get stock data from Stock API (includes basicInfo, priceData, fullData)
    */
-  getPriceDataFromSheets(sheetId: string, symbol: string, scriptId?: string): Observable<any> {
-    const scriptIdToUse = scriptId || '';
-    if (!scriptIdToUse) {
-      return throwError(() => new Error('Script ID chưa được cấu hình'));
-    }
-
-    const baseUrl = environment.production
-      ? `https://script.google.com/macros/s/${scriptIdToUse}/exec`
-      : `/api/securities-apps-script/${scriptIdToUse}/exec`;
-
-    return this.http.post<any>(baseUrl, {
-      action: 'getPriceData',
-      sheetId: sheetId,
-      symbol: symbol
-    }).pipe(
+  getStockDataFromAPI(symbol: string): Observable<any> {
+    return this.http.get<any>(`/api/stocks/${symbol.toUpperCase()}`).pipe(
+      map((response: any) => {
+        if (response.success && response.data) {
+          return response.data;
+        }
+        throw new Error('Stock data not found');
+      }),
       catchError((error) => {
-        console.error(`Error getting price data for ${symbol}:`, error);
+        console.error(`Error getting stock data for ${symbol}:`, error);
         return throwError(() => error);
       })
     );
   }
 
   /**
-   * Get basic info of a stock from Google Sheets
+   * Save stock data to Stock API
    */
-  getStockBasicInfoFromSheets(sheetId: string, symbol: string, scriptId?: string): Observable<any> {
-    const scriptIdToUse = scriptId || '';
-    if (!scriptIdToUse) {
-      return throwError(() => new Error('Script ID chưa được cấu hình'));
-    }
-
-    const baseUrl = environment.production
-      ? `https://script.google.com/macros/s/${scriptIdToUse}/exec`
-      : `/api/securities-apps-script/${scriptIdToUse}/exec`;
-
-    return this.http.post<any>(baseUrl, {
-      action: 'getStockBasicInfo',
-      sheetId: sheetId,
-      symbol: symbol
+  saveStockData(symbol: string, basicInfo: any, priceData: DNSEOHLCData, fullData: any): Observable<any> {
+    return this.http.post<any>('/api/stocks/save', {
+      symbol: symbol.toUpperCase(),
+      basicInfo,
+      priceData,
+      fullData
     }).pipe(
       catchError((error) => {
-        console.error(`Error getting basic info for ${symbol}:`, error);
-        return throwError(() => error);
-      })
-    );
-  }
-
-  /**
-   * Get basic info of all stocks from Google Sheets
-   */
-  getAllStocksBasicInfoFromSheets(sheetId: string, scriptId?: string): Observable<any> {
-    const scriptIdToUse = scriptId || '';
-    if (!scriptIdToUse) {
-      return throwError(() => new Error('Script ID chưa được cấu hình'));
-    }
-
-    const baseUrl = environment.production
-      ? `https://script.google.com/macros/s/${scriptIdToUse}/exec`
-      : `/api/securities-apps-script/${scriptIdToUse}/exec`;
-
-    return this.http.post<any>(baseUrl, {
-      action: 'getAllStocksBasicInfo',
-      sheetId: sheetId
-    }).pipe(
-      catchError((error) => {
-        console.error('Error getting all stocks basic info:', error);
+        console.error(`Error saving stock data for ${symbol}:`, error);
         return throwError(() => error);
       })
     );

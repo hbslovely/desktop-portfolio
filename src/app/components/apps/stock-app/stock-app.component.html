@@ -98,7 +98,20 @@
             
             <!-- Candlestick Chart -->
             <div class="chart-container">
-              <h4>Biểu đồ hình nến</h4>
+              <div class="chart-header">
+                <h4>Biểu đồ hình nến</h4>
+                <div class="chart-controls">
+                  <button class="btn btn-sm btn-secondary" (click)="resetZoom()" title="Reset zoom">
+                    <i class="pi pi-refresh"></i>
+                    Reset zoom
+                  </button>
+                </div>
+              </div>
+              <div class="chart-legend">
+                <span class="legend-item"><span class="legend-color ma20"></span> MA20</span>
+                <span class="legend-item"><span class="legend-color ma50"></span> MA50</span>
+                <span class="legend-hint">Cuộn chuột để zoom, kéo để di chuyển</span>
+              </div>
               <div class="chart-wrapper">
                 <canvas #candlestickChart></canvas>
               </div>
@@ -119,10 +132,18 @@
                 <tbody>
                   <tr *ngFor="let item of priceTableData()">
                     <td>{{ item.date }}</td>
-                    <td>{{ (item.open * 1000) | number:'1.0-0' }} đ</td>
-                    <td>{{ (item.low * 1000) | number:'1.0-0' }} đ</td>
-                    <td>{{ (item.high * 1000) | number:'1.0-0' }} đ</td>
-                    <td>{{ (item.close * 1000) | number:'1.0-0' }} đ</td>
+                    <td [ngClass]="getPriceColorClass(item.open, item.referencePrice, item.ceilingPrice, item.floorPrice)">
+                      {{ (item.open * 1000) | number:'1.0-0' }} đ
+                    </td>
+                    <td [ngClass]="getPriceColorClass(item.low, item.referencePrice, item.ceilingPrice, item.floorPrice)">
+                      {{ (item.low * 1000) | number:'1.0-0' }} đ
+                    </td>
+                    <td [ngClass]="getPriceColorClass(item.high, item.referencePrice, item.ceilingPrice, item.floorPrice)">
+                      {{ (item.high * 1000) | number:'1.0-0' }} đ
+                    </td>
+                    <td [ngClass]="getPriceColorClass(item.close, item.referencePrice, item.ceilingPrice, item.floorPrice)">
+                      {{ (item.close * 1000) | number:'1.0-0' }} đ
+                    </td>
                     <td>{{ item.volume | number:'1.0-0' }}</td>
                   </tr>
                 </tbody>
@@ -134,11 +155,11 @@
         <!-- Actions -->
         <div class="detail-actions">
           <a 
-            [href]="'https://docs.google.com/spreadsheets/d/' + sheetId() + '/edit#gid=0'" 
+            href="https://github.com/hongphat/desktop-portfolio/tree/master/src/assets/stocks" 
             target="_blank"
             class="btn btn-primary">
             <i class="pi pi-external-link"></i>
-            Mở Google Sheets
+            Xem trên GitHub
           </a>
           <button 
             class="btn btn-secondary" 
@@ -191,6 +212,18 @@
     </div>
 
     <div class="control-group">
+      <label>Lọc theo:</label>
+      <select 
+        [value]="filterMode()" 
+        (change)="onFilterModeChange($any($event.target).value)"
+        class="filter-mode-select">
+        <option value="all">Tất cả</option>
+        <option value="unfetched">Chưa fetch</option>
+        <option value="missingBasicInfo">Chưa có thông tin cơ bản</option>
+      </select>
+    </div>
+
+    <div class="control-group">
       <label>Tìm kiếm:</label>
       <input 
         type="text" 
@@ -228,6 +261,12 @@
   <div *ngIf="isLoading()" class="loading-container">
     <i class="pi pi-spin pi-spinner"></i>
     <span>Đang tải danh sách cổ phiếu...</span>
+  </div>
+
+  <!-- Loading Basic Info Check -->
+  <div *ngIf="isLoadingBasicInfoCheck()" class="loading-container">
+    <i class="pi pi-spin pi-spinner"></i>
+    <span>Đang kiểm tra thông tin cơ bản...</span>
   </div>
 
   <!-- Symbols List -->
