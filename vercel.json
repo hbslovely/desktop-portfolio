@@ -10,7 +10,23 @@
       "use": "@vercel/static-build"
     },
     {
-      "src": "api/**/*.js",
+      "src": "api/help.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "api/test-minimal.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "api/stocks/list.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "api/stocks/save.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "api/stocks/[symbol].js",
       "use": "@vercel/node"
     }
   ],
@@ -66,6 +82,10 @@
     {
       "source": "/api/securities-apps-script/:scriptId/exec",
       "destination": "https://script.google.com/macros/s/:scriptId/exec"
+    },
+    {
+      "source": "/api/:path*",
+      "destination": "/api/:path*"
     },
     {
       "source": "/(.*)",
