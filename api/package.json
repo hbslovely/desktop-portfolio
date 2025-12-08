@@ -2,6 +2,9 @@
   "type": "module",
   "name": "api-functions",
   "version": "1.0.0",
-  "description": "API functions re-exports for Vercel",
-  "private": true
+  "description": "API functions for Vercel",
+  "private": true,
+  "dependencies": {
+    "jsonwebtoken": "^9.0.3"
+  }
 }
