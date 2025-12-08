@@ -1,4 +1,6 @@
 // Load environment variables from .env.local for local development
+import { getGitHubAppToken } from '../github-app.js';
+
 export const config = {
   runtime: 'nodejs',
 };
@@ -93,13 +95,23 @@ export default async function handler(req) {
     }
 
     // Get GitHub credentials from environment variables
-    const githubToken = process.env.GITHUB_TOKEN;
     const repoOwner = process.env.GITHUB_REPO_OWNER || 'hbslovely';
     const repoName = process.env.GITHUB_REPO_NAME || 'desktop-portfolio';
     const branch = process.env.GITHUB_BRANCH || 'master';
 
+    // Get GitHub App token (or fallback to personal access token)
+    let githubToken;
+    try {
+      githubToken = await getGitHubAppToken(repoOwner);
+      console.log('[list.js] Using GitHub App authentication');
+    } catch (error) {
+      console.warn('[list.js] GitHub App auth failed, falling back to GITHUB_TOKEN:', error.message);
+      githubToken = process.env.GITHUB_TOKEN;
+    }
+
     console.log('[list.js] Environment:', {
       hasToken: !!githubToken,
+      usingAppAuth: !!process.env.GITHUB_APP_ID,
       repoOwner,
       repoName,
       branch

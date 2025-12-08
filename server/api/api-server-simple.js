@@ -7,9 +7,9 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const port = 3001;
+const port = process.env.PORT || 3001;
 
-// Simple router - paths relative to api/ directory
+// Simple router - paths relative to server/api/ directory
 const routes = {
   '/api/test-minimal': './test-minimal.js',
   '/api/help': './help.js',

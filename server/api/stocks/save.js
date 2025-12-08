@@ -1,3 +1,5 @@
+import { getGitHubAppToken } from '../github-app.js';
+
 export const config = {
   runtime: 'nodejs',
 };
@@ -118,25 +120,34 @@ export default async function handler(req) {
     }
 
     // Get GitHub credentials from environment variables
-    const githubToken = process.env['GITHUB_TOKEN'];
     const repoOwner = process.env['GITHUB_REPO_OWNER'] || 'hbslovely';
     const repoName = process.env['GITHUB_REPO_NAME'] || 'desktop-portfolio';
     const branch = process.env['GITHUB_BRANCH'] || 'master';
 
-    if (!githubToken) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: 'GitHub token not configured',
-        }),
-        {
-          status: 500,
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
-          },
-        }
-      );
+    // Get GitHub App token (or fallback to personal access token)
+    let githubToken;
+    try {
+      githubToken = await getGitHubAppToken(repoOwner);
+      console.log('[save.js] Using GitHub App authentication');
+    } catch (error) {
+      console.warn('[save.js] GitHub App auth failed, falling back to GITHUB_TOKEN:', error.message);
+      githubToken = process.env['GITHUB_TOKEN'];
+      
+      if (!githubToken) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: 'GitHub authentication not configured. Please set GITHUB_APP_ID and GITHUB_CLIENT_SECRET, or GITHUB_TOKEN',
+          }),
+          {
+            status: 500,
+            headers: {
+              'Content-Type': 'application/json',
+              'Access-Control-Allow-Origin': '*',
+            },
+          }
+        );
+      }
     }
 
     // Prepare stock data

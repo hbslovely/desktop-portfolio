@@ -1,4 +1,6 @@
 // Load environment variables from .env.local for local development
+import { getGitHubAppToken } from '../github-app.js';
+
 export const config = {
   runtime: 'nodejs',
 };
@@ -13,7 +15,7 @@ async function getStockDataFromGitHub(
   repoName = 'desktop-portfolio',
   branch = 'master'
 ) {
-  const filePath = `api/data/stocks/${symbol.toUpperCase()}.json`;
+  const filePath = `server/data/stocks/${symbol.toUpperCase()}.json`;
 
   // Try to get from GitHub raw URL first (public access)
   const rawUrl = `https://raw.githubusercontent.com/${repoOwner}/${repoName}/${branch}/${filePath}`;
@@ -104,10 +106,19 @@ export default async function handler(req) {
     }
 
     // Get GitHub credentials from environment variables
-    const githubToken = process.env['GITHUB_TOKEN'];
     const repoOwner = process.env['GITHUB_REPO_OWNER'] || 'hbslovely';
     const repoName = process.env['GITHUB_REPO_NAME'] || 'desktop-portfolio';
     const branch = process.env['GITHUB_BRANCH'] || 'master';
+
+    // Get GitHub App token (or fallback to personal access token)
+    let githubToken;
+    try {
+      githubToken = await getGitHubAppToken(repoOwner);
+      console.log('[symbol.js] Using GitHub App authentication');
+    } catch (error) {
+      console.warn('[symbol.js] GitHub App auth failed, falling back to GITHUB_TOKEN:', error.message);
+      githubToken = process.env['GITHUB_TOKEN'];
+    }
 
     // Fetch stock data from GitHub
     const result = await getStockDataFromGitHub(
