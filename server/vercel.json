@@ -1,6 +1,33 @@
 {
   "buildCommand": "npm run build",
   "installCommand": "npm install",
-  "outputDirectory": "./"
+  "outputDirectory": "./",
+  "functions": {
+    "server/api/**/*.js": {
+      "runtime": "@vercel/node"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/test-minimal",
+      "destination": "/server/api/test-minimal"
+    },
+    {
+      "source": "/api/help",
+      "destination": "/server/api/help"
+    },
+    {
+      "source": "/api/stocks/list",
+      "destination": "/server/api/stocks/list"
+    },
+    {
+      "source": "/api/stocks/save",
+      "destination": "/server/api/stocks/save"
+    },
+    {
+      "source": "/api/stocks/:symbol",
+      "destination": "/server/api/stocks/:symbol"
+    }
+  ]
 }
 

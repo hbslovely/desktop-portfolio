@@ -1,11 +1,13 @@
 {
   "type": "module",
   "scripts": {
-    "build": "echo 'Building Node.js API...' && node --check *.js stocks/*.js 2>/dev/null || true && echo '✅ API build complete'",
-    "dev:api": "node ./api-server-simple.js"
+    "build": "echo 'Building Node.js API...' && node --check *.js api/stocks/*.js 2>/dev/null || true && echo '✅ API build complete'",
+    "dev:api": "node api/api-server-simple.js"
   },
   "devDependencies": {
     "vercel": "^49.1.1"
+  },
+  "dependencies": {
+    "jsonwebtoken": "^9.0.3"
   }
 }
-

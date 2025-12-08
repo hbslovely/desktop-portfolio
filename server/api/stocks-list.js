@@ -1,3 +1,5 @@
+import { getGitHubAppToken } from './github-app.js';
+
 export const config = {
   runtime: 'nodejs',
 };
@@ -11,7 +13,7 @@ async function getStockListFromGitHub(
   repoName = 'desktop-portfolio',
   branch = 'master'
 ) {
-  const folderPath = 'api/data/stocks';
+  const folderPath = 'server/data/stocks';
   const apiUrl = `https://api.github.com/repos/${repoOwner}/${repoName}/contents/${folderPath}?ref=${branch}`;
 
   try {
@@ -92,13 +94,23 @@ export default async function handler(req) {
     }
 
     // Get GitHub credentials from environment variables
-    const githubToken = process.env.GITHUB_TOKEN;
     const repoOwner = process.env.GITHUB_REPO_OWNER || 'hbslovely';
     const repoName = process.env.GITHUB_REPO_NAME || 'desktop-portfolio';
     const branch = process.env.GITHUB_BRANCH || 'master';
 
+    // Get GitHub App token (or fallback to personal access token)
+    let githubToken;
+    try {
+      githubToken = await getGitHubAppToken(repoOwner);
+      console.log('[stocks-list.js] Using GitHub App authentication');
+    } catch (error) {
+      console.warn('[stocks-list.js] GitHub App auth failed, falling back to GITHUB_TOKEN:', error.message);
+      githubToken = process.env.GITHUB_TOKEN;
+    }
+
     console.log('[stocks-list.js] Environment:', {
       hasToken: !!githubToken,
+      usingAppAuth: !!process.env.GITHUB_APP_ID,
       repoOwner,
       repoName,
       branch
