@@ -4,7 +4,8 @@
   "scripts": {
     "ng": "ng",
     "start": "npm run dev",
-    "dev": "ng serve --port 4200",
+    "dev": "concurrently \"npm run dev:api\" \"npm run dev:angular\"",
+    "dev:angular": "ng serve --port 4200 --proxy-config proxy.conf.json",
     "dev:angular-only": "ng serve",
     "dev:api": "cd server && npm run dev:api",
     "build": "ng build --configuration production",
