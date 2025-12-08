@@ -6,6 +6,7 @@
     "start": "npm run dev",
     "dev": "ng serve --port 4200",
     "dev:angular-only": "ng serve",
+    "dev:api": "cd api && npm run dev:api",
     "build": "ng build --configuration production",
     "build:dev": "ng build --configuration development",
     "watch": "ng build --watch --configuration development",

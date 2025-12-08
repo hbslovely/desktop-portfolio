@@ -1,6 +1,4 @@
 // Load environment variables from .env.local for local development
-import '../../env-loader.js';
-
 export const config = {
   runtime: 'nodejs',
 };
