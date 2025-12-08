@@ -1,0 +1,7 @@
+{
+  "type": "module",
+  "name": "api-functions",
+  "version": "1.0.0",
+  "description": "API functions re-exports for Vercel",
+  "private": true
+}
