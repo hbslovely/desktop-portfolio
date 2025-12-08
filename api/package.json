@@ -1,7 +1,11 @@
 {
   "type": "module",
   "scripts": {
+    "dev:api": "node api/api-server-simple.js",
     "build": "ng build --configuration production"
+  },
+  "devDependencies": {
+    "vercel": "^49.1.1"
   }
 }
 

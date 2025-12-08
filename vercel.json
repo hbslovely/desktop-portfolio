@@ -2,6 +2,7 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist/desktop-portfolio",
   "framework": "angular",
+  "installCommand": "npm install",
   "builds": [
     { "src": "api/**/*.js", "use": "@vercel/node" }
   ],
