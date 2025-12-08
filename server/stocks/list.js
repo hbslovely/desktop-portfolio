@@ -12,7 +12,7 @@ async function getStockListFromGitHub(
   repoName = 'desktop-portfolio',
   branch = 'master'
 ) {
-  const folderPath = 'api/data/stocks';
+  const folderPath = 'server/data/stocks';
   const apiUrl = `https://api.github.com/repos/${repoOwner}/${repoName}/contents/${folderPath}?ref=${branch}`;
 
   try {

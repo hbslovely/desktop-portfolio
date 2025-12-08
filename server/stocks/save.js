@@ -13,7 +13,7 @@ async function commitToGitHub(
   repoName,
   branch = 'master'
 ) {
-  const filePath = `api/data/stocks/${symbol.toUpperCase()}.json`;
+  const filePath = `server/data/stocks/${symbol.toUpperCase()}.json`;
   const apiUrl = `https://api.github.com/repos/${repoOwner}/${repoName}/contents/${filePath}`;
 
   try {
