@@ -4,9 +4,7 @@
   "scripts": {
     "ng": "ng",
     "start": "npm run dev",
-    "dev": "concurrently \"npm run dev:api\" \"npm run dev:angular\"",
-    "dev:api": "node api-server-simple.js",
-    "dev:angular": "ng serve --port 4200",
+    "dev": "ng serve --port 4200",
     "dev:angular-only": "ng serve",
     "build": "ng build --configuration production",
     "build:dev": "ng build --configuration development",

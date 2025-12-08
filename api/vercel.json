@@ -1,6 +1,5 @@
 {
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist/stock-api",
+  "installCommand": "npm install",
   "rewrites": [
     {
       "source": "/api/dnse-api/:path*",

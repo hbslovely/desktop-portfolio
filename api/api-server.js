@@ -7,12 +7,12 @@ app.use(cors());
 app.use(express.json());
 
 // Import API handlers
-const listHandler = require('./api/stocks/list.js').default;
-const saveHandler = require('./api/stocks/save.js').default;
-const symbolHandler = require('./api/stocks/[symbol].js').default;
-const helpHandler = require('./api/help.js').default;
-const testMinimalHandler = require('./api/test-minimal.js').default;
-const stocksListHandler = require('./api/stocks-list.js').default;
+const listHandler = require('./stocks/list.js').default;
+const saveHandler = require('./stocks/save.js').default;
+const symbolHandler = require('./stocks/[symbol].js').default;
+const helpHandler = require('./help.js').default;
+const testMinimalHandler = require('./test-minimal.js').default;
+const stocksListHandler = require('./stocks-list.js').default;
 
 // Convert Vercel handler to Express middleware
 function vercelToExpress(handler) {
@@ -28,15 +28,15 @@ function vercelToExpress(handler) {
       };
 
       const response = await handler(vercelReq);
-      
+
       // Set headers
       response.headers.forEach((value, key) => {
         res.setHeader(key, value);
       });
-      
+
       // Set status and send body
       res.status(response.status);
-      
+
       if (response.body) {
         const text = await response.text();
         res.send(text);
