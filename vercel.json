@@ -4,49 +4,7 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "installCommand": "npm install",
-  "builds": [
-    {
-      "src": "server/api/test-minimal.js",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "server/api/help.js",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "server/api/stocks/list.js",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "server/api/stocks/save.js",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "server/api/stocks/[symbol].js",
-      "use": "@vercel/node"
-    }
-  ],
   "rewrites": [
-    {
-      "source": "/api/test-minimal",
-      "destination": "/server/api/test-minimal"
-    },
-    {
-      "source": "/api/help",
-      "destination": "/server/api/help"
-    },
-    {
-      "source": "/api/stocks/list",
-      "destination": "/server/api/stocks/list"
-    },
-    {
-      "source": "/api/stocks/save",
-      "destination": "/server/api/stocks/save"
-    },
-    {
-      "source": "/api/stocks/:symbol",
-      "destination": "/server/api/stocks/:symbol"
-    },
     {
       "source": "/api/angular-dev/:path*",
       "destination": "https://angular.dev/:path*"
