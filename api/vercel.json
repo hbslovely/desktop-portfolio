@@ -1,7 +1,6 @@
 {
   "buildCommand": "npm run build",
-  "outputDirectory": "dist/desktop-portfolio",
-  "framework": "angular",
+  "outputDirectory": "dist/stock-api",
   "rewrites": [
     {
       "source": "/api/dnse-api/:path*",
