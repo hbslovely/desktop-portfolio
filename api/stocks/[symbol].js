@@ -1,3 +1,6 @@
+// Load environment variables from .env.local for local development
+import '../../env-loader.js';
+
 export const config = {
   runtime: 'nodejs',
 };
@@ -8,15 +11,15 @@ export const config = {
 async function getStockDataFromGitHub(
   symbol,
   githubToken,
-  repoOwner = 'hongphat',
+  repoOwner = 'hbslovely',
   repoName = 'desktop-portfolio',
   branch = 'master'
 ) {
   const filePath = `src/assets/stocks/${symbol.toUpperCase()}.json`;
-  
+
   // Try to get from GitHub raw URL first (public access)
   const rawUrl = `https://raw.githubusercontent.com/${repoOwner}/${repoName}/${branch}/${filePath}`;
-  
+
   try {
     const response = await fetch(rawUrl, {
       headers: githubToken
@@ -88,7 +91,7 @@ export default async function handler(req) {
     const url = new URL(req.url);
     const pathParts = url.pathname.split('/');
     const symbol = pathParts[pathParts.length - 1]?.toUpperCase();
-    
+
     if (!symbol) {
       return new Response(
         JSON.stringify({ success: false, error: 'Symbol is required' }),
@@ -104,7 +107,7 @@ export default async function handler(req) {
 
     // Get GitHub credentials from environment variables
     const githubToken = process.env['GITHUB_TOKEN'];
-    const repoOwner = process.env['GITHUB_REPO_OWNER'] || 'hongphat';
+    const repoOwner = process.env['GITHUB_REPO_OWNER'] || 'hbslovely';
     const repoName = process.env['GITHUB_REPO_NAME'] || 'desktop-portfolio';
     const branch = process.env['GITHUB_BRANCH'] || 'master';
 

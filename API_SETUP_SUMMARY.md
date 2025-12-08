@@ -25,7 +25,7 @@
 1. **Setup environment variables:**
    ```bash
    export GITHUB_TOKEN=your_token
-   export GITHUB_REPO_OWNER=hongphat
+   export GITHUB_REPO_OWNER=hbslovely
    export GITHUB_REPO_NAME=desktop-portfolio
    export GITHUB_BRANCH=master
    ```

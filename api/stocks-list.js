@@ -7,7 +7,7 @@ export const config = {
  */
 async function getStockListFromGitHub(
   githubToken,
-  repoOwner = 'hongphat',
+  repoOwner = 'hbslovely',
   repoName = 'desktop-portfolio',
   branch = 'master'
 ) {
@@ -35,9 +35,9 @@ async function getStockListFromGitHub(
     if (!response.ok) {
       const errorText = await response.text();
       console.error('GitHub API error:', response.status, errorText);
-      return { 
-        success: false, 
-        error: `GitHub API error: ${response.status} - ${errorText}` 
+      return {
+        success: false,
+        error: `GitHub API error: ${response.status} - ${errorText}`
       };
     }
 
@@ -65,7 +65,7 @@ async function getStockListFromGitHub(
 export default async function handler(req) {
   try {
     console.log('[stocks-list.js] API requested', req?.url, req?.method);
-    
+
     // Handle CORS preflight
     if (req?.method === 'OPTIONS') {
       return new Response(null, {
@@ -93,7 +93,7 @@ export default async function handler(req) {
 
     // Get GitHub credentials from environment variables
     const githubToken = process.env.GITHUB_TOKEN;
-    const repoOwner = process.env.GITHUB_REPO_OWNER || 'hongphat';
+    const repoOwner = process.env.GITHUB_REPO_OWNER || 'hbslovely';
     const repoName = process.env.GITHUB_REPO_NAME || 'desktop-portfolio';
     const branch = process.env.GITHUB_BRANCH || 'master';
 
@@ -151,7 +151,7 @@ export default async function handler(req) {
   } catch (error) {
     console.error('[stocks-list.js] Unhandled error:', error);
     console.error('[stocks-list.js] Error stack:', error?.stack);
-    
+
     return new Response(
       JSON.stringify({
         success: false,

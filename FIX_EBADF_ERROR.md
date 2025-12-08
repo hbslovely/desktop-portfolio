@@ -35,7 +35,7 @@ Vercel yêu cầu Node.js >= 18. Nếu version thấp hơn, update Node.js.
 
 ### 4. **Thử chạy Vercel dev trực tiếp:**
 ```bash
-cd /Users/hongphat/Projects/desktop-portfolio
+cd /Users/hbslovely/Projects/desktop-portfolio
 vercel dev --listen 3001
 ```
 
@@ -64,7 +64,7 @@ Test: `curl http://localhost:3001/api/test`
 Đảm bảo các biến môi trường được set:
 ```bash
 export GITHUB_TOKEN=your_token
-export GITHUB_REPO_OWNER=hongphat
+export GITHUB_REPO_OWNER=hbslovely
 export GITHUB_REPO_NAME=desktop-portfolio
 export GITHUB_BRANCH=master
 ```
