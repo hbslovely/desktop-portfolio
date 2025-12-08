@@ -1,85 +1,8 @@
 {
   "buildCommand": "npm run build",
   "installCommand": "npm install",
-  "rewrites": [
-    {
-      "source": "/api/dnse-api/:path*",
-      "destination": "https://api.dnse.com.vn/:path*"
-    },
-    {
-      "source": "/api/dnse/:path*",
-      "destination": "https://www.dnse.com.vn/:path*"
-    }
-  ],
-  "headers": [
-    {
-      "source": "/api/dnse-api/:path*",
-      "headers": [
-        {
-          "key": "Access-Control-Allow-Origin",
-          "value": "*"
-        },
-        {
-          "key": "Access-Control-Allow-Methods",
-          "value": "GET, OPTIONS"
-        },
-        {
-          "key": "Access-Control-Allow-Headers",
-          "value": "Content-Type, Accept, Accept-Language, User-Agent, Referer"
-        }
-      ]
-    },
-    {
-      "source": "/api/dnse/:path*",
-      "headers": [
-        {
-          "key": "Access-Control-Allow-Origin",
-          "value": "*"
-        },
-        {
-          "key": "Access-Control-Allow-Methods",
-          "value": "GET, OPTIONS"
-        },
-        {
-          "key": "Access-Control-Allow-Headers",
-          "value": "Content-Type, Accept, Accept-Language, User-Agent, Referer"
-        }
-      ]
-    },
-    {
-      "source": "/api/securities-apps-script/:path*",
-      "headers": [
-        {
-          "key": "Access-Control-Allow-Origin",
-          "value": "*"
-        },
-        {
-          "key": "Access-Control-Allow-Methods",
-          "value": "GET, POST, OPTIONS"
-        },
-        {
-          "key": "Access-Control-Allow-Headers",
-          "value": "Content-Type, Authorization"
-        }
-      ]
-    },
-    {
-      "source": "/api/stocks/:path*",
-      "headers": [
-        {
-          "key": "Access-Control-Allow-Origin",
-          "value": "*"
-        },
-        {
-          "key": "Access-Control-Allow-Methods",
-          "value": "GET, POST, OPTIONS"
-        },
-        {
-          "key": "Access-Control-Allow-Headers",
-          "value": "Content-Type, Authorization"
-        }
-      ]
-    }
+  "builds": [
+    { "src": "api/**/*.js", "use": "@vercel/node" }
   ]
 }
 
