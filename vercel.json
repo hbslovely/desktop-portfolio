@@ -59,19 +59,9 @@
       "destination": "https://script.google.com/macros/s/:scriptId/exec"
     },
     {
-      "source": "/api/stocks/list",
-      "destination": "/api/stocks/list.js"
-    },
-    {
-      "source": "/api/stocks/save",
-      "destination": "/api/stocks/save.js"
-    },
-    {
-      "source": "/api/stocks/:symbol",
-      "destination": "/api/stocks/[symbol].js"
-    },
-    { "source": "/api/(.*)", "destination": "/api/$1.js" },
-    { "source": "/(.*)", "destination": "/index.html" }
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
   ],
   "headers": [
     {
