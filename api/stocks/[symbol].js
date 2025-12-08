@@ -15,7 +15,7 @@ async function getStockDataFromGitHub(
   repoName = 'desktop-portfolio',
   branch = 'master'
 ) {
-  const filePath = `src/assets/stocks/${symbol.toUpperCase()}.json`;
+  const filePath = `api/data/stocks/${symbol.toUpperCase()}.json`;
 
   // Try to get from GitHub raw URL first (public access)
   const rawUrl = `https://raw.githubusercontent.com/${repoOwner}/${repoName}/${branch}/${filePath}`;
