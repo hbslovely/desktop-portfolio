@@ -16,7 +16,7 @@
 
 ### 1. Set Environment Variables trong Vercel Dashboard:
 - `GITHUB_TOKEN` (required) - GitHub personal access token với quyền `repo`
-- `GITHUB_REPO_OWNER` (optional) - default: hongphat
+- `GITHUB_REPO_OWNER` (optional) - default: hbslovely
 - `GITHUB_REPO_NAME` (optional) - default: desktop-portfolio  
 - `GITHUB_BRANCH` (optional) - default: master
 

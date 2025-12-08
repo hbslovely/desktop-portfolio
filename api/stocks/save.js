@@ -20,8 +20,8 @@ async function commitToGitHub(
     // Check if file exists
     const checkResponse = await fetch(`${apiUrl}?ref=${branch}`, {
       headers: {
-        'Authorization': `token ${githubToken}`,
-        'Accept': 'application/vnd.github.v3+json',
+        'Authorization': `Bearer ${githubToken}`,
+        'Accept': 'application/vnd.github.object',
       },
     });
 
@@ -38,15 +38,16 @@ async function commitToGitHub(
     const commitResponse = await fetch(apiUrl, {
       method: 'PUT',
       headers: {
-        'Authorization': `token ${githubToken}`,
-        'Accept': 'application/vnd.github.v3+json',
+        'Authorization': `Bearer ${githubToken}`,
+        'Accept': 'application/vnd.github+json',
         'Content-Type': 'application/json',
+        'X-GitHub-Api-Version': '2022-11-28'
       },
       body: JSON.stringify({
         message: `Update stock data for ${symbol.toUpperCase()}`,
         content: encodedContent,
         branch: branch,
-        ...(sha ? { sha } : {}), // Include sha if updating existing file
+        ...(sha ? {sha} : {}), // Include sha if updating existing file
       }),
     });
 
@@ -90,7 +91,7 @@ export default async function handler(req) {
 
     if (req.method !== 'POST') {
       return new Response(
-        JSON.stringify({ success: false, error: 'Method not allowed' }),
+        JSON.stringify({success: false, error: 'Method not allowed'}),
         {
           status: 405,
           headers: {
@@ -101,11 +102,11 @@ export default async function handler(req) {
       );
     }
     const body = await req.json();
-    const { symbol, basicInfo, priceData, fullData } = body;
+    const {symbol, basicInfo, priceData, fullData} = body;
 
     if (!symbol) {
       return new Response(
-        JSON.stringify({ success: false, error: 'Symbol is required' }),
+        JSON.stringify({success: false, error: 'Symbol is required'}),
         {
           status: 400,
           headers: {
@@ -118,7 +119,7 @@ export default async function handler(req) {
 
     // Get GitHub credentials from environment variables
     const githubToken = process.env['GITHUB_TOKEN'];
-    const repoOwner = process.env['GITHUB_REPO_OWNER'] || 'hongphat';
+    const repoOwner = process.env['GITHUB_REPO_OWNER'] || 'hbslovely';
     const repoName = process.env['GITHUB_REPO_NAME'] || 'desktop-portfolio';
     const branch = process.env['GITHUB_BRANCH'] || 'master';
 

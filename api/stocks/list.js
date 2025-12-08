@@ -1,3 +1,6 @@
+// Load environment variables from .env.local for local development
+import '../../env-loader.js';
+
 export const config = {
   runtime: 'nodejs',
 };
@@ -93,7 +96,7 @@ export default async function handler(req) {
 
     // Get GitHub credentials from environment variables
     const githubToken = process.env.GITHUB_TOKEN;
-    const repoOwner = process.env.GITHUB_REPO_OWNER || 'hongphat';
+    const repoOwner = process.env.GITHUB_REPO_OWNER || 'hbslovely';
     const repoName = process.env.GITHUB_REPO_NAME || 'desktop-portfolio';
     const branch = process.env.GITHUB_BRANCH || 'master';
 

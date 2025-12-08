@@ -13,7 +13,7 @@
    Tạo file `.env.local` hoặc export:
    ```bash
    export GITHUB_TOKEN=your_token_here
-   export GITHUB_REPO_OWNER=hongphat
+   export GITHUB_REPO_OWNER=hbslovely
    export GITHUB_REPO_NAME=desktop-portfolio
    export GITHUB_BRANCH=master
    ```
@@ -46,7 +46,7 @@
    - Vào Vercel Dashboard → Project → Settings → Environment Variables
    - Thêm các biến:
      - `GITHUB_TOKEN`
-     - `GITHUB_REPO_OWNER` (optional, default: hongphat)
+     - `GITHUB_REPO_OWNER` (optional, default: hbslovely)
      - `GITHUB_REPO_NAME` (optional, default: desktop-portfolio)
      - `GITHUB_BRANCH` (optional, default: master)
 
