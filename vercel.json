@@ -4,6 +4,10 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "installCommand": "npm install",
+  "builds": [
+    { "src": "dist/**", "use": "@vercel/static" },
+    { "src": "api/**/*.ts", "use": "@vercel/node" }
+  ],
   "rewrites": [
     {
       "source": "/api/angular-dev/:path*",
@@ -260,6 +264,10 @@
         }
       ]
     }
+  ],
+  "routes": [
+    { "src": "/api/(.*)", "dest": "/api/$1" },
+    { "src": "/(.*)", "dest": "/dist/YOUR-ANGULAR-PROJECT/browser/$1" }
   ]
 }
 
