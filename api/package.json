@@ -1,8 +1,8 @@
 {
   "type": "module",
   "scripts": {
-    "dev:api": "node api/api-server-simple.js",
-    "build": "ng build --configuration production"
+    "build": "echo 'Building Node.js API...' && find . -name '*.js' -not -path './node_modules/*' -exec node --check {} \\; && echo '✅ API build complete'",
+    "dev:api": "node api/api-server-simple.js"
   },
   "devDependencies": {
     "vercel": "^49.1.1"
