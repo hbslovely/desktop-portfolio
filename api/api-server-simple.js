@@ -1,16 +1,20 @@
 // Simple API server using Node.js built-in modules
-const http = require('http');
-const url = require('url');
-const { spawn } = require('child_process');
+import http from 'http';
+import url from 'url';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const port = 3001;
 
-// Simple router
+// Simple router - paths relative to api/ directory
 const routes = {
-  '/api/test-minimal': './api/test-minimal.js',
-  '/api/help': './api/help.js',
-  '/api/stocks/list': './api/stocks-list.js',
-  '/api/stocks/save': './api/stocks/save.js',
+  '/api/test-minimal': './test-minimal.js',
+  '/api/help': './help.js',
+  '/api/stocks/list': './stocks/list.js',
+  '/api/stocks/save': './stocks/save.js',
 };
 
 // Handle dynamic route
@@ -24,7 +28,7 @@ function getHandler(pathname) {
   if (pathname.startsWith('/api/stocks/') && pathname !== '/api/stocks/list' && pathname !== '/api/stocks/save') {
     const symbol = pathname.replace('/api/stocks/', '');
     if (symbol && symbol.length > 0) {
-      return './api/stocks/[symbol].js';
+      return './stocks/[symbol].js';
     }
   }
 
@@ -57,9 +61,8 @@ const server = http.createServer(async (req, res) => {
 
   try {
     // Import handler dynamically (ES modules)
-    // Need to use file:// protocol for absolute paths
-    const path = require('path');
-    const fullPath = path.resolve(process.cwd(), handlerPath);
+    // Resolve path relative to api/ directory
+    const fullPath = path.resolve(__dirname, handlerPath);
     const fileUrl = `file://${fullPath}`;
     console.log(`Loading handler from: ${fileUrl}`);
     const handlerModule = await import(fileUrl);
