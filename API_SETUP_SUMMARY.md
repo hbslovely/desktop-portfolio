@@ -11,7 +11,7 @@
 - ✅ Cài đặt Vercel CLI và concurrently
 - ✅ Script `npm run dev` để chạy cả API và Frontend
 - ✅ Proxy config để forward requests từ Angular đến Vercel dev server
-- ✅ Port configuration: API (3001), Frontend (4200)
+- ✅ Port configuration: API (3001), Frontend (3006)
 
 ### 3. Production (Vercel)
 - ✅ Vercel tự động detect API routes từ thư mục `api/`
@@ -36,7 +36,7 @@
    ```
 
 3. **Truy cập:**
-   - Frontend: http://localhost:4200
+   - Frontend: http://localhost:3006
    - API: http://localhost:3001/api/stocks/*
 
 ### Production

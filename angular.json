@@ -66,7 +66,7 @@
           "builder": "@ngx-env/builder:dev-server",
           "options": {
             "proxyConfig": "proxy.conf.js",
-            "port": 4200
+            "port": 3006
           },
           "configurations": {
             "production": {

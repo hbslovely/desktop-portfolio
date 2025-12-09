@@ -29,7 +29,7 @@ services:
         - linux/amd64
         - linux/arm64
     ports:
-      - "4200:4200"
+      - "3006:3006"
     container_name: desktop-portfolio-dev
     restart: unless-stopped
     volumes:

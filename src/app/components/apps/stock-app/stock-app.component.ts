@@ -715,14 +715,158 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   /**
-   * Fetch multiple symbols
+   * Fetch a single symbol and return a Promise
    */
-  fetchSelectedSymbols(symbols: SymbolWithStatus[]) {
-    symbols.forEach(symbol => {
-      if (!symbol.isFetched && !this.fetchingSymbols().has(symbol.symbol)) {
-        this.fetchSymbol(symbol);
+  private fetchSymbolPromise(symbol: SymbolWithStatus): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (this.fetchingSymbols().has(symbol.symbol)) {
+        resolve(); // Already fetching, skip
+        return;
       }
+
+      this.fetchingSymbols.update(set => {
+        const newSet = new Set(set);
+        newSet.add(symbol.symbol);
+        return newSet;
+      });
+
+      // Update UI to show fetching state
+      this.allSymbols.update(symbols =>
+        symbols.map(s =>
+          s.symbol === symbol.symbol ? { ...s, isFetching: true } : s
+        )
+      );
+
+      // Fetch both detail data and price history
+      this.dnseService.getStockData(symbol.symbol).subscribe({
+        next: (data) => {
+          // Fetch price history (3 years = 1095 days)
+          this.dnseService.getOHLCDataLastDays(symbol.symbol, 1095, '1D').subscribe({
+            next: (ohlcData) => {
+              // Extract basic info from data
+              const basicInfo = this.extractBasicInfoFromStockData(data);
+              
+              // Save to Stock API
+              this.dnseService.saveStockData(
+                symbol.symbol,
+                basicInfo,
+                ohlcData,
+                data.fullData || data
+              ).subscribe({
+                next: (response) => {
+                  console.log(`✅ Đã lưu dữ liệu ${symbol.symbol} vào Stock API`, response);
+                  
+                  // Mark as fetched
+                  this.dnseService.markAsFetched(symbol.symbol);
+
+                  // Update UI
+                  this.allSymbols.update(symbols =>
+                    symbols.map(s =>
+                      s.symbol === symbol.symbol
+                        ? { ...s, isFetched: true, isFetching: false }
+                        : s
+                    )
+                  );
+                  this.applyFilters();
+                  this.updateFetchedCount();
+                  this.updateExchangeCounts();
+
+                  // Load basic info for this symbol
+                  this.loadBasicInfoForSymbol(symbol.symbol);
+
+                  // Remove from fetching set
+                  this.fetchingSymbols.update(set => {
+                    const newSet = new Set(set);
+                    newSet.delete(symbol.symbol);
+                    return newSet;
+                  });
+                  
+                  resolve();
+                },
+                error: (saveError) => {
+                  console.error(`Error saving ${symbol.symbol} to API:`, saveError);
+                  // Still mark as fetched even if save fails
+                  this.dnseService.markAsFetched(symbol.symbol);
+                  this.allSymbols.update(symbols =>
+                    symbols.map(s =>
+                      s.symbol === symbol.symbol
+                        ? { ...s, isFetched: true, isFetching: false }
+                        : s
+                    )
+                  );
+                  this.applyFilters();
+                  this.updateFetchedCount();
+                  this.fetchingSymbols.update(set => {
+                    const newSet = new Set(set);
+                    newSet.delete(symbol.symbol);
+                    return newSet;
+                  });
+                  
+                  resolve(); // Resolve even on error to continue with next symbol
+                }
+              });
+            },
+            error: (error) => {
+              console.error(`Error fetching price data for ${symbol.symbol}:`, error);
+              // Still mark as fetched even if price data fails
+              this.dnseService.markAsFetched(symbol.symbol);
+              this.allSymbols.update(symbols =>
+                symbols.map(s =>
+                  s.symbol === symbol.symbol
+                    ? { ...s, isFetched: true, isFetching: false }
+                    : s
+                )
+              );
+              this.applyFilters();
+              this.updateFetchedCount();
+              this.fetchingSymbols.update(set => {
+                const newSet = new Set(set);
+                newSet.delete(symbol.symbol);
+                return newSet;
+              });
+              
+              resolve(); // Resolve even on error to continue with next symbol
+            }
+          });
+        },
+        error: (error) => {
+          console.error(`Error fetching data for ${symbol.symbol}:`, error);
+
+          // Update UI to remove fetching state
+          this.allSymbols.update(symbols =>
+            symbols.map(s =>
+              s.symbol === symbol.symbol ? { ...s, isFetching: false } : s
+            )
+          );
+
+          // Remove from fetching set
+          this.fetchingSymbols.update(set => {
+            const newSet = new Set(set);
+            newSet.delete(symbol.symbol);
+            return newSet;
+          });
+          
+          resolve(); // Resolve even on error to continue with next symbol
+        }
+      });
     });
+  }
+
+  /**
+   * Fetch multiple symbols sequentially (one by one)
+   */
+  async fetchSelectedSymbols(symbols: SymbolWithStatus[]) {
+    const unfetched = symbols.filter(s => !s.isFetched && !this.fetchingSymbols().has(s.symbol));
+    
+    console.log(`🔄 Bắt đầu fetch tuần tự ${unfetched.length} mã cổ phiếu...`);
+    
+    for (const symbol of unfetched) {
+      console.log(`📥 Đang fetch: ${symbol.symbol}...`);
+      await this.fetchSymbolPromise(symbol);
+      console.log(`✅ Hoàn thành: ${symbol.symbol}`);
+    }
+    
+    console.log(`✨ Đã hoàn thành fetch tất cả ${unfetched.length} mã cổ phiếu`);
   }
 
   /**
