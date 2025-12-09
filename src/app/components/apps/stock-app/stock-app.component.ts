@@ -1,7 +1,8 @@
-import { Component, OnInit, OnDestroy, signal, computed, ViewChild, ElementRef, AfterViewInit, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal, computed, ViewChild, ElementRef, AfterViewInit, OnChanges, SimpleChanges, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
+import { ScrollingModule } from '@angular/cdk/scrolling';
 import { DnseService, DNSESymbol, DNSEStockData, DNSEOHLCData, ExchangeType } from '../../../services/dnse.service';
 import { Chart, ChartConfiguration, registerables, TimeScale } from 'chart.js';
 // @ts-ignore - chartjs-chart-financial doesn't have proper type declarations
@@ -14,8 +15,10 @@ Chart.register(...registerables, TimeScale);
 Chart.register(CandlestickController, CandlestickElement);
 Chart.register(zoomPlugin);
 
-interface SymbolWithStatus extends DNSESymbol {
-  exchange: ExchangeType;
+interface SymbolWithStatus {
+  symbol: string;
+  name?: string;
+  exchange: ExchangeType | ExchangeType[]; // Can be single exchange or array for merged symbols
   isFetched: boolean;
   isFetching?: boolean;
   hasBasicInfo?: boolean; // Track if has full basic info data
@@ -46,7 +49,7 @@ interface ExchangeCount {
 @Component({
   selector: 'app-stock-app',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ScrollingModule],
   templateUrl: './stock-app.component.html',
   styleUrl: './stock-app.component.scss'
 })
@@ -92,22 +95,35 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
   isLoadingDetail = signal(false);
   isLoadingPrice = signal(false);
   selectedYears = signal<number>(3); // Default 3 years
+  activeTab = signal<'overview' | 'trading' | 'chart'>('overview');
 
-  // Computed: price table data with reference price, ceiling, floor
+  // Header search state
+  headerSearchQuery = signal('');
+  showSearchSuggestions = signal(false);
+
+  // Computed: price table data with reference price, ceiling, floor, and color classes
   priceTableData = computed(() => {
     const priceData = this.selectedSymbolPriceData();
     if (!priceData || !priceData.t) return [];
 
     const result: Array<{
-      date: string, 
-      open: number, 
-      high: number, 
-      low: number, 
-      close: number, 
+      date: string,
+      open: number,
+      high: number,
+      low: number,
+      close: number,
       volume: number,
       referencePrice: number,
       ceilingPrice: number,
-      floorPrice: number
+      floorPrice: number,
+      openColorClass: string,
+      highColorClass: string,
+      lowColorClass: string,
+      closeColorClass: string,
+      openFormatted: string,
+      highFormatted: string,
+      lowFormatted: string,
+      closeFormatted: string
     }> = [];
 
     for (let i = 0; i < priceData.t.length; i++) {
@@ -117,27 +133,129 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
       // Reference price = previous day's close price
       const referencePrice = i > 0 ? (priceData.c[i - 1] || 0) : (priceData.c[i] || 0);
-      
+
       // Calculate ceiling and floor (typically ±7% for HOSE/HNX, ±10% for UPCOM)
       // Using 7% as default
       const ceilingPrice = referencePrice * 1.07;
       const floorPrice = referencePrice * 0.93;
 
+      const open = priceData.o[i] || 0;
+      const high = priceData.h[i] || 0;
+      const low = priceData.l[i] || 0;
+      const close = priceData.c[i] || 0;
+
       result.push({
         date: dateStr,
-        open: priceData.o[i] || 0,
-        high: priceData.h[i] || 0,
-        low: priceData.l[i] || 0,
-        close: priceData.c[i] || 0,
+        open,
+        high,
+        low,
+        close,
         volume: priceData.v[i] || 0,
         referencePrice,
         ceilingPrice,
-        floorPrice
+        floorPrice,
+        openColorClass: this.getPriceColorClass(open, referencePrice, ceilingPrice, floorPrice),
+        highColorClass: this.getPriceColorClass(high, referencePrice, ceilingPrice, floorPrice),
+        lowColorClass: this.getPriceColorClass(low, referencePrice, ceilingPrice, floorPrice),
+        closeColorClass: this.getPriceColorClass(close, referencePrice, ceilingPrice, floorPrice),
+        openFormatted: `${(open * 1000).toLocaleString('vi-VN')} đ`,
+        highFormatted: `${(high * 1000).toLocaleString('vi-VN')} đ`,
+        lowFormatted: `${(low * 1000).toLocaleString('vi-VN')} đ`,
+        closeFormatted: `${(close * 1000).toLocaleString('vi-VN')} đ`
       });
     }
 
     // Show latest 20 records (most recent first)
     return result.slice(-20).reverse();
+  });
+
+  // Computed: selected symbol formatted info
+  selectedSymbolInfo = computed(() => {
+    const symbol = this.selectedSymbol();
+    if (!symbol) return null;
+
+    const basicInfo = symbol.basicInfo;
+    if (!basicInfo) return null;
+
+    const matchPrice = basicInfo.matchPrice ? parseFloat(basicInfo.matchPrice) : null;
+    const changedValue = basicInfo.changedValue ? parseFloat(basicInfo.changedValue) : null;
+    const totalVolume = basicInfo.totalVolume ? parseFloat(basicInfo.totalVolume) : null;
+
+    const exchange = Array.isArray(symbol.exchange) ? symbol.exchange[0] : symbol.exchange;
+    return {
+      symbol: symbol.symbol,
+      companyName: basicInfo.companyName || '-',
+      exchange: exchange,
+      exchangeName: this.exchangeNames[exchange],
+      matchPrice: matchPrice,
+      matchPriceFormatted: matchPrice ? `${(matchPrice * 1000).toLocaleString('vi-VN')} đ` : '-',
+      changedValue: changedValue,
+      changedValueFormatted: changedValue ? `${(changedValue * 1000).toLocaleString('vi-VN')} đ` : '-',
+      changedRatio: basicInfo.changedRatio || '0',
+      changedValueClass: changedValue !== null ? (changedValue >= 0 ? 'positive' : 'negative') : '',
+      totalVolume: totalVolume,
+      totalVolumeFormatted: totalVolume ? totalVolume.toLocaleString('vi-VN') : '-',
+      eps: basicInfo.eps || '-',
+      pe: basicInfo.pe || '-',
+      pb: basicInfo.pb || '-',
+      roe: basicInfo.roe || '-',
+      roa: basicInfo.roa || '-',
+      marketCap: basicInfo.marketCap ? parseFloat(basicInfo.marketCap).toLocaleString('vi-VN') : '-',
+      hasFullData: !!basicInfo.fullData,
+      hasTicker: !!basicInfo.fullData?.['pageProps.ticker']
+    };
+  });
+
+  // Computed: company info HTML
+  companyInfoHTML = computed(() => {
+    const symbol = this.selectedSymbol();
+    if (!symbol || !symbol.basicInfo?.fullData) {
+      return '';
+    }
+
+    const ticker = symbol.basicInfo.fullData['pageProps.ticker'];
+    if (!ticker) {
+      return '';
+    }
+
+    // Convert ticker object to HTML
+    let html = '<div class="ticker-info">';
+
+    if (typeof ticker === 'object') {
+      for (const key in ticker) {
+        if (ticker[key] && typeof ticker[key] !== 'object') {
+          html += `<div class="ticker-item"><strong>${key}:</strong> ${ticker[key]}</div>`;
+        }
+      }
+    } else {
+      html += `<div>${ticker}</div>`;
+    }
+
+    html += '</div>';
+    return html;
+  });
+
+  // Computed: stock list items with formatted data
+  stockListItems = computed(() => {
+    return this.filteredSymbols().map(symbol => {
+      const basicInfo = symbol.basicInfo;
+      const matchPrice = basicInfo?.matchPrice ? parseFloat(basicInfo.matchPrice) : null;
+      const changedValue = basicInfo?.changedValue ? parseFloat(basicInfo.changedValue) : null;
+
+      const exchange = Array.isArray(symbol.exchange) ? symbol.exchange[0] : symbol.exchange;
+      return {
+        ...symbol,
+        companyName: basicInfo?.companyName || symbol.name || '-',
+        exchangeName: this.exchangeNames[exchange],
+        matchPrice: matchPrice,
+        matchPriceFormatted: matchPrice ? `${(matchPrice * 1000).toLocaleString('vi-VN')} đ` : '-',
+        changedValue: changedValue,
+        changedValueFormatted: changedValue ? `${(changedValue * 1000).toLocaleString('vi-VN')} đ` : '-',
+        changedRatio: basicInfo?.changedRatio || '0',
+        changedValueClass: changedValue !== null ? (changedValue >= 0 ? 'positive' : 'negative') : '',
+        hasMetrics: !!(basicInfo?.pe || basicInfo?.pb || basicInfo?.roe)
+      };
+    });
   });
 
   // Computed: company info from selected symbol data
@@ -164,7 +282,23 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
   constructor(
     private dnseService: DnseService,
     private http: HttpClient
-  ) {}
+  ) {
+    // Watch for tab changes and initialize chart when switching to chart tab
+    effect(() => {
+      const tab = this.activeTab();
+      if (tab === 'chart' && this.selectedSymbolPriceData() && !this.isLoadingPrice()) {
+        // Small delay to ensure DOM is ready
+        setTimeout(() => {
+          // Always reinitialize chart when switching to chart tab
+          if (this.candlestickChart) {
+            this.candlestickChart.destroy();
+            this.candlestickChart = null;
+          }
+          this.initCandlestickChart();
+        }, 200);
+      }
+    });
+  }
 
   ngOnInit() {
     this.loadSymbols();
@@ -184,31 +318,198 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   /**
-   * Load symbols from all exchanges
+   * Load symbols from all exchanges and merge with stock data from API
    */
   loadSymbols() {
     this.isLoading.set(true);
 
+    // Load both symbols from exchanges and stock data from API
     this.dnseService.getAllSymbols().subscribe({
       next: (results) => {
         const allSymbols: SymbolWithStatus[] = [];
+        const symbolMap = new Map<string, SymbolWithStatus>();
 
+        // First, add all symbols from exchanges and merge duplicates
         results.forEach(({ exchange, symbols }) => {
           symbols.forEach(symbol => {
             const symbolStr = typeof symbol === 'string' ? symbol : symbol.symbol;
-            allSymbols.push({
-              symbol: symbolStr,
-              name: typeof symbol === 'object' ? symbol.name : undefined,
-              exchange,
-              isFetched: false // Will be updated by checkFetchedStatusFromSheets
-            });
+            const symbolKey = symbolStr.toUpperCase();
+            const existingSymbol = symbolMap.get(symbolKey);
+
+            if (existingSymbol) {
+              // Merge: combine exchanges and merge information
+              if (Array.isArray(existingSymbol.exchange)) {
+                if (!existingSymbol.exchange.includes(exchange)) {
+                  existingSymbol.exchange.push(exchange);
+                }
+              } else {
+                if (existingSymbol.exchange !== exchange) {
+                  existingSymbol.exchange = [existingSymbol.exchange, exchange];
+                }
+              }
+              // Merge name if not set
+              if (!existingSymbol.name && typeof symbol === 'object' && symbol.name) {
+                existingSymbol.name = symbol.name;
+              }
+            } else {
+              // Create new symbol
+              const symbolWithStatus: SymbolWithStatus = {
+                symbol: symbolStr,
+                name: typeof symbol === 'object' ? symbol.name : undefined,
+                exchange,
+                isFetched: false // Will be updated by checkFetchedStatus
+              };
+              symbolMap.set(symbolKey, symbolWithStatus);
+              allSymbols.push(symbolWithStatus);
+            }
           });
         });
 
-        this.allSymbols.set(allSymbols);
-        this.applyFilters();
-        this.checkFetchedStatus();
-        this.isLoading.set(false);
+        // Then, load stock data from API and merge
+        this.dnseService.getAllStockData().subscribe({
+          next: (stocks) => {
+            // Deduplicate stocks by symbol first to avoid processing duplicates
+            const uniqueStocksMap = new Map<string, any>();
+            stocks.forEach((stock: any) => {
+              if (stock && stock.symbol) {
+                const symbolKey = stock.symbol.toUpperCase();
+                // Keep the stock with more complete data (has fullData or basicInfo)
+                const existing = uniqueStocksMap.get(symbolKey);
+                if (!existing || (stock.fullData || stock.basicInfo) && !(existing.fullData || existing.basicInfo)) {
+                  uniqueStocksMap.set(symbolKey, stock);
+                }
+              }
+            });
+
+            // Process unique stocks
+            uniqueStocksMap.forEach((stock: any) => {
+              if (stock && stock.symbol) {
+                const symbolKey = stock.symbol.toUpperCase();
+                const existingSymbol = symbolMap.get(symbolKey);
+
+                if (existingSymbol) {
+                  // Update existing symbol with fetched data
+                  existingSymbol.isFetched = true;
+                  // Merge exchange if different
+                  const stockExchange = (stock.basicInfo?.exchange || 'hose') as ExchangeType;
+                  if (Array.isArray(existingSymbol.exchange)) {
+                    if (!existingSymbol.exchange.includes(stockExchange)) {
+                      existingSymbol.exchange.push(stockExchange);
+                    }
+                  } else {
+                    if (existingSymbol.exchange.toLowerCase() !== stockExchange.toLowerCase()) {
+                      existingSymbol.exchange = [existingSymbol.exchange, stockExchange];
+                    }
+                  }
+                  // Merge basicInfo - prefer existing data if available, otherwise use new data
+                  existingSymbol.basicInfo = {
+                    companyName: existingSymbol.basicInfo?.companyName || stock.basicInfo?.companyName || stock.fullData?.['pageProps.companyInfo.fullName'] || stock.fullData?.['pageProps.companyInfo.name'],
+                    exchange: stock.basicInfo?.exchange || (Array.isArray(existingSymbol.exchange) ? existingSymbol.exchange[0] : existingSymbol.exchange),
+                    matchPrice: existingSymbol.basicInfo?.matchPrice || stock.basicInfo?.matchPrice,
+                    changedValue: existingSymbol.basicInfo?.changedValue || stock.basicInfo?.changedValue,
+                    changedRatio: existingSymbol.basicInfo?.changedRatio || stock.basicInfo?.changedRatio,
+                    totalVolume: existingSymbol.basicInfo?.totalVolume || stock.basicInfo?.totalVolume,
+                    marketCap: existingSymbol.basicInfo?.marketCap || stock.basicInfo?.marketCap,
+                    beta: existingSymbol.basicInfo?.beta || stock.basicInfo?.beta,
+                    eps: existingSymbol.basicInfo?.eps || stock.basicInfo?.eps,
+                    pe: existingSymbol.basicInfo?.pe || stock.basicInfo?.pe,
+                    pb: existingSymbol.basicInfo?.pb || stock.basicInfo?.pb,
+                    roe: existingSymbol.basicInfo?.roe || stock.basicInfo?.roe,
+                    roa: existingSymbol.basicInfo?.roa || stock.basicInfo?.roa,
+                    fullData: existingSymbol.basicInfo?.fullData || stock.fullData
+                  };
+                } else {
+                  // Add new symbol from API (not in exchange list)
+                  const newSymbol: SymbolWithStatus = {
+                    symbol: stock.symbol,
+                    name: stock.basicInfo?.companyName || stock.fullData?.['pageProps.companyInfo.fullName'],
+                    exchange: (stock.basicInfo?.exchange || 'hose') as ExchangeType,
+                    isFetched: true,
+                    basicInfo: {
+                      companyName: stock.basicInfo?.companyName || stock.fullData?.['pageProps.companyInfo.fullName'],
+                      exchange: stock.basicInfo?.exchange || 'hose',
+                      matchPrice: stock.basicInfo?.matchPrice,
+                      changedValue: stock.basicInfo?.changedValue,
+                      changedRatio: stock.basicInfo?.changedRatio,
+                      totalVolume: stock.basicInfo?.totalVolume,
+                      marketCap: stock.basicInfo?.marketCap,
+                      beta: stock.basicInfo?.beta,
+                      eps: stock.basicInfo?.eps,
+                      pe: stock.basicInfo?.pe,
+                      pb: stock.basicInfo?.pb,
+                      roe: stock.basicInfo?.roe,
+                      roa: stock.basicInfo?.roa,
+                      fullData: stock.fullData
+                    }
+                  };
+                  symbolMap.set(symbolKey, newSymbol);
+                  allSymbols.push(newSymbol);
+                }
+              }
+            });
+
+            // Ensure unique symbols - remove duplicates by symbol key
+            const uniqueSymbolsMap = new Map<string, SymbolWithStatus>();
+            allSymbols.forEach(symbol => {
+              const symbolKey = symbol.symbol.toUpperCase();
+              const existing = uniqueSymbolsMap.get(symbolKey);
+              
+              if (existing) {
+                // Merge exchanges if different
+                const existingExchanges = Array.isArray(existing.exchange) 
+                  ? existing.exchange 
+                  : [existing.exchange];
+                const newExchanges = Array.isArray(symbol.exchange) 
+                  ? symbol.exchange 
+                  : [symbol.exchange];
+                
+                // Combine and deduplicate exchanges
+                const allExchanges = [...existingExchanges, ...newExchanges];
+                const uniqueExchanges = Array.from(new Set(allExchanges));
+                existing.exchange = uniqueExchanges.length === 1 ? uniqueExchanges[0] : uniqueExchanges;
+                
+                // Merge basicInfo - prefer data from fetched symbol
+                if (symbol.isFetched && !existing.isFetched) {
+                  existing.isFetched = true;
+                  existing.basicInfo = symbol.basicInfo || existing.basicInfo;
+                } else if (symbol.isFetched && existing.isFetched) {
+                  // Both fetched - merge basicInfo, prefer non-null values
+                  existing.basicInfo = {
+                    ...existing.basicInfo,
+                    ...symbol.basicInfo,
+                    companyName: symbol.basicInfo?.companyName || existing.basicInfo?.companyName,
+                    fullData: symbol.basicInfo?.fullData || existing.basicInfo?.fullData
+                  };
+                }
+                
+                // Merge name if not set
+                if (!existing.name && symbol.name) {
+                  existing.name = symbol.name;
+                }
+              } else {
+                uniqueSymbolsMap.set(symbolKey, { ...symbol });
+              }
+            });
+
+            // Convert map back to array
+            const uniqueSymbols = Array.from(uniqueSymbolsMap.values());
+
+            this.allSymbols.set(uniqueSymbols);
+            this.applyFilters();
+            this.updateFetchedCount();
+            this.updateExchangeCounts();
+            this.isLoading.set(false);
+          },
+          error: (error) => {
+            console.error('Error loading stock data:', error);
+            // Continue with symbols only
+            this.allSymbols.set(allSymbols);
+            this.applyFilters();
+            this.updateFetchedCount();
+            this.updateExchangeCounts();
+            this.isLoading.set(false);
+          }
+        });
       },
       error: (error) => {
         console.error('Error loading symbols:', error);
@@ -219,36 +520,57 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
   /**
    * Check fetched status from Stock API and load basic info
+   * This is now handled in loadSymbols, but kept for backward compatibility
    */
   checkFetchedStatus() {
-    this.dnseService.getAllFetchedSymbols().subscribe({
-      next: (fetchedSymbols) => {
-        const fetchedSet = new Set(fetchedSymbols);
+    // This is now handled in loadSymbols, but we keep it for compatibility
+    this.dnseService.getAllStockData().subscribe({
+      next: (stocks) => {
+        const stockMap = new Map<string, any>();
+        stocks.forEach((stock: any) => {
+          if (stock && stock.symbol) {
+            stockMap.set(stock.symbol.toUpperCase(), stock);
+          }
+        });
+
+        // Update symbols with fetched data
         this.allSymbols.update(symbols =>
-          symbols.map(s => ({
-            ...s,
-            isFetched: fetchedSet.has(s.symbol)
-          }))
+          symbols.map(s => {
+            const stockData = stockMap.get(s.symbol.toUpperCase());
+            if (stockData) {
+              const basicInfo = stockData.basicInfo || {};
+              return {
+                ...s,
+                isFetched: true,
+                basicInfo: {
+                  companyName: basicInfo.companyName || stockData.fullData?.['pageProps.companyInfo.fullName'] || stockData.fullData?.['pageProps.companyInfo.name'],
+                  exchange: basicInfo.exchange || s.exchange,
+                  matchPrice: basicInfo.matchPrice,
+                  changedValue: basicInfo.changedValue,
+                  changedRatio: basicInfo.changedRatio,
+                  totalVolume: basicInfo.totalVolume,
+                  marketCap: basicInfo.marketCap,
+                  eps: basicInfo.eps,
+                  pe: basicInfo.pe,
+                  pb: basicInfo.pb,
+                  roe: basicInfo.roe,
+                  roa: basicInfo.roa,
+                  fullData: stockData.fullData
+                }
+              };
+            }
+            return {
+              ...s,
+              isFetched: false
+            };
+          })
         );
         this.applyFilters();
         this.updateFetchedCount();
         this.updateExchangeCounts();
-
-        // Load basic info for fetched symbols
-        this.loadBasicInfoForFetchedSymbols(fetchedSymbols);
       },
       error: (error) => {
-        console.error('Error checking fetched status:', error);
-        // Fallback to localStorage
-        this.allSymbols.update(symbols =>
-          symbols.map(s => ({
-            ...s,
-            isFetched: this.dnseService.isFetched(s.symbol)
-          }))
-        );
-        this.applyFilters();
-        this.updateFetchedCount();
-        this.updateExchangeCounts();
+        console.error('Error loading stock data:', error);
       }
     });
   }
@@ -270,7 +592,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
           if (data) {
             basicInfoMap.set(symbol, data);
           }
-          
+
           completed++;
           if (completed === total) {
             // Update all symbols with basic info
@@ -285,12 +607,12 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
                   const hasIntroduction = fullData['pageProps.companyInfo.introduction'];
                   const hasNotes = fullData['pageProps.companyInfo.notes'];
                   const hasPermanentAddress = fullData['pageProps.companyInfo.permanentAddress'];
-                  
+
                   const hasBasicInfo = !!(hasFullName || hasFullNameEn || hasImage || hasIntroduction || hasNotes || hasPermanentAddress);
-                  
+
                   // Extract basic info from stockData
                   const basicInfo = stockData.basicInfo || {};
-                  
+
                   return {
                     ...s,
                     hasBasicInfo,
@@ -338,7 +660,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
         if (data) {
           const fullData = data.fullData || {};
           const basicInfo = data.basicInfo || {};
-          
+
           this.allSymbols.update(symbols =>
             symbols.map(s => {
               if (s.symbol === symbol.toUpperCase()) {
@@ -381,7 +703,12 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const counts = new Map<ExchangeType, ExchangeCount>();
 
     this.exchanges.forEach(exchange => {
-      const symbols = this.allSymbols().filter(s => s.exchange === exchange);
+      const symbols = this.allSymbols().filter(s => {
+        if (Array.isArray(s.exchange)) {
+          return s.exchange.includes(exchange);
+        }
+        return s.exchange === exchange;
+      });
       const fetched = symbols.filter(s => s.isFetched).length;
 
       counts.set(exchange, {
@@ -395,12 +722,17 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   /**
-   * Get exchange count text
+   * Get exchange count text (shows total count, works even before fetching)
    */
   getExchangeCountText(exchange: ExchangeType): string {
-    const count = this.exchangeCounts().get(exchange);
-    if (!count) return this.exchangeNames[exchange];
-    return `${this.exchangeNames[exchange]} (${count.fetched}/${count.total})`;
+    // Always calculate on the fly to show current count
+    const symbols = this.allSymbols().filter(s => {
+      if (Array.isArray(s.exchange)) {
+        return s.exchange.includes(exchange);
+      }
+      return s.exchange === exchange;
+    });
+    return `${symbols.length}`;
   }
 
   /**
@@ -409,7 +741,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
    */
   hasBasicInfoData(symbol: SymbolWithStatus): boolean {
     if (!symbol.isFetched) return false;
-    
+
     // If already checked, return cached value
     if (symbol.hasBasicInfo !== undefined) {
       return symbol.hasBasicInfo;
@@ -424,7 +756,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
       const hasIntroduction = fullData['pageProps.companyInfo.introduction'];
       const hasNotes = fullData['pageProps.companyInfo.notes'];
       const hasPermanentAddress = fullData['pageProps.companyInfo.permanentAddress'];
-      
+
       // Consider has basic info if at least fullName exists
       return !!(hasFullName || hasFullNameEn || hasImage || hasIntroduction || hasNotes || hasPermanentAddress);
     }
@@ -456,7 +788,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
           if (data && data.fullData) {
             basicInfoMap.set(symbol.symbol, data.fullData);
           }
-          
+
           completed++;
           if (completed === total) {
             // Update all symbols with basic info check
@@ -471,9 +803,9 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
                     const hasIntroduction = fullData['pageProps.companyInfo.introduction'];
                     const hasNotes = fullData['pageProps.companyInfo.notes'];
                     const hasPermanentAddress = fullData['pageProps.companyInfo.permanentAddress'];
-                    
+
                     const hasBasicInfo = !!(hasFullName || hasFullNameEn || hasImage || hasIntroduction || hasNotes || hasPermanentAddress);
-                    
+
                     return {
                       ...s,
                       hasBasicInfo,
@@ -528,7 +860,12 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     // Filter by exchange
     if (this.selectedExchange() !== 'all') {
-      filtered = filtered.filter(s => s.exchange === this.selectedExchange());
+      filtered = filtered.filter(s => {
+        if (Array.isArray(s.exchange)) {
+          return s.exchange.includes(this.selectedExchange() as ExchangeType);
+        }
+        return s.exchange === this.selectedExchange();
+      });
     }
 
     // Filter by filter mode
@@ -548,7 +885,8 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     if (query) {
       filtered = filtered.filter(s =>
         s.symbol.toLowerCase().includes(query) ||
-        (s.name && s.name.toLowerCase().includes(query))
+        (s.name && s.name.toLowerCase().includes(query)) ||
+        (s.basicInfo?.companyName && s.basicInfo.companyName.toLowerCase().includes(query))
       );
     }
 
@@ -616,7 +954,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
           next: (ohlcData) => {
             // Extract basic info from data
             const basicInfo = this.extractBasicInfoFromStockData(data);
-            
+
             // Save to Stock API
             this.dnseService.saveStockData(
               symbol.symbol,
@@ -626,7 +964,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
             ).subscribe({
               next: (response) => {
                 console.log(`✅ Đã lưu dữ liệu ${symbol.symbol} vào Stock API`, response);
-                
+
                 // Mark as fetched
                 this.dnseService.markAsFetched(symbol.symbol);
 
@@ -745,7 +1083,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
             next: (ohlcData) => {
               // Extract basic info from data
               const basicInfo = this.extractBasicInfoFromStockData(data);
-              
+
               // Save to Stock API
               this.dnseService.saveStockData(
                 symbol.symbol,
@@ -755,7 +1093,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
               ).subscribe({
                 next: (response) => {
                   console.log(`✅ Đã lưu dữ liệu ${symbol.symbol} vào Stock API`, response);
-                  
+
                   // Mark as fetched
                   this.dnseService.markAsFetched(symbol.symbol);
 
@@ -780,7 +1118,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
                     newSet.delete(symbol.symbol);
                     return newSet;
                   });
-                  
+
                   resolve();
                 },
                 error: (saveError) => {
@@ -801,7 +1139,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
                     newSet.delete(symbol.symbol);
                     return newSet;
                   });
-                  
+
                   resolve(); // Resolve even on error to continue with next symbol
                 }
               });
@@ -824,7 +1162,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
                 newSet.delete(symbol.symbol);
                 return newSet;
               });
-              
+
               resolve(); // Resolve even on error to continue with next symbol
             }
           });
@@ -845,7 +1183,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
             newSet.delete(symbol.symbol);
             return newSet;
           });
-          
+
           resolve(); // Resolve even on error to continue with next symbol
         }
       });
@@ -857,15 +1195,15 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
    */
   async fetchSelectedSymbols(symbols: SymbolWithStatus[]) {
     const unfetched = symbols.filter(s => !s.isFetched && !this.fetchingSymbols().has(s.symbol));
-    
+
     console.log(`🔄 Bắt đầu fetch tuần tự ${unfetched.length} mã cổ phiếu...`);
-    
+
     for (const symbol of unfetched) {
       console.log(`📥 Đang fetch: ${symbol.symbol}...`);
       await this.fetchSymbolPromise(symbol);
       console.log(`✅ Hoàn thành: ${symbol.symbol}`);
     }
-    
+
     console.log(`✨ Đã hoàn thành fetch tất cả ${unfetched.length} mã cổ phiếu`);
   }
 
@@ -921,7 +1259,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const companyInfo = this.extractCompanyInfo(data);
     const priceSnapshot = this.extractPriceSnapshot(data);
     const pageProps = this.extractPageProps(data);
-    
+
     return {
       companyName: companyInfo?.fullName || companyInfo?.name,
       exchange: companyInfo?.exchange,
@@ -957,61 +1295,6 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     return 'Chưa fetch';
   }
 
-  /**
-   * View stock detail
-   */
-  viewStockDetail(symbol: SymbolWithStatus) {
-    this.selectedSymbol.set(symbol);
-    this.showDetailView.set(true);
-    this.isLoadingDetail.set(true);
-    this.isLoadingPrice.set(true);
-    this.selectedSymbolData.set(null);
-    this.selectedSymbolPriceData.set(null);
-
-    // Load basic info from Stock API
-    this.dnseService.getStockDataFromAPI(symbol.symbol).subscribe({
-      next: (data) => {
-        if (data) {
-          // Convert to DNSEStockData format for display
-          const fullData = data.fullData || {};
-          const basicInfo = data.basicInfo || {};
-          
-          this.selectedSymbolData.set({
-            pageProps: {
-              symbol: symbol.symbol,
-              companyInfo: {
-                name: basicInfo.companyName || fullData['pageProps.companyInfo.name'],
-                fullName: basicInfo.companyName || fullData['pageProps.companyInfo.fullName'],
-                exchange: basicInfo.exchange || fullData['pageProps.companyInfo.exchange']
-              },
-              priceSnapshot: {
-                matchPrice: basicInfo.matchPrice || fullData['pageProps.priceSnapshot.matchPrice'],
-                changedValue: basicInfo.changedValue || fullData['pageProps.priceSnapshot.changedValue'],
-                changedRatio: basicInfo.changedRatio || fullData['pageProps.priceSnapshot.changedRatio'],
-                totalVolumeTraded: basicInfo.totalVolume || fullData['pageProps.priceSnapshot.totalVolumeTraded']
-              }
-            },
-            fullData: fullData
-          } as DNSEStockData);
-          
-          // Set price data if available
-          if (data.priceData) {
-            this.selectedSymbolPriceData.set(data.priceData);
-            setTimeout(() => this.initCandlestickChart(), 100);
-          }
-        }
-        this.isLoadingDetail.set(false);
-      },
-      error: (error) => {
-        console.error(`Error loading stock data for ${symbol.symbol}:`, error);
-        this.isLoadingDetail.set(false);
-        // Don't show alert, just show empty data
-      }
-    });
-
-    // Load price data (3 years default)
-    this.loadPriceData(symbol.symbol, 3);
-  }
 
   /**
    * Load price data for detail view from Stock API
@@ -1054,7 +1337,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
           next: (existingData) => {
             const basicInfo = existingData?.basicInfo || this.extractBasicInfoFromStockData({} as DNSEStockData);
             const fullData = existingData?.fullData || {};
-            
+
             // Save updated data with new price data
             this.dnseService.saveStockData(symbol, basicInfo, ohlcData, fullData).subscribe({
               next: () => {
@@ -1177,7 +1460,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
           next: (existingData) => {
             const basicInfo = existingData?.basicInfo || this.extractBasicInfoFromStockData({} as DNSEStockData);
             const fullData = existingData?.fullData || {};
-            
+
             // Save updated data with new price data
             this.dnseService.saveStockData(symbol.symbol, basicInfo, ohlcData, fullData).subscribe({
               next: () => {
@@ -1216,18 +1499,6 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     });
   }
 
-  /**
-   * Close detail view
-   */
-  closeDetailView() {
-    this.showDetailView.set(false);
-    this.selectedSymbol.set(null);
-    this.selectedSymbolData.set(null);
-    this.selectedSymbolPriceData.set(null);
-    this.isLoadingDetail.set(false);
-    this.isLoadingPrice.set(false);
-    this.selectedYears.set(3);
-  }
 
   /**
    * Get total volume from price data
@@ -1276,34 +1547,6 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     return isNaN(parsed) ? 0 : parsed;
   }
 
-  /**
-   * Get price color class based on reference price, ceiling, floor
-   */
-  getPriceColorClass(price: number, referencePrice: number, ceilingPrice: number, floorPrice: number): string {
-    const tolerance = 0.01; // Small tolerance for floating point comparison
-    
-    // Check if price equals reference price (within tolerance)
-    if (Math.abs(price - referencePrice) < tolerance) {
-      return 'price-reference'; // Yellow
-    }
-    
-    // Check if price equals ceiling price
-    if (Math.abs(price - ceilingPrice) < tolerance) {
-      return 'price-ceiling'; // Purple
-    }
-    
-    // Check if price equals floor price
-    if (Math.abs(price - floorPrice) < tolerance) {
-      return 'price-floor'; // Cyan
-    }
-    
-    // Compare with reference price
-    if (price > referencePrice) {
-      return 'price-up'; // Green
-    } else {
-      return 'price-down'; // Red
-    }
-  }
 
   /**
    * Calculate Moving Average
@@ -1336,7 +1579,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     // Calculate initial average gain and loss
     let avgGain = 0;
     let avgLoss = 0;
-    
+
     for (let i = 0; i < period && i < changes.length; i++) {
       if (changes[i] > 0) {
         avgGain += changes[i];
@@ -1344,7 +1587,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
         avgLoss += Math.abs(changes[i]);
       }
     }
-    
+
     avgGain /= period;
     avgLoss /= period;
 
@@ -1380,7 +1623,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
   calculateMACD(prices: number[]): { macd: number[], signal: number[], histogram: number[] } {
     const ema12 = this.calculateEMA(prices, 12);
     const ema26 = this.calculateEMA(prices, 26);
-    
+
     const macd: number[] = [];
     for (let i = 0; i < prices.length; i++) {
       if (isNaN(ema12[i]) || isNaN(ema26[i])) {
@@ -1389,10 +1632,10 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
         macd.push(ema12[i] - ema26[i]);
       }
     }
-    
+
     const signal = this.calculateEMA(macd.filter(v => !isNaN(v)), 9);
     const histogram: number[] = [];
-    
+
     for (let i = 0; i < macd.length; i++) {
       if (isNaN(macd[i]) || isNaN(signal[i])) {
         histogram.push(NaN);
@@ -1400,7 +1643,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
         histogram.push(macd[i] - signal[i]);
       }
     }
-    
+
     return { macd, signal, histogram };
   }
 
@@ -1410,7 +1653,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
   calculateEMA(prices: number[], period: number): number[] {
     const ema: number[] = [];
     const multiplier = 2 / (period + 1);
-    
+
     // First EMA value is SMA
     let sum = 0;
     for (let i = 0; i < period && i < prices.length; i++) {
@@ -1419,16 +1662,16 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
         ema.push(NaN);
       }
     }
-    
+
     if (prices.length >= period) {
       ema.push(sum / period);
-      
+
       // Calculate subsequent EMA values
       for (let i = period; i < prices.length; i++) {
         ema.push((prices[i] - ema[ema.length - 1]) * multiplier + ema[ema.length - 1]);
       }
     }
-    
+
     return ema;
   }
 
@@ -1543,23 +1786,10 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
         maintainAspectRatio: false,
         plugins: {
           legend: {
-            display: true,
-            position: 'top'
+            display: false
           },
           tooltip: {
-            mode: 'index',
-            intersect: false,
-            callbacks: {
-              label: (context: any) => {
-                const data = context.raw;
-                return [
-                  `Mở cửa: ${this.formatNumberVN(data.o)}`,
-                  `Cao nhất: ${this.formatNumberVN(data.h)}`,
-                  `Thấp nhất: ${this.formatNumberVN(data.l)}`,
-                  `Đóng cửa: ${this.formatNumberVN(data.c)}`
-                ];
-              }
-            }
+            enabled: false
           },
           zoom: {
             zoom: {
@@ -1573,8 +1803,12 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
               mode: 'x',
               limits: {
                 x: {
-                  min: 'original',
-                  max: 'original'
+                  min: 0.1,  // Minimum zoom: 10% of original
+                  max: 1     // Maximum zoom: 100% of original (no zoom out beyond original)
+                },
+                y: {
+                  min: 0.5,  // Minimum zoom: 50% of original for Y axis
+                  max: 2     // Maximum zoom: 200% of original for Y axis
                 }
               }
             },
@@ -1652,24 +1886,50 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
   /**
    * Extract company info from stock data (private helper)
-   * Supports both data.pageProps.companyInfo and data.fullData['pageProps.companyInfo....']
+   * Supports multiple formats:
+   * - data.fullData['pageProps.companyInfo'] (flat key object)
+   * - data.fullData.pageProps?.companyInfo (nested object)
+   * - data.fullData['pageProps.companyInfo.xxx'] (flat keys with prefix)
+   * - data.pageProps?.companyInfo (fallback)
    */
   private extractCompanyInfo(data: DNSEStockData): any {
     // Try fullData first (new structure)
     if (data.fullData) {
-      // Look for keys that start with 'pageProps.companyInfo'
+      // Case 1: Check for flat key 'pageProps.companyInfo' (object)
+      if (data.fullData['pageProps.companyInfo'] && typeof data.fullData['pageProps.companyInfo'] === 'object') {
+        return data.fullData['pageProps.companyInfo'];
+      }
+
+      // Case 2: Check for nested object data.fullData['pageProps']?.companyInfo
+      if (data.fullData['pageProps']?.companyInfo && typeof data.fullData['pageProps'].companyInfo === 'object') {
+        return data.fullData['pageProps'].companyInfo;
+      }
+
+      // Case 3: Look for keys that start with 'pageProps.companyInfo.' and build object
+      const companyInfo: any = {};
+      let hasFields = false;
       for (const key in data.fullData) {
-        if (key.startsWith('pageProps.companyInfo')) {
-          return data.fullData[key];
+        if (key.startsWith('pageProps.companyInfo.')) {
+          const fieldName = key.replace('pageProps.companyInfo.', '');
+          companyInfo[fieldName] = data.fullData[key];
+          hasFields = true;
         }
       }
+      if (hasFields && Object.keys(companyInfo).length > 0) {
+        return companyInfo;
+      }
+
+      // Case 4: Check for exact key 'pageProps.companyInfo' (might be a string or other type)
+      if (data.fullData['pageProps.companyInfo'] !== undefined) {
+        return data.fullData['pageProps.companyInfo'];
+      }
     }
-    
+
     // Fallback to pageProps.companyInfo (old structure)
     if (data.pageProps?.companyInfo) {
       return data.pageProps.companyInfo;
     }
-    
+
     return null;
   }
 
@@ -1692,12 +1952,12 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
         return pageProps;
       }
     }
-    
+
     // Fallback to pageProps (old structure)
     if (data.pageProps) {
       return data.pageProps;
     }
-    
+
     return null;
   }
 
@@ -1715,13 +1975,712 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
         }
       }
     }
-    
+
     // Fallback to pageProps.priceSnapshot (old structure)
     if (data.pageProps?.priceSnapshot) {
       return data.pageProps.priceSnapshot;
     }
-    
+
     return null;
+  }
+
+  /**
+   * Get price color class based on price, reference, ceiling, and floor
+   * Green > reference, Yellow = reference, Red < reference, Purple = ceiling, Light blue = floor
+   */
+  getPriceColorClass(price: number, referencePrice: number, ceilingPrice: number, floorPrice: number): string {
+    const tolerance = 0.01; // Small tolerance for floating point comparison
+
+    // Check if price equals ceiling price (within tolerance)
+    if (Math.abs(price - ceilingPrice) < tolerance) {
+      return 'price-ceiling'; // Purple = trần
+    }
+
+    // Check if price equals floor price (within tolerance)
+    if (Math.abs(price - floorPrice) < tolerance) {
+      return 'price-floor'; // Light blue = sàn
+    }
+
+    // Check if price equals reference price (within tolerance)
+    if (Math.abs(price - referencePrice) < tolerance) {
+      return 'price-reference'; // Yellow = tham chiếu
+    }
+
+    // Compare with reference price
+    if (price > referencePrice) {
+      return 'price-up'; // Green > tham chiếu
+    } else {
+      return 'price-down'; // Red < tham chiếu
+    }
+  }
+
+  /**
+   * Get company info from fullData
+   * Supports multiple formats:
+   * - fullData['pageProps.companyInfo'] (flat key object)
+   * - fullData.pageProps?.companyInfo (nested object)
+   * - fullData['pageProps.companyInfo.xxx'] (flat keys with prefix)
+   */
+  getCompanyInfoFromFullData(): any {
+    const symbol = this.selectedSymbol();
+    if (!symbol || !symbol.basicInfo?.fullData) {
+      return null;
+    }
+
+    const fullData = symbol.basicInfo.fullData;
+
+    // Case 1: Check for flat key 'pageProps.companyInfo' (object)
+    if (fullData['pageProps.companyInfo'] && typeof fullData['pageProps.companyInfo'] === 'object') {
+      return fullData['pageProps.companyInfo'];
+    }
+
+    // Case 2: Check for nested object fullData['pageProps']?.companyInfo
+    if (fullData['pageProps']?.companyInfo && typeof fullData['pageProps'].companyInfo === 'object') {
+      return fullData['pageProps'].companyInfo;
+    }
+
+    // Case 3: Look for keys that start with 'pageProps.companyInfo.' and build object
+    const companyInfo: any = {};
+    let hasFields = false;
+    for (const key in fullData) {
+      if (key.startsWith('pageProps.companyInfo.')) {
+        const fieldName = key.replace('pageProps.companyInfo.', '');
+        companyInfo[fieldName] = fullData[key];
+        hasFields = true;
+      }
+    }
+    if (hasFields && Object.keys(companyInfo).length > 0) {
+      return companyInfo;
+    }
+
+    // Case 4: Check for exact key 'pageProps.companyInfo' (might be a string or other type)
+    if (fullData['pageProps.companyInfo'] !== undefined) {
+      return fullData['pageProps.companyInfo'];
+    }
+
+    return null;
+  }
+
+  /**
+   * Get company address from symbol
+   * Supports multiple formats for companyInfo
+   */
+  getCompanyAddress(symbol: SymbolWithStatus): string {
+    if (!symbol.basicInfo?.fullData) return '';
+
+    const fullData = symbol.basicInfo.fullData;
+
+    // Try to get companyInfo in different formats
+    let companyInfo: any = null;
+
+    // Case 1: Check for flat key 'pageProps.companyInfo' (object)
+    if (fullData['pageProps.companyInfo'] && typeof fullData['pageProps.companyInfo'] === 'object') {
+      companyInfo = fullData['pageProps.companyInfo'];
+    }
+    // Case 2: Check for nested object fullData['pageProps']?.companyInfo
+    else if (fullData['pageProps']?.companyInfo && typeof fullData['pageProps'].companyInfo === 'object') {
+      companyInfo = fullData['pageProps'].companyInfo;
+    }
+    // Case 3: Check for flat key 'pageProps.companyInfo.address'
+    else if (fullData['pageProps.companyInfo.address'] !== undefined) {
+      return fullData['pageProps.companyInfo.address'];
+    }
+
+    if (companyInfo && companyInfo.address) {
+      return companyInfo.address;
+    }
+
+    return '';
+  }
+
+  /**
+   * Get field from company info
+   */
+  getCompanyField(fieldName: string): any {
+    const companyInfo = this.getCompanyInfoFromFullData();
+    if (!companyInfo) {
+      // Fallback: try to get from fullData directly
+      const symbol = this.selectedSymbol();
+      if (symbol?.basicInfo?.fullData) {
+        const fullData = symbol.basicInfo.fullData;
+        const key = `pageProps.companyInfo.${fieldName}`;
+        if (fullData[key] !== undefined) {
+          return fullData[key];
+        }
+      }
+      return null;
+    }
+    return companyInfo[fieldName] || null;
+  }
+
+  /**
+   * Get ticker info from fullData
+   * Supports multiple formats:
+   * - fullData['pageProps.ticker'] (flat key object)
+   * - fullData.pageProps?.ticker (nested object)
+   * - fullData['pageProps.ticker.xxx'] (flat keys with prefix)
+   */
+  getTickerInfoFromFullData(): any {
+    const symbol = this.selectedSymbol();
+    if (!symbol || !symbol.basicInfo?.fullData) {
+      return null;
+    }
+
+    const fullData = symbol.basicInfo.fullData;
+
+    // Case 1: Check for flat key 'pageProps.ticker' (object)
+    if (fullData['pageProps.ticker'] && typeof fullData['pageProps.ticker'] === 'object') {
+      return fullData['pageProps.ticker'];
+    }
+
+    // Case 2: Check for nested object fullData['pageProps']?.ticker
+    if (fullData['pageProps']?.ticker && typeof fullData['pageProps'].ticker === 'object') {
+      return fullData['pageProps'].ticker;
+    }
+
+    // Case 3: Look for keys that start with 'pageProps.ticker.' and build object
+    const ticker: any = {};
+    let hasFields = false;
+    for (const key in fullData) {
+      if (key.startsWith('pageProps.ticker.')) {
+        const fieldName = key.replace('pageProps.ticker.', '');
+        ticker[fieldName] = fullData[key];
+        hasFields = true;
+      }
+    }
+    if (hasFields && Object.keys(ticker).length > 0) {
+      return ticker;
+    }
+
+    // Case 4: Check for exact key 'pageProps.ticker' (might be a string or other type)
+    if (fullData['pageProps.ticker'] !== undefined) {
+      return fullData['pageProps.ticker'];
+    }
+
+    return null;
+  }
+
+  /**
+   * Get field from ticker info
+   */
+  getTickerField(fieldName: string): any {
+    const ticker = this.getTickerInfoFromFullData();
+    if (!ticker) {
+      // Fallback: try to get from fullData directly
+      const symbol = this.selectedSymbol();
+      if (symbol?.basicInfo?.fullData) {
+        const fullData = symbol.basicInfo.fullData;
+        const key = `pageProps.ticker.${fieldName}`;
+        if (fullData[key] !== undefined) {
+          return fullData[key];
+        }
+      }
+      return null;
+    }
+    return ticker[fieldName] || null;
+  }
+
+  /**
+   * Get company info from ticker data
+   */
+  getCompanyInfo(): any {
+    const symbol = this.selectedSymbol();
+    if (!symbol || !symbol.basicInfo?.fullData) {
+      return null;
+    }
+
+    const ticker = symbol.basicInfo.fullData['pageProps.ticker'];
+    return ticker || null;
+  }
+
+  /**
+   * Get company info HTML from ticker data
+   */
+  getCompanyInfoHTML(): string {
+    const ticker = this.getCompanyInfo();
+    if (!ticker) {
+      return '';
+    }
+
+    // Convert ticker object to HTML
+    let html = '<div class="ticker-info">';
+
+    if (typeof ticker === 'object') {
+      for (const key in ticker) {
+        if (ticker[key] !== null && ticker[key] !== undefined) {
+          if (typeof ticker[key] === 'object') {
+            html += `<div class="ticker-item"><strong>${key}:</strong> ${JSON.stringify(ticker[key], null, 2)}</div>`;
+          } else {
+            html += `<div class="ticker-item"><strong>${key}:</strong> ${ticker[key]}</div>`;
+          }
+        }
+      }
+    } else {
+      html += `<div>${ticker}</div>`;
+    }
+
+    html += '</div>';
+    return html;
+  }
+
+  /**
+   * View stock detail - load from API
+   */
+  viewStockDetail(symbol: SymbolWithStatus) {
+    this.selectedSymbol.set(symbol);
+    this.showDetailView.set(true);
+    this.isLoadingDetail.set(true);
+    this.isLoadingPrice.set(true);
+    this.selectedSymbolData.set(null);
+    this.selectedSymbolPriceData.set(null);
+    this.activeTab.set('overview'); // Reset to overview tab
+
+    // Load stock data from API
+    this.dnseService.getStockDataFromAPI(symbol.symbol).subscribe({
+      next: (data) => {
+        this.selectedSymbolData.set(data as any);
+        this.isLoadingDetail.set(false);
+
+        // Load price data if available
+        if (data && data.priceData) {
+          this.selectedSymbolPriceData.set(data.priceData);
+          this.isLoadingPrice.set(false);
+          // Initialize chart if on chart tab
+          if (this.activeTab() === 'chart') {
+            setTimeout(() => this.initCandlestickChart(), 100);
+          }
+        } else {
+          // Fetch price data
+          this.fetchPriceDataOnly(this.selectedYears());
+        }
+      },
+      error: (error) => {
+        console.error('Error loading stock detail:', error);
+        this.isLoadingDetail.set(false);
+        this.isLoadingPrice.set(false);
+      }
+    });
+  }
+
+  /**
+   * Close detail view
+   */
+  closeDetailView() {
+    this.showDetailView.set(false);
+    this.selectedSymbol.set(null);
+    this.selectedSymbolData.set(null);
+    this.selectedSymbolPriceData.set(null);
+    this.isLoadingDetail.set(false);
+    this.isLoadingPrice.set(false);
+    this.selectedYears.set(3);
+    this.activeTab.set('overview');
+    if (this.candlestickChart) {
+      this.candlestickChart.destroy();
+      this.candlestickChart = null;
+    }
+  }
+
+  /**
+   * Get related stocks from sameSectorStocks
+   */
+  getRelatedStocks(): Array<{symbol: string, name?: string, price?: number}> {
+    const symbol = this.selectedSymbol();
+    if (!symbol || !symbol.basicInfo?.fullData) {
+      return [];
+    }
+
+    const fullData = symbol.basicInfo.fullData;
+
+    // Look for sameSectorStocks in fullData
+    // It might be in pageProps.companyInfo.sameSectorStocks or directly in fullData
+    let sameSectorStocks: any[] = [];
+
+    // Try to find sameSectorStocks in various possible locations
+    for (const key in fullData) {
+      if (key.includes('sameSectorStocks') || key.includes('sameSector')) {
+        const value = fullData[key];
+        if (Array.isArray(value)) {
+          sameSectorStocks = value;
+          break;
+        }
+      }
+    }
+
+    // If not found, try to get from pageProps
+    if (sameSectorStocks.length === 0) {
+      const companyInfo = this.getCompanyInfoFromFullData();
+      if (companyInfo && companyInfo.sameSectorStocks) {
+        sameSectorStocks = companyInfo.sameSectorStocks;
+      }
+    }
+
+    // Map to our format
+    return sameSectorStocks.map((stock: any) => {
+      if (typeof stock === 'string') {
+        // If it's just a symbol string
+        return { symbol: stock.toUpperCase() };
+      } else if (stock && stock.symbol) {
+        // If it's an object with symbol
+        return {
+          symbol: stock.symbol.toUpperCase(),
+          name: stock.name || stock.companyName,
+          price: stock.price || stock.matchPrice
+        } as any;
+      }
+      return null;
+    }).filter((s: any) => s !== null && s.symbol);
+  }
+
+  /**
+   * View related stock detail
+   */
+  viewRelatedStock(stock: {symbol: string, name?: string, price?: number}) {
+    // Find the symbol in allSymbols
+    const foundSymbol = this.allSymbols().find(s => s.symbol.toUpperCase() === stock.symbol.toUpperCase());
+    if (foundSymbol && foundSymbol.isFetched) {
+      // If found and already fetched, view detail immediately
+      this.viewStockDetail(foundSymbol);
+    } else if (foundSymbol && !foundSymbol.isFetched) {
+      // If found but not fetched, fetch first then view
+      this.fetchSymbol(foundSymbol);
+      // Wait for fetch to complete
+      const checkInterval = setInterval(() => {
+        const updatedSymbol = this.allSymbols().find(s => s.symbol.toUpperCase() === stock.symbol.toUpperCase());
+        if (updatedSymbol && updatedSymbol.isFetched) {
+          clearInterval(checkInterval);
+          this.viewStockDetail(updatedSymbol);
+        }
+      }, 500);
+      // Timeout after 10 seconds
+      setTimeout(() => clearInterval(checkInterval), 10000);
+    } else {
+      // If not found, create a temporary symbol object and add to list
+      const tempSymbol: SymbolWithStatus = {
+        symbol: stock.symbol.toUpperCase(),
+        name: stock.name,
+        exchange: this.selectedSymbol()?.exchange || 'hose' as ExchangeType,
+        isFetched: false
+      };
+      // Add to allSymbols temporarily
+      this.allSymbols.update(symbols => [...symbols, tempSymbol]);
+      // Fetch the symbol
+      this.fetchSymbol(tempSymbol);
+      // Wait for fetch to complete
+      const checkInterval = setInterval(() => {
+        const updatedSymbol = this.allSymbols().find(s => s.symbol.toUpperCase() === stock.symbol.toUpperCase());
+        if (updatedSymbol && updatedSymbol.isFetched) {
+          clearInterval(checkInterval);
+          this.viewStockDetail(updatedSymbol);
+        }
+      }, 500);
+      // Timeout after 10 seconds
+      setTimeout(() => clearInterval(checkInterval), 10000);
+    }
+  }
+
+  /**
+   * Get highest price from price data
+   */
+  getHighestPrice(): number {
+    const priceData = this.selectedSymbolPriceData();
+    if (!priceData || !priceData.h || priceData.h.length === 0) return 0;
+    const maxHigh = Math.max(...priceData.h);
+    return maxHigh * 1000; // Convert to đồng
+  }
+
+  /**
+   * Get lowest price from price data
+   */
+  getLowestPrice(): number {
+    const priceData = this.selectedSymbolPriceData();
+    if (!priceData || !priceData.l || priceData.l.length === 0) return 0;
+    const minLow = Math.min(...priceData.l);
+    return minLow * 1000; // Convert to đồng
+  }
+
+  /**
+   * Get average price from price data
+   */
+  getAveragePrice(): number {
+    const priceData = this.selectedSymbolPriceData();
+    if (!priceData || !priceData.c || priceData.c.length === 0) return 0;
+    const sum = priceData.c.reduce((a, b) => a + b, 0);
+    const avg = sum / priceData.c.length;
+    return avg * 1000; // Convert to đồng
+  }
+
+  /**
+   * Helper: Check if exchange is array
+   */
+  isExchangeArray(exchange: ExchangeType | ExchangeType[] | undefined): exchange is ExchangeType[] {
+    return Array.isArray(exchange);
+  }
+
+  /**
+   * Helper: Get exchanges as array
+   */
+  getExchangesArray(exchange: ExchangeType | ExchangeType[] | undefined): ExchangeType[] {
+    if (!exchange) return [];
+    return (Array.isArray(exchange) ? exchange : [exchange]).filter(Boolean);
+  }
+
+  /**
+   * Helper: Get exchange name safely
+   */
+  getExchangeName(exchange: ExchangeType | ExchangeType[] | undefined): string {
+    if (!exchange) return '';
+    const exch = Array.isArray(exchange) ? exchange[0] : exchange;
+    return this.exchangeNames[exch] || '';
+  }
+
+  /**
+   * Get autocomplete suggestions for header search
+   */
+  getHeaderSearchSuggestions = computed(() => {
+    const query = this.headerSearchQuery().toLowerCase().trim();
+    if (!query || query.length < 1) return [];
+
+    return this.allSymbols()
+      .filter(s =>
+        s.symbol.toLowerCase().includes(query) ||
+        (s.name && s.name.toLowerCase().includes(query)) ||
+        (s.basicInfo?.companyName && s.basicInfo.companyName.toLowerCase().includes(query))
+      )
+      .slice(0, 10) // Limit to 10 suggestions
+      .map(s => ({
+        symbol: s.symbol,
+        name: s.basicInfo?.companyName || s.name || s.symbol,
+        exchange: this.getExchangesArray(s.exchange),
+        isFetched: s.isFetched
+      }));
+  });
+
+  /**
+   * Handle header search input
+   */
+  onHeaderSearchInput(value: string) {
+    this.headerSearchQuery.set(value);
+    this.showSearchSuggestions.set(value.length > 0);
+  }
+
+  /**
+   * Handle header search keydown (Enter)
+   */
+  onHeaderSearchKeydown(event: KeyboardEvent) {
+    if (event.key === 'Enter') {
+      const query = this.headerSearchQuery().trim().toUpperCase();
+      if (query) {
+        const symbol = this.allSymbols().find(s => s.symbol.toUpperCase() === query);
+        if (symbol) {
+          if (symbol.isFetched) {
+            this.viewStockDetail(symbol);
+          } else {
+            // Fetch first then view
+            this.fetchSymbol(symbol);
+            const checkInterval = setInterval(() => {
+              const updatedSymbol = this.allSymbols().find(s => s.symbol.toUpperCase() === query);
+              if (updatedSymbol && updatedSymbol.isFetched) {
+                clearInterval(checkInterval);
+                this.viewStockDetail(updatedSymbol);
+              }
+            }, 500);
+            setTimeout(() => clearInterval(checkInterval), 10000);
+          }
+          this.headerSearchQuery.set('');
+          this.showSearchSuggestions.set(false);
+        }
+      }
+    } else if (event.key === 'Escape') {
+      this.showSearchSuggestions.set(false);
+    }
+  }
+
+  /**
+   * Handle header search blur with delay
+   */
+  onHeaderSearchBlur() {
+    // Delay hiding suggestions to allow clicking on them
+    setTimeout(() => {
+      this.showSearchSuggestions.set(false);
+    }, 200);
+  }
+
+  /**
+   * Select symbol from autocomplete
+   */
+  selectSymbolFromSuggestion(suggestion: {symbol: string, isFetched: boolean}) {
+    const symbol = this.allSymbols().find(s => s.symbol.toUpperCase() === suggestion.symbol.toUpperCase());
+    if (symbol) {
+      if (symbol.isFetched) {
+        this.viewStockDetail(symbol);
+      } else {
+        this.fetchSymbol(symbol);
+        const checkInterval = setInterval(() => {
+          const updatedSymbol = this.allSymbols().find(s => s.symbol.toUpperCase() === suggestion.symbol.toUpperCase());
+          if (updatedSymbol && updatedSymbol.isFetched) {
+            clearInterval(checkInterval);
+            this.viewStockDetail(updatedSymbol);
+          }
+        }, 500);
+        setTimeout(() => clearInterval(checkInterval), 10000);
+      }
+      this.headerSearchQuery.set('');
+      this.showSearchSuggestions.set(false);
+    }
+  }
+
+  /**
+   * Get same sector stocks from fullData
+   */
+  getSameSectorStocks(): Array<{symbol: string, name?: string, price?: number}> {
+    const symbol = this.selectedSymbol();
+    if (!symbol || !symbol.basicInfo?.fullData) {
+      return [];
+    }
+
+    const fullData = symbol.basicInfo.fullData;
+    const sameSectorStocks = fullData['pageProps.sameSectorStocks'];
+
+    if (!sameSectorStocks || !Array.isArray(sameSectorStocks)) {
+      return [];
+    }
+
+    const result: Array<{symbol: string, name?: string, price?: number}> = [];
+    sameSectorStocks.forEach((stock: any) => {
+      if (typeof stock === 'string') {
+        result.push({ symbol: stock.toUpperCase() });
+      } else if (stock && stock.symbol) {
+        result.push({
+          symbol: stock.symbol.toUpperCase(),
+          name: stock.name || stock.companyName,
+          price: stock.price || stock.matchPrice
+        });
+      }
+    });
+    return result;
+  }
+
+  /**
+   * Get financial indicators from fullData
+   */
+  getFinancialIndicators(): any {
+    const symbol = this.selectedSymbol();
+    if (!symbol || !symbol.basicInfo?.fullData) {
+      return null;
+    }
+
+    const fullData = symbol.basicInfo.fullData;
+    return fullData['pageProps.financialIndicators.indexes'] || null;
+  }
+
+  /**
+   * Get financial report overall from fullData
+   */
+  getFinancialReportOverall(): any {
+    const symbol = this.selectedSymbol();
+    if (!symbol || !symbol.basicInfo?.fullData) {
+      return null;
+    }
+
+    const fullData = symbol.basicInfo.fullData;
+    return fullData['pageProps.financialReportOverall'] || null;
+  }
+
+  /**
+   * Format financial report for display
+   */
+  formatFinancialReport(report: any): string {
+    if (!report) return '';
+
+    if (typeof report === 'string') {
+      return report;
+    }
+
+    if (typeof report === 'object') {
+      let html = '<div class="financial-report-data">';
+
+      if (Array.isArray(report)) {
+        report.forEach((item: any, index: number) => {
+          html += `<div class="report-item">`;
+          html += this.formatReportItem(item);
+          html += `</div>`;
+        });
+      } else {
+        html += this.formatReportItem(report);
+      }
+
+      html += '</div>';
+      return html;
+    }
+
+    return JSON.stringify(report, null, 2);
+  }
+
+  /**
+   * Format a single report item
+   */
+  private formatReportItem(item: any): string {
+    if (typeof item === 'string' || typeof item === 'number') {
+      return `<div>${item}</div>`;
+    }
+
+    if (typeof item === 'object' && item !== null) {
+      let html = '';
+      for (const key in item) {
+        const value = item[key];
+        html += `<div class="report-field"><strong>${key}:</strong> `;
+        if (typeof value === 'object') {
+          html += `<pre>${JSON.stringify(value, null, 2)}</pre>`;
+        } else {
+          html += `${value}`;
+        }
+        html += `</div>`;
+      }
+      return html;
+    }
+
+    return '';
+  }
+
+  /**
+   * Helper: Check if indicator value is an object
+   */
+  isIndicatorObject(value: any): boolean {
+    return value && typeof value === 'object' && !Array.isArray(value);
+  }
+
+  /**
+   * Helper: Check if indicator has a value property
+   */
+  hasIndicatorValue(value: any): boolean {
+    return value && typeof value === 'object' && value.value !== undefined;
+  }
+
+  /**
+   * Helper: Get indicator value
+   */
+  getIndicatorValue(value: any): number {
+    if (value && typeof value === 'object' && value.value !== undefined) {
+      return parseFloat(value.value) || 0;
+    }
+    return 0;
+  }
+
+  /**
+   * Helper: Get indicator unit
+   */
+  getIndicatorUnit(value: any): string {
+    if (value && typeof value === 'object' && value.unit) {
+      return value.unit;
+    }
+    return '';
+  }
+
+  /**
+   * TrackBy function for virtual scroll optimization
+   */
+  trackBySymbol(index: number, symbol: SymbolWithStatus): string {
+    return symbol.symbol;
   }
 }
 

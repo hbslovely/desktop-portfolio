@@ -2,395 +2,756 @@
   <!-- Detail View -->
   <div *ngIf="showDetailView() && selectedSymbol()" class="detail-view">
     <div class="detail-header">
-      <button class="btn-back" (click)="closeDetailView()">
-        <i class="pi pi-arrow-left"></i>
-        Quay lại
-      </button>
-      <h2>
-        <i class="pi pi-chart-line"></i>
-        Chi tiết: {{ selectedSymbol()?.symbol }}
-      </h2>
-    </div>
-
-    <div class="detail-content-wrapper">
-      <div class="detail-loading" *ngIf="isLoadingDetail() || isLoadingPrice()">
-        <i class="pi pi-spin pi-spinner"></i>
-        <span>Đang tải dữ liệu...</span>
-      </div>
-
-      <div class="detail-content" *ngIf="selectedSymbol() && !isLoadingDetail()">
-        <!-- Basic Info Section -->
-        <div class="info-section" *ngIf="selectedSymbolData()">
-          <h3>Thông tin cơ bản</h3>
-          <div class="info-grid">
-            <div class="info-item">
-              <span class="info-label">Mã cổ phiếu:</span>
-              <span class="info-value">{{ selectedSymbol()?.symbol }}</span>
+      <div class="header-content">
+        <button class="btn-back" (click)="closeDetailView()">
+          <i class="pi pi-arrow-left"></i>
+        </button>
+        <!-- Company Header Info -->
+        <div class="header-company-info" *ngIf="selectedSymbol()?.basicInfo?.fullData || selectedSymbol()?.basicInfo">
+          <div class="company-logo-small" *ngIf="getCompanyField('image')">
+            <img [src]="getCompanyField('image')" [alt]="getCompanyField('fullName') || selectedSymbol()?.symbol"
+                 onerror="this.style.display='none'">
+          </div>
+          <div class="header-company-details">
+            <h2>{{ getCompanyField('fullName') || selectedSymbol()?.basicInfo?.companyName || selectedSymbol()?.symbol }}</h2>
+            <div class="company-name-en" *ngIf="getCompanyField('fullNameEn')">
+              {{ getCompanyField('fullNameEn') }}
             </div>
-            <div class="info-item" *ngIf="companyInfo()">
-              <span class="info-label">Tên công ty:</span>
-              <span class="info-value">{{ companyInfo()?.fullName || companyInfo()?.name || '-' }}</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">Sàn:</span>
-              <span class="info-value">{{ exchangeNames[selectedSymbol()!.exchange] }}</span>
-            </div>
-            <div class="info-item" *ngIf="priceSnapshot()">
-              <span class="info-label">Giá khớp:</span>
-              <span class="info-value price-value">{{ priceSnapshot()?.matchPrice || '-' }}</span>
-            </div>
-            <div class="info-item" *ngIf="priceSnapshot()">
-              <span class="info-label">Thay đổi:</span>
-              <span class="info-value" [class]="(priceSnapshot()?.changedValue || 0) >= 0 ? 'change-positive' : 'change-negative'">
-                {{ priceSnapshot()?.changedValue || 0 }}
-                ({{ priceSnapshot()?.changedRatio || 0 }}%)
+            <div class="company-symbol-badge">
+              <span class="badge">{{ selectedSymbol()?.symbol }}</span>
+              <span class="badge" *ngFor="let exch of getExchangesArray(selectedSymbol()?.exchange)">
+                {{ exchangeNames[exch] || exch }}
+              </span>
+              <span class="badge index-badge" *ngFor="let index of getTickerField('indexCodes')">
+                {{ index }}
               </span>
             </div>
-            <div class="info-item" *ngIf="priceSnapshot()">
-              <span class="info-label">Khối lượng:</span>
-              <span class="info-value">{{ priceSnapshot()?.totalVolumeTraded ? (priceSnapshot()!.totalVolumeTraded | number:'1.0-0') : '-' }}</span>
+            <div class="price-info" *ngIf="selectedSymbol()?.basicInfo?.matchPrice">
+              <span class="price-value">{{ (parseFloat(selectedSymbol()!.basicInfo!.matchPrice) * 1000) | number:'1.0-0' }} đ</span>
+              <span [class]="parseFloat(selectedSymbol()!.basicInfo!.changedValue || '0') >= 0 ? 'positive' : 'negative'">
+                {{ parseFloat(selectedSymbol()!.basicInfo!.changedValue || '0') >= 0 ? '+' : '' }}{{ (parseFloat(selectedSymbol()!.basicInfo!.changedValue || '0') * 1000) | number:'1.0-0' }} đ
+                ({{ selectedSymbol()?.basicInfo?.changedRatio || '0' }}%)
+              </span>
             </div>
           </div>
         </div>
-
-        <!-- Price History Section -->
-        <div class="info-section">
-          <h3>Lịch sử giá</h3>
-          <div class="price-controls">
-            <label>Chọn số năm:</label>
-            <select
-              [value]="selectedYears()"
-              (change)="selectedYears.set(+$any($event.target).value)"
-              class="years-select">
-              <option [value]="1">1 năm</option>
-              <option [value]="3">3 năm</option>
-              <option [value]="5">5 năm</option>
-            </select>
-            <button
-              class="btn btn-primary btn-sm"
-              (click)="fetchPriceDataOnly(selectedYears())"
-              [disabled]="isLoadingPrice()">
-              <i class="pi" [ngClass]="isLoadingPrice() ? 'pi-spin pi-spinner' : 'pi-download'"></i>
-              {{ isLoadingPrice() ? 'Đang tải...' : 'Fetch giá' }}
+        <div class="header-search-wrapper">
+          <div class="header-search-box">
+            <i class="pi pi-search"></i>
+            <input
+              type="text"
+              [value]="headerSearchQuery()"
+              (input)="onHeaderSearchInput($any($event.target).value)"
+              (keydown)="onHeaderSearchKeydown($event)"
+              (focus)="showSearchSuggestions.set(headerSearchQuery().length > 0)"
+              (blur)="onHeaderSearchBlur()"
+              placeholder="Gõ mã cổ phiếu..."
+              class="header-search-input">
+            <button *ngIf="headerSearchQuery()" (click)="headerSearchQuery.set(''); showSearchSuggestions.set(false)" class="clear-search-btn">
+              <i class="pi pi-times"></i>
             </button>
           </div>
+          <div class="search-suggestions" *ngIf="showSearchSuggestions() && getHeaderSearchSuggestions().length > 0">
+            <div
+              *ngFor="let suggestion of getHeaderSearchSuggestions()"
+              class="suggestion-item"
+              (mousedown)="selectSymbolFromSuggestion(suggestion)"
+              [class.fetched]="suggestion.isFetched">
+              <div class="suggestion-symbol">{{ suggestion.symbol }}</div>
+              <div class="suggestion-name">{{ suggestion.name }}</div>
+              <div class="suggestion-exchange">
+                <span class="badge" *ngFor="let exch of suggestion.exchange">{{ exchangeNames[exch] || exch }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="header-actions">
+          <button class="btn-icon" (click)="fetchSymbol(selectedSymbol()!)" title="Fetch lại">
+            <i class="pi pi-refresh"></i>
+          </button>
+        </div>
+      </div>
+    </div>
 
+    <!-- Tab Navigation -->
+    <div class="tab-navigation">
+      <button
+        class="tab-btn"
+        [class.active]="activeTab() === 'overview'"
+        (click)="activeTab.set('overview')">
+        <i class="pi pi-info-circle"></i>
+        <span>Tổng quan</span>
+      </button>
+      <button
+        class="tab-btn"
+        [class.active]="activeTab() === 'trading'"
+        (click)="activeTab.set('trading')">
+        <i class="pi pi-shopping-cart"></i>
+        <span>Trading</span>
+      </button>
+      <button
+        class="tab-btn"
+        [class.active]="activeTab() === 'chart'"
+        (click)="activeTab.set('chart')">
+        <i class="pi pi-chart-line"></i>
+        <span>Biểu đồ</span>
+      </button>
+    </div>
+
+    <div class="detail-content" *ngIf="selectedSymbol()">
+      <!-- Loading -->
+      <div class="loading" *ngIf="isLoadingDetail() || isLoadingPrice()">
+        <i class="pi pi-spin pi-spinner"></i>
+        <span>Đang tải...</span>
+      </div>
+
+      <!-- Overview Tab -->
+      <div *ngIf="activeTab() === 'overview' && !isLoadingDetail()">
+        <!-- Basic Info from fullData -->
+        <section class="section" *ngIf="selectedSymbol()?.basicInfo?.fullData || selectedSymbol()?.basicInfo">
+          <h3>Thông tin cơ bản</h3>
+          <div class="info-grid">
+            <div class="info-item" *ngIf="selectedSymbol()?.symbol">
+              <label>Mã cổ phiếu</label>
+              <span>{{ selectedSymbol()?.symbol }}</span>
+            </div>
+            <div class="info-item" *ngIf="selectedSymbol()?.basicInfo?.companyName || getCompanyField('fullName')">
+              <label>Tên công ty</label>
+              <span>{{ getCompanyField('fullName') || selectedSymbol()?.basicInfo?.companyName }}</span>
+            </div>
+            <div class="info-item" *ngIf="getCompanyField('fullNameEn')">
+              <label>Tên tiếng Anh</label>
+              <span>{{ getCompanyField('fullNameEn') }}</span>
+            </div>
+            <div class="info-item" *ngIf="getCompanyField('name')">
+              <label>Tên ngắn</label>
+              <span>{{ getCompanyField('name') }}</span>
+            </div>
+            <div class="info-item" *ngIf="selectedSymbol()?.exchange">
+              <label>Sàn giao dịch</label>
+              <span>
+                <span class="badge" *ngFor="let exch of getExchangesArray(selectedSymbol()?.exchange)">
+                  {{ exchangeNames[exch] || exch }}
+                </span>
+              </span>
+            </div>
+            <div class="info-item" *ngIf="getCompanyField('taxCode')">
+              <label>Mã số thuế</label>
+              <span>{{ getCompanyField('taxCode') }}</span>
+            </div>
+            <div class="info-item" *ngIf="getCompanyField('address') || getCompanyField('permanentAddress')">
+              <label>Địa chỉ</label>
+              <span>{{ getCompanyField('address') || getCompanyField('permanentAddress') }}</span>
+            </div>
+            <div class="info-item" *ngIf="getCompanyField('permanentAddress') && getCompanyField('address')">
+              <label>Địa chỉ trụ sở chính</label>
+              <span>{{ getCompanyField('permanentAddress') }}</span>
+            </div>
+            <div class="info-item" *ngIf="getCompanyField('phone')">
+              <label>Điện thoại</label>
+              <span>{{ getCompanyField('phone') }}</span>
+            </div>
+            <div class="info-item" *ngIf="getCompanyField('email')">
+              <label>Email</label>
+              <span><a [href]="'mailto:' + getCompanyField('email')">{{ getCompanyField('email') }}</a></span>
+            </div>
+            <div class="info-item" *ngIf="getCompanyField('url')">
+              <label>Website</label>
+              <span><a [href]="'https://' + getCompanyField('url')" target="_blank" rel="noopener">{{ getCompanyField('url') }}</a></span>
+            </div>
+            <div class="info-item" *ngIf="getCompanyField('fax')">
+              <label>Fax</label>
+              <span>{{ getCompanyField('fax') }}</span>
+            </div>
+            <div class="info-item" *ngIf="getCompanyField('foundDate')">
+              <label>Ngày thành lập</label>
+              <span>{{ getCompanyField('foundDate') | date:'dd/MM/yyyy' }}</span>
+            </div>
+            <div class="info-item" *ngIf="getCompanyField('issueDate')">
+              <label>Ngày niêm yết</label>
+              <span>{{ getCompanyField('issueDate') | date:'dd/MM/yyyy' }}</span>
+            </div>
+            <div class="info-item" *ngIf="getTickerField('listedDate')">
+              <label>Ngày giao dịch đầu tiên</label>
+              <span>{{ getTickerField('listedDate') | date:'dd/MM/yyyy' }}</span>
+            </div>
+            <div class="info-item" *ngIf="getCompanyField('firstTradingSessionPrice')">
+              <label>Giá giao dịch đầu tiên</label>
+              <span class="price">{{ (getCompanyField('firstTradingSessionPrice') * 1000) | number:'1.0-0' }} đ</span>
+            </div>
+            <div class="info-item" *ngIf="getCompanyField('capital')">
+              <label>Vốn điều lệ</label>
+              <span>{{ (getCompanyField('capital') / 1000000000) | number:'1.2-2' }} tỷ đồng</span>
+            </div>
+            <div class="info-item" *ngIf="getCompanyField('stockFaceValue')">
+              <label>Mệnh giá</label>
+              <span>{{ getCompanyField('stockFaceValue') | number:'1.0-0' }} đ</span>
+            </div>
+            <div class="info-item" *ngIf="selectedSymbol()?.basicInfo?.matchPrice">
+              <label>Giá khớp</label>
+              <span class="price">{{ (parseFloat(selectedSymbol()!.basicInfo!.matchPrice) * 1000) | number:'1.0-0' }} đ</span>
+            </div>
+            <div class="info-item" *ngIf="selectedSymbol()?.basicInfo?.changedValue">
+              <label>Thay đổi</label>
+              <span [class]="parseFloat(selectedSymbol()!.basicInfo!.changedValue) >= 0 ? 'positive' : 'negative'">
+                {{ (parseFloat(selectedSymbol()!.basicInfo!.changedValue) * 1000) | number:'1.0-0' }} đ
+                ({{ selectedSymbol()?.basicInfo?.changedRatio || '0' }}%)
+              </span>
+            </div>
+            <div class="info-item" *ngIf="selectedSymbol()?.basicInfo?.totalVolume">
+              <label>Khối lượng</label>
+              <span>{{ selectedSymbol()?.basicInfo?.totalVolume | number:'1.0-0' }}</span>
+            </div>
+            <div class="info-item" *ngIf="getCompanyField('beta')">
+              <label>Beta</label>
+              <span>{{ getCompanyField('beta') | number:'1.2-2' }}</span>
+            </div>
+            <div class="info-item" *ngIf="getTickerField('outstandingShares')">
+              <label>Số cổ phiếu lưu hành</label>
+              <span>{{ (getTickerField('outstandingShares') / 1000000) | number:'1.2-2' }} triệu CP</span>
+            </div>
+            <div class="info-item" *ngIf="getTickerField('listedShares')">
+              <label>Số cổ phiếu niêm yết</label>
+              <span>{{ (getTickerField('listedShares') / 1000000) | number:'1.2-2' }} triệu CP</span>
+            </div>
+            <div class="info-item" *ngIf="getTickerField('foreignOwnership') !== null && getTickerField('foreignOwnership') !== undefined">
+              <label>Tỷ lệ sở hữu nước ngoài</label>
+              <span>{{ getTickerField('foreignOwnership') | number:'1.2-2' }}%</span>
+            </div>
+            <div class="info-item" *ngIf="getTickerField('dividend')">
+              <label>Cổ tức</label>
+              <span>{{ getTickerField('dividend') | number:'1.2-2' }}%</span>
+            </div>
+            <div class="info-item" *ngIf="getTickerField('dividendYield')">
+              <label>Tỷ suất cổ tức</label>
+              <span>{{ getTickerField('dividendYield') | number:'1.2-2' }}%</span>
+            </div>
+            <div class="info-item" *ngIf="getTickerField('high52w')">
+              <label>Giá cao nhất 52 tuần</label>
+              <span class="price">{{ (getTickerField('high52w') * 1000) | number:'1.0-0' }} đ</span>
+            </div>
+            <div class="info-item" *ngIf="getTickerField('low52w')">
+              <label>Giá thấp nhất 52 tuần</label>
+              <span class="price">{{ (getTickerField('low52w') * 1000) | number:'1.0-0' }} đ</span>
+            </div>
+            <div class="info-item" *ngIf="getTickerField('avgVolume20d')">
+              <label>KL trung bình 20 ngày</label>
+              <span>{{ (getTickerField('avgVolume20d') / 1000000) | number:'1.2-2' }} triệu</span>
+            </div>
+            <div class="info-item" *ngIf="getTickerField('avgVolume30d')">
+              <label>KL trung bình 30 ngày</label>
+              <span>{{ (getTickerField('avgVolume30d') / 1000000) | number:'1.2-2' }} triệu</span>
+            </div>
+            <div class="info-item" *ngIf="getTickerField('marketCap')">
+              <label>Vốn hóa thị trường</label>
+              <span>{{ (getTickerField('marketCap') / 1000000000) | number:'1.2-2' }} tỷ đồng</span>
+            </div>
+            <div class="info-item" *ngIf="getTickerField('freeFloat')">
+              <label>Free float</label>
+              <span>{{ (getTickerField('freeFloat') / 1000000) | number:'1.2-2' }} triệu CP</span>
+            </div>
+            <div class="info-item" *ngIf="getTickerField('freeFloatRatio') !== null && getTickerField('freeFloatRatio') !== undefined">
+              <label>Tỷ lệ free float</label>
+              <span>{{ getTickerField('freeFloatRatio') | number:'1.2-2' }}%</span>
+            </div>
+            <div class="info-item" *ngIf="getCompanyField('contactPerson')">
+              <label>Người liên hệ</label>
+              <span>{{ getCompanyField('contactPerson') }} - {{ getCompanyField('contactPersonPosition') }}</span>
+            </div>
+            <div class="info-item" *ngIf="getCompanyField('infoSupplier')">
+              <label>Người cung cấp thông tin</label>
+              <span>{{ getCompanyField('infoSupplier') }} - {{ getCompanyField('infoSupplierPosition') }}</span>
+            </div>
+            <div class="info-item" *ngIf="getCompanyField('phoneSupplier')">
+              <label>Điện thoại liên hệ</label>
+              <span>{{ getCompanyField('phoneSupplier') }}</span>
+            </div>
+            <div class="info-item" *ngIf="getCompanyField('auditFirm')">
+              <label>Công ty kiểm toán</label>
+              <span>{{ getCompanyField('auditFirm') }}</span>
+            </div>
+            <div class="info-item" *ngIf="getCompanyField('foundPermit')">
+              <label>Giấy phép thành lập</label>
+              <span>{{ getCompanyField('foundPermit') }}</span>
+            </div>
+            <div class="info-item" *ngIf="getCompanyField('businessPermit')">
+              <label>Giấy phép kinh doanh</label>
+              <span>{{ getCompanyField('businessPermit') }}</span>
+            </div>
+            <div class="info-item" *ngIf="getCompanyField('identityNumber')">
+              <label>Số CMND/CCCD</label>
+              <span>{{ getCompanyField('identityNumber') }}</span>
+            </div>
+            <div class="info-item full-width" *ngIf="getCompanyField('introduction')">
+              <label>Giới thiệu</label>
+              <span class="intro-text">{{ getCompanyField('introduction') }}</span>
+            </div>
+            <div class="info-item full-width" *ngIf="getCompanyField('notes')">
+              <label>Lịch sử phát triển</label>
+              <div class="notes-text" [innerHTML]="getCompanyField('notes')"></div>
+            </div>
+            <div class="info-item full-width" *ngIf="getCompanyField('otherInfo')">
+              <label>Thông tin khác</label>
+              <span class="intro-text">{{ getCompanyField('otherInfo') }}</span>
+            </div>
+            <div class="info-item full-width" *ngIf="getCompanyField('branch')">
+              <label>Chi nhánh và phòng giao dịch</label>
+              <span class="intro-text">{{ getCompanyField('branch') }}</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Industry & Sector Info -->
+        <section class="section" *ngIf="getCompanyField('industryName') || getTickerField('industry')">
+          <h3>Phân loại ngành nghề</h3>
+          <div class="info-grid">
+            <div class="info-item" *ngIf="getCompanyField('industryName') || getTickerField('industry')">
+              <label>Ngành</label>
+              <span>{{ getCompanyField('industryName') || getTickerField('industry') }}</span>
+            </div>
+            <div class="info-item" *ngIf="getCompanyField('subIndustryName') || getTickerField('subIndustry')">
+              <label>Ngành phụ</label>
+              <span>{{ getCompanyField('subIndustryName') || getTickerField('subIndustry') }}</span>
+            </div>
+            <div class="info-item" *ngIf="getCompanyField('sectorName') || getTickerField('sector')">
+              <label>Lĩnh vực</label>
+              <span>{{ getCompanyField('sectorName') || getTickerField('sector') }}</span>
+            </div>
+            <div class="info-item" *ngIf="getCompanyField('sectorIndexName') || getTickerField('sectorIndex')">
+              <label>Chỉ số ngành</label>
+              <span>{{ getCompanyField('sectorIndexName') || getTickerField('sectorIndex') }}</span>
+            </div>
+            <div class="info-item" *ngIf="getCompanyField('companyTypeName')">
+              <label>Loại hình công ty</label>
+              <span>{{ getCompanyField('companyTypeName') }}</span>
+            </div>
+            <div class="info-item" *ngIf="getTickerField('indexCode')">
+              <label>Chỉ số chính</label>
+              <span class="badge index-badge">{{ getTickerField('indexCode') }}</span>
+            </div>
+            <div class="info-item" *ngIf="getTickerField('indexCodes') && getTickerField('indexCodes').length > 0">
+              <label>Các chỉ số</label>
+              <div class="badge-list">
+                <span class="badge index-badge" *ngFor="let index of getTickerField('indexCodes')">
+                  {{ index }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- GICS Classification -->
+        <section class="section" *ngIf="getCompanyField('gicsSector') || getTickerField('gicsSector')">
+          <h3>Phân loại GICS</h3>
+          <div class="info-grid">
+            <div class="info-item" *ngIf="getCompanyField('gicsSector') || getTickerField('gicsSector')">
+              <label>GICS Sector</label>
+              <span>{{ getCompanyField('gicsSector') || getTickerField('gicsSector') }}</span>
+            </div>
+            <div class="info-item" *ngIf="getCompanyField('gicsIndustryGroup') || getTickerField('gicsIndustryGroup')">
+              <label>GICS Industry Group</label>
+              <span>{{ getCompanyField('gicsIndustryGroup') || getTickerField('gicsIndustryGroup') }}</span>
+            </div>
+            <div class="info-item" *ngIf="getCompanyField('gicsIndustry') || getTickerField('gicsIndustry')">
+              <label>GICS Industry</label>
+              <span>{{ getCompanyField('gicsIndustry') || getTickerField('gicsIndustry') }}</span>
+            </div>
+            <div class="info-item" *ngIf="getCompanyField('gicsSubIndustry') || getTickerField('gicsSubIndustry')">
+              <label>GICS Sub-Industry</label>
+              <span>{{ getCompanyField('gicsSubIndustry') || getTickerField('gicsSubIndustry') }}</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Trading Features -->
+        <section class="section" *ngIf="getCompanyField('isMargin') !== null || getCompanyField('isVn30') !== null">
+          <h3>Tính năng giao dịch</h3>
+          <div class="info-grid">
+            <div class="info-item" *ngIf="getCompanyField('isMargin') !== null">
+              <label>Margin</label>
+              <span [class]="getCompanyField('isMargin') ? 'positive' : 'negative'">
+                {{ getCompanyField('isMargin') ? 'Có' : 'Không' }}
+              </span>
+            </div>
+            <div class="info-item" *ngIf="getCompanyField('isVn30') !== null">
+              <label>VN30</label>
+              <span [class]="getCompanyField('isVn30') ? 'positive' : 'negative'">
+                {{ getCompanyField('isVn30') ? 'Có' : 'Không' }}
+              </span>
+            </div>
+            <div class="info-item" *ngIf="getCompanyField('isHnx30') !== null">
+              <label>HNX30</label>
+              <span [class]="getCompanyField('isHnx30') ? 'positive' : 'negative'">
+                {{ getCompanyField('isHnx30') ? 'Có' : 'Không' }}
+              </span>
+            </div>
+            <div class="info-item" *ngIf="getCompanyField('isFtse') !== null">
+              <label>FTSE</label>
+              <span [class]="getCompanyField('isFtse') ? 'positive' : 'negative'">
+                {{ getCompanyField('isFtse') ? 'Có' : 'Không' }}
+              </span>
+            </div>
+            <div class="info-item" *ngIf="getCompanyField('isVnmetf') !== null">
+              <label>VNMetf</label>
+              <span [class]="getCompanyField('isVnmetf') ? 'positive' : 'negative'">
+                {{ getCompanyField('isVnmetf') ? 'Có' : 'Không' }}
+              </span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Stock Metrics from basicInfo -->
+        <section class="section" *ngIf="selectedSymbol()?.basicInfo">
+          <h3>Thông số cổ phiếu</h3>
+          <div class="metrics-grid">
+            <div class="metric-item" *ngIf="selectedSymbol()?.basicInfo?.eps">
+              <label>EPS</label>
+              <span>{{ parseFloat(selectedSymbol()!.basicInfo!.eps) | number:'1.2-2' }}</span>
+            </div>
+            <div class="metric-item" *ngIf="selectedSymbol()?.basicInfo?.pe">
+              <label>P/E</label>
+              <span>{{ parseFloat(selectedSymbol()!.basicInfo!.pe) | number:'1.2-2' }}</span>
+            </div>
+            <div class="metric-item" *ngIf="selectedSymbol()?.basicInfo?.pb">
+              <label>P/B</label>
+              <span>{{ parseFloat(selectedSymbol()!.basicInfo!.pb) | number:'1.2-2' }}</span>
+            </div>
+            <div class="metric-item" *ngIf="selectedSymbol()?.basicInfo?.roe">
+              <label>ROE</label>
+              <span>{{ parseFloat(selectedSymbol()!.basicInfo!.roe) | number:'1.2-2' }}%</span>
+            </div>
+            <div class="metric-item" *ngIf="selectedSymbol()?.basicInfo?.roa">
+              <label>ROA</label>
+              <span>{{ parseFloat(selectedSymbol()!.basicInfo!.roa) | number:'1.2-2' }}%</span>
+            </div>
+            <div class="metric-item" *ngIf="selectedSymbol()?.basicInfo?.marketCap">
+              <label>Vốn hóa</label>
+              <span>{{ selectedSymbol()?.basicInfo?.marketCap | number:'1.0-0' }}</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Same Sector Stocks -->
+        <section class="section" *ngIf="getSameSectorStocks().length > 0">
+          <h3>Cổ phiếu cùng ngành</h3>
+          <div class="related-stocks">
+            <div
+              *ngFor="let stock of getSameSectorStocks()"
+              class="related-stock-item"
+              (click)="viewRelatedStock(stock)">
+              <div class="stock-symbol">{{ stock.symbol }}</div>
+              <div class="stock-name" *ngIf="stock.name">{{ stock.name }}</div>
+              <div class="stock-price" *ngIf="stock.price">
+                {{ (stock.price * 1000) | number:'1.0-0' }} đ
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Financial Indicators -->
+        <section class="section" *ngIf="getFinancialIndicators()">
+          <h3>Chỉ số tài chính</h3>
+          <div class="financial-indicators-grid">
+            <div class="indicator-item" *ngFor="let indicator of getFinancialIndicators() | keyvalue">
+              <label>{{ indicator.key }}</label>
+              <div class="indicator-value" *ngIf="isIndicatorObject(indicator.value)">
+                <div *ngIf="hasIndicatorValue(indicator.value)">
+                  <span class="value">{{ getIndicatorValue(indicator.value) | number:'1.2-2' }}</span>
+                  <span class="unit" *ngIf="getIndicatorUnit(indicator.value)">{{ getIndicatorUnit(indicator.value) }}</span>
+                </div>
+                <div *ngIf="!hasIndicatorValue(indicator.value)">
+                  {{ indicator.value | json }}
+                </div>
+              </div>
+              <div class="indicator-value" *ngIf="!isIndicatorObject(indicator.value)">
+                {{ indicator.value }}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Financial Report Overall -->
+        <section class="section" *ngIf="getFinancialReportOverall()">
+          <h3>Báo cáo tài chính tổng hợp</h3>
+          <div class="financial-report-wrapper">
+            <div class="financial-report-content" [innerHTML]="formatFinancialReport(getFinancialReportOverall())"></div>
+          </div>
+        </section>
+      </div>
+
+      <!-- Trading Tab -->
+      <div *ngIf="activeTab() === 'trading' && !isLoadingDetail()">
+        <!-- Trading Info -->
+        <section class="section" *ngIf="selectedSymbol()?.basicInfo">
+          <h3>Thông tin giao dịch</h3>
+          <div class="trading-info-grid">
+            <div class="trading-info-item" *ngIf="selectedSymbol()?.basicInfo?.matchPrice">
+              <label>Giá khớp</label>
+              <span class="price-value">{{ (parseFloat(selectedSymbol()!.basicInfo!.matchPrice) * 1000) | number:'1.0-0' }} đ</span>
+            </div>
+            <div class="trading-info-item" *ngIf="selectedSymbol()?.basicInfo?.changedValue">
+              <label>Thay đổi</label>
+              <span [class]="parseFloat(selectedSymbol()!.basicInfo!.changedValue) >= 0 ? 'positive' : 'negative'">
+                {{ (parseFloat(selectedSymbol()!.basicInfo!.changedValue) * 1000) | number:'1.0-0' }} đ
+                ({{ selectedSymbol()?.basicInfo?.changedRatio || '0' }}%)
+              </span>
+            </div>
+            <div class="trading-info-item" *ngIf="selectedSymbol()?.basicInfo?.totalVolume">
+              <label>Khối lượng</label>
+              <span>{{ selectedSymbol()?.basicInfo?.totalVolume | number:'1.0-0' }}</span>
+            </div>
+            <div class="trading-info-item" *ngIf="getCompanyField('capital')">
+              <label>Vốn điều lệ</label>
+              <span>{{ (getCompanyField('capital') / 1000000) | number:'1.0-0' }} triệu đồng</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Trading Statistics -->
+        <section class="section" *ngIf="selectedSymbolPriceData()">
+          <h3>Thống kê giao dịch</h3>
+          <div class="trading-stats-grid">
+            <div class="stat-card">
+              <label>Giá cao nhất</label>
+              <span class="stat-value">{{ getHighestPrice() | number:'1.0-0' }} đ</span>
+            </div>
+            <div class="stat-card">
+              <label>Giá thấp nhất</label>
+              <span class="stat-value">{{ getLowestPrice() | number:'1.0-0' }} đ</span>
+            </div>
+            <div class="stat-card">
+              <label>Giá trung bình</label>
+              <span class="stat-value">{{ getAveragePrice() | number:'1.0-0' }} đ</span>
+            </div>
+            <div class="stat-card">
+              <label>Tổng khối lượng</label>
+              <span class="stat-value">{{ getTotalVolumeDisplay() | number:'1.0-0' }}</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Company Info from ticker -->
+        <section class="section" *ngIf="getCompanyInfo()">
+          <h3>Chi tiết công ty</h3>
+          <div class="company-info" [innerHTML]="getCompanyInfoHTML()"></div>
+        </section>
+
+        <!-- Neural Network Section -->
+        <section class="section">
+          <h3>Neural Network Trading</h3>
+          <div class="neural-network-section">
+            <div class="nn-status">
+              <div class="nn-status-item">
+                <label>Trạng thái:</label>
+                <span class="nn-status-badge">Đang cài đặt...</span>
+              </div>
+              <div class="nn-info">
+                <p>Hệ thống Neural Network đang được thiết lập để phân tích và dự đoán giá cổ phiếu.</p>
+                <p class="nn-note">Tính năng này sẽ sử dụng mô hình deep learning để phân tích dữ liệu lịch sử và đưa ra các dự đoán giao dịch.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- Chart Tab -->
+      <div *ngIf="activeTab() === 'chart' && !isLoadingDetail()">
+        <!-- Price Chart -->
+        <section class="section" *ngIf="selectedSymbolPriceData() || isLoadingPrice()">
+          <h3>Biểu đồ nến & Khối lượng</h3>
+          <div class="chart-controls">
+            <button class="btn" (click)="fetchPriceDataOnly(selectedYears())" [disabled]="isLoadingPrice()">
+              <i class="pi" [ngClass]="isLoadingPrice() ? 'pi-spin pi-spinner' : 'pi-download'"></i>
+              {{ isLoadingPrice() ? 'Đang tải...' : 'Tải dữ liệu' }}
+            </button>
+          </div>
+          <div class="chart-wrapper" *ngIf="selectedSymbolPriceData() && !isLoadingPrice()">
+            <canvas #candlestickChart></canvas>
+          </div>
           <div class="price-loading" *ngIf="isLoadingPrice()">
             <i class="pi pi-spin pi-spinner"></i>
             <span>Đang tải dữ liệu giá...</span>
           </div>
+        </section>
 
-          <div class="price-data" *ngIf="selectedSymbolPriceData() && !isLoadingPrice()">
-            <div class="price-stats">
-              <div class="stat-item">
-                <span class="stat-label">Số ngày giao dịch:</span>
-                <span class="stat-value">{{ selectedSymbolPriceData()?.t?.length || 0 }}</span>
-              </div>
-              <div class="stat-item" *ngIf="selectedSymbolPriceData()?.c && selectedSymbolPriceData()!.c.length > 0">
-                <span class="stat-label">Giá đóng cửa gần nhất:</span>
-                <span class="stat-value">{{ (getLatestClosePrice() * 1000) | number:'1.0-0' }} đ</span>
-              </div>
-              <div class="stat-item" *ngIf="selectedSymbolPriceData()?.v">
-                <span class="stat-label">Tổng khối lượng:</span>
-                <span class="stat-value">{{ getTotalVolumeDisplay() | number:'1.0-0' }}</span>
-              </div>
-            </div>
-
-            <!-- Candlestick Chart -->
-            <div class="chart-container">
-              <div class="chart-header">
-                <h4>Biểu đồ hình nến</h4>
-                <div class="chart-controls">
-                  <button class="btn btn-sm btn-secondary" (click)="resetZoom()" title="Reset zoom">
-                    <i class="pi pi-refresh"></i>
-                    Reset zoom
-                  </button>
-                </div>
-              </div>
-              <div class="chart-legend">
-                <span class="legend-item"><span class="legend-color ma20"></span> MA20</span>
-                <span class="legend-item"><span class="legend-color ma50"></span> MA50</span>
-                <span class="legend-hint">Cuộn chuột để zoom, kéo để di chuyển</span>
-              </div>
-              <div class="chart-wrapper">
-                <canvas #candlestickChart></canvas>
-              </div>
-            </div>
-
-            <div class="price-table-container">
-              <table class="price-table">
-                <thead>
-                  <tr>
-                    <th>Ngày</th>
-                    <th>Mở cửa</th>
-                    <th>Thấp nhất</th>
-                    <th>Cao nhất</th>
-                    <th>Đóng cửa</th>
-                    <th>Khối lượng</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr *ngFor="let item of priceTableData()">
-                    <td>{{ item.date }}</td>
-                    <td [ngClass]="getPriceColorClass(item.open, item.referencePrice, item.ceilingPrice, item.floorPrice)">
-                      {{ (item.open * 1000) | number:'1.0-0' }} đ
-                    </td>
-                    <td [ngClass]="getPriceColorClass(item.low, item.referencePrice, item.ceilingPrice, item.floorPrice)">
-                      {{ (item.low * 1000) | number:'1.0-0' }} đ
-                    </td>
-                    <td [ngClass]="getPriceColorClass(item.high, item.referencePrice, item.ceilingPrice, item.floorPrice)">
-                      {{ (item.high * 1000) | number:'1.0-0' }} đ
-                    </td>
-                    <td [ngClass]="getPriceColorClass(item.close, item.referencePrice, item.ceilingPrice, item.floorPrice)">
-                      {{ (item.close * 1000) | number:'1.0-0' }} đ
-                    </td>
-                    <td>{{ item.volume | number:'1.0-0' }}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+        <!-- Price Table -->
+        <section class="section" *ngIf="selectedSymbolPriceData() && !isLoadingPrice()">
+          <h3>Lịch sử giá</h3>
+          <div class="table-wrapper">
+            <table class="price-table">
+              <thead>
+                <tr>
+                  <th>Ngày</th>
+                  <th>Mở</th>
+                  <th>Cao</th>
+                  <th>Thấp</th>
+                  <th>Đóng</th>
+                  <th>KL</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let item of priceTableData()">
+                  <td>{{ item.date }}</td>
+                  <td [ngClass]="getPriceColorClass(item.open, item.referencePrice, item.ceilingPrice, item.floorPrice)">
+                    {{ (item.open * 1000) | number:'1.0-0' }} đ
+                  </td>
+                  <td [ngClass]="getPriceColorClass(item.high, item.referencePrice, item.ceilingPrice, item.floorPrice)">
+                    {{ (item.high * 1000) | number:'1.0-0' }} đ
+                  </td>
+                  <td [ngClass]="getPriceColorClass(item.low, item.referencePrice, item.ceilingPrice, item.floorPrice)">
+                    {{ (item.low * 1000) | number:'1.0-0' }} đ
+                  </td>
+                  <td [ngClass]="getPriceColorClass(item.close, item.referencePrice, item.ceilingPrice, item.floorPrice)">
+                    {{ (item.close * 1000) | number:'1.0-0' }} đ
+                  </td>
+                  <td>{{ item.volume | number:'1.0-0' }}</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
-        </div>
-
-        <!-- Actions -->
-        <div class="detail-actions">
-          <a
-            href="https://github.com/hbslovely/desktop-portfolio/tree/master/src/assets/stocks"
-            target="_blank"
-            class="btn btn-primary">
-            <i class="pi pi-external-link"></i>
-            Xem trên GitHub
-          </a>
-          <button
-            class="btn btn-secondary"
-            (click)="fetchSymbol(selectedSymbol()!)">
-            <i class="pi pi-refresh"></i>
-            Fetch lại tất cả
-          </button>
-        </div>
+        </section>
+      </div>
       </div>
     </div>
-  </div>
 
   <!-- List View -->
   <div *ngIf="!showDetailView()" class="list-view">
     <!-- Header -->
-    <div class="app-header">
-    <h2>
-      <i class="pi pi-chart-line"></i>
-      Chứng khoán DNSE
-    </h2>
-    <div class="header-stats">
-      <span class="stat-item">
-        <i class="pi pi-list"></i>
-        Tổng: {{ totalCount() }}
-      </span>
-      <span class="stat-item success">
-        <i class="pi pi-check-circle"></i>
-        Đã fetch: {{ fetchedCount() }}
-      </span>
-      <span class="stat-item warning">
-        <i class="pi pi-clock"></i>
-        Chưa fetch: {{ totalCount() - fetchedCount() }}
-      </span>
-    </div>
-  </div>
+    <header class="header">
+      <h1>Danh sách cổ phiếu</h1>
+      <div class="stats">
+        <span class="stat">Tổng: {{ totalCount() }}</span>
+        <span class="stat success">Đã fetch: {{ fetchedCount() }}</span>
+        <span class="stat warning">Chưa fetch: {{ totalCount() - fetchedCount() }}</span>
+      </div>
+    </header>
 
-  <!-- Controls -->
-  <div class="controls">
-    <div class="controls-row">
-      <div class="control-group">
-        <label>
-          <i class="pi pi-building"></i>
-          Sàn giao dịch
-        </label>
-        <div class="select-wrapper">
-          <select
-            [value]="selectedExchange()"
-            (change)="onExchangeChange($any($event.target).value)"
-            class="modern-select exchange-select">
-            <option value="all">Tất cả ({{ fetchedCount() }}/{{ totalCount() }})</option>
-            <option *ngFor="let exchange of exchanges" [value]="exchange">
-              {{ getExchangeCountText(exchange) }}
-            </option>
-          </select>
-          <i class="pi pi-chevron-down select-arrow"></i>
+    <!-- Search & Filters -->
+    <div class="toolbar">
+      <div class="search-box">
+        <i class="pi pi-search"></i>
+        <input
+          type="text"
+          [value]="searchQuery()"
+          (input)="onSearchChange($any($event.target).value)"
+          placeholder="Tìm kiếm mã hoặc tên công ty..."
+          class="search-input">
+        <button *ngIf="searchQuery()" (click)="onSearchChange('')" class="clear-btn">
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+      <div class="filters">
+        <select [value]="selectedExchange()" (change)="onExchangeChange($any($event.target).value)" class="select">
+          <option value="all">Tất cả sàn</option>
+          <option *ngFor="let exchange of exchanges" [value]="exchange">
+            {{ exchangeNames[exchange] }} ({{ getExchangeCountText(exchange) }})
+          </option>
+        </select>
+        <select [value]="filterMode()" (change)="onFilterModeChange($any($event.target).value)" class="select">
+          <option value="all">Tất cả</option>
+          <option value="unfetched">Chưa fetch</option>
+        </select>
+      </div>
+      <div class="actions">
+        <button class="btn primary" (click)="fetchAllUnfetched()" [disabled]="isLoading() || !hasUnfetchedSymbols()">
+          <i class="pi pi-download"></i>
+          Fetch tất cả
+        </button>
+        <button class="btn" (click)="loadSymbols()" [disabled]="isLoading()">
+          <i class="pi pi-refresh"></i>
+          Tải lại
+        </button>
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <div class="loading" *ngIf="isLoading()">
+      <i class="pi pi-spin pi-spinner"></i>
+      <span>Đang tải...</span>
+    </div>
+
+    <!-- Stock List -->
+    <div *ngIf="!isLoading()" class="stock-list">
+      <div class="list-header">
+        <div class="col-symbol">Mã</div>
+        <div class="col-name">Tên công ty</div>
+        <div class="col-exchange">Sàn</div>
+        <div class="col-price">Giá</div>
+        <div class="col-change">Thay đổi</div>
+        <div class="col-status">Trạng thái</div>
+        <div class="col-actions">Thao tác</div>
+      </div>
+
+      <cdk-virtual-scroll-viewport class="viewport" itemSize="80">
+        <div
+          *cdkVirtualFor="let symbol of filteredSymbols(); trackBy: trackBySymbol"
+          class="stock-row"
+          [class.fetched]="symbol.isFetched"
+          [class.not-fetched]="!symbol.isFetched"
+          (click)="symbol.isFetched && viewStockDetail(symbol)">
+          <div class="col-symbol">
+            <strong>{{ symbol.symbol }}</strong>
+          </div>
+          <div class="col-name">
+            <div class="company-name">{{ symbol.basicInfo?.companyName || symbol.name || '-' }}</div>
+            <div class="company-address" *ngIf="symbol.basicInfo?.fullData">
+              {{ getCompanyAddress(symbol) }}
+            </div>
+          </div>
+          <div class="col-exchange">
+            <span class="badge" *ngFor="let exch of getExchangesArray(symbol.exchange)">
+              {{ exchangeNames[exch] || exch }}
+            </span>
+          </div>
+          <div class="col-price" *ngIf="symbol.isFetched && symbol.basicInfo?.matchPrice">
+            <strong>{{ (parseFloat(symbol.basicInfo.matchPrice) * 1000) | number:'1.0-0' }} đ</strong>
+          </div>
+          <div class="col-price" *ngIf="!symbol.isFetched || !symbol.basicInfo?.matchPrice">-</div>
+          <div class="col-change" *ngIf="symbol.isFetched && symbol.basicInfo?.changedValue">
+            <span [class]="parseFloat(symbol.basicInfo.changedValue) >= 0 ? 'positive' : 'negative'">
+              {{ (parseFloat(symbol.basicInfo.changedValue) * 1000) | number:'1.0-0' }} đ
+              ({{ symbol.basicInfo.changedRatio || '0' }}%)
+            </span>
+          </div>
+          <div class="col-change" *ngIf="!symbol.isFetched || !symbol.basicInfo?.changedValue">-</div>
+          <div class="col-status">
+            <span class="status" [ngClass]="symbol.isFetched ? 'fetched' : 'not-fetched'">
+              <i class="pi" [ngClass]="symbol.isFetched ? 'pi-check-circle' : 'pi-clock'"></i>
+              {{ symbol.isFetched ? 'Đã fetch' : 'Chưa fetch' }}
+            </span>
+          </div>
+          <div class="col-actions" (click)="$event.stopPropagation()">
+            <button
+              *ngIf="!symbol.isFetched"
+              class="btn-icon"
+              (click)="fetchSymbol(symbol)"
+              [disabled]="symbol.isFetching || fetchingSymbols().has(symbol.symbol)"
+              title="Fetch">
+              <i class="pi pi-download"></i>
+            </button>
+            <button
+              *ngIf="symbol.isFetched"
+              class="btn-icon"
+              (click)="viewStockDetail(symbol)"
+              title="Xem chi tiết">
+              <i class="pi pi-eye"></i>
+            </button>
+            <button
+              *ngIf="symbol.isFetched"
+              class="btn-icon"
+              (click)="fetchSymbol(symbol)"
+              [disabled]="symbol.isFetching || fetchingSymbols().has(symbol.symbol)"
+              title="Fetch lại">
+              <i class="pi pi-refresh"></i>
+            </button>
+          </div>
         </div>
-      </div>
+      </cdk-virtual-scroll-viewport>
 
-      <div class="control-group">
-        <label>
-          <i class="pi pi-filter"></i>
-          Lọc theo
-        </label>
-        <div class="select-wrapper">
-          <select
-            [value]="filterMode()"
-            (change)="onFilterModeChange($any($event.target).value)"
-            class="modern-select filter-mode-select">
-            <option value="all">Tất cả</option>
-            <option value="unfetched">Chưa fetch</option>
-            <option value="missingBasicInfo">Chưa có thông tin cơ bản</option>
-          </select>
-          <i class="pi pi-chevron-down select-arrow"></i>
-        </div>
-      </div>
-
-      <div class="control-group search-group">
-        <label>
-          <i class="pi pi-search"></i>
-          Tìm kiếm
-        </label>
-        <div class="search-wrapper">
-          <i class="pi pi-search search-icon"></i>
-          <input
-            type="text"
-            [value]="searchQuery()"
-            (input)="onSearchChange($any($event.target).value)"
-            placeholder="Nhập mã cổ phiếu hoặc tên công ty..."
-            class="modern-search-input">
-          <button
-            *ngIf="searchQuery()"
-            (click)="onSearchChange('')"
-            class="clear-search-btn"
-            type="button">
-            <i class="pi pi-times"></i>
-          </button>
-        </div>
+      <div *ngIf="filteredSymbols().length === 0" class="empty">
+        <i class="pi pi-inbox"></i>
+        <p>Không tìm thấy cổ phiếu nào</p>
       </div>
     </div>
-
-    <div class="control-actions">
-      <button
-        class="btn btn-primary"
-        (click)="fetchAllUnfetched()"
-        [disabled]="isLoading() || !hasUnfetchedSymbols()">
-        <i class="pi pi-download"></i>
-        <span>Fetch tất cả chưa fetch</span>
-      </button>
-      <button
-        class="btn btn-secondary"
-        (click)="loadSymbols()"
-        [disabled]="isLoading()">
-        <i class="pi pi-refresh"></i>
-        <span>Tải lại danh sách</span>
-      </button>
-      <button
-        class="btn btn-danger"
-        (click)="clearAllFetched()">
-        <i class="pi pi-trash"></i>
-        <span>Xóa trạng thái</span>
-      </button>
-    </div>
   </div>
-
-  <!-- Loading -->
-  <div *ngIf="isLoading()" class="loading-container">
-    <i class="pi pi-spin pi-spinner"></i>
-    <span>Đang tải danh sách cổ phiếu...</span>
-  </div>
-
-  <!-- Loading Basic Info Check -->
-  <div *ngIf="isLoadingBasicInfoCheck()" class="loading-container">
-    <i class="pi pi-spin pi-spinner"></i>
-    <span>Đang kiểm tra thông tin cơ bản...</span>
-  </div>
-
-  <!-- Symbols List -->
-  <div *ngIf="!isLoading()" class="symbols-container">
-    <div class="symbols-header">
-      <span class="symbol-col">Mã</span>
-      <span class="name-col">Tên công ty</span>
-      <span class="exchange-col">Sàn</span>
-      <span class="price-col">Giá</span>
-      <span class="change-col">Thay đổi</span>
-      <span class="status-col">Trạng thái</span>
-      <span class="actions-col">Thao tác</span>
-    </div>
-
-    <div class="symbols-list">
-      <div
-        *ngFor="let symbol of filteredSymbols()"
-        class="symbol-item"
-        [class.fetched]="symbol.isFetched"
-        [class.fetching]="symbol.isFetching">
-        <span class="symbol-col">
-          <strong>{{ symbol.symbol }}</strong>
-        </span>
-        <span class="name-col">
-          {{ symbol.basicInfo?.companyName || symbol.name || '-' }}
-        </span>
-        <span class="exchange-col">
-          <span class="exchange-badge" [attr.data-exchange]="symbol.exchange">
-            {{ exchangeNames[symbol.exchange] }}
-          </span>
-        </span>
-        <span class="price-col" *ngIf="symbol.isFetched && symbol.basicInfo && symbol.basicInfo.matchPrice">
-          <strong>{{ parseFloat(symbol.basicInfo.matchPrice) | number:'1.2-2' }}</strong>
-        </span>
-        <span class="price-col" *ngIf="!symbol.isFetched || !symbol.basicInfo || !symbol.basicInfo.matchPrice">
-          -
-        </span>
-        <span class="change-col" *ngIf="symbol.isFetched && symbol.basicInfo && symbol.basicInfo.changedValue">
-          <span [class]="parseFloat(symbol.basicInfo.changedValue) >= 0 ? 'change-positive' : 'change-negative'">
-            {{ parseFloat(symbol.basicInfo.changedValue) | number:'1.2-2' }}
-            ({{ symbol.basicInfo.changedRatio ? (parseFloat(symbol.basicInfo.changedRatio) | number:'1.2-2') : '0' }}%)
-          </span>
-        </span>
-        <span class="change-col" *ngIf="!symbol.isFetched || !symbol.basicInfo || !symbol.basicInfo.changedValue">
-          -
-        </span>
-        <span class="status-col">
-          <span class="status-badge" [ngClass]="getStatusClass(symbol)">
-            <i class="pi"
-               [ngClass]="{
-                 'pi-spin pi-spinner': symbol.isFetching,
-                 'pi-check-circle': symbol.isFetched && !symbol.isFetching,
-                 'pi-clock': !symbol.isFetched && !symbol.isFetching
-               }"></i>
-            {{ getStatusText(symbol) }}
-          </span>
-        </span>
-        <span class="actions-col">
-          <button
-            *ngIf="!symbol.isFetched"
-            class="btn-icon btn-fetch"
-            (click)="fetchSymbol(symbol)"
-            [disabled]="symbol.isFetching || fetchingSymbols().has(symbol.symbol)"
-            title="Fetch dữ liệu">
-            <i class="pi pi-download"></i>
-          </button>
-          <button
-            *ngIf="symbol.isFetched"
-            class="btn-icon btn-view"
-            (click)="viewStockDetail(symbol)"
-            title="Xem chi tiết">
-            <i class="pi pi-eye"></i>
-          </button>
-          <button
-            *ngIf="symbol.isFetched"
-            class="btn-icon btn-refetch"
-            (click)="fetchSymbol(symbol)"
-            [disabled]="symbol.isFetching || fetchingSymbols().has(symbol.symbol)"
-            title="Fetch lại">
-            <i class="pi pi-refresh"></i>
-          </button>
-          <button
-            *ngIf="symbol.isFetched"
-            class="btn-icon btn-reset"
-            (click)="markAsNotFetched(symbol)"
-            title="Xóa trạng thái">
-            <i class="pi pi-times"></i>
-          </button>
-        </span>
-      </div>
-    </div>
-
-    <div *ngIf="filteredSymbols().length === 0" class="empty-state">
-      <i class="pi pi-inbox"></i>
-      <p>Không tìm thấy mã cổ phiếu nào</p>
-    </div>
-  </div>
-
 </div>
-
