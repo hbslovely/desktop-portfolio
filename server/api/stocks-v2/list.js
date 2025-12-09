@@ -1,34 +1,23 @@
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+/**
+ * Stocks List API - V2
+ * Returns list of all stocks from Vercel Postgres database
+ */
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-export const config = {
-  runtime: 'nodejs',
-};
+import { getAllStocks } from '../../lib/db.js';
 
 /**
  * Extract companyInfo from fullData and convert to flat key structure
- * Returns flat key structure like: { 'pageProps.companyInfo.fullName': '...', ... }
  */
 function extractCompanyInfoToFlatKeys(fullData) {
   if (!fullData) return {};
 
   let companyInfo = null;
 
-  // Try to find companyInfo in various possible structures
-  // Case 1: fullData.pageProps.companyInfo (nested object)
   if (fullData.pageProps && fullData.pageProps.companyInfo) {
     companyInfo = fullData.pageProps.companyInfo;
-  }
-  // Case 2: fullData['pageProps.companyInfo'] (flat key structure - already an object)
-  else if (fullData['pageProps.companyInfo']) {
+  } else if (fullData['pageProps.companyInfo']) {
     companyInfo = fullData['pageProps.companyInfo'];
-  }
-  // Case 3: Look for keys starting with 'pageProps.companyInfo.'
-  else {
+  } else {
     companyInfo = {};
     for (const key in fullData) {
       if (key.startsWith('pageProps.companyInfo.')) {
@@ -36,14 +25,11 @@ function extractCompanyInfoToFlatKeys(fullData) {
         companyInfo[fieldName] = fullData[key];
       }
     }
-    
-    // If no fields found, return empty object
     if (Object.keys(companyInfo).length === 0) {
       return {};
     }
   }
 
-  // Convert companyInfo object to flat key structure
   const flatKeys = {};
   if (companyInfo && typeof companyInfo === 'object') {
     for (const key in companyInfo) {
@@ -54,125 +40,58 @@ function extractCompanyInfoToFlatKeys(fullData) {
   return flatKeys;
 }
 
-/**
- * Get list of all stock data from local filesystem
- * Only returns fullData.pageProps.companyInfo for each stock
- */
-function getStockListFromLocal() {
-  const dataDir = path.join(__dirname, '../../data/stocks');
-  
-  try {
-    // Check if directory exists
-    if (!fs.existsSync(dataDir)) {
-      console.log('Stocks directory does not exist yet, returning empty list');
-      return { success: true, stocks: [] };
-    }
+export default async function handler(req, res) {
+  // Set CORS headers
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
-    // Read directory
-    const files = fs.readdirSync(dataDir);
-
-    // Filter JSON files and extract only companyInfo
-    const stocks = files
-      .filter((file) => file.endsWith('.json'))
-      .map((file) => {
-        try {
-          const filePath = path.join(dataDir, file);
-          const content = fs.readFileSync(filePath, 'utf-8');
-          const stockData = JSON.parse(content);
-          
-          // Extract only companyInfo from fullData and convert to flat keys
-          const companyInfoFlatKeys = extractCompanyInfoToFlatKeys(stockData.fullData);
-          
-          // Return minimal structure with symbol, basicInfo, and companyInfo (as flat keys)
-          return {
-            symbol: stockData.symbol || file.replace('.json', '').toUpperCase(),
-            basicInfo: stockData.basicInfo || {},
-            fullData: Object.keys(companyInfoFlatKeys).length > 0 ? companyInfoFlatKeys : null
-          };
-        } catch (error) {
-          console.error(`Error reading file ${file}:`, error);
-          return null;
-        }
-      })
-      .filter((stock) => stock !== null)
-      .sort((a, b) => (a.symbol || '').localeCompare(b.symbol || ''));
-
-    return { success: true, stocks };
-  } catch (error) {
-    console.error('Error reading stock list:', error);
-    return { success: true, stocks: [] };
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
   }
-}
 
-export default async function handler(req) {
+  if (req.method !== 'GET') {
+    return res.status(405).json({ success: false, error: 'Method not allowed' });
+  }
+
   try {
-    console.log('[stocks-v2/list.js] API requested', req?.url, req?.method);
+    console.log('[stocks-v2/list.js] API requested');
 
-    // Handle CORS preflight
-    if (req?.method === 'OPTIONS') {
-      return new Response(null, {
-        status: 200,
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'GET, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        },
-      });
-    }
+    const result = await getAllStocks();
 
-    if (req?.method !== 'GET') {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Method not allowed' }),
-        {
-          status: 405,
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
-          },
-        }
-      );
-    }
-
-    // Fetch stock list from local filesystem
-    const result = getStockListFromLocal();
+    // Transform data to expected format
+    const stocks = (result.stocks || []).map(row => {
+      const basicInfo = typeof row.basic_info === 'string' 
+        ? JSON.parse(row.basic_info) 
+        : row.basic_info || {};
+      const fullData = typeof row.full_data === 'string'
+        ? JSON.parse(row.full_data)
+        : row.full_data || {};
+      
+      const companyInfoFlatKeys = extractCompanyInfoToFlatKeys(fullData);
+      
+      return {
+        symbol: row.symbol,
+        basicInfo: basicInfo,
+        fullData: Object.keys(companyInfoFlatKeys).length > 0 ? companyInfoFlatKeys : null
+      };
+    });
 
     console.log('[stocks-v2/list.js] Result:', {
       success: result.success,
-      stocksCount: result.stocks?.length || 0,
+      stocksCount: stocks.length,
     });
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        stocks: result.stocks || [],
-        count: result.stocks?.length || 0,
-      }),
-      {
-        status: 200,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-        },
-      }
-    );
+    return res.status(200).json({
+      success: true,
+      stocks: stocks,
+      count: stocks.length,
+    });
   } catch (error) {
     console.error('[stocks-v2/list.js] Unhandled error:', error);
-    console.error('[stocks-v2/list.js] Error stack:', error?.stack);
-
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: error?.message || 'Internal server error',
-        details: process.env.NODE_ENV === 'development' ? error?.stack : undefined,
-      }),
-      {
-        status: 500,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-        },
-      }
-    );
+    return res.status(500).json({
+      success: false,
+      error: error?.message || 'Internal server error',
+    });
   }
 }
-

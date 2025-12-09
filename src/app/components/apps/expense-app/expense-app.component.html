@@ -279,11 +279,18 @@
         <span>Tổng hợp</span>
       </button>
       <button
-        (click)="switchTab('matrix')"
+        (click)="switchTab('budget')"
         class="tab-btn"
-        [class.active]="activeTab() === 'matrix'">
-        <i class="pi pi-table"></i>
-        <span>Ma trận</span>
+        [class.active]="activeTab() === 'budget'">
+        <i class="pi pi-wallet"></i>
+        <span>Ngân sách</span>
+      </button>
+      <button
+        (click)="switchTab('insights')"
+        class="tab-btn"
+        [class.active]="activeTab() === 'insights'">
+        <i class="pi pi-lightbulb"></i>
+        <span>Insights</span>
       </button>
     </div>
 
@@ -1351,82 +1358,281 @@
       </div>
     </div>
 
-    <!-- Tab Content: Matrix -->
-    <div class="tab-content matrix-tab" *ngIf="activeTab() === 'matrix'">
-      <div class="matrix-view" *ngIf="!isLoading() && filteredExpenses().length > 0">
-        <div class="matrix-container">
-          <div class="matrix-table-wrapper">
-            <table class="matrix-table">
-              <thead>
-                <tr>
-                  <th class="matrix-header-date">Ngày</th>
-                  <th class="matrix-header-category" *ngFor="let category of uniqueCategories()">
-                    {{ category }}
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let date of uniqueDates()">
-                  <td class="matrix-date-cell">
-                    <div class="matrix-date-content">
-                      <div class="matrix-date-day">{{ formatDateWithDayOfWeek(date) }}</div>
-                      <div class="matrix-date-short">{{ formatDateShort(date) }}</div>
-                      <div class="matrix-date-total">{{ formatAmount(dateTotals()[date] || 0) }}</div>
-                    </div>
-                  </td>
-                  <td
-                    *ngFor="let category of uniqueCategories()"
-                    class="matrix-cell"
-                    [ngClass]="getMatrixCellClass(matrixData()[date][category] || 0, date)"
-                    [class.matrix-cell-disabled]="!matrixData()[date][category] || matrixData()[date][category] === 0"
-                    (click)="matrixData()[date][category] && matrixData()[date][category] > 0 ? showMatrixDetailDialog(date, category) : null"
-                    [title]="matrixData()[date][category] ? formatAmount(matrixData()[date][category]) : 'Không có dữ liệu'">
-                    <div class="matrix-cell-content">
-                      <span class="matrix-cell-value" *ngIf="matrixData()[date][category]">
-                        {{ formatAmount(matrixData()[date][category]) }}
-                      </span>
-                      <span class="matrix-cell-empty-text" *ngIf="!matrixData()[date][category]">-</span>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+    <!-- Tab Content: Budget -->
+    <div class="tab-content budget-tab" *ngIf="activeTab() === 'budget'">
+      <div class="budget-view" *ngIf="!isLoading()">
+        <!-- Budget Overview -->
+        <div class="budget-overview">
+          <div class="budget-header-section">
+            <div class="budget-title">
+              <i class="pi pi-wallet"></i>
+              <h3>Ngân sách tháng {{ getCurrentMonthName() }}</h3>
+            </div>
+            <button class="edit-budget-btn" (click)="showBudgetSettings.set(true)">
+              <i class="pi pi-cog"></i>
+              <span>Thiết lập ngân sách</span>
+            </button>
           </div>
 
-          <!-- Matrix Legend -->
-          <div class="matrix-legend">
-            <div class="legend-item">
-              <div class="legend-color matrix-cell-very-low"></div>
-              <span>Rất ít (&lt;50% TB)</span>
+          <!-- Overall Budget Progress -->
+          <div class="overall-budget-card">
+            <div class="budget-progress-header">
+              <div class="budget-info">
+                <span class="budget-label">Tổng chi tiêu / Ngân sách</span>
+                <span class="budget-values">
+                  <span class="spent">{{ formatAmount(monthlySpent()) }}</span>
+                  <span class="separator">/</span>
+                  <span class="budget">{{ formatAmount(monthlyBudget()) }}</span>
+                </span>
+              </div>
+              <div class="budget-percentage" [class.over-budget]="budgetPercentage() > 100" [class.warning]="budgetPercentage() > 80 && budgetPercentage() <= 100">
+                {{ budgetPercentage() }}%
+              </div>
             </div>
-            <div class="legend-item">
-              <div class="legend-color matrix-cell-low"></div>
-              <span>Ít (&lt;100% TB)</span>
+            <div class="budget-progress-bar">
+              <div class="progress-fill" 
+                   [style.width.%]="Math.min(budgetPercentage(), 100)"
+                   [class.over-budget]="budgetPercentage() > 100"
+                   [class.warning]="budgetPercentage() > 80 && budgetPercentage() <= 100">
+              </div>
+              <div class="progress-marker" *ngIf="budgetPercentage() > 100" [style.left.%]="100"></div>
             </div>
-            <div class="legend-item">
-              <div class="legend-color matrix-cell-medium"></div>
-              <span>Vừa (100-105% TB)</span>
+            <div class="budget-remaining" [class.over-budget]="remainingBudget() < 0">
+              <i class="pi" [class.pi-check-circle]="remainingBudget() >= 0" [class.pi-exclamation-triangle]="remainingBudget() < 0"></i>
+              <span *ngIf="remainingBudget() >= 0">Còn lại: {{ formatAmount(remainingBudget()) }}</span>
+              <span *ngIf="remainingBudget() < 0">Vượt ngân sách: {{ formatAmount(Math.abs(remainingBudget())) }}</span>
             </div>
-            <div class="legend-item">
-              <div class="legend-color matrix-cell-high"></div>
-              <span>Nhiều (115-120% TB)</span>
+          </div>
+
+          <!-- Daily Budget Suggestion -->
+          <div class="daily-budget-suggestion" *ngIf="remainingBudget() > 0">
+            <div class="suggestion-icon">
+              <i class="pi pi-lightbulb"></i>
             </div>
-            <div class="legend-item">
-              <div class="legend-color matrix-cell-very-high"></div>
-              <span>Rất nhiều (&gt;125% TB)</span>
+            <div class="suggestion-content">
+              <span class="suggestion-title">Gợi ý chi tiêu hàng ngày</span>
+              <span class="suggestion-amount">{{ formatAmount(dailyBudgetSuggestion()) }}/ngày</span>
+              <span class="suggestion-note">cho {{ remainingDaysInMonth() }} ngày còn lại</span>
             </div>
-            <div class="legend-item">
-              <div class="legend-color matrix-cell-empty"></div>
-              <span>Không có dữ liệu</span>
+          </div>
+        </div>
+
+        <!-- Category Budgets -->
+        <div class="category-budgets-section">
+          <div class="section-header">
+            <h4>
+              <i class="pi pi-tag"></i>
+              Ngân sách theo danh mục
+            </h4>
+          </div>
+          <div class="category-budgets-grid">
+            <div class="category-budget-card" *ngFor="let catBudget of categoryBudgets()"
+                 [class.over-budget]="catBudget.spent > catBudget.budget && catBudget.budget > 0"
+                 [class.warning]="catBudget.percentage > 80 && catBudget.percentage <= 100"
+                 [class.no-budget]="catBudget.budget === 0">
+              <div class="cat-budget-header">
+                <span class="cat-name">{{ catBudget.category }}</span>
+                <span class="cat-percentage" *ngIf="catBudget.budget > 0" 
+                      [class.over-budget]="catBudget.spent > catBudget.budget">
+                  {{ catBudget.percentage }}%
+                </span>
+              </div>
+              <div class="cat-budget-values">
+                <span class="cat-spent">{{ formatAmount(catBudget.spent) }}</span>
+                <span class="cat-separator" *ngIf="catBudget.budget > 0">/</span>
+                <span class="cat-budget" *ngIf="catBudget.budget > 0">{{ formatAmount(catBudget.budget) }}</span>
+                <span class="cat-no-limit" *ngIf="catBudget.budget === 0">Chưa đặt hạn mức</span>
+              </div>
+              <div class="cat-progress-bar" *ngIf="catBudget.budget > 0">
+                <div class="cat-progress-fill" 
+                     [style.width.%]="Math.min(catBudget.percentage, 100)"
+                     [class.over-budget]="catBudget.spent > catBudget.budget"
+                     [class.warning]="catBudget.percentage > 80 && catBudget.percentage <= 100">
+                </div>
+              </div>
+              <div class="cat-remaining" *ngIf="catBudget.budget > 0">
+                <span *ngIf="catBudget.remaining >= 0">Còn {{ formatAmount(catBudget.remaining) }}</span>
+                <span *ngIf="catBudget.remaining < 0" class="over-text">Vượt {{ formatAmount(Math.abs(catBudget.remaining)) }}</span>
+              </div>
             </div>
+          </div>
+        </div>
+
+        <!-- Budget Trends Chart -->
+        <div class="budget-trends-section">
+          <div class="section-header">
+            <h4>
+              <i class="pi pi-chart-line"></i>
+              Xu hướng chi tiêu so với ngân sách
+            </h4>
+          </div>
+          <div class="budget-chart-container">
+            <canvas #budgetTrendChart></canvas>
           </div>
         </div>
       </div>
 
+      <!-- Loading State -->
+      <div class="loading-state" *ngIf="isLoading()">
+        <i class="pi pi-spin pi-spinner"></i>
+        <p>Đang tải...</p>
+      </div>
+    </div>
+
+    <!-- Tab Content: Insights -->
+    <div class="tab-content insights-tab" *ngIf="activeTab() === 'insights'">
+      <div class="insights-view" *ngIf="!isLoading() && filteredExpenses().length > 0">
+        
+        <!-- Quick Stats Cards -->
+        <div class="insights-stats-grid">
+          <div class="insight-stat-card gradient-1">
+            <div class="stat-icon">
+              <i class="pi pi-fire"></i>
+            </div>
+            <div class="stat-content">
+              <span class="stat-value">{{ topSpendingCategory()?.category || 'N/A' }}</span>
+              <span class="stat-label">Danh mục chi tiêu nhiều nhất</span>
+              <span class="stat-amount">{{ formatAmount(topSpendingCategory()?.total || 0) }}</span>
+            </div>
+          </div>
+
+          <div class="insight-stat-card gradient-2">
+            <div class="stat-icon">
+              <i class="pi pi-calendar"></i>
+            </div>
+            <div class="stat-content">
+              <span class="stat-value">{{ highestSpendingDay()?.dayName || 'N/A' }}</span>
+              <span class="stat-label">Ngày chi tiêu nhiều nhất trong tuần</span>
+              <span class="stat-amount">TB {{ formatAmount(highestSpendingDay()?.average || 0) }}/tuần</span>
+            </div>
+          </div>
+
+          <div class="insight-stat-card gradient-3">
+            <div class="stat-icon">
+              <i class="pi pi-chart-line"></i>
+            </div>
+            <div class="stat-content">
+              <span class="stat-value">{{ spendingTrend().trend }}</span>
+              <span class="stat-label">Xu hướng chi tiêu 30 ngày</span>
+              <span class="stat-amount" [class.positive]="spendingTrend().percentage < 0" [class.negative]="spendingTrend().percentage > 0">
+                <i class="pi" [class.pi-arrow-up]="spendingTrend().percentage > 0" [class.pi-arrow-down]="spendingTrend().percentage < 0"></i>
+                {{ Math.abs(spendingTrend().percentage) }}%
+              </span>
+            </div>
+          </div>
+
+          <div class="insight-stat-card gradient-4">
+            <div class="stat-icon">
+              <i class="pi pi-clock"></i>
+            </div>
+            <div class="stat-content">
+              <span class="stat-value">{{ averageTransactionsPerDay() | number:'1.1-1' }}</span>
+              <span class="stat-label">Giao dịch TB/ngày</span>
+              <span class="stat-amount">{{ formatAmount(averageDailyExpense()) }}/ngày</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Spending Tips Section -->
+        <div class="spending-tips-section">
+          <div class="section-header">
+            <h4>
+              <i class="pi pi-lightbulb"></i>
+              Gợi ý tiết kiệm
+            </h4>
+          </div>
+          <div class="tips-grid">
+            <div class="tip-card" *ngFor="let tip of spendingTips(); let i = index" 
+                 [class.tip-warning]="tip.type === 'warning'"
+                 [class.tip-success]="tip.type === 'success'"
+                 [class.tip-info]="tip.type === 'info'">
+              <div class="tip-icon">
+                <i class="pi" [ngClass]="tip.icon"></i>
+              </div>
+              <div class="tip-content">
+                <span class="tip-title">{{ tip.title }}</span>
+                <span class="tip-description">{{ tip.description }}</span>
+                <span class="tip-action" *ngIf="tip.action">{{ tip.action }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Spending Patterns -->
+        <div class="spending-patterns-section">
+          <div class="section-header">
+            <h4>
+              <i class="pi pi-chart-pie"></i>
+              Phân tích chi tiêu theo thời gian
+            </h4>
+          </div>
+          <div class="patterns-grid">
+            <!-- Day of Week Analysis -->
+            <div class="pattern-card">
+              <h5>Chi tiêu theo ngày trong tuần</h5>
+              <div class="day-bars">
+                <div class="day-bar-item" *ngFor="let day of weekdaySpending()">
+                  <div class="day-name">{{ day.shortName }}</div>
+                  <div class="day-bar-wrapper">
+                    <div class="day-bar" [style.height.%]="day.percentage" [class.highest]="day.isHighest"></div>
+                  </div>
+                  <div class="day-amount">{{ formatCompactAmount(day.average) }}</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Week of Month Analysis -->
+            <div class="pattern-card">
+              <h5>Chi tiêu theo tuần trong tháng</h5>
+              <div class="week-analysis">
+                <div class="week-item" *ngFor="let week of weekOfMonthSpending()">
+                  <div class="week-label">{{ week.label }}</div>
+                  <div class="week-bar-wrapper">
+                    <div class="week-bar" [style.width.%]="week.percentage" [class.highest]="week.isHighest"></div>
+                    <span class="week-amount">{{ formatAmount(week.average) }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Achievements -->
+        <div class="achievements-section">
+          <div class="section-header">
+            <h4>
+              <i class="pi pi-star"></i>
+              Thành tích gần đây
+            </h4>
+          </div>
+          <div class="achievements-grid">
+            <div class="achievement-card" *ngFor="let achievement of recentAchievements()"
+                 [class.achieved]="achievement.achieved"
+                 [class.progress]="!achievement.achieved">
+              <div class="achievement-icon" [class.achieved]="achievement.achieved">
+                <i class="pi" [ngClass]="achievement.icon"></i>
+              </div>
+              <div class="achievement-content">
+                <span class="achievement-title">{{ achievement.title }}</span>
+                <span class="achievement-description">{{ achievement.description }}</span>
+                <div class="achievement-progress" *ngIf="!achievement.achieved && achievement.progress !== undefined">
+                  <div class="progress-bar-mini">
+                    <div class="progress-fill-mini" [style.width.%]="achievement.progress"></div>
+                  </div>
+                  <span class="progress-text">{{ achievement.progress }}%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
       <!-- Empty State -->
       <div class="empty-state" *ngIf="!isLoading() && filteredExpenses().length === 0">
-        <i class="pi pi-table"></i>
-        <p>Không có dữ liệu để hiển thị ma trận</p>
+        <i class="pi pi-lightbulb"></i>
+        <p>Chưa có đủ dữ liệu để phân tích</p>
+        <span class="empty-hint">Thêm chi tiêu để xem insights</span>
       </div>
 
       <!-- Loading State -->
@@ -2040,83 +2246,70 @@
       </div>
     </div>
 
-    <!-- Matrix Detail Dialog -->
-    <div class="dialog-overlay" *ngIf="showMatrixDetail()" (click)="hideMatrixDetailDialog()">
-      <div class="dialog-container matrix-detail-dialog" (click)="$event.stopPropagation()">
-        <div class="dialog-header day-detail-header">
+    <!-- Budget Settings Dialog -->
+    <div class="dialog-overlay" *ngIf="showBudgetSettings()" (click)="showBudgetSettings.set(false)">
+      <div class="dialog-container budget-settings-dialog" (click)="$event.stopPropagation()">
+        <div class="dialog-header">
           <div class="header-content">
             <div class="header-icon">
-              <i class="pi pi-table"></i>
+              <i class="pi pi-wallet"></i>
             </div>
             <div class="header-text">
-              <h3>Chi tiết</h3>
-              <p class="header-date">{{ formatDate(selectedMatrixDate()) }} - {{ selectedMatrixCategory() }}</p>
+              <h3>Thiết lập ngân sách</h3>
+              <p class="header-subtitle">Tháng {{ getCurrentMonthName() }}</p>
             </div>
           </div>
-          <button (click)="hideMatrixDetailDialog()" class="close-btn">
+          <button (click)="showBudgetSettings.set(false)" class="close-btn">
             <i class="pi pi-times"></i>
           </button>
         </div>
 
-        <div class="dialog-body day-detail-body">
-          <div class="day-detail-summary">
-            <div class="detail-summary-card total-card">
-              <div class="card-icon">
-                <i class="pi pi-money-bill"></i>
-              </div>
-              <div class="card-content">
-                <div class="detail-summary-label">Tổng chi tiêu</div>
-                <div class="detail-summary-value">{{ formatAmount(selectedMatrixTotal()) }}</div>
-              </div>
-            </div>
-            <div class="detail-summary-card count-card">
-              <div class="card-icon">
-                <i class="pi pi-list"></i>
-              </div>
-              <div class="card-content">
-                <div class="detail-summary-label">Số giao dịch</div>
-                <div class="detail-summary-value">{{ selectedMatrixExpenses().length }}</div>
-              </div>
+        <div class="dialog-body budget-settings-body">
+          <!-- Monthly Budget -->
+          <div class="budget-setting-section">
+            <label class="budget-setting-label">
+              <i class="pi pi-money-bill"></i>
+              Ngân sách tổng hàng tháng
+            </label>
+            <div class="budget-input-wrapper">
+              <input type="text" 
+                     [ngModel]="formatNumberInput(editMonthlyBudget())"
+                     (ngModelChange)="onMonthlyBudgetChange($event)"
+                     mask="separator"
+                     thousandSeparator="."
+                     class="budget-input"
+                     placeholder="Nhập ngân sách">
+              <span class="budget-unit">VNĐ</span>
             </div>
           </div>
 
-          <div class="day-detail-list" *ngIf="selectedMatrixExpenses().length > 0">
-            <div class="list-header">
-              <h4>
-                <i class="pi pi-list-check"></i>
-                Danh sách chi tiêu
-              </h4>
-              <span class="list-count">{{ selectedMatrixExpenses().length }} mục</span>
-            </div>
-            <div class="expense-list-detail">
-              <div class="expense-item-detail" *ngFor="let expense of selectedMatrixExpenses(); let i = index">
-                <div class="expense-number">{{ i + 1 }}</div>
-                <div class="expense-info">
-                  <div class="expense-content-detail">{{ expense.content }}</div>
-                  <div class="expense-note-detail" *ngIf="expense.note">
-                    <i class="pi pi-comment"></i>
-                    <span>{{ expense.note }}</span>
-                  </div>
-                </div>
-                <div class="expense-amount-detail">
-                  <span class="amount-value">{{ formatAmount(expense.amount) }}</span>
-                </div>
-              </div>
-            </div>
+          <div class="budget-divider">
+            <span>Ngân sách theo danh mục</span>
           </div>
 
-          <div class="empty-state" *ngIf="selectedMatrixExpenses().length === 0">
-            <div class="empty-icon">
-              <i class="pi pi-inbox"></i>
+          <!-- Category Budgets -->
+          <div class="category-budgets-settings">
+            <div class="category-budget-setting" *ngFor="let cat of categories()">
+              <label class="cat-budget-label">{{ cat }}</label>
+              <div class="cat-budget-input-wrapper">
+                <input type="text"
+                       [ngModel]="formatNumberInput(getCategoryBudgetValue(cat))"
+                       (ngModelChange)="onCategoryBudgetChange(cat, $event)"
+                       mask="separator"
+                       thousandSeparator="."
+                       class="cat-budget-input"
+                       placeholder="0">
+                <span class="cat-budget-unit">VNĐ</span>
+              </div>
             </div>
-            <p>Không có chi tiêu nào</p>
           </div>
         </div>
 
-        <div class="dialog-footer day-detail-footer">
-          <button (click)="hideMatrixDetailDialog()" class="close-detail-btn">
-            <i class="pi pi-check"></i>
-            Đóng
+        <div class="dialog-footer">
+          <button (click)="showBudgetSettings.set(false)" class="cancel-btn">Hủy</button>
+          <button (click)="saveBudgetSettings()" class="save-btn">
+            <i class="pi pi-save"></i>
+            Lưu ngân sách
           </button>
         </div>
       </div>

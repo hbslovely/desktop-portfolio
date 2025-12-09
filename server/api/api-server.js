@@ -18,6 +18,8 @@ const listV2Handler = require('./stocks-v2/list.js').default;
 const saveV2Handler = require('./stocks-v2/save.js').default;
 const symbolV2Handler = require('./stocks-v2/[symbol].js').default;
 const fetchAndSaveV2Handler = require('./stocks-v2/fetch-and-save.js').default;
+const neuralNetworkV2Handler = require('./stocks-v2/neural-network.js').default;
+const stockModelV2Handler = require('./stocks-v2/stock-model.js').default;
 
 // Convert Vercel handler to Express middleware
 function vercelToExpress(handler) {
@@ -62,9 +64,16 @@ app.get('/api/stocks/list', vercelToExpress(stocksListHandler));
 app.post('/api/stocks/save', vercelToExpress(saveHandler));
 app.get('/api/stocks/:symbol', vercelToExpress(symbolHandler));
 // Stocks v2 routes (local filesystem)
+// IMPORTANT: More specific routes must come BEFORE generic routes
 app.get('/api/stocks-v2/list', vercelToExpress(listV2Handler));
 app.post('/api/stocks-v2/save', vercelToExpress(saveV2Handler));
 app.post('/api/stocks-v2/fetch-and-save', vercelToExpress(fetchAndSaveV2Handler));
+// Specific routes first
+app.get('/api/stocks-v2/neural-network/:symbol', vercelToExpress(neuralNetworkV2Handler));
+app.post('/api/stocks-v2/neural-network/:symbol', vercelToExpress(neuralNetworkV2Handler));
+app.get('/api/stocks-v2/stock-model/:symbol', vercelToExpress(stockModelV2Handler));
+app.post('/api/stocks-v2/stock-model/:symbol', vercelToExpress(stockModelV2Handler));
+// Generic route last
 app.get('/api/stocks-v2/:symbol', vercelToExpress(symbolV2Handler));
 
 // Health check
@@ -84,5 +93,9 @@ app.listen(port, () => {
   console.log('  POST /api/stocks-v2/save');
   console.log('  POST /api/stocks-v2/fetch-and-save');
   console.log('  GET  /api/stocks-v2/:symbol');
+    console.log('  GET  /api/stocks-v2/neural-network/:symbol');
+    console.log('  POST /api/stocks-v2/neural-network/:symbol');
+    console.log('  GET  /api/stocks-v2/stock-model/:symbol');
+    console.log('  POST /api/stocks-v2/stock-model/:symbol');
 });
 

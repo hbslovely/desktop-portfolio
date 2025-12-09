@@ -543,12 +543,516 @@
             <div class="nn-status">
               <div class="nn-status-item">
                 <label>Trạng thái:</label>
-                <span class="nn-status-badge">Đang cài đặt...</span>
+                <span class="nn-status-badge" [ngClass]="getNNStatusBadgeClass()">
+                  {{ getNNStatusText() }}
+                </span>
               </div>
-              <div class="nn-info">
-                <p>Hệ thống Neural Network đang được thiết lập để phân tích và dự đoán giá cổ phiếu.</p>
-                <p class="nn-note">Tính năng này sẽ sử dụng mô hình deep learning để phân tích dữ liệu lịch sử và đưa ra các dự đoán giao dịch.</p>
+              
+              <!-- Training Progress -->
+              <div class="nn-training-progress" *ngIf="isNNTraining() && nnTrainingProgress()">
+                <div class="progress-bar">
+                  <div class="progress-fill" [style.width.%]="(nnTrainingProgress()!.epoch / 50) * 100"></div>
+                </div>
+                <div class="progress-info">
+                  <span>Epoch: {{ nnTrainingProgress()!.epoch }}/50</span>
+                  <span>Loss: {{ nnTrainingProgress()!.loss.toFixed(6) }}</span>
+                </div>
               </div>
+
+              <!-- Error Message -->
+              <div class="nn-error" *ngIf="nnError()">
+                <i class="pi pi-exclamation-triangle"></i>
+                <span>{{ nnError() }}</span>
+              </div>
+
+              <!-- Action Buttons -->
+              <div class="nn-actions" *ngIf="selectedSymbolPriceData()">
+                <div class="nn-actions-row">
+                  <button 
+                    class="btn-train" 
+                    (click)="trainNeuralNetwork()"
+                    [disabled]="isNNTraining() || !hasEnoughDataForTraining()">
+                    <i class="pi" [ngClass]="isNNTraining() ? 'pi-spin pi-spinner' : 'pi-cog'"></i>
+                    {{ isNNTraining() ? 'Đang huấn luyện...' : 'Huấn luyện mô hình' }}
+                  </button>
+                  <button 
+                    class="btn-predict" 
+                    (click)="predictWithNeuralNetwork()"
+                    [disabled]="!isNNReady() || isNNTraining()">
+                    <i class="pi pi-chart-line"></i>
+                    Dự đoán giá
+                  </button>
+                </div>
+                <div class="nn-actions-row">
+                  <button 
+                    class="btn-reload" 
+                    (click)="reloadDataAndRetrain()"
+                    [disabled]="isNNTraining() || isLoadingPrice()">
+                    <i class="pi" [ngClass]="isLoadingPrice() ? 'pi-spin pi-spinner' : 'pi-refresh'"></i>
+                    {{ isLoadingPrice() ? 'Đang tải...' : 'Reload & Train lại' }}
+                  </button>
+                  <button 
+                    class="btn-load" 
+                    (click)="loadSavedWeights()"
+                    [disabled]="isNNTraining()">
+                    <i class="pi pi-download"></i>
+                    Load mô hình đã lưu
+                  </button>
+                </div>
+              </div>
+
+              <!-- Prediction Results -->
+              <div class="nn-prediction" *ngIf="nnPrediction()">
+                <h4>Kết quả dự đoán</h4>
+                <div class="prediction-grid">
+                  <div class="prediction-item">
+                    <label>Giá hiện tại:</label>
+                    <span class="price-value">{{ formatPredictionPrice(getLatestClosePrice()) }}</span>
+                  </div>
+                  <div class="prediction-item">
+                    <label>Dự đoán ngày mai:</label>
+                    <span class="price-value" [ngClass]="getTrendColorClass(nnPrediction()!.trend)">
+                      {{ formatPredictionPrice(nnPrediction()!.predictedPrice) }}
+                      <i class="pi" [ngClass]="getTrendIconClass(nnPrediction()!.trend)"></i>
+                    </span>
+                  </div>
+                  <div class="prediction-item" *ngIf="nnPrediction()!.nextWeekPrediction">
+                    <label>Dự đoán 1 tuần:</label>
+                    <span class="price-value">{{ formatPredictionPrice(nnPrediction()!.nextWeekPrediction!) }}</span>
+                  </div>
+                  <div class="prediction-item" *ngIf="nnPrediction()!.nextMonthPrediction">
+                    <label>Dự đoán 1 tháng:</label>
+                    <span class="price-value">{{ formatPredictionPrice(nnPrediction()!.nextMonthPrediction!) }}</span>
+                  </div>
+                  <div class="prediction-item">
+                    <label>Độ tin cậy:</label>
+                    <span class="confidence-value">{{ formatConfidence(nnPrediction()!.confidence) }}</span>
+                  </div>
+                  <div class="prediction-item">
+                    <label>Xu hướng:</label>
+                    <span class="trend-badge" [ngClass]="getTrendColorClass(nnPrediction()!.trend)">
+                      {{ nnPrediction()!.trend === 'up' ? 'Tăng' : nnPrediction()!.trend === 'down' ? 'Giảm' : 'Ổn định' }}
+                    </span>
+                  </div>
+                  <div class="prediction-item" *ngIf="nnPrediction()!.tradingDecision">
+                    <label>Quyết định giao dịch:</label>
+                    <span class="trading-decision-badge" [ngClass]="'decision-' + nnPrediction()!.tradingDecision!.action">
+                      {{ nnPrediction()!.tradingDecision!.action === 'buy' ? 'MUA' : nnPrediction()!.tradingDecision!.action === 'sell' ? 'BÁN' : 'GIỮ' }}
+                      <span class="decision-confidence">({{ (nnPrediction()!.tradingDecision!.confidence * 100).toFixed(1) }}%)</span>
+                    </span>
+                    <div class="decision-reason">{{ nnPrediction()!.tradingDecision!.reason }}</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Info -->
+              <div class="nn-info" *ngIf="!nnPrediction() && !isNNTraining()">
+                <p>Hệ thống Neural Network sử dụng mô hình deep learning để phân tích dữ liệu lịch sử và dự đoán giá cổ phiếu.</p>
+                <p class="nn-note">
+                  <i class="pi pi-info-circle"></i>
+                  Cần ít nhất 100 ngày dữ liệu để huấn luyện mô hình. Sau khi huấn luyện, bạn có thể sử dụng để dự đoán giá trong tương lai.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Prediction Comparison Table -->
+          <div class="nn-comparison-section" *ngIf="isNNReady()">
+            <div class="section-header">
+              <h4>So sánh dự đoán vs thực tế (10 phiên gần đây)</h4>
+              <button 
+                class="btn btn-small"
+                (click)="loadPredictionComparison()"
+                [disabled]="isLoadingComparison() || isNNTraining()">
+                <i class="pi" [ngClass]="isLoadingComparison() ? 'pi-spin pi-spinner' : 'pi-refresh'"></i>
+                {{ isLoadingComparison() ? 'Đang tải...' : 'Tải so sánh' }}
+              </button>
+            </div>
+
+            <div class="comparison-table-wrapper" *ngIf="nnPredictionComparison()">
+              <table class="comparison-table">
+                <thead>
+                  <tr>
+                    <th>Ngày</th>
+                    <th>Giá dự đoán</th>
+                    <th>Giá thực tế</th>
+                    <th>Sai số</th>
+                    <th>% Sai số</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let comp of nnPredictionComparison()" [ngClass]="getComparisonRowClass(comp.errorPercent)">
+                    <td>{{ comp.dateStr }}</td>
+                    <td>{{ formatPredictionPrice(comp.predictedPrice) }}</td>
+                    <td>{{ formatPredictionPrice(comp.actualPrice) }}</td>
+                    <td [ngClass]="comp.error >= 0 ? 'positive' : 'negative'">
+                      {{ formatCurrency(comp.error) }}
+                    </td>
+                    <td [ngClass]="comp.errorPercent >= 0 ? 'positive' : 'negative'">
+                      {{ comp.errorPercent >= 0 ? '+' : '' }}{{ comp.errorPercent.toFixed(2) }}%
+                    </td>
+                  </tr>
+                </tbody>
+                <tfoot *ngIf="nnPredictionComparison() && nnPredictionComparison()!.length > 0">
+                  <tr>
+                    <td><strong>Trung bình</strong></td>
+                    <td></td>
+                    <td></td>
+                    <td [ngClass]="getAverageError() >= 0 ? 'positive' : 'negative'">
+                      {{ formatCurrency(getAverageError()) }}
+                    </td>
+                    <td [ngClass]="getAverageErrorClass()">
+                      {{ getAverageErrorPercent().toFixed(2) }}%
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+
+            <div class="no-comparison" *ngIf="!nnPredictionComparison() && !isLoadingComparison()">
+              <p>Chưa có dữ liệu so sánh. Nhấn "Tải so sánh" để xem kết quả.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Trading Simulation Section -->
+        <section class="section">
+          <h3>Mô phỏng Giao dịch (Backtesting)</h3>
+          <div class="trading-simulation-section">
+            <!-- Date Range Selection -->
+            <div class="date-range-config" *ngIf="selectedSymbolPriceData()">
+              <h4>Chọn vùng ngày để testing</h4>
+              <div class="date-range-inputs">
+                <div class="date-input-item">
+                  <label>Ngày bắt đầu:</label>
+                  <input 
+                    type="date" 
+                    [value]="backtestStartDate()"
+                    [min]="getAvailableDateRange()?.minDate"
+                    [max]="getAvailableDateRange()?.maxDate"
+                    (change)="backtestStartDate.set($any($event.target).value)"
+                    (focus)="initializeDateRange()">
+                </div>
+                <div class="date-input-item">
+                  <label>Ngày kết thúc:</label>
+                  <input 
+                    type="date" 
+                    [value]="backtestEndDate()"
+                    [min]="getAvailableDateRange()?.minDate"
+                    [max]="getAvailableDateRange()?.maxDate"
+                    (change)="backtestEndDate.set($any($event.target).value)"
+                    (focus)="initializeDateRange()">
+                </div>
+                <div class="date-input-item">
+                  <label>Khoảng thời gian:</label>
+                  <button 
+                    class="btn-quick-range" 
+                    (click)="backtestStartDate.set(getAvailableDateRange()?.minDate || ''); backtestEndDate.set(getAvailableDateRange()?.maxDate || '')">
+                    <i class="pi pi-calendar"></i>
+                    Toàn bộ
+                  </button>
+                </div>
+              </div>
+              <div class="date-range-info" *ngIf="getAvailableDateRange()">
+                <span class="info-text">
+                  <i class="pi pi-info-circle"></i>
+                  Dữ liệu có sẵn: {{ getFormattedMinDate() }} đến {{ getFormattedMaxDate() }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Configuration -->
+            <div class="simulation-config">
+              <h4>Cấu hình giao dịch</h4>
+              <div class="config-grid">
+                <div class="config-item">
+                  <label>Vốn ban đầu (đồng):</label>
+                  <input 
+                    type="number" 
+                    [value]="tradingConfig().initialCapital"
+                    (input)="updateTradingConfig({ initialCapital: +$any($event.target).value })"
+                    min="1000000"
+                    step="1000000">
+                </div>
+                <div class="config-item">
+                  <label>Cắt lỗ (%):</label>
+                  <input 
+                    type="number" 
+                    [value]="tradingConfig().stopLossPercent"
+                    (input)="updateTradingConfig({ stopLossPercent: +$any($event.target).value })"
+                    min="1"
+                    max="20"
+                    step="0.5">
+                </div>
+                <div class="config-item">
+                  <label>Chốt lời (%):</label>
+                  <input 
+                    type="number" 
+                    [value]="tradingConfig().takeProfitPercent"
+                    (input)="updateTradingConfig({ takeProfitPercent: +$any($event.target).value })"
+                    min="1"
+                    max="50"
+                    step="0.5">
+                </div>
+                <div class="config-item" style="opacity: 0.6;">
+                  <label>Độ tin cậy tối thiểu (%):</label>
+                  <input 
+                    type="number" 
+                    [value]="tradingConfig().minConfidence * 100"
+                    (input)="updateTradingConfig({ minConfidence: +$any($event.target).value / 100 })"
+                    min="0"
+                    max="100"
+                    step="5"
+                    disabled>
+                  <small style="font-size: 11px; color: #6c757d;">Không dùng - Model tự quyết định mua/bán</small>
+                </div>
+                <div class="config-item">
+                  <label>Số vị thế tối đa:</label>
+                  <input 
+                    type="number" 
+                    [value]="tradingConfig().maxPositions"
+                    (input)="updateTradingConfig({ maxPositions: +$any($event.target).value })"
+                    min="1"
+                    max="10"
+                    step="1">
+                  <small style="font-size: 11px; color: #6c757d;">Số lần có thể mua đồng thời (tăng để mua bán liên tục)</small>
+                </div>
+                <div class="config-item">
+                  <label>T+ (ngày):</label>
+                  <input 
+                    type="number" 
+                    [value]="tradingConfig().tPlusDays"
+                    (input)="updateTradingConfig({ tPlusDays: +$any($event.target).value })"
+                    min="0"
+                    max="5"
+                    step="1">
+                  <small style="font-size: 11px; color: #6c757d;">Số ngày phải đợi sau khi mua mới được bán (T+2 = 2 ngày)</small>
+                </div>
+              </div>
+              <button
+                class="btn-simulate"
+                (click)="runTradingSimulation()"
+                [disabled]="!isNNReady() || isRunningSimulation() || isNNTraining()">
+                <i class="pi" [ngClass]="isRunningSimulation() ? 'pi-spin pi-spinner' : 'pi-play'"></i>
+                {{ isRunningSimulation() ? 'Đang chạy...' : 'Chạy mô phỏng' }}
+              </button>
+              <button
+                class="btn btn-load"
+                (click)="loadSavedSimulationResult()"
+                [disabled]="!selectedSymbol()">
+                <i class="pi pi-download"></i>
+                Load kết quả đã lưu
+              </button>
+            </div>
+
+            <!-- Results -->
+            <div class="simulation-results" *ngIf="tradingResult()">
+              <h4>Kết quả mô phỏng</h4>
+              
+              <!-- Summary Stats -->
+              <div class="results-summary">
+                <div class="stat-card profit" [ngClass]="tradingResult()!.totalProfit >= 0 ? 'positive' : 'negative'">
+                  <label>Lãi/Lỗ:</label>
+                  <div class="stat-value">{{ formatCurrency(tradingResult()!.totalProfit) }}</div>
+                  <div class="stat-percent">{{ tradingResult()!.totalProfitPercent >= 0 ? '+' : '' }}{{ tradingResult()!.totalProfitPercent.toFixed(2) }}%</div>
+                </div>
+                <div class="stat-card">
+                  <label>Vốn ban đầu:</label>
+                  <div class="stat-value">{{ formatCurrency(tradingResult()!.initialCapital) }}</div>
+                </div>
+                <div class="stat-card">
+                  <label>Vốn cuối:</label>
+                  <div class="stat-value">{{ formatCurrency(tradingResult()!.finalCapital) }}</div>
+                </div>
+                <div class="stat-card">
+                  <label>Tổng giao dịch:</label>
+                  <div class="stat-value">{{ tradingResult()!.totalTrades }}</div>
+                </div>
+                <div class="stat-card">
+                  <label>Thắng:</label>
+                  <div class="stat-value positive">{{ tradingResult()!.winningTrades }}</div>
+                </div>
+                <div class="stat-card">
+                  <label>Thua:</label>
+                  <div class="stat-value negative">{{ tradingResult()!.losingTrades }}</div>
+                </div>
+                <div class="stat-card">
+                  <label>Tỷ lệ thắng:</label>
+                  <div class="stat-value">{{ tradingResult()!.winRate.toFixed(2) }}%</div>
+                </div>
+                <div class="stat-card">
+                  <label>Drawdown tối đa:</label>
+                  <div class="stat-value negative">{{ formatCurrency(tradingResult()!.maxDrawdown) }}</div>
+                  <div class="stat-percent">{{ tradingResult()!.maxDrawdownPercent.toFixed(2) }}%</div>
+                </div>
+              </div>
+
+              <!-- Transactions List -->
+              <div class="transactions-list" *ngIf="getTransactions().length > 0">
+                <h5>Lịch sử giao dịch ({{ getTransactions().length }})</h5>
+                <div class="transactions-table-wrapper">
+                  <table class="transactions-table">
+                    <thead>
+                      <tr>
+                        <th>Loại</th>
+                        <th>Số lượng</th>
+                        <th>Giá</th>
+                        <th>Tiền trước GD</th>
+                        <th>Tiền giao dịch</th>
+                        <th>Tiền sau GD</th>
+                        <th>Số CP trước</th>
+                        <th>Số CP sau</th>
+                        <th>Ngày nắm giữ</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr *ngFor="let tx of getTransactions()" [ngClass]="tx.type === 'buy' ? 'transaction-buy' : 'transaction-sell'">
+                        <td>
+                          <span class="transaction-type" [ngClass]="'type-' + tx.type">
+                            {{ tx.type === 'buy' ? 'MUA' : 'BÁN' }}
+                          </span>
+                        </td>
+                        <td>{{ tx.quantity | number:'1.0-0' }}</td>
+                        <td>{{ formatPredictionPrice(tx.price) }}</td>
+                        <td>{{ formatCurrency(tx.capitalBefore) }}</td>
+                        <td [ngClass]="tx.type === 'buy' ? 'negative' : 'positive'">
+                          {{ tx.type === 'buy' ? '-' : '+' }}{{ formatCurrency(tx.transactionAmount) }}
+                        </td>
+                        <td>{{ formatCurrency(tx.capitalAfter) }}</td>
+                        <td>{{ tx.positionsBefore | number:'1.0-0' }}</td>
+                        <td>{{ tx.positionsAfter | number:'1.0-0' }}</td>
+                        <td>{{ tx.holdingDays !== undefined ? tx.holdingDays + ' ngày' : '-' }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Recent Week Analysis Section -->
+        <section class="section" *ngIf="tradingResult()">
+          <h3>Đánh giá 1 tuần gần đây</h3>
+          <div class="recent-week-analysis" *ngIf="getRecentWeekAnalysis() as weekAnalysis">
+            
+            <!-- Today's Recommendation -->
+            <div class="today-recommendation" *ngIf="weekAnalysis.todayRecommendation">
+              <h4>Khuyến nghị hôm nay</h4>
+              <div class="recommendation-card" [ngClass]="'recommendation-' + weekAnalysis.todayRecommendation.action">
+                <div class="recommendation-header">
+                  <span class="recommendation-action">
+                    {{ weekAnalysis.todayRecommendation.action === 'buy' ? 'MUA' : weekAnalysis.todayRecommendation.action === 'sell' ? 'BÁN' : 'GIỮ' }}
+                  </span>
+                  <span class="recommendation-confidence">
+                    Độ tin cậy: {{ (weekAnalysis.todayRecommendation.confidence * 100).toFixed(1) }}%
+                  </span>
+                </div>
+                <div class="recommendation-details">
+                  <div class="detail-item">
+                    <label>Giá hiện tại:</label>
+                    <span>{{ formatPredictionPrice(weekAnalysis.todayRecommendation.currentPrice) }}</span>
+                  </div>
+                  <div class="detail-item" *ngIf="weekAnalysis.todayRecommendation.action === 'buy'">
+                    <label>Giá dự đoán:</label>
+                    <span class="predicted-price">{{ formatPredictionPrice(weekAnalysis.todayRecommendation.predictedPrice) }}</span>
+                  </div>
+                  <div class="detail-item">
+                    <label>Lý do:</label>
+                    <span class="reason-text">{{ weekAnalysis.todayRecommendation.reason }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Buy Positions -->
+            <div class="positions-section" *ngIf="weekAnalysis.buyPositions.length > 0">
+              <h4>Vị thế mua ({{ weekAnalysis.buyPositions.length }})</h4>
+              <div class="positions-list">
+                <div class="position-card buy" *ngFor="let position of weekAnalysis.buyPositions">
+                  <div class="position-header">
+                    <span class="position-date">{{ formatDateFromTimestamp(position.buyDate) }}</span>
+                    <span class="position-status" [ngClass]="position.status">
+                      {{ position.status === 'sold' ? 'Đã bán' : 'Đang giữ' }}
+                    </span>
+                  </div>
+                  <div class="position-details">
+                    <div class="detail-row">
+                      <span>Giá mua:</span>
+                      <span class="price-value">{{ formatPredictionPrice(position.buyPrice) }}</span>
+                    </div>
+                    <div class="detail-row" *ngIf="position.sellPrice">
+                      <span>Giá bán:</span>
+                      <span class="price-value">{{ formatPredictionPrice(position.sellPrice) }}</span>
+                    </div>
+                    <div class="detail-row" *ngIf="position.status === 'holding'">
+                      <span>Giá hiện tại:</span>
+                      <span class="price-value">{{ formatPredictionPrice(position.currentPrice) }}</span>
+                    </div>
+                    <div class="detail-row">
+                      <span>Số lượng:</span>
+                      <span>{{ position.quantity | number:'1.0-0' }}</span>
+                    </div>
+                    <div class="detail-row" *ngIf="position.profit !== null && position.profitPercent !== null && position.profitPercent !== undefined">
+                      <span>Lãi/Lỗ:</span>
+                      <span [ngClass]="position.profit >= 0 ? 'positive' : 'negative'">
+                        {{ formatCurrency(position.profit) }}
+                        ({{ (position.profitPercent ?? 0) >= 0 ? '+' : '' }}{{ (position.profitPercent ?? 0).toFixed(2) }}%)
+                      </span>
+                    </div>
+                    <div class="detail-row" *ngIf="position.status === 'holding' && position.currentPrice && position.buyPrice">
+                      <span>Lãi/Lỗ chưa thực hiện:</span>
+                      <span [ngClass]="(position.currentPrice - position.buyPrice) * position.quantity >= 0 ? 'positive' : 'negative'">
+                        {{ formatCurrency((position.currentPrice - position.buyPrice) * position.quantity) }}
+                        ({{ ((position.currentPrice - position.buyPrice) / position.buyPrice * 100) >= 0 ? '+' : '' }}{{ ((position.currentPrice - position.buyPrice) / position.buyPrice * 100).toFixed(2) }}%)
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Sell Positions -->
+            <div class="positions-section" *ngIf="weekAnalysis.sellPositions.length > 0">
+              <h4>Vị thế bán ({{ weekAnalysis.sellPositions.length }})</h4>
+              <div class="positions-list">
+                <div class="position-card sell" *ngFor="let position of weekAnalysis.sellPositions">
+                  <div class="position-header">
+                    <span class="position-date">{{ formatDateFromTimestamp(position.sellDate) }}</span>
+                    <span class="position-status sold">Đã bán</span>
+                  </div>
+                  <div class="position-details">
+                    <div class="detail-row">
+                      <span>Giá mua (kỳ vọng):</span>
+                      <span class="price-value">{{ formatPredictionPrice(position.expectedBuyPrice) }}</span>
+                    </div>
+                    <div class="detail-row">
+                      <span>Giá bán:</span>
+                      <span class="price-value">{{ formatPredictionPrice(position.sellPrice) }}</span>
+                    </div>
+                    <div class="detail-row">
+                      <span>Số lượng:</span>
+                      <span>{{ position.quantity | number:'1.0-0' }}</span>
+                    </div>
+                    <div class="detail-row">
+                      <span>Lãi/Lỗ:</span>
+                      <span [ngClass]="position.profit >= 0 ? 'positive' : 'negative'">
+                        {{ formatCurrency(position.profit) }}
+                        ({{ position.profitPercent >= 0 ? '+' : '' }}{{ position.profitPercent.toFixed(2) }}%)
+                      </span>
+                    </div>
+                    <div class="detail-row">
+                      <span>Ngày mua:</span>
+                      <span>{{ formatDateFromTimestamp(position.buyDate) }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- No positions message -->
+            <div class="no-positions" *ngIf="weekAnalysis.buyPositions.length === 0 && weekAnalysis.sellPositions.length === 0">
+              <p>Không có giao dịch nào trong 7 ngày gần đây.</p>
             </div>
           </div>
         </section>

@@ -32,6 +32,10 @@
   ],
   "rewrites": [
     {
+      "source": "/api/stocks-v2/:path*",
+      "destination": "https://viet-stock-api.vercel.app/api/stocks-v2/:path*"
+    },
+    {
       "source": "/api/angular-dev/:path*",
       "destination": "https://angular.dev/:path*"
     },
@@ -93,6 +97,23 @@
     }
   ],
   "headers": [
+    {
+      "source": "/api/stocks-v2/:path*",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, POST, PUT, DELETE, OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "Content-Type, Authorization"
+        }
+      ]
+    },
     {
       "source": "/api/angular-dev/:path*",
       "headers": [
