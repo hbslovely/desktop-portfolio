@@ -1,13 +1,25 @@
 {
+  "name": "viet-stock-api",
+  "version": "1.0.0",
+  "description": "Vietnamese Stock Data API with Vercel Postgres",
   "type": "module",
   "scripts": {
-    "build": "echo 'Building Node.js API...' && node --check *.js api/stocks/*.js 2>/dev/null || true && echo '✅ API build complete'",
-    "dev:api": "node api/api-server-simple.js"
+    "build": "echo 'Build complete'",
+    "dev": "vercel dev",
+    "dev:api": "node api/api-server-simple.js",
+    "db:migrate": "node scripts/db-migrate.js",
+    "db:seed": "node scripts/db-seed.js"
+  },
+  "engines": {
+    "node": "20.x"
   },
   "devDependencies": {
-    "vercel": "^49.1.1"
+    "vercel": "^41.0.0"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^0.10.4",
+    "@vercel/postgres": "^0.10.0",
+    "dotenv": "^16.4.5",
     "jsonwebtoken": "^9.0.3"
   }
 }

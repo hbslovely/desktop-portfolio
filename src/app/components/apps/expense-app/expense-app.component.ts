@@ -180,8 +180,13 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   });
 
   // Tabs
-  activeTab = signal<'list' | 'summary' | 'matrix'>('list');
+  activeTab = signal<'list' | 'summary' | 'budget' | 'insights'>('list');
   predictionTab = signal<'thisWeek' | 'nextWeek' | 'thisMonth'>('thisWeek');
+
+  // Budget Settings
+  showBudgetSettings = signal<boolean>(false);
+  editMonthlyBudget = signal<number>(10000000); // Default 10M VND
+  editCategoryBudgets = signal<{ [category: string]: number }>({});
 
   // Sorting for expenses list
   sortField = signal<'date' | 'amount' | 'category' | 'content'>('date');
@@ -874,6 +879,391 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       startDate: maxStreakStart,
       endDate: maxStreakEnd
     };
+  });
+
+  // ============ BUDGET COMPUTED VALUES ============
+
+  // Get current month's expenses
+  currentMonthExpenses = computed(() => {
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    
+    return this.expenses().filter(expense => {
+      const expenseDate = new Date(expense.date);
+      return expenseDate.getMonth() === currentMonth && expenseDate.getFullYear() === currentYear;
+    });
+  });
+
+  // Monthly spent amount
+  monthlySpent = computed(() => {
+    return this.currentMonthExpenses().reduce((sum, expense) => sum + expense.amount, 0);
+  });
+
+  // Monthly budget (default 10M VND)
+  monthlyBudget = computed(() => {
+    return this.editMonthlyBudget();
+  });
+
+  // Budget percentage used
+  budgetPercentage = computed(() => {
+    const budget = this.monthlyBudget();
+    if (budget === 0) return 0;
+    return Math.round((this.monthlySpent() / budget) * 100);
+  });
+
+  // Remaining budget
+  remainingBudget = computed(() => {
+    return this.monthlyBudget() - this.monthlySpent();
+  });
+
+  // Remaining days in current month
+  remainingDaysInMonth = computed(() => {
+    const now = new Date();
+    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    return lastDay.getDate() - now.getDate();
+  });
+
+  // Daily budget suggestion
+  dailyBudgetSuggestion = computed(() => {
+    const remaining = this.remainingBudget();
+    const days = this.remainingDaysInMonth();
+    if (days === 0 || remaining <= 0) return 0;
+    return Math.round(remaining / days);
+  });
+
+  // Category budgets with spending
+  categoryBudgets = computed(() => {
+    const categories = this.categories();
+    const catBudgets = this.editCategoryBudgets();
+    const monthExpenses = this.currentMonthExpenses();
+    
+    return categories.map(category => {
+      const spent = monthExpenses
+        .filter(e => e.category === category)
+        .reduce((sum, e) => sum + e.amount, 0);
+      const budget = catBudgets[category] || 0;
+      const percentage = budget > 0 ? Math.round((spent / budget) * 100) : 0;
+      const remaining = budget - spent;
+      
+      return {
+        category,
+        spent,
+        budget,
+        percentage,
+        remaining
+      };
+    }).sort((a, b) => b.spent - a.spent);
+  });
+
+  // ============ INSIGHTS COMPUTED VALUES ============
+
+  // Top spending category
+  topSpendingCategory = computed(() => {
+    const byCategory = this.totalByCategory();
+    if (byCategory.length === 0) return null;
+    const total = this.totalAmount();
+    const top = byCategory[0];
+    return {
+      ...top,
+      percentage: total > 0 ? Math.round((top.total / total) * 100) : 0
+    };
+  });
+
+  // Highest spending day of week
+  highestSpendingDay = computed(() => {
+    const expenses = this.filteredExpenses();
+    if (expenses.length === 0) return null;
+
+    const dayNames = ['Chủ Nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
+    const dayTotals: { [key: number]: { total: number; count: number } } = {};
+    
+    for (let i = 0; i < 7; i++) {
+      dayTotals[i] = { total: 0, count: 0 };
+    }
+    
+    expenses.forEach(expense => {
+      const day = new Date(expense.date).getDay();
+      dayTotals[day].total += expense.amount;
+      dayTotals[day].count++;
+    });
+    
+    let maxDay = 0;
+    let maxAverage = 0;
+    
+    for (let i = 0; i < 7; i++) {
+      const avg = dayTotals[i].count > 0 ? dayTotals[i].total / dayTotals[i].count : 0;
+      if (avg > maxAverage) {
+        maxAverage = avg;
+        maxDay = i;
+      }
+    }
+    
+    return {
+      day: maxDay,
+      dayName: dayNames[maxDay],
+      average: Math.round(maxAverage)
+    };
+  });
+
+  // Spending trend (last 30 days vs previous 30 days)
+  spendingTrend = computed(() => {
+    const expenses = this.expenses();
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+    
+    const recent = expenses.filter(e => {
+      const d = new Date(e.date);
+      return d >= thirtyDaysAgo && d <= now;
+    });
+    
+    const previous = expenses.filter(e => {
+      const d = new Date(e.date);
+      return d >= sixtyDaysAgo && d < thirtyDaysAgo;
+    });
+    
+    const recentTotal = recent.reduce((sum, e) => sum + e.amount, 0);
+    const previousTotal = previous.reduce((sum, e) => sum + e.amount, 0);
+    
+    if (previousTotal === 0) {
+      return { trend: 'Chưa đủ dữ liệu', percentage: 0 };
+    }
+    
+    const percentage = Math.round(((recentTotal - previousTotal) / previousTotal) * 100);
+    
+    if (percentage > 10) return { trend: 'Tăng', percentage };
+    if (percentage < -10) return { trend: 'Giảm', percentage };
+    return { trend: 'Ổn định', percentage };
+  });
+
+  // Average transactions per day
+  averageTransactionsPerDay = computed(() => {
+    const expenses = this.filteredExpenses();
+    const dates = this.uniqueDates();
+    if (dates.length === 0) return 0;
+    return expenses.length / dates.length;
+  });
+
+  // Weekday spending analysis
+  weekdaySpending = computed(() => {
+    const expenses = this.filteredExpenses();
+    const dayNames = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+    const fullDayNames = ['Chủ Nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
+    const dayData: { [key: number]: { total: number; count: number } } = {};
+    
+    for (let i = 0; i < 7; i++) {
+      dayData[i] = { total: 0, count: 0 };
+    }
+    
+    expenses.forEach(expense => {
+      const day = new Date(expense.date).getDay();
+      dayData[day].total += expense.amount;
+      dayData[day].count++;
+    });
+    
+    const averages = Object.entries(dayData).map(([day, data]) => ({
+      day: parseInt(day),
+      average: data.count > 0 ? data.total / data.count : 0
+    }));
+    
+    const maxAverage = Math.max(...averages.map(d => d.average));
+    
+    return averages.map(item => ({
+      day: item.day,
+      shortName: dayNames[item.day],
+      fullName: fullDayNames[item.day],
+      average: Math.round(item.average),
+      percentage: maxAverage > 0 ? Math.round((item.average / maxAverage) * 100) : 0,
+      isHighest: item.average === maxAverage && maxAverage > 0
+    }));
+  });
+
+  // Week of month spending analysis
+  weekOfMonthSpending = computed(() => {
+    const expenses = this.filteredExpenses();
+    const weekLabels = ['Tuần 1', 'Tuần 2', 'Tuần 3', 'Tuần 4', 'Tuần 5'];
+    const weekData: { [key: number]: { total: number; count: number } } = {};
+    
+    for (let i = 1; i <= 5; i++) {
+      weekData[i] = { total: 0, count: 0 };
+    }
+    
+    expenses.forEach(expense => {
+      const date = new Date(expense.date);
+      const week = Math.ceil(date.getDate() / 7);
+      if (week <= 5) {
+        weekData[week].total += expense.amount;
+        weekData[week].count++;
+      }
+    });
+    
+    const averages = Object.entries(weekData).map(([week, data]) => ({
+      week: parseInt(week),
+      average: data.count > 0 ? data.total / data.count : 0
+    }));
+    
+    const maxAverage = Math.max(...averages.map(w => w.average));
+    
+    return averages.map(item => ({
+      week: item.week,
+      label: weekLabels[item.week - 1],
+      average: Math.round(item.average),
+      percentage: maxAverage > 0 ? Math.round((item.average / maxAverage) * 100) : 0,
+      isHighest: item.average === maxAverage && maxAverage > 0
+    }));
+  });
+
+  // Spending tips based on analysis
+  spendingTips = computed(() => {
+    const tips: Array<{ title: string; description: string; type: 'warning' | 'success' | 'info'; icon: string; action?: string }> = [];
+    
+    // Check budget status
+    const budgetPercent = this.budgetPercentage();
+    if (budgetPercent > 100) {
+      tips.push({
+        title: 'Vượt ngân sách!',
+        description: `Bạn đã chi tiêu vượt ${budgetPercent - 100}% ngân sách tháng này.`,
+        type: 'warning',
+        icon: 'pi-exclamation-triangle',
+        action: 'Xem xét cắt giảm các chi tiêu không cần thiết'
+      });
+    } else if (budgetPercent > 80) {
+      tips.push({
+        title: 'Gần hết ngân sách',
+        description: `Đã sử dụng ${budgetPercent}% ngân sách. Còn ${this.remainingDaysInMonth()} ngày trong tháng.`,
+        type: 'warning',
+        icon: 'pi-exclamation-circle',
+        action: 'Hạn chế chi tiêu để không vượt ngân sách'
+      });
+    }
+    
+    // Top spending category tip
+    const topCat = this.topSpendingCategory();
+    if (topCat && topCat.percentage > 30) {
+      tips.push({
+        title: `${topCat.category} chiếm ${topCat.percentage}%`,
+        description: `Danh mục này chiếm tỷ trọng lớn trong chi tiêu của bạn.`,
+        type: 'info',
+        icon: 'pi-chart-pie',
+        action: 'Xem xét tối ưu chi tiêu cho danh mục này'
+      });
+    }
+    
+    // Spending trend tip
+    const trend = this.spendingTrend();
+    if (trend.percentage < -15) {
+      tips.push({
+        title: 'Chi tiêu giảm đáng kể!',
+        description: `Chi tiêu 30 ngày qua giảm ${Math.abs(trend.percentage)}% so với kỳ trước.`,
+        type: 'success',
+        icon: 'pi-thumbs-up'
+      });
+    }
+    
+    // Highest spending day tip
+    const highestDay = this.highestSpendingDay();
+    if (highestDay) {
+      tips.push({
+        title: `${highestDay.dayName} là ngày chi tiêu nhiều`,
+        description: `Trung bình ${this.formatAmount(highestDay.average)} mỗi ${highestDay.dayName}.`,
+        type: 'info',
+        icon: 'pi-calendar',
+        action: 'Cân nhắc lên kế hoạch chi tiêu cho ngày này'
+      });
+    }
+    
+    // Add default tip if no warnings
+    if (tips.length < 2) {
+      tips.push({
+        title: 'Theo dõi chi tiêu thường xuyên',
+        description: 'Ghi chép chi tiêu hàng ngày giúp bạn kiểm soát tài chính tốt hơn.',
+        type: 'info',
+        icon: 'pi-bookmark'
+      });
+    }
+    
+    return tips.slice(0, 4); // Max 4 tips
+  });
+
+  // Recent achievements
+  recentAchievements = computed(() => {
+    const achievements: Array<{ 
+      title: string; 
+      description: string; 
+      icon: string; 
+      achieved: boolean; 
+      progress?: number 
+    }> = [];
+    
+    const budgetPercent = this.budgetPercentage();
+    const trend = this.spendingTrend();
+    const daysRemaining = this.remainingDaysInMonth();
+    const totalDays = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
+    const daysPassed = totalDays - daysRemaining;
+    
+    // Budget control achievement
+    if (budgetPercent <= 100) {
+      const targetPercent = (daysPassed / totalDays) * 100;
+      if (budgetPercent <= targetPercent) {
+        achievements.push({
+          title: 'Kiểm soát ngân sách tốt',
+          description: 'Chi tiêu theo đúng kế hoạch ngân sách',
+          icon: 'pi-wallet',
+          achieved: true
+        });
+      } else {
+        achievements.push({
+          title: 'Đang nỗ lực kiểm soát',
+          description: 'Tiếp tục cố gắng để đạt mục tiêu',
+          icon: 'pi-wallet',
+          achieved: false,
+          progress: Math.max(0, Math.round(100 - (budgetPercent - targetPercent)))
+        });
+      }
+    }
+    
+    // Saving trend achievement
+    if (trend.percentage < 0) {
+      achievements.push({
+        title: 'Xu hướng tiết kiệm',
+        description: `Giảm ${Math.abs(trend.percentage)}% so với kỳ trước`,
+        icon: 'pi-chart-line',
+        achieved: true
+      });
+    }
+    
+    // Consistent tracking achievement
+    const uniqueDates = this.uniqueDates();
+    if (uniqueDates.length >= 7) {
+      achievements.push({
+        title: 'Ghi chép đều đặn',
+        description: `Đã ghi chép ${uniqueDates.length} ngày`,
+        icon: 'pi-check-circle',
+        achieved: true
+      });
+    } else {
+      achievements.push({
+        title: 'Ghi chép đều đặn',
+        description: 'Ghi chép ít nhất 7 ngày để đạt thành tích',
+        icon: 'pi-check-circle',
+        achieved: false,
+        progress: Math.round((uniqueDates.length / 7) * 100)
+      });
+    }
+    
+    // Low single transaction achievement
+    const avgExpense = this.averageExpense();
+    if (avgExpense > 0 && avgExpense < 200000) {
+      achievements.push({
+        title: 'Chi tiêu hợp lý',
+        description: `Trung bình ${this.formatAmount(avgExpense)}/giao dịch`,
+        icon: 'pi-star',
+        achieved: true
+      });
+    }
+    
+    return achievements.slice(0, 4);
   });
 
   // Helper function to get week number
@@ -2169,7 +2559,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   /**
    * Switch tab
    */
-  switchTab(tab: 'list' | 'summary' | 'matrix'): void {
+  switchTab(tab: 'list' | 'summary' | 'budget' | 'insights'): void {
     this.activeTab.set(tab);
     if (tab === 'summary') {
       // Initialize charts when switching to summary tab
@@ -2192,6 +2582,11 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
             this.initMonthlyPredictionChart();
           }, 200);
         }
+      }, 100);
+    } else if (tab === 'budget') {
+      // Initialize budget chart when switching to budget tab
+      setTimeout(() => {
+        this.initBudgetTrendChart();
       }, 100);
     }
   }
@@ -4458,6 +4853,181 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       componentElement.classList.add('theme-compact'); // Always use compact theme (like v1)
       componentElement.classList.add(`font-${this.currentFontSize()}`);
     }
+  }
+
+  // ============ BUDGET METHODS ============
+
+  /**
+   * Get current month name in Vietnamese
+   */
+  getCurrentMonthName(): string {
+    const months = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
+    const now = new Date();
+    return months[now.getMonth()] + '/' + now.getFullYear();
+  }
+
+  /**
+   * Get category budget value for editing
+   */
+  getCategoryBudgetValue(category: string): number {
+    return this.editCategoryBudgets()[category] || 0;
+  }
+
+  /**
+   * Handle monthly budget change
+   */
+  onMonthlyBudgetChange(value: string): void {
+    const numericValue = parseInt(value.replace(/\./g, ''), 10) || 0;
+    this.editMonthlyBudget.set(numericValue);
+  }
+
+  /**
+   * Handle category budget change
+   */
+  onCategoryBudgetChange(category: string, value: string): void {
+    const numericValue = parseInt(value.replace(/\./g, ''), 10) || 0;
+    const currentBudgets = { ...this.editCategoryBudgets() };
+    currentBudgets[category] = numericValue;
+    this.editCategoryBudgets.set(currentBudgets);
+  }
+
+  /**
+   * Save budget settings
+   */
+  saveBudgetSettings(): void {
+    // In a real app, you would save these to a backend or local storage
+    // For now, the signals already hold the values
+    this.showBudgetSettings.set(false);
+    this.showNotificationDialog('Đã lưu ngân sách thành công!', 'success');
+  }
+
+  /**
+   * Format compact amount (e.g., 1.5M, 500K)
+   */
+  formatCompactAmount(amount: number): string {
+    if (amount >= 1000000) {
+      return (amount / 1000000).toFixed(1) + 'M';
+    } else if (amount >= 1000) {
+      return (amount / 1000).toFixed(0) + 'K';
+    }
+    return amount.toString();
+  }
+
+  /**
+   * Initialize budget trend chart
+   */
+  @ViewChild('budgetTrendChart') budgetTrendChartRef!: ElementRef<HTMLCanvasElement>;
+  private budgetTrendChart: Chart | null = null;
+
+  initBudgetTrendChart(): void {
+    if (!this.budgetTrendChartRef?.nativeElement) return;
+
+    // Destroy existing chart
+    if (this.budgetTrendChart) {
+      this.budgetTrendChart.destroy();
+    }
+
+    const now = new Date();
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    const labels: string[] = [];
+    const budgetLine: number[] = [];
+    const actualSpending: number[] = [];
+    
+    // Generate cumulative budget line
+    const dailyBudget = this.monthlyBudget() / daysInMonth;
+    let cumulativeBudget = 0;
+    
+    // Get actual daily spending for current month
+    const monthExpenses = this.currentMonthExpenses();
+    const dailyTotals: { [key: number]: number } = {};
+    
+    monthExpenses.forEach(expense => {
+      const day = new Date(expense.date).getDate();
+      dailyTotals[day] = (dailyTotals[day] || 0) + expense.amount;
+    });
+    
+    let cumulativeActual = 0;
+    const today = now.getDate();
+    
+    for (let day = 1; day <= daysInMonth; day++) {
+      labels.push(day.toString());
+      cumulativeBudget += dailyBudget;
+      budgetLine.push(Math.round(cumulativeBudget));
+      
+      if (day <= today) {
+        cumulativeActual += dailyTotals[day] || 0;
+        actualSpending.push(cumulativeActual);
+      }
+    }
+
+    const config: ChartConfiguration = {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: 'Ngân sách dự kiến',
+            data: budgetLine,
+            borderColor: 'rgba(99, 102, 241, 0.5)',
+            backgroundColor: 'rgba(99, 102, 241, 0.1)',
+            borderDash: [5, 5],
+            fill: false,
+            tension: 0,
+            pointRadius: 0
+          },
+          {
+            label: 'Chi tiêu thực tế',
+            data: actualSpending,
+            borderColor: actualSpending[actualSpending.length - 1] > budgetLine[actualSpending.length - 1] 
+              ? 'rgba(239, 68, 68, 1)' 
+              : 'rgba(16, 185, 129, 1)',
+            backgroundColor: actualSpending[actualSpending.length - 1] > budgetLine[actualSpending.length - 1]
+              ? 'rgba(239, 68, 68, 0.1)'
+              : 'rgba(16, 185, 129, 0.1)',
+            fill: true,
+            tension: 0.4,
+            pointRadius: 2
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: true,
+            position: 'top',
+            labels: {
+              usePointStyle: true,
+              padding: 20
+            }
+          },
+          tooltip: {
+            callbacks: {
+              label: (context) => {
+                return context.dataset.label + ': ' + this.formatAmount(context.parsed.y || 0);
+              }
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: (value) => this.formatCompactAmount(value as number)
+            }
+          },
+          x: {
+            title: {
+              display: true,
+              text: 'Ngày trong tháng'
+            }
+          }
+        }
+      }
+    };
+
+    this.budgetTrendChart = new Chart(this.budgetTrendChartRef.nativeElement, config);
   }
 }
 

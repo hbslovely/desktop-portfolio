@@ -4,6 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { ScrollingModule } from '@angular/cdk/scrolling';
 import { DnseService, DNSESymbol, DNSEStockData, DNSEOHLCData, ExchangeType } from '../../../services/dnse.service';
+import { NeuralNetworkService, StockPrediction, TrainingProgress } from '../../../services/neural-network.service';
+import { TradingSimulationService, TradingConfig, TradingResult, TradeSignal } from '../../../services/trading-simulation.service';
 import { Chart, ChartConfiguration, registerables, TimeScale } from 'chart.js';
 // @ts-ignore - chartjs-chart-financial doesn't have proper type declarations
 import { CandlestickController, CandlestickElement } from 'chartjs-chart-financial';
@@ -44,6 +46,20 @@ interface ExchangeCount {
   exchange: ExchangeType;
   total: number;
   fetched: number;
+}
+
+interface Transaction {
+  type: 'buy' | 'sell';
+  date: number;
+  dateStr: string;
+  quantity: number;
+  price: number;
+  capitalBefore: number;
+  transactionAmount: number; // Tiền giao dịch (số tiền dùng để mua hoặc nhận được khi bán)
+  capitalAfter: number;
+  positionsBefore: number;
+  positionsAfter: number;
+  holdingDays?: number; // Chỉ có khi là giao dịch bán
 }
 
 @Component({
@@ -279,9 +295,44 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     return this.extractPageProps(data);
   });
 
+  // Neural Network state
+  nnPrediction = signal<StockPrediction | null>(null);
+  nnTrainingProgress = signal<TrainingProgress | null>(null);
+  isNNTraining = signal(false);
+  isNNReady = signal(false);
+  nnError = signal<string | null>(null);
+  nnPredictionComparison = signal<Array<{
+    date: number;
+    dateStr: string;
+    predictedPrice: number;
+    actualPrice: number;
+    error: number;
+    errorPercent: number;
+  }> | null>(null);
+  isLoadingComparison = signal(false);
+
+  // Trading simulation state
+  tradingConfig = signal<TradingConfig>({
+    initialCapital: 100000000, // 100 triệu đồng
+    stopLossPercent: 5, // 5%
+    takeProfitPercent: 10, // 10%
+    minConfidence: 0.0, // Không dùng nữa - model tự quyết định
+    maxPositions: 3, // Cho phép mua nhiều lần để tối ưu
+    tPlusDays: 2 // T+2 (sau 2 ngày mới được bán)
+  });
+  tradingResult = signal<TradingResult | null>(null);
+  isRunningSimulation = signal(false);
+  
+
+  // Date range for backtesting
+  backtestStartDate = signal<string>('');
+  backtestEndDate = signal<string>('');
+
   constructor(
     private dnseService: DnseService,
-    private http: HttpClient
+    private http: HttpClient,
+    private nnService: NeuralNetworkService,
+    private tradingSimulationService: TradingSimulationService
   ) {
     // Watch for tab changes and initialize chart when switching to chart tab
     effect(() => {
@@ -453,21 +504,21 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
             allSymbols.forEach(symbol => {
               const symbolKey = symbol.symbol.toUpperCase();
               const existing = uniqueSymbolsMap.get(symbolKey);
-              
+
               if (existing) {
                 // Merge exchanges if different
-                const existingExchanges = Array.isArray(existing.exchange) 
-                  ? existing.exchange 
+                const existingExchanges = Array.isArray(existing.exchange)
+                  ? existing.exchange
                   : [existing.exchange];
-                const newExchanges = Array.isArray(symbol.exchange) 
-                  ? symbol.exchange 
+                const newExchanges = Array.isArray(symbol.exchange)
+                  ? symbol.exchange
                   : [symbol.exchange];
-                
+
                 // Combine and deduplicate exchanges
                 const allExchanges = [...existingExchanges, ...newExchanges];
                 const uniqueExchanges = Array.from(new Set(allExchanges));
                 existing.exchange = uniqueExchanges.length === 1 ? uniqueExchanges[0] : uniqueExchanges;
-                
+
                 // Merge basicInfo - prefer data from fetched symbol
                 if (symbol.isFetched && !existing.isFetched) {
                   existing.isFetched = true;
@@ -481,7 +532,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
                     fullData: symbol.basicInfo?.fullData || existing.basicInfo?.fullData
                   };
                 }
-                
+
                 // Merge name if not set
                 if (!existing.name && symbol.name) {
                   existing.name = symbol.name;
@@ -1488,6 +1539,8 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
         this.selectedSymbolPriceData.set(ohlcData);
         this.isLoadingPrice.set(false);
         this.selectedYears.set(years);
+        // Initialize date range when price data is loaded
+        setTimeout(() => this.initializeDateRange(), 100);
         // Update chart
         setTimeout(() => this.initCandlestickChart(), 100);
       },
@@ -1520,12 +1573,13 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   /**
-   * Get latest close price
+   * Get latest close price in actual VND units
    */
   getLatestClosePrice(): number {
     const priceData = this.selectedSymbolPriceData();
     if (!priceData || !priceData.c || priceData.c.length === 0) return 0;
-    return priceData.c[priceData.c.length - 1];
+    // Convert from database units to actual VND units
+    return priceData.c[priceData.c.length - 1] * 1000;
   }
 
   /**
@@ -2234,6 +2288,10 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     this.selectedSymbolData.set(null);
     this.selectedSymbolPriceData.set(null);
     this.activeTab.set('overview'); // Reset to overview tab
+    // Reset date range
+    this.backtestStartDate.set('');
+    this.backtestEndDate.set('');
+    this.tradingResult.set(null);
 
     // Load stock data from API
     this.dnseService.getStockDataFromAPI(symbol.symbol).subscribe({
@@ -2245,6 +2303,8 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
         if (data && data.priceData) {
           this.selectedSymbolPriceData.set(data.priceData);
           this.isLoadingPrice.set(false);
+          // Initialize date range when price data is loaded
+          setTimeout(() => this.initializeDateRange(), 100);
           // Initialize chart if on chart tab
           if (this.activeTab() === 'chart') {
             setTimeout(() => this.initCandlestickChart(), 100);
@@ -2681,6 +2741,803 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
    */
   trackBySymbol(index: number, symbol: SymbolWithStatus): string {
     return symbol.symbol;
+  }
+
+  /**
+   * Train neural network model with current stock data
+   */
+  async trainNeuralNetwork() {
+    const priceData = this.selectedSymbolPriceData();
+    if (!priceData || !priceData.c || priceData.c.length < 100) {
+      this.nnError.set('Cần ít nhất 100 ngày dữ liệu giá để huấn luyện mô hình');
+      return;
+    }
+
+    const symbol = this.selectedSymbol();
+    if (!symbol) {
+      this.nnError.set('Không tìm thấy mã cổ phiếu');
+      return;
+    }
+
+    this.isNNTraining.set(true);
+    this.nnError.set(null);
+    this.nnPrediction.set(null);
+
+    try {
+      const prices = priceData.c;
+
+      await this.nnService.trainModel(
+        prices,
+        50, // epochs
+        32, // batch size
+        0.2, // validation split
+        (progress) => {
+          this.nnTrainingProgress.set(progress);
+        }
+      );
+
+      this.isNNReady.set(true);
+      this.isNNTraining.set(false);
+
+      // Save weights to API
+      try {
+        await this.nnService.saveWeights(symbol.symbol).toPromise();
+        console.log('✅ Neural network weights saved to API');
+      } catch (saveError) {
+        console.error('Error saving weights:', saveError);
+        // Don't fail training if save fails
+      }
+
+      // Automatically make prediction after training
+      await this.predictWithNeuralNetwork();
+    } catch (error: any) {
+      console.error('Error training neural network:', error);
+      this.nnError.set(error.message || 'Lỗi khi huấn luyện mô hình');
+      this.isNNTraining.set(false);
+    }
+  }
+
+  /**
+   * Reload data from DNSE API and retrain
+   */
+  async reloadDataAndRetrain() {
+    const symbol = this.selectedSymbol();
+    if (!symbol) {
+      this.nnError.set('Không tìm thấy mã cổ phiếu');
+      return;
+    }
+
+    this.isNNTraining.set(true);
+    this.nnError.set(null);
+    this.nnPrediction.set(null);
+    this.isLoadingPrice.set(true);
+
+    try {
+      // Reload price data
+      await this.fetchPriceDataOnly(this.selectedYears());
+
+      // Wait a bit for data to load
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Check if we have enough data
+      const priceData = this.selectedSymbolPriceData();
+      if (!priceData || !priceData.c || priceData.c.length < 100) {
+        this.nnError.set('Dữ liệu mới không đủ (cần ít nhất 100 ngày). Vui lòng chọn nhiều năm hơn.');
+        this.isNNTraining.set(false);
+        this.isLoadingPrice.set(false);
+        return;
+      }
+
+      // Train with new data
+      await this.trainNeuralNetwork();
+
+      this.isLoadingPrice.set(false);
+    } catch (error: any) {
+      console.error('Error reloading data and retraining:', error);
+      this.nnError.set(error.message || 'Lỗi khi reload và train lại');
+      this.isNNTraining.set(false);
+      this.isLoadingPrice.set(false);
+    }
+  }
+
+  /**
+   * Load saved neural network weights
+   */
+  async loadSavedWeights() {
+    const symbol = this.selectedSymbol();
+    if (!symbol) {
+      this.nnError.set('Không tìm thấy mã cổ phiếu');
+      return;
+    }
+
+    try {
+      const loaded = await this.nnService.loadWeights(symbol.symbol);
+      if (loaded) {
+        this.isNNReady.set(true);
+        this.nnError.set(null);
+        // Automatically make prediction after loading
+        await this.predictWithNeuralNetwork();
+      } else {
+        this.nnError.set('Không tìm thấy mô hình đã lưu. Vui lòng huấn luyện mô hình trước.');
+      }
+    } catch (error: any) {
+      console.error('Error loading weights:', error);
+      this.nnError.set(error.message || 'Lỗi khi load mô hình đã lưu');
+    }
+  }
+
+  /**
+   * Make prediction using neural network
+   */
+  async predictWithNeuralNetwork() {
+    const priceData = this.selectedSymbolPriceData();
+    if (!priceData || !priceData.c || priceData.c.length < 60) {
+      this.nnError.set('Cần ít nhất 60 ngày dữ liệu giá để dự đoán');
+      return;
+    }
+
+    if (!this.nnService.isReady()) {
+      this.nnError.set('Mô hình chưa được huấn luyện. Vui lòng huấn luyện trước.');
+      return;
+    }
+
+    try {
+      this.nnError.set(null);
+      const prices = priceData.c;
+      const prediction = await this.nnService.predict(prices, 30);
+      this.nnPrediction.set(prediction);
+    } catch (error: any) {
+      console.error('Error making prediction:', error);
+      this.nnError.set(error.message || 'Lỗi khi dự đoán');
+    }
+  }
+
+  /**
+   * Get prediction vs actual comparison for last 10 days
+   */
+  async loadPredictionComparison(): Promise<any> {
+    const priceData = this.selectedSymbolPriceData();
+    if (!priceData || !priceData.c || !priceData.t || priceData.c.length < 70) {
+      this.nnError.set('Cần ít nhất 70 ngày dữ liệu để so sánh (60 ngày để dự đoán + 10 ngày để so sánh)');
+      return;
+    }
+
+    if (!this.nnService.isReady()) {
+      this.nnError.set('Mô hình chưa được huấn luyện. Vui lòng huấn luyện trước.');
+      return;
+    }
+
+    this.isLoadingComparison.set(true);
+    this.nnError.set(null);
+
+    try {
+    const priceData = this.selectedSymbolPriceData();
+    if (!priceData || !priceData.c || !priceData.t || priceData.c.length < 70) {
+      return null; // Need at least 70 days (60 for lookback + 10 for comparison)
+    }
+
+    if (!this.nnService.isReady()) {
+      return null;
+    }
+
+      const comparisons: Array<{
+        date: number;
+        dateStr: string;
+        predictedPrice: number;
+        actualPrice: number;
+        error: number;
+        errorPercent: number;
+      }> = [];
+
+      const prices = priceData.c;
+      const timestamps = priceData.t;
+      const last10Days = Math.min(10, prices.length - 60);
+
+      // For each of the last 10 days, predict using data up to that point
+      for (let i = 0; i < last10Days; i++) {
+        const targetIndex = prices.length - last10Days + i;
+        const historicalData = prices.slice(0, targetIndex);
+
+        if (historicalData.length < 60) continue;
+
+        try {
+          // Predict for the next day (which is the actual price we have)
+          const prediction = await this.nnService.predict(historicalData, 1);
+          const actualPrice = prices[targetIndex] * 1000; // Convert to VND
+          const predictedPrice = prediction.predictedPrice; // Already in VND
+          const error = predictedPrice - actualPrice;
+          const errorPercent = (error / actualPrice) * 100;
+
+          comparisons.push({
+            date: timestamps[targetIndex],
+            dateStr: this.formatDateFromTimestamp(timestamps[targetIndex]),
+            predictedPrice,
+            actualPrice,
+            error,
+            errorPercent
+          });
+        } catch (error) {
+          console.error(`Error predicting for day ${targetIndex}:`, error);
+        }
+      }
+
+      // Sort by date (newest first)
+      comparisons.sort((a, b) => b.date - a.date);
+
+      this.nnPredictionComparison.set(comparisons.length > 0 ? comparisons : null);
+    } catch (error: any) {
+      console.error('Error loading prediction comparison:', error);
+      this.nnError.set(error.message || 'Lỗi khi so sánh dự đoán');
+    } finally {
+      this.isLoadingComparison.set(false);
+    }
+  }
+
+  /**
+   * Get neural network status text
+   */
+  getNNStatusText(): string {
+    if (this.isNNTraining()) {
+      const progress = this.nnTrainingProgress();
+      if (progress) {
+        return `Đang huấn luyện... Epoch ${progress.epoch}, Loss: ${progress.loss.toFixed(6)}`;
+      }
+      return 'Đang huấn luyện...';
+    }
+    if (this.isNNReady()) {
+      return 'Sẵn sàng';
+    }
+    return 'Chưa huấn luyện';
+  }
+
+  /**
+   * Get neural network status badge class
+   */
+  getNNStatusBadgeClass(): string {
+    if (this.isNNTraining()) {
+      return 'nn-status-training';
+    }
+    if (this.isNNReady()) {
+      return 'nn-status-ready';
+    }
+    return 'nn-status-pending';
+  }
+
+  /**
+   * Format prediction price
+   * Note: All prices are now normalized to actual VND units (multiplied by 1000)
+   * in the neural network service, so we just need to format them here.
+   */
+  formatPredictionPrice(price: number): string {
+    // All prices are already in actual VND units (e.g., 22500 = 22,500 VND)
+    return `${price.toLocaleString('vi-VN')} đ`;
+  }
+
+  /**
+   * Format confidence percentage
+   */
+  formatConfidence(confidence: number): string {
+    return `${(confidence * 100).toFixed(1)}%`;
+  }
+
+  /**
+   * Get trend icon class
+   */
+  getTrendIconClass(trend: 'up' | 'down' | 'neutral'): string {
+    switch (trend) {
+      case 'up':
+        return 'pi pi-arrow-up';
+      case 'down':
+        return 'pi pi-arrow-down';
+      default:
+        return 'pi pi-minus';
+    }
+  }
+
+  /**
+   * Get trend color class
+   */
+  getTrendColorClass(trend: 'up' | 'down' | 'neutral'): string {
+    switch (trend) {
+      case 'up':
+        return 'trend-up';
+      case 'down':
+        return 'trend-down';
+      default:
+        return 'trend-neutral';
+    }
+  }
+
+  /**
+   * Check if there's enough data for training
+   */
+  hasEnoughDataForTraining(): boolean {
+    const priceData = this.selectedSymbolPriceData();
+    return !!(priceData && priceData.c && priceData.c.length >= 100);
+  }
+
+  /**
+   * Get available date range from price data
+   */
+  getAvailableDateRange(): { minDate: string, maxDate: string } | null {
+    const priceData = this.selectedSymbolPriceData();
+    if (!priceData || !priceData.t || priceData.t.length === 0) {
+      return null;
+    }
+
+    const timestamps = priceData.t;
+    const minTimestamp = Math.min(...timestamps);
+    const maxTimestamp = Math.max(...timestamps);
+
+    const minDate = new Date(minTimestamp * 1000);
+    const maxDate = new Date(maxTimestamp * 1000);
+
+    return {
+      minDate: this.formatDateForInput(minDate),
+      maxDate: this.formatDateForInput(maxDate)
+    };
+  }
+
+  /**
+   * Format date for input[type="date"]
+   */
+  formatDateForInput(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  /**
+   * Initialize date range to full range
+   */
+  initializeDateRange() {
+    const range = this.getAvailableDateRange();
+    if (range) {
+      if (!this.backtestStartDate()) {
+        this.backtestStartDate.set(range.minDate);
+      }
+      if (!this.backtestEndDate()) {
+        this.backtestEndDate.set(range.maxDate);
+      }
+    }
+  }
+
+  /**
+   * Filter data by date range
+   */
+  filterDataByDateRange(
+    prices: number[],
+    timestamps: number[],
+    startDate: string,
+    endDate: string
+  ): { prices: number[], timestamps: number[] } {
+    if (!startDate || !endDate) {
+      return { prices, timestamps };
+    }
+
+    const startTimestamp = Math.floor(new Date(startDate).getTime() / 1000);
+    const endTimestamp = Math.floor(new Date(endDate).getTime() / 1000);
+
+    const filteredPrices: number[] = [];
+    const filteredTimestamps: number[] = [];
+
+    for (let i = 0; i < timestamps.length; i++) {
+      if (timestamps[i] >= startTimestamp && timestamps[i] <= endTimestamp) {
+        filteredTimestamps.push(timestamps[i]);
+        filteredPrices.push(prices[i]);
+      }
+    }
+
+    return { prices: filteredPrices, timestamps: filteredTimestamps };
+  }
+
+  /**
+   * Run trading simulation
+   */
+  async runTradingSimulation() {
+    const priceData = this.selectedSymbolPriceData();
+    if (!priceData || !priceData.c || priceData.c.length < 60) {
+      this.nnError.set('Cần ít nhất 60 ngày dữ liệu để chạy mô phỏng');
+      return;
+    }
+
+    if (!this.nnService.isReady()) {
+      this.nnError.set('Mô hình chưa được huấn luyện. Vui lòng huấn luyện trước.');
+      return;
+    }
+
+    // Validate date range
+    const startDate = this.backtestStartDate();
+    const endDate = this.backtestEndDate();
+    if (!startDate || !endDate) {
+      this.nnError.set('Vui lòng chọn vùng ngày để testing');
+      return;
+    }
+
+    const startTimestamp = Math.floor(new Date(startDate).getTime() / 1000);
+    const endTimestamp = Math.floor(new Date(endDate).getTime() / 1000);
+    if (startTimestamp >= endTimestamp) {
+      this.nnError.set('Ngày bắt đầu phải nhỏ hơn ngày kết thúc');
+      return;
+    }
+
+    this.isRunningSimulation.set(true);
+    this.nnError.set(null);
+
+    try {
+      // Filter data by date range
+      const { prices: filteredPrices, timestamps: filteredTimestamps } =
+        this.filterDataByDateRange(priceData.c, priceData.t, startDate, endDate);
+
+      if (filteredPrices.length < 30) {
+        this.nnError.set('Vùng ngày được chọn có quá ít dữ liệu (cần ít nhất 30 ngày)');
+        this.isRunningSimulation.set(false);
+        return;
+      }
+
+      // Generate predictions for backtesting
+      let basePrediction = this.nnPrediction();
+      if (!basePrediction) {
+        // If no prediction yet, make one
+        await this.predictWithNeuralNetwork();
+        basePrediction = this.nnPrediction();
+        if (!basePrediction) {
+          throw new Error('Không thể tạo dự đoán');
+        }
+      }
+
+      console.log('[StockApp] Base prediction:', {
+        predictedPrice: basePrediction.predictedPrice,
+        confidence: basePrediction.confidence,
+        trend: basePrediction.trend,
+        tradingDecision: basePrediction.tradingDecision
+      });
+
+      const predictions = this.tradingSimulationService.generatePredictionsForBacktest(
+        filteredPrices,
+        filteredTimestamps,
+        basePrediction
+      );
+
+      console.log('[StockApp] Generated predictions:', predictions.length);
+      console.log('[StockApp] Sample predictions:', predictions.slice(0, 5).map(p => ({
+        predictedPrice: p.predictedPrice,
+        confidence: p.confidence,
+        trend: p.trend,
+        tradingDecision: p.tradingDecision
+      })));
+
+      // Generate signals
+      const signals = this.tradingSimulationService.generateSignals(
+        filteredPrices,
+        filteredTimestamps,
+        predictions,
+        this.tradingConfig()
+      );
+
+      console.log('[StockApp] Generated signals:', signals.length);
+      const buySignals = signals.filter(s => s.action === 'buy').length;
+      const sellSignals = signals.filter(s => s.action === 'sell').length;
+      const holdSignals = signals.filter(s => s.action === 'hold').length;
+      console.log(`[StockApp] Signals breakdown: ${buySignals} buy, ${sellSignals} sell, ${holdSignals} hold`);
+
+      // Run simulation
+      const result = this.tradingSimulationService.simulateTrading(
+        filteredPrices,
+        filteredTimestamps,
+        signals,
+        this.tradingConfig()
+      );
+
+      this.tradingResult.set(result);
+
+      // Auto-save simulation result to API
+      await this.saveSimulationResult(result, startDate, endDate);
+    } catch (error: any) {
+      console.error('Error running simulation:', error);
+      this.nnError.set(error.message || 'Lỗi khi chạy mô phỏng');
+    } finally {
+      this.isRunningSimulation.set(false);
+    }
+  }
+
+  /**
+   * Save simulation result to API
+   */
+  async saveSimulationResult(result: TradingResult, startDate: string, endDate: string) {
+    const symbol = this.selectedSymbol()?.symbol;
+    if (!symbol) {
+      console.warn('No symbol selected, cannot save simulation result');
+      return;
+    }
+
+    try {
+      const payload = {
+        simulationResult: result,
+        tradingConfig: this.tradingConfig(),
+        dateRange: {
+          startDate,
+          endDate
+        }
+      };
+
+      this.http.post(`/api/stocks-v2/stock-model/${symbol}`, payload).subscribe({
+        next: (response: any) => {
+          if (response.success) {
+            console.log('Simulation result saved successfully:', response);
+          } else {
+            console.warn('Failed to save simulation result:', response.error);
+          }
+        },
+        error: (error) => {
+          console.error('Error saving simulation result:', error);
+        }
+      });
+    } catch (error: any) {
+      console.error('Error in saveSimulationResult:', error);
+    }
+  }
+
+  /**
+   * Load saved simulation result from API
+   */
+  loadSavedSimulationResult() {
+    const symbol = this.selectedSymbol()?.symbol;
+    if (!symbol) {
+      this.nnError.set('Vui lòng chọn mã cổ phiếu');
+      return;
+    }
+
+    this.http.get(`/api/stocks-v2/stock-model/${symbol}`).subscribe({
+      next: (response: any) => {
+        if (response.success && response.data?.simulationResult) {
+          this.tradingResult.set(response.data.simulationResult);
+          if (response.data.tradingConfig) {
+            this.tradingConfig.set(response.data.tradingConfig);
+          }
+          if (response.data.dateRange) {
+            this.backtestStartDate.set(response.data.dateRange.startDate);
+            this.backtestEndDate.set(response.data.dateRange.endDate);
+          }
+          console.log('Simulation result loaded successfully');
+        } else {
+          this.nnError.set('Không tìm thấy kết quả mô phỏng đã lưu');
+        }
+      },
+      error: (error) => {
+        console.error('Error loading simulation result:', error);
+        this.nnError.set('Lỗi khi tải kết quả mô phỏng đã lưu');
+      }
+    });
+  }
+
+  /**
+   * Format currency
+   */
+  formatCurrency(amount: number): string {
+    return `${amount.toLocaleString('vi-VN')} đ`;
+  }
+
+  /**
+   * Format date from timestamp (seconds)
+   */
+  formatDateFromTimestamp(timestamp: number): string {
+    // Timestamp is in seconds, convert to milliseconds
+    return this.formatDateVN(new Date(timestamp * 1000));
+  }
+
+  /**
+   * Format date from timestamp for display in info
+   */
+  formatDateFromTimestampForInfo(timestamp: number): string {
+    const date = new Date(timestamp * 1000);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${day}/${month}/${year}`;
+  }
+
+  /**
+   * Update trading config
+   */
+  updateTradingConfig(config: Partial<TradingConfig>) {
+    this.tradingConfig.update(current => ({ ...current, ...config }));
+  }
+
+  /**
+   * Get formatted min date for display
+   */
+  getFormattedMinDate(): string {
+    const range = this.getAvailableDateRange();
+    if (!range) return '';
+    const timestamp = Math.floor(new Date(range.minDate).getTime() / 1000);
+    return this.formatDateFromTimestampForInfo(timestamp);
+  }
+
+  /**
+   * Get formatted max date for display
+   */
+  getFormattedMaxDate(): string {
+    const range = this.getAvailableDateRange();
+    if (!range) return '';
+    const timestamp = Math.floor(new Date(range.maxDate).getTime() / 1000);
+    return this.formatDateFromTimestampForInfo(timestamp);
+  }
+
+  /**
+   * Get CSS class for comparison table row based on error percentage
+   */
+  getComparisonRowClass(errorPercent: number): string {
+    const absError = Math.abs(errorPercent);
+    if (absError < 2) return 'good';
+    if (absError < 5) return 'moderate';
+    return 'poor';
+  }
+
+  /**
+   * Convert trades to transactions (separate buy and sell)
+   */
+  getTransactions(): Transaction[] {
+    const result = this.tradingResult();
+    if (!result || !result.trades || result.trades.length === 0) {
+      return [];
+    }
+
+    const transactions: Transaction[] = [];
+
+    // Sort trades by buy date to process chronologically
+    const sortedTrades = [...result.trades].sort((a, b) => a.buyDate - b.buyDate);
+
+    for (const trade of sortedTrades) {
+      // Buy transaction
+      const buyTransaction: Transaction = {
+        type: 'buy',
+        date: trade.buyDate,
+        dateStr: this.formatDateFromTimestamp(trade.buyDate),
+        quantity: trade.quantity,
+        price: trade.buyPrice,
+        capitalBefore: trade.buyCapital,
+        transactionAmount: trade.buyPrice * trade.quantity, // Tiền dùng để mua
+        capitalAfter: trade.buyCapital - (trade.buyPrice * trade.quantity),
+        positionsBefore: trade.buyPositions,
+        positionsAfter: trade.buyPositions + 1
+      };
+      transactions.push(buyTransaction);
+
+      // Sell transaction
+      const sellTransaction: Transaction = {
+        type: 'sell',
+        date: trade.sellDate,
+        dateStr: this.formatDateFromTimestamp(trade.sellDate),
+        quantity: trade.quantity,
+        price: trade.sellPrice,
+        capitalBefore: trade.sellCapital,
+        transactionAmount: trade.sellPrice * trade.quantity, // Tiền nhận được khi bán
+        capitalAfter: trade.sellCapital + (trade.sellPrice * trade.quantity),
+        positionsBefore: trade.sellPositions + 1, // +1 because we're about to sell this position
+        positionsAfter: trade.sellPositions,
+        holdingDays: trade.duration
+      };
+      transactions.push(sellTransaction);
+    }
+
+    // Sort by date
+    transactions.sort((a, b) => a.date - b.date);
+
+    return transactions;
+  }
+
+  /**
+   * Get average error from comparison data
+   */
+  getAverageError(): number {
+    const comparison = this.nnPredictionComparison();
+    if (!comparison || comparison.length === 0) return 0;
+    return comparison.reduce((sum, c) => sum + c.error, 0) / comparison.length;
+  }
+
+  /**
+   * Get average absolute error percentage from comparison data
+   */
+  getAverageErrorPercent(): number {
+    const comparison = this.nnPredictionComparison();
+    if (!comparison || comparison.length === 0) return 0;
+    return comparison.reduce((sum, c) => sum + Math.abs(c.errorPercent), 0) / comparison.length;
+  }
+
+  /**
+   * Get CSS class for average error percentage
+   */
+  getAverageErrorClass(): string {
+    const avgError = this.getAverageErrorPercent();
+    if (avgError < 3) return 'good';
+    if (avgError < 5) return 'moderate';
+    return 'poor';
+  }
+
+  /**
+   * Get recent week analysis (last 7 days)
+   */
+  getRecentWeekAnalysis() {
+    const result = this.tradingResult();
+    const priceData = this.selectedSymbolPriceData();
+    if (!result || !priceData || !priceData.t || !priceData.c) {
+      return null;
+    }
+
+    const now = Date.now() / 1000; // Current timestamp in seconds
+    const sevenDaysAgo = now - (7 * 24 * 60 * 60); // 7 days ago
+
+    // Filter trades from last 7 days
+    const recentTrades = result.trades.filter(trade => {
+      return trade.buyDate >= sevenDaysAgo || trade.sellDate >= sevenDaysAgo;
+    });
+
+    // Get buy positions (trades that were bought in last 7 days)
+    const buyPositions = recentTrades
+      .filter(trade => trade.buyDate >= sevenDaysAgo)
+      .map(trade => {
+        const sellTrade = result.trades.find(t =>
+          t.buyDate === trade.buyDate && t.sellDate > trade.buyDate
+        );
+        return {
+          buyDate: trade.buyDate,
+          buyPrice: trade.buyPrice,
+          quantity: trade.quantity,
+          sellDate: sellTrade?.sellDate,
+          sellPrice: sellTrade?.sellPrice,
+          currentPrice: priceData.c[priceData.c.length - 1] * 1000, // Convert to actual VND
+          profit: sellTrade ? sellTrade.profit : null,
+          profitPercent: sellTrade ? sellTrade.profitPercent : null,
+          status: sellTrade ? 'sold' : 'holding'
+        };
+      });
+
+    // Get sell positions (trades that were sold in last 7 days)
+    const sellPositions = recentTrades
+      .filter(trade => trade.sellDate >= sevenDaysAgo && trade.buyDate < sevenDaysAgo)
+      .map(trade => ({
+        buyDate: trade.buyDate,
+        buyPrice: trade.buyPrice,
+        sellDate: trade.sellDate,
+        sellPrice: trade.sellPrice,
+        quantity: trade.quantity,
+        profit: trade.profit,
+        profitPercent: trade.profitPercent,
+        expectedBuyPrice: trade.buyPrice // Giá mua kỳ vọng
+      }));
+
+    // Get today's recommendation
+        const todayRecommendation = this.nnPrediction();
+        const todaySignal = todayRecommendation?.tradingDecision;
+
+        // Convert current price from database units to actual VND units
+        const currentPriceDb = priceData.c[priceData.c.length - 1];
+        const currentPriceActual = currentPriceDb * 1000; // Convert to actual VND
+
+        return {
+          buyPositions,
+          sellPositions,
+          todayRecommendation: todaySignal ? {
+            action: todaySignal.action,
+            confidence: todaySignal.confidence,
+            reason: todaySignal.reason,
+            predictedPrice: todayRecommendation.predictedPrice,
+            currentPrice: currentPriceActual
+          } : null,
+      totalBuyPositions: buyPositions.length,
+      totalSellPositions: sellPositions.length
+    };
+  }
+
+  /**
+   * Check if date is today
+   */
+  isToday(timestamp: number): boolean {
+    const today = new Date();
+    const date = new Date(timestamp * 1000);
+    return date.toDateString() === today.toDateString();
   }
 }
 
