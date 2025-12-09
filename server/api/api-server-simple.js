@@ -15,6 +15,9 @@ const routes = {
   '/api/help': './help.js',
   '/api/stocks/list': './stocks/list.js',
   '/api/stocks/save': './stocks/save.js',
+  '/api/stocks-v2/list': './stocks-v2/list.js',
+  '/api/stocks-v2/save': './stocks-v2/save.js',
+  '/api/stocks-v2/fetch-and-save': './stocks-v2/fetch-and-save.js',
 };
 
 // Handle dynamic route
@@ -29,6 +32,14 @@ function getHandler(pathname) {
     const symbol = pathname.replace('/api/stocks/', '');
     if (symbol && symbol.length > 0) {
       return './stocks/[symbol].js';
+    }
+  }
+
+  // Check stocks-v2 dynamic routes
+  if (pathname.startsWith('/api/stocks-v2/') && pathname !== '/api/stocks-v2/list' && pathname !== '/api/stocks-v2/save' && pathname !== '/api/stocks-v2/fetch-and-save') {
+    const symbol = pathname.replace('/api/stocks-v2/', '');
+    if (symbol && symbol.length > 0) {
+      return './stocks-v2/[symbol].js';
     }
   }
 
@@ -124,5 +135,9 @@ server.listen(port, () => {
   console.log('  GET  /api/stocks/list');
   console.log('  POST /api/stocks/save');
   console.log('  GET  /api/stocks/:symbol');
+  console.log('  GET  /api/stocks-v2/list');
+  console.log('  POST /api/stocks-v2/save');
+  console.log('  POST /api/stocks-v2/fetch-and-save');
+  console.log('  GET  /api/stocks-v2/:symbol');
 });
 

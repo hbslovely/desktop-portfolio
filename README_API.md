@@ -25,7 +25,7 @@
    
    Lệnh này sẽ chạy:
    - Vercel dev server (port 3001) - API routes
-   - Angular dev server (port 4200) - Frontend
+   - Angular dev server (port 3006) - Frontend
 
 4. **Truy cập:**
    - Frontend: http://localhost:4200

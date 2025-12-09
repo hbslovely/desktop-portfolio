@@ -1,0 +1,1195 @@
+{
+  "symbol": "CPH",
+  "basicInfo": {
+    "companyName": "CTCP Phục vụ Mai táng Hải Phòng",
+    "exchange": "UPCOM",
+    "marketCap": 1320000000,
+    "beta": -0.054854085248179175,
+    "eps": 2450.861580227273,
+    "roe": 0.189048871106308,
+    "roa": 0.06781857000298944
+  },
+  "priceData": {
+    "t": [],
+    "o": [],
+    "h": [],
+    "l": [],
+    "c": [],
+    "v": [],
+    "nextTime": 1670640201
+  },
+  "fullData": {
+    "pageProps": {
+      "symbol": "CPH",
+      "instrumentSymbol": "co-phieu-CPH",
+      "companyInfo": {
+        "id": 3027,
+        "symbol": "CPH",
+        "companyType": 0,
+        "name": "Mai táng Hải Phòng",
+        "fullName": "CTCP Phục vụ Mai táng Hải Phòng",
+        "fullNameEn": "HaiPhong Funeral Services JSC",
+        "image": "https://storage.googleapis.com/cdn-entrade/company/CPH",
+        "taxCode": "0201093942",
+        "address": "Số 123 - Khúc Thừa Dụ - P. Vĩnh Niệm - Q. Lê Chân - TP. Hải Phòng",
+        "phone": "(84.225) 385 1282",
+        "fax": "",
+        "email": "congtyphucvumaitang@gmail.com",
+        "url": "maihoatanghaiphong.vn",
+        "status": 1,
+        "foundPermit": "",
+        "foundDate": "0001-01-01T00:00:00Z",
+        "businessPermit": "0201093942",
+        "issueDate": "2010-07-07T00:00:00Z",
+        "contactPerson": "Mr. Nguyễn Hồng Lê ",
+        "contactPersonPosition": "Chủ tịch HĐQT",
+        "identityNumber": "031069002268",
+        "permanentAddress": "Số 3/26 - Hào Khê E1 - P. Cát Bi - Q. Hải An - Tp. Hải Phòng",
+        "infoSupplier": "Mr. Nguyễn Hồng Lê ",
+        "infoSupplierPosition": "Chủ tịch HĐQT",
+        "phoneSupplier": "",
+        "introduction": "Công ty Cổ phần Phục vụ Mai táng Hải Phòng (CPH) có tiền thân là Công ty TNHH MTV Phục vụ Mai Táng, được thành lập vào ngày 28/06/2010. Công ty chuyên cung cấp các dịch vụ tang lễ tại Thành phố Hải Phòng và các khu vực lân cận. CPH chính thức hoạt động theo mô hình công ty cổ phần từ tháng 06/2015. Công ty đang cung cấp dịch vụ mai táng, hỏa táng, quản lý chăm sóc các phần mộ tại Nghĩa trang Ninh Hải và Nghĩa trang Phi Liệt.",
+        "capital": 1320000000,
+        "beta": -0.054854085248179175,
+        "notes": " - CT TNHH MTV Phục vụ mai táng được chuyển đổi từ CT Phục vụ mai táng - 100% vốn nhà nước hoạt động ngày 28/06/2010\r\n - Ngày 07/07/2010, CT được cấp GCNĐKDN lần đầu số 0201093942 \r\n - Ngày 02/06/2015, Ct chính thức hoạt động theo mô hình CTCP\r\n - Ngày 08/02/2017  giao dịch đầu tiên trên sàn UPCoM với giá tham chiếu 10.000đ/cp. ",
+        "otherInfo": "",
+        "postUpDate": "2017-02-08T00:00:00",
+        "stockFaceValue": 10000,
+        "branch": "",
+        "auditFirm": "",
+        "firstTradingSessionPrice": 10000,
+        "isMargin": false,
+        "isFtse": false,
+        "isVnmetf": false,
+        "isVn30": false,
+        "isHnx30": false,
+        "industryName": "Dịch vụ khác (ngoại trừ hành chính công)",
+        "subIndustryName": "Dịch vụ tiêu dùng",
+        "sectorName": "Dịch vụ chăm sóc người chết",
+        "companyTypeName": "Công ty cổ phần",
+        "exchange": "UPCOM",
+        "sectorIndexId": 28,
+        "sectorIndexName": "VS-PST Service",
+        "languageID": 1,
+        "businessTypeId": 1,
+        "gicsSector": "Hàng tiêu dùng",
+        "gicsIndustryGroup": "Dịch vụ tiêu dùng",
+        "gicsIndustry": "Dịch vụ tiêu dùng đa dạng",
+        "gicsSubIndustry": "Dịch vụ mai táng"
+      },
+      "statistic": {
+        "symbol": "CPH",
+        "klcplh": 4400000,
+        "tradingDate": "2025-12-03T00:00:00Z"
+      },
+      "priceSnapshot": {
+        "referencePrice": 0.3,
+        "productGrpId": "9",
+        "symbol": "CPH"
+      },
+      "coveredWarrant": {},
+      "ticker": {
+        "id": "eOKf040Bx-xEuiQhFPRc",
+        "symbol": "CPH",
+        "floor": "UPCOM",
+        "type": "STOCK",
+        "symbolType": "",
+        "groupType": "STOCK",
+        "isListed": true,
+        "listedDate": "2017-02-08",
+        "company": "",
+        "companyName": "CTCP Phục vụ Mai táng Hải Phòng",
+        "companyNameEng": "HaiPhong Funeral Services JSC",
+        "companyNameVie": "CTCP Phuc vu Mai tang Hai Phong",
+        "shortName": "Mai táng Hải Phòng",
+        "logo": "https://storage.googleapis.com/cdn-entrade/company/CPH",
+        "name": "CTCP Phục vụ Mai táng Hải Phòng",
+        "indexCode": "",
+        "industry": "Dịch vụ khác (ngoại trừ hành chính công)",
+        "subIndustry": "",
+        "sector": "Dịch vụ chăm sóc người chết",
+        "sectorIndex": "Dịch vụ tư vấn, hỗ trợ",
+        "industryId": "1900",
+        "subIndustryId": "",
+        "sectorId": "19022",
+        "sectorIndexId": "28",
+        "gicsSector": "Hàng tiêu dùng",
+        "gicsIndustryGroup": "Dịch vụ tiêu dùng",
+        "gicsIndustry": "Dịch vụ tiêu dùng đa dạng",
+        "gicsSubIndustry": "Dịch vụ mai táng",
+        "gicsSectorId": "7",
+        "gicsIndustryGroupId": "27",
+        "gicsIndustryId": "44",
+        "gicsSubIndustryId": "116",
+        "gicsIndustryGroupSlug": "dich-vu-tieu-dung"
+      },
+      "menusFooter": {
+        "0": {
+          "id": 93,
+          "title": "Về DNSE",
+          "isActive": true,
+          "isNew": false,
+          "startNewTagAt": null,
+          "newTagDurationByDays": 30,
+          "link": null,
+          "linkType": "INTERNAL",
+          "location": "FOOTER",
+          "order": 1,
+          "type": "NORMAL",
+          "parentId": null,
+          "slug": "ve-dnse-footer",
+          "children": [
+            {
+              "id": 96,
+              "title": "Về chúng tôi",
+              "isActive": true,
+              "isNew": false,
+              "startNewTagAt": null,
+              "newTagDurationByDays": 30,
+              "link": "/ve-chung-toi",
+              "linkType": "INTERNAL",
+              "location": "FOOTER",
+              "order": 1,
+              "type": "NORMAL",
+              "parentId": "93",
+              "slug": "ve-chung-toi-footer"
+            },
+            {
+              "id": 97,
+              "title": "Tin tức",
+              "isActive": true,
+              "isNew": false,
+              "startNewTagAt": null,
+              "newTagDurationByDays": 30,
+              "link": "/tin-tuc/trang/quan-he-co-dong",
+              "linkType": "INTERNAL",
+              "location": "FOOTER",
+              "order": 2,
+              "type": "NORMAL",
+              "parentId": "93",
+              "slug": "tin-tuc-footer"
+            },
+            {
+              "id": 98,
+              "title": "Cổ đông",
+              "isActive": true,
+              "isNew": false,
+              "startNewTagAt": null,
+              "newTagDurationByDays": 30,
+              "link": "https://ir.dnse.com.vn",
+              "linkType": "EXTERNAL",
+              "location": "FOOTER",
+              "order": 3,
+              "type": "NORMAL",
+              "parentId": "93",
+              "slug": "co-dong"
+            },
+            {
+              "id": 99,
+              "title": "Cơ hội việc làm",
+              "isActive": true,
+              "isNew": false,
+              "startNewTagAt": null,
+              "newTagDurationByDays": 30,
+              "link": "https://talent.dnse.com.vn/",
+              "linkType": "EXTERNAL",
+              "location": "FOOTER",
+              "order": 4,
+              "type": "NORMAL",
+              "parentId": "93",
+              "slug": "co-hoi-viec-lam-footer"
+            },
+            {
+              "id": 100,
+              "title": "Liên hệ",
+              "isActive": true,
+              "isNew": false,
+              "startNewTagAt": null,
+              "newTagDurationByDays": 30,
+              "link": "https://hdsd.dnse.com.vn/thong-tin-lien-he-dnse",
+              "linkType": "EXTERNAL",
+              "location": "FOOTER",
+              "order": 5,
+              "type": "NORMAL",
+              "parentId": "93",
+              "slug": "lien-he-footer"
+            }
+          ]
+        },
+        "1": {
+          "id": 92,
+          "title": "Điều khoản",
+          "isActive": true,
+          "isNew": false,
+          "startNewTagAt": null,
+          "newTagDurationByDays": 30,
+          "link": null,
+          "linkType": "INTERNAL",
+          "location": "FOOTER",
+          "order": 2,
+          "type": "NORMAL",
+          "parentId": null,
+          "slug": "dieu-khoan",
+          "children": [
+            {
+              "id": 94,
+              "title": "Biểu phí",
+              "isActive": true,
+              "isNew": false,
+              "startNewTagAt": null,
+              "newTagDurationByDays": 30,
+              "link": "https://hdsd.dnse.com.vn/san-pham-dich-vu/bieu-phi-dich-vu-dnse",
+              "linkType": "EXTERNAL",
+              "location": "FOOTER",
+              "order": 1,
+              "type": "NORMAL",
+              "parentId": "92",
+              "slug": "bieu-phi"
+            },
+            {
+              "id": 95,
+              "title": "Điều khoản dịch vụ",
+              "isActive": true,
+              "isNew": false,
+              "startNewTagAt": null,
+              "newTagDurationByDays": 30,
+              "link": "/dieu-khoan-dich-vu",
+              "linkType": "INTERNAL",
+              "location": "FOOTER",
+              "order": 2,
+              "type": "NORMAL",
+              "parentId": "92",
+              "slug": "dieu-khoan-dich-vu"
+            }
+          ]
+        }
+      },
+      "menusHeader": {
+        "0": {
+          "id": 69,
+          "title": "Thị trường",
+          "description": null,
+          "isActive": true,
+          "isNew": false,
+          "startNewTagAt": null,
+          "newTagDurationByDays": 30,
+          "link": null,
+          "linkType": "INTERNAL",
+          "location": "HEADER",
+          "order": 1,
+          "type": "NORMAL",
+          "slug": "thi-truong",
+          "parentId": null,
+          "startIcon": "earth-outline",
+          "endIcon": "arrow-down-small",
+          "promoImage": null,
+          "children": [
+            {
+              "id": 74,
+              "title": "Bảng giá",
+              "description": "Cập nhật dữ liệu nhanh nhất",
+              "isActive": true,
+              "isNew": false,
+              "startNewTagAt": null,
+              "newTagDurationByDays": 30,
+              "link": "https://banggia.dnse.com.vn/",
+              "linkType": "EXTERNAL",
+              "location": "HEADER",
+              "order": 1,
+              "type": "NORMAL",
+              "slug": "bang-gia",
+              "parentId": "69",
+              "startIcon": "menu-priceboard",
+              "endIcon": null,
+              "promoImage": null
+            },
+            {
+              "id": 75,
+              "title": "Senses",
+              "description": "Thông tin cơ bản về cổ phiếu",
+              "isActive": true,
+              "isNew": false,
+              "startNewTagAt": null,
+              "newTagDurationByDays": 30,
+              "link": "/senses",
+              "linkType": "INTERNAL",
+              "location": "HEADER",
+              "order": 2,
+              "type": "NORMAL",
+              "slug": "senses",
+              "parentId": "69",
+              "startIcon": "menu-senses",
+              "endIcon": null,
+              "promoImage": null
+            },
+            {
+              "id": 89,
+              "title": "Nhận định thị trường",
+              "description": "Báo cáo phân tích thị trường từ DNSE",
+              "isActive": true,
+              "isNew": false,
+              "startNewTagAt": null,
+              "newTagDurationByDays": 30,
+              "link": "/nhan-dinh-thi-truong/trang/ban-tin-phai-sinh",
+              "linkType": "INTERNAL",
+              "location": "HEADER",
+              "order": 3,
+              "type": "NORMAL",
+              "slug": "ban-tin-phai-sinh",
+              "parentId": "69",
+              "startIcon": "menu-dnse-news",
+              "endIcon": null,
+              "promoImage": null
+            }
+          ]
+        },
+        "1": {
+          "id": 70,
+          "title": "Học đầu tư",
+          "description": null,
+          "isActive": true,
+          "isNew": false,
+          "startNewTagAt": null,
+          "newTagDurationByDays": 30,
+          "link": null,
+          "linkType": "INTERNAL",
+          "location": "HEADER",
+          "order": 2,
+          "type": "NORMAL",
+          "slug": "hoc-dau-tu",
+          "parentId": null,
+          "startIcon": "bulb-on-outline",
+          "endIcon": "arrow-down-small",
+          "promoImage": null,
+          "children": [
+            {
+              "id": 314,
+              "title": "Gặp gỡ đầu tư",
+              "description": "Xây dựng nền móng đầu tư",
+              "isActive": true,
+              "isNew": true,
+              "startNewTagAt": "2025-09-19T04:26:04",
+              "newTagDurationByDays": 30,
+              "link": "/hoc/gap-go-dau-tu",
+              "linkType": "INTERNAL",
+              "location": "HEADER",
+              "order": 2,
+              "type": "NORMAL",
+              "slug": "gap-go-dau-tu",
+              "parentId": "70",
+              "startIcon": "menu-invest-course",
+              "endIcon": null,
+              "promoImage": null
+            },
+            {
+              "id": 77,
+              "title": "Thư viện kiến thức",
+              "description": "Cập nhật liên tục kiến thức mới",
+              "isActive": true,
+              "isNew": false,
+              "startNewTagAt": null,
+              "newTagDurationByDays": 30,
+              "link": "https://www.dnse.com.vn/hoc/kien-thuc",
+              "linkType": "INTERNAL",
+              "location": "HEADER",
+              "order": 2,
+              "type": "NORMAL",
+              "slug": "thu-vien-kien-thuc",
+              "parentId": "70",
+              "startIcon": "menu-knowledge-library",
+              "endIcon": null,
+              "promoImage": null
+            },
+            {
+              "id": 76,
+              "title": "Con đường đầu tư",
+              "description": "Nền móng cho hành trình đầu tư",
+              "isActive": true,
+              "isNew": false,
+              "startNewTagAt": null,
+              "newTagDurationByDays": 30,
+              "link": "/hoc",
+              "linkType": "INTERNAL",
+              "location": "HEADER",
+              "order": 3,
+              "type": "NORMAL",
+              "slug": "khoa-hoc-dau-tu",
+              "parentId": "70",
+              "startIcon": "menu-invest-course",
+              "endIcon": null,
+              "promoImage": null
+            }
+          ]
+        },
+        "2": {
+          "id": 71,
+          "title": "Sản phẩm",
+          "description": null,
+          "isActive": true,
+          "isNew": false,
+          "startNewTagAt": null,
+          "newTagDurationByDays": 30,
+          "link": null,
+          "linkType": "INTERNAL",
+          "location": "HEADER",
+          "order": 3,
+          "type": "NORMAL",
+          "slug": "san-pham",
+          "parentId": null,
+          "startIcon": "briefcase-outline",
+          "endIcon": "arrow-down-small",
+          "promoImage": null,
+          "children": [
+            {
+              "id": 78,
+              "title": "Future X - Phái sinh",
+              "description": "Giao dịch tốc độ - Chốt lãi tức thì",
+              "isActive": true,
+              "isNew": false,
+              "startNewTagAt": null,
+              "newTagDurationByDays": 30,
+              "link": "/san-pham/phai-sinh",
+              "linkType": "INTERNAL",
+              "location": "HEADER",
+              "order": 1,
+              "type": "NORMAL",
+              "slug": "san-pham-phai-sinh",
+              "parentId": "71",
+              "startIcon": "menu-product-future-x",
+              "endIcon": null,
+              "promoImage": null
+            },
+            {
+              "id": 79,
+              "title": "Margin X - Vay mua Chứng khoán",
+              "description": "Lãi suất thấp nhất chỉ từ 5.99%/năm",
+              "isActive": true,
+              "isNew": false,
+              "startNewTagAt": null,
+              "newTagDurationByDays": 30,
+              "link": "/san-pham/margin",
+              "linkType": "INTERNAL",
+              "location": "HEADER",
+              "order": 2,
+              "type": "NORMAL",
+              "slug": "san-pham-margin",
+              "parentId": "71",
+              "startIcon": "menu-product-margin-x",
+              "endIcon": null,
+              "promoImage": null
+            },
+            {
+              "id": 206,
+              "title": "Trứng vàng",
+              "description": "Sản phẩm đầu tư sinh lời ổn định theo kỳ hạn",
+              "isActive": true,
+              "isNew": false,
+              "startNewTagAt": null,
+              "newTagDurationByDays": 30,
+              "link": "/san-pham/trung-vang",
+              "linkType": "INTERNAL",
+              "location": "HEADER",
+              "order": 3,
+              "type": "NORMAL",
+              "slug": "san-pham-trung-vang",
+              "parentId": "71",
+              "startIcon": "menu-product-golden-egg",
+              "endIcon": null,
+              "promoImage": null
+            },
+            {
+              "id": 309,
+              "title": "Tài khoản không ngủ",
+              "description": "Sinh lời không nghỉ tới 4.3%/năm",
+              "isActive": true,
+              "isNew": true,
+              "startNewTagAt": "2025-07-15T12:00:00",
+              "newTagDurationByDays": 30,
+              "link": "/san-pham/tai-khoan-khong-ngu",
+              "linkType": "INTERNAL",
+              "location": "HEADER",
+              "order": 4,
+              "type": "NORMAL",
+              "slug": "tai-khoan-khong-ngu",
+              "parentId": "71",
+              "startIcon": "menu-product-sleepless-earning",
+              "endIcon": null,
+              "promoImage": null
+            },
+            {
+              "id": 311,
+              "title": "IPO Online – Đầu tư từ sớm",
+              "description": "Đặt mua cổ phiếu, trái phiếu IPO nhanh chóng",
+              "isActive": true,
+              "isNew": true,
+              "startNewTagAt": "2025-08-18T22:01:58",
+              "newTagDurationByDays": 30,
+              "link": "https://ipo.dnse.com.vn",
+              "linkType": "EXTERNAL",
+              "location": "HEADER",
+              "order": 5,
+              "type": "NORMAL",
+              "slug": "tcbs/dang-ky",
+              "parentId": "71",
+              "startIcon": "menu-ipo",
+              "endIcon": null,
+              "promoImage": null
+            },
+            {
+              "id": 308,
+              "title": "SACO",
+              "description": "Hoa hồng giao dịch lên tới 80%",
+              "isActive": true,
+              "isNew": true,
+              "startNewTagAt": "2025-07-15T12:00:00",
+              "newTagDurationByDays": 30,
+              "link": "https://saco.dnse.com.vn",
+              "linkType": "EXTERNAL",
+              "location": "HEADER",
+              "order": 6,
+              "type": "NORMAL",
+              "slug": "saco",
+              "parentId": "71",
+              "startIcon": "menu-investor-relations",
+              "endIcon": null,
+              "promoImage": null
+            },
+            {
+              "id": 203,
+              "title": "DNSE x TradingView",
+              "description": "Đặt lệnh trực tiếp trên Siêu Biểu Đồ TradingView",
+              "isActive": true,
+              "isNew": false,
+              "startNewTagAt": null,
+              "newTagDurationByDays": 30,
+              "link": "/san-pham/tradingview",
+              "linkType": "INTERNAL",
+              "location": "HEADER",
+              "order": 7,
+              "type": "NORMAL",
+              "slug": "san-pham-tradingview",
+              "parentId": "71",
+              "startIcon": "menu-product-tradingview",
+              "endIcon": null,
+              "promoImage": null
+            },
+            {
+              "id": 208,
+              "title": "Lightspeed API",
+              "description": "Kết nối giao dịch tự động cùng DNSE",
+              "isActive": true,
+              "isNew": false,
+              "startNewTagAt": null,
+              "newTagDurationByDays": 30,
+              "link": "https://www.dnse.com.vn/lightspeed-api",
+              "linkType": "EXTERNAL",
+              "location": "HEADER",
+              "order": 8,
+              "type": "NORMAL",
+              "slug": "lightspeed-api",
+              "parentId": "71",
+              "startIcon": "lightspeed-api",
+              "endIcon": null,
+              "promoImage": null
+            },
+            {
+              "id": 207,
+              "title": "Ami X",
+              "description": "Phần mềm kết nối giao dịch AmiBroker",
+              "isActive": true,
+              "isNew": false,
+              "startNewTagAt": null,
+              "newTagDurationByDays": 30,
+              "link": "/san-pham/ami-x",
+              "linkType": "INTERNAL",
+              "location": "HEADER",
+              "order": 9,
+              "type": "NORMAL",
+              "slug": "amix",
+              "parentId": "71",
+              "startIcon": "menu-product-ami-x",
+              "endIcon": null,
+              "promoImage": null
+            }
+          ]
+        },
+        "3": {
+          "id": 204,
+          "title": "Quà tặng",
+          "description": null,
+          "isActive": true,
+          "isNew": false,
+          "startNewTagAt": null,
+          "newTagDurationByDays": 30,
+          "link": null,
+          "linkType": "INTERNAL",
+          "location": "HEADER",
+          "order": 4,
+          "type": "NEWS",
+          "slug": "qua-tang",
+          "parentId": null,
+          "startIcon": "menu-product-gift-x",
+          "endIcon": "arrow-down-small",
+          "promoImage": null,
+          "children": [
+            {
+              "id": 315,
+              "title": "“Chạy đà OLYMPIC” mở tài khoản",
+              "description": "Tích lũy Star thưởng - Nhận quà hấp dẫn",
+              "isActive": true,
+              "isNew": true,
+              "startNewTagAt": "2025-11-13T09:13:16",
+              "newTagDurationByDays": 30,
+              "link": "/chay-da-olympic",
+              "linkType": "INTERNAL",
+              "location": "HEADER",
+              "order": 1,
+              "type": "PROMO",
+              "slug": "chay-da-olympic",
+              "parentId": "204",
+              "startIcon": null,
+              "endIcon": null,
+              "promoImage": {
+                "title": "Frame 1410081739 (1)",
+                "width": 100,
+                "height": 100,
+                "filename_disk": "ac78c55e-48b9-45ae-af7a-be8a56b677d3.png"
+              }
+            },
+            {
+              "id": 275,
+              "title": "Olympic Chứng khoán",
+              "description": "Thế vận hội đầu tư tại DNSE",
+              "isActive": true,
+              "isNew": true,
+              "startNewTagAt": "2025-07-15T12:00:00",
+              "newTagDurationByDays": 30,
+              "link": "/olympic-chung-khoan",
+              "linkType": "INTERNAL",
+              "location": "HEADER",
+              "order": 2,
+              "type": "PROMO",
+              "slug": "olympic-ck",
+              "parentId": "204",
+              "startIcon": null,
+              "endIcon": null,
+              "promoImage": {
+                "title": "Olypic Ck",
+                "width": 50,
+                "height": 50,
+                "filename_disk": "cf6d8e25-1831-4561-bd62-20218a338b0f.png"
+              }
+            },
+            {
+              "id": 242,
+              "title": "Kho ưu đãi khủng",
+              "description": "Tổng hợp tất cả ưu đãi của DNSE",
+              "isActive": true,
+              "isNew": false,
+              "startNewTagAt": null,
+              "newTagDurationByDays": 30,
+              "link": "/mo-tai-khoan-nhan-qua-ngay",
+              "linkType": "INTERNAL",
+              "location": "HEADER",
+              "order": 3,
+              "type": "PROMO",
+              "slug": "mo-tai-khoan-nhan-qua-ngay",
+              "parentId": "204",
+              "startIcon": null,
+              "endIcon": null,
+              "promoImage": {
+                "title": "Images Onboading (1) (1)",
+                "width": 100,
+                "height": 100,
+                "filename_disk": "b8e84cb0-5389-4835-9372-797426f6a7d4.png"
+              }
+            },
+            {
+              "id": 205,
+              "title": "DNSE Pro Club",
+              "description": "Tri ân khách hàng thân thiết với nhiều quà tặng giá trị",
+              "isActive": true,
+              "isNew": false,
+              "startNewTagAt": null,
+              "newTagDurationByDays": 30,
+              "link": "/qua-tang/dnse-pro-club",
+              "linkType": "INTERNAL",
+              "location": "HEADER",
+              "order": 4,
+              "type": "PROMO",
+              "slug": "dnse-pro-club",
+              "parentId": "204",
+              "startIcon": null,
+              "endIcon": null,
+              "promoImage": {
+                "title": "Dnse Pro Club",
+                "width": 100,
+                "height": 100,
+                "filename_disk": "5d64489a-a142-421f-9b38-301e668d9f21.png"
+              }
+            },
+            {
+              "id": 101,
+              "title": "Tặng cổ phiếu",
+              "description": "Sở hữu cổ phiếu doanh nghiệp TOP với giá 0 đồng",
+              "isActive": true,
+              "isNew": false,
+              "startNewTagAt": null,
+              "newTagDurationByDays": 30,
+              "link": "/san-pham/tang-co-phieu",
+              "linkType": "INTERNAL",
+              "location": "HEADER",
+              "order": 6,
+              "type": "PROMO",
+              "slug": "tang-co-phieu",
+              "parentId": "204",
+              "startIcon": null,
+              "endIcon": null,
+              "promoImage": {
+                "title": "Onboarding Stock Reward",
+                "width": 100,
+                "height": 100,
+                "filename_disk": "78665040-88b7-4e5d-94c8-1d835ebe5fca.png"
+              }
+            },
+            {
+              "id": 83,
+              "title": "Giới thiệu bạn bè",
+              "description": "Nhận thưởng không giới hạn",
+              "isActive": true,
+              "isNew": false,
+              "startNewTagAt": null,
+              "newTagDurationByDays": 30,
+              "link": "/san-pham/gioi-thieu-ban-be",
+              "linkType": "INTERNAL",
+              "location": "HEADER",
+              "order": 7,
+              "type": "PROMO",
+              "slug": "gioi-thieu-ban-be",
+              "parentId": "204",
+              "startIcon": null,
+              "endIcon": null,
+              "promoImage": {
+                "title": "46c7b7ad 5510 4bf4 Ac8c F9db0c398175.png",
+                "width": 100,
+                "height": 100,
+                "filename_disk": "af6a57c8-37dc-4230-8d6e-801ae2f6c721.png"
+              }
+            }
+          ]
+        },
+        "4": {
+          "id": 72,
+          "title": "Hỗ trợ",
+          "description": null,
+          "isActive": true,
+          "isNew": false,
+          "startNewTagAt": null,
+          "newTagDurationByDays": 30,
+          "link": null,
+          "linkType": "INTERNAL",
+          "location": "HEADER",
+          "order": 5,
+          "type": "NORMAL",
+          "slug": "ho-tro",
+          "parentId": null,
+          "startIcon": "question-outline",
+          "endIcon": "arrow-down-small",
+          "promoImage": null,
+          "children": [
+            {
+              "id": 84,
+              "title": "Blog",
+              "description": "DNSE Blog - Đầu tư thông minh hơn",
+              "isActive": true,
+              "isNew": false,
+              "startNewTagAt": null,
+              "newTagDurationByDays": 30,
+              "link": "https://blog.dnse.com.vn",
+              "linkType": "EXTERNAL",
+              "location": "HEADER",
+              "order": 1,
+              "type": "NORMAL",
+              "slug": "blog",
+              "parentId": "72",
+              "startIcon": "menu-blog",
+              "endIcon": null,
+              "promoImage": null
+            },
+            {
+              "id": 85,
+              "title": "Hướng dẫn giao dịch",
+              "description": "Cách sử dụng các tính năng giao dịch",
+              "isActive": true,
+              "isNew": false,
+              "startNewTagAt": null,
+              "newTagDurationByDays": 30,
+              "link": "https://hdsd.dnse.com.vn",
+              "linkType": "EXTERNAL",
+              "location": "HEADER",
+              "order": 2,
+              "type": "NORMAL",
+              "slug": "huong-dan-giao-dich",
+              "parentId": "72",
+              "startIcon": "menu-trading-guide",
+              "endIcon": null,
+              "promoImage": null
+            },
+            {
+              "id": 86,
+              "title": "Sử dụng bảng giá",
+              "description": "Hướng dẫn sử dụng bảng giá DNSE",
+              "isActive": true,
+              "isNew": false,
+              "startNewTagAt": null,
+              "newTagDurationByDays": 30,
+              "link": "https://banggia.dnse.com.vn/cach-doc-bang-gia",
+              "linkType": "EXTERNAL",
+              "location": "HEADER",
+              "order": 3,
+              "type": "NORMAL",
+              "slug": "su-dung-bang-gia",
+              "parentId": "72",
+              "startIcon": "menu-priceboard-guide",
+              "endIcon": null,
+              "promoImage": null
+            },
+            {
+              "id": 87,
+              "title": "Liên hệ",
+              "description": "Hỗ trợ và giải đáp mọi vấn đề",
+              "isActive": true,
+              "isNew": false,
+              "startNewTagAt": null,
+              "newTagDurationByDays": 30,
+              "link": "https://hdsd.dnse.com.vn/thong-tin-lien-he-dnse",
+              "linkType": "EXTERNAL",
+              "location": "HEADER",
+              "order": 4,
+              "type": "NORMAL",
+              "slug": "lien-he",
+              "parentId": "72",
+              "startIcon": "menu-contact",
+              "endIcon": null,
+              "promoImage": null
+            }
+          ]
+        },
+        "5": {
+          "id": 73,
+          "title": "Về DNSE",
+          "description": null,
+          "isActive": true,
+          "isNew": false,
+          "startNewTagAt": null,
+          "newTagDurationByDays": 30,
+          "link": null,
+          "linkType": "INTERNAL",
+          "location": "HEADER",
+          "order": 6,
+          "type": "NORMAL",
+          "slug": "ve-dnse",
+          "parentId": null,
+          "startIcon": "home-outline",
+          "endIcon": "arrow-down-small",
+          "promoImage": null,
+          "children": [
+            {
+              "id": 88,
+              "title": "Về chúng tôi",
+              "description": "Giới thiệu về công ty DNSE",
+              "isActive": true,
+              "isNew": false,
+              "startNewTagAt": null,
+              "newTagDurationByDays": 30,
+              "link": "/ve-chung-toi",
+              "linkType": "INTERNAL",
+              "location": "HEADER",
+              "order": 1,
+              "type": "NORMAL",
+              "slug": "ve-chung-toi",
+              "parentId": "73",
+              "startIcon": "menu-about-us",
+              "endIcon": null,
+              "promoImage": null
+            },
+            {
+              "id": 90,
+              "title": "Tin DNSE",
+              "description": "Các tin công bố của DNSE",
+              "isActive": true,
+              "isNew": false,
+              "startNewTagAt": null,
+              "newTagDurationByDays": 30,
+              "link": "/tin-tuc/trang/quan-he-co-dong",
+              "linkType": "INTERNAL",
+              "location": "HEADER",
+              "order": 2,
+              "type": "NORMAL",
+              "slug": "quan-he-co-dong",
+              "parentId": "73",
+              "startIcon": "menu-news-dnse",
+              "endIcon": null,
+              "promoImage": null
+            },
+            {
+              "id": 209,
+              "title": "Quan hệ Nhà đầu tư",
+              "description": "Thông tin cập nhật tới Cổ đông và Nhà đầu tư",
+              "isActive": true,
+              "isNew": false,
+              "startNewTagAt": null,
+              "newTagDurationByDays": 30,
+              "link": "https://ir.dnse.com.vn",
+              "linkType": "EXTERNAL",
+              "location": "HEADER",
+              "order": 3,
+              "type": "NORMAL",
+              "slug": "quan-he-nha-dau-tu",
+              "parentId": "73",
+              "startIcon": "menu-investor-relations",
+              "endIcon": null,
+              "promoImage": null
+            },
+            {
+              "id": 91,
+              "title": "Cơ hội việc làm",
+              "description": "Công việc triển vọng trong ngành tài chính",
+              "isActive": true,
+              "isNew": false,
+              "startNewTagAt": null,
+              "newTagDurationByDays": 30,
+              "link": "https://talent.dnse.com.vn/",
+              "linkType": "EXTERNAL",
+              "location": "HEADER",
+              "order": 4,
+              "type": "NORMAL",
+              "slug": "co-hoi-viec-lam",
+              "parentId": "73",
+              "startIcon": "menu-job-chances",
+              "endIcon": null,
+              "promoImage": null
+            }
+          ]
+        }
+      },
+      "sameSectorStocks": [],
+      "financialIndicators": {
+        "indexes": {
+          "marketShare": {
+            "value": 100,
+            "tooltip": "Tỷ trọng doanh thu so với ngành. Chỉ tính các doanh nghiệp trên sàn"
+          },
+          "totalAssets": {},
+          "eps": {
+            "value": 2450.861580227273,
+            "tooltip": "EPS (Earning Per Share) là khoản lợi nhuận sau thuế mà các nhà đầu tư chứng khoán thu được tính trên 1 cổ phiếu"
+          },
+          "pe": {
+            "tooltip": "P/E (Price-to-Earning) thể hiện số tiền nhà đầu tư sẵn sàng bỏ ra để đổi lấy 1 đồng lợi nhuận trên cổ phiếu"
+          },
+          "ps": {
+            "tooltip": "P/S (Price-to-Sales) là tỷ lệ giá cổ phiếu trên doanh thu. Tỷ lệ này cho biết nhà đầu tư sẵn sàng trả bao nhiêu cho mỗi đồng doanh thu cho một cổ phiếu"
+          },
+          "pb": {
+            "tooltip": "P/B (Price-to-Book) là so sánh giá cổ phiếu trên thị trường cao/ thấp gấp bao nhiêu lần so với giá trị sổ sách của doanh nghiệp"
+          },
+          "beta": {
+            "value": 0,
+            "tooltip": "Hệ số Beta là sự tương quan giữa sự biến động của giá cố phiếu so với sự biến động của thị trường Vnindex"
+          },
+          "netInterestMargin": {
+            "tooltip": "NIM (Net Interest Margin) được tính bằng thu nhập lãi ròng chia cho tổng tài sản sinh lãi, phản ánh khả năng của ngân hàng trong việc tạo ra thu nhập lãi ròng từ các khoản cho vay và đầu tư trong 12 tháng gần nhất"
+          },
+          "lossRatio": {
+            "tooltip": "Tỷ lệ bồi thường (loss ratio) là số tiền mà công ty bảo hiểm trả cho các yêu cầu bồi thường so với số tiền thu được từ phí bảo hiểm. Tỷ lệ này dưới 50 là tốt"
+          },
+          "combineRatio": {
+            "tooltip": "Tỷ lệ chi phí kết hợp (combine ratio) phản ánh chi phí trên doanh thu của công ty bảo hiểm. Tỷ lệ này càng cao (trên 100) phản ánh công ty bảo hiểm đang chưa tối ưu hóa được chi phí hoạt động của mình"
+          },
+          "profitGrowth": {
+            "value": 0,
+            "tooltip": "So sánh tốc độ tăng trưởng lợi nhuận của quý này so với quý liền trước"
+          },
+          "ytd": {
+            "tooltip": "So sánh tăng trưởng tín dụng cuối quý này so với cuối năm trước. Phản ánh tốc độ tăng trưởng tín dụng so với hạn mức được cấp, cũng như so với toàn ngành"
+          },
+          "nplRatio": {
+            "tooltip": "Tỷ lệ nợ xấu phản ánh chất lượng và mức độ rủi ro của danh mục cho vay mà ngân hàng có, số lượng đồng nợ xấu trên tổng số 100 đồng cho vay"
+          },
+          "llr": {
+            "tooltip": "Tỷ lệ bao phủ nợ xấu được áp dụng để đánh giá khả năng chống chọi của ngân hàng trước rủi ro tiềm ẩn từ nợ xấu"
+          },
+          "casaRatio": {
+            "tooltip": "Tỷ lệ CASA là tỷ lệ tiền gửi không kỳ hạn trong ngân hàng của khách hàng. CASA ở mức cao thì chi phí giá vốn của ngân hàng đó thấp, chứng tỏ sức khoẻ tài chính của ngân hàng tốt"
+          },
+          "roe": {
+            "value": 0.189048871106308,
+            "tooltip": "ROE là chỉ số tỷ suất lợi nhuận ròng trên vốn chủ sở hữu, đo lường khả năng sinh lợi trên mỗi đồng vốn chủ trong 12 tháng gần nhất"
+          },
+          "roa": {
+            "value": 0.06781857000298944,
+            "tooltip": "ROA là chỉ số tỷ suất lợi nhuận ròng trên tài sản, đo lường khả năng sinh lời trên mỗi đồng tài sản của công ty trong 12 tháng gần nhất"
+          },
+          "grossMargin": {
+            "value": 0.30389745231111936,
+            "tooltip": "Biên lợi nhuận gộp (Gross margin) cho biết với mỗi đồng doanh thu tạo ra thì doanh nghiệp thu về được bao nhiêu đồng lợi nhuận gộp, sau khi trừ đi giá vốn hàng bán trong 12 tháng gần nhất"
+          },
+          "debtEquityRatio": {
+            "value": 0,
+            "tooltip": "Hệ số nợ trên vốn chủ sở hữu giúp xác định mức độ rủi ro tài chính của công ty. Hệ số này cao cho thấy doanh nghiệp sử dụng nhiều vốn vay để tài trợ cho hoạt động kinh doanh"
+          },
+          "inventoryGrowth": {
+            "value": 0,
+            "tooltip": "So sánh giá trị hàng hóa tồn kho giữa quý này so với quý trước"
+          },
+          "prepaidBuyerGrowth": {
+            "value": 0,
+            "tooltip": "So sánh giá trị người mua trả tiền trước tại thời điểm cuối quý này so với cuối quý trước"
+          },
+          "proprietaryTradingRatio": {
+            "tooltip": "Tỷ trọng danh mục tự doanh càng cao, điều này có thể tăng cường khả năng sinh lời nhưng cũng đồng nghĩa với việc tăng cường rủi ro. Tỷ trọng cao đồng nghĩa với việc công ty chứng khoán đầu tư nhiều tiền vào cổ phiếu, trái phiếu... , từ đó tăng sự phụ thuộc vào sự biến động của các chứng khoán này"
+          },
+          "marginLendingGrowth": {
+            "tooltip": "Phản ánh tỷ lệ tăng trưởng cho vay margin so với cùng kỳ năm trước"
+          },
+          "freeFloatRatio": {
+            "value": "15.0%",
+            "tooltip": "Tỷ lệ free float là tỷ lệ phần trăm cổ phiếu chuyển nhượng tự do trên tổng số cổ phiếu đang lưu hành"
+          },
+          "dividendYield": {
+            "value": 6.533333333333333,
+            "tooltip": "Tỷ suất cổ tức (Dividend yield) là tỷ lệ giữa số tiền cổ tức mà một doanh nghiệp chi trả cho cổ đông và giá trị thị trường của cổ phiếu"
+          },
+          "dividendRatio": {
+            "value": 19.6,
+            "tooltip": "Phản ánh tỷ lệ trả cổ tức bằng tiền mặt trên mỗi cổ phiếu của doanh nghiệp"
+          },
+          "equity": {},
+          "bookValue": {
+            "value": 0
+          },
+          "sales": {
+            "value": 131829856836
+          },
+          "capitalization": {
+            "value": 0
+          },
+          "revenue": {
+            "value": 131829856836
+          },
+          "revenuePerShare": {
+            "value": 29961.33109909091
+          },
+          "profit": {
+            "value": 10166795220
+          },
+          "foreignOwnershipRatio": {
+            "value": 49
+          },
+          "foreignHoldingRatio": {
+            "value": 0
+          },
+          "accuredInterestTotalAssetRatio": {
+            "tooltip": "Tỷ lệ các khoản lãi, phí mà ngân hàng dự kiến thu được trong tương lai trên tổng tài sản"
+          },
+          "remainForeignRoom": {
+            "value": 2156000,
+            "ratio": 49
+          }
+        },
+        "companyType": "Sản xuất"
+      },
+      "financialReportOverall": [
+        {
+          "type": "SHORT_TERM_ASSETS",
+          "label": "Tài sản ngắn hạn",
+          "value": null,
+          "yearValue": 176170091220
+        },
+        {
+          "type": "LONG_TERM_ASSETS",
+          "label": "Tài sản dài hạn",
+          "value": null,
+          "yearValue": 44486573593
+        },
+        {
+          "type": "ACCOUNTS_PAYABLE",
+          "label": "Nợ phải trả",
+          "value": null,
+          "yearValue": 162520472399
+        },
+        {
+          "type": "BORROWINGS",
+          "label": "Nợ vay",
+          "value": null,
+          "yearValue": 0
+        },
+        {
+          "type": "OWNERS_EQUITY",
+          "label": "Vốn chủ sở hữu",
+          "value": null,
+          "yearValue": 58136192414
+        },
+        {
+          "type": "GROSS_PROFIT",
+          "label": "Lợi nhuận gộp",
+          "value": null,
+          "yearValue": 44851270113
+        },
+        {
+          "type": "PROFIT_BEFORE_TAX",
+          "label": "Lợi nhuận trước thuế",
+          "value": null,
+          "yearValue": 13649955824
+        },
+        {
+          "type": "PROFIT_AFTER_TAX_PARENT_COMPANY",
+          "label": "LNST công ty mẹ",
+          "value": null,
+          "yearValue": 10783790953
+        },
+        {
+          "type": "OPERATING_EXPENSES",
+          "label": "Chi phí kinh doanh",
+          "value": null,
+          "yearValue": 139105658635
+        },
+        {
+          "type": "CASH_FLOW",
+          "label": "Lưu chuyển tiền tệ",
+          "value": null,
+          "yearValue": 22561892623
+        }
+      ],
+      "financialResultOverall": [
+        {
+          "code": "BUSINESS_RESULT",
+          "label": "Kết quả kinh doanh"
+        },
+        {
+          "code": "PROFIT_RATE",
+          "label": "Tỷ suất sinh lời"
+        },
+        {
+          "code": "PROFITABLE_EFFICIENCY",
+          "label": "Hiệu quả sinh lời"
+        },
+        {
+          "code": "ROTATION",
+          "label": "Vòng quay"
+        },
+        {
+          "code": "LEVER",
+          "label": "Đòn bẩy"
+        },
+        {
+          "code": "SOLVENCY",
+          "label": "Khả năng thanh toán"
+        }
+      ]
+    },
+    "__N_SSG": true
+  },
+  "updatedAt": "2025-12-09T02:43:22.049Z"
+}

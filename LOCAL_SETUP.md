@@ -10,7 +10,7 @@ npm run dev
 
 Lệnh này sẽ:
 - ✅ Khởi động API server tại `http://localhost:3001`
-- ✅ Khởi động Angular app tại `http://localhost:4200`
+- ✅ Khởi động Angular app tại `http://localhost:3006`
 - ✅ Angular app sẽ tự động proxy API requests đến API server
 
 ## Chạy riêng lẻ
@@ -29,7 +29,7 @@ npm run dev:api
 
 ## Cấu trúc
 
-- **Angular App**: `http://localhost:4200`
+- **Angular App**: `http://localhost:3006`
   - Frontend application
   - Tự động proxy `/api/stocks/*` đến API server
 
@@ -64,7 +64,7 @@ GITHUB_BRANCH=master
 ## Troubleshooting
 
 ### Port đã được sử dụng
-Nếu port 3001 hoặc 4200 đã được sử dụng:
+Nếu port 3001 hoặc 3006 đã được sử dụng:
 - Thay đổi port trong `server/api/api-server-simple.js` (line 10)
 - Hoặc thay đổi port trong `package.json` script: `ng serve --port 4201`
 

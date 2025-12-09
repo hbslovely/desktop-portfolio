@@ -14,7 +14,7 @@ npm run dev
 
 Lệnh này sẽ:
 - Chạy Vercel dev server trên port 3001 (API routes)
-- Chạy Angular dev server trên port 4200 (Frontend)
+- Chạy Angular dev server trên port 3006 (Frontend)
 
 Angular dev server sẽ tự động proxy requests đến `/api/stocks/*` đến Vercel dev server thông qua `proxy.conf.json`.
 
@@ -96,10 +96,10 @@ curl http://localhost:3001/api/stocks/list
 ## Cấu trúc Ports
 
 - **Port 3001**: Vercel dev server (API routes)
-- **Port 4200**: Angular dev server (Frontend)
+- **Port 3006**: Angular dev server (Frontend)
 
 Angular app sẽ gọi API thông qua proxy:
-- Frontend: `http://localhost:4200/api/stocks/*`
+- Frontend: `http://localhost:3006/api/stocks/*`
 - Proxy forward đến: `http://localhost:3001/api/stocks/*`
 
 ## Troubleshooting

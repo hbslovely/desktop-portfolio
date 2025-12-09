@@ -13,6 +13,11 @@ const symbolHandler = require('./stocks/[symbol].js').default;
 const helpHandler = require('./help.js').default;
 const testMinimalHandler = require('./test-minimal.js').default;
 const stocksListHandler = require('./stocks-list.js').default;
+// Stocks v2 handlers (local filesystem)
+const listV2Handler = require('./stocks-v2/list.js').default;
+const saveV2Handler = require('./stocks-v2/save.js').default;
+const symbolV2Handler = require('./stocks-v2/[symbol].js').default;
+const fetchAndSaveV2Handler = require('./stocks-v2/fetch-and-save.js').default;
 
 // Convert Vercel handler to Express middleware
 function vercelToExpress(handler) {
@@ -56,6 +61,11 @@ app.get('/api/test-minimal', vercelToExpress(testMinimalHandler));
 app.get('/api/stocks/list', vercelToExpress(stocksListHandler));
 app.post('/api/stocks/save', vercelToExpress(saveHandler));
 app.get('/api/stocks/:symbol', vercelToExpress(symbolHandler));
+// Stocks v2 routes (local filesystem)
+app.get('/api/stocks-v2/list', vercelToExpress(listV2Handler));
+app.post('/api/stocks-v2/save', vercelToExpress(saveV2Handler));
+app.post('/api/stocks-v2/fetch-and-save', vercelToExpress(fetchAndSaveV2Handler));
+app.get('/api/stocks-v2/:symbol', vercelToExpress(symbolV2Handler));
 
 // Health check
 app.get('/health', (req, res) => {
@@ -70,5 +80,9 @@ app.listen(port, () => {
   console.log('  GET  /api/stocks/list');
   console.log('  POST /api/stocks/save');
   console.log('  GET  /api/stocks/:symbol');
+  console.log('  GET  /api/stocks-v2/list');
+  console.log('  POST /api/stocks-v2/save');
+  console.log('  POST /api/stocks-v2/fetch-and-save');
+  console.log('  GET  /api/stocks-v2/:symbol');
 });
 

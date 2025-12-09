@@ -47,10 +47,10 @@ export class DnseService {
   // Use proxy to avoid CORS issues
   private readonly SYMBOLS_API_BASE = '/api/dnse-api/chart-api/symbols';
   private readonly STOCK_DATA_BASE = '/api/dnse/senses/_next/data/TNgKE3JbtnJNequvT4tmO/co-phieu-';
-  
+
   // Cache for symbols list
   private symbolsCache: Map<ExchangeType, DNSESymbol[]> = new Map();
-  
+
   // Track fetched symbols (stored in localStorage)
   private readonly FETCHED_SYMBOLS_KEY = 'dnse_fetched_symbols';
 
@@ -66,17 +66,17 @@ export class DnseService {
     }
 
     const url = `${this.SYMBOLS_API_BASE}?type=${exchange}`;
-    
+
     return this.http.get<any>(url).pipe(
       map((response: any) => {
         // API might return array directly or wrapped in data property
-        const symbols: DNSESymbol[] = Array.isArray(response) 
-          ? response 
+        const symbols: DNSESymbol[] = Array.isArray(response)
+          ? response
           : (response.data || response.symbols || []);
-        
+
         // Cache the result
         this.symbolsCache.set(exchange, symbols);
-        
+
         return symbols;
       }),
       catchError((error) => {
@@ -91,7 +91,7 @@ export class DnseService {
    */
   getAllSymbols(): Observable<{ exchange: ExchangeType; symbols: DNSESymbol[] }[]> {
     const exchanges: ExchangeType[] = ['hose', 'hnx', 'upcom', 'vn30'];
-    const requests = exchanges.map(exchange => 
+    const requests = exchanges.map(exchange =>
       this.getSymbols(exchange).pipe(
         map(symbols => ({ exchange, symbols }))
       )
@@ -131,7 +131,7 @@ export class DnseService {
    */
   getStockData(symbol: string): Observable<DNSEStockData> {
     const url = `${this.STOCK_DATA_BASE}${symbol}.json`;
-    
+
     return this.http.get<DNSEStockData>(url).pipe(
       catchError((error) => {
         console.error(`Failed to get stock data for ${symbol}:`, error);
@@ -149,7 +149,7 @@ export class DnseService {
    */
   getOHLCData(symbol: string, from: number, to: number, resolution: string = '1D'): Observable<DNSEOHLCData> {
     const url = `/api/dnse-api/chart-api/v2/ohlcs/stock?from=${from}&to=${to}&symbol=${symbol}&resolution=${resolution}`;
-    
+
     return this.http.get<DNSEOHLCData>(url).pipe(
       catchError((error) => {
         console.error(`Failed to get OHLC data for ${symbol}:`, error);
@@ -207,7 +207,7 @@ export class DnseService {
    * Get all fetched symbols from Stock API
    */
   getAllFetchedSymbols(): Observable<string[]> {
-    return this.http.get<any>('/api/stocks/list').pipe(
+    return this.http.get<any>('/api/stocks-v2/list').pipe(
       map((response: any) => {
         if (response.success && Array.isArray(response.symbols)) {
           return response.symbols;
@@ -247,7 +247,7 @@ export class DnseService {
    * Get stock data from Stock API (includes basicInfo, priceData, fullData)
    */
   getStockDataFromAPI(symbol: string): Observable<any> {
-    return this.http.get<any>(`/api/stocks/${symbol.toUpperCase()}`).pipe(
+    return this.http.get<any>(`/api/stocks-v2/${symbol.toUpperCase()}`).pipe(
       map((response: any) => {
         if (response.success && response.data) {
           return response.data;
@@ -265,7 +265,7 @@ export class DnseService {
    * Save stock data to Stock API
    */
   saveStockData(symbol: string, basicInfo: any, priceData: DNSEOHLCData, fullData: any): Observable<any> {
-    return this.http.post<any>('/api/stocks/save', {
+    return this.http.post<any>('/api/stocks-v2/save', {
       symbol: symbol.toUpperCase(),
       basicInfo,
       priceData,
