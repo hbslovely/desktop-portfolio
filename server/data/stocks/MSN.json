@@ -3,12 +3,12 @@
   "basicInfo": {
     "companyName": "CTCP Tập đoàn Masan",
     "exchange": "HOSE",
-    "matchPrice": 79.9,
-    "changedValue": -0.7,
-    "changedRatio": -0.87,
-    "totalVolume": 530930,
-    "marketCap": 122551649316200,
-    "beta": 1.1234528006713693,
+    "matchPrice": 77,
+    "changedValue": -0.9,
+    "changedRatio": -1.16,
+    "totalVolume": 252800,
+    "marketCap": 118446321113300,
+    "beta": 1.120093165643992,
     "eps": 2187.0566630111416,
     "roe": 0.1429466205517052,
     "roa": 0.04364147502367322
@@ -4541,8 +4541,8 @@
         "infoSupplierPosition": "Luật sư trưởng - Giám đốc Tuân Thủ",
         "phoneSupplier": "(84.62) 563 862",
         "introduction": "Công ty Cổ phần Tập đoàn Masan (MSN), tiền thân là Công ty Cổ phần Hàng hải Ma San, được thành lập vào năm 2004. MSN là một tập đoàn quản lý vốn đầu tư và tài sản, tập trung chủ yếu vào việc sở hữu cổ phần của các công ty khác, trong đó bao gồm Công ty Cổ phần Thực phẩm Ma San (Masan Food) và Ngân hàng Thương mại cổ phần Kỹ thương Việt Nam (Techcombank). Với sự đa dạng trong các lĩnh vực kinh doanh, MSN đạt được nhiều thành tựu đáng kể. Đặc biệt, MSN là nhà cung cấp hàng đầu vonfram và bismut ngoài Trung Quốc, cung cấp các sản phẩm này trên thị trường quốc tế. MSN là công ty sản xuất đạm động vật lớn nhất Việt Nam với thương hiệu Bio-zeem, dẫn đầu trong lĩnh vực thức ăn chăn nuôi. Masan gần như thống lĩnh hết các thị trường, các ngành hàng tiêu dùng mà công ty tham gia cạnh tranh. ",
-        "capital": 122551649316200,
-        "beta": 1.1234528006713693,
+        "capital": 118446321113300,
+        "beta": 1.120093165643992,
         "notes": "<p>- Năm 2004: Thành lập Công ty Cổ phần Hàng hải Ma San (MSC) với vốn điều lệ ban đầu là 3.2 tỷ đồng. MSC hoạt động trong lĩnh vực vận tải biển.</p><p>- Năm 2005: MSC tăng vốn từ 3.2 tỷ đồng lên 32 tỷ đồng thông qua việc phát hành riêng lẻ cho các cổ đông hiện hữu.</p><p>- Năm 2009: MSC được chuyển giao toàn bộ cho Công ty Cổ phần Tập đoàn Ma San. MSC tăng vốn từ 32 tỷ đồng lên 100 tỷ đồng thông qua việc phát hành riêng lẻ cho Công ty Cổ phần Tập đoàn Ma San.</p><p>- Năm 2009: Công ty Cổ phần Tập đoàn Ma San chính thức đổi tên thành Công ty Cổ phần Ma San. Masan Group tăng vốn lên 4,764 tỷ và chính thức là Công ty đại chúng.</p><p>- Năm 2011: KKR, công ty hàng đầu toàn cầu chuyên đầu tư vào các công ty chưa niêm yết, đã đầu tư 159 triệu đô la Mỹ vào Masan Consumer. Các ngân hàng J.P. Morgan và Standard Chartered đã dành cho Masan Consumer khoản vay 108 triệu đô la Mỹ.</p><p>- Năm 2012: Vốn điều lệ của Công ty là 6,872 tỷ đồng.</p><p>- Năm 2013: KKR tiếp tục rót thêm 200 triệu USD đầu tư vào Masan Consumer. Thay đổi đăng ký kinh doanh, vốn điều lệ 7,349.113 tỷ đồng.</p><p>- Năm 2014: Masan group chuyển nhượng toàn bộ vốn góp, tương đương 100% vốn điều lệ của công ty Masan Brewey sang cho công ty Masan Consumer Holdings và bán công ty Masan Agri.</p><p>- Ngày 23/02/2017: Tăng vốn điều lệ lên 11,474,963,740,000 đồng.</p><p>- Ngày 31/08/2017: Tăng vốn điều lệ lên 11,573,739,740,000 đồng.</p><p>- Ngày 25/06/2018: Tăng vốn điều lệ lên 11,631,495,480,000 đồng.</p><p>- Ngày 17/07/2019: Tăng vốn điều lệ lên 11,689,464,470,000 đồng.</p><p>- Ngày 07/09/2020: Tăng vốn điều lệ lên 11,746,832,460,000 đồng.</p><p>- Ngày 17/06/2021: Tăng vốn điều lệ lên 11,805,346,920,000 đồng.</p><p>- Tháng 05/2022: Tăng vốn điều lệ lên 14,166,416,000,000 đồng.</p><p>- Tháng 06/2022: Tăng vốn điều lệ lên 14,237,248,000,000 đồng.</p>",
         "otherInfo": "Quá trình thay đổi vốn điều lệ:\r\n- 08/2014: 7,358 tỷ đồng\r\n- 07/2015: 7,467 tỷ đồng",
         "postUpDate": "2009-11-05T00:00:00",
@@ -4572,17 +4572,16 @@
       "statistic": {
         "symbol": "MSN",
         "klcplh": 1520491927,
-        "tradingDate": "2025-12-03T00:00:00Z"
+        "tradingDate": "2025-12-08T00:00:00Z"
       },
       "priceSnapshot": {
-        "changedValue": -0.7,
-        "totalVolumeTraded": 530930,
-        "referencePrice": 80.6,
+        "changedValue": -0.9,
+        "totalVolumeTraded": 252800,
+        "referencePrice": 77.9,
         "productGrpId": "7",
-        "expectedTradePrice": 79.9,
         "symbol": "MSN",
-        "changedRatio": -0.87,
-        "matchPrice": 79.9
+        "changedRatio": -1.16,
+        "matchPrice": 77
       },
       "coveredWarrant": {},
       "ticker": {
@@ -5542,7 +5541,7 @@
             "tooltip": "P/B (Price-to-Book) là so sánh giá cổ phiếu trên thị trường cao/ thấp gấp bao nhiêu lần so với giá trị sổ sách của doanh nghiệp"
           },
           "beta": {
-            "value": 1.1234528006713693,
+            "value": 1.120093165643992,
             "tooltip": "Hệ số Beta là sự tương quan giữa sự biến động của giá cố phiếu so với sự biến động của thị trường Vnindex"
           },
           "netInterestMargin": {
@@ -5620,7 +5619,7 @@
             "value": 81077035000000
           },
           "capitalization": {
-            "value": 122551649316200
+            "value": 118446321113300
           },
           "revenue": {
             "value": 81077035000000
@@ -5635,14 +5634,14 @@
             "value": 100
           },
           "foreignHoldingRatio": {
-            "value": 23.047326182876866
+            "value": 22.977900493647276
           },
           "accuredInterestTotalAssetRatio": {
             "tooltip": "Tỷ lệ các khoản lãi, phí mà ngân hàng dự kiến thu được trong tương lai trên tổng tài sản"
           },
           "remainForeignRoom": {
-            "value": 1170059193,
-            "ratio": 76.95267381712313
+            "value": 1171114805,
+            "ratio": 77.02209950635273
           }
         },
         "companyType": "Sản xuất"
@@ -5738,5 +5737,5 @@
     },
     "__N_SSG": true
   },
-  "updatedAt": "2025-12-09T02:35:12.569Z"
+  "updatedAt": "2025-12-09T04:16:17.516Z"
 }

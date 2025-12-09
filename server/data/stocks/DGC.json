@@ -3,10 +3,12 @@
   "basicInfo": {
     "companyName": "CTCP Tập đoàn Hóa chất Đức Giang",
     "exchange": "HOSE",
-    "matchPrice": 97,
-    "totalVolume": 179230,
-    "marketCap": 36838506061000,
-    "beta": 0.9661476487014636,
+    "matchPrice": 93.7,
+    "changedValue": -0.3,
+    "changedRatio": -0.32,
+    "totalVolume": 75060,
+    "marketCap": 35699170822000,
+    "beta": 0.9663446123628581,
     "eps": 8295.703397991712,
     "roe": 0.22003243783991544,
     "roa": 0.18624886820460046
@@ -4539,8 +4541,8 @@
         "infoSupplierPosition": "Tổng Giám đốc",
         "phoneSupplier": "(84.24) 3827 1620",
         "introduction": "CTCP Tập đoàn Hóa chất Đức Giang tiền thân là Công ty Hoá chất Đức Giang - trực thuộc Tổng cục hóa chất Việt Nam, được thành lập năm 1963 với sản phẩm “Bột giặt Đức Giang”. Tháng 03/2004, Công ty chuyển đổi mô hình và chính thức hoạt động dưới hình thức công ty cổ phần, tháng 08/2014, cổ phiếu CTCP Bột giặt và Hóa chất Đức Giang chính thức niêm yết trên HNX với mã chứng khoán DGC, năm 2020 chuyển lên giao dịch ở sàn HOSE. Hoạt động chính của DGC là sản xuất hóa chất, công ty có chuỗi giá trị sản xuất khép kín từ quặng Apatit đầu vào tới hóa chất và phân bón thành phẩm với sản phẩm chính là hóa chất cơ bản gốc phốt pho như: Phốt pho vàng, Axit phosphoric và các hóa chất tinh khiết khác ... ",
-        "capital": 36838506061000,
-        "beta": 0.9661476487014636,
+        "capital": 35699170822000,
+        "beta": 0.9663446123628581,
         "notes": "<p>- Ngày 7/11/1963: Thành lập với tên gọi Nhà máy hóa chất Đức Giang, trực thuộc Tổng cục hóa chất Việt Nam.</p><p>- Tháng 4 năm 2004: Công ty hoàn tất công tác cổ phần hóa, chuyển đổi mô hình và Công ty Cổ phần Bột giặt và Hoá chất Đức Giang chính thức đi vào hoạt động theo Giấy chứng nhận đăng ký kinh doanh số 0103003850 do Sở Kế hoạch và Đầu tư TP Hà Nội cấp cho đăng ký lần đầu ngày 05/03/2004 với số vốn điều lệ 15 tỷ đồng.</p><p>- Ngày 13/09/2007: Công ty chính thức trở thành công ty đại chúng.</p><p>- Ngày 26/08/2014: Giao dịch đầu tiên trên HNX.</p><p>- Ngày 08/04/2019: đổi tên thành CTCP Tập đoàn Hoá chất Đức Giang.</p><p>- Ngày 20/07/2020: hủy niêm yết trên HNX.</p><p>- Ngày 28/07/2020: ngày đầu tiên cổ phiếu giao dịch trên sàn HOSE với giá tham chiếu 39,700 đ/CP.</p><p>- Ngày 25/08/2020: Tăng vốn điều lệ lên 1,487,669,430,000 đồng.</p><p>- Ngày 24/05/2021: Tăng vốn điều lệ lên 1,710,805,560,000 đồng.</p>",
         "otherInfo": "Quá trình tăng VĐL: \r\n- 10/08/2015: 422,091,320,000 đồng",
         "postUpDate": "2020-07-28T00:00:00",
@@ -4570,15 +4572,16 @@
       "statistic": {
         "symbol": "DGC",
         "klcplh": 379778413,
-        "tradingDate": "2025-12-03T00:00:00Z"
+        "tradingDate": "2025-12-08T00:00:00Z"
       },
       "priceSnapshot": {
-        "totalVolumeTraded": 179230,
-        "referencePrice": 97,
+        "changedValue": -0.3,
+        "totalVolumeTraded": 75060,
+        "referencePrice": 94,
         "productGrpId": "7",
-        "expectedTradePrice": 97,
         "symbol": "DGC",
-        "matchPrice": 97
+        "changedRatio": -0.32,
+        "matchPrice": 93.7
       },
       "coveredWarrant": {},
       "ticker": {
@@ -5518,7 +5521,7 @@
             "tooltip": "P/B (Price-to-Book) là so sánh giá cổ phiếu trên thị trường cao/ thấp gấp bao nhiêu lần so với giá trị sổ sách của doanh nghiệp"
           },
           "beta": {
-            "value": 0.9661476487014636,
+            "value": 0.9663446123628581,
             "tooltip": "Hệ số Beta là sự tương quan giữa sự biến động của giá cố phiếu so với sự biến động của thị trường Vnindex"
           },
           "netInterestMargin": {
@@ -5596,7 +5599,7 @@
             "value": 10939038558441
           },
           "capitalization": {
-            "value": 36838506061000
+            "value": 35699170822000
           },
           "revenue": {
             "value": 10939038558441
@@ -5611,14 +5614,14 @@
             "value": 49
           },
           "foreignHoldingRatio": {
-            "value": 10.638267406716858
+            "value": 10.618147825998072
           },
           "accuredInterestTotalAssetRatio": {
             "tooltip": "Tỷ lệ các khoản lãi, phí mà ngân hàng dự kiến thu được trong tương lai trên tổng tài sản"
           },
           "remainForeignRoom": {
-            "value": 145689914,
-            "ratio": 38.36173259328314
+            "value": 145766324,
+            "ratio": 38.38185217400193
           }
         },
         "companyType": "Sản xuất"
@@ -5714,5 +5717,5 @@
     },
     "__N_SSG": true
   },
-  "updatedAt": "2025-12-09T02:35:12.463Z"
+  "updatedAt": "2025-12-09T04:16:15.062Z"
 }

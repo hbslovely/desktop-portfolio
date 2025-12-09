@@ -3,12 +3,10 @@
   "basicInfo": {
     "companyName": "Tập đoàn Công nghiệp Cao su Việt Nam - CTCP",
     "exchange": "HOSE",
-    "matchPrice": 27.85,
-    "changedValue": 0.15,
-    "changedRatio": 0.54,
-    "totalVolume": 223470,
-    "marketCap": 110800000000000,
-    "beta": 1.1484073453367367,
+    "matchPrice": 26.95,
+    "totalVolume": 97480,
+    "marketCap": 107800000000000,
+    "beta": 1.1441485258615542,
     "eps": 1569.31285736,
     "roe": 0.11938031228335716,
     "roa": 0.0888620761816997
@@ -4541,8 +4539,8 @@
         "infoSupplierPosition": "Phụ trách Kế toàn Tập đoàn",
         "phoneSupplier": "0918116649",
         "introduction": "Tập đoàn Công nghiệp Cao su Việt Nam - CTCP được thành lập vào năm 1975. GVR tập trung vào 5 lĩnh vực kinh doanh chính, bao gồm trồng và chế biến cao su, chế biến gỗ, sản phẩm công nghiệp cao su, đầu tư kinh doanh hạ tầng khu công nghiệp, và nông nghiệp ứng dụng công nghệ cao. Tập đoàn có nguồn lực và thế mạnh về đất đai để phát triển trồng rừng nguyên liệu. Đồng thời, diện tích cao su thanh lý của GVR dao động từ 10,000 đến 12,000 ha/năm, mang lại lợi thế quan trọng trong việc cung cấp nguyên liệu cho việc chế biến và sản xuất các sản phẩm gỗ. Kể từ tháng 03/2020, GVR đã được niêm yết trên Sở Giao dịch Chứng khoán Thành phố Hồ Chí Minh (HOSE).\n\n\n\n",
-        "capital": 110800000000000,
-        "beta": 1.1484073453367367,
+        "capital": 107800000000000,
+        "beta": 1.1441485258615542,
         "notes": "<p>- Ngày 29/04/1995: Tổng Công ty Cao su Việt Nam được thành lập theo Quyết định số 252/TTg của Thủ tướng Chính phủ.</p><p>- Tháng 7/1977: Chuyển thành Tổng Công ty Cao su Việt Nam thuộc Bộ Nông nghiệp.</p><p>- Năm 2006: Chính phủ quyết định thành lập Tập đoàn Công nghiệp Cao su Việt Nam.</p><p>- Ngày 21/03/2018: Là ngày giao dịch đầu tiên trên sàn UPCoM với giá tham chiếu là 13,000 đ/CP.</p><p>- Ngày 09/03/2020: Ngày hủy đăng kí giao dịch trên sàn UPCoM.</p><p>- Ngày 17/03/2020: Ngày đầu tiên cổ phiếu giao dịch trên sàn HOSE với giá tham chiếu 11,570 đ/CP.</p>",
         "otherInfo": "",
         "postUpDate": "2020-03-17T00:00:00",
@@ -4572,17 +4570,14 @@
       "statistic": {
         "symbol": "GVR",
         "klcplh": 4000000000,
-        "tradingDate": "2025-12-03T00:00:00Z"
+        "tradingDate": "2025-12-08T00:00:00Z"
       },
       "priceSnapshot": {
-        "changedValue": 0.15,
-        "totalVolumeTraded": 223470,
-        "referencePrice": 27.7,
+        "totalVolumeTraded": 97480,
+        "referencePrice": 26.95,
         "productGrpId": "7",
-        "expectedTradePrice": 27.85,
         "symbol": "GVR",
-        "changedRatio": 0.54,
-        "matchPrice": 27.85
+        "matchPrice": 26.95
       },
       "coveredWarrant": {},
       "ticker": {
@@ -5547,7 +5542,7 @@
             "tooltip": "P/B (Price-to-Book) là so sánh giá cổ phiếu trên thị trường cao/ thấp gấp bao nhiêu lần so với giá trị sổ sách của doanh nghiệp"
           },
           "beta": {
-            "value": 1.1484073453367367,
+            "value": 1.1441485258615542,
             "tooltip": "Hệ số Beta là sự tương quan giữa sự biến động của giá cố phiếu so với sự biến động của thị trường Vnindex"
           },
           "netInterestMargin": {
@@ -5625,7 +5620,7 @@
             "value": 30149572466227
           },
           "capitalization": {
-            "value": 110800000000000
+            "value": 107800000000000
           },
           "revenue": {
             "value": 30149572466227
@@ -5640,14 +5635,14 @@
             "value": 13
           },
           "foreignHoldingRatio": {
-            "value": 0.422391225
+            "value": 0.448569975
           },
           "accuredInterestTotalAssetRatio": {
             "tooltip": "Tỷ lệ các khoản lãi, phí mà ngân hàng dự kiến thu được trong tương lai trên tổng tài sản"
           },
           "remainForeignRoom": {
-            "value": 503104351,
-            "ratio": 12.577608775
+            "value": 502057201,
+            "ratio": 12.551430025
           }
         },
         "companyType": "Sản xuất"
@@ -5743,5 +5738,5 @@
     },
     "__N_SSG": true
   },
-  "updatedAt": "2025-12-09T02:35:12.477Z"
+  "updatedAt": "2025-12-09T04:16:15.947Z"
 }

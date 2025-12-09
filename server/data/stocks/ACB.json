@@ -3,10 +3,10 @@
   "basicInfo": {
     "companyName": "Ngân hàng TMCP Á Châu",
     "exchange": "HOSE",
-    "matchPrice": 24.15,
-    "changedValue": -0.05,
-    "changedRatio": -0.21,
-    "totalVolume": 30600,
+    "matchPrice": 24.1,
+    "changedValue": -0.1,
+    "changedRatio": -0.41,
+    "totalVolume": 417980,
     "marketCap": 124307089695800,
     "beta": 0.939408940673903,
     "eps": 3384.5708127314897,
@@ -4575,14 +4575,13 @@
         "tradingDate": "2025-12-08T00:00:00Z"
       },
       "priceSnapshot": {
-        "changedValue": -0.05,
-        "totalVolumeTraded": 30600,
+        "changedValue": -0.1,
+        "totalVolumeTraded": 417980,
         "referencePrice": 24.2,
         "productGrpId": "7",
-        "expectedTradePrice": 24.2,
         "symbol": "ACB",
-        "changedRatio": -0.21,
-        "matchPrice": 24.15
+        "changedRatio": -0.41,
+        "matchPrice": 24.1
       },
       "coveredWarrant": {},
       "ticker": {
@@ -5728,5 +5727,5 @@
     },
     "__N_SSG": true
   },
-  "updatedAt": "2025-12-09T02:35:12.429Z"
+  "updatedAt": "2025-12-09T04:16:13.825Z"
 }

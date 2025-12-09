@@ -3,12 +3,12 @@
   "basicInfo": {
     "companyName": "Ngân hàng TMCP Đầu tư và Phát triển Việt Nam",
     "exchange": "HOSE",
-    "matchPrice": 38.2,
-    "changedValue": -0.2,
-    "changedRatio": -0.52,
-    "totalVolume": 205210,
-    "marketCap": 269620297612800,
-    "beta": 0.9765939375458279,
+    "matchPrice": 37.2,
+    "changedValue": -0.3,
+    "changedRatio": -0.8,
+    "totalVolume": 98330,
+    "marketCap": 263301071887500,
+    "beta": 0.974362332001337,
     "eps": 3754.0373664803355,
     "roe": 0.17548609240555635,
     "roa": 0.009520896961687085
@@ -4541,8 +4541,8 @@
         "infoSupplierPosition": "Phó TGĐ",
         "phoneSupplier": "(84.242) 2205 544 - 090 329 3459",
         "introduction": "Ngân hàng Thương mại Cổ phần Đầu tư và Phát triển Việt Nam (BIDV), có tiền thân là Ngân hàng Kiến thiết Việt Nam trực thuộc Bộ Tài chính được thành lập vào năm 1957. Ngân hàng hoạt động trong lĩnh vực huy động và kinh doanh vốn, và cung cấp các dịch vụ tài chính liên quan. BIDV chính thức hoạt động theo hình thức ngân hàng thương mại cổ phần từ năm 2012. ",
-        "capital": 269620297612800,
-        "beta": 0.9765939375458279,
+        "capital": 263301071887500,
+        "beta": 0.974362332001337,
         "notes": "<p>- Ngày 26/04/1957: Tiền thân là Ngân hàng Kiến thiết Việt Nam trực thuộc Bộ Tài chính được thành lập theo Quyết định 177/TTg của Thủ tướng Chính phủ. .</p><p>- Ngày 24/06/1981: Đổi tên thành Ngân hàng Đầu tư và Xây dựng Việt Nam.</p><p>- Ngày 14/11/1990: Đổi tên thành Ngân hàng Đầu tư và Phát triển Việt Nam.</p><p>- Ngày 23/04/2012: Ngân hàng Nhà nước đã cấp giấy phép số 84 về việc thành lập và hoạt động Ngân hàng TMCP Đầu tư và Phát triển Việt Nam.</p><p>- Ngày 24/01/2014: Chính thức niêm yết trên sàn giao dịch HCM (MCK:BID).</p><p>- Đến cuối năm 2014: BIDV đã thiết lập quan hệ đại lý với trên 1,700 ngân hàng và chi nhánh ngân hàng tại 122 quốc gia và vùng lãnh thổ trên thế giới.</p><p>- Ngày 25/5/2015: BIDV nhận sáp nhập toàn bộ hệ thống Ngân hàng TMCP Phát triển Nhà Đồng bằng Sông Cửu Long (MHB), tăng mạng lưới hoạt động với 180 chi nhánh, 798 phòng giao dịch, 1,822 máy ATM, 15,962 điểm giao dịch POS tại 63 tỉnh/thành phố trên toàn quốc.</p><p>- Đến cuối 2015: BIDV đã thành lập hiện diện thương mại tại 6 quốc gia – vùng lãnh thổ: Lào, Campuchia, Myanmar, Cộng hòa Séc, Cộng hoà LB Nga và Đài Loan.</p><p>- Ngày 20/02/2020: Tăng vốn điều lệ lên 40,220,180,000,000 đồng.</p><p>- Tháng 03/2022: Tăng vốn điều lệ lên 50,585,238,000,000 đồng.</p>",
         "otherInfo": "- Số chi nhánh: 191\r\n- Số phòng giao dịch: \r\n854\r\nLịch sử thay đổi VĐL: Triệu đồng\r\n07/2015: 31,481,237",
         "postUpDate": "2014-01-24T00:00:00",
@@ -4572,17 +4572,16 @@
       "statistic": {
         "symbol": "BID",
         "klcplh": 7021361917,
-        "tradingDate": "2025-12-03T00:00:00Z"
+        "tradingDate": "2025-12-08T00:00:00Z"
       },
       "priceSnapshot": {
-        "changedValue": -0.2,
-        "totalVolumeTraded": 205210,
-        "referencePrice": 38.4,
+        "changedValue": -0.3,
+        "totalVolumeTraded": 98330,
+        "referencePrice": 37.5,
         "productGrpId": "7",
-        "expectedTradePrice": 38.2,
         "symbol": "BID",
-        "changedRatio": -0.52,
-        "matchPrice": 38.2
+        "changedRatio": -0.8,
+        "matchPrice": 37.2
       },
       "coveredWarrant": {},
       "ticker": {
@@ -5506,14 +5505,14 @@
           "shortName": "LienVietPostBank"
         },
         {
-          "name": "Ngân hàng TMCP Á Châu",
-          "symbol": "ACB",
-          "shortName": "Ngân hàng Á Châu"
-        },
-        {
           "name": "Ngân hàng TMCP Phát triển TP. HCM",
           "symbol": "HDB",
           "shortName": "HDBank"
+        },
+        {
+          "name": "Ngân hàng TMCP Á Châu",
+          "symbol": "ACB",
+          "shortName": "Ngân hàng Á Châu"
         },
         {
           "name": "Ngân hàng TMCP Sài Gòn Thương Tín",
@@ -5548,7 +5547,7 @@
             "tooltip": "P/B (Price-to-Book) là so sánh giá cổ phiếu trên thị trường cao/ thấp gấp bao nhiêu lần so với giá trị sổ sách của doanh nghiệp"
           },
           "beta": {
-            "value": 0.9765939375458279,
+            "value": 0.974362332001337,
             "tooltip": "Hệ số Beta là sự tương quan giữa sự biến động của giá cố phiếu so với sự biến động của thị trường Vnindex"
           },
           "netInterestMargin": {
@@ -5625,7 +5624,7 @@
           },
           "sales": {},
           "capitalization": {
-            "value": 269620297612800
+            "value": 263301071887500
           },
           "revenue": {
             "value": 147727280000000
@@ -5638,15 +5637,15 @@
             "value": 30
           },
           "foreignHoldingRatio": {
-            "value": 17.156584167572685
+            "value": 17.14637411134037
           },
           "accuredInterestTotalAssetRatio": {
             "value": 0.8056534217755803,
             "tooltip": "Tỷ lệ các khoản lãi, phí mà ngân hàng dự kiến thu được trong tương lai trên tổng tài sản"
           },
           "remainForeignRoom": {
-            "value": 901782708,
-            "ratio": 12.843415832427315
+            "value": 902499593,
+            "ratio": 12.853625888659629
           }
         },
         "companyType": "Ngân hàng"
@@ -5728,5 +5727,5 @@
     },
     "__N_SSG": true
   },
-  "updatedAt": "2025-12-09T02:35:12.436Z"
+  "updatedAt": "2025-12-09T04:16:14.459Z"
 }

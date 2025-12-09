@@ -3,12 +3,12 @@
   "basicInfo": {
     "companyName": "Ngân hàng TMCP Kỹ thương Việt Nam",
     "exchange": "HOSE",
-    "matchPrice": 35.4,
-    "changedValue": 0.5,
-    "changedRatio": 1.43,
-    "totalVolume": 1202060,
-    "marketCap": 247309790448600,
-    "beta": 1.1869696198827553,
+    "matchPrice": 33.7,
+    "changedValue": -0.5,
+    "changedRatio": -1.46,
+    "totalVolume": 522790,
+    "marketCap": 242349422158800,
+    "beta": 1.1815971165782386,
     "eps": 3102.5948479766043,
     "roe": 0.13832523506318706,
     "roa": 0.021778175442035374
@@ -4541,8 +4541,8 @@
         "infoSupplierPosition": "GĐ Kế Toán - Chính sách Tài Chính và Thuế",
         "phoneSupplier": "(84.24) 3944 6368",
         "introduction": "Ngân hàng Thương mại Cổ phần Kỹ thương Việt Nam (TCB) được thành lập vào năm 1993. Ngân hàng hoạt động trong lĩnh vực huy động và kinh doanh vốn, và cung cấp các dịch vụ tài chính liên quan. Techcombank trở thành công ty đại chúng từ năm 2007. Techcombank được biết đến là ngân hàng thương mại có tốc độ phát triển nhanh nhất trong 10 năm trở lại đây, khi tập trung nhiều vào cho vay ngành Bất động sản. ",
-        "capital": 247309790448600,
-        "beta": 1.1869696198827553,
+        "capital": 242349422158800,
+        "beta": 1.1815971165782386,
         "notes": "<p>- Ngày 27/09/1993: Ngân hàng Thương mại Cổ phần Kỹ thương Việt Nam (Techcombank) được thành lập với vốn điều lệ ban đầu là 20 tỷ đồng.</p><p>- Năm 1995: Tăng vốn điều lệ lên 51,495 tỷ đồng.</p><p>- Năm 1996: Tăng vốn điều lệ lên 70 tỷ đồng.</p><p>- Năm 1999: Tăng vốn điều lệ lên 80,02 tỷ đồng.</p><p>- Năm 2001: Tăng vốn điều lệ lên 102,345 tỷ đồng. Ký kết hợp đồng với nhà cung cấp phần mềm hệ thống ngân hàng hàng đầu thế giới Temenos Holding NV.</p><p>- Năm 2002: Tăng vốn điều lệ lên 104,435 tỷ đồng.</p><p>- Ngày 31/12/2003: Vốn điều lệ tăng lên 180 tỷ đồng. Chính thức phát hành thẻ thanh toán F@stAccess-Connect 24 ngày 05/12/2003.Triển khai phần mềm Globus trên toàn hệ thống vào ngày 16/12/2003.</p><p>- Ngày 30/06/2004: Tăng vốn điều lệ lên 234 tỷ đồng.</p><p>- Ngày 02/08/2004: Tăng vốn điều lệ lên 252,255 tỷ đồng.</p><p>- Ngày 26/11/2004: Tăng vốn điều lệ lên 412,7 tỷ đồng.</p><p>- Ngày 21/07/2005: Tăng vốn điều lệ lên 453 tỷ đồng.</p><p>- Ngày 28/09/2005: Tăng vốn điều lệ lên 498 tỷ đồng.</p><p>- Ngày 28/10/2005: Tăng vốn điều lệ lên 555 tỷ đồng.</p><p>- Năm 2005: Kí kết hợp đồng cổ đông chiến lược với HSBC.</p><p>- Ngày 24/11/2006: Tăng vốn điều lệ lên 1.500 tỷ đồng.</p><p>- Năm 2007: Tổng tài sản đạt gần 2,5 tỷ.</p><p>- Năm 2008: Tăng vốn điều lệ lên 3.342 tỷ đồng.</p><p>- Tháng 09/2009: Tăng vốn điều lệ lên 5.400,42 tỷ đồng.</p><p>- Tháng 6/2010: Tăng vốn điều lệ lên 6.932 tỷ đồng.</p><p>- Năm 2011: Tăng vốn điều lệ lên 8.788 tỷ đồng.</p><p>- Năm 2012: Tăng vốn điều lệ lên 8.848 tỷ đồng. Tổng tài sản đạt 179.934 tỷ đồng.</p><p>- Năm 2013: Tăng vốn điều lệ lên 8.878 tỷ đồng.</p><p>- Năm 2015: Tổng tài sản đạt 191,994 tỷ đồng.</p><p>- Ngày 04/06/2018: là ngày giao dịch đầu tiên trên sàn HOSE với giá tham chiếu là 128,000 đ/CP.</p><p>- Ngày 10/08/2018: Tăng vốn điều lệ lên 34,965,921,600,000 đồng.</p><p>- Ngày 12/11/2019: Tăng vốn điều lệ lên 35,001,399,620,000 đồng.</p><p>- Ngày 19/01/2021: Tăng vốn điều lệ lên 35,049,062,300,000 đồng.</p>",
         "otherInfo": "Số chi nhánh và số phòng giao dịch: 130",
         "postUpDate": "2018-06-04T00:00:00",
@@ -4572,17 +4572,16 @@
       "statistic": {
         "symbol": "TCB",
         "klcplh": 7086240414,
-        "tradingDate": "2025-12-03T00:00:00Z"
+        "tradingDate": "2025-12-08T00:00:00Z"
       },
       "priceSnapshot": {
-        "changedValue": 0.5,
-        "totalVolumeTraded": 1202060,
-        "referencePrice": 34.9,
+        "changedValue": -0.5,
+        "totalVolumeTraded": 522790,
+        "referencePrice": 34.2,
         "productGrpId": "7",
-        "expectedTradePrice": 35.4,
         "symbol": "TCB",
-        "changedRatio": 1.43,
-        "matchPrice": 35.4
+        "changedRatio": -1.46,
+        "matchPrice": 33.7
       },
       "coveredWarrant": {},
       "ticker": {
@@ -5506,14 +5505,14 @@
           "shortName": "LienVietPostBank"
         },
         {
-          "name": "Ngân hàng TMCP Á Châu",
-          "symbol": "ACB",
-          "shortName": "Ngân hàng Á Châu"
-        },
-        {
           "name": "Ngân hàng TMCP Phát triển TP. HCM",
           "symbol": "HDB",
           "shortName": "HDBank"
+        },
+        {
+          "name": "Ngân hàng TMCP Á Châu",
+          "symbol": "ACB",
+          "shortName": "Ngân hàng Á Châu"
         },
         {
           "name": "Ngân hàng TMCP Sài Gòn Thương Tín",
@@ -5548,7 +5547,7 @@
             "tooltip": "P/B (Price-to-Book) là so sánh giá cổ phiếu trên thị trường cao/ thấp gấp bao nhiêu lần so với giá trị sổ sách của doanh nghiệp"
           },
           "beta": {
-            "value": 1.1869696198827553,
+            "value": 1.1815971165782386,
             "tooltip": "Hệ số Beta là sự tương quan giữa sự biến động của giá cố phiếu so với sự biến động của thị trường Vnindex"
           },
           "netInterestMargin": {
@@ -5625,7 +5624,7 @@
           },
           "sales": {},
           "capitalization": {
-            "value": 247309790448600
+            "value": 242349422158800
           },
           "revenue": {
             "value": 63918167000000
@@ -5638,15 +5637,15 @@
             "value": 22.5386
           },
           "foreignHoldingRatio": {
-            "value": 22.47211954386847
+            "value": 22.512605934851365
           },
           "accuredInterestTotalAssetRatio": {
             "value": 0.932442852537845,
             "tooltip": "Tỷ lệ các khoản lãi, phí mà ngân hàng dự kiến thu được trong tương lai trên tổng tài sản"
           },
           "remainForeignRoom": {
-            "value": 4710964,
-            "ratio": 0.06648045613152931
+            "value": 1842001,
+            "ratio": 0.025994065148633894
           }
         },
         "companyType": "Ngân hàng"
@@ -5728,5 +5727,5 @@
     },
     "__N_SSG": true
   },
-  "updatedAt": "2025-12-09T02:35:12.609Z"
+  "updatedAt": "2025-12-09T04:16:20.195Z"
 }

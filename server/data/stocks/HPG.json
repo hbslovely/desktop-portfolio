@@ -3,8 +3,10 @@
   "basicInfo": {
     "companyName": "CTCP Tập đoàn Hòa Phát",
     "exchange": "HOSE",
+    "matchPrice": 26.55,
     "changedValue": -0.2,
     "changedRatio": -0.75,
+    "totalVolume": 1872570,
     "marketCap": 205318711621250,
     "beta": 1.0646519735375908,
     "eps": 1875.812624517499,
@@ -4574,11 +4576,12 @@
       },
       "priceSnapshot": {
         "changedValue": -0.2,
+        "totalVolumeTraded": 1872570,
         "referencePrice": 26.75,
         "productGrpId": "7",
-        "expectedTradePrice": 26.55,
         "symbol": "HPG",
-        "changedRatio": -0.75
+        "changedRatio": -0.75,
+        "matchPrice": 26.55
       },
       "coveredWarrant": {},
       "ticker": {
@@ -5739,5 +5742,5 @@
     },
     "__N_SSG": true
   },
-  "updatedAt": "2025-12-09T02:35:12.535Z"
+  "updatedAt": "2025-12-09T04:16:16.680Z"
 }

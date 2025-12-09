@@ -3,12 +3,12 @@
   "basicInfo": {
     "companyName": "Ngân hàng TMCP Đông Nam Á",
     "exchange": "HOSE",
-    "matchPrice": 17.7,
-    "changedValue": -0.05,
-    "changedRatio": -0.28,
-    "totalVolume": 256060,
-    "marketCap": 50498750000000,
-    "beta": 0.6779794076260125,
+    "matchPrice": 17.3,
+    "changedValue": -0.25,
+    "changedRatio": -1.42,
+    "totalVolume": 34450,
+    "marketCap": 49929750000000,
+    "beta": 0.6668348156844662,
     "eps": 2329.0632688927944,
     "roe": 0.17897568935960215,
     "roa": 0.019799568255664802
@@ -4541,8 +4541,8 @@
         "infoSupplierPosition": "Phó Tổng Giám Đốc",
         "phoneSupplier": "",
         "introduction": "Ngân hàng Thương mại Cổ phần Đông Nam Á (SSB) được thành lập vào năm 1994. Ngân hàng hoạt động trong lĩnh vực huy động, cấp tín dụng và các dịch vụ tài chính liên quan. ",
-        "capital": 50498750000000,
-        "beta": 0.6779794076260125,
+        "capital": 49929750000000,
+        "beta": 0.6668348156844662,
         "notes": "<p>- Tháng 03/1994: Ngân hàng TMCP Hải Phòng (tiền thân của Ngân hàng TMCP Đông Nam Á) được thành lập tại Hải Phòng.</p><p>- Tháng 09/2002: Đổi tên thành Ngân hàng TMCP Đông Nam Á (SeABank).</p><p>- Tháng 08/2008: Mobifone chính thức trở thành cổ đông chiến lược của SeABank.</p><p>- Tháng 08/2008: Societe Generale (Pháp) - Tập đoàn Tài chính Ngân hàng Châu Âu trở thành cổ đông chiến lược nước ngoài của SeABank.</p><p>- Tháng 12/2008: Tăng vốn điều lệ lên 4,068 tỷ đồng.</p><p>- Tháng 06/2009: Chính thức triển khai mô hình ngân hàng bán lẻ.</p><p>- Tháng 12/2009: Tăng vốn điều lệ lên 5,068 tỷ đồng.</p><p>- Năm 2010: Công bố bộ nhận diện thương hiệu mới, được UBCKNN chấp thuận là công ty đại chúng.</p><p>- Tháng 10/2013: Chính thức được NHNN chấp thuận tăng vốn điều lệ lên 5,466 tỷ đồng.</p><p>- Tháng 06/2018: Mua lại Công ty Tài chính TNHH MTV Bưu điện (PTF) từ VNPT.</p><p>- Tháng 12/2018: Tăng vốn điều lệ lên 7,688 tỷ đồng.</p><p>- Tháng 09/2019: Tăng vốn điều lệ lên 9,369 tỷ đồng, đáp ứng chuẩn Basel II theo yêu cầu của NHNN.</p><p>- Tháng 12/2019: Hoàn thành việc mua lại trước thời hạn toàn bộ dư nợ đã bán cho VAMC.</p><p>- Tháng 10/2020: Đạt mức vốn điều lệ 12,087 tỷ đồng, sở hữu mạng lưới hoạt động gần 170 chi nhánh và phòng giao dịch tại 27 tỉnh thành trên toàn quốc.</p><p>- Ngày 24/03/2021: Ngày giao dịch đầu tiên trên HOSE với giá 16,800 đ/CP.</p><p>- Ngày 22/09/2021: Tăng vốn điều lệ lên 13,424 tỷ đồng.</p>",
         "otherInfo": "- Số chi nhánh: 39\r\n- Số phòng giao dịch: 126",
         "postUpDate": "2021-03-24T00:00:00",
@@ -4572,17 +4572,17 @@
       "statistic": {
         "symbol": "SSB",
         "klcplh": 2845000000,
-        "tradingDate": "2025-12-03T00:00:00Z"
+        "tradingDate": "2025-12-08T00:00:00Z"
       },
       "priceSnapshot": {
-        "changedValue": -0.05,
-        "totalVolumeTraded": 256060,
-        "referencePrice": 17.75,
+        "changedValue": -0.25,
+        "totalVolumeTraded": 34450,
+        "referencePrice": 17.55,
         "productGrpId": "7",
-        "expectedTradePrice": 17.7,
+        "expectedTradePrice": 17.4,
         "symbol": "SSB",
-        "changedRatio": -0.28,
-        "matchPrice": 17.7
+        "changedRatio": -1.42,
+        "matchPrice": 17.3
       },
       "coveredWarrant": {},
       "ticker": {
@@ -5511,14 +5511,14 @@
           "shortName": "LienVietPostBank"
         },
         {
-          "name": "Ngân hàng TMCP Á Châu",
-          "symbol": "ACB",
-          "shortName": "Ngân hàng Á Châu"
-        },
-        {
           "name": "Ngân hàng TMCP Phát triển TP. HCM",
           "symbol": "HDB",
           "shortName": "HDBank"
+        },
+        {
+          "name": "Ngân hàng TMCP Á Châu",
+          "symbol": "ACB",
+          "shortName": "Ngân hàng Á Châu"
         },
         {
           "name": "Ngân hàng TMCP Sài Gòn Thương Tín",
@@ -5548,7 +5548,7 @@
             "tooltip": "P/B (Price-to-Book) là so sánh giá cổ phiếu trên thị trường cao/ thấp gấp bao nhiêu lần so với giá trị sổ sách của doanh nghiệp"
           },
           "beta": {
-            "value": 0.6779794076260125,
+            "value": 0.6668348156844662,
             "tooltip": "Hệ số Beta là sự tương quan giữa sự biến động của giá cố phiếu so với sự biến động của thị trường Vnindex"
           },
           "netInterestMargin": {
@@ -5625,7 +5625,7 @@
           },
           "sales": {},
           "capitalization": {
-            "value": 50498750000000
+            "value": 49929750000000
           },
           "revenue": {
             "value": 23118535000000
@@ -5638,15 +5638,15 @@
             "value": 5
           },
           "foreignHoldingRatio": {
-            "value": 0.23463771528998242
+            "value": 0.22837409490333918
           },
           "accuredInterestTotalAssetRatio": {
             "value": 1.1204631717023708,
             "tooltip": "Tỷ lệ các khoản lãi, phí mà ngân hàng dự kiến thu được trong tương lai trên tổng tài sản"
           },
           "remainForeignRoom": {
-            "value": 135574557,
-            "ratio": 4.765362284710018
+            "value": 135752757,
+            "ratio": 4.771625905096661
           }
         },
         "companyType": "Ngân hàng"
@@ -5728,5 +5728,5 @@
     },
     "__N_SSG": true
   },
-  "updatedAt": "2025-12-09T02:35:12.582Z"
+  "updatedAt": "2025-12-09T04:16:19.159Z"
 }

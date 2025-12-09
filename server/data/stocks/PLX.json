@@ -3,12 +3,12 @@
   "basicInfo": {
     "companyName": "Tập đoàn Xăng Dầu Việt Nam",
     "exchange": "HOSE",
-    "matchPrice": 34.95,
-    "changedValue": 0.35,
-    "changedRatio": 1.01,
-    "totalVolume": 174960,
-    "marketCap": 43962491331000,
-    "beta": 0.8199108373602654,
+    "matchPrice": 35.05,
+    "changedValue": -1,
+    "changedRatio": -2.77,
+    "totalVolume": 92830,
+    "marketCap": 45804850071750,
+    "beta": 0.8290820855064357,
     "eps": 2090.2016432628366,
     "roe": 0.10251600842101431,
     "roa": 0.0364872728990708
@@ -4541,8 +4541,8 @@
         "infoSupplierPosition": "Kế toán trưởng",
         "phoneSupplier": "",
         "introduction": "Tổng Công ty Xăng dầu Việt Nam (Petrolimex) được thành lập vào ngày 12/01/1996 với tên ban đầu là Tổng Công ty Xăng dầu mỡ. Trải qua quá trình cổ phần hóa, tái cấu trúc và thành công trong việc đưa ra công chúng (IPO) trên Sở Giao dịch Chứng khoán Hà Nội (HNX) vào năm 2011. Năm 2017, Petrolimex chính thức niêm yết trên Sở Giao dịch Chứng khoán Thành phố Hồ Chí Minh (HOSE) với mã PLX. Hoạt động kinh doanh chính của Petrolimex bao gồm xuất nhập khẩu và kinh doanh xăng dầu, lọc - hóa dầu, đầu tư vốn vào các doanh nghiệp khác để kinh doanh trong các ngành nghề mà Petrolimex đang hoạt động và các ngành nghề khác theo quy định của pháp luật.",
-        "capital": 43962491331000,
-        "beta": 0.8199108373602654,
+        "capital": 45804850071750,
+        "beta": 0.8290820855064357,
         "notes": "<p>- Ngày 12/01/1956: Thành lập TCT Xăng dầu mỡ (tiền thân của Tập đoàn Xăng dầu Việt Nam).</p><p>- Ngày 17/04/1995: Thành lập TCT xăng dầu Việt Nam.</p><p>- Ngày 28/07/2011: Tập đoàn tổ chức thành công phiên đấu giá cổ phần lần đầu ra bên ngoài (IPO) tại SGD chứng khoán Hà Nội.</p><p>- Ngày 01/12/2011: TCT Xăng Dầu Việt Nam chính thức hoạt động dưới hình thức CTCP với tên gọi Tập Đoàn Xăng Dầu Việt Nam.</p><p>- Ngày 17/08/2012: Tập Đoàn trở thành CTCP đại chúng theo quyết định số 2946/UBCK-QLPH của UBCK NN.</p><p>- Ngày 21/04/2017: Là ngày giao dịch đầu tiên trên sàn HOSE với giá tham chiếu 43,200 đ/CP.</p>",
         "otherInfo": "",
         "postUpDate": "2017-04-21T00:00:00",
@@ -4572,17 +4572,16 @@
       "statistic": {
         "symbol": "PLX",
         "klcplh": 1270592235,
-        "tradingDate": "2025-12-03T00:00:00Z"
+        "tradingDate": "2025-12-08T00:00:00Z"
       },
       "priceSnapshot": {
-        "changedValue": 0.35,
-        "totalVolumeTraded": 174960,
-        "referencePrice": 34.6,
+        "changedValue": -1,
+        "totalVolumeTraded": 92830,
+        "referencePrice": 36.05,
         "productGrpId": "7",
-        "expectedTradePrice": 34.95,
         "symbol": "PLX",
-        "changedRatio": 1.01,
-        "matchPrice": 34.95
+        "changedRatio": -2.77,
+        "matchPrice": 35.05
       },
       "coveredWarrant": {},
       "ticker": {
@@ -5547,7 +5546,7 @@
             "tooltip": "P/B (Price-to-Book) là so sánh giá cổ phiếu trên thị trường cao/ thấp gấp bao nhiêu lần so với giá trị sổ sách của doanh nghiệp"
           },
           "beta": {
-            "value": 0.8199108373602654,
+            "value": 0.8290820855064357,
             "tooltip": "Hệ số Beta là sự tương quan giữa sự biến động của giá cố phiếu so với sự biến động của thị trường Vnindex"
           },
           "netInterestMargin": {
@@ -5625,7 +5624,7 @@
             "value": 299058836338154
           },
           "capitalization": {
-            "value": 43962491331000
+            "value": 45804850071750
           },
           "revenue": {
             "value": 299058836338154
@@ -5640,14 +5639,14 @@
             "value": 20
           },
           "foreignHoldingRatio": {
-            "value": 14.763144287317129
+            "value": 14.785364309761423
           },
           "accuredInterestTotalAssetRatio": {
             "tooltip": "Tỷ lệ các khoản lãi, phí mà ngân hàng dự kiến thu được trong tương lai trên tổng tài sản"
           },
           "remainForeignRoom": {
-            "value": 67758528,
-            "ratio": 5.236855712682871
+            "value": 67471028,
+            "ratio": 5.214635690238577
           }
         },
         "companyType": "Sản xuất"
@@ -5743,5 +5742,5 @@
     },
     "__N_SSG": true
   },
-  "updatedAt": "2025-12-09T02:35:12.550Z"
+  "updatedAt": "2025-12-09T04:16:18.308Z"
 }

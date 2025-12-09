@@ -3,10 +3,10 @@
   "basicInfo": {
     "companyName": "Ngân hàng TMCP Sài Gòn Thương Tín",
     "exchange": "HOSE",
-    "matchPrice": 48.2,
-    "changedValue": -0.5,
-    "changedRatio": -1.03,
-    "totalVolume": 100350,
+    "matchPrice": 48.15,
+    "changedValue": -0.55,
+    "changedRatio": -1.13,
+    "totalVolume": 166080,
     "marketCap": 91810005369200,
     "beta": 1.080672003391808,
     "eps": 6518.962734978601,
@@ -4575,14 +4575,14 @@
         "tradingDate": "2025-12-08T00:00:00Z"
       },
       "priceSnapshot": {
-        "changedValue": -0.5,
-        "totalVolumeTraded": 100350,
+        "changedValue": -0.55,
+        "totalVolumeTraded": 166080,
         "referencePrice": 48.7,
         "productGrpId": "7",
         "expectedTradePrice": 48.35,
         "symbol": "STB",
-        "changedRatio": -1.03,
-        "matchPrice": 48.2
+        "changedRatio": -1.13,
+        "matchPrice": 48.15
       },
       "coveredWarrant": {},
       "ticker": {
@@ -5728,5 +5728,5 @@
     },
     "__N_SSG": true
   },
-  "updatedAt": "2025-12-09T02:35:12.603Z"
+  "updatedAt": "2025-12-09T04:16:19.900Z"
 }

@@ -3,12 +3,12 @@
   "basicInfo": {
     "companyName": "Ngân hàng TMCP Quốc tế Việt Nam",
     "exchange": "HOSE",
-    "matchPrice": 18.9,
-    "changedValue": 0.1,
-    "changedRatio": 0.53,
-    "totalVolume": 704330,
-    "marketCap": 63995307348000,
-    "beta": 0.9841473730469894,
+    "matchPrice": 18.3,
+    "changedValue": -0.05,
+    "changedRatio": -0.27,
+    "totalVolume": 222470,
+    "marketCap": 62463504778500,
+    "beta": 0.9798971871618443,
     "eps": 2220.512726460732,
     "roe": 0.17742896427718413,
     "roa": 0.015286385244352567
@@ -4541,8 +4541,8 @@
         "infoSupplierPosition": "Phó TGĐ",
         "phoneSupplier": "(84.4) 6276 0068 - 6276 4483",
         "introduction": "Ngân hàng Thương mại Cổ phần Quốc tế Việt Nam (VIB) được thành lập vào năm 1996. VIB hoạt động chủ yếu trong lĩnh vực huy động vốn, cho vay tín dụng. Ngoài ra, Ngân hàng còn tham gia các hoạt động thanh toán quốc tế, kinh doanh ngoại hối, đầu tư tài chính, quản lý rủi ro và bảo toàn vốn. Chiến lược của VIB là trở thành ngân hàng bán lẻ khi tập trung nhiều khách hàng cá nhân và các doạnh nghiệp nhỏ và vừa.",
-        "capital": 63995307348000,
-        "beta": 0.9841473730469894,
+        "capital": 62463504778500,
+        "beta": 0.9798971871618443,
         "notes": "<p>- Ngày 18/09/1996: Được thành lập với vốn ban đầu 50 tỷ đồng và 23 nhân viên.</p><p>- Ngày 23/11/2006: VIBank tăng vốn điều lệ lên 1,000 tỷ đồng.</p><p>- Năm 2009: VIB ký thỏa thuận hợp tác chiến lược với Ngân hàng CBA (Commonwealth Bank of Australia), vốn điều lệ tăng lên 3,000 tỷ đồng, triển khai tái nhận diện thương hiệu 2009-2013.</p><p>- Năm 2010: Ngân hàng CBA chính thức trở thành cổ đông chiến lược của VIB với tỷ lệ sở hữu 15% (vốn điều lệ là 4,000 tỷ đồng).</p><p>- Năm 2011: Vốn điều lệ tăng lên 4,250 tỷ đồng, Ngân hàng CBA nâng tỷ lệ sở hữu lên 20% vốn.</p><p>- Ngày 09/01/2017: Giao dịch đầu tiên trên sàn UPCoM với giá tham chiếu 17,000 đồng/cp.</p><p>- Ngày 30/10/2020: Ngày hủy giao dịch trên UPCoM.</p><p>- Ngày 10/11/2020: Ngày giao dịch đầu tiên trên HOSE với giá 32,300 đ/CP .</p><p>- Ngày 28/01/2021: Tăng vốn điều lệ lên 11,093,878,520,000 đồng.</p><p>- Ngày 08/09/2021: Tăng vốn điều lệ lên 15,531,429,930,000 đồng.</p>",
         "otherInfo": "- Số phòng giao dịch: 90\r\n- Số chi nhánh: 37",
         "postUpDate": "2020-11-10T00:00:00",
@@ -4572,17 +4572,16 @@
       "statistic": {
         "symbol": "VIB",
         "klcplh": 3404005710,
-        "tradingDate": "2025-12-03T00:00:00Z"
+        "tradingDate": "2025-12-08T00:00:00Z"
       },
       "priceSnapshot": {
-        "changedValue": 0.1,
-        "totalVolumeTraded": 704330,
-        "referencePrice": 18.8,
+        "changedValue": -0.05,
+        "totalVolumeTraded": 222470,
+        "referencePrice": 18.35,
         "productGrpId": "7",
-        "expectedTradePrice": 18.9,
         "symbol": "VIB",
-        "changedRatio": 0.53,
-        "matchPrice": 18.9
+        "changedRatio": -0.27,
+        "matchPrice": 18.3
       },
       "coveredWarrant": {},
       "ticker": {
@@ -5511,14 +5510,14 @@
           "shortName": "LienVietPostBank"
         },
         {
-          "name": "Ngân hàng TMCP Á Châu",
-          "symbol": "ACB",
-          "shortName": "Ngân hàng Á Châu"
-        },
-        {
           "name": "Ngân hàng TMCP Phát triển TP. HCM",
           "symbol": "HDB",
           "shortName": "HDBank"
+        },
+        {
+          "name": "Ngân hàng TMCP Á Châu",
+          "symbol": "ACB",
+          "shortName": "Ngân hàng Á Châu"
         },
         {
           "name": "Ngân hàng TMCP Sài Gòn Thương Tín",
@@ -5548,7 +5547,7 @@
             "tooltip": "P/B (Price-to-Book) là so sánh giá cổ phiếu trên thị trường cao/ thấp gấp bao nhiêu lần so với giá trị sổ sách của doanh nghiệp"
           },
           "beta": {
-            "value": 0.9841473730469894,
+            "value": 0.9798971871618443,
             "tooltip": "Hệ số Beta là sự tương quan giữa sự biến động của giá cố phiếu so với sự biến động của thị trường Vnindex"
           },
           "netInterestMargin": {
@@ -5625,7 +5624,7 @@
           },
           "sales": {},
           "capitalization": {
-            "value": 63995307348000
+            "value": 62463504778500
           },
           "revenue": {
             "value": 35442403000000
@@ -5638,15 +5637,15 @@
             "value": 4.99
           },
           "foreignHoldingRatio": {
-            "value": 4.985874891496583
+            "value": 4.982023634737088
           },
           "accuredInterestTotalAssetRatio": {
             "value": 0.5278907097724892,
             "tooltip": "Tỷ lệ các khoản lãi, phí mà ngân hàng dự kiến thu được trong tương lai trên tổng tài sản"
           },
           "remainForeignRoom": {
-            "value": 140418,
-            "ratio": 0.004125108503417074
+            "value": 271515,
+            "ratio": 0.007976365262912566
           }
         },
         "companyType": "Ngân hàng"
@@ -5728,5 +5727,5 @@
     },
     "__N_SSG": true
   },
-  "updatedAt": "2025-12-09T02:35:12.630Z"
+  "updatedAt": "2025-12-09T04:16:21.584Z"
 }

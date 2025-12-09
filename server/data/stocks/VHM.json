@@ -3,12 +3,12 @@
   "basicInfo": {
     "companyName": "CTCP Vinhomes",
     "exchange": "HOSE",
-    "matchPrice": 105.2,
-    "changedValue": -1.6,
-    "changedRatio": -1.5,
-    "totalVolume": 458480,
-    "marketCap": 438671602027200,
-    "beta": 1.1660703895842748,
+    "matchPrice": 108.3,
+    "changedValue": -1.7,
+    "changedRatio": -1.55,
+    "totalVolume": 112270,
+    "marketCap": 451815320440000,
+    "beta": 1.1667696576916222,
     "eps": 6461.583589411937,
     "roe": 0.13211721894363118,
     "roa": 0.04607378355759542
@@ -4541,8 +4541,8 @@
         "infoSupplierPosition": "Chủ tịch HĐQT",
         "phoneSupplier": "(+84 24) 3974 9350",
         "introduction": "Tiền thân của Vinhomes là CTCP Đô thị BIDV - PP được thành lập với vốn điều lệ 300 tỷ. Hoạt động trong lĩnh vực bất động sản, phát triển, chuyển nhượng và vận hành các bất động sản. Năm 2019 được tổ chức kỷ lục thế giới trao danh hiệu \"Khu đô thị có biển hồ nước mặn và hồ nước ngọt nhân tạo trải cát trắng lớn nhất thế giới\" cho dự án Vinhomes Ocean Park cùng với nhiều thành tựu nổi bật khác.",
-        "capital": 438671602027200,
-        "beta": 1.1660703895842748,
+        "capital": 451815320440000,
+        "beta": 1.1667696576916222,
         "notes": "<p>- Năm 2008: Tiền thân Công ty Cổ phần Đô thị BIDV-PP được thành lập với vốn điều lệ ban đầu là 300 tỷ đồng.</p><p>- Tháng 03/2009: Đổi tên thành Công ty Cổ phần Phát triển Đô thị Nam Hà Nội.</p><p>- Ngày 26/06/2009: Tăng vốn điều lệ lên 500 tỷ đồng.</p><p>- Ngày 05/08/2010: Tăng vốn điều lệ lên 2,000 tỷ đồng.</p><p>- Ngày 28/10/2011: Trở thành công ty đại chúng theo Công văn số 3585/UBCK-QLPH của Ủy ban chứng khoán Nhà nước.</p><p>- Ngày 03/11/2011: Công ty nhận được Quyết định về việc chấp thuận đăng ký giao dịch cổ phiếu tại Sở Giao dịch Chứng khoán Hà Nội (UPCoM) với mã chứng khoán là NHN.</p><p>- Ngày 14/07/2017: Hủy đăng ký giao dịch trên thị trường UPCoM.</p><p>- Ngày 01/02/2018: Tăng vốn điều lệ lên 28,365 tỷ đồng.</p><p>- Ngày 02/02/2018: Đổi tên thành Công ty Cổ phần Vinhomes.</p><p>- Ngày 12/02/2018: Giảm vốn điều lệ xuống 26,796 tỷ đồng.</p><p>- Ngày 07/05/2018: Niêm yết trên Sở Giao dịch Chứng khoán Thành phố Hồ Chí Minh (HOSE).</p><p>- Ngày 17/05/2018: là ngày giao dịch đầu tiên trên sàn HOSE với giá tham chiếu là 92,100 đ/CP.</p><p>- Ngày 08/11/2018: Tăng vốn điều lệ lên 33,495 tỷ đồng.</p><p>- Tháng 10/2021: Tăng vốn điều lệ lên 43,543 tỷ đồng.</p>",
         "otherInfo": "",
         "postUpDate": "2018-05-17T00:00:00",
@@ -4572,17 +4572,16 @@
       "statistic": {
         "symbol": "VHM",
         "klcplh": 4107412004,
-        "tradingDate": "2025-12-03T00:00:00Z"
+        "tradingDate": "2025-12-08T00:00:00Z"
       },
       "priceSnapshot": {
-        "changedValue": -1.6,
-        "totalVolumeTraded": 458480,
-        "referencePrice": 106.8,
+        "changedValue": -1.7,
+        "totalVolumeTraded": 112270,
+        "referencePrice": 110,
         "productGrpId": "7",
-        "expectedTradePrice": 105.2,
         "symbol": "VHM",
-        "changedRatio": -1.5,
-        "matchPrice": 105.2
+        "changedRatio": -1.55,
+        "matchPrice": 108.3
       },
       "coveredWarrant": {},
       "ticker": {
@@ -5506,6 +5505,11 @@
           "shortName": "Công ty Cổ phần Tập đoàn Bất động sản CRV"
         },
         {
+          "name": "CTCP Đầu tư Bất động sản Taseco",
+          "symbol": "TAL",
+          "shortName": "Bất Động Sản Taseco"
+        },
+        {
           "name": "CTCP Tập đoàn Đất Xanh",
           "symbol": "DXG",
           "shortName": "Dat Xanh Group"
@@ -5514,11 +5518,6 @@
           "name": "CTCP Phát triển Bất động sản Văn Phú",
           "symbol": "VPI",
           "shortName": "Đầu tư Văn Phú"
-        },
-        {
-          "name": "CTCP Đầu tư Nam Long",
-          "symbol": "NLG",
-          "shortName": "Đầu tư Nam Long"
         },
         {
           "name": "CTCP Đầu tư Phát triển Đô thị và Khu công nghiệp Sông Đà",
@@ -5547,7 +5546,7 @@
             "tooltip": "P/B (Price-to-Book) là so sánh giá cổ phiếu trên thị trường cao/ thấp gấp bao nhiêu lần so với giá trị sổ sách của doanh nghiệp"
           },
           "beta": {
-            "value": 1.1660703895842748,
+            "value": 1.1667696576916222,
             "tooltip": "Hệ số Beta là sự tương quan giữa sự biến động của giá cố phiếu so với sự biến động của thị trường Vnindex"
           },
           "netInterestMargin": {
@@ -5625,7 +5624,7 @@
             "value": 83506329000000
           },
           "capitalization": {
-            "value": 438671602027200
+            "value": 451815320440000
           },
           "revenue": {
             "value": 83506329000000
@@ -5640,14 +5639,14 @@
             "value": 50
           },
           "foreignHoldingRatio": {
-            "value": 8.915429634119558
+            "value": 8.882565509491071
           },
           "accuredInterestTotalAssetRatio": {
             "tooltip": "Tỷ lệ các khoản lãi, phí mà ngân hàng dự kiến thu được trong tương lai trên tổng tài sản"
           },
           "remainForeignRoom": {
-            "value": 1687512575,
-            "ratio": 41.08457036588044
+            "value": 1688862440,
+            "ratio": 41.11743449050893
           }
         },
         "companyType": "Bất động sản"
@@ -5743,5 +5742,5 @@
     },
     "__N_SSG": true
   },
-  "updatedAt": "2025-12-09T02:35:12.615Z"
+  "updatedAt": "2025-12-09T04:16:21.237Z"
 }

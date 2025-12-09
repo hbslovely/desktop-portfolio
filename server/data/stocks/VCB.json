@@ -3,6 +3,10 @@
   "basicInfo": {
     "companyName": "Ngân hàng TMCP Ngoại thương Việt Nam",
     "exchange": "HOSE",
+    "matchPrice": 57.3,
+    "changedValue": -0.6,
+    "changedRatio": -1.04,
+    "totalVolume": 159960,
     "marketCap": 483793587942600,
     "beta": 0.8572047439387802,
     "eps": 4202.412205473915,
@@ -4571,10 +4575,13 @@
         "tradingDate": "2025-12-08T00:00:00Z"
       },
       "priceSnapshot": {
+        "changedValue": -0.6,
+        "totalVolumeTraded": 159960,
         "referencePrice": 57.9,
         "productGrpId": "7",
-        "expectedTradePrice": 57.9,
-        "symbol": "VCB"
+        "symbol": "VCB",
+        "changedRatio": -1.04,
+        "matchPrice": 57.3
       },
       "coveredWarrant": {},
       "ticker": {
@@ -5720,5 +5727,5 @@
     },
     "__N_SSG": true
   },
-  "updatedAt": "2025-12-09T02:35:12.622Z"
+  "updatedAt": "2025-12-09T04:16:20.897Z"
 }

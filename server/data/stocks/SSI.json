@@ -3,10 +3,10 @@
   "basicInfo": {
     "companyName": "CTCP Chứng khoán SSI",
     "exchange": "HOSE",
-    "matchPrice": 28.95,
-    "changedValue": -0.45,
-    "changedRatio": -1.53,
-    "totalVolume": 286750,
+    "matchPrice": 28.65,
+    "changedValue": -0.75,
+    "changedRatio": -2.55,
+    "totalVolume": 1354770,
     "marketCap": 73238273908800,
     "beta": 1.3309758554353066,
     "eps": 1491.8592698328605,
@@ -4575,14 +4575,13 @@
         "tradingDate": "2025-12-08T00:00:00Z"
       },
       "priceSnapshot": {
-        "changedValue": -0.45,
-        "totalVolumeTraded": 286750,
+        "changedValue": -0.75,
+        "totalVolumeTraded": 1354770,
         "referencePrice": 29.4,
         "productGrpId": "7",
-        "expectedTradePrice": 29.35,
         "symbol": "SSI",
-        "changedRatio": -1.53,
-        "matchPrice": 28.95
+        "changedRatio": -2.55,
+        "matchPrice": 28.65
       },
       "coveredWarrant": {},
       "ticker": {
@@ -5740,5 +5739,5 @@
     },
     "__N_SSG": true
   },
-  "updatedAt": "2025-12-09T02:35:12.592Z"
+  "updatedAt": "2025-12-09T04:16:19.614Z"
 }

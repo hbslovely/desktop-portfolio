@@ -209,7 +209,11 @@ export class DnseService {
   getAllFetchedSymbols(): Observable<string[]> {
     return this.http.get<any>('/api/stocks-v2/list').pipe(
       map((response: any) => {
+        if (response.success && Array.isArray(response.stocks)) {
+          return response.stocks.map((stock: any) => stock.symbol).filter((s: string) => s);
+        }
         if (response.success && Array.isArray(response.symbols)) {
+          // Fallback for old API format
           return response.symbols;
         }
         return [];
@@ -218,6 +222,24 @@ export class DnseService {
         console.error('Error getting all symbols from API:', error);
         // Fallback to localStorage on error
         return of(this.getFetchedSymbols());
+      })
+    );
+  }
+
+  /**
+   * Get all stock data from Stock API
+   */
+  getAllStockData(): Observable<any[]> {
+    return this.http.get<any>('/api/stocks-v2/list').pipe(
+      map((response: any) => {
+        if (response.success && Array.isArray(response.stocks)) {
+          return response.stocks;
+        }
+        return [];
+      }),
+      catchError((error) => {
+        console.error('Error getting all stock data from API:', error);
+        return of([]);
       })
     );
   }

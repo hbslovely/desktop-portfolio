@@ -3,6 +3,10 @@
   "basicInfo": {
     "companyName": "CTCP Hàng không Vietjet",
     "exchange": "HOSE",
+    "matchPrice": 203.1,
+    "changedValue": -3.3,
+    "changedRatio": -1.6,
+    "totalVolume": 28530,
     "marketCap": 122108579337600,
     "beta": 0.8540664449610109,
     "eps": 2726.2310122459553,
@@ -4571,9 +4575,14 @@
         "tradingDate": "2025-12-08T00:00:00Z"
       },
       "priceSnapshot": {
+        "changedValue": -3.3,
+        "totalVolumeTraded": 28530,
         "referencePrice": 206.4,
         "productGrpId": "7",
-        "symbol": "VJC"
+        "expectedTradePrice": 205,
+        "symbol": "VJC",
+        "changedRatio": -1.6,
+        "matchPrice": 203.1
       },
       "coveredWarrant": {},
       "ticker": {
@@ -5689,5 +5698,5 @@
     },
     "__N_SSG": true
   },
-  "updatedAt": "2025-12-09T02:35:12.691Z"
+  "updatedAt": "2025-12-09T04:16:23.066Z"
 }

@@ -3,10 +3,10 @@
   "basicInfo": {
     "companyName": "Tổng CTCP Bia - Rượu - Nước giải khát Sài Gòn",
     "exchange": "HOSE",
-    "matchPrice": 54.9,
-    "changedValue": 1.7,
-    "changedRatio": 3.2,
-    "totalVolume": 66750,
+    "matchPrice": 55.2,
+    "changedValue": 2,
+    "changedRatio": 3.76,
+    "totalVolume": 57130,
     "marketCap": 68232318190400,
     "beta": 0.5518818433164608,
     "eps": 3373.4107666165028,
@@ -4575,14 +4575,14 @@
         "tradingDate": "2025-12-08T00:00:00Z"
       },
       "priceSnapshot": {
-        "changedValue": 1.7,
-        "totalVolumeTraded": 66750,
+        "changedValue": 2,
+        "totalVolumeTraded": 57130,
         "referencePrice": 53.2,
         "productGrpId": "7",
         "expectedTradePrice": 54.5,
         "symbol": "SAB",
-        "changedRatio": 3.2,
-        "matchPrice": 54.9
+        "changedRatio": 3.76,
+        "matchPrice": 55.2
       },
       "coveredWarrant": {},
       "ticker": {
@@ -5743,5 +5743,5 @@
     },
     "__N_SSG": true
   },
-  "updatedAt": "2025-12-09T02:35:12.557Z"
+  "updatedAt": "2025-12-09T04:16:18.588Z"
 }

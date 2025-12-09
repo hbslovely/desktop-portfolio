@@ -3,10 +3,10 @@
   "basicInfo": {
     "companyName": "Ngân hàng TMCP Lộc Phát Việt Nam",
     "exchange": "HOSE",
-    "matchPrice": 45.3,
-    "changedValue": -1,
-    "changedRatio": -2.16,
-    "totalVolume": 30330,
+    "matchPrice": 44.45,
+    "changedValue": -1.85,
+    "changedRatio": -4,
+    "totalVolume": 300150,
     "marketCap": 138311161230000,
     "beta": 0.823681455949761,
     "eps": 3468.573322887718,
@@ -4575,14 +4575,13 @@
         "tradingDate": "2025-12-08T00:00:00Z"
       },
       "priceSnapshot": {
-        "changedValue": -1,
-        "totalVolumeTraded": 30330,
+        "changedValue": -1.85,
+        "totalVolumeTraded": 300150,
         "referencePrice": 46.3,
         "productGrpId": "7",
-        "expectedTradePrice": 46.4,
         "symbol": "LPB",
-        "changedRatio": -2.16,
-        "matchPrice": 45.3
+        "changedRatio": -4,
+        "matchPrice": 44.45
       },
       "coveredWarrant": {},
       "ticker": {
@@ -5728,5 +5727,5 @@
     },
     "__N_SSG": true
   },
-  "updatedAt": "2025-12-09T02:35:12.541Z"
+  "updatedAt": "2025-12-09T04:16:16.951Z"
 }
