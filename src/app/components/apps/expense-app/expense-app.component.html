@@ -1424,12 +1424,14 @@
               <i class="pi pi-tag"></i>
               Ngân sách theo danh mục
             </h4>
+            <span class="section-hint">Click để xem chi tiết</span>
           </div>
           <div class="category-budgets-grid">
-            <div class="category-budget-card" *ngFor="let catBudget of categoryBudgets()"
+            <div class="category-budget-card clickable" *ngFor="let catBudget of categoryBudgets()"
                  [class.over-budget]="catBudget.spent > catBudget.budget && catBudget.budget > 0"
                  [class.warning]="catBudget.percentage > 80 && catBudget.percentage <= 100"
-                 [class.no-budget]="catBudget.budget === 0">
+                 [class.no-budget]="catBudget.budget === 0"
+                 (click)="showBudgetCategoryDetail(catBudget.category)">
               <div class="cat-budget-header">
                 <span class="cat-name">{{ catBudget.category }}</span>
                 <span class="cat-percentage" *ngIf="catBudget.budget > 0" 
@@ -1453,6 +1455,9 @@
               <div class="cat-remaining" *ngIf="catBudget.budget > 0">
                 <span *ngIf="catBudget.remaining >= 0">Còn {{ formatAmount(catBudget.remaining) }}</span>
                 <span *ngIf="catBudget.remaining < 0" class="over-text">Vượt {{ formatAmount(Math.abs(catBudget.remaining)) }}</span>
+              </div>
+              <div class="cat-card-action">
+                <i class="pi pi-chevron-right"></i>
               </div>
             </div>
           </div>
@@ -1580,6 +1585,35 @@
             </div>
             <div class="chart-body">
               <canvas #monthlyCompareChart></canvas>
+            </div>
+          </div>
+
+          <!-- Current vs Previous Month Daily Chart -->
+          <div class="chart-card full-width">
+            <div class="chart-header">
+              <h4><i class="pi pi-calendar-plus"></i> So sánh chi tiêu theo ngày trong tháng</h4>
+              <div class="chart-summary">
+                <span class="summary-item current-month">
+                  <span class="legend-dot current"></span>
+                  <span class="summary-label">{{ getCurrentMonthLabel() }}:</span>
+                  <span class="summary-value">{{ formatCompactAmount(currentMonthDailyData().total) }}</span>
+                </span>
+                <span class="summary-item previous-month">
+                  <span class="legend-dot previous"></span>
+                  <span class="summary-label">{{ getPreviousMonthLabel() }}:</span>
+                  <span class="summary-value">{{ formatCompactAmount(previousMonthDailyData().total) }}</span>
+                </span>
+                <span class="summary-item difference" 
+                      [class.positive]="currentMonthDailyData().total < previousMonthDailyData().total"
+                      [class.negative]="currentMonthDailyData().total > previousMonthDailyData().total">
+                  <i class="pi" [class.pi-arrow-down]="currentMonthDailyData().total < previousMonthDailyData().total"
+                                [class.pi-arrow-up]="currentMonthDailyData().total > previousMonthDailyData().total"></i>
+                  <span class="summary-value">{{ getMonthComparisonPercentage() }}%</span>
+                </span>
+              </div>
+            </div>
+            <div class="chart-body tall">
+              <canvas #monthDailyCompareChart></canvas>
             </div>
           </div>
         </div>
@@ -1789,6 +1823,130 @@
 
         <div class="dialog-footer day-detail-footer">
           <button (click)="hideCategoryDetailDialog()" class="close-detail-btn">
+            <i class="pi pi-check"></i>
+            Đóng
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Budget Category Detail Dialog -->
+    <div class="dialog-overlay" *ngIf="showBudgetCategoryDetailDialog()" (click)="hideBudgetCategoryDetail()">
+      <div class="dialog-container budget-category-detail-dialog" (click)="$event.stopPropagation()">
+        <div class="dialog-header budget-detail-header">
+          <div class="header-content">
+            <div class="header-icon" [class.over-budget]="(selectedBudgetCategoryInfo()?.spent || 0) > (selectedBudgetCategoryInfo()?.budget || 0) && (selectedBudgetCategoryInfo()?.budget || 0) > 0">
+              <i class="pi pi-wallet"></i>
+            </div>
+            <div class="header-text">
+              <h3>{{ selectedBudgetCategory() }}</h3>
+              <p class="header-subtitle">Ngân sách tháng {{ getCurrentMonthName() }}</p>
+            </div>
+          </div>
+          <button (click)="hideBudgetCategoryDetail()" class="close-btn">
+            <i class="pi pi-times"></i>
+          </button>
+        </div>
+
+        <div class="dialog-body budget-detail-body">
+          <!-- Budget Overview Cards -->
+          <div class="budget-detail-overview">
+            <div class="overview-card spent-card" [class.over-budget]="(selectedBudgetCategoryInfo()?.spent || 0) > (selectedBudgetCategoryInfo()?.budget || 0) && (selectedBudgetCategoryInfo()?.budget || 0) > 0">
+              <div class="card-icon">
+                <i class="pi pi-shopping-cart"></i>
+              </div>
+              <div class="card-content">
+                <span class="card-label">Đã chi tiêu</span>
+                <span class="card-value">{{ formatAmount(selectedBudgetCategoryInfo()?.spent || 0) }}</span>
+              </div>
+            </div>
+            <div class="overview-card budget-card">
+              <div class="card-icon">
+                <i class="pi pi-wallet"></i>
+              </div>
+              <div class="card-content">
+                <span class="card-label">Ngân sách</span>
+                <span class="card-value">{{ formatAmount(selectedBudgetCategoryInfo()?.budget || 0) }}</span>
+              </div>
+            </div>
+            <div class="overview-card remaining-card" 
+                 [class.positive]="(selectedBudgetCategoryInfo()?.remaining || 0) >= 0"
+                 [class.negative]="(selectedBudgetCategoryInfo()?.remaining || 0) < 0">
+              <div class="card-icon">
+                <i class="pi" [class.pi-check-circle]="(selectedBudgetCategoryInfo()?.remaining || 0) >= 0"
+                              [class.pi-exclamation-triangle]="(selectedBudgetCategoryInfo()?.remaining || 0) < 0"></i>
+              </div>
+              <div class="card-content">
+                <span class="card-label">{{ (selectedBudgetCategoryInfo()?.remaining || 0) >= 0 ? 'Còn lại' : 'Vượt ngân sách' }}</span>
+                <span class="card-value">{{ formatAmount(Math.abs(selectedBudgetCategoryInfo()?.remaining || 0)) }}</span>
+              </div>
+            </div>
+            <div class="overview-card percentage-card">
+              <div class="card-icon">
+                <i class="pi pi-percentage"></i>
+              </div>
+              <div class="card-content">
+                <span class="card-label">Tỷ lệ sử dụng</span>
+                <span class="card-value" [class.over-budget]="(selectedBudgetCategoryInfo()?.percentage || 0) > 100">
+                  {{ selectedBudgetCategoryInfo()?.percentage || 0 }}%
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Progress Bar -->
+          <div class="budget-progress-section" *ngIf="(selectedBudgetCategoryInfo()?.budget || 0) > 0">
+            <div class="progress-labels">
+              <span>0%</span>
+              <span class="warning-mark">80%</span>
+              <span>100%</span>
+            </div>
+            <div class="budget-progress-track">
+              <div class="progress-fill" 
+                   [style.width.%]="Math.min(selectedBudgetCategoryInfo()?.percentage || 0, 100)"
+                   [class.warning]="(selectedBudgetCategoryInfo()?.percentage || 0) > 80 && (selectedBudgetCategoryInfo()?.percentage || 0) <= 100"
+                   [class.over-budget]="(selectedBudgetCategoryInfo()?.percentage || 0) > 100">
+              </div>
+              <div class="warning-line" style="left: 80%"></div>
+            </div>
+          </div>
+
+          <!-- Monthly Daily Chart -->
+          <div class="budget-monthly-chart-section">
+            <h4>
+              <i class="pi pi-chart-bar"></i>
+              Chi tiêu theo ngày trong tháng
+            </h4>
+            <div class="monthly-chart-container">
+              <canvas #budgetCategoryMonthlyChart></canvas>
+            </div>
+          </div>
+
+          <!-- Expense List -->
+          <div class="budget-expense-list-section">
+            <div class="list-header">
+              <h4>
+                <i class="pi pi-list"></i>
+                Danh sách chi tiêu ({{ budgetCategoryExpenses().length }})
+              </h4>
+              <span class="list-total">Tổng: {{ formatAmount(selectedBudgetCategoryInfo()?.spent || 0) }}</span>
+            </div>
+            <div class="expense-list-scroll" *ngIf="budgetCategoryExpenses().length > 0">
+              <div class="expense-row" *ngFor="let expense of budgetCategoryExpenses(); let i = index">
+                <div class="expense-date">{{ formatDateShort(expense.date) }}</div>
+                <div class="expense-content">{{ expense.content }}</div>
+                <div class="expense-amount">{{ formatAmount(expense.amount) }}</div>
+              </div>
+            </div>
+            <div class="empty-list" *ngIf="budgetCategoryExpenses().length === 0">
+              <i class="pi pi-inbox"></i>
+              <span>Chưa có chi tiêu trong tháng này</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="dialog-footer">
+          <button (click)="hideBudgetCategoryDetail()" class="close-btn-primary">
             <i class="pi pi-check"></i>
             Đóng
           </button>
@@ -2283,124 +2441,180 @@
         </div>
 
         <div class="dialog-body budget-settings-body">
-          <!-- Monthly Budget -->
-          <div class="budget-setting-section">
-            <label class="budget-setting-label">
-              <i class="pi pi-money-bill"></i>
-              Ngân sách tổng hàng tháng
-            </label>
-            <div class="budget-input-wrapper">
-              <input type="text" 
-                     [value]="formatBudgetDisplay(editMonthlyBudget())"
-                     (input)="onMonthlyBudgetInput($event)"
-                     class="budget-input"
-                     placeholder="Nhập ngân sách">
-              <span class="budget-unit">VNĐ</span>
+          <!-- Budget Mode Toggle -->
+          <div class="budget-mode-toggle">
+            <button class="mode-btn" 
+                    [class.active]="budgetMode() === 'topDown'"
+                    (click)="switchBudgetMode('topDown')">
+              <i class="pi pi-arrow-down"></i>
+              <div class="mode-info">
+                <span class="mode-title">Từ tổng xuống</span>
+                <span class="mode-desc">Nhập tổng, phân bổ theo trọng số</span>
+              </div>
+            </button>
+            <button class="mode-btn"
+                    [class.active]="budgetMode() === 'bottomUp'"
+                    (click)="switchBudgetMode('bottomUp')">
+              <i class="pi pi-arrow-up"></i>
+              <div class="mode-info">
+                <span class="mode-title">Từ chi tiết lên</span>
+                <span class="mode-desc">Nhập từng mục, tự tính tổng</span>
+              </div>
+            </button>
+          </div>
+
+          <!-- TOP-DOWN MODE -->
+          <div class="budget-mode-content" *ngIf="budgetMode() === 'topDown'">
+            <!-- Monthly Budget Total -->
+            <div class="budget-setting-section highlight">
+              <label class="budget-setting-label">
+                <i class="pi pi-money-bill"></i>
+                Tổng ngân sách hàng tháng
+              </label>
+              <div class="budget-input-wrapper large">
+                <input type="text" 
+                       [value]="formatBudgetDisplay(editMonthlyBudget())"
+                       (input)="onMonthlyBudgetInput($event); applyWeightsToBudgets()"
+                       class="budget-input"
+                       placeholder="Nhập ngân sách">
+                <span class="budget-unit">VNĐ</span>
+              </div>
+              <div class="budget-presets">
+                <button class="preset-chip" (click)="setMonthlyBudgetPreset(5000000)" 
+                        [class.active]="editMonthlyBudget() === 5000000">5M</button>
+                <button class="preset-chip" (click)="setMonthlyBudgetPreset(10000000)"
+                        [class.active]="editMonthlyBudget() === 10000000">10M</button>
+                <button class="preset-chip" (click)="setMonthlyBudgetPreset(15000000)"
+                        [class.active]="editMonthlyBudget() === 15000000">15M</button>
+                <button class="preset-chip" (click)="setMonthlyBudgetPreset(20000000)"
+                        [class.active]="editMonthlyBudget() === 20000000">20M</button>
+                <button class="preset-chip" (click)="setMonthlyBudgetPreset(30000000)"
+                        [class.active]="editMonthlyBudget() === 30000000">30M</button>
+              </div>
             </div>
-            <!-- Quick preset buttons for monthly budget -->
-            <div class="budget-presets">
-              <span class="preset-label">Chọn nhanh:</span>
-              <button class="preset-chip" (click)="setMonthlyBudgetPreset(5000000)" 
-                      [class.active]="editMonthlyBudget() === 5000000">5M</button>
-              <button class="preset-chip" (click)="setMonthlyBudgetPreset(10000000)"
-                      [class.active]="editMonthlyBudget() === 10000000">10M</button>
-              <button class="preset-chip" (click)="setMonthlyBudgetPreset(15000000)"
-                      [class.active]="editMonthlyBudget() === 15000000">15M</button>
-              <button class="preset-chip" (click)="setMonthlyBudgetPreset(20000000)"
-                      [class.active]="editMonthlyBudget() === 20000000">20M</button>
-              <button class="preset-chip" (click)="setMonthlyBudgetPreset(30000000)"
-                      [class.active]="editMonthlyBudget() === 30000000">30M</button>
-              <button class="preset-chip" (click)="setMonthlyBudgetPreset(50000000)"
-                      [class.active]="editMonthlyBudget() === 50000000">50M</button>
-            </div>
-          </div>
 
-          <div class="budget-divider">
-            <span>Ngân sách theo danh mục</span>
-          </div>
-
-          <!-- Quick Actions for Category Budgets -->
-          <div class="category-quick-actions">
-            <button class="quick-action-btn distribute" (click)="distributeBudgetEvenly()">
-              <i class="pi pi-percentage"></i>
-              <span>Chia đều</span>
-              <small>{{ formatCompactAmount(editMonthlyBudget() / categories().length) }}/mục</small>
-            </button>
-            <button class="quick-action-btn set-all" (click)="showSetAllDialog.set(true)">
-              <i class="pi pi-copy"></i>
-              <span>Đặt cùng giá trị</span>
-            </button>
-            <button class="quick-action-btn clear-all" (click)="clearAllCategoryBudgets()">
-              <i class="pi pi-trash"></i>
-              <span>Xóa tất cả</span>
-            </button>
-          </div>
-
-          <!-- Set All Dialog (inline) -->
-          <div class="set-all-inline" *ngIf="showSetAllDialog()">
-            <div class="set-all-header">
-              <span>Đặt cùng giá trị cho tất cả danh mục:</span>
-              <button class="close-inline-btn" (click)="showSetAllDialog.set(false)">
-                <i class="pi pi-times"></i>
+            <div class="budget-divider">
+              <span>Phân bổ theo trọng số</span>
+              <button class="normalize-btn" (click)="normalizeWeights()" title="Chuẩn hóa về 100%">
+                <i class="pi pi-sync"></i>
+                {{ getTotalWeight() }}%
               </button>
             </div>
-            <div class="set-all-content">
-              <div class="set-all-input-wrapper">
-                <input type="text"
-                       [value]="formatBudgetDisplay(setAllValue())"
-                       (input)="onSetAllValueInput($event)"
-                       class="set-all-input"
-                       placeholder="Nhập giá trị">
-                <span class="set-all-unit">VNĐ</span>
-              </div>
-              <div class="set-all-presets">
-                <button class="mini-preset" (click)="setAllValue.set(500000)">500K</button>
-                <button class="mini-preset" (click)="setAllValue.set(1000000)">1M</button>
-                <button class="mini-preset" (click)="setAllValue.set(2000000)">2M</button>
-                <button class="mini-preset" (click)="setAllValue.set(3000000)">3M</button>
-              </div>
-              <button class="apply-set-all-btn" (click)="applySetAllValue()">
-                <i class="pi pi-check"></i>
-                Áp dụng cho tất cả
+
+            <!-- Quick Actions -->
+            <div class="category-quick-actions">
+              <button class="quick-action-btn distribute" (click)="distributeBudgetEvenly()">
+                <i class="pi pi-percentage"></i>
+                <span>Chia đều</span>
               </button>
             </div>
-          </div>
 
-          <!-- Category Budgets -->
-          <div class="category-budgets-settings">
-            <div class="category-budget-setting" *ngFor="let cat of categories()">
-              <label class="cat-budget-label">{{ cat }}</label>
-              <div class="cat-budget-input-wrapper">
-                <input type="text"
-                       [value]="formatBudgetDisplay(getCategoryBudgetValue(cat))"
-                       (input)="onCategoryBudgetInput(cat, $event)"
-                       class="cat-budget-input"
-                       placeholder="0">
-                <span class="cat-budget-unit">VNĐ</span>
-              </div>
-              <div class="cat-quick-presets">
-                <button class="cat-preset" (click)="setCategoryBudgetPreset(cat, 500000)">500K</button>
-                <button class="cat-preset" (click)="setCategoryBudgetPreset(cat, 1000000)">1M</button>
-                <button class="cat-preset" (click)="setCategoryBudgetPreset(cat, 2000000)">2M</button>
+            <!-- Category Weights -->
+            <div class="category-weights-grid">
+              <div class="category-weight-item" *ngFor="let cat of categories()">
+                <div class="weight-header">
+                  <span class="cat-name">{{ cat }}</span>
+                  <span class="cat-amount">{{ formatCompactAmount(getCategoryBudgetValue(cat)) }}</span>
+                </div>
+                <div class="weight-control">
+                  <input type="range" 
+                         [value]="getCategoryWeight(cat)"
+                         (input)="updateCategoryWeight(cat, +$any($event.target).value)"
+                         min="0" max="50" step="1"
+                         class="weight-slider">
+                  <div class="weight-input-group">
+                    <input type="number" 
+                           [value]="getCategoryWeight(cat)"
+                           (input)="updateCategoryWeight(cat, +$any($event.target).value)"
+                           min="0" max="100"
+                           class="weight-input">
+                    <span class="weight-percent">%</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
-          <!-- Summary -->
-          <div class="budget-summary">
-            <div class="summary-row">
-              <span class="summary-label">Tổng ngân sách danh mục:</span>
-              <span class="summary-value" [class.over]="getTotalCategoryBudgets() > editMonthlyBudget()">
-                {{ formatAmount(getTotalCategoryBudgets()) }}
-              </span>
+          <!-- BOTTOM-UP MODE -->
+          <div class="budget-mode-content" *ngIf="budgetMode() === 'bottomUp'">
+            <!-- Category Budgets First -->
+            <div class="budget-divider first">
+              <span>Ngân sách từng danh mục</span>
             </div>
-            <div class="summary-row" *ngIf="editMonthlyBudget() > 0">
-              <span class="summary-label">Chênh lệch với ngân sách tổng:</span>
-              <span class="summary-value" 
-                    [class.positive]="editMonthlyBudget() - getTotalCategoryBudgets() >= 0"
-                    [class.negative]="editMonthlyBudget() - getTotalCategoryBudgets() < 0">
-                {{ editMonthlyBudget() - getTotalCategoryBudgets() >= 0 ? '+' : '' }}{{ formatAmount(editMonthlyBudget() - getTotalCategoryBudgets()) }}
-              </span>
+
+            <!-- Quick Actions -->
+            <div class="category-quick-actions">
+              <button class="quick-action-btn set-all" (click)="showSetAllDialog.set(true)">
+                <i class="pi pi-copy"></i>
+                <span>Đặt cùng giá trị</span>
+              </button>
+              <button class="quick-action-btn clear-all" (click)="clearAllCategoryBudgets()">
+                <i class="pi pi-trash"></i>
+                <span>Xóa tất cả</span>
+              </button>
+            </div>
+
+            <!-- Set All Dialog (inline) -->
+            <div class="set-all-inline" *ngIf="showSetAllDialog()">
+              <div class="set-all-header">
+                <span>Đặt cùng giá trị cho tất cả:</span>
+                <button class="close-inline-btn" (click)="showSetAllDialog.set(false)">
+                  <i class="pi pi-times"></i>
+                </button>
+              </div>
+              <div class="set-all-content">
+                <div class="set-all-input-wrapper">
+                  <input type="text"
+                         [value]="formatBudgetDisplay(setAllValue())"
+                         (input)="onSetAllValueInput($event)"
+                         class="set-all-input"
+                         placeholder="Nhập giá trị">
+                  <span class="set-all-unit">VNĐ</span>
+                </div>
+                <div class="set-all-presets">
+                  <button class="mini-preset" (click)="setAllValue.set(500000)">500K</button>
+                  <button class="mini-preset" (click)="setAllValue.set(1000000)">1M</button>
+                  <button class="mini-preset" (click)="setAllValue.set(2000000)">2M</button>
+                </div>
+                <button class="apply-set-all-btn" (click)="applySetAllValue()">
+                  <i class="pi pi-check"></i>
+                  Áp dụng
+                </button>
+              </div>
+            </div>
+
+            <!-- Category Budgets -->
+            <div class="category-budgets-grid">
+              <div class="category-budget-card" *ngFor="let cat of categories()">
+                <div class="card-header">
+                  <span class="cat-label">{{ cat }}</span>
+                </div>
+                <div class="card-input">
+                  <input type="text"
+                         [value]="formatBudgetDisplay(getCategoryBudgetValue(cat))"
+                         (input)="onCategoryBudgetInput(cat, $event); editMonthlyBudget.set(getTotalCategoryBudgets())"
+                         class="cat-budget-input"
+                         placeholder="0">
+                  <span class="input-unit">đ</span>
+                </div>
+                <div class="card-presets">
+                  <button (click)="setCategoryBudgetPreset(cat, 500000)">500K</button>
+                  <button (click)="setCategoryBudgetPreset(cat, 1000000)">1M</button>
+                  <button (click)="setCategoryBudgetPreset(cat, 2000000)">2M</button>
+                  <button (click)="setCategoryBudgetPreset(cat, 3000000)">3M</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Auto-calculated Total -->
+            <div class="budget-total-display">
+              <div class="total-icon">
+                <i class="pi pi-calculator"></i>
+              </div>
+              <div class="total-info">
+                <span class="total-label">Tổng ngân sách (tự động tính)</span>
+                <span class="total-value">{{ formatAmount(getTotalCategoryBudgets()) }}</span>
+              </div>
             </div>
           </div>
         </div>

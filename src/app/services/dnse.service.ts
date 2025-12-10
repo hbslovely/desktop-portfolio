@@ -287,6 +287,58 @@ export class DnseService {
   }
 
   /**
+   * Pagination response interface
+   */
+  
+
+  /**
+   * Get stock data with pagination and search
+   * @param options - Query options
+   * @param options.keyword - Search keyword (symbol or company name)
+   * @param options.limit - Number of records per page (default: 50)
+   * @param options.offset - Number of records to skip (default: 0)
+   */
+  getStocksPaginated(options: { keyword?: string; limit?: number; offset?: number } = {}): Observable<{
+    stocks: any[];
+    pagination: { total: number; limit: number; offset: number; hasMore: boolean } | null;
+    query: { keyword: string; limit: number; offset: number };
+  }> {
+    const { keyword = '', limit = 50, offset = 0 } = options;
+    
+    const params = new URLSearchParams();
+    if (keyword) params.set('keyword', keyword);
+    params.set('limit', limit.toString());
+    params.set('offset', offset.toString());
+
+    const url = `/api/stocks-v2/list?${params.toString()}`;
+
+    return this.http.get<any>(url).pipe(
+      map((response: any) => {
+        if (response.success) {
+          return {
+            stocks: response.stocks || [],
+            pagination: response.pagination || null,
+            query: response.query || { keyword, limit, offset }
+          };
+        }
+        return {
+          stocks: [],
+          pagination: null,
+          query: { keyword, limit, offset }
+        };
+      }),
+      catchError((error) => {
+        console.error('Error getting paginated stock data:', error);
+        return of({
+          stocks: [],
+          pagination: null,
+          query: { keyword, limit, offset }
+        });
+      })
+    );
+  }
+
+  /**
    * Sync new stocks from DNSE API and save to database
    * This should only be called during days 10-20 of the month
    * Returns Observable with { newSymbols: string[], totalFromDNSE: number }
