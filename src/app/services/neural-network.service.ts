@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, throwError } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { Observable, throwError, of } from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
 import * as tf from '@tensorflow/tfjs';
 
 export interface StockPrediction {
@@ -25,13 +25,90 @@ export interface TrainingProgress {
   accuracy?: number;
 }
 
+export interface TrainingConfig {
+  epochs: number;           // Số vòng lặp huấn luyện (50-200)
+  batchSize: number;        // Kích thước batch (16-64)
+  validationSplit: number;  // Tỷ lệ validation (0.1-0.3)
+  lookbackDays: number;     // Số ngày lịch sử để xét (30-120)
+  forecastDays: number;     // Số ngày dự đoán (1-7)
+  learningRate: number;     // Tốc độ học (0.0001-0.01)
+}
+
 export interface NeuralNetworkWeights {
   weights: any[];
   trainingEpochs?: number;
   loss?: number;
+  accuracy?: number;
   modelConfig?: any;
   trainedAt?: string;
+  // Training config used
+  lookbackDays?: number;
+  forecastDays?: number;
+  batchSize?: number;
+  validationSplit?: number;
 }
+
+export interface ModelStatus {
+  exists: boolean;
+  hasWeights: boolean;
+  hasSimulation: boolean;
+}
+
+// Default training configuration with descriptions
+export const DEFAULT_TRAINING_CONFIG: TrainingConfig = {
+  epochs: 50,           // Số vòng lặp huấn luyện
+  batchSize: 32,        // Kích thước batch
+  validationSplit: 0.2, // Tỷ lệ validation
+  lookbackDays: 60,     // Số ngày lịch sử
+  forecastDays: 1,      // Số ngày dự đoán
+  learningRate: 0.001,  // Tốc độ học
+};
+
+// Training config descriptions for UI
+export const TRAINING_CONFIG_DESCRIPTIONS: Record<keyof TrainingConfig, { label: string; description: string; min: number; max: number; step: number }> = {
+  epochs: {
+    label: 'Số Epochs',
+    description: 'Số vòng lặp huấn luyện. Nhiều epochs hơn = model học kỹ hơn nhưng có thể bị overfit. Khuyến nghị: 30-100',
+    min: 10,
+    max: 200,
+    step: 10
+  },
+  batchSize: {
+    label: 'Batch Size',
+    description: 'Số mẫu dữ liệu xử lý mỗi lần. Batch nhỏ = học chi tiết hơn nhưng chậm hơn. Khuyến nghị: 16-64',
+    min: 8,
+    max: 128,
+    step: 8
+  },
+  validationSplit: {
+    label: 'Validation Split',
+    description: 'Tỷ lệ dữ liệu dùng để kiểm tra (validation). 0.2 = 20% data để validate. Khuyến nghị: 0.1-0.3',
+    min: 0.1,
+    max: 0.4,
+    step: 0.05
+  },
+  lookbackDays: {
+    label: 'Lookback Days',
+    description: 'Số ngày lịch sử để model xem xét. Nhiều ngày hơn = nhìn xa hơn nhưng cần nhiều data hơn. Khuyến nghị: 30-90',
+    min: 20,
+    max: 120,
+    step: 10
+  },
+  forecastDays: {
+    label: 'Forecast Days',
+    description: 'Số ngày dự đoán phía trước. Dự đoán xa hơn = độ chính xác giảm. Khuyến nghị: 1-5',
+    min: 1,
+    max: 10,
+    step: 1
+  },
+  learningRate: {
+    label: 'Learning Rate',
+    description: 'Tốc độ học của model. Cao = học nhanh nhưng có thể bỏ lỡ điểm tối ưu. Khuyến nghị: 0.0005-0.005',
+    min: 0.0001,
+    max: 0.01,
+    step: 0.0001
+  }
+};
 
 @Injectable({
   providedIn: 'root'
@@ -42,7 +119,9 @@ export class NeuralNetworkService {
   private isTraining = false;
   private trainingProgress: TrainingProgress | null = null;
   private lastTrainingLoss: number | null = null;
+  private lastTrainingAccuracy: number | null = null;
   private lastTrainingEpochs: number = 0;
+  private currentTrainingConfig: TrainingConfig = { ...DEFAULT_TRAINING_CONFIG };
 
   constructor(private http: HttpClient) {
     // Initialize TensorFlow.js backend
@@ -53,11 +132,42 @@ export class NeuralNetworkService {
   }
 
   /**
+   * Get current training configuration
+   */
+  getTrainingConfig(): TrainingConfig {
+    return { ...this.currentTrainingConfig };
+  }
+
+  /**
+   * Set training configuration
+   */
+  setTrainingConfig(config: Partial<TrainingConfig>): void {
+    this.currentTrainingConfig = { ...this.currentTrainingConfig, ...config };
+  }
+
+  /**
+   * Check if model exists in database
+   */
+  checkModelExists(symbol: string): Observable<ModelStatus> {
+    return this.http.get<any>(`/api/stocks-v2/neural-network/${symbol.toUpperCase()}?action=check`).pipe(
+      map(response => ({
+        exists: response.exists || false,
+        hasWeights: response.hasWeights || false,
+        hasSimulation: response.hasSimulation || false
+      })),
+      catchError(error => {
+        console.error('Error checking model exists:', error);
+        return of({ exists: false, hasWeights: false, hasSimulation: false });
+      })
+    );
+  }
+
+  /**
    * Create a neural network model for stock price prediction and trading decision
-   * Input: 63 features (60 prices + 3 MACD indicators)
+   * Input: lookbackDays prices + 3 MACD indicators
    * Model outputs: [predictedPrice, buySignal, sellSignal]
    */
-  createModel(inputSize: number = 63): tf.Sequential {
+  createModel(inputSize: number = 63, learningRate: number = 0.001): tf.Sequential {
     const model = tf.sequential({
       layers: [
         // Input layer
@@ -93,9 +203,9 @@ export class NeuralNetworkService {
       ]
     });
 
-    // Compile the model
+    // Compile the model with configurable learning rate
     model.compile({
-      optimizer: tf.train.adam(0.001),
+      optimizer: tf.train.adam(learningRate),
       loss: 'meanSquaredError'
     });
 
@@ -224,7 +334,7 @@ export class NeuralNetworkService {
 
   /**
    * Prepare training data with trading signals and MACD
-   * Input: [prices (60 days), macd, signal, histogram] = 63 features
+   * Input: [prices (lookback days), macd, signal, histogram] = lookback + 3 features
    * Output: [predictedPrice, buySignal, sellSignal]
    */
   prepareTrainingDataWithSignals(
@@ -282,26 +392,28 @@ export class NeuralNetworkService {
   }
 
   /**
-   * Train the neural network model
+   * Train the neural network model with configurable parameters
    */
   async trainModel(
     prices: number[],
-    epochs: number = 50,
-    batchSize: number = 32,
-    validationSplit: number = 0.2,
+    config: Partial<TrainingConfig> = {},
     onProgress?: (progress: TrainingProgress) => void
   ): Promise<void> {
     if (this.isTraining) {
       throw new Error('Model is already training');
     }
 
+    // Merge with current config
+    const trainingConfig = { ...this.currentTrainingConfig, ...config };
+    this.currentTrainingConfig = trainingConfig;
+
     this.isTraining = true;
     this.isModelReady = false;
 
     try {
       // Prepare data with trading signals and MACD
-      const lookback = 60;
-      const { xs, ys } = this.prepareTrainingDataWithSignals(prices, lookback, 1);
+      const lookback = trainingConfig.lookbackDays;
+      const { xs, ys } = this.prepareTrainingDataWithSignals(prices, lookback, trainingConfig.forecastDays);
 
       if (xs.length === 0) {
         throw new Error('Not enough data for training. Need at least ' + (lookback + 1) + ' data points.');
@@ -381,34 +493,38 @@ export class NeuralNetworkService {
       const xsTensor = tf.tensor2d(finalXs);
       const ysTensor = tf.tensor2d(finalYs);
       
-      console.log(`Training data: ${finalXs.length} samples, input shape: [${finalXs.length}, ${finalXs[0]?.length || 0}], output shape: [${finalYs.length}, ${finalYs[0]?.length || 0}]`);
+      const inputSize = lookback + 3; // lookback prices + 3 MACD features
+      console.log(`Training data: ${finalXs.length} samples, input shape: [${finalXs.length}, ${inputSize}], output shape: [${finalYs.length}, 3]`);
+      console.log(`Training config: epochs=${trainingConfig.epochs}, batchSize=${trainingConfig.batchSize}, validationSplit=${trainingConfig.validationSplit}, learningRate=${trainingConfig.learningRate}`);
 
-      // Create or recreate model (input size is 63: 60 prices + 3 MACD)
+      // Create or recreate model
       if (this.model) {
         this.model.dispose();
       }
-      this.model = this.createModel(63);
+      this.model = this.createModel(inputSize, trainingConfig.learningRate);
 
       // Train the model
       let finalLoss = 0;
+      let finalAccuracy = 0;
       await this.model.fit(xsTensor, ysTensor, {
-        epochs,
-        batchSize,
-        validationSplit,
+        epochs: trainingConfig.epochs,
+        batchSize: trainingConfig.batchSize,
+        validationSplit: trainingConfig.validationSplit,
         shuffle: true,
         callbacks: {
           onEpochEnd: (epoch, logs) => {
             finalLoss = logs?.['loss'] || 0;
             // Calculate accuracy from loss (lower loss = higher accuracy)
             // Accuracy is inversely related to loss, normalized to 0-1 range
-            const accuracy = finalLoss > 0 ? Math.max(0, Math.min(1, 1 / (1 + finalLoss))) : undefined;
+            finalAccuracy = finalLoss > 0 ? Math.max(0, Math.min(1, 1 / (1 + finalLoss))) : 0;
             const progress: TrainingProgress = {
               epoch: epoch + 1,
               loss: finalLoss,
-              accuracy: accuracy
+              accuracy: finalAccuracy
             };
             this.trainingProgress = progress;
             this.lastTrainingLoss = finalLoss;
+            this.lastTrainingAccuracy = finalAccuracy;
             this.lastTrainingEpochs = epoch + 1;
             if (onProgress) {
               onProgress(progress);
@@ -442,8 +558,9 @@ export class NeuralNetworkService {
       throw new Error('Model is not trained yet. Please train the model first.');
     }
 
-    if (prices.length < 60) {
-      throw new Error('Need at least 60 days of historical data for prediction');
+    const lookback = this.currentTrainingConfig.lookbackDays;
+    if (prices.length < lookback) {
+      throw new Error(`Need at least ${lookback} days of historical data for prediction`);
     }
 
     try {
@@ -471,14 +588,14 @@ export class NeuralNetworkService {
       const histMax = Math.max(...allHistogramValues);
       const histRange = histMax - histMin || 1;
 
-      // Get last 60 days of prices + MACD indicators
-      const last60Days = normalizedPrices.slice(-60);
+      // Get last lookback days of prices + MACD indicators
+      const lastDays = normalizedPrices.slice(-lookback);
       const lastIndex = normalizedPrices.length - 1;
       const macdValue = isNaN(macdData.macd[lastIndex]) ? 0 : (macdData.macd[lastIndex] - macdMin) / macdRange;
       const signalValue = isNaN(macdData.signal[lastIndex]) ? 0 : (macdData.signal[lastIndex] - signalMin) / signalRange;
       const histogramValue = isNaN(macdData.histogram[lastIndex]) ? 0 : (macdData.histogram[lastIndex] - histMin) / histRange;
       
-      const inputFeatures = [...last60Days, macdValue, signalValue, histogramValue];
+      const inputFeatures = [...lastDays, macdValue, signalValue, histogramValue];
       const inputTensor = tf.tensor2d([inputFeatures]);
 
       // Predict - output is [predictedPrice, buySignal, sellSignal]
@@ -640,7 +757,8 @@ export class NeuralNetworkService {
       throw new Error('Model not available');
     }
 
-    let currentSequence = [...normalizedPrices.slice(-60)];
+    const lookback = this.currentTrainingConfig.lookbackDays;
+    let currentSequence = [...normalizedPrices.slice(-lookback)];
     let lastPredicted = currentSequence[currentSequence.length - 1];
     const lastIndex = normalizedPrices.length - 1;
 
@@ -656,7 +774,7 @@ export class NeuralNetworkService {
         ? (macdData.histogram[lastIndex] - histMin) / histRange
         : 0;
 
-      // Create input with 63 features (60 prices + 3 MACD)
+      // Create input with lookback + 3 features (lookback prices + 3 MACD)
       const inputFeatures = [...currentSequence, macdValue, signalValue, histogramValue];
       const inputTensor = tf.tensor2d([inputFeatures]);
       
@@ -752,7 +870,7 @@ export class NeuralNetworkService {
   }
 
   /**
-   * Save model weights to API
+   * Save model weights to API (database)
    */
   saveWeights(symbol: string): Observable<any> {
     if (!this.model || !this.isModelReady) {
@@ -782,20 +900,28 @@ export class NeuralNetworkService {
             });
           }
 
-          // Save to API
+          const inputSize = this.currentTrainingConfig.lookbackDays + 3;
+
+          // Save to API (database)
           this.http.post<any>(`/api/stocks-v2/neural-network/${symbol.toUpperCase()}`, {
             weights,
             trainingEpochs: this.lastTrainingEpochs,
             loss: this.lastTrainingLoss,
+            accuracy: this.lastTrainingAccuracy,
             modelConfig: {
-              inputSize: 60,
+              inputSize: inputSize,
               layers: [
                 { units: 128, activation: 'relu' },
                 { units: 64, activation: 'relu' },
                 { units: 32, activation: 'relu' },
-                { units: 1, activation: 'linear' }
+                { units: 3, activation: 'linear' }
               ]
-            }
+            },
+            // Save training config
+            lookbackDays: this.currentTrainingConfig.lookbackDays,
+            forecastDays: this.currentTrainingConfig.forecastDays,
+            batchSize: this.currentTrainingConfig.batchSize,
+            validationSplit: this.currentTrainingConfig.validationSplit,
           }).pipe(
             catchError(error => {
               console.error('Error saving weights:', error);
@@ -818,7 +944,7 @@ export class NeuralNetworkService {
   }
 
   /**
-   * Load model weights from API
+   * Load model weights from API (database)
    */
   async loadWeights(symbol: string): Promise<boolean> {
     try {
@@ -835,9 +961,26 @@ export class NeuralNetworkService {
         return false;
       }
 
+      // Load training config from saved model
+      const lookbackDays = response.data.lookbackDays || response.lookbackDays || 60;
+      const forecastDays = response.data.forecastDays || response.forecastDays || 1;
+      const batchSize = response.data.batchSize || response.batchSize || 32;
+      const validationSplit = response.data.validationSplit || response.validationSplit || 0.2;
+
+      // Update current training config
+      this.currentTrainingConfig = {
+        ...this.currentTrainingConfig,
+        lookbackDays,
+        forecastDays,
+        batchSize,
+        validationSplit
+      };
+
+      const inputSize = lookbackDays + 3; // lookback prices + 3 MACD features
+
       // Create model if not exists
       if (!this.model) {
-        this.model = this.createModel(60);
+        this.model = this.createModel(inputSize);
       }
 
       // Load weights into model
@@ -862,10 +1005,12 @@ export class NeuralNetworkService {
       });
 
       this.isModelReady = true;
-      this.lastTrainingEpochs = response.trainingEpochs || 0;
-      this.lastTrainingLoss = response.loss || null;
+      this.lastTrainingEpochs = response.trainingEpochs || response.data.trainingEpochs || 0;
+      this.lastTrainingLoss = response.loss || response.data.loss || null;
+      this.lastTrainingAccuracy = response.accuracy || response.data.accuracy || null;
       
       console.log('✅ Neural network weights loaded successfully');
+      console.log(`   Training config: lookback=${lookbackDays}, forecast=${forecastDays}, batch=${batchSize}`);
       return true;
     } catch (error) {
       console.error('Error loading weights:', error);

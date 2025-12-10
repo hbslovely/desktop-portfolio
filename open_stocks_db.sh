@@ -15,3 +15,4 @@ echo "Sử dụng .schema để xem cấu trúc bảng"
 echo ""
 
 sqlite3 "$DB_PATH"
+

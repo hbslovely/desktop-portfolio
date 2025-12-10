@@ -133,16 +133,42 @@ async function migrate() {
     await sql`CREATE INDEX IF NOT EXISTS idx_stock_details_is_vn30 ON stock_details(is_vn30)`;
     console.log('✅ Indexes on stock_details created');
 
-    // Create stock_models table
+    // Create stock_models table with flat trading config and neural network weights
     console.log('📦 Creating stock_models table...');
     await sql`
       CREATE TABLE IF NOT EXISTS stock_models (
         id SERIAL PRIMARY KEY,
         symbol VARCHAR(20) UNIQUE NOT NULL,
-        simulation_result JSONB DEFAULT '{}',
-        trading_config JSONB DEFAULT '{}',
-        date_range JSONB DEFAULT '{}',
-        simulations JSONB DEFAULT '[]',
+        
+        -- Neural Network Model Data
+        neural_network_weights JSONB,           -- Serialized model weights
+        training_epochs INTEGER DEFAULT 50,     -- Number of training epochs
+        training_loss DECIMAL(15, 10),          -- Final training loss
+        training_accuracy DECIMAL(10, 6),       -- Model accuracy (0-1)
+        model_config JSONB,                     -- Model architecture config
+        
+        -- Training Parameters (flat fields with descriptions in comments)
+        lookback_days INTEGER DEFAULT 60,       -- Số ngày lịch sử để xét (input window)
+        forecast_days INTEGER DEFAULT 1,        -- Số ngày dự đoán phía trước
+        batch_size INTEGER DEFAULT 32,          -- Kích thước batch khi training
+        validation_split DECIMAL(3, 2) DEFAULT 0.2, -- Tỷ lệ data dùng để validation (0.2 = 20%)
+        
+        -- Trading Config (flat fields)
+        initial_capital DECIMAL(20, 2) DEFAULT 100000000, -- Vốn ban đầu (VND)
+        stop_loss_percent DECIMAL(5, 2) DEFAULT 5,        -- % cắt lỗ (5 = 5%)
+        take_profit_percent DECIMAL(5, 2) DEFAULT 10,     -- % chốt lời (10 = 10%)
+        max_positions INTEGER DEFAULT 3,                   -- Số vị thế tối đa cùng lúc
+        t_plus_days INTEGER DEFAULT 2,                     -- Quy tắc T+ (2 = T+2, sau 2 ngày mới được bán)
+        
+        -- Backtest Date Range
+        date_range_start DATE,                  -- Ngày bắt đầu backtest
+        date_range_end DATE,                    -- Ngày kết thúc backtest
+        
+        -- Simulation Result
+        simulation_result JSONB,                -- Kết quả mô phỏng giao dịch
+        
+        -- Timestamps
+        trained_at TIMESTAMP WITH TIME ZONE,    -- Thời điểm train model
         created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
       )
@@ -152,7 +178,10 @@ async function migrate() {
     await sql`
       CREATE INDEX IF NOT EXISTS idx_stock_models_symbol ON stock_models(symbol)
     `;
-    console.log('✅ Index on stock_models.symbol created');
+    await sql`
+      CREATE INDEX IF NOT EXISTS idx_stock_models_trained_at ON stock_models(trained_at)
+    `;
+    console.log('✅ Indexes on stock_models created');
 
     // Create price_history table
     console.log('📦 Creating price_history table...');

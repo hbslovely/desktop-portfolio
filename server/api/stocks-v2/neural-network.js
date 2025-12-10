@@ -1,80 +1,21 @@
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+/**
+ * Neural Network API - V2
+ * Save and load neural network weights from Neon PostgreSQL database
+ * 
+ * Endpoints:
+ * - GET /api/stocks-v2/neural-network/:symbol - Load neural network weights
+ * - POST /api/stocks-v2/neural-network/:symbol - Save neural network weights
+ */
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import { 
+  saveNeuralNetworkWeights, 
+  getNeuralNetworkWeights,
+  checkModelExists
+} from '../../lib/db.js';
 
 export const config = {
   runtime: 'nodejs',
 };
-
-/**
- * Read neural network weights file
- */
-function readNeuralNetworkFile(symbol) {
-  const dataDir = path.join(__dirname, '../../data/stocks');
-  const filePath = path.join(dataDir, `${symbol.toUpperCase()}.json`);
-  
-  try {
-    if (fs.existsSync(filePath)) {
-      const content = fs.readFileSync(filePath, 'utf-8');
-      const stockData = JSON.parse(content);
-      
-      // Return neural network data if exists
-      if (stockData.neuralNetwork) {
-        return { 
-          success: true, 
-          data: stockData.neuralNetwork,
-          trainedAt: stockData.neuralNetwork?.trainedAt,
-          trainingEpochs: stockData.neuralNetwork?.trainingEpochs,
-          loss: stockData.neuralNetwork?.loss
-        };
-      }
-      return { success: false, error: 'Neural network data not found' };
-    }
-    return { success: false, error: 'Stock file not found' };
-  } catch (error) {
-    console.error('Error reading neural network file:', error);
-    return { success: false, error: error.message };
-  }
-}
-
-/**
- * Save neural network weights to stock file
- */
-function saveNeuralNetworkFile(symbol, neuralNetworkData) {
-  const dataDir = path.join(__dirname, '../../data/stocks');
-  const filePath = path.join(dataDir, `${symbol.toUpperCase()}.json`);
-  
-  try {
-    // Read existing stock data
-    let stockData = {};
-    if (fs.existsSync(filePath)) {
-      const content = fs.readFileSync(filePath, 'utf-8');
-      stockData = JSON.parse(content);
-    }
-
-    // Update neural network data
-    stockData.neuralNetwork = {
-      ...neuralNetworkData,
-      trainedAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-
-    // Ensure directory exists
-    if (!fs.existsSync(dataDir)) {
-      fs.mkdirSync(dataDir, { recursive: true });
-    }
-
-    // Write file
-    fs.writeFileSync(filePath, JSON.stringify(stockData, null, 2), 'utf-8');
-    return { success: true, message: 'Neural network data saved successfully' };
-  } catch (error) {
-    console.error('Error saving neural network file:', error);
-    return { success: false, error: error.message };
-  }
-}
 
 export default async function handler(req) {
   try {
@@ -111,9 +52,30 @@ export default async function handler(req) {
       );
     }
 
-    // GET: Load neural network weights
+    // Check for action parameter
+    const action = url.searchParams.get('action');
+
+    // GET: Load neural network weights from database
     if (req.method === 'GET') {
-      const result = readNeuralNetworkFile(symbol);
+      // Check action parameter
+      if (action === 'check') {
+        const result = await checkModelExists(symbol);
+        return new Response(
+          JSON.stringify({
+            success: true,
+            ...result
+          }),
+          {
+            status: 200,
+            headers: {
+              'Content-Type': 'application/json',
+              'Access-Control-Allow-Origin': '*',
+            },
+          }
+        );
+      }
+
+      const result = await getNeuralNetworkWeights(symbol);
 
       if (!result.success) {
         return new Response(
@@ -135,9 +97,15 @@ export default async function handler(req) {
         JSON.stringify({
           success: true,
           data: result.data,
-          trainedAt: result.trainedAt,
-          trainingEpochs: result.trainingEpochs,
-          loss: result.loss,
+          trainedAt: result.data.trainedAt,
+          trainingEpochs: result.data.trainingEpochs,
+          loss: result.data.loss,
+          accuracy: result.data.accuracy,
+          // Training parameters
+          lookbackDays: result.data.lookbackDays,
+          forecastDays: result.data.forecastDays,
+          batchSize: result.data.batchSize,
+          validationSplit: result.data.validationSplit,
         }),
         {
           status: 200,
@@ -149,10 +117,21 @@ export default async function handler(req) {
       );
     }
 
-    // POST: Save neural network weights
+    // POST: Save neural network weights to database
     if (req.method === 'POST') {
       const body = await req.json();
-      const { weights, trainingEpochs, loss, modelConfig } = body;
+      const { 
+        weights, 
+        trainingEpochs, 
+        loss, 
+        accuracy,
+        modelConfig,
+        // Training parameters
+        lookbackDays,
+        forecastDays,
+        batchSize,
+        validationSplit,
+      } = body;
 
       if (!weights) {
         return new Response(
@@ -167,14 +146,27 @@ export default async function handler(req) {
         );
       }
 
-      const neuralNetworkData = {
+      const weightsData = {
         weights,
-        trainingEpochs: trainingEpochs || 0,
+        trainingEpochs: trainingEpochs || 50,
         loss: loss || null,
-        modelConfig: modelConfig || null,
+        accuracy: accuracy || null,
+        modelConfig: modelConfig || {
+          inputSize: lookbackDays || 60,
+          layers: [
+            { units: 128, activation: 'relu' },
+            { units: 64, activation: 'relu' },
+            { units: 32, activation: 'relu' },
+            { units: 3, activation: 'linear' }
+          ]
+        },
+        lookbackDays: lookbackDays || 60,
+        forecastDays: forecastDays || 1,
+        batchSize: batchSize || 32,
+        validationSplit: validationSplit || 0.2,
       };
 
-      const saveResult = saveNeuralNetworkFile(symbol, neuralNetworkData);
+      const saveResult = await saveNeuralNetworkWeights(symbol, weightsData);
 
       if (!saveResult.success) {
         return new Response(
@@ -195,8 +187,9 @@ export default async function handler(req) {
       return new Response(
         JSON.stringify({
           success: true,
-          message: saveResult.message,
+          message: 'Neural network data saved to database successfully',
           symbol: symbol,
+          updatedAt: saveResult.updatedAt,
         }),
         {
           status: 200,

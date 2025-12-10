@@ -34,3 +34,4 @@ python3 migrate_sqlite_to_mysql.py
 ```bash
 mysql -u stocks_user -h localhost stocks_db -e "SELECT COUNT(*) FROM stocks;"
 ```
+

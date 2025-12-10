@@ -165,3 +165,4 @@ conn = mysql.connector.connect(
   ```sql
   CREATE DATABASE stocks_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
   ```
+
