@@ -2553,6 +2553,394 @@ $green-border: #81c784;
   }
 }
 
+// Key Financial Indicators Grid
+.key-indicators-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+
+  .key-indicator-card {
+    position: relative;
+    padding: 16px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    border-radius: 10px;
+    border: 1px solid #e0e0e0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    transition: all 0.2s;
+    cursor: help;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      border-color: $green-border;
+
+      .tooltip-icon {
+        opacity: 1;
+      }
+    }
+
+    &.positive {
+      border-left: 3px solid $light-green;
+      
+      .indicator-value {
+        color: $dark-green;
+      }
+    }
+
+    &.negative {
+      border-left: 3px solid #e53935;
+      
+      .indicator-value {
+        color: #c62828;
+      }
+    }
+
+    .indicator-label {
+      font-size: 11px;
+      color: #666;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .indicator-value {
+      font-size: 18px;
+      font-weight: 700;
+      color: #333;
+      font-family: 'Courier New', monospace;
+    }
+
+    .tooltip-icon {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      font-size: 12px;
+      color: #999;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+  }
+}
+
+// Same Sector Stocks Grid
+.same-sector-stocks-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+
+  .sector-stock-card {
+    padding: 14px;
+    background: #fff;
+    border-radius: 10px;
+    border: 1px solid #e0e0e0;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    position: relative;
+
+    &:hover {
+      background: $green-bg;
+      border-color: $green-border;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+
+      .stock-action {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    &.fetched {
+      border-left: 3px solid $light-green;
+    }
+
+    .stock-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      .stock-symbol {
+        font-size: 16px;
+        font-weight: 700;
+        color: $dark-green;
+      }
+
+      .stock-status {
+        color: $light-green;
+        font-size: 14px;
+      }
+    }
+
+    .stock-name {
+      font-size: 12px;
+      color: #666;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .stock-action {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateX(5px) translateY(-50%);
+      opacity: 0;
+      transition: all 0.2s;
+      color: $green;
+    }
+  }
+}
+
+// Same Sector Stocks List (for financial tab)
+.same-sector-stocks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+
+  .sector-stock-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: #fff;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+    cursor: pointer;
+    transition: all 0.2s;
+
+    &:hover {
+      background: $green-bg;
+      border-color: $green-border;
+
+      .btn-view {
+        background: $green;
+        color: white;
+      }
+    }
+
+    &.fetched {
+      border-left: 3px solid $light-green;
+    }
+
+    .stock-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex: 1;
+      min-width: 0;
+
+      .stock-symbol {
+        font-size: 15px;
+        font-weight: 700;
+        color: $dark-green;
+        min-width: 60px;
+      }
+
+      .stock-name {
+        font-size: 13px;
+        color: #666;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+    }
+
+    .stock-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+
+      .fetch-status {
+        font-size: 12px;
+        color: $light-green;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+
+        &.pending {
+          color: #ff9800;
+        }
+
+        i {
+          font-size: 12px;
+        }
+      }
+
+      .btn-view {
+        padding: 6px 12px;
+        background: #f0f0f0;
+        border: none;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        color: #666;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        transition: all 0.2s;
+
+        i {
+          font-size: 12px;
+        }
+      }
+    }
+  }
+}
+
+// Financial Indicators Detailed (for financial tab)
+.financial-indicators-detailed {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+
+  .indicator-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    transition: background 0.2s;
+
+    &:hover {
+      background: $green-bg;
+    }
+
+    .indicator-label {
+      font-size: 13px;
+      color: #555;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+
+      .info-icon {
+        font-size: 12px;
+        color: #999;
+        cursor: help;
+      }
+    }
+
+    .indicator-value {
+      font-size: 14px;
+      font-weight: 600;
+      color: $dark-green;
+      font-family: 'Courier New', monospace;
+    }
+  }
+}
+
+// Financial Report Table
+.financial-report-table-wrapper {
+  margin-top: 12px;
+  overflow-x: auto;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+}
+
+.financial-report-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+
+  th, td {
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 1px solid #e0e0e0;
+  }
+
+  th {
+    background: linear-gradient(135deg, $dark-green 0%, $green 100%);
+    color: white;
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+
+    &.value-col {
+      text-align: right;
+      min-width: 120px;
+    }
+
+    &.change-col {
+      text-align: right;
+      min-width: 140px;
+    }
+  }
+
+  tbody tr {
+    transition: background 0.2s;
+
+    &:hover {
+      background: $green-bg;
+    }
+
+    &:last-child td {
+      border-bottom: none;
+    }
+  }
+
+  td {
+    color: #333;
+
+    &.label-cell {
+      font-weight: 500;
+    }
+
+    &.value-cell {
+      text-align: right;
+      font-family: 'Courier New', monospace;
+      font-weight: 600;
+      color: $dark-green;
+
+      &.year-value {
+        color: #666;
+      }
+    }
+
+    &.change-cell {
+      text-align: right;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+
+      &.positive {
+        color: $light-green;
+        
+        .change-percent {
+          color: $dark-green;
+        }
+      }
+
+      &.negative {
+        color: #e53935;
+        
+        .change-percent {
+          color: #c62828;
+        }
+      }
+
+      .change-value {
+        font-weight: 600;
+        display: block;
+      }
+
+      .change-percent {
+        font-size: 11px;
+        opacity: 0.8;
+      }
+    }
+  }
+}
+
 // Trading Info
 .trading-info-grid {
   display: grid;

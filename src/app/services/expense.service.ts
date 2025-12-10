@@ -33,6 +33,11 @@ export interface ExpenseRow {
   phanLoai: string;
 }
 
+export interface CategoryBudget {
+  category: string;
+  amount: number;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -259,6 +264,136 @@ class ExpenseService {
     );
   }
 
+
+  // ========== BUDGET METHODS ==========
+  
+  private readonly BUDGET_SHEET_NAME = 'Ngân sách'; // Budget tab name
+  private cachedBudgets$: Observable<CategoryBudget[]> | null = null;
+  private lastBudgetLoadTime: number = 0;
+
+  /**
+   * Get all budgets from Google Sheets "Ngân sách" tab
+   * Columns: A = Category, B = Amount
+   */
+  getBudgets(forceRefresh: boolean = false): Observable<CategoryBudget[]> {
+    // Check cache first
+    const now = Date.now();
+    if (!forceRefresh && this.cachedBudgets$ && (now - this.lastBudgetLoadTime) < this.CACHE_DURATION) {
+      console.log('📦 Using cached budgets');
+      return this.cachedBudgets$;
+    }
+
+    // Read from Ngân sách tab
+    // Use FORMATTED_VALUE to get values as they appear in the sheet
+    const range = `${this.BUDGET_SHEET_NAME}!A2:B`;
+    const url = `${this.BASE_URL}/values/${range}?key=${this.API_KEY}&valueRenderOption=FORMATTED_VALUE`;
+
+    this.cachedBudgets$ = this.http.get<{ values: string[][] }>(url).pipe(
+      shareReplay(1),
+      map((response) => {
+        if (!response.values || response.values.length === 0) {
+          this.lastBudgetLoadTime = Date.now();
+          return [];
+        }
+
+        const budgets = response.values
+          .filter((row: string[]) => row && row.length >= 1 && row[0])
+          .map((row: string[]) => {
+            const category = row[0]?.trim() || '';
+            const rawValue = row[1]?.trim() || '0';
+            
+            // Parse amount - handle different formats:
+            // 1. Pure number: 1200000
+            // 2. Vietnamese format with dots: "1.200.000"
+            // 3. Number with decimal: 1171717.17
+            // 4. Formatted with "đ": "1.200.000 đ"
+            let amount = 0;
+            
+            // Remove currency symbol and spaces
+            let cleanValue = rawValue.replace(/[đ\s]/g, '').trim();
+            
+            if (cleanValue) {
+              // Check if it's a decimal number (has a dot followed by 1-2 digits at the end)
+              const decimalMatch = cleanValue.match(/^[\d.]+[,.](\d{1,2})$/);
+              
+              if (decimalMatch) {
+                // It's a decimal number - parse as float and round
+                // Replace comma with dot for parsing
+                cleanValue = cleanValue.replace(',', '.');
+                // Remove thousand separators (dots that are not the decimal point)
+                const parts = cleanValue.split('.');
+                if (parts.length > 2) {
+                  // Multiple dots - last one is decimal, others are thousand separators
+                  const decimalPart = parts.pop();
+                  cleanValue = parts.join('') + '.' + decimalPart;
+                }
+                amount = Math.round(parseFloat(cleanValue) || 0);
+              } else {
+                // It's a whole number with thousand separators
+                // Remove all non-digits
+                amount = parseInt(cleanValue.replace(/[^\d]/g, ''), 10) || 0;
+              }
+            }
+            
+            console.log(`📊 Budget: ${category} = ${rawValue} -> ${amount}`);
+
+            return {
+              category,
+              amount
+            };
+          });
+
+        this.lastBudgetLoadTime = Date.now();
+        return budgets;
+      }),
+      catchError((error) => {
+        console.error('Failed to get budgets from Google Sheets:', error);
+        this.cachedBudgets$ = null;
+        return throwError(() => error);
+      })
+    );
+
+    return this.cachedBudgets$;
+  }
+
+  /**
+   * Save budgets to Google Sheets "Ngân sách" tab
+   * Uses Google Apps Script for write operations
+   */
+  saveBudgets(budgets: CategoryBudget[]): Observable<any> {
+    if (this.APPS_SCRIPT_URL) {
+      return this.http.post(this.APPS_SCRIPT_URL, {
+        action: 'saveBudgets',
+        budgets: budgets
+      }, {
+        headers: new HttpHeaders({
+          'Content-Type': 'application/json'
+        })
+      }).pipe(
+        map((response) => {
+          // Clear budget cache after saving
+          this.cachedBudgets$ = null;
+          this.lastBudgetLoadTime = 0;
+          return response;
+        }),
+        catchError((error) => {
+          console.error('Failed to save budgets via Apps Script:', error);
+          return throwError(() => new Error('Không thể lưu ngân sách. Vui lòng kiểm tra cấu hình Google Apps Script.'));
+        })
+      );
+    }
+
+    return throwError(() => new Error('Google Apps Script URL not configured'));
+  }
+
+  /**
+   * Clear budget cache
+   */
+  clearBudgetCache(): void {
+    this.cachedBudgets$ = null;
+    this.lastBudgetLoadTime = 0;
+    console.log('🗑️ Budget cache cleared');
+  }
 
   /**
    * Parse Vietnamese date string to ISO date string

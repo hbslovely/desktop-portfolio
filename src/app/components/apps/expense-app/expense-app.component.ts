@@ -64,11 +64,16 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   // Multiple expenses input
   multipleExpenses = signal<Expense[]>([]);
   savingProgress = signal<{ current: number; total: number; saving: boolean }>({ current: 0, total: 0, saving: false });
+  savedRowIndices = signal<Set<number>>(new Set()); // Track which rows have been saved
 
   // Category detail dialog
   showCategoryDetail = signal<boolean>(false);
   selectedCategory = signal<string>('');
   showCustomDateDialog = signal<boolean>(false); // For custom date range filter
+
+  // Budget category detail dialog
+  showBudgetCategoryDetailDialog = signal<boolean>(false);
+  selectedBudgetCategory = signal<string>('');
 
   // Day detail dialog
   showDayDetail = signal<boolean>(false);
@@ -181,6 +186,12 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
   // Tabs
   activeTab = signal<'list' | 'summary' | 'budget' | 'insights'>('list');
+  currentView = signal<'main' | 'insights'>('main'); // Main view (list/summary) or Insights view (budget/insights)
+  insightsActiveTab = signal<'budget' | 'insights'>('budget'); // Active tab within insights view
+  
+  // Month/Year picker for insights view
+  insightsYear = signal<number>(new Date().getFullYear());
+  insightsMonth = signal<number | null>(new Date().getMonth() + 1); // null = whole year
   predictionTab = signal<'thisWeek' | 'nextWeek' | 'thisMonth'>('thisWeek');
 
   // Budget Settings
@@ -189,6 +200,141 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   editCategoryBudgets = signal<{ [category: string]: number }>({});
   showSetAllDialog = signal<boolean>(false);
   setAllValue = signal<number>(1000000); // Default 1M for set all
+  
+  // Budget mode: 'topDown' = set total and distribute by weight, 'bottomUp' = set each category
+  budgetMode = signal<'topDown' | 'bottomUp'>('topDown');
+  categoryWeights = signal<{ [category: string]: number }>({}); // Weight percentages for each category
+
+  // Report Period Picker (for Budget & Insights tabs)
+  reportYear = signal<number>(new Date().getFullYear());
+  reportMonth = signal<number | null>(new Date().getMonth() + 1); // 1-12, null = whole year
+
+  // Computed: expenses filtered by report period
+  reportPeriodExpenses = computed(() => {
+    const allExpenses = this.expenses();
+    const year = this.reportYear();
+    const month = this.reportMonth();
+
+    return allExpenses.filter(expense => {
+      const expenseDate = new Date(expense.date);
+      const expenseYear = expenseDate.getFullYear();
+      const expenseMonth = expenseDate.getMonth() + 1;
+
+      if (month === null) {
+        // Whole year
+        return expenseYear === year;
+      } else {
+        // Specific month
+        return expenseYear === year && expenseMonth === month;
+      }
+    });
+  });
+
+  // Report period label
+  getReportPeriodLabel(): string {
+    const year = this.reportYear();
+    const month = this.reportMonth();
+
+    if (month === null) {
+      return `Năm ${year}`;
+    }
+
+    const monthNames = ['', 'Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6',
+                        'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'];
+    return `${monthNames[month]} ${year}`;
+  }
+
+  // Set report period shortcuts
+  setReportPeriod(period: 'thisMonth' | 'lastMonth' | 'thisYear' | 'lastYear'): void {
+    const now = new Date();
+    switch (period) {
+      case 'thisMonth':
+        this.reportYear.set(now.getFullYear());
+        this.reportMonth.set(now.getMonth() + 1);
+        break;
+      case 'lastMonth':
+        const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        this.reportYear.set(lastMonth.getFullYear());
+        this.reportMonth.set(lastMonth.getMonth() + 1);
+        break;
+      case 'thisYear':
+        this.reportYear.set(now.getFullYear());
+        this.reportMonth.set(null);
+        break;
+      case 'lastYear':
+        this.reportYear.set(now.getFullYear() - 1);
+        this.reportMonth.set(null);
+        break;
+    }
+    // Reinitialize charts when period changes
+    if (this.activeTab() === 'insights') {
+      this.initInsightCharts();
+    } else if (this.activeTab() === 'budget') {
+      setTimeout(() => this.initBudgetTrendChart(), 100);
+    }
+  }
+
+  // Navigate months/years
+  navigateReportPeriod(direction: 'prev' | 'next'): void {
+    const year = this.reportYear();
+    const month = this.reportMonth();
+
+    if (month === null) {
+      // Navigate years
+      this.reportYear.set(direction === 'prev' ? year - 1 : year + 1);
+    } else {
+      // Navigate months
+      if (direction === 'prev') {
+        if (month === 1) {
+          this.reportYear.set(year - 1);
+          this.reportMonth.set(12);
+        } else {
+          this.reportMonth.set(month - 1);
+        }
+      } else {
+        if (month === 12) {
+          this.reportYear.set(year + 1);
+          this.reportMonth.set(1);
+        } else {
+          this.reportMonth.set(month + 1);
+        }
+      }
+    }
+    // Reinitialize charts
+    if (this.activeTab() === 'insights') {
+      this.initInsightCharts();
+    } else if (this.activeTab() === 'budget') {
+      setTimeout(() => this.initBudgetTrendChart(), 100);
+    }
+  }
+
+  // Toggle between month and year view
+  toggleReportMode(): void {
+    const month = this.reportMonth();
+    if (month === null) {
+      // Switch to current month
+      this.reportMonth.set(new Date().getMonth() + 1);
+    } else {
+      // Switch to whole year
+      this.reportMonth.set(null);
+    }
+    // Reinitialize charts
+    if (this.activeTab() === 'insights') {
+      this.initInsightCharts();
+    } else if (this.activeTab() === 'budget') {
+      setTimeout(() => this.initBudgetTrendChart(), 100);
+    }
+  }
+
+  // Get available years for picker
+  getAvailableYears(): number[] {
+    const currentYear = new Date().getFullYear();
+    const years: number[] = [];
+    for (let y = currentYear; y >= currentYear - 5; y--) {
+      years.push(y);
+    }
+    return years;
+  }
 
   // Sorting for expenses list
   sortField = signal<'date' | 'amount' | 'category' | 'content'>('date');
@@ -2119,6 +2265,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       // Auto-login if hash is valid
       this.isAuthenticated.set(true);
       this.loadExpenses();
+      this.loadBudgets(); // Load budgets from Google Sheets
     } else {
       // Clear invalid authentication and logout
       // Hash is invalid (wrong username:password or expired)
@@ -2391,6 +2538,8 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     this.inputMode.set('single');
     this.multipleExpenses.set([this.createEmptyExpense()]);
     this.savingProgress.set({ current: 0, total: 0, saving: false });
+    this.savedRowIndices.set(new Set()); // Reset saved row tracking
+    this.showSuccessMessage.set(false);
     this.showAddForm.set(true);
   }
 
@@ -3891,6 +4040,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     }
 
     this.savingProgress.set({ current: 0, total: validExpenses.length, saving: true });
+    this.savedRowIndices.set(new Set()); // Reset saved indices
     this.isLoading.set(true);
     this.error.set(null);
 
@@ -3925,6 +4075,11 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     this.expenseService.addExpense(expense).subscribe({
       next: () => {
+        // Mark this row as saved
+        const saved = new Set(this.savedRowIndices());
+        saved.add(index);
+        this.savedRowIndices.set(saved);
+        
         // Save next expense
         this.saveExpensesSequentially(expenses, index + 1);
       },
@@ -3937,6 +4092,11 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         this.loadExpenses(true);
       }
     });
+  }
+
+  // Check if a row has been saved
+  isRowSaved(index: number): boolean {
+    return this.savedRowIndices().has(index);
   }
 
   /**
@@ -4931,14 +5091,220 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   /**
-   * Save budget settings
+   * Load budgets from Google Sheets
+   */
+  loadBudgets(forceRefresh: boolean = false): void {
+    this.expenseService.getBudgets(forceRefresh).subscribe({
+      next: (budgets) => {
+        console.log('📊 Loaded budgets:', budgets);
+        
+        // Map budgets to editCategoryBudgets signal
+        const budgetMap: { [category: string]: number } = {};
+        let totalBudget = 0;
+        
+        budgets.forEach(b => {
+          if (b.category && b.amount > 0) {
+            budgetMap[b.category] = b.amount;
+            totalBudget += b.amount;
+          }
+        });
+        
+        this.editCategoryBudgets.set(budgetMap);
+        
+        // If total budget was set via bottom-up, use sum of categories
+        // Otherwise keep the default monthly budget
+        if (totalBudget > 0) {
+          this.editMonthlyBudget.set(totalBudget);
+        }
+        
+        // Initialize weights from loaded budgets
+        this.calculateWeightsFromBudgets();
+      },
+      error: (err) => {
+        console.error('Failed to load budgets:', err);
+        // Continue with default values
+      }
+    });
+  }
+
+  /**
+   * Save budget settings to Google Sheets
    */
   saveBudgetSettings(): void {
-    // In a real app, you would save these to a backend or local storage
-    // For now, the signals already hold the values
-    this.showBudgetSettings.set(false);
-    this.showSetAllDialog.set(false);
-    this.showNotificationDialog('Đã lưu ngân sách thành công!', 'success');
+    // Prepare budgets array from editCategoryBudgets
+    const categoryBudgets = this.editCategoryBudgets();
+    const budgets = this.categories().map(category => ({
+      category,
+      amount: categoryBudgets[category] || 0
+    }));
+
+    // Save to Google Sheets
+    this.expenseService.saveBudgets(budgets).subscribe({
+      next: () => {
+        this.showBudgetSettings.set(false);
+        this.showSetAllDialog.set(false);
+        this.showNotificationDialog('Đã lưu ngân sách thành công!', 'success');
+        
+        // Refresh the budget trend chart
+        setTimeout(() => {
+          this.initBudgetTrendChart();
+        }, 100);
+      },
+      error: (err) => {
+        console.error('Failed to save budgets:', err);
+        this.showNotificationDialog('Lỗi khi lưu ngân sách: ' + err.message, 'error');
+      }
+    });
+  }
+
+  /**
+   * Switch budget mode
+   */
+  switchBudgetMode(mode: 'topDown' | 'bottomUp'): void {
+    this.budgetMode.set(mode);
+    
+    if (mode === 'topDown') {
+      // Calculate weights from current category budgets
+      this.calculateWeightsFromBudgets();
+    } else {
+      // Apply weights to calculate category budgets from total
+      this.applyWeightsToBudgets();
+    }
+  }
+
+  /**
+   * Calculate weights from current category budgets
+   */
+  calculateWeightsFromBudgets(): void {
+    const categories = this.categories();
+    const budgets = this.editCategoryBudgets();
+    const total = this.getTotalCategoryBudgets();
+    const weights: { [category: string]: number } = {};
+    
+    if (total > 0) {
+      categories.forEach(cat => {
+        const budget = budgets[cat] || 0;
+        weights[cat] = Math.round((budget / total) * 100);
+      });
+    } else {
+      // Default equal weights
+      const equalWeight = Math.floor(100 / categories.length);
+      categories.forEach(cat => {
+        weights[cat] = equalWeight;
+      });
+    }
+    
+    this.categoryWeights.set(weights);
+  }
+
+  /**
+   * Apply weights to calculate category budgets from total
+   */
+  applyWeightsToBudgets(): void {
+    const categories = this.categories();
+    const weights = this.categoryWeights();
+    const total = this.editMonthlyBudget();
+    const newBudgets: { [category: string]: number } = {};
+    
+    // Ensure weights exist
+    let totalWeight = 0;
+    categories.forEach(cat => {
+      totalWeight += weights[cat] || 0;
+    });
+    
+    if (totalWeight === 0) {
+      // Default equal weights
+      const equalWeight = Math.floor(100 / categories.length);
+      categories.forEach(cat => {
+        newBudgets[cat] = Math.floor(total * equalWeight / 100);
+      });
+    } else {
+      categories.forEach(cat => {
+        const weight = weights[cat] || 0;
+        newBudgets[cat] = Math.floor(total * weight / totalWeight);
+      });
+    }
+    
+    this.editCategoryBudgets.set(newBudgets);
+  }
+
+  /**
+   * Update category weight (in topDown mode)
+   */
+  updateCategoryWeight(category: string, weight: number): void {
+    const weights = { ...this.categoryWeights() };
+    weights[category] = Math.max(0, Math.min(100, weight));
+    this.categoryWeights.set(weights);
+    
+    // Recalculate budgets based on new weights
+    this.applyWeightsToBudgets();
+  }
+
+  /**
+   * Get category weight
+   */
+  getCategoryWeight(category: string): number {
+    return this.categoryWeights()[category] || 0;
+  }
+
+  /**
+   * Get total weight
+   */
+  getTotalWeight(): number {
+    const weights = this.categoryWeights();
+    return Object.values(weights).reduce((sum, w) => sum + w, 0);
+  }
+
+  /**
+   * Normalize weights to 100%
+   */
+  normalizeWeights(): void {
+    const categories = this.categories();
+    const weights = this.categoryWeights();
+    const total = this.getTotalWeight();
+    
+    if (total === 0) return;
+    
+    const normalized: { [category: string]: number } = {};
+    let remaining = 100;
+    
+    categories.forEach((cat, index) => {
+      if (index === categories.length - 1) {
+        // Last category gets the remaining to ensure total is 100
+        normalized[cat] = Math.max(0, remaining);
+      } else {
+        const normalizedWeight = Math.round((weights[cat] || 0) / total * 100);
+        normalized[cat] = normalizedWeight;
+        remaining -= normalizedWeight;
+      }
+    });
+    
+    this.categoryWeights.set(normalized);
+    this.applyWeightsToBudgets();
+    this.showNotificationDialog('Đã chuẩn hóa trọng số về 100%', 'success');
+  }
+
+  /**
+   * Update total budget (in topDown mode) - recalculates category budgets
+   */
+  onTotalBudgetChange(amount: number): void {
+    this.editMonthlyBudget.set(amount);
+    if (this.budgetMode() === 'topDown') {
+      this.applyWeightsToBudgets();
+    }
+  }
+
+  /**
+   * Update category budget (in bottomUp mode) - recalculates total
+   */
+  onCategoryBudgetChangeBottomUp(category: string, amount: number): void {
+    const currentBudgets = { ...this.editCategoryBudgets() };
+    currentBudgets[category] = amount;
+    this.editCategoryBudgets.set(currentBudgets);
+    
+    // Recalculate total from category budgets
+    const newTotal = Object.values(currentBudgets).reduce((sum, val) => sum + val, 0);
+    this.editMonthlyBudget.set(newTotal);
   }
 
   /**
@@ -4946,6 +5312,9 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
    */
   setMonthlyBudgetPreset(amount: number): void {
     this.editMonthlyBudget.set(amount);
+    if (this.budgetMode() === 'topDown') {
+      this.applyWeightsToBudgets();
+    }
   }
 
   /**
@@ -4955,12 +5324,16 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const categories = this.categories();
     const budgetPerCategory = Math.floor(this.editMonthlyBudget() / categories.length);
     const newBudgets: { [category: string]: number } = {};
+    const equalWeight = Math.floor(100 / categories.length);
+    const newWeights: { [category: string]: number } = {};
     
     categories.forEach(cat => {
       newBudgets[cat] = budgetPerCategory;
+      newWeights[cat] = equalWeight;
     });
     
     this.editCategoryBudgets.set(newBudgets);
+    this.categoryWeights.set(newWeights);
     this.showNotificationDialog(`Đã chia đều ${this.formatCompactAmount(budgetPerCategory)} cho mỗi danh mục`, 'success');
   }
 
@@ -4969,6 +5342,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
    */
   clearAllCategoryBudgets(): void {
     this.editCategoryBudgets.set({});
+    this.categoryWeights.set({});
   }
 
   /**
@@ -4984,6 +5358,13 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     });
     
     this.editCategoryBudgets.set(newBudgets);
+    
+    // Update total in bottomUp mode
+    if (this.budgetMode() === 'bottomUp') {
+      const newTotal = value * categories.length;
+      this.editMonthlyBudget.set(newTotal);
+    }
+    
     this.showSetAllDialog.set(false);
     this.showNotificationDialog(`Đã đặt ${this.formatCompactAmount(value)} cho tất cả danh mục`, 'success');
   }
@@ -4995,6 +5376,12 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const currentBudgets = { ...this.editCategoryBudgets() };
     currentBudgets[category] = amount;
     this.editCategoryBudgets.set(currentBudgets);
+    
+    // Update total in bottomUp mode
+    if (this.budgetMode() === 'bottomUp') {
+      const newTotal = Object.values(currentBudgets).reduce((sum, val) => sum + val, 0);
+      this.editMonthlyBudget.set(newTotal);
+    }
   }
 
   /**
@@ -5003,6 +5390,24 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   getTotalCategoryBudgets(): number {
     const budgets = this.editCategoryBudgets();
     return Object.values(budgets).reduce((sum, val) => sum + val, 0);
+  }
+  
+  /**
+   * Initialize category weights with default values
+   */
+  initDefaultWeights(): void {
+    const categories = this.categories();
+    const weights = this.categoryWeights();
+    
+    // Only initialize if weights are empty
+    if (Object.keys(weights).length === 0 && categories.length > 0) {
+      const equalWeight = Math.floor(100 / categories.length);
+      const newWeights: { [category: string]: number } = {};
+      categories.forEach(cat => {
+        newWeights[cat] = equalWeight;
+      });
+      this.categoryWeights.set(newWeights);
+    }
   }
 
   /**
@@ -5015,6 +5420,239 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       return (amount / 1000).toFixed(0) + 'K';
     }
     return amount.toString();
+  }
+
+  // ========== BUDGET CATEGORY DETAIL ==========
+  @ViewChild('budgetCategoryMonthlyChart') budgetCategoryMonthlyChartRef!: ElementRef<HTMLCanvasElement>;
+  private budgetCategoryMonthlyChart: Chart | null = null;
+
+  /**
+   * Get selected budget category info
+   */
+  selectedBudgetCategoryInfo = computed(() => {
+    const category = this.selectedBudgetCategory();
+    if (!category) return null;
+    
+    const budgets = this.categoryBudgets();
+    return budgets.find(b => b.category === category) || null;
+  });
+
+  /**
+   * Get expenses for selected budget category in current month
+   */
+  budgetCategoryExpenses = computed(() => {
+    const category = this.selectedBudgetCategory();
+    if (!category) return [];
+    
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    
+    return this.expenses()
+      .filter(e => {
+        const expenseDate = new Date(e.date);
+        return e.category === category && 
+               expenseDate.getMonth() === currentMonth && 
+               expenseDate.getFullYear() === currentYear;
+      })
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  });
+
+  /**
+   * Get daily spending for selected budget category in current month
+   */
+  budgetCategoryDailySpending = computed(() => {
+    const category = this.selectedBudgetCategory();
+    if (!category) return [];
+    
+    const now = new Date();
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    
+    const dailyTotals: { day: number; amount: number }[] = [];
+    
+    // Initialize all days
+    for (let day = 1; day <= daysInMonth; day++) {
+      dailyTotals.push({ day, amount: 0 });
+    }
+    
+    // Sum expenses by day
+    this.expenses()
+      .filter(e => {
+        const expenseDate = new Date(e.date);
+        return e.category === category && 
+               expenseDate.getMonth() === currentMonth && 
+               expenseDate.getFullYear() === currentYear;
+      })
+      .forEach(e => {
+        const day = new Date(e.date).getDate();
+        dailyTotals[day - 1].amount += e.amount;
+      });
+    
+    return dailyTotals;
+  });
+
+  /**
+   * Show budget category detail dialog
+   */
+  showBudgetCategoryDetail(category: string): void {
+    this.selectedBudgetCategory.set(category);
+    this.showBudgetCategoryDetailDialog.set(true);
+    
+    // Initialize chart after dialog is shown
+    setTimeout(() => {
+      this.initBudgetCategoryMonthlyChart();
+    }, 150);
+  }
+
+  /**
+   * Hide budget category detail dialog
+   */
+  hideBudgetCategoryDetail(): void {
+    this.showBudgetCategoryDetailDialog.set(false);
+    this.selectedBudgetCategory.set('');
+    
+    // Destroy chart
+    if (this.budgetCategoryMonthlyChart) {
+      this.budgetCategoryMonthlyChart.destroy();
+      this.budgetCategoryMonthlyChart = null;
+    }
+  }
+
+  /**
+   * Initialize budget category monthly chart
+   */
+  initBudgetCategoryMonthlyChart(): void {
+    if (!this.budgetCategoryMonthlyChartRef?.nativeElement) return;
+    
+    // Destroy existing chart
+    if (this.budgetCategoryMonthlyChart) {
+      this.budgetCategoryMonthlyChart.destroy();
+    }
+    
+    const dailyData = this.budgetCategoryDailySpending();
+    const categoryInfo = this.selectedBudgetCategoryInfo();
+    const now = new Date();
+    const daysInMonth = dailyData.length;
+    const today = now.getDate();
+    
+    // Calculate daily budget line
+    const dailyBudget = categoryInfo?.budget ? categoryInfo.budget / daysInMonth : 0;
+    
+    const labels = dailyData.map(d => d.day.toString());
+    const actualData = dailyData.map(d => d.amount);
+    const budgetLineData = dailyData.map(() => dailyBudget);
+    
+    // Cumulative data for area chart
+    let cumulative = 0;
+    const cumulativeData = dailyData.map((d, index) => {
+      if (index + 1 <= today) {
+        cumulative += d.amount;
+        return cumulative;
+      }
+      return null;
+    });
+    
+    // Budget cumulative line
+    const budgetCumulativeData = dailyData.map((_, index) => dailyBudget * (index + 1));
+    
+    const ctx = this.budgetCategoryMonthlyChartRef.nativeElement.getContext('2d')!;
+    const gradient = ctx.createLinearGradient(0, 0, 0, 200);
+    gradient.addColorStop(0, 'rgba(16, 185, 129, 0.3)');
+    gradient.addColorStop(1, 'rgba(16, 185, 129, 0)');
+    
+    const config: ChartConfiguration = {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          {
+            type: 'bar',
+            label: 'Chi tiêu ngày',
+            data: actualData,
+            backgroundColor: actualData.map((val, idx) => {
+              if (idx + 1 > today) return 'rgba(200, 200, 200, 0.3)';
+              return val > dailyBudget ? 'rgba(239, 68, 68, 0.7)' : 'rgba(16, 185, 129, 0.7)';
+            }),
+            borderRadius: 4,
+            order: 2
+          },
+          {
+            type: 'line',
+            label: 'Ngân sách ngày',
+            data: budgetLineData,
+            borderColor: 'rgba(139, 92, 246, 0.8)',
+            borderWidth: 2,
+            borderDash: [5, 5],
+            pointRadius: 0,
+            fill: false,
+            order: 1
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          intersect: false,
+          mode: 'index'
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: {
+              font: { size: 10 },
+              maxRotation: 0,
+              callback: (_, index) => {
+                // Show only every 5th day
+                const day = index + 1;
+                if (day === 1 || day % 5 === 0 || day === daysInMonth) {
+                  return day.toString();
+                }
+                return '';
+              }
+            }
+          },
+          y: {
+            grid: { color: 'rgba(0, 0, 0, 0.05)' },
+            ticks: {
+              font: { size: 10 },
+              callback: (value) => this.formatCompactAmount(value as number)
+            }
+          }
+        },
+        plugins: {
+          legend: {
+            display: true,
+            position: 'top',
+            labels: {
+              font: { size: 11 },
+              usePointStyle: true,
+              padding: 15
+            }
+          },
+          tooltip: {
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            padding: 12,
+            titleFont: { size: 13 },
+            bodyFont: { size: 12 },
+            callbacks: {
+              title: (items) => `Ngày ${items[0].label}`,
+              label: (context) => {
+                const value = context.raw as number;
+                if (context.datasetIndex === 0) {
+                  return `Chi tiêu: ${this.formatAmount(value)}`;
+                }
+                return `Ngân sách: ${this.formatAmount(value)}`;
+              }
+            }
+          }
+        }
+      }
+    };
+    
+    this.budgetCategoryMonthlyChart = new Chart(this.budgetCategoryMonthlyChartRef.nativeElement, config);
   }
 
   /**
@@ -5139,11 +5777,13 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   @ViewChild('dailyTrendChart') dailyTrendChartRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('weekdayChart') weekdayChartRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('monthlyCompareChart') monthlyCompareChartRef!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('monthDailyCompareChart') monthDailyCompareChartRef!: ElementRef<HTMLCanvasElement>;
 
   private categoryPieChart: Chart | null = null;
   private dailyTrendChart: Chart | null = null;
   private weekdayChart: Chart | null = null;
   private monthlyCompareChart: Chart | null = null;
+  private monthDailyCompareChart: Chart | null = null;
 
   private insightChartColors = [
     '#f43f5e', '#8b5cf6', '#06b6d4', '#10b981', '#f59e0b',
@@ -5166,12 +5806,103 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     return this.getLast30DaysTotal() / 30;
   }
 
+  /**
+   * Get current month daily spending data
+   */
+  currentMonthDailyData = computed(() => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    
+    const dailyAmounts: number[] = new Array(31).fill(0);
+    let total = 0;
+    
+    this.expenses()
+      .filter(e => {
+        const d = new Date(e.date);
+        return d.getFullYear() === year && d.getMonth() === month;
+      })
+      .forEach(e => {
+        const day = new Date(e.date).getDate();
+        dailyAmounts[day - 1] += e.amount;
+        total += e.amount;
+      });
+    
+    return { dailyAmounts, total, daysInMonth };
+  });
+
+  /**
+   * Get previous month daily spending data
+   */
+  previousMonthDailyData = computed(() => {
+    const now = new Date();
+    let year = now.getFullYear();
+    let month = now.getMonth() - 1;
+    
+    if (month < 0) {
+      month = 11;
+      year--;
+    }
+    
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const dailyAmounts: number[] = new Array(31).fill(0);
+    let total = 0;
+    
+    this.expenses()
+      .filter(e => {
+        const d = new Date(e.date);
+        return d.getFullYear() === year && d.getMonth() === month;
+      })
+      .forEach(e => {
+        const day = new Date(e.date).getDate();
+        dailyAmounts[day - 1] += e.amount;
+        total += e.amount;
+      });
+    
+    return { dailyAmounts, total, daysInMonth };
+  });
+
+  /**
+   * Get current month label for chart
+   */
+  getCurrentMonthLabel(): string {
+    const now = new Date();
+    return `Tháng ${now.getMonth() + 1}`;
+  }
+
+  /**
+   * Get previous month label for chart
+   */
+  getPreviousMonthLabel(): string {
+    const now = new Date();
+    let month = now.getMonth();
+    if (month === 0) {
+      return 'Tháng 12';
+    }
+    return `Tháng ${month}`;
+  }
+
+  /**
+   * Get month comparison percentage
+   */
+  getMonthComparisonPercentage(): string {
+    const current = this.currentMonthDailyData().total;
+    const previous = this.previousMonthDailyData().total;
+    
+    if (previous === 0) return '0';
+    
+    const diff = ((current - previous) / previous) * 100;
+    return Math.abs(diff).toFixed(1);
+  }
+
   initInsightCharts(): void {
     setTimeout(() => {
       this.initCategoryPieChart();
       this.initDailyTrendChart();
       this.initWeekdayChart();
       this.initMonthlyCompareChart();
+      this.initMonthDailyCompareChart();
     }, 100);
   }
 
@@ -5424,6 +6155,163 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
             padding: 12,
             callbacks: {
               label: (context) => this.formatAmount(context.raw as number)
+            }
+          }
+        }
+      }
+    });
+  }
+
+  private initMonthDailyCompareChart(): void {
+    if (!this.monthDailyCompareChartRef?.nativeElement) return;
+
+    if (this.monthDailyCompareChart) {
+      this.monthDailyCompareChart.destroy();
+    }
+
+    const currentData = this.currentMonthDailyData();
+    const previousData = this.previousMonthDailyData();
+    const now = new Date();
+    const today = now.getDate();
+
+    // Create labels for days 1-31
+    const labels = Array.from({ length: 31 }, (_, i) => (i + 1).toString());
+
+    // Current month data (only up to today)
+    const currentMonthData = currentData.dailyAmounts.map((val, idx) => {
+      if (idx + 1 <= today) return val;
+      return null; // Future days show as null
+    });
+
+    // Previous month data (all days)
+    const previousMonthData = previousData.dailyAmounts;
+
+    // Calculate cumulative data
+    let currentCumulative = 0;
+    const currentCumulativeData = currentData.dailyAmounts.map((val, idx) => {
+      if (idx + 1 <= today) {
+        currentCumulative += val;
+        return currentCumulative;
+      }
+      return null;
+    });
+
+    let previousCumulative = 0;
+    const previousCumulativeData = previousData.dailyAmounts.map(val => {
+      previousCumulative += val;
+      return previousCumulative;
+    });
+
+    const ctx = this.monthDailyCompareChartRef.nativeElement.getContext('2d')!;
+    
+    // Gradient for current month
+    const currentGradient = ctx.createLinearGradient(0, 0, 0, 300);
+    currentGradient.addColorStop(0, 'rgba(16, 185, 129, 0.3)');
+    currentGradient.addColorStop(1, 'rgba(16, 185, 129, 0)');
+
+    // Gradient for previous month
+    const previousGradient = ctx.createLinearGradient(0, 0, 0, 300);
+    previousGradient.addColorStop(0, 'rgba(139, 92, 246, 0.2)');
+    previousGradient.addColorStop(1, 'rgba(139, 92, 246, 0)');
+
+    this.monthDailyCompareChart = new Chart(this.monthDailyCompareChartRef.nativeElement, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: this.getCurrentMonthLabel(),
+            data: currentCumulativeData,
+            borderColor: '#10b981',
+            backgroundColor: currentGradient,
+            borderWidth: 3,
+            fill: true,
+            tension: 0.3,
+            pointRadius: currentCumulativeData.map((_, idx) => idx + 1 === today ? 6 : 0),
+            pointBackgroundColor: '#10b981',
+            pointBorderColor: '#ffffff',
+            pointBorderWidth: 2
+          },
+          {
+            label: this.getPreviousMonthLabel(),
+            data: previousCumulativeData,
+            borderColor: '#8b5cf6',
+            backgroundColor: previousGradient,
+            borderWidth: 2,
+            borderDash: [5, 5],
+            fill: true,
+            tension: 0.3,
+            pointRadius: 0
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          intersect: false,
+          mode: 'index'
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: {
+              font: { size: 10 },
+              maxRotation: 0,
+              callback: (_, index) => {
+                // Show only every 5th day and first/last
+                const day = index + 1;
+                if (day === 1 || day % 5 === 0 || day === 31) {
+                  return day.toString();
+                }
+                return '';
+              }
+            }
+          },
+          y: {
+            grid: { color: 'rgba(0, 0, 0, 0.05)' },
+            ticks: {
+              font: { size: 10 },
+              callback: (value) => this.formatCompactAmount(value as number)
+            }
+          }
+        },
+        plugins: {
+          legend: {
+            display: true,
+            position: 'top',
+            labels: {
+              font: { size: 12 },
+              usePointStyle: true,
+              padding: 20
+            }
+          },
+          tooltip: {
+            backgroundColor: 'rgba(0, 0, 0, 0.85)',
+            padding: 14,
+            titleFont: { size: 14, weight: 'bold' },
+            bodyFont: { size: 12 },
+            callbacks: {
+              title: (items) => `Ngày ${items[0].label}`,
+              label: (context) => {
+                const value = context.raw as number;
+                if (value === null) return '';
+                return `${context.dataset.label}: ${this.formatAmount(value)} (lũy kế)`;
+              },
+              afterBody: (items) => {
+                const dayIndex = items[0].dataIndex;
+                const currentDay = currentData.dailyAmounts[dayIndex];
+                const previousDay = previousData.dailyAmounts[dayIndex];
+                
+                const lines = [];
+                if (dayIndex + 1 <= today && currentDay > 0) {
+                  lines.push(`Chi trong ngày (${this.getCurrentMonthLabel()}): ${this.formatAmount(currentDay)}`);
+                }
+                if (previousDay > 0) {
+                  lines.push(`Chi trong ngày (${this.getPreviousMonthLabel()}): ${this.formatAmount(previousDay)}`);
+                }
+                return lines.length > 0 ? ['\n' + lines.join('\n')] : [];
+              }
             }
           }
         }

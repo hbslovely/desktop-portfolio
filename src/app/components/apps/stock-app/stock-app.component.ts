@@ -1,13 +1,15 @@
-import { Component, OnInit, OnDestroy, signal, computed, ViewChild, ElementRef, AfterViewInit, OnChanges, SimpleChanges, effect } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal, computed, ViewChild, ElementRef, AfterViewInit, OnChanges, SimpleChanges, effect, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
-import { ScrollingModule } from '@angular/cdk/scrolling';
+import { ScrollingModule, CdkVirtualScrollViewport } from '@angular/cdk/scrolling';
 import { DnseService, DNSESymbol, DNSEStockData, DNSEOHLCData, ExchangeType } from '../../../services/dnse.service';
 import { NeuralNetworkService, StockPrediction, TrainingProgress, TrainingConfig, DEFAULT_TRAINING_CONFIG, TRAINING_CONFIG_DESCRIPTIONS, ModelStatus } from '../../../services/neural-network.service';
 import { TradingSimulationService, TradingConfig, TradingResult, TradeSignal } from '../../../services/trading-simulation.service';
 import { TradingviewChartComponent } from './tradingview-chart/tradingview-chart.component';
 import { Chart, ChartConfiguration, registerables, TimeScale } from 'chart.js';
+import { Subject, Subscription } from 'rxjs';
+import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 // @ts-ignore - chartjs-chart-financial doesn't have proper type declarations
 import { CandlestickController, CandlestickElement } from 'chartjs-chart-financial';
 import zoomPlugin from 'chartjs-plugin-zoom';
@@ -113,7 +115,48 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
   isLoadingDetail = signal(false);
   isLoadingPrice = signal(false);
   selectedYears = signal<number>(3); // Default 3 years
-  activeTab = signal<'overview' | 'trading' | 'chart'>('overview');
+  activeTab = signal<'overview' | 'trading' | 'chart' | 'financial'>('overview');
+
+  // Financial indicator labels mapping (Vietnamese)
+  financialIndicatorLabels: Record<string, string> = {
+    'marketShare': 'Thị phần',
+    'totalAssets': 'Tổng tài sản',
+    'eps': 'EPS',
+    'pe': 'P/E',
+    'ps': 'P/S',
+    'pb': 'P/B',
+    'beta': 'Beta',
+    'netInterestMargin': 'NIM',
+    'lossRatio': 'Tỷ lệ bồi thường',
+    'combineRatio': 'Tỷ lệ kết hợp',
+    'profitGrowth': 'Tăng trưởng LN',
+    'ytd': 'YTD',
+    'nplRatio': 'Tỷ lệ nợ xấu',
+    'llr': 'Bao phủ nợ xấu',
+    'casaRatio': 'Tỷ lệ CASA',
+    'roe': 'ROE',
+    'roa': 'ROA',
+    'grossMargin': 'Biên LN gộp',
+    'debtEquityRatio': 'Nợ/Vốn CSH',
+    'inventoryGrowth': 'Tăng trưởng tồn kho',
+    'prepaidBuyerGrowth': 'Tăng trưởng NMTTT',
+    'proprietaryTradingRatio': 'Tỷ trọng tự doanh',
+    'marginLendingGrowth': 'Tăng trưởng cho vay margin',
+    'freeFloatRatio': 'Free Float',
+    'dividendYield': 'Tỷ suất cổ tức',
+    'dividendRatio': 'Tỷ lệ cổ tức',
+    'equity': 'Vốn chủ sở hữu',
+    'bookValue': 'Giá trị sổ sách',
+    'sales': 'Doanh số',
+    'capitalization': 'Vốn hóa',
+    'revenue': 'Doanh thu',
+    'revenuePerShare': 'Doanh thu/CP',
+    'profit': 'Lợi nhuận',
+    'foreignOwnershipRatio': 'Tỷ lệ SHNN',
+    'foreignHoldingRatio': 'Room NN',
+    'accuredInterestTotalAssetRatio': 'Lãi dự thu/TTS',
+    'remainForeignRoom': 'Room NN còn lại'
+  };
 
   // Header search state
   headerSearchQuery = signal('');
@@ -2723,6 +2766,257 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
       return value.unit;
     }
     return '';
+  }
+
+  /**
+   * Get indicator label in Vietnamese
+   */
+  getIndicatorLabel(key: string): string {
+    return this.financialIndicatorLabels[key] || key;
+  }
+
+  /**
+   * Get indicator tooltip
+   */
+  getIndicatorTooltip(value: any): string {
+    if (value && typeof value === 'object' && value.tooltip) {
+      return value.tooltip;
+    }
+    return '';
+  }
+
+  /**
+   * Format indicator value with proper formatting
+   */
+  formatIndicatorValue(key: string, value: any): string {
+    if (!value) return '-';
+    
+    let numValue: number | string;
+    
+    if (typeof value === 'object' && value.value !== undefined) {
+      numValue = value.value;
+    } else if (typeof value === 'number' || typeof value === 'string') {
+      numValue = value;
+    } else {
+      return '-';
+    }
+
+    // Handle string values (like "15.0%")
+    if (typeof numValue === 'string') {
+      return numValue;
+    }
+
+    // Format based on indicator type
+    const percentageIndicators = ['marketShare', 'roe', 'roa', 'grossMargin', 'debtEquityRatio', 
+      'profitGrowth', 'inventoryGrowth', 'prepaidBuyerGrowth', 'foreignOwnershipRatio', 
+      'foreignHoldingRatio', 'dividendYield', 'nplRatio', 'llr', 'casaRatio', 
+      'netInterestMargin', 'lossRatio', 'combineRatio', 'marginLendingGrowth'];
+    
+    const currencyIndicators = ['totalAssets', 'equity', 'sales', 'capitalization', 'revenue', 'profit'];
+    const priceIndicators = ['bookValue', 'eps', 'revenuePerShare'];
+
+    if (percentageIndicators.includes(key)) {
+      // Convert decimal to percentage
+      if (Math.abs(numValue) < 1) {
+        return `${(numValue * 100).toFixed(2)}%`;
+      }
+      return `${numValue.toFixed(2)}%`;
+    }
+
+    if (currencyIndicators.includes(key)) {
+      // Format as billion VND
+      if (numValue >= 1000000000) {
+        return `${(numValue / 1000000000).toFixed(2)} tỷ`;
+      } else if (numValue >= 1000000) {
+        return `${(numValue / 1000000).toFixed(2)} triệu`;
+      }
+      return numValue.toLocaleString('vi-VN') + ' đ';
+    }
+
+    if (priceIndicators.includes(key)) {
+      return numValue.toLocaleString('vi-VN', { maximumFractionDigits: 0 }) + ' đ';
+    }
+
+    // Default formatting
+    if (Number.isInteger(numValue)) {
+      return numValue.toLocaleString('vi-VN');
+    }
+    return numValue.toFixed(2);
+  }
+
+  /**
+   * Get key financial indicators (most important ones)
+   */
+  getKeyFinancialIndicators(): Array<{key: string, label: string, value: string, tooltip: string, isPositive?: boolean}> {
+    const indicators = this.getFinancialIndicators();
+    if (!indicators) return [];
+
+    // Key indicators to show prominently
+    const keyIndicators = [
+      'eps', 'pe', 'pb', 'roe', 'roa', 'grossMargin', 'debtEquityRatio', 
+      'beta', 'dividendYield', 'dividendRatio', 'profitGrowth', 'marketShare'
+    ];
+
+    const result: Array<{key: string, label: string, value: string, tooltip: string, isPositive?: boolean}> = [];
+
+    keyIndicators.forEach(key => {
+      if (indicators[key]) {
+        const value = indicators[key];
+        const formattedValue = this.formatIndicatorValue(key, value);
+        if (formattedValue !== '-') {
+          const numValue = typeof value === 'object' ? value.value : value;
+          let isPositive: boolean | undefined;
+          
+          // Determine if value is positive/negative for coloring
+          if (['roe', 'roa', 'eps', 'grossMargin', 'dividendYield', 'profitGrowth'].includes(key)) {
+            isPositive = numValue > 0;
+          } else if (['debtEquityRatio'].includes(key)) {
+            isPositive = numValue < 0.5; // Low debt is good
+          }
+
+          result.push({
+            key,
+            label: this.getIndicatorLabel(key),
+            value: formattedValue,
+            tooltip: this.getIndicatorTooltip(value),
+            isPositive
+          });
+        }
+      }
+    });
+
+    return result;
+  }
+
+  /**
+   * Get all financial indicators formatted
+   */
+  getAllFinancialIndicators(): Array<{key: string, label: string, value: string, tooltip: string}> {
+    const indicators = this.getFinancialIndicators();
+    if (!indicators) return [];
+
+    const result: Array<{key: string, label: string, value: string, tooltip: string}> = [];
+
+    Object.keys(indicators).forEach(key => {
+      const value = indicators[key];
+      const formattedValue = this.formatIndicatorValue(key, value);
+      if (formattedValue !== '-') {
+        result.push({
+          key,
+          label: this.getIndicatorLabel(key),
+          value: formattedValue,
+          tooltip: this.getIndicatorTooltip(value)
+        });
+      }
+    });
+
+    return result;
+  }
+
+  /**
+   * Get formatted financial report items
+   */
+  getFormattedFinancialReport(): Array<{type: string, label: string, value: number, yearValue: number, change: number, changePercent: number}> {
+    const report = this.getFinancialReportOverall();
+    if (!report || !Array.isArray(report)) return [];
+
+    return report.map((item: any) => {
+      const value = item.value || 0;
+      const yearValue = item.yearValue || 0;
+      const change = value - yearValue;
+      const changePercent = yearValue !== 0 ? ((value - yearValue) / Math.abs(yearValue)) * 100 : 0;
+
+      return {
+        type: item.type || '',
+        label: item.label || item.type || '',
+        value,
+        yearValue,
+        change,
+        changePercent
+      };
+    });
+  }
+
+  /**
+   * Format large number for display
+   */
+  formatLargeNumber(num: number): string {
+    if (Math.abs(num) >= 1000000000000) {
+      return `${(num / 1000000000000).toFixed(2)} nghìn tỷ`;
+    }
+    if (Math.abs(num) >= 1000000000) {
+      return `${(num / 1000000000).toFixed(2)} tỷ`;
+    }
+    if (Math.abs(num) >= 1000000) {
+      return `${(num / 1000000).toFixed(2)} triệu`;
+    }
+    return num.toLocaleString('vi-VN');
+  }
+
+  /**
+   * Get same sector stocks with full data
+   */
+  getFormattedSameSectorStocks(): Array<{symbol: string, name: string, shortName?: string, isFetched: boolean}> {
+    const symbol = this.selectedSymbol();
+    if (!symbol || !symbol.basicInfo?.fullData) {
+      return [];
+    }
+
+    const fullData = symbol.basicInfo.fullData;
+    const sameSectorStocks = fullData['pageProps.sameSectorStocks'];
+
+    if (!sameSectorStocks || !Array.isArray(sameSectorStocks)) {
+      return [];
+    }
+
+    return sameSectorStocks.map((stock: any) => {
+      if (typeof stock === 'string') {
+        const foundSymbol = this.allSymbols().find(s => s.symbol.toUpperCase() === stock.toUpperCase());
+        return {
+          symbol: stock.toUpperCase(),
+          name: foundSymbol?.name || foundSymbol?.basicInfo?.companyName || '',
+          isFetched: foundSymbol?.isFetched || false
+        };
+      } else if (stock && stock.symbol) {
+        const foundSymbol = this.allSymbols().find(s => s.symbol.toUpperCase() === stock.symbol.toUpperCase());
+        return {
+          symbol: stock.symbol.toUpperCase(),
+          name: stock.name || stock.companyName || foundSymbol?.name || '',
+          shortName: stock.shortName,
+          isFetched: foundSymbol?.isFetched || false
+        };
+      }
+      return null;
+    }).filter((s): s is {symbol: string, name: string, shortName?: string, isFetched: boolean} => s !== null);
+  }
+
+  /**
+   * Navigate to related stock
+   */
+  navigateToStock(stockSymbol: string) {
+    const foundSymbol = this.allSymbols().find(s => s.symbol.toUpperCase() === stockSymbol.toUpperCase());
+    
+    if (foundSymbol) {
+      this.viewStockDetail(foundSymbol);
+    } else {
+      // Stock not in list, try to load it
+      const newSymbol: SymbolWithStatus = {
+        symbol: stockSymbol.toUpperCase(),
+        exchange: 'hose',
+        isFetched: false
+      };
+      
+      // Fetch the stock first
+      this.fetchSymbol(newSymbol);
+      
+      // Wait a bit then view
+      setTimeout(() => {
+        const updated = this.allSymbols().find(s => s.symbol.toUpperCase() === stockSymbol.toUpperCase());
+        if (updated) {
+          this.viewStockDetail(updated);
+        }
+      }, 2000);
+    }
   }
 
   /**

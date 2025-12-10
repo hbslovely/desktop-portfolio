@@ -84,6 +84,13 @@
       </button>
       <button
         class="tab-btn"
+        [class.active]="activeTab() === 'financial'"
+        (click)="activeTab.set('financial')">
+        <i class="pi pi-wallet"></i>
+        <span>Tài chính</span>
+      </button>
+      <button
+        class="tab-btn"
         [class.active]="activeTab() === 'trading'"
         (click)="activeTab.set('trading')">
         <i class="pi pi-shopping-cart"></i>
@@ -431,50 +438,132 @@
           </div>
         </section>
 
-        <!-- Same Sector Stocks -->
-        <section class="section" *ngIf="getSameSectorStocks().length > 0">
-          <h3>Cổ phiếu cùng ngành</h3>
-          <div class="related-stocks">
-            <div
-              *ngFor="let stock of getSameSectorStocks()"
-              class="related-stock-item"
-              (click)="viewRelatedStock(stock)">
-              <div class="stock-symbol">{{ stock.symbol }}</div>
-              <div class="stock-name" *ngIf="stock.name">{{ stock.name }}</div>
-              <div class="stock-price" *ngIf="stock.price">
-                {{ (stock.price * 1000) | number:'1.0-0' }} đ
-              </div>
+        <!-- Key Financial Indicators -->
+        <section class="section" *ngIf="getKeyFinancialIndicators().length > 0">
+          <h3>Chỉ số tài chính quan trọng</h3>
+          <div class="key-indicators-grid">
+            <div 
+              *ngFor="let indicator of getKeyFinancialIndicators()" 
+              class="key-indicator-card"
+              [class.positive]="indicator.isPositive === true"
+              [class.negative]="indicator.isPositive === false"
+              [title]="indicator.tooltip">
+              <div class="indicator-label">{{ indicator.label }}</div>
+              <div class="indicator-value">{{ indicator.value }}</div>
+              <i class="pi pi-info-circle tooltip-icon" *ngIf="indicator.tooltip"></i>
             </div>
           </div>
         </section>
 
-        <!-- Financial Indicators -->
-        <section class="section" *ngIf="getFinancialIndicators()">
-          <h3>Chỉ số tài chính</h3>
-          <div class="financial-indicators-grid">
-            <div class="indicator-item" *ngFor="let indicator of getFinancialIndicators() | keyvalue">
-              <label>{{ indicator.key }}</label>
-              <div class="indicator-value" *ngIf="isIndicatorObject(indicator.value)">
-                <div *ngIf="hasIndicatorValue(indicator.value)">
-                  <span class="value">{{ getIndicatorValue(indicator.value) | number:'1.2-2' }}</span>
-                  <span class="unit" *ngIf="getIndicatorUnit(indicator.value)">{{ getIndicatorUnit(indicator.value) }}</span>
-                </div>
-                <div *ngIf="!hasIndicatorValue(indicator.value)">
-                  {{ indicator.value | json }}
-                </div>
+        <!-- Same Sector Stocks -->
+        <section class="section" *ngIf="getFormattedSameSectorStocks().length > 0">
+          <h3>
+            <i class="pi pi-sitemap"></i>
+            Cổ phiếu cùng ngành ({{ getFormattedSameSectorStocks().length }})
+          </h3>
+          <div class="same-sector-stocks-grid">
+            <div
+              *ngFor="let stock of getFormattedSameSectorStocks()"
+              class="sector-stock-card"
+              [class.fetched]="stock.isFetched"
+              (click)="navigateToStock(stock.symbol)">
+              <div class="stock-header">
+                <span class="stock-symbol">{{ stock.symbol }}</span>
+                <span class="stock-status" *ngIf="stock.isFetched">
+                  <i class="pi pi-check-circle"></i>
+                </span>
               </div>
-              <div class="indicator-value" *ngIf="!isIndicatorObject(indicator.value)">
-                {{ indicator.value }}
+              <div class="stock-name" *ngIf="stock.name">{{ stock.shortName || stock.name }}</div>
+              <div class="stock-action">
+                <i class="pi pi-arrow-right"></i>
               </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- Financial Tab -->
+      <div *ngIf="activeTab() === 'financial' && !isLoadingDetail()">
+        <!-- Key Financial Indicators -->
+        <section class="section" *ngIf="getAllFinancialIndicators().length > 0">
+          <h3>
+            <i class="pi pi-chart-bar"></i>
+            Chỉ số tài chính
+          </h3>
+          <div class="financial-indicators-detailed">
+            <div 
+              *ngFor="let indicator of getAllFinancialIndicators()" 
+              class="indicator-row"
+              [title]="indicator.tooltip">
+              <div class="indicator-label">
+                {{ indicator.label }}
+                <i class="pi pi-info-circle info-icon" *ngIf="indicator.tooltip"></i>
+              </div>
+              <div class="indicator-value">{{ indicator.value }}</div>
             </div>
           </div>
         </section>
 
         <!-- Financial Report Overall -->
-        <section class="section" *ngIf="getFinancialReportOverall()">
-          <h3>Báo cáo tài chính tổng hợp</h3>
-          <div class="financial-report-wrapper">
-            <div class="financial-report-content" [innerHTML]="formatFinancialReport(getFinancialReportOverall())"></div>
+        <section class="section" *ngIf="getFormattedFinancialReport().length > 0">
+          <h3>
+            <i class="pi pi-file-excel"></i>
+            Báo cáo tài chính tổng hợp
+          </h3>
+          <div class="financial-report-table-wrapper">
+            <table class="financial-report-table">
+              <thead>
+                <tr>
+                  <th>Chỉ tiêu</th>
+                  <th class="value-col">Quý này</th>
+                  <th class="value-col">Năm trước</th>
+                  <th class="change-col">Thay đổi</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let item of getFormattedFinancialReport()">
+                  <td class="label-cell">{{ item.label }}</td>
+                  <td class="value-cell">{{ formatLargeNumber(item.value) }}</td>
+                  <td class="value-cell year-value">{{ formatLargeNumber(item.yearValue) }}</td>
+                  <td class="change-cell" [class.positive]="item.change > 0" [class.negative]="item.change < 0">
+                    <span class="change-value">{{ item.change >= 0 ? '+' : '' }}{{ formatLargeNumber(item.change) }}</span>
+                    <span class="change-percent">({{ item.changePercent >= 0 ? '+' : '' }}{{ item.changePercent | number:'1.1-1' }}%)</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Same Sector Stocks (also in financial tab) -->
+        <section class="section" *ngIf="getFormattedSameSectorStocks().length > 0">
+          <h3>
+            <i class="pi pi-sitemap"></i>
+            Cổ phiếu cùng ngành ({{ getFormattedSameSectorStocks().length }})
+          </h3>
+          <div class="same-sector-stocks-list">
+            <div
+              *ngFor="let stock of getFormattedSameSectorStocks()"
+              class="sector-stock-row"
+              [class.fetched]="stock.isFetched"
+              (click)="navigateToStock(stock.symbol)">
+              <div class="stock-info">
+                <span class="stock-symbol">{{ stock.symbol }}</span>
+                <span class="stock-name">{{ stock.name || stock.shortName }}</span>
+              </div>
+              <div class="stock-actions">
+                <span class="fetch-status" *ngIf="stock.isFetched">
+                  <i class="pi pi-check-circle"></i> Đã có dữ liệu
+                </span>
+                <span class="fetch-status pending" *ngIf="!stock.isFetched">
+                  <i class="pi pi-clock"></i> Chưa fetch
+                </span>
+                <button class="btn-view">
+                  <i class="pi pi-eye"></i>
+                  Xem
+                </button>
+              </div>
+            </div>
           </div>
         </section>
       </div>
