@@ -95,8 +95,8 @@
             </div>
           </div>
 
-    <!-- Date Filter (affects all tabs) - Hidden in V2 -->
-    <div class="date-filter-section" [class.hidden-v2]="currentLayout() === 'v2'">
+    <!-- Date Filter (affects all tabs) - Hidden in V2 - Only for Transactions Screen -->
+    <div class="date-filter-section" [class.hidden-v2]="currentLayout() === 'v2'" *ngIf="currentScreen() === 'transactions'">
       <!-- Quick Filter Buttons -->
       <div class="quick-filters">
         <button (click)="filterToday()" class="quick-filter-btn" [class.active]="isTodayActive()">
@@ -143,8 +143,35 @@
       </div>
     </div>
 
-    <!-- Search and Filters (affects all tabs) - Hidden in V2 -->
-    <div class="filters-section" [class.hidden-v2]="currentLayout() === 'v2'">
+    <!-- Month Picker Filter - Only for Insights Screen -->
+    <div class="insights-month-picker" *ngIf="currentScreen() === 'insights'">
+      <div class="month-picker-container">
+        <button class="month-nav-btn" (click)="navigateReportPeriod('prev')">
+          <i class="pi pi-chevron-left"></i>
+        </button>
+        <div class="month-display">
+          <span class="month-label">{{ getReportPeriodLabel() }}</span>
+        </div>
+        <button class="month-nav-btn" (click)="navigateReportPeriod('next')">
+          <i class="pi pi-chevron-right"></i>
+        </button>
+        <div class="month-quick-actions">
+          <button class="quick-month-btn" [class.active]="isThisMonthReport()" (click)="setReportPeriod('thisMonth')">
+            <span>Tháng này</span>
+          </button>
+          <button class="quick-month-btn" [class.active]="isLastMonthReport()" (click)="setReportPeriod('lastMonth')">
+            <span>Tháng trước</span>
+          </button>
+          <button class="quick-month-btn" (click)="toggleReportMode()">
+            <i class="pi" [class.pi-calendar]="reportMonth() !== null" [class.pi-calendar-times]="reportMonth() === null"></i>
+            <span>{{ reportMonth() === null ? 'Xem theo tháng' : 'Xem cả năm' }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Search and Filters (affects all tabs) - Hidden in V2 - Only for Transactions Screen -->
+    <div class="filters-section" [class.hidden-v2]="currentLayout() === 'v2'" *ngIf="currentScreen() === 'transactions'">
             <div class="filter-row">
 
               <!-- Search Bar -->
@@ -262,8 +289,26 @@
       </div>
     </div>
 
-    <!-- Tabs -->
-    <div class="tabs-section">
+    <!-- Screen Navigation -->
+    <div class="screen-navigation">
+      <button
+        (click)="switchScreen('transactions')"
+        class="screen-btn"
+        [class.active]="currentScreen() === 'transactions'">
+        <i class="pi pi-list"></i>
+        <span>Giao dịch</span>
+      </button>
+      <button
+        (click)="switchScreen('insights')"
+        class="screen-btn"
+        [class.active]="currentScreen() === 'insights'">
+        <i class="pi pi-chart-pie"></i>
+        <span>Phân tích</span>
+      </button>
+    </div>
+
+    <!-- Tabs for Transactions Screen -->
+    <div class="tabs-section" *ngIf="currentScreen() === 'transactions'">
       <button
         (click)="switchTab('list')"
         class="tab-btn"
@@ -276,8 +321,12 @@
         class="tab-btn"
         [class.active]="activeTab() === 'summary'">
         <i class="pi pi-chart-bar"></i>
-        <span>Tổng hợp</span>
+        <span>Thống kê</span>
       </button>
+    </div>
+
+    <!-- Tabs for Insights Screen -->
+    <div class="tabs-section" *ngIf="currentScreen() === 'insights'">
       <button
         (click)="switchTab('budget')"
         class="tab-btn"
@@ -1366,11 +1415,11 @@
           <div class="budget-header-section">
             <div class="budget-title">
               <i class="pi pi-wallet"></i>
-              <h3>Ngân sách tháng {{ getCurrentMonthName() }}</h3>
+              <h3>Ngân sách {{ getCurrentMonthName() }}</h3>
             </div>
             <button class="edit-budget-btn" (click)="showBudgetSettings.set(true)">
               <i class="pi pi-cog"></i>
-              <span>Thiết lập ngân sách</span>
+              <span>Thiết lập</span>
             </button>
           </div>
 
@@ -1404,8 +1453,8 @@
             </div>
           </div>
 
-          <!-- Daily Budget Suggestion -->
-          <div class="daily-budget-suggestion" *ngIf="remainingBudget() > 0">
+          <!-- Daily Budget Suggestion - Only show for current month with remaining budget -->
+          <div class="daily-budget-suggestion" *ngIf="remainingBudget() > 0 && remainingDaysInMonth() > 0 && dailyBudgetSuggestion() > 0">
             <div class="suggestion-icon">
               <i class="pi pi-lightbulb"></i>
             </div>

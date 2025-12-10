@@ -75,7 +75,23 @@ interface Transaction {
 })
 export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
   @ViewChild('candlestickChart') candlestickChartRef!: ElementRef<HTMLCanvasElement>;
+  @ViewChild(CdkVirtualScrollViewport) virtualScrollViewport!: CdkVirtualScrollViewport;
   private candlestickChart: Chart | null = null;
+  
+  // Pagination constants
+  private readonly PAGE_SIZE = 50;
+  
+  // Pagination state
+  paginationOffset = signal(0);
+  paginationTotal = signal(0);
+  hasMoreData = signal(true);
+  isLoadingMore = signal(false);
+  
+  // Search debounce
+  private searchSubject = new Subject<string>();
+  private searchSubscription?: Subscription;
+  private scrollSubscription?: Subscription;
+  
   // Exchange types
   exchanges: ExchangeType[] = ['hose', 'hnx', 'upcom', 'vn30'];
   exchangeNames: Record<ExchangeType, string> = {
@@ -398,7 +414,8 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     private dnseService: DnseService,
     private http: HttpClient,
     private nnService: NeuralNetworkService,
-    private tradingSimulationService: TradingSimulationService
+    private tradingSimulationService: TradingSimulationService,
+    private ngZone: NgZone
   ) {
     // Watch for tab changes and initialize chart when switching to chart tab
     effect(() => {
@@ -420,10 +437,19 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
   ngOnInit() {
     this.loadSymbols();
     this.checkFetchedStatus();
+    
+    // Setup search debounce
+    this.searchSubscription = this.searchSubject.pipe(
+      debounceTime(300),
+      distinctUntilChanged()
+    ).subscribe(keyword => {
+      this.performSearch(keyword);
+    });
   }
 
   ngAfterViewInit() {
-    // Chart will be initialized when price data is loaded
+    // Setup infinite scroll listener
+    this.setupInfiniteScroll();
   }
 
   ngOnDestroy() {
@@ -432,60 +458,82 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
       this.candlestickChart.destroy();
       this.candlestickChart = null;
     }
+    
+    // Cleanup subscriptions
+    this.searchSubscription?.unsubscribe();
+    this.scrollSubscription?.unsubscribe();
+  }
+  
+  /**
+   * Setup infinite scroll on virtual viewport
+   */
+  private setupInfiniteScroll() {
+    if (!this.virtualScrollViewport) {
+      // Retry after a short delay if viewport not ready
+      setTimeout(() => this.setupInfiniteScroll(), 100);
+      return;
+    }
+
+    this.scrollSubscription = this.virtualScrollViewport.scrolledIndexChange.subscribe(() => {
+      this.ngZone.run(() => {
+        this.checkAndLoadMore();
+      });
+    });
+  }
+  
+  /**
+   * Check if we need to load more data
+   */
+  private checkAndLoadMore() {
+    if (!this.virtualScrollViewport || this.isLoadingMore() || !this.hasMoreData() || this.isLoading()) {
+      return;
+    }
+
+    const end = this.virtualScrollViewport.getRenderedRange().end;
+    const total = this.filteredSymbols().length;
+
+    // Load more when user scrolls to within 10 items of the end
+    if (end >= total - 10) {
+      this.loadMoreSymbols();
+    }
   }
 
   /**
-   * Load symbols from internal API only (api/stocks-v2/list)
+   * Load symbols from internal API with pagination (api/stocks-v2/list)
    * DNSE API is only called on days 10-20 of the month to sync new stocks
    */
   loadSymbols() {
     this.isLoading.set(true);
+    
+    // Reset pagination state
+    this.paginationOffset.set(0);
+    this.hasMoreData.set(true);
+    this.allSymbols.set([]);
+    this.filteredSymbols.set([]);
 
-    // Only load from internal API (api/stocks-v2/list)
-    this.dnseService.getAllStockData().subscribe({
-      next: (stocks) => {
-        // Deduplicate stocks by symbol
-        const uniqueStocksMap = new Map<string, any>();
-        stocks.forEach((stock: any) => {
-          if (stock && stock.symbol) {
-            const symbolKey = stock.symbol.toUpperCase();
-            const existing = uniqueStocksMap.get(symbolKey);
-            if (!existing || (stock.fullData || stock.basicInfo) && !(existing.fullData || existing.basicInfo)) {
-              uniqueStocksMap.set(symbolKey, stock);
-            }
-          }
-        });
-
-        // Convert stocks to SymbolWithStatus array
-        const allSymbols: SymbolWithStatus[] = [];
-        uniqueStocksMap.forEach((stock: any) => {
-          const symbol: SymbolWithStatus = {
-            symbol: stock.symbol,
-            name: stock.basicInfo?.companyName || stock.fullData?.['pageProps.companyInfo.fullName'],
-            exchange: (stock.basicInfo?.exchange || 'hose') as ExchangeType,
-            isFetched: !!(stock.priceData || stock.fullData),
-            basicInfo: {
-              companyName: stock.basicInfo?.companyName || stock.fullData?.['pageProps.companyInfo.fullName'],
-              exchange: stock.basicInfo?.exchange || 'hose',
-              matchPrice: stock.basicInfo?.matchPrice,
-              changedValue: stock.basicInfo?.changedValue,
-              changedRatio: stock.basicInfo?.changedRatio,
-              totalVolume: stock.basicInfo?.totalVolume,
-              marketCap: stock.basicInfo?.marketCap,
-              beta: stock.basicInfo?.beta,
-              eps: stock.basicInfo?.eps,
-              pe: stock.basicInfo?.pe,
-              pb: stock.basicInfo?.pb,
-              roe: stock.basicInfo?.roe,
-              roa: stock.basicInfo?.roa,
-              fullData: stock.fullData
-            }
-          };
-          allSymbols.push(symbol);
-        });
-
-        this.allSymbols.set(allSymbols);
-        this.applyFilters();
+    const keyword = this.searchQuery();
+    
+    // Load from internal API with pagination
+    this.dnseService.getStocksPaginated({
+      keyword,
+      limit: this.PAGE_SIZE,
+      offset: 0
+    }).subscribe({
+      next: (response) => {
+        const symbols = this.convertStocksToSymbols(response.stocks);
+        
+        this.allSymbols.set(symbols);
+        this.filteredSymbols.set(symbols);
+        
+        // Update pagination state
+        if (response.pagination) {
+          this.paginationTotal.set(response.pagination.total);
+          this.paginationOffset.set(response.stocks.length);
+          this.hasMoreData.set(response.pagination.hasMore);
+        } else {
+          this.hasMoreData.set(false);
+        }
+        
         this.updateFetchedCount();
         this.updateExchangeCounts();
         this.isLoading.set(false);
@@ -496,13 +544,114 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
       error: (error) => {
         console.error('Error loading stock data:', error);
         this.allSymbols.set([]);
-        this.applyFilters();
+        this.filteredSymbols.set([]);
+        this.hasMoreData.set(false);
         this.isLoading.set(false);
         
         // Still try to sync with DNSE if in window
         this.checkAndSyncDNSE();
       }
     });
+  }
+  
+  /**
+   * Load more symbols (infinite scroll)
+   */
+  loadMoreSymbols() {
+    if (this.isLoadingMore() || !this.hasMoreData() || this.isLoading()) {
+      return;
+    }
+
+    this.isLoadingMore.set(true);
+    const keyword = this.searchQuery();
+    const currentOffset = this.paginationOffset();
+
+    this.dnseService.getStocksPaginated({
+      keyword,
+      limit: this.PAGE_SIZE,
+      offset: currentOffset
+    }).subscribe({
+      next: (response) => {
+        const newSymbols = this.convertStocksToSymbols(response.stocks);
+        
+        // Append to existing symbols
+        const currentSymbols = this.allSymbols();
+        const updatedSymbols = [...currentSymbols, ...newSymbols];
+        
+        this.allSymbols.set(updatedSymbols);
+        this.filteredSymbols.set(updatedSymbols);
+        
+        // Update pagination state
+        if (response.pagination) {
+          this.paginationOffset.set(currentOffset + response.stocks.length);
+          this.hasMoreData.set(response.pagination.hasMore);
+        } else {
+          this.hasMoreData.set(false);
+        }
+        
+        this.updateFetchedCount();
+        this.updateExchangeCounts();
+        this.isLoadingMore.set(false);
+      },
+      error: (error) => {
+        console.error('Error loading more stocks:', error);
+        this.isLoadingMore.set(false);
+      }
+    });
+  }
+  
+  /**
+   * Convert API response stocks to SymbolWithStatus array
+   */
+  private convertStocksToSymbols(stocks: any[]): SymbolWithStatus[] {
+    const uniqueStocksMap = new Map<string, any>();
+    
+    stocks.forEach((stock: any) => {
+      if (stock && stock.symbol) {
+        const symbolKey = stock.symbol.toUpperCase();
+        const existing = uniqueStocksMap.get(symbolKey);
+        if (!existing || (stock.fullData || stock.basicInfo) && !(existing.fullData || existing.basicInfo)) {
+          uniqueStocksMap.set(symbolKey, stock);
+        }
+      }
+    });
+
+    const symbols: SymbolWithStatus[] = [];
+    uniqueStocksMap.forEach((stock: any) => {
+      const symbol: SymbolWithStatus = {
+        symbol: stock.symbol,
+        name: stock.basicInfo?.companyName || stock.fullData?.['pageProps.companyInfo.fullName'],
+        exchange: (stock.basicInfo?.exchange || 'hose') as ExchangeType,
+        isFetched: !!(stock.priceData || stock.fullData),
+        basicInfo: {
+          companyName: stock.basicInfo?.companyName || stock.fullData?.['pageProps.companyInfo.fullName'],
+          exchange: stock.basicInfo?.exchange || 'hose',
+          matchPrice: stock.basicInfo?.matchPrice,
+          changedValue: stock.basicInfo?.changedValue,
+          changedRatio: stock.basicInfo?.changedRatio,
+          totalVolume: stock.basicInfo?.totalVolume,
+          marketCap: stock.basicInfo?.marketCap,
+          beta: stock.basicInfo?.beta,
+          eps: stock.basicInfo?.eps,
+          pe: stock.basicInfo?.pe,
+          pb: stock.basicInfo?.pb,
+          roe: stock.basicInfo?.roe,
+          roa: stock.basicInfo?.roa,
+          fullData: stock.fullData
+        }
+      };
+      symbols.push(symbol);
+    });
+    
+    return symbols;
+  }
+  
+  /**
+   * Perform search with debounced keyword
+   */
+  private performSearch(keyword: string) {
+    this.searchQuery.set(keyword);
+    this.loadSymbols();
   }
 
   /**
@@ -544,50 +693,28 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
   /**
    * Load symbols without triggering DNSE sync (used after sync completes)
+   * Now uses paginated API
    */
   private loadSymbolsWithoutDNSESync() {
-    this.dnseService.getAllStockData().subscribe({
-      next: (stocks) => {
-        const uniqueStocksMap = new Map<string, any>();
-        stocks.forEach((stock: any) => {
-          if (stock && stock.symbol) {
-            const symbolKey = stock.symbol.toUpperCase();
-            const existing = uniqueStocksMap.get(symbolKey);
-            if (!existing || (stock.fullData || stock.basicInfo) && !(existing.fullData || existing.basicInfo)) {
-              uniqueStocksMap.set(symbolKey, stock);
-            }
-          }
-        });
-
-        const allSymbols: SymbolWithStatus[] = [];
-        uniqueStocksMap.forEach((stock: any) => {
-          const symbol: SymbolWithStatus = {
-            symbol: stock.symbol,
-            name: stock.basicInfo?.companyName || stock.fullData?.['pageProps.companyInfo.fullName'],
-            exchange: (stock.basicInfo?.exchange || 'hose') as ExchangeType,
-            isFetched: !!(stock.priceData || stock.fullData),
-            basicInfo: {
-              companyName: stock.basicInfo?.companyName || stock.fullData?.['pageProps.companyInfo.fullName'],
-              exchange: stock.basicInfo?.exchange || 'hose',
-              matchPrice: stock.basicInfo?.matchPrice,
-              changedValue: stock.basicInfo?.changedValue,
-              changedRatio: stock.basicInfo?.changedRatio,
-              totalVolume: stock.basicInfo?.totalVolume,
-              marketCap: stock.basicInfo?.marketCap,
-              beta: stock.basicInfo?.beta,
-              eps: stock.basicInfo?.eps,
-              pe: stock.basicInfo?.pe,
-              pb: stock.basicInfo?.pb,
-              roe: stock.basicInfo?.roe,
-              roa: stock.basicInfo?.roa,
-              fullData: stock.fullData
-            }
-          };
-          allSymbols.push(symbol);
-        });
-
-        this.allSymbols.set(allSymbols);
-        this.applyFilters();
+    const keyword = this.searchQuery();
+    
+    this.dnseService.getStocksPaginated({
+      keyword,
+      limit: this.PAGE_SIZE,
+      offset: 0
+    }).subscribe({
+      next: (response) => {
+        const symbols = this.convertStocksToSymbols(response.stocks);
+        
+        this.allSymbols.set(symbols);
+        this.filteredSymbols.set(symbols);
+        
+        if (response.pagination) {
+          this.paginationTotal.set(response.pagination.total);
+          this.paginationOffset.set(response.stocks.length);
+          this.hasMoreData.set(response.pagination.hasMore);
+        }
+        
         this.updateFetchedCount();
         this.updateExchangeCounts();
       }
@@ -973,11 +1100,13 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   /**
-   * Update search query
+   * Update search query with debounce
    */
   onSearchChange(query: string) {
+    // Update UI immediately
     this.searchQuery.set(query);
-    this.applyFilters();
+    // Debounce the actual API call
+    this.searchSubject.next(query);
   }
 
   /**
@@ -3934,16 +4063,22 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const transactions: Transaction[] = [];
     let totalShares = 0;
     let totalCost = 0; // Total cost of shares held (for avg price calculation)
+    
+    // Initialize running capital from the first buy trade's capital
+    let runningCapital = result.trades.length > 0 ? result.trades[0].buyCapital : 0;
 
     for (const event of events) {
       const trade = event.trade;
       const totalSharesBefore = totalShares;
       const avgPriceBefore = totalShares > 0 ? totalCost / totalShares : 0;
+      const capitalBefore = runningCapital;
+      const transactionAmount = event.price * event.quantity;
 
       if (event.type === 'buy') {
         // Calculate new totals after buy
         totalShares += event.quantity;
-        totalCost += event.price * event.quantity;
+        totalCost += transactionAmount;
+        runningCapital -= transactionAmount; // Subtract money when buying
         const avgPriceAfter = totalShares > 0 ? totalCost / totalShares : 0;
 
         transactions.push({
@@ -3952,9 +4087,9 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
           dateStr: this.formatDateFromTimestamp(event.date),
           quantity: event.quantity,
           price: event.price,
-          capitalBefore: trade.buyCapital,
-          transactionAmount: event.price * event.quantity,
-          capitalAfter: trade.buyCapital - (event.price * event.quantity),
+          capitalBefore,
+          transactionAmount,
+          capitalAfter: runningCapital,
           totalSharesBefore,
           totalSharesAfter: totalShares,
           avgPriceAfter
@@ -3965,6 +4100,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
         const costReduction = avgPriceBefore * event.quantity;
         totalShares -= event.quantity;
         totalCost -= costReduction;
+        runningCapital += transactionAmount; // Add money when selling
         if (totalShares <= 0) {
           totalShares = 0;
           totalCost = 0;
@@ -3977,9 +4113,9 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
           dateStr: this.formatDateFromTimestamp(event.date),
           quantity: event.quantity,
           price: event.price,
-          capitalBefore: trade.sellCapital,
-          transactionAmount: event.price * event.quantity,
-          capitalAfter: trade.sellCapital + (event.price * event.quantity),
+          capitalBefore,
+          transactionAmount,
+          capitalAfter: runningCapital,
           totalSharesBefore,
           totalSharesAfter: totalShares,
           avgPriceAfter,

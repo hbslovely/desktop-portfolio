@@ -13,25 +13,20 @@ import {
   checkModelExists
 } from '../../lib/db.js';
 
-export const config = {
-  runtime: 'nodejs',
-};
+export default async function handler(req, res) {
+  // Set CORS headers
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
-export default async function handler(req) {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
   try {
-    // Handle CORS preflight
-    if (req.method === 'OPTIONS') {
-      return new Response(null, {
-        status: 200,
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        },
-      });
-    }
-
-    const url = new URL(req.url);
+    // Extract symbol from URL
+    const url = new URL(req.url, `http://${req.headers.host}`);
     const pathParts = url.pathname.split('/').filter(p => p);
     // Find index of 'neural-network' and get next part as symbol
     const nnIndex = pathParts.indexOf('neural-network');
@@ -40,16 +35,7 @@ export default async function handler(req) {
       : null;
 
     if (!symbol) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Symbol is required' }),
-        {
-          status: 400,
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
-          },
-        }
-      );
+      return res.status(400).json({ success: false, error: 'Symbol is required' });
     }
 
     // Check for action parameter
@@ -60,66 +46,38 @@ export default async function handler(req) {
       // Check action parameter
       if (action === 'check') {
         const result = await checkModelExists(symbol);
-        return new Response(
-          JSON.stringify({
-            success: true,
-            ...result
-          }),
-          {
-            status: 200,
-            headers: {
-              'Content-Type': 'application/json',
-              'Access-Control-Allow-Origin': '*',
-            },
-          }
-        );
+        return res.status(200).json({
+          success: true,
+          ...result
+        });
       }
 
       const result = await getNeuralNetworkWeights(symbol);
 
       if (!result.success) {
-        return new Response(
-          JSON.stringify({
-            success: false,
-            error: result.error || 'Neural network data not found',
-          }),
-          {
-            status: 404,
-            headers: {
-              'Content-Type': 'application/json',
-              'Access-Control-Allow-Origin': '*',
-            },
-          }
-        );
+        return res.status(404).json({
+          success: false,
+          error: result.error || 'Neural network data not found',
+        });
       }
 
-      return new Response(
-        JSON.stringify({
-          success: true,
-          data: result.data,
-          trainedAt: result.data.trainedAt,
-          trainingEpochs: result.data.trainingEpochs,
-          loss: result.data.loss,
-          accuracy: result.data.accuracy,
-          // Training parameters
-          lookbackDays: result.data.lookbackDays,
-          forecastDays: result.data.forecastDays,
-          batchSize: result.data.batchSize,
-          validationSplit: result.data.validationSplit,
-        }),
-        {
-          status: 200,
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
-          },
-        }
-      );
+      return res.status(200).json({
+        success: true,
+        data: result.data,
+        trainedAt: result.data.trainedAt,
+        trainingEpochs: result.data.trainingEpochs,
+        loss: result.data.loss,
+        accuracy: result.data.accuracy,
+        // Training parameters
+        lookbackDays: result.data.lookbackDays,
+        forecastDays: result.data.forecastDays,
+        batchSize: result.data.batchSize,
+        validationSplit: result.data.validationSplit,
+      });
     }
 
     // POST: Save neural network weights to database
     if (req.method === 'POST') {
-      const body = await req.json();
       const { 
         weights, 
         trainingEpochs, 
@@ -131,19 +89,10 @@ export default async function handler(req) {
         forecastDays,
         batchSize,
         validationSplit,
-      } = body;
+      } = req.body;
 
       if (!weights) {
-        return new Response(
-          JSON.stringify({ success: false, error: 'Weights are required' }),
-          {
-            status: 400,
-            headers: {
-              'Content-Type': 'application/json',
-              'Access-Control-Allow-Origin': '*',
-            },
-          }
-        );
+        return res.status(400).json({ success: false, error: 'Weights are required' });
       }
 
       const weightsData = {
@@ -169,62 +118,26 @@ export default async function handler(req) {
       const saveResult = await saveNeuralNetworkWeights(symbol, weightsData);
 
       if (!saveResult.success) {
-        return new Response(
-          JSON.stringify({
-            success: false,
-            error: saveResult.error || 'Failed to save neural network data',
-          }),
-          {
-            status: 500,
-            headers: {
-              'Content-Type': 'application/json',
-              'Access-Control-Allow-Origin': '*',
-            },
-          }
-        );
+        return res.status(500).json({
+          success: false,
+          error: saveResult.error || 'Failed to save neural network data',
+        });
       }
 
-      return new Response(
-        JSON.stringify({
-          success: true,
-          message: 'Neural network data saved to database successfully',
-          symbol: symbol,
-          updatedAt: saveResult.updatedAt,
-        }),
-        {
-          status: 200,
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
-          },
-        }
-      );
+      return res.status(200).json({
+        success: true,
+        message: 'Neural network data saved to database successfully',
+        symbol: symbol,
+        updatedAt: saveResult.updatedAt,
+      });
     }
 
-    return new Response(
-      JSON.stringify({ success: false, error: 'Method not allowed' }),
-      {
-        status: 405,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-        },
-      }
-    );
+    return res.status(405).json({ success: false, error: 'Method not allowed' });
   } catch (error) {
     console.error('[stocks-v2/neural-network.js] Error:', error);
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: error?.message || 'Internal server error',
-      }),
-      {
-        status: 500,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-        },
-      }
-    );
+    return res.status(500).json({
+      success: false,
+      error: error?.message || 'Internal server error',
+    });
   }
 }

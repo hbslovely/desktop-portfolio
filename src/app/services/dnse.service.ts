@@ -53,7 +53,7 @@ export class DnseService {
 
   // Track fetched symbols (stored in localStorage)
   private readonly FETCHED_SYMBOLS_KEY = 'dnse_fetched_symbols';
-  
+
   // Track last DNSE sync date
   private readonly LAST_DNSE_SYNC_KEY = 'dnse_last_sync_date';
 
@@ -74,12 +74,12 @@ export class DnseService {
   hasAlreadySyncedThisMonth(): boolean {
     const lastSync = localStorage.getItem(this.LAST_DNSE_SYNC_KEY);
     if (!lastSync) return false;
-    
+
     const lastSyncDate = new Date(lastSync);
     const today = new Date();
-    
+
     // Check if last sync was in the same month and year
-    return lastSyncDate.getMonth() === today.getMonth() && 
+    return lastSyncDate.getMonth() === today.getMonth() &&
            lastSyncDate.getFullYear() === today.getFullYear();
   }
 
@@ -289,7 +289,7 @@ export class DnseService {
   /**
    * Pagination response interface
    */
-  
+
 
   /**
    * Get stock data with pagination and search
@@ -304,7 +304,7 @@ export class DnseService {
     query: { keyword: string; limit: number; offset: number };
   }> {
     const { keyword = '', limit = 50, offset = 0 } = options;
-    
+
     const params = new URLSearchParams();
     if (keyword) params.set('keyword', keyword);
     params.set('limit', limit.toString());
@@ -417,8 +417,8 @@ export class DnseService {
    * Save new stocks to database with basic info
    */
   private saveNewStocksToDB(symbols: string[]): Observable<any> {
-    const requests = symbols.map(symbol => 
-      this.http.post<any>('/api/stocks-v2/create', {
+    const requests = symbols.map(symbol =>
+      this.http.post<any>('/api/stocks-v2/save', {
         symbol: symbol.toUpperCase(),
         basicInfo: { symbol: symbol.toUpperCase() },
         priceData: null,

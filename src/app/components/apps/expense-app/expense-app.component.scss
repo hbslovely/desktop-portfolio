@@ -5148,6 +5148,157 @@
     }
   }
 
+  // Screen Navigation - Compact toggle between Transactions and Insights
+  .screen-navigation {
+    display: flex;
+    gap: 2px;
+    padding: 6px 16px;
+    background: #f5f5f5;
+    border-bottom: 1px solid #e8e8e8;
+
+    .screen-btn {
+      flex: 1;
+      background: transparent;
+      border: none;
+      border-radius: 6px;
+      padding: 6px 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      color: #757575;
+      transition: all 0.15s ease;
+
+      i {
+        font-size: 13px;
+      }
+
+      &:hover {
+        background: #e8e8e8;
+        color: #424242;
+      }
+
+      &.active {
+        background: #2196F3;
+        color: #ffffff;
+        box-shadow: 0 1px 3px rgba(33, 150, 243, 0.3);
+      }
+    }
+  }
+
+  // Insights Month Picker - Compact
+  .insights-month-picker {
+    background: #fafafa;
+    padding: 8px 16px;
+    border-bottom: 1px solid #e8e8e8;
+
+    .month-picker-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+
+      .month-nav-btn {
+        background: #ffffff;
+        border: 1px solid #e0e0e0;
+        border-radius: 6px;
+        padding: 5px 10px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.15s ease;
+        color: #757575;
+
+        i {
+          font-size: 12px;
+        }
+
+        &:hover {
+          background: #f0f0f0;
+          border-color: #2196F3;
+          color: #2196F3;
+        }
+
+        &:active {
+          transform: scale(0.95);
+        }
+      }
+
+      .month-display {
+        background: #ffffff;
+        border: 1px solid #e0e0e0;
+        border-radius: 6px;
+        padding: 5px 14px;
+        min-width: 100px;
+        text-align: center;
+
+        .month-label {
+          font-size: 13px;
+          font-weight: 600;
+          color: #333333;
+        }
+      }
+
+      .month-quick-actions {
+        display: flex;
+        gap: 6px;
+        margin-left: auto;
+
+        .quick-month-btn {
+          background: #ffffff;
+          border: 1px solid #e0e0e0;
+          border-radius: 6px;
+          padding: 5px 10px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          gap: 5px;
+          font-size: 12px;
+          font-weight: 500;
+          color: #757575;
+          transition: all 0.15s ease;
+
+          i {
+            font-size: 11px;
+          }
+
+          &:hover {
+            background: #f0f0f0;
+            border-color: #2196F3;
+            color: #2196F3;
+          }
+
+          &.active {
+            background: #2196F3;
+            border-color: #2196F3;
+            color: #ffffff;
+          }
+        }
+      }
+
+      // Responsive for smaller screens
+      @media (max-width: 600px) {
+        .month-quick-actions {
+          width: 100%;
+          margin-left: 0;
+          margin-top: 6px;
+          justify-content: center;
+          
+          .quick-month-btn {
+            flex: 1;
+            justify-content: center;
+            padding: 6px 8px;
+            font-size: 11px;
+          }
+        }
+      }
+    }
+  }
+
   // Tabs Section - Compact
   .tabs-section {
     display: flex;
