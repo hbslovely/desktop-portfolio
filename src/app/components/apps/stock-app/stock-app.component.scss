@@ -1582,6 +1582,83 @@ $green-border: #81c784;
             box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.1);
           }
         }
+
+        // Capital config special styling
+        &.capital-config {
+          grid-column: 1 / -1; // Full width
+          background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+          padding: 16px;
+          border-radius: 8px;
+          border: 1px solid #dee2e6;
+
+          .capital-input {
+            font-size: 18px;
+            font-weight: 600;
+            padding: 12px 16px;
+            text-align: right;
+            background: #ffffff;
+            border: 2px solid #ced4da;
+
+            &:focus {
+              border-color: #198754;
+              box-shadow: 0 0 0 4px rgba(25, 135, 84, 0.15);
+            }
+          }
+
+          .capital-helper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px;
+            background: linear-gradient(135deg, #d1e7dd 0%, #badbcc 100%);
+            border-radius: 6px;
+            margin-top: 8px;
+            border-left: 4px solid #198754;
+
+            i {
+              color: #198754;
+              font-size: 14px;
+            }
+
+            span {
+              font-size: 14px;
+              font-weight: 500;
+              color: #0f5132;
+              font-style: italic;
+            }
+          }
+
+          .capital-presets {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+
+            button {
+              padding: 6px 14px;
+              border: 1px solid #ced4da;
+              border-radius: 20px;
+              background: #ffffff;
+              font-size: 12px;
+              font-weight: 600;
+              color: #495057;
+              cursor: pointer;
+              transition: all 0.2s;
+
+              &:hover {
+                background: #e9ecef;
+                border-color: #198754;
+                color: #198754;
+              }
+
+              &.active {
+                background: #198754;
+                border-color: #198754;
+                color: #ffffff;
+              }
+            }
+          }
+        }
       }
     }
 
@@ -2105,21 +2182,15 @@ $green-border: #81c784;
     z-index: 10;
 
     th {
-      padding: 10px 8px;
-      text-align: left;
+      padding: 10px 6px;
+      text-align: right;
       font-weight: 600;
-      font-size: 12px;
+      font-size: 11px;
       text-transform: uppercase;
+      white-space: nowrap;
 
-      &:nth-child(2),
-      &:nth-child(3),
-      &:nth-child(4),
-      &:nth-child(5) {
-        text-align: right;
-      }
-
-      &:last-child {
-        text-align: right;
+      &:first-child {
+        text-align: left;
       }
     }
   }
@@ -2139,29 +2210,57 @@ $green-border: #81c784;
     }
 
     td {
-      padding: 12px 8px;
-      font-size: 14px;
+      padding: 10px 6px;
+      font-size: 13px;
+      text-align: right;
+      font-family: 'Courier New', monospace;
+      white-space: nowrap;
 
       &:first-child {
+        text-align: left;
         font-weight: 500;
         color: #333;
+        font-family: inherit;
       }
 
-      &:nth-child(2),
+      // Reference (TC) column
+      &:nth-child(2) {
+        color: #ffc107;
+        font-weight: 600;
+      }
+
+      // Price columns (Mở, Cao, Thấp, Đóng)
       &:nth-child(3),
       &:nth-child(4),
-      &:nth-child(5) {
-        text-align: right;
-        font-family: 'Courier New', monospace;
+      &:nth-child(5),
+      &:nth-child(6) {
         font-weight: 600;
-        font-size: 15px;
       }
 
+      // Change columns (+/-, %)
+      &:nth-child(7),
+      &:nth-child(8) {
+        font-weight: 600;
+        font-size: 12px;
+      }
+
+      // Volume column
       &:last-child {
-        text-align: right;
-        font-family: 'Courier New', monospace;
         color: #666;
-        font-size: 13px;
+        font-size: 12px;
+      }
+
+      // Color classes for change columns
+      &.positive {
+        color: $light-green;
+      }
+
+      &.negative {
+        color: #d32f2f;
+      }
+
+      &.reference {
+        color: #ffc107;
       }
     }
   }

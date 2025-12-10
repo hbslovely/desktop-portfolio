@@ -945,14 +945,30 @@
             <div class="simulation-config">
               <h4>Cấu hình giao dịch</h4>
               <div class="config-grid">
-                <div class="config-item">
+                <div class="config-item capital-config">
                   <label>Vốn ban đầu (đồng):</label>
                   <input 
-                    type="number" 
-                    [value]="tradingConfig().initialCapital"
-                    (input)="updateTradingConfig({ initialCapital: +$any($event.target).value })"
-                    min="1000000"
-                    step="1000000">
+                    type="text" 
+                    [value]="tradingConfig().initialCapital | number:'1.0-0'"
+                    (input)="updateTradingConfig({ initialCapital: parseCapitalInput($any($event.target).value) })"
+                    (blur)="formatCapitalInput($event)"
+                    class="capital-input">
+                  <div class="capital-helper" *ngIf="tradingConfig().initialCapital > 0">
+                    <i class="pi pi-info-circle"></i>
+                    <span>{{ getInitialCapitalText() }}</span>
+                  </div>
+                  <div class="capital-presets">
+                    <button type="button" (click)="updateTradingConfig({ initialCapital: 50000000 })" 
+                            [class.active]="tradingConfig().initialCapital === 50000000">50M</button>
+                    <button type="button" (click)="updateTradingConfig({ initialCapital: 100000000 })"
+                            [class.active]="tradingConfig().initialCapital === 100000000">100M</button>
+                    <button type="button" (click)="updateTradingConfig({ initialCapital: 200000000 })"
+                            [class.active]="tradingConfig().initialCapital === 200000000">200M</button>
+                    <button type="button" (click)="updateTradingConfig({ initialCapital: 500000000 })"
+                            [class.active]="tradingConfig().initialCapital === 500000000">500M</button>
+                    <button type="button" (click)="updateTradingConfig({ initialCapital: 1000000000 })"
+                            [class.active]="tradingConfig().initialCapital === 1000000000">1B</button>
+                  </div>
                 </div>
                 <div class="config-item">
                   <label>Cắt lỗ (%):</label>
@@ -1317,27 +1333,37 @@
               <thead>
                 <tr>
                   <th>Ngày</th>
+                  <th>TC</th>
                   <th>Mở</th>
                   <th>Cao</th>
                   <th>Thấp</th>
                   <th>Đóng</th>
+                  <th>+/-</th>
+                  <th>%</th>
                   <th>KL</th>
                 </tr>
               </thead>
               <tbody>
                 <tr *ngFor="let item of priceTableData()">
                   <td>{{ item.date }}</td>
+                  <td class="reference">{{ (item.referencePrice * 1000) | number:'1.0-0' }}</td>
                   <td [ngClass]="getPriceColorClass(item.open, item.referencePrice, item.ceilingPrice, item.floorPrice)">
-                    {{ (item.open * 1000) | number:'1.0-0' }} đ
+                    {{ (item.open * 1000) | number:'1.0-0' }}
                   </td>
                   <td [ngClass]="getPriceColorClass(item.high, item.referencePrice, item.ceilingPrice, item.floorPrice)">
-                    {{ (item.high * 1000) | number:'1.0-0' }} đ
+                    {{ (item.high * 1000) | number:'1.0-0' }}
                   </td>
                   <td [ngClass]="getPriceColorClass(item.low, item.referencePrice, item.ceilingPrice, item.floorPrice)">
-                    {{ (item.low * 1000) | number:'1.0-0' }} đ
+                    {{ (item.low * 1000) | number:'1.0-0' }}
                   </td>
                   <td [ngClass]="getPriceColorClass(item.close, item.referencePrice, item.ceilingPrice, item.floorPrice)">
-                    {{ (item.close * 1000) | number:'1.0-0' }} đ
+                    {{ (item.close * 1000) | number:'1.0-0' }}
+                  </td>
+                  <td [ngClass]="{'positive': item.changeValue > 0, 'negative': item.changeValue < 0, 'reference': item.changeValue === 0}">
+                    {{ item.changeValue >= 0 ? '+' : '' }}{{ (item.changeValue * 1000) | number:'1.0-0' }}
+                  </td>
+                  <td [ngClass]="{'positive': item.changePercent > 0, 'negative': item.changePercent < 0, 'reference': item.changePercent === 0}">
+                    {{ item.changePercent >= 0 ? '+' : '' }}{{ item.changePercent | number:'1.2-2' }}%
                   </td>
                   <td>{{ item.volume | number:'1.0-0' }}</td>
                 </tr>

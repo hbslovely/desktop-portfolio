@@ -187,6 +187,8 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   showBudgetSettings = signal<boolean>(false);
   editMonthlyBudget = signal<number>(10000000); // Default 10M VND
   editCategoryBudgets = signal<{ [category: string]: number }>({});
+  showSetAllDialog = signal<boolean>(false);
+  setAllValue = signal<number>(1000000); // Default 1M for set all
 
   // Sorting for expenses list
   sortField = signal<'date' | 'amount' | 'category' | 'content'>('date');
@@ -2588,6 +2590,9 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       setTimeout(() => {
         this.initBudgetTrendChart();
       }, 100);
+    } else if (tab === 'insights') {
+      // Initialize insight charts when switching to insights tab
+      this.initInsightCharts();
     }
   }
 
@@ -4874,21 +4879,55 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   /**
-   * Handle monthly budget change
+   * Format budget display with thousand separators
    */
-  onMonthlyBudgetChange(value: string): void {
-    const numericValue = parseInt(value.replace(/\./g, ''), 10) || 0;
-    this.editMonthlyBudget.set(numericValue);
+  formatBudgetDisplay(value: number): string {
+    if (!value || value === 0) return '';
+    return value.toLocaleString('vi-VN');
   }
 
   /**
-   * Handle category budget change
+   * Parse budget input value
    */
-  onCategoryBudgetChange(category: string, value: string): void {
-    const numericValue = parseInt(value.replace(/\./g, ''), 10) || 0;
+  parseBudgetInput(value: string): number {
+    // Remove all non-digit characters (dots, commas, spaces)
+    const cleaned = value.replace(/[^\d]/g, '');
+    return parseInt(cleaned, 10) || 0;
+  }
+
+  /**
+   * Handle monthly budget input
+   */
+  onMonthlyBudgetInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const numericValue = this.parseBudgetInput(input.value);
+    this.editMonthlyBudget.set(numericValue);
+    // Update display with formatted value
+    input.value = this.formatBudgetDisplay(numericValue);
+  }
+
+  /**
+   * Handle category budget input
+   */
+  onCategoryBudgetInput(category: string, event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const numericValue = this.parseBudgetInput(input.value);
     const currentBudgets = { ...this.editCategoryBudgets() };
     currentBudgets[category] = numericValue;
     this.editCategoryBudgets.set(currentBudgets);
+    // Update display with formatted value
+    input.value = this.formatBudgetDisplay(numericValue);
+  }
+
+  /**
+   * Handle set all value input
+   */
+  onSetAllValueInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const numericValue = this.parseBudgetInput(input.value);
+    this.setAllValue.set(numericValue);
+    // Update display with formatted value
+    input.value = this.formatBudgetDisplay(numericValue);
   }
 
   /**
@@ -4898,7 +4937,72 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     // In a real app, you would save these to a backend or local storage
     // For now, the signals already hold the values
     this.showBudgetSettings.set(false);
+    this.showSetAllDialog.set(false);
     this.showNotificationDialog('Đã lưu ngân sách thành công!', 'success');
+  }
+
+  /**
+   * Set monthly budget preset
+   */
+  setMonthlyBudgetPreset(amount: number): void {
+    this.editMonthlyBudget.set(amount);
+  }
+
+  /**
+   * Distribute budget evenly across all categories
+   */
+  distributeBudgetEvenly(): void {
+    const categories = this.categories();
+    const budgetPerCategory = Math.floor(this.editMonthlyBudget() / categories.length);
+    const newBudgets: { [category: string]: number } = {};
+    
+    categories.forEach(cat => {
+      newBudgets[cat] = budgetPerCategory;
+    });
+    
+    this.editCategoryBudgets.set(newBudgets);
+    this.showNotificationDialog(`Đã chia đều ${this.formatCompactAmount(budgetPerCategory)} cho mỗi danh mục`, 'success');
+  }
+
+  /**
+   * Clear all category budgets
+   */
+  clearAllCategoryBudgets(): void {
+    this.editCategoryBudgets.set({});
+  }
+
+  /**
+   * Apply set all value to all categories
+   */
+  applySetAllValue(): void {
+    const categories = this.categories();
+    const value = this.setAllValue();
+    const newBudgets: { [category: string]: number } = {};
+    
+    categories.forEach(cat => {
+      newBudgets[cat] = value;
+    });
+    
+    this.editCategoryBudgets.set(newBudgets);
+    this.showSetAllDialog.set(false);
+    this.showNotificationDialog(`Đã đặt ${this.formatCompactAmount(value)} cho tất cả danh mục`, 'success');
+  }
+
+  /**
+   * Set category budget preset
+   */
+  setCategoryBudgetPreset(category: string, amount: number): void {
+    const currentBudgets = { ...this.editCategoryBudgets() };
+    currentBudgets[category] = amount;
+    this.editCategoryBudgets.set(currentBudgets);
+  }
+
+  /**
+   * Get total of all category budgets
+   */
+  getTotalCategoryBudgets(): number {
+    const budgets = this.editCategoryBudgets();
+    return Object.values(budgets).reduce((sum, val) => sum + val, 0);
   }
 
   /**
@@ -5028,6 +5132,303 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     };
 
     this.budgetTrendChart = new Chart(this.budgetTrendChartRef.nativeElement, config);
+  }
+
+  // ============ INSIGHT CHARTS ============
+  @ViewChild('categoryPieChart') categoryPieChartRef!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('dailyTrendChart') dailyTrendChartRef!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('weekdayChart') weekdayChartRef!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('monthlyCompareChart') monthlyCompareChartRef!: ElementRef<HTMLCanvasElement>;
+
+  private categoryPieChart: Chart | null = null;
+  private dailyTrendChart: Chart | null = null;
+  private weekdayChart: Chart | null = null;
+  private monthlyCompareChart: Chart | null = null;
+
+  private insightChartColors = [
+    '#f43f5e', '#8b5cf6', '#06b6d4', '#10b981', '#f59e0b',
+    '#ec4899', '#6366f1', '#14b8a6', '#84cc16', '#f97316'
+  ];
+
+  getCategoryChartColor(index: number): string {
+    return this.insightChartColors[index % this.insightChartColors.length];
+  }
+
+  getLast30DaysTotal(): number {
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    return this.filteredExpenses()
+      .filter(e => new Date(e.date) >= thirtyDaysAgo)
+      .reduce((sum, e) => sum + e.amount, 0);
+  }
+
+  getLast30DaysAverage(): number {
+    return this.getLast30DaysTotal() / 30;
+  }
+
+  initInsightCharts(): void {
+    setTimeout(() => {
+      this.initCategoryPieChart();
+      this.initDailyTrendChart();
+      this.initWeekdayChart();
+      this.initMonthlyCompareChart();
+    }, 100);
+  }
+
+  private initCategoryPieChart(): void {
+    if (!this.categoryPieChartRef?.nativeElement) return;
+
+    if (this.categoryPieChart) {
+      this.categoryPieChart.destroy();
+    }
+
+    const categories = this.totalByCategory().slice(0, 6);
+    const labels = categories.map(c => c.category);
+    const data = categories.map(c => c.total);
+
+    this.categoryPieChart = new Chart(this.categoryPieChartRef.nativeElement, {
+      type: 'doughnut',
+      data: {
+        labels,
+        datasets: [{
+          data,
+          backgroundColor: this.insightChartColors.slice(0, labels.length),
+          borderWidth: 0,
+          hoverOffset: 8
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '65%',
+        plugins: {
+          legend: {
+            display: false
+          },
+          tooltip: {
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            padding: 12,
+            titleFont: { size: 13 },
+            bodyFont: { size: 12 },
+            callbacks: {
+              label: (context) => {
+                const total = data.reduce((a, b) => a + b, 0);
+                const percentage = ((context.raw as number) / total * 100).toFixed(1);
+                return `${this.formatAmount(context.raw as number)} (${percentage}%)`;
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  private initDailyTrendChart(): void {
+    if (!this.dailyTrendChartRef?.nativeElement) return;
+
+    if (this.dailyTrendChart) {
+      this.dailyTrendChart.destroy();
+    }
+
+    const now = new Date();
+    const labels: string[] = [];
+    const data: number[] = [];
+
+    // Get last 30 days
+    for (let i = 29; i >= 0; i--) {
+      const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+      const dateStr = date.toISOString().split('T')[0];
+      labels.push(`${date.getDate()}/${date.getMonth() + 1}`);
+
+      const dayTotal = this.filteredExpenses()
+        .filter(e => e.date === dateStr)
+        .reduce((sum, e) => sum + e.amount, 0);
+      data.push(dayTotal);
+    }
+
+    const gradient = this.dailyTrendChartRef.nativeElement.getContext('2d')!.createLinearGradient(0, 0, 0, 200);
+    gradient.addColorStop(0, 'rgba(139, 92, 246, 0.3)');
+    gradient.addColorStop(1, 'rgba(139, 92, 246, 0)');
+
+    this.dailyTrendChart = new Chart(this.dailyTrendChartRef.nativeElement, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          data,
+          borderColor: '#8b5cf6',
+          backgroundColor: gradient,
+          borderWidth: 2,
+          fill: true,
+          tension: 0.4,
+          pointRadius: 0,
+          pointHoverRadius: 6,
+          pointHoverBackgroundColor: '#8b5cf6',
+          pointHoverBorderColor: '#fff',
+          pointHoverBorderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          intersect: false,
+          mode: 'index'
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: { 
+              font: { size: 10 },
+              maxRotation: 0,
+              maxTicksLimit: 10
+            }
+          },
+          y: {
+            grid: { color: 'rgba(0, 0, 0, 0.05)' },
+            ticks: {
+              font: { size: 10 },
+              callback: (value) => this.formatCompactAmount(value as number)
+            }
+          }
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            padding: 12,
+            callbacks: {
+              label: (context) => this.formatAmount(context.raw as number)
+            }
+          }
+        }
+      }
+    });
+  }
+
+  private initWeekdayChart(): void {
+    if (!this.weekdayChartRef?.nativeElement) return;
+
+    if (this.weekdayChart) {
+      this.weekdayChart.destroy();
+    }
+
+    const weekdays = this.weekdaySpending();
+    const labels = weekdays.map(d => d.shortName);
+    const data = weekdays.map(d => d.average);
+    const maxVal = Math.max(...data);
+
+    this.weekdayChart = new Chart(this.weekdayChartRef.nativeElement, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{
+          data,
+          backgroundColor: data.map(v => v === maxVal ? '#f43f5e' : '#06b6d4'),
+          borderRadius: 6,
+          borderSkipped: false
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: { font: { size: 11, weight: 500 } }
+          },
+          y: {
+            grid: { color: 'rgba(0, 0, 0, 0.05)' },
+            ticks: {
+              font: { size: 10 },
+              callback: (value) => this.formatCompactAmount(value as number)
+            }
+          }
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            padding: 12,
+            callbacks: {
+              label: (context) => `TB: ${this.formatAmount(context.raw as number)}`
+            }
+          }
+        }
+      }
+    });
+  }
+
+  private initMonthlyCompareChart(): void {
+    if (!this.monthlyCompareChartRef?.nativeElement) return;
+
+    if (this.monthlyCompareChart) {
+      this.monthlyCompareChart.destroy();
+    }
+
+    const now = new Date();
+    const labels: string[] = [];
+    const data: number[] = [];
+
+    // Get last 6 months
+    for (let i = 5; i >= 0; i--) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const monthName = date.toLocaleDateString('vi-VN', { month: 'short' });
+      labels.push(monthName);
+
+      const monthStart = new Date(date.getFullYear(), date.getMonth(), 1);
+      const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+
+      const monthTotal = this.filteredExpenses()
+        .filter(e => {
+          const expenseDate = new Date(e.date);
+          return expenseDate >= monthStart && expenseDate <= monthEnd;
+        })
+        .reduce((sum, e) => sum + e.amount, 0);
+      data.push(monthTotal);
+    }
+
+    const maxVal = Math.max(...data);
+
+    this.monthlyCompareChart = new Chart(this.monthlyCompareChartRef.nativeElement, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{
+          data,
+          backgroundColor: data.map((v, i) => i === data.length - 1 ? '#10b981' : (v === maxVal ? '#f43f5e' : '#8b5cf6')),
+          borderRadius: 6,
+          borderSkipped: false
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: { font: { size: 11, weight: 500 } }
+          },
+          y: {
+            grid: { color: 'rgba(0, 0, 0, 0.05)' },
+            ticks: {
+              font: { size: 10 },
+              callback: (value) => this.formatCompactAmount(value as number)
+            }
+          }
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            padding: 12,
+            callbacks: {
+              label: (context) => this.formatAmount(context.raw as number)
+            }
+          }
+        }
+      }
+    });
   }
 }
 
