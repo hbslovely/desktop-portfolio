@@ -16,3 +16,4 @@ echo ""
 
 sqlite3 "$DB_PATH"
 
+

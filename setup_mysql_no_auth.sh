@@ -36,3 +36,4 @@ echo ""
 echo "Hoặc chỉ định user mới:"
 echo "  python3 migrate_sqlite_to_mysql.py <sqlite_path> localhost 3306 stocks_user '' stocks_db"
 
+
