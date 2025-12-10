@@ -6,7 +6,7 @@ import { ScrollingModule, CdkVirtualScrollViewport } from '@angular/cdk/scrollin
 import { DnseService, DNSESymbol, DNSEStockData, DNSEOHLCData, ExchangeType } from '../../../services/dnse.service';
 import { NeuralNetworkService, StockPrediction, TrainingProgress, TrainingConfig, DEFAULT_TRAINING_CONFIG, TRAINING_CONFIG_DESCRIPTIONS, ModelStatus } from '../../../services/neural-network.service';
 import { TradingSimulationService, TradingConfig, TradingResult, TradeSignal } from '../../../services/trading-simulation.service';
-import { TradingviewChartComponent } from './tradingview-chart/tradingview-chart.component';
+import { TradingviewChartComponent, ChartMarker } from './tradingview-chart/tradingview-chart.component';
 import { Chart, ChartConfiguration, registerables, TimeScale } from 'chart.js';
 import { Subject, Subscription } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
@@ -409,6 +409,9 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
   // Date range for backtesting
   backtestStartDate = signal<string>('');
   backtestEndDate = signal<string>('');
+  
+  // Backtest tabs: 'setup' | 'results' | 'chart'
+  backtestActiveTab = signal<'setup' | 'results' | 'chart'>('setup');
 
   constructor(
     private dnseService: DnseService,
@@ -3776,6 +3779,9 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
       // Auto-save simulation result to API
       await this.saveSimulationResult(result, startDate, endDate);
+      
+      // Switch to results tab after simulation completes
+      this.backtestActiveTab.set('results');
     } catch (error: any) {
       console.error('Error running simulation:', error);
       this.nnError.set(error.message || 'Lỗi khi chạy mô phỏng');
@@ -3843,6 +3849,8 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
             this.backtestEndDate.set(response.data.dateRange.endDate);
           }
           console.log('Simulation result loaded successfully');
+          // Switch to results tab after loading
+          this.backtestActiveTab.set('results');
         } else {
           this.nnError.set('Không tìm thấy kết quả mô phỏng đã lưu');
         }
@@ -4125,6 +4133,29 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     }
 
     return transactions;
+  }
+
+  /**
+   * Get chart markers (buy/sell points) for TradingView chart
+   */
+  getChartMarkers(): ChartMarker[] {
+    const transactions = this.getTransactions();
+    if (transactions.length === 0) return [];
+
+    return transactions.map(tx => ({
+      time: tx.date,
+      type: tx.type,
+      price: tx.price,
+      quantity: tx.quantity,
+      label: `${tx.type === 'buy' ? 'Mua' : 'Bán'} ${tx.quantity} @ ${this.formatPredictionPrice(tx.price)}`
+    }));
+  }
+
+  /**
+   * Switch to results tab after running simulation
+   */
+  onRunSimulationComplete() {
+    this.backtestActiveTab.set('results');
   }
 
   /**

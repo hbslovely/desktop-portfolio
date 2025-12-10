@@ -24,7 +24,8 @@ import {
   CandlestickSeries,
   HistogramSeries,
   LineSeries,
-  LineData
+  LineData,
+  SeriesMarker
 } from 'lightweight-charts';
 
 export interface OHLCData {
@@ -34,6 +35,14 @@ export interface OHLCData {
   l: number[];  // low
   c: number[];  // close
   v: number[];  // volume
+}
+
+export interface ChartMarker {
+  time: number;      // Unix timestamp
+  type: 'buy' | 'sell';
+  price: number;
+  quantity?: number;
+  label?: string;
 }
 
 interface ChartTooltipData {
@@ -939,6 +948,7 @@ export class TradingviewChartComponent implements OnInit, OnDestroy, OnChanges {
   @Input() data: OHLCData | null = null;
   @Input() symbol: string = '';
   @Input() theme: 'light' | 'dark' = 'dark';
+  @Input() markers: ChartMarker[] = [];
 
   private chart: IChartApi | null = null;
   private candlestickSeries: ISeriesApi<'Candlestick'> | null = null;
@@ -1038,6 +1048,9 @@ export class TradingviewChartComponent implements OnInit, OnDestroy, OnChanges {
     }
     if (changes['theme'] && this.chart) {
       this.applyTheme();
+    }
+    if (changes['markers'] && this.chart && this.candlestickSeries) {
+      this.updateMarkers();
     }
   }
 
@@ -1211,11 +1224,38 @@ export class TradingviewChartComponent implements OnInit, OnDestroy, OnChanges {
       this.currentPrice.set(c[c.length - 1]);
     }
 
+    // Update markers if any
+    if (this.markers.length > 0) {
+      this.updateMarkers();
+    }
+
     // Fit content
     this.chart?.timeScale().fitContent();
 
     // Apply timeframe filter
     this.applyTimeframe();
+  }
+
+  /**
+   * Update markers (buy/sell points) on the chart
+   */
+  private updateMarkers() {
+    if (!this.candlestickSeries || !this.markers.length) return;
+
+    const seriesMarkers: SeriesMarker<Time>[] = this.markers.map(marker => ({
+      time: marker.time as Time,
+      position: marker.type === 'buy' ? 'belowBar' as const : 'aboveBar' as const,
+      color: marker.type === 'buy' ? '#26a69a' : '#ef5350',
+      shape: marker.type === 'buy' ? 'arrowUp' as const : 'arrowDown' as const,
+      text: marker.type === 'buy' ? 'B' : 'S',
+      size: 2,
+    }));
+
+    // Sort markers by time
+    seriesMarkers.sort((a, b) => (a.time as number) - (b.time as number));
+
+    // Use type assertion for v5 compatibility - setMarkers exists but TypeScript types may not include it
+    (this.candlestickSeries as any).setMarkers(seriesMarkers);
   }
 
   changeTimeframe(timeframe: string) {

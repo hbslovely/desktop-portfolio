@@ -376,20 +376,20 @@ export class DnseService {
 
               if (newSymbols.length > 0) {
                 console.log(`Found ${newSymbols.length} new stocks from DNSE:`, newSymbols);
-                // Save new stocks to database (just basic info for now)
-                this.saveNewStocksToDB(newSymbols).subscribe({
-                  next: () => {
-                    this.markDNSESynced();
-                    observer.next({ newSymbols, totalFromDNSE, synced: true });
-                    observer.complete();
-                  },
-                  error: (error) => {
-                    console.error('Error saving new stocks:', error);
-                    this.markDNSESynced(); // Still mark as synced to avoid retrying
-                    observer.next({ newSymbols, totalFromDNSE, synced: true });
-                    observer.complete();
-                  }
-                });
+                // // Save new stocks to database (just basic info for now)
+                // this.saveNewStocksToDB(newSymbols).subscribe({
+                //   next: () => {
+                //     this.markDNSESynced();
+                //     observer.next({ newSymbols, totalFromDNSE, synced: true });
+                //     observer.complete();
+                //   },
+                //   error: (error) => {
+                //     console.error('Error saving new stocks:', error);
+                //     this.markDNSESynced(); // Still mark as synced to avoid retrying
+                //     observer.next({ newSymbols, totalFromDNSE, synced: true });
+                //     observer.complete();
+                //   }
+                // });
               } else {
                 console.log('No new stocks found from DNSE');
                 this.markDNSESynced();

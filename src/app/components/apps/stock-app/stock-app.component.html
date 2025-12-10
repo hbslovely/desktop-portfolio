@@ -985,236 +985,327 @@
         </section>
 
         <!-- Trading Simulation Section -->
-        <section class="section">
+        <section class="section backtest-section">
           <h3>Mô phỏng Giao dịch (Backtesting)</h3>
+          
+          <!-- Backtest Sub-tabs -->
+          <div class="backtest-tabs">
+            <button 
+              class="backtest-tab-btn"
+              [class.active]="backtestActiveTab() === 'setup'"
+              (click)="backtestActiveTab.set('setup')">
+              <i class="pi pi-cog"></i>
+              <span>Thiết lập</span>
+            </button>
+            <button 
+              class="backtest-tab-btn"
+              [class.active]="backtestActiveTab() === 'results'"
+              (click)="backtestActiveTab.set('results')"
+              [disabled]="!tradingResult()">
+              <i class="pi pi-chart-bar"></i>
+              <span>Kết quả</span>
+              <span class="badge-count" *ngIf="tradingResult()">{{ tradingResult()!.totalTrades }}</span>
+            </button>
+            <button 
+              class="backtest-tab-btn"
+              [class.active]="backtestActiveTab() === 'chart'"
+              (click)="backtestActiveTab.set('chart')"
+              [disabled]="!tradingResult()">
+              <i class="pi pi-chart-line"></i>
+              <span>Biểu đồ</span>
+            </button>
+          </div>
+          
           <div class="trading-simulation-section">
-            <!-- Date Range Selection -->
-            <div class="date-range-config" *ngIf="selectedSymbolPriceData()">
-              <h4>Chọn vùng ngày để testing</h4>
-              <div class="date-range-inputs">
-                <div class="date-input-item">
-                  <label>Ngày bắt đầu:</label>
-                  <input 
-                    type="date" 
-                    [value]="backtestStartDate()"
-                    [min]="getAvailableDateRange()?.minDate"
-                    [max]="getAvailableDateRange()?.maxDate"
-                    (change)="backtestStartDate.set($any($event.target).value)"
-                    (focus)="initializeDateRange()">
+            <!-- TAB 1: SETUP -->
+            <div class="backtest-tab-content" *ngIf="backtestActiveTab() === 'setup'">
+              <!-- Date Range Selection -->
+              <div class="date-range-config" *ngIf="selectedSymbolPriceData()">
+                <h4>Chọn vùng ngày để testing</h4>
+                <div class="date-range-inputs">
+                  <div class="date-input-item">
+                    <label>Ngày bắt đầu:</label>
+                    <input 
+                      type="date" 
+                      [value]="backtestStartDate()"
+                      [min]="getAvailableDateRange()?.minDate"
+                      [max]="getAvailableDateRange()?.maxDate"
+                      (change)="backtestStartDate.set($any($event.target).value)"
+                      (focus)="initializeDateRange()">
+                  </div>
+                  <div class="date-input-item">
+                    <label>Ngày kết thúc:</label>
+                    <input 
+                      type="date" 
+                      [value]="backtestEndDate()"
+                      [min]="getAvailableDateRange()?.minDate"
+                      [max]="getAvailableDateRange()?.maxDate"
+                      (change)="backtestEndDate.set($any($event.target).value)"
+                      (focus)="initializeDateRange()">
+                  </div>
+                  <div class="date-input-item">
+                    <label>Khoảng thời gian:</label>
+                    <button 
+                      class="btn-quick-range" 
+                      (click)="backtestStartDate.set(getAvailableDateRange()?.minDate || ''); backtestEndDate.set(getAvailableDateRange()?.maxDate || '')">
+                      <i class="pi pi-calendar"></i>
+                      Toàn bộ
+                    </button>
+                  </div>
                 </div>
-                <div class="date-input-item">
-                  <label>Ngày kết thúc:</label>
-                  <input 
-                    type="date" 
-                    [value]="backtestEndDate()"
-                    [min]="getAvailableDateRange()?.minDate"
-                    [max]="getAvailableDateRange()?.maxDate"
-                    (change)="backtestEndDate.set($any($event.target).value)"
-                    (focus)="initializeDateRange()">
+                <div class="date-range-info" *ngIf="getAvailableDateRange()">
+                  <span class="info-text">
+                    <i class="pi pi-info-circle"></i>
+                    Dữ liệu có sẵn: {{ getFormattedMinDate() }} đến {{ getFormattedMaxDate() }}
+                  </span>
                 </div>
-                <div class="date-input-item">
-                  <label>Khoảng thời gian:</label>
-                  <button 
-                    class="btn-quick-range" 
-                    (click)="backtestStartDate.set(getAvailableDateRange()?.minDate || ''); backtestEndDate.set(getAvailableDateRange()?.maxDate || '')">
-                    <i class="pi pi-calendar"></i>
-                    Toàn bộ
+              </div>
+
+              <!-- Configuration -->
+              <div class="simulation-config">
+                <h4>Cấu hình giao dịch</h4>
+                <div class="config-grid">
+                  <div class="config-item capital-config">
+                    <label>Vốn ban đầu (đồng):</label>
+                    <input 
+                      type="text" 
+                      [value]="tradingConfig().initialCapital | number:'1.0-0'"
+                      (input)="updateTradingConfig({ initialCapital: parseCapitalInput($any($event.target).value) })"
+                      (blur)="formatCapitalInput($event)"
+                      class="capital-input">
+                    <div class="capital-helper" *ngIf="tradingConfig().initialCapital > 0">
+                      <i class="pi pi-info-circle"></i>
+                      <span>{{ getInitialCapitalText() }}</span>
+                    </div>
+                    <div class="capital-presets">
+                      <button type="button" (click)="updateTradingConfig({ initialCapital: 50000000 })" 
+                              [class.active]="tradingConfig().initialCapital === 50000000">50M</button>
+                      <button type="button" (click)="updateTradingConfig({ initialCapital: 100000000 })"
+                              [class.active]="tradingConfig().initialCapital === 100000000">100M</button>
+                      <button type="button" (click)="updateTradingConfig({ initialCapital: 200000000 })"
+                              [class.active]="tradingConfig().initialCapital === 200000000">200M</button>
+                      <button type="button" (click)="updateTradingConfig({ initialCapital: 500000000 })"
+                              [class.active]="tradingConfig().initialCapital === 500000000">500M</button>
+                      <button type="button" (click)="updateTradingConfig({ initialCapital: 1000000000 })"
+                              [class.active]="tradingConfig().initialCapital === 1000000000">1B</button>
+                    </div>
+                  </div>
+                  <div class="config-item">
+                    <label>Cắt lỗ (%):</label>
+                    <input 
+                      type="number" 
+                      [value]="tradingConfig().stopLossPercent"
+                      (input)="updateTradingConfig({ stopLossPercent: +$any($event.target).value })"
+                      min="1"
+                      max="20"
+                      step="0.5">
+                  </div>
+                  <div class="config-item">
+                    <label>Chốt lời (%):</label>
+                    <input 
+                      type="number" 
+                      [value]="tradingConfig().takeProfitPercent"
+                      (input)="updateTradingConfig({ takeProfitPercent: +$any($event.target).value })"
+                      min="1"
+                      max="50"
+                      step="0.5">
+                  </div>
+                  <div class="config-item" style="opacity: 0.6;">
+                    <label>Độ tin cậy tối thiểu (%):</label>
+                    <input 
+                      type="number" 
+                      [value]="tradingConfig().minConfidence * 100"
+                      (input)="updateTradingConfig({ minConfidence: +$any($event.target).value / 100 })"
+                      min="0"
+                      max="100"
+                      step="5"
+                      disabled>
+                    <small style="font-size: 11px; color: #6c757d;">Không dùng - Model tự quyết định mua/bán</small>
+                  </div>
+                  <div class="config-item">
+                    <label>Số vị thế tối đa:</label>
+                    <input 
+                      type="number" 
+                      [value]="tradingConfig().maxPositions"
+                      (input)="updateTradingConfig({ maxPositions: +$any($event.target).value })"
+                      min="1"
+                      max="10"
+                      step="1">
+                    <small style="font-size: 11px; color: #6c757d;">Số lần có thể mua đồng thời (tăng để mua bán liên tục)</small>
+                  </div>
+                  <div class="config-item">
+                    <label>T+ (ngày):</label>
+                    <input 
+                      type="number" 
+                      [value]="tradingConfig().tPlusDays"
+                      (input)="updateTradingConfig({ tPlusDays: +$any($event.target).value })"
+                      min="0"
+                      max="5"
+                      step="1">
+                    <small style="font-size: 11px; color: #6c757d;">Số ngày phải đợi sau khi mua mới được bán (T+2 = 2 ngày)</small>
+                  </div>
+                </div>
+                <div class="simulation-actions">
+                  <button
+                    class="btn-simulate"
+                    (click)="runTradingSimulation()"
+                    [disabled]="!isNNReady() || isRunningSimulation() || isNNTraining()">
+                    <i class="pi" [ngClass]="isRunningSimulation() ? 'pi-spin pi-spinner' : 'pi-play'"></i>
+                    {{ isRunningSimulation() ? 'Đang chạy...' : 'Chạy mô phỏng' }}
+                  </button>
+                  <button
+                    class="btn btn-load"
+                    (click)="loadSavedSimulationResult()"
+                    [disabled]="!selectedSymbol()">
+                    <i class="pi pi-download"></i>
+                    Load kết quả đã lưu
                   </button>
                 </div>
               </div>
-              <div class="date-range-info" *ngIf="getAvailableDateRange()">
-                <span class="info-text">
-                  <i class="pi pi-info-circle"></i>
-                  Dữ liệu có sẵn: {{ getFormattedMinDate() }} đến {{ getFormattedMaxDate() }}
-                </span>
-              </div>
             </div>
 
-            <!-- Configuration -->
-            <div class="simulation-config">
-              <h4>Cấu hình giao dịch</h4>
-              <div class="config-grid">
-                <div class="config-item capital-config">
-                  <label>Vốn ban đầu (đồng):</label>
-                  <input 
-                    type="text" 
-                    [value]="tradingConfig().initialCapital | number:'1.0-0'"
-                    (input)="updateTradingConfig({ initialCapital: parseCapitalInput($any($event.target).value) })"
-                    (blur)="formatCapitalInput($event)"
-                    class="capital-input">
-                  <div class="capital-helper" *ngIf="tradingConfig().initialCapital > 0">
-                    <i class="pi pi-info-circle"></i>
-                    <span>{{ getInitialCapitalText() }}</span>
+            <!-- TAB 2: RESULTS -->
+            <div class="backtest-tab-content" *ngIf="backtestActiveTab() === 'results'">
+              <div class="simulation-results" *ngIf="tradingResult()">
+                <!-- Summary Stats -->
+                <div class="results-summary">
+                  <div class="stat-card profit" [ngClass]="tradingResult()!.totalProfit >= 0 ? 'positive' : 'negative'">
+                    <label>Lãi/Lỗ:</label>
+                    <div class="stat-value">{{ formatCurrency(tradingResult()!.totalProfit) }}</div>
+                    <div class="stat-percent">{{ tradingResult()!.totalProfitPercent >= 0 ? '+' : '' }}{{ tradingResult()!.totalProfitPercent.toFixed(2) }}%</div>
                   </div>
-                  <div class="capital-presets">
-                    <button type="button" (click)="updateTradingConfig({ initialCapital: 50000000 })" 
-                            [class.active]="tradingConfig().initialCapital === 50000000">50M</button>
-                    <button type="button" (click)="updateTradingConfig({ initialCapital: 100000000 })"
-                            [class.active]="tradingConfig().initialCapital === 100000000">100M</button>
-                    <button type="button" (click)="updateTradingConfig({ initialCapital: 200000000 })"
-                            [class.active]="tradingConfig().initialCapital === 200000000">200M</button>
-                    <button type="button" (click)="updateTradingConfig({ initialCapital: 500000000 })"
-                            [class.active]="tradingConfig().initialCapital === 500000000">500M</button>
-                    <button type="button" (click)="updateTradingConfig({ initialCapital: 1000000000 })"
-                            [class.active]="tradingConfig().initialCapital === 1000000000">1B</button>
+                  <div class="stat-card">
+                    <label>Vốn ban đầu:</label>
+                    <div class="stat-value">{{ formatCurrency(tradingResult()!.initialCapital) }}</div>
+                  </div>
+                  <div class="stat-card">
+                    <label>Vốn cuối:</label>
+                    <div class="stat-value">{{ formatCurrency(tradingResult()!.finalCapital) }}</div>
+                  </div>
+                  <div class="stat-card">
+                    <label>Tổng giao dịch:</label>
+                    <div class="stat-value">{{ tradingResult()!.totalTrades }}</div>
+                  </div>
+                  <div class="stat-card">
+                    <label>Thắng:</label>
+                    <div class="stat-value positive">{{ tradingResult()!.winningTrades }}</div>
+                  </div>
+                  <div class="stat-card">
+                    <label>Thua:</label>
+                    <div class="stat-value negative">{{ tradingResult()!.losingTrades }}</div>
+                  </div>
+                  <div class="stat-card">
+                    <label>Tỷ lệ thắng:</label>
+                    <div class="stat-value">{{ tradingResult()!.winRate.toFixed(2) }}%</div>
+                  </div>
+                  <div class="stat-card">
+                    <label>Drawdown tối đa:</label>
+                    <div class="stat-value negative">{{ formatCurrency(tradingResult()!.maxDrawdown) }}</div>
+                    <div class="stat-percent">{{ tradingResult()!.maxDrawdownPercent.toFixed(2) }}%</div>
                   </div>
                 </div>
-                <div class="config-item">
-                  <label>Cắt lỗ (%):</label>
-                  <input 
-                    type="number" 
-                    [value]="tradingConfig().stopLossPercent"
-                    (input)="updateTradingConfig({ stopLossPercent: +$any($event.target).value })"
-                    min="1"
-                    max="20"
-                    step="0.5">
+
+                <!-- Transactions List -->
+                <div class="transactions-list" *ngIf="getTransactions().length > 0">
+                  <h5>Lịch sử giao dịch ({{ getTransactions().length }})</h5>
+                  <div class="transactions-table-wrapper">
+                    <table class="transactions-table">
+                      <thead>
+                        <tr>
+                          <th>Ngày</th>
+                          <th>Loại</th>
+                          <th>Số lượng</th>
+                          <th>Giá GD</th>
+                          <th>Tiền GD</th>
+                          <th>Tổng CP</th>
+                          <th>Giá TB</th>
+                          <th>Tiền còn</th>
+                          <th>Nắm giữ</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr *ngFor="let tx of getTransactions()" [ngClass]="tx.type === 'buy' ? 'transaction-buy' : 'transaction-sell'">
+                          <td class="date-cell">{{ tx.dateStr }}</td>
+                          <td>
+                            <span class="transaction-type" [ngClass]="'type-' + tx.type">
+                              {{ tx.type === 'buy' ? 'MUA' : 'BÁN' }}
+                            </span>
+                          </td>
+                          <td class="quantity-cell">{{ tx.quantity | number:'1.0-0' }}</td>
+                          <td class="price-cell">{{ formatPredictionPrice(tx.price) }}</td>
+                          <td class="amount-cell" [ngClass]="tx.type === 'buy' ? 'negative' : 'positive'">
+                            {{ tx.type === 'buy' ? '-' : '+' }}{{ formatCurrency(tx.transactionAmount) }}
+                          </td>
+                          <td class="shares-cell">
+                            <span class="shares-change">{{ tx.totalSharesBefore | number:'1.0-0' }} → {{ tx.totalSharesAfter | number:'1.0-0' }}</span>
+                          </td>
+                          <td class="avg-price-cell">
+                            {{ tx.avgPriceAfter > 0 ? formatPredictionPrice(tx.avgPriceAfter) : '-' }}
+                          </td>
+                          <td class="capital-cell">{{ formatCurrency(tx.capitalAfter) }}</td>
+                          <td class="holding-cell">{{ tx.holdingDays !== undefined ? tx.holdingDays + 'ngày' : '-' }}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
-                <div class="config-item">
-                  <label>Chốt lời (%):</label>
-                  <input 
-                    type="number" 
-                    [value]="tradingConfig().takeProfitPercent"
-                    (input)="updateTradingConfig({ takeProfitPercent: +$any($event.target).value })"
-                    min="1"
-                    max="50"
-                    step="0.5">
-                </div>
-                <div class="config-item" style="opacity: 0.6;">
-                  <label>Độ tin cậy tối thiểu (%):</label>
-                  <input 
-                    type="number" 
-                    [value]="tradingConfig().minConfidence * 100"
-                    (input)="updateTradingConfig({ minConfidence: +$any($event.target).value / 100 })"
-                    min="0"
-                    max="100"
-                    step="5"
-                    disabled>
-                  <small style="font-size: 11px; color: #6c757d;">Không dùng - Model tự quyết định mua/bán</small>
-                </div>
-                <div class="config-item">
-                  <label>Số vị thế tối đa:</label>
-                  <input 
-                    type="number" 
-                    [value]="tradingConfig().maxPositions"
-                    (input)="updateTradingConfig({ maxPositions: +$any($event.target).value })"
-                    min="1"
-                    max="10"
-                    step="1">
-                  <small style="font-size: 11px; color: #6c757d;">Số lần có thể mua đồng thời (tăng để mua bán liên tục)</small>
-                </div>
-                <div class="config-item">
-                  <label>T+ (ngày):</label>
-                  <input 
-                    type="number" 
-                    [value]="tradingConfig().tPlusDays"
-                    (input)="updateTradingConfig({ tPlusDays: +$any($event.target).value })"
-                    min="0"
-                    max="5"
-                    step="1">
-                  <small style="font-size: 11px; color: #6c757d;">Số ngày phải đợi sau khi mua mới được bán (T+2 = 2 ngày)</small>
+                
+                <!-- Action buttons -->
+                <div class="results-actions">
+                  <button class="btn" (click)="backtestActiveTab.set('chart')">
+                    <i class="pi pi-chart-line"></i>
+                    Xem biểu đồ
+                  </button>
+                  <button class="btn btn-secondary" (click)="backtestActiveTab.set('setup')">
+                    <i class="pi pi-cog"></i>
+                    Thay đổi cấu hình
+                  </button>
                 </div>
               </div>
-              <button
-                class="btn-simulate"
-                (click)="runTradingSimulation()"
-                [disabled]="!isNNReady() || isRunningSimulation() || isNNTraining()">
-                <i class="pi" [ngClass]="isRunningSimulation() ? 'pi-spin pi-spinner' : 'pi-play'"></i>
-                {{ isRunningSimulation() ? 'Đang chạy...' : 'Chạy mô phỏng' }}
-              </button>
-              <button
-                class="btn btn-load"
-                (click)="loadSavedSimulationResult()"
-                [disabled]="!selectedSymbol()">
-                <i class="pi pi-download"></i>
-                Load kết quả đã lưu
-              </button>
-            </div>
-
-            <!-- Results -->
-            <div class="simulation-results" *ngIf="tradingResult()">
-              <h4>Kết quả mô phỏng</h4>
               
-              <!-- Summary Stats -->
-              <div class="results-summary">
-                <div class="stat-card profit" [ngClass]="tradingResult()!.totalProfit >= 0 ? 'positive' : 'negative'">
-                  <label>Lãi/Lỗ:</label>
-                  <div class="stat-value">{{ formatCurrency(tradingResult()!.totalProfit) }}</div>
-                  <div class="stat-percent">{{ tradingResult()!.totalProfitPercent >= 0 ? '+' : '' }}{{ tradingResult()!.totalProfitPercent.toFixed(2) }}%</div>
-                </div>
-                <div class="stat-card">
-                  <label>Vốn ban đầu:</label>
-                  <div class="stat-value">{{ formatCurrency(tradingResult()!.initialCapital) }}</div>
-                </div>
-                <div class="stat-card">
-                  <label>Vốn cuối:</label>
-                  <div class="stat-value">{{ formatCurrency(tradingResult()!.finalCapital) }}</div>
-                </div>
-                <div class="stat-card">
-                  <label>Tổng giao dịch:</label>
-                  <div class="stat-value">{{ tradingResult()!.totalTrades }}</div>
-                </div>
-                <div class="stat-card">
-                  <label>Thắng:</label>
-                  <div class="stat-value positive">{{ tradingResult()!.winningTrades }}</div>
-                </div>
-                <div class="stat-card">
-                  <label>Thua:</label>
-                  <div class="stat-value negative">{{ tradingResult()!.losingTrades }}</div>
-                </div>
-                <div class="stat-card">
-                  <label>Tỷ lệ thắng:</label>
-                  <div class="stat-value">{{ tradingResult()!.winRate.toFixed(2) }}%</div>
-                </div>
-                <div class="stat-card">
-                  <label>Drawdown tối đa:</label>
-                  <div class="stat-value negative">{{ formatCurrency(tradingResult()!.maxDrawdown) }}</div>
-                  <div class="stat-percent">{{ tradingResult()!.maxDrawdownPercent.toFixed(2) }}%</div>
-                </div>
+              <!-- Empty state -->
+              <div class="empty-results" *ngIf="!tradingResult()">
+                <i class="pi pi-chart-bar"></i>
+                <p>Chưa có kết quả mô phỏng</p>
+                <button class="btn" (click)="backtestActiveTab.set('setup')">
+                  <i class="pi pi-cog"></i>
+                  Thiết lập và chạy mô phỏng
+                </button>
               </div>
+            </div>
 
-              <!-- Transactions List -->
-              <div class="transactions-list" *ngIf="getTransactions().length > 0">
-                <h5>Lịch sử giao dịch ({{ getTransactions().length }})</h5>
-                <div class="transactions-table-wrapper">
-                  <table class="transactions-table">
-                    <thead>
-                      <tr>
-                        <th>Ngày</th>
-                        <th>Loại</th>
-                        <th>Số lượng</th>
-                        <th>Giá GD</th>
-                        <th>Tiền GD</th>
-                        <th>Tổng CP</th>
-                        <th>Giá TB</th>
-                        <th>Tiền còn</th>
-                        <th>Nắm giữ</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr *ngFor="let tx of getTransactions()" [ngClass]="tx.type === 'buy' ? 'transaction-buy' : 'transaction-sell'">
-                        <td class="date-cell">{{ tx.dateStr }}</td>
-                        <td>
-                          <span class="transaction-type" [ngClass]="'type-' + tx.type">
-                            {{ tx.type === 'buy' ? 'MUA' : 'BÁN' }}
-                          </span>
-                        </td>
-                        <td class="quantity-cell">{{ tx.quantity | number:'1.0-0' }}</td>
-                        <td class="price-cell">{{ formatPredictionPrice(tx.price) }}</td>
-                        <td class="amount-cell" [ngClass]="tx.type === 'buy' ? 'negative' : 'positive'">
-                          {{ tx.type === 'buy' ? '-' : '+' }}{{ formatCurrency(tx.transactionAmount) }}
-                        </td>
-                        <td class="shares-cell">
-                          <span class="shares-change">{{ tx.totalSharesBefore | number:'1.0-0' }} → {{ tx.totalSharesAfter | number:'1.0-0' }}</span>
-                        </td>
-                        <td class="avg-price-cell">
-                          {{ tx.avgPriceAfter > 0 ? formatPredictionPrice(tx.avgPriceAfter) : '-' }}
-                        </td>
-                        <td class="capital-cell">{{ formatCurrency(tx.capitalAfter) }}</td>
-                        <td class="holding-cell">{{ tx.holdingDays !== undefined ? tx.holdingDays + 'ngày' : '-' }}</td>
-                      </tr>
-                    </tbody>
-                  </table>
+            <!-- TAB 3: CHART -->
+            <div class="backtest-tab-content backtest-chart-tab" *ngIf="backtestActiveTab() === 'chart'">
+              <div class="backtest-chart-container" *ngIf="tradingResult() && selectedSymbolPriceData()">
+                <div class="chart-header">
+                  <h4>
+                    <i class="pi pi-chart-line"></i>
+                    Biểu đồ giá với điểm mua/bán
+                  </h4>
+                  <div class="chart-legend-info">
+                    <span class="legend-item buy">
+                      <i class="pi pi-arrow-up"></i> Mua
+                    </span>
+                    <span class="legend-item sell">
+                      <i class="pi pi-arrow-down"></i> Bán
+                    </span>
+                  </div>
                 </div>
+                <app-tradingview-chart 
+                  [data]="selectedSymbolPriceData()"
+                  [symbol]="selectedSymbol()?.symbol || ''"
+                  [markers]="getChartMarkers()">
+                </app-tradingview-chart>
+              </div>
+              
+              <!-- Empty state -->
+              <div class="empty-results" *ngIf="!tradingResult()">
+                <i class="pi pi-chart-line"></i>
+                <p>Chưa có kết quả mô phỏng để hiển thị</p>
+                <button class="btn" (click)="backtestActiveTab.set('setup')">
+                  <i class="pi pi-cog"></i>
+                  Thiết lập và chạy mô phỏng
+                </button>
               </div>
             </div>
           </div>
