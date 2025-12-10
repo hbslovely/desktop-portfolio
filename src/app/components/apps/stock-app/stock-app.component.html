@@ -1596,9 +1596,28 @@
             </button>
           </div>
         </div>
+        
+        <!-- Loading more indicator -->
+        <div *ngIf="isLoadingMore()" class="loading-more">
+          <i class="pi pi-spin pi-spinner"></i>
+          <span>Đang tải thêm...</span>
+        </div>
+        
+        <!-- End of list indicator -->
+        <div *ngIf="!hasMoreData() && filteredSymbols().length > 0" class="end-of-list">
+          <span>Đã hiển thị tất cả {{ filteredSymbols().length }} / {{ paginationTotal() }} cổ phiếu</span>
+        </div>
       </cdk-virtual-scroll-viewport>
 
-      <div *ngIf="filteredSymbols().length === 0" class="empty">
+      <!-- Pagination info -->
+      <div *ngIf="!isLoading() && filteredSymbols().length > 0" class="pagination-info">
+        <span>Hiển thị {{ filteredSymbols().length }} / {{ paginationTotal() }} cổ phiếu</span>
+        <span *ngIf="hasMoreData()" class="scroll-hint">
+          <i class="pi pi-arrow-down"></i> Cuộn xuống để tải thêm
+        </span>
+      </div>
+
+      <div *ngIf="filteredSymbols().length === 0 && !isLoading()" class="empty">
         <i class="pi pi-inbox"></i>
         <p>Không tìm thấy cổ phiếu nào</p>
       </div>

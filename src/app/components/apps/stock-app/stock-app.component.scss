@@ -656,6 +656,67 @@ $green-border: #81c784;
   }
 }
 
+// Loading more indicator (inside virtual scroll)
+.loading-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 20px;
+  color: $dark-green;
+  font-size: 14px;
+
+  i {
+    font-size: 18px;
+  }
+}
+
+// End of list indicator
+.end-of-list {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  color: #999;
+  font-size: 13px;
+  border-top: 1px dashed #e0e0e0;
+  margin-top: 8px;
+}
+
+// Pagination info bar
+.pagination-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: linear-gradient(to right, $green-bg, #fff);
+  border-top: 1px solid #e8e8e8;
+  font-size: 13px;
+  color: #666;
+
+  .scroll-hint {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: $dark-green;
+    font-weight: 500;
+    animation: bounce 1.5s infinite;
+
+    i {
+      font-size: 12px;
+    }
+  }
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(3px);
+  }
+}
+
 .empty {
   display: flex;
   flex-direction: column;

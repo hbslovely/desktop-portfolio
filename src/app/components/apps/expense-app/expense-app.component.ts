@@ -184,10 +184,12 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     return dateFrom && dateTo && dateFrom === dateTo;
   });
 
-  // Tabs
+  // Screens and Tabs
+  currentScreen = signal<'transactions' | 'insights'>('transactions'); // Screen 1: Giao dịch, Screen 2: Insights
   activeTab = signal<'list' | 'summary' | 'budget' | 'insights'>('list');
-  currentView = signal<'main' | 'insights'>('main'); // Main view (list/summary) or Insights view (budget/insights)
-  insightsActiveTab = signal<'budget' | 'insights'>('budget'); // Active tab within insights view
+  // Legacy signals (kept for compatibility)
+  currentView = signal<'main' | 'insights'>('main'); 
+  insightsActiveTab = signal<'budget' | 'insights'>('budget');
   
   // Month/Year picker for insights view
   insightsYear = signal<number>(new Date().getFullYear());
@@ -334,6 +336,19 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       years.push(y);
     }
     return years;
+  }
+
+  // Check if report period is this month
+  isThisMonthReport(): boolean {
+    const now = new Date();
+    return this.reportYear() === now.getFullYear() && this.reportMonth() === (now.getMonth() + 1);
+  }
+
+  // Check if report period is last month
+  isLastMonthReport(): boolean {
+    const now = new Date();
+    const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    return this.reportYear() === lastMonth.getFullYear() && this.reportMonth() === (lastMonth.getMonth() + 1);
   }
 
   // Sorting for expenses list
@@ -1031,15 +1046,23 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
   // ============ BUDGET COMPUTED VALUES ============
 
-  // Get current month's expenses
+  // Get selected month's expenses (based on reportMonth/reportYear)
   currentMonthExpenses = computed(() => {
-    const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
-    
+    const year = this.reportYear();
+    const month = this.reportMonth();
+
+    // If viewing whole year, return all expenses for that year
+    if (month === null) {
+      return this.expenses().filter(expense => {
+        const expenseDate = new Date(expense.date);
+        return expenseDate.getFullYear() === year;
+      });
+    }
+
+    // Otherwise filter by specific month
     return this.expenses().filter(expense => {
       const expenseDate = new Date(expense.date);
-      return expenseDate.getMonth() === currentMonth && expenseDate.getFullYear() === currentYear;
+      return expenseDate.getMonth() === (month - 1) && expenseDate.getFullYear() === year;
     });
   });
 
@@ -1065,11 +1088,25 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     return this.monthlyBudget() - this.monthlySpent();
   });
 
-  // Remaining days in current month
+  // Remaining days in selected month
   remainingDaysInMonth = computed(() => {
+    const year = this.reportYear();
+    const month = this.reportMonth();
     const now = new Date();
-    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-    return lastDay.getDate() - now.getDate();
+
+    // If viewing whole year or a past month, return 0
+    if (month === null) return 0;
+    
+    const isCurrentMonth = year === now.getFullYear() && month === (now.getMonth() + 1);
+    
+    if (isCurrentMonth) {
+      const lastDay = new Date(year, month, 0);
+      return lastDay.getDate() - now.getDate();
+    }
+    
+    // For past/future months, return total days in month
+    const lastDay = new Date(year, month, 0);
+    return lastDay.getDate();
   });
 
   // Daily budget suggestion
@@ -2705,6 +2742,24 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         this.showNotificationDialog('Lỗi: Không thể cập nhật chi tiêu. Vui lòng kiểm tra kết nối hoặc quyền truy cập Google Sheets.', 'error');
       }
     });
+  }
+
+  /**
+   * Switch screen (Giao dịch or Insights)
+   */
+  switchScreen(screen: 'transactions' | 'insights'): void {
+    this.currentScreen.set(screen);
+    
+    // Set default tab for each screen
+    if (screen === 'transactions') {
+      this.activeTab.set('list');
+    } else {
+      this.activeTab.set('budget');
+      // Initialize budget chart when switching to insights screen
+      setTimeout(() => {
+        this.initBudgetTrendChart();
+      }, 100);
+    }
   }
 
   /**
@@ -5023,12 +5078,17 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   // ============ BUDGET METHODS ============
 
   /**
-   * Get current month name in Vietnamese
+   * Get selected month name for budget display
    */
   getCurrentMonthName(): string {
-    const months = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
-    const now = new Date();
-    return months[now.getMonth()] + '/' + now.getFullYear();
+    const year = this.reportYear();
+    const month = this.reportMonth();
+    
+    if (month === null) {
+      return `năm ${year}`;
+    }
+    
+    return `${month}/${year}`;
   }
 
   /**
@@ -5669,8 +5729,14 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       this.budgetTrendChart.destroy();
     }
 
+    const year = this.reportYear();
+    const month = this.reportMonth();
     const now = new Date();
-    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    
+    // If viewing whole year, don't show the chart
+    if (month === null) return;
+
+    const daysInMonth = new Date(year, month, 0).getDate();
     const labels: string[] = [];
     const budgetLine: number[] = [];
     const actualSpending: number[] = [];
@@ -5679,7 +5745,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const dailyBudget = this.monthlyBudget() / daysInMonth;
     let cumulativeBudget = 0;
     
-    // Get actual daily spending for current month
+    // Get actual daily spending for selected month
     const monthExpenses = this.currentMonthExpenses();
     const dailyTotals: { [key: number]: number } = {};
     
@@ -5689,14 +5755,17 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     });
     
     let cumulativeActual = 0;
-    const today = now.getDate();
+    
+    // Determine how many days to show actual spending
+    const isCurrentMonth = year === now.getFullYear() && month === (now.getMonth() + 1);
+    const lastDayWithData = isCurrentMonth ? now.getDate() : daysInMonth;
     
     for (let day = 1; day <= daysInMonth; day++) {
       labels.push(day.toString());
       cumulativeBudget += dailyBudget;
       budgetLine.push(Math.round(cumulativeBudget));
       
-      if (day <= today) {
+      if (day <= lastDayWithData) {
         cumulativeActual += dailyTotals[day] || 0;
         actualSpending.push(cumulativeActual);
       }
