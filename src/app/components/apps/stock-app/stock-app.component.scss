@@ -1502,6 +1502,188 @@ $green-border: #81c784;
   }
 }
 
+// Backtest Section Styles
+.backtest-section {
+  .backtest-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #e9ecef;
+    padding-bottom: 12px;
+  }
+
+  .backtest-tab-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border: none;
+    background: #f8f9fa;
+    color: #6c757d;
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: 8px 8px 0 0;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+
+    i {
+      font-size: 16px;
+    }
+
+    .badge-count {
+      background: $dark-green;
+      color: white;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-weight: 600;
+    }
+
+    &:hover:not(:disabled) {
+      background: #e9ecef;
+      color: #495057;
+    }
+
+    &.active {
+      background: $dark-green;
+      color: white;
+
+      .badge-count {
+        background: white;
+        color: $dark-green;
+      }
+
+      &::after {
+        content: '';
+        position: absolute;
+        bottom: -14px;
+        left: 50%;
+        transform: translateX(-50%);
+        border: 6px solid transparent;
+        border-top-color: $dark-green;
+      }
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+
+  .backtest-tab-content {
+    animation: fadeIn 0.3s ease;
+  }
+
+  .simulation-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 20px;
+  }
+
+  .results-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid #e9ecef;
+  }
+
+  .empty-results {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    text-align: center;
+    color: #6c757d;
+
+    i {
+      font-size: 64px;
+      margin-bottom: 16px;
+      opacity: 0.3;
+    }
+
+    p {
+      font-size: 16px;
+      margin: 0 0 20px 0;
+    }
+  }
+
+  // Chart Tab Specific Styles
+  .backtest-chart-tab {
+    .backtest-chart-container {
+      background: #131722;
+      border-radius: 8px;
+      overflow: hidden;
+
+      .chart-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px 20px;
+        background: #1e222d;
+        border-bottom: 1px solid #2a2e39;
+
+        h4 {
+          margin: 0;
+          color: #d1d4dc;
+          font-size: 16px;
+          font-weight: 600;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+
+          i {
+            color: #2962ff;
+          }
+        }
+
+        .chart-legend-info {
+          display: flex;
+          gap: 20px;
+
+          .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            font-weight: 500;
+
+            i {
+              font-size: 12px;
+            }
+
+            &.buy {
+              color: #26a69a;
+            }
+
+            &.sell {
+              color: #ef5350;
+            }
+          }
+        }
+      }
+
+      app-tradingview-chart {
+        display: block;
+        height: 500px;
+      }
+    }
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .trading-simulation-section {
   padding: 20px;
   background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
