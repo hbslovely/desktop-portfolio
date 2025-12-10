@@ -134,6 +134,8 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
       referencePrice: number,
       ceilingPrice: number,
       floorPrice: number,
+      changeValue: number,
+      changePercent: number,
       openColorClass: string,
       highColorClass: string,
       lowColorClass: string,
@@ -144,13 +146,15 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
       closeFormatted: string
     }> = [];
 
+    // Data is sorted oldest to newest, so i-1 is the previous trading day
     for (let i = 0; i < priceData.t.length; i++) {
       const timestamp = priceData.t[i];
       const date = new Date(timestamp * 1000);
       const dateStr = this.formatDateVN(date);
 
-      // Reference price = previous day's close price
-      const referencePrice = i > 0 ? (priceData.c[i - 1] || 0) : (priceData.c[i] || 0);
+      // Reference price = previous trading day's close price
+      // For the first record, use the open price as reference (no previous data)
+      const referencePrice = i > 0 ? (priceData.c[i - 1] || 0) : (priceData.o[i] || 0);
 
       // Calculate ceiling and floor (typically ±7% for HOSE/HNX, ±10% for UPCOM)
       // Using 7% as default
@@ -162,6 +166,10 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
       const low = priceData.l[i] || 0;
       const close = priceData.c[i] || 0;
 
+      // Calculate daily change (close vs reference)
+      const changeValue = close - referencePrice;
+      const changePercent = referencePrice > 0 ? (changeValue / referencePrice) * 100 : 0;
+
       result.push({
         date: dateStr,
         open,
@@ -172,6 +180,8 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
         referencePrice,
         ceilingPrice,
         floorPrice,
+        changeValue,
+        changePercent,
         openColorClass: this.getPriceColorClass(open, referencePrice, ceilingPrice, floorPrice),
         highColorClass: this.getPriceColorClass(high, referencePrice, ceilingPrice, floorPrice),
         lowColorClass: this.getPriceColorClass(low, referencePrice, ceilingPrice, floorPrice),
@@ -382,202 +392,161 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   /**
-   * Load symbols from all exchanges and merge with stock data from API
+   * Load symbols from internal API only (api/stocks-v2/list)
+   * DNSE API is only called on days 10-20 of the month to sync new stocks
    */
   loadSymbols() {
     this.isLoading.set(true);
 
-    // Load both symbols from exchanges and stock data from API
-    this.dnseService.getAllSymbols().subscribe({
-      next: (results) => {
-        const allSymbols: SymbolWithStatus[] = [];
-        const symbolMap = new Map<string, SymbolWithStatus>();
-
-        // First, add all symbols from exchanges and merge duplicates
-        results.forEach(({ exchange, symbols }) => {
-          symbols.forEach(symbol => {
-            const symbolStr = typeof symbol === 'string' ? symbol : symbol.symbol;
-            const symbolKey = symbolStr.toUpperCase();
-            const existingSymbol = symbolMap.get(symbolKey);
-
-            if (existingSymbol) {
-              // Merge: combine exchanges and merge information
-              if (Array.isArray(existingSymbol.exchange)) {
-                if (!existingSymbol.exchange.includes(exchange)) {
-                  existingSymbol.exchange.push(exchange);
-                }
-              } else {
-                if (existingSymbol.exchange !== exchange) {
-                  existingSymbol.exchange = [existingSymbol.exchange, exchange];
-                }
-              }
-              // Merge name if not set
-              if (!existingSymbol.name && typeof symbol === 'object' && symbol.name) {
-                existingSymbol.name = symbol.name;
-              }
-            } else {
-              // Create new symbol
-              const symbolWithStatus: SymbolWithStatus = {
-                symbol: symbolStr,
-                name: typeof symbol === 'object' ? symbol.name : undefined,
-                exchange,
-                isFetched: false // Will be updated by checkFetchedStatus
-              };
-              symbolMap.set(symbolKey, symbolWithStatus);
-              allSymbols.push(symbolWithStatus);
+    // Only load from internal API (api/stocks-v2/list)
+    this.dnseService.getAllStockData().subscribe({
+      next: (stocks) => {
+        // Deduplicate stocks by symbol
+        const uniqueStocksMap = new Map<string, any>();
+        stocks.forEach((stock: any) => {
+          if (stock && stock.symbol) {
+            const symbolKey = stock.symbol.toUpperCase();
+            const existing = uniqueStocksMap.get(symbolKey);
+            if (!existing || (stock.fullData || stock.basicInfo) && !(existing.fullData || existing.basicInfo)) {
+              uniqueStocksMap.set(symbolKey, stock);
             }
-          });
-        });
-
-        // Then, load stock data from API and merge
-        this.dnseService.getAllStockData().subscribe({
-          next: (stocks) => {
-            // Deduplicate stocks by symbol first to avoid processing duplicates
-            const uniqueStocksMap = new Map<string, any>();
-            stocks.forEach((stock: any) => {
-              if (stock && stock.symbol) {
-                const symbolKey = stock.symbol.toUpperCase();
-                // Keep the stock with more complete data (has fullData or basicInfo)
-                const existing = uniqueStocksMap.get(symbolKey);
-                if (!existing || (stock.fullData || stock.basicInfo) && !(existing.fullData || existing.basicInfo)) {
-                  uniqueStocksMap.set(symbolKey, stock);
-                }
-              }
-            });
-
-            // Process unique stocks
-            uniqueStocksMap.forEach((stock: any) => {
-              if (stock && stock.symbol) {
-                const symbolKey = stock.symbol.toUpperCase();
-                const existingSymbol = symbolMap.get(symbolKey);
-
-                if (existingSymbol) {
-                  // Update existing symbol with fetched data
-                  existingSymbol.isFetched = true;
-                  // Merge exchange if different
-                  const stockExchange = (stock.basicInfo?.exchange || 'hose') as ExchangeType;
-                  if (Array.isArray(existingSymbol.exchange)) {
-                    if (!existingSymbol.exchange.includes(stockExchange)) {
-                      existingSymbol.exchange.push(stockExchange);
-                    }
-                  } else {
-                    if (existingSymbol.exchange.toLowerCase() !== stockExchange.toLowerCase()) {
-                      existingSymbol.exchange = [existingSymbol.exchange, stockExchange];
-                    }
-                  }
-                  // Merge basicInfo - prefer existing data if available, otherwise use new data
-                  existingSymbol.basicInfo = {
-                    companyName: existingSymbol.basicInfo?.companyName || stock.basicInfo?.companyName || stock.fullData?.['pageProps.companyInfo.fullName'] || stock.fullData?.['pageProps.companyInfo.name'],
-                    exchange: stock.basicInfo?.exchange || (Array.isArray(existingSymbol.exchange) ? existingSymbol.exchange[0] : existingSymbol.exchange),
-                    matchPrice: existingSymbol.basicInfo?.matchPrice || stock.basicInfo?.matchPrice,
-                    changedValue: existingSymbol.basicInfo?.changedValue || stock.basicInfo?.changedValue,
-                    changedRatio: existingSymbol.basicInfo?.changedRatio || stock.basicInfo?.changedRatio,
-                    totalVolume: existingSymbol.basicInfo?.totalVolume || stock.basicInfo?.totalVolume,
-                    marketCap: existingSymbol.basicInfo?.marketCap || stock.basicInfo?.marketCap,
-                    beta: existingSymbol.basicInfo?.beta || stock.basicInfo?.beta,
-                    eps: existingSymbol.basicInfo?.eps || stock.basicInfo?.eps,
-                    pe: existingSymbol.basicInfo?.pe || stock.basicInfo?.pe,
-                    pb: existingSymbol.basicInfo?.pb || stock.basicInfo?.pb,
-                    roe: existingSymbol.basicInfo?.roe || stock.basicInfo?.roe,
-                    roa: existingSymbol.basicInfo?.roa || stock.basicInfo?.roa,
-                    fullData: existingSymbol.basicInfo?.fullData || stock.fullData
-                  };
-                } else {
-                  // Add new symbol from API (not in exchange list)
-                  const newSymbol: SymbolWithStatus = {
-                    symbol: stock.symbol,
-                    name: stock.basicInfo?.companyName || stock.fullData?.['pageProps.companyInfo.fullName'],
-                    exchange: (stock.basicInfo?.exchange || 'hose') as ExchangeType,
-                    isFetched: true,
-                    basicInfo: {
-                      companyName: stock.basicInfo?.companyName || stock.fullData?.['pageProps.companyInfo.fullName'],
-                      exchange: stock.basicInfo?.exchange || 'hose',
-                      matchPrice: stock.basicInfo?.matchPrice,
-                      changedValue: stock.basicInfo?.changedValue,
-                      changedRatio: stock.basicInfo?.changedRatio,
-                      totalVolume: stock.basicInfo?.totalVolume,
-                      marketCap: stock.basicInfo?.marketCap,
-                      beta: stock.basicInfo?.beta,
-                      eps: stock.basicInfo?.eps,
-                      pe: stock.basicInfo?.pe,
-                      pb: stock.basicInfo?.pb,
-                      roe: stock.basicInfo?.roe,
-                      roa: stock.basicInfo?.roa,
-                      fullData: stock.fullData
-                    }
-                  };
-                  symbolMap.set(symbolKey, newSymbol);
-                  allSymbols.push(newSymbol);
-                }
-              }
-            });
-
-            // Ensure unique symbols - remove duplicates by symbol key
-            const uniqueSymbolsMap = new Map<string, SymbolWithStatus>();
-            allSymbols.forEach(symbol => {
-              const symbolKey = symbol.symbol.toUpperCase();
-              const existing = uniqueSymbolsMap.get(symbolKey);
-
-              if (existing) {
-                // Merge exchanges if different
-                const existingExchanges = Array.isArray(existing.exchange)
-                  ? existing.exchange
-                  : [existing.exchange];
-                const newExchanges = Array.isArray(symbol.exchange)
-                  ? symbol.exchange
-                  : [symbol.exchange];
-
-                // Combine and deduplicate exchanges
-                const allExchanges = [...existingExchanges, ...newExchanges];
-                const uniqueExchanges = Array.from(new Set(allExchanges));
-                existing.exchange = uniqueExchanges.length === 1 ? uniqueExchanges[0] : uniqueExchanges;
-
-                // Merge basicInfo - prefer data from fetched symbol
-                if (symbol.isFetched && !existing.isFetched) {
-                  existing.isFetched = true;
-                  existing.basicInfo = symbol.basicInfo || existing.basicInfo;
-                } else if (symbol.isFetched && existing.isFetched) {
-                  // Both fetched - merge basicInfo, prefer non-null values
-                  existing.basicInfo = {
-                    ...existing.basicInfo,
-                    ...symbol.basicInfo,
-                    companyName: symbol.basicInfo?.companyName || existing.basicInfo?.companyName,
-                    fullData: symbol.basicInfo?.fullData || existing.basicInfo?.fullData
-                  };
-                }
-
-                // Merge name if not set
-                if (!existing.name && symbol.name) {
-                  existing.name = symbol.name;
-                }
-              } else {
-                uniqueSymbolsMap.set(symbolKey, { ...symbol });
-              }
-            });
-
-            // Convert map back to array
-            const uniqueSymbols = Array.from(uniqueSymbolsMap.values());
-
-            this.allSymbols.set(uniqueSymbols);
-            this.applyFilters();
-            this.updateFetchedCount();
-            this.updateExchangeCounts();
-            this.isLoading.set(false);
-          },
-          error: (error) => {
-            console.error('Error loading stock data:', error);
-            // Continue with symbols only
-            this.allSymbols.set(allSymbols);
-            this.applyFilters();
-            this.updateFetchedCount();
-            this.updateExchangeCounts();
-            this.isLoading.set(false);
           }
         });
+
+        // Convert stocks to SymbolWithStatus array
+        const allSymbols: SymbolWithStatus[] = [];
+        uniqueStocksMap.forEach((stock: any) => {
+          const symbol: SymbolWithStatus = {
+            symbol: stock.symbol,
+            name: stock.basicInfo?.companyName || stock.fullData?.['pageProps.companyInfo.fullName'],
+            exchange: (stock.basicInfo?.exchange || 'hose') as ExchangeType,
+            isFetched: !!(stock.priceData || stock.fullData),
+            basicInfo: {
+              companyName: stock.basicInfo?.companyName || stock.fullData?.['pageProps.companyInfo.fullName'],
+              exchange: stock.basicInfo?.exchange || 'hose',
+              matchPrice: stock.basicInfo?.matchPrice,
+              changedValue: stock.basicInfo?.changedValue,
+              changedRatio: stock.basicInfo?.changedRatio,
+              totalVolume: stock.basicInfo?.totalVolume,
+              marketCap: stock.basicInfo?.marketCap,
+              beta: stock.basicInfo?.beta,
+              eps: stock.basicInfo?.eps,
+              pe: stock.basicInfo?.pe,
+              pb: stock.basicInfo?.pb,
+              roe: stock.basicInfo?.roe,
+              roa: stock.basicInfo?.roa,
+              fullData: stock.fullData
+            }
+          };
+          allSymbols.push(symbol);
+        });
+
+        this.allSymbols.set(allSymbols);
+        this.applyFilters();
+        this.updateFetchedCount();
+        this.updateExchangeCounts();
+        this.isLoading.set(false);
+
+        // Check if we should sync with DNSE (days 10-20 of month)
+        this.checkAndSyncDNSE();
       },
       error: (error) => {
-        console.error('Error loading symbols:', error);
+        console.error('Error loading stock data:', error);
+        this.allSymbols.set([]);
+        this.applyFilters();
         this.isLoading.set(false);
+        
+        // Still try to sync with DNSE if in window
+        this.checkAndSyncDNSE();
+      }
+    });
+  }
+
+  /**
+   * Check if we should sync with DNSE API and do it if needed
+   * Only syncs on days 10-20 of the month, and only once per month
+   */
+  private checkAndSyncDNSE() {
+    if (this.dnseService.shouldSyncWithDNSE()) {
+      console.log('🔄 DNSE sync window (days 10-20) - checking for new stocks...');
+      
+      this.dnseService.syncNewStocksFromDNSE().subscribe({
+        next: (result) => {
+          if (result.synced) {
+            if (result.newSymbols.length > 0) {
+              console.log(`✅ Synced ${result.newSymbols.length} new stocks from DNSE:`, result.newSymbols);
+              // Reload symbols to include new ones
+              this.loadSymbolsWithoutDNSESync();
+            } else {
+              console.log(`✅ DNSE sync complete. No new stocks found (${result.totalFromDNSE} total in DNSE)`);
+            }
+          }
+        },
+        error: (error) => {
+          console.error('Error syncing with DNSE:', error);
+        }
+      });
+    } else {
+      const today = new Date();
+      const dayOfMonth = today.getDate();
+      if (dayOfMonth < 10) {
+        console.log(`📅 DNSE sync skipped - waiting for sync window (current: day ${dayOfMonth}, window: days 10-20)`);
+      } else if (dayOfMonth > 20) {
+        console.log(`📅 DNSE sync skipped - window passed (current: day ${dayOfMonth}, window: days 10-20)`);
+      } else {
+        console.log(`📅 DNSE sync skipped - already synced this month`);
+      }
+    }
+  }
+
+  /**
+   * Load symbols without triggering DNSE sync (used after sync completes)
+   */
+  private loadSymbolsWithoutDNSESync() {
+    this.dnseService.getAllStockData().subscribe({
+      next: (stocks) => {
+        const uniqueStocksMap = new Map<string, any>();
+        stocks.forEach((stock: any) => {
+          if (stock && stock.symbol) {
+            const symbolKey = stock.symbol.toUpperCase();
+            const existing = uniqueStocksMap.get(symbolKey);
+            if (!existing || (stock.fullData || stock.basicInfo) && !(existing.fullData || existing.basicInfo)) {
+              uniqueStocksMap.set(symbolKey, stock);
+            }
+          }
+        });
+
+        const allSymbols: SymbolWithStatus[] = [];
+        uniqueStocksMap.forEach((stock: any) => {
+          const symbol: SymbolWithStatus = {
+            symbol: stock.symbol,
+            name: stock.basicInfo?.companyName || stock.fullData?.['pageProps.companyInfo.fullName'],
+            exchange: (stock.basicInfo?.exchange || 'hose') as ExchangeType,
+            isFetched: !!(stock.priceData || stock.fullData),
+            basicInfo: {
+              companyName: stock.basicInfo?.companyName || stock.fullData?.['pageProps.companyInfo.fullName'],
+              exchange: stock.basicInfo?.exchange || 'hose',
+              matchPrice: stock.basicInfo?.matchPrice,
+              changedValue: stock.basicInfo?.changedValue,
+              changedRatio: stock.basicInfo?.changedRatio,
+              totalVolume: stock.basicInfo?.totalVolume,
+              marketCap: stock.basicInfo?.marketCap,
+              beta: stock.basicInfo?.beta,
+              eps: stock.basicInfo?.eps,
+              pe: stock.basicInfo?.pe,
+              pb: stock.basicInfo?.pb,
+              roe: stock.basicInfo?.roe,
+              roa: stock.basicInfo?.roa,
+              fullData: stock.fullData
+            }
+          };
+          allSymbols.push(symbol);
+        });
+
+        this.allSymbols.set(allSymbols);
+        this.applyFilters();
+        this.updateFetchedCount();
+        this.updateExchangeCounts();
       }
     });
   }
@@ -3493,6 +3462,108 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
    */
   updateTradingConfig(config: Partial<TradingConfig>) {
     this.tradingConfig.update(current => ({ ...current, ...config }));
+  }
+
+  /**
+   * Convert number to Vietnamese text
+   * Example: 10000000 -> "Mười triệu đồng"
+   */
+  numberToVietnameseText(num: number): string {
+    if (num === 0) return 'Không đồng';
+    if (num < 0) return 'Âm ' + this.numberToVietnameseText(-num);
+
+    const units = ['', 'nghìn', 'triệu', 'tỷ', 'nghìn tỷ', 'triệu tỷ'];
+    const digits = ['không', 'một', 'hai', 'ba', 'bốn', 'năm', 'sáu', 'bảy', 'tám', 'chín'];
+
+    const readThreeDigits = (n: number, showZeroHundred: boolean = false): string => {
+      if (n === 0) return '';
+      
+      const hundred = Math.floor(n / 100);
+      const ten = Math.floor((n % 100) / 10);
+      const unit = n % 10;
+      
+      let result = '';
+      
+      // Hundreds
+      if (hundred > 0 || showZeroHundred) {
+        result += digits[hundred] + ' trăm ';
+      }
+      
+      // Tens
+      if (ten === 0 && unit > 0 && hundred > 0) {
+        result += 'lẻ ';
+      } else if (ten === 1) {
+        result += 'mười ';
+      } else if (ten > 1) {
+        result += digits[ten] + ' mươi ';
+      }
+      
+      // Units
+      if (unit === 1 && ten > 1) {
+        result += 'mốt';
+      } else if (unit === 4 && ten > 1) {
+        result += 'tư';
+      } else if (unit === 5 && ten > 0) {
+        result += 'lăm';
+      } else if (unit > 0) {
+        result += digits[unit];
+      }
+      
+      return result.trim();
+    };
+
+    const parts: string[] = [];
+    let remaining = num;
+    let unitIndex = 0;
+
+    while (remaining > 0) {
+      const part = remaining % 1000;
+      remaining = Math.floor(remaining / 1000);
+
+      if (part > 0) {
+        const text = readThreeDigits(part, unitIndex > 0 && remaining > 0);
+        if (text) {
+          parts.unshift(text + (units[unitIndex] ? ' ' + units[unitIndex] : ''));
+        }
+      } else if (unitIndex > 0 && remaining > 0) {
+        // Handle zeros in between (e.g., 1,000,000 should not skip "nghìn")
+      }
+
+      unitIndex++;
+    }
+
+    let result = parts.join(' ').trim();
+    
+    // Capitalize first letter
+    result = result.charAt(0).toUpperCase() + result.slice(1);
+    
+    return result + ' đồng';
+  }
+
+  /**
+   * Get Vietnamese text for initial capital
+   */
+  getInitialCapitalText(): string {
+    const capital = this.tradingConfig().initialCapital;
+    return this.numberToVietnameseText(capital);
+  }
+
+  /**
+   * Parse capital input (remove formatting)
+   */
+  parseCapitalInput(value: string): number {
+    // Remove all non-digit characters
+    const cleaned = value.replace(/[^\d]/g, '');
+    return parseInt(cleaned, 10) || 0;
+  }
+
+  /**
+   * Format capital input on blur
+   */
+  formatCapitalInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const value = this.tradingConfig().initialCapital;
+    input.value = value.toLocaleString('vi-VN');
   }
 
   /**

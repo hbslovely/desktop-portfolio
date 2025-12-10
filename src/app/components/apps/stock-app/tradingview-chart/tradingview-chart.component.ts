@@ -22,7 +22,9 @@ import {
   ColorType,
   LineStyle,
   CandlestickSeries,
-  HistogramSeries
+  HistogramSeries,
+  LineSeries,
+  LineData
 } from 'lightweight-charts';
 
 export interface OHLCData {
@@ -43,6 +45,22 @@ interface ChartTooltipData {
   volume: number;
   change: number;
   changePercent: number;
+}
+
+interface IndicatorSettings {
+  ma: { enabled: boolean; period: number; color: string };
+  ema: { enabled: boolean; period: number; color: string };
+  bb: { enabled: boolean; period: number; stdDev: number; color: string };
+  sma2: { enabled: boolean; period: number; color: string };
+}
+
+interface ChartThemeSettings {
+  preset: 'dark' | 'light' | 'tradingview' | 'custom';
+  background: string;
+  upColor: string;
+  downColor: string;
+  gridColor: string;
+  textColor: string;
 }
 
 @Component({
@@ -86,6 +104,238 @@ interface ChartTooltipData {
           </button>
           <button (click)="toggleVolume()" [class.active]="showVolume()" title="Hiển thị khối lượng">
             <i class="pi pi-chart-bar"></i> Vol
+          </button>
+          <button (click)="toggleIndicatorPanel()" [class.active]="showIndicatorPanel()" title="Chỉ báo kỹ thuật">
+            <i class="pi pi-sliders-h"></i> Chỉ báo
+          </button>
+        </div>
+      </div>
+
+      <!-- Indicator Settings Panel -->
+      <div class="indicator-panel" *ngIf="showIndicatorPanel()">
+        <div class="indicator-panel-header">
+          <span>Cài đặt chỉ báo kỹ thuật</span>
+          <button class="close-btn" (click)="showIndicatorPanel.set(false)">
+            <i class="pi pi-times"></i>
+          </button>
+        </div>
+        <div class="indicator-panel-body">
+          <!-- MA Settings -->
+          <div class="indicator-group">
+            <div class="indicator-header">
+              <label class="indicator-toggle">
+                <input type="checkbox" [checked]="indicators().ma.enabled" 
+                       (change)="toggleIndicator('ma')">
+                <span class="toggle-label">MA (Moving Average)</span>
+              </label>
+              <div class="indicator-color" [style.background]="indicators().ma.color"></div>
+            </div>
+            <div class="indicator-settings" *ngIf="indicators().ma.enabled">
+              <div class="setting-row">
+                <label>Chu kỳ:</label>
+                <input type="number" [value]="indicators().ma.period" 
+                       (input)="updateIndicator('ma', 'period', +$any($event.target).value)"
+                       min="5" max="200" step="1">
+              </div>
+              <div class="setting-row">
+                <label>Màu:</label>
+                <input type="color" [value]="indicators().ma.color"
+                       (input)="updateIndicator('ma', 'color', $any($event.target).value)">
+              </div>
+              <div class="period-presets">
+                <button (click)="updateIndicator('ma', 'period', 10)" [class.active]="indicators().ma.period === 10">MA10</button>
+                <button (click)="updateIndicator('ma', 'period', 20)" [class.active]="indicators().ma.period === 20">MA20</button>
+                <button (click)="updateIndicator('ma', 'period', 50)" [class.active]="indicators().ma.period === 50">MA50</button>
+                <button (click)="updateIndicator('ma', 'period', 100)" [class.active]="indicators().ma.period === 100">MA100</button>
+                <button (click)="updateIndicator('ma', 'period', 200)" [class.active]="indicators().ma.period === 200">MA200</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- EMA Settings -->
+          <div class="indicator-group">
+            <div class="indicator-header">
+              <label class="indicator-toggle">
+                <input type="checkbox" [checked]="indicators().ema.enabled"
+                       (change)="toggleIndicator('ema')">
+                <span class="toggle-label">EMA (Exponential MA)</span>
+              </label>
+              <div class="indicator-color" [style.background]="indicators().ema.color"></div>
+            </div>
+            <div class="indicator-settings" *ngIf="indicators().ema.enabled">
+              <div class="setting-row">
+                <label>Chu kỳ:</label>
+                <input type="number" [value]="indicators().ema.period"
+                       (input)="updateIndicator('ema', 'period', +$any($event.target).value)"
+                       min="5" max="200" step="1">
+              </div>
+              <div class="setting-row">
+                <label>Màu:</label>
+                <input type="color" [value]="indicators().ema.color"
+                       (input)="updateIndicator('ema', 'color', $any($event.target).value)">
+              </div>
+              <div class="period-presets">
+                <button (click)="updateIndicator('ema', 'period', 12)" [class.active]="indicators().ema.period === 12">EMA12</button>
+                <button (click)="updateIndicator('ema', 'period', 26)" [class.active]="indicators().ema.period === 26">EMA26</button>
+                <button (click)="updateIndicator('ema', 'period', 50)" [class.active]="indicators().ema.period === 50">EMA50</button>
+                <button (click)="updateIndicator('ema', 'period', 200)" [class.active]="indicators().ema.period === 200">EMA200</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bollinger Bands Settings -->
+          <div class="indicator-group">
+            <div class="indicator-header">
+              <label class="indicator-toggle">
+                <input type="checkbox" [checked]="indicators().bb.enabled"
+                       (change)="toggleIndicator('bb')">
+                <span class="toggle-label">Bollinger Bands</span>
+              </label>
+              <div class="indicator-color" [style.background]="indicators().bb.color"></div>
+            </div>
+            <div class="indicator-settings" *ngIf="indicators().bb.enabled">
+              <div class="setting-row">
+                <label>Chu kỳ:</label>
+                <input type="number" [value]="indicators().bb.period"
+                       (input)="updateIndicator('bb', 'period', +$any($event.target).value)"
+                       min="10" max="50" step="1">
+              </div>
+              <div class="setting-row">
+                <label>Độ lệch chuẩn:</label>
+                <input type="number" [value]="indicators().bb.stdDev"
+                       (input)="updateIndicator('bb', 'stdDev', +$any($event.target).value)"
+                       min="1" max="4" step="0.5">
+              </div>
+              <div class="setting-row">
+                <label>Màu:</label>
+                <input type="color" [value]="indicators().bb.color"
+                       (input)="updateIndicator('bb', 'color', $any($event.target).value)">
+              </div>
+            </div>
+          </div>
+
+          <!-- SMA 2 Settings -->
+          <div class="indicator-group">
+            <div class="indicator-header">
+              <label class="indicator-toggle">
+                <input type="checkbox" [checked]="indicators().sma2.enabled"
+                       (change)="toggleIndicator('sma2')">
+                <span class="toggle-label">MA thứ 2</span>
+              </label>
+              <div class="indicator-color" [style.background]="indicators().sma2.color"></div>
+            </div>
+            <div class="indicator-settings" *ngIf="indicators().sma2.enabled">
+              <div class="setting-row">
+                <label>Chu kỳ:</label>
+                <input type="number" [value]="indicators().sma2.period"
+                       (input)="updateIndicator('sma2', 'period', +$any($event.target).value)"
+                       min="5" max="200" step="1">
+              </div>
+              <div class="setting-row">
+                <label>Màu:</label>
+                <input type="color" [value]="indicators().sma2.color"
+                       (input)="updateIndicator('sma2', 'color', $any($event.target).value)">
+              </div>
+            </div>
+          </div>
+
+          <!-- Divider -->
+          <div class="panel-divider">
+            <span>Giao diện biểu đồ</span>
+          </div>
+
+          <!-- Theme Settings -->
+          <div class="indicator-group theme-group">
+            <div class="indicator-header">
+              <span class="toggle-label">🎨 Chủ đề</span>
+            </div>
+            <div class="indicator-settings">
+              <div class="theme-presets">
+                <button class="theme-btn" [class.active]="chartTheme().preset === 'dark'" 
+                        (click)="setThemePreset('dark')">
+                  <span class="theme-preview dark-preview"></span>
+                  <span>Tối</span>
+                </button>
+                <button class="theme-btn" [class.active]="chartTheme().preset === 'light'"
+                        (click)="setThemePreset('light')">
+                  <span class="theme-preview light-preview"></span>
+                  <span>Sáng</span>
+                </button>
+                <button class="theme-btn" [class.active]="chartTheme().preset === 'tradingview'"
+                        (click)="setThemePreset('tradingview')">
+                  <span class="theme-preview tv-preview"></span>
+                  <span>TradingView</span>
+                </button>
+                <button class="theme-btn" [class.active]="chartTheme().preset === 'custom'"
+                        (click)="setThemePreset('custom')">
+                  <span class="theme-preview custom-preview"></span>
+                  <span>Tùy chỉnh</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Custom Theme Settings -->
+          <div class="indicator-group" *ngIf="chartTheme().preset === 'custom'">
+            <div class="indicator-header">
+              <span class="toggle-label">Tùy chỉnh màu sắc</span>
+            </div>
+            <div class="indicator-settings">
+              <div class="setting-row">
+                <label>Nền:</label>
+                <input type="color" [value]="chartTheme().background"
+                       (input)="updateTheme('background', $any($event.target).value)">
+              </div>
+              <div class="setting-row">
+                <label>Nến tăng:</label>
+                <input type="color" [value]="chartTheme().upColor"
+                       (input)="updateTheme('upColor', $any($event.target).value)">
+              </div>
+              <div class="setting-row">
+                <label>Nến giảm:</label>
+                <input type="color" [value]="chartTheme().downColor"
+                       (input)="updateTheme('downColor', $any($event.target).value)">
+              </div>
+              <div class="setting-row">
+                <label>Đường lưới:</label>
+                <input type="color" [value]="chartTheme().gridColor"
+                       (input)="updateTheme('gridColor', $any($event.target).value)">
+              </div>
+              <div class="setting-row">
+                <label>Chữ:</label>
+                <input type="color" [value]="chartTheme().textColor"
+                       (input)="updateTheme('textColor', $any($event.target).value)">
+              </div>
+            </div>
+          </div>
+
+          <!-- Candle Style -->
+          <div class="indicator-group">
+            <div class="indicator-header">
+              <span class="toggle-label">🕯️ Kiểu nến</span>
+            </div>
+            <div class="indicator-settings">
+              <div class="candle-style-presets">
+                <button class="style-btn" [class.active]="candleStyle() === 'filled'"
+                        (click)="setCandleStyle('filled')">
+                  <span class="candle-icon filled"></span>
+                  <span>Đặc</span>
+                </button>
+                <button class="style-btn" [class.active]="candleStyle() === 'hollow'"
+                        (click)="setCandleStyle('hollow')">
+                  <span class="candle-icon hollow"></span>
+                  <span>Rỗng</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="indicator-panel-footer">
+          <button class="btn-reset" (click)="resetIndicators()">
+            <i class="pi pi-refresh"></i> Reset mặc định
+          </button>
+          <button class="btn-apply" (click)="applyIndicators()">
+            <i class="pi pi-check"></i> Áp dụng
           </button>
         </div>
       </div>
@@ -279,6 +529,374 @@ interface ChartTooltipData {
       font-family: monospace;
     }
 
+    /* Indicator Panel */
+    .indicator-panel {
+      position: absolute;
+      top: 48px;
+      right: 0;
+      width: 320px;
+      max-height: calc(100% - 60px);
+      background: #1e222d;
+      border: 1px solid #2a2e39;
+      border-radius: 8px;
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      overflow: hidden;
+    }
+
+    .indicator-panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      background: #2a2e39;
+      border-bottom: 1px solid #363a45;
+
+      span {
+        font-size: 13px;
+        font-weight: 600;
+        color: #d1d4dc;
+      }
+
+      .close-btn {
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: transparent;
+        border: none;
+        color: #787b86;
+        cursor: pointer;
+        border-radius: 4px;
+
+        &:hover {
+          background: #363a45;
+          color: #d1d4dc;
+        }
+      }
+    }
+
+    .indicator-panel-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px;
+    }
+
+    .indicator-group {
+      background: #252932;
+      border-radius: 6px;
+      margin-bottom: 12px;
+      overflow: hidden;
+    }
+
+    .indicator-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 12px;
+      background: #2a2e39;
+    }
+
+    .indicator-toggle {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+
+      input[type="checkbox"] {
+        width: 16px;
+        height: 16px;
+        cursor: pointer;
+      }
+
+      .toggle-label {
+        font-size: 13px;
+        font-weight: 500;
+        color: #d1d4dc;
+      }
+    }
+
+    .indicator-color {
+      width: 16px;
+      height: 16px;
+      border-radius: 4px;
+      border: 1px solid #363a45;
+    }
+
+    .indicator-settings {
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .setting-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+
+      label {
+        font-size: 12px;
+        color: #787b86;
+        min-width: 80px;
+      }
+
+      input[type="number"] {
+        flex: 1;
+        padding: 6px 10px;
+        background: #1e222d;
+        border: 1px solid #363a45;
+        border-radius: 4px;
+        color: #d1d4dc;
+        font-size: 12px;
+
+        &:focus {
+          outline: none;
+          border-color: #2962ff;
+        }
+      }
+
+      input[type="color"] {
+        width: 32px;
+        height: 24px;
+        padding: 0;
+        border: 1px solid #363a45;
+        border-radius: 4px;
+        cursor: pointer;
+        background: transparent;
+      }
+    }
+
+    .period-presets {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+
+      button {
+        padding: 4px 10px;
+        background: #1e222d;
+        border: 1px solid #363a45;
+        border-radius: 4px;
+        color: #787b86;
+        font-size: 11px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+
+        &:hover {
+          background: #2a2e39;
+          color: #d1d4dc;
+        }
+
+        &.active {
+          background: #2962ff;
+          border-color: #2962ff;
+          color: white;
+        }
+      }
+    }
+
+    /* Panel Divider */
+    .panel-divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 16px 0 12px;
+      color: #787b86;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+
+      &::before, &::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: #363a45;
+      }
+    }
+
+    /* Theme Settings */
+    .theme-group .indicator-header {
+      padding: 8px 12px;
+    }
+
+    .theme-presets {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+
+    .theme-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      padding: 10px;
+      background: #1e222d;
+      border: 2px solid #363a45;
+      border-radius: 8px;
+      color: #787b86;
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.2s;
+
+      &:hover {
+        border-color: #2962ff;
+        color: #d1d4dc;
+      }
+
+      &.active {
+        border-color: #2962ff;
+        background: rgba(41, 98, 255, 0.1);
+        color: #2962ff;
+      }
+    }
+
+    .theme-preview {
+      width: 40px;
+      height: 24px;
+      border-radius: 4px;
+      border: 1px solid #363a45;
+
+      &.dark-preview {
+        background: linear-gradient(135deg, #131722 50%, #1e222d 50%);
+      }
+
+      &.light-preview {
+        background: linear-gradient(135deg, #ffffff 50%, #e1e3eb 50%);
+      }
+
+      &.tv-preview {
+        background: linear-gradient(135deg, #1e222d 50%, #2a2e39 50%);
+      }
+
+      &.custom-preview {
+        background: linear-gradient(135deg, 
+          #26a69a 0%, #26a69a 25%, 
+          #ef5350 25%, #ef5350 50%,
+          #131722 50%, #131722 75%,
+          #2962ff 75%, #2962ff 100%);
+      }
+    }
+
+    /* Candle Style */
+    .candle-style-presets {
+      display: flex;
+      gap: 10px;
+    }
+
+    .style-btn {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      padding: 12px;
+      background: #1e222d;
+      border: 2px solid #363a45;
+      border-radius: 8px;
+      color: #787b86;
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.2s;
+
+      &:hover {
+        border-color: #2962ff;
+        color: #d1d4dc;
+      }
+
+      &.active {
+        border-color: #2962ff;
+        background: rgba(41, 98, 255, 0.1);
+        color: #2962ff;
+      }
+    }
+
+    .candle-icon {
+      width: 20px;
+      height: 32px;
+      position: relative;
+
+      &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 2px;
+        height: 100%;
+        background: #26a69a;
+      }
+
+      &::after {
+        content: '';
+        position: absolute;
+        top: 8px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 12px;
+        height: 16px;
+        border-radius: 2px;
+      }
+
+      &.filled::after {
+        background: #26a69a;
+      }
+
+      &.hollow::after {
+        background: transparent;
+        border: 2px solid #26a69a;
+      }
+    }
+
+    .indicator-panel-footer {
+      display: flex;
+      gap: 10px;
+      padding: 12px;
+      background: #2a2e39;
+      border-top: 1px solid #363a45;
+
+      button {
+        flex: 1;
+        padding: 8px 16px;
+        border: none;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 500;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        transition: all 0.2s;
+
+        i {
+          font-size: 12px;
+        }
+      }
+
+      .btn-reset {
+        background: #363a45;
+        color: #d1d4dc;
+
+        &:hover {
+          background: #454a57;
+        }
+      }
+
+      .btn-apply {
+        background: #2962ff;
+        color: white;
+
+        &:hover {
+          background: #1e4bd8;
+        }
+      }
+    }
+
     /* Responsive */
     @media (max-width: 600px) {
       .chart-toolbar {
@@ -305,6 +923,13 @@ interface ChartTooltipData {
       .chart-tooltip {
         display: none;
       }
+
+      .indicator-panel {
+        width: 100%;
+        right: 0;
+        left: 0;
+        border-radius: 0;
+      }
     }
   `]
 })
@@ -321,6 +946,14 @@ export class TradingviewChartComponent implements OnInit, OnDestroy, OnChanges {
   private areaSeries: ISeriesApi<'Area'> | null = null;
   private volumeSeries: ISeriesApi<'Histogram'> | null = null;
   private resizeObserver: ResizeObserver | null = null;
+  
+  // Indicator series
+  private maSeries: ISeriesApi<'Line'> | null = null;
+  private emaSeries: ISeriesApi<'Line'> | null = null;
+  private sma2Series: ISeriesApi<'Line'> | null = null;
+  private bbUpperSeries: ISeriesApi<'Line'> | null = null;
+  private bbMiddleSeries: ISeriesApi<'Line'> | null = null;
+  private bbLowerSeries: ISeriesApi<'Line'> | null = null;
 
   // Re-export series types for template use
   protected CandlestickSeries = CandlestickSeries;
@@ -332,6 +965,59 @@ export class TradingviewChartComponent implements OnInit, OnDestroy, OnChanges {
   showVolume = signal(true);
   tooltipData = signal<ChartTooltipData | null>(null);
   currentPrice = signal<number | null>(null);
+  showIndicatorPanel = signal(false);
+  
+  // Indicator settings
+  indicators = signal<IndicatorSettings>({
+    ma: { enabled: false, period: 20, color: '#ff9800' },
+    ema: { enabled: false, period: 12, color: '#2196f3' },
+    bb: { enabled: false, period: 20, stdDev: 2, color: '#9c27b0' },
+    sma2: { enabled: false, period: 50, color: '#4caf50' }
+  });
+
+  // Chart theme settings
+  chartTheme = signal<ChartThemeSettings>({
+    preset: 'dark',
+    background: '#131722',
+    upColor: '#26a69a',
+    downColor: '#ef5350',
+    gridColor: '#1e222d',
+    textColor: '#d1d4dc'
+  });
+
+  candleStyle = signal<'filled' | 'hollow'>('filled');
+
+  // Theme presets
+  private themePresets: Record<string, Omit<ChartThemeSettings, 'preset'>> = {
+    dark: {
+      background: '#131722',
+      upColor: '#26a69a',
+      downColor: '#ef5350',
+      gridColor: '#1e222d',
+      textColor: '#d1d4dc'
+    },
+    light: {
+      background: '#ffffff',
+      upColor: '#26a69a',
+      downColor: '#ef5350',
+      gridColor: '#e1e3eb',
+      textColor: '#191919'
+    },
+    tradingview: {
+      background: '#1e222d',
+      upColor: '#089981',
+      downColor: '#f23645',
+      gridColor: '#2a2e39',
+      textColor: '#b2b5be'
+    },
+    custom: {
+      background: '#131722',
+      upColor: '#26a69a',
+      downColor: '#ef5350',
+      gridColor: '#1e222d',
+      textColor: '#d1d4dc'
+    }
+  };
 
   timeframes = [
     { label: '1T', value: '1m' },
@@ -628,5 +1314,334 @@ export class TradingviewChartComponent implements OnInit, OnDestroy, OnChanges {
     this.volumeSeries = null;
     this.lineSeries = null;
     this.areaSeries = null;
+    this.maSeries = null;
+    this.emaSeries = null;
+    this.sma2Series = null;
+    this.bbUpperSeries = null;
+    this.bbMiddleSeries = null;
+    this.bbLowerSeries = null;
+  }
+
+  // ============ INDICATOR METHODS ============
+
+  toggleIndicatorPanel() {
+    this.showIndicatorPanel.update(v => !v);
+  }
+
+  toggleIndicator(type: keyof IndicatorSettings) {
+    this.indicators.update(current => ({
+      ...current,
+      [type]: { ...current[type], enabled: !current[type].enabled }
+    }));
+  }
+
+  updateIndicator(type: keyof IndicatorSettings, field: string, value: number | string) {
+    this.indicators.update(current => ({
+      ...current,
+      [type]: { ...current[type], [field]: value }
+    }));
+  }
+
+  resetIndicators() {
+    this.indicators.set({
+      ma: { enabled: false, period: 20, color: '#ff9800' },
+      ema: { enabled: false, period: 12, color: '#2196f3' },
+      bb: { enabled: false, period: 20, stdDev: 2, color: '#9c27b0' },
+      sma2: { enabled: false, period: 50, color: '#4caf50' }
+    });
+    this.clearIndicatorSeries();
+  }
+
+  applyIndicators() {
+    this.updateIndicatorSeries();
+    this.applyChartTheme();
+    this.showIndicatorPanel.set(false);
+  }
+
+  // ============ THEME METHODS ============
+
+  setThemePreset(preset: 'dark' | 'light' | 'tradingview' | 'custom') {
+    const presetColors = this.themePresets[preset];
+    this.chartTheme.set({
+      preset,
+      ...presetColors
+    });
+  }
+
+  updateTheme(field: keyof Omit<ChartThemeSettings, 'preset'>, value: string) {
+    this.chartTheme.update(current => ({
+      ...current,
+      preset: 'custom',
+      [field]: value
+    }));
+  }
+
+  setCandleStyle(style: 'filled' | 'hollow') {
+    this.candleStyle.set(style);
+  }
+
+  private applyChartTheme() {
+    if (!this.chart || !this.candlestickSeries) return;
+
+    const theme = this.chartTheme();
+    const style = this.candleStyle();
+
+    // Apply chart layout
+    this.chart.applyOptions({
+      layout: {
+        background: { type: ColorType.Solid, color: theme.background },
+        textColor: theme.textColor,
+      },
+      grid: {
+        vertLines: { color: theme.gridColor },
+        horzLines: { color: theme.gridColor },
+      },
+    });
+
+    // Apply candlestick colors
+    if (style === 'filled') {
+      this.candlestickSeries.applyOptions({
+        upColor: theme.upColor,
+        downColor: theme.downColor,
+        borderUpColor: theme.upColor,
+        borderDownColor: theme.downColor,
+        wickUpColor: theme.upColor,
+        wickDownColor: theme.downColor,
+      });
+    } else {
+      // Hollow style: up candles are hollow (border only)
+      this.candlestickSeries.applyOptions({
+        upColor: 'transparent',
+        downColor: theme.downColor,
+        borderUpColor: theme.upColor,
+        borderDownColor: theme.downColor,
+        wickUpColor: theme.upColor,
+        wickDownColor: theme.downColor,
+      });
+    }
+
+    // Update volume colors
+    if (this.volumeSeries && this.data) {
+      const { t, o, c, v } = this.data;
+      const volumeData: HistogramData[] = [];
+      
+      for (let i = 0; i < t.length; i++) {
+        const color = c[i] >= o[i] 
+          ? theme.upColor + '80'  // 50% opacity
+          : theme.downColor + '80';
+        volumeData.push({
+          time: t[i] as Time,
+          value: v[i],
+          color,
+        });
+      }
+      
+      this.volumeSeries.setData(volumeData);
+    }
+  }
+
+  private clearIndicatorSeries() {
+    if (this.chart) {
+      if (this.maSeries) { this.chart.removeSeries(this.maSeries); this.maSeries = null; }
+      if (this.emaSeries) { this.chart.removeSeries(this.emaSeries); this.emaSeries = null; }
+      if (this.sma2Series) { this.chart.removeSeries(this.sma2Series); this.sma2Series = null; }
+      if (this.bbUpperSeries) { this.chart.removeSeries(this.bbUpperSeries); this.bbUpperSeries = null; }
+      if (this.bbMiddleSeries) { this.chart.removeSeries(this.bbMiddleSeries); this.bbMiddleSeries = null; }
+      if (this.bbLowerSeries) { this.chart.removeSeries(this.bbLowerSeries); this.bbLowerSeries = null; }
+    }
+  }
+
+  private updateIndicatorSeries() {
+    if (!this.chart || !this.data) return;
+
+    const { t, c } = this.data;
+    const ind = this.indicators();
+
+    // Clear existing indicator series
+    this.clearIndicatorSeries();
+
+    // MA
+    if (ind.ma.enabled) {
+      const maData = this.calculateSMA(c, ind.ma.period);
+      this.maSeries = this.chart.addSeries(LineSeries, {
+        color: ind.ma.color,
+        lineWidth: 2,
+        priceLineVisible: false,
+        lastValueVisible: false,
+      });
+      
+      const lineData: LineData[] = [];
+      for (let i = 0; i < maData.length; i++) {
+        if (maData[i] !== null) {
+          lineData.push({ time: t[i] as Time, value: maData[i]! });
+        }
+      }
+      this.maSeries.setData(lineData);
+    }
+
+    // EMA
+    if (ind.ema.enabled) {
+      const emaData = this.calculateEMA(c, ind.ema.period);
+      this.emaSeries = this.chart.addSeries(LineSeries, {
+        color: ind.ema.color,
+        lineWidth: 2,
+        priceLineVisible: false,
+        lastValueVisible: false,
+      });
+      
+      const lineData: LineData[] = [];
+      for (let i = 0; i < emaData.length; i++) {
+        if (emaData[i] !== null) {
+          lineData.push({ time: t[i] as Time, value: emaData[i]! });
+        }
+      }
+      this.emaSeries.setData(lineData);
+    }
+
+    // SMA 2
+    if (ind.sma2.enabled) {
+      const sma2Data = this.calculateSMA(c, ind.sma2.period);
+      this.sma2Series = this.chart.addSeries(LineSeries, {
+        color: ind.sma2.color,
+        lineWidth: 2,
+        priceLineVisible: false,
+        lastValueVisible: false,
+      });
+      
+      const lineData: LineData[] = [];
+      for (let i = 0; i < sma2Data.length; i++) {
+        if (sma2Data[i] !== null) {
+          lineData.push({ time: t[i] as Time, value: sma2Data[i]! });
+        }
+      }
+      this.sma2Series.setData(lineData);
+    }
+
+    // Bollinger Bands
+    if (ind.bb.enabled) {
+      const bbData = this.calculateBollingerBands(c, ind.bb.period, ind.bb.stdDev);
+      
+      // Upper band
+      this.bbUpperSeries = this.chart.addSeries(LineSeries, {
+        color: ind.bb.color,
+        lineWidth: 1,
+        lineStyle: LineStyle.Dashed,
+        priceLineVisible: false,
+        lastValueVisible: false,
+      });
+      
+      // Middle band (SMA)
+      this.bbMiddleSeries = this.chart.addSeries(LineSeries, {
+        color: ind.bb.color,
+        lineWidth: 1,
+        priceLineVisible: false,
+        lastValueVisible: false,
+      });
+      
+      // Lower band
+      this.bbLowerSeries = this.chart.addSeries(LineSeries, {
+        color: ind.bb.color,
+        lineWidth: 1,
+        lineStyle: LineStyle.Dashed,
+        priceLineVisible: false,
+        lastValueVisible: false,
+      });
+      
+      const upperData: LineData[] = [];
+      const middleData: LineData[] = [];
+      const lowerData: LineData[] = [];
+      
+      for (let i = 0; i < bbData.upper.length; i++) {
+        if (bbData.upper[i] !== null) {
+          upperData.push({ time: t[i] as Time, value: bbData.upper[i]! });
+        }
+        if (bbData.middle[i] !== null) {
+          middleData.push({ time: t[i] as Time, value: bbData.middle[i]! });
+        }
+        if (bbData.lower[i] !== null) {
+          lowerData.push({ time: t[i] as Time, value: bbData.lower[i]! });
+        }
+      }
+      
+      this.bbUpperSeries.setData(upperData);
+      this.bbMiddleSeries.setData(middleData);
+      this.bbLowerSeries.setData(lowerData);
+    }
+  }
+
+  // Calculate Simple Moving Average
+  private calculateSMA(data: number[], period: number): (number | null)[] {
+    const result: (number | null)[] = [];
+    
+    for (let i = 0; i < data.length; i++) {
+      if (i < period - 1) {
+        result.push(null);
+      } else {
+        let sum = 0;
+        for (let j = 0; j < period; j++) {
+          sum += data[i - j];
+        }
+        result.push(sum / period);
+      }
+    }
+    
+    return result;
+  }
+
+  // Calculate Exponential Moving Average
+  private calculateEMA(data: number[], period: number): (number | null)[] {
+    const result: (number | null)[] = [];
+    const multiplier = 2 / (period + 1);
+    
+    // First EMA value is SMA
+    let ema = 0;
+    for (let i = 0; i < period && i < data.length; i++) {
+      ema += data[i];
+    }
+    ema = ema / Math.min(period, data.length);
+    
+    for (let i = 0; i < data.length; i++) {
+      if (i < period - 1) {
+        result.push(null);
+      } else if (i === period - 1) {
+        result.push(ema);
+      } else {
+        ema = (data[i] - ema) * multiplier + ema;
+        result.push(ema);
+      }
+    }
+    
+    return result;
+  }
+
+  // Calculate Bollinger Bands
+  private calculateBollingerBands(data: number[], period: number, stdDev: number): {
+    upper: (number | null)[];
+    middle: (number | null)[];
+    lower: (number | null)[];
+  } {
+    const middle = this.calculateSMA(data, period);
+    const upper: (number | null)[] = [];
+    const lower: (number | null)[] = [];
+    
+    for (let i = 0; i < data.length; i++) {
+      if (middle[i] === null) {
+        upper.push(null);
+        lower.push(null);
+      } else {
+        // Calculate standard deviation
+        let sumSquares = 0;
+        for (let j = 0; j < period; j++) {
+          const diff = data[i - j] - middle[i]!;
+          sumSquares += diff * diff;
+        }
+        const std = Math.sqrt(sumSquares / period);
+        
+        upper.push(middle[i]! + stdDev * std);
+        lower.push(middle[i]! - stdDev * std);
+      }
+    }
+    
+    return { upper, middle, lower };
   }
 }

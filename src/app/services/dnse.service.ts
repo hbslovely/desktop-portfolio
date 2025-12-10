@@ -53,8 +53,50 @@ export class DnseService {
 
   // Track fetched symbols (stored in localStorage)
   private readonly FETCHED_SYMBOLS_KEY = 'dnse_fetched_symbols';
+  
+  // Track last DNSE sync date
+  private readonly LAST_DNSE_SYNC_KEY = 'dnse_last_sync_date';
 
   constructor(private http: HttpClient) {}
+
+  /**
+   * Check if today is within the DNSE sync window (days 10-20 of the month)
+   */
+  isInDNSESyncWindow(): boolean {
+    const today = new Date();
+    const dayOfMonth = today.getDate();
+    return dayOfMonth >= 10 && dayOfMonth <= 20;
+  }
+
+  /**
+   * Check if we already synced DNSE in the current month
+   */
+  hasAlreadySyncedThisMonth(): boolean {
+    const lastSync = localStorage.getItem(this.LAST_DNSE_SYNC_KEY);
+    if (!lastSync) return false;
+    
+    const lastSyncDate = new Date(lastSync);
+    const today = new Date();
+    
+    // Check if last sync was in the same month and year
+    return lastSyncDate.getMonth() === today.getMonth() && 
+           lastSyncDate.getFullYear() === today.getFullYear();
+  }
+
+  /**
+   * Mark that we've synced DNSE this month
+   */
+  markDNSESynced(): void {
+    localStorage.setItem(this.LAST_DNSE_SYNC_KEY, new Date().toISOString());
+  }
+
+  /**
+   * Check if we should sync with DNSE API
+   * Only sync if: within days 10-20 AND haven't synced this month yet
+   */
+  shouldSyncWithDNSE(): boolean {
+    return this.isInDNSESyncWindow() && !this.hasAlreadySyncedThisMonth();
+  }
 
   /**
    * Get list of symbols from an exchange
@@ -242,6 +284,131 @@ export class DnseService {
         return of([]);
       })
     );
+  }
+
+  /**
+   * Sync new stocks from DNSE API and save to database
+   * This should only be called during days 10-20 of the month
+   * Returns Observable with { newSymbols: string[], totalFromDNSE: number }
+   */
+  syncNewStocksFromDNSE(): Observable<{ newSymbols: string[]; totalFromDNSE: number; synced: boolean }> {
+    if (!this.shouldSyncWithDNSE()) {
+      return of({ newSymbols: [], totalFromDNSE: 0, synced: false });
+    }
+
+    return new Observable(observer => {
+      // First, get all existing stocks from our API
+      this.getAllStockData().subscribe({
+        next: (existingStocks) => {
+          const existingSymbolsSet = new Set(
+            existingStocks.map((s: any) => s.symbol?.toUpperCase()).filter(Boolean)
+          );
+
+          // Then get all symbols from DNSE API
+          this.getAllSymbols().subscribe({
+            next: (results) => {
+              const newSymbols: string[] = [];
+              let totalFromDNSE = 0;
+
+              results.forEach(({ symbols }) => {
+                symbols.forEach(symbol => {
+                  const symbolStr = typeof symbol === 'string' ? symbol : symbol.symbol;
+                  const symbolKey = symbolStr.toUpperCase();
+                  totalFromDNSE++;
+
+                  if (!existingSymbolsSet.has(symbolKey)) {
+                    newSymbols.push(symbolStr);
+                  }
+                });
+              });
+
+              if (newSymbols.length > 0) {
+                console.log(`Found ${newSymbols.length} new stocks from DNSE:`, newSymbols);
+                // Save new stocks to database (just basic info for now)
+                this.saveNewStocksToDB(newSymbols).subscribe({
+                  next: () => {
+                    this.markDNSESynced();
+                    observer.next({ newSymbols, totalFromDNSE, synced: true });
+                    observer.complete();
+                  },
+                  error: (error) => {
+                    console.error('Error saving new stocks:', error);
+                    this.markDNSESynced(); // Still mark as synced to avoid retrying
+                    observer.next({ newSymbols, totalFromDNSE, synced: true });
+                    observer.complete();
+                  }
+                });
+              } else {
+                console.log('No new stocks found from DNSE');
+                this.markDNSESynced();
+                observer.next({ newSymbols: [], totalFromDNSE, synced: true });
+                observer.complete();
+              }
+            },
+            error: (error) => {
+              console.error('Error getting symbols from DNSE:', error);
+              observer.next({ newSymbols: [], totalFromDNSE: 0, synced: false });
+              observer.complete();
+            }
+          });
+        },
+        error: (error) => {
+          console.error('Error getting existing stocks:', error);
+          observer.next({ newSymbols: [], totalFromDNSE: 0, synced: false });
+          observer.complete();
+        }
+      });
+    });
+  }
+
+  /**
+   * Save new stocks to database with basic info
+   */
+  private saveNewStocksToDB(symbols: string[]): Observable<any> {
+    const requests = symbols.map(symbol => 
+      this.http.post<any>('/api/stocks-v2/create', {
+        symbol: symbol.toUpperCase(),
+        basicInfo: { symbol: symbol.toUpperCase() },
+        priceData: null,
+        fullData: null
+      }).pipe(
+        catchError(error => {
+          console.error(`Error creating stock ${symbol}:`, error);
+          return of(null);
+        })
+      )
+    );
+
+    return new Observable(observer => {
+      if (requests.length === 0) {
+        observer.next([]);
+        observer.complete();
+        return;
+      }
+
+      let completed = 0;
+      const results: any[] = [];
+
+      requests.forEach((req, index) => {
+        req.subscribe({
+          next: (result) => {
+            results[index] = result;
+            completed++;
+            if (completed === requests.length) {
+              observer.next(results);
+              observer.complete();
+            }
+          },
+          error: () => {
+            completed++;
+            if (completed === requests.length) {
+              observer.next(results);
+              observer.complete();
+            }
+          }
+        });
+      });
+    });
   }
 
   /**
