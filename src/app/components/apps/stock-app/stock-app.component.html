@@ -540,6 +540,22 @@
         <section class="section">
           <h3>Neural Network Trading</h3>
           <div class="neural-network-section">
+            <!-- Model Status from DB -->
+            <div class="model-status-bar" *ngIf="modelStatus().exists">
+              <div class="status-indicator success">
+                <i class="pi pi-check-circle"></i>
+                <span>Mô hình đã có trong DB</span>
+              </div>
+              <div class="status-details">
+                <span *ngIf="modelStatus().hasWeights" class="status-tag">
+                  <i class="pi pi-database"></i> Weights
+                </span>
+                <span *ngIf="modelStatus().hasSimulation" class="status-tag">
+                  <i class="pi pi-chart-bar"></i> Simulation
+                </span>
+              </div>
+            </div>
+
             <div class="nn-status">
               <div class="nn-status-item">
                 <label>Trạng thái:</label>
@@ -551,11 +567,12 @@
               <!-- Training Progress -->
               <div class="nn-training-progress" *ngIf="isNNTraining() && nnTrainingProgress()">
                 <div class="progress-bar">
-                  <div class="progress-fill" [style.width.%]="(nnTrainingProgress()!.epoch / 50) * 100"></div>
+                  <div class="progress-fill" [style.width.%]="(nnTrainingProgress()!.epoch / trainingConfig().epochs) * 100"></div>
                 </div>
                 <div class="progress-info">
-                  <span>Epoch: {{ nnTrainingProgress()!.epoch }}/50</span>
+                  <span>Epoch: {{ nnTrainingProgress()!.epoch }}/{{ trainingConfig().epochs }}</span>
                   <span>Loss: {{ nnTrainingProgress()!.loss.toFixed(6) }}</span>
+                  <span *ngIf="nnTrainingProgress()?.accuracy">Accuracy: {{ (nnTrainingProgress()!.accuracy! * 100).toFixed(1) }}%</span>
                 </div>
               </div>
 
@@ -563,6 +580,168 @@
               <div class="nn-error" *ngIf="nnError()">
                 <i class="pi pi-exclamation-triangle"></i>
                 <span>{{ nnError() }}</span>
+              </div>
+
+              <!-- Training Config Summary & Toggle -->
+              <div class="training-config-summary">
+                <div class="config-quick-view">
+                  <span class="config-tag"><i class="pi pi-sync"></i> {{ trainingConfig().epochs }} epochs</span>
+                  <span class="config-tag"><i class="pi pi-calendar"></i> {{ trainingConfig().lookbackDays }} ngày</span>
+                  <span class="config-tag"><i class="pi pi-percentage"></i> {{ (trainingConfig().validationSplit * 100).toFixed(0) }}% val</span>
+                </div>
+                <button 
+                  class="btn btn-config" 
+                  (click)="showTrainingConfig.set(true)">
+                  <i class="pi pi-cog"></i>
+                  Cấu hình
+                </button>
+              </div>
+
+              <!-- Training Config Dialog -->
+              <div class="fullscreen-dialog-overlay" *ngIf="showTrainingConfig()" (click)="showTrainingConfig.set(false)">
+                <div class="fullscreen-dialog training-config-dialog" (click)="$event.stopPropagation()">
+                  <div class="dialog-header">
+                    <h3><i class="pi pi-sliders-h"></i> Cấu hình huấn luyện mô hình</h3>
+                    <button class="btn-close" (click)="showTrainingConfig.set(false)">
+                      <i class="pi pi-times"></i>
+                    </button>
+                  </div>
+                  <div class="dialog-body">
+                    <p class="config-description">Điều chỉnh các thông số để tối ưu mô hình Neural Network.</p>
+                    
+                    <!-- Presets -->
+                    <div class="config-presets-section">
+                      <h4>Chọn nhanh</h4>
+                      <div class="preset-buttons">
+                        <button class="btn-preset-card" (click)="applyTrainingPreset('fast')">
+                          <i class="pi pi-bolt"></i>
+                          <span class="preset-name">Nhanh</span>
+                          <span class="preset-desc">30 epochs, 30 ngày</span>
+                        </button>
+                        <button class="btn-preset-card active" (click)="applyTrainingPreset('balanced')">
+                          <i class="pi pi-sliders-h"></i>
+                          <span class="preset-name">Cân bằng</span>
+                          <span class="preset-desc">50 epochs, 60 ngày</span>
+                        </button>
+                        <button class="btn-preset-card" (click)="applyTrainingPreset('accurate')">
+                          <i class="pi pi-check-circle"></i>
+                          <span class="preset-name">Chính xác</span>
+                          <span class="preset-desc">100 epochs, 90 ngày</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <!-- Advanced Config -->
+                    <div class="config-advanced-section">
+                      <h4>Cấu hình chi tiết</h4>
+                      <div class="config-grid-dialog">
+                        <!-- Epochs -->
+                        <div class="config-field">
+                          <div class="field-header">
+                            <label>{{ trainingConfigDescriptions.epochs.label }}</label>
+                            <span class="field-value">{{ trainingConfig().epochs }}</span>
+                          </div>
+                          <input 
+                            type="range" 
+                            [value]="trainingConfig().epochs"
+                            [min]="trainingConfigDescriptions.epochs.min"
+                            [max]="trainingConfigDescriptions.epochs.max"
+                            [step]="trainingConfigDescriptions.epochs.step"
+                            (input)="updateTrainingConfig({ epochs: +$any($event.target).value })">
+                          <p class="field-hint">{{ trainingConfigDescriptions.epochs.description }}</p>
+                        </div>
+
+                        <!-- Lookback Days -->
+                        <div class="config-field">
+                          <div class="field-header">
+                            <label>{{ trainingConfigDescriptions.lookbackDays.label }}</label>
+                            <span class="field-value">{{ trainingConfig().lookbackDays }} ngày</span>
+                          </div>
+                          <input 
+                            type="range" 
+                            [value]="trainingConfig().lookbackDays"
+                            [min]="trainingConfigDescriptions.lookbackDays.min"
+                            [max]="trainingConfigDescriptions.lookbackDays.max"
+                            [step]="trainingConfigDescriptions.lookbackDays.step"
+                            (input)="updateTrainingConfig({ lookbackDays: +$any($event.target).value })">
+                          <p class="field-hint">{{ trainingConfigDescriptions.lookbackDays.description }}</p>
+                        </div>
+
+                        <!-- Batch Size -->
+                        <div class="config-field">
+                          <div class="field-header">
+                            <label>{{ trainingConfigDescriptions.batchSize.label }}</label>
+                            <span class="field-value">{{ trainingConfig().batchSize }}</span>
+                          </div>
+                          <input 
+                            type="range" 
+                            [value]="trainingConfig().batchSize"
+                            [min]="trainingConfigDescriptions.batchSize.min"
+                            [max]="trainingConfigDescriptions.batchSize.max"
+                            [step]="trainingConfigDescriptions.batchSize.step"
+                            (input)="updateTrainingConfig({ batchSize: +$any($event.target).value })">
+                          <p class="field-hint">{{ trainingConfigDescriptions.batchSize.description }}</p>
+                        </div>
+
+                        <!-- Validation Split -->
+                        <div class="config-field">
+                          <div class="field-header">
+                            <label>{{ trainingConfigDescriptions.validationSplit.label }}</label>
+                            <span class="field-value">{{ (trainingConfig().validationSplit * 100).toFixed(0) }}%</span>
+                          </div>
+                          <input 
+                            type="range" 
+                            [value]="trainingConfig().validationSplit"
+                            [min]="trainingConfigDescriptions.validationSplit.min"
+                            [max]="trainingConfigDescriptions.validationSplit.max"
+                            [step]="trainingConfigDescriptions.validationSplit.step"
+                            (input)="updateTrainingConfig({ validationSplit: +$any($event.target).value })">
+                          <p class="field-hint">{{ trainingConfigDescriptions.validationSplit.description }}</p>
+                        </div>
+
+                        <!-- Learning Rate -->
+                        <div class="config-field">
+                          <div class="field-header">
+                            <label>{{ trainingConfigDescriptions.learningRate.label }}</label>
+                            <span class="field-value">{{ trainingConfig().learningRate }}</span>
+                          </div>
+                          <input 
+                            type="range" 
+                            [value]="trainingConfig().learningRate"
+                            [min]="trainingConfigDescriptions.learningRate.min"
+                            [max]="trainingConfigDescriptions.learningRate.max"
+                            [step]="trainingConfigDescriptions.learningRate.step"
+                            (input)="updateTrainingConfig({ learningRate: +$any($event.target).value })">
+                          <p class="field-hint">{{ trainingConfigDescriptions.learningRate.description }}</p>
+                        </div>
+
+                        <!-- Forecast Days -->
+                        <div class="config-field">
+                          <div class="field-header">
+                            <label>{{ trainingConfigDescriptions.forecastDays.label }}</label>
+                            <span class="field-value">{{ trainingConfig().forecastDays }} ngày</span>
+                          </div>
+                          <input 
+                            type="range" 
+                            [value]="trainingConfig().forecastDays"
+                            [min]="trainingConfigDescriptions.forecastDays.min"
+                            [max]="trainingConfigDescriptions.forecastDays.max"
+                            [step]="trainingConfigDescriptions.forecastDays.step"
+                            (input)="updateTrainingConfig({ forecastDays: +$any($event.target).value })">
+                          <p class="field-hint">{{ trainingConfigDescriptions.forecastDays.description }}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="dialog-footer">
+                    <button class="btn btn-secondary" (click)="resetTrainingConfig()">
+                      <i class="pi pi-refresh"></i> Đặt lại mặc định
+                    </button>
+                    <button class="btn btn-primary" (click)="showTrainingConfig.set(false)">
+                      <i class="pi pi-check"></i> Xong
+                    </button>
+                  </div>
+                </div>
               </div>
 
               <!-- Action Buttons -->
@@ -594,9 +773,10 @@
                   <button 
                     class="btn-load" 
                     (click)="loadSavedWeights()"
-                    [disabled]="isNNTraining()">
+                    [disabled]="isNNTraining()"
+                    [class.has-model]="modelStatus().hasWeights">
                     <i class="pi pi-download"></i>
-                    Load mô hình đã lưu
+                    {{ modelStatus().hasWeights ? 'Load từ DB' : 'Load mô hình đã lưu' }}
                   </button>
                 </div>
               </div>
@@ -894,34 +1074,38 @@
                   <table class="transactions-table">
                     <thead>
                       <tr>
+                        <th>Ngày</th>
                         <th>Loại</th>
                         <th>Số lượng</th>
-                        <th>Giá</th>
-                        <th>Tiền trước GD</th>
-                        <th>Tiền giao dịch</th>
-                        <th>Tiền sau GD</th>
-                        <th>Số CP trước</th>
-                        <th>Số CP sau</th>
-                        <th>Ngày nắm giữ</th>
+                        <th>Giá GD</th>
+                        <th>Tiền GD</th>
+                        <th>Tổng CP</th>
+                        <th>Giá TB</th>
+                        <th>Tiền còn</th>
+                        <th>Nắm giữ</th>
                       </tr>
                     </thead>
                     <tbody>
                       <tr *ngFor="let tx of getTransactions()" [ngClass]="tx.type === 'buy' ? 'transaction-buy' : 'transaction-sell'">
+                        <td class="date-cell">{{ tx.dateStr }}</td>
                         <td>
                           <span class="transaction-type" [ngClass]="'type-' + tx.type">
                             {{ tx.type === 'buy' ? 'MUA' : 'BÁN' }}
                           </span>
                         </td>
-                        <td>{{ tx.quantity | number:'1.0-0' }}</td>
-                        <td>{{ formatPredictionPrice(tx.price) }}</td>
-                        <td>{{ formatCurrency(tx.capitalBefore) }}</td>
-                        <td [ngClass]="tx.type === 'buy' ? 'negative' : 'positive'">
+                        <td class="quantity-cell">{{ tx.quantity | number:'1.0-0' }}</td>
+                        <td class="price-cell">{{ formatPredictionPrice(tx.price) }}</td>
+                        <td class="amount-cell" [ngClass]="tx.type === 'buy' ? 'negative' : 'positive'">
                           {{ tx.type === 'buy' ? '-' : '+' }}{{ formatCurrency(tx.transactionAmount) }}
                         </td>
-                        <td>{{ formatCurrency(tx.capitalAfter) }}</td>
-                        <td>{{ tx.positionsBefore | number:'1.0-0' }}</td>
-                        <td>{{ tx.positionsAfter | number:'1.0-0' }}</td>
-                        <td>{{ tx.holdingDays !== undefined ? tx.holdingDays + ' ngày' : '-' }}</td>
+                        <td class="shares-cell">
+                          <span class="shares-change">{{ tx.totalSharesBefore | number:'1.0-0' }} → {{ tx.totalSharesAfter | number:'1.0-0' }}</span>
+                        </td>
+                        <td class="avg-price-cell">
+                          {{ tx.avgPriceAfter > 0 ? formatPredictionPrice(tx.avgPriceAfter) : '-' }}
+                        </td>
+                        <td class="capital-cell">{{ formatCurrency(tx.capitalAfter) }}</td>
+                        <td class="holding-cell">{{ tx.holdingDays !== undefined ? tx.holdingDays + 'ngày' : '-' }}</td>
                       </tr>
                     </tbody>
                   </table>
@@ -1060,28 +1244,75 @@
 
       <!-- Chart Tab -->
       <div *ngIf="activeTab() === 'chart' && !isLoadingDetail()">
-        <!-- Price Chart -->
-        <section class="section" *ngIf="selectedSymbolPriceData() || isLoadingPrice()">
-          <h3>Biểu đồ nến & Khối lượng</h3>
-          <div class="chart-controls">
-            <button class="btn" (click)="fetchPriceDataOnly(selectedYears())" [disabled]="isLoadingPrice()">
-              <i class="pi" [ngClass]="isLoadingPrice() ? 'pi-spin pi-spinner' : 'pi-download'"></i>
-              {{ isLoadingPrice() ? 'Đang tải...' : 'Tải dữ liệu' }}
-            </button>
+        <!-- TradingView Chart -->
+        <section class="section tradingview-section">
+          <div class="section-header">
+            <h3>Biểu đồ TradingView</h3>
+            <div class="chart-data-controls">
+              <select [value]="selectedYears()" (change)="selectedYears.set(+$any($event.target).value)">
+                <option [value]="1">1 năm</option>
+                <option [value]="2">2 năm</option>
+                <option [value]="3">3 năm</option>
+                <option [value]="5">5 năm</option>
+              </select>
+              <button class="btn btn-small" (click)="fetchPriceDataOnly(selectedYears())" [disabled]="isLoadingPrice()">
+                <i class="pi" [ngClass]="isLoadingPrice() ? 'pi-spin pi-spinner' : 'pi-refresh'"></i>
+                {{ isLoadingPrice() ? 'Đang tải...' : 'Cập nhật' }}
+              </button>
+              <button class="btn btn-small btn-fullscreen" (click)="showChartFullscreen.set(true)" *ngIf="selectedSymbolPriceData()">
+                <i class="pi pi-expand"></i>
+                Phóng to
+              </button>
+            </div>
           </div>
-          <div class="chart-wrapper" *ngIf="selectedSymbolPriceData() && !isLoadingPrice()">
-            <canvas #candlestickChart></canvas>
+          
+          <div class="tradingview-chart-container compact" *ngIf="selectedSymbolPriceData() && !isLoadingPrice()">
+            <app-tradingview-chart
+              [data]="selectedSymbolPriceData()"
+              [symbol]="selectedSymbol()?.symbol || ''"
+              [theme]="'dark'">
+            </app-tradingview-chart>
           </div>
+          
           <div class="price-loading" *ngIf="isLoadingPrice()">
             <i class="pi pi-spin pi-spinner"></i>
             <span>Đang tải dữ liệu giá...</span>
           </div>
+          
+          <div class="no-data" *ngIf="!selectedSymbolPriceData() && !isLoadingPrice()">
+            <i class="pi pi-chart-line"></i>
+            <p>Chưa có dữ liệu giá. Nhấn "Cập nhật" để tải.</p>
+          </div>
         </section>
 
-        <!-- Price Table -->
-        <section class="section" *ngIf="selectedSymbolPriceData() && !isLoadingPrice()">
-          <h3>Lịch sử giá</h3>
-          <div class="table-wrapper">
+        <!-- Chart Fullscreen Dialog -->
+        <div class="fullscreen-dialog-overlay" *ngIf="showChartFullscreen()" (click)="showChartFullscreen.set(false)">
+          <div class="fullscreen-dialog chart-dialog" (click)="$event.stopPropagation()">
+            <div class="dialog-header">
+              <h3>{{ selectedSymbol()?.symbol }} - Biểu đồ</h3>
+              <button class="btn-close" (click)="showChartFullscreen.set(false)">
+                <i class="pi pi-times"></i>
+              </button>
+            </div>
+            <div class="dialog-body">
+              <app-tradingview-chart
+                [data]="selectedSymbolPriceData()"
+                [symbol]="selectedSymbol()?.symbol || ''"
+                [theme]="'dark'">
+              </app-tradingview-chart>
+            </div>
+          </div>
+        </div>
+
+        <!-- Price Table (Collapsed by default) -->
+        <section class="section collapsible" *ngIf="selectedSymbolPriceData() && !isLoadingPrice()">
+          <div class="section-header clickable" (click)="togglePriceTable()">
+            <h3>
+              <i class="pi" [ngClass]="showPriceTable() ? 'pi-chevron-down' : 'pi-chevron-right'"></i>
+              Lịch sử giá (20 phiên gần nhất)
+            </h3>
+          </div>
+          <div class="table-wrapper" *ngIf="showPriceTable()">
             <table class="price-table">
               <thead>
                 <tr>

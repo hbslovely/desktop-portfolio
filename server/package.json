@@ -8,7 +8,8 @@
     "dev": "vercel dev",
     "dev:api": "node api/api-server-simple.js",
     "db:migrate": "node scripts/db-migrate.js",
-    "db:seed": "node scripts/db-seed.js"
+    "db:seed": "node scripts/db-seed.js",
+    "db:alter-models": "node scripts/db-alter-stock-models.js"
   },
   "engines": {
     "node": "20.x"

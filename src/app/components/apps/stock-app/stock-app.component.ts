@@ -4,8 +4,9 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { ScrollingModule } from '@angular/cdk/scrolling';
 import { DnseService, DNSESymbol, DNSEStockData, DNSEOHLCData, ExchangeType } from '../../../services/dnse.service';
-import { NeuralNetworkService, StockPrediction, TrainingProgress } from '../../../services/neural-network.service';
+import { NeuralNetworkService, StockPrediction, TrainingProgress, TrainingConfig, DEFAULT_TRAINING_CONFIG, TRAINING_CONFIG_DESCRIPTIONS, ModelStatus } from '../../../services/neural-network.service';
 import { TradingSimulationService, TradingConfig, TradingResult, TradeSignal } from '../../../services/trading-simulation.service';
+import { TradingviewChartComponent } from './tradingview-chart/tradingview-chart.component';
 import { Chart, ChartConfiguration, registerables, TimeScale } from 'chart.js';
 // @ts-ignore - chartjs-chart-financial doesn't have proper type declarations
 import { CandlestickController, CandlestickElement } from 'chartjs-chart-financial';
@@ -57,15 +58,16 @@ interface Transaction {
   capitalBefore: number;
   transactionAmount: number; // Tiền giao dịch (số tiền dùng để mua hoặc nhận được khi bán)
   capitalAfter: number;
-  positionsBefore: number;
-  positionsAfter: number;
+  totalSharesBefore: number; // Tổng số cổ phiếu đang nắm giữ trước GD
+  totalSharesAfter: number;  // Tổng số cổ phiếu đang nắm giữ sau GD
+  avgPriceAfter: number;     // Giá trung bình sau GD
   holdingDays?: number; // Chỉ có khi là giao dịch bán
 }
 
 @Component({
   selector: 'app-stock-app',
   standalone: true,
-  imports: [CommonModule, FormsModule, ScrollingModule],
+  imports: [CommonModule, FormsModule, ScrollingModule, TradingviewChartComponent],
   templateUrl: './stock-app.component.html',
   styleUrl: './stock-app.component.scss'
 })
@@ -310,6 +312,17 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     errorPercent: number;
   }> | null>(null);
   isLoadingComparison = signal(false);
+  
+  // Training configuration state
+  trainingConfig = signal<TrainingConfig>({ ...DEFAULT_TRAINING_CONFIG });
+  trainingConfigDescriptions = TRAINING_CONFIG_DESCRIPTIONS;
+  showTrainingConfig = signal(false);
+  modelStatus = signal<ModelStatus>({ exists: false, hasWeights: false, hasSimulation: false });
+  isCheckingModel = signal(false);
+  
+  // Chart state
+  showPriceTable = signal(false);
+  showChartFullscreen = signal(false);
 
   // Trading simulation state
   tradingConfig = signal<TradingConfig>({
@@ -2292,6 +2305,13 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     this.backtestStartDate.set('');
     this.backtestEndDate.set('');
     this.tradingResult.set(null);
+    // Reset neural network state
+    this.isNNReady.set(false);
+    this.nnPrediction.set(null);
+    this.nnError.set(null);
+    this.nnTrainingProgress.set(null);
+    // Check if model exists in database for this symbol
+    this.checkModelExists();
 
     // Load stock data from API
     this.dnseService.getStockDataFromAPI(symbol.symbol).subscribe({
@@ -2748,8 +2768,11 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
    */
   async trainNeuralNetwork() {
     const priceData = this.selectedSymbolPriceData();
-    if (!priceData || !priceData.c || priceData.c.length < 100) {
-      this.nnError.set('Cần ít nhất 100 ngày dữ liệu giá để huấn luyện mô hình');
+    const config = this.trainingConfig();
+    const minDataRequired = config.lookbackDays + 50; // Need at least lookback + 50 for training
+    
+    if (!priceData || !priceData.c || priceData.c.length < minDataRequired) {
+      this.nnError.set(`Cần ít nhất ${minDataRequired} ngày dữ liệu giá để huấn luyện mô hình (lookback: ${config.lookbackDays} ngày)`);
       return;
     }
 
@@ -2766,11 +2789,10 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     try {
       const prices = priceData.c;
 
+      // Use configurable training parameters
       await this.nnService.trainModel(
         prices,
-        50, // epochs
-        32, // batch size
-        0.2, // validation split
+        config,
         (progress) => {
           this.nnTrainingProgress.set(progress);
         }
@@ -2779,10 +2801,12 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
       this.isNNReady.set(true);
       this.isNNTraining.set(false);
 
-      // Save weights to API
+      // Save weights to API (database)
       try {
         await this.nnService.saveWeights(symbol.symbol).toPromise();
-        console.log('✅ Neural network weights saved to API');
+        console.log('✅ Neural network weights saved to database');
+        // Update model status
+        this.modelStatus.set({ exists: true, hasWeights: true, hasSimulation: this.modelStatus().hasSimulation });
       } catch (saveError) {
         console.error('Error saving weights:', saveError);
         // Don't fail training if save fails
@@ -2794,6 +2818,130 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
       console.error('Error training neural network:', error);
       this.nnError.set(error.message || 'Lỗi khi huấn luyện mô hình');
       this.isNNTraining.set(false);
+    }
+  }
+
+  /**
+   * Update training configuration
+   */
+  updateTrainingConfig(updates: Partial<TrainingConfig>) {
+    this.trainingConfig.update(config => ({ ...config, ...updates }));
+    this.nnService.setTrainingConfig(updates);
+  }
+
+  /**
+   * Reset training config to defaults
+   */
+  resetTrainingConfig() {
+    this.trainingConfig.set({ ...DEFAULT_TRAINING_CONFIG });
+    this.nnService.setTrainingConfig(DEFAULT_TRAINING_CONFIG);
+  }
+
+  /**
+   * Apply training preset configuration
+   * @param preset - 'fast' | 'balanced' | 'accurate'
+   */
+  applyTrainingPreset(preset: 'fast' | 'balanced' | 'accurate') {
+    const presets: Record<string, Partial<TrainingConfig>> = {
+      fast: {
+        epochs: 30,
+        batchSize: 64,
+        validationSplit: 0.15,
+        lookbackDays: 30,
+        forecastDays: 1,
+        learningRate: 0.002
+      },
+      balanced: {
+        epochs: 50,
+        batchSize: 32,
+        validationSplit: 0.2,
+        lookbackDays: 60,
+        forecastDays: 1,
+        learningRate: 0.001
+      },
+      accurate: {
+        epochs: 100,
+        batchSize: 16,
+        validationSplit: 0.25,
+        lookbackDays: 90,
+        forecastDays: 1,
+        learningRate: 0.0005
+      }
+    };
+
+    const presetConfig = presets[preset];
+    if (presetConfig) {
+      this.trainingConfig.update(config => ({ ...config, ...presetConfig }));
+      this.nnService.setTrainingConfig(presetConfig);
+    }
+  }
+
+  /**
+   * Toggle training config panel
+   */
+  toggleTrainingConfig() {
+    this.showTrainingConfig.update(v => !v);
+  }
+
+  /**
+   * Toggle price table visibility in chart tab
+   */
+  togglePriceTable() {
+    this.showPriceTable.update(v => !v);
+  }
+
+  /**
+   * Check if model exists in database for current symbol and auto-load if found
+   */
+  async checkModelExists() {
+    const symbol = this.selectedSymbol();
+    if (!symbol) return;
+
+    this.isCheckingModel.set(true);
+    try {
+      this.nnService.checkModelExists(symbol.symbol).subscribe({
+        next: async (status) => {
+          this.modelStatus.set(status);
+          this.isCheckingModel.set(false);
+          
+          // Auto-load model if exists with weights
+          if (status.hasWeights) {
+            console.log(`📦 Model found for ${symbol.symbol}, auto-loading...`);
+            await this.autoLoadModel();
+          }
+        },
+        error: (error) => {
+          console.error('Error checking model:', error);
+          this.isCheckingModel.set(false);
+        }
+      });
+    } catch (error) {
+      console.error('Error checking model:', error);
+      this.isCheckingModel.set(false);
+    }
+  }
+
+  /**
+   * Auto-load model from database (called when opening stock detail)
+   */
+  async autoLoadModel() {
+    const symbol = this.selectedSymbol();
+    if (!symbol) return;
+
+    try {
+      const loaded = await this.nnService.loadWeights(symbol.symbol);
+      if (loaded) {
+        this.isNNReady.set(true);
+        this.nnError.set(null);
+        // Load training config from service after loading weights
+        const savedConfig = this.nnService.getTrainingConfig();
+        this.trainingConfig.set(savedConfig);
+        console.log(`✅ Model for ${symbol.symbol} auto-loaded successfully`);
+        console.log(`   Training config: lookback=${savedConfig.lookbackDays}, epochs=${savedConfig.epochs}`);
+      }
+    } catch (error: any) {
+      console.warn('Auto-load model failed:', error.message);
+      // Don't show error - user can train manually
     }
   }
 
@@ -3053,7 +3201,9 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
    */
   hasEnoughDataForTraining(): boolean {
     const priceData = this.selectedSymbolPriceData();
-    return !!(priceData && priceData.c && priceData.c.length >= 100);
+    const config = this.trainingConfig();
+    const minDataRequired = config.lookbackDays + 50; // Need at least lookback + 50 for training
+    return !!(priceData && priceData.c && priceData.c.length >= minDataRequired);
   }
 
   /**
@@ -3384,46 +3534,94 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
       return [];
     }
 
-    const transactions: Transaction[] = [];
+    // Create a list of all events (buy and sell) sorted by date
+    interface TradeEvent {
+      type: 'buy' | 'sell';
+      date: number;
+      quantity: number;
+      price: number;
+      trade: typeof result.trades[0];
+    }
 
-    // Sort trades by buy date to process chronologically
-    const sortedTrades = [...result.trades].sort((a, b) => a.buyDate - b.buyDate);
-
-    for (const trade of sortedTrades) {
-      // Buy transaction
-      const buyTransaction: Transaction = {
+    const events: TradeEvent[] = [];
+    
+    for (const trade of result.trades) {
+      events.push({
         type: 'buy',
         date: trade.buyDate,
-        dateStr: this.formatDateFromTimestamp(trade.buyDate),
         quantity: trade.quantity,
         price: trade.buyPrice,
-        capitalBefore: trade.buyCapital,
-        transactionAmount: trade.buyPrice * trade.quantity, // Tiền dùng để mua
-        capitalAfter: trade.buyCapital - (trade.buyPrice * trade.quantity),
-        positionsBefore: trade.buyPositions,
-        positionsAfter: trade.buyPositions + 1
-      };
-      transactions.push(buyTransaction);
-
-      // Sell transaction
-      const sellTransaction: Transaction = {
+        trade
+      });
+      events.push({
         type: 'sell',
         date: trade.sellDate,
-        dateStr: this.formatDateFromTimestamp(trade.sellDate),
         quantity: trade.quantity,
         price: trade.sellPrice,
-        capitalBefore: trade.sellCapital,
-        transactionAmount: trade.sellPrice * trade.quantity, // Tiền nhận được khi bán
-        capitalAfter: trade.sellCapital + (trade.sellPrice * trade.quantity),
-        positionsBefore: trade.sellPositions + 1, // +1 because we're about to sell this position
-        positionsAfter: trade.sellPositions,
-        holdingDays: trade.duration
-      };
-      transactions.push(sellTransaction);
+        trade
+      });
     }
 
     // Sort by date
-    transactions.sort((a, b) => a.date - b.date);
+    events.sort((a, b) => a.date - b.date);
+
+    // Process events to calculate running totals
+    const transactions: Transaction[] = [];
+    let totalShares = 0;
+    let totalCost = 0; // Total cost of shares held (for avg price calculation)
+
+    for (const event of events) {
+      const trade = event.trade;
+      const totalSharesBefore = totalShares;
+      const avgPriceBefore = totalShares > 0 ? totalCost / totalShares : 0;
+
+      if (event.type === 'buy') {
+        // Calculate new totals after buy
+        totalShares += event.quantity;
+        totalCost += event.price * event.quantity;
+        const avgPriceAfter = totalShares > 0 ? totalCost / totalShares : 0;
+
+        transactions.push({
+          type: 'buy',
+          date: event.date,
+          dateStr: this.formatDateFromTimestamp(event.date),
+          quantity: event.quantity,
+          price: event.price,
+          capitalBefore: trade.buyCapital,
+          transactionAmount: event.price * event.quantity,
+          capitalAfter: trade.buyCapital - (event.price * event.quantity),
+          totalSharesBefore,
+          totalSharesAfter: totalShares,
+          avgPriceAfter
+        });
+      } else {
+        // Calculate new totals after sell
+        // When selling, we reduce total cost proportionally
+        const costReduction = avgPriceBefore * event.quantity;
+        totalShares -= event.quantity;
+        totalCost -= costReduction;
+        if (totalShares <= 0) {
+          totalShares = 0;
+          totalCost = 0;
+        }
+        const avgPriceAfter = totalShares > 0 ? totalCost / totalShares : 0;
+
+        transactions.push({
+          type: 'sell',
+          date: event.date,
+          dateStr: this.formatDateFromTimestamp(event.date),
+          quantity: event.quantity,
+          price: event.price,
+          capitalBefore: trade.sellCapital,
+          transactionAmount: event.price * event.quantity,
+          capitalAfter: trade.sellCapital + (event.price * event.quantity),
+          totalSharesBefore,
+          totalSharesAfter: totalShares,
+          avgPriceAfter,
+          holdingDays: trade.duration
+        });
+      }
+    }
 
     return transactions;
   }
