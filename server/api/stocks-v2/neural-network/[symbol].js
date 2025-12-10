@@ -11,7 +11,7 @@ import {
   saveNeuralNetworkWeights,
   getNeuralNetworkWeights,
   checkModelExists
-} from '../../lib/db.js';
+} from '../../../lib/db.js';
 
 export default async function handler(req, res) {
   // Set CORS headers
