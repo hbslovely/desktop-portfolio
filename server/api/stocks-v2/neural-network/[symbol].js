@@ -24,15 +24,14 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
+  const url = new URL(req.url, `http://${req.headers.host}`);
+
   try {
-    const { symbol } = req.query;
+    const { symbol, action } = req.query;
 
     if (!symbol) {
       return res.status(400).json({ success: false, error: 'Symbol is required' });
     }
-
-    // Check for action parameter
-    const action = url.searchParams.get('action');
 
     // GET: Load neural network weights from database
     if (req.method === 'GET') {
