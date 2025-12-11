@@ -39,3 +39,4 @@ echo "  python3 migrate_sqlite_to_mysql.py <sqlite_path> localhost 3306 stocks_u
 
 
 
+
