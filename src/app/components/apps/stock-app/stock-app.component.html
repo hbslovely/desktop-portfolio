@@ -37,7 +37,7 @@
         </div>
         <div class="header-search-wrapper">
           <div class="header-search-box">
-            <i class="pi pi-search"></i>
+            <i class="pi" [ngClass]="isSearchingAPI() ? 'pi-spin pi-spinner' : 'pi-search'"></i>
             <input
               type="text"
               [value]="headerSearchQuery()"
@@ -45,23 +45,37 @@
               (keydown)="onHeaderSearchKeydown($event)"
               (focus)="showSearchSuggestions.set(headerSearchQuery().length > 0)"
               (blur)="onHeaderSearchBlur()"
-              placeholder="Gõ mã cổ phiếu..."
+              placeholder="Tìm mã cổ phiếu..."
               class="header-search-input">
-            <button *ngIf="headerSearchQuery()" (click)="headerSearchQuery.set(''); showSearchSuggestions.set(false)" class="clear-search-btn">
+            <button *ngIf="headerSearchQuery()" (click)="headerSearchQuery.set(''); showSearchSuggestions.set(false); apiSearchResults.set([])" class="clear-search-btn">
               <i class="pi pi-times"></i>
             </button>
           </div>
-          <div class="search-suggestions" *ngIf="showSearchSuggestions() && getHeaderSearchSuggestions().length > 0">
+          <div class="search-suggestions" *ngIf="showSearchSuggestions() && (getHeaderSearchSuggestions().length > 0 || isSearchingAPI())">
+            <!-- Loading state -->
+            <div class="suggestion-loading" *ngIf="isSearchingAPI() && getHeaderSearchSuggestions().length === 0">
+              <i class="pi pi-spin pi-spinner"></i>
+              <span>Đang tìm kiếm...</span>
+            </div>
+            <!-- Results -->
             <div
               *ngFor="let suggestion of getHeaderSearchSuggestions()"
               class="suggestion-item"
               (mousedown)="selectSymbolFromSuggestion(suggestion)"
-              [class.fetched]="suggestion.isFetched">
-              <div class="suggestion-symbol">{{ suggestion.symbol }}</div>
+              [class.fetched]="suggestion.isFetched"
+              [class.from-api]="$any(suggestion).source === 'api'">
+              <div class="suggestion-symbol">
+                {{ suggestion.symbol }}
+                <span class="api-badge" *ngIf="$any(suggestion).source === 'api'">DB</span>
+              </div>
               <div class="suggestion-name">{{ suggestion.name }}</div>
               <div class="suggestion-exchange">
-                <span class="badge" *ngFor="let exch of suggestion.exchange">{{ exchangeNames[exch] || exch }}</span>
+                <span class="badge" *ngFor="let exch of suggestion.exchange">{{ $any(exchangeNames)[exch] || exch }}</span>
               </div>
+            </div>
+            <!-- Searching indicator at bottom -->
+            <div class="suggestion-searching" *ngIf="isSearchingAPI() && getHeaderSearchSuggestions().length > 0">
+              <i class="pi pi-spin pi-spinner"></i> Đang tìm thêm...
             </div>
           </div>
         </div>
@@ -449,8 +463,8 @@
         <section class="section" *ngIf="getKeyFinancialIndicators().length > 0">
           <h3>Chỉ số tài chính quan trọng</h3>
           <div class="key-indicators-grid">
-            <div 
-              *ngFor="let indicator of getKeyFinancialIndicators()" 
+            <div
+              *ngFor="let indicator of getKeyFinancialIndicators()"
               class="key-indicator-card"
               [class.positive]="indicator.isPositive === true"
               [class.negative]="indicator.isPositive === false"
@@ -467,17 +481,23 @@
           <h3>
             <i class="pi pi-sitemap"></i>
             Cổ phiếu cùng ngành ({{ getFormattedSameSectorStocks().length }})
+            <span class="checking-indicator" *ngIf="isCheckingSameSectorStocks()">
+              <i class="pi pi-spin pi-spinner"></i> Đang kiểm tra...
+            </span>
           </h3>
           <div class="same-sector-stocks-grid">
             <div
               *ngFor="let stock of getFormattedSameSectorStocks()"
               class="sector-stock-card"
-              [class.fetched]="stock.isFetched"
+              [class.fetched]="stock.isFetched === true"
+              [class.checking]="stock.isFetched === 'checking'"
               (click)="navigateToStock(stock.symbol)">
               <div class="stock-header">
                 <span class="stock-symbol">{{ stock.symbol }}</span>
-                <span class="stock-status" *ngIf="stock.isFetched">
-                  <i class="pi pi-check-circle"></i>
+                <span class="stock-status">
+                  <i class="pi pi-spin pi-spinner" *ngIf="stock.isFetched === 'checking'"></i>
+                  <i class="pi pi-check-circle" *ngIf="stock.isFetched === true"></i>
+                  <i class="pi pi-times-circle not-fetched" *ngIf="stock.isFetched === false"></i>
                 </span>
               </div>
               <div class="stock-name" *ngIf="stock.name">{{ stock.shortName || stock.name }}</div>
@@ -498,8 +518,8 @@
             Chỉ số tài chính
           </h3>
           <div class="financial-indicators-detailed">
-            <div 
-              *ngFor="let indicator of getAllFinancialIndicators()" 
+            <div
+              *ngFor="let indicator of getAllFinancialIndicators()"
               class="indicator-row"
               [title]="indicator.tooltip">
               <div class="indicator-label">
@@ -547,23 +567,30 @@
           <h3>
             <i class="pi pi-sitemap"></i>
             Cổ phiếu cùng ngành ({{ getFormattedSameSectorStocks().length }})
+            <span class="checking-indicator" *ngIf="isCheckingSameSectorStocks()">
+              <i class="pi pi-spin pi-spinner"></i> Đang kiểm tra...
+            </span>
           </h3>
           <div class="same-sector-stocks-list">
             <div
               *ngFor="let stock of getFormattedSameSectorStocks()"
               class="sector-stock-row"
-              [class.fetched]="stock.isFetched"
+              [class.fetched]="stock.isFetched === true"
+              [class.checking]="stock.isFetched === 'checking'"
               (click)="navigateToStock(stock.symbol)">
               <div class="stock-info">
                 <span class="stock-symbol">{{ stock.symbol }}</span>
                 <span class="stock-name">{{ stock.name || stock.shortName }}</span>
               </div>
               <div class="stock-actions">
-                <span class="fetch-status" *ngIf="stock.isFetched">
+                <span class="fetch-status checking" *ngIf="stock.isFetched === 'checking'">
+                  <i class="pi pi-spin pi-spinner"></i> Đang kiểm tra
+                </span>
+                <span class="fetch-status" *ngIf="stock.isFetched === true">
                   <i class="pi pi-check-circle"></i> Đã có dữ liệu
                 </span>
-                <span class="fetch-status pending" *ngIf="!stock.isFetched">
-                  <i class="pi pi-clock"></i> Chưa fetch
+                <span class="fetch-status pending" *ngIf="stock.isFetched === false">
+                  <i class="pi pi-times-circle"></i> Chưa có dữ liệu
                 </span>
                 <button class="btn-view">
                   <i class="pi pi-eye"></i>
@@ -659,7 +686,7 @@
                   {{ getNNStatusText() }}
                 </span>
               </div>
-              
+
               <!-- Training Progress -->
               <div class="nn-training-progress" *ngIf="isNNTraining() && nnTrainingProgress()">
                 <div class="progress-bar">
@@ -685,8 +712,8 @@
                   <span class="config-tag"><i class="pi pi-calendar"></i> {{ trainingConfig().lookbackDays }} ngày</span>
                   <span class="config-tag"><i class="pi pi-percentage"></i> {{ (trainingConfig().validationSplit * 100).toFixed(0) }}% val</span>
                 </div>
-                <button 
-                  class="btn btn-config" 
+                <button
+                  class="btn btn-config"
                   (click)="showTrainingConfig.set(true)">
                   <i class="pi pi-cog"></i>
                   Cấu hình
@@ -704,7 +731,7 @@
                   </div>
                   <div class="dialog-body">
                     <p class="config-description">Điều chỉnh các thông số để tối ưu mô hình Neural Network.</p>
-                    
+
                     <!-- Presets -->
                     <div class="config-presets-section">
                       <h4>Chọn nhanh</h4>
@@ -737,8 +764,8 @@
                             <label>{{ trainingConfigDescriptions.epochs.label }}</label>
                             <span class="field-value">{{ trainingConfig().epochs }}</span>
                           </div>
-                          <input 
-                            type="range" 
+                          <input
+                            type="range"
                             [value]="trainingConfig().epochs"
                             [min]="trainingConfigDescriptions.epochs.min"
                             [max]="trainingConfigDescriptions.epochs.max"
@@ -753,8 +780,8 @@
                             <label>{{ trainingConfigDescriptions.lookbackDays.label }}</label>
                             <span class="field-value">{{ trainingConfig().lookbackDays }} ngày</span>
                           </div>
-                          <input 
-                            type="range" 
+                          <input
+                            type="range"
                             [value]="trainingConfig().lookbackDays"
                             [min]="trainingConfigDescriptions.lookbackDays.min"
                             [max]="trainingConfigDescriptions.lookbackDays.max"
@@ -769,8 +796,8 @@
                             <label>{{ trainingConfigDescriptions.batchSize.label }}</label>
                             <span class="field-value">{{ trainingConfig().batchSize }}</span>
                           </div>
-                          <input 
-                            type="range" 
+                          <input
+                            type="range"
                             [value]="trainingConfig().batchSize"
                             [min]="trainingConfigDescriptions.batchSize.min"
                             [max]="trainingConfigDescriptions.batchSize.max"
@@ -785,8 +812,8 @@
                             <label>{{ trainingConfigDescriptions.validationSplit.label }}</label>
                             <span class="field-value">{{ (trainingConfig().validationSplit * 100).toFixed(0) }}%</span>
                           </div>
-                          <input 
-                            type="range" 
+                          <input
+                            type="range"
                             [value]="trainingConfig().validationSplit"
                             [min]="trainingConfigDescriptions.validationSplit.min"
                             [max]="trainingConfigDescriptions.validationSplit.max"
@@ -801,8 +828,8 @@
                             <label>{{ trainingConfigDescriptions.learningRate.label }}</label>
                             <span class="field-value">{{ trainingConfig().learningRate }}</span>
                           </div>
-                          <input 
-                            type="range" 
+                          <input
+                            type="range"
                             [value]="trainingConfig().learningRate"
                             [min]="trainingConfigDescriptions.learningRate.min"
                             [max]="trainingConfigDescriptions.learningRate.max"
@@ -817,8 +844,8 @@
                             <label>{{ trainingConfigDescriptions.forecastDays.label }}</label>
                             <span class="field-value">{{ trainingConfig().forecastDays }} ngày</span>
                           </div>
-                          <input 
-                            type="range" 
+                          <input
+                            type="range"
                             [value]="trainingConfig().forecastDays"
                             [min]="trainingConfigDescriptions.forecastDays.min"
                             [max]="trainingConfigDescriptions.forecastDays.max"
@@ -843,15 +870,15 @@
               <!-- Action Buttons -->
               <div class="nn-actions" *ngIf="selectedSymbolPriceData()">
                 <div class="nn-actions-row">
-                  <button 
-                    class="btn-train" 
+                  <button
+                    class="btn-train"
                     (click)="trainNeuralNetwork()"
                     [disabled]="isNNTraining() || !hasEnoughDataForTraining()">
                     <i class="pi" [ngClass]="isNNTraining() ? 'pi-spin pi-spinner' : 'pi-cog'"></i>
                     {{ isNNTraining() ? 'Đang huấn luyện...' : 'Huấn luyện mô hình' }}
                   </button>
-                  <button 
-                    class="btn-predict" 
+                  <button
+                    class="btn-predict"
                     (click)="predictWithNeuralNetwork()"
                     [disabled]="!isNNReady() || isNNTraining()">
                     <i class="pi pi-chart-line"></i>
@@ -859,15 +886,15 @@
                   </button>
                 </div>
                 <div class="nn-actions-row">
-                  <button 
-                    class="btn-reload" 
+                  <button
+                    class="btn-reload"
                     (click)="reloadDataAndRetrain()"
                     [disabled]="isNNTraining() || isLoadingPrice()">
                     <i class="pi" [ngClass]="isLoadingPrice() ? 'pi-spin pi-spinner' : 'pi-refresh'"></i>
                     {{ isLoadingPrice() ? 'Đang tải...' : 'Reload & Train lại' }}
                   </button>
-                  <button 
-                    class="btn-load" 
+                  <button
+                    class="btn-load"
                     (click)="loadSavedWeights()"
                     [disabled]="isNNTraining()"
                     [class.has-model]="modelStatus().hasWeights">
@@ -936,7 +963,7 @@
           <div class="nn-comparison-section" *ngIf="isNNReady()">
             <div class="section-header">
               <h4>So sánh dự đoán vs thực tế (10 phiên gần đây)</h4>
-              <button 
+              <button
                 class="btn btn-small"
                 (click)="loadPredictionComparison()"
                 [disabled]="isLoadingComparison() || isNNTraining()">
@@ -994,17 +1021,17 @@
         <!-- Trading Simulation Section -->
         <section class="section backtest-section">
           <h3>Mô phỏng Giao dịch (Backtesting)</h3>
-          
+
           <!-- Backtest Sub-tabs -->
           <div class="backtest-tabs">
-            <button 
+            <button
               class="backtest-tab-btn"
               [class.active]="backtestActiveTab() === 'setup'"
               (click)="backtestActiveTab.set('setup')">
               <i class="pi pi-cog"></i>
               <span>Thiết lập</span>
             </button>
-            <button 
+            <button
               class="backtest-tab-btn"
               [class.active]="backtestActiveTab() === 'results'"
               (click)="backtestActiveTab.set('results')"
@@ -1013,7 +1040,7 @@
               <span>Kết quả</span>
               <span class="badge-count" *ngIf="tradingResult()">{{ tradingResult()!.totalTrades }}</span>
             </button>
-            <button 
+            <button
               class="backtest-tab-btn"
               [class.active]="backtestActiveTab() === 'chart'"
               (click)="backtestActiveTab.set('chart')"
@@ -1022,7 +1049,7 @@
               <span>Biểu đồ</span>
             </button>
           </div>
-          
+
           <div class="trading-simulation-section">
             <!-- TAB 1: SETUP -->
             <div class="backtest-tab-content" *ngIf="backtestActiveTab() === 'setup'">
@@ -1032,8 +1059,8 @@
                 <div class="date-range-inputs">
                   <div class="date-input-item">
                     <label>Ngày bắt đầu:</label>
-                    <input 
-                      type="date" 
+                    <input
+                      type="date"
                       [value]="backtestStartDate()"
                       [min]="getAvailableDateRange()?.minDate"
                       [max]="getAvailableDateRange()?.maxDate"
@@ -1042,8 +1069,8 @@
                   </div>
                   <div class="date-input-item">
                     <label>Ngày kết thúc:</label>
-                    <input 
-                      type="date" 
+                    <input
+                      type="date"
                       [value]="backtestEndDate()"
                       [min]="getAvailableDateRange()?.minDate"
                       [max]="getAvailableDateRange()?.maxDate"
@@ -1052,8 +1079,8 @@
                   </div>
                   <div class="date-input-item">
                     <label>Khoảng thời gian:</label>
-                    <button 
-                      class="btn-quick-range" 
+                    <button
+                      class="btn-quick-range"
                       (click)="backtestStartDate.set(getAvailableDateRange()?.minDate || ''); backtestEndDate.set(getAvailableDateRange()?.maxDate || '')">
                       <i class="pi pi-calendar"></i>
                       Toàn bộ
@@ -1072,7 +1099,7 @@
               <div class="strategy-selection">
                 <h4>Chọn chiến lược giao dịch</h4>
                 <div class="strategy-grid">
-                  <div class="strategy-card" 
+                  <div class="strategy-card"
                        *ngFor="let strategy of availableStrategies"
                        [class.active]="tradingConfig().strategy === strategy"
                        (click)="updateTradingStrategy(strategy)">
@@ -1187,8 +1214,8 @@
                 <div class="config-grid">
                   <div class="config-item capital-config">
                     <label>Vốn ban đầu (đồng):</label>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       [value]="tradingConfig().initialCapital | number:'1.0-0'"
                       (input)="updateTradingConfig({ initialCapital: parseCapitalInput($any($event.target).value) })"
                       (blur)="formatCapitalInput($event)"
@@ -1198,7 +1225,7 @@
                       <span>{{ getInitialCapitalText() }}</span>
                     </div>
                     <div class="capital-presets">
-                      <button type="button" (click)="updateTradingConfig({ initialCapital: 50000000 })" 
+                      <button type="button" (click)="updateTradingConfig({ initialCapital: 50000000 })"
                               [class.active]="tradingConfig().initialCapital === 50000000">50M</button>
                       <button type="button" (click)="updateTradingConfig({ initialCapital: 100000000 })"
                               [class.active]="tradingConfig().initialCapital === 100000000">100M</button>
@@ -1212,8 +1239,8 @@
                   </div>
                   <div class="config-item">
                     <label>Cắt lỗ (%):</label>
-                    <input 
-                      type="number" 
+                    <input
+                      type="number"
                       [value]="tradingConfig().stopLossPercent"
                       (input)="updateTradingConfig({ stopLossPercent: +$any($event.target).value })"
                       min="1"
@@ -1222,8 +1249,8 @@
                   </div>
                   <div class="config-item">
                     <label>Chốt lời (%):</label>
-                    <input 
-                      type="number" 
+                    <input
+                      type="number"
                       [value]="tradingConfig().takeProfitPercent"
                       (input)="updateTradingConfig({ takeProfitPercent: +$any($event.target).value })"
                       min="0"
@@ -1235,14 +1262,14 @@
                   </div>
                   <div class="config-item trailing-stop-config">
                     <label>
-                      <input type="checkbox" 
+                      <input type="checkbox"
                              [checked]="tradingConfig().useTrailingStop"
                              (change)="updateTradingConfig({ useTrailingStop: $any($event.target).checked })">
                       Trailing Stop
                     </label>
                     <div class="trailing-input" *ngIf="tradingConfig().useTrailingStop">
-                      <input 
-                        type="number" 
+                      <input
+                        type="number"
                         [value]="tradingConfig().trailingStopPercent"
                         (input)="updateTradingConfig({ trailingStopPercent: +$any($event.target).value })"
                         min="1"
@@ -1256,8 +1283,8 @@
                   </div>
                   <div class="config-item">
                     <label>Số vị thế tối đa:</label>
-                    <input 
-                      type="number" 
+                    <input
+                      type="number"
                       [value]="tradingConfig().maxPositions"
                       (input)="updateTradingConfig({ maxPositions: +$any($event.target).value })"
                       min="1"
@@ -1267,8 +1294,8 @@
                   </div>
                   <div class="config-item">
                     <label>T+ (ngày):</label>
-                    <input 
-                      type="number" 
+                    <input
+                      type="number"
                       [value]="tradingConfig().tPlusDays"
                       (input)="updateTradingConfig({ tPlusDays: +$any($event.target).value })"
                       min="0"
@@ -1336,7 +1363,7 @@
                     <div class="stat-percent">{{ tradingResult()!.maxDrawdownPercent.toFixed(2) }}%</div>
                   </div>
                 </div>
-                
+
                 <!-- Strategy Performance Metrics -->
                 <div class="performance-metrics" *ngIf="tradingResult()">
                   <h5>📊 Đánh giá hiệu suất chiến lược</h5>
@@ -1414,7 +1441,7 @@
                         </tr>
                       </thead>
                       <tbody>
-                        <tr *ngFor="let tx of transactions()" 
+                        <tr *ngFor="let tx of transactions()"
                             [ngClass]="{
                               'transaction-buy': tx.type === 'buy',
                               'transaction-sell': tx.type === 'sell',
@@ -1473,7 +1500,7 @@
                     </table>
                   </div>
                 </div>
-                
+
                 <!-- Action buttons -->
                 <div class="results-actions">
                   <button class="btn" (click)="backtestActiveTab.set('chart')">
@@ -1486,7 +1513,7 @@
                   </button>
                 </div>
               </div>
-              
+
               <!-- Empty state -->
               <div class="empty-results" *ngIf="!tradingResult()">
                 <i class="pi pi-chart-bar"></i>
@@ -1515,13 +1542,13 @@
                     </span>
                   </div>
                 </div>
-                <app-tradingview-chart 
+                <app-tradingview-chart
                   [data]="selectedSymbolPriceData()"
                   [symbol]="selectedSymbol()?.symbol || ''"
                   [markers]="chartMarkers()">
                 </app-tradingview-chart>
               </div>
-              
+
               <!-- Empty state -->
               <div class="empty-results" *ngIf="!tradingResult()">
                 <i class="pi pi-chart-line"></i>
@@ -1539,7 +1566,7 @@
         <section class="section" *ngIf="tradingResult()">
           <h3>Đánh giá 1 tuần gần đây</h3>
           <div class="recent-week-analysis" *ngIf="getRecentWeekAnalysis() as weekAnalysis">
-            
+
             <!-- Today's Recommendation -->
             <div class="today-recommendation" *ngIf="weekAnalysis.todayRecommendation">
               <h4>Khuyến nghị hôm nay</h4>
@@ -1685,7 +1712,7 @@
               </button>
             </div>
           </div>
-          
+
           <div class="tradingview-chart-container compact" *ngIf="selectedSymbolPriceData() && !isLoadingPrice()">
             <app-tradingview-chart
               [data]="selectedSymbolPriceData()"
@@ -1693,12 +1720,12 @@
               [theme]="'dark'">
             </app-tradingview-chart>
           </div>
-          
+
           <div class="price-loading" *ngIf="isLoadingPrice()">
             <i class="pi pi-spin pi-spinner"></i>
             <span>Đang tải dữ liệu giá...</span>
           </div>
-          
+
           <div class="no-data" *ngIf="!selectedSymbolPriceData() && !isLoadingPrice()">
             <i class="pi pi-chart-line"></i>
             <p>Chưa có dữ liệu giá. Nhấn "Cập nhật" để tải.</p>
@@ -1784,7 +1811,7 @@
             <i class="pi pi-compass"></i>
             Tư vấn chiến lược giao dịch
           </h3>
-          
+
           <!-- Need Model Warning -->
           <div class="advisor-warning" *ngIf="!isNNReady()">
             <div class="warning-content">
@@ -1814,8 +1841,8 @@
               <div class="input-row">
                 <div class="input-group">
                   <label>Số CP đang nắm giữ:</label>
-                  <input 
-                    type="number" 
+                  <input
+                    type="number"
                     [ngModel]="userHoldingShares()"
                     (ngModelChange)="userHoldingShares.set($event)"
                     min="0"
@@ -1824,8 +1851,8 @@
                 </div>
                 <div class="input-group">
                   <label>Giá trung bình (VNĐ):</label>
-                  <input 
-                    type="number" 
+                  <input
+                    type="number"
                     [ngModel]="userAveragePrice()"
                     (ngModelChange)="userAveragePrice.set($event)"
                     min="0"
@@ -1942,7 +1969,7 @@
                 <div class="sessions-info">
                   <i class="pi pi-clock"></i>
                   <span>
-                    Dự kiến đạt vùng chốt lãi sau khoảng 
+                    Dự kiến đạt vùng chốt lãi sau khoảng
                     <strong>{{ strategyRecommendation()!.estimatedSessions }} phiên</strong>
                     giao dịch (dựa vào biến động trung bình)
                   </span>
@@ -2068,23 +2095,23 @@
         </span>
       </div>
       <div class="sync-actions">
-        <button 
-          class="btn-sync" 
+        <button
+          class="btn-sync"
           (click)="checkMissingStocksFromDNSE()"
           [disabled]="isSyncingDNSE()">
           <i class="pi" [ngClass]="isSyncingDNSE() ? 'pi-spin pi-spinner' : 'pi-search'"></i>
           {{ isSyncingDNSE() ? 'Đang kiểm tra...' : 'Kiểm tra DNSE' }}
         </button>
-        <button 
-          class="btn-sync primary" 
+        <button
+          class="btn-sync primary"
           *ngIf="missingSymbolsCount() > 0"
           (click)="syncMissingStocks()"
           [disabled]="isSyncingDNSE()">
           <i class="pi pi-cloud-download"></i>
           Thêm {{ missingSymbolsCount() }} cổ phiếu
         </button>
-        <button 
-          class="btn-sync" 
+        <button
+          class="btn-sync"
           (click)="updateAllPricesFromDNSE()"
           [disabled]="isUpdatingPrices()">
           <i class="pi" [ngClass]="isUpdatingPrices() ? 'pi-spin pi-spinner' : 'pi-refresh'"></i>
@@ -2164,7 +2191,7 @@
               class="btn-icon"
               (click)="updatePriceFromDNSE(symbol)"
               [disabled]="isUpdatingPrices() || symbol.isFetching"
-              title="Cập nhật giá">
+              title="Cập nhật thông tin & giá">
               <i class="pi" [ngClass]="updatingPriceSymbol() === symbol.symbol ? 'pi-spin pi-spinner' : 'pi-sync'"></i>
             </button>
             <button
@@ -2177,13 +2204,13 @@
             </button>
           </div>
         </div>
-        
+
         <!-- Loading more indicator -->
         <div *ngIf="isLoadingMore()" class="loading-more">
           <i class="pi pi-spin pi-spinner"></i>
           <span>Đang tải thêm...</span>
         </div>
-        
+
         <!-- End of list indicator -->
         <div *ngIf="!hasMoreData() && filteredSymbols().length > 0" class="end-of-list">
           <span>Đã hiển thị tất cả {{ filteredSymbols().length }} / {{ paginationTotal() }} cổ phiếu</span>
@@ -2218,20 +2245,20 @@
         <i class="pi pi-times"></i>
       </button>
     </div>
-    
+
     <div class="dnse-dialog-content">
       <!-- Loading State -->
       <div class="dialog-status loading" *ngIf="dnseDialogStatus() === 'loading'">
         <i class="pi pi-spin pi-spinner"></i>
         <span>{{ dnseDialogMessage() }}</span>
       </div>
-      
+
       <!-- Error State -->
       <div class="dialog-status error" *ngIf="dnseDialogStatus() === 'error'">
         <i class="pi pi-times-circle"></i>
         <span>{{ dnseDialogMessage() }}</span>
       </div>
-      
+
       <!-- Success State -->
       <div class="dialog-result" *ngIf="dnseDialogStatus() === 'success'">
         <div class="result-summary">
@@ -2244,7 +2271,7 @@
               <span class="result-value">{{ dbSymbolsCount() }} cổ phiếu</span>
             </div>
           </div>
-          
+
           <div class="result-item">
             <div class="result-icon dnse">
               <i class="pi pi-cloud"></i>
@@ -2254,7 +2281,7 @@
               <span class="result-value">{{ dnseSymbolsCount() }} cổ phiếu</span>
             </div>
           </div>
-          
+
           <div class="result-item" [class.highlight]="missingSymbolsCount() > 0">
             <div class="result-icon missing">
               <i class="pi" [ngClass]="missingSymbolsCount() > 0 ? 'pi-exclamation-triangle' : 'pi-check-circle'"></i>
@@ -2265,7 +2292,7 @@
             </div>
           </div>
         </div>
-        
+
         <!-- Missing symbols list -->
         <div class="missing-symbols-section" *ngIf="missingSymbolsCount() > 0">
           <h4>
@@ -2276,7 +2303,7 @@
             <span class="symbol-tag" *ngFor="let symbol of missingSymbols()">{{ symbol }}</span>
           </div>
         </div>
-        
+
         <!-- No missing symbols -->
         <div class="no-missing" *ngIf="missingSymbolsCount() === 0">
           <i class="pi pi-check-circle"></i>
@@ -2284,13 +2311,13 @@
         </div>
       </div>
     </div>
-    
+
     <div class="dnse-dialog-footer" *ngIf="dnseDialogStatus() !== 'loading'">
       <button class="btn-dialog secondary" (click)="closeDnseDialog()">
         Đóng
       </button>
-      <button 
-        class="btn-dialog primary" 
+      <button
+        class="btn-dialog primary"
         *ngIf="missingSymbolsCount() > 0"
         (click)="syncMissingStocks(); closeDnseDialog()">
         <i class="pi pi-cloud-download"></i>
