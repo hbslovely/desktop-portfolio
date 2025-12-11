@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { StockPrediction } from './neural-network.service';
 
 // Available trading strategies
-export type TradingStrategy = 
+export type TradingStrategy =
   | 'neural_network'    // Neural Network based (current)
   | 'ma_crossover'      // Moving Average Crossover (SMA)
   | 'ema_crossover'     // Exponential Moving Average Crossover
@@ -14,17 +14,17 @@ export interface StrategyConfig {
   // MA Crossover settings
   maShortPeriod: number;      // Short MA period (default: 10)
   maLongPeriod: number;       // Long MA period (default: 30)
-  
+
   // RSI settings
   rsiPeriod: number;          // RSI period (default: 14)
   rsiOverbought: number;      // Overbought level (default: 70)
   rsiOversold: number;        // Oversold level (default: 30)
-  
+
   // MACD settings
   macdFastPeriod: number;     // Fast EMA period (default: 12)
   macdSlowPeriod: number;     // Slow EMA period (default: 26)
   macdSignalPeriod: number;   // Signal line period (default: 9)
-  
+
   // Bollinger Bands settings
   bbPeriod: number;           // BB period (default: 20)
   bbStdDev: number;           // Standard deviation multiplier (default: 2)
@@ -37,11 +37,11 @@ export interface TradingConfig {
   minConfidence: number;      // Độ tin cậy tối thiểu để mua (0-1)
   maxPositions: number;       // Số lượng cổ phiếu tối đa có thể mua cùng lúc
   tPlusDays: number;          // Số ngày T+ (mặc định T+2, nghĩa là sau 2 ngày mới được bán)
-  
+
   // Strategy selection
   strategy: TradingStrategy;  // Trading strategy to use
   strategyConfig: StrategyConfig; // Strategy-specific configuration
-  
+
   // Advanced options
   useTrailingStop: boolean;   // Sử dụng trailing stop loss (điểm cắt lỗ di động)
   trailingStopPercent: number; // % trailing stop (khoảng cách từ đỉnh)
@@ -83,7 +83,7 @@ export interface TradingResult {
   maxDrawdown: number; // Mức giảm tối đa
   maxDrawdownPercent: number;
   strategy: TradingStrategy; // Strategy used
-  
+
   // Performance metrics
   avgWinAmount: number; // Average winning trade amount
   avgLossAmount: number; // Average losing trade amount
@@ -92,7 +92,7 @@ export interface TradingResult {
   largestWin: number; // Largest single winning trade
   largestLoss: number; // Largest single losing trade
   avgHoldingDays: number; // Average holding period in days
-  
+
   trades: Array<{
     buyDate: number;
     sellDate: number;
@@ -172,9 +172,9 @@ export class TradingSimulationService {
     config: TradingConfig
   ): TradeSignal[] {
     const strategy = config.strategy || 'neural_network';
-    
+
     console.log(`[TradingSimulation] Using strategy: ${strategy}`);
-    
+
     switch (strategy) {
       case 'ma_crossover':
         return this.generateMACrossoverSignals(prices, timestamps, config, false);
@@ -242,7 +242,7 @@ export class TradingSimulationService {
           reason = `NN: Dự đoán tăng ${expectedReturnPercent.toFixed(2)}%, độ tin cậy ${(confidence * 100).toFixed(1)}%`;
         } else if (trend === 'down' || expectedReturnPercent < -0.5 || (i > 0 && prices[i] < prices[i - 1] * 0.98)) {
           action = 'sell';
-          reason = trend === 'down' 
+          reason = trend === 'down'
             ? `NN: Dự đoán giảm ${Math.abs(expectedReturnPercent).toFixed(2)}%`
             : `NN: Giá giảm, bán để bảo toàn vốn`;
         } else {
@@ -276,17 +276,17 @@ export class TradingSimulationService {
     const strategyConfig = config.strategyConfig || DEFAULT_STRATEGY_CONFIG;
     const shortPeriod = strategyConfig.maShortPeriod;
     const longPeriod = strategyConfig.maLongPeriod;
-    
+
     const shortMA = useEMA ? this.calculateEMA(prices, shortPeriod) : this.calculateSMA(prices, shortPeriod);
     const longMA = useEMA ? this.calculateEMA(prices, longPeriod) : this.calculateSMA(prices, longPeriod);
-    
+
     let buyCount = 0, sellCount = 0, holdCount = 0;
     let previousCross = 0; // 1 = short above long, -1 = short below long, 0 = not yet determined
-    
+
     for (let i = 0; i < prices.length - 1; i++) {
       const timestamp = timestamps[i];
       const currentPrice = prices[i];
-      
+
       // Need enough data for long MA
       if (i < longPeriod - 1 || shortMA[i] === null || longMA[i] === null) {
         signals.push({
@@ -299,12 +299,12 @@ export class TradingSimulationService {
         holdCount++;
         continue;
       }
-      
+
       const currentCross = shortMA[i]! > longMA[i]! ? 1 : -1;
       let action: 'buy' | 'sell' | 'hold' = 'hold';
       let reason = '';
       let confidence = 0.6;
-      
+
       // Crossover detection
       if (previousCross !== 0 && currentCross !== previousCross) {
         if (currentCross === 1) {
@@ -321,16 +321,16 @@ export class TradingSimulationService {
       } else {
         reason = `${useEMA ? 'EMA' : 'MA'}: Giữ - MA${shortPeriod}=${shortMA[i]!.toFixed(2)}, MA${longPeriod}=${longMA[i]!.toFixed(2)}`;
       }
-      
+
       previousCross = currentCross;
-      
+
       if (action === 'buy') buyCount++;
       else if (action === 'sell') sellCount++;
       else holdCount++;
-      
+
       signals.push({ date: timestamp, price: currentPrice, action, confidence, reason });
     }
-    
+
     this.logSignalStats(`${useEMA ? 'EMA' : 'MA'} Crossover`, signals.length, buyCount, sellCount, holdCount);
     return signals;
   }
@@ -349,16 +349,16 @@ export class TradingSimulationService {
     const period = strategyConfig.rsiPeriod;
     const overbought = strategyConfig.rsiOverbought;
     const oversold = strategyConfig.rsiOversold;
-    
+
     const rsi = this.calculateRSI(prices, period);
-    
+
     let buyCount = 0, sellCount = 0, holdCount = 0;
-    
+
     for (let i = 0; i < prices.length - 1; i++) {
       const timestamp = timestamps[i];
       const currentPrice = prices[i];
       const currentRSI = rsi[i];
-      
+
       if (currentRSI === null) {
         signals.push({
           date: timestamp,
@@ -370,11 +370,11 @@ export class TradingSimulationService {
         holdCount++;
         continue;
       }
-      
+
       let action: 'buy' | 'sell' | 'hold' = 'hold';
       let reason = '';
       let confidence = 0.6;
-      
+
       if (currentRSI <= oversold) {
         action = 'buy';
         confidence = 0.7 + (oversold - currentRSI) / 100;
@@ -386,14 +386,14 @@ export class TradingSimulationService {
       } else {
         reason = `RSI: Trung tính (RSI=${currentRSI.toFixed(1)}) - Giữ`;
       }
-      
+
       if (action === 'buy') buyCount++;
       else if (action === 'sell') sellCount++;
       else holdCount++;
-      
+
       signals.push({ date: timestamp, price: currentPrice, action, confidence, reason });
     }
-    
+
     this.logSignalStats('RSI', signals.length, buyCount, sellCount, holdCount);
     return signals;
   }
@@ -412,16 +412,16 @@ export class TradingSimulationService {
     const fastPeriod = strategyConfig.macdFastPeriod;
     const slowPeriod = strategyConfig.macdSlowPeriod;
     const signalPeriod = strategyConfig.macdSignalPeriod;
-    
+
     const { macd, signal: signalLine, histogram } = this.calculateMACD(prices, fastPeriod, slowPeriod, signalPeriod);
-    
+
     let buyCount = 0, sellCount = 0, holdCount = 0;
     let previousHistogram = 0;
-    
+
     for (let i = 0; i < prices.length - 1; i++) {
       const timestamp = timestamps[i];
       const currentPrice = prices[i];
-      
+
       if (macd[i] === null || signalLine[i] === null) {
         signals.push({
           date: timestamp,
@@ -433,12 +433,12 @@ export class TradingSimulationService {
         holdCount++;
         continue;
       }
-      
+
       const currentHistogram = histogram[i]!;
       let action: 'buy' | 'sell' | 'hold' = 'hold';
       let reason = '';
       let confidence = 0.6;
-      
+
       // Crossover detection using histogram
       if (previousHistogram !== 0) {
         if (previousHistogram < 0 && currentHistogram > 0) {
@@ -457,16 +457,16 @@ export class TradingSimulationService {
       } else {
         reason = `MACD: Khởi tạo - MACD=${macd[i]!.toFixed(2)}, Signal=${signalLine[i]!.toFixed(2)}`;
       }
-      
+
       previousHistogram = currentHistogram;
-      
+
       if (action === 'buy') buyCount++;
       else if (action === 'sell') sellCount++;
       else holdCount++;
-      
+
       signals.push({ date: timestamp, price: currentPrice, action, confidence, reason });
     }
-    
+
     this.logSignalStats('MACD', signals.length, buyCount, sellCount, holdCount);
     return signals;
   }
@@ -484,15 +484,15 @@ export class TradingSimulationService {
     const strategyConfig = config.strategyConfig || DEFAULT_STRATEGY_CONFIG;
     const period = strategyConfig.bbPeriod;
     const stdDevMultiplier = strategyConfig.bbStdDev;
-    
+
     const { upper, middle, lower } = this.calculateBollingerBands(prices, period, stdDevMultiplier);
-    
+
     let buyCount = 0, sellCount = 0, holdCount = 0;
-    
+
     for (let i = 0; i < prices.length - 1; i++) {
       const timestamp = timestamps[i];
       const currentPrice = prices[i];
-      
+
       if (upper[i] === null || middle[i] === null || lower[i] === null) {
         signals.push({
           date: timestamp,
@@ -504,14 +504,14 @@ export class TradingSimulationService {
         holdCount++;
         continue;
       }
-      
+
       let action: 'buy' | 'sell' | 'hold' = 'hold';
       let reason = '';
       let confidence = 0.6;
-      
+
       const bandwidth = upper[i]! - lower[i]!;
       const percentB = (currentPrice - lower[i]!) / bandwidth; // 0 = at lower band, 1 = at upper band
-      
+
       if (currentPrice <= lower[i]!) {
         action = 'buy';
         confidence = 0.7 + (lower[i]! - currentPrice) / currentPrice;
@@ -523,14 +523,14 @@ export class TradingSimulationService {
       } else {
         reason = `BB: Giá trong band - Lower=${lower[i]!.toFixed(2)}, Price=${currentPrice.toFixed(2)}, Upper=${upper[i]!.toFixed(2)} (%B=${(percentB*100).toFixed(1)}%)`;
       }
-      
+
       if (action === 'buy') buyCount++;
       else if (action === 'sell') sellCount++;
       else holdCount++;
-      
+
       signals.push({ date: timestamp, price: currentPrice, action, confidence, reason });
     }
-    
+
     this.logSignalStats('Bollinger Bands', signals.length, buyCount, sellCount, holdCount);
     return signals;
   }
@@ -559,7 +559,7 @@ export class TradingSimulationService {
   private calculateEMA(prices: number[], period: number): (number | null)[] {
     const ema: (number | null)[] = [];
     const multiplier = 2 / (period + 1);
-    
+
     for (let i = 0; i < prices.length; i++) {
       if (i < period - 1) {
         ema.push(null);
@@ -582,17 +582,17 @@ export class TradingSimulationService {
     const rsi: (number | null)[] = [];
     const gains: number[] = [];
     const losses: number[] = [];
-    
+
     // Calculate price changes
     for (let i = 1; i < prices.length; i++) {
       const change = prices[i] - prices[i - 1];
       gains.push(change > 0 ? change : 0);
       losses.push(change < 0 ? -change : 0);
     }
-    
+
     // First value is null
     rsi.push(null);
-    
+
     for (let i = 0; i < gains.length; i++) {
       if (i < period - 1) {
         rsi.push(null);
@@ -610,7 +610,7 @@ export class TradingSimulationService {
         const prevAvgGain = (100 - prevRSI) !== 0 ? (prevRSI / (100 - prevRSI)) : 0;
         const avgGain = (prevAvgGain * (period - 1) + gains[i]) / period;
         const avgLoss = ((1 / (prevAvgGain + 0.0001)) * (period - 1) + losses[i]) / period;
-        
+
         if (avgLoss === 0) {
           rsi.push(100);
         } else {
@@ -619,7 +619,7 @@ export class TradingSimulationService {
         }
       }
     }
-    
+
     return rsi;
   }
 
@@ -634,7 +634,7 @@ export class TradingSimulationService {
   ): { macd: (number | null)[]; signal: (number | null)[]; histogram: (number | null)[] } {
     const fastEMA = this.calculateEMA(prices, fastPeriod);
     const slowEMA = this.calculateEMA(prices, slowPeriod);
-    
+
     const macd: (number | null)[] = [];
     for (let i = 0; i < prices.length; i++) {
       if (fastEMA[i] === null || slowEMA[i] === null) {
@@ -643,15 +643,15 @@ export class TradingSimulationService {
         macd.push(fastEMA[i]! - slowEMA[i]!);
       }
     }
-    
+
     // Calculate signal line (EMA of MACD)
     const macdValues = macd.filter(v => v !== null) as number[];
     const signalEMA = this.calculateEMA(macdValues, signalPeriod);
-    
+
     const signal: (number | null)[] = [];
     const histogram: (number | null)[] = [];
     let signalIndex = 0;
-    
+
     for (let i = 0; i < prices.length; i++) {
       if (macd[i] === null) {
         signal.push(null);
@@ -667,7 +667,7 @@ export class TradingSimulationService {
         signalIndex++;
       }
     }
-    
+
     return { macd, signal, histogram };
   }
 
@@ -682,7 +682,7 @@ export class TradingSimulationService {
     const middle = this.calculateSMA(prices, period);
     const upper: (number | null)[] = [];
     const lower: (number | null)[] = [];
-    
+
     for (let i = 0; i < prices.length; i++) {
       if (middle[i] === null) {
         upper.push(null);
@@ -692,12 +692,12 @@ export class TradingSimulationService {
         const mean = middle[i]!;
         const variance = slice.reduce((sum, p) => sum + Math.pow(p - mean, 2), 0) / period;
         const stdDev = Math.sqrt(variance);
-        
+
         upper.push(mean + stdDevMultiplier * stdDev);
         lower.push(mean - stdDevMultiplier * stdDev);
       }
     }
-    
+
     return { upper, middle, lower };
   }
 
@@ -721,10 +721,14 @@ export class TradingSimulationService {
     const positions: Position[] = [];
     const completedTrades: TradingResult['trades'] = [];
     const equityCurve: TradingResult['equityCurve'] = [];
-    
+
     let maxCapital = capital;
     let maxDrawdown = 0;
     let maxDrawdownPercent = 0;
+
+    // Track last sell date for T+2 cash settlement rule
+    // Cannot buy on the same day after selling (money takes T+2 to settle)
+    let lastSellTimestamp: number | null = null;
 
     console.log(`[TradingSimulation] Starting simulation with ${prices.length} prices, ${signals.length} signals`);
 
@@ -748,7 +752,7 @@ export class TradingSimulationService {
       }
 
       // Update existing positions
-      
+
       for (let j = positions.length - 1; j >= 0; j--) {
         const position = positions[j];
         position.currentPrice = actualPrice;
@@ -775,7 +779,7 @@ export class TradingSimulationService {
           const profit = (sellPrice - position.buyPrice) * position.quantity;
           const profitPercent = ((sellPrice - position.buyPrice) / position.buyPrice) * 100;
           const duration = daysSinceBuy;
-          
+
           const sellCapital = capital;
           const sellPositions = positions.length - 1;
 
@@ -795,6 +799,7 @@ export class TradingSimulationService {
           });
 
           capital += sellPrice * position.quantity;
+          lastSellTimestamp = timestamp; // Track sell date for T+2 cash settlement
           positions.splice(j, 1);
           continue;
         }
@@ -806,7 +811,7 @@ export class TradingSimulationService {
           const profit = (sellPrice - position.buyPrice) * position.quantity;
           const profitPercent = ((sellPrice - position.buyPrice) / position.buyPrice) * 100;
           const duration = daysSinceBuy;
-          
+
           const sellCapital = capital;
           const sellPositions = positions.length - 1;
 
@@ -826,6 +831,7 @@ export class TradingSimulationService {
           });
 
           capital += sellPrice * position.quantity;
+          lastSellTimestamp = timestamp; // Track sell date for T+2 cash settlement
           positions.splice(j, 1);
           continue;
         }
@@ -838,7 +844,7 @@ export class TradingSimulationService {
           const profit = (sellPrice - position.buyPrice) * position.quantity;
           const profitPercent = ((sellPrice - position.buyPrice) / position.buyPrice) * 100;
           const duration = daysSinceBuy;
-          
+
           const sellCapital = capital;
           const sellPositions = positions.length - 1;
 
@@ -858,6 +864,7 @@ export class TradingSimulationService {
           });
 
           capital += sellPrice * position.quantity;
+          lastSellTimestamp = timestamp; // Track sell date for T+2 cash settlement
           positions.splice(j, 1);
           continue;
         }
@@ -869,15 +876,15 @@ export class TradingSimulationService {
           // Only sell if we're in profit OR if the signal confidence is high
           const inProfit = actualPrice > position.buyPrice;
           const highConfidenceSell = signal.confidence >= 0.6;
-          
+
           // Sell conditions when take profit is disabled:
           // 1. In profit and have sell signal
           // 2. High confidence sell signal (even at loss - cut losses early)
           // 3. If take profit is enabled, let it handle exits
-          const shouldSell = config.takeProfitPercent === 0 
+          const shouldSell = config.takeProfitPercent === 0
             ? (inProfit || highConfidenceSell)
             : true; // If take profit is enabled, always follow sell signal
-          
+
           if (shouldSell) {
             const profit = (actualPrice - position.buyPrice) * position.quantity;
             const profitPercent = ((actualPrice - position.buyPrice) / position.buyPrice) * 100;
@@ -901,20 +908,25 @@ export class TradingSimulationService {
             });
 
             capital += actualPrice * position.quantity;
+            lastSellTimestamp = timestamp; // Track sell date for T+2 cash settlement
             positions.splice(j, 1);
           }
         }
       }
 
+      // Check if we can buy (T+2 cash settlement rule)
+      // Cannot buy on the same day after selling because money takes T+2 to settle
+      const canBuyToday = lastSellTimestamp === null || !this.isSameDay(lastSellTimestamp, timestamp);
+
       // Execute buy signal - allow continuous buying
-      // Can buy if: have capital, haven't reached max positions, and have buy signal
-      if (signal.action === 'buy' && positions.length < config.maxPositions && capital > 0) {
+      // Can buy if: have capital, haven't reached max positions, have buy signal, AND not same day as sell
+      if (signal.action === 'buy' && positions.length < config.maxPositions && capital > 0 && canBuyToday) {
         // Calculate how many shares we can buy with available capital
         // For continuous trading, use a portion of capital (e.g., 100% if maxPositions = 1, or split if multiple)
-        const capitalPerPosition = config.maxPositions > 1 
-          ? capital / (config.maxPositions - positions.length) 
+        const capitalPerPosition = config.maxPositions > 1
+          ? capital / (config.maxPositions - positions.length)
           : capital;
-        
+
         // Calculate quantity and round down to nearest 100 (bội số của 100)
         const rawQuantity = Math.floor(capitalPerPosition / actualPrice);
         const quantity = Math.floor(rawQuantity / 100) * 100; // Round down to nearest 100
@@ -924,15 +936,15 @@ export class TradingSimulationService {
           if (cost <= capital) {
             const stopLoss = actualPrice * (1 - config.stopLossPercent / 100);
             // Take profit = 0 means disabled (optimize using sell signals)
-            const takeProfit = config.takeProfitPercent > 0 
+            const takeProfit = config.takeProfitPercent > 0
               ? actualPrice * (1 + config.takeProfitPercent / 100)
               : 0;
-            
+
             // Initialize trailing stop if enabled
             const trailingStopPrice = config.useTrailingStop && config.trailingStopPercent > 0
               ? actualPrice * (1 - config.trailingStopPercent / 100)
               : 0;
-            
+
             const buyCapital = capital; // Capital before buying
             const buyPositions = positions.length; // Number of positions before buying
 
@@ -997,7 +1009,7 @@ export class TradingSimulationService {
     const finalActualPrice = finalPrice * 1000; // Convert to actual price
     const finalTimestamp = timestamps[timestamps.length - 1];
     const sellCapital = capital; // Capital before closing
-    
+
     for (let i = 0; i < positions.length; i++) {
       const position = positions[i];
       const profit = (finalActualPrice - position.buyPrice) * position.quantity;
@@ -1031,7 +1043,7 @@ export class TradingSimulationService {
     const winningTrades = winningTradesList.length;
     const losingTrades = losingTradesList.length;
     const winRate = completedTrades.length > 0 ? (winningTrades / completedTrades.length) * 100 : 0;
-    
+
     // Performance metrics
     const totalWinAmount = winningTradesList.reduce((sum, t) => sum + t.profit, 0);
     const totalLossAmount = Math.abs(losingTradesList.reduce((sum, t) => sum + t.profit, 0));
@@ -1039,8 +1051,8 @@ export class TradingSimulationService {
     const avgLossAmount = losingTrades > 0 ? totalLossAmount / losingTrades : 0;
     const largestWin = winningTradesList.length > 0 ? Math.max(...winningTradesList.map(t => t.profit)) : 0;
     const largestLoss = losingTradesList.length > 0 ? Math.abs(Math.min(...losingTradesList.map(t => t.profit))) : 0;
-    const avgHoldingDays = completedTrades.length > 0 
-      ? completedTrades.reduce((sum, t) => sum + t.duration, 0) / completedTrades.length 
+    const avgHoldingDays = completedTrades.length > 0
+      ? completedTrades.reduce((sum, t) => sum + t.duration, 0) / completedTrades.length
       : 0;
 
     console.log(`[TradingSimulation] Simulation completed:`);
@@ -1093,10 +1105,10 @@ export class TradingSimulationService {
 
     for (let i = 0; i < prices.length; i++) {
       const currentPrice = prices[i];
-      
+
       // Calculate recent price trend (last 5 days)
       const recentPrices = prices.slice(Math.max(0, i - 5), i + 1);
-      const priceChange = recentPrices.length > 1 
+      const priceChange = recentPrices.length > 1
         ? (recentPrices[recentPrices.length - 1] - recentPrices[0]) / recentPrices[0]
         : 0;
 
@@ -1110,23 +1122,23 @@ export class TradingSimulationService {
       const trendMultiplier = 1 + (priceChange * 0.3); // Moderate adjustment
       const adjustedExpectedReturn = baseExpectedReturn * trendMultiplier;
       const adjustedPredictedPrice = currentPrice * (1 + adjustedExpectedReturn);
-      
+
       // Adjust confidence based on volatility
       const adjustedConfidence = Math.max(0.3, Math.min(0.95, basePrediction.confidence * (1 - volatility * 2)));
-      
+
       // Determine trend
-      const adjustedTrend: 'up' | 'down' | 'neutral' = 
-        priceChange > 0.015 ? 'up' : 
-        priceChange < -0.015 ? 'down' : 
+      const adjustedTrend: 'up' | 'down' | 'neutral' =
+        priceChange > 0.015 ? 'up' :
+        priceChange < -0.015 ? 'down' :
         basePrediction.trend;
 
       // Generate trading decision if base prediction has one, otherwise create one
       let tradingDecision: StockPrediction['tradingDecision'];
-      
+
       if (basePrediction.tradingDecision) {
         // Use base decision but adjust confidence
         const adjustedDecisionConfidence = Math.max(0.5, basePrediction.tradingDecision.confidence * (1 - volatility * 0.5));
-        
+
         // Adjust action based on recent trend if confidence is moderate
         let action = basePrediction.tradingDecision.action;
         if (adjustedDecisionConfidence < 0.7) {
@@ -1137,7 +1149,7 @@ export class TradingSimulationService {
             action = 'hold';
           }
         }
-        
+
         tradingDecision = {
           action,
           confidence: adjustedDecisionConfidence,
@@ -1146,7 +1158,7 @@ export class TradingSimulationService {
       } else {
         // Generate trading decision based on expected return and trend
         const expectedReturnPercent = adjustedExpectedReturn * 100;
-        
+
         // More aggressive buy conditions for backtesting
         if (adjustedConfidence >= 0.4 && adjustedTrend === 'up' && expectedReturnPercent > 0.3) {
           tradingDecision = {
@@ -1210,11 +1222,25 @@ export class TradingSimulationService {
     // Timestamps are in seconds, convert to milliseconds for Date
     const startDate = new Date(startTimestamp * 1000);
     const endDate = new Date(endTimestamp * 1000);
-    
+
     // Calculate difference in days
     const diffTime = endDate.getTime() - startDate.getTime();
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    
+
     return diffDays;
+  }
+
+  /**
+   * Check if two timestamps are on the same day
+   * Used for T+2 cash settlement rule - cannot buy on the same day after selling
+   */
+  private isSameDay(timestamp1: number, timestamp2: number): boolean {
+    // Timestamps are in seconds, convert to milliseconds for Date
+    const date1 = new Date(timestamp1 * 1000);
+    const date2 = new Date(timestamp2 * 1000);
+
+    return date1.getFullYear() === date2.getFullYear() &&
+           date1.getMonth() === date2.getMonth() &&
+           date1.getDate() === date2.getDate();
   }
 }
