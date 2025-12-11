@@ -24,8 +24,7 @@ import {
   CandlestickSeries,
   HistogramSeries,
   LineSeries,
-  LineData,
-  SeriesMarker
+  LineData
 } from 'lightweight-charts';
 
 export interface OHLCData {
@@ -964,6 +963,10 @@ export class TradingviewChartComponent implements OnInit, OnDestroy, OnChanges {
   private bbUpperSeries: ISeriesApi<'Line'> | null = null;
   private bbMiddleSeries: ISeriesApi<'Line'> | null = null;
   private bbLowerSeries: ISeriesApi<'Line'> | null = null;
+  
+  // Marker series for buy/sell points
+  private buyMarkerSeries: ISeriesApi<'Line'> | null = null;
+  private sellMarkerSeries: ISeriesApi<'Line'> | null = null;
 
   // Re-export series types for template use
   protected CandlestickSeries = CandlestickSeries;
@@ -1237,25 +1240,93 @@ export class TradingviewChartComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   /**
-   * Update markers (buy/sell points) on the chart
+   * Update markers (buy/sell points) on the chart using line series
+   * In lightweight-charts v5, setMarkers was removed, so we use line series with point markers
    */
   private updateMarkers() {
-    if (!this.candlestickSeries || !this.markers.length) return;
+    if (!this.chart || !this.markers.length) {
+      this.clearMarkerSeries();
+      return;
+    }
 
-    const seriesMarkers: SeriesMarker<Time>[] = this.markers.map(marker => ({
-      time: marker.time as Time,
-      position: marker.type === 'buy' ? 'belowBar' as const : 'aboveBar' as const,
-      color: marker.type === 'buy' ? '#26a69a' : '#ef5350',
-      shape: marker.type === 'buy' ? 'arrowUp' as const : 'arrowDown' as const,
-      text: marker.type === 'buy' ? 'B' : 'S',
-      size: 2,
-    }));
+    // Clear existing marker series
+    this.clearMarkerSeries();
 
-    // Sort markers by time
-    seriesMarkers.sort((a, b) => (a.time as number) - (b.time as number));
+    // Separate buy and sell markers
+    const buyMarkers = this.markers.filter(m => m.type === 'buy');
+    const sellMarkers = this.markers.filter(m => m.type === 'sell');
 
-    // Use type assertion for v5 compatibility - setMarkers exists but TypeScript types may not include it
-    (this.candlestickSeries as any).setMarkers(seriesMarkers);
+    // Create buy markers series (green dots)
+    if (buyMarkers.length > 0) {
+      this.buyMarkerSeries = this.chart.addSeries(LineSeries, {
+        color: 'transparent', // Hide the line
+        lineWidth: 1,
+        lineVisible: false,
+        pointMarkersVisible: true,
+        pointMarkersRadius: 8,
+        lastValueVisible: false,
+        priceLineVisible: false,
+        crosshairMarkerVisible: false,
+      });
+
+      // Override point marker color
+      this.buyMarkerSeries.applyOptions({
+        color: '#26a69a',
+      });
+
+      const buyData: LineData[] = buyMarkers
+        .map(m => ({
+          time: m.time as Time,
+          value: m.price * 0.98, // Position slightly below the price
+        }))
+        .sort((a, b) => (a.time as number) - (b.time as number));
+
+      this.buyMarkerSeries.setData(buyData);
+    }
+
+    // Create sell markers series (red dots)
+    if (sellMarkers.length > 0) {
+      this.sellMarkerSeries = this.chart.addSeries(LineSeries, {
+        color: 'transparent', // Hide the line
+        lineWidth: 1,
+        lineVisible: false,
+        pointMarkersVisible: true,
+        pointMarkersRadius: 8,
+        lastValueVisible: false,
+        priceLineVisible: false,
+        crosshairMarkerVisible: false,
+      });
+
+      // Override point marker color
+      this.sellMarkerSeries.applyOptions({
+        color: '#ef5350',
+      });
+
+      const sellData: LineData[] = sellMarkers
+        .map(m => ({
+          time: m.time as Time,
+          value: m.price * 1.02, // Position slightly above the price
+        }))
+        .sort((a, b) => (a.time as number) - (b.time as number));
+
+      this.sellMarkerSeries.setData(sellData);
+    }
+  }
+
+  /**
+   * Clear marker series from chart
+   */
+  private clearMarkerSeries() {
+    if (this.chart) {
+      if (this.buyMarkerSeries) {
+        this.chart.removeSeries(this.buyMarkerSeries);
+        this.buyMarkerSeries = null;
+      }
+      if (this.sellMarkerSeries) {
+        this.chart.removeSeries(this.sellMarkerSeries);
+        this.sellMarkerSeries = null;
+      }
+    }
   }
 
   changeTimeframe(timeframe: string) {
@@ -1360,6 +1431,8 @@ export class TradingviewChartComponent implements OnInit, OnDestroy, OnChanges {
     this.bbUpperSeries = null;
     this.bbMiddleSeries = null;
     this.bbLowerSeries = null;
+    this.buyMarkerSeries = null;
+    this.sellMarkerSeries = null;
   }
 
   // ============ INDICATOR METHODS ============
