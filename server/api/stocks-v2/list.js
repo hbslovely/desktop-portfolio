@@ -37,40 +37,6 @@ function parseQueryParams(query) {
   return { keyword, limit, offset };
 }
 
-/**
- * Extract companyInfo from fullData and convert to flat key structure
- */
-function extractCompanyInfoToFlatKeys(fullData) {
-  if (!fullData) return {};
-
-  let companyInfo = null;
-
-  if (fullData.pageProps && fullData.pageProps.companyInfo) {
-    companyInfo = fullData.pageProps.companyInfo;
-  } else if (fullData['pageProps.companyInfo']) {
-    companyInfo = fullData['pageProps.companyInfo'];
-  } else {
-    companyInfo = {};
-    for (const key in fullData) {
-      if (key.startsWith('pageProps.companyInfo.')) {
-        const fieldName = key.replace('pageProps.companyInfo.', '');
-        companyInfo[fieldName] = fullData[key];
-      }
-    }
-    if (Object.keys(companyInfo).length === 0) {
-      return {};
-    }
-  }
-
-  const flatKeys = {};
-  if (companyInfo && typeof companyInfo === 'object') {
-    for (const key in companyInfo) {
-      flatKeys[`pageProps.companyInfo.${key}`] = companyInfo[key];
-    }
-  }
-
-  return flatKeys;
-}
 
 export default async function handler(req, res) {
   // Set CORS headers
@@ -101,7 +67,7 @@ export default async function handler(req, res) {
       });
     }
 
-    // Transform data to expected format
+    // Transform data to expected format (same as detail API)
     const stocks = (result.stocks || []).map(row => {
       const basicInfo = typeof row.basic_info === 'string'
         ? JSON.parse(row.basic_info)
@@ -109,13 +75,16 @@ export default async function handler(req, res) {
       const fullData = typeof row.full_data === 'string'
         ? JSON.parse(row.full_data)
         : row.full_data || {};
-
-      const companyInfoFlatKeys = extractCompanyInfoToFlatKeys(fullData);
+      const priceData = typeof row.price_data === 'string'
+        ? JSON.parse(row.price_data)
+        : row.price_data || {};
 
       return {
         symbol: row.symbol,
         basicInfo: basicInfo,
-        fullData: Object.keys(companyInfoFlatKeys).length > 0 ? companyInfoFlatKeys : null
+        fullData: fullData,
+        priceData: priceData,
+        updatedAt: row.updated_at
       };
     });
 

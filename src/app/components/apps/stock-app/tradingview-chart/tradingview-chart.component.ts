@@ -7,6 +7,7 @@ import {
   SimpleChanges, 
   ElementRef, 
   ViewChild,
+  HostListener,
   signal,
   effect
 } from '@angular/core';
@@ -42,6 +43,21 @@ export interface ChartMarker {
   price: number;
   quantity?: number;
   label?: string;
+  profitLoss?: number;        // Profit/loss amount (for this transaction)
+  profitLossPercent?: number; // Profit/loss percentage (for this transaction)
+  originalBuyPrice?: number;  // Original buy price for calculating total profit
+  totalValue?: number;        // Total value of this transaction
+}
+
+interface MarkerTooltipData {
+  time: string;
+  type: 'buy' | 'sell';
+  price: number;
+  quantity: number;
+  profitLoss?: number;
+  profitLossPercent?: number;
+  originalBuyPrice?: number;
+  totalValue?: number;
 }
 
 interface ChartTooltipData {
@@ -76,7 +92,7 @@ interface ChartThemeSettings {
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="tv-chart-wrapper">
+    <div class="tv-chart-wrapper" [class.fullscreen]="isFullscreen()" #chartWrapper>
       <div class="chart-toolbar">
         <div class="timeframe-buttons">
           <button 
@@ -115,6 +131,9 @@ interface ChartThemeSettings {
           </button>
           <button (click)="toggleIndicatorPanel()" [class.active]="showIndicatorPanel()" title="Chỉ báo kỹ thuật">
             <i class="pi pi-sliders-h"></i> Chỉ báo
+          </button>
+          <button (click)="toggleFullscreen()" [class.active]="isFullscreen()" title="Toàn màn hình">
+            <i class="pi" [class.pi-window-maximize]="!isFullscreen()" [class.pi-window-minimize]="isFullscreen()"></i>
           </button>
         </div>
       </div>
@@ -354,27 +373,27 @@ interface ChartThemeSettings {
         <div class="tooltip-header">
           <span class="tooltip-time">{{ tooltipData()!.time }}</span>
           <span class="tooltip-change" [class.positive]="tooltipData()!.change >= 0" [class.negative]="tooltipData()!.change < 0">
-            {{ tooltipData()!.change >= 0 ? '+' : '' }}{{ (tooltipData()!.change * 1000).toFixed(0) }}đ
+            {{ tooltipData()!.change >= 0 ? '+' : '' }}{{ tooltipData()!.change | number:'1.0-0' }}đ
             ({{ tooltipData()!.changePercent >= 0 ? '+' : '' }}{{ tooltipData()!.changePercent.toFixed(2) }}%)
           </span>
         </div>
         <div class="tooltip-body">
           <div class="tooltip-row">
             <span class="label">Mở:</span>
-            <span class="value">{{ (tooltipData()!.open * 1000) | number:'1.0-0' }}đ</span>
+            <span class="value">{{ tooltipData()!.open | number:'1.0-0' }}đ</span>
           </div>
           <div class="tooltip-row">
             <span class="label">Cao:</span>
-            <span class="value ceiling">{{ (tooltipData()!.high * 1000) | number:'1.0-0' }}đ</span>
+            <span class="value ceiling">{{ tooltipData()!.high | number:'1.0-0' }}đ</span>
           </div>
           <div class="tooltip-row">
             <span class="label">Thấp:</span>
-            <span class="value floor">{{ (tooltipData()!.low * 1000) | number:'1.0-0' }}đ</span>
+            <span class="value floor">{{ tooltipData()!.low | number:'1.0-0' }}đ</span>
           </div>
           <div class="tooltip-row">
             <span class="label">Đóng:</span>
             <span class="value" [class.positive]="tooltipData()!.change >= 0" [class.negative]="tooltipData()!.change < 0">
-              {{ (tooltipData()!.close * 1000) | number:'1.0-0' }}đ
+              {{ tooltipData()!.close | number:'1.0-0' }}đ
             </span>
           </div>
           <div class="tooltip-row">
@@ -384,10 +403,49 @@ interface ChartThemeSettings {
         </div>
       </div>
 
+      <!-- Marker Tooltip -->
+      <div class="marker-tooltip" *ngIf="markerTooltipData()" 
+           [class.buy]="markerTooltipData()!.type === 'buy'"
+           [class.sell]="markerTooltipData()!.type === 'sell'"
+           [class.profit]="markerTooltipData()!.profitLoss !== undefined && markerTooltipData()!.profitLoss! >= 0"
+           [class.loss]="markerTooltipData()!.profitLoss !== undefined && markerTooltipData()!.profitLoss! < 0">
+        <div class="marker-tooltip-header">
+          <span class="marker-type">{{ markerTooltipData()!.type === 'buy' ? '▲ MUA' : '▼ BÁN' }}</span>
+          <span class="marker-time">{{ markerTooltipData()!.time }}</span>
+        </div>
+        <div class="marker-tooltip-body">
+          <div class="tooltip-row">
+            <span class="label">Giá {{ markerTooltipData()!.type === 'buy' ? 'mua' : 'bán' }}:</span>
+            <span class="value">{{ markerTooltipData()!.price | number:'1.0-0' }}đ</span>
+          </div>
+          <div class="tooltip-row" *ngIf="markerTooltipData()!.originalBuyPrice && markerTooltipData()!.type === 'sell'">
+            <span class="label">Giá mua gốc:</span>
+            <span class="value muted">{{ markerTooltipData()!.originalBuyPrice | number:'1.0-0' }}đ</span>
+          </div>
+          <div class="tooltip-row">
+            <span class="label">Khối lượng:</span>
+            <span class="value">{{ markerTooltipData()!.quantity | number:'1.0-0' }} CP</span>
+          </div>
+          <div class="tooltip-row" *ngIf="markerTooltipData()!.totalValue">
+            <span class="label">Giá trị:</span>
+            <span class="value">{{ markerTooltipData()!.totalValue | number:'1.0-0' }}đ</span>
+          </div>
+          <div class="tooltip-row profit-row" *ngIf="markerTooltipData()!.profitLoss !== undefined && markerTooltipData()!.type === 'sell'">
+            <span class="label">{{ markerTooltipData()!.profitLoss! >= 0 ? '💰 Lãi:' : '📉 Lỗ:' }}</span>
+            <span class="value profit-value" [class.positive]="markerTooltipData()!.profitLoss! >= 0" [class.negative]="markerTooltipData()!.profitLoss! < 0">
+              {{ markerTooltipData()!.profitLoss! >= 0 ? '+' : '' }}{{ markerTooltipData()!.profitLoss! | number:'1.0-0' }}đ
+              <span class="percent" *ngIf="markerTooltipData()!.profitLossPercent !== undefined">
+                ({{ markerTooltipData()!.profitLossPercent! >= 0 ? '+' : '' }}{{ markerTooltipData()!.profitLossPercent!.toFixed(2) }}%)
+              </span>
+            </span>
+          </div>
+        </div>
+      </div>
+
       <div class="chart-legend" *ngIf="symbol">
         <span class="legend-symbol">{{ symbol }}</span>
         <span class="legend-price" *ngIf="currentPrice()">
-          {{ (currentPrice()! * 1000) | number:'1.0-0' }}đ
+          {{ currentPrice()! | number:'1.0-0' }}đ
         </span>
       </div>
     </div>
@@ -401,6 +459,24 @@ interface ChartThemeSettings {
       background: #131722;
       border-radius: 8px;
       overflow: hidden;
+    }
+
+    .tv-chart-wrapper.fullscreen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: 100vw;
+      height: 100vh;
+      min-height: 100vh;
+      z-index: 9999;
+      border-radius: 0;
+    }
+
+    .tv-chart-wrapper.fullscreen .chart-container {
+      height: calc(100vh - 48px);
+      min-height: calc(100vh - 48px);
     }
 
     .chart-toolbar {
@@ -535,6 +611,69 @@ interface ChartThemeSettings {
       font-weight: 600;
       color: #26a69a;
       font-family: monospace;
+    }
+
+    /* Marker Tooltip */
+    .marker-tooltip {
+      position: absolute;
+      top: 60px;
+      right: 200px;
+      background: rgba(30, 34, 45, 0.98);
+      border: 2px solid #2a2e39;
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 13px;
+      color: #d1d4dc;
+      pointer-events: none;
+      z-index: 15;
+      min-width: 180px;
+      backdrop-filter: blur(8px);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    }
+
+    .marker-tooltip.buy {
+      border-color: #26a69a;
+    }
+
+    .marker-tooltip.sell {
+      border-color: #ef5350;
+    }
+
+    .marker-tooltip-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #2a2e39;
+    }
+
+    .marker-type {
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .marker-tooltip.buy .marker-type {
+      color: #26a69a;
+    }
+
+    .marker-tooltip.sell .marker-type {
+      color: #ef5350;
+    }
+
+    .marker-time {
+      color: #787b86;
+      font-size: 11px;
+    }
+
+    .marker-tooltip-body {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .marker-tooltip-body .tooltip-row .value {
+      font-size: 13px;
     }
 
     /* Indicator Panel */
@@ -943,6 +1082,7 @@ interface ChartThemeSettings {
 })
 export class TradingviewChartComponent implements OnInit, OnDestroy, OnChanges {
   @ViewChild('chartContainer', { static: true }) chartContainer!: ElementRef<HTMLDivElement>;
+  @ViewChild('chartWrapper', { static: true }) chartWrapper!: ElementRef<HTMLDivElement>;
   
   @Input() data: OHLCData | null = null;
   @Input() symbol: string = '';
@@ -966,7 +1106,9 @@ export class TradingviewChartComponent implements OnInit, OnDestroy, OnChanges {
   
   // Marker series for buy/sell points
   private buyMarkerSeries: ISeriesApi<'Line'> | null = null;
+  private buyMarkerStemSeries: ISeriesApi<'Line'> | null = null;
   private sellMarkerSeries: ISeriesApi<'Line'> | null = null;
+  private sellMarkerStemSeries: ISeriesApi<'Line'> | null = null;
 
   // Re-export series types for template use
   protected CandlestickSeries = CandlestickSeries;
@@ -977,8 +1119,10 @@ export class TradingviewChartComponent implements OnInit, OnDestroy, OnChanges {
   chartType = signal<'candlestick' | 'line' | 'area'>('candlestick');
   showVolume = signal(true);
   tooltipData = signal<ChartTooltipData | null>(null);
+  markerTooltipData = signal<MarkerTooltipData | null>(null);
   currentPrice = signal<number | null>(null);
   showIndicatorPanel = signal(false);
+  isFullscreen = signal(false);
   
   // Indicator settings
   indicators = signal<IndicatorSettings>({
@@ -1052,13 +1196,20 @@ export class TradingviewChartComponent implements OnInit, OnDestroy, OnChanges {
     if (changes['theme'] && this.chart) {
       this.applyTheme();
     }
-    if (changes['markers'] && this.chart && this.candlestickSeries) {
+    if (changes['markers'] && this.chart) {
       this.updateMarkers();
     }
   }
 
   ngOnDestroy() {
     this.destroyChart();
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscapeKey() {
+    if (this.isFullscreen()) {
+      this.toggleFullscreen();
+    }
   }
 
   private initChart() {
@@ -1140,6 +1291,7 @@ export class TradingviewChartComponent implements OnInit, OnDestroy, OnChanges {
     this.chart.subscribeCrosshairMove((param) => {
       if (!param.time || !param.seriesData.size) {
         this.tooltipData.set(null);
+        this.markerTooltipData.set(null);
         return;
       }
 
@@ -1172,6 +1324,9 @@ export class TradingviewChartComponent implements OnInit, OnDestroy, OnChanges {
           changePercent,
         });
       }
+
+      // Check if hovering over a marker
+      this.updateMarkerTooltip(param.time as number);
     });
 
     // Setup resize observer
@@ -1195,6 +1350,7 @@ export class TradingviewChartComponent implements OnInit, OnDestroy, OnChanges {
     const { t, o, h, l, c, v } = this.data;
     
     // Convert to candlestick format
+    // Note: Prices are stored in thousands (15 = 15,000đ), multiply by 1000
     const candleData: CandlestickData[] = [];
     const volumeData: HistogramData[] = [];
 
@@ -1203,10 +1359,10 @@ export class TradingviewChartComponent implements OnInit, OnDestroy, OnChanges {
       
       candleData.push({
         time,
-        open: o[i],
-        high: h[i],
-        low: l[i],
-        close: c[i],
+        open: o[i] * 1000,
+        high: h[i] * 1000,
+        low: l[i] * 1000,
+        close: c[i] * 1000,
       });
 
       // Color volume based on price movement
@@ -1222,9 +1378,9 @@ export class TradingviewChartComponent implements OnInit, OnDestroy, OnChanges {
     this.candlestickSeries.setData(candleData);
     this.volumeSeries.setData(volumeData);
 
-    // Update current price
+    // Update current price (multiply by 1000)
     if (c.length > 0) {
-      this.currentPrice.set(c[c.length - 1]);
+      this.currentPrice.set(c[c.length - 1] * 1000);
     }
 
     // Update markers if any
@@ -1242,6 +1398,8 @@ export class TradingviewChartComponent implements OnInit, OnDestroy, OnChanges {
   /**
    * Update markers (buy/sell points) on the chart using line series
    * In lightweight-charts v5, setMarkers was removed, so we use line series with point markers
+   * Buy markers: Green arrow pointing up (▲)
+   * Sell markers: Red arrow pointing down (▼)
    */
   private updateMarkers() {
     if (!this.chart || !this.markers.length) {
@@ -1256,60 +1414,99 @@ export class TradingviewChartComponent implements OnInit, OnDestroy, OnChanges {
     const buyMarkers = this.markers.filter(m => m.type === 'buy');
     const sellMarkers = this.markers.filter(m => m.type === 'sell');
 
-    // Create buy markers series (green dots)
+    // Calculate price range for offset
+    const allPrices = this.markers.map(m => m.price);
+    const priceRange = Math.max(...allPrices) - Math.min(...allPrices);
+    const offset = priceRange * 0.02; // 2% offset for arrow effect
+
+    // Create buy markers series (green - arrow pointing up)
     if (buyMarkers.length > 0) {
+      // Main point (arrow tip)
       this.buyMarkerSeries = this.chart.addSeries(LineSeries, {
-        color: 'transparent', // Hide the line
-        lineWidth: 1,
+        color: '#00c853', // Bright green
+        lineWidth: 3,
         lineVisible: false,
         pointMarkersVisible: true,
-        pointMarkersRadius: 8,
+        pointMarkersRadius: 10,
         lastValueVisible: false,
         priceLineVisible: false,
-        crosshairMarkerVisible: false,
+        crosshairMarkerVisible: true,
       });
 
-      // Override point marker color
-      this.buyMarkerSeries.applyOptions({
-        color: '#26a69a',
-      });
-
-      const buyData: LineData[] = buyMarkers
-        .map(m => ({
+      const buyData: LineData[] = this.deduplicateAndSortMarkerData(
+        buyMarkers.map(m => ({
           time: m.time as Time,
-          value: m.price * 0.98, // Position slightly below the price
+          value: m.price, // Position at exact buy price
         }))
-        .sort((a, b) => (a.time as number) - (b.time as number));
+      );
 
       this.buyMarkerSeries.setData(buyData);
-    }
 
-    // Create sell markers series (red dots)
-    if (sellMarkers.length > 0) {
-      this.sellMarkerSeries = this.chart.addSeries(LineSeries, {
-        color: 'transparent', // Hide the line
-        lineWidth: 1,
+      // Arrow stem (below the point)
+      this.buyMarkerStemSeries = this.chart.addSeries(LineSeries, {
+        color: '#00c853',
+        lineWidth: 4,
         lineVisible: false,
         pointMarkersVisible: true,
-        pointMarkersRadius: 8,
+        pointMarkersRadius: 5,
         lastValueVisible: false,
         priceLineVisible: false,
         crosshairMarkerVisible: false,
       });
 
-      // Override point marker color
-      this.sellMarkerSeries.applyOptions({
-        color: '#ef5350',
+      const buyDataStem: LineData[] = this.deduplicateAndSortMarkerData(
+        buyMarkers.map(m => ({
+          time: m.time as Time,
+          value: m.price - offset, // Below the main point
+        }))
+      );
+
+      this.buyMarkerStemSeries.setData(buyDataStem);
+    }
+
+    // Create sell markers series (red - arrow pointing down)
+    if (sellMarkers.length > 0) {
+      // Main point (arrow tip)
+      this.sellMarkerSeries = this.chart.addSeries(LineSeries, {
+        color: '#ff1744', // Bright red
+        lineWidth: 3,
+        lineVisible: false,
+        pointMarkersVisible: true,
+        pointMarkersRadius: 10,
+        lastValueVisible: false,
+        priceLineVisible: false,
+        crosshairMarkerVisible: true,
       });
 
-      const sellData: LineData[] = sellMarkers
-        .map(m => ({
+      const sellData: LineData[] = this.deduplicateAndSortMarkerData(
+        sellMarkers.map(m => ({
           time: m.time as Time,
-          value: m.price * 1.02, // Position slightly above the price
+          value: m.price, // Position at exact sell price
         }))
-        .sort((a, b) => (a.time as number) - (b.time as number));
+      );
 
       this.sellMarkerSeries.setData(sellData);
+
+      // Arrow stem (above the point)
+      this.sellMarkerStemSeries = this.chart.addSeries(LineSeries, {
+        color: '#ff1744',
+        lineWidth: 4,
+        lineVisible: false,
+        pointMarkersVisible: true,
+        pointMarkersRadius: 5,
+        lastValueVisible: false,
+        priceLineVisible: false,
+        crosshairMarkerVisible: false,
+      });
+
+      const sellDataStem: LineData[] = this.deduplicateAndSortMarkerData(
+        sellMarkers.map(m => ({
+          time: m.time as Time,
+          value: m.price + offset, // Above the main point
+        }))
+      );
+
+      this.sellMarkerStemSeries.setData(sellDataStem);
     }
   }
 
@@ -1322,10 +1519,95 @@ export class TradingviewChartComponent implements OnInit, OnDestroy, OnChanges {
         this.chart.removeSeries(this.buyMarkerSeries);
         this.buyMarkerSeries = null;
       }
+      if (this.buyMarkerStemSeries) {
+        this.chart.removeSeries(this.buyMarkerStemSeries);
+        this.buyMarkerStemSeries = null;
+      }
       if (this.sellMarkerSeries) {
         this.chart.removeSeries(this.sellMarkerSeries);
         this.sellMarkerSeries = null;
       }
+      if (this.sellMarkerStemSeries) {
+        this.chart.removeSeries(this.sellMarkerStemSeries);
+        this.sellMarkerStemSeries = null;
+      }
+    }
+  }
+
+  /**
+   * Deduplicate and sort marker data by time
+   * TradingView requires unique timestamps in ascending order
+   */
+  private deduplicateAndSortMarkerData(data: LineData[]): LineData[] {
+    // Sort by time first
+    const sorted = data.sort((a, b) => (a.time as number) - (b.time as number));
+
+    // Deduplicate by keeping the average value for duplicate timestamps
+    const timeMap = new Map<number, { sum: number; count: number }>();
+    for (const item of sorted) {
+      const time = item.time as number;
+      const existing = timeMap.get(time);
+      if (existing) {
+        existing.sum += item.value;
+        existing.count += 1;
+      } else {
+        timeMap.set(time, { sum: item.value, count: 1 });
+      }
+    }
+
+    // Convert back to array with averaged values
+    return Array.from(timeMap.entries())
+      .map(([time, { sum, count }]) => ({
+        time: time as Time,
+        value: sum / count,
+      }))
+      .sort((a, b) => (a.time as number) - (b.time as number));
+  }
+
+  /**
+   * Update marker tooltip when hovering near a marker
+   */
+  private updateMarkerTooltip(hoverTime: number) {
+    if (!this.markers.length) {
+      this.markerTooltipData.set(null);
+      return;
+    }
+
+    // Find marker at or near the current hover time
+    const marker = this.markers.find(m => m.time === hoverTime);
+    
+    if (marker) {
+      const timestamp = marker.time * 1000;
+      const date = new Date(timestamp);
+      const timeStr = date.toLocaleDateString('vi-VN', { 
+        day: '2-digit', 
+        month: '2-digit', 
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+
+      // Calculate profit/loss if we have original buy price
+      let profitLoss = marker.profitLoss;
+      let profitLossPercent = marker.profitLossPercent;
+      
+      if (marker.type === 'sell' && marker.originalBuyPrice && !profitLoss) {
+        profitLoss = marker.price - marker.originalBuyPrice;
+        profitLossPercent = ((marker.price - marker.originalBuyPrice) / marker.originalBuyPrice) * 100;
+      }
+
+      this.markerTooltipData.set({
+        time: timeStr,
+        type: marker.type,
+        price: marker.price, // Already in VND
+        quantity: marker.quantity || 0,
+        profitLoss: profitLoss,
+        profitLossPercent: profitLossPercent,
+        originalBuyPrice: marker.originalBuyPrice,
+        totalValue: marker.totalValue,
+      });
+    } else {
+      this.markerTooltipData.set(null);
     }
   }
 
@@ -1391,6 +1673,18 @@ export class TradingviewChartComponent implements OnInit, OnDestroy, OnChanges {
 
   resetChart() {
     this.chart?.timeScale().fitContent();
+  }
+
+  toggleFullscreen() {
+    this.isFullscreen.update(v => !v);
+    // Need to resize chart after fullscreen toggle
+    setTimeout(() => {
+      if (this.chart && this.chartContainer?.nativeElement) {
+        const container = this.chartContainer.nativeElement;
+        this.chart.resize(container.clientWidth, container.clientHeight);
+        this.chart.timeScale().fitContent();
+      }
+    }, 100);
   }
 
   private applyTheme() {
