@@ -477,17 +477,17 @@
         </section>
 
         <!-- Same Sector Stocks -->
-        <section class="section" *ngIf="getFormattedSameSectorStocks().length > 0">
+        <section class="section" *ngIf="formattedSameSectorStocks().length > 0">
           <h3>
             <i class="pi pi-sitemap"></i>
-            Cổ phiếu cùng ngành ({{ getFormattedSameSectorStocks().length }})
+            Cổ phiếu cùng ngành ({{ formattedSameSectorStocks().length }})
             <span class="checking-indicator" *ngIf="isCheckingSameSectorStocks()">
               <i class="pi pi-spin pi-spinner"></i> Đang kiểm tra...
             </span>
           </h3>
           <div class="same-sector-stocks-grid">
             <div
-              *ngFor="let stock of getFormattedSameSectorStocks()"
+              *ngFor="let stock of formattedSameSectorStocks()"
               class="sector-stock-card"
               [class.fetched]="stock.isFetched === true"
               [class.checking]="stock.isFetched === 'checking'"
@@ -563,17 +563,17 @@
         </section>
 
         <!-- Same Sector Stocks (also in financial tab) -->
-        <section class="section" *ngIf="getFormattedSameSectorStocks().length > 0">
+        <section class="section" *ngIf="formattedSameSectorStocks().length > 0">
           <h3>
             <i class="pi pi-sitemap"></i>
-            Cổ phiếu cùng ngành ({{ getFormattedSameSectorStocks().length }})
+            Cổ phiếu cùng ngành ({{ formattedSameSectorStocks().length }})
             <span class="checking-indicator" *ngIf="isCheckingSameSectorStocks()">
               <i class="pi pi-spin pi-spinner"></i> Đang kiểm tra...
             </span>
           </h3>
           <div class="same-sector-stocks-list">
             <div
-              *ngFor="let stock of getFormattedSameSectorStocks()"
+              *ngFor="let stock of formattedSameSectorStocks()"
               class="sector-stock-row"
               [class.fetched]="stock.isFetched === true"
               [class.checking]="stock.isFetched === 'checking'"
