@@ -460,11 +460,11 @@
         </section>
 
         <!-- Key Financial Indicators -->
-        <section class="section" *ngIf="getKeyFinancialIndicators().length > 0">
+        <section class="section" *ngIf="keyFinancialIndicators().length > 0">
           <h3>Chỉ số tài chính quan trọng</h3>
           <div class="key-indicators-grid">
             <div
-              *ngFor="let indicator of getKeyFinancialIndicators()"
+              *ngFor="let indicator of keyFinancialIndicators()"
               class="key-indicator-card"
               [class.positive]="indicator.isPositive === true"
               [class.negative]="indicator.isPositive === false"
@@ -512,14 +512,14 @@
       <!-- Financial Tab -->
       <div *ngIf="activeTab() === 'financial' && !isLoadingDetail()">
         <!-- Key Financial Indicators -->
-        <section class="section" *ngIf="getAllFinancialIndicators().length > 0">
+        <section class="section" *ngIf="allFinancialIndicators().length > 0">
           <h3>
             <i class="pi pi-chart-bar"></i>
             Chỉ số tài chính
           </h3>
           <div class="financial-indicators-detailed">
             <div
-              *ngFor="let indicator of getAllFinancialIndicators()"
+              *ngFor="let indicator of allFinancialIndicators()"
               class="indicator-row"
               [title]="indicator.tooltip">
               <div class="indicator-label">
@@ -532,7 +532,7 @@
         </section>
 
         <!-- Financial Report Overall -->
-        <section class="section" *ngIf="getFormattedFinancialReport().length > 0">
+        <section class="section" *ngIf="formattedFinancialReport().length > 0">
           <h3>
             <i class="pi pi-file-excel"></i>
             Báo cáo tài chính tổng hợp
@@ -548,7 +548,7 @@
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let item of getFormattedFinancialReport()">
+                <tr *ngFor="let item of formattedFinancialReport()">
                   <td class="label-cell">{{ item.label }}</td>
                   <td class="value-cell">{{ formatLargeNumber(item.value) }}</td>
                   <td class="value-cell year-value">{{ formatLargeNumber(item.yearValue) }}</td>
