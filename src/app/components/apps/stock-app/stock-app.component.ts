@@ -3395,9 +3395,9 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   /**
-   * Get financial indicators from fullData
+   * Computed: Get financial indicators from fullData
    */
-  getFinancialIndicators(): any {
+  financialIndicators = computed(() => {
     const symbol = this.selectedSymbol();
     if (!symbol || !symbol.basicInfo?.fullData) {
       return null;
@@ -3405,12 +3405,12 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     const fullData = symbol.basicInfo.fullData;
     return fullData['pageProps.financialIndicators.indexes'] || fullData?.pageProps?.financialIndicators?.indexes || null;
-  }
+  });
 
   /**
-   * Get financial report overall from fullData
+   * Computed: Get financial report overall from fullData
    */
-  getFinancialReportOverall(): any {
+  financialReportOverall = computed(() => {
     const symbol = this.selectedSymbol();
     if (!symbol || !symbol.basicInfo?.fullData) {
       return null;
@@ -3418,7 +3418,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     const fullData = symbol.basicInfo.fullData;
     return fullData['pageProps.financialReportOverall'] || fullData?.pageProps?.financialReportOverall || null;
-  }
+  });
 
   /**
    * Format financial report for display
@@ -3587,10 +3587,10 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   /**
-   * Get key financial indicators (most important ones)
+   * Computed: Get key financial indicators (most important ones)
    */
-  getKeyFinancialIndicators(): Array<{key: string, label: string, value: string, tooltip: string, isPositive?: boolean}> {
-    const indicators = this.getFinancialIndicators();
+  keyFinancialIndicators = computed(() => {
+    const indicators = this.financialIndicators();
     if (!indicators) return [];
 
     // Key indicators to show prominently
@@ -3628,13 +3628,13 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     });
 
     return result;
-  }
+  });
 
   /**
-   * Get all financial indicators formatted
+   * Computed: Get all financial indicators formatted
    */
-  getAllFinancialIndicators(): Array<{key: string, label: string, value: string, tooltip: string}> {
-    const indicators = this.getFinancialIndicators();
+  allFinancialIndicators = computed(() => {
+    const indicators = this.financialIndicators();
     if (!indicators) return [];
 
     const result: Array<{key: string, label: string, value: string, tooltip: string}> = [];
@@ -3653,13 +3653,13 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     });
 
     return result;
-  }
+  });
 
   /**
-   * Get formatted financial report items
+   * Computed: Get formatted financial report items
    */
-  getFormattedFinancialReport(): Array<{type: string, label: string, value: number, yearValue: number, change: number, changePercent: number}> {
-    const report = this.getFinancialReportOverall();
+  formattedFinancialReport = computed(() => {
+    const report = this.financialReportOverall();
     if (!report || !Array.isArray(report)) return [];
 
     return report.map((item: any) => {
@@ -3677,7 +3677,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
         changePercent
       };
     });
-  }
+  });
 
   /**
    * Format large number for display
