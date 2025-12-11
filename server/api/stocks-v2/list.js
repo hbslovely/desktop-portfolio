@@ -13,8 +13,8 @@
 
 import { getAllStocks } from '../../lib/db.js';
 
-const MAX_LIMIT = 500;
-const DEFAULT_LIMIT = 100;
+const MAX_LIMIT = 2500;
+const DEFAULT_LIMIT = 2000;
 
 /**
  * Parse and validate pagination parameters

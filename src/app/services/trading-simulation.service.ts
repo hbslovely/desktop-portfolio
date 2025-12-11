@@ -33,7 +33,7 @@ export interface StrategyConfig {
 export interface TradingConfig {
   initialCapital: number;     // Vốn ban đầu (đồng)
   stopLossPercent: number;    // % cắt lỗ (ví dụ: 5 = 5%)
-  takeProfitPercent: number;  // % chốt lời (ví dụ: 10 = 10%)
+  takeProfitPercent: number;  // % chốt lời (ví dụ: 10 = 10%), 0 = tắt (tự động tối ưu điểm bán)
   minConfidence: number;      // Độ tin cậy tối thiểu để mua (0-1)
   maxPositions: number;       // Số lượng cổ phiếu tối đa có thể mua cùng lúc
   tPlusDays: number;          // Số ngày T+ (mặc định T+2, nghĩa là sau 2 ngày mới được bán)
@@ -41,6 +41,10 @@ export interface TradingConfig {
   // Strategy selection
   strategy: TradingStrategy;  // Trading strategy to use
   strategyConfig: StrategyConfig; // Strategy-specific configuration
+  
+  // Advanced options
+  useTrailingStop: boolean;   // Sử dụng trailing stop loss (điểm cắt lỗ di động)
+  trailingStopPercent: number; // % trailing stop (khoảng cách từ đỉnh)
 }
 
 export interface TradeSignal {
@@ -57,12 +61,14 @@ export interface Position {
   buyPrice: number;
   quantity: number; // Số lượng cổ phiếu
   stopLoss: number; // Giá cắt lỗ
-  takeProfit: number; // Giá chốt lời
+  takeProfit: number; // Giá chốt lời (0 = không dùng, tối ưu bằng tín hiệu)
   currentPrice: number;
   unrealizedPL: number; // Lãi/lỗ chưa thực hiện
   unrealizedPLPercent: number;
   buyCapital: number; // Số tiền còn lại ở ngày mua
   buyPositions: number; // Số cổ phiếu đang nắm giữ ở ngày mua
+  highestPrice: number; // Giá cao nhất kể từ khi mua (cho trailing stop)
+  trailingStopPrice: number; // Giá trailing stop hiện tại
 }
 
 export interface TradingResult {
@@ -77,6 +83,16 @@ export interface TradingResult {
   maxDrawdown: number; // Mức giảm tối đa
   maxDrawdownPercent: number;
   strategy: TradingStrategy; // Strategy used
+  
+  // Performance metrics
+  avgWinAmount: number; // Average winning trade amount
+  avgLossAmount: number; // Average losing trade amount
+  totalWinAmount: number; // Total profit from winning trades
+  totalLossAmount: number; // Total loss from losing trades
+  largestWin: number; // Largest single winning trade
+  largestLoss: number; // Largest single losing trade
+  avgHoldingDays: number; // Average holding period in days
+  
   trades: Array<{
     buyDate: number;
     sellDate: number;
@@ -739,20 +755,60 @@ export class TradingSimulationService {
         position.unrealizedPL = (actualPrice - position.buyPrice) * position.quantity;
         position.unrealizedPLPercent = ((actualPrice - position.buyPrice) / position.buyPrice) * 100;
 
+        // Update highest price for trailing stop
+        if (actualPrice > position.highestPrice) {
+          position.highestPrice = actualPrice;
+          // Update trailing stop price if enabled
+          if (config.useTrailingStop && config.trailingStopPercent > 0) {
+            position.trailingStopPrice = actualPrice * (1 - config.trailingStopPercent / 100);
+          }
+        }
+
         // Check T+2 rule: Can only sell after T+2 days (2 trading days)
         const daysSinceBuy = this.calculateTradingDays(position.buyDate, timestamp);
         const canSell = daysSinceBuy >= (config.tPlusDays || 2);
 
+        // Check trailing stop (only if enabled and T+2 is satisfied)
+        if (config.useTrailingStop && position.trailingStopPrice > 0 && actualPrice <= position.trailingStopPrice && canSell) {
+          // Execute trailing stop
+          const sellPrice = actualPrice;
+          const profit = (sellPrice - position.buyPrice) * position.quantity;
+          const profitPercent = ((sellPrice - position.buyPrice) / position.buyPrice) * 100;
+          const duration = daysSinceBuy;
+          
+          const sellCapital = capital;
+          const sellPositions = positions.length - 1;
+
+          completedTrades.push({
+            buyDate: position.buyDate,
+            sellDate: timestamp,
+            buyPrice: position.buyPrice,
+            sellPrice: sellPrice,
+            quantity: position.quantity,
+            profit,
+            profitPercent,
+            duration,
+            buyCapital: position.buyCapital,
+            buyPositions: position.buyPositions,
+            sellCapital: sellCapital,
+            sellPositions: sellPositions
+          });
+
+          capital += sellPrice * position.quantity;
+          positions.splice(j, 1);
+          continue;
+        }
+
         // Check stop loss (only if T+2 is satisfied)
         if (actualPrice <= position.stopLoss && canSell) {
           // Execute stop loss
-          const sellPrice = position.stopLoss;
+          const sellPrice = actualPrice; // Use actual price, not stop loss price (may gap down)
           const profit = (sellPrice - position.buyPrice) * position.quantity;
           const profitPercent = ((sellPrice - position.buyPrice) / position.buyPrice) * 100;
           const duration = daysSinceBuy;
           
-          const sellCapital = capital; // Capital before selling
-          const sellPositions = positions.length - 1; // Positions after removing this one
+          const sellCapital = capital;
+          const sellPositions = positions.length - 1;
 
           completedTrades.push({
             buyDate: position.buyDate,
@@ -774,16 +830,17 @@ export class TradingSimulationService {
           continue;
         }
 
-        // Check take profit (only if T+2 is satisfied)
-        if (actualPrice >= position.takeProfit && canSell) {
+        // Check take profit (only if enabled and T+2 is satisfied)
+        // takeProfitPercent = 0 means disabled, rely on sell signals instead
+        if (config.takeProfitPercent > 0 && position.takeProfit > 0 && actualPrice >= position.takeProfit && canSell) {
           // Execute take profit
-          const sellPrice = position.takeProfit;
+          const sellPrice = actualPrice; // Use actual price
           const profit = (sellPrice - position.buyPrice) * position.quantity;
           const profitPercent = ((sellPrice - position.buyPrice) / position.buyPrice) * 100;
           const duration = daysSinceBuy;
           
-          const sellCapital = capital; // Capital before selling
-          const sellPositions = positions.length - 1; // Positions after removing this one
+          const sellCapital = capital;
+          const sellPositions = positions.length - 1;
 
           completedTrades.push({
             buyDate: position.buyDate,
@@ -805,40 +862,46 @@ export class TradingSimulationService {
           continue;
         }
 
-        // Check sell signal (only if T+2 is satisfied for all positions)
-        if (signal.action === 'sell' && positions.length > 0) {
-          const sellCapital = capital; // Capital before selling
+        // Check sell signal (only if T+2 is satisfied)
+        // This is the main optimization path when take profit is disabled
+        if (signal.action === 'sell' && canSell) {
+          // If take profit is disabled (0), use sell signals to optimize exit point
+          // Only sell if we're in profit OR if the signal confidence is high
+          const inProfit = actualPrice > position.buyPrice;
+          const highConfidenceSell = signal.confidence >= 0.6;
           
-          // Sell all positions that satisfy T+2
-          for (let k = positions.length - 1; k >= 0; k--) {
-            const pos = positions[k];
-            const posDaysSinceBuy = this.calculateTradingDays(pos.buyDate, timestamp);
-            const posCanSell = posDaysSinceBuy >= (config.tPlusDays || 2);
+          // Sell conditions when take profit is disabled:
+          // 1. In profit and have sell signal
+          // 2. High confidence sell signal (even at loss - cut losses early)
+          // 3. If take profit is enabled, let it handle exits
+          const shouldSell = config.takeProfitPercent === 0 
+            ? (inProfit || highConfidenceSell)
+            : true; // If take profit is enabled, always follow sell signal
+          
+          if (shouldSell) {
+            const profit = (actualPrice - position.buyPrice) * position.quantity;
+            const profitPercent = ((actualPrice - position.buyPrice) / position.buyPrice) * 100;
+            const duration = daysSinceBuy;
+            const sellCapital = capital;
+            const sellPositions = positions.length - 1;
 
-            if (posCanSell) {
-              const profit = (actualPrice - pos.buyPrice) * pos.quantity;
-              const profitPercent = ((actualPrice - pos.buyPrice) / pos.buyPrice) * 100;
-              const duration = posDaysSinceBuy;
-              const sellPositions = positions.length - 1; // Positions after removing this one
+            completedTrades.push({
+              buyDate: position.buyDate,
+              sellDate: timestamp,
+              buyPrice: position.buyPrice,
+              sellPrice: actualPrice,
+              quantity: position.quantity,
+              profit,
+              profitPercent,
+              duration,
+              buyCapital: position.buyCapital,
+              buyPositions: position.buyPositions,
+              sellCapital: sellCapital,
+              sellPositions: sellPositions
+            });
 
-              completedTrades.push({
-                buyDate: pos.buyDate,
-                sellDate: timestamp,
-                buyPrice: pos.buyPrice,
-                sellPrice: actualPrice,
-                quantity: pos.quantity,
-                profit,
-                profitPercent,
-                duration,
-                buyCapital: pos.buyCapital,
-                buyPositions: pos.buyPositions,
-                sellCapital: sellCapital,
-                sellPositions: sellPositions
-              });
-
-              capital += actualPrice * pos.quantity;
-              positions.splice(k, 1);
-            }
+            capital += actualPrice * position.quantity;
+            positions.splice(j, 1);
           }
         }
       }
@@ -860,7 +923,15 @@ export class TradingSimulationService {
           const cost = actualPrice * quantity;
           if (cost <= capital) {
             const stopLoss = actualPrice * (1 - config.stopLossPercent / 100);
-            const takeProfit = actualPrice * (1 + config.takeProfitPercent / 100);
+            // Take profit = 0 means disabled (optimize using sell signals)
+            const takeProfit = config.takeProfitPercent > 0 
+              ? actualPrice * (1 + config.takeProfitPercent / 100)
+              : 0;
+            
+            // Initialize trailing stop if enabled
+            const trailingStopPrice = config.useTrailingStop && config.trailingStopPercent > 0
+              ? actualPrice * (1 - config.trailingStopPercent / 100)
+              : 0;
             
             const buyCapital = capital; // Capital before buying
             const buyPositions = positions.length; // Number of positions before buying
@@ -875,11 +946,14 @@ export class TradingSimulationService {
               unrealizedPL: 0,
               unrealizedPLPercent: 0,
               buyCapital: buyCapital,
-              buyPositions: buyPositions
+              buyPositions: buyPositions,
+              highestPrice: actualPrice, // Initialize highest price
+              trailingStopPrice: trailingStopPrice
             });
 
             capital -= cost;
-            console.log(`[TradingSimulation] BUY at day ${i}: price=${actualPrice.toFixed(2)}, quantity=${quantity}, cost=${cost.toFixed(2)}, remaining capital=${capital.toFixed(2)}`);
+            const tpInfo = config.takeProfitPercent > 0 ? `TP=${takeProfit.toFixed(0)}` : 'TP=auto';
+            console.log(`[TradingSimulation] BUY at day ${i}: price=${actualPrice.toFixed(2)}, qty=${quantity}, SL=${stopLoss.toFixed(0)}, ${tpInfo}`);
           } else {
             console.log(`[TradingSimulation] BUY signal but insufficient capital: need=${cost.toFixed(2)}, have=${capital.toFixed(2)}`);
           }
@@ -952,9 +1026,22 @@ export class TradingSimulationService {
     // Calculate statistics
     const totalProfit = capital - config.initialCapital;
     const totalProfitPercent = (totalProfit / config.initialCapital) * 100;
-    const winningTrades = completedTrades.filter(t => t.profit > 0).length;
-    const losingTrades = completedTrades.filter(t => t.profit <= 0).length;
+    const winningTradesList = completedTrades.filter(t => t.profit > 0);
+    const losingTradesList = completedTrades.filter(t => t.profit <= 0);
+    const winningTrades = winningTradesList.length;
+    const losingTrades = losingTradesList.length;
     const winRate = completedTrades.length > 0 ? (winningTrades / completedTrades.length) * 100 : 0;
+    
+    // Performance metrics
+    const totalWinAmount = winningTradesList.reduce((sum, t) => sum + t.profit, 0);
+    const totalLossAmount = Math.abs(losingTradesList.reduce((sum, t) => sum + t.profit, 0));
+    const avgWinAmount = winningTrades > 0 ? totalWinAmount / winningTrades : 0;
+    const avgLossAmount = losingTrades > 0 ? totalLossAmount / losingTrades : 0;
+    const largestWin = winningTradesList.length > 0 ? Math.max(...winningTradesList.map(t => t.profit)) : 0;
+    const largestLoss = losingTradesList.length > 0 ? Math.abs(Math.min(...losingTradesList.map(t => t.profit))) : 0;
+    const avgHoldingDays = completedTrades.length > 0 
+      ? completedTrades.reduce((sum, t) => sum + t.duration, 0) / completedTrades.length 
+      : 0;
 
     console.log(`[TradingSimulation] Simulation completed:`);
     console.log(`  - Initial capital: ${config.initialCapital.toFixed(2)}`);
@@ -962,6 +1049,8 @@ export class TradingSimulationService {
     console.log(`  - Total trades: ${completedTrades.length}`);
     console.log(`  - Remaining positions: ${positions.length}`);
     console.log(`  - Total profit: ${totalProfit.toFixed(2)} (${totalProfitPercent.toFixed(2)}%)`);
+    console.log(`  - Win rate: ${winRate.toFixed(2)}%`);
+    console.log(`  - Avg win: ${avgWinAmount.toFixed(0)}, Avg loss: ${avgLossAmount.toFixed(0)}`);
 
     return {
       initialCapital: config.initialCapital,
@@ -975,6 +1064,14 @@ export class TradingSimulationService {
       maxDrawdown,
       maxDrawdownPercent,
       strategy: config.strategy || 'neural_network',
+      // Performance metrics
+      avgWinAmount,
+      avgLossAmount,
+      totalWinAmount,
+      totalLossAmount,
+      largestWin,
+      largestLoss,
+      avgHoldingDays,
       trades: completedTrades,
       equityCurve,
       signals
