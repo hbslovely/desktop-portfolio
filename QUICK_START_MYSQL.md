@@ -36,3 +36,5 @@ mysql -u stocks_user -h localhost stocks_db -e "SELECT COUNT(*) FROM stocks;"
 ```
 
 
+
+

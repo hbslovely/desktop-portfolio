@@ -5,7 +5,7 @@ import { HttpClient } from '@angular/common/http';
 import { ScrollingModule, CdkVirtualScrollViewport } from '@angular/cdk/scrolling';
 import { DnseService, DNSESymbol, DNSEStockData, DNSEOHLCData, ExchangeType } from '../../../services/dnse.service';
 import { NeuralNetworkService, StockPrediction, TrainingProgress, TrainingConfig, DEFAULT_TRAINING_CONFIG, TRAINING_CONFIG_DESCRIPTIONS, ModelStatus } from '../../../services/neural-network.service';
-import { TradingSimulationService, TradingConfig, TradingResult, TradeSignal } from '../../../services/trading-simulation.service';
+import { TradingSimulationService, TradingConfig, TradingResult, TradeSignal, TradingStrategy, StrategyConfig, DEFAULT_STRATEGY_CONFIG, STRATEGY_DESCRIPTIONS } from '../../../services/trading-simulation.service';
 import { TradingviewChartComponent, ChartMarker } from './tradingview-chart/tradingview-chart.component';
 import { Chart, ChartConfiguration, registerables, TimeScale } from 'chart.js';
 import { Subject, Subscription } from 'rxjs';
@@ -77,21 +77,21 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
   @ViewChild('candlestickChart') candlestickChartRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild(CdkVirtualScrollViewport) virtualScrollViewport!: CdkVirtualScrollViewport;
   private candlestickChart: Chart | null = null;
-  
+
   // Pagination constants
   private readonly PAGE_SIZE = 50;
-  
+
   // Pagination state
   paginationOffset = signal(0);
   paginationTotal = signal(0);
   hasMoreData = signal(true);
   isLoadingMore = signal(false);
-  
+
   // Search debounce
   private searchSubject = new Subject<string>();
   private searchSubscription?: Subscription;
   private scrollSubscription?: Subscription;
-  
+
   // Exchange types
   exchanges: ExchangeType[] = ['hose', 'hnx', 'upcom', 'vn30'];
   exchangeNames: Record<ExchangeType, string> = {
@@ -289,7 +289,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
       roa: basicInfo.roa || '-',
       marketCap: basicInfo.marketCap ? parseFloat(basicInfo.marketCap).toLocaleString('vi-VN') : '-',
       hasFullData: !!basicInfo.fullData,
-      hasTicker: !!basicInfo.fullData?.['pageProps.ticker']
+      hasTicker: !!basicInfo.fullData?.['pageProps.ticker'] || !!basicInfo.fullData?.pageProps.ticker
     };
   });
 
@@ -300,7 +300,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
       return '';
     }
 
-    const ticker = symbol.basicInfo.fullData['pageProps.ticker'];
+    const ticker = symbol.basicInfo.fullData['pageProps.ticker'] || symbol.basicInfo.fullData?.pageProps?.ticker;
     if (!ticker) {
       return '';
     }
@@ -381,14 +381,14 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     errorPercent: number;
   }> | null>(null);
   isLoadingComparison = signal(false);
-  
+
   // Training configuration state
   trainingConfig = signal<TrainingConfig>({ ...DEFAULT_TRAINING_CONFIG });
   trainingConfigDescriptions = TRAINING_CONFIG_DESCRIPTIONS;
   showTrainingConfig = signal(false);
   modelStatus = signal<ModelStatus>({ exists: false, hasWeights: false, hasSimulation: false });
   isCheckingModel = signal(false);
-  
+
   // Chart state
   showPriceTable = signal(false);
   showChartFullscreen = signal(false);
@@ -400,23 +400,29 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     takeProfitPercent: 10, // 10%
     minConfidence: 0.0, // Không dùng nữa - model tự quyết định
     maxPositions: 3, // Cho phép mua nhiều lần để tối ưu
-    tPlusDays: 2 // T+2 (sau 2 ngày mới được bán)
+    tPlusDays: 2, // T+2 (sau 2 ngày mới được bán)
+    strategy: 'neural_network' as TradingStrategy,
+    strategyConfig: { ...DEFAULT_STRATEGY_CONFIG }
   });
   tradingResult = signal<TradingResult | null>(null);
   isRunningSimulation = signal(false);
-  
+
+  // Strategy descriptions for UI
+  strategyDescriptions = STRATEGY_DESCRIPTIONS;
+  availableStrategies: TradingStrategy[] = ['neural_network', 'ma_crossover', 'ema_crossover', 'rsi', 'macd', 'bollinger_bands'];
+
 
   // Date range for backtesting
   backtestStartDate = signal<string>('');
   backtestEndDate = signal<string>('');
-  
+
   // Backtest tabs: 'setup' | 'results' | 'chart'
   backtestActiveTab = signal<'setup' | 'results' | 'chart'>('setup');
 
   constructor(
     private dnseService: DnseService,
     private http: HttpClient,
-    private nnService: NeuralNetworkService,
+    public nnService: NeuralNetworkService,
     private tradingSimulationService: TradingSimulationService,
     private ngZone: NgZone
   ) {
@@ -440,7 +446,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
   ngOnInit() {
     this.loadSymbols();
     this.checkFetchedStatus();
-    
+
     // Setup search debounce
     this.searchSubscription = this.searchSubject.pipe(
       debounceTime(300),
@@ -461,12 +467,12 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
       this.candlestickChart.destroy();
       this.candlestickChart = null;
     }
-    
+
     // Cleanup subscriptions
     this.searchSubscription?.unsubscribe();
     this.scrollSubscription?.unsubscribe();
   }
-  
+
   /**
    * Setup infinite scroll on virtual viewport
    */
@@ -483,7 +489,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
       });
     });
   }
-  
+
   /**
    * Check if we need to load more data
    */
@@ -507,7 +513,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
    */
   loadSymbols() {
     this.isLoading.set(true);
-    
+
     // Reset pagination state
     this.paginationOffset.set(0);
     this.hasMoreData.set(true);
@@ -515,7 +521,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     this.filteredSymbols.set([]);
 
     const keyword = this.searchQuery();
-    
+
     // Load from internal API with pagination
     this.dnseService.getStocksPaginated({
       keyword,
@@ -524,10 +530,10 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     }).subscribe({
       next: (response) => {
         const symbols = this.convertStocksToSymbols(response.stocks);
-        
+
         this.allSymbols.set(symbols);
         this.filteredSymbols.set(symbols);
-        
+
         // Update pagination state
         if (response.pagination) {
           this.paginationTotal.set(response.pagination.total);
@@ -536,7 +542,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
         } else {
           this.hasMoreData.set(false);
         }
-        
+
         this.updateFetchedCount();
         this.updateExchangeCounts();
         this.isLoading.set(false);
@@ -550,13 +556,13 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
         this.filteredSymbols.set([]);
         this.hasMoreData.set(false);
         this.isLoading.set(false);
-        
+
         // Still try to sync with DNSE if in window
         this.checkAndSyncDNSE();
       }
     });
   }
-  
+
   /**
    * Load more symbols (infinite scroll)
    */
@@ -576,14 +582,14 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     }).subscribe({
       next: (response) => {
         const newSymbols = this.convertStocksToSymbols(response.stocks);
-        
+
         // Append to existing symbols
         const currentSymbols = this.allSymbols();
         const updatedSymbols = [...currentSymbols, ...newSymbols];
-        
+
         this.allSymbols.set(updatedSymbols);
         this.filteredSymbols.set(updatedSymbols);
-        
+
         // Update pagination state
         if (response.pagination) {
           this.paginationOffset.set(currentOffset + response.stocks.length);
@@ -591,7 +597,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
         } else {
           this.hasMoreData.set(false);
         }
-        
+
         this.updateFetchedCount();
         this.updateExchangeCounts();
         this.isLoadingMore.set(false);
@@ -602,13 +608,13 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
       }
     });
   }
-  
+
   /**
    * Convert API response stocks to SymbolWithStatus array
    */
   private convertStocksToSymbols(stocks: any[]): SymbolWithStatus[] {
     const uniqueStocksMap = new Map<string, any>();
-    
+
     stocks.forEach((stock: any) => {
       if (stock && stock.symbol) {
         const symbolKey = stock.symbol.toUpperCase();
@@ -623,11 +629,11 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     uniqueStocksMap.forEach((stock: any) => {
       const symbol: SymbolWithStatus = {
         symbol: stock.symbol,
-        name: stock.basicInfo?.companyName || stock.fullData?.['pageProps.companyInfo.fullName'],
+        name: stock.basicInfo?.companyName || stock.fullData?.['pageProps.companyInfo.fullName'] || stock.fullData?.pageProps?.companyInfo.fullName,
         exchange: (stock.basicInfo?.exchange || 'hose') as ExchangeType,
         isFetched: !!(stock.priceData || stock.fullData),
         basicInfo: {
-          companyName: stock.basicInfo?.companyName || stock.fullData?.['pageProps.companyInfo.fullName'],
+          companyName: stock.basicInfo?.companyName || stock.fullData?.['pageProps.companyInfo.fullName'] || stock.fullData?.pageProps.companyInfo.fullName,
           exchange: stock.basicInfo?.exchange || 'hose',
           matchPrice: stock.basicInfo?.matchPrice,
           changedValue: stock.basicInfo?.changedValue,
@@ -645,10 +651,10 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
       };
       symbols.push(symbol);
     });
-    
+
     return symbols;
   }
-  
+
   /**
    * Perform search with debounced keyword
    */
@@ -664,7 +670,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
   private checkAndSyncDNSE() {
     if (this.dnseService.shouldSyncWithDNSE()) {
       console.log('🔄 DNSE sync window (days 10-20) - checking for new stocks...');
-      
+
       this.dnseService.syncNewStocksFromDNSE().subscribe({
         next: (result) => {
           if (result.synced) {
@@ -700,7 +706,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
    */
   private loadSymbolsWithoutDNSESync() {
     const keyword = this.searchQuery();
-    
+
     this.dnseService.getStocksPaginated({
       keyword,
       limit: this.PAGE_SIZE,
@@ -708,16 +714,16 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     }).subscribe({
       next: (response) => {
         const symbols = this.convertStocksToSymbols(response.stocks);
-        
+
         this.allSymbols.set(symbols);
         this.filteredSymbols.set(symbols);
-        
+
         if (response.pagination) {
           this.paginationTotal.set(response.pagination.total);
           this.paginationOffset.set(response.stocks.length);
           this.hasMoreData.set(response.pagination.hasMore);
         }
-        
+
         this.updateFetchedCount();
         this.updateExchangeCounts();
       }
@@ -749,7 +755,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
                 ...s,
                 isFetched: true,
                 basicInfo: {
-                  companyName: basicInfo.companyName || stockData.fullData?.['pageProps.companyInfo.fullName'] || stockData.fullData?.['pageProps.companyInfo.name'],
+                  companyName: basicInfo.companyName || stockData.fullData?.['pageProps.companyInfo.fullName'] || stockData.fullData?.pageProps.companyInfo.fullName || stockData.fullData?.['pageProps.companyInfo.name'] || stockData.fullData?.pageProps.companyInfo.name,
                   exchange: basicInfo.exchange || s.exchange,
                   matchPrice: basicInfo.matchPrice,
                   changedValue: basicInfo.changedValue,
@@ -807,12 +813,12 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
                 const stockData = basicInfoMap.get(s.symbol);
                 if (stockData) {
                   const fullData = stockData.fullData || {};
-                  const hasFullName = fullData['pageProps.companyInfo.fullName'] || fullData['pageProps.companyInfo.name'];
-                  const hasFullNameEn = fullData['pageProps.companyInfo.fullNameEn'];
-                  const hasImage = fullData['pageProps.companyInfo.image'];
-                  const hasIntroduction = fullData['pageProps.companyInfo.introduction'];
-                  const hasNotes = fullData['pageProps.companyInfo.notes'];
-                  const hasPermanentAddress = fullData['pageProps.companyInfo.permanentAddress'];
+                  const hasFullName = fullData['pageProps.companyInfo.fullName'] || fullData?.pageProps.companyInfo.fullName || fullData['pageProps.companyInfo.name'] || fullData?.pageProps.companyInfo.name;
+                  const hasFullNameEn = fullData['pageProps.companyInfo.fullNameEn'] || fullData.pageProps.companyInfo.fullNameEn;
+                  const hasImage = fullData['pageProps.companyInfo.image'] || fullData.pageProps.companyInfo.image;
+                  const hasIntroduction = fullData['pageProps.companyInfo.introduction'] || fullData.pageProps.companyInfo.introduction;
+                  const hasNotes = fullData['pageProps.companyInfo.notes'] || fullData.pageProps.companyInfo.notes;
+                  const hasPermanentAddress = fullData['pageProps.companyInfo.permanentAddress'] || fullData.pageProps.companyInfo.permanentAddress;
 
                   const hasBasicInfo = !!(hasFullName || hasFullNameEn || hasImage || hasIntroduction || hasNotes || hasPermanentAddress);
 
@@ -823,12 +829,12 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
                     ...s,
                     hasBasicInfo,
                     basicInfo: {
-                      companyName: basicInfo.companyName || fullData['pageProps.companyInfo.fullName'] || fullData['pageProps.companyInfo.name'],
-                      exchange: basicInfo.exchange || fullData['pageProps.companyInfo.exchange'],
-                      matchPrice: basicInfo.matchPrice || fullData['pageProps.priceSnapshot.matchPrice'],
-                      changedValue: basicInfo.changedValue || fullData['pageProps.priceSnapshot.changedValue'],
-                      changedRatio: basicInfo.changedRatio || fullData['pageProps.priceSnapshot.changedRatio'],
-                      totalVolume: basicInfo.totalVolume || fullData['pageProps.priceSnapshot.totalVolumeTraded'],
+                      companyName: basicInfo.companyName || fullData['pageProps.companyInfo.fullName'] || fullData?.pageProps.companyInfo.fullName || fullData['pageProps.companyInfo.name'] || fullData?.pageProps.companyInfo.name,
+                      exchange: basicInfo.exchange || fullData['pageProps.companyInfo.exchange'] || fullData?.pageProps.companyInfo.exchange,
+                      matchPrice: basicInfo.matchPrice || fullData['pageProps.priceSnapshot.matchPrice'] || fullData.pageProps.priceSnapshot.matchPrice,
+                      changedValue: basicInfo.changedValue || fullData['pageProps.priceSnapshot.changedValue'] || fullData.pageProps.priceSnapshot.changedValue,
+                      changedRatio: basicInfo.changedRatio || fullData['pageProps.priceSnapshot.changedRatio']|| fullData.pageProps.priceSnapshot.changedRatio,
+                      totalVolume: basicInfo.totalVolume || fullData['pageProps.priceSnapshot.totalVolumeTraded'] || fullData.pageProps.priceSnapshot.totalVolumeTraded,
                       marketCap: basicInfo.marketCap,
                       beta: basicInfo.beta,
                       eps: basicInfo.eps,
@@ -873,12 +879,12 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
                 return {
                   ...s,
                   basicInfo: {
-                    companyName: basicInfo.companyName || fullData['pageProps.companyInfo.fullName'] || fullData['pageProps.companyInfo.name'],
-                    exchange: basicInfo.exchange || fullData['pageProps.companyInfo.exchange'],
-                    matchPrice: basicInfo.matchPrice || fullData['pageProps.priceSnapshot.matchPrice'],
-                    changedValue: basicInfo.changedValue || fullData['pageProps.priceSnapshot.changedValue'],
-                    changedRatio: basicInfo.changedRatio || fullData['pageProps.priceSnapshot.changedRatio'],
-                    totalVolume: basicInfo.totalVolume || fullData['pageProps.priceSnapshot.totalVolumeTraded'],
+                    companyName: basicInfo.companyName || fullData['pageProps.companyInfo.fullName'] || fullData?.pageProps.companyInfo.fullName || fullData['pageProps.companyInfo.name'] || fullData?.pageProps.companyInfo.name,
+                    exchange: basicInfo.exchange || fullData['pageProps.companyInfo.exchange'] || fullData?.pageProps.companyInfo.exchange,
+                    matchPrice: basicInfo.matchPrice || fullData['pageProps.priceSnapshot.matchPrice'] || fullData.pageProps.priceSnapshot.matchPrice,
+                    changedValue: basicInfo.changedValue || fullData['pageProps.priceSnapshot.changedValue'] || fullData.pageProps.priceSnapshot.changedValue,
+                    changedRatio: basicInfo.changedRatio || fullData['pageProps.priceSnapshot.changedRatio']|| fullData.pageProps.priceSnapshot.changedRatio,
+                    totalVolume: basicInfo.totalVolume || fullData['pageProps.priceSnapshot.totalVolumeTraded'] || fullData.pageProps.priceSnapshot.totalVolumeTraded,
                     marketCap: basicInfo.marketCap,
                     beta: basicInfo.beta,
                     eps: basicInfo.eps,
@@ -956,12 +962,12 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     // Check if we have fullData in basicInfo
     if (symbol.basicInfo?.fullData) {
       const fullData = symbol.basicInfo.fullData;
-      const hasFullName = fullData['pageProps.companyInfo.fullName'] || fullData['pageProps.companyInfo.name'];
-      const hasFullNameEn = fullData['pageProps.companyInfo.fullNameEn'];
-      const hasImage = fullData['pageProps.companyInfo.image'];
-      const hasIntroduction = fullData['pageProps.companyInfo.introduction'];
-      const hasNotes = fullData['pageProps.companyInfo.notes'];
-      const hasPermanentAddress = fullData['pageProps.companyInfo.permanentAddress'];
+      const hasFullName = fullData['pageProps.companyInfo.fullName'] || fullData?.pageProps.companyInfo.fullName || fullData['pageProps.companyInfo.name'] || fullData?.pageProps.companyInfo.name;
+      const hasFullNameEn = fullData['pageProps.companyInfo.fullNameEn'] || fullData.pageProps.companyInfo.fullNameEn;
+      const hasImage = fullData['pageProps.companyInfo.image'] || fullData.pageProps.companyInfo.image;
+      const hasIntroduction = fullData['pageProps.companyInfo.introduction'] || fullData.pageProps.companyInfo.introduction;
+      const hasNotes = fullData['pageProps.companyInfo.notes'] || fullData.pageProps.companyInfo.notes;
+      const hasPermanentAddress = fullData['pageProps.companyInfo.permanentAddress'] || fullData.pageProps.companyInfo.permanentAddress;
 
       // Consider has basic info if at least fullName exists
       return !!(hasFullName || hasFullNameEn || hasImage || hasIntroduction || hasNotes || hasPermanentAddress);
@@ -1003,12 +1009,12 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
                 if (s.isFetched && s.hasBasicInfo === undefined) {
                   const fullData = basicInfoMap.get(s.symbol);
                   if (fullData) {
-                    const hasFullName = fullData['pageProps.companyInfo.fullName'] || fullData['pageProps.companyInfo.name'];
-                    const hasFullNameEn = fullData['pageProps.companyInfo.fullNameEn'];
-                    const hasImage = fullData['pageProps.companyInfo.image'];
-                    const hasIntroduction = fullData['pageProps.companyInfo.introduction'];
-                    const hasNotes = fullData['pageProps.companyInfo.notes'];
-                    const hasPermanentAddress = fullData['pageProps.companyInfo.permanentAddress'];
+                    const hasFullName = fullData['pageProps.companyInfo.fullName'] || fullData?.pageProps.companyInfo.fullName || fullData['pageProps.companyInfo.name'] || fullData?.pageProps.companyInfo.name;
+                    const hasFullNameEn = fullData['pageProps.companyInfo.fullNameEn'] || fullData.pageProps.companyInfo.fullNameEn;
+                    const hasImage = fullData['pageProps.companyInfo.image'] || fullData.pageProps.companyInfo.image;
+                    const hasIntroduction = fullData['pageProps.companyInfo.introduction'] || fullData.pageProps.companyInfo.introduction;
+                    const hasNotes = fullData['pageProps.companyInfo.notes'] || fullData.pageProps.companyInfo.notes;
+                    const hasPermanentAddress = fullData['pageProps.companyInfo.permanentAddress'] || fullData.pageProps.companyInfo.permanentAddress;
 
                     const hasBasicInfo = !!(hasFullName || hasFullNameEn || hasImage || hasIntroduction || hasNotes || hasPermanentAddress);
 
@@ -2107,13 +2113,8 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     // Try fullData first (new structure)
     if (data.fullData) {
       // Case 1: Check for flat key 'pageProps.companyInfo' (object)
-      if (data.fullData['pageProps.companyInfo'] && typeof data.fullData['pageProps.companyInfo'] === 'object') {
-        return data.fullData['pageProps.companyInfo'];
-      }
-
-      // Case 2: Check for nested object data.fullData['pageProps']?.companyInfo
-      if (data.fullData['pageProps']?.companyInfo && typeof data.fullData['pageProps'].companyInfo === 'object') {
-        return data.fullData['pageProps'].companyInfo;
+      if (data.fullData?.['pageProps']?.['companyInfo'] && typeof data.fullData?.['pageProps']?.['companyInfo'] === 'object') {
+        return data.fullData?.['pageProps']?.['companyInfo'];
       }
 
       // Case 3: Look for keys that start with 'pageProps.companyInfo.' and build object
@@ -2807,7 +2808,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     }
 
     const fullData = symbol.basicInfo.fullData;
-    return fullData['pageProps.financialReportOverall'] || null;
+    return fullData['pageProps.financialReportOverall'] || fullData.pageProps.financialReportOveral || null;
   }
 
   /**
@@ -2922,9 +2923,9 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
    */
   formatIndicatorValue(key: string, value: any): string {
     if (!value) return '-';
-    
+
     let numValue: number | string;
-    
+
     if (typeof value === 'object' && value.value !== undefined) {
       numValue = value.value;
     } else if (typeof value === 'number' || typeof value === 'string') {
@@ -2939,11 +2940,11 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     }
 
     // Format based on indicator type
-    const percentageIndicators = ['marketShare', 'roe', 'roa', 'grossMargin', 'debtEquityRatio', 
-      'profitGrowth', 'inventoryGrowth', 'prepaidBuyerGrowth', 'foreignOwnershipRatio', 
-      'foreignHoldingRatio', 'dividendYield', 'nplRatio', 'llr', 'casaRatio', 
+    const percentageIndicators = ['marketShare', 'roe', 'roa', 'grossMargin', 'debtEquityRatio',
+      'profitGrowth', 'inventoryGrowth', 'prepaidBuyerGrowth', 'foreignOwnershipRatio',
+      'foreignHoldingRatio', 'dividendYield', 'nplRatio', 'llr', 'casaRatio',
       'netInterestMargin', 'lossRatio', 'combineRatio', 'marginLendingGrowth'];
-    
+
     const currencyIndicators = ['totalAssets', 'equity', 'sales', 'capitalization', 'revenue', 'profit'];
     const priceIndicators = ['bookValue', 'eps', 'revenuePerShare'];
 
@@ -2985,7 +2986,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     // Key indicators to show prominently
     const keyIndicators = [
-      'eps', 'pe', 'pb', 'roe', 'roa', 'grossMargin', 'debtEquityRatio', 
+      'eps', 'pe', 'pb', 'roe', 'roa', 'grossMargin', 'debtEquityRatio',
       'beta', 'dividendYield', 'dividendRatio', 'profitGrowth', 'marketShare'
     ];
 
@@ -2998,7 +2999,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
         if (formattedValue !== '-') {
           const numValue = typeof value === 'object' ? value.value : value;
           let isPositive: boolean | undefined;
-          
+
           // Determine if value is positive/negative for coloring
           if (['roe', 'roa', 'eps', 'grossMargin', 'dividendYield', 'profitGrowth'].includes(key)) {
             isPositive = numValue > 0;
@@ -3095,7 +3096,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     }
 
     const fullData = symbol.basicInfo.fullData;
-    const sameSectorStocks = fullData['pageProps.sameSectorStocks'];
+    const sameSectorStocks = fullData['pageProps.sameSectorStocks'] || fullData.pageProps?.sameSectorStocks;
 
     if (!sameSectorStocks || !Array.isArray(sameSectorStocks)) {
       return [];
@@ -3127,7 +3128,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
    */
   navigateToStock(stockSymbol: string) {
     const foundSymbol = this.allSymbols().find(s => s.symbol.toUpperCase() === stockSymbol.toUpperCase());
-    
+
     if (foundSymbol) {
       this.viewStockDetail(foundSymbol);
     } else {
@@ -3137,10 +3138,10 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
         exchange: 'hose',
         isFetched: false
       };
-      
+
       // Fetch the stock first
       this.fetchSymbol(newSymbol);
-      
+
       // Wait a bit then view
       setTimeout(() => {
         const updated = this.allSymbols().find(s => s.symbol.toUpperCase() === stockSymbol.toUpperCase());
@@ -3165,7 +3166,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const priceData = this.selectedSymbolPriceData();
     const config = this.trainingConfig();
     const minDataRequired = config.lookbackDays + 50; // Need at least lookback + 50 for training
-    
+
     if (!priceData || !priceData.c || priceData.c.length < minDataRequired) {
       this.nnError.set(`Cần ít nhất ${minDataRequired} ngày dữ liệu giá để huấn luyện mô hình (lookback: ${config.lookbackDays} ngày)`);
       return;
@@ -3298,7 +3299,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
         next: async (status) => {
           this.modelStatus.set(status);
           this.isCheckingModel.set(false);
-          
+
           // Auto-load model if exists with weights
           if (status.hasWeights) {
             console.log(`📦 Model found for ${symbol.symbol}, auto-loading...`);
@@ -3682,13 +3683,20 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
    */
   async runTradingSimulation() {
     const priceData = this.selectedSymbolPriceData();
-    if (!priceData || !priceData.c || priceData.c.length < 60) {
-      this.nnError.set('Cần ít nhất 60 ngày dữ liệu để chạy mô phỏng');
+    const config = this.tradingConfig();
+    const strategy = config.strategy || 'neural_network';
+
+    // Minimum data requirements vary by strategy
+    const minDataRequired = strategy === 'neural_network' ? 60 : 35;
+
+    if (!priceData || !priceData.c || priceData.c.length < minDataRequired) {
+      this.nnError.set(`Cần ít nhất ${minDataRequired} ngày dữ liệu để chạy mô phỏng với chiến lược ${this.strategyDescriptions[strategy].name}`);
       return;
     }
 
-    if (!this.nnService.isReady()) {
-      this.nnError.set('Mô hình chưa được huấn luyện. Vui lòng huấn luyện trước.');
+    // Only require NN to be ready if using neural_network strategy
+    if (strategy === 'neural_network' && !this.nnService.isReady()) {
+      this.nnError.set('Mô hình Neural Network chưa được huấn luyện. Vui lòng huấn luyện trước hoặc chọn chiến lược khác.');
       return;
     }
 
@@ -3715,50 +3723,50 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
       const { prices: filteredPrices, timestamps: filteredTimestamps } =
         this.filterDataByDateRange(priceData.c, priceData.t, startDate, endDate);
 
-      if (filteredPrices.length < 30) {
-        this.nnError.set('Vùng ngày được chọn có quá ít dữ liệu (cần ít nhất 30 ngày)');
+      const minFilteredData = strategy === 'neural_network' ? 30 : 20;
+      if (filteredPrices.length < minFilteredData) {
+        this.nnError.set(`Vùng ngày được chọn có quá ít dữ liệu (cần ít nhất ${minFilteredData} ngày)`);
         this.isRunningSimulation.set(false);
         return;
       }
 
-      // Generate predictions for backtesting
-      let basePrediction = this.nnPrediction();
-      if (!basePrediction) {
-        // If no prediction yet, make one
-        await this.predictWithNeuralNetwork();
-        basePrediction = this.nnPrediction();
+      let predictions: StockPrediction[] | null = null;
+
+      // Only generate NN predictions if using neural_network strategy
+      if (strategy === 'neural_network') {
+        let basePrediction = this.nnPrediction();
         if (!basePrediction) {
-          throw new Error('Không thể tạo dự đoán');
+          await this.predictWithNeuralNetwork();
+          basePrediction = this.nnPrediction();
+          if (!basePrediction) {
+            throw new Error('Không thể tạo dự đoán Neural Network');
+          }
         }
+
+        console.log('[StockApp] Base prediction:', {
+          predictedPrice: basePrediction.predictedPrice,
+          confidence: basePrediction.confidence,
+          trend: basePrediction.trend,
+          tradingDecision: basePrediction.tradingDecision
+        });
+
+        predictions = this.tradingSimulationService.generatePredictionsForBacktest(
+          filteredPrices,
+          filteredTimestamps,
+          basePrediction
+        );
+
+        console.log('[StockApp] Generated predictions:', predictions.length);
       }
 
-      console.log('[StockApp] Base prediction:', {
-        predictedPrice: basePrediction.predictedPrice,
-        confidence: basePrediction.confidence,
-        trend: basePrediction.trend,
-        tradingDecision: basePrediction.tradingDecision
-      });
+      console.log(`[StockApp] Running simulation with strategy: ${strategy}`);
 
-      const predictions = this.tradingSimulationService.generatePredictionsForBacktest(
-        filteredPrices,
-        filteredTimestamps,
-        basePrediction
-      );
-
-      console.log('[StockApp] Generated predictions:', predictions.length);
-      console.log('[StockApp] Sample predictions:', predictions.slice(0, 5).map(p => ({
-        predictedPrice: p.predictedPrice,
-        confidence: p.confidence,
-        trend: p.trend,
-        tradingDecision: p.tradingDecision
-      })));
-
-      // Generate signals
+      // Generate signals based on selected strategy
       const signals = this.tradingSimulationService.generateSignals(
         filteredPrices,
         filteredTimestamps,
         predictions,
-        this.tradingConfig()
+        config
       );
 
       console.log('[StockApp] Generated signals:', signals.length);
@@ -3772,14 +3780,14 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
         filteredPrices,
         filteredTimestamps,
         signals,
-        this.tradingConfig()
+        config
       );
 
       this.tradingResult.set(result);
 
       // Auto-save simulation result to API
       await this.saveSimulationResult(result, startDate, endDate);
-      
+
       // Switch to results tab after simulation completes
       this.backtestActiveTab.set('results');
     } catch (error: any) {
@@ -3896,6 +3904,38 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   /**
+   * Update trading strategy
+   */
+  updateTradingStrategy(strategy: TradingStrategy) {
+    this.tradingConfig.update(current => ({ ...current, strategy }));
+  }
+
+  /**
+   * Update strategy-specific configuration
+   */
+  updateStrategyConfig(config: Partial<StrategyConfig>) {
+    this.tradingConfig.update(current => ({
+      ...current,
+      strategyConfig: { ...current.strategyConfig, ...config }
+    }));
+  }
+
+  /**
+   * Check if current strategy requires neural network
+   */
+  isNeuralNetworkStrategy(): boolean {
+    return this.tradingConfig().strategy === 'neural_network';
+  }
+
+  /**
+   * Get current strategy description
+   */
+  getCurrentStrategyDescription(): { name: string; description: string } {
+    const strategy = this.tradingConfig().strategy || 'neural_network';
+    return this.strategyDescriptions[strategy];
+  }
+
+  /**
    * Convert number to Vietnamese text
    * Example: 10000000 -> "Mười triệu đồng"
    */
@@ -3908,18 +3948,18 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     const readThreeDigits = (n: number, showZeroHundred: boolean = false): string => {
       if (n === 0) return '';
-      
+
       const hundred = Math.floor(n / 100);
       const ten = Math.floor((n % 100) / 10);
       const unit = n % 10;
-      
+
       let result = '';
-      
+
       // Hundreds
       if (hundred > 0 || showZeroHundred) {
         result += digits[hundred] + ' trăm ';
       }
-      
+
       // Tens
       if (ten === 0 && unit > 0 && hundred > 0) {
         result += 'lẻ ';
@@ -3928,7 +3968,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
       } else if (ten > 1) {
         result += digits[ten] + ' mươi ';
       }
-      
+
       // Units
       if (unit === 1 && ten > 1) {
         result += 'mốt';
@@ -3939,7 +3979,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
       } else if (unit > 0) {
         result += digits[unit];
       }
-      
+
       return result.trim();
     };
 
@@ -3964,10 +4004,10 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     }
 
     let result = parts.join(' ').trim();
-    
+
     // Capitalize first letter
     result = result.charAt(0).toUpperCase() + result.slice(1);
-    
+
     return result + ' đồng';
   }
 
@@ -4046,7 +4086,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     }
 
     const events: TradeEvent[] = [];
-    
+
     for (const trade of result.trades) {
       events.push({
         type: 'buy',
@@ -4071,7 +4111,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const transactions: Transaction[] = [];
     let totalShares = 0;
     let totalCost = 0; // Total cost of shares held (for avg price calculation)
-    
+
     // Initialize running capital from the first buy trade's capital
     let runningCapital = result.trades.length > 0 ? result.trades[0].buyCapital : 0;
 
