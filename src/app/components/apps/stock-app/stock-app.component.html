@@ -103,6 +103,13 @@
         <i class="pi pi-chart-line"></i>
         <span>Biểu đồ</span>
       </button>
+      <button
+        class="tab-btn"
+        [class.active]="activeTab() === 'advisor'"
+        (click)="activeTab.set('advisor')">
+        <i class="pi pi-compass"></i>
+        <span>Tư vấn tự động</span>
+      </button>
     </div>
 
     <div class="detail-content" *ngIf="selectedSymbol()">
@@ -1766,6 +1773,222 @@
                 </tr>
               </tbody>
             </table>
+          </div>
+        </section>
+      </div>
+
+      <!-- Advisor Tab - Tư vấn tự động -->
+      <div *ngIf="activeTab() === 'advisor' && !isLoadingDetail()">
+        <section class="section advisor-section">
+          <h3>
+            <i class="pi pi-compass"></i>
+            Tư vấn chiến lược giao dịch
+          </h3>
+          
+          <!-- Need Model Warning -->
+          <div class="advisor-warning" *ngIf="!isNNReady()">
+            <div class="warning-content">
+              <i class="pi pi-exclamation-triangle"></i>
+              <div class="warning-text">
+                <strong>Cần huấn luyện mô hình AI</strong>
+                <p>Vui lòng huấn luyện mô hình Neural Network trong tab Trading trước khi sử dụng tính năng tư vấn tự động.</p>
+              </div>
+            </div>
+            <button class="btn btn-primary" (click)="activeTab.set('trading')">
+              <i class="pi pi-arrow-right"></i>
+              Đi đến Trading
+            </button>
+          </div>
+
+          <!-- Strategy Panel - Personal Holding Analysis -->
+          <div class="strategy-panel" *ngIf="isNNReady()">
+            <div class="panel-header">
+              <h4>
+                <i class="pi pi-user"></i>
+                Danh mục của bạn
+              </h4>
+            </div>
+
+            <!-- User Input Section -->
+            <div class="holding-input-section">
+              <div class="input-row">
+                <div class="input-group">
+                  <label>Số CP đang nắm giữ:</label>
+                  <input 
+                    type="number" 
+                    [ngModel]="userHoldingShares()"
+                    (ngModelChange)="userHoldingShares.set($event)"
+                    min="0"
+                    step="100"
+                    placeholder="VD: 1000">
+                </div>
+                <div class="input-group">
+                  <label>Giá trung bình (VNĐ):</label>
+                  <input 
+                    type="number" 
+                    [ngModel]="userAveragePrice()"
+                    (ngModelChange)="userAveragePrice.set($event)"
+                    min="0"
+                    step="100"
+                    placeholder="VD: 25000">
+                </div>
+              </div>
+              <div class="holding-summary" *ngIf="userHoldingShares() > 0 && userAveragePrice() > 0">
+                <span class="summary-item">
+                  <i class="pi pi-wallet"></i>
+                  Giá trị nắm giữ: <strong>{{ formatCurrency(userHoldingShares() * userAveragePrice()) }}</strong>
+                </span>
+                <span class="summary-item" *ngIf="strategyRecommendation()">
+                  <i class="pi pi-chart-line"></i>
+                  Giá hiện tại: <strong>{{ formatPredictionPrice(strategyRecommendation()!.currentPrice) }}</strong>
+                </span>
+              </div>
+            </div>
+
+            <!-- Strategy Recommendation -->
+            <div class="strategy-recommendation" *ngIf="strategyRecommendation()">
+              <div class="recommendation-header" [ngClass]="'recommendation-' + strategyRecommendation()!.recommendation">
+                <div class="recommendation-badge">
+                  <i class="pi" [ngClass]="{
+                    'pi-arrow-up': strategyRecommendation()!.recommendation === 'buy' || strategyRecommendation()!.recommendation === 'buy_more',
+                    'pi-arrow-down': strategyRecommendation()!.recommendation === 'sell',
+                    'pi-pause': strategyRecommendation()!.recommendation === 'hold'
+                  }"></i>
+                  <span>
+                    {{ strategyRecommendation()!.recommendation === 'buy' ? 'MUA VÀO' :
+                       strategyRecommendation()!.recommendation === 'buy_more' ? 'MUA THÊM' :
+                       strategyRecommendation()!.recommendation === 'sell' ? 'BÁN RA' : 'NẮM GIỮ' }}
+                  </span>
+                </div>
+                <div class="recommendation-confidence">
+                  Độ tin cậy: {{ (strategyRecommendation()!.confidence * 100).toFixed(0) }}%
+                </div>
+              </div>
+              <div class="recommendation-reason">
+                <i class="pi pi-info-circle"></i>
+                {{ strategyRecommendation()!.reason }}
+              </div>
+
+              <!-- Unrealized P/L if holding -->
+              <div class="unrealized-pl" *ngIf="userHoldingShares() > 0">
+                <div class="pl-item" [ngClass]="strategyRecommendation()!.unrealizedPL >= 0 ? 'profit' : 'loss'">
+                  <span class="pl-label">Lãi/Lỗ chưa thực hiện:</span>
+                  <span class="pl-value">
+                    {{ strategyRecommendation()!.unrealizedPL >= 0 ? '+' : '' }}{{ formatCurrency(strategyRecommendation()!.unrealizedPL) }}
+                    <span class="pl-percent">
+                      ({{ strategyRecommendation()!.unrealizedPLPercent >= 0 ? '+' : '' }}{{ strategyRecommendation()!.unrealizedPLPercent.toFixed(2) }}%)
+                    </span>
+                  </span>
+                </div>
+              </div>
+
+              <!-- Price Zones -->
+              <div class="price-zones">
+                <h5>
+                  <i class="pi pi-map-marker"></i>
+                  Các vùng giá quan trọng
+                </h5>
+                <div class="zones-grid">
+                  <div class="zone-item current">
+                    <div class="zone-icon">
+                      <i class="pi pi-circle-fill"></i>
+                    </div>
+                    <div class="zone-info">
+                      <span class="zone-label">Giá hiện tại</span>
+                      <span class="zone-price">{{ formatPredictionPrice(strategyRecommendation()!.currentPrice) }}</span>
+                    </div>
+                  </div>
+                  <div class="zone-item predicted">
+                    <div class="zone-icon">
+                      <i class="pi pi-star"></i>
+                    </div>
+                    <div class="zone-info">
+                      <span class="zone-label">Giá dự đoán (AI)</span>
+                      <span class="zone-price">{{ formatPredictionPrice(strategyRecommendation()!.predictedPrice) }}</span>
+                    </div>
+                  </div>
+                  <div class="zone-item stop-loss">
+                    <div class="zone-icon">
+                      <i class="pi pi-exclamation-triangle"></i>
+                    </div>
+                    <div class="zone-info">
+                      <span class="zone-label">Vùng cắt lỗ</span>
+                      <span class="zone-price">≤ {{ formatPredictionPrice(strategyRecommendation()!.stopLossPrice) }}</span>
+                    </div>
+                  </div>
+                  <div class="zone-item take-profit">
+                    <div class="zone-icon">
+                      <i class="pi pi-check-circle"></i>
+                    </div>
+                    <div class="zone-info">
+                      <span class="zone-label">Vùng chốt lãi</span>
+                      <span class="zone-price">≥ {{ formatPredictionPrice(strategyRecommendation()!.takeProfitPrice) }}</span>
+                    </div>
+                  </div>
+                  <div class="zone-item buy-more">
+                    <div class="zone-icon">
+                      <i class="pi pi-plus-circle"></i>
+                    </div>
+                    <div class="zone-info">
+                      <span class="zone-label">Vùng mua thêm (DCA)</span>
+                      <span class="zone-price">{{ formatPredictionPrice(strategyRecommendation()!.buyMoreZoneEnd) }} - {{ formatPredictionPrice(strategyRecommendation()!.buyMoreZoneStart) }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Estimated Sessions -->
+              <div class="estimated-sessions" *ngIf="strategyRecommendation()!.estimatedSessions && strategyRecommendation()!.estimatedSessions! > 0">
+                <div class="sessions-info">
+                  <i class="pi pi-clock"></i>
+                  <span>
+                    Dự kiến đạt vùng chốt lãi sau khoảng 
+                    <strong>{{ strategyRecommendation()!.estimatedSessions }} phiên</strong>
+                    giao dịch (dựa vào biến động trung bình)
+                  </span>
+                </div>
+              </div>
+
+              <!-- Model Info -->
+              <div class="model-info-section">
+                <h5>
+                  <i class="pi pi-microchip-ai"></i>
+                  Thông tin mô hình AI
+                </h5>
+                <div class="model-info-grid">
+                  <div class="model-info-item" *ngIf="nnPrediction()">
+                    <span class="info-label">Xu hướng dự đoán:</span>
+                    <span class="info-value trend-badge" [ngClass]="getTrendColorClass(nnPrediction()!.trend)">
+                      {{ nnPrediction()!.trend === 'up' ? '📈 Tăng' : nnPrediction()!.trend === 'down' ? '📉 Giảm' : '➡️ Ổn định' }}
+                    </span>
+                  </div>
+                  <div class="model-info-item" *ngIf="nnPrediction()?.tradingDecision">
+                    <span class="info-label">Quyết định AI:</span>
+                    <span class="info-value decision-badge" [ngClass]="'decision-' + nnPrediction()!.tradingDecision!.action">
+                      {{ nnPrediction()!.tradingDecision!.action === 'buy' ? 'MUA' : nnPrediction()!.tradingDecision!.action === 'sell' ? 'BÁN' : 'GIỮ' }}
+                      ({{ (nnPrediction()!.tradingDecision!.confidence * 100).toFixed(0) }}%)
+                    </span>
+                  </div>
+                  <div class="model-info-item">
+                    <span class="info-label">Stop Loss:</span>
+                    <span class="info-value">-{{ tradingConfig().stopLossPercent }}%</span>
+                  </div>
+                  <div class="model-info-item">
+                    <span class="info-label">Take Profit:</span>
+                    <span class="info-value">{{ tradingConfig().takeProfitPercent > 0 ? '+' + tradingConfig().takeProfitPercent + '%' : 'Tự động (AI)' }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- No Prediction Message -->
+            <div class="no-model-message" *ngIf="!strategyRecommendation()">
+              <i class="pi pi-info-circle"></i>
+              <div>
+                <strong>Chưa có dự đoán</strong>
+                <p>Vui lòng chạy dự đoán trong tab Trading để nhận tư vấn chiến lược giao dịch.</p>
+              </div>
+            </div>
           </div>
         </section>
       </div>

@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, signal, computed, ViewChild, ElementRef, AfterViewInit, OnChanges, SimpleChanges, effect, NgZone } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal, computed, ViewChild, ElementRef, AfterViewInit, OnChanges, SimpleChanges, effect, NgZone, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
@@ -149,7 +149,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
   isLoadingDetail = signal(false);
   isLoadingPrice = signal(false);
   selectedYears = signal<number>(3); // Default 3 years
-  activeTab = signal<'overview' | 'trading' | 'chart' | 'financial'>('overview');
+  activeTab = signal<'overview' | 'trading' | 'chart' | 'financial' | 'advisor'>('overview');
 
   // Financial indicator labels mapping (Vietnamese)
   financialIndicatorLabels: Record<string, string> = {
@@ -427,6 +427,120 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
   tradingResult = signal<TradingResult | null>(null);
   isRunningSimulation = signal(false);
 
+  // Strategy Panel - User's current holding
+  userHoldingShares = signal<number>(0); // Số CP đang nắm giữ
+  userAveragePrice = signal<number>(0); // Giá trung bình mua vào (VNĐ)
+  
+  // Strategy recommendation computed from model
+  strategyRecommendation = computed(() => {
+    const prediction = this.nnPrediction();
+    const priceData = this.selectedSymbolPriceData();
+    const holdingShares = this.userHoldingShares();
+    const averagePrice = this.userAveragePrice();
+    const tradingConfig = this.tradingConfig();
+    
+    if (!prediction || !priceData || !priceData.c || priceData.c.length === 0) {
+      return null;
+    }
+    
+    // Current price (convert from database units to VND)
+    const currentPrice = priceData.c[priceData.c.length - 1] * 1000;
+    const predictedPrice = prediction.predictedPrice;
+    const decision = prediction.tradingDecision;
+    
+    // Calculate profit/loss if holding
+    const unrealizedPL = holdingShares > 0 ? (currentPrice - averagePrice) * holdingShares : 0;
+    const unrealizedPLPercent = holdingShares > 0 && averagePrice > 0 
+      ? ((currentPrice - averagePrice) / averagePrice) * 100 
+      : 0;
+    
+    // Calculate zones based on current price and trading config
+    const stopLossPercent = tradingConfig.stopLossPercent;
+    const takeProfitPercent = tradingConfig.takeProfitPercent;
+    
+    // Stop loss zone (from average price if holding, else from current price)
+    const referencePrice = holdingShares > 0 && averagePrice > 0 ? averagePrice : currentPrice;
+    const stopLossPrice = referencePrice * (1 - stopLossPercent / 100);
+    
+    // Take profit zone
+    const takeProfitPrice = takeProfitPercent > 0 
+      ? referencePrice * (1 + takeProfitPercent / 100)
+      : predictedPrice; // Use predicted price if take profit is auto
+    
+    // Buy more zone (DCA) - suggest buying when price drops 3-5% from average
+    const buyMoreZoneStart = referencePrice * 0.97; // -3%
+    const buyMoreZoneEnd = referencePrice * 0.95; // -5%
+    
+    // Determine recommendation
+    let recommendation: 'sell' | 'hold' | 'buy_more' | 'buy' = 'hold';
+    let reason = '';
+    let confidence = decision?.confidence || 0;
+    
+    if (holdingShares === 0) {
+      // Not holding - recommend based on model
+      if (decision?.action === 'buy') {
+        recommendation = 'buy';
+        reason = `Tín hiệu MUA từ mô hình (confidence: ${(confidence * 100).toFixed(1)}%)`;
+      } else if (decision?.action === 'sell') {
+        recommendation = 'hold';
+        reason = 'Không nên mua vào lúc này - Tín hiệu bán từ mô hình';
+      } else {
+        recommendation = 'hold';
+        reason = 'Chờ tín hiệu rõ ràng hơn từ mô hình';
+      }
+    } else {
+      // Holding - recommend based on profit/loss and model
+      if (currentPrice <= stopLossPrice) {
+        recommendation = 'sell';
+        reason = `Giá hiện tại đã chạm vùng cắt lỗ (-${stopLossPercent}%)`;
+        confidence = 0.9;
+      } else if (takeProfitPercent > 0 && currentPrice >= takeProfitPrice) {
+        recommendation = 'sell';
+        reason = `Giá hiện tại đã đạt mục tiêu chốt lãi (+${takeProfitPercent}%)`;
+        confidence = 0.85;
+      } else if (decision?.action === 'sell' && confidence >= 0.6) {
+        recommendation = 'sell';
+        reason = `Tín hiệu BÁN từ mô hình (confidence: ${(confidence * 100).toFixed(1)}%)`;
+      } else if (currentPrice >= buyMoreZoneStart && currentPrice <= buyMoreZoneEnd && decision?.action !== 'sell') {
+        recommendation = 'buy_more';
+        reason = `Giá đang ở vùng mua thêm (DCA) - cân nhắc gia tăng tỉ trọng`;
+        confidence = 0.6;
+      } else if (decision?.action === 'buy' && unrealizedPLPercent < 0) {
+        recommendation = 'buy_more';
+        reason = `Tín hiệu MUA từ mô hình - cân nhắc mua thêm để hạ giá trung bình`;
+        confidence = decision.confidence;
+      } else {
+        recommendation = 'hold';
+        reason = unrealizedPLPercent > 0 
+          ? `Đang lãi ${unrealizedPLPercent.toFixed(2)}% - tiếp tục nắm giữ`
+          : `Đang lỗ ${Math.abs(unrealizedPLPercent).toFixed(2)}% - chờ tín hiệu từ mô hình`;
+      }
+    }
+    
+    // Estimate sessions to take profit
+    const priceChangePerDay = this.estimatePriceChangePerDay(priceData.c);
+    const priceDifference = takeProfitPrice - currentPrice;
+    const estimatedSessions = priceChangePerDay > 0 
+      ? Math.ceil(Math.abs(priceDifference) / (priceChangePerDay * 1000))
+      : null;
+    
+    return {
+      recommendation,
+      reason,
+      confidence,
+      currentPrice,
+      predictedPrice,
+      unrealizedPL,
+      unrealizedPLPercent,
+      stopLossPrice,
+      takeProfitPrice,
+      buyMoreZoneStart,
+      buyMoreZoneEnd,
+      estimatedSessions,
+      holdingValue: holdingShares * currentPrice
+    };
+  });
+
   // Computed signal for transactions (avoid recalculating on every template access)
   transactions = computed<Transaction[]>(() => {
     const result = this.tradingResult();
@@ -517,6 +631,16 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     // Cleanup subscriptions
     this.searchSubscription?.unsubscribe();
     this.scrollSubscription?.unsubscribe();
+  }
+
+  /**
+   * Handle window resize to update virtual scroll viewport
+   */
+  @HostListener('window:resize')
+  onWindowResize() {
+    if (this.virtualScrollViewport) {
+      this.virtualScrollViewport.checkViewportSize();
+    }
   }
 
   /**
@@ -2940,6 +3064,25 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const sum = priceData.c.reduce((a, b) => a + b, 0);
     const avg = sum / priceData.c.length;
     return avg * 1000; // Convert to đồng
+  }
+
+  /**
+   * Estimate average price change per day based on recent price history
+   * Returns average absolute daily change in database units (thousands)
+   */
+  private estimatePriceChangePerDay(prices: number[]): number {
+    if (!prices || prices.length < 10) return 0;
+    
+    // Use last 30 days or available data
+    const recentPrices = prices.slice(-30);
+    if (recentPrices.length < 2) return 0;
+    
+    let totalChange = 0;
+    for (let i = 1; i < recentPrices.length; i++) {
+      totalChange += Math.abs(recentPrices[i] - recentPrices[i - 1]);
+    }
+    
+    return totalChange / (recentPrices.length - 1);
   }
 
   /**
