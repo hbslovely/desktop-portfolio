@@ -3696,9 +3696,9 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   /**
-   * Get same sector stocks with full data
+   * Computed: Get same sector stocks with full data
    */
-  getFormattedSameSectorStocks(): Array<{symbol: string, name: string, shortName?: string, isFetched: boolean | 'checking'}> {
+  formattedSameSectorStocks = computed(() => {
     const symbol = this.selectedSymbol();
     if (!symbol || !symbol.basicInfo?.fullData) {
       return [];
@@ -3712,22 +3712,24 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     }
 
     const statusMap = this.sameSectorStocksStatus();
+    const allSymbolsList = this.allSymbols();
+    const isChecking = this.isCheckingSameSectorStocks();
 
     return sameSectorStocks.map((stock: any) => {
       if (typeof stock === 'string') {
         const upperSymbol = stock.toUpperCase();
-        const foundSymbol = this.allSymbols().find(s => s.symbol.toUpperCase() === upperSymbol);
+        const foundSymbol = allSymbolsList.find(s => s.symbol.toUpperCase() === upperSymbol);
         // Check from API status map first, fallback to local status
         const apiStatus = statusMap.get(upperSymbol);
         const isFetched = apiStatus !== undefined ? apiStatus : (foundSymbol?.isFetched || false);
         return {
           symbol: upperSymbol,
           name: foundSymbol?.name || foundSymbol?.basicInfo?.companyName || '',
-          isFetched: this.isCheckingSameSectorStocks() && apiStatus === undefined ? 'checking' as const : isFetched
+          isFetched: isChecking && apiStatus === undefined ? 'checking' as const : isFetched
         };
       } else if (stock && stock.symbol) {
         const upperSymbol = stock.symbol.toUpperCase();
-        const foundSymbol = this.allSymbols().find(s => s.symbol.toUpperCase() === upperSymbol);
+        const foundSymbol = allSymbolsList.find(s => s.symbol.toUpperCase() === upperSymbol);
         // Check from API status map first, fallback to local status
         const apiStatus = statusMap.get(upperSymbol);
         const isFetched = apiStatus !== undefined ? apiStatus : (foundSymbol?.isFetched || false);
@@ -3735,12 +3737,12 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
           symbol: upperSymbol,
           name: stock.name || stock.companyName || foundSymbol?.name || '',
           shortName: stock.shortName,
-          isFetched: this.isCheckingSameSectorStocks() && apiStatus === undefined ? 'checking' as const : isFetched
+          isFetched: isChecking && apiStatus === undefined ? 'checking' as const : isFetched
         };
       }
       return null;
     }).filter((s): s is {symbol: string, name: string, shortName?: string, isFetched: boolean | 'checking'} => s !== null);
-  }
+  });
 
   /**
    * Check same sector stocks status from API
@@ -3810,32 +3812,37 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   /**
-   * Navigate to related stock
+   * Navigate to related stock - fetch from API directly
    */
   navigateToStock(stockSymbol: string) {
-    const foundSymbol = this.allSymbols().find(s => s.symbol.toUpperCase() === stockSymbol.toUpperCase());
+    const upperSymbol = stockSymbol.toUpperCase();
 
-    if (foundSymbol) {
-      this.viewStockDetail(foundSymbol);
-    } else {
-      // Stock not in list, try to load it
-      const newSymbol: SymbolWithStatus = {
-        symbol: stockSymbol.toUpperCase(),
-        exchange: 'hose',
-        isFetched: false
-      };
+    // Show loading state
+    this.isLoadingDetail.set(true);
 
-      // Fetch the stock first
-      this.fetchSymbol(newSymbol);
-
-      // Wait a bit then view
-      setTimeout(() => {
-        const updated = this.allSymbols().find(s => s.symbol.toUpperCase() === stockSymbol.toUpperCase());
-        if (updated) {
-          this.viewStockDetail(updated);
+    // Call API to get stock data directly
+    this.dnseService.getStockDataFromAPI(upperSymbol).subscribe({
+      next: (data) => {
+        if (data) {
+          // Create symbol object from API data
+          const symbol: SymbolWithStatus = {
+            symbol: upperSymbol,
+            name: data.basicInfo?.companyName,
+            exchange: data.basicInfo?.exchange || 'hose',
+            isFetched: true,
+            basicInfo: data.basicInfo
+          };
+          this.viewStockDetail(symbol);
+        } else {
+          console.log(`No data found for ${upperSymbol}`);
+          this.isLoadingDetail.set(false);
         }
-      }, 2000);
-    }
+      },
+      error: (error) => {
+        console.error(`Error fetching ${upperSymbol}:`, error);
+        this.isLoadingDetail.set(false);
+      }
+    });
   }
 
   /**
