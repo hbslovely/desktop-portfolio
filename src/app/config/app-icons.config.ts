@@ -161,7 +161,7 @@ export const APP_ICONS: DesktopIconData[] = [
   },
   {
     id: 'fb-id-finder',
-    name: 'Tìm Facebook ID',
+    name: 'Facebook Scanner',
     icon: 'pi pi-facebook',
     type: 'application',
     position: { x: 420, y: 120 }

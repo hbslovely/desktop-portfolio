@@ -1219,21 +1219,33 @@
                       type="number" 
                       [value]="tradingConfig().takeProfitPercent"
                       (input)="updateTradingConfig({ takeProfitPercent: +$any($event.target).value })"
-                      min="1"
+                      min="0"
                       max="50"
                       step="0.5">
+                    <small style="font-size: 11px; color: #6c757d;">
+                      {{ tradingConfig().takeProfitPercent === 0 ? '🔄 Tự động tối ưu điểm bán theo tín hiệu' : '📍 Chốt lời cố định ' + tradingConfig().takeProfitPercent + '%' }}
+                    </small>
                   </div>
-                  <div class="config-item" style="opacity: 0.6;">
-                    <label>Độ tin cậy tối thiểu (%):</label>
-                    <input 
-                      type="number" 
-                      [value]="tradingConfig().minConfidence * 100"
-                      (input)="updateTradingConfig({ minConfidence: +$any($event.target).value / 100 })"
-                      min="0"
-                      max="100"
-                      step="5"
-                      disabled>
-                    <small style="font-size: 11px; color: #6c757d;">Không dùng - Model tự quyết định mua/bán</small>
+                  <div class="config-item trailing-stop-config">
+                    <label>
+                      <input type="checkbox" 
+                             [checked]="tradingConfig().useTrailingStop"
+                             (change)="updateTradingConfig({ useTrailingStop: $any($event.target).checked })">
+                      Trailing Stop
+                    </label>
+                    <div class="trailing-input" *ngIf="tradingConfig().useTrailingStop">
+                      <input 
+                        type="number" 
+                        [value]="tradingConfig().trailingStopPercent"
+                        (input)="updateTradingConfig({ trailingStopPercent: +$any($event.target).value })"
+                        min="1"
+                        max="20"
+                        step="0.5">
+                      <span>%</span>
+                    </div>
+                    <small style="font-size: 11px; color: #6c757d;">
+                      {{ tradingConfig().useTrailingStop ? '📈 Cắt lỗ di động từ đỉnh giá' : '❌ Tắt trailing stop' }}
+                    </small>
                   </div>
                   <div class="config-item">
                     <label>Số vị thế tối đa:</label>
@@ -1262,7 +1274,7 @@
                   <button
                     class="btn-simulate"
                     (click)="runTradingSimulation()"
-                    [disabled]="!isNNReady() || isRunningSimulation() || isNNTraining()">
+                    [disabled]="(isNeuralNetworkStrategy() && !isNNReady()) || isRunningSimulation() || isNNTraining()">
                     <i class="pi" [ngClass]="isRunningSimulation() ? 'pi-spin pi-spinner' : 'pi-play'"></i>
                     {{ isRunningSimulation() ? 'Đang chạy...' : 'Chạy mô phỏng' }}
                   </button>
@@ -1317,10 +1329,67 @@
                     <div class="stat-percent">{{ tradingResult()!.maxDrawdownPercent.toFixed(2) }}%</div>
                   </div>
                 </div>
+                
+                <!-- Strategy Performance Metrics -->
+                <div class="performance-metrics" *ngIf="tradingResult()">
+                  <h5>📊 Đánh giá hiệu suất chiến lược</h5>
+                  <div class="metrics-grid">
+                    <div class="metric-card">
+                      <label>Chiến lược:</label>
+                      <div class="metric-value strategy-name">{{ getStrategyDisplayName(tradingResult()!.strategy) }}</div>
+                    </div>
+                    <div class="metric-card">
+                      <label>Sharpe Ratio:</label>
+                      <div class="metric-value" [ngClass]="getSharpeRatioClass(tradingResult()!)">
+                        {{ calculateSharpeRatio(tradingResult()!).toFixed(2) }}
+                      </div>
+                      <small>{{ getSharpeRatioLabel(tradingResult()!) }}</small>
+                    </div>
+                    <div class="metric-card">
+                      <label>Profit Factor:</label>
+                      <div class="metric-value" [ngClass]="getProfitFactorClass(tradingResult()!)">
+                        {{ calculateProfitFactor(tradingResult()!).toFixed(2) }}
+                      </div>
+                      <small>{{ getProfitFactorLabel(tradingResult()!) }}</small>
+                    </div>
+                    <div class="metric-card">
+                      <label>Lãi TB/GD:</label>
+                      <div class="metric-value" [ngClass]="tradingResult()!.avgWinAmount > 0 ? 'positive' : ''">
+                        {{ formatCurrency(tradingResult()!.avgWinAmount || 0) }}
+                      </div>
+                    </div>
+                    <div class="metric-card">
+                      <label>Lỗ TB/GD:</label>
+                      <div class="metric-value negative">
+                        {{ formatCurrency(tradingResult()!.avgLossAmount || 0) }}
+                      </div>
+                    </div>
+                    <div class="metric-card">
+                      <label>Recovery Factor:</label>
+                      <div class="metric-value" [ngClass]="getRecoveryFactorClass(tradingResult()!)">
+                        {{ calculateRecoveryFactor(tradingResult()!).toFixed(2) }}
+                      </div>
+                      <small>Khả năng phục hồi từ drawdown</small>
+                    </div>
+                    <div class="metric-card">
+                      <label>Expectancy:</label>
+                      <div class="metric-value" [ngClass]="calculateExpectancy(tradingResult()!) >= 0 ? 'positive' : 'negative'">
+                        {{ formatCurrency(calculateExpectancy(tradingResult()!)) }}
+                      </div>
+                      <small>Kỳ vọng lợi nhuận/giao dịch</small>
+                    </div>
+                    <div class="metric-card">
+                      <label>Thời gian nắm giữ TB:</label>
+                      <div class="metric-value">
+                        {{ calculateAvgHoldingDays(tradingResult()!).toFixed(1) }} ngày
+                      </div>
+                    </div>
+                  </div>
+                </div>
 
                 <!-- Transactions List -->
-                <div class="transactions-list" *ngIf="getTransactions().length > 0">
-                  <h5>Lịch sử giao dịch ({{ getTransactions().length }})</h5>
+                <div class="transactions-list" *ngIf="transactions().length > 0">
+                  <h5>Lịch sử giao dịch ({{ transactions().length }})</h5>
                   <div class="transactions-table-wrapper">
                     <table class="transactions-table">
                       <thead>
@@ -1334,10 +1403,17 @@
                           <th>Giá TB</th>
                           <th>Tiền còn</th>
                           <th>Nắm giữ</th>
+                          <th>Lãi/Lỗ</th>
                         </tr>
                       </thead>
                       <tbody>
-                        <tr *ngFor="let tx of getTransactions()" [ngClass]="tx.type === 'buy' ? 'transaction-buy' : 'transaction-sell'">
+                        <tr *ngFor="let tx of transactions()" 
+                            [ngClass]="{
+                              'transaction-buy': tx.type === 'buy',
+                              'transaction-sell': tx.type === 'sell',
+                              'transaction-loss': tx.type === 'sell' && tx.profit !== undefined && tx.profit < 0,
+                              'transaction-profit': tx.type === 'sell' && tx.profit !== undefined && tx.profit > 0
+                            }">
                           <td class="date-cell">{{ tx.dateStr }}</td>
                           <td>
                             <span class="transaction-type" [ngClass]="'type-' + tx.type">
@@ -1356,9 +1432,37 @@
                             {{ tx.avgPriceAfter > 0 ? formatPredictionPrice(tx.avgPriceAfter) : '-' }}
                           </td>
                           <td class="capital-cell">{{ formatCurrency(tx.capitalAfter) }}</td>
-                          <td class="holding-cell">{{ tx.holdingDays !== undefined ? tx.holdingDays + 'ngày' : '-' }}</td>
+                          <td class="holding-cell">{{ tx.holdingDays !== undefined ? tx.holdingDays + ' ngày' : '-' }}</td>
+                          <td class="profit-cell">
+                            <span *ngIf="tx.type === 'sell' && tx.profit !== undefined" [ngClass]="tx.profit >= 0 ? 'positive' : 'negative'">
+                              <span class="profit-icon">{{ tx.profit >= 0 ? '✅' : '⚠️' }}</span>
+                              {{ tx.profit >= 0 ? '+' : '' }}{{ formatCurrency(tx.profit) }}
+                            </span>
+                            <span *ngIf="tx.type === 'buy'" class="buy-indicator">-</span>
+                          </td>
                         </tr>
                       </tbody>
+                      <tfoot>
+                        <tr class="summary-row">
+                          <td colspan="2" class="summary-label">
+                            <strong>TỔNG KẾT</strong>
+                          </td>
+                          <td class="summary-trades" colspan="3">
+                            <span class="trade-count">{{ tradingResult()!.totalTrades }} giao dịch</span>
+                            <span class="win-count positive">{{ tradingResult()!.winningTrades }} lãi</span>
+                            <span class="loss-count negative">{{ tradingResult()!.losingTrades }} lỗ</span>
+                          </td>
+                          <td colspan="2" class="summary-amounts">
+                            <span class="total-win positive">+{{ formatCurrency(tradingResult()!.totalWinAmount || 0) }}</span>
+                            <span class="total-loss negative">-{{ formatCurrency(tradingResult()!.totalLossAmount || 0) }}</span>
+                          </td>
+                          <td colspan="3" class="summary-net">
+                            <strong [ngClass]="tradingResult()!.totalProfit >= 0 ? 'positive' : 'negative'">
+                              {{ tradingResult()!.totalProfit >= 0 ? '+' : '' }}{{ formatCurrency(tradingResult()!.totalProfit) }}
+                            </strong>
+                          </td>
+                        </tr>
+                      </tfoot>
                     </table>
                   </div>
                 </div>
@@ -1407,7 +1511,7 @@
                 <app-tradingview-chart 
                   [data]="selectedSymbolPriceData()"
                   [symbol]="selectedSymbol()?.symbol || ''"
-                  [markers]="getChartMarkers()">
+                  [markers]="chartMarkers()">
                 </app-tradingview-chart>
               </div>
               
@@ -1724,6 +1828,48 @@
       <span>Đang tải...</span>
     </div>
 
+    <!-- DNSE Sync Panel -->
+    <div *ngIf="!isLoading()" class="dnse-sync-panel">
+      <div class="sync-info">
+        <span class="sync-label">
+          <i class="pi pi-database"></i>
+          DB: {{ paginationTotal() }} cổ phiếu
+        </span>
+        <span class="sync-label" *ngIf="dnseSymbolsCount() > 0">
+          <i class="pi pi-cloud"></i>
+          DNSE: {{ dnseSymbolsCount() }}
+        </span>
+        <span class="sync-label missing" *ngIf="missingSymbolsCount() > 0">
+          <i class="pi pi-exclamation-circle"></i>
+          Thiếu: {{ missingSymbolsCount() }}
+        </span>
+      </div>
+      <div class="sync-actions">
+        <button 
+          class="btn-sync" 
+          (click)="checkMissingStocksFromDNSE()"
+          [disabled]="isSyncingDNSE()">
+          <i class="pi" [ngClass]="isSyncingDNSE() ? 'pi-spin pi-spinner' : 'pi-search'"></i>
+          {{ isSyncingDNSE() ? 'Đang kiểm tra...' : 'Kiểm tra DNSE' }}
+        </button>
+        <button 
+          class="btn-sync primary" 
+          *ngIf="missingSymbolsCount() > 0"
+          (click)="syncMissingStocks()"
+          [disabled]="isSyncingDNSE()">
+          <i class="pi pi-cloud-download"></i>
+          Thêm {{ missingSymbolsCount() }} cổ phiếu
+        </button>
+        <button 
+          class="btn-sync" 
+          (click)="updateAllPricesFromDNSE()"
+          [disabled]="isUpdatingPrices()">
+          <i class="pi" [ngClass]="isUpdatingPrices() ? 'pi-spin pi-spinner' : 'pi-refresh'"></i>
+          {{ isUpdatingPrices() ? 'Đang cập nhật ' + priceUpdateProgress().current + '/' + priceUpdateProgress().total : 'Cập nhật giá tất cả' }}
+        </button>
+      </div>
+    </div>
+
     <!-- Stock List -->
     <div *ngIf="!isLoading()" class="stock-list">
       <div class="list-header">
@@ -1732,7 +1878,7 @@
         <div class="col-exchange">Sàn</div>
         <div class="col-price">Giá</div>
         <div class="col-change">Thay đổi</div>
-        <div class="col-status">Trạng thái</div>
+        <div class="col-updated">Cập nhật</div>
         <div class="col-actions">Thao tác</div>
       </div>
 
@@ -1768,10 +1914,10 @@
             </span>
           </div>
           <div class="col-change" *ngIf="!symbol.isFetched || !symbol.basicInfo?.changedValue">-</div>
-          <div class="col-status">
-            <span class="status" [ngClass]="symbol.isFetched ? 'fetched' : 'not-fetched'">
-              <i class="pi" [ngClass]="symbol.isFetched ? 'pi-check-circle' : 'pi-clock'"></i>
-              {{ symbol.isFetched ? 'Đã fetch' : 'Chưa fetch' }}
+          <div class="col-updated">
+            <span class="updated-date" [ngClass]="{'outdated': isPriceOutdated(symbol.updatedAt), 'not-fetched': !symbol.isFetched}">
+              <i class="pi" [ngClass]="symbol.isFetched ? (isPriceOutdated(symbol.updatedAt) ? 'pi-exclamation-triangle' : 'pi-check-circle') : 'pi-clock'"></i>
+              {{ symbol.isFetched ? formatUpdatedDate(symbol.updatedAt) : 'Chưa fetch' }}
             </span>
           </div>
           <div class="col-actions" (click)="$event.stopPropagation()">
@@ -1793,9 +1939,17 @@
             <button
               *ngIf="symbol.isFetched"
               class="btn-icon"
+              (click)="updatePriceFromDNSE(symbol)"
+              [disabled]="isUpdatingPrices() || symbol.isFetching"
+              title="Cập nhật giá">
+              <i class="pi" [ngClass]="updatingPriceSymbol() === symbol.symbol ? 'pi-spin pi-spinner' : 'pi-sync'"></i>
+            </button>
+            <button
+              *ngIf="symbol.isFetched"
+              class="btn-icon"
               (click)="fetchSymbol(symbol)"
               [disabled]="symbol.isFetching || fetchingSymbols().has(symbol.symbol)"
-              title="Fetch lại">
+              title="Fetch lại toàn bộ">
               <i class="pi pi-refresh"></i>
             </button>
           </div>
@@ -1825,6 +1979,100 @@
         <i class="pi pi-inbox"></i>
         <p>Không tìm thấy cổ phiếu nào</p>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- DNSE Check Dialog -->
+<div class="dnse-dialog-overlay" *ngIf="showDnseDialog()" (click)="closeDnseDialog()">
+  <div class="dnse-dialog" (click)="$event.stopPropagation()">
+    <div class="dnse-dialog-header">
+      <h3>
+        <i class="pi pi-cloud"></i>
+        Kiểm tra DNSE
+      </h3>
+      <button class="close-btn" (click)="closeDnseDialog()" [disabled]="dnseDialogStatus() === 'loading'">
+        <i class="pi pi-times"></i>
+      </button>
+    </div>
+    
+    <div class="dnse-dialog-content">
+      <!-- Loading State -->
+      <div class="dialog-status loading" *ngIf="dnseDialogStatus() === 'loading'">
+        <i class="pi pi-spin pi-spinner"></i>
+        <span>{{ dnseDialogMessage() }}</span>
+      </div>
+      
+      <!-- Error State -->
+      <div class="dialog-status error" *ngIf="dnseDialogStatus() === 'error'">
+        <i class="pi pi-times-circle"></i>
+        <span>{{ dnseDialogMessage() }}</span>
+      </div>
+      
+      <!-- Success State -->
+      <div class="dialog-result" *ngIf="dnseDialogStatus() === 'success'">
+        <div class="result-summary">
+          <div class="result-item">
+            <div class="result-icon db">
+              <i class="pi pi-database"></i>
+            </div>
+            <div class="result-info">
+              <span class="result-label">Database</span>
+              <span class="result-value">{{ dbSymbolsCount() }} cổ phiếu</span>
+            </div>
+          </div>
+          
+          <div class="result-item">
+            <div class="result-icon dnse">
+              <i class="pi pi-cloud"></i>
+            </div>
+            <div class="result-info">
+              <span class="result-label">DNSE</span>
+              <span class="result-value">{{ dnseSymbolsCount() }} cổ phiếu</span>
+            </div>
+          </div>
+          
+          <div class="result-item" [class.highlight]="missingSymbolsCount() > 0">
+            <div class="result-icon missing">
+              <i class="pi" [ngClass]="missingSymbolsCount() > 0 ? 'pi-exclamation-triangle' : 'pi-check-circle'"></i>
+            </div>
+            <div class="result-info">
+              <span class="result-label">Chưa có trong DB</span>
+              <span class="result-value">{{ missingSymbolsCount() }} cổ phiếu</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Missing symbols list -->
+        <div class="missing-symbols-section" *ngIf="missingSymbolsCount() > 0">
+          <h4>
+            <i class="pi pi-list"></i>
+            Danh sách cổ phiếu chưa có ({{ missingSymbolsCount() }})
+          </h4>
+          <div class="missing-symbols-list">
+            <span class="symbol-tag" *ngFor="let symbol of missingSymbols()">{{ symbol }}</span>
+          </div>
+        </div>
+        
+        <!-- No missing symbols -->
+        <div class="no-missing" *ngIf="missingSymbolsCount() === 0">
+          <i class="pi pi-check-circle"></i>
+          <span>Tất cả cổ phiếu từ DNSE đều đã có trong Database!</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="dnse-dialog-footer" *ngIf="dnseDialogStatus() !== 'loading'">
+      <button class="btn-dialog secondary" (click)="closeDnseDialog()">
+        Đóng
+      </button>
+      <button 
+        class="btn-dialog primary" 
+        *ngIf="missingSymbolsCount() > 0"
+        (click)="syncMissingStocks(); closeDnseDialog()">
+        <i class="pi pi-cloud-download"></i>
+        Thêm {{ missingSymbolsCount() }} cổ phiếu
+      </button>
     </div>
   </div>
 </div>

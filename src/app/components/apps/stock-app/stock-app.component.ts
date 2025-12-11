@@ -4,7 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { ScrollingModule, CdkVirtualScrollViewport } from '@angular/cdk/scrolling';
 import { DnseService, DNSESymbol, DNSEStockData, DNSEOHLCData, ExchangeType } from '../../../services/dnse.service';
-import { NeuralNetworkService, StockPrediction, TrainingProgress, TrainingConfig, DEFAULT_TRAINING_CONFIG, TRAINING_CONFIG_DESCRIPTIONS, ModelStatus } from '../../../services/neural-network.service';
+import { StockPrediction, TrainingProgress, TrainingConfig, DEFAULT_TRAINING_CONFIG, TRAINING_CONFIG_DESCRIPTIONS, ModelStatus } from '../../../services/neural-network.service';
+import { NeuralNetworkWorkerService } from '../../../services/neural-network-worker.service';
 import { TradingSimulationService, TradingConfig, TradingResult, TradeSignal, TradingStrategy, StrategyConfig, DEFAULT_STRATEGY_CONFIG, STRATEGY_DESCRIPTIONS } from '../../../services/trading-simulation.service';
 import { TradingviewChartComponent, ChartMarker } from './tradingview-chart/tradingview-chart.component';
 import { Chart, ChartConfiguration, registerables, TimeScale } from 'chart.js';
@@ -27,6 +28,7 @@ interface SymbolWithStatus {
   isFetched: boolean;
   isFetching?: boolean;
   hasBasicInfo?: boolean; // Track if has full basic info data
+  updatedAt?: string; // Last updated timestamp from database
   basicInfo?: {
     companyName?: string;
     exchange?: string;
@@ -64,6 +66,7 @@ interface Transaction {
   totalSharesAfter: number;  // Tổng số cổ phiếu đang nắm giữ sau GD
   avgPriceAfter: number;     // Giá trung bình sau GD
   holdingDays?: number; // Chỉ có khi là giao dịch bán
+  profit?: number; // Lãi/lỗ khi bán (chỉ có khi là giao dịch bán)
 }
 
 @Component({
@@ -122,6 +125,21 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
   // Exchange counts
   exchangeCounts = signal<Map<ExchangeType, ExchangeCount>>(new Map());
+
+  // DNSE Sync state
+  isSyncingDNSE = signal(false);
+  dnseSymbolsCount = signal(0);
+  missingSymbolsCount = signal(0);
+  missingSymbols = signal<string[]>([]);
+  isUpdatingPrices = signal(false);
+  updatingPriceSymbol = signal<string | null>(null);
+  priceUpdateProgress = signal({ current: 0, total: 0 });
+  
+  // DNSE Sync Dialog state
+  showDnseDialog = signal(false);
+  dnseDialogStatus = signal<'loading' | 'success' | 'error'>('loading');
+  dnseDialogMessage = signal('');
+  dbSymbolsCount = signal(0);
 
   // Selected symbol for detail view
   selectedSymbol = signal<SymbolWithStatus | null>(null);
@@ -397,15 +415,43 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
   tradingConfig = signal<TradingConfig>({
     initialCapital: 100000000, // 100 triệu đồng
     stopLossPercent: 5, // 5%
-    takeProfitPercent: 10, // 10%
+    takeProfitPercent: 0, // 0 = tắt (tự động tối ưu điểm bán theo tín hiệu)
     minConfidence: 0.0, // Không dùng nữa - model tự quyết định
     maxPositions: 3, // Cho phép mua nhiều lần để tối ưu
     tPlusDays: 2, // T+2 (sau 2 ngày mới được bán)
     strategy: 'neural_network' as TradingStrategy,
-    strategyConfig: { ...DEFAULT_STRATEGY_CONFIG }
+    strategyConfig: { ...DEFAULT_STRATEGY_CONFIG },
+    useTrailingStop: true, // Bật trailing stop mặc định
+    trailingStopPercent: 5, // 5% từ đỉnh
   });
   tradingResult = signal<TradingResult | null>(null);
   isRunningSimulation = signal(false);
+
+  // Computed signal for transactions (avoid recalculating on every template access)
+  transactions = computed<Transaction[]>(() => {
+    const result = this.tradingResult();
+    if (!result || !result.trades || result.trades.length === 0) {
+      return [];
+    }
+    return this.buildTransactionsFromTrades(result.trades, result);
+  });
+
+  // Computed signal for chart markers
+  chartMarkers = computed<ChartMarker[]>(() => {
+    const txs = this.transactions();
+    if (txs.length === 0) return [];
+
+    return txs.map(tx => ({
+      time: tx.date,
+      type: tx.type,
+      price: tx.price,
+      quantity: tx.quantity,
+      label: `${tx.type === 'buy' ? 'Mua' : 'Bán'} ${tx.quantity} @ ${this.formatPredictionPrice(tx.price)}`,
+      profitLoss: tx.profit,
+      originalBuyPrice: tx.type === 'sell' ? tx.avgPriceAfter : undefined,
+      totalValue: tx.transactionAmount
+    }));
+  });
 
   // Strategy descriptions for UI
   strategyDescriptions = STRATEGY_DESCRIPTIONS;
@@ -422,7 +468,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
   constructor(
     private dnseService: DnseService,
     private http: HttpClient,
-    public nnService: NeuralNetworkService,
+    public nnService: NeuralNetworkWorkerService,
     private tradingSimulationService: TradingSimulationService,
     private ngZone: NgZone
   ) {
@@ -632,6 +678,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
         name: stock.basicInfo?.companyName || stock.fullData?.['pageProps.companyInfo.fullName'] || stock.fullData?.pageProps?.companyInfo.fullName,
         exchange: (stock.basicInfo?.exchange || 'hose') as ExchangeType,
         isFetched: !!(stock.priceData || stock.fullData),
+        updatedAt: stock.updatedAt, // Store last updated timestamp
         basicInfo: {
           companyName: stock.basicInfo?.companyName || stock.fullData?.['pageProps.companyInfo.fullName'] || stock.fullData?.pageProps.companyInfo.fullName,
           exchange: stock.basicInfo?.exchange || 'hose',
@@ -872,40 +919,58 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
         if (data) {
           const fullData = data.fullData || {};
           const basicInfo = data.basicInfo || {};
+          const updatedAt = data.updatedAt || new Date().toISOString();
 
-          this.allSymbols.update(symbols =>
-            symbols.map(s => {
-              if (s.symbol === symbol.toUpperCase()) {
-                return {
-                  ...s,
-                  basicInfo: {
-                    companyName: basicInfo.companyName || fullData['pageProps.companyInfo.fullName'] || fullData?.pageProps.companyInfo.fullName || fullData['pageProps.companyInfo.name'] || fullData?.pageProps.companyInfo.name,
-                    exchange: basicInfo.exchange || fullData['pageProps.companyInfo.exchange'] || fullData?.pageProps.companyInfo.exchange,
-                    matchPrice: basicInfo.matchPrice || fullData['pageProps.priceSnapshot.matchPrice'] || fullData.pageProps.priceSnapshot.matchPrice,
-                    changedValue: basicInfo.changedValue || fullData['pageProps.priceSnapshot.changedValue'] || fullData.pageProps.priceSnapshot.changedValue,
-                    changedRatio: basicInfo.changedRatio || fullData['pageProps.priceSnapshot.changedRatio']|| fullData.pageProps.priceSnapshot.changedRatio,
-                    totalVolume: basicInfo.totalVolume || fullData['pageProps.priceSnapshot.totalVolumeTraded'] || fullData.pageProps.priceSnapshot.totalVolumeTraded,
-                    marketCap: basicInfo.marketCap,
-                    beta: basicInfo.beta,
-                    eps: basicInfo.eps,
-                    pe: basicInfo.pe,
-                    pb: basicInfo.pb,
-                    roe: basicInfo.roe,
-                    roa: basicInfo.roa,
-                    fullData: fullData
-                  }
-                };
-              }
-              return s;
-            })
-          );
-          this.applyFilters();
+          const updatedBasicInfo = {
+            companyName: basicInfo.companyName || fullData['pageProps.companyInfo.fullName'] || fullData?.pageProps?.companyInfo?.fullName || fullData['pageProps.companyInfo.name'] || fullData?.pageProps?.companyInfo?.name,
+            exchange: basicInfo.exchange || fullData['pageProps.companyInfo.exchange'] || fullData?.pageProps?.companyInfo?.exchange,
+            matchPrice: basicInfo.matchPrice || fullData['pageProps.priceSnapshot.matchPrice'] || fullData?.pageProps?.priceSnapshot?.matchPrice,
+            changedValue: basicInfo.changedValue || fullData['pageProps.priceSnapshot.changedValue'] || fullData?.pageProps?.priceSnapshot?.changedValue,
+            changedRatio: basicInfo.changedRatio || fullData['pageProps.priceSnapshot.changedRatio'] || fullData?.pageProps?.priceSnapshot?.changedRatio,
+            totalVolume: basicInfo.totalVolume || fullData['pageProps.priceSnapshot.totalVolumeTraded'] || fullData?.pageProps?.priceSnapshot?.totalVolumeTraded,
+            marketCap: basicInfo.marketCap,
+            beta: basicInfo.beta,
+            eps: basicInfo.eps,
+            pe: basicInfo.pe,
+            pb: basicInfo.pb,
+            roe: basicInfo.roe,
+            roa: basicInfo.roa,
+            fullData: fullData
+          };
+
+          // Update in allSymbols without reloading list
+          this.updateSymbolInPlace(symbol.toUpperCase(), {
+            basicInfo: updatedBasicInfo,
+            updatedAt: updatedAt,
+            hasBasicInfo: true
+          });
         }
       },
       error: (error) => {
         console.error(`Error loading basic info for ${symbol}:`, error);
       }
     });
+  }
+
+  /**
+   * Update a single symbol in both allSymbols and filteredSymbols without reloading the list
+   */
+  private updateSymbolInPlace(symbolCode: string, updates: Partial<SymbolWithStatus>) {
+    const upperSymbol = symbolCode.toUpperCase();
+    
+    // Update in allSymbols
+    this.allSymbols.update(symbols =>
+      symbols.map(s =>
+        s.symbol.toUpperCase() === upperSymbol ? { ...s, ...updates } : s
+      )
+    );
+
+    // Update in filteredSymbols
+    this.filteredSymbols.update(symbols =>
+      symbols.map(s =>
+        s.symbol.toUpperCase() === upperSymbol ? { ...s, ...updates } : s
+      )
+    );
   }
 
   /**
@@ -1153,12 +1218,8 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
       return newSet;
     });
 
-    // Update UI to show fetching state
-    this.allSymbols.update(symbols =>
-      symbols.map(s =>
-        s.symbol === symbol.symbol ? { ...s, isFetching: true } : s
-      )
-    );
+    // Update UI to show fetching state (in place)
+    this.updateSymbolInPlace(symbol.symbol, { isFetching: true });
 
     // Fetch both detail data and price history
     this.dnseService.getStockData(symbol.symbol).subscribe({
@@ -1182,19 +1243,16 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
                 // Mark as fetched
                 this.dnseService.markAsFetched(symbol.symbol);
 
-                // Update UI
-                this.allSymbols.update(symbols =>
-                  symbols.map(s =>
-                    s.symbol === symbol.symbol
-                      ? { ...s, isFetched: true, isFetching: false }
-                      : s
-                  )
-                );
-                this.applyFilters();
+                // Update UI in place (don't reload list)
+                this.updateSymbolInPlace(symbol.symbol, {
+                  isFetched: true,
+                  isFetching: false,
+                  updatedAt: new Date().toISOString()
+                });
                 this.updateFetchedCount();
                 this.updateExchangeCounts();
 
-                // Load basic info for this symbol
+                // Load basic info for this symbol from DB
                 this.loadBasicInfoForSymbol(symbol.symbol);
 
                 // Remove from fetching set
@@ -1208,14 +1266,10 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
                 console.error(`Error saving ${symbol.symbol} to API:`, saveError);
                 // Still mark as fetched even if save fails
                 this.dnseService.markAsFetched(symbol.symbol);
-                this.allSymbols.update(symbols =>
-                  symbols.map(s =>
-                    s.symbol === symbol.symbol
-                      ? { ...s, isFetched: true, isFetching: false }
-                      : s
-                  )
-                );
-                this.applyFilters();
+                this.updateSymbolInPlace(symbol.symbol, {
+                  isFetched: true,
+                  isFetching: false
+                });
                 this.updateFetchedCount();
                 this.fetchingSymbols.update(set => {
                   const newSet = new Set(set);
@@ -1229,14 +1283,10 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
             console.error(`Error fetching price data for ${symbol.symbol}:`, error);
             // Still mark as fetched even if price data fails
             this.dnseService.markAsFetched(symbol.symbol);
-            this.allSymbols.update(symbols =>
-              symbols.map(s =>
-                s.symbol === symbol.symbol
-                  ? { ...s, isFetched: true, isFetching: false }
-                  : s
-              )
-            );
-            this.applyFilters();
+            this.updateSymbolInPlace(symbol.symbol, {
+              isFetched: true,
+              isFetching: false
+            });
             this.updateFetchedCount();
             this.fetchingSymbols.update(set => {
               const newSet = new Set(set);
@@ -1249,12 +1299,8 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
       error: (error) => {
         console.error(`Error fetching data for ${symbol.symbol}:`, error);
 
-        // Update UI to remove fetching state
-        this.allSymbols.update(symbols =>
-          symbols.map(s =>
-            s.symbol === symbol.symbol ? { ...s, isFetching: false } : s
-          )
-        );
+        // Update UI to remove fetching state (in place)
+        this.updateSymbolInPlace(symbol.symbol, { isFetching: false });
 
         // Remove from fetching set
         this.fetchingSymbols.update(set => {
@@ -1282,12 +1328,8 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
         return newSet;
       });
 
-      // Update UI to show fetching state
-      this.allSymbols.update(symbols =>
-        symbols.map(s =>
-          s.symbol === symbol.symbol ? { ...s, isFetching: true } : s
-        )
-      );
+      // Update UI to show fetching state (in place)
+      this.updateSymbolInPlace(symbol.symbol, { isFetching: true });
 
       // Fetch both detail data and price history
       this.dnseService.getStockData(symbol.symbol).subscribe({
@@ -1311,19 +1353,16 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
                   // Mark as fetched
                   this.dnseService.markAsFetched(symbol.symbol);
 
-                  // Update UI
-                  this.allSymbols.update(symbols =>
-                    symbols.map(s =>
-                      s.symbol === symbol.symbol
-                        ? { ...s, isFetched: true, isFetching: false }
-                        : s
-                    )
-                  );
-                  this.applyFilters();
+                  // Update UI in place (don't reload list)
+                  this.updateSymbolInPlace(symbol.symbol, {
+                    isFetched: true,
+                    isFetching: false,
+                    updatedAt: new Date().toISOString()
+                  });
                   this.updateFetchedCount();
                   this.updateExchangeCounts();
 
-                  // Load basic info for this symbol
+                  // Load basic info for this symbol from DB
                   this.loadBasicInfoForSymbol(symbol.symbol);
 
                   // Remove from fetching set
@@ -1339,14 +1378,10 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
                   console.error(`Error saving ${symbol.symbol} to API:`, saveError);
                   // Still mark as fetched even if save fails
                   this.dnseService.markAsFetched(symbol.symbol);
-                  this.allSymbols.update(symbols =>
-                    symbols.map(s =>
-                      s.symbol === symbol.symbol
-                        ? { ...s, isFetched: true, isFetching: false }
-                        : s
-                    )
-                  );
-                  this.applyFilters();
+                  this.updateSymbolInPlace(symbol.symbol, {
+                    isFetched: true,
+                    isFetching: false
+                  });
                   this.updateFetchedCount();
                   this.fetchingSymbols.update(set => {
                     const newSet = new Set(set);
@@ -1362,14 +1397,10 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
               console.error(`Error fetching price data for ${symbol.symbol}:`, error);
               // Still mark as fetched even if price data fails
               this.dnseService.markAsFetched(symbol.symbol);
-              this.allSymbols.update(symbols =>
-                symbols.map(s =>
-                  s.symbol === symbol.symbol
-                    ? { ...s, isFetched: true, isFetching: false }
-                    : s
-                )
-              );
-              this.applyFilters();
+              this.updateSymbolInPlace(symbol.symbol, {
+                isFetched: true,
+                isFetching: false
+              });
               this.updateFetchedCount();
               this.fetchingSymbols.update(set => {
                 const newSet = new Set(set);
@@ -1384,12 +1415,8 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
         error: (error) => {
           console.error(`Error fetching data for ${symbol.symbol}:`, error);
 
-          // Update UI to remove fetching state
-          this.allSymbols.update(symbols =>
-            symbols.map(s =>
-              s.symbol === symbol.symbol ? { ...s, isFetching: false } : s
-            )
-          );
+          // Update UI to remove fetching state (in place)
+          this.updateSymbolInPlace(symbol.symbol, { isFetching: false });
 
           // Remove from fetching set
           this.fetchingSymbols.update(set => {
@@ -1455,6 +1482,287 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
       );
       this.applyFilters();
       this.updateFetchedCount();
+    }
+  }
+
+  /**
+   * Check for missing stocks from DNSE
+   */
+  checkMissingStocksFromDNSE() {
+    // Show dialog with loading state
+    this.showDnseDialog.set(true);
+    this.dnseDialogStatus.set('loading');
+    this.dnseDialogMessage.set('Đang lấy danh sách cổ phiếu từ Database...');
+    
+    this.isSyncingDNSE.set(true);
+    this.missingSymbols.set([]);
+    this.missingSymbolsCount.set(0);
+    this.dbSymbolsCount.set(0);
+
+    // First, get ALL existing symbols from our database API (handles pagination)
+    this.dnseService.getAllStockSymbols().subscribe({
+      next: (dbSymbols) => {
+        const existingSymbols = new Set(dbSymbols);
+        this.dbSymbolsCount.set(existingSymbols.size);
+        this.dnseDialogMessage.set(`Đã tìm thấy ${existingSymbols.size} cổ phiếu trong DB. Đang lấy danh sách từ DNSE...`);
+
+        console.log(`DB has ${existingSymbols.size} symbols`);
+
+        // Then get all symbols from DNSE
+        this.dnseService.getAllSymbols().subscribe({
+          next: (results) => {
+            const dnseSymbols: string[] = [];
+            const missing: string[] = [];
+
+            results.forEach(({ symbols }) => {
+              symbols.forEach(sym => {
+                const symbolStr = typeof sym === 'string' ? sym : sym.symbol;
+                if (symbolStr) {
+                  dnseSymbols.push(symbolStr.toUpperCase());
+                  if (!existingSymbols.has(symbolStr.toUpperCase())) {
+                    missing.push(symbolStr);
+                  }
+                }
+              });
+            });
+
+            this.dnseSymbolsCount.set(dnseSymbols.length);
+            this.missingSymbolsCount.set(missing.length);
+            this.missingSymbols.set(missing);
+            this.isSyncingDNSE.set(false);
+            
+            // Update dialog to success state
+            this.dnseDialogStatus.set('success');
+            this.dnseDialogMessage.set(`Hoàn tất kiểm tra!`);
+
+            console.log(`DNSE has ${dnseSymbols.length} symbols, missing ${missing.length} in our DB`);
+          },
+          error: (error) => {
+            console.error('Error checking DNSE symbols:', error);
+            this.isSyncingDNSE.set(false);
+            this.dnseDialogStatus.set('error');
+            this.dnseDialogMessage.set('Lỗi khi lấy danh sách từ DNSE: ' + (error.message || 'Unknown error'));
+          }
+        });
+      },
+      error: (error) => {
+        console.error('Error getting DB symbols:', error);
+        this.isSyncingDNSE.set(false);
+        this.dnseDialogStatus.set('error');
+        this.dnseDialogMessage.set('Lỗi khi lấy danh sách từ Database: ' + (error.message || 'Unknown error'));
+      }
+    });
+  }
+  
+  /**
+   * Close DNSE dialog
+   */
+  closeDnseDialog() {
+    this.showDnseDialog.set(false);
+  }
+
+  /**
+   * Sync missing stocks from DNSE to database
+   */
+  syncMissingStocks() {
+    const missing = this.missingSymbols();
+    if (missing.length === 0) {
+      return;
+    }
+
+    if (!confirm(`Bạn có chắc muốn thêm ${missing.length} cổ phiếu mới vào database?`)) {
+      return;
+    }
+
+    this.isSyncingDNSE.set(true);
+    let completed = 0;
+
+    missing.forEach(symbol => {
+      this.http.post<any>('/api/stocks-v2/save', {
+        symbol: symbol.toUpperCase(),
+        basicInfo: { symbol: symbol.toUpperCase() },
+        priceData: null,
+        fullData: null
+      }).subscribe({
+        next: () => {
+          completed++;
+          if (completed === missing.length) {
+            this.isSyncingDNSE.set(false);
+            this.missingSymbolsCount.set(0);
+            this.missingSymbols.set([]);
+            this.loadSymbols(); // Reload the list
+          }
+        },
+        error: (error) => {
+          console.error(`Error adding stock ${symbol}:`, error);
+          completed++;
+          if (completed === missing.length) {
+            this.isSyncingDNSE.set(false);
+            this.loadSymbols(); // Reload anyway
+          }
+        }
+      });
+    });
+  }
+
+  /**
+   * Update price data for a single stock from DNSE
+   */
+  updatePriceFromDNSE(symbol: SymbolWithStatus) {
+    if (this.isUpdatingPrices()) return;
+
+    this.isUpdatingPrices.set(true);
+    this.updatingPriceSymbol.set(symbol.symbol);
+
+    // Fetch OHLC data from DNSE
+    this.dnseService.getOHLCDataLastDays(symbol.symbol, 365 * 3).subscribe({
+      next: (priceData) => {
+        // Get current stock data
+        this.dnseService.getStockDataFromAPI(symbol.symbol).subscribe({
+          next: (stockData) => {
+            // Save updated price data
+            this.dnseService.saveStockData(
+              symbol.symbol,
+              stockData.basicInfo || {},
+              priceData,
+              stockData.fullData || null
+            ).subscribe({
+              next: () => {
+                console.log(`✅ Updated price data for ${symbol.symbol}`);
+                // Update local state in place (don't reload list)
+                this.updateSymbolInPlace(symbol.symbol, {
+                  updatedAt: new Date().toISOString()
+                });
+                this.isUpdatingPrices.set(false);
+                this.updatingPriceSymbol.set(null);
+              },
+              error: (error) => {
+                console.error(`Error saving price data for ${symbol.symbol}:`, error);
+                this.isUpdatingPrices.set(false);
+                this.updatingPriceSymbol.set(null);
+              }
+            });
+          },
+          error: (error) => {
+            console.error(`Error getting stock data for ${symbol.symbol}:`, error);
+            this.isUpdatingPrices.set(false);
+            this.updatingPriceSymbol.set(null);
+          }
+        });
+      },
+      error: (error) => {
+        console.error(`Error fetching OHLC data for ${symbol.symbol}:`, error);
+        this.isUpdatingPrices.set(false);
+        this.updatingPriceSymbol.set(null);
+      }
+    });
+  }
+
+  /**
+   * Update price data for all fetched stocks
+   */
+  updateAllPricesFromDNSE() {
+    const fetchedSymbols = this.allSymbols().filter(s => s.isFetched);
+    if (fetchedSymbols.length === 0) return;
+
+    if (!confirm(`Bạn có chắc muốn cập nhật giá cho ${fetchedSymbols.length} cổ phiếu? Quá trình này có thể mất vài phút.`)) {
+      return;
+    }
+
+    this.isUpdatingPrices.set(true);
+    this.priceUpdateProgress.set({ current: 0, total: fetchedSymbols.length });
+
+    let current = 0;
+    const updateNext = () => {
+      if (current >= fetchedSymbols.length) {
+        this.isUpdatingPrices.set(false);
+        this.updatingPriceSymbol.set(null);
+        this.priceUpdateProgress.set({ current: 0, total: 0 });
+        this.loadSymbols(); // Reload to get fresh data
+        return;
+      }
+
+      const symbol = fetchedSymbols[current];
+      this.updatingPriceSymbol.set(symbol.symbol);
+      this.priceUpdateProgress.set({ current: current + 1, total: fetchedSymbols.length });
+
+      this.dnseService.getOHLCDataLastDays(symbol.symbol, 365 * 3).subscribe({
+        next: (priceData) => {
+          this.dnseService.getStockDataFromAPI(symbol.symbol).subscribe({
+            next: (stockData) => {
+              this.dnseService.saveStockData(
+                symbol.symbol,
+                stockData.basicInfo || {},
+                priceData,
+                stockData.fullData || null
+              ).subscribe({
+                next: () => {
+                  current++;
+                  setTimeout(() => updateNext(), 500); // Rate limit
+                },
+                error: () => {
+                  current++;
+                  setTimeout(() => updateNext(), 500);
+                }
+              });
+            },
+            error: () => {
+              current++;
+              setTimeout(() => updateNext(), 500);
+            }
+          });
+        },
+        error: () => {
+          current++;
+          setTimeout(() => updateNext(), 500);
+        }
+      });
+    };
+
+    updateNext();
+  }
+
+  /**
+   * Format date for display
+   */
+  formatUpdatedDate(dateStr: string | undefined): string {
+    if (!dateStr) return 'Chưa có';
+    try {
+      const date = new Date(dateStr);
+      const now = new Date();
+      const diffMs = now.getTime() - date.getTime();
+      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+      if (diffDays === 0) {
+        return 'Hôm nay';
+      } else if (diffDays === 1) {
+        return 'Hôm qua';
+      } else if (diffDays < 7) {
+        return `${diffDays} ngày trước`;
+      } else if (diffDays < 30) {
+        const weeks = Math.floor(diffDays / 7);
+        return `${weeks} tuần trước`;
+      } else {
+        return date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      }
+    } catch {
+      return 'N/A';
+    }
+  }
+
+  /**
+   * Check if price data is outdated (more than 7 days old)
+   */
+  isPriceOutdated(dateStr: string | undefined): boolean {
+    if (!dateStr) return true;
+    try {
+      const date = new Date(dateStr);
+      const now = new Date();
+      const diffMs = now.getTime() - date.getTime();
+      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      return diffDays > 7;
+    } catch {
+      return true;
     }
   }
 
@@ -3936,6 +4244,115 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   /**
+   * Get strategy display name
+   */
+  getStrategyDisplayName(strategy: TradingStrategy): string {
+    return this.strategyDescriptions[strategy]?.name || strategy;
+  }
+
+  /**
+   * Calculate Sharpe Ratio
+   * Measures risk-adjusted return (higher is better)
+   * Sharpe = (Return - Risk-Free Rate) / StdDev of Returns
+   */
+  calculateSharpeRatio(result: TradingResult): number {
+    if (!result.trades || result.trades.length < 2) return 0;
+
+    const returns = result.trades.map(t => t.profitPercent / 100);
+    const avgReturn = returns.reduce((a, b) => a + b, 0) / returns.length;
+    const variance = returns.reduce((sum, r) => sum + Math.pow(r - avgReturn, 2), 0) / returns.length;
+    const stdDev = Math.sqrt(variance);
+
+    // Assuming risk-free rate of 5% annually, ~0.02% per trade
+    const riskFreeRate = 0.0002;
+
+    if (stdDev === 0) return avgReturn > 0 ? 3 : 0;
+    return (avgReturn - riskFreeRate) / stdDev;
+  }
+
+  getSharpeRatioClass(result: TradingResult): string {
+    const ratio = this.calculateSharpeRatio(result);
+    if (ratio >= 2) return 'excellent';
+    if (ratio >= 1) return 'good';
+    if (ratio >= 0) return 'fair';
+    return 'poor';
+  }
+
+  getSharpeRatioLabel(result: TradingResult): string {
+    const ratio = this.calculateSharpeRatio(result);
+    if (ratio >= 2) return 'Xuất sắc';
+    if (ratio >= 1) return 'Tốt';
+    if (ratio >= 0) return 'Trung bình';
+    return 'Kém';
+  }
+
+  /**
+   * Calculate Profit Factor
+   * Ratio of gross profits to gross losses (higher is better, > 1 means profitable)
+   */
+  calculateProfitFactor(result: TradingResult): number {
+    if (!result.totalLossAmount || result.totalLossAmount === 0) {
+      return result.totalWinAmount > 0 ? 10 : 0; // Cap at 10
+    }
+    return result.totalWinAmount / result.totalLossAmount;
+  }
+
+  getProfitFactorClass(result: TradingResult): string {
+    const factor = this.calculateProfitFactor(result);
+    if (factor >= 2) return 'excellent';
+    if (factor >= 1.5) return 'good';
+    if (factor >= 1) return 'fair';
+    return 'poor';
+  }
+
+  getProfitFactorLabel(result: TradingResult): string {
+    const factor = this.calculateProfitFactor(result);
+    if (factor >= 2) return 'Xuất sắc (>2)';
+    if (factor >= 1.5) return 'Tốt (>1.5)';
+    if (factor >= 1) return 'Hòa vốn (>1)';
+    return 'Lỗ (<1)';
+  }
+
+  /**
+   * Calculate Recovery Factor
+   * Total profit / Max Drawdown (measures ability to recover from losses)
+   */
+  calculateRecoveryFactor(result: TradingResult): number {
+    if (!result.maxDrawdown || result.maxDrawdown === 0) {
+      return result.totalProfit > 0 ? 10 : 0;
+    }
+    return result.totalProfit / result.maxDrawdown;
+  }
+
+  getRecoveryFactorClass(result: TradingResult): string {
+    const factor = this.calculateRecoveryFactor(result);
+    if (factor >= 3) return 'excellent';
+    if (factor >= 1) return 'good';
+    if (factor >= 0) return 'fair';
+    return 'poor';
+  }
+
+  /**
+   * Calculate Expectancy
+   * Expected profit per trade = (Win% * Avg Win) - (Loss% * Avg Loss)
+   */
+  calculateExpectancy(result: TradingResult): number {
+    if (result.totalTrades === 0) return 0;
+
+    const winProb = result.winRate / 100;
+    const lossProb = 1 - winProb;
+
+    return (winProb * (result.avgWinAmount || 0)) - (lossProb * (result.avgLossAmount || 0));
+  }
+
+  /**
+   * Calculate average holding days
+   */
+  calculateAvgHoldingDays(result: TradingResult): number {
+    return result.avgHoldingDays || 0;
+  }
+
+  /**
    * Convert number to Vietnamese text
    * Example: 10000000 -> "Mười triệu đồng"
    */
@@ -4068,26 +4485,21 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   /**
-   * Convert trades to transactions (separate buy and sell)
+   * Build transactions from trades (helper for computed signal)
    */
-  getTransactions(): Transaction[] {
-    const result = this.tradingResult();
-    if (!result || !result.trades || result.trades.length === 0) {
-      return [];
-    }
-
+  private buildTransactionsFromTrades(trades: TradingResult['trades'], result: TradingResult): Transaction[] {
     // Create a list of all events (buy and sell) sorted by date
     interface TradeEvent {
       type: 'buy' | 'sell';
       date: number;
       quantity: number;
       price: number;
-      trade: typeof result.trades[0];
+      trade: typeof trades[0];
     }
 
     const events: TradeEvent[] = [];
 
-    for (const trade of result.trades) {
+    for (const trade of trades) {
       events.push({
         type: 'buy',
         date: trade.buyDate,
@@ -4113,7 +4525,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     let totalCost = 0; // Total cost of shares held (for avg price calculation)
 
     // Initialize running capital from the first buy trade's capital
-    let runningCapital = result.trades.length > 0 ? result.trades[0].buyCapital : 0;
+    let runningCapital = trades.length > 0 ? trades[0].buyCapital : 0;
 
     for (const event of events) {
       const trade = event.trade;
@@ -4167,7 +4579,8 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
           totalSharesBefore,
           totalSharesAfter: totalShares,
           avgPriceAfter,
-          holdingDays: trade.duration
+          holdingDays: trade.duration,
+          profit: trade.profit // Lãi/lỗ của giao dịch này
         });
       }
     }
@@ -4177,18 +4590,10 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
   /**
    * Get chart markers (buy/sell points) for TradingView chart
+   * @deprecated Use chartMarkers computed signal instead
    */
   getChartMarkers(): ChartMarker[] {
-    const transactions = this.getTransactions();
-    if (transactions.length === 0) return [];
-
-    return transactions.map(tx => ({
-      time: tx.date,
-      type: tx.type,
-      price: tx.price,
-      quantity: tx.quantity,
-      label: `${tx.type === 'buy' ? 'Mua' : 'Bán'} ${tx.quantity} @ ${this.formatPredictionPrice(tx.price)}`
-    }));
+    return this.chartMarkers();
   }
 
   /**

@@ -272,6 +272,7 @@ export class DnseService {
    * Get all stock data from Stock API
    */
   getAllStockData(): Observable<any[]> {
+    // Use max limit (500) to get as many stocks as possible
     return this.http.get<any>('/api/stocks-v2/list').pipe(
       map((response: any) => {
         if (response.success && Array.isArray(response.stocks)) {
@@ -284,6 +285,49 @@ export class DnseService {
         return of([]);
       })
     );
+  }
+
+  /**
+   * Get ALL stock symbols from database (handles pagination automatically)
+   */
+  getAllStockSymbols(): Observable<string[]> {
+    return new Observable(observer => {
+      const allSymbols: string[] = [];
+      const pageSize = 500;
+      let offset = 0;
+
+      const fetchPage = () => {
+        this.http.get<any>(`/api/stocks-v2/list?limit=${pageSize}&offset=${offset}`).subscribe({
+          next: (response) => {
+            if (response.success && Array.isArray(response.stocks)) {
+              const symbols = response.stocks
+                .map((s: any) => s.symbol?.toUpperCase())
+                .filter(Boolean);
+              allSymbols.push(...symbols);
+
+              // Check if there are more pages
+              if (response.pagination?.hasMore) {
+                offset += pageSize;
+                fetchPage();
+              } else {
+                observer.next(allSymbols);
+                observer.complete();
+              }
+            } else {
+              observer.next(allSymbols);
+              observer.complete();
+            }
+          },
+          error: (error) => {
+            console.error('Error fetching stock symbols:', error);
+            observer.next(allSymbols); // Return what we have so far
+            observer.complete();
+          }
+        });
+      };
+
+      fetchPage();
+    });
   }
 
   /**

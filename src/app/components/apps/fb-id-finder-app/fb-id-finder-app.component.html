@@ -2,7 +2,7 @@
   <div class="app-header">
     <div class="header-content">
       <i class="pi pi-facebook"></i>
-      <h2>Tìm Facebook ID</h2>
+      <h2>Facebook Scanner</h2>
     </div>
     <p class="header-subtitle">Tìm Facebook ID từ số điện thoại</p>
   </div>
@@ -126,7 +126,7 @@
           <i class="pi pi-copy"></i>
         </button>
       </div>
-      
+
       <!-- Facebook ID Display -->
       <div class="fb-id-display">
         <div class="fb-id-label">Facebook ID:</div>
@@ -141,17 +141,17 @@
             Thông tin Facebook
           </h4>
           <div class="profile-actions">
-            <button 
-              (click)="copyFacebookLink()" 
-              class="action-btn" 
-              type="button" 
+            <button
+              (click)="copyFacebookLink()"
+              class="action-btn"
+              type="button"
               title="Sao chép link">
               <i class="pi pi-copy"></i>
             </button>
-            <button 
-              (click)="openFacebookLink()" 
-              class="action-btn primary" 
-              type="button" 
+            <button
+              (click)="openFacebookLink()"
+              class="action-btn primary"
+              type="button"
               title="Mở trên Facebook">
               <i class="pi pi-external-link"></i>
               Mở Facebook
@@ -178,7 +178,7 @@
           <!-- Profile Image and Name -->
           <div class="profile-main" *ngIf="facebookProfile()!.name || facebookProfile()!.profileImage">
             <div class="profile-avatar" *ngIf="facebookProfile()!.profileImage">
-              <img [src]="facebookProfile()!.profileImage" [alt]="facebookProfile()!.name || 'Profile'" 
+              <img [src]="facebookProfile()!.profileImage" [alt]="facebookProfile()!.name || 'Profile'"
                    onerror="this.style.display='none'">
             </div>
             <div class="profile-details">
