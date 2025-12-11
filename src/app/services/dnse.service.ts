@@ -547,6 +547,27 @@ export class DnseService {
   }
 
   /**
+   * Search stocks from API by keyword
+   */
+  searchStocksFromAPI(keyword: string, limit: number = 15): Observable<any[]> {
+    if (!keyword || keyword.trim().length === 0) {
+      return of([]);
+    }
+    return this.http.get<any>(`/api/stocks-v2/list?keyword=${encodeURIComponent(keyword.trim())}&limit=${limit}`).pipe(
+      map((response: any) => {
+        if (response.success && Array.isArray(response.stocks)) {
+          return response.stocks;
+        }
+        return [];
+      }),
+      catchError((error) => {
+        console.error(`Error searching stocks with keyword "${keyword}":`, error);
+        return of([]);
+      })
+    );
+  }
+
+  /**
    * Save stock data to Stock API
    */
   saveStockData(symbol: string, basicInfo: any, priceData: DNSEOHLCData, fullData: any): Observable<any> {
