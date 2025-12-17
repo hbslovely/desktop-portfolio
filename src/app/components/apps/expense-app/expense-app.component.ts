@@ -1269,6 +1269,224 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     return expenses.length / dates.length;
   });
 
+  // ============ INSIGHTS COMPUTED VALUES (based on reportPeriodExpenses) ============
+  
+  // Top spending category for insights (uses reportPeriodExpenses)
+  insightsTopSpendingCategory = computed(() => {
+    const expenses = this.reportPeriodExpenses();
+    if (expenses.length === 0) return null;
+
+    const totals: { [key: string]: number } = {};
+    expenses.forEach(expense => {
+      if (expense.category) {
+        totals[expense.category] = (totals[expense.category] || 0) + expense.amount;
+      }
+    });
+
+    const byCategory = Object.keys(totals).map(category => ({
+      category,
+      total: totals[category]
+    })).sort((a, b) => b.total - a.total);
+
+    if (byCategory.length === 0) return null;
+    const total = expenses.reduce((sum, e) => sum + e.amount, 0);
+    const top = byCategory[0];
+    return {
+      ...top,
+      percentage: total > 0 ? Math.round((top.total / total) * 100) : 0
+    };
+  });
+
+  // Highest spending day of week for insights (uses reportPeriodExpenses)
+  insightsHighestSpendingDay = computed(() => {
+    const expenses = this.reportPeriodExpenses();
+    if (expenses.length === 0) return null;
+
+    const dayNames = ['Chủ Nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
+    const dayTotals: { [key: number]: { total: number; count: number } } = {};
+    
+    for (let i = 0; i < 7; i++) {
+      dayTotals[i] = { total: 0, count: 0 };
+    }
+    
+    expenses.forEach(expense => {
+      const day = new Date(expense.date).getDay();
+      dayTotals[day].total += expense.amount;
+      dayTotals[day].count++;
+    });
+    
+    let maxDay = 0;
+    let maxAverage = 0;
+    
+    for (let i = 0; i < 7; i++) {
+      const avg = dayTotals[i].count > 0 ? dayTotals[i].total / dayTotals[i].count : 0;
+      if (avg > maxAverage) {
+        maxAverage = avg;
+        maxDay = i;
+      }
+    }
+    
+    return {
+      day: maxDay,
+      dayName: dayNames[maxDay],
+      average: Math.round(maxAverage)
+    };
+  });
+
+  // Spending trend for insights (compares selected period vs previous period)
+  insightsSpendingTrend = computed(() => {
+    const expenses = this.expenses();
+    const year = this.reportYear();
+    const month = this.reportMonth();
+
+    if (month === null) {
+      // Year view: compare this year vs last year
+      const thisYear = expenses.filter(e => {
+        const d = new Date(e.date);
+        return d.getFullYear() === year;
+      });
+      const lastYear = expenses.filter(e => {
+        const d = new Date(e.date);
+        return d.getFullYear() === year - 1;
+      });
+
+      const thisYearTotal = thisYear.reduce((sum, e) => sum + e.amount, 0);
+      const lastYearTotal = lastYear.reduce((sum, e) => sum + e.amount, 0);
+
+      if (lastYearTotal === 0) {
+        return { trend: 'Chưa đủ dữ liệu', percentage: 0 };
+      }
+
+      const percentage = Math.round(((thisYearTotal - lastYearTotal) / lastYearTotal) * 100);
+      if (percentage > 10) return { trend: 'Tăng', percentage };
+      if (percentage < -10) return { trend: 'Giảm', percentage };
+      return { trend: 'Ổn định', percentage };
+    } else {
+      // Month view: compare this month vs last month
+      const thisMonth = expenses.filter(e => {
+        const d = new Date(e.date);
+        return d.getFullYear() === year && d.getMonth() + 1 === month;
+      });
+
+      let lastMonthYear = year;
+      let lastMonthNum = month - 1;
+      if (lastMonthNum === 0) {
+        lastMonthNum = 12;
+        lastMonthYear = year - 1;
+      }
+
+      const lastMonth = expenses.filter(e => {
+        const d = new Date(e.date);
+        return d.getFullYear() === lastMonthYear && d.getMonth() + 1 === lastMonthNum;
+      });
+
+      const thisMonthTotal = thisMonth.reduce((sum, e) => sum + e.amount, 0);
+      const lastMonthTotal = lastMonth.reduce((sum, e) => sum + e.amount, 0);
+
+      if (lastMonthTotal === 0) {
+        return { trend: 'Chưa đủ dữ liệu', percentage: 0 };
+      }
+
+      const percentage = Math.round(((thisMonthTotal - lastMonthTotal) / lastMonthTotal) * 100);
+      if (percentage > 10) return { trend: 'Tăng', percentage };
+      if (percentage < -10) return { trend: 'Giảm', percentage };
+      return { trend: 'Ổn định', percentage };
+    }
+  });
+
+  // Average transactions per day for insights (uses reportPeriodExpenses)
+  insightsAverageTransactionsPerDay = computed(() => {
+    const expenses = this.reportPeriodExpenses();
+    if (expenses.length === 0) return 0;
+
+    const dateSet = new Set<string>();
+    expenses.forEach(expense => {
+      dateSet.add(expense.date);
+    });
+    const dates = Array.from(dateSet);
+    
+    if (dates.length === 0) return 0;
+    return expenses.length / dates.length;
+  });
+
+  // Average daily expense for insights (uses reportPeriodExpenses)
+  insightsAverageDailyExpense = computed(() => {
+    const expenses = this.reportPeriodExpenses();
+    if (expenses.length === 0) return 0;
+
+    const dailyMap: { [key: string]: number } = {};
+    expenses.forEach(expense => {
+      const date = expense.date;
+      if (dailyMap[date]) {
+        dailyMap[date] += expense.amount;
+      } else {
+        dailyMap[date] = expense.amount;
+      }
+    });
+
+    const dailyTotals = Object.values(dailyMap);
+    if (dailyTotals.length === 0) return 0;
+
+    const total = dailyTotals.reduce((sum, item) => sum + item, 0);
+    return Math.round(total / dailyTotals.length);
+  });
+
+  // Total by category for insights (uses reportPeriodExpenses)
+  insightsTotalByCategory = computed(() => {
+    const expenses = this.reportPeriodExpenses();
+    const totals: { [key: string]: number } = {};
+
+    expenses.forEach(expense => {
+      if (expense.category) {
+        totals[expense.category] = (totals[expense.category] || 0) + expense.amount;
+      }
+    });
+
+    return Object.keys(totals).map(category => ({
+      category,
+      total: totals[category]
+    })).sort((a, b) => b.total - a.total);
+  });
+
+  // Total amount for insights (uses reportPeriodExpenses)
+  insightsTotalAmount = computed(() => {
+    return this.reportPeriodExpenses().reduce((sum, expense) => sum + expense.amount, 0);
+  });
+
+  // Weekday spending for insights (uses reportPeriodExpenses)
+  insightsWeekdaySpending = computed(() => {
+    const expenses = this.reportPeriodExpenses();
+    const dayNames = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+    const fullDayNames = ['Chủ Nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
+    const dayData: { [key: number]: { total: number; count: number } } = {};
+    
+    for (let i = 0; i < 7; i++) {
+      dayData[i] = { total: 0, count: 0 };
+    }
+    
+    expenses.forEach(expense => {
+      const day = new Date(expense.date).getDay();
+      dayData[day].total += expense.amount;
+      dayData[day].count++;
+    });
+    
+    const averages = Object.entries(dayData).map(([day, data]) => ({
+      day: parseInt(day),
+      average: data.count > 0 ? data.total / data.count : 0
+    }));
+    
+    const maxAverage = Math.max(...averages.map(d => d.average));
+    
+    return averages.map(item => ({
+      day: item.day,
+      shortName: dayNames[item.day],
+      fullName: fullDayNames[item.day],
+      average: Math.round(item.average),
+      percentage: maxAverage > 0 ? Math.round((item.average / maxAverage) * 100) : 0,
+      isHighest: item.average === maxAverage && maxAverage > 0
+    }));
+  });
+
   // Weekday spending analysis
   weekdaySpending = computed(() => {
     const expenses = this.filteredExpenses();
@@ -6047,7 +6265,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       this.categoryPieChart.destroy();
     }
 
-    const categories = this.totalByCategory().slice(0, 6);
+    const categories = this.insightsTotalByCategory().slice(0, 6);
     const labels = categories.map(c => c.category);
     const data = categories.map(c => c.total);
 
@@ -6095,20 +6313,38 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       this.dailyTrendChart.destroy();
     }
 
-    const now = new Date();
+    const expenses = this.reportPeriodExpenses();
+    const year = this.reportYear();
+    const month = this.reportMonth();
+
     const labels: string[] = [];
     const data: number[] = [];
 
-    // Get last 30 days
-    for (let i = 29; i >= 0; i--) {
-      const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
-      const dateStr = date.toISOString().split('T')[0];
-      labels.push(`${date.getDate()}/${date.getMonth() + 1}`);
+    if (month === null) {
+      // Year view: show monthly data
+      for (let m = 1; m <= 12; m++) {
+        labels.push(`Tháng ${m}`);
+        const monthTotal = expenses
+          .filter(e => {
+            const d = new Date(e.date);
+            return d.getFullYear() === year && d.getMonth() + 1 === m;
+          })
+          .reduce((sum, e) => sum + e.amount, 0);
+        data.push(monthTotal);
+      }
+    } else {
+      // Month view: show daily data for the selected month
+      const daysInMonth = new Date(year, month, 0).getDate();
+      for (let day = 1; day <= daysInMonth; day++) {
+        const date = new Date(year, month - 1, day);
+        const dateStr = date.toISOString().split('T')[0];
+        labels.push(`${day}/${month}`);
 
-      const dayTotal = this.filteredExpenses()
-        .filter(e => e.date === dateStr)
-        .reduce((sum, e) => sum + e.amount, 0);
-      data.push(dayTotal);
+        const dayTotal = expenses
+          .filter(e => e.date === dateStr)
+          .reduce((sum, e) => sum + e.amount, 0);
+        data.push(dayTotal);
+      }
     }
 
     const gradient = this.dailyTrendChartRef.nativeElement.getContext('2d')!.createLinearGradient(0, 0, 0, 200);
@@ -6178,7 +6414,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       this.weekdayChart.destroy();
     }
 
-    const weekdays = this.weekdaySpending();
+    const weekdays = this.insightsWeekdaySpending();
     const labels = weekdays.map(d => d.shortName);
     const data = weekdays.map(d => d.average);
     const maxVal = Math.max(...data);
