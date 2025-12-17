@@ -210,6 +210,12 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   categorySearchText = signal<string>('');
   categoryDropdownPosition = signal<{ top: number; left: number } | null>(null);
 
+  // Filter sidebar collapsed state
+  filterSidebarCollapsed = signal<boolean>(false);
+
+  // Right info panel state
+  rightPanelOpen = signal<boolean>(false);
+
   // Check if filter is single day
   isSingleDayFilter = computed(() => {
     const dateFrom = this.filterDateFrom();
@@ -657,6 +663,13 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const total = expenses.reduce((sum, expense) => sum + expense.amount, 0);
     return Math.round(total / expenses.length);
   });
+
+  // Get top N expenses by amount
+  getTopExpenses(count: number = 5): { content: string; amount: number; category: string; date: string }[] {
+    return [...this.filteredExpenses()]
+      .sort((a, b) => b.amount - a.amount)
+      .slice(0, count);
+  }
 
   // Advanced Statistics
   medianExpense = computed(() => {
