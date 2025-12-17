@@ -1523,46 +1523,46 @@
 
     <!-- Tab Content: Insights -->
     <div class="tab-content insights-tab" *ngIf="activeTab() === 'insights'">
-      <div class="insights-view" *ngIf="!isLoading() && filteredExpenses().length > 0">
+      <div class="insights-view" *ngIf="!isLoading() && reportPeriodExpenses().length > 0">
         
         <!-- Quick Stats Cards - Compact Row -->
         <div class="insights-stats-row">
           <div class="mini-stat-card">
             <i class="pi pi-fire stat-icon-mini"></i>
             <div class="mini-stat-info">
-              <span class="mini-stat-value">{{ topSpendingCategory()?.category || 'N/A' }}</span>
+              <span class="mini-stat-value">{{ insightsTopSpendingCategory()?.category || 'N/A' }}</span>
               <span class="mini-stat-label">Top danh mục</span>
             </div>
-            <span class="mini-stat-amount">{{ formatCompactAmount(topSpendingCategory()?.total || 0) }}</span>
+            <span class="mini-stat-amount">{{ formatCompactAmount(insightsTopSpendingCategory()?.total || 0) }}</span>
           </div>
 
           <div class="mini-stat-card">
             <i class="pi pi-calendar stat-icon-mini"></i>
             <div class="mini-stat-info">
-              <span class="mini-stat-value">{{ highestSpendingDay()?.dayName || 'N/A' }}</span>
+              <span class="mini-stat-value">{{ insightsHighestSpendingDay()?.dayName || 'N/A' }}</span>
               <span class="mini-stat-label">Ngày chi nhiều</span>
             </div>
-            <span class="mini-stat-amount">{{ formatCompactAmount(highestSpendingDay()?.average || 0) }}</span>
+            <span class="mini-stat-amount">{{ formatCompactAmount(insightsHighestSpendingDay()?.average || 0) }}</span>
           </div>
 
           <div class="mini-stat-card">
-            <i class="pi pi-chart-line stat-icon-mini" [class.trending-up]="spendingTrend().percentage > 0" [class.trending-down]="spendingTrend().percentage < 0"></i>
+            <i class="pi pi-chart-line stat-icon-mini" [class.trending-up]="insightsSpendingTrend().percentage > 0" [class.trending-down]="insightsSpendingTrend().percentage < 0"></i>
             <div class="mini-stat-info">
-              <span class="mini-stat-value">{{ spendingTrend().trend }}</span>
-              <span class="mini-stat-label">Xu hướng 30 ngày</span>
+              <span class="mini-stat-value">{{ insightsSpendingTrend().trend }}</span>
+              <span class="mini-stat-label">{{ reportMonth() === null ? 'Xu hướng so năm trước' : 'Xu hướng so tháng trước' }}</span>
             </div>
-            <span class="mini-stat-amount" [class.positive]="spendingTrend().percentage < 0" [class.negative]="spendingTrend().percentage > 0">
-              {{ spendingTrend().percentage >= 0 ? '+' : '' }}{{ spendingTrend().percentage }}%
+            <span class="mini-stat-amount" [class.positive]="insightsSpendingTrend().percentage < 0" [class.negative]="insightsSpendingTrend().percentage > 0">
+              {{ insightsSpendingTrend().percentage >= 0 ? '+' : '' }}{{ insightsSpendingTrend().percentage }}%
             </span>
           </div>
 
           <div class="mini-stat-card">
             <i class="pi pi-wallet stat-icon-mini"></i>
             <div class="mini-stat-info">
-              <span class="mini-stat-value">{{ averageTransactionsPerDay() | number:'1.1-1' }} GD</span>
+              <span class="mini-stat-value">{{ insightsAverageTransactionsPerDay() | number:'1.1-1' }} GD</span>
               <span class="mini-stat-label">Trung bình/ngày</span>
             </div>
-            <span class="mini-stat-amount">{{ formatCompactAmount(averageDailyExpense()) }}</span>
+            <span class="mini-stat-amount">{{ formatCompactAmount(insightsAverageDailyExpense()) }}</span>
           </div>
         </div>
 
@@ -1577,7 +1577,7 @@
               <canvas #categoryPieChart></canvas>
             </div>
             <div class="chart-legend-custom">
-              <div class="legend-item" *ngFor="let cat of totalByCategory().slice(0, 5); let i = index">
+              <div class="legend-item" *ngFor="let cat of insightsTotalByCategory().slice(0, 5); let i = index">
                 <span class="legend-color" [style.background]="getCategoryChartColor(i)"></span>
                 <span class="legend-label">{{ cat.category }}</span>
                 <span class="legend-value">{{ formatCompactAmount(cat.total) }}</span>
@@ -1588,15 +1588,15 @@
           <!-- Daily Trend Line Chart -->
           <div class="chart-card wide">
             <div class="chart-header">
-              <h4><i class="pi pi-chart-line"></i> Xu hướng chi tiêu 30 ngày</h4>
+              <h4><i class="pi pi-chart-line"></i> {{ reportMonth() === null ? 'Xu hướng chi tiêu theo tháng' : 'Xu hướng chi tiêu theo ngày' }}</h4>
               <div class="chart-summary">
                 <span class="summary-item">
                   <span class="summary-label">Tổng:</span>
-                  <span class="summary-value">{{ formatCompactAmount(getLast30DaysTotal()) }}</span>
+                  <span class="summary-value">{{ formatCompactAmount(insightsTotalAmount()) }}</span>
                 </span>
                 <span class="summary-item">
                   <span class="summary-label">TB/ngày:</span>
-                  <span class="summary-value">{{ formatCompactAmount(getLast30DaysAverage()) }}</span>
+                  <span class="summary-value">{{ formatCompactAmount(insightsAverageDailyExpense()) }}</span>
                 </span>
               </div>
             </div>
@@ -1718,7 +1718,7 @@
       </div>
 
       <!-- Empty State -->
-      <div class="empty-state" *ngIf="!isLoading() && filteredExpenses().length === 0">
+      <div class="empty-state" *ngIf="!isLoading() && reportPeriodExpenses().length === 0">
         <i class="pi pi-lightbulb"></i>
         <p>Chưa có đủ dữ liệu để phân tích</p>
         <span class="empty-hint">Thêm chi tiêu để xem insights</span>
