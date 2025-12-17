@@ -164,6 +164,39 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     'Chi tiêu khác'
   ]);
 
+  // Category icons and colors mapping
+  categoryConfig: { [key: string]: { icon: string; color: string; bgColor: string } } = {
+    'Kinh doanh': { icon: 'pi-briefcase', color: '#6366f1', bgColor: '#eef2ff' },
+    'Đi chợ': { icon: 'pi-shopping-bag', color: '#10b981', bgColor: '#ecfdf5' },
+    'Siêu thị': { icon: 'pi-shopping-cart', color: '#0ea5e9', bgColor: '#f0f9ff' },
+    'Ăn uống ngoài': { icon: 'pi-utensils', color: '#f97316', bgColor: '#fff7ed' },
+    'Nhà hàng': { icon: 'pi-building', color: '#ec4899', bgColor: '#fdf2f8' },
+    'Đi lại - xăng xe': { icon: 'pi-car', color: '#8b5cf6', bgColor: '#f5f3ff' },
+    'Gia đình/Bạn bè': { icon: 'pi-users', color: '#14b8a6', bgColor: '#f0fdfa' },
+    'Điện - nước': { icon: 'pi-bolt', color: '#eab308', bgColor: '#fefce8' },
+    'Pet/Thú cưng/Vật nuôi khác': { icon: 'pi-heart', color: '#f43f5e', bgColor: '#fff1f2' },
+    'Sức khỏe': { icon: 'pi-heart-fill', color: '#ef4444', bgColor: '#fef2f2' },
+    'Thời trang / Mỹ Phẩm/ Làm đẹp': { icon: 'pi-star', color: '#a855f7', bgColor: '#faf5ff' },
+    'Mua sắm / Mua sắm online': { icon: 'pi-box', color: '#3b82f6', bgColor: '#eff6ff' },
+    'Sữa/vitamin/chất bổ/Thuốc khác': { icon: 'pi-plus-circle', color: '#22c55e', bgColor: '#f0fdf4' },
+    'Từ thiện': { icon: 'pi-gift', color: '#f472b6', bgColor: '#fce7f3' },
+    'Điện thoại': { icon: 'pi-mobile', color: '#64748b', bgColor: '#f8fafc' },
+    'Sinh hoạt (Lee)': { icon: 'pi-home', color: '#06b6d4', bgColor: '#ecfeff' },
+    'Chi tiêu khác': { icon: 'pi-ellipsis-h', color: '#71717a', bgColor: '#fafafa' }
+  };
+
+  getCategoryIcon(category: string): string {
+    return this.categoryConfig[category]?.icon || 'pi-tag';
+  }
+
+  getCategoryColor(category: string): string {
+    return this.categoryConfig[category]?.color || '#64748b';
+  }
+
+  getCategoryBgColor(category: string): string {
+    return this.categoryConfig[category]?.bgColor || '#f8fafc';
+  }
+
   // Filter
   filterCategory = signal<string[]>([]);
   filterDateFrom = signal<string>('');
@@ -206,6 +239,12 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   // Budget mode: 'topDown' = set total and distribute by weight, 'bottomUp' = set each category
   budgetMode = signal<'topDown' | 'bottomUp'>('topDown');
   categoryWeights = signal<{ [category: string]: number }>({}); // Weight percentages for each category
+
+  // Backup values for cancel functionality
+  private originalMonthlyBudget = 0;
+  private originalCategoryBudgets: { [category: string]: number } = {};
+  private originalCategoryWeights: { [category: string]: number } = {};
+  private originalBudgetMode: 'topDown' | 'bottomUp' = 'topDown';
 
   // Report Period Picker (for Budget & Insights tabs)
   reportYear = signal<number>(new Date().getFullYear());
@@ -5188,6 +5227,35 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   /**
+   * Open budget settings dialog and backup current values
+   */
+  openBudgetSettings(): void {
+    // Backup current values before opening dialog
+    this.originalMonthlyBudget = this.editMonthlyBudget();
+    this.originalCategoryBudgets = { ...this.editCategoryBudgets() };
+    this.originalCategoryWeights = { ...this.categoryWeights() };
+    this.originalBudgetMode = this.budgetMode();
+    
+    // Show dialog
+    this.showBudgetSettings.set(true);
+  }
+
+  /**
+   * Cancel budget settings and restore original values
+   */
+  cancelBudgetSettings(): void {
+    // Restore original values
+    this.editMonthlyBudget.set(this.originalMonthlyBudget);
+    this.editCategoryBudgets.set({ ...this.originalCategoryBudgets });
+    this.categoryWeights.set({ ...this.originalCategoryWeights });
+    this.budgetMode.set(this.originalBudgetMode);
+    
+    // Close dialogs
+    this.showBudgetSettings.set(false);
+    this.showSetAllDialog.set(false);
+  }
+
+  /**
    * Save budget settings to Google Sheets
    */
   saveBudgetSettings(): void {
@@ -5219,17 +5287,16 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
   /**
    * Switch budget mode
+   * Note: Does NOT auto-recalculate budgets when switching modes - preserves current values
    */
   switchBudgetMode(mode: 'topDown' | 'bottomUp'): void {
     this.budgetMode.set(mode);
     
     if (mode === 'topDown') {
-      // Calculate weights from current category budgets
+      // Calculate weights from current category budgets (for display only)
       this.calculateWeightsFromBudgets();
-    } else {
-      // Apply weights to calculate category budgets from total
-      this.applyWeightsToBudgets();
     }
+    // Don't auto-apply weights when switching to bottomUp - preserve current values
   }
 
   /**
@@ -5345,13 +5412,12 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   /**
-   * Update total budget (in topDown mode) - recalculates category budgets
+   * Update total budget (in topDown mode)
+   * Note: Does NOT auto-recalculate category budgets - user must click "Chia đều" to redistribute
    */
   onTotalBudgetChange(amount: number): void {
     this.editMonthlyBudget.set(amount);
-    if (this.budgetMode() === 'topDown') {
-      this.applyWeightsToBudgets();
-    }
+    // Don't auto-apply weights - let user explicitly click "Chia đều" button
   }
 
   /**
@@ -5369,12 +5435,11 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
   /**
    * Set monthly budget preset
+   * Note: Does NOT auto-apply weights - user must click "Chia đều" to redistribute
    */
   setMonthlyBudgetPreset(amount: number): void {
     this.editMonthlyBudget.set(amount);
-    if (this.budgetMode() === 'topDown') {
-      this.applyWeightsToBudgets();
-    }
+    // Don't auto-apply weights - let user explicitly click "Chia đều" button
   }
 
   /**
