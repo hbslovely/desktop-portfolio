@@ -441,70 +441,49 @@
           </button>
         </div>
 
-        <div class="expenses-list">
-          <!-- Header with resize handles -->
-          <div class="expense-header">
-            <div class="expense-header-date" [style.width.px]="columnWidths().date">
-              <span>Ngày</span>
-              <div class="resize-handle" (mousedown)="startResize($event, 'date')"></div>
-            </div>
-            <div class="expense-header-content">
-              <span>Nội dung</span>
-              <div class="resize-handle" (mousedown)="startResize($event, 'content')"></div>
-            </div>
-            <div class="expense-header-actions" [style.width.px]="columnWidths().actions">
-              <span>Thao tác</span>
-            </div>
-          </div>
-
+        <div class="expenses-list expenses-list-v2">
+          <!-- Modern Expense Cards -->
           <div
-            class="expense-item"
+            class="expense-card-v2"
             *ngFor="let expense of filteredExpenses(); let i = index"
             [class.highlight-above-average]="isAboveAverage(expense.amount)">
-            <div class="expense-date" [style.width.px]="columnWidths().date">
-              <i class="pi pi-calendar"></i>
-              <span>{{ formatDate(expense.date) }}</span>
+            
+            <!-- Category Icon -->
+            <div class="expense-icon-v2" 
+                 [style.background]="getCategoryBgColor(expense.category)"
+                 [style.color]="getCategoryColor(expense.category)">
+              <i class="pi" [ngClass]="getCategoryIcon(expense.category)"></i>
             </div>
-            <div class="expense-content">
-              <div class="expense-category-row" *ngIf="currentLayout() === 'v2'">
-                <div class="expense-category">
-                  <i class="pi pi-tag"></i>
-                  <span>{{ expense.category }}</span>
-                </div>
-                <div class="expense-details">{{ expense.content }}</div>
+            
+            <!-- Main Content -->
+            <div class="expense-main-v2">
+              <div class="expense-top-row">
+                <span class="expense-content-v2">{{ expense.content }}</span>
+                <span class="expense-amount-v2" [class.high-amount]="isAboveAverage(expense.amount)">
+                  <i class="pi pi-exclamation-triangle" *ngIf="isAboveAverage(expense.amount)"
+                     [title]="'Cao hơn ' + getPercentageAboveAverage(expense.amount) + '% so với trung bình'"></i>
+                  {{ formatAmount(expense.amount) }}
+                </span>
               </div>
-              <div *ngIf="currentLayout() !== 'v2'">
-                <div class="expense-category">
-                  <i class="pi pi-tag"></i>
-                  <span>{{ expense.category }}</span>
+              <div class="expense-bottom-row">
+                <div class="expense-meta-v2">
+                  <span class="expense-category-chip-v2"
+                        [style.background]="getCategoryBgColor(expense.category)"
+                        [style.color]="getCategoryColor(expense.category)">
+                    {{ expense.category }}
+                  </span>
+                  <span class="expense-date-v2">
+                    <i class="pi pi-calendar"></i>
+                    {{ formatDate(expense.date) }}
+                  </span>
                 </div>
-                <div class="expense-details">{{ expense.content }}</div>
+                <button class="edit-btn-v2" (click)="showEditExpenseForm(expense, i)" title="Chỉnh sửa">
+                  <i class="pi pi-pencil"></i>
+                </button>
               </div>
-              <div class="expense-note" *ngIf="expense.note">
-                <i class="pi pi-comment"></i>
+              <div class="expense-note-v2" *ngIf="expense.note">
+                <i class="pi pi-info-circle"></i>
                 <span>{{ expense.note }}</span>
-              </div>
-            </div>
-            <div class="expense-actions" [style.width.px]="columnWidths().actions">
-              <div class="actions-row" *ngIf="currentLayout() === 'v2'">
-                <button class="edit-btn" (click)="showEditExpenseForm(expense, i)" title="Chỉnh sửa">
-                  <i class="pi pi-pencil"></i>
-                </button>
-                <div class="expense-amount" [class.high-amount]="isAboveAverage(expense.amount)">
-                  <i class="pi pi-exclamation-triangle amount-warning-icon" *ngIf="isAboveAverage(expense.amount)"
-                     [title]="'Cao hơn ' + getPercentageAboveAverage(expense.amount) + '% so với trung bình'"></i>
-                  <span class="amount-value">{{ formatAmount(expense.amount) }}</span>
-                </div>
-              </div>
-              <div *ngIf="currentLayout() !== 'v2'">
-                <button class="edit-btn" (click)="showEditExpenseForm(expense, i)" title="Chỉnh sửa">
-                  <i class="pi pi-pencil"></i>
-                </button>
-                <div class="expense-amount" [class.high-amount]="isAboveAverage(expense.amount)">
-                  <i class="pi pi-exclamation-triangle amount-warning-icon" *ngIf="isAboveAverage(expense.amount)"
-                     [title]="'Cao hơn ' + getPercentageAboveAverage(expense.amount) + '% so với trung bình'"></i>
-                  <span class="amount-value">{{ formatAmount(expense.amount) }}</span>
-                </div>
               </div>
             </div>
           </div>
@@ -512,15 +491,24 @@
       </div>
 
       <!-- Empty State -->
-      <div class="empty-state" *ngIf="!isLoading() && filteredExpenses().length === 0">
-        <i class="pi pi-inbox"></i>
-        <p>Không có chi tiêu nào</p>
+      <div class="empty-state-v2" *ngIf="!isLoading() && filteredExpenses().length === 0">
+        <div class="empty-icon">
+          <i class="pi pi-wallet"></i>
+        </div>
+        <h4>Chưa có chi tiêu nào</h4>
+        <p>Nhấn nút "Thêm chi tiêu" để bắt đầu ghi chép</p>
+        <button class="add-first-btn" (click)="showAddExpenseForm()">
+          <i class="pi pi-plus"></i>
+          Thêm chi tiêu đầu tiên
+        </button>
       </div>
 
       <!-- Loading State -->
-      <div class="loading-state" *ngIf="isLoading()">
-        <i class="pi pi-spin pi-spinner"></i>
-        <p>Đang tải...</p>
+      <div class="loading-state-v2" *ngIf="isLoading()">
+        <div class="loading-spinner">
+          <i class="pi pi-spin pi-spinner"></i>
+        </div>
+        <p>Đang tải dữ liệu...</p>
       </div>
     </div>
 
@@ -1417,7 +1405,7 @@
               <i class="pi pi-wallet"></i>
               <h3>Ngân sách {{ getCurrentMonthName() }}</h3>
             </div>
-            <button class="edit-budget-btn" (click)="showBudgetSettings.set(true)">
+            <button class="edit-budget-btn" (click)="openBudgetSettings()">
               <i class="pi pi-cog"></i>
               <span>Thiết lập</span>
             </button>
@@ -2005,36 +1993,46 @@
 
     <!-- Add Expense Dialog -->
     <div class="dialog-overlay" *ngIf="showAddForm()" (click)="hideAddExpenseForm()">
-      <div class="dialog-container add-expense-dialog" (click)="$event.stopPropagation()">
-        <div class="dialog-header">
-          <h3>Thêm chi tiêu mới</h3>
-          <button (click)="hideAddExpenseForm()" class="close-btn">
+      <div class="dialog-container add-expense-dialog-v2" (click)="$event.stopPropagation()">
+        <div class="dialog-header-v2">
+          <div class="header-left">
+            <div class="header-icon-wrapper">
+              <i class="pi pi-plus-circle"></i>
+            </div>
+            <div class="header-text">
+              <h3>Thêm chi tiêu mới</h3>
+              <p class="header-subtitle">Ghi lại khoản chi tiêu của bạn</p>
+            </div>
+          </div>
+          <button (click)="hideAddExpenseForm()" class="close-btn-v2">
             <i class="pi pi-times"></i>
           </button>
         </div>
 
-        <div class="dialog-body">
+        <div class="dialog-body-v2">
           <!-- Success Message -->
-          <div class="success-message" *ngIf="showSuccessMessage()">
-            <div class="success-content">
-              <i class="pi pi-check-circle"></i>
+          <div class="success-message-v2" *ngIf="showSuccessMessage()">
+            <div class="success-icon">
+              <i class="pi pi-check"></i>
+            </div>
+            <div class="success-text">
               <span *ngIf="inputMode() === 'single'">Thêm chi tiêu thành công!</span>
               <span *ngIf="inputMode() === 'multiple'">Đã lưu {{ savingProgress().total }} chi tiêu thành công!</span>
             </div>
           </div>
 
           <!-- Input Mode Toggle -->
-          <div class="input-mode-toggle">
+          <div class="input-mode-toggle-v2">
             <button
               (click)="switchInputMode('single')"
-              class="mode-btn"
+              class="mode-btn-v2"
               [class.active]="inputMode() === 'single'">
-              <i class="pi pi-plus"></i>
+              <i class="pi pi-pencil"></i>
               <span>Nhập đơn</span>
             </button>
             <button
               (click)="switchInputMode('multiple')"
-              class="mode-btn"
+              class="mode-btn-v2"
               [class.active]="inputMode() === 'multiple'">
               <i class="pi pi-table"></i>
               <span>Nhập nhiều</span>
@@ -2042,49 +2040,83 @@
           </div>
 
           <!-- Single Input Mode -->
-          <div class="single-input-mode" *ngIf="inputMode() === 'single'">
-            <div class="form-group">
-              <label>Ngày:</label>
-              <input type="date" [(ngModel)]="newExpense.date" class="form-input">
+          <div class="single-input-mode-v2" *ngIf="inputMode() === 'single'">
+            <!-- Date & Amount Row -->
+            <div class="form-row">
+              <div class="form-group-v2 date-group">
+                <label>
+                  <i class="pi pi-calendar"></i>
+                  Ngày chi tiêu
+                </label>
+                <input type="date" [(ngModel)]="newExpense.date" class="form-input-v2">
+              </div>
+
+              <div class="form-group-v2 amount-group">
+                <label>
+                  <i class="pi pi-wallet"></i>
+                  Số tiền
+                </label>
+                <div class="amount-input-wrapper">
+                  <input
+                    type="text"
+                    [value]="newExpense.amount || ''"
+                    (input)="onNewAmountInput($event)"
+                    (blur)="onNewAmountBlur($event)"
+                    mask="separator"
+                    thousandSeparator="."
+                    [showMaskTyped]="false"
+                    [dropSpecialCharacters]="false"
+                    class="form-input-v2 amount-input"
+                    placeholder="0">
+                  <span class="amount-suffix">VNĐ</span>
+                </div>
+              </div>
             </div>
 
-            <div class="form-group">
-              <label>Nội dung:</label>
-              <input type="text" [(ngModel)]="newExpense.content" class="form-input" placeholder="Nhập nội dung chi tiêu">
+            <!-- Content -->
+            <div class="form-group-v2">
+              <label>
+                <i class="pi pi-file-edit"></i>
+                Nội dung chi tiêu
+              </label>
+              <input type="text" [(ngModel)]="newExpense.content" class="form-input-v2" placeholder="Ví dụ: Ăn trưa, Mua đồ...">
             </div>
 
-            <div class="form-group">
-              <label>Số tiền:</label>
-              <input
-                type="text"
-                [value]="newExpense.amount || ''"
-                (input)="onNewAmountInput($event)"
-                (blur)="onNewAmountBlur($event)"
-                mask="separator"
-                thousandSeparator="."
-                [showMaskTyped]="false"
-                [dropSpecialCharacters]="false"
-                class="form-input"
-                placeholder="0">
+            <!-- Category Selection -->
+            <div class="form-group-v2 category-group">
+              <label>
+                <i class="pi pi-th-large"></i>
+                Phân loại
+              </label>
+              <div class="category-grid-v2">
+                <button 
+                  *ngFor="let cat of categories()" 
+                  class="category-chip-v2"
+                  [class.selected]="newExpense.category === cat"
+                  [style.--cat-color]="getCategoryColor(cat)"
+                  [style.--cat-bg]="getCategoryBgColor(cat)"
+                  (click)="newExpense.category = cat">
+                  <i class="pi" [ngClass]="getCategoryIcon(cat)"></i>
+                  <span>{{ cat }}</span>
+                </button>
+              </div>
             </div>
 
-            <div class="form-group">
-              <label>Phân loại:</label>
-              <select [(ngModel)]="newExpense.category" class="form-input">
-                <option value="">Chọn phân loại</option>
-                <option *ngFor="let cat of categories()" [value]="cat">{{ cat }}</option>
-              </select>
+            <!-- Note -->
+            <div class="form-group-v2">
+              <label>
+                <i class="pi pi-comment"></i>
+                Ghi chú <span class="optional-label">(tùy chọn)</span>
+              </label>
+              <textarea [(ngModel)]="newExpense.note" class="form-input-v2 textarea-input" placeholder="Thêm ghi chú chi tiết..." rows="2"></textarea>
             </div>
 
-            <div class="form-group">
-              <label>Ghi chú:</label>
-              <textarea [(ngModel)]="newExpense.note" class="form-input" placeholder="Nhập ghi chú (tùy chọn)" rows="3"></textarea>
-            </div>
-
-            <div class="form-group checkbox-group">
-              <label class="checkbox-label">
-                <input type="checkbox" [ngModel]="createAnother()" (ngModelChange)="createAnother.set($event)" class="checkbox-input">
-                <span class="checkbox-text">Tạo thêm cái nữa</span>
+            <!-- Create Another Checkbox -->
+            <div class="checkbox-group-v2">
+              <label class="checkbox-label-v2">
+                <input type="checkbox" [ngModel]="createAnother()" (ngModelChange)="createAnother.set($event)">
+                <span class="checkbox-custom"></span>
+                <span class="checkbox-text">Tiếp tục thêm chi tiêu khác</span>
               </label>
             </div>
           </div>
@@ -2179,22 +2211,25 @@
           </div>
         </div>
 
-        <div class="dialog-footer">
-          <button (click)="hideAddExpenseForm()" class="cancel-btn" [disabled]="savingProgress().saving">Hủy</button>
+        <div class="dialog-footer-v2">
+          <button (click)="hideAddExpenseForm()" class="cancel-btn-v2" [disabled]="savingProgress().saving">
+            <i class="pi pi-times"></i>
+            Hủy
+          </button>
           <button
             *ngIf="inputMode() === 'single'"
             (click)="addExpense()"
-            class="save-btn"
-            [disabled]="isLoading() || savingProgress().saving">
-            <i class="pi pi-save"></i>
-            Lưu
+            class="save-btn-v2"
+            [disabled]="isLoading() || savingProgress().saving || !newExpense.content || !newExpense.amount || !newExpense.category">
+            <i class="pi pi-check"></i>
+            Lưu chi tiêu
           </button>
           <button
             *ngIf="inputMode() === 'multiple'"
             (click)="addMultipleExpenses()"
-            class="save-btn"
+            class="save-btn-v2"
             [disabled]="isLoading() || savingProgress().saving">
-            <i class="pi pi-save"></i>
+            <i class="pi pi-check-circle"></i>
             <span *ngIf="!savingProgress().saving">Lưu tất cả ({{ multipleExpenses().length }})</span>
             <span *ngIf="savingProgress().saving">Đang lưu...</span>
           </button>
@@ -2472,7 +2507,7 @@
     </div>
 
     <!-- Budget Settings Dialog -->
-    <div class="dialog-overlay" *ngIf="showBudgetSettings()" (click)="showBudgetSettings.set(false)">
+    <div class="dialog-overlay" *ngIf="showBudgetSettings()" (click)="cancelBudgetSettings()">
       <div class="dialog-container budget-settings-dialog" (click)="$event.stopPropagation()">
         <div class="dialog-header">
           <div class="header-content">
@@ -2484,7 +2519,7 @@
               <p class="header-subtitle">Tháng {{ getCurrentMonthName() }}</p>
             </div>
           </div>
-          <button (click)="showBudgetSettings.set(false)" class="close-btn">
+          <button (click)="cancelBudgetSettings()" class="close-btn">
             <i class="pi pi-times"></i>
           </button>
         </div>
@@ -2523,7 +2558,7 @@
               <div class="budget-input-wrapper large">
                 <input type="text" 
                        [value]="formatBudgetDisplay(editMonthlyBudget())"
-                       (input)="onMonthlyBudgetInput($event); applyWeightsToBudgets()"
+                       (input)="onMonthlyBudgetInput($event)"
                        class="budget-input"
                        placeholder="Nhập ngân sách">
                 <span class="budget-unit">VNĐ</span>
@@ -2669,7 +2704,7 @@
         </div>
 
         <div class="dialog-footer">
-          <button (click)="showBudgetSettings.set(false)" class="cancel-btn">Hủy</button>
+          <button (click)="cancelBudgetSettings()" class="cancel-btn">Hủy</button>
           <button (click)="saveBudgetSettings()" class="save-btn">
             <i class="pi pi-save"></i>
             Lưu ngân sách
