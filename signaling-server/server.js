@@ -288,6 +288,22 @@ io.on('connection', (socket) => {
     
     console.log(`[${new Date().toISOString()}] Screen share stopped by ${user.userName} in room ${roomId}`);
   });
+
+  // Handle typing indicator
+  socket.on('typing', ({ roomId, isTyping }) => {
+    const user = users.get(socket.id);
+    
+    if (!user || user.roomId !== roomId) {
+      return;
+    }
+    
+    // Broadcast typing status to other users in the room
+    socket.to(roomId).emit('user-typing', {
+      userId: socket.id,
+      userName: user.userName,
+      isTyping
+    });
+  });
 });
 
 // Helper function to handle user leaving

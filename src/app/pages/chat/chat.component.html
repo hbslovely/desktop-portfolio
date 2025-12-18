@@ -106,12 +106,51 @@
           </div>
         </div>
         
+        <!-- Layout Toggle (only show when screen sharing) -->
+        @if (localScreenStream() || remoteScreenShares().size > 0) {
+          <div class="layout-toggle">
+            <button 
+              class="layout-btn" 
+              [class.active]="layoutMode() === 'focus'"
+              (click)="layoutMode.set('focus')"
+              title="Focus Layout"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="12" rx="2"/>
+                <rect x="3" y="17" width="5" height="4" rx="1"/>
+                <rect x="10" y="17" width="5" height="4" rx="1"/>
+                <rect x="17" y="17" width="4" height="4" rx="1"/>
+              </svg>
+              Focus
+            </button>
+            <button 
+              class="layout-btn" 
+              [class.active]="layoutMode() === 'grid'"
+              (click)="layoutMode.set('grid')"
+              title="Grid Layout"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="8" height="8" rx="1"/>
+                <rect x="13" y="3" width="8" height="8" rx="1"/>
+                <rect x="3" y="13" width="8" height="8" rx="1"/>
+                <rect x="13" y="13" width="8" height="8" rx="1"/>
+              </svg>
+              Grid
+            </button>
+          </div>
+        }
+        
         <!-- Video Grid -->
-        <div class="video-grid" [class.has-screen-share]="localScreenStream() || remoteScreenShares().size > 0">
+        <div class="video-grid" 
+             [class.has-screen-share]="localScreenStream() || remoteScreenShares().size > 0"
+             [class.focus-layout]="layoutMode() === 'focus'"
+             [class.grid-layout]="layoutMode() === 'grid'">
           
-          <!-- Screen Share Videos (shown prominently) -->
+          <!-- Screen Share Videos (shown prominently in focus mode) -->
           @if (localScreenStream()) {
-            <div class="video-wrapper screen-share featured" [class.fullscreen-video]="fullscreenVideoId() === 'local-screen'">
+            <div class="video-wrapper screen-share" 
+                 [class.featured]="layoutMode() === 'focus'"
+                 [class.fullscreen-video]="fullscreenVideoId() === 'local-screen'">
               <video 
                 autoplay 
                 muted 
@@ -154,7 +193,9 @@
           
           <!-- Remote Screen Shares -->
           @for (entry of remoteScreenShares() | keyvalue; track entry.key) {
-            <div class="video-wrapper screen-share featured" [class.fullscreen-video]="fullscreenVideoId() === 'screen-' + entry.key">
+            <div class="video-wrapper screen-share" 
+                 [class.featured]="layoutMode() === 'focus'"
+                 [class.fullscreen-video]="fullscreenVideoId() === 'screen-' + entry.key">
               <video 
                 autoplay 
                 playsinline
@@ -187,61 +228,84 @@
             </div>
           }
           
-          <!-- Local Video (Camera) -->
-          <div class="video-wrapper local" [class.small-pip]="localScreenStream() || remoteScreenShares().size > 0">
-            <video 
-              #localVideo 
-              autoplay 
-              muted 
-              playsinline
-              [class.video-off]="!isVideoEnabled()"
-            ></video>
-            @if (!isVideoEnabled()) {
-              <div class="video-placeholder">
-                <div class="avatar">{{ userName().charAt(0).toUpperCase() }}</div>
-                <span>{{ userName() }}</span>
-              </div>
-            }
-            <div class="video-label">
-              <span class="name">You ({{ userName() }})</span>
-              <div class="status-icons">
-                @if (!isAudioEnabled()) {
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="muted">
-                    <line x1="1" y1="1" x2="23" y2="23"/>
-                    <path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/>
-                    <path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"/>
-                    <line x1="12" y1="19" x2="12" y2="23"/>
-                    <line x1="8" y1="23" x2="16" y2="23"/>
-                  </svg>
+          <!-- Cameras Container (for focus layout) -->
+          @if (layoutMode() === 'focus' && (localScreenStream() || remoteScreenShares().size > 0)) {
+            <div class="cameras-strip">
+              <!-- Local Camera -->
+              <div class="video-wrapper local camera-tile">
+                <video 
+                  #localVideo 
+                  autoplay 
+                  muted 
+                  playsinline
+                  [class.video-off]="!isVideoEnabled()"
+                ></video>
+                @if (!isVideoEnabled()) {
+                  <div class="video-placeholder">
+                    <div class="avatar">{{ userName().charAt(0).toUpperCase() }}</div>
+                    <span>{{ userName() }}</span>
+                  </div>
                 }
+                <div class="video-label">
+                  <span class="name">You</span>
+                  @if (!isAudioEnabled()) {
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="muted-icon">
+                      <line x1="1" y1="1" x2="23" y2="23"/>
+                      <path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/>
+                    </svg>
+                  }
+                </div>
               </div>
-            </div>
-          </div>
-          
-          <!-- Remote Videos (Cameras) -->
-          @for (entry of remoteStreams() | keyvalue; track entry.key) {
-            <div class="video-wrapper remote" [class.fullscreen-video]="fullscreenVideoId() === entry.key">
-              <video 
-                #remoteVideo 
-                autoplay 
-                playsinline
-                [srcObject]="entry.value"
-                [class.video-off]="!isParticipantVideoEnabled(entry.key)"
-                (dblclick)="toggleVideoFullscreen(entry.key)"
-              ></video>
               
-              <!-- Avatar when video is off (like MS Teams) -->
-              @if (!isParticipantVideoEnabled(entry.key)) {
-                <div class="video-placeholder">
-                  <div class="avatar">{{ getAvatarLetter(getParticipantName(entry.key)) }}</div>
-                  <span>{{ getParticipantName(entry.key) }}</span>
+              <!-- Remote Cameras -->
+              @for (entry of remoteStreams() | keyvalue; track entry.key) {
+                <div class="video-wrapper remote camera-tile">
+                  <video 
+                    autoplay 
+                    playsinline
+                    [srcObject]="entry.value"
+                    [class.video-off]="!hasActiveVideo(entry.value)"
+                  ></video>
+                  @if (!hasActiveVideo(entry.value)) {
+                    <div class="video-placeholder">
+                      <div class="avatar">{{ getAvatarLetter(getParticipantName(entry.key)) }}</div>
+                      <span>{{ getParticipantName(entry.key) }}</span>
+                    </div>
+                  }
+                  <div class="video-label">
+                    <span class="name">{{ getParticipantName(entry.key) }}</span>
+                    @if (!isParticipantAudioEnabled(entry.key)) {
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="muted-icon">
+                        <line x1="1" y1="1" x2="23" y2="23"/>
+                        <path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/>
+                      </svg>
+                    }
+                  </div>
                 </div>
               }
-              
+            </div>
+          } @else {
+            <!-- Grid Layout or No Screen Share - Show all videos normally -->
+            
+            <!-- Local Video (Camera) -->
+            <div class="video-wrapper local">
+              <video 
+                #localVideo 
+                autoplay 
+                muted 
+                playsinline
+                [class.video-off]="!isVideoEnabled()"
+              ></video>
+              @if (!isVideoEnabled()) {
+                <div class="video-placeholder">
+                  <div class="avatar">{{ userName().charAt(0).toUpperCase() }}</div>
+                  <span>{{ userName() }}</span>
+                </div>
+              }
               <div class="video-label">
-                <span class="name">{{ getParticipantName(entry.key) }}</span>
+                <span class="name">You ({{ userName() }})</span>
                 <div class="status-icons">
-                  @if (!isParticipantAudioEnabled(entry.key)) {
+                  @if (!isAudioEnabled()) {
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="muted">
                       <line x1="1" y1="1" x2="23" y2="23"/>
                       <path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/>
@@ -250,35 +314,74 @@
                       <line x1="8" y1="23" x2="16" y2="23"/>
                     </svg>
                   }
-                  @if (!isParticipantVideoEnabled(entry.key)) {
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="video-off-icon">
-                      <path d="M16.5 17.5L1 1"/>
-                      <path d="M22 8l-5 3 5 3v-6z"/>
-                      <path d="M21.3 12.8A4 4 0 0 1 21 14v2a2 2 0 0 1-2 2H7"/>
-                      <path d="M7.8 4H19a2 2 0 0 1 2 2v.5"/>
-                      <path d="M3 3l18 18"/>
-                    </svg>
-                  }
-                </div>
-                <div class="video-controls">
-                  <button class="video-control-btn" (click)="toggleVideoFullscreen(entry.key)" title="Fullscreen">
-                    @if (fullscreenVideoId() === entry.key) {
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/>
-                      </svg>
-                    } @else {
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
-                      </svg>
-                    }
-                  </button>
                 </div>
               </div>
             </div>
           }
           
+          <!-- Remote Videos (Cameras) - Only in grid layout or no screen share -->
+          @if (layoutMode() === 'grid' || (!localScreenStream() && remoteScreenShares().size === 0)) {
+            @for (entry of remoteStreams() | keyvalue; track entry.key) {
+              <div class="video-wrapper remote" [class.fullscreen-video]="fullscreenVideoId() === entry.key">
+                <video 
+                  #remoteVideo 
+                  autoplay 
+                  playsinline
+                  [srcObject]="entry.value"
+                  [class.video-off]="!hasActiveVideo(entry.value)"
+                  (dblclick)="toggleVideoFullscreen(entry.key)"
+                ></video>
+                
+                <!-- Avatar when video is off (like MS Teams) -->
+                @if (!hasActiveVideo(entry.value)) {
+                  <div class="video-placeholder">
+                    <div class="avatar">{{ getAvatarLetter(getParticipantName(entry.key)) }}</div>
+                    <span>{{ getParticipantName(entry.key) }}</span>
+                  </div>
+                }
+                
+                <div class="video-label">
+                  <span class="name">{{ getParticipantName(entry.key) }}</span>
+                  <div class="status-icons">
+                    @if (!isParticipantAudioEnabled(entry.key)) {
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="muted">
+                        <line x1="1" y1="1" x2="23" y2="23"/>
+                        <path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/>
+                        <path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"/>
+                        <line x1="12" y1="19" x2="12" y2="23"/>
+                        <line x1="8" y1="23" x2="16" y2="23"/>
+                      </svg>
+                    }
+                    @if (!hasActiveVideo(entry.value)) {
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="video-off-icon">
+                        <path d="M16.5 17.5L1 1"/>
+                        <path d="M22 8l-5 3 5 3v-6z"/>
+                        <path d="M21.3 12.8A4 4 0 0 1 21 14v2a2 2 0 0 1-2 2H7"/>
+                        <path d="M7.8 4H19a2 2 0 0 1 2 2v.5"/>
+                        <path d="M3 3l18 18"/>
+                      </svg>
+                    }
+                  </div>
+                  <div class="video-controls">
+                    <button class="video-control-btn" (click)="toggleVideoFullscreen(entry.key)" title="Fullscreen">
+                      @if (fullscreenVideoId() === entry.key) {
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/>
+                        </svg>
+                      } @else {
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+                        </svg>
+                      }
+                    </button>
+                  </div>
+                </div>
+              </div>
+            }
+          }
+          
           <!-- Empty state when no remote participants -->
-          @if (remoteStreams().size === 0) {
+          @if (remoteStreams().size === 0 && (!localScreenStream() && remoteScreenShares().size === 0)) {
             <div class="video-wrapper empty">
               <div class="waiting-message">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -549,6 +652,26 @@
             }
           </div>
           
+          <!-- Typing Indicator -->
+          @if (typingUsers().length > 0) {
+            <div class="typing-indicator">
+              <div class="typing-dots">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+              <span class="typing-text">
+                @if (typingUsers().length === 1) {
+                  {{ typingUsers()[0] }} is typing...
+                } @else if (typingUsers().length === 2) {
+                  {{ typingUsers()[0] }} and {{ typingUsers()[1] }} are typing...
+                } @else {
+                  {{ typingUsers().length }} people are typing...
+                }
+              </span>
+            </div>
+          }
+          
           <div class="chat-input" (dragover)="onDragOver($event)" (drop)="onFileDrop($event)">
             <button class="attach-btn" (click)="triggerFileInput()" title="Attach file">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -558,8 +681,9 @@
             <input 
               type="text"
               [value]="messageInput()"
-              (input)="updateMessage($any($event.target).value)"
+              (input)="onMessageInput($event)"
               (keydown)="onMessageKeydown($event)"
+              (blur)="onMessageBlur()"
               placeholder="Type a message or drop file..."
               autocomplete="off"
             />
