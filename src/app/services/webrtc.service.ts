@@ -388,16 +388,21 @@ export class WebRTCService implements OnDestroy {
   // Initialize local media stream
   async initLocalStream(video: boolean = true, audio: boolean = true): Promise<MediaStream | null> {
     try {
+      // Detect mobile device
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      
       const stream = await navigator.mediaDevices.getUserMedia({
         video: video ? {
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-          facingMode: 'user'
+          width: isMobile ? { ideal: 640, max: 1280 } : { ideal: 1280 },
+          height: isMobile ? { ideal: 480, max: 720 } : { ideal: 720 },
+          facingMode: 'user',
+          aspectRatio: { ideal: 16/9 }
         } : false,
         audio: audio ? {
           echoCancellation: true,
           noiseSuppression: true,
-          autoGainControl: true
+          autoGainControl: true,
+          sampleRate: isMobile ? 16000 : 48000 // Lower sample rate for mobile
         } : false
       });
 
@@ -821,12 +826,19 @@ export class WebRTCService implements OnDestroy {
     // Handle ICE candidates
     pc.onicecandidate = (event) => {
       if (event.candidate && this.socket?.connected) {
-        console.log('Sending ICE candidate to:', peerId);
+        console.log('Sending ICE candidate to:', peerId, 'candidate:', event.candidate.candidate);
         this.socket.emit('ice-candidate', {
           targetId: peerId,
           candidate: event.candidate
         });
+      } else if (!event.candidate) {
+        console.log('ICE gathering completed for:', peerId);
       }
+    };
+    
+    // Handle ICE gathering state
+    pc.onicegatheringstatechange = () => {
+      console.log('ICE gathering state for', peerId, ':', pc.iceGatheringState);
     };
 
     // Handle connection state changes
@@ -840,19 +852,35 @@ export class WebRTCService implements OnDestroy {
     // Handle ICE connection state changes
     pc.oniceconnectionstatechange = () => {
       console.log('ICE connection state with', peerId, ':', pc.iceConnectionState);
+      
+      // Handle connection failures
+      if (pc.iceConnectionState === 'failed' || pc.iceConnectionState === 'disconnected') {
+        console.warn('ICE connection issue with', peerId, '- attempting to restart ICE');
+        // Try to restart ICE
+        if (pc.signalingState === 'stable') {
+          pc.restartIce();
+        }
+      }
     };
 
-    // Create data channel for messaging
+    // Create data channel for messaging (only if creating offer)
     if (createOffer) {
-      const dataChannel = pc.createDataChannel('chat', {
-        ordered: true
-      });
-      this.setupDataChannel(dataChannel, peerId);
+      try {
+        const dataChannel = pc.createDataChannel('chat', {
+          ordered: true,
+          maxPacketLifeTime: 3000, // 3 seconds timeout
+          maxRetransmits: 3
+        });
+        console.log('Created data channel for:', peerId);
+        this.setupDataChannel(dataChannel, peerId);
+      } catch (error) {
+        console.error('Error creating data channel:', error);
+      }
     }
 
-    // Handle incoming data channels
+    // Handle incoming data channels (when receiving offer)
     pc.ondatachannel = (event) => {
-      console.log('Received data channel from:', peerId);
+      console.log('Received data channel from:', peerId, 'channel:', event.channel.label);
       this.setupDataChannel(event.channel, peerId);
     };
 
@@ -902,9 +930,35 @@ export class WebRTCService implements OnDestroy {
     }
 
     try {
+      // Ensure local tracks are added before setting remote description
+      const localStream = this.localStream();
+      if (localStream) {
+        const existingTracks = pc.getSenders().map(s => s.track);
+        localStream.getTracks().forEach(track => {
+          if (!existingTracks.includes(track)) {
+            console.log('Adding local track to peer connection:', track.kind);
+            pc.addTrack(track, localStream);
+          }
+        });
+      }
+      
+      // Add screen share track if currently sharing
+      if (this.screenStream) {
+        const existingScreenTracks = pc.getSenders().map(s => s.track);
+        this.screenStream.getTracks().forEach(track => {
+          if (!existingScreenTracks.includes(track)) {
+            console.log('Adding screen share track to peer connection');
+            pc.addTrack(track, this.screenStream!);
+          }
+        });
+      }
+
       await pc.setRemoteDescription(new RTCSessionDescription(offer));
 
-      const answer = await pc.createAnswer();
+      const answer = await pc.createAnswer({
+        offerToReceiveAudio: true,
+        offerToReceiveVideo: true
+      });
       await pc.setLocalDescription(answer);
 
       if (this.socket?.connected) {
@@ -945,13 +999,27 @@ export class WebRTCService implements OnDestroy {
         this.pendingCandidates.set(senderId, []);
       }
       this.pendingCandidates.get(senderId)!.push(candidate);
+      console.log('Stored pending ICE candidate for:', senderId);
+      return;
+    }
+
+    // Check if remote description is set
+    if (pc.remoteDescription === null) {
+      // Store candidate if remote description not set yet
+      if (!this.pendingCandidates.has(senderId)) {
+        this.pendingCandidates.set(senderId, []);
+      }
+      this.pendingCandidates.get(senderId)!.push(candidate);
+      console.log('Stored pending ICE candidate (no remote description yet) for:', senderId);
       return;
     }
 
     try {
       await pc.addIceCandidate(new RTCIceCandidate(candidate));
+      console.log('Added ICE candidate for:', senderId);
     } catch (error) {
       console.error('Error adding ICE candidate:', error);
+      // Don't throw - some candidates might fail but others might work
     }
   }
 
@@ -959,10 +1027,15 @@ export class WebRTCService implements OnDestroy {
   private setupDataChannel(channel: RTCDataChannel, peerId: string): void {
     // Set binary type for file transfers
     channel.binaryType = 'arraybuffer';
-
+    
+    // Log channel state changes
     channel.onopen = () => {
-      console.log('Data channel opened with:', peerId);
+      console.log('Data channel opened with:', peerId, 'readyState:', channel.readyState);
       this.dataChannels.set(peerId, channel);
+    };
+    
+    channel.onbufferedamountlow = () => {
+      console.log('Data channel buffer low for:', peerId);
     };
 
     channel.onmessage = (event) => {
@@ -1065,8 +1138,8 @@ export class WebRTCService implements OnDestroy {
         name: file.name,
         size: file.size,
         type: file.type,
-        status: 'completed',
-        url: URL.createObjectURL(file) // Local file URL
+        status: 'transferring',
+        progress: 0
       }
     };
 
@@ -1075,38 +1148,105 @@ export class WebRTCService implements OnDestroy {
 
     // Send file via data channels to each peer
     const arrayBuffer = await file.arrayBuffer();
-
-    this.dataChannels.forEach((channel, peerId) => {
+    
+    // Wait for data channels to be ready
+    const sendPromises: Promise<void>[] = [];
+    
+    this.peerConnections.forEach((pc, peerId) => {
+      // Get or wait for data channel
+      let channel = this.dataChannels.get(peerId);
+      
+      if (!channel) {
+        // Try to find data channel from peer connection
+        // Data channel might not be in our map yet
+        console.log('Data channel not found for:', peerId, '- peer connection exists');
+        // Wait a bit for data channel to be created
+        setTimeout(() => {
+          channel = this.dataChannels.get(peerId);
+          if (channel && channel.readyState === 'open') {
+            this.sendFileToPeer(channel, fileId, file, arrayBuffer, totalChunks);
+          } else {
+            console.warn('Data channel not available for:', peerId);
+          }
+        }, 1000);
+        return;
+      }
+      
+      // Wait for channel to be open
       if (channel.readyState === 'open') {
-        // Send file metadata first
-        channel.send(JSON.stringify({
-          type: 'file-start',
-          fileId,
-          fileName: file.name,
-          fileSize: file.size,
-          fileType: file.type,
-          totalChunks,
-          senderId: this.localUserId,
-          senderName: this.localUserName
-        }));
-
-        // Send file in chunks
-        this.sendFileChunks(channel, fileId, arrayBuffer, totalChunks);
+        sendPromises.push(this.sendFileToPeer(channel, fileId, file, arrayBuffer, totalChunks));
+      } else if (channel.readyState === 'connecting') {
+        // Wait for channel to open
+        const waitForOpen = new Promise<void>((resolve) => {
+          const timeout = setTimeout(() => {
+            console.warn('Data channel timeout for:', peerId);
+            resolve();
+          }, 5000);
+          
+          channel.onopen = () => {
+            clearTimeout(timeout);
+            console.log('Data channel opened, sending file to:', peerId);
+            this.sendFileToPeer(channel, fileId, file, arrayBuffer, totalChunks).then(() => resolve());
+          };
+        });
+        sendPromises.push(waitForOpen);
+      } else {
+        console.warn('Data channel not ready for:', peerId, 'state:', channel.readyState);
       }
     });
+    
+    // Wait for all sends to complete
+    await Promise.allSettled(sendPromises);
+    
+    // Update file message status
+    this.messages.update(msgs =>
+      msgs.map(msg => {
+        if (msg.id === fileId && msg.file) {
+          return {
+            ...msg,
+            file: {
+              ...msg.file,
+              status: 'completed' as const,
+              progress: 100,
+              url: URL.createObjectURL(file)
+            }
+          };
+        }
+        return msg;
+      })
+    );
 
-    // Also notify via signaling server for users who might not have direct connection
-    if (this.socket?.connected && this.roomId()) {
-      this.socket.emit('file-shared', {
-        roomId: this.roomId(),
+    this.addSystemMessage(`You shared: ${file.name}`);
+  }
+  
+  // Send file to a specific peer via data channel
+  private async sendFileToPeer(
+    channel: RTCDataChannel,
+    fileId: string,
+    file: File,
+    arrayBuffer: ArrayBuffer,
+    totalChunks: number
+  ): Promise<void> {
+    try {
+      // Send file metadata first
+      channel.send(JSON.stringify({
+        type: 'file-start',
         fileId,
         fileName: file.name,
         fileSize: file.size,
-        fileType: file.type
-      });
-    }
+        fileType: file.type,
+        totalChunks,
+        senderId: this.localUserId,
+        senderName: this.localUserName
+      }));
 
-    this.addSystemMessage(`You shared: ${file.name}`);
+      // Send file in chunks
+      await this.sendFileChunks(channel, fileId, arrayBuffer, totalChunks);
+      
+      console.log('File sent successfully via data channel');
+    } catch (error) {
+      console.error('Error sending file via data channel:', error);
+    }
   }
 
   // Send file chunks via data channel
@@ -1587,6 +1727,9 @@ export class WebRTCService implements OnDestroy {
     // Update current caption (for display)
     this.currentCaption.set(caption);
 
+    // Broadcast ALL captions (both interim and final) for real-time display
+    this.broadcastCaption(caption);
+
     // If final, add to captions history
     if (isFinal) {
       this.captions.update(caps => {
@@ -1594,9 +1737,6 @@ export class WebRTCService implements OnDestroy {
         // Keep only last 50 captions
         return newCaps.slice(-50);
       });
-
-      // Share caption with other participants via signaling server
-      this.broadcastCaption(caption);
     }
   }
 
@@ -1621,11 +1761,17 @@ export class WebRTCService implements OnDestroy {
       timestamp: new Date(caption.timestamp)
     };
 
-    // Add to captions history
-    this.captions.update(caps => {
-      const newCaps = [...caps, remoteCaption];
-      return newCaps.slice(-50);
-    });
+    // Update current caption for display (both interim and final)
+    this.currentCaption.set(remoteCaption);
+
+    // If final, add to captions history
+    if (remoteCaption.isFinal) {
+      this.captions.update(caps => {
+        const newCaps = [...caps, remoteCaption];
+        // Keep only last 50 captions
+        return newCaps.slice(-50);
+      });
+    }
   }
 
   // Toggle captions on/off
