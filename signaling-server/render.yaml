@@ -1,0 +1,19 @@
+# Render Blueprint for WebRTC Signaling Server
+# https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: webrtc-signaling-server
+    env: node
+    region: singapore # Change to your preferred region: oregon, frankfurt, ohio, singapore
+    plan: free # free, starter, standard, pro
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: ALLOWED_ORIGINS
+        sync: false # Set this manually in Render dashboard

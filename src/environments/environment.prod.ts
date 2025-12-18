@@ -10,5 +10,7 @@ export const environment = {
   googleAppsScriptUrl: import.meta.env['NG_APP_GOOGLE_APPS_SCRIPT_URL'],
   googleBusinessAppsScriptUrl: import.meta.env['NG_APP_GOOGLE_BUSINESS_APPS_SCRIPT_URL'],
   securitiesSheetScriptId: import.meta.env['NG_APP_SECURITIES_SHEET_SCRIPT_ID'] || '',
+  // WebRTC Signaling Server URL - Update this with your Render.com deployment URL
+  signalingServerUrl: (import.meta.env as unknown as Record<string, string>)['NG_APP_SIGNALING_SERVER_URL'] || 'https://your-signaling-server.onrender.com',
 };
 

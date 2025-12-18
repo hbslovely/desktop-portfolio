@@ -35,6 +35,8 @@ import { WelcomeScreenComponent } from './components/welcome-screen/welcome-scre
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DomSanitizer } from "@angular/platform-browser";
+import { Router, RouterOutlet, NavigationEnd } from '@angular/router';
+import { filter } from 'rxjs/operators';
 import { SettingsDialogComponent } from "./components/settings-dialog/settings-dialog.component";
 import { APP_ICONS, APP_SEARCH_CONFIG } from './config/app-icons.config';
 import { SearchService, SearchResult } from './services/search.service';
@@ -42,11 +44,13 @@ import { WindowManagerService } from './services/window-manager.service';
 import { getWindowDefinition } from './config/window-registry';
 import { SystemRestartService, BootMessage } from './services/system-restart.service';
 import { FileSystemService } from './services/file-system.service';
+import { AppSplashService } from './services/app-splash.service';
+import { AppSplashComponent } from './components/app-splash/app-splash.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [ WelcomeScreenComponent, WindowComponent, DesktopIconComponent, CalculatorComponent, IframeAppComponent, LoveAppComponent, ExplorerComponent, TextViewerComponent, ImageViewerComponent, PdfViewerComponent, MachineInfoComponent, PaintAppComponent, HcmcAppComponent, NewsAppComponent, SettingsAppComponent, TaskManagerComponent, WeatherAppComponent, DictionaryAppComponent, CountriesAppComponent, YugiohAppComponent, YugiohCardDetailComponent, CalendarAppComponent, AngularLoveAppComponent, MusicAppComponent, AngularGuidelinesAppComponent, TuoiTreNewsAppComponent, ExpenseAppComponent, BusinessAppComponent, ChineseChessAppComponent, OcrAppComponent, FbIdFinderAppComponent, GraphVisualizerAppComponent, StockAppComponent, CommonModule, FormsModule, SettingsDialogComponent ],
+  imports: [ WelcomeScreenComponent, WindowComponent, DesktopIconComponent, CalculatorComponent, IframeAppComponent, LoveAppComponent, ExplorerComponent, TextViewerComponent, ImageViewerComponent, PdfViewerComponent, MachineInfoComponent, PaintAppComponent, HcmcAppComponent, NewsAppComponent, SettingsAppComponent, TaskManagerComponent, WeatherAppComponent, DictionaryAppComponent, CountriesAppComponent, YugiohAppComponent, YugiohCardDetailComponent, CalendarAppComponent, AngularLoveAppComponent, MusicAppComponent, AngularGuidelinesAppComponent, TuoiTreNewsAppComponent, ExpenseAppComponent, BusinessAppComponent, ChineseChessAppComponent, OcrAppComponent, FbIdFinderAppComponent, GraphVisualizerAppComponent, StockAppComponent, CommonModule, FormsModule, SettingsDialogComponent, AppSplashComponent, RouterOutlet ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
 })
@@ -57,6 +61,11 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   @ViewChild('previewContainer', { static: false }) previewContainer!: ElementRef<HTMLDivElement>;
 
   windowManager = inject(WindowManagerService);
+  appSplashService = inject(AppSplashService);
+  private router = inject(Router);
+  
+  // Track if we're on desktop or a routed page
+  isDesktopRoute = signal(true);
 
   // Track subscriptions for cleanup
   private subscriptions: any[] = [];
@@ -78,6 +87,17 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     // Listen for restart requests from lock screen
     this.systemRestartHandler = () => this.restartSystem();
     window.addEventListener('system-restart-requested', this.systemRestartHandler);
+    
+    // Track route changes to show/hide desktop
+    this.router.events.pipe(
+      filter((event): event is NavigationEnd => event instanceof NavigationEnd)
+    ).subscribe((event) => {
+      // Show desktop only on root route
+      this.isDesktopRoute.set(event.url === '/' || event.url === '');
+    });
+    
+    // Check initial route
+    this.isDesktopRoute.set(this.router.url === '/' || this.router.url === '');
   }
 
   private systemRestartHandler!: () => void;
@@ -861,8 +881,30 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   }
 
   openTestApp(icon: DesktopIconData) {
+    // Check if app should show splash screen
+    if (this.appSplashService.shouldShowSplash(icon.id)) {
+      // Check if window already exists (don't show splash for existing windows)
+      if (this.windowManager.isWindowOpen(icon.id)) {
+        this.doOpenApp(icon);
+        return;
+      }
 
+      // Show splash then open app
+      this.appSplashService.showSplash(
+        {
+          appId: icon.id,
+          appName: icon.name,
+          appIcon: icon.icon
+        },
+        () => this.doOpenApp(icon)
+      );
+    } else {
+      // Open app directly without splash
+      this.doOpenApp(icon);
+    }
+  }
 
+  private doOpenApp(icon: DesktopIconData) {
     // Try to use the new WindowManager system first
     const definition = getWindowDefinition(icon.id);
     if (definition) {
