@@ -263,6 +263,7 @@ $transition: all 0.2s ease;
   flex-direction: column;
   background: $bg-dark;
   min-width: 0;
+  position: relative; // For captions overlay positioning
 }
 
 .room-info-bar {
@@ -367,6 +368,27 @@ $transition: all 0.2s ease;
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
   }
+  
+  // When screen share is active, adjust layout
+  &.has-screen-share {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr auto;
+    
+    .video-wrapper.featured {
+      grid-column: 1;
+      max-height: 70vh;
+    }
+    
+    .video-wrapper:not(.featured) {
+      max-height: 200px;
+    }
+    
+    // Participants row when screen sharing
+    &::after {
+      content: '';
+      display: block;
+    }
+  }
 }
 
 .video-wrapper {
@@ -397,6 +419,50 @@ $transition: all 0.2s ease;
     border: 2px dashed $border-color;
     background: rgba(26, 26, 46, 0.5);
   }
+  
+  // Screen share video
+  &.screen-share {
+    border: 2px solid $success-color;
+    box-shadow: 0 0 30px rgba(16, 185, 129, 0.3);
+    
+    video {
+      object-fit: contain;
+      background: #000;
+    }
+    
+    &.featured {
+      grid-column: 1 / -1;
+      min-height: 400px;
+      max-height: 70vh;
+    }
+  }
+  
+  // Small PIP mode when screen sharing
+  &.small-pip {
+    position: absolute;
+    bottom: 100px;
+    right: 20px;
+    width: 200px;
+    height: 150px;
+    min-height: unset;
+    aspect-ratio: unset;
+    z-index: 100;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    transition: $transition;
+    
+    &:hover {
+      transform: scale(1.05);
+    }
+    
+    .video-label {
+      padding: 6px 10px;
+      
+      .name {
+        font-size: 11px;
+      }
+    }
+  }
 }
 
 .video-placeholder {
@@ -415,11 +481,40 @@ $transition: all 0.2s ease;
     border-radius: 50%;
     font-size: 32px;
     font-weight: 700;
+    color: white;
+    box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
+    animation: avatar-pulse 2s ease-in-out infinite;
   }
   
   span {
     color: $text-secondary;
     font-size: 14px;
+  }
+}
+
+@keyframes avatar-pulse {
+  0%, 100% {
+    box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
+  }
+  50% {
+    box-shadow: 0 4px 30px rgba(99, 102, 241, 0.5);
+  }
+}
+
+// Remote video placeholder with different color
+.video-wrapper.remote .video-placeholder .avatar {
+  background: linear-gradient(135deg, #10b981, #059669);
+  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
+  
+  animation: avatar-pulse-remote 2s ease-in-out infinite;
+}
+
+@keyframes avatar-pulse-remote {
+  0%, 100% {
+    box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
+  }
+  50% {
+    box-shadow: 0 4px 30px rgba(16, 185, 129, 0.5);
   }
 }
 
@@ -450,11 +545,130 @@ $transition: all 0.2s ease;
       width: 16px;
       height: 16px;
       
-      &.muted {
+      &.muted,
+      &.video-off-icon {
         color: $danger-color;
       }
     }
   }
+  
+  .video-controls {
+    display: flex;
+    gap: 8px;
+    
+    .video-control-btn {
+      @include flex-center;
+      width: 32px;
+      height: 32px;
+      background: rgba(255, 255, 255, 0.1);
+      border: none;
+      border-radius: 6px;
+      color: white;
+      cursor: pointer;
+      transition: $transition;
+      
+      svg {
+        width: 16px;
+        height: 16px;
+      }
+      
+      &:hover {
+        background: rgba(255, 255, 255, 0.2);
+      }
+      
+      &.stop-share {
+        background: $danger-color;
+        gap: 6px;
+        width: auto;
+        padding: 0 12px;
+        font-size: 12px;
+        font-weight: 500;
+        
+        svg {
+          width: 14px;
+          height: 14px;
+        }
+        
+        &:hover {
+          background: darken($danger-color, 8%);
+        }
+      }
+    }
+  }
+  
+  // Screen share specific label
+  &.screen-share-label {
+    background: rgba(16, 185, 129, 0.9);
+    
+    .share-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      
+      svg {
+        width: 18px;
+        height: 18px;
+      }
+      
+      span {
+        font-size: 13px;
+        font-weight: 500;
+      }
+    }
+  }
+}
+
+// Fullscreen video mode
+.video-wrapper.fullscreen-video {
+  position: fixed !important;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 9999;
+  border-radius: 0;
+  aspect-ratio: unset;
+  margin: 0;
+  
+  video {
+    object-fit: contain;
+    background: #000;
+  }
+  
+  .video-label {
+    bottom: 24px;
+    left: 24px;
+    right: 24px;
+    padding: 12px 20px;
+    
+    .name {
+      font-size: 16px;
+    }
+    
+    .video-controls .video-control-btn {
+      width: 40px;
+      height: 40px;
+      
+      svg {
+        width: 20px;
+        height: 20px;
+      }
+    }
+  }
+}
+
+// Overlay behind fullscreen video
+.video-wrapper.fullscreen-video::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.9);
+  z-index: -1;
 }
 
 .waiting-message {
@@ -541,6 +755,192 @@ $transition: all 0.2s ease;
     &:hover {
       background: darken($danger-color, 8%);
     }
+  }
+}
+
+// Caption Control (CC Button)
+.caption-control {
+  position: relative;
+  display: flex;
+  gap: 2px;
+  
+  .cc-btn {
+    border-radius: 50% 0 0 50%;
+    width: 46px;
+    
+    .cc-text {
+      font-weight: 700;
+      font-size: 14px;
+      letter-spacing: -0.5px;
+    }
+    
+    &.unsupported {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+  
+  .lang-btn {
+    @include flex-center;
+    width: 24px;
+    height: 52px;
+    background: $secondary-color;
+    border: none;
+    border-radius: 0 50% 50% 0;
+    color: white;
+    cursor: pointer;
+    transition: $transition;
+    
+    svg {
+      width: 14px;
+      height: 14px;
+    }
+    
+    &:hover {
+      background: lighten($secondary-color, 8%);
+    }
+  }
+  
+  .language-menu {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-bottom: 12px;
+    background: $bg-card;
+    border: 1px solid $border-color;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+    overflow: hidden;
+    min-width: 180px;
+    z-index: 1000;
+    
+    .language-menu-header {
+      padding: 12px 16px;
+      font-size: 12px;
+      font-weight: 600;
+      color: $text-secondary;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid $border-color;
+      background: rgba(0, 0, 0, 0.2);
+    }
+    
+    .language-option {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      padding: 12px 16px;
+      background: transparent;
+      border: none;
+      color: $text-primary;
+      font-size: 14px;
+      cursor: pointer;
+      transition: $transition;
+      
+      svg {
+        width: 16px;
+        height: 16px;
+        color: $success-color;
+      }
+      
+      &:hover {
+        background: rgba(99, 102, 241, 0.1);
+      }
+      
+      &.active {
+        background: rgba(99, 102, 241, 0.15);
+        color: $primary-color;
+      }
+    }
+  }
+}
+
+// Live Captions Overlay
+.captions-container {
+  position: absolute;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90%;
+  max-width: 800px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  z-index: 50;
+  pointer-events: none;
+}
+
+.caption-bubble {
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  padding: 12px 20px;
+  border-radius: 8px;
+  max-width: 100%;
+  animation: caption-fade-in 0.2s ease;
+  
+  .caption-speaker {
+    font-weight: 600;
+    color: $primary-color;
+    margin-right: 8px;
+  }
+  
+  .caption-text {
+    color: white;
+    font-size: 16px;
+    line-height: 1.4;
+  }
+  
+  &.final {
+    .caption-text {
+      opacity: 1;
+    }
+  }
+  
+  &:not(.final) {
+    .caption-text {
+      opacity: 0.8;
+      font-style: italic;
+    }
+  }
+}
+
+.captions-history {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  
+  .caption-history-item {
+    background: rgba(0, 0, 0, 0.6);
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    opacity: 0.7;
+    animation: caption-fade-in 0.3s ease;
+    
+    .speaker {
+      font-weight: 600;
+      color: #10b981;
+      margin-right: 6px;
+    }
+    
+    .text {
+      color: rgba(255, 255, 255, 0.9);
+    }
+  }
+}
+
+@keyframes caption-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
@@ -711,6 +1111,30 @@ $transition: all 0.2s ease;
   border-top: 1px solid $border-color;
   background: $bg-input;
   
+  .attach-btn {
+    @include flex-center;
+    width: 44px;
+    height: 44px;
+    background: transparent;
+    border: 1px solid $border-color;
+    border-radius: 50%;
+    color: $text-secondary;
+    cursor: pointer;
+    transition: $transition;
+    flex-shrink: 0;
+    
+    svg {
+      width: 18px;
+      height: 18px;
+    }
+    
+    &:hover {
+      border-color: $primary-color;
+      color: $primary-color;
+      background: rgba(99, 102, 241, 0.1);
+    }
+  }
+  
   input {
     flex: 1;
     padding: 12px 16px;
@@ -740,6 +1164,7 @@ $transition: all 0.2s ease;
     color: white;
     cursor: pointer;
     transition: $transition;
+    flex-shrink: 0;
     
     svg {
       width: 18px;
@@ -754,6 +1179,121 @@ $transition: all 0.2s ease;
     &:disabled {
       opacity: 0.5;
       cursor: not-allowed;
+    }
+  }
+}
+
+// File Message Styles
+.file-message {
+  .file-content {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .file-image-preview {
+    max-width: 200px;
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    
+    img {
+      width: 100%;
+      height: auto;
+      display: block;
+      transition: $transition;
+      
+      &:hover {
+        transform: scale(1.02);
+      }
+    }
+  }
+  
+  .file-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: $transition;
+    
+    &:hover {
+      background: rgba(0, 0, 0, 0.3);
+    }
+    
+    .file-icon {
+      font-size: 24px;
+      line-height: 1;
+    }
+    
+    .file-details {
+      flex: 1;
+      min-width: 0;
+      
+      .file-name {
+        display: block;
+        font-size: 13px;
+        font-weight: 500;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        color: white;
+      }
+      
+      .file-size {
+        display: block;
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.6);
+        margin-top: 2px;
+      }
+    }
+    
+    .file-progress {
+      width: 60px;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 2px;
+      overflow: hidden;
+      
+      .progress-bar {
+        height: 100%;
+        background: $primary-color;
+        transition: width 0.3s ease;
+      }
+    }
+    
+    .download-btn {
+      @include flex-center;
+      width: 32px;
+      height: 32px;
+      background: rgba(255, 255, 255, 0.1);
+      border: none;
+      border-radius: 6px;
+      color: white;
+      cursor: pointer;
+      transition: $transition;
+      
+      svg {
+        width: 16px;
+        height: 16px;
+      }
+      
+      &:hover {
+        background: $primary-color;
+      }
+    }
+  }
+}
+
+// Own file message styles
+.message.own .file-message {
+  .file-info {
+    background: rgba(255, 255, 255, 0.15);
+    
+    &:hover {
+      background: rgba(255, 255, 255, 0.2);
     }
   }
 }

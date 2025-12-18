@@ -11,7 +11,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { WebRTCService, ChatMessage } from '../../services/webrtc.service';
+import { WebRTCService, ChatMessage, Caption, FileMetadata } from '../../services/webrtc.service';
 
 type ViewMode = 'lobby' | 'chat';
 
@@ -40,6 +40,22 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
   showChat = signal(true);
   isFullscreen = signal(false);
   isCopied = signal(false);
+  fullscreenVideoId = signal<string | null>(null);
+  captionLanguage = signal('vi-VN');
+  showLanguageMenu = signal(false);
+  
+  // Available languages for captions
+  languages = [
+    { code: 'vi-VN', name: 'Tiếng Việt' },
+    { code: 'en-US', name: 'English (US)' },
+    { code: 'en-GB', name: 'English (UK)' },
+    { code: 'ja-JP', name: '日本語' },
+    { code: 'ko-KR', name: '한국어' },
+    { code: 'zh-CN', name: '中文 (简体)' },
+    { code: 'fr-FR', name: 'Français' },
+    { code: 'de-DE', name: 'Deutsch' },
+    { code: 'es-ES', name: 'Español' },
+  ];
   
   // Get state from service
   localStream = computed(() => this.webrtcService.localStream());
@@ -50,6 +66,16 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
   connectionStatus = computed(() => this.webrtcService.connectionStatus());
   roomId = computed(() => this.webrtcService.roomId());
   messages = computed(() => this.webrtcService.messages());
+  
+  // Caption state
+  isCaptionsEnabled = computed(() => this.webrtcService.isCaptionsEnabled());
+  captions = computed(() => this.webrtcService.captions());
+  currentCaption = computed(() => this.webrtcService.currentCaption());
+  
+  // Screen share state
+  localScreenStream = computed(() => this.webrtcService.localScreenStream());
+  remoteScreenShares = computed(() => this.webrtcService.remoteScreenShares());
+  screenSharerName = computed(() => this.webrtcService.screenSharerName());
   
   private shouldScrollToBottom = false;
   
@@ -196,6 +222,146 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     } else {
       document.exitFullscreen();
       this.isFullscreen.set(false);
+    }
+  }
+  
+  // Toggle individual video fullscreen
+  toggleVideoFullscreen(oderId: string): void {
+    if (this.fullscreenVideoId() === oderId) {
+      this.fullscreenVideoId.set(null);
+    } else {
+      this.fullscreenVideoId.set(oderId);
+    }
+  }
+  
+  // Get participant name by ID
+  getParticipantName(oderId: string): string {
+    return this.webrtcService.getParticipantName(oderId);
+  }
+  
+  // Check if participant's video is enabled
+  isParticipantVideoEnabled(oderId: string): boolean {
+    return this.webrtcService.isParticipantVideoEnabled(oderId);
+  }
+  
+  // Check if participant's audio is enabled
+  isParticipantAudioEnabled(oderId: string): boolean {
+    return this.webrtcService.isParticipantAudioEnabled(oderId);
+  }
+  
+  // Get first letter of name for avatar
+  getAvatarLetter(name: string): string {
+    return name?.charAt(0)?.toUpperCase() || '?';
+  }
+  
+  // Toggle live captions
+  toggleCaptions(): void {
+    this.webrtcService.toggleCaptions(this.captionLanguage());
+  }
+  
+  // Set caption language
+  setCaptionLanguage(langCode: string): void {
+    this.captionLanguage.set(langCode);
+    this.showLanguageMenu.set(false);
+    
+    // Restart captions with new language if enabled
+    if (this.isCaptionsEnabled()) {
+      this.webrtcService.stopCaptions();
+      setTimeout(() => {
+        this.webrtcService.startCaptions(langCode);
+      }, 100);
+    }
+  }
+  
+  // Toggle language menu
+  toggleLanguageMenu(): void {
+    this.showLanguageMenu.set(!this.showLanguageMenu());
+  }
+  
+  // Get current language name
+  getCurrentLanguageName(): string {
+    const lang = this.languages.find(l => l.code === this.captionLanguage());
+    return lang?.name || 'Tiếng Việt';
+  }
+  
+  // Check if speech recognition is supported
+  isSpeechRecognitionSupported(): boolean {
+    return this.webrtcService.isSpeechRecognitionSupported();
+  }
+  
+  // ==================== FILE SHARING ====================
+  
+  // Trigger file input
+  triggerFileInput(): void {
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.multiple = false;
+    fileInput.accept = '*/*';
+    
+    fileInput.onchange = (event: any) => {
+      const file = event.target.files[0];
+      if (file) {
+        this.sendFile(file);
+      }
+    };
+    
+    fileInput.click();
+  }
+  
+  // Send file
+  async sendFile(file: File): Promise<void> {
+    // Check file size (max 100MB)
+    const maxSize = 100 * 1024 * 1024;
+    if (file.size > maxSize) {
+      alert('File size exceeds 100MB limit');
+      return;
+    }
+    
+    await this.webrtcService.sendFile(file);
+    this.shouldScrollToBottom = true;
+  }
+  
+  // Download file
+  downloadFile(file: FileMetadata): void {
+    if (!file.url) return;
+    
+    const a = document.createElement('a');
+    a.href = file.url;
+    a.download = file.name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+  
+  // Preview image file
+  isImageFile(file: FileMetadata): boolean {
+    return file.type.startsWith('image/');
+  }
+  
+  // Format file size
+  formatFileSize(bytes: number): string {
+    return this.webrtcService.formatFileSize(bytes);
+  }
+  
+  // Get file icon
+  getFileIcon(fileType: string): string {
+    return this.webrtcService.getFileIcon(fileType);
+  }
+  
+  // Handle drag over
+  onDragOver(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+  
+  // Handle file drop
+  onFileDrop(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    const files = event.dataTransfer?.files;
+    if (files && files.length > 0) {
+      this.sendFile(files[0]);
     }
   }
   
