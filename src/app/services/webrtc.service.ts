@@ -532,8 +532,17 @@ export class WebRTCService implements OnDestroy {
     if (stream) {
       const audioTrack = stream.getAudioTracks()[0];
       if (audioTrack) {
+        const wasEnabled = audioTrack.enabled;
         audioTrack.enabled = !audioTrack.enabled;
         this.isAudioEnabled.set(audioTrack.enabled);
+
+        // If audio was just enabled and captions are active, restart recognition
+        if (!wasEnabled && audioTrack.enabled && this.isCaptionsEnabled()) {
+          console.log('Audio enabled, restarting captions...');
+          setTimeout(() => {
+            this.restartCaptionsIfNeeded();
+          }, 500); // Small delay to ensure mic is ready
+        }
 
         // Notify other participants
         this.notifyMediaStateChange();
@@ -1445,20 +1454,44 @@ export class WebRTCService implements OnDestroy {
         if (event.error === 'no-speech') {
           // No speech detected, restart
           this.restartRecognition();
+        } else if (event.error === 'aborted') {
+          // Aborted usually means mic was disabled, wait for it to be enabled again
+          console.log('Speech recognition aborted (likely mic disabled)');
+          this.isRecognitionActive = false;
+          // Don't stop captions, just wait for audio to be enabled again
+          // The toggleAudio handler will restart it
         } else if (event.error === 'audio-capture') {
-          this.addSystemMessage('Microphone not available for captions.');
-          this.stopCaptions();
+          // Only stop if audio is actually disabled
+          if (!this.isAudioEnabled()) {
+            console.log('Audio capture error - mic disabled, will restart when enabled');
+            this.isRecognitionActive = false;
+          } else {
+            this.addSystemMessage('Microphone not available for captions.');
+            this.stopCaptions();
+          }
         } else if (event.error === 'not-allowed') {
           this.addSystemMessage('Microphone permission denied for captions.');
           this.stopCaptions();
+        } else {
+          // For other errors, try to restart if captions are still enabled
+          if (this.isCaptionsEnabled() && this.isAudioEnabled()) {
+            console.log('Attempting to restart recognition after error:', event.error);
+            setTimeout(() => {
+              this.restartCaptionsIfNeeded();
+            }, 1000);
+          }
         }
       };
 
       this.speechRecognition.onend = () => {
         console.log('Speech recognition ended');
-        // Auto-restart if still enabled
-        if (this.isCaptionsEnabled() && this.isRecognitionActive) {
+        // Auto-restart if still enabled and audio is available
+        if (this.isCaptionsEnabled() && this.isRecognitionActive && this.isAudioEnabled()) {
           this.restartRecognition();
+        } else if (this.isCaptionsEnabled() && !this.isAudioEnabled()) {
+          // Audio disabled, mark as inactive but keep captions enabled
+          this.isRecognitionActive = false;
+          console.log('Speech recognition paused - audio disabled');
         }
       };
 
@@ -1496,16 +1529,40 @@ export class WebRTCService implements OnDestroy {
 
   // Restart recognition (for continuous listening)
   private restartRecognition(): void {
-    if (this.isCaptionsEnabled() && this.speechRecognition) {
+    if (this.isCaptionsEnabled() && this.speechRecognition && this.isAudioEnabled()) {
       try {
         setTimeout(() => {
-          if (this.isCaptionsEnabled()) {
+          if (this.isCaptionsEnabled() && this.isAudioEnabled()) {
             this.speechRecognition.start();
           }
         }, 100);
       } catch (e) {
         console.error('Error restarting recognition:', e);
       }
+    }
+  }
+  
+  // Restart captions if needed (when audio is re-enabled)
+  private restartCaptionsIfNeeded(): void {
+    if (this.isCaptionsEnabled() && this.isAudioEnabled() && !this.isRecognitionActive) {
+      console.log('Restarting captions after audio re-enabled');
+      // Get current language from the recognition instance or use default
+      const language = this.speechRecognition?.lang || 'vi-VN';
+      
+      // Stop and restart fresh
+      if (this.speechRecognition) {
+        try {
+          this.speechRecognition.stop();
+        } catch (e) {
+          // Ignore errors
+        }
+        this.speechRecognition = null;
+      }
+      
+      // Start fresh
+      setTimeout(() => {
+        this.startCaptions(language);
+      }, 300);
     }
   }
 
