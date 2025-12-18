@@ -396,9 +396,32 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     return this.reportYear() === lastMonth.getFullYear() && this.reportMonth() === (lastMonth.getMonth() + 1);
   }
 
-  // Sorting for expenses list
+  // Sorting for expenses list - dropdown options
+  sortOption = signal<'newest' | 'oldest' | 'amount_desc' | 'amount_asc' | 'most_frequent' | 'least_frequent'>('newest');
+
+  // Sort options for dropdown
+  sortOptions = [
+    { value: 'newest', label: 'Mới nhất' },
+    { value: 'oldest', label: 'Cũ nhất' },
+    { value: 'amount_desc', label: 'Số tiền giảm dần' },
+    { value: 'amount_asc', label: 'Số tiền tăng dần' },
+    { value: 'most_frequent', label: 'Thường xuyên nhất' },
+    { value: 'least_frequent', label: 'Ít thường xuyên nhất' }
+  ];
+
+  // Legacy signals for backward compatibility
   sortField = signal<'date' | 'amount' | 'category' | 'content'>('date');
   sortDirection = signal<'asc' | 'desc'>('desc');
+
+  // Computed: frequency map for content (for frequency-based sorting)
+  contentFrequencyMap = computed(() => {
+    const frequencyMap = new Map<string, number>();
+    this.expenses().forEach(expense => {
+      const key = expense.content.toLowerCase().trim();
+      frequencyMap.set(key, (frequencyMap.get(key) || 0) + 1);
+    });
+    return frequencyMap;
+  });
 
   // Computed signals for optimized performance
   filteredExpenses = computed(() => {
@@ -409,8 +432,8 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const search = this.searchText().toLowerCase().trim();
     const amountMin = this.filterAmountMin();
     const amountMax = this.filterAmountMax();
-    const sortField = this.sortField();
-    const sortDirection = this.sortDirection();
+    const sortOption = this.sortOption();
+    const frequencyMap = this.contentFrequencyMap();
 
     let filtered = [...allExpenses];
 
@@ -443,29 +466,50 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       filtered = filtered.filter(expense => expense.amount <= amountMax);
     }
 
-    // Sort expenses
+    // Sort expenses based on dropdown option
     filtered.sort((a, b) => {
-      let comparison = 0;
+      switch (sortOption) {
+        case 'newest':
+          const dateANew = this.parseDate(a.date);
+          const dateBNew = this.parseDate(b.date);
+          if (!dateANew || !dateBNew) return 0;
+          return dateBNew.getTime() - dateANew.getTime();
 
-      switch (sortField) {
-        case 'date':
-          const dateA = this.parseDate(a.date);
-          const dateB = this.parseDate(b.date);
-          if (!dateA || !dateB) return 0;
-          comparison = dateA.getTime() - dateB.getTime();
-          break;
-        case 'amount':
-          comparison = a.amount - b.amount;
-          break;
-        case 'category':
-          comparison = a.category.localeCompare(b.category, 'vi');
-          break;
-        case 'content':
-          comparison = a.content.localeCompare(b.content, 'vi');
-          break;
+        case 'oldest':
+          const dateAOld = this.parseDate(a.date);
+          const dateBOld = this.parseDate(b.date);
+          if (!dateAOld || !dateBOld) return 0;
+          return dateAOld.getTime() - dateBOld.getTime();
+
+        case 'amount_desc':
+          return b.amount - a.amount;
+
+        case 'amount_asc':
+          return a.amount - b.amount;
+
+        case 'most_frequent':
+          const freqAMost = frequencyMap.get(a.content.toLowerCase().trim()) || 0;
+          const freqBMost = frequencyMap.get(b.content.toLowerCase().trim()) || 0;
+          // Sort by frequency desc, then by date desc for same frequency
+          if (freqBMost !== freqAMost) return freqBMost - freqAMost;
+          const dateAFreq = this.parseDate(a.date);
+          const dateBFreq = this.parseDate(b.date);
+          if (!dateAFreq || !dateBFreq) return 0;
+          return dateBFreq.getTime() - dateAFreq.getTime();
+
+        case 'least_frequent':
+          const freqALeast = frequencyMap.get(a.content.toLowerCase().trim()) || 0;
+          const freqBLeast = frequencyMap.get(b.content.toLowerCase().trim()) || 0;
+          // Sort by frequency asc, then by date desc for same frequency
+          if (freqALeast !== freqBLeast) return freqALeast - freqBLeast;
+          const dateALFreq = this.parseDate(a.date);
+          const dateBLFreq = this.parseDate(b.date);
+          if (!dateALFreq || !dateBLFreq) return 0;
+          return dateBLFreq.getTime() - dateALFreq.getTime();
+
+        default:
+          return 0;
       }
-
-      return sortDirection === 'asc' ? comparison : -comparison;
     });
 
     return filtered;
@@ -4752,7 +4796,22 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   /**
-   * Sort expenses by field
+   * Change sort option from dropdown
+   */
+  onSortOptionChange(option: 'newest' | 'oldest' | 'amount_desc' | 'amount_asc' | 'most_frequent' | 'least_frequent'): void {
+    this.sortOption.set(option);
+  }
+
+  /**
+   * Get current sort option label
+   */
+  getSortOptionLabel(): string {
+    const option = this.sortOptions.find(o => o.value === this.sortOption());
+    return option?.label || 'Mới nhất';
+  }
+
+  /**
+   * Legacy: Sort expenses by field (kept for backward compatibility)
    */
   sortBy(field: 'date' | 'amount' | 'category' | 'content'): void {
     if (this.sortField() === field) {
@@ -4766,7 +4825,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   /**
-   * Get sort icon for field
+   * Legacy: Get sort icon for field (kept for backward compatibility)
    */
   getSortIcon(field: 'date' | 'amount' | 'category' | 'content'): string {
     if (this.sortField() !== field) {
