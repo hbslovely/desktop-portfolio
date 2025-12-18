@@ -90,7 +90,7 @@ export class WebRTCService implements OnDestroy {
 
   // Typing indicator state
   typingUsers = signal<Map<string, string>>(new Map()); // oderId -> userName
-  
+
   // Voice activity detection
   isSpeaking = signal(false);
   speakingPeers = signal<Set<string>>(new Set());
@@ -122,7 +122,7 @@ export class WebRTCService implements OnDestroy {
   private localUserName = '';
   private screenStream: MediaStream | null = null;
   private pendingCandidates = new Map<string, RTCIceCandidateInit[]>();
-  
+
   // Track known stream IDs per peer (to distinguish camera vs screen share)
   private peerStreamIds = new Map<string, Set<string>>();
 
@@ -147,7 +147,7 @@ export class WebRTCService implements OnDestroy {
   private typingTimeout: any = null;
   private isCurrentlyTyping = false;
   private typingTimeouts = new Map<string, any>(); // Clear typing after timeout
-  
+
   // Voice activity detection
   private audioContext: AudioContext | null = null;
   private localAnalyser: AnalyserNode | null = null;
@@ -161,7 +161,7 @@ export class WebRTCService implements OnDestroy {
     'Lucky', 'Sunny', 'Cosmic', 'Magic', 'Golden', 'Silver', 'Crystal', 'Ocean',
     'Forest', 'Thunder', 'Shadow', 'Mystic', 'Stellar', 'Atomic', 'Digital', 'Neon'
   ];
-  
+
   private nouns = [
     'Tiger', 'Eagle', 'Wolf', 'Bear', 'Lion', 'Hawk', 'Fox', 'Panda',
     'Dragon', 'Phoenix', 'Falcon', 'Shark', 'Dolphin', 'Owl', 'Raven', 'Lynx',
@@ -180,7 +180,7 @@ export class WebRTCService implements OnDestroy {
   private generateUserId(): string {
     return Math.random().toString(36).substring(2, 15);
   }
-  
+
   // Generate a random meaningful username
   private generateRandomName(): string {
     const adj = this.adjectives[Math.floor(Math.random() * this.adjectives.length)];
@@ -270,7 +270,7 @@ export class WebRTCService implements OnDestroy {
 
       // Update participants list
       this.updateParticipantsList();
-      
+
       // Send our media state to existing participants
       setTimeout(() => this.notifyMediaStateChange(), 500);
     });
@@ -282,7 +282,7 @@ export class WebRTCService implements OnDestroy {
 
       // Store participant name
       this.participantNames.set(userId, userName);
-      
+
       // Set default media state for new user (default to true)
       this.participantMediaStates.set(userId, {
         videoEnabled: true,
@@ -291,7 +291,7 @@ export class WebRTCService implements OnDestroy {
 
       // Create peer connection and send offer
       await this.createPeerConnection(userId, false);
-      
+
       // Send our media state to the new user
       setTimeout(() => this.notifyMediaStateChange(), 500);
 
@@ -390,7 +390,7 @@ export class WebRTCService implements OnDestroy {
     try {
       // Detect mobile device
       const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      
+
       const stream = await navigator.mediaDevices.getUserMedia({
         video: video ? {
           width: isMobile ? { ideal: 640, max: 1280 } : { ideal: 1280 },
@@ -409,7 +409,7 @@ export class WebRTCService implements OnDestroy {
       this.localStream.set(stream);
       this.isVideoEnabled.set(video);
       this.isAudioEnabled.set(audio);
-      
+
       // Setup voice activity detection for local stream
       if (audio) {
         this.setupVoiceActivityDetection(stream);
@@ -422,43 +422,43 @@ export class WebRTCService implements OnDestroy {
       return null;
     }
   }
-  
+
   // Setup voice activity detection
   private setupVoiceActivityDetection(stream: MediaStream): void {
     try {
       if (!this.audioContext) {
         this.audioContext = new AudioContext();
       }
-      
+
       const source = this.audioContext.createMediaStreamSource(stream);
       this.localAnalyser = this.audioContext.createAnalyser();
       this.localAnalyser.fftSize = 256;
       this.localAnalyser.smoothingTimeConstant = 0.5;
       source.connect(this.localAnalyser);
-      
+
       // Start monitoring voice activity
       this.startVoiceActivityMonitoring();
     } catch (error) {
       console.error('Error setting up voice activity detection:', error);
     }
   }
-  
+
   // Start monitoring voice activity
   private startVoiceActivityMonitoring(): void {
     if (this.voiceActivityInterval) {
       clearInterval(this.voiceActivityInterval);
     }
-    
+
     const checkVoiceActivity = () => {
       // Check local speaking
       if (this.localAnalyser && this.isAudioEnabled()) {
         const dataArray = new Uint8Array(this.localAnalyser.frequencyBinCount);
         this.localAnalyser.getByteFrequencyData(dataArray);
-        
+
         // Calculate average volume
         const average = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
         const isSpeaking = average > 15; // Threshold for voice activity
-        
+
         if (this.isSpeaking() !== isSpeaking) {
           this.isSpeaking.set(isSpeaking);
         }
@@ -467,50 +467,50 @@ export class WebRTCService implements OnDestroy {
           this.isSpeaking.set(false);
         }
       }
-      
+
       // Check remote speakers
       const currentSpeakers = new Set<string>();
       this.remoteAnalysers.forEach((analyser, peerId) => {
         const dataArray = new Uint8Array(analyser.frequencyBinCount);
         analyser.getByteFrequencyData(dataArray);
-        
+
         const average = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
         if (average > 15) {
           currentSpeakers.add(peerId);
         }
       });
-      
+
       // Update if changed
       const currentSet = this.speakingPeers();
-      if (currentSpeakers.size !== currentSet.size || 
+      if (currentSpeakers.size !== currentSet.size ||
           ![...currentSpeakers].every(id => currentSet.has(id))) {
         this.speakingPeers.set(currentSpeakers);
       }
     };
-    
+
     // Check every 100ms
     this.voiceActivityInterval = setInterval(checkVoiceActivity, 100);
   }
-  
+
   // Setup voice activity detection for remote stream
   setupRemoteVoiceActivity(peerId: string, stream: MediaStream): void {
     try {
       if (!this.audioContext) {
         this.audioContext = new AudioContext();
       }
-      
+
       const source = this.audioContext.createMediaStreamSource(stream);
       const analyser = this.audioContext.createAnalyser();
       analyser.fftSize = 256;
       analyser.smoothingTimeConstant = 0.5;
       source.connect(analyser);
-      
+
       this.remoteAnalysers.set(peerId, analyser);
     } catch (error) {
       console.error('Error setting up remote voice activity:', error);
     }
   }
-  
+
   // Check if a specific peer is speaking
   isPeerSpeaking(peerId: string): boolean {
     return this.speakingPeers().has(peerId);
@@ -581,7 +581,7 @@ export class WebRTCService implements OnDestroy {
       for (const [peerId, pc] of this.peerConnections.entries()) {
         // Add new track for screen share
         pc.addTrack(videoTrack, this.screenStream!);
-        
+
         // Renegotiate to send the new track
         await this.renegotiate(peerId, pc);
       }
@@ -604,15 +604,15 @@ export class WebRTCService implements OnDestroy {
       return false;
     }
   }
-  
+
   // Renegotiate peer connection (used when adding/removing tracks)
   private async renegotiate(peerId: string, pc: RTCPeerConnection): Promise<void> {
     try {
       console.log('Renegotiating with peer:', peerId);
-      
+
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
-      
+
       if (this.socket?.connected) {
         this.socket.emit('offer', {
           targetId: peerId,
@@ -795,7 +795,7 @@ export class WebRTCService implements OnDestroy {
             newShares.set(peerId, remoteStream);
             return newShares;
           });
-          
+
           // Listen for track removal on screen share stream
           event.track.onended = () => {
             console.log('Screen share track ended from:', peerId);
@@ -807,7 +807,7 @@ export class WebRTCService implements OnDestroy {
             // Remove from known streams so it can be re-added if they share again
             knownStreamIds.delete(remoteStream.id);
           };
-          
+
           event.track.onmute = () => {
             console.log('Screen share track muted from:', peerId);
             this.remoteScreenShares.update(shares => {
@@ -835,7 +835,7 @@ export class WebRTCService implements OnDestroy {
         console.log('ICE gathering completed for:', peerId);
       }
     };
-    
+
     // Handle ICE gathering state
     pc.onicegatheringstatechange = () => {
       console.log('ICE gathering state for', peerId, ':', pc.iceGatheringState);
@@ -852,7 +852,7 @@ export class WebRTCService implements OnDestroy {
     // Handle ICE connection state changes
     pc.oniceconnectionstatechange = () => {
       console.log('ICE connection state with', peerId, ':', pc.iceConnectionState);
-      
+
       // Handle connection failures
       if (pc.iceConnectionState === 'failed' || pc.iceConnectionState === 'disconnected') {
         console.warn('ICE connection issue with', peerId, '- attempting to restart ICE');
@@ -941,7 +941,7 @@ export class WebRTCService implements OnDestroy {
           }
         });
       }
-      
+
       // Add screen share track if currently sharing
       if (this.screenStream) {
         const existingScreenTracks = pc.getSenders().map(s => s.track);
@@ -1027,13 +1027,13 @@ export class WebRTCService implements OnDestroy {
   private setupDataChannel(channel: RTCDataChannel, peerId: string): void {
     // Set binary type for file transfers
     channel.binaryType = 'arraybuffer';
-    
+
     // Log channel state changes
     channel.onopen = () => {
       console.log('Data channel opened with:', peerId, 'readyState:', channel.readyState);
       this.dataChannels.set(peerId, channel);
     };
-    
+
     channel.onbufferedamountlow = () => {
       console.log('Data channel buffer low for:', peerId);
     };
@@ -1148,30 +1148,47 @@ export class WebRTCService implements OnDestroy {
 
     // Send file via data channels to each peer
     const arrayBuffer = await file.arrayBuffer();
-    
+
     // Wait for data channels to be ready
     const sendPromises: Promise<void>[] = [];
-    
-    this.peerConnections.forEach((pc, peerId) => {
+
+    for (const [peerId, pc] of this.peerConnections.entries()) {
       // Get or wait for data channel
       let channel = this.dataChannels.get(peerId);
-      
+
       if (!channel) {
-        // Try to find data channel from peer connection
-        // Data channel might not be in our map yet
-        console.log('Data channel not found for:', peerId, '- peer connection exists');
-        // Wait a bit for data channel to be created
-        setTimeout(() => {
-          channel = this.dataChannels.get(peerId);
-          if (channel && channel.readyState === 'open') {
-            this.sendFileToPeer(channel, fileId, file, arrayBuffer, totalChunks);
-          } else {
-            console.warn('Data channel not available for:', peerId);
-          }
-        }, 1000);
-        return;
+        // Wait for data channel to be created (max 3 seconds)
+        const waitForChannel = new Promise<RTCDataChannel | null>((resolve) => {
+          let attempts = 0;
+          const maxAttempts = 30; // 3 seconds
+
+          const checkChannel = () => {
+            const ch = this.dataChannels.get(peerId);
+            if (ch) {
+              resolve(ch);
+              return;
+            }
+
+            attempts++;
+            if (attempts >= maxAttempts) {
+              console.warn('Data channel timeout for:', peerId);
+              resolve(null);
+              return;
+            }
+
+            setTimeout(checkChannel, 100);
+          };
+
+          checkChannel();
+        });
+
+        channel = await waitForChannel as any;
+        if (!channel) {
+          console.warn('Data channel not available for:', peerId);
+          continue;
+        }
       }
-      
+
       // Wait for channel to be open
       if (channel.readyState === 'open') {
         sendPromises.push(this.sendFileToPeer(channel, fileId, file, arrayBuffer, totalChunks));
@@ -1179,12 +1196,14 @@ export class WebRTCService implements OnDestroy {
         // Wait for channel to open
         const waitForOpen = new Promise<void>((resolve) => {
           const timeout = setTimeout(() => {
-            console.warn('Data channel timeout for:', peerId);
+            console.warn('Data channel open timeout for:', peerId);
             resolve();
           }, 5000);
-          
+
+          const originalOnOpen = channel.onopen as any;
           channel.onopen = () => {
             clearTimeout(timeout);
+            if (originalOnOpen) originalOnOpen();
             console.log('Data channel opened, sending file to:', peerId);
             this.sendFileToPeer(channel, fileId, file, arrayBuffer, totalChunks).then(() => resolve());
           };
@@ -1193,11 +1212,11 @@ export class WebRTCService implements OnDestroy {
       } else {
         console.warn('Data channel not ready for:', peerId, 'state:', channel.readyState);
       }
-    });
-    
+    }
+
     // Wait for all sends to complete
     await Promise.allSettled(sendPromises);
-    
+
     // Update file message status
     this.messages.update(msgs =>
       msgs.map(msg => {
@@ -1218,7 +1237,7 @@ export class WebRTCService implements OnDestroy {
 
     this.addSystemMessage(`You shared: ${file.name}`);
   }
-  
+
   // Send file to a specific peer via data channel
   private async sendFileToPeer(
     channel: RTCDataChannel,
@@ -1242,7 +1261,7 @@ export class WebRTCService implements OnDestroy {
 
       // Send file in chunks
       await this.sendFileChunks(channel, fileId, arrayBuffer, totalChunks);
-      
+
       console.log('File sent successfully via data channel');
     } catch (error) {
       console.error('Error sending file via data channel:', error);
@@ -1681,14 +1700,14 @@ export class WebRTCService implements OnDestroy {
       }
     }
   }
-  
+
   // Restart captions if needed (when audio is re-enabled)
   private restartCaptionsIfNeeded(): void {
     if (this.isCaptionsEnabled() && this.isAudioEnabled() && !this.isRecognitionActive) {
       console.log('Restarting captions after audio re-enabled');
       // Get current language from the recognition instance or use default
       const language = this.speechRecognition?.lang || 'vi-VN';
-      
+
       // Stop and restart fresh
       if (this.speechRecognition) {
         try {
@@ -1698,7 +1717,7 @@ export class WebRTCService implements OnDestroy {
         }
         this.speechRecognition = null;
       }
-      
+
       // Start fresh
       setTimeout(() => {
         this.startCaptions(language);
@@ -1877,13 +1896,13 @@ export class WebRTCService implements OnDestroy {
       clearInterval(this.voiceActivityInterval);
       this.voiceActivityInterval = null;
     }
-    
+
     // Close audio context
     if (this.audioContext) {
       this.audioContext.close();
       this.audioContext = null;
     }
-    
+
     this.localAnalyser = null;
     this.remoteAnalysers.clear();
 
