@@ -266,6 +266,46 @@ $transition: all 0.2s ease;
   position: relative; // For captions overlay positioning
 }
 
+// Layout Toggle
+.layout-toggle {
+  display: flex;
+  gap: 8px;
+  padding: 8px 16px;
+  background: rgba(0, 0, 0, 0.3);
+  border-bottom: 1px solid $border-color;
+  
+  .layout-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid $border-color;
+    border-radius: 8px;
+    color: $text-secondary;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: $transition;
+    
+    svg {
+      width: 16px;
+      height: 16px;
+    }
+    
+    &:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: $text-primary;
+    }
+    
+    &.active {
+      background: rgba(99, 102, 241, 0.2);
+      border-color: $primary-color;
+      color: $primary-color;
+    }
+  }
+}
+
 .room-info-bar {
   display: flex;
   justify-content: space-between;
@@ -369,26 +409,89 @@ $transition: all 0.2s ease;
     grid-template-columns: 1fr;
   }
   
-  // When screen share is active, adjust layout
-  &.has-screen-share {
-    grid-template-columns: 1fr;
-    grid-template-rows: 1fr auto;
+  // Focus layout - screen share prominent, cameras at bottom
+  &.focus-layout.has-screen-share {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
     
-    .video-wrapper.featured {
-      grid-column: 1;
-      max-height: 70vh;
+    .video-wrapper.screen-share.featured {
+      flex: 1;
+      min-height: 60vh;
+      max-height: 75vh;
     }
     
-    .video-wrapper:not(.featured) {
-      max-height: 200px;
+    .cameras-strip {
+      display: flex;
+      gap: 12px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+      
+      &::-webkit-scrollbar {
+        height: 6px;
+      }
+      
+      &::-webkit-scrollbar-thumb {
+        background: $border-color;
+        border-radius: 3px;
+      }
     }
     
-    // Participants row when screen sharing
-    &::after {
-      content: '';
-      display: block;
+    .camera-tile {
+      width: 180px;
+      min-width: 180px;
+      height: 120px;
+      aspect-ratio: unset;
+      min-height: unset;
+      flex-shrink: 0;
+      
+      .video-label {
+        padding: 6px 10px;
+        
+        .name {
+          font-size: 11px;
+        }
+      }
+      
+      .video-placeholder {
+        .avatar {
+          width: 50px;
+          height: 50px;
+          font-size: 20px;
+        }
+        
+        span {
+          font-size: 11px;
+        }
+      }
     }
   }
+  
+  // Grid layout - all videos equal size
+  &.grid-layout {
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    
+    .video-wrapper {
+      aspect-ratio: 16/9;
+      min-height: 200px;
+    }
+    
+    .video-wrapper.screen-share {
+      // In grid layout, screen share is same size as others
+      video {
+        object-fit: contain;
+        background: #000;
+      }
+    }
+  }
+}
+
+// Muted icon for camera tiles
+.muted-icon {
+  width: 14px;
+  height: 14px;
+  color: $danger-color;
+  margin-left: 6px;
 }
 
 .video-wrapper {
@@ -437,32 +540,6 @@ $transition: all 0.2s ease;
     }
   }
   
-  // Small PIP mode when screen sharing
-  &.small-pip {
-    position: absolute;
-    bottom: 100px;
-    right: 20px;
-    width: 200px;
-    height: 150px;
-    min-height: unset;
-    aspect-ratio: unset;
-    z-index: 100;
-    border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-    transition: $transition;
-    
-    &:hover {
-      transform: scale(1.05);
-    }
-    
-    .video-label {
-      padding: 6px 10px;
-      
-      .name {
-        font-size: 11px;
-      }
-    }
-  }
 }
 
 .video-placeholder {
@@ -1100,6 +1177,66 @@ $transition: all 0.2s ease;
   span {
     font-size: 12px;
     opacity: 0.7;
+  }
+}
+
+// Typing Indicator
+.typing-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  color: $text-secondary;
+  font-size: 13px;
+  animation: fade-in 0.2s ease;
+  
+  .typing-dots {
+    display: flex;
+    gap: 3px;
+    
+    span {
+      width: 6px;
+      height: 6px;
+      background: $primary-color;
+      border-radius: 50%;
+      animation: typing-bounce 1.4s infinite ease-in-out both;
+      
+      &:nth-child(1) {
+        animation-delay: -0.32s;
+      }
+      
+      &:nth-child(2) {
+        animation-delay: -0.16s;
+      }
+      
+      &:nth-child(3) {
+        animation-delay: 0s;
+      }
+    }
+  }
+  
+  .typing-text {
+    font-style: italic;
+  }
+}
+
+@keyframes typing-bounce {
+  0%, 80%, 100% {
+    transform: scale(0.6);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }
 

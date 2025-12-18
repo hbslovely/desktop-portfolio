@@ -43,6 +43,7 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
   fullscreenVideoId = signal<string | null>(null);
   captionLanguage = signal('vi-VN');
   showLanguageMenu = signal(false);
+  layoutMode = signal<'focus' | 'grid'>('focus'); // Layout mode: focus (screen share large) or grid (equal size)
   
   // Available languages for captions
   languages = [
@@ -76,6 +77,9 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
   localScreenStream = computed(() => this.webrtcService.localScreenStream());
   remoteScreenShares = computed(() => this.webrtcService.remoteScreenShares());
   screenSharerName = computed(() => this.webrtcService.screenSharerName());
+  
+  // Typing indicator
+  typingUsers = computed(() => this.webrtcService.getTypingUsersArray());
   
   private shouldScrollToBottom = false;
   
@@ -184,6 +188,7 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
   sendMessage(): void {
     const text = this.messageInput().trim();
     if (text) {
+      this.webrtcService.stopTyping(); // Stop typing when message is sent
       this.webrtcService.sendMessage(text);
       this.messageInput.set('');
       this.shouldScrollToBottom = true;
@@ -196,6 +201,24 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
       event.preventDefault();
       this.sendMessage();
     }
+  }
+  
+  // Handle typing indicator
+  onMessageInput(event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    this.updateMessage(value);
+    
+    // Emit typing event
+    if (value.trim()) {
+      this.webrtcService.startTyping();
+    } else {
+      this.webrtcService.stopTyping();
+    }
+  }
+  
+  // Stop typing when input loses focus
+  onMessageBlur(): void {
+    this.webrtcService.stopTyping();
   }
   
   // Copy room ID to clipboard
@@ -225,6 +248,11 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     }
   }
   
+  // Toggle layout mode (focus/grid)
+  toggleLayoutMode(): void {
+    this.layoutMode.set(this.layoutMode() === 'focus' ? 'grid' : 'focus');
+  }
+  
   // Toggle individual video fullscreen
   toggleVideoFullscreen(oderId: string): void {
     if (this.fullscreenVideoId() === oderId) {
@@ -241,12 +269,30 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
   
   // Check if participant's video is enabled
   isParticipantVideoEnabled(oderId: string): boolean {
-    return this.webrtcService.isParticipantVideoEnabled(oderId);
+    // First check the media state from socket
+    const socketState = this.webrtcService.isParticipantVideoEnabled(oderId);
+    if (!socketState) return false;
+    
+    // Also check if the stream actually has video enabled
+    const stream = this.remoteStreams().get(oderId);
+    if (stream) {
+      const videoTrack = stream.getVideoTracks()[0];
+      if (videoTrack) {
+        return videoTrack.enabled && !videoTrack.muted;
+      }
+    }
+    return socketState;
   }
   
   // Check if participant's audio is enabled
   isParticipantAudioEnabled(oderId: string): boolean {
     return this.webrtcService.isParticipantAudioEnabled(oderId);
+  }
+  
+  // Check if stream has active video
+  hasActiveVideo(stream: MediaStream): boolean {
+    const videoTrack = stream.getVideoTracks()[0];
+    return videoTrack ? videoTrack.enabled && !videoTrack.muted : false;
   }
   
   // Get first letter of name for avatar

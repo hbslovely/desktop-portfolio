@@ -77,27 +77,30 @@ export class WebRTCService implements OnDestroy {
   roomId = signal<string>('');
   participants = signal<Participant[]>([]);
   messages = signal<ChatMessage[]>([]);
-  
+
   // Screen share state
   localScreenStream = signal<MediaStream | null>(null);
   remoteScreenShares = signal<Map<string, MediaStream>>(new Map());
   screenSharerName = signal<string | null>(null); // Who is currently sharing (remote)
-  
+
   // Caption/CC state
   isCaptionsEnabled = signal(false);
   captions = signal<Caption[]>([]);
   currentCaption = signal<Caption | null>(null);
-  
+
+  // Typing indicator state
+  typingUsers = signal<Map<string, string>>(new Map()); // oderId -> userName
+
   // Events
   private messageSubject = new Subject<ChatMessage>();
   message$ = this.messageSubject.asObservable();
-  
+
   // Socket.IO connection
   private socket: Socket | null = null;
-  
+
   // Signaling server URL - configurable via environment
   private signalingServerUrl = environment.signalingServerUrl || 'http://localhost:3007';
-  
+
   // WebRTC configuration
   private rtcConfig: RTCConfiguration = {
     iceServers: [
@@ -108,55 +111,60 @@ export class WebRTCService implements OnDestroy {
       { urls: 'stun:stun4.l.google.com:19302' },
     ]
   };
-  
+
   private peerConnections = new Map<string, RTCPeerConnection>();
   private dataChannels = new Map<string, RTCDataChannel>();
   private localUserId = '';
   private localUserName = '';
   private screenStream: MediaStream | null = null;
   private pendingCandidates = new Map<string, RTCIceCandidateInit[]>();
-  
+
   // Track participant names by ID
   private participantNames = new Map<string, string>();
-  
+
   // Track participant media states (video/audio enabled)
   private participantMediaStates = new Map<string, { videoEnabled: boolean; audioEnabled: boolean }>();
-  
+
   // Track received message IDs to prevent duplicates
   private receivedMessageIds = new Set<string>();
-  
+
   // Speech recognition for live captions
   private speechRecognition: any = null;
   private isRecognitionActive = false;
-  
+
   // File transfer
   private fileTransfers = new Map<string, FileTransfer>();
   private readonly CHUNK_SIZE = 16384; // 16KB chunks for WebRTC
-  
+
+  // Typing indicator
+  private typingTimeout: any = null;
+  private isCurrentlyTyping = false;
+  private typingTimeouts = new Map<string, any>(); // Clear typing after timeout
+
   constructor() {
     this.localUserName = `User_${this.generateUserId().slice(0, 4)}`;
   }
-  
+
   ngOnDestroy(): void {
     this.cleanup();
   }
-  
+
   private generateUserId(): string {
     return Math.random().toString(36).substring(2, 15);
   }
-  
+
   getLocalUserId(): string {
     return this.localUserId;
   }
-  
+
   getLocalUserName(): string {
     return this.localUserName;
   }
-  
+
   setLocalUserName(name: string): void {
     this.localUserName = name || `User_${this.generateUserId().slice(0, 4)}`;
   }
-  
+
   // Connect to signaling server
   private connectToSignalingServer(): Promise<void> {
     return new Promise((resolve, reject) => {
@@ -164,9 +172,9 @@ export class WebRTCService implements OnDestroy {
         resolve();
         return;
       }
-      
+
       console.log('Connecting to signaling server:', this.signalingServerUrl);
-      
+
       this.socket = io(this.signalingServerUrl, {
         transports: ['websocket', 'polling'],
         reconnection: true,
@@ -174,13 +182,13 @@ export class WebRTCService implements OnDestroy {
         reconnectionDelay: 1000,
         timeout: 10000
       });
-      
+
       this.socket.on('connect', () => {
         console.log('Connected to signaling server with ID:', this.socket?.id);
         this.localUserId = this.socket?.id || this.generateUserId();
         resolve();
       });
-      
+
       this.socket.on('connect_error', (error) => {
         console.error('Connection error:', error);
         this.connectionStatus.set('disconnected');
@@ -188,7 +196,7 @@ export class WebRTCService implements OnDestroy {
         // Resolve anyway to allow local testing
         resolve();
       });
-      
+
       this.socket.on('disconnect', (reason) => {
         console.log('Disconnected from signaling server:', reason);
         if (reason === 'io server disconnect') {
@@ -196,77 +204,77 @@ export class WebRTCService implements OnDestroy {
           this.socket?.connect();
         }
       });
-      
+
       // Setup signaling event handlers
       this.setupSignalingHandlers();
     });
   }
-  
+
   // Setup signaling event handlers
   private setupSignalingHandlers(): void {
     if (!this.socket) return;
-    
+
     // Room joined - receive existing participants
     this.socket.on('room-joined', async ({ roomId, participants, userId }) => {
       console.log('Joined room:', roomId, 'Existing participants:', participants);
       this.localUserId = userId;
       this.connectionStatus.set('connected');
       this.addSystemMessage(`Joined room: ${roomId}`);
-      
+
       // Store participant names and create peer connections
       for (const participant of participants) {
         this.participantNames.set(participant.id, participant.userName);
         await this.createPeerConnection(participant.id, true);
       }
-      
+
       // Update participants list
       this.updateParticipantsList();
     });
-    
+
     // New user joined
     this.socket.on('user-joined', async ({ userId, userName }) => {
       console.log('User joined:', userName, userId);
       this.addSystemMessage(`${userName} joined the room`);
-      
+
       // Store participant name
       this.participantNames.set(userId, userName);
-      
+
       // Create peer connection and send offer
       await this.createPeerConnection(userId, false);
-      
+
       // Update participants list
       this.updateParticipantsList();
     });
-    
+
     // User left
     this.socket.on('user-left', ({ userId, userName }) => {
       console.log('User left:', userName, userId);
       this.addSystemMessage(`${userName} left the room`);
       this.participantNames.delete(userId);
       this.handlePeerDisconnect(userId);
-      
+
       // Update participants list
       this.updateParticipantsList();
     });
-    
+
     // Receive offer
     this.socket.on('offer', async ({ senderId, senderName, offer }) => {
       console.log('Received offer from:', senderName, senderId);
       await this.handleOffer(senderId, offer);
     });
-    
+
     // Receive answer
     this.socket.on('answer', async ({ senderId, answer }) => {
       console.log('Received answer from:', senderId);
       await this.handleAnswer(senderId, answer);
     });
-    
+
     // Receive ICE candidate
     this.socket.on('ice-candidate', async ({ senderId, candidate }) => {
       console.log('Received ICE candidate from:', senderId);
       await this.handleIceCandidate(senderId, candidate);
     });
-    
+
     // Receive chat message
     this.socket.on('chat-message', (message: ChatMessage) => {
       // Don't add our own messages (server broadcasts to all)
@@ -281,30 +289,35 @@ export class WebRTCService implements OnDestroy {
         this.messageSubject.next(chatMessage);
       }
     });
-    
+
     // Media state change from other users
     this.socket.on('media-state-change', ({ userId, video, audio, screenShare }) => {
       // Store media state
       this.participantMediaStates.set(userId, { videoEnabled: video, audioEnabled: audio });
-      
+
       // Update participants list
       this.updateParticipantsList();
     });
-    
+
     // Receive live captions from other users
     this.socket.on('caption', (caption: Caption) => {
       if (caption.speakerId !== this.localUserId) {
         this.handleRemoteCaption(caption);
       }
     });
-    
+
     // Screen share started by remote user
     this.socket.on('screen-share-start', ({ userId, userName }) => {
       console.log('Screen share started by:', userName);
       this.screenSharerName.set(userName);
       this.addSystemMessage(`${userName} started screen sharing`);
     });
-    
+
+    // Typing indicator
+    this.socket.on('user-typing', ({ userId, userName, isTyping }) => {
+      this.handleRemoteTyping(userId, userName, isTyping);
+    });
+
     // Screen share stopped by remote user
     this.socket.on('screen-share-stop', ({ userId, userName }) => {
       console.log('Screen share stopped by:', userName);
@@ -318,7 +331,7 @@ export class WebRTCService implements OnDestroy {
       this.addSystemMessage(`${userName} stopped screen sharing`);
     });
   }
-  
+
   // Initialize local media stream
   async initLocalStream(video: boolean = true, audio: boolean = true): Promise<MediaStream | null> {
     try {
@@ -334,11 +347,11 @@ export class WebRTCService implements OnDestroy {
           autoGainControl: true
         } : false
       });
-      
+
       this.localStream.set(stream);
       this.isVideoEnabled.set(video);
       this.isAudioEnabled.set(audio);
-      
+
       return stream;
     } catch (error) {
       console.error('Error accessing media devices:', error);
@@ -346,7 +359,7 @@ export class WebRTCService implements OnDestroy {
       return null;
     }
   }
-  
+
   // Toggle video
   toggleVideo(): void {
     const stream = this.localStream();
@@ -355,13 +368,13 @@ export class WebRTCService implements OnDestroy {
       if (videoTrack) {
         videoTrack.enabled = !videoTrack.enabled;
         this.isVideoEnabled.set(videoTrack.enabled);
-        
+
         // Notify other participants
         this.notifyMediaStateChange();
       }
     }
   }
-  
+
   // Toggle audio
   toggleAudio(): void {
     const stream = this.localStream();
@@ -370,13 +383,13 @@ export class WebRTCService implements OnDestroy {
       if (audioTrack) {
         audioTrack.enabled = !audioTrack.enabled;
         this.isAudioEnabled.set(audioTrack.enabled);
-        
+
         // Notify other participants
         this.notifyMediaStateChange();
       }
     }
   }
-  
+
   // Notify media state change
   private notifyMediaStateChange(): void {
     if (this.socket?.connected && this.roomId()) {
@@ -388,7 +401,7 @@ export class WebRTCService implements OnDestroy {
       });
     }
   }
-  
+
   // Start screen sharing
   async startScreenShare(): Promise<boolean> {
     try {
@@ -396,39 +409,39 @@ export class WebRTCService implements OnDestroy {
         video: true,
         audio: true
       });
-      
+
       const videoTrack = this.screenStream.getVideoTracks()[0];
-      
+
       // Add screen share track to all peer connections (don't replace camera)
       this.peerConnections.forEach((pc) => {
         // Add new track for screen share
         pc.addTrack(videoTrack, this.screenStream!);
       });
-      
+
       // Update local screen stream signal
       this.localScreenStream.set(this.screenStream);
       this.isScreenSharing.set(true);
-      
+
       // Notify other participants about screen share
       this.notifyScreenShareStart();
-      
+
       // Handle screen share end
       videoTrack.onended = () => {
         this.stopScreenShare();
       };
-      
+
       return true;
     } catch (error) {
       console.error('Error sharing screen:', error);
       return false;
     }
   }
-  
+
   // Stop screen sharing
   async stopScreenShare(): Promise<void> {
     if (this.screenStream) {
       const videoTrack = this.screenStream.getVideoTracks()[0];
-      
+
       // Remove screen share track from all peer connections
       this.peerConnections.forEach((pc) => {
         const sender = pc.getSenders().find(s => s.track === videoTrack);
@@ -436,19 +449,19 @@ export class WebRTCService implements OnDestroy {
           pc.removeTrack(sender);
         }
       });
-      
+
       this.screenStream.getTracks().forEach(track => track.stop());
       this.screenStream = null;
     }
-    
+
     // Clear local screen stream signal
     this.localScreenStream.set(null);
     this.isScreenSharing.set(false);
-    
+
     // Notify other participants about screen share stop
     this.notifyScreenShareStop();
   }
-  
+
   // Notify screen share started
   private notifyScreenShareStart(): void {
     if (this.socket?.connected && this.roomId()) {
@@ -459,7 +472,7 @@ export class WebRTCService implements OnDestroy {
     }
     this.addSystemMessage(`You started screen sharing`);
   }
-  
+
   // Notify screen share stopped
   private notifyScreenShareStop(): void {
     if (this.socket?.connected && this.roomId()) {
@@ -469,15 +482,15 @@ export class WebRTCService implements OnDestroy {
     }
     this.addSystemMessage(`You stopped screen sharing`);
   }
-  
+
   // Create a new room (as host)
   async createRoom(): Promise<string> {
     await this.connectToSignalingServer();
-    
+
     const roomId = this.generateRoomId();
     this.roomId.set(roomId);
     this.connectionStatus.set('connecting');
-    
+
     if (this.socket?.connected) {
       this.socket.emit('join-room', {
         roomId,
@@ -488,10 +501,10 @@ export class WebRTCService implements OnDestroy {
       this.connectionStatus.set('connected');
       this.addSystemMessage(`Room created! Share this ID: ${roomId}`);
     }
-    
+
     return roomId;
   }
-  
+
   private generateRoomId(): string {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     let result = '';
@@ -500,15 +513,15 @@ export class WebRTCService implements OnDestroy {
     }
     return result;
   }
-  
+
   // Join an existing room
   async joinRoom(roomId: string): Promise<boolean> {
     try {
       await this.connectToSignalingServer();
-      
+
       this.roomId.set(roomId);
       this.connectionStatus.set('connecting');
-      
+
       if (this.socket?.connected) {
         this.socket.emit('join-room', {
           roomId,
@@ -528,14 +541,14 @@ export class WebRTCService implements OnDestroy {
       return false;
     }
   }
-  
+
   // Create peer connection
   private async createPeerConnection(peerId: string, createOffer: boolean): Promise<RTCPeerConnection> {
     console.log('Creating peer connection for:', peerId, 'createOffer:', createOffer);
-    
+
     const pc = new RTCPeerConnection(this.rtcConfig);
     this.peerConnections.set(peerId, pc);
-    
+
     // Add local stream tracks (camera)
     const localStream = this.localStream();
     if (localStream) {
@@ -543,30 +556,30 @@ export class WebRTCService implements OnDestroy {
         pc.addTrack(track, localStream);
       });
     }
-    
+
     // Add screen share track if currently sharing
     if (this.screenStream) {
       this.screenStream.getTracks().forEach(track => {
         pc.addTrack(track, this.screenStream!);
       });
     }
-    
+
     // Track known stream IDs for this peer
     const knownStreamIds = new Set<string>();
-    
+
     // Handle incoming tracks
     pc.ontrack = (event) => {
       console.log('Received remote track from:', peerId, 'track kind:', event.track.kind);
       const remoteStream = event.streams[0];
-      
+
       if (!remoteStream) return;
-      
+
       // Check if this is a new stream (screen share) or existing (camera)
       const isNewStream = !knownStreamIds.has(remoteStream.id);
-      
+
       if (isNewStream) {
         knownStreamIds.add(remoteStream.id);
-        
+
         // First stream is camera, additional streams are screen share
         if (knownStreamIds.size === 1) {
           // This is the camera stream
@@ -585,11 +598,11 @@ export class WebRTCService implements OnDestroy {
           });
         }
       }
-      
+
       // Update participants list when stream is received
       this.updateParticipantsList();
     };
-    
+
     // Handle ICE candidates
     pc.onicecandidate = (event) => {
       if (event.candidate && this.socket?.connected) {
@@ -600,7 +613,7 @@ export class WebRTCService implements OnDestroy {
         });
       }
     };
-    
+
     // Handle connection state changes
     pc.onconnectionstatechange = () => {
       console.log('Connection state with', peerId, ':', pc.connectionState);
@@ -608,12 +621,12 @@ export class WebRTCService implements OnDestroy {
         this.handlePeerDisconnect(peerId);
       }
     };
-    
+
     // Handle ICE connection state changes
     pc.oniceconnectionstatechange = () => {
       console.log('ICE connection state with', peerId, ':', pc.iceConnectionState);
     };
-    
+
     // Create data channel for messaging
     if (createOffer) {
       const dataChannel = pc.createDataChannel('chat', {
@@ -621,13 +634,13 @@ export class WebRTCService implements OnDestroy {
       });
       this.setupDataChannel(dataChannel, peerId);
     }
-    
+
     // Handle incoming data channels
     pc.ondatachannel = (event) => {
       console.log('Received data channel from:', peerId);
       this.setupDataChannel(event.channel, peerId);
     };
-    
+
     // Create and send offer if we're the initiator
     if (createOffer) {
       try {
@@ -636,7 +649,7 @@ export class WebRTCService implements OnDestroy {
           offerToReceiveVideo: true
         });
         await pc.setLocalDescription(offer);
-        
+
         if (this.socket?.connected) {
           console.log('Sending offer to:', peerId);
           this.socket.emit('offer', {
@@ -648,7 +661,7 @@ export class WebRTCService implements OnDestroy {
         console.error('Error creating offer:', error);
       }
     }
-    
+
     // Apply any pending ICE candidates
     const pendingCandidates = this.pendingCandidates.get(peerId);
     if (pendingCandidates) {
@@ -661,24 +674,24 @@ export class WebRTCService implements OnDestroy {
       }
       this.pendingCandidates.delete(peerId);
     }
-    
+
     return pc;
   }
-  
+
   // Handle incoming offer
   private async handleOffer(senderId: string, offer: RTCSessionDescriptionInit): Promise<void> {
     let pc = this.peerConnections.get(senderId);
-    
+
     if (!pc) {
       pc = await this.createPeerConnection(senderId, false);
     }
-    
+
     try {
       await pc.setRemoteDescription(new RTCSessionDescription(offer));
-      
+
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
-      
+
       if (this.socket?.connected) {
         console.log('Sending answer to:', senderId);
         this.socket.emit('answer', {
@@ -690,27 +703,27 @@ export class WebRTCService implements OnDestroy {
       console.error('Error handling offer:', error);
     }
   }
-  
+
   // Handle incoming answer
   private async handleAnswer(senderId: string, answer: RTCSessionDescriptionInit): Promise<void> {
     const pc = this.peerConnections.get(senderId);
-    
+
     if (!pc) {
       console.error('No peer connection found for:', senderId);
       return;
     }
-    
+
     try {
       await pc.setRemoteDescription(new RTCSessionDescription(answer));
     } catch (error) {
       console.error('Error handling answer:', error);
     }
   }
-  
+
   // Handle incoming ICE candidate
   private async handleIceCandidate(senderId: string, candidate: RTCIceCandidateInit): Promise<void> {
     const pc = this.peerConnections.get(senderId);
-    
+
     if (!pc) {
       // Store candidate for later if peer connection doesn't exist yet
       if (!this.pendingCandidates.has(senderId)) {
@@ -719,73 +732,67 @@ export class WebRTCService implements OnDestroy {
       this.pendingCandidates.get(senderId)!.push(candidate);
       return;
     }
-    
+
     try {
       await pc.addIceCandidate(new RTCIceCandidate(candidate));
     } catch (error) {
       console.error('Error adding ICE candidate:', error);
     }
   }
-  
+
   // Setup data channel for messaging
   private setupDataChannel(channel: RTCDataChannel, peerId: string): void {
     // Set binary type for file transfers
     channel.binaryType = 'arraybuffer';
-    
+
     channel.onopen = () => {
       console.log('Data channel opened with:', peerId);
       this.dataChannels.set(peerId, channel);
     };
-    
+
     channel.onmessage = (event) => {
       // Check if it's binary data (file chunk)
       if (event.data instanceof ArrayBuffer) {
         this.handleFileChunk(peerId, event.data);
         return;
       }
-      
+
       // Try to parse as JSON message
       try {
         const data = JSON.parse(event.data);
-        
-        // Handle file transfer metadata
+
+        // Handle file transfer metadata ONLY
+        // Text messages are handled via Socket.IO to avoid duplicates
         if (data.type === 'file-start') {
           this.handleFileStart(peerId, data);
           return;
         }
-        
+
         if (data.type === 'file-end') {
           this.handleFileEnd(peerId, data);
           return;
         }
-        
-        // Handle regular chat message
-        const message = data as ChatMessage;
-        if (!this.receivedMessageIds.has(message.id)) {
-          this.receivedMessageIds.add(message.id);
-          message.timestamp = new Date(message.timestamp);
-          this.messages.update(msgs => [...msgs, message]);
-          this.messageSubject.next(message);
-        }
+
+        // Ignore other messages - they come from Socket.IO
       } catch (e) {
         console.error('Error parsing message:', e);
       }
     };
-    
+
     channel.onerror = (error) => {
       console.error('Data channel error:', error);
     };
-    
+
     channel.onclose = () => {
       console.log('Data channel closed with:', peerId);
       this.dataChannels.delete(peerId);
     };
   }
-  
+
   // Send chat message
   sendMessage(text: string): void {
     if (!text.trim()) return;
-    
+
     const message: ChatMessage = {
       id: this.generateUserId(),
       sender: this.localUserName,
@@ -794,28 +801,22 @@ export class WebRTCService implements OnDestroy {
       timestamp: new Date(),
       type: 'text'
     };
-    
+
     // Add to local messages
     this.messages.update(msgs => [...msgs, message]);
-    
-    // Send via signaling server (for reliability)
+
+    // Send via signaling server ONLY (to avoid duplicates)
+    // DataChannel is now only used for file transfer
     if (this.socket?.connected && this.roomId()) {
       this.socket.emit('chat-message', {
         roomId: this.roomId(),
         message: text.trim()
       });
     }
-    
-    // Also send via data channels (for low latency when connected)
-    this.dataChannels.forEach(channel => {
-      if (channel.readyState === 'open') {
-        channel.send(JSON.stringify(message));
-      }
-    });
-    
+
     this.messageSubject.next(message);
   }
-  
+
   // Add system message
   private addSystemMessage(text: string): void {
     const message: ChatMessage = {
@@ -827,16 +828,16 @@ export class WebRTCService implements OnDestroy {
     };
     this.messages.update(msgs => [...msgs, message]);
   }
-  
+
   // ==================== FILE TRANSFER ====================
-  
+
   // Send a file to all connected peers
   async sendFile(file: File): Promise<void> {
     if (!file) return;
-    
+
     const fileId = this.generateUserId();
     const totalChunks = Math.ceil(file.size / this.CHUNK_SIZE);
-    
+
     // Create file message
     const fileMessage: ChatMessage = {
       id: fileId,
@@ -853,13 +854,13 @@ export class WebRTCService implements OnDestroy {
         url: URL.createObjectURL(file) // Local file URL
       }
     };
-    
+
     // Add to local messages
     this.messages.update(msgs => [...msgs, fileMessage]);
-    
+
     // Send file via data channels to each peer
     const arrayBuffer = await file.arrayBuffer();
-    
+
     this.dataChannels.forEach((channel, peerId) => {
       if (channel.readyState === 'open') {
         // Send file metadata first
@@ -873,12 +874,12 @@ export class WebRTCService implements OnDestroy {
           senderId: this.localUserId,
           senderName: this.localUserName
         }));
-        
+
         // Send file in chunks
         this.sendFileChunks(channel, fileId, arrayBuffer, totalChunks);
       }
     });
-    
+
     // Also notify via signaling server for users who might not have direct connection
     if (this.socket?.connected && this.roomId()) {
       this.socket.emit('file-shared', {
@@ -889,39 +890,39 @@ export class WebRTCService implements OnDestroy {
         fileType: file.type
       });
     }
-    
+
     this.addSystemMessage(`You shared: ${file.name}`);
   }
-  
+
   // Send file chunks via data channel
   private async sendFileChunks(
-    channel: RTCDataChannel, 
-    fileId: string, 
-    arrayBuffer: ArrayBuffer, 
+    channel: RTCDataChannel,
+    fileId: string,
+    arrayBuffer: ArrayBuffer,
     totalChunks: number
   ): Promise<void> {
     for (let i = 0; i < totalChunks; i++) {
       const start = i * this.CHUNK_SIZE;
       const end = Math.min(start + this.CHUNK_SIZE, arrayBuffer.byteLength);
       const chunk = arrayBuffer.slice(start, end);
-      
+
       // Wait for buffer to be available
       while (channel.bufferedAmount > 65535) {
         await new Promise(resolve => setTimeout(resolve, 10));
       }
-      
+
       if (channel.readyState === 'open') {
         channel.send(chunk);
       }
     }
-    
+
     // Send end signal
     channel.send(JSON.stringify({
       type: 'file-end',
       fileId
     }));
   }
-  
+
   // Handle incoming file start
   private handleFileStart(peerId: string, data: any): void {
     const transfer: FileTransfer = {
@@ -936,9 +937,9 @@ export class WebRTCService implements OnDestroy {
       totalChunks: data.totalChunks,
       status: 'transferring'
     };
-    
+
     this.fileTransfers.set(data.fileId, transfer);
-    
+
     // Add pending file message
     const fileMessage: ChatMessage = {
       id: data.fileId,
@@ -955,33 +956,33 @@ export class WebRTCService implements OnDestroy {
         status: 'transferring'
       }
     };
-    
+
     this.messages.update(msgs => [...msgs, fileMessage]);
   }
-  
+
   // Handle incoming file chunk
   private handleFileChunk(peerId: string, chunk: ArrayBuffer): void {
     // Find the active transfer for this peer
     let activeTransfer: FileTransfer | undefined;
-    
+
     this.fileTransfers.forEach((transfer) => {
       if (transfer.status !== 'completed') {
         activeTransfer = transfer;
       }
     });
-    
+
     if (!activeTransfer) {
       console.warn('Received chunk but no active transfer');
       return;
     }
-    
+
     activeTransfer.chunks.push(chunk);
     activeTransfer.receivedSize += chunk.byteLength;
-    
+
     // Update progress
     const progress = Math.round((activeTransfer.receivedSize / activeTransfer.fileSize) * 100);
-    
-    this.messages.update(msgs => 
+
+    this.messages.update(msgs =>
       msgs.map(msg => {
         if (msg.id === activeTransfer!.id && msg.file) {
           return {
@@ -997,20 +998,20 @@ export class WebRTCService implements OnDestroy {
       })
     );
   }
-  
+
   // Handle file transfer end
   private handleFileEnd(peerId: string, data: any): void {
     const transfer = this.fileTransfers.get(data.fileId);
-    
+
     if (!transfer) {
       console.warn('File end received but no transfer found');
       return;
     }
-    
+
     // Combine all chunks
     const blob = new Blob(transfer.chunks, { type: transfer.fileType });
     const url = URL.createObjectURL(blob);
-    
+
     // Update message with completed status and URL
     this.messages.update(msgs =>
       msgs.map(msg => {
@@ -1028,13 +1029,13 @@ export class WebRTCService implements OnDestroy {
         return msg;
       })
     );
-    
+
     // Cleanup transfer
     this.fileTransfers.delete(data.fileId);
-    
+
     console.log(`File transfer completed: ${transfer.fileName}`);
   }
-  
+
   // Format file size for display
   formatFileSize(bytes: number): string {
     if (bytes === 0) return '0 Bytes';
@@ -1043,7 +1044,7 @@ export class WebRTCService implements OnDestroy {
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   }
-  
+
   // Get file icon based on type
   getFileIcon(fileType: string): string {
     if (fileType.startsWith('image/')) return '🖼️';
@@ -1057,13 +1058,102 @@ export class WebRTCService implements OnDestroy {
     if (fileType.includes('text')) return '📃';
     return '📎';
   }
-  
+
   // ==================== END FILE TRANSFER ====================
-  
+
+  // ==================== TYPING INDICATOR ====================
+
+  // Called when user starts typing
+  startTyping(): void {
+    if (!this.socket?.connected || !this.roomId()) return;
+
+    // Only emit if not already typing
+    if (!this.isCurrentlyTyping) {
+      this.isCurrentlyTyping = true;
+      this.socket.emit('typing', {
+        roomId: this.roomId(),
+        isTyping: true
+      });
+    }
+
+    // Reset the timeout
+    if (this.typingTimeout) {
+      clearTimeout(this.typingTimeout);
+    }
+
+    // Stop typing after 2 seconds of no activity
+    this.typingTimeout = setTimeout(() => {
+      this.stopTyping();
+    }, 2000);
+  }
+
+  // Called when user stops typing
+  stopTyping(): void {
+    if (!this.socket?.connected || !this.roomId()) return;
+
+    if (this.isCurrentlyTyping) {
+      this.isCurrentlyTyping = false;
+      this.socket.emit('typing', {
+        roomId: this.roomId(),
+        isTyping: false
+      });
+    }
+
+    if (this.typingTimeout) {
+      clearTimeout(this.typingTimeout);
+      this.typingTimeout = null;
+    }
+  }
+
+  // Handle remote user typing
+  private handleRemoteTyping(userId: string, userName: string, isTyping: boolean): void {
+    // Clear existing timeout for this user
+    const existingTimeout = this.typingTimeouts.get(userId);
+    if (existingTimeout) {
+      clearTimeout(existingTimeout);
+    }
+
+    if (isTyping) {
+      // Add user to typing list
+      this.typingUsers.update(users => {
+        const newUsers = new Map(users);
+        newUsers.set(userId, userName);
+        return newUsers;
+      });
+
+      // Auto-remove after 3 seconds if no update
+      const timeout = setTimeout(() => {
+        this.typingUsers.update(users => {
+          const newUsers = new Map(users);
+          newUsers.delete(userId);
+          return newUsers;
+        });
+        this.typingTimeouts.delete(userId);
+      }, 3000);
+
+      this.typingTimeouts.set(userId, timeout);
+    } else {
+      // Remove user from typing list
+      this.typingUsers.update(users => {
+        const newUsers = new Map(users);
+        newUsers.delete(userId);
+        return newUsers;
+      });
+      this.typingTimeouts.delete(userId);
+    }
+  }
+
+  // Get typing users as array
+  getTypingUsersArray(): string[] {
+    return Array.from(this.typingUsers().values());
+  }
+
+  // ==================== END TYPING INDICATOR ====================
+
   // Update participants list
   private updateParticipantsList(): void {
     const participantsList: Participant[] = [];
-    
+
     this.remoteStreams().forEach((stream, oderId) => {
       const name = this.participantNames.get(oderId) || 'Unknown';
       participantsList.push({
@@ -1074,7 +1164,7 @@ export class WebRTCService implements OnDestroy {
         audioEnabled: true
       });
     });
-    
+
     // Also add participants without streams yet
     this.participantNames.forEach((name, oderId) => {
       if (!participantsList.find(p => p.id === oderId)) {
@@ -1086,64 +1176,64 @@ export class WebRTCService implements OnDestroy {
         });
       }
     });
-    
+
     this.participants.set(participantsList);
   }
-  
+
   // Get participant name by ID
   getParticipantName(oderId: string): string {
     return this.participantNames.get(oderId) || 'Participant';
   }
-  
+
   // Check if participant's video is enabled
   isParticipantVideoEnabled(oderId: string): boolean {
     const state = this.participantMediaStates.get(oderId);
     return state?.videoEnabled ?? true; // Default to true if unknown
   }
-  
+
   // Check if participant's audio is enabled
   isParticipantAudioEnabled(oderId: string): boolean {
     const state = this.participantMediaStates.get(oderId);
     return state?.audioEnabled ?? true; // Default to true if unknown
   }
-  
+
   // ==================== LIVE CAPTIONS (CC) ====================
-  
+
   // Check if browser supports speech recognition
   isSpeechRecognitionSupported(): boolean {
     return 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
   }
-  
+
   // Start live captions
   startCaptions(language: string = 'vi-VN'): boolean {
     if (!this.isSpeechRecognitionSupported()) {
       this.addSystemMessage('Speech recognition is not supported in this browser. Try Chrome or Edge.');
       return false;
     }
-    
+
     if (this.isRecognitionActive) {
       return true;
     }
-    
+
     try {
       const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
       this.speechRecognition = new SpeechRecognition();
-      
+
       this.speechRecognition.continuous = true;
       this.speechRecognition.interimResults = true;
       this.speechRecognition.lang = language;
       this.speechRecognition.maxAlternatives = 1;
-      
+
       this.speechRecognition.onstart = () => {
         console.log('Speech recognition started');
         this.isRecognitionActive = true;
         this.isCaptionsEnabled.set(true);
       };
-      
+
       this.speechRecognition.onresult = (event: any) => {
         this.handleSpeechResult(event);
       };
-      
+
       this.speechRecognition.onerror = (event: any) => {
         console.error('Speech recognition error:', event.error);
         if (event.error === 'no-speech') {
@@ -1157,7 +1247,7 @@ export class WebRTCService implements OnDestroy {
           this.stopCaptions();
         }
       };
-      
+
       this.speechRecognition.onend = () => {
         console.log('Speech recognition ended');
         // Auto-restart if still enabled
@@ -1165,7 +1255,7 @@ export class WebRTCService implements OnDestroy {
           this.restartRecognition();
         }
       };
-      
+
       this.speechRecognition.start();
       this.addSystemMessage('Live captions enabled');
       return true;
@@ -1175,12 +1265,12 @@ export class WebRTCService implements OnDestroy {
       return false;
     }
   }
-  
+
   // Stop live captions
   stopCaptions(): void {
     this.isRecognitionActive = false;
     this.isCaptionsEnabled.set(false);
-    
+
     if (this.speechRecognition) {
       try {
         this.speechRecognition.stop();
@@ -1189,15 +1279,15 @@ export class WebRTCService implements OnDestroy {
       }
       this.speechRecognition = null;
     }
-    
+
     // Clear current caption after a delay
     setTimeout(() => {
       this.currentCaption.set(null);
     }, 2000);
-    
+
     this.addSystemMessage('Live captions disabled');
   }
-  
+
   // Restart recognition (for continuous listening)
   private restartRecognition(): void {
     if (this.isCaptionsEnabled() && this.speechRecognition) {
@@ -1212,16 +1302,16 @@ export class WebRTCService implements OnDestroy {
       }
     }
   }
-  
+
   // Handle speech recognition results
   private handleSpeechResult(event: any): void {
     const results = event.results;
     const latestResult = results[results.length - 1];
     const transcript = latestResult[0].transcript.trim();
     const isFinal = latestResult.isFinal;
-    
+
     if (!transcript) return;
-    
+
     const caption: Caption = {
       id: this.generateUserId(),
       speakerId: this.localUserId,
@@ -1230,10 +1320,10 @@ export class WebRTCService implements OnDestroy {
       timestamp: new Date(),
       isFinal
     };
-    
+
     // Update current caption (for display)
     this.currentCaption.set(caption);
-    
+
     // If final, add to captions history
     if (isFinal) {
       this.captions.update(caps => {
@@ -1241,12 +1331,12 @@ export class WebRTCService implements OnDestroy {
         // Keep only last 50 captions
         return newCaps.slice(-50);
       });
-      
+
       // Share caption with other participants via signaling server
       this.broadcastCaption(caption);
     }
   }
-  
+
   // Broadcast caption to other participants
   private broadcastCaption(caption: Caption): void {
     if (this.socket?.connected && this.roomId()) {
@@ -1256,25 +1346,25 @@ export class WebRTCService implements OnDestroy {
       });
     }
   }
-  
+
   // Handle caption received from remote participant
   private handleRemoteCaption(caption: Caption): void {
     // Get speaker name from our records if available
     const speakerName = this.participantNames.get(caption.speakerId) || caption.speakerName;
-    
+
     const remoteCaption: Caption = {
       ...caption,
       speakerName,
       timestamp: new Date(caption.timestamp)
     };
-    
+
     // Add to captions history
     this.captions.update(caps => {
       const newCaps = [...caps, remoteCaption];
       return newCaps.slice(-50);
     });
   }
-  
+
   // Toggle captions on/off
   toggleCaptions(language: string = 'vi-VN'): void {
     if (this.isCaptionsEnabled()) {
@@ -1283,9 +1373,9 @@ export class WebRTCService implements OnDestroy {
       this.startCaptions(language);
     }
   }
-  
+
   // ==================== END LIVE CAPTIONS ====================
-  
+
   // Handle peer disconnection
   private handlePeerDisconnect(peerId: string): void {
     const pc = this.peerConnections.get(peerId);
@@ -1293,35 +1383,35 @@ export class WebRTCService implements OnDestroy {
       pc.close();
       this.peerConnections.delete(peerId);
     }
-    
+
     this.dataChannels.delete(peerId);
     this.pendingCandidates.delete(peerId);
     this.participantMediaStates.delete(peerId);
-    
+
     this.remoteStreams.update(streams => {
       const newStreams = new Map(streams);
       newStreams.delete(peerId);
       return newStreams;
     });
-    
+
     // Remove screen share from this peer
     this.remoteScreenShares.update(shares => {
       const newShares = new Map(shares);
       newShares.delete(peerId);
       return newShares;
     });
-    
+
     // Update participants list
     this.updateParticipantsList();
   }
-  
+
   // Leave room and cleanup
   leaveRoom(): void {
     // Notify server
     if (this.socket?.connected) {
       this.socket.emit('leave-room');
     }
-    
+
     // Close all peer connections
     this.peerConnections.forEach((pc) => {
       pc.close();
@@ -1329,31 +1419,31 @@ export class WebRTCService implements OnDestroy {
     this.peerConnections.clear();
     this.dataChannels.clear();
     this.pendingCandidates.clear();
-    
+
     // Stop local stream
     const localStream = this.localStream();
     if (localStream) {
       localStream.getTracks().forEach(track => track.stop());
     }
     this.localStream.set(null);
-    
+
     // Stop screen share
     if (this.screenStream) {
       this.screenStream.getTracks().forEach(track => track.stop());
       this.screenStream = null;
     }
-    
+
     // Clear remote streams
     this.remoteStreams.set(new Map());
-    
+
     // Clear screen share state
     this.localScreenStream.set(null);
     this.remoteScreenShares.set(new Map());
     this.screenSharerName.set(null);
-    
+
     // Stop captions
     this.stopCaptions();
-    
+
     // Reset state
     this.connectionStatus.set('disconnected');
     this.roomId.set('');
@@ -1366,11 +1456,11 @@ export class WebRTCService implements OnDestroy {
     this.captions.set([]);
     this.currentCaption.set(null);
   }
-  
+
   // Cleanup on service destroy
   cleanup(): void {
     this.leaveRoom();
-    
+
     // Disconnect socket
     if (this.socket) {
       this.socket.disconnect();
