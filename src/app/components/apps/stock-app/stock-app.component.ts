@@ -687,6 +687,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
   /**
    * Load symbols from internal API with pagination (api/stocks-v2/list)
    * DNSE API is only called on days 10-20 of the month to sync new stocks
+   * Server-side API will fallback to JSON files if database fails
    */
   loadSymbols() {
     this.isLoading.set(true);
@@ -699,7 +700,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     const keyword = this.searchQuery();
 
-    // Load from internal API with pagination
+    // Load from internal API with pagination (server will fallback to JSON if DB fails)
     this.dnseService.getStocksPaginated({
       keyword,
       limit: this.PAGE_SIZE,
@@ -2881,7 +2882,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   /**
-   * View stock detail - load from API
+   * View stock detail - load from API (with server-side JSON fallback)
    */
   viewStockDetail(symbol: SymbolWithStatus) {
     this.selectedSymbol.set(symbol);
@@ -2906,7 +2907,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     // Check if model exists in database for this symbol
     this.checkModelExists();
 
-    // Load stock data from API
+    // Load stock data from API (server will fallback to JSON if database fails)
     this.dnseService.getStockDataFromAPI(symbol.symbol).subscribe({
       next: (data) => {
         this.selectedSymbolData.set(data as any);
