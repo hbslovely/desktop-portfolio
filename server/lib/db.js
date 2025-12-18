@@ -44,12 +44,14 @@ export async function testConnection() {
  * @param {number} options.limit - Number of records to return (default: 100)
  * @param {number} options.offset - Number of records to skip (default: 0)
  * @param {string} options.keyword - Search keyword for symbol or company name
+ * @param {string} options.symbolType - 'all' | 'stocks' - Filter by symbol type (stocks = 3-char symbols only)
  */
 export async function getAllStocks(options = {}) {
   const {
     limit = 100,
     offset = 0,
-    keyword = ''
+    keyword = '',
+    symbolType = 'all'
   } = options;
 
   try {
@@ -58,10 +60,38 @@ export async function getAllStocks(options = {}) {
     let result;
     let totalResult;
 
-    if (keyword && keyword.trim()) {
-      const searchPattern = `%${keyword.trim().toUpperCase()}%`;
+    // Build conditions based on filters
+    const isStocksOnly = symbolType === 'stocks';
+    const hasKeyword = keyword && keyword.trim();
+    const searchPattern = hasKeyword ? `%${keyword.trim().toUpperCase()}%` : '';
 
-      // Get total count for pagination
+    if (hasKeyword && isStocksOnly) {
+      // Both keyword and stocks-only filter
+      totalResult = await sql`
+        SELECT COUNT(*) as total
+        FROM stocks
+        WHERE LENGTH(symbol) = 3
+          AND (UPPER(symbol) LIKE ${searchPattern}
+           OR UPPER(COALESCE(basic_info ->>'companyName', '')) LIKE ${searchPattern}
+           OR UPPER(COALESCE(basic_info ->>'shortName', '')) LIKE ${searchPattern})
+      `;
+
+      result = await sql`
+        SELECT symbol,
+               basic_info,
+               full_data,
+               updated_at
+        FROM stocks
+        WHERE LENGTH(symbol) = 3
+          AND (UPPER(symbol) LIKE ${searchPattern}
+           OR UPPER(COALESCE(basic_info ->>'companyName', '')) LIKE ${searchPattern}
+           OR UPPER(COALESCE(basic_info ->>'shortName', '')) LIKE ${searchPattern})
+        ORDER BY symbol ASC
+        LIMIT ${limit}
+        OFFSET ${offset}
+      `;
+    } else if (hasKeyword) {
+      // Keyword only
       totalResult = await sql`
         SELECT COUNT(*) as total
         FROM stocks
@@ -70,7 +100,6 @@ export async function getAllStocks(options = {}) {
            OR UPPER(COALESCE(basic_info ->>'shortName', '')) LIKE ${searchPattern}
       `;
 
-      // Get paginated results with keyword search
       result = await sql`
         SELECT symbol,
                basic_info,
@@ -81,17 +110,35 @@ export async function getAllStocks(options = {}) {
            OR UPPER(COALESCE(basic_info ->>'companyName', '')) LIKE ${searchPattern}
            OR UPPER(COALESCE(basic_info ->>'shortName', '')) LIKE ${searchPattern}
         ORDER BY symbol ASC
-          LIMIT ${limit}
+        LIMIT ${limit}
+        OFFSET ${offset}
+      `;
+    } else if (isStocksOnly) {
+      // Stocks-only filter (no keyword)
+      totalResult = await sql`
+        SELECT COUNT(*) as total
+        FROM stocks
+        WHERE LENGTH(symbol) = 3
+      `;
+
+      result = await sql`
+        SELECT symbol,
+               basic_info,
+               full_data,
+               updated_at
+        FROM stocks
+        WHERE LENGTH(symbol) = 3
+        ORDER BY symbol ASC
+        LIMIT ${limit}
         OFFSET ${offset}
       `;
     } else {
-      // Get total count for pagination
+      // No filters
       totalResult = await sql`
         SELECT COUNT(*) as total
         FROM stocks
       `;
 
-      // Get all stocks without keyword filter
       result = await sql`
         SELECT symbol,
                basic_info,
@@ -99,7 +146,7 @@ export async function getAllStocks(options = {}) {
                updated_at
         FROM stocks
         ORDER BY symbol ASC
-          LIMIT ${limit}
+        LIMIT ${limit}
         OFFSET ${offset}
       `;
     }

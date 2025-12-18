@@ -7,9 +7,11 @@
  * - keyword: Search by symbol or company name (optional)
  * - limit: Number of records to return (default: 100, max: 500)
  * - offset: Number of records to skip for pagination (default: 0)
+ * - symbolType: 'all' | 'stocks' - Filter by symbol type (stocks = 3-char symbols only)
  *
  * Example:
  * GET /api/stocks-v2/list?keyword=VNM&limit=20&offset=0
+ * GET /api/stocks-v2/list?symbolType=stocks&limit=50&offset=0
  */
 
 import { getAllStocks } from '../../lib/db.js';
@@ -42,14 +44,26 @@ function parseQueryParams(query) {
     offset = 0;
   }
 
-  return { keyword, limit, offset };
+  // symbolType: 'all' or 'stocks' (3-char symbols only)
+  const symbolType = query.symbolType === 'stocks' ? 'stocks' : 'all';
+
+  return { keyword, limit, offset, symbolType };
+}
+
+/**
+ * Check if symbol is a stock (3-char symbol)
+ * In Vietnam stock market, actual stock codes have exactly 3 characters
+ * Other securities like ETFs, warrants, bonds have different lengths
+ */
+function isStockSymbol(symbol) {
+  return symbol && symbol.length === 3;
 }
 
 /**
  * Load stocks from JSON files as fallback
  * Path: api/stocks-v2/list.js -> ../../data/stocks/
  */
-async function loadFromJsonFiles(keyword, limit, offset) {
+async function loadFromJsonFiles(keyword, limit, offset, symbolType = 'all') {
   try {
     // Use __dirname for correct path on Vercel (relative to this file)
     // This file is at: api/stocks-v2/list.js
@@ -72,12 +86,16 @@ async function loadFromJsonFiles(keyword, limit, offset) {
           symbol: data.symbol || file.replace('.json', ''),
           basicInfo: data.basicInfo || {},
           fullData: data.fullData || {},
-          priceData: data.priceData || {},
           updatedAt: data.updatedAt || null
         });
       } catch (err) {
         console.warn(`[stocks-v2/list.js] Error reading ${file}:`, err.message);
       }
+    }
+
+    // Filter by symbolType (stocks = 3-char symbols only)
+    if (symbolType === 'stocks') {
+      stocks = stocks.filter(stock => isStockSymbol(stock.symbol));
     }
 
     // Filter by keyword if provided
@@ -136,11 +154,12 @@ export default async function handler(req, res) {
 
   try {
     // Parse query parameters
-    const { keyword, limit, offset } = parseQueryParams(req.query || {});
+    const { keyword, limit, offset, symbolType } = parseQueryParams(req.query || {});
 
-    console.log('[stocks-v2/list.js] API requested with params:', { keyword, limit, offset });
+    console.log('[stocks-v2/list.js] API requested with params:', { keyword, limit, offset, symbolType });
 
-    const result = await getAllStocks({ keyword, limit, offset });
+    // Pass symbolType to database query for proper filtering at DB level
+    const result = await getAllStocks({ keyword, limit, offset, symbolType });
 
     if (result.success) {
       // Transform data to expected format (same as detail API)
@@ -167,6 +186,7 @@ export default async function handler(req, res) {
       console.log('[stocks-v2/list.js] Result from database:', {
         success: result.success,
         stocksCount: stocks.length,
+        symbolType,
         pagination: result.pagination
       });
 
@@ -175,18 +195,19 @@ export default async function handler(req, res) {
         stocks: stocks,
         count: stocks.length,
         pagination: result.pagination,
-        query: { keyword, limit, offset },
+        query: { keyword, limit, offset, symbolType },
         source: 'database'
       });
     }
 
     // Database failed, try JSON files fallback
     console.log('[stocks-v2/list.js] Database query failed, trying JSON files fallback...');
-    const jsonResult = await loadFromJsonFiles(keyword, limit, offset);
+    const jsonResult = await loadFromJsonFiles(keyword, limit, offset, symbolType);
 
     if (jsonResult.success) {
       console.log('[stocks-v2/list.js] Loaded from JSON files:', {
         stocksCount: jsonResult.stocks.length,
+        symbolType,
         pagination: jsonResult.pagination
       });
 
@@ -195,7 +216,7 @@ export default async function handler(req, res) {
         stocks: jsonResult.stocks,
         count: jsonResult.stocks.length,
         pagination: jsonResult.pagination,
-        query: { keyword, limit, offset },
+        query: { keyword, limit, offset, symbolType },
         source: 'json_files'
       });
     }
@@ -212,8 +233,8 @@ export default async function handler(req, res) {
     console.error('[stocks-v2/list.js] Unhandled error:', error);
 
     // Try JSON fallback on error
-    const { keyword, limit, offset } = parseQueryParams(req.query || {});
-    const jsonResult = await loadFromJsonFiles(keyword, limit, offset);
+    const { keyword, limit, offset, symbolType } = parseQueryParams(req.query || {});
+    const jsonResult = await loadFromJsonFiles(keyword, limit, offset, symbolType);
 
     if (jsonResult.success) {
       console.log('[stocks-v2/list.js] Error recovery: Loaded from JSON files');
@@ -222,7 +243,7 @@ export default async function handler(req, res) {
         stocks: jsonResult.stocks,
         count: jsonResult.stocks.length,
         pagination: jsonResult.pagination,
-        query: { keyword, limit, offset },
+        query: { keyword, limit, offset, symbolType },
         source: 'json_files_fallback'
       });
     }

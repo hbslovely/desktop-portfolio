@@ -341,18 +341,20 @@ export class DnseService {
    * @param options.keyword - Search keyword (symbol or company name)
    * @param options.limit - Number of records per page (default: 50)
    * @param options.offset - Number of records to skip (default: 0)
+   * @param options.symbolType - 'all' | 'stocks' - Filter by symbol type (stocks = 3-char symbols)
    */
-  getStocksPaginated(options: { keyword?: string; limit?: number; offset?: number } = {}): Observable<{
+  getStocksPaginated(options: { keyword?: string; limit?: number; offset?: number; symbolType?: 'all' | 'stocks' } = {}): Observable<{
     stocks: any[];
     pagination: { total: number; limit: number; offset: number; hasMore: boolean } | null;
     query: { keyword: string; limit: number; offset: number };
   }> {
-    const { keyword = '', limit = 50, offset = 0 } = options;
+    const { keyword = '', limit = 50, offset = 0, symbolType = 'all' } = options;
 
     const params = new URLSearchParams();
     if (keyword) params.set('keyword', keyword);
     params.set('limit', limit.toString());
     params.set('offset', offset.toString());
+    if (symbolType !== 'all') params.set('symbolType', symbolType);
 
     const url = `/api/stocks-v2/list?${params.toString()}`;
 

@@ -1,5 +1,10 @@
 /* You can add global styles to this file, and also import other style files */
 
+// Professional number fonts - JetBrains Mono & Roboto Mono
+// JetBrains Mono: Clear distinction between 0/O, 1/l/I - ideal for financial data
+// Roboto Mono: Clean, professional fallback
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Roboto+Mono:wght@400;500;600;700&display=swap');
+
 // PrimeNG Theme - will be configured later
 // @import '../node_modules/primeng/resources/themes/saga-blue/theme.css';
 // @import '../node_modules/primeng/resources/primeng.css';
