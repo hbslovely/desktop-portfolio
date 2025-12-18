@@ -75,6 +75,13 @@
           <i class="pi pi-plus"></i>
           <span>Thêm chi tiêu mới</span>
         </button>
+        <button
+          class="screen-toggle-header-btn"
+          (click)="switchScreen(currentScreen() === 'transactions' ? 'insights' : 'transactions')"
+          [title]="currentScreen() === 'transactions' ? 'Xem phân tích' : 'Xem giao dịch'">
+          <i class="pi" [ngClass]="currentScreen() === 'transactions' ? 'pi-chart-pie' : 'pi-list'"></i>
+          <span>{{ currentScreen() === 'transactions' ? 'Xem phân tích' : 'Xem giao dịch' }}</span>
+        </button>
         <button (click)="showMetricDialog.set(true)" class="metric-header-btn" title="Xem số liệu"
                 *ngIf="currentLayout() === 'v2'">
           <i class="pi pi-chart-line"></i>
@@ -85,14 +92,9 @@
           <i class="pi pi-filter"></i>
           <span class="filter-badge" *ngIf="getActiveFilterCount() > 0">{{ getActiveFilterCount() }}</span>
         </button>
-        <button (click)="showSettingsDialog()" class="settings-btn" title="Cài đặt">
-          <i class="pi pi-cog"></i>
-        </button>
-        <button (click)="loadExpenses()" class="refresh-btn" [class.loading]="isLoading()" title="Làm mới">
+        <button (click)="loadExpenses()" class="refresh-header-btn" [class.loading]="isLoading()" title="Làm mới dữ liệu">
           <i class="pi pi-refresh"></i>
-        </button>
-        <button (click)="logout()" class="logout-btn" title="Đăng xuất">
-          <i class="pi pi-sign-out"></i>
+          <span>Làm mới</span>
         </button>
       </div>
     </div>
@@ -124,24 +126,6 @@
           </button>
         </div>
       </div>
-    </div>
-
-    <!-- Screen Navigation -->
-    <div class="screen-navigation">
-      <button
-        (click)="switchScreen('transactions')"
-        class="screen-btn"
-        [class.active]="currentScreen() === 'transactions'">
-        <i class="pi pi-list"></i>
-        <span>Giao dịch</span>
-      </button>
-      <button
-        (click)="switchScreen('insights')"
-        class="screen-btn"
-        [class.active]="currentScreen() === 'insights'">
-        <i class="pi pi-chart-pie"></i>
-        <span>Phân tích</span>
-      </button>
     </div>
 
     <!-- ========== TRANSACTIONS SCREEN ========== -->
@@ -319,15 +303,13 @@
             <div class="toolbar-right">
               <div class="sort-dropdown-v3">
                 <span class="sort-label">Sắp xếp:</span>
-                <button class="sort-btn-v3" [class.active]="sortField() === 'date'" (click)="sortBy('date')">
-                  <i class="pi" [ngClass]="getSortIcon('date')"></i> Ngày
-                </button>
-                <button class="sort-btn-v3" [class.active]="sortField() === 'amount'" (click)="sortBy('amount')">
-                  <i class="pi" [ngClass]="getSortIcon('amount')"></i> Tiền
-                </button>
-                <button class="sort-btn-v3" [class.active]="sortField() === 'category'" (click)="sortBy('category')">
-                  <i class="pi" [ngClass]="getSortIcon('category')"></i> Loại
-                </button>
+                <select class="sort-select"
+                        [value]="sortOption()"
+                        (change)="onSortOptionChange($any($event.target).value)">
+                  @for (option of sortOptions; track option.value) {
+                    <option [value]="option.value">{{ option.label }}</option>
+                  }
+                </select>
               </div>
             </div>
           </div>

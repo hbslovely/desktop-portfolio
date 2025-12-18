@@ -418,23 +418,30 @@
         }
       }
 
-      .settings-btn,
-      .refresh-btn,
-      .logout-btn {
-        background: #f5f5f5;
+      .refresh-header-btn {
+        background: linear-gradient(135deg, #43A047 0%, #388E3C 100%);
+        color: #ffffff;
         border: none;
-        border-radius: 6px;
-        padding: 6px 12px;
+        border-radius: 8px;
+        padding: 8px 14px;
         cursor: pointer;
         display: flex;
         align-items: center;
         gap: 6px;
-        font-size: 13px;
-        color: #212121;
-        transition: background 0.2s;
+        font-size: 12px;
+        font-weight: 500;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 6px rgba(67, 160, 71, 0.3);
 
         &:hover {
-          background: #eeeeee;
+          background: linear-gradient(135deg, #388E3C 0%, #2E7D32 100%);
+          box-shadow: 0 3px 10px rgba(67, 160, 71, 0.4);
+          transform: translateY(-1px);
+        }
+
+        &:active {
+          transform: translateY(0);
+          box-shadow: 0 2px 4px rgba(67, 160, 71, 0.3);
         }
 
         &.loading i {
@@ -442,7 +449,11 @@
         }
 
         i {
-          font-size: 14px;
+          font-size: 13px;
+        }
+
+        span {
+          white-space: nowrap;
         }
       }
 
@@ -5148,44 +5159,39 @@
     }
   }
 
-  // Screen Navigation - Compact toggle between Transactions and Insights
-  .screen-navigation {
+  // Screen Toggle Button in Header - Different color from Add Expense button
+  .screen-toggle-header-btn {
     display: flex;
-    gap: 2px;
-    padding: 6px 16px;
-    background: #f5f5f5;
-    border-bottom: 1px solid #e8e8e8;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    background: linear-gradient(135deg, #7C4DFF 0%, #651FFF 100%);
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    color: #ffffff;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 6px rgba(124, 77, 255, 0.3);
 
-    .screen-btn {
-      flex: 1;
-      background: transparent;
-      border: none;
-      border-radius: 6px;
-      padding: 6px 12px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      font-size: 12px;
-      font-weight: 500;
-      color: #757575;
-      transition: all 0.15s ease;
+    i {
+      font-size: 13px;
+    }
 
-      i {
-        font-size: 13px;
-      }
+    span {
+      white-space: nowrap;
+    }
 
-      &:hover {
-        background: #e8e8e8;
-        color: #424242;
-      }
+    &:hover {
+      background: linear-gradient(135deg, #651FFF 0%, #536DFE 100%);
+      box-shadow: 0 3px 10px rgba(124, 77, 255, 0.4);
+      transform: translateY(-1px);
+    }
 
-      &.active {
-        background: #2196F3;
-        color: #ffffff;
-        box-shadow: 0 1px 3px rgba(33, 150, 243, 0.3);
-      }
+    &:active {
+      transform: translateY(0);
+      box-shadow: 0 2px 4px rgba(124, 77, 255, 0.3);
     }
   }
 
@@ -5952,14 +5958,27 @@
           }
         }
 
-        .settings-btn,
-        .refresh-btn,
-        .logout-btn {
-          background: rgba(255, 255, 255, 0.15);
+        .screen-toggle-header-btn {
+          background: rgba(255, 255, 255, 0.2);
           color: #ffffff;
+          box-shadow: none;
+          border: 1px solid rgba(255, 255, 255, 0.3);
 
           &:hover {
-            background: rgba(255, 255, 255, 0.25);
+            background: rgba(255, 255, 255, 0.3);
+            box-shadow: none;
+          }
+        }
+
+        .refresh-header-btn {
+          background: rgba(255, 255, 255, 0.2);
+          color: #ffffff;
+          box-shadow: none;
+          border: 1px solid rgba(255, 255, 255, 0.3);
+
+          &:hover {
+            background: rgba(255, 255, 255, 0.3);
+            box-shadow: none;
           }
         }
       }
@@ -11834,6 +11853,38 @@
         font-size: 11px;
         color: #94a3b8;
         margin-right: 4px;
+      }
+
+      .sort-select {
+        padding: 5px 24px 5px 10px;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        font-size: 11px;
+        background: white;
+        color: #374151;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 8px center;
+        min-width: 140px;
+
+        &:hover {
+          border-color: #0ea5e9;
+        }
+
+        &:focus {
+          outline: none;
+          border-color: #0ea5e9;
+          box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.1);
+        }
+
+        option {
+          padding: 8px 12px;
+        }
       }
 
       .sort-btn-v3 {
