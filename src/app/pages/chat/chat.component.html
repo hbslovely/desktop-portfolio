@@ -107,9 +107,88 @@
         </div>
         
         <!-- Video Grid -->
-        <div class="video-grid">
-          <!-- Local Video -->
-          <div class="video-wrapper local">
+        <div class="video-grid" [class.has-screen-share]="localScreenStream() || remoteScreenShares().size > 0">
+          
+          <!-- Screen Share Videos (shown prominently) -->
+          @if (localScreenStream()) {
+            <div class="video-wrapper screen-share featured" [class.fullscreen-video]="fullscreenVideoId() === 'local-screen'">
+              <video 
+                autoplay 
+                muted 
+                playsinline
+                [srcObject]="localScreenStream()"
+                (dblclick)="toggleVideoFullscreen('local-screen')"
+              ></video>
+              <div class="video-label screen-share-label">
+                <div class="share-indicator">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+                    <line x1="8" y1="21" x2="16" y2="21"/>
+                    <line x1="12" y1="17" x2="12" y2="21"/>
+                  </svg>
+                  <span>You are sharing your screen</span>
+                </div>
+                <div class="video-controls">
+                  <button class="video-control-btn stop-share" (click)="toggleScreenShare()" title="Stop sharing">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <line x1="18" y1="6" x2="6" y2="18"/>
+                      <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                    Stop
+                  </button>
+                  <button class="video-control-btn" (click)="toggleVideoFullscreen('local-screen')" title="Fullscreen">
+                    @if (fullscreenVideoId() === 'local-screen') {
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/>
+                      </svg>
+                    } @else {
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+                      </svg>
+                    }
+                  </button>
+                </div>
+              </div>
+            </div>
+          }
+          
+          <!-- Remote Screen Shares -->
+          @for (entry of remoteScreenShares() | keyvalue; track entry.key) {
+            <div class="video-wrapper screen-share featured" [class.fullscreen-video]="fullscreenVideoId() === 'screen-' + entry.key">
+              <video 
+                autoplay 
+                playsinline
+                [srcObject]="entry.value"
+                (dblclick)="toggleVideoFullscreen('screen-' + entry.key)"
+              ></video>
+              <div class="video-label screen-share-label">
+                <div class="share-indicator">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+                    <line x1="8" y1="21" x2="16" y2="21"/>
+                    <line x1="12" y1="17" x2="12" y2="21"/>
+                  </svg>
+                  <span>{{ getParticipantName(entry.key) }} is sharing their screen</span>
+                </div>
+                <div class="video-controls">
+                  <button class="video-control-btn" (click)="toggleVideoFullscreen('screen-' + entry.key)" title="Fullscreen">
+                    @if (fullscreenVideoId() === 'screen-' + entry.key) {
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/>
+                      </svg>
+                    } @else {
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+                      </svg>
+                    }
+                  </button>
+                </div>
+              </div>
+            </div>
+          }
+          
+          <!-- Local Video (Camera) -->
+          <div class="video-wrapper local" [class.small-pip]="localScreenStream() || remoteScreenShares().size > 0">
             <video 
               #localVideo 
               autoplay 
@@ -139,17 +218,61 @@
             </div>
           </div>
           
-          <!-- Remote Videos -->
+          <!-- Remote Videos (Cameras) -->
           @for (entry of remoteStreams() | keyvalue; track entry.key) {
-            <div class="video-wrapper remote">
+            <div class="video-wrapper remote" [class.fullscreen-video]="fullscreenVideoId() === entry.key">
               <video 
                 #remoteVideo 
                 autoplay 
                 playsinline
                 [srcObject]="entry.value"
+                [class.video-off]="!isParticipantVideoEnabled(entry.key)"
+                (dblclick)="toggleVideoFullscreen(entry.key)"
               ></video>
+              
+              <!-- Avatar when video is off (like MS Teams) -->
+              @if (!isParticipantVideoEnabled(entry.key)) {
+                <div class="video-placeholder">
+                  <div class="avatar">{{ getAvatarLetter(getParticipantName(entry.key)) }}</div>
+                  <span>{{ getParticipantName(entry.key) }}</span>
+                </div>
+              }
+              
               <div class="video-label">
-                <span class="name">Participant</span>
+                <span class="name">{{ getParticipantName(entry.key) }}</span>
+                <div class="status-icons">
+                  @if (!isParticipantAudioEnabled(entry.key)) {
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="muted">
+                      <line x1="1" y1="1" x2="23" y2="23"/>
+                      <path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/>
+                      <path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"/>
+                      <line x1="12" y1="19" x2="12" y2="23"/>
+                      <line x1="8" y1="23" x2="16" y2="23"/>
+                    </svg>
+                  }
+                  @if (!isParticipantVideoEnabled(entry.key)) {
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="video-off-icon">
+                      <path d="M16.5 17.5L1 1"/>
+                      <path d="M22 8l-5 3 5 3v-6z"/>
+                      <path d="M21.3 12.8A4 4 0 0 1 21 14v2a2 2 0 0 1-2 2H7"/>
+                      <path d="M7.8 4H19a2 2 0 0 1 2 2v.5"/>
+                      <path d="M3 3l18 18"/>
+                    </svg>
+                  }
+                </div>
+                <div class="video-controls">
+                  <button class="video-control-btn" (click)="toggleVideoFullscreen(entry.key)" title="Fullscreen">
+                    @if (fullscreenVideoId() === entry.key) {
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/>
+                      </svg>
+                    } @else {
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+                      </svg>
+                    }
+                  </button>
+                </div>
               </div>
             </div>
           }
@@ -170,6 +293,28 @@
             </div>
           }
         </div>
+        
+        <!-- Live Captions Overlay -->
+        @if (isCaptionsEnabled()) {
+          <div class="captions-container">
+            @if (currentCaption()) {
+              <div class="caption-bubble" [class.final]="currentCaption()!.isFinal">
+                <span class="caption-speaker">{{ currentCaption()!.speakerName }}:</span>
+                <span class="caption-text">{{ currentCaption()!.text }}</span>
+              </div>
+            }
+            
+            <!-- Recent captions history -->
+            <div class="captions-history">
+              @for (caption of captions().slice(-3); track caption.id) {
+                <div class="caption-history-item">
+                  <span class="speaker">{{ caption.speakerName }}:</span>
+                  <span class="text">{{ caption.text }}</span>
+                </div>
+              }
+            </div>
+          </div>
+        }
         
         <!-- Control Bar -->
         <div class="control-bar">
@@ -231,6 +376,50 @@
               <line x1="12" y1="17" x2="12" y2="21"/>
             </svg>
           </button>
+          
+          <!-- Live Captions (CC) Button -->
+          <div class="caption-control">
+            <button 
+              class="control-btn cc-btn"
+              [class.active]="isCaptionsEnabled()"
+              [class.unsupported]="!isSpeechRecognitionSupported()"
+              (click)="toggleCaptions()"
+              [title]="isCaptionsEnabled() ? 'Turn off captions' : 'Turn on captions (CC)'"
+              [disabled]="!isSpeechRecognitionSupported()"
+            >
+              <span class="cc-text">CC</span>
+            </button>
+            <button 
+              class="lang-btn"
+              (click)="toggleLanguageMenu()"
+              [title]="'Language: ' + getCurrentLanguageName()"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+            </button>
+            
+            <!-- Language Menu -->
+            @if (showLanguageMenu()) {
+              <div class="language-menu">
+                <div class="language-menu-header">Caption Language</div>
+                @for (lang of languages; track lang.code) {
+                  <button 
+                    class="language-option"
+                    [class.active]="captionLanguage() === lang.code"
+                    (click)="setCaptionLanguage(lang.code)"
+                  >
+                    {{ lang.name }}
+                    @if (captionLanguage() === lang.code) {
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                    }
+                  </button>
+                }
+              </div>
+            }
+          </div>
           
           <button 
             class="control-btn"
@@ -296,7 +485,48 @@
                     </svg>
                     {{ message.text }}
                   </div>
+                } @else if (message.type === 'file' && message.file) {
+                  <!-- File Message -->
+                  <div class="message-bubble file-message">
+                    @if (!isOwnMessage(message)) {
+                      <span class="sender">{{ message.sender }}</span>
+                    }
+                    
+                    <div class="file-content">
+                      <!-- Image Preview -->
+                      @if (isImageFile(message.file) && message.file.url && message.file.status === 'completed') {
+                        <div class="file-image-preview">
+                          <img [src]="message.file.url" [alt]="message.file.name" (click)="downloadFile(message.file)" />
+                        </div>
+                      }
+                      
+                      <div class="file-info" (click)="message.file.status === 'completed' && downloadFile(message.file)">
+                        <div class="file-icon">{{ getFileIcon(message.file.type) }}</div>
+                        <div class="file-details">
+                          <span class="file-name">{{ message.file.name }}</span>
+                          <span class="file-size">{{ formatFileSize(message.file.size) }}</span>
+                        </div>
+                        
+                        @if (message.file.status === 'transferring') {
+                          <div class="file-progress">
+                            <div class="progress-bar" [style.width.%]="message.file.progress || 0"></div>
+                          </div>
+                        } @else if (message.file.status === 'completed') {
+                          <button class="download-btn" title="Download">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                              <polyline points="7 10 12 15 17 10"/>
+                              <line x1="12" y1="15" x2="12" y2="3"/>
+                            </svg>
+                          </button>
+                        }
+                      </div>
+                    </div>
+                    
+                    <span class="time">{{ formatTime(message.timestamp) }}</span>
+                  </div>
                 } @else {
+                  <!-- Regular Text Message -->
                   <div class="message-bubble">
                     @if (!isOwnMessage(message)) {
                       <span class="sender">{{ message.sender }}</span>
@@ -319,13 +549,18 @@
             }
           </div>
           
-          <div class="chat-input">
+          <div class="chat-input" (dragover)="onDragOver($event)" (drop)="onFileDrop($event)">
+            <button class="attach-btn" (click)="triggerFileInput()" title="Attach file">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+              </svg>
+            </button>
             <input 
               type="text"
               [value]="messageInput()"
               (input)="updateMessage($any($event.target).value)"
               (keydown)="onMessageKeydown($event)"
-              placeholder="Type a message..."
+              placeholder="Type a message or drop file..."
               autocomplete="off"
             />
             <button class="send-btn" (click)="sendMessage()" [disabled]="!messageInput().trim()">

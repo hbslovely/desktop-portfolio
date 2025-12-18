@@ -1691,7 +1691,7 @@
                       <span>Lãi/Lỗ:</span>
                       <span [ngClass]="position.profit >= 0 ? 'positive' : 'negative'">
                         {{ formatCurrency(position.profit) }}
-                        ({{ (position.profitPercent ?? 0) >= 0 ? '+' : '' }}{{ (position.profitPercent ?? 0).toFixed(2) }}%)
+                        ({{ position.profitPercent >= 0 ? '+' : '' }}{{ position.profitPercent.toFixed(2) }}%)
                       </span>
                     </div>
                     <div class="detail-row" *ngIf="position.status === 'holding' && position.currentPrice && position.buyPrice">

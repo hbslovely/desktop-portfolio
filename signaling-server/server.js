@@ -236,6 +236,58 @@ io.on('connection', (socket) => {
       screenShare
     });
   });
+
+  // Handle live captions
+  socket.on('caption', ({ roomId, caption }) => {
+    const user = users.get(socket.id);
+    
+    if (!user || user.roomId !== roomId) {
+      return;
+    }
+    
+    // Broadcast caption to all other users in the room
+    socket.to(roomId).emit('caption', {
+      ...caption,
+      speakerId: socket.id,
+      speakerName: user.userName
+    });
+    
+    console.log(`[${new Date().toISOString()}] Caption in room ${roomId} from ${user.userName}: "${caption.text.substring(0, 50)}..."`);
+  });
+
+  // Handle screen share start
+  socket.on('screen-share-start', ({ roomId }) => {
+    const user = users.get(socket.id);
+    
+    if (!user || user.roomId !== roomId) {
+      return;
+    }
+    
+    // Notify all other users in the room
+    socket.to(roomId).emit('screen-share-start', {
+      userId: socket.id,
+      userName: user.userName
+    });
+    
+    console.log(`[${new Date().toISOString()}] Screen share started by ${user.userName} in room ${roomId}`);
+  });
+
+  // Handle screen share stop
+  socket.on('screen-share-stop', ({ roomId }) => {
+    const user = users.get(socket.id);
+    
+    if (!user || user.roomId !== roomId) {
+      return;
+    }
+    
+    // Notify all other users in the room
+    socket.to(roomId).emit('screen-share-stop', {
+      userId: socket.id,
+      userName: user.userName
+    });
+    
+    console.log(`[${new Date().toISOString()}] Screen share stopped by ${user.userName} in room ${roomId}`);
+  });
 });
 
 // Helper function to handle user leaving
