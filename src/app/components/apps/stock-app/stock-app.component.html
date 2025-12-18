@@ -137,7 +137,7 @@
       <div *ngIf="activeTab() === 'overview' && !isLoadingDetail()">
         <!-- Basic Info from fullData -->
         <section class="section" *ngIf="selectedSymbol()?.basicInfo?.fullData || selectedSymbol()?.basicInfo">
-          <h3>Thông tin cơ bản</h3>
+          <h3><i class="pi pi-building"></i> Thông tin doanh nghiệp</h3>
           <div class="info-grid">
             <div class="info-item" *ngIf="selectedSymbol()?.symbol">
               <label>Mã cổ phiếu</label>
@@ -244,15 +244,15 @@
             </div>
             <div class="info-item" *ngIf="getTickerField('foreignOwnership') !== null && getTickerField('foreignOwnership') !== undefined">
               <label>Tỷ lệ sở hữu nước ngoài</label>
-              <span>{{ getTickerField('foreignOwnership') | number:'1.2-2' }}%</span>
+              <span>{{ formatPercent(getTickerField('foreignOwnership')) | number:'1.2-2' }}%</span>
             </div>
             <div class="info-item" *ngIf="getTickerField('dividend')">
               <label>Cổ tức</label>
-              <span>{{ getTickerField('dividend') | number:'1.2-2' }}%</span>
+              <span>{{ formatPercent(getTickerField('dividend')) | number:'1.2-2' }}%</span>
             </div>
             <div class="info-item" *ngIf="getTickerField('dividendYield')">
               <label>Tỷ suất cổ tức</label>
-              <span>{{ getTickerField('dividendYield') | number:'1.2-2' }}%</span>
+              <span>{{ formatPercent(getTickerField('dividendYield')) | number:'1.2-2' }}%</span>
             </div>
             <div class="info-item" *ngIf="getTickerField('high52w')">
               <label>Giá cao nhất 52 tuần</label>
@@ -280,7 +280,7 @@
             </div>
             <div class="info-item" *ngIf="getTickerField('freeFloatRatio') !== null && getTickerField('freeFloatRatio') !== undefined">
               <label>Tỷ lệ free float</label>
-              <span>{{ getTickerField('freeFloatRatio') | number:'1.2-2' }}%</span>
+              <span>{{ formatPercent(getTickerField('freeFloatRatio')) | number:'1.2-2' }}%</span>
             </div>
             <div class="info-item" *ngIf="getCompanyField('contactPerson')">
               <label>Người liên hệ</label>
@@ -331,33 +331,33 @@
 
         <!-- Industry & Sector Info -->
         <section class="section" *ngIf="getCompanyField('industryName') || getTickerField('industry')">
-          <h3>Phân loại ngành nghề</h3>
+          <h3><i class="pi pi-sitemap"></i> Phân loại ngành nghề</h3>
           <div class="info-grid">
-            <div class="info-item" *ngIf="getCompanyField('industryName') || getTickerField('industry')">
+            <div class="info-item has-tooltip" *ngIf="getCompanyField('industryName') || getTickerField('industry')" data-tooltip="Ngành chính mà công ty hoạt động. Dùng để so sánh với các công ty cùng ngành">
               <label>Ngành</label>
               <span>{{ getCompanyField('industryName') || getTickerField('industry') }}</span>
             </div>
-            <div class="info-item" *ngIf="getCompanyField('subIndustryName') || getTickerField('subIndustry')">
+            <div class="info-item has-tooltip" *ngIf="getCompanyField('subIndustryName') || getTickerField('subIndustry')" data-tooltip="Phân ngành chi tiết hơn trong ngành chính">
               <label>Ngành phụ</label>
               <span>{{ getCompanyField('subIndustryName') || getTickerField('subIndustry') }}</span>
             </div>
-            <div class="info-item" *ngIf="getCompanyField('sectorName') || getTickerField('sector')">
+            <div class="info-item has-tooltip" *ngIf="getCompanyField('sectorName') || getTickerField('sector')" data-tooltip="Lĩnh vực kinh doanh rộng hơn của công ty">
               <label>Lĩnh vực</label>
               <span>{{ getCompanyField('sectorName') || getTickerField('sector') }}</span>
             </div>
-            <div class="info-item" *ngIf="getCompanyField('sectorIndexName') || getTickerField('sectorIndex')">
+            <div class="info-item has-tooltip" *ngIf="getCompanyField('sectorIndexName') || getTickerField('sectorIndex')" data-tooltip="Chỉ số ngành tương ứng trên sàn chứng khoán">
               <label>Chỉ số ngành</label>
               <span>{{ getCompanyField('sectorIndexName') || getTickerField('sectorIndex') }}</span>
             </div>
-            <div class="info-item" *ngIf="getCompanyField('companyTypeName')">
+            <div class="info-item has-tooltip" *ngIf="getCompanyField('companyTypeName')" data-tooltip="Loại hình doanh nghiệp theo pháp luật Việt Nam">
               <label>Loại hình công ty</label>
               <span>{{ getCompanyField('companyTypeName') }}</span>
             </div>
-            <div class="info-item" *ngIf="getTickerField('indexCode')">
+            <div class="info-item has-tooltip" *ngIf="getTickerField('indexCode')" data-tooltip="Chỉ số chính mà cổ phiếu thuộc về (VN30, HNX30, UPCOM...)">
               <label>Chỉ số chính</label>
               <span class="badge index-badge">{{ getTickerField('indexCode') }}</span>
             </div>
-            <div class="info-item" *ngIf="getTickerField('indexCodes') && getTickerField('indexCodes').length > 0">
+            <div class="info-item has-tooltip" *ngIf="getTickerField('indexCodes') && getTickerField('indexCodes').length > 0" data-tooltip="Danh sách tất cả các chỉ số mà cổ phiếu thuộc về">
               <label>Các chỉ số</label>
               <div class="badge-list">
                 <span class="badge index-badge" *ngFor="let index of getTickerField('indexCodes')">
@@ -370,21 +370,21 @@
 
         <!-- GICS Classification -->
         <section class="section" *ngIf="getCompanyField('gicsSector') || getTickerField('gicsSector')">
-          <h3>Phân loại GICS</h3>
+          <h3><i class="pi pi-th-large"></i> Phân loại GICS</h3>
           <div class="info-grid">
-            <div class="info-item" *ngIf="getCompanyField('gicsSector') || getTickerField('gicsSector')">
+            <div class="info-item has-tooltip" *ngIf="getCompanyField('gicsSector') || getTickerField('gicsSector')" data-tooltip="GICS Sector - Phân loại ngành cấp cao nhất theo chuẩn quốc tế GICS (11 sectors)">
               <label>GICS Sector</label>
               <span>{{ getCompanyField('gicsSector') || getTickerField('gicsSector') }}</span>
             </div>
-            <div class="info-item" *ngIf="getCompanyField('gicsIndustryGroup') || getTickerField('gicsIndustryGroup')">
+            <div class="info-item has-tooltip" *ngIf="getCompanyField('gicsIndustryGroup') || getTickerField('gicsIndustryGroup')" data-tooltip="GICS Industry Group - Nhóm ngành (25 nhóm), chi tiết hơn Sector">
               <label>GICS Industry Group</label>
               <span>{{ getCompanyField('gicsIndustryGroup') || getTickerField('gicsIndustryGroup') }}</span>
             </div>
-            <div class="info-item" *ngIf="getCompanyField('gicsIndustry') || getTickerField('gicsIndustry')">
+            <div class="info-item has-tooltip" *ngIf="getCompanyField('gicsIndustry') || getTickerField('gicsIndustry')" data-tooltip="GICS Industry - Ngành (74 ngành), chi tiết hơn Industry Group">
               <label>GICS Industry</label>
               <span>{{ getCompanyField('gicsIndustry') || getTickerField('gicsIndustry') }}</span>
             </div>
-            <div class="info-item" *ngIf="getCompanyField('gicsSubIndustry') || getTickerField('gicsSubIndustry')">
+            <div class="info-item has-tooltip" *ngIf="getCompanyField('gicsSubIndustry') || getTickerField('gicsSubIndustry')" data-tooltip="GICS Sub-Industry - Phân ngành (163 phân ngành), mức chi tiết nhất">
               <label>GICS Sub-Industry</label>
               <span>{{ getCompanyField('gicsSubIndustry') || getTickerField('gicsSubIndustry') }}</span>
             </div>
@@ -393,33 +393,33 @@
 
         <!-- Trading Features -->
         <section class="section" *ngIf="getCompanyField('isMargin') !== null || getCompanyField('isVn30') !== null">
-          <h3>Tính năng giao dịch</h3>
+          <h3><i class="pi pi-sliders-h"></i> Tính năng giao dịch</h3>
           <div class="info-grid">
-            <div class="info-item" *ngIf="getCompanyField('isMargin') !== null">
+            <div class="info-item has-tooltip" *ngIf="getCompanyField('isMargin') !== null" data-tooltip="Cổ phiếu có được phép giao dịch ký quỹ (vay tiền từ công ty chứng khoán để mua). Margin = rủi ro cao hơn nhưng có thể tăng lợi nhuận">
               <label>Margin</label>
               <span [class]="getCompanyField('isMargin') ? 'positive' : 'negative'">
                 {{ getCompanyField('isMargin') ? 'Có' : 'Không' }}
               </span>
             </div>
-            <div class="info-item" *ngIf="getCompanyField('isVn30') !== null">
+            <div class="info-item has-tooltip" *ngIf="getCompanyField('isVn30') !== null" data-tooltip="VN30 - Rổ 30 cổ phiếu có vốn hóa và thanh khoản lớn nhất sàn HOSE. Đây là các blue-chip, đại diện cho thị trường">
               <label>VN30</label>
               <span [class]="getCompanyField('isVn30') ? 'positive' : 'negative'">
                 {{ getCompanyField('isVn30') ? 'Có' : 'Không' }}
               </span>
             </div>
-            <div class="info-item" *ngIf="getCompanyField('isHnx30') !== null">
+            <div class="info-item has-tooltip" *ngIf="getCompanyField('isHnx30') !== null" data-tooltip="HNX30 - Rổ 30 cổ phiếu hàng đầu trên sàn HNX. Thường là các công ty vừa và nhỏ tiềm năng">
               <label>HNX30</label>
               <span [class]="getCompanyField('isHnx30') ? 'positive' : 'negative'">
                 {{ getCompanyField('isHnx30') ? 'Có' : 'Không' }}
               </span>
             </div>
-            <div class="info-item" *ngIf="getCompanyField('isFtse') !== null">
+            <div class="info-item has-tooltip" *ngIf="getCompanyField('isFtse') !== null" data-tooltip="FTSE Vietnam Index - Chỉ số của tổ chức quốc tế FTSE Russell. Các quỹ ETF nước ngoài thường theo dõi rổ này">
               <label>FTSE</label>
               <span [class]="getCompanyField('isFtse') ? 'positive' : 'negative'">
                 {{ getCompanyField('isFtse') ? 'Có' : 'Không' }}
               </span>
             </div>
-            <div class="info-item" *ngIf="getCompanyField('isVnmetf') !== null">
+            <div class="info-item has-tooltip" *ngIf="getCompanyField('isVnmetf') !== null" data-tooltip="Thuộc danh mục quỹ ETF VNM của VanEck. Đây là quỹ ETF Việt Nam lớn nhất được giao dịch tại Mỹ">
               <label>VNMetf</label>
               <span [class]="getCompanyField('isVnmetf') ? 'positive' : 'negative'">
                 {{ getCompanyField('isVnmetf') ? 'Có' : 'Không' }}
@@ -428,50 +428,113 @@
           </div>
         </section>
 
-        <!-- Stock Metrics from basicInfo -->
-        <section class="section" *ngIf="selectedSymbol()?.basicInfo">
-          <h3>Thông số cổ phiếu</h3>
+        <!-- Quick Price Summary - Tóm tắt giá nhanh -->
+        <section class="section" *ngIf="selectedSymbolPriceData()?.c && selectedSymbolPriceData()!.c!.length > 0">
+          <h3><i class="pi pi-chart-line"></i> Tóm tắt giá</h3>
           <div class="metrics-grid">
-            <div class="metric-item" *ngIf="selectedSymbol()?.basicInfo?.eps">
-              <label>EPS</label>
-              <span>{{ parseFloat(selectedSymbol()!.basicInfo!.eps) | number:'1.2-2' }}</span>
+            <div class="metric-item has-tooltip" data-tooltip="Giá đóng cửa phiên giao dịch gần nhất">
+              <label>Giá hiện tại</label>
+              <span>{{ (selectedSymbolPriceData()!.c![selectedSymbolPriceData()!.c!.length - 1] * 1000) | number:'1.0-0' }}đ</span>
             </div>
-            <div class="metric-item" *ngIf="selectedSymbol()?.basicInfo?.pe">
+            <div class="metric-item has-tooltip" data-tooltip="Giá cao nhất trong khoảng thời gian đang xem">
+              <label>Cao nhất</label>
+              <span>{{ (getHighestPrice()) | number:'1.0-0' }}đ</span>
+            </div>
+            <div class="metric-item has-tooltip" data-tooltip="Giá thấp nhất trong khoảng thời gian đang xem">
+              <label>Thấp nhất</label>
+              <span>{{ (getLowestPrice()) | number:'1.0-0' }}đ</span>
+            </div>
+            <div class="metric-item has-tooltip" *ngIf="getTickerField('high52w')" data-tooltip="Mức giá cao nhất trong 52 tuần qua (1 năm). Nếu giá hiện tại gần mức này, cổ phiếu đang trong xu hướng tăng mạnh">
+              <label>Cao 52W</label>
+              <span>{{ (getTickerField('high52w') * 1000) | number:'1.0-0' }}đ</span>
+            </div>
+            <div class="metric-item has-tooltip" *ngIf="getTickerField('low52w')" data-tooltip="Mức giá thấp nhất trong 52 tuần qua (1 năm). Nếu giá hiện tại gần mức này, có thể là cơ hội mua vào">
+              <label>Thấp 52W</label>
+              <span>{{ (getTickerField('low52w') * 1000) | number:'1.0-0' }}đ</span>
+            </div>
+            <div class="metric-item has-tooltip" *ngIf="selectedSymbolPriceData()!.v" data-tooltip="Khối lượng giao dịch trong phiên gần nhất. So sánh với KL trung bình để đánh giá mức độ quan tâm">
+              <label>KL hôm nay</label>
+              <span>{{ selectedSymbolPriceData()!.v![selectedSymbolPriceData()!.v!.length - 1] | number:'1.0-0' }}</span>
+            </div>
+            <div class="metric-item has-tooltip" *ngIf="getTickerField('avgVolume20d')" data-tooltip="Khối lượng giao dịch trung bình 20 ngày. Dùng để so sánh thanh khoản hiện tại với bình thường">
+              <label>KL TB 20D</label>
+              <span>{{ (getTickerField('avgVolume20d') / 1000000) | number:'1.2-2' }}M</span>
+            </div>
+            <div class="metric-item has-tooltip" *ngIf="getTickerField('avgVolume30d')" data-tooltip="Khối lượng giao dịch trung bình 30 ngày. Chỉ số thanh khoản dài hạn hơn">
+              <label>KL TB 30D</label>
+              <span>{{ (getTickerField('avgVolume30d') / 1000000) | number:'1.2-2' }}M</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Stock Metrics from basicInfo - Chỉ số định giá -->
+        <section class="section" *ngIf="selectedSymbol()?.basicInfo">
+          <h3><i class="pi pi-calculator"></i> Chỉ số định giá & sinh lời</h3>
+          <div class="metrics-grid">
+            <div class="metric-item has-tooltip" *ngIf="selectedSymbol()?.basicInfo?.eps" data-tooltip="Earnings Per Share - Lợi nhuận trên mỗi cổ phiếu. EPS cao = công ty làm ăn có lời. So sánh với các công ty cùng ngành">
+              <label>EPS</label>
+              <span>{{ parseFloat(selectedSymbol()!.basicInfo!.eps) | number:'1.0-0' }}</span>
+            </div>
+            <div class="metric-item has-tooltip" *ngIf="selectedSymbol()?.basicInfo?.pe" data-tooltip="Price to Earnings - Giá/Lợi nhuận. P/E thấp có thể là cơ hội (định giá rẻ), P/E cao có thể là kỳ vọng tăng trưởng. Trung bình ngành: 10-15">
               <label>P/E</label>
               <span>{{ parseFloat(selectedSymbol()!.basicInfo!.pe) | number:'1.2-2' }}</span>
             </div>
-            <div class="metric-item" *ngIf="selectedSymbol()?.basicInfo?.pb">
+            <div class="metric-item has-tooltip" *ngIf="selectedSymbol()?.basicInfo?.pb" data-tooltip="Price to Book - Giá/Giá trị sổ sách. P/B < 1 có thể là định giá rẻ hơn tài sản thực. P/B cao = thị trường kỳ vọng lớn">
               <label>P/B</label>
               <span>{{ parseFloat(selectedSymbol()!.basicInfo!.pb) | number:'1.2-2' }}</span>
             </div>
-            <div class="metric-item" *ngIf="selectedSymbol()?.basicInfo?.roe">
+            <div class="metric-item has-tooltip" *ngIf="selectedSymbol()?.basicInfo?.roe" data-tooltip="Return on Equity - Tỷ suất sinh lời trên vốn chủ sở hữu. ROE > 15% = hiệu quả tốt. Càng cao càng tốt">
               <label>ROE</label>
-              <span>{{ parseFloat(selectedSymbol()!.basicInfo!.roe) | number:'1.2-2' }}%</span>
+              <span>{{ formatPercent(selectedSymbol()!.basicInfo!.roe) | number:'1.2-2' }}%</span>
             </div>
-            <div class="metric-item" *ngIf="selectedSymbol()?.basicInfo?.roa">
+            <div class="metric-item has-tooltip" *ngIf="selectedSymbol()?.basicInfo?.roa" data-tooltip="Return on Assets - Tỷ suất sinh lời trên tổng tài sản. ROA > 5% = sử dụng tài sản hiệu quả. Ngành ngân hàng thường thấp hơn">
               <label>ROA</label>
-              <span>{{ parseFloat(selectedSymbol()!.basicInfo!.roa) | number:'1.2-2' }}%</span>
+              <span>{{ formatPercent(selectedSymbol()!.basicInfo!.roa) | number:'1.2-2' }}%</span>
             </div>
-            <div class="metric-item" *ngIf="selectedSymbol()?.basicInfo?.marketCap">
+            <div class="metric-item has-tooltip" *ngIf="getTickerField('marketCap')" data-tooltip="Vốn hóa thị trường = Giá CP × Số CP lưu hành. Phản ánh quy mô công ty. Large-cap > 10.000 tỷ, Mid-cap: 1.000-10.000 tỷ">
               <label>Vốn hóa</label>
-              <span>{{ selectedSymbol()?.basicInfo?.marketCap | number:'1.0-0' }}</span>
+              <span>{{ (getTickerField('marketCap') / 1000000000) | number:'1.1-1' }}T</span>
+            </div>
+            <div class="metric-item has-tooltip" *ngIf="getTickerField('dividend')" data-tooltip="Tỷ lệ cổ tức - % lợi nhuận công ty chia cho cổ đông. Cổ tức cao = thu nhập ổn định, phù hợp đầu tư dài hạn">
+              <label>Cổ tức</label>
+              <span>{{ formatPercent(getTickerField('dividend')) | number:'1.2-2' }}%</span>
+            </div>
+            <div class="metric-item has-tooltip" *ngIf="getTickerField('dividendYield')" data-tooltip="Tỷ suất cổ tức = Cổ tức/Giá CP. Cho biết % lợi nhuận nhận được từ cổ tức so với giá mua. > 5% là khá hấp dẫn">
+              <label>Tỷ suất CT</label>
+              <span>{{ formatPercent(getTickerField('dividendYield')) | number:'1.2-2' }}%</span>
+            </div>
+            <div class="metric-item has-tooltip" *ngIf="getCompanyField('beta')" data-tooltip="Hệ số Beta - Đo độ biến động so với thị trường. Beta > 1: biến động mạnh hơn, Beta < 1: ổn định hơn. Beta = 1: biến động như VN-Index">
+              <label>Beta</label>
+              <span>{{ getCompanyField('beta') | number:'1.2-2' }}</span>
+            </div>
+            <div class="metric-item has-tooltip" *ngIf="getTickerField('outstandingShares')" data-tooltip="Số cổ phiếu đang lưu hành trên thị trường. Ảnh hưởng đến thanh khoản và biến động giá">
+              <label>CP lưu hành</label>
+              <span>{{ (getTickerField('outstandingShares') / 1000000) | number:'1.1-1' }}M</span>
+            </div>
+            <div class="metric-item has-tooltip" *ngIf="getTickerField('freeFloatRatio') !== null && getTickerField('freeFloatRatio') !== undefined" data-tooltip="Tỷ lệ cổ phiếu tự do chuyển nhượng. Free float cao = thanh khoản tốt, dễ giao dịch. Thấp = có thể bị thao túng giá">
+              <label>Free Float</label>
+              <span>{{ formatPercent(getTickerField('freeFloatRatio')) | number:'1.1-1' }}%</span>
+            </div>
+            <div class="metric-item has-tooltip" *ngIf="getTickerField('foreignOwnership') !== null && getTickerField('foreignOwnership') !== undefined" data-tooltip="Tỷ lệ sở hữu của nhà đầu tư nước ngoài. Tỷ lệ cao = được khối ngoại quan tâm, thường là dấu hiệu tích cực">
+              <label>SH nước ngoài</label>
+              <span>{{ formatPercent(getTickerField('foreignOwnership')) | number:'1.1-1' }}%</span>
             </div>
           </div>
         </section>
 
         <!-- Key Financial Indicators -->
         <section class="section" *ngIf="keyFinancialIndicators().length > 0">
-          <h3>Chỉ số tài chính quan trọng</h3>
+          <h3><i class="pi pi-chart-bar"></i> Chỉ số tài chính quan trọng</h3>
           <div class="key-indicators-grid">
             <div
               *ngFor="let indicator of keyFinancialIndicators()"
-              class="key-indicator-card"
+              class="key-indicator-card has-tooltip"
               [class.positive]="indicator.isPositive === true"
               [class.negative]="indicator.isPositive === false"
-              [title]="indicator.tooltip">
+              [attr.data-tooltip]="indicator.tooltip || indicator.label">
               <div class="indicator-label">{{ indicator.label }}</div>
               <div class="indicator-value">{{ indicator.value }}</div>
-              <i class="pi pi-info-circle tooltip-icon" *ngIf="indicator.tooltip"></i>
+              <i class="pi pi-info-circle tooltip-icon" *ngIf="indicator.tooltip" [attr.data-tooltip]="indicator.tooltip"></i>
             </div>
           </div>
         </section>
@@ -2046,6 +2109,25 @@
           class="search-input">
         <button *ngIf="searchQuery()" (click)="onSearchChange('')" class="clear-btn">
           <i class="pi pi-times"></i>
+        </button>
+      </div>
+      <!-- Search Type Toggle -->
+      <div class="search-type-toggle">
+        <button
+          class="toggle-btn"
+          [class.active]="searchType() === 'all'"
+          (click)="onSearchTypeChange('all')"
+          title="Hiển thị tất cả mã (cổ phiếu, ETF, chứng quyền, trái phiếu...)">
+          <i class="pi pi-list"></i>
+          Tất cả
+        </button>
+        <button
+          class="toggle-btn"
+          [class.active]="searchType() === 'stocks'"
+          (click)="onSearchTypeChange('stocks')"
+          title="Chỉ hiển thị cổ phiếu (mã 3 ký tự như VNM, FPT, VIC...)">
+          <i class="pi pi-chart-line"></i>
+          Cổ phiếu
         </button>
       </div>
       <div class="filters">

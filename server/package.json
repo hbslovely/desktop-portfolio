@@ -9,7 +9,10 @@
     "dev:api": "node api/api-server-simple.js",
     "db:migrate": "node scripts/db-migrate.js",
     "db:seed": "node scripts/db-seed.js",
-    "db:alter-models": "node scripts/db-alter-stock-models.js"
+    "db:alter-models": "node scripts/db-alter-stock-models.js",
+    "update:prices": "node scripts/update-prices.js",
+    "update:prices:stocks": "node scripts/update-prices.js --stocks-only",
+    "update:prices:full": "node scripts/update-prices.js --days=365 --concurrent=5"
   },
   "engines": {
     "node": "20.x"

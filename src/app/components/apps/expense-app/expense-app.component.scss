@@ -1,3 +1,6 @@
+// Professional number font stack for money display
+$font-numbers: 'JetBrains Mono', 'Roboto Mono', 'SF Mono', 'Cascadia Code', 'Consolas', 'Monaco', monospace;
+
 .expense-app {
   width: 100%;
   height: 100%;
@@ -6,6 +9,24 @@
   background: #ffffff;
   overflow: hidden;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+
+  // Global number font for all money/amount elements
+  .amount-value,
+  .total-value,
+  .card-value,
+  .price-value,
+  .balance-value,
+  .budget-value,
+  .expense-amount,
+  .amount-input,
+  [class*="amount"],
+  [class*="price"],
+  [class*="total-value"],
+  [class*="money"] {
+    font-family: $font-numbers;
+    font-variant-numeric: tabular-nums; // Ensures equal-width numbers for alignment
+    letter-spacing: -0.3px;
+  }
 
   // Authentication Screen
   .auth-screen {

@@ -107,6 +107,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
   // State
   selectedExchange = signal<ExchangeType | 'all'>('all');
   filterMode = signal<'all' | 'unfetched' | 'missingBasicInfo'>('all');
+  searchType = signal<'all' | 'stocks'>('all'); // 'all' = all symbols, 'stocks' = only 3-char symbols (actual stocks)
   allSymbols = signal<SymbolWithStatus[]>([]);
   filteredSymbols = signal<SymbolWithStatus[]>([]);
   isLoading = signal(false);
@@ -660,7 +661,15 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
       return;
     }
 
+    // Subscribe to scrolledIndexChange
     this.scrollSubscription = this.virtualScrollViewport.scrolledIndexChange.subscribe(() => {
+      this.ngZone.run(() => {
+        this.checkAndLoadMore();
+      });
+    });
+
+    // Also listen to elementScrolled for better scroll detection
+    this.virtualScrollViewport.elementScrolled().subscribe(() => {
       this.ngZone.run(() => {
         this.checkAndLoadMore();
       });
@@ -699,12 +708,14 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     this.filteredSymbols.set([]);
 
     const keyword = this.searchQuery();
+    const symbolType = this.searchType();
 
     // Load from internal API with pagination (server will fallback to JSON if DB fails)
     this.dnseService.getStocksPaginated({
       keyword,
       limit: this.PAGE_SIZE,
-      offset: 0
+      offset: 0,
+      symbolType
     }).subscribe({
       next: (response) => {
         const symbols = this.convertStocksToSymbols(response.stocks);
@@ -751,12 +762,14 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     this.isLoadingMore.set(true);
     const keyword = this.searchQuery();
+    const symbolType = this.searchType();
     const currentOffset = this.paginationOffset();
 
     this.dnseService.getStocksPaginated({
       keyword,
       limit: this.PAGE_SIZE,
-      offset: currentOffset
+      offset: currentOffset,
+      symbolType
     }).subscribe({
       next: (response) => {
         const newSymbols = this.convertStocksToSymbols(response.stocks);
@@ -885,11 +898,13 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
    */
   private loadSymbolsWithoutDNSESync() {
     const keyword = this.searchQuery();
+    const symbolType = this.searchType();
 
     this.dnseService.getStocksPaginated({
       keyword,
       limit: this.PAGE_SIZE,
-      offset: 0
+      offset: 0,
+      symbolType
     }).subscribe({
       next: (response) => {
         const symbols = this.convertStocksToSymbols(response.stocks);
@@ -1289,6 +1304,12 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
       });
     }
 
+    // Filter by search type (stocks = 3 char symbols only)
+    const searchType = this.searchType();
+    if (searchType === 'stocks') {
+      filtered = filtered.filter(s => s.symbol.length === 3);
+    }
+
     // Filter by search query
     const query = this.searchQuery().toLowerCase().trim();
     if (query) {
@@ -1334,6 +1355,17 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     } else {
       this.applyFilters();
     }
+  }
+
+  /**
+   * Change search type filter
+   * 'all' = search all symbols
+   * 'stocks' = only search symbols with exactly 3 characters (actual stock codes)
+   */
+  onSearchTypeChange(type: 'all' | 'stocks') {
+    this.searchType.set(type);
+    // Reload symbols with the new filter
+    this.loadSymbols();
   }
 
   /**
@@ -2836,6 +2868,22 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
       return null;
     }
     return ticker[fieldName] || null;
+  }
+
+  /**
+   * Format percentage value - converts decimal to percentage if needed
+   * Input: 0.029 (decimal form) or 2.9 (already percentage)
+   * Output: 2.9 (percentage form)
+   */
+  formatPercent(value: any): number {
+    if (value === null || value === undefined) return 0;
+    const numValue = typeof value === 'string' ? parseFloat(value) : value;
+    if (isNaN(numValue)) return 0;
+    // If value is less than 1 (and not 0), it's likely in decimal form, multiply by 100
+    if (Math.abs(numValue) > 0 && Math.abs(numValue) < 1) {
+      return numValue * 100;
+    }
+    return numValue;
   }
 
   /**
