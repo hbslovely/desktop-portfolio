@@ -121,7 +121,10 @@ io.on('connection', (socket) => {
     room.participants.set(socket.id, {
       id: socket.id,
       userName,
-      joinedAt: new Date().toISOString()
+      joinedAt: new Date().toISOString(),
+      videoEnabled: true,
+      audioEnabled: true,
+      screenSharing: false
     });
     
     // Update user info
@@ -140,7 +143,10 @@ io.on('connection', (socket) => {
       if (id !== socket.id) {
         existingParticipants.push({
           id: participant.id,
-          userName: participant.userName
+          userName: participant.userName,
+          videoEnabled: participant.videoEnabled,
+          audioEnabled: participant.audioEnabled,
+          screenSharing: participant.screenSharing
         });
       }
     });
@@ -229,6 +235,18 @@ io.on('connection', (socket) => {
 
   // Toggle media state (for UI sync)
   socket.on('media-state-change', ({ roomId, video, audio, screenShare }) => {
+    // Update stored media state
+    const room = rooms.get(roomId);
+    if (room) {
+      const participant = room.participants.get(socket.id);
+      if (participant) {
+        participant.videoEnabled = video;
+        participant.audioEnabled = audio;
+        participant.screenSharing = screenShare;
+      }
+    }
+    
+    // Broadcast to others
     socket.to(roomId).emit('media-state-change', {
       userId: socket.id,
       video,

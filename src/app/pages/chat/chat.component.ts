@@ -267,21 +267,11 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     return this.webrtcService.getParticipantName(oderId);
   }
   
-  // Check if participant's video is enabled
-  isParticipantVideoEnabled(oderId: string): boolean {
-    // First check the media state from socket
-    const socketState = this.webrtcService.isParticipantVideoEnabled(oderId);
-    if (!socketState) return false;
-    
-    // Also check if the stream actually has video enabled
-    const stream = this.remoteStreams().get(oderId);
-    if (stream) {
-      const videoTrack = stream.getVideoTracks()[0];
-      if (videoTrack) {
-        return videoTrack.enabled && !videoTrack.muted;
-      }
-    }
-    return socketState;
+// Check if participant's video is enabled
+  // Note: WebRTC doesn't propagate track.enabled state to remote peers
+  // So we must rely on the socket-based media state
+  isParticipantVideoEnabled(peerId: string): boolean {
+    return this.webrtcService.isParticipantVideoEnabled(peerId);
   }
   
   // Check if participant's audio is enabled
