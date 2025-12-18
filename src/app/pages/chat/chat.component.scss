@@ -42,6 +42,11 @@ $wide: 1280px;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid $border-light;
+  
+  // Fallback for browsers that don't support backdrop-filter
+  @supports not (backdrop-filter: blur(20px)) {
+    background: rgba(24, 24, 27, 0.98);
+  }
 }
 
 @mixin glass-effect-light {
@@ -49,6 +54,11 @@ $wide: 1280px;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid $border-light;
+  
+  // Fallback for browsers that don't support backdrop-filter
+  @supports not (backdrop-filter: blur(12px)) {
+    background: rgba(39, 39, 42, 0.95);
+  }
 }
 
 @mixin hover-lift {
@@ -88,10 +98,17 @@ $wide: 1280px;
 .chat-container {
   width: 100%;
   height: 100vh;
+  height: 100dvh; // Dynamic viewport height for mobile
   background: linear-gradient(135deg, $bg-dark 0%, #0f172a 50%, $bg-dark 100%);
   color: $text-primary;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   overflow: hidden;
+  -webkit-overflow-scrolling: touch; // Smooth scrolling on iOS
+  touch-action: pan-y pinch-zoom; // Better touch handling
+  
+  @supports (height: 100dvh) {
+    height: 100dvh; // Use dynamic viewport height if supported
+  }
 }
 
 // Lobby Styles
@@ -657,6 +674,10 @@ $wide: 1280px;
     height: 100%;
     object-fit: cover;
     transition: opacity 0.3s ease;
+    // Optimize video rendering
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    will-change: contents;
     
     &.video-off {
       opacity: 0;
@@ -1107,12 +1128,13 @@ $wide: 1280px;
   flex-wrap: wrap;
   
   @include mobile {
-    padding: 12px;
+    padding: 10px 8px;
     gap: 6px;
-    
-    // Scroll horizontally on very small screens
+    flex-wrap: nowrap;
     overflow-x: auto;
-    justify-content: center;
+    overflow-y: hidden;
+    justify-content: flex-start;
+    -webkit-overflow-scrolling: touch;
     
     &::-webkit-scrollbar {
       display: none;
@@ -1197,13 +1219,25 @@ $wide: 1280px;
   }
   
   @include mobile {
-    width: 46px;
-    height: 46px;
-    border-radius: 14px;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    flex-shrink: 0;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
     
     svg {
-      width: 20px;
-      height: 20px;
+      width: 18px;
+      height: 18px;
+    }
+    
+    &.chat-toggle-btn .notification-badge {
+      top: -4px;
+      right: -4px;
+      min-width: 18px;
+      height: 18px;
+      font-size: 10px;
+      padding: 0 4px;
     }
   }
 }
@@ -1427,16 +1461,23 @@ $wide: 1280px;
   @include mobile {
     width: 100%;
     min-width: 100%;
-    position: absolute;
+    position: fixed;
     left: 0;
     right: 0;
     top: auto;
     bottom: 0;
-    height: 60%;
+    height: 70vh;
+    height: 70dvh;
+    max-height: 90vh;
     border-left: none;
     border-top: 1px solid $border-color;
     border-radius: $border-radius-xl $border-radius-xl 0 0;
     box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.4);
+    -webkit-overflow-scrolling: touch;
+    
+    @supports (height: 100dvh) {
+      height: 70dvh;
+    }
   }
   
   &.collapsed {
@@ -1451,6 +1492,7 @@ $wide: 1280px;
       width: 100%;
       height: 0;
       transform: translateY(100%);
+      max-height: 0;
     }
   }
 }
@@ -1957,6 +1999,11 @@ $wide: 1280px;
 
 // Responsive
 @include mobile {
+  // Disable hover effects on mobile
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+  
   .lobby-card {
     padding: 24px 20px;
     margin: 16px;
@@ -1990,17 +2037,25 @@ $wide: 1280px;
       input {
         padding: 12px 14px;
         font-size: 16px; // Prevent zoom on iOS
+        -webkit-appearance: none;
+        border-radius: $border-radius;
       }
     }
     
     .btn {
       padding: 12px 20px;
       font-size: 14px;
+      touch-action: manipulation; // Faster tap response
+      -webkit-tap-highlight-color: transparent;
     }
   }
   
   .video-section {
-    padding-bottom: 0; // Make room for bottom controls
+    padding-bottom: 0;
+    min-height: 0;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
   }
   
   .room-info-bar {
@@ -2036,25 +2091,37 @@ $wide: 1280px;
   
   .video-grid {
     grid-template-columns: 1fr;
-    gap: 10px;
-    padding: 10px;
+    gap: 8px;
+    padding: 8px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     
     &.focus-layout.has-screen-share {
       .cameras-strip {
-        gap: 8px;
+        gap: 6px;
+        padding-bottom: 4px;
       }
       
       .camera-tile {
-        width: 140px;
-        min-width: 140px;
-        height: 100px;
+        width: 120px;
+        min-width: 120px;
+        height: 90px;
       }
     }
   }
   
   .video-wrapper {
     border-radius: 12px;
-    min-height: 160px;
+    min-height: 200px;
+    max-height: 50vh;
+    touch-action: pan-y pinch-zoom;
+    
+    video {
+      // Optimize video rendering on mobile
+      transform: translateZ(0);
+      -webkit-transform: translateZ(0);
+      will-change: contents;
+    }
     
     .video-label {
       padding: 6px 10px;
@@ -2062,9 +2129,43 @@ $wide: 1280px;
       left: 8px;
       right: 8px;
       bottom: 8px;
+      font-size: 11px;
       
       .name {
-        font-size: 12px;
+        font-size: 11px;
+      }
+    }
+    
+    .video-avatar-overlay {
+      bottom: 8px;
+      left: 8px;
+      padding: 4px 10px 4px 4px;
+      gap: 6px;
+      
+      .mini-avatar {
+        width: 24px;
+        height: 24px;
+        font-size: 11px;
+      }
+      
+      .mini-name {
+        font-size: 11px;
+        max-width: 120px;
+      }
+      
+      &.mini {
+        padding: 3px 6px 3px 3px;
+        
+        .mini-avatar {
+          width: 18px;
+          height: 18px;
+          font-size: 9px;
+        }
+        
+        .mini-name {
+          font-size: 9px;
+          max-width: 60px;
+        }
       }
     }
   }
