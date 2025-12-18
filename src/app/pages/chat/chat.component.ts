@@ -38,12 +38,15 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
   
   // UI state
   showChat = signal(true);
+  isChatCollapsed = signal(false); // Chat panel collapsed (minimized to icon)
   isFullscreen = signal(false);
   isCopied = signal(false);
   fullscreenVideoId = signal<string | null>(null);
   captionLanguage = signal('vi-VN');
   showLanguageMenu = signal(false);
   layoutMode = signal<'focus' | 'grid'>('focus'); // Layout mode: focus (screen share large) or grid (equal size)
+  unreadMessages = signal(0); // Unread message counter
+  lastReadMessageCount = signal(0); // Track last read message count
   
   // Available languages for captions
   languages = [
@@ -81,13 +84,50 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
   // Typing indicator
   typingUsers = computed(() => this.webrtcService.getTypingUsersArray());
   
+  // Voice activity
+  isSpeaking = computed(() => this.webrtcService.isSpeaking());
+  
   private shouldScrollToBottom = false;
+  private notificationSound: HTMLAudioElement | null = null;
+  private lastMessageCount = 0;
   
   constructor(public webrtcService: WebRTCService) {}
   
   ngOnInit(): void {
     // Generate default username
     this.userName.set(this.webrtcService.getLocalUserName());
+    
+    // Initialize notification sound
+    this.initNotificationSound();
+    
+    // Subscribe to new messages
+    this.webrtcService.message$.subscribe((message) => {
+      if (!this.isOwnMessage(message)) {
+        // Play sound and increment unread if chat is collapsed
+        if (this.isChatCollapsed()) {
+          this.unreadMessages.update(n => n + 1);
+          this.playNotificationSound();
+        }
+        this.shouldScrollToBottom = true;
+      }
+    });
+  }
+  
+  // Initialize notification sound
+  private initNotificationSound(): void {
+    // Create a simple beep sound using Web Audio API
+    this.notificationSound = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2telejiQ1/DMbR0TTpbF2s5nIRYufLnS08N4Pik8k8zi0G4cC0+VxtzNaiUaLX280tPDeTwqPJPM4tBuHAtPlcbczWolGi1+vdLTw3k8KjyTzOLQbhwLT5XG3M1qJRotfr3S08N5PCo8k8zi0G4cC0+VxtzNaiUaLX690tPDeTwqPJPM4tBuHAtPlcbczWolGi1+vdLTw3k8KjyTzOLQbhwLT5XG3M1qJRotfr3S08N5PCo8k8zi0G4cC0+VxtzNaiUaLX690tPDeTwqPJPM4tBuHAtPlcbczWolGi1+vdLTw3k8KjyTzOLQbhwLT5XG3M1qJRotfr3S08N5PCo8k8zi0G4cC0+VxtzNaiUaLX690tPDeTwqPJPM4tBuHAtPlcbczQ==');
+  }
+  
+  // Play notification sound
+  private playNotificationSound(): void {
+    if (this.notificationSound) {
+      this.notificationSound.currentTime = 0;
+      this.notificationSound.volume = 0.5;
+      this.notificationSound.play().catch(() => {
+        // Ignore autoplay errors
+      });
+    }
   }
   
   ngAfterViewChecked(): void {
@@ -232,9 +272,15 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     }
   }
   
-  // Toggle chat panel
+  // Toggle chat panel (collapse/expand)
   toggleChat(): void {
-    this.showChat.set(!this.showChat());
+    const newState = !this.isChatCollapsed();
+    this.isChatCollapsed.set(newState);
+    
+    // Reset unread count when expanding chat
+    if (!newState) {
+      this.unreadMessages.set(0);
+    }
   }
   
   // Toggle fullscreen
@@ -277,6 +323,11 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
   // Check if participant's audio is enabled
   isParticipantAudioEnabled(oderId: string): boolean {
     return this.webrtcService.isParticipantAudioEnabled(oderId);
+  }
+  
+  // Check if peer is speaking
+  isPeerSpeaking(peerId: string): boolean {
+    return this.webrtcService.isPeerSpeaking(peerId);
   }
   
   // Check if stream has active video
