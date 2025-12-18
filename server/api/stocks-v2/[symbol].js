@@ -7,16 +7,25 @@
 import { getStockBySymbol } from '../../lib/db.js';
 import { promises as fs } from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
+
+// Get __dirname for ES modules (needed for Vercel deployment)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 /**
  * Load stock data from JSON file as fallback
+ * Path: api/stocks-v2/[symbol].js -> ../../data/stocks/{symbol}.json
  */
 async function loadFromJsonFile(symbol) {
   try {
-    const jsonPath = path.join(process.cwd(), 'server', 'data', 'stocks', `${symbol}.json`);
+    // Use __dirname for correct path on Vercel
+    const jsonPath = path.join(__dirname, '..', '..', 'data', 'stocks', `${symbol}.json`);
+    console.log(`[stocks-v2/[symbol].js] Looking for JSON file: ${jsonPath}`);
+
     const fileContent = await fs.readFile(jsonPath, 'utf-8');
     const jsonData = JSON.parse(fileContent);
-    
+
     return {
       success: true,
       data: {

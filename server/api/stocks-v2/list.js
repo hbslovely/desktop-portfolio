@@ -15,6 +15,11 @@
 import { getAllStocks } from '../../lib/db.js';
 import { promises as fs } from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
+
+// Get __dirname for ES modules (needed for Vercel deployment)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const MAX_LIMIT = 2500;
 const DEFAULT_LIMIT = 2000;
@@ -42,21 +47,27 @@ function parseQueryParams(query) {
 
 /**
  * Load stocks from JSON files as fallback
+ * Path: api/stocks-v2/list.js -> ../../data/stocks/
  */
 async function loadFromJsonFiles(keyword, limit, offset) {
   try {
-    const stocksDir = path.join(process.cwd(), 'server', 'data', 'stocks');
+    // Use __dirname for correct path on Vercel (relative to this file)
+    // This file is at: api/stocks-v2/list.js
+    // Data is at: data/stocks/
+    const stocksDir = path.join(__dirname, '..', '..', 'data', 'stocks');
+    console.log('[stocks-v2/list.js] Looking for JSON files in:', stocksDir);
+
     const files = await fs.readdir(stocksDir);
     const jsonFiles = files.filter(f => f.endsWith('.json'));
-    
+
     let stocks = [];
-    
+
     for (const file of jsonFiles) {
       try {
         const filePath = path.join(stocksDir, file);
         const content = await fs.readFile(filePath, 'utf-8');
         const data = JSON.parse(content);
-        
+
         stocks.push({
           symbol: data.symbol || file.replace('.json', ''),
           basicInfo: data.basicInfo || {},
@@ -68,24 +79,24 @@ async function loadFromJsonFiles(keyword, limit, offset) {
         console.warn(`[stocks-v2/list.js] Error reading ${file}:`, err.message);
       }
     }
-    
+
     // Filter by keyword if provided
     if (keyword) {
       const searchTerm = keyword.toLowerCase();
-      stocks = stocks.filter(stock => 
+      stocks = stocks.filter(stock =>
         stock.symbol.toLowerCase().includes(searchTerm) ||
         (stock.basicInfo?.companyName || '').toLowerCase().includes(searchTerm)
       );
     }
-    
+
     // Sort by symbol
     stocks.sort((a, b) => a.symbol.localeCompare(b.symbol));
-    
+
     const total = stocks.length;
-    
+
     // Apply pagination
     const paginatedStocks = stocks.slice(offset, offset + limit);
-    
+
     return {
       success: true,
       stocks: paginatedStocks,
@@ -99,7 +110,12 @@ async function loadFromJsonFiles(keyword, limit, offset) {
     };
   } catch (error) {
     console.error('[stocks-v2/list.js] Error loading JSON files:', error);
-    return { success: false, error: 'Failed to load JSON files' };
+    return {
+      success: false,
+      error: 'Failed to load JSON files',
+      details: error.message,
+      path: path.join(__dirname, '..', '..', 'data', 'stocks')
+    };
   }
 }
 
@@ -187,15 +203,18 @@ export default async function handler(req, res) {
     // Both database and JSON files failed
     return res.status(500).json({
       success: false,
-      error: 'Failed to fetch stocks from database and JSON files'
+      error: 'Failed to fetch stocks from database and JSON files',
+      dbError: result.error || 'Unknown database error',
+      jsonError: jsonResult.error || 'Unknown JSON error',
+      jsonPath: jsonResult.path || path.join(__dirname, '..', '..', 'data', 'stocks')
     });
   } catch (error) {
     console.error('[stocks-v2/list.js] Unhandled error:', error);
-    
+
     // Try JSON fallback on error
     const { keyword, limit, offset } = parseQueryParams(req.query || {});
     const jsonResult = await loadFromJsonFiles(keyword, limit, offset);
-    
+
     if (jsonResult.success) {
       console.log('[stocks-v2/list.js] Error recovery: Loaded from JSON files');
       return res.status(200).json({
@@ -207,7 +226,7 @@ export default async function handler(req, res) {
         source: 'json_files_fallback'
       });
     }
-    
+
     return res.status(500).json({
       success: false,
       error: error?.message || 'Internal server error',
