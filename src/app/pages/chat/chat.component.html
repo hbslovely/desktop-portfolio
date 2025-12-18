@@ -1,0 +1,342 @@
+<div class="chat-container">
+  <!-- Lobby View -->
+  @if (viewMode() === 'lobby') {
+    <div class="lobby">
+      <div class="lobby-card">
+        <div class="lobby-header">
+          <div class="logo">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M15 10l-4 4l6 6l4 -16l-18 7l4 2l2 6l3 -4"/>
+            </svg>
+          </div>
+          <h1>Video Chat</h1>
+          <p class="subtitle">Connect with others using WebRTC</p>
+        </div>
+        
+        <div class="lobby-form">
+          <div class="input-group">
+            <label for="userName">Your Name</label>
+            <input 
+              id="userName"
+              type="text" 
+              [value]="userName()"
+              (input)="updateUserName($any($event.target).value)"
+              placeholder="Enter your name"
+              autocomplete="off"
+            />
+          </div>
+          
+          <div class="action-buttons">
+            <button class="btn btn-primary" (click)="createRoom()">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="16"/>
+                <line x1="8" y1="12" x2="16" y2="12"/>
+              </svg>
+              Create Room
+            </button>
+          </div>
+          
+          <div class="divider">
+            <span>or join existing</span>
+          </div>
+          
+          <div class="input-group">
+            <label for="roomId">Room ID</label>
+            <input 
+              id="roomId"
+              type="text" 
+              [value]="roomIdInput()"
+              (input)="updateRoomId($any($event.target).value)"
+              placeholder="Enter room ID (e.g., ABC123)"
+              autocomplete="off"
+              class="room-input"
+            />
+          </div>
+          
+          <button class="btn btn-secondary" (click)="joinRoom()">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+              <polyline points="10 17 15 12 10 7"/>
+              <line x1="15" y1="12" x2="3" y2="12"/>
+            </svg>
+            Join Room
+          </button>
+        </div>
+        
+        <div class="lobby-footer">
+          <p>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+            Peer-to-peer encrypted connection
+          </p>
+        </div>
+      </div>
+    </div>
+  }
+  
+  <!-- Chat View -->
+  @if (viewMode() === 'chat') {
+    <div class="chat-room" [class.chat-hidden]="!showChat()">
+      <!-- Video Section -->
+      <div class="video-section">
+        <!-- Room Info Bar -->
+        <div class="room-info-bar">
+          <div class="room-id">
+            <span class="label">Room:</span>
+            <span class="value">{{ roomId() }}</span>
+            <button class="copy-btn" (click)="copyRoomId()" [title]="isCopied() ? 'Copied!' : 'Copy Room ID'">
+              @if (isCopied()) {
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+              } @else {
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                </svg>
+              }
+            </button>
+          </div>
+          <div class="connection-status" [class]="connectionStatus()">
+            <span class="status-dot"></span>
+            {{ connectionStatus() | titlecase }}
+          </div>
+        </div>
+        
+        <!-- Video Grid -->
+        <div class="video-grid">
+          <!-- Local Video -->
+          <div class="video-wrapper local">
+            <video 
+              #localVideo 
+              autoplay 
+              muted 
+              playsinline
+              [class.video-off]="!isVideoEnabled()"
+            ></video>
+            @if (!isVideoEnabled()) {
+              <div class="video-placeholder">
+                <div class="avatar">{{ userName().charAt(0).toUpperCase() }}</div>
+                <span>{{ userName() }}</span>
+              </div>
+            }
+            <div class="video-label">
+              <span class="name">You ({{ userName() }})</span>
+              <div class="status-icons">
+                @if (!isAudioEnabled()) {
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="muted">
+                    <line x1="1" y1="1" x2="23" y2="23"/>
+                    <path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/>
+                    <path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"/>
+                    <line x1="12" y1="19" x2="12" y2="23"/>
+                    <line x1="8" y1="23" x2="16" y2="23"/>
+                  </svg>
+                }
+              </div>
+            </div>
+          </div>
+          
+          <!-- Remote Videos -->
+          @for (entry of remoteStreams() | keyvalue; track entry.key) {
+            <div class="video-wrapper remote">
+              <video 
+                #remoteVideo 
+                autoplay 
+                playsinline
+                [srcObject]="entry.value"
+              ></video>
+              <div class="video-label">
+                <span class="name">Participant</span>
+              </div>
+            </div>
+          }
+          
+          <!-- Empty state when no remote participants -->
+          @if (remoteStreams().size === 0) {
+            <div class="video-wrapper empty">
+              <div class="waiting-message">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                  <circle cx="9" cy="7" r="4"/>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
+                <p>Waiting for others to join...</p>
+                <p class="hint">Share the Room ID: <strong>{{ roomId() }}</strong></p>
+              </div>
+            </div>
+          }
+        </div>
+        
+        <!-- Control Bar -->
+        <div class="control-bar">
+          <button 
+            class="control-btn" 
+            [class.off]="!isAudioEnabled()"
+            (click)="toggleAudio()"
+            [title]="isAudioEnabled() ? 'Mute' : 'Unmute'"
+          >
+            @if (isAudioEnabled()) {
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                <line x1="12" y1="19" x2="12" y2="23"/>
+                <line x1="8" y1="23" x2="16" y2="23"/>
+              </svg>
+            } @else {
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="1" y1="1" x2="23" y2="23"/>
+                <path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/>
+                <path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"/>
+                <line x1="12" y1="19" x2="12" y2="23"/>
+                <line x1="8" y1="23" x2="16" y2="23"/>
+              </svg>
+            }
+          </button>
+          
+          <button 
+            class="control-btn" 
+            [class.off]="!isVideoEnabled()"
+            (click)="toggleVideo()"
+            [title]="isVideoEnabled() ? 'Turn off camera' : 'Turn on camera'"
+          >
+            @if (isVideoEnabled()) {
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="23 7 16 12 23 17 23 7"/>
+                <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+              </svg>
+            } @else {
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M16.5 17.5L1 1"/>
+                <path d="M22 8l-5 3 5 3v-6z"/>
+                <path d="M21.3 12.8A4 4 0 0 1 21 14v2a2 2 0 0 1-2 2H7"/>
+                <path d="M7.8 4H19a2 2 0 0 1 2 2v.5"/>
+                <path d="M3 3l18 18"/>
+              </svg>
+            }
+          </button>
+          
+          <button 
+            class="control-btn" 
+            [class.active]="isScreenSharing()"
+            (click)="toggleScreenShare()"
+            title="Share screen"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+              <line x1="8" y1="21" x2="16" y2="21"/>
+              <line x1="12" y1="17" x2="12" y2="21"/>
+            </svg>
+          </button>
+          
+          <button 
+            class="control-btn"
+            (click)="toggleChat()"
+            title="Toggle chat"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+          </button>
+          
+          <button 
+            class="control-btn"
+            (click)="toggleFullscreen()"
+            title="Toggle fullscreen"
+          >
+            @if (isFullscreen()) {
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/>
+              </svg>
+            } @else {
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+              </svg>
+            }
+          </button>
+          
+          <button 
+            class="control-btn leave"
+            (click)="leaveRoom()"
+            title="Leave room"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+              <polyline points="16 17 21 12 16 7"/>
+              <line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+      
+      <!-- Chat Section -->
+      @if (showChat()) {
+        <div class="chat-section">
+          <div class="chat-header">
+            <h3>Chat</h3>
+            <span class="message-count">{{ messages().length }} messages</span>
+          </div>
+          
+          <div class="messages" #messagesContainer>
+            @for (message of messages(); track message.id) {
+              <div 
+                class="message" 
+                [class.own]="isOwnMessage(message)"
+                [class.system]="message.type === 'system'"
+              >
+                @if (message.type === 'system') {
+                  <div class="system-message">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="12" cy="12" r="10"/>
+                      <line x1="12" y1="16" x2="12" y2="12"/>
+                      <line x1="12" y1="8" x2="12.01" y2="8"/>
+                    </svg>
+                    {{ message.text }}
+                  </div>
+                } @else {
+                  <div class="message-bubble">
+                    @if (!isOwnMessage(message)) {
+                      <span class="sender">{{ message.sender }}</span>
+                    }
+                    <p class="text">{{ message.text }}</p>
+                    <span class="time">{{ formatTime(message.timestamp) }}</span>
+                  </div>
+                }
+              </div>
+            }
+            
+            @if (messages().length === 0) {
+              <div class="no-messages">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+                </svg>
+                <p>No messages yet</p>
+                <span>Start the conversation!</span>
+              </div>
+            }
+          </div>
+          
+          <div class="chat-input">
+            <input 
+              type="text"
+              [value]="messageInput()"
+              (input)="updateMessage($any($event.target).value)"
+              (keydown)="onMessageKeydown($event)"
+              placeholder="Type a message..."
+              autocomplete="off"
+            />
+            <button class="send-btn" (click)="sendMessage()" [disabled]="!messageInput().trim()">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="22" y1="2" x2="11" y2="13"/>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>

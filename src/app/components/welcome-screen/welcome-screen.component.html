@@ -1,4 +1,4 @@
-<!-- Boot Screen -->
+<!-- Boot Screen - Minimalist with Effects -->
 <div class="boot-screen" *ngIf="isBooting()">
   <div class="boot-content">
     <div class="boot-logo">
@@ -12,11 +12,11 @@
         <div class="boot-progress-fill" [style.width.%]="bootProgress()"></div>
       </div>
     </div>
-    <div class="boot-status">Đang khởi động hệ thống...</div>
+    <div class="boot-status">Đang khởi động...</div>
   </div>
 </div>
 
-<!-- Welcome/Lock Screen -->
+<!-- Welcome/Lock Screen - Flat & Elegant -->
 <div class="welcome-screen" *ngIf="!isAuthenticated() && !isBooting()">
   <!-- Animated Background -->
   <div class="welcome-background">
@@ -27,9 +27,7 @@
         class="particle" 
         *ngFor="let i of particles; let idx = index"
         [style.left.%]="(idx * 10 + 5)"
-        [style.top.%]="(idx * 8 + 10)"
-        [style.animation-delay.s]="idx * 0.2"
-        [style.animation-duration.s]="(15 + idx * 2)">
+        [style.animation-delay.s]="idx * 2">
       </div>
     </div>
   </div>
@@ -46,7 +44,7 @@
         <div class="greeting-text">{{ greeting() }}</div>
       </div>
 
-      <!-- Middle Section: Login Card -->
+      <!-- Middle Section: Login -->
       <div class="middle-section">
         <div class="login-card">
           <div class="user-avatar">
@@ -57,34 +55,35 @@
           <!-- Password Input Section -->
           <div class="login-section">
             <div class="password-input-wrapper">
-              <div class="input-icon">
-                <i class="pi pi-lock"></i>
+              <div class="input-container" [class.has-error]="errorMessage()">
+                <div class="input-icon">
+                  <i class="pi pi-lock"></i>
+                </div>
+                <input
+                  [type]="showPassword() ? 'text' : 'password'"
+                  class="password-input"
+                  [value]="password()"
+                  (input)="onPasswordInput($event)"
+                  (keypress)="onKeyPress($event)"
+                  placeholder="Nhập mật khẩu"
+                  autofocus>
+                <button 
+                  type="button" 
+                  class="password-toggle"
+                  (click)="togglePasswordVisibility()"
+                  [title]="showPassword() ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'">
+                  <i [class]="showPassword() ? 'pi pi-eye-slash' : 'pi pi-eye'"></i>
+                </button>
+                <button 
+                  type="button" 
+                  class="unlock-button"
+                  [class.loading]="isLoading()"
+                  [disabled]="!password() || isLoading()"
+                  (click)="onSubmit()">
+                  <i class="pi pi-arrow-right" *ngIf="!isLoading()"></i>
+                  <div *ngIf="isLoading()" class="loading-spinner"></div>
+                </button>
               </div>
-              <input
-                [type]="showPassword() ? 'text' : 'password'"
-                class="password-input"
-                [class.error]="errorMessage()"
-                [value]="password()"
-                (input)="onPasswordInput($event)"
-                (keypress)="onKeyPress($event)"
-                placeholder="Mật khẩu"
-                autofocus>
-              <button 
-                type="button" 
-                class="password-toggle"
-                (click)="togglePasswordVisibility()"
-                [title]="showPassword() ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'">
-                <i [class]="showPassword() ? 'pi pi-eye-slash' : 'pi pi-eye'"></i>
-              </button>
-              <button 
-                type="button" 
-                class="unlock-button"
-                [class.loading]="isLoading()"
-                [disabled]="!password() || isLoading()"
-                (click)="onSubmit()">
-                <i class="pi pi-arrow-right" *ngIf="!isLoading()"></i>
-                <div *ngIf="isLoading()" class="loading-spinner"></div>
-              </button>
             </div>
 
             <!-- Error Message -->
@@ -97,11 +96,11 @@
             <div class="hint-section">
               <button class="hint-btn" (click)="toggleHint()">
                 <i [class]="showHint() ? 'pi pi-eye-slash' : 'pi pi-info-circle'"></i>
-                {{ showHint() ? 'Ẩn gợi ý' : 'Xem gợi ý' }}
+                {{ showHint() ? 'Ẩn gợi ý' : 'Gợi ý mật khẩu' }}
               </button>
               <div class="password-hint" *ngIf="showHint()">
                 <i class="pi pi-lightbulb"></i>
-                {{ getPasswordHint() }}
+                <span>{{ getPasswordHint() }}</span>
               </div>
             </div>
           </div>
@@ -111,7 +110,7 @@
       <!-- Bottom Section: Actions -->
       <div class="bottom-section">
         <div class="action-buttons">
-          <button class="action-btn restart-btn" (click)="onRestartRequest()" title="Khởi động lại hệ thống">
+          <button class="action-btn restart-btn" (click)="onRestartRequest()" title="Khởi động lại">
             <i class="pi pi-refresh"></i>
             <span>Khởi động lại</span>
           </button>
@@ -120,7 +119,7 @@
     </div>
   </div>
 
-  <!-- Loading Screen (shown after authentication) -->
+  <!-- Unlock Success Screen -->
   <div class="loading-screen" *ngIf="isAuthenticated()">
     <div class="loading-content">
       <div class="loading-avatar">
@@ -129,10 +128,16 @@
           <i class="pi pi-check"></i>
         </div>
       </div>
-      <div class="loading-text">Welcome back!</div>
+      <div class="loading-text">Chào mừng trở lại!</div>
+      <div class="loading-subtext">Đang tải môi trường làm việc...</div>
       <div class="loading-progress">
         <div class="progress-bar">
           <div class="progress-fill"></div>
+        </div>
+        <div class="progress-dots">
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
         </div>
       </div>
     </div>

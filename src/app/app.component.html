@@ -1,3 +1,9 @@
+<!-- Router Outlet for standalone pages like /chat -->
+<router-outlet *ngIf="!isDesktopRoute()"></router-outlet>
+
+<!-- Desktop Environment (only show on root route) -->
+<ng-container *ngIf="isDesktopRoute()">
+
 <!-- System Restart Screen -->
 <div *ngIf="showRestartScreen()" class="restart-screen">
   <div class="terminal-body" #terminalBody>
@@ -881,6 +887,9 @@
   </div>
 </app-welcome-screen>
 
+<!-- App Splash Screen -->
+<app-splash></app-splash>
+
 <!-- Settings Dialog -->
 <app-settings-dialog
   [isVisible]="showSettingsDialog()"
@@ -1044,3 +1053,5 @@
     </ng-container>
   </app-window>
 </ng-container>
+
+</ng-container><!-- End Desktop Environment -->

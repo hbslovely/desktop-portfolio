@@ -1,4 +1,6 @@
-// Boot Screen
+// ==========================================
+// BOOT SCREEN - Minimalist with Effects
+// ==========================================
 .boot-screen {
   position: fixed;
   top: 0;
@@ -9,131 +11,201 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #1e40af 100%);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', sans-serif;
+  background: #0a0a0a;
+  font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   overflow: hidden;
-  animation: fadeOut 0.5s ease 2.5s forwards;
+
+  // Animated gradient background
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: 
+      radial-gradient(ellipse 80% 50% at 50% -20%, rgba(59, 130, 246, 0.15) 0%, transparent 50%),
+      radial-gradient(ellipse 60% 40% at 100% 100%, rgba(139, 92, 246, 0.1) 0%, transparent 50%),
+      radial-gradient(ellipse 50% 30% at 0% 100%, rgba(236, 72, 153, 0.08) 0%, transparent 50%);
+    animation: bootGradientPulse 4s ease-in-out infinite;
+  }
+
+  // Floating orbs
+  &::after {
+    content: '';
+    position: absolute;
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, rgba(59, 130, 246, 0.2) 0%, transparent 70%);
+    border-radius: 50%;
+    top: 20%;
+    left: 10%;
+    animation: floatOrb1 8s ease-in-out infinite;
+    filter: blur(40px);
+  }
 
   .boot-content {
     text-align: center;
     color: white;
-    animation: fadeIn 0.5s ease;
+    position: relative;
+    z-index: 1;
 
     .boot-logo {
-      margin-bottom: 40px;
-      animation: scaleIn 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+      margin-bottom: 48px;
+      position: relative;
 
       .logo-circle {
-        width: 120px;
-        height: 120px;
+        width: 100px;
+        height: 100px;
         margin: 0 auto;
-        border-radius: 50%;
-        background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%);
-        backdrop-filter: blur(20px);
-        border: 3px solid rgba(255, 255, 255, 0.3);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 
-          0 0 40px rgba(255, 255, 255, 0.2),
-          inset 0 0 40px rgba(255, 255, 255, 0.1);
         position: relative;
-        overflow: hidden;
+        animation: logoReveal 1s cubic-bezier(0.4, 0, 0.2, 1);
 
+        // Outer ring animation
         &::before {
           content: '';
           position: absolute;
-          top: -50%;
-          left: -50%;
-          width: 200%;
-          height: 200%;
-          background: conic-gradient(
-            transparent,
-            rgba(255, 255, 255, 0.3),
-            transparent 30%
-          );
-          animation: rotate 2s linear infinite;
+          top: -10px;
+          left: -10px;
+          right: -10px;
+          bottom: -10px;
+          border: 2px solid transparent;
+          border-top-color: rgba(59, 130, 246, 0.8);
+          border-radius: 50%;
+          animation: spinRing 2s linear infinite;
+        }
+
+        // Second ring
+        &::after {
+          content: '';
+          position: absolute;
+          top: -20px;
+          left: -20px;
+          right: -20px;
+          bottom: -20px;
+          border: 1px solid transparent;
+          border-bottom-color: rgba(139, 92, 246, 0.5);
+          border-radius: 50%;
+          animation: spinRing 3s linear infinite reverse;
         }
 
         .logo-inner {
-          width: 80px;
-          height: 80px;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
           border-radius: 50%;
-          background: linear-gradient(135deg, #ffffff 0%, rgba(255, 255, 255, 0.8) 100%);
-          box-shadow: 
-            0 0 20px rgba(255, 255, 255, 0.5),
-            inset 0 0 20px rgba(255, 255, 255, 0.3);
-          position: relative;
-          z-index: 1;
           display: flex;
           align-items: center;
           justify-content: center;
+          box-shadow: 
+            0 0 60px rgba(59, 130, 246, 0.4),
+            inset 0 0 30px rgba(255, 255, 255, 0.1);
+          animation: logoPulse 2s ease-in-out infinite;
 
           &::after {
             content: 'DP';
-            font-size: 32px;
+            font-size: 36px;
             font-weight: 700;
-            color: #1e3a8a;
-            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            color: white;
+            letter-spacing: 2px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
           }
         }
       }
     }
 
     .boot-text {
-      font-size: 2.5rem;
-      font-weight: 600;
-      margin-bottom: 50px;
-      text-shadow: 0 2px 20px rgba(0, 0, 0, 0.3);
-      letter-spacing: 2px;
-      animation: slideUp 0.6s ease 0.3s both;
+      font-size: 1.8rem;
+      font-weight: 500;
+      margin-bottom: 60px;
+      color: rgba(255, 255, 255, 0.9);
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      opacity: 0;
+      animation: textFadeIn 0.8s ease 0.5s forwards;
     }
 
     .boot-progress-container {
-      width: 400px;
-      margin: 0 auto 20px;
-      animation: slideUp 0.6s ease 0.5s both;
+      width: 280px;
+      margin: 0 auto 24px;
+      opacity: 0;
+      animation: textFadeIn 0.6s ease 0.8s forwards;
 
       .boot-progress-bar {
         width: 100%;
-        height: 8px;
-        background: rgba(255, 255, 255, 0.2);
-        border-radius: 4px;
+        height: 3px;
+        background: rgba(255, 255, 255, 0.1);
         overflow: hidden;
-        box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+        position: relative;
 
         .boot-progress-fill {
           height: 100%;
-          background: linear-gradient(90deg, #ffffff 0%, rgba(255, 255, 255, 0.8) 100%);
-          border-radius: 4px;
-          box-shadow: 
-            0 0 10px rgba(255, 255, 255, 0.5),
-            0 0 20px rgba(255, 255, 255, 0.3);
+          background: linear-gradient(90deg, #3b82f6, #8b5cf6, #ec4899);
+          background-size: 200% 100%;
           transition: width 0.1s linear;
+          animation: gradientMove 2s linear infinite;
+          box-shadow: 0 0 20px rgba(59, 130, 246, 0.8);
         }
       }
     }
 
     .boot-status {
-      font-size: 0.9rem;
-      color: rgba(255, 255, 255, 0.9);
-      text-shadow: 0 1px 10px rgba(0, 0, 0, 0.3);
-      animation: slideUp 0.6s ease 0.7s both;
-      letter-spacing: 1px;
+      font-size: 0.8rem;
+      color: rgba(255, 255, 255, 0.5);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      opacity: 0;
+      animation: textFadeIn 0.6s ease 1s forwards;
     }
   }
 }
 
-@keyframes fadeOut {
-  from {
-    opacity: 1;
+@keyframes bootGradientPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes floatOrb1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25% { transform: translate(100px, 50px) scale(1.2); }
+  50% { transform: translate(50px, -50px) scale(0.8); }
+  75% { transform: translate(-50px, 30px) scale(1.1); }
+}
+
+@keyframes logoReveal {
+  0% { opacity: 0; transform: scale(0.5); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes spinRing {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes logoPulse {
+  0%, 100% { 
+    transform: scale(1);
+    box-shadow: 0 0 60px rgba(59, 130, 246, 0.4), inset 0 0 30px rgba(255, 255, 255, 0.1);
   }
-  to {
-    opacity: 0;
-    visibility: hidden;
+  50% { 
+    transform: scale(1.05);
+    box-shadow: 0 0 80px rgba(59, 130, 246, 0.6), inset 0 0 40px rgba(255, 255, 255, 0.15);
   }
 }
 
+@keyframes textFadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes gradientMove {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+
+// ==========================================
+// WELCOME/LOCK SCREEN - Flat & Elegant
+// ==========================================
 .welcome-screen {
   position: fixed;
   top: 0;
@@ -144,9 +216,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', sans-serif;
+  font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   overflow: hidden;
-  animation: fadeIn 0.5s ease;
 }
 
 .welcome-background {
@@ -156,7 +227,7 @@
   width: 100%;
   height: 100%;
   z-index: -1;
-  background: #0a0a0f;
+  background: #0d0d0d;
   overflow: hidden;
 
   .wallpaper {
@@ -165,10 +236,9 @@
     background-image: url('../../../assets/images/wallpaper.jpg');
     background-size: cover;
     background-position: center;
-    background-repeat: no-repeat;
-    opacity: 0.25;
-    animation: backgroundShift 25s ease-in-out infinite;
-    filter: blur(1px);
+    opacity: 0.15;
+    filter: blur(2px) saturate(1.2);
+    animation: slowZoom 60s ease-in-out infinite alternate;
   }
 
   .gradient-overlay {
@@ -178,19 +248,10 @@
     width: 100%;
     height: 100%;
     background: 
-      radial-gradient(circle at 20% 50%, rgba(99, 102, 241, 0.3) 0%, transparent 50%),
-      radial-gradient(circle at 80% 80%, rgba(236, 72, 153, 0.3) 0%, transparent 50%),
-      radial-gradient(circle at 40% 20%, rgba(59, 130, 246, 0.25) 0%, transparent 50%),
-      linear-gradient(
-        135deg,
-        rgba(99, 102, 241, 0.15) 0%,
-        rgba(139, 92, 246, 0.15) 25%,
-        rgba(236, 72, 153, 0.15) 50%,
-        rgba(59, 130, 246, 0.15) 75%,
-        rgba(99, 102, 241, 0.15) 100%
-      );
-    background-size: 100% 100%, 100% 100%, 100% 100%, 400% 400%;
-    animation: gradientShift 20s ease infinite, pulseRadial 8s ease-in-out infinite;
+      radial-gradient(ellipse 100% 100% at 50% 0%, rgba(59, 130, 246, 0.08) 0%, transparent 50%),
+      radial-gradient(ellipse 80% 60% at 100% 50%, rgba(139, 92, 246, 0.06) 0%, transparent 50%),
+      radial-gradient(ellipse 60% 60% at 0% 100%, rgba(236, 72, 153, 0.05) 0%, transparent 50%);
+    animation: gradientShift 20s ease infinite;
   }
 
   .particles {
@@ -199,36 +260,29 @@
     left: 0;
     width: 100%;
     height: 100%;
-    overflow: hidden;
 
     .particle {
       position: absolute;
-      width: 3px;
-      height: 3px;
-      background: rgba(255, 255, 255, 0.6);
+      width: 2px;
+      height: 2px;
+      background: rgba(255, 255, 255, 0.4);
       border-radius: 50%;
-      box-shadow: 
-        0 0 6px rgba(255, 255, 255, 0.8),
-        0 0 12px rgba(99, 102, 241, 0.6);
-      animation: float 25s infinite ease-in-out;
+      animation: particleFloat 20s infinite linear;
       
       &:nth-child(odd) {
-        background: rgba(99, 102, 241, 0.8);
-        box-shadow: 
-          0 0 8px rgba(99, 102, 241, 1),
-          0 0 16px rgba(99, 102, 241, 0.6);
+        width: 3px;
+        height: 3px;
+        background: rgba(59, 130, 246, 0.6);
       }
       
-      &:nth-child(even) {
-        background: rgba(236, 72, 153, 0.8);
-        box-shadow: 
-          0 0 8px rgba(236, 72, 153, 1),
-          0 0 16px rgba(236, 72, 153, 0.6);
+      &:nth-child(3n) {
+        animation-duration: 25s;
+        background: rgba(139, 92, 246, 0.5);
       }
     }
   }
-  
-  // Animated grid overlay
+
+  // Subtle line pattern
   &::before {
     content: '';
     position: absolute;
@@ -237,14 +291,29 @@
     width: 100%;
     height: 100%;
     background-image: 
-      linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-    background-size: 50px 50px;
-    animation: gridMove 20s linear infinite;
+      linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+    background-size: 80px 80px;
     pointer-events: none;
   }
 }
 
+@keyframes slowZoom {
+  from { transform: scale(1); }
+  to { transform: scale(1.1); }
+}
+
+@keyframes gradientShift {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.8; }
+}
+
+@keyframes particleFloat {
+  0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { transform: translateY(-100vh) rotate(720deg); opacity: 0; }
+}
 
 .welcome-content {
   display: flex;
@@ -260,299 +329,91 @@
 
 .lock-screen-container {
   width: 100%;
-  max-width: 420px;
+  max-width: 380px;
   display: flex;
   flex-direction: column;
   gap: 40px;
-  animation: fadeInUp 0.5s ease;
 }
 
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(40px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes backgroundShift {
-  0%, 100% {
-    transform: scale(1) translate(0, 0);
-  }
-  50% {
-    transform: scale(1.05) translate(-1%, -1%);
-  }
-}
-
-@keyframes gradientShift {
-  0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
-  }
-}
-
-@keyframes float {
-  0%, 100% {
-    transform: translate(0, 0) scale(1);
-    opacity: 0.2;
-  }
-  25% {
-    transform: translate(30px, -50px) scale(1.1);
-    opacity: 0.4;
-  }
-  50% {
-    transform: translate(-20px, -100px) scale(0.9);
-    opacity: 0.3;
-  }
-  75% {
-    transform: translate(50px, -30px) scale(1.05);
-    opacity: 0.4;
-  }
-}
-
-@keyframes timeGlow {
-  0%, 100% {
-    text-shadow: 
-      0 0 20px rgba(99, 102, 241, 0.6),
-      0 0 40px rgba(99, 102, 241, 0.4),
-      0 0 60px rgba(99, 102, 241, 0.2),
-      0 0 80px rgba(236, 72, 153, 0.1);
-  }
-  50% {
-    text-shadow: 
-      0 0 30px rgba(99, 102, 241, 0.8),
-      0 0 50px rgba(99, 102, 241, 0.5),
-      0 0 70px rgba(236, 72, 153, 0.3),
-      0 0 100px rgba(236, 72, 153, 0.2);
-  }
-}
-
-@keyframes shimmerText {
-  0% {
-    transform: translateX(-100%);
-  }
-  100% {
-    transform: translateX(100%);
-  }
-}
-
-@keyframes pulseRadial {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.8;
-  }
-}
-
-@keyframes gridMove {
-  0% {
-    transform: translate(0, 0);
-  }
-  100% {
-    transform: translate(50px, 50px);
-  }
-}
-
-@keyframes borderGlow {
-  0%, 100% {
-    opacity: 0;
-  }
-  50% {
-    opacity: 1;
-  }
-}
-
-@keyframes avatarFloat {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-8px);
-  }
-}
-
-@keyframes shimmer {
-  0% {
-    transform: translate(-50%, -50%) rotate(0deg);
-  }
-  100% {
-    transform: translate(-50%, -50%) rotate(360deg);
-  }
-}
-
-@keyframes pulseGlow {
-  0%, 100% {
-    opacity: 0.2;
-    transform: translate(-50%, -50%) scale(1);
-  }
-  50% {
-    opacity: 0.4;
-    transform: translate(-50%, -50%) scale(1.1);
-  }
-}
-
-// Top Section: Time & Greeting
+// ==========================================
+// TOP SECTION - Time Display
+// ==========================================
 .top-section {
   text-align: center;
-  position: relative;
-  z-index: 1;
+  animation: fadeInDown 0.8s ease;
 
   .time-display {
-    margin-bottom: 32px;
-    position: relative;
+    margin-bottom: 20px;
 
     .current-time {
-      font-size: 6rem;
+      font-size: 5.5rem;
       font-weight: 200;
-      margin-bottom: 16px;
       color: #ffffff;
-      letter-spacing: 8px;
-      font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      letter-spacing: 4px;
       line-height: 1;
+      margin-bottom: 12px;
+      text-shadow: 0 0 40px rgba(59, 130, 246, 0.3);
       animation: timeGlow 4s ease-in-out infinite;
-      text-shadow: 
-        0 0 20px rgba(99, 102, 241, 0.5),
-        0 0 40px rgba(99, 102, 241, 0.3),
-        0 0 60px rgba(99, 102, 241, 0.2);
-      position: relative;
-      
-      &::after {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: linear-gradient(
-          180deg,
-          transparent 0%,
-          rgba(99, 102, 241, 0.1) 50%,
-          transparent 100%
-        );
-        animation: shimmerText 3s ease-in-out infinite;
-        pointer-events: none;
-      }
     }
 
     .current-date {
-      font-size: 1.2rem;
-      font-weight: 300;
-      color: rgba(255, 255, 255, 0.85);
+      font-size: 1rem;
+      font-weight: 400;
+      color: rgba(255, 255, 255, 0.6);
       letter-spacing: 3px;
       text-transform: uppercase;
-      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-      font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     }
   }
 
   .greeting-text {
-    font-size: 1.75rem;
+    font-size: 1.4rem;
     font-weight: 300;
-    color: rgba(255, 255, 255, 0.95);
-    letter-spacing: 2px;
-    text-shadow: 0 2px 15px rgba(0, 0, 0, 0.4);
-    font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    animation: fadeInUp 0.8s ease 0.3s both;
+    color: rgba(255, 255, 255, 0.8);
+    letter-spacing: 1px;
   }
 }
 
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 
-// Middle Section: Login Card
+@keyframes timeGlow {
+  0%, 100% { text-shadow: 0 0 40px rgba(59, 130, 246, 0.3); }
+  50% { text-shadow: 0 0 60px rgba(59, 130, 246, 0.5), 0 0 80px rgba(139, 92, 246, 0.3); }
+}
+
+// ==========================================
+// MIDDLE SECTION - Login Card (NEW DESIGN)
+// ==========================================
 .middle-section {
   display: flex;
   justify-content: center;
-  animation: fadeInUp 0.6s ease 0.3s both;
+  animation: fadeInUp 0.8s ease 0.2s both;
 
   .login-card {
     width: 100%;
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    border-radius: 24px;
-    padding: 48px 40px;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 32px;
-    position: relative;
-    overflow: hidden;
-    box-shadow: 
-      0 8px 32px rgba(0, 0, 0, 0.4),
-      inset 0 1px 0 rgba(255, 255, 255, 0.1),
-      0 0 0 1px rgba(255, 255, 255, 0.05);
-
-    &::before {
-      content: '';
-      position: absolute;
-      top: -50%;
-      left: -50%;
-      width: 200%;
-      height: 200%;
-      background: radial-gradient(
-        circle,
-        rgba(99, 102, 241, 0.15) 0%,
-        rgba(236, 72, 153, 0.1) 30%,
-        transparent 70%
-      );
-      animation: shimmer 4s ease-in-out infinite;
-    }
-    
-    &::after {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      border-radius: 24px;
-      padding: 1px;
-      background: linear-gradient(
-        135deg,
-        rgba(99, 102, 241, 0.4),
-        rgba(236, 72, 153, 0.4),
-        rgba(99, 102, 241, 0.4)
-      );
-      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-      -webkit-mask-composite: xor;
-      mask-composite: exclude;
-      opacity: 0;
-      animation: borderGlow 3s ease-in-out infinite;
-      pointer-events: none;
-    }
   }
 
   .user-avatar {
     position: relative;
-    width: 112px;
-    height: 112px;
-    z-index: 1;
-    animation: avatarFloat 3s ease-in-out infinite;
+    width: 88px;
+    height: 88px;
 
     .avatar-glow {
       position: absolute;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      width: 140px;
-      height: 140px;
-      background: radial-gradient(
-        circle,
-        rgba(99, 102, 241, 0.4) 0%,
-        rgba(236, 72, 153, 0.3) 40%,
-        transparent 70%
-      );
+      width: 110px;
+      height: 110px;
+      background: radial-gradient(circle, rgba(59, 130, 246, 0.25) 0%, transparent 70%);
       border-radius: 50%;
-      animation: pulseGlow 3s ease-in-out infinite;
+      animation: avatarGlow 3s ease-in-out infinite;
       filter: blur(8px);
     }
 
@@ -562,94 +423,93 @@
       height: 100%;
       object-fit: cover;
       border-radius: 50%;
-      border: 3px solid rgba(255, 255, 255, 0.25);
-      transition: all 0.3s ease;
-      z-index: 2;
-      box-shadow: 
-        0 8px 32px rgba(0, 0, 0, 0.4),
-        0 0 0 4px rgba(99, 102, 241, 0.2),
-        inset 0 0 20px rgba(255, 255, 255, 0.1);
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 1;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
     }
 
     &:hover .avatar-image {
-      border-color: rgba(255, 255, 255, 0.4);
-      box-shadow: 
-        0 12px 40px rgba(99, 102, 241, 0.4),
-        0 0 0 4px rgba(99, 102, 241, 0.3),
-        inset 0 0 30px rgba(255, 255, 255, 0.15);
-      transform: scale(1.05);
+      border-color: rgba(59, 130, 246, 0.6);
+      transform: scale(1.08);
+      box-shadow: 0 12px 40px rgba(59, 130, 246, 0.35);
     }
   }
 
+  // ==========================================
+  // PASSWORD INPUT - Clean & Modern Design
+  // ==========================================
   .login-section {
     width: 100%;
-    z-index: 1;
 
     .password-input-wrapper {
       position: relative;
-      display: flex;
-      align-items: center;
-      gap: 12px;
       margin-bottom: 20px;
 
+      // Container for input and button
+      .input-container {
+        display: flex;
+        align-items: stretch;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        transition: all 0.3s ease;
+        overflow: hidden;
+
+        &:focus-within {
+          background: rgba(255, 255, 255, 0.06);
+          border-color: rgba(59, 130, 246, 0.4);
+          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        &.has-error {
+          border-color: rgba(239, 68, 68, 0.5);
+          box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+        }
+      }
+
       .input-icon {
-        position: absolute;
-        left: 16px;
-        color: rgba(255, 255, 255, 0.5);
-        font-size: 16px;
-        z-index: 2;
-        pointer-events: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 48px;
+        color: rgba(255, 255, 255, 0.35);
+        font-size: 14px;
+        flex-shrink: 0;
+        border-right: 1px solid rgba(255, 255, 255, 0.06);
       }
 
       .password-input {
         flex: 1;
-        padding: 18px 56px 18px 56px;
-        background: rgba(255, 255, 255, 0.06);
-        backdrop-filter: blur(10px);
-        border: 2px solid rgba(255, 255, 255, 0.15);
-        border-radius: 14px;
+        padding: 16px 40px 16px 14px;
+        background: transparent;
+        border: none;
         color: white;
-        font-size: 16px;
+        font-size: 15px;
         font-weight: 400;
-        transition: all 0.3s ease;
-        box-shadow: 
-          inset 0 2px 4px rgba(0, 0, 0, 0.1),
-          0 0 0 0 rgba(99, 102, 241, 0);
+        letter-spacing: 0.5px;
+        min-width: 0;
 
         &::placeholder {
-          color: rgba(255, 255, 255, 0.5);
+          color: rgba(255, 255, 255, 0.35);
           font-weight: 300;
         }
 
         &:focus {
           outline: none;
-          background: rgba(255, 255, 255, 0.1);
-          border-color: rgba(99, 102, 241, 0.6);
-          box-shadow: 
-            inset 0 2px 4px rgba(0, 0, 0, 0.1),
-            0 0 0 4px rgba(99, 102, 241, 0.2),
-            0 0 20px rgba(99, 102, 241, 0.3);
-        }
-
-        &.error {
-          border-color: #ef4444;
-          box-shadow: 
-            0 0 0 4px rgba(239, 68, 68, 0.2),
-            0 0 20px rgba(239, 68, 68, 0.3);
-          animation: shake 0.5s ease;
         }
       }
 
       .password-toggle {
         position: absolute;
-        right: 64px;
+        right: 56px;
+        top: 50%;
+        transform: translateY(-50%);
         width: 32px;
         height: 32px;
         border: none;
         background: transparent;
-        color: rgba(255, 255, 255, 0.5);
+        color: rgba(255, 255, 255, 0.35);
         cursor: pointer;
-        border-radius: 6px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -657,21 +517,16 @@
         z-index: 2;
 
         &:hover {
-          background: rgba(255, 255, 255, 0.08);
-          color: rgba(255, 255, 255, 0.8);
+          color: rgba(255, 255, 255, 0.7);
         }
 
-        i {
-          font-size: 16px;
-        }
+        i { font-size: 13px; }
       }
 
       .unlock-button {
-        width: 56px;
-        height: 56px;
+        width: 52px;
         border: none;
-        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%);
-        border-radius: 14px;
+        background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
         color: white;
         cursor: pointer;
         display: flex;
@@ -679,71 +534,50 @@
         justify-content: center;
         transition: all 0.3s ease;
         flex-shrink: 0;
-        z-index: 2;
-        box-shadow: 
-          0 4px 15px rgba(99, 102, 241, 0.4),
-          0 0 0 0 rgba(99, 102, 241, 0.5);
         position: relative;
         overflow: hidden;
 
+        // Shine effect
         &::before {
           content: '';
           position: absolute;
-          top: 50%;
-          left: 50%;
-          width: 0;
-          height: 0;
-          border-radius: 50%;
-          background: rgba(255, 255, 255, 0.3);
-          transform: translate(-50%, -50%);
-          transition: width 0.6s, height 0.6s;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent);
+          transition: left 0.5s ease;
         }
 
+        // Arrow icon
         i {
-          font-size: 22px;
-          position: relative;
-          z-index: 1;
+          font-size: 16px;
           transition: transform 0.3s ease;
         }
 
         .loading-spinner {
-          width: 22px;
-          height: 22px;
-          border: 2.5px solid rgba(255, 255, 255, 0.3);
+          width: 16px;
+          height: 16px;
+          border: 2px solid rgba(255, 255, 255, 0.3);
           border-top-color: white;
           border-radius: 50%;
-          animation: spin 0.8s linear infinite;
-          position: relative;
-          z-index: 1;
+          animation: spin 0.7s linear infinite;
         }
 
         &:hover:not(:disabled) {
-          transform: translateY(-2px);
-          box-shadow: 
-            0 8px 25px rgba(99, 102, 241, 0.5),
-            0 0 0 4px rgba(99, 102, 241, 0.3);
+          background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
           
-          &::before {
-            width: 200px;
-            height: 200px;
-          }
-          
-          i {
-            transform: translateX(2px);
-          }
+          &::before { left: 100%; }
+          i { transform: translateX(3px); }
         }
 
         &:active:not(:disabled) {
-          transform: translateY(0);
-          box-shadow: 
-            0 2px 10px rgba(99, 102, 241, 0.4),
-            0 0 0 2px rgba(99, 102, 241, 0.3);
+          transform: scale(0.98);
         }
 
         &:disabled {
-          opacity: 0.6;
+          opacity: 0.4;
           cursor: not-allowed;
-          transform: none;
         }
       }
     }
@@ -752,17 +586,17 @@
       display: flex;
       align-items: center;
       gap: 10px;
-      padding: 12px 16px;
-      background: rgba(239, 68, 68, 0.15);
-      border: 1px solid rgba(239, 68, 68, 0.3);
-      border-radius: 8px;
+      padding: 12px 14px;
+      background: rgba(239, 68, 68, 0.08);
+      border-left: 3px solid #ef4444;
       color: #fca5a5;
-      font-size: 14px;
+      font-size: 13px;
       margin-bottom: 16px;
-      animation: slideIn 0.3s ease;
+      animation: errorSlideIn 0.3s ease;
 
-      i {
-        font-size: 16px;
+      i { 
+        font-size: 14px;
+        color: #f87171;
       }
     }
 
@@ -771,12 +605,10 @@
 
       .hint-btn {
         padding: 10px 18px;
-        background: rgba(255, 255, 255, 0.06);
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        border-radius: 8px;
-        color: rgba(255, 255, 255, 0.8);
-        font-size: 13px;
-        font-weight: 400;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        color: rgba(255, 255, 255, 0.5);
+        font-size: 12px;
         cursor: pointer;
         display: inline-flex;
         align-items: center;
@@ -784,304 +616,496 @@
         transition: all 0.2s ease;
 
         &:hover {
-          background: rgba(255, 255, 255, 0.1);
-          border-color: rgba(255, 255, 255, 0.2);
+          background: rgba(255, 255, 255, 0.06);
+          border-color: rgba(255, 255, 255, 0.15);
+          color: rgba(255, 255, 255, 0.75);
         }
 
-        i {
-          font-size: 14px;
-        }
+        i { font-size: 12px; }
       }
 
       .password-hint {
         margin-top: 12px;
         padding: 12px 16px;
-        background: rgba(255, 255, 255, 0.06);
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        border-radius: 8px;
-        color: rgba(255, 255, 255, 0.9);
-        font-size: 14px;
-        display: inline-flex;
+        background: rgba(251, 191, 36, 0.08);
+        border-left: 3px solid #fbbf24;
+        color: #fcd34d;
+        font-size: 13px;
+        display: flex;
         align-items: center;
         gap: 10px;
+        text-align: left;
         animation: fadeIn 0.3s ease;
 
         i {
           color: #fbbf24;
-          font-size: 16px;
+          font-size: 14px;
+          flex-shrink: 0;
         }
       }
     }
   }
 }
 
-@keyframes scaleIn {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
+@keyframes avatarGlow {
+  0%, 100% { opacity: 0.6; transform: translate(-50%, -50%) scale(1); }
+  50% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
 }
 
 @keyframes shake {
   0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-10px); }
-  75% { transform: translateX(10px); }
-}
-
-@keyframes rotate {
-  to { transform: rotate(360deg); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
 }
 
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
 
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateX(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+@keyframes errorSlideIn {
+  from { opacity: 0; transform: translateX(-10px); }
+  to { opacity: 1; transform: translateX(0); }
 }
 
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
 
-// Bottom Section: Actions
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+// ==========================================
+// BOTTOM SECTION - Actions
+// ==========================================
 .bottom-section {
   display: flex;
   justify-content: center;
-  animation: slideUp 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.4s both;
+  animation: fadeInUp 0.8s ease 0.4s both;
 
   .action-buttons {
     display: flex;
     gap: 12px;
-    flex-wrap: wrap;
-    justify-content: center;
 
     .action-btn {
-      padding: 12px 20px;
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      border-radius: 8px;
-      color: rgba(255, 255, 255, 0.9);
-      font-size: 14px;
-      font-weight: 400;
+      padding: 10px 18px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 13px;
       cursor: pointer;
       display: flex;
       align-items: center;
       gap: 8px;
       transition: all 0.2s ease;
 
-      i {
-        font-size: 16px;
-      }
+      i { font-size: 14px; }
 
       &:hover {
-        background: rgba(255, 255, 255, 0.1);
-        border-color: rgba(255, 255, 255, 0.2);
-      }
-
-      &:active {
-        background: rgba(255, 255, 255, 0.08);
+        background: rgba(255, 255, 255, 0.06);
+        border-color: rgba(255, 255, 255, 0.15);
+        color: rgba(255, 255, 255, 0.85);
       }
     }
   }
 }
 
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-// Loading Screen
+// ==========================================
+// LOADING/UNLOCK SCREEN - IMPRESSIVE EFFECT
+// ==========================================
 .loading-screen {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.95);
-  backdrop-filter: blur(20px);
+  background: #0a0a0a;
   display: flex;
   align-items: center;
   justify-content: center;
-  animation: fadeIn 0.5s ease;
-  z-index: 100;
+  z-index: 200;
+  animation: unlockFadeIn 0.5s ease;
+
+  // Animated background circles
+  &::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 600px;
+    height: 600px;
+    transform: translate(-50%, -50%);
+    background: radial-gradient(circle, rgba(16, 185, 129, 0.15) 0%, transparent 50%);
+    animation: unlockPulse 2s ease-in-out infinite;
+    filter: blur(60px);
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 400px;
+    height: 400px;
+    transform: translate(-50%, -50%);
+    background: radial-gradient(circle, rgba(52, 211, 153, 0.2) 0%, transparent 60%);
+    animation: unlockPulse 2s ease-in-out infinite 0.5s;
+    filter: blur(40px);
+  }
+
+  // Particle burst effect
+  .unlock-particles {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+
+    .particle {
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      background: #34d399;
+      border-radius: 50%;
+      animation: particleBurst 1s ease-out forwards;
+
+      @for $i from 1 through 12 {
+        &:nth-child(#{$i}) {
+          animation-delay: #{$i * 0.05}s;
+          --angle: #{$i * 30}deg;
+        }
+      }
+    }
+  }
 
   .loading-content {
     text-align: center;
     color: white;
+    position: relative;
+    z-index: 1;
 
     .loading-avatar {
       position: relative;
       width: 120px;
       height: 120px;
-      margin: 0 auto 30px;
+      margin: 0 auto 32px;
+
+      // Outer ring animation
+      &::before {
+        content: '';
+        position: absolute;
+        top: -12px;
+        left: -12px;
+        right: -12px;
+        bottom: -12px;
+        border: 2px solid transparent;
+        border-top-color: rgba(16, 185, 129, 0.8);
+        border-radius: 50%;
+        animation: successRingSpin 1.5s linear infinite;
+      }
+
+      // Inner glow
+      &::after {
+        content: '';
+        position: absolute;
+        top: -6px;
+        left: -6px;
+        right: -6px;
+        bottom: -6px;
+        border: 1px solid rgba(52, 211, 153, 0.3);
+        border-radius: 50%;
+        animation: successRingPulse 2s ease-in-out infinite;
+      }
 
       .avatar-image {
         width: 100%;
         height: 100%;
         object-fit: cover;
         border-radius: 50%;
-        border: 4px solid rgba(255, 255, 255, 0.3);
-        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
-        animation: scaleIn 0.5s ease;
+        border: 3px solid rgba(16, 185, 129, 0.6);
+        box-shadow: 
+          0 0 40px rgba(16, 185, 129, 0.3),
+          0 0 80px rgba(16, 185, 129, 0.15);
+        animation: avatarSuccess 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
       }
 
       .success-checkmark {
         position: absolute;
-        bottom: -5px;
-        right: -5px;
-        width: 50px;
-        height: 50px;
+        bottom: -2px;
+        right: -2px;
+        width: 40px;
+        height: 40px;
         background: linear-gradient(135deg, #10b981 0%, #059669 100%);
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
-        border: 4px solid rgba(0, 0, 0, 0.9);
-        animation: popIn 0.5s ease 0.3s both;
-        box-shadow: 0 4px 20px rgba(16, 185, 129, 0.5);
+        animation: checkmarkBounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.3s both;
+        box-shadow: 
+          0 4px 20px rgba(16, 185, 129, 0.5),
+          0 0 0 4px #0a0a0a;
 
         i {
-          font-size: 24px;
+          font-size: 20px;
           color: white;
-          font-weight: bold;
+          animation: checkmarkIcon 0.3s ease 0.5s both;
         }
       }
     }
 
     .loading-text {
-      font-size: 28px;
-      font-weight: 600;
-      margin-bottom: 30px;
-      animation: slideUp 0.5s ease 0.2s both;
-      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+      font-size: 1.6rem;
+      font-weight: 400;
+      margin-bottom: 12px;
+      color: rgba(255, 255, 255, 0.95);
+      letter-spacing: 1px;
+      animation: textReveal 0.6s ease 0.4s both;
+    }
+
+    .loading-subtext {
+      font-size: 0.9rem;
+      color: rgba(255, 255, 255, 0.5);
+      margin-bottom: 32px;
+      animation: textReveal 0.6s ease 0.5s both;
     }
 
     .loading-progress {
-      width: 300px;
+      width: 240px;
       margin: 0 auto;
-      animation: slideUp 0.5s ease 0.3s both;
+      animation: textReveal 0.6s ease 0.6s both;
 
       .progress-bar {
         width: 100%;
-        height: 6px;
-        background: rgba(255, 255, 255, 0.2);
-        border-radius: 3px;
+        height: 3px;
+        background: rgba(255, 255, 255, 0.08);
         overflow: hidden;
+        position: relative;
 
         .progress-fill {
           height: 100%;
-          background: linear-gradient(90deg, #3b82f6 0%, #8b5cf6 100%);
-          animation: fillProgress 1.5s ease;
-          box-shadow: 0 0 15px rgba(59, 130, 246, 0.8);
+          background: linear-gradient(90deg, #10b981, #34d399, #6ee7b7);
+          background-size: 200% 100%;
+          animation: 
+            fillProgress 1s ease-out forwards,
+            progressShine 1.5s linear infinite;
+          box-shadow: 0 0 20px rgba(16, 185, 129, 0.6);
+        }
+      }
+
+      .progress-dots {
+        display: flex;
+        justify-content: center;
+        gap: 6px;
+        margin-top: 16px;
+
+        .dot {
+          width: 6px;
+          height: 6px;
+          background: rgba(255, 255, 255, 0.2);
+          border-radius: 50%;
+          animation: dotPulse 1.4s ease-in-out infinite;
+
+          &:nth-child(1) { animation-delay: 0s; }
+          &:nth-child(2) { animation-delay: 0.2s; }
+          &:nth-child(3) { animation-delay: 0.4s; }
         }
       }
     }
   }
 }
 
-@keyframes popIn {
-  from {
-    opacity: 0;
-    transform: scale(0);
+@keyframes unlockFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes unlockPulse {
+  0%, 100% { 
+    opacity: 0.5; 
+    transform: translate(-50%, -50%) scale(1); 
   }
-  to {
+  50% { 
+    opacity: 0.8; 
+    transform: translate(-50%, -50%) scale(1.15); 
+  }
+}
+
+@keyframes particleBurst {
+  0% { 
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+  100% { 
+    transform: translate(calc(cos(var(--angle)) * 100px), calc(sin(var(--angle)) * 100px)) scale(0);
+    opacity: 0;
+  }
+}
+
+@keyframes successRingSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes successRingPulse {
+  0%, 100% { 
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% { 
+    opacity: 0.6;
+    transform: scale(1.05);
+  }
+}
+
+@keyframes avatarSuccess {
+  0% { 
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  50% { 
+    transform: scale(1.1);
+  }
+  100% { 
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes checkmarkBounce {
+  0% { 
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% { 
+    transform: scale(1.3);
+  }
+  100% { 
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes checkmarkIcon {
+  from { 
+    transform: scale(0) rotate(-45deg);
+    opacity: 0;
+  }
+  to { 
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+@keyframes textReveal {
+  from { 
+    opacity: 0; 
+    transform: translateY(20px);
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0);
+  }
+}
+
+@keyframes fillProgress {
+  from { width: 0%; }
+  to { width: 100%; }
+}
+
+@keyframes progressShine {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+
+@keyframes dotPulse {
+  0%, 80%, 100% { 
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1);
+  }
+  40% { 
+    background: #34d399;
+    transform: scale(1.3);
+  }
+}
+
+// ==========================================
+// DESKTOP CONTENT
+// ==========================================
+.desktop-content {
+  width: 100%;
+  height: 100vh;
+  animation: desktopReveal 0.6s ease;
+}
+
+@keyframes desktopReveal {
+  from { 
+    opacity: 0;
+    transform: scale(1.02);
+  }
+  to { 
     opacity: 1;
     transform: scale(1);
   }
 }
 
-@keyframes fillProgress {
-  from {
-    width: 0%;
-  }
-  to {
-    width: 100%;
-  }
-}
-
-// Desktop Content
-.desktop-content {
-  width: 100%;
-  height: 100vh;
-}
-
-// Responsive Design
+// ==========================================
+// RESPONSIVE
+// ==========================================
 @media (max-width: 768px) {
   .lock-screen-container {
-    gap: 40px;
+    gap: 32px;
     max-width: 90%;
   }
 
   .top-section .time-display .current-time {
     font-size: 3.5rem;
-    letter-spacing: 4px;
   }
 
   .top-section .greeting-text {
-    font-size: 1.4rem;
+    font-size: 1.2rem;
   }
 
-  .middle-section {
-    .login-card {
-      padding: 32px 24px;
-    }
+  .middle-section .user-avatar {
+    width: 76px;
+    height: 76px;
+  }
 
-    .user-avatar {
-      width: 100px;
-      height: 100px;
-    }
+  .loading-screen .loading-content .loading-avatar {
+    width: 100px;
+    height: 100px;
   }
 }
 
 @media (max-width: 480px) {
-  .welcome-content {
-    padding: 16px;
-  }
-
   .top-section .time-display .current-time {
-    font-size: 2.5rem;
+    font-size: 2.8rem;
     letter-spacing: 2px;
   }
 
   .middle-section .login-section .password-input-wrapper {
-    flex-direction: column;
+    .input-container {
+      flex-direction: column;
+    }
+
+    .input-icon {
+      display: none;
+    }
     
     .password-input {
-      width: 100%;
-      padding: 16px 18px;
+      padding: 14px 44px 14px 16px;
     }
 
     .unlock-button {
       width: 100%;
-      height: 52px;
+      height: 48px;
     }
 
     .password-toggle {
-      right: 18px;
+      right: 12px;
     }
   }
 }
