@@ -90,6 +90,10 @@ export class WebRTCService implements OnDestroy {
 
   // Typing indicator state
   typingUsers = signal<Map<string, string>>(new Map()); // oderId -> userName
+  
+  // Voice activity detection
+  isSpeaking = signal(false);
+  speakingPeers = signal<Set<string>>(new Set());
 
   // Events
   private messageSubject = new Subject<ChatMessage>();
@@ -143,9 +147,30 @@ export class WebRTCService implements OnDestroy {
   private typingTimeout: any = null;
   private isCurrentlyTyping = false;
   private typingTimeouts = new Map<string, any>(); // Clear typing after timeout
+  
+  // Voice activity detection
+  private audioContext: AudioContext | null = null;
+  private localAnalyser: AnalyserNode | null = null;
+  private remoteAnalysers = new Map<string, AnalyserNode>();
+  private voiceActivityInterval: any;
+
+  // Random name generators
+  private adjectives = [
+    'Happy', 'Brave', 'Clever', 'Swift', 'Bright', 'Calm', 'Kind', 'Bold',
+    'Wise', 'Cool', 'Noble', 'Quick', 'Sharp', 'Smart', 'Warm', 'Wild',
+    'Lucky', 'Sunny', 'Cosmic', 'Magic', 'Golden', 'Silver', 'Crystal', 'Ocean',
+    'Forest', 'Thunder', 'Shadow', 'Mystic', 'Stellar', 'Atomic', 'Digital', 'Neon'
+  ];
+  
+  private nouns = [
+    'Tiger', 'Eagle', 'Wolf', 'Bear', 'Lion', 'Hawk', 'Fox', 'Panda',
+    'Dragon', 'Phoenix', 'Falcon', 'Shark', 'Dolphin', 'Owl', 'Raven', 'Lynx',
+    'Knight', 'Ninja', 'Wizard', 'Ranger', 'Hunter', 'Pilot', 'Captain', 'Scout',
+    'Coder', 'Hacker', 'Gamer', 'Artist', 'Voyager', 'Explorer', 'Pioneer', 'Legend'
+  ];
 
   constructor() {
-    this.localUserName = `User_${this.generateUserId().slice(0, 4)}`;
+    this.localUserName = this.generateRandomName();
   }
 
   ngOnDestroy(): void {
@@ -154,6 +179,14 @@ export class WebRTCService implements OnDestroy {
 
   private generateUserId(): string {
     return Math.random().toString(36).substring(2, 15);
+  }
+  
+  // Generate a random meaningful username
+  private generateRandomName(): string {
+    const adj = this.adjectives[Math.floor(Math.random() * this.adjectives.length)];
+    const noun = this.nouns[Math.floor(Math.random() * this.nouns.length)];
+    const num = Math.floor(Math.random() * 100);
+    return `${adj}${noun}${num}`;
   }
 
   getLocalUserId(): string {
@@ -165,7 +198,7 @@ export class WebRTCService implements OnDestroy {
   }
 
   setLocalUserName(name: string): void {
-    this.localUserName = name || `User_${this.generateUserId().slice(0, 4)}`;
+    this.localUserName = name || this.generateRandomName();
   }
 
   // Connect to signaling server
@@ -371,6 +404,11 @@ export class WebRTCService implements OnDestroy {
       this.localStream.set(stream);
       this.isVideoEnabled.set(video);
       this.isAudioEnabled.set(audio);
+      
+      // Setup voice activity detection for local stream
+      if (audio) {
+        this.setupVoiceActivityDetection(stream);
+      }
 
       return stream;
     } catch (error) {
@@ -378,6 +416,99 @@ export class WebRTCService implements OnDestroy {
       this.addSystemMessage('Failed to access camera/microphone. Please check permissions.');
       return null;
     }
+  }
+  
+  // Setup voice activity detection
+  private setupVoiceActivityDetection(stream: MediaStream): void {
+    try {
+      if (!this.audioContext) {
+        this.audioContext = new AudioContext();
+      }
+      
+      const source = this.audioContext.createMediaStreamSource(stream);
+      this.localAnalyser = this.audioContext.createAnalyser();
+      this.localAnalyser.fftSize = 256;
+      this.localAnalyser.smoothingTimeConstant = 0.5;
+      source.connect(this.localAnalyser);
+      
+      // Start monitoring voice activity
+      this.startVoiceActivityMonitoring();
+    } catch (error) {
+      console.error('Error setting up voice activity detection:', error);
+    }
+  }
+  
+  // Start monitoring voice activity
+  private startVoiceActivityMonitoring(): void {
+    if (this.voiceActivityInterval) {
+      clearInterval(this.voiceActivityInterval);
+    }
+    
+    const checkVoiceActivity = () => {
+      // Check local speaking
+      if (this.localAnalyser && this.isAudioEnabled()) {
+        const dataArray = new Uint8Array(this.localAnalyser.frequencyBinCount);
+        this.localAnalyser.getByteFrequencyData(dataArray);
+        
+        // Calculate average volume
+        const average = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
+        const isSpeaking = average > 15; // Threshold for voice activity
+        
+        if (this.isSpeaking() !== isSpeaking) {
+          this.isSpeaking.set(isSpeaking);
+        }
+      } else {
+        if (this.isSpeaking()) {
+          this.isSpeaking.set(false);
+        }
+      }
+      
+      // Check remote speakers
+      const currentSpeakers = new Set<string>();
+      this.remoteAnalysers.forEach((analyser, peerId) => {
+        const dataArray = new Uint8Array(analyser.frequencyBinCount);
+        analyser.getByteFrequencyData(dataArray);
+        
+        const average = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
+        if (average > 15) {
+          currentSpeakers.add(peerId);
+        }
+      });
+      
+      // Update if changed
+      const currentSet = this.speakingPeers();
+      if (currentSpeakers.size !== currentSet.size || 
+          ![...currentSpeakers].every(id => currentSet.has(id))) {
+        this.speakingPeers.set(currentSpeakers);
+      }
+    };
+    
+    // Check every 100ms
+    this.voiceActivityInterval = setInterval(checkVoiceActivity, 100);
+  }
+  
+  // Setup voice activity detection for remote stream
+  setupRemoteVoiceActivity(peerId: string, stream: MediaStream): void {
+    try {
+      if (!this.audioContext) {
+        this.audioContext = new AudioContext();
+      }
+      
+      const source = this.audioContext.createMediaStreamSource(stream);
+      const analyser = this.audioContext.createAnalyser();
+      analyser.fftSize = 256;
+      analyser.smoothingTimeConstant = 0.5;
+      source.connect(analyser);
+      
+      this.remoteAnalysers.set(peerId, analyser);
+    } catch (error) {
+      console.error('Error setting up remote voice activity:', error);
+    }
+  }
+  
+  // Check if a specific peer is speaking
+  isPeerSpeaking(peerId: string): boolean {
+    return this.speakingPeers().has(peerId);
   }
 
   // Toggle video
@@ -613,7 +744,7 @@ export class WebRTCService implements OnDestroy {
       this.peerStreamIds.set(peerId, new Set<string>());
     }
 
-    // Handle incoming tracks
+// Handle incoming tracks
     pc.ontrack = (event) => {
       console.log('Received remote track from:', peerId, 'track kind:', event.track.kind, 'streams:', event.streams.length);
       const remoteStream = event.streams[0];
@@ -624,10 +755,10 @@ export class WebRTCService implements OnDestroy {
       }
 
       const knownStreamIds = this.peerStreamIds.get(peerId)!;
-      
+
       // Check if this is a new stream (screen share) or existing (camera)
       const isNewStream = !knownStreamIds.has(remoteStream.id);
-      
+
       console.log('Stream ID:', remoteStream.id, 'isNew:', isNewStream, 'known streams:', knownStreamIds.size);
 
       if (isNewStream) {
@@ -650,6 +781,27 @@ export class WebRTCService implements OnDestroy {
             newShares.set(peerId, remoteStream);
             return newShares;
           });
+          
+          // Listen for track removal on screen share stream
+          event.track.onended = () => {
+            console.log('Screen share track ended from:', peerId);
+            this.remoteScreenShares.update(shares => {
+              const newShares = new Map(shares);
+              newShares.delete(peerId);
+              return newShares;
+            });
+            // Remove from known streams so it can be re-added if they share again
+            knownStreamIds.delete(remoteStream.id);
+          };
+          
+          event.track.onmute = () => {
+            console.log('Screen share track muted from:', peerId);
+            this.remoteScreenShares.update(shares => {
+              const newShares = new Map(shares);
+              newShares.delete(peerId);
+              return newShares;
+            });
+          };
         }
       }
 
@@ -1516,6 +1668,21 @@ export class WebRTCService implements OnDestroy {
   // Cleanup on service destroy
   cleanup(): void {
     this.leaveRoom();
+
+    // Stop voice activity monitoring
+    if (this.voiceActivityInterval) {
+      clearInterval(this.voiceActivityInterval);
+      this.voiceActivityInterval = null;
+    }
+    
+    // Close audio context
+    if (this.audioContext) {
+      this.audioContext.close();
+      this.audioContext = null;
+    }
+    
+    this.localAnalyser = null;
+    this.remoteAnalysers.clear();
 
     // Disconnect socket
     if (this.socket) {
