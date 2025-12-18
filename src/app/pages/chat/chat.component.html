@@ -231,13 +231,14 @@
           <!-- Cameras Container (for focus layout) -->
           @if (layoutMode() === 'focus' && (localScreenStream() || remoteScreenShares().size > 0)) {
             <div class="cameras-strip">
-              <!-- Local Camera -->
+<!-- Local Camera -->
               <div class="video-wrapper local camera-tile">
-                <video 
-                  #localVideo 
-                  autoplay 
-                  muted 
+                <video
+                  #localVideo
+                  autoplay
+                  muted
                   playsinline
+                  [srcObject]="localStream()"
                   [class.video-off]="!isVideoEnabled()"
                 ></video>
                 @if (!isVideoEnabled()) {
@@ -261,12 +262,12 @@
               @for (entry of remoteStreams() | keyvalue; track entry.key) {
                 <div class="video-wrapper remote camera-tile">
                   <video 
-                    autoplay 
+autoplay
                     playsinline
                     [srcObject]="entry.value"
-                    [class.video-off]="!hasActiveVideo(entry.value)"
+                    [class.video-off]="!isParticipantVideoEnabled(entry.key)"
                   ></video>
-                  @if (!hasActiveVideo(entry.value)) {
+                  @if (!isParticipantVideoEnabled(entry.key)) {
                     <div class="video-placeholder">
                       <div class="avatar">{{ getAvatarLetter(getParticipantName(entry.key)) }}</div>
                       <span>{{ getParticipantName(entry.key) }}</span>
@@ -294,6 +295,7 @@
                 autoplay 
                 muted 
                 playsinline
+                [srcObject]="localStream()"
                 [class.video-off]="!isVideoEnabled()"
               ></video>
               @if (!isVideoEnabled()) {
@@ -328,12 +330,12 @@
                   autoplay 
                   playsinline
                   [srcObject]="entry.value"
-                  [class.video-off]="!hasActiveVideo(entry.value)"
+                  [class.video-off]="!isParticipantVideoEnabled(entry.key)"
                   (dblclick)="toggleVideoFullscreen(entry.key)"
                 ></video>
                 
                 <!-- Avatar when video is off (like MS Teams) -->
-                @if (!hasActiveVideo(entry.value)) {
+                @if (!isParticipantVideoEnabled(entry.key)) {
                   <div class="video-placeholder">
                     <div class="avatar">{{ getAvatarLetter(getParticipantName(entry.key)) }}</div>
                     <span>{{ getParticipantName(entry.key) }}</span>
@@ -352,7 +354,7 @@
                         <line x1="8" y1="23" x2="16" y2="23"/>
                       </svg>
                     }
-                    @if (!hasActiveVideo(entry.value)) {
+                    @if (!isParticipantVideoEnabled(entry.key)) {
                       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="video-off-icon">
                         <path d="M16.5 17.5L1 1"/>
                         <path d="M22 8l-5 3 5 3v-6z"/>

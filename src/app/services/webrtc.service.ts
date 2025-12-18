@@ -118,6 +118,9 @@ export class WebRTCService implements OnDestroy {
   private localUserName = '';
   private screenStream: MediaStream | null = null;
   private pendingCandidates = new Map<string, RTCIceCandidateInit[]>();
+  
+  // Track known stream IDs per peer (to distinguish camera vs screen share)
+  private peerStreamIds = new Map<string, Set<string>>();
 
   // Track participant names by ID
   private participantNames = new Map<string, string>();
@@ -224,11 +227,19 @@ export class WebRTCService implements OnDestroy {
       // Store participant names and create peer connections
       for (const participant of participants) {
         this.participantNames.set(participant.id, participant.userName);
+        // Store initial media state from participant (default to true if not provided)
+        this.participantMediaStates.set(participant.id, {
+          videoEnabled: participant.videoEnabled ?? true,
+          audioEnabled: participant.audioEnabled ?? true
+        });
         await this.createPeerConnection(participant.id, true);
       }
 
       // Update participants list
       this.updateParticipantsList();
+      
+      // Send our media state to existing participants
+      setTimeout(() => this.notifyMediaStateChange(), 500);
     });
 
     // New user joined
@@ -238,9 +249,18 @@ export class WebRTCService implements OnDestroy {
 
       // Store participant name
       this.participantNames.set(userId, userName);
+      
+      // Set default media state for new user (default to true)
+      this.participantMediaStates.set(userId, {
+        videoEnabled: true,
+        audioEnabled: true
+      });
 
       // Create peer connection and send offer
       await this.createPeerConnection(userId, false);
+      
+      // Send our media state to the new user
+      setTimeout(() => this.notifyMediaStateChange(), 500);
 
       // Update participants list
       this.updateParticipantsList();
@@ -412,11 +432,14 @@ export class WebRTCService implements OnDestroy {
 
       const videoTrack = this.screenStream.getVideoTracks()[0];
 
-      // Add screen share track to all peer connections (don't replace camera)
-      this.peerConnections.forEach((pc) => {
+      // Add screen share track to all peer connections and renegotiate
+      for (const [peerId, pc] of this.peerConnections.entries()) {
         // Add new track for screen share
         pc.addTrack(videoTrack, this.screenStream!);
-      });
+        
+        // Renegotiate to send the new track
+        await this.renegotiate(peerId, pc);
+      }
 
       // Update local screen stream signal
       this.localScreenStream.set(this.screenStream);
@@ -436,19 +459,40 @@ export class WebRTCService implements OnDestroy {
       return false;
     }
   }
+  
+  // Renegotiate peer connection (used when adding/removing tracks)
+  private async renegotiate(peerId: string, pc: RTCPeerConnection): Promise<void> {
+    try {
+      console.log('Renegotiating with peer:', peerId);
+      
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      
+      if (this.socket?.connected) {
+        this.socket.emit('offer', {
+          targetId: peerId,
+          offer: pc.localDescription
+        });
+      }
+    } catch (error) {
+      console.error('Renegotiation error:', error);
+    }
+  }
 
   // Stop screen sharing
   async stopScreenShare(): Promise<void> {
     if (this.screenStream) {
       const videoTrack = this.screenStream.getVideoTracks()[0];
 
-      // Remove screen share track from all peer connections
-      this.peerConnections.forEach((pc) => {
+      // Remove screen share track from all peer connections and renegotiate
+      for (const [peerId, pc] of this.peerConnections.entries()) {
         const sender = pc.getSenders().find(s => s.track === videoTrack);
         if (sender) {
           pc.removeTrack(sender);
+          // Renegotiate after removing track
+          await this.renegotiate(peerId, pc);
         }
-      });
+      }
 
       this.screenStream.getTracks().forEach(track => track.stop());
       this.screenStream = null;
@@ -564,18 +608,27 @@ export class WebRTCService implements OnDestroy {
       });
     }
 
-    // Track known stream IDs for this peer
-    const knownStreamIds = new Set<string>();
+    // Initialize stream tracking for this peer if not exists
+    if (!this.peerStreamIds.has(peerId)) {
+      this.peerStreamIds.set(peerId, new Set<string>());
+    }
 
     // Handle incoming tracks
     pc.ontrack = (event) => {
-      console.log('Received remote track from:', peerId, 'track kind:', event.track.kind);
+      console.log('Received remote track from:', peerId, 'track kind:', event.track.kind, 'streams:', event.streams.length);
       const remoteStream = event.streams[0];
 
-      if (!remoteStream) return;
+      if (!remoteStream) {
+        console.warn('No stream in track event');
+        return;
+      }
 
+      const knownStreamIds = this.peerStreamIds.get(peerId)!;
+      
       // Check if this is a new stream (screen share) or existing (camera)
       const isNewStream = !knownStreamIds.has(remoteStream.id);
+      
+      console.log('Stream ID:', remoteStream.id, 'isNew:', isNewStream, 'known streams:', knownStreamIds.size);
 
       if (isNewStream) {
         knownStreamIds.add(remoteStream.id);
@@ -583,6 +636,7 @@ export class WebRTCService implements OnDestroy {
         // First stream is camera, additional streams are screen share
         if (knownStreamIds.size === 1) {
           // This is the camera stream
+          console.log('Setting as camera stream for:', peerId);
           this.remoteStreams.update(streams => {
             const newStreams = new Map(streams);
             newStreams.set(peerId, remoteStream);
@@ -590,7 +644,7 @@ export class WebRTCService implements OnDestroy {
           });
         } else {
           // This is a screen share stream
-          console.log('Received screen share stream from:', peerId);
+          console.log('Setting as screen share stream for:', peerId);
           this.remoteScreenShares.update(shares => {
             const newShares = new Map(shares);
             newShares.set(peerId, remoteStream);
@@ -1387,6 +1441,7 @@ export class WebRTCService implements OnDestroy {
     this.dataChannels.delete(peerId);
     this.pendingCandidates.delete(peerId);
     this.participantMediaStates.delete(peerId);
+    this.peerStreamIds.delete(peerId);
 
     this.remoteStreams.update(streams => {
       const newStreams = new Map(streams);
@@ -1419,6 +1474,7 @@ export class WebRTCService implements OnDestroy {
     this.peerConnections.clear();
     this.dataChannels.clear();
     this.pendingCandidates.clear();
+    this.peerStreamIds.clear();
 
     // Stop local stream
     const localStream = this.localStream();
