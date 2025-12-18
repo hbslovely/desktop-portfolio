@@ -1,17 +1,17 @@
 /**
  * Update Stock Prices Script
- * 
+ *
  * This script fetches the latest price data from DNSE API and updates:
  * 1. priceData in JSON files (appends new dates)
  * 2. basicInfo with latest price information
- * 
+ *
  * Usage:
  *   node scripts/update-prices.js                  # Update all stocks
  *   node scripts/update-prices.js VNM FPT ACB     # Update specific stocks
  *   node scripts/update-prices.js --stocks-only   # Update only 3-char stock symbols
  *   node scripts/update-prices.js --days=30       # Fetch last 30 days (default: 7)
  *   node scripts/update-prices.js --concurrent=5  # Process 5 stocks at a time (default: 3)
- * 
+ *
  * Run: npm run update:prices
  */
 
@@ -26,15 +26,15 @@ const __dirname = path.dirname(__filename);
 const DNSE_API_BASE = 'https://api.dnse.com.vn';
 const STOCKS_DIR = path.join(__dirname, '../data/stocks');
 const DEFAULT_DAYS = 7; // Fetch last 7 days by default
-const DEFAULT_CONCURRENT = 3; // Process 3 stocks at a time
-const DELAY_BETWEEN_REQUESTS = 500; // 500ms delay between requests to avoid rate limiting
+const DEFAULT_CONCURRENT = 10; // Process 3 stocks at a time
+const DELAY_BETWEEN_REQUESTS = 150; // 500ms delay between requests to avoid rate limiting
 
 // Parse command line arguments
 function parseArgs() {
   const args = process.argv.slice(2);
   const options = {
     symbols: [],
-    stocksOnly: false,
+    stocksOnly: true,
     days: DEFAULT_DAYS,
     concurrent: DEFAULT_CONCURRENT,
   };
@@ -60,9 +60,9 @@ function parseArgs() {
 async function fetchOHLCData(symbol, days) {
   const now = Math.floor(Date.now() / 1000);
   const from = now - (days * 24 * 60 * 60);
-  
+
   const url = `${DNSE_API_BASE}/chart-api/v2/ohlcs/stock?from=${from}&to=${now}&symbol=${symbol}&resolution=1D`;
-  
+
   try {
     const response = await fetch(url, {
       headers: {
@@ -99,7 +99,7 @@ function mergePriceData(existingData, newData) {
 
   // Create a map of existing timestamps for quick lookup
   const existingTimestamps = new Set(existingData.t);
-  
+
   // Find new data points that don't exist
   const newIndices = [];
   for (let i = 0; i < newData.t.length; i++) {
@@ -113,7 +113,7 @@ function mergePriceData(existingData, newData) {
     // But still update the last price if timestamps match
     const lastNewIdx = newData.t.length - 1;
     const lastExistingIdx = existingData.t.findIndex(t => t === newData.t[lastNewIdx]);
-    
+
     if (lastExistingIdx !== -1) {
       // Update the last matching entry with fresh data
       existingData.o[lastExistingIdx] = newData.o[lastNewIdx];
@@ -122,7 +122,7 @@ function mergePriceData(existingData, newData) {
       existingData.c[lastExistingIdx] = newData.c[lastNewIdx];
       existingData.v[lastExistingIdx] = newData.v[lastNewIdx];
     }
-    
+
     return existingData;
   }
 
@@ -190,7 +190,7 @@ function updateBasicInfo(basicInfo, priceData) {
  */
 async function processStock(symbol, days) {
   const filePath = path.join(STOCKS_DIR, `${symbol}.json`);
-  
+
   // Check if file exists
   if (!fs.existsSync(filePath)) {
     console.log(`  ⚠️  ${symbol}: File not found, skipping`);
@@ -204,7 +204,7 @@ async function processStock(symbol, days) {
 
     // Fetch new price data
     const newPriceData = await fetchOHLCData(symbol, days);
-    
+
     if (!newPriceData || !newPriceData.t || newPriceData.t.length === 0) {
       console.log(`  ⚠️  ${symbol}: No price data available from API`);
       return { symbol, status: 'skipped', reason: 'no_data' };
@@ -212,7 +212,7 @@ async function processStock(symbol, days) {
 
     // Merge price data
     const mergedPriceData = mergePriceData(stockData.priceData || {}, newPriceData);
-    
+
     // Update basicInfo
     const updatedBasicInfo = updateBasicInfo(stockData.basicInfo || {}, mergedPriceData);
 
@@ -227,10 +227,10 @@ async function processStock(symbol, days) {
 
     // Write back to file
     fs.writeFileSync(filePath, JSON.stringify(updatedStockData, null, 2));
-    
+
     const newDataPoints = newPriceData.t.length;
     console.log(`  ✅ ${symbol}: Updated (${newDataPoints} data points from API, latest price: ${updatedBasicInfo.matchPrice})`);
-    
+
     return { symbol, status: 'updated', dataPoints: newDataPoints, price: updatedBasicInfo.matchPrice };
 
   } catch (error) {
@@ -260,7 +260,7 @@ async function processBatch(symbols, days, concurrent) {
   // Process in batches
   for (let i = 0; i < symbols.length; i += concurrent) {
     const batch = symbols.slice(i, i + concurrent);
-    
+
     // Process batch concurrently
     const batchResults = await Promise.all(
       batch.map(async (symbol, idx) => {
@@ -285,10 +285,10 @@ async function processBatch(symbols, days, concurrent) {
     // Progress update
     const processed = Math.min(i + concurrent, symbols.length);
     console.log(`\n📊 Progress: ${processed}/${symbols.length} stocks processed`);
-    
+
     // Delay between batches
     if (i + concurrent < symbols.length) {
-      await sleep(1000);
+      await sleep(0);
     }
   }
 
@@ -303,7 +303,7 @@ async function main() {
   console.log('════════════════════════════════════════\n');
 
   const options = parseArgs();
-  
+
   console.log('📋 Options:');
   console.log(`   Days to fetch: ${options.days}`);
   console.log(`   Concurrent: ${options.concurrent}`);
@@ -312,7 +312,7 @@ async function main() {
 
   // Get list of symbols to process
   let symbols = [];
-  
+
   if (options.symbols.length > 0) {
     // Use specified symbols
     symbols = options.symbols;
@@ -332,10 +332,10 @@ async function main() {
   console.log('────────────────────────────────────────');
 
   const startTime = Date.now();
-  
+
   // Process stocks
   const results = await processBatch(symbols, options.days, options.concurrent);
-  
+
   const duration = ((Date.now() - startTime) / 1000).toFixed(1);
 
   // Summary
