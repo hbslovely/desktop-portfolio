@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payroll 2026 - Color Synced</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { border-radius: 0px !important; font-family: 'Plus Jakarta Sans', sans-serif; }
+        .stt-font { font-family: 'Arial', monospace; font-weight: 700; font-size: 13px; }
+        .row-header { background-color: #575757; text-transform: uppercase; font-size: 11px; letter-spacing: 0.1em; font-weight: 800; color: #eeeeee; }
+        .sub-row-style { font-size: 13px; font-weight: 600; color: #334155; }
+
+        /* Cột Cũ: Đen */
+        .col-old { color: #0f172a !important; }
+        /* Cột Mới: Xanh */
+        .col-new { color: #2563eb !important; }
+
+        input:focus, select:focus { outline: 2px solid #2563eb; background: white; }
+        .pct-label { font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; margin-right: 6px; }
+    </style>
+</head>
+<body class="bg-slate-50 p-4 md:p-8 text-slate-900">
+
+<div class="max-w-6xl mx-auto bg-white border border-slate-200 shadow-xl">
+    <header class="p-8 border-b-2 border-slate-100 flex justify-between items-center bg-white">
+        <div>
+            <h1 class="text-2xl font-black uppercase tracking-tighter italic">Công cụ tính thuế TNCN 2026</h1>
+            <p class="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest italic">Hệ thống phân tích thay đổi của thuế TNCN từ năm 2026</p>
+        </div>
+        <div class="bg-blue-600 text-white p-4">
+            <span class="block text-[10px] font-bold uppercase opacity-80 text-center">NET tăng thêm</span>
+            <span id="finalDiff" class="text-2xl font-black tracking-tighter italic">0 ₫</span>
+        </div>
+    </header>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12">
+        <div class="lg:col-span-4 p-8 bg-slate-50 border-r border-slate-200 space-y-6">
+            <div>
+                <label class="block text-[10px] font-black uppercase text-slate-500 mb-2 italic">Lương Gross</label>
+                <input type="number" id="grossInput" value="60000000" class="w-full p-3 border-2 border-slate-200 text-xl font-bold outline-none">
+            </div>
+            <div>
+                <label class="block text-[10px] font-black uppercase text-slate-500 mb-2 italic">Mức đóng Bảo hiểm</label>
+                <select id="insType" class="w-full p-3 border-2 border-slate-200 font-bold bg-white mb-2" onchange="toggleInsInput()">
+                    <option value="full">Đóng trên 100% lương</option>
+                    <option value="other">Mức tùy chỉnh khác</option>
+                </select>
+                <input type="number" id="insInput" placeholder="Nhập mức lương đóng BH" class="w-full p-3 border-2 border-blue-600 font-bold bg-blue-50 outline-none hidden">
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-[10px] font-black uppercase text-slate-500 mb-2 italic">Phụ thuộc</label>
+                    <input type="number" id="dependents" value="1" class="w-full p-3 border-2 border-slate-200 font-bold">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black uppercase text-slate-500 mb-2 italic">Vùng</label>
+                    <select id="region" class="w-full p-3 border-2 border-slate-200 font-bold cursor-pointer">
+                        <option value="4680000">Vùng I</option>
+                        <option value="4160000">Vùng II</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="lg:col-span-8 overflow-x-auto bg-white">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                <tr class="bg-slate-900 text-white text-[10px] font-bold uppercase tracking-widest">
+                    <th class="p-4 w-16 text-center border-r border-slate-800">STT</th>
+                    <th class="p-4 border-r border-slate-800">Hạng mục chi tiết</th>
+                    <th class="p-4 text-right border-r border-slate-800">Luật 2025 (Cũ)</th>
+                    <th class="p-4 text-right bg-blue-700">Luật 2026 (Mới)</th>
+                </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                <tr class="font-bold">
+                    <td class="p-4 text-center stt-font border-r">[1]</td>
+                    <td class="p-4 uppercase text-xs tracking-tighter">Tổng thu nhập Gross</td>
+                    <td class="p-4 text-right col-old valGross">0</td>
+                    <td class="p-4 text-right col-new valGross font-black">0</td>
+                </tr>
+
+                <tr class="row-header">
+                    <td class="p-3 text-center border-r stt-font">[2]</td>
+                    <td colspan="3" class="p-3">Các khoản Bảo hiểm phải nộp (10.5%)</td>
+                </tr>
+                <tr class="sub-row-style">
+                    <td class="p-3 text-center border-r stt-font text-[11px]">[2.1]</td>
+                    <td class="p-3 pl-10">Bảo hiểm xã hội (8.0%)</td>
+                    <td class="p-3 text-right col-old valBHXH">0</td>
+                    <td class="p-3 text-right col-new valBHXH">0</td>
+                </tr>
+                <tr class="sub-row-style">
+                    <td class="p-3 text-center border-r stt-font text-[11px]">[2.2]</td>
+                    <td class="p-3 pl-10">Bảo hiểm y tế (1.5%)</td>
+                    <td class="p-3 text-right col-old valBHYT">0</td>
+                    <td class="p-3 text-right col-new valBHYT">0</td>
+                </tr>
+                <tr class="sub-row-style border-b-2 border-slate-200">
+                    <td class="p-3 text-center border-r stt-font text-[11px]">[2.3]</td>
+                    <td class="p-3 pl-10">Bảo hiểm thất nghiệp (1.0%)</td>
+                    <td class="p-3 text-right col-old valBHTN">0</td>
+                    <td class="p-3 text-right col-new valBHTN">0</td>
+                </tr>
+
+                <tr class="font-bold">
+                    <td class="p-4 text-center border-r stt-font">[3]</td>
+                    <td class="p-4 text-sm">Giảm trừ cho bản thân</td>
+                    <td class="p-4 text-right col-old">11.000.000 ₫</td>
+                    <td class="p-4 text-right col-new">15.500.000 ₫</td>
+                </tr>
+                <tr class="font-bold">
+                    <td class="p-4 text-center border-r stt-font">[4]</td>
+                    <td class="p-4 text-sm">Giảm trừ người phụ thuộc</td>
+                    <td id="dedDepOld" class="p-4 text-right col-old">0</td>
+                    <td id="dedDepNew" class="p-4 text-right col-new">0</td>
+                </tr>
+
+                <tr class="bg-slate-50 border-y-2">
+                    <td class="p-4 text-center border-r stt-font">[5]</td>
+                    <td class="p-4 font-extrabold text-slate-500 text-[10px] uppercase">Số tiền tính thuế = [1] - [2] - [3] - [4]</td>
+                    <td id="taxableOld" class="p-4 text-right font-bold col-old">0</td>
+                    <td id="taxableNew" class="p-4 text-right font-black col-new italic">0</td>
+                </tr>
+
+                <tr class="row-header">
+                    <td class="p-3 text-center border-r stt-font">[6]</td>
+                    <td colspan="3" class="p-3">Chi tiết số thuế TNCN phát sinh theo từng bậc</td>
+                </tr>
+                <tbody id="taxStepsBody" class="sub-row-style divide-y divide-slate-50"></tbody>
+
+                <tr class="font-bold">
+                    <td class="p-3 text-center border-r stt-font">[6]</td>
+                    <td class="p-3 text-[10px] uppercase tracking-widest font-bold">Tổng cộng thuế TNCN [6]</td>
+                    <td id="taxTotalOld" class="p-3 text-right">0</td>
+                    <td id="taxTotalNew" class="p-3 text-right text-blue-400 font-black">0</td>
+                </tr>
+
+                <tr class="bg-yellow-400 border-t-4 border-slate-900">
+                    <td class="p-3 text-center border-r border-slate-900 stt-font text-black text-xl">[7]</td>
+                    <td class="p-3">
+                        <span class="text-xl font-black uppercase block text-slate-900 tracking-tighter">Thực nhận (NET)</span>
+                        <span class="text-[9px] font-black text-slate-700 uppercase">[7] = [1] - [2] - [6]</span>
+                    </td>
+                    <td id="netOld" class="p-3 text-right font-bold col-old">0</td>
+                    <td id="netNew" class="p-3 text-right font-black text-xl col-new">0</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    const LCSC = 2340000;
+    const OLD = { pers: 11e6, dep: 4.4e6, steps: [
+            { m: 5e6, r: 0.05 }, { m: 10e6, r: 0.1 }, { m: 18e6, r: 0.15 }, { m: 32e6, r: 0.2 }, { m: 52e6, r: 0.25 }, { m: 80e6, r: 0.3 }, { m: Infinity, r: 0.35 }
+        ]};
+    const NEW = { pers: 15.5e6, dep: 6.2e6, steps: [
+            { m: 10e6, r: 0.05 }, { m: 30e6, r: 0.1 }, { m: 60e6, r: 0.2 }, { m: 100e6, r: 0.3 }, { m: Infinity, r: 0.35 }
+        ]};
+
+    function f(n) { return new Intl.NumberFormat('vi-VN').format(Math.round(n)) + " ₫"; }
+
+    function toggleInsInput() {
+        document.getElementById('insInput').classList.toggle('hidden', document.getElementById('insType').value === 'full');
+        calculate();
+    }
+
+    function calcTax(taxable, steps) {
+        let total = 0, prev = 0, detail = [];
+        steps.forEach(s => {
+            let amt = Math.max(0, Math.min(taxable - prev, s.m - prev));
+            let tax = amt * s.r;
+            total += tax; detail.push({ tax, r: s.r * 100, amt });
+            prev = s.m;
+        });
+        return { total, detail };
+    }
+
+    function calculate() {
+        const gross = parseFloat(document.getElementById('grossInput').value) || 0;
+        const deps = parseInt(document.getElementById('dependents').value) || 0;
+        const regMin = parseFloat(document.getElementById('region').value);
+        const insSal = document.getElementById('insType').value === 'full' ? gross : (parseFloat(document.getElementById('insInput').value) || 0);
+
+        document.querySelectorAll('.valGross').forEach(e => e.innerText = f(gross));
+
+        const bhxh = Math.min(insSal, 20 * LCSC) * 0.08;
+        const bhyt = Math.min(insSal, 20 * LCSC) * 0.015;
+        const bhtn = Math.min(insSal, 20 * regMin) * 0.01;
+        const totalBH = bhxh + bhyt + bhtn;
+
+        document.querySelectorAll('.valBHXH').forEach(e => e.innerText = f(bhxh));
+        document.querySelectorAll('.valBHYT').forEach(e => e.innerText = f(bhyt));
+        document.querySelectorAll('.valBHTN').forEach(e => e.innerText = f(bhtn));
+
+        const dDepO = deps * OLD.dep; const dDepN = deps * NEW.dep;
+        document.getElementById('dedDepOld').innerText = f(dDepO);
+        document.getElementById('dedDepNew').innerText = f(dDepN);
+
+        const tO = Math.max(0, gross - totalBH - OLD.pers - dDepO);
+        const tN = Math.max(0, gross - totalBH - NEW.pers - dDepN);
+        document.getElementById('taxableOld').innerText = f(tO);
+        document.getElementById('taxableNew').innerText = f(tN);
+
+        const rO = calcTax(tO, OLD.steps);
+        const rN = calcTax(tN, NEW.steps);
+
+        let h = "";
+        const max = Math.max(rO.detail.length, rN.detail.length);
+        for(let i=0; i<max; i++) {
+            let sO = rO.detail[i]; let sN = rN.detail[i];
+            let vO = sO && sO.amt > 0 ? `<span class="pct-label col-old">[${sO.r}%]</span>${f(sO.tax)}` : "—";
+            let vN = sN && sN.amt > 0 ? `<span class="pct-label col-new">[${sN.r}%]</span>${f(sN.tax)}` : "—";
+            if(vO === "—" && vN === "—") continue;
+
+            h += `<tr class="sub-row-style">
+                    <td class="p-3 text-center border-r stt-font text-[11px]">[6.${i+1}]</td>
+                    <td class="p-3">Bậc Thuế ${i+1}</td>
+                    <td class="p-3 text-right col-old">${vO}</td>
+                    <td class="p-3 text-right col-new">${vN}</td>
+                </tr>`;
+        }
+        document.getElementById('taxStepsBody').innerHTML = h;
+
+        document.getElementById('taxTotalOld').innerText = f(rO.total);
+        document.getElementById('taxTotalNew').innerText = f(rN.total);
+
+        const nO = gross - totalBH - rO.total;
+        const nN = gross - totalBH - rN.total;
+        document.getElementById('netOld').innerText = f(nO);
+        document.getElementById('netNew').innerText = f(nN);
+        document.getElementById('finalDiff').innerText = f(nN - nO);
+    }
+
+    document.querySelectorAll('input, select').forEach(el => el.addEventListener('input', calculate));
+    calculate();
+</script>
+</body>
+</html>
