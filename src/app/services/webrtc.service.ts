@@ -144,6 +144,8 @@ export class WebRTCService implements OnDestroy {
   private dataChannels = new Map<string, RTCDataChannel>();
   private localUserId = '';
   private localUserName = '';
+  private currentFacingMode: 'user' | 'environment' = 'user'; // Front or back camera
+  private availableVideoDevices: MediaDeviceInfo[] = [];
   private screenStream: MediaStream | null = null;
   private pendingCandidates = new Map<string, RTCIceCandidateInit[]>();
 
@@ -409,17 +411,115 @@ export class WebRTCService implements OnDestroy {
     });
   }
 
+  // Check if device is mobile
+  isMobileDevice(): boolean {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  }
+
+  // Enumerate available video devices
+  async enumerateVideoDevices(): Promise<MediaDeviceInfo[]> {
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      this.availableVideoDevices = devices.filter(device => device.kind === 'videoinput');
+      console.log('Available video devices:', this.availableVideoDevices.length);
+      return this.availableVideoDevices;
+    } catch (error) {
+      console.error('Error enumerating devices:', error);
+      return [];
+    }
+  }
+
+  // Check if camera switching is supported (mobile with multiple cameras)
+  isCameraSwitchSupported(): boolean {
+    return this.isMobileDevice() && this.availableVideoDevices.length > 1;
+  }
+
+  // Switch between front and back camera (mobile only)
+  async switchCamera(): Promise<boolean> {
+    if (!this.isMobileDevice()) {
+      console.log('Camera switching is only available on mobile devices');
+      return false;
+    }
+
+    const stream = this.localStream();
+    if (!stream) {
+      console.error('No local stream available');
+      return false;
+    }
+
+    const videoTrack = stream.getVideoTracks()[0];
+    if (!videoTrack) {
+      console.error('No video track available');
+      return false;
+    }
+
+    try {
+      // Toggle facing mode
+      this.currentFacingMode = this.currentFacingMode === 'user' ? 'environment' : 'user';
+      
+      // Get new stream with different facing mode
+      const newStream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          width: { ideal: 640, max: 1280 },
+          height: { ideal: 480, max: 720 },
+          facingMode: this.currentFacingMode,
+          aspectRatio: { ideal: 16/9 }
+        },
+        audio: this.isAudioEnabled() ? {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          sampleRate: 16000
+        } : false
+      });
+
+      const newVideoTrack = newStream.getVideoTracks()[0];
+      
+      // Replace track in all peer connections
+      for (const [peerId, pc] of this.peerConnections.entries()) {
+        const sender = pc.getSenders().find(s => s.track && s.track.kind === 'video' && s.track.id === videoTrack.id);
+        if (sender) {
+          await sender.replaceTrack(newVideoTrack);
+          console.log('Replaced video track for peer:', peerId);
+        }
+      }
+
+      // Stop old track
+      videoTrack.stop();
+      
+      // Replace track in local stream
+      stream.removeTrack(videoTrack);
+      stream.addTrack(newVideoTrack);
+      
+      // Update local stream signal
+      this.localStream.set(stream);
+      
+      // Update available devices
+      await this.enumerateVideoDevices();
+      
+      console.log('Camera switched to:', this.currentFacingMode === 'user' ? 'front' : 'back');
+      return true;
+    } catch (error) {
+      console.error('Error switching camera:', error);
+      this.addSystemMessage('Failed to switch camera');
+      return false;
+    }
+  }
+
   // Initialize local media stream
   async initLocalStream(video: boolean = true, audio: boolean = true): Promise<MediaStream | null> {
     try {
       // Detect mobile device
-      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const isMobile = this.isMobileDevice();
+
+      // Enumerate devices first (to get permissions)
+      await this.enumerateVideoDevices();
 
       const stream = await navigator.mediaDevices.getUserMedia({
         video: video ? {
           width: isMobile ? { ideal: 640, max: 1280 } : { ideal: 1280 },
           height: isMobile ? { ideal: 480, max: 720 } : { ideal: 720 },
-          facingMode: 'user',
+          facingMode: this.currentFacingMode,
           aspectRatio: { ideal: 16/9 }
         } : false,
         audio: audio ? {
@@ -591,8 +691,20 @@ export class WebRTCService implements OnDestroy {
     }
   }
 
+  // Check if screen sharing is supported
+  isScreenShareSupported(): boolean {
+    return 'getDisplayMedia' in navigator.mediaDevices;
+  }
+
   // Start screen sharing
   async startScreenShare(): Promise<boolean> {
+    // Check if screen sharing is supported
+    if (!this.isScreenShareSupported()) {
+      console.error('Screen sharing is not supported on this device');
+      this.addSystemMessage('Screen sharing is not supported on mobile devices');
+      return false;
+    }
+
     try {
       this.screenStream = await navigator.mediaDevices.getDisplayMedia({
         video: true,
@@ -782,13 +894,13 @@ export class WebRTCService implements OnDestroy {
       this.peerStreamIds.set(peerId, new Set<string>());
     }
 
-// Handle incoming tracks
+    // Handle incoming tracks
     pc.ontrack = (event) => {
-      console.log('Received remote track from:', peerId, 'track kind:', event.track.kind, 'streams:', event.streams.length);
+      console.log('Received remote track from:', peerId, 'track kind:', event.track.kind, 'streams:', event.streams.length, 'track id:', event.track.id);
       const remoteStream = event.streams[0];
 
       if (!remoteStream) {
-        console.warn('No stream in track event');
+        console.warn('No stream in track event from:', peerId);
         return;
       }
 
@@ -797,7 +909,12 @@ export class WebRTCService implements OnDestroy {
       // Check if this is a new stream (screen share) or existing (camera)
       const isNewStream = !knownStreamIds.has(remoteStream.id);
 
-      console.log('Stream ID:', remoteStream.id, 'isNew:', isNewStream, 'known streams:', knownStreamIds.size);
+      console.log('Stream ID:', remoteStream.id, 'isNew:', isNewStream, 'known streams:', knownStreamIds.size, 'peer:', peerId);
+      
+      // Ensure track is not muted
+      if (event.track.readyState === 'live' && event.track.muted) {
+        console.warn('Track is muted from:', peerId, 'kind:', event.track.kind);
+      }
 
       if (isNewStream) {
         knownStreamIds.add(remoteStream.id);
@@ -805,7 +922,14 @@ export class WebRTCService implements OnDestroy {
         // First stream is camera, additional streams are screen share
         if (knownStreamIds.size === 1) {
           // This is the camera stream
-          console.log('Setting as camera stream for:', peerId);
+          console.log('Setting as camera stream for:', peerId, 'stream id:', remoteStream.id);
+          
+          // Check if stream already exists and update it
+          const existingStream = this.remoteStreams().get(peerId);
+          if (existingStream && existingStream.id !== remoteStream.id) {
+            console.log('Replacing existing stream for:', peerId, 'old id:', existingStream.id, 'new id:', remoteStream.id);
+          }
+          
           this.remoteStreams.update(streams => {
             const newStreams = new Map(streams);
             newStreams.set(peerId, remoteStream);
@@ -818,6 +942,11 @@ export class WebRTCService implements OnDestroy {
           } catch (error) {
             console.error('Error setting up remote voice activity:', error);
           }
+          
+          // Log track info
+          remoteStream.getTracks().forEach(track => {
+            console.log('Remote track from', peerId, '- kind:', track.kind, 'enabled:', track.enabled, 'muted:', track.muted, 'readyState:', track.readyState);
+          });
         } else {
           // This is a screen share stream
           console.log('Setting as screen share stream for:', peerId);
@@ -1008,43 +1137,51 @@ export class WebRTCService implements OnDestroy {
       pc = await this.createPeerConnection(senderId, false);
     }
 
+    if (!pc) {
+      console.error('Failed to create peer connection for:', senderId);
+      return;
+    }
+
+    // Store reference to avoid TypeScript issues
+    const peerConnection = pc;
+
     try {
       // Ensure local tracks are added before setting remote description
       const localStream = this.localStream();
       if (localStream) {
-        const existingTracks = pc.getSenders().map(s => s.track);
+        const existingTracks = peerConnection.getSenders().map(s => s.track);
         localStream.getTracks().forEach(track => {
           if (!existingTracks.includes(track)) {
             console.log('Adding local track to peer connection:', track.kind);
-            pc.addTrack(track, localStream);
+            peerConnection.addTrack(track, localStream);
           }
         });
       }
 
       // Add screen share track if currently sharing
       if (this.screenStream) {
-        const existingScreenTracks = pc.getSenders().map(s => s.track);
+        const existingScreenTracks = peerConnection.getSenders().map(s => s.track);
         this.screenStream.getTracks().forEach(track => {
           if (!existingScreenTracks.includes(track)) {
             console.log('Adding screen share track to peer connection');
-            pc.addTrack(track, this.screenStream!);
+            peerConnection.addTrack(track, this.screenStream!);
           }
         });
       }
 
-      await pc.setRemoteDescription(new RTCSessionDescription(offer));
+      await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
 
-      const answer = await pc.createAnswer({
+      const answer = await peerConnection.createAnswer({
         offerToReceiveAudio: true,
         offerToReceiveVideo: true
       });
-      await pc.setLocalDescription(answer);
+      await peerConnection.setLocalDescription(answer);
 
       if (this.socket?.connected) {
         console.log('Sending answer to:', senderId);
         this.socket.emit('answer', {
           targetId: senderId,
-          answer: pc.localDescription
+          answer: peerConnection.localDescription
         });
       }
     } catch (error) {
@@ -1062,7 +1199,24 @@ export class WebRTCService implements OnDestroy {
     }
 
     try {
+      console.log('Setting remote description (answer) for:', senderId);
       await pc.setRemoteDescription(new RTCSessionDescription(answer));
+      
+      // Apply any pending ICE candidates after setting remote description
+      const pendingCandidates = this.pendingCandidates.get(senderId);
+      if (pendingCandidates && pendingCandidates.length > 0) {
+        console.log('Applying', pendingCandidates.length, 'pending ICE candidates for:', senderId);
+        for (const candidate of pendingCandidates) {
+          try {
+            await pc.addIceCandidate(candidate);
+          } catch (error) {
+            console.error('Error adding pending ICE candidate:', error);
+          }
+        }
+        this.pendingCandidates.delete(senderId);
+      }
+      
+      console.log('Answer processed successfully for:', senderId);
     } catch (error) {
       console.error('Error handling answer:', error);
     }
@@ -1269,9 +1423,17 @@ export class WebRTCService implements OnDestroy {
       }
 
       // Wait for channel to be open
-      if (channel.readyState === 'open') {
-        sendPromises.push(this.sendFileToPeer(channel, fileId, file, arrayBuffer, totalChunks));
-      } else if (channel.readyState === 'connecting') {
+      if (!channel) {
+        console.warn('Data channel is null for:', peerId);
+        continue;
+      }
+
+      // Store reference to avoid TypeScript issues in closure
+      const dataChannel: RTCDataChannel = channel;
+      
+      if (dataChannel.readyState === 'open') {
+        sendPromises.push(this.sendFileToPeer(dataChannel, fileId, file, arrayBuffer, totalChunks));
+      } else if (dataChannel.readyState === 'connecting') {
         // Wait for channel to open
         const waitForOpen = new Promise<void>((resolve) => {
           const timeout = setTimeout(() => {
@@ -1279,17 +1441,17 @@ export class WebRTCService implements OnDestroy {
             resolve();
           }, 5000);
 
-          const originalOnOpen = channel.onopen as any;
-          channel.onopen = () => {
+          const originalOnOpen = dataChannel.onopen as any;
+          dataChannel.onopen = () => {
             clearTimeout(timeout);
             if (originalOnOpen) originalOnOpen();
             console.log('Data channel opened, sending file to:', peerId);
-            this.sendFileToPeer(channel, fileId, file, arrayBuffer, totalChunks).then(() => resolve());
+            this.sendFileToPeer(dataChannel, fileId, file, arrayBuffer, totalChunks).then(() => resolve());
           };
         });
         sendPromises.push(waitForOpen);
       } else {
-        console.warn('Data channel not ready for:', peerId, 'state:', channel.readyState);
+        console.warn('Data channel not ready for:', peerId, 'state:', dataChannel.readyState);
       }
     }
 
