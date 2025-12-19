@@ -87,6 +87,12 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
   // Voice activity
   isSpeaking = computed(() => this.webrtcService.isSpeaking());
   
+  // Screen share support
+  isScreenShareSupported = computed(() => this.webrtcService.isScreenShareSupported());
+  
+  // Camera switch support
+  isCameraSwitchSupported = computed(() => this.webrtcService.isCameraSwitchSupported());
+  
   private shouldScrollToBottom = false;
   private notificationSound: HTMLAudioElement | null = null;
   private lastMessageCount = 0;
@@ -214,6 +220,11 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     } else {
       await this.webrtcService.startScreenShare();
     }
+  }
+  
+  // Switch camera (front/back) - mobile only
+  async switchCamera(): Promise<void> {
+    await this.webrtcService.switchCamera();
   }
   
   // Leave room
