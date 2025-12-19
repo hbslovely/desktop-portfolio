@@ -1,261 +1,382 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vòng Quay Tết 2026 - Lưu Trữ Kết Quả</title>
-    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --gold: #fbc531;
-            --red: #b31217;
-            --yellow-light: #fffa65;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vòng Quay Tết 2026 - Lưu Trữ Kết Quả</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Quicksand:wght@500;700&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --gold: #fbc531;
+      --red: #b31217;
+      --yellow-light: #fffa65;
+    }
 
-        body {
-            display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
-            min-height: 100vh; margin: 0; padding: 20px;
-            background: #b31217 radial-gradient(circle, #d63031 0%, #5c090b 100%);
-            font-family: 'Quicksand', sans-serif; color: white; overflow-x: hidden;
-        }
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      min-height: 100vh;
+      margin: 0;
+      padding: 20px;
+      background: #b31217 radial-gradient(circle, #d63031 0%, #5c090b 100%);
+      font-family: 'Quicksand', sans-serif;
+      color: white;
+      overflow-x: hidden;
+    }
 
-        h2 { font-family: 'Dancing Script', cursive; font-size: clamp(30px, 8vw, 50px); color: var(--gold); margin: 0; text-align: center; text-shadow: 2px 2px 10px rgba(0,0,0,0.5); }
+    h2 {
+      font-family: 'Dancing Script', cursive;
+      font-size: clamp(30px, 8vw, 50px);
+      color: var(--gold);
+      margin: 0;
+      text-align: center;
+      text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.5);
+    }
 
-        /* Khung thông tin người quay bên trái */
-        #playerBox {
-            position: fixed; left: 20px; top: 120px;
-            background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(10px);
-            padding: 15px; border-left: 5px solid var(--gold); border-radius: 0 15px 15px 0;
-            display: none; box-shadow: 5px 5px 15px rgba(0,0,0,0.3); z-index: 90;
-        }
+    /* Khung thông tin người quay bên trái */
+    #playerBox {
+      position: fixed;
+      left: 20px;
+      top: 120px;
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(10px);
+      padding: 15px;
+      border-left: 5px solid var(--gold);
+      border-radius: 0 15px 15px 0;
+      display: none;
+      box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.3);
+      z-index: 90;
+    }
 
-        /* Container vòng quay căn chuẩn tâm tuyệt đối */
-        .wheel-outer {
-            position: relative;
-            width: min(85vw, 500px);
-            height: min(85vw, 500px);
-            margin-top: 40px;
-            display: flex; justify-content: center; align-items: center;
-            border: 12px solid var(--gold);
-            border-radius: 50%;
-            background: var(--gold);
-            box-sizing: border-box; /* Quan trọng để không lệch tâm */
-        }
+    /* Container vòng quay căn chuẩn tâm tuyệt đối */
+    .wheel-outer {
+      position: relative;
+      width: min(85vw, 500px);
+      height: min(85vw, 500px);
+      margin-top: 140px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border: 12px solid var(--gold);
+      border-radius: 50%;
+      background: var(--gold);
+      box-sizing: border-box; /* Quan trọng để không lệch tâm */
+    }
 
-        .light-glow {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            border-radius: 50%; pointer-events: none; z-index: 1;
-        }
-        .spinning .light-glow { animation: pulse 0.5s infinite alternate; }
-        @keyframes pulse { from { box-shadow: 0 0 10px var(--yellow-light); } to { box-shadow: 0 0 50px var(--yellow-light); } }
+    .light-glow {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 1;
+    }
 
-        .pointer {
-            position: absolute; top: -35px; left: 50%; transform: translateX(-50%);
-            width: 0; height: 0; border-left: 20px solid transparent; border-right: 20px solid transparent;
-            border-top: 55px solid #fff; z-index: 10; filter: drop-shadow(0 5px 10px rgba(0,0,0,0.5));
-        }
+    .spinning .light-glow {
+      animation: pulse 0.5s infinite alternate;
+    }
 
-        canvas {
-            width: 100%; height: 100%; border-radius: 50%;
-            transition: transform 8s cubic-bezier(0.1, 0, 0, 1);
-            background: white; display: block;
-        }
+    @keyframes pulse {
+      from {
+        box-shadow: 0 0 10px var(--yellow-light);
+      }
+      to {
+        box-shadow: 0 0 50px var(--yellow-light);
+      }
+    }
 
-        #spinBtn {
-            margin-top: 30px; padding: 15px 50px; font-size: 22px; font-weight: bold;
-            background: linear-gradient(180deg, var(--yellow-light), var(--gold));
-            color: var(--red); border: none; border-radius: 50px; cursor: pointer;
-            box-shadow: 0 6px 0 #8d240d; font-family: 'Quicksand', sans-serif;
-            transition: 0.2s;
-        }
-        #spinBtn:disabled { background: #7f8c8d; box-shadow: 0 4px 0 #2f3640; cursor: not-allowed; opacity: 0.7; }
+    .pointer {
+      position: absolute;
+      top: -35px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 20px solid transparent;
+      border-right: 20px solid transparent;
+      border-top: 55px solid #fff;
+      z-index: 10;
+      filter: drop-shadow(0 5px 10px rgba(0, 0, 0, 0.5));
+    }
 
-        /* Modal Kết quả lệch trái trên màn hình rộng */
-        .modal {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 100;
-        }
+    canvas {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      transition: transform 8s cubic-bezier(0.1, 0, 0, 1);
+      background: white;
+      display: block;
+    }
 
-        @media (min-width: 1024px) {
-            .result-side { margin-right: 600px; } /* Đẩy modal sang bên trái vòng quay */
-        }
+    #spinBtn {
+      margin-top: 30px;
+      padding: 15px 50px;
+      font-size: 22px;
+      font-weight: bold;
+      background: linear-gradient(180deg, var(--yellow-light), var(--gold));
+      color: var(--red);
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      box-shadow: 0 6px 0 #8d240d;
+      font-family: 'Quicksand', sans-serif;
+      transition: 0.2s;
+    }
 
-        .modal-content {
-            background: white; padding: 30px; border-radius: 25px; text-align: center;
-            color: #333; width: 90%; max-width: 380px; border: 6px solid var(--gold);
-            animation: bounceIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-        }
-        @keyframes bounceIn { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    #spinBtn:disabled {
+      background: #7f8c8d;
+      box-shadow: 0 4px 0 #2f3640;
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
 
-        .modal-content h3 { font-family: 'Dancing Script', cursive; font-size: 35px; color: var(--red); margin: 0; }
-        input { padding: 15px; font-size: 18px; border-radius: 12px; border: 2px solid #ddd; width: 85%; margin: 20px 0; outline: none; text-align: center; }
-    </style>
+    /* Modal Kết quả lệch trái trên màn hình rộng */
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.85);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+
+    @media (min-width: 1024px) {
+      .result-side {
+        margin-right: 600px;
+      }
+
+      /* Đẩy modal sang bên trái vòng quay */
+    }
+
+    .modal-content {
+      margin: auto;
+      background: white;
+      padding: 30px;
+      border-radius: 25px;
+      text-align: center;
+      color: #333;
+      width: 90%;
+      max-width: 380px;
+      border: 6px solid var(--gold);
+      animation: bounceIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    }
+
+    @keyframes bounceIn {
+      from {
+        transform: scale(0);
+        opacity: 0;
+      }
+      to {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
+    .modal-content h3 {
+      font-family: 'Dancing Script', cursive;
+      font-size: 35px;
+      color: var(--red);
+      margin: 0;
+    }
+
+    input {
+      padding: 15px;
+      font-size: 18px;
+      border-radius: 12px;
+      border: 2px solid #ddd;
+      width: 85%;
+      margin: 20px 0;
+      outline: none;
+      text-align: center;
+    }
+  </style>
 </head>
 <body>
 
 <div id="loginModal" class="modal">
-    <div class="modal-content">
-        <h3>Xuân Bính Ngọ 2026</h3>
-        <p>Vui lòng nhập quý danh để nhận lộc:</p>
-        <input type="text" id="nameInput" placeholder="Tên của bạn..." maxlength="15">
-        <button onclick="startGame()" style="background:var(--red); color:white; padding:12px 30px; border:none; border-radius:25px; font-weight:bold; cursor:pointer;">KHAI XUÂN</button>
-    </div>
+  <div class="modal-content">
+    <h3>Xuân Bính Ngọ 2026</h3>
+    <p>Vui lòng nhập quý danh để nhận lộc:</p>
+    <input type="text" id="nameInput" placeholder="Tên của bạn..." maxlength="15">
+    <button onclick="startGame()"
+            style="background:var(--red); color:white; padding:12px 30px; border:none; border-radius:25px; font-weight:bold; cursor:pointer;">
+      KHAI XUÂN
+    </button>
+  </div>
 </div>
 
 <div id="resultModal" class="modal" style="display:none">
-    <div class="modal-content result-side">
-        <h3 id="resTitle">🧧 Lộc Xuân!</h3>
-        <p id="resMsg" style="font-weight: bold; font-size: 22px; color: #c23616; margin: 15px 0;"></p>
-        <p id="resWish" style="font-style: italic; background: #fff9e6; padding: 15px; border-radius: 15px; font-size: 14px; border: 1px dashed var(--gold);"></p>
-        <button onclick="closeModal()" style="margin-top:20px; padding:10px 25px; cursor:pointer; background:var(--gold); border:none; border-radius:20px; font-weight:bold;">CẢM ƠN 🏮</button>
-    </div>
+  <div class="modal-content result-side">
+    <h3 id="resTitle">🧧 Lộc Xuân!</h3>
+    <p id="resMsg" style="font-weight: bold; font-size: 22px; color: #c23616; margin: 15px 0;"></p>
+    <p id="resWish"
+       style="font-style: italic; background: #fff9e6; padding: 15px; border-radius: 15px; font-size: 14px; border: 1px dashed var(--gold);"></p>
+    <button onclick="closeModal()"
+            style="margin-top:20px; padding:10px 25px; cursor:pointer; background:var(--gold); border:none; border-radius:20px; font-weight:bold;">
+      CẢM ƠN 🏮
+    </button>
+  </div>
 </div>
 
 <h2>🏮 Vòng Quay Lộc Xuân 2026 🏮</h2>
 
 <div id="playerBox">
-    <div style="font-weight:bold; color:var(--yellow-light); font-size: 20px;">🏮 <span id="displayName"></span></div>
-    <div id="spinStatus" style="font-size: 13px; color: #fff; margin-top: 5px;">Chào mừng bạn tham gia!</div>
+  <div style="font-weight:bold; color:var(--yellow-light); font-size: 20px;">🏮 <span id="displayName"></span></div>
+  <div id="spinStatus" style="font-size: 13px; color: #fff; margin-top: 5px;">Chào mừng bạn tham gia!</div>
 </div>
 
 <div class="wheel-outer" id="wheelCont">
-    <div class="light-glow"></div>
-    <div class="pointer"></div>
-    <canvas id="wheel" width="500" height="500"></canvas>
+  <div class="light-glow"></div>
+  <div class="pointer"></div>
+  <canvas id="wheel" width="500" height="500"></canvas>
 </div>
 
 <button id="spinBtn" disabled>🧧 QUAY LẤY LỘC 🧧</button>
 
 <script>
-    const canvas = document.getElementById('wheel');
-    const ctx = canvas.getContext('2d');
-    const spinBtn = document.getElementById('spinBtn');
-    const wheelCont = document.getElementById('wheelCont');
+  const canvas = document.getElementById('wheel');
+  const ctx = canvas.getContext('2d');
+  const spinBtn = document.getElementById('spinBtn');
+  const wheelCont = document.getElementById('wheelCont');
 
-    let playerName = "";
-    let currentRotation = 0;
+  let playerName = "";
+  let currentRotation = 0;
 
-    const items = [
-        { label: "1.000đ", weight: 30, color: "#eb4d4b" },
-        { label: "10.000đ", weight: 200, color: "#f9ca24" },
-        { label: "Lời chúc may mắn", weight: 150, color: "#2ecc71" },
-        { label: "20.000đ", weight: 250, color: "#22a6b3" },
-        { label: "2.000đ", weight: 30, color: "#eb4d4b" },
-        { label: "50.000đ", weight: 150, color: "#f0932b" },
-        { label: "100.000đ", weight: 20, color: "#686de0" },
-        { label: "5.000đ", weight: 80, color: "#f9ca24" },
-        { label: "1.000.000đ", weight: 0, color: "#FFD700" },
-        { label: "10.000đ", weight: 200, color: "#22a6b3" },
-        { label: "20.000đ", weight: 250, color: "#f0932b" },
-        { label: "Lời chúc may mắn", weight: 150, color: "#2ecc71" },
-        { label: "50.000đ", weight: 150, color: "#686de0" },
-        { label: "5.000đ", weight: 80, color: "#eb4d4b" },
-        { label: "500.000đ", weight: 0.05, color: "#c0392b" },
-        { label: "200.000đ", weight: 10, color: "#e056fd" }
-    ];
+  const items = [
+    {label: "1.000đ", weight: 10, color: "#eb4d4b"},
+    {label: "1.000.000đ", weight: 0, color: "#FFD700"},
+    {label: "10.000đ", weight: 400, color: "#f9ca24"},
+    {label: "Lời chúc may mắn", weight: 150, color: "#2ecc71"},
+    {label: "200.000đ", weight: 5, color: "#db97e6"},
+    {label: "20.000đ", weight: 500, color: "#22a6b3"},
+    {label: "2.000đ", weight: 20, color: "#eb4d4b"},
+    {label: "50.000đ", weight: 100, color: "#f0932b"},
+    {label: "100.000đ", weight: 50, color: "#686de0"},
+    {label: "5.000đ", weight: 100, color: "#f9ca24"},
+    {label: "10.000đ", weight: 400, color: "#22a6b3"},
+    {label: "20.000đ", weight: 500, color: "#f0932b"},
+    {label: "500.000đ", weight: 0.005, color: "#c0392b"},
+    {label: "Lời chúc may mắn", weight: 200, color: "#2ecc71"},
+    {label: "5.000đ", weight: 100, color: "#eb4d4b"},
+    {label: "50.000đ", weight: 120, color: "#686de0"},
+    {label: "200.000đ", weight: 5, color: "#e056fd"}
+  ];
 
-    const wishes = [
-        "Chúc bạn năm Bính Ngọ mã đáo thành công, tiền vào như nước, sức khỏe dẻo dai!",
-        "Cung chúc tân xuân! Chúc bạn vạn sự như ý, tỷ sự như mơ, làm ăn phát đạt!",
-        "Năm mới chúc bạn bớt lo âu, thêm tài lộc, tình duyên viên mãn, hạnh phúc đong đầy!"
-    ];
+  const wishes = [
+    "Chúc bạn năm Bính Ngọ mã đáo thành công, tiền vào như nước, sức khỏe dẻo dai!",
+    "Cung chúc tân xuân! Chúc bạn vạn sự như ý, tỷ sự như mơ, làm ăn phát đạt!",
+    "Năm mới chúc bạn bớt lo âu, thêm tài lộc, tình duyên viên mãn, hạnh phúc đong đầy!"
+  ];
 
-    window.onload = () => {
-        drawWheel();
-        checkLockedStatus();
-    };
+  window.onload = () => {
+    drawWheel();
+    checkLockedStatus();
+  };
 
-    // KIỂM TRA TRẠNG THÁI ĐÃ QUAY
-    function checkLockedStatus() {
-        const hasSpun = localStorage.getItem('tet_2026_spun');
-        const savedName = localStorage.getItem('tet_2026_name');
-        const savedResult = localStorage.getItem('tet_2026_result');
+  // KIỂM TRA TRẠNG THÁI ĐÃ QUAY
+  function checkLockedStatus() {
+    const hasSpun = localStorage.getItem('tet_2026_spun');
+    const savedName = localStorage.getItem('tet_2026_name');
+    const savedResult = localStorage.getItem('tet_2026_result');
 
-        if (hasSpun === 'true') {
-            document.getElementById('loginModal').style.display = 'none';
-            document.getElementById('playerBox').style.display = 'block';
-            document.getElementById('displayName').innerText = savedName;
-            document.getElementById('spinStatus').innerHTML = "Đã nhận lộc: <b style='color:var(--gold)'>" + savedResult + "</b>";
+    if (hasSpun === 'true') {
+      document.getElementById('loginModal').style.display = 'none';
+      document.getElementById('playerBox').style.display = 'block';
+      document.getElementById('displayName').innerText = savedName;
+      document.getElementById('spinStatus').innerHTML = "Đã nhận lộc: <b style='color:var(--gold)'>" + savedResult + "</b>";
 
-            spinBtn.disabled = true;
-            spinBtn.innerText = "HẾT LƯỢT QUAY";
-            spinBtn.style.filter = "grayscale(1)";
-        }
+      spinBtn.disabled = true;
+      spinBtn.innerText = "HẾT LƯỢT QUAY";
+      spinBtn.style.filter = "grayscale(1)";
+    }
+  }
+
+  function startGame() {
+    playerName = document.getElementById('nameInput').value.trim();
+    if (!playerName) return alert("Vui lòng nhập tên của bạn!");
+    document.getElementById('loginModal').style.display = 'none';
+    document.getElementById('playerBox').style.display = 'block';
+    document.getElementById('displayName').innerText = playerName;
+    spinBtn.disabled = false;
+  }
+
+  function drawWheel() {
+    const arc = (2 * Math.PI) / items.length;
+    ctx.clearRect(0, 0, 500, 500);
+    items.forEach((item, i) => {
+      const angle = i * arc;
+      ctx.beginPath();
+      ctx.fillStyle = item.color;
+      ctx.moveTo(250, 250);
+      ctx.arc(250, 250, 250, angle, angle + arc);
+      ctx.fill();
+      ctx.save();
+      ctx.translate(250, 250);
+      ctx.rotate(angle + arc / 2);
+      ctx.textAlign = "right";
+      ctx.fillStyle = "white";
+      ctx.font = "bold 15px Arial";
+      ctx.fillText(item.label, 235, 8);
+      ctx.restore();
+    });
+  }
+
+  spinBtn.onclick = () => {
+    if (localStorage.getItem('tet_2026_spun') === 'true') return;
+
+    spinBtn.disabled = true;
+    wheelCont.classList.add('spinning');
+
+    const totalWeight = items.reduce((s, i) => s + i.weight, 0);
+    let rand = Math.random() * totalWeight;
+    let winIdx = 0;
+    for (let i = 0; i < items.length; i++) {
+      if (rand < items[i].weight) {
+        winIdx = i;
+        break;
+      }
+      rand -= items[i].weight;
     }
 
-    function startGame() {
-        playerName = document.getElementById('nameInput').value.trim();
-        if (!playerName) return alert("Vui lòng nhập tên của bạn!");
-        document.getElementById('loginModal').style.display = 'none';
-        document.getElementById('playerBox').style.display = 'block';
-        document.getElementById('displayName').innerText = playerName;
-        spinBtn.disabled = false;
-    }
+    const segDeg = 360 / items.length;
+    const targetPos = (360 - (winIdx * segDeg)) - (segDeg / 2) - 90;
+    const finalRotation = currentRotation + (360 * 10) + (targetPos - (currentRotation % 360));
 
-    function drawWheel() {
-        const arc = (2 * Math.PI) / items.length;
-        ctx.clearRect(0,0,500,500);
-        items.forEach((item, i) => {
-            const angle = i * arc;
-            ctx.beginPath();
-            ctx.fillStyle = item.color;
-            ctx.moveTo(250, 250);
-            ctx.arc(250, 250, 250, angle, angle + arc);
-            ctx.fill();
-            ctx.save();
-            ctx.translate(250, 250);
-            ctx.rotate(angle + arc / 2);
-            ctx.textAlign = "right";
-            ctx.fillStyle = "white";
-            ctx.font = "bold 15px Arial";
-            ctx.fillText(item.label, 235, 8);
-            ctx.restore();
-        });
-    }
+    canvas.style.transform = `rotate(${finalRotation}deg)`;
+    currentRotation = finalRotation;
 
-    spinBtn.onclick = () => {
-        if (localStorage.getItem('tet_2026_spun') === 'true') return;
+    setTimeout(() => {
+      wheelCont.classList.remove('spinning');
+      const resultLabel = items[winIdx].label;
 
-        spinBtn.disabled = true;
-        wheelCont.classList.add('spinning');
+      // LƯU Tên + Kết quả VÀO STORAGE
+      localStorage.setItem('tet_2026_spun', 'true');
+      localStorage.setItem('tet_2026_name', playerName);
+      localStorage.setItem('tet_2026_result', resultLabel);
 
-        const totalWeight = items.reduce((s, i) => s + i.weight, 0);
-        let rand = Math.random() * totalWeight;
-        let winIdx = 0;
-        for (let i = 0; i < items.length; i++) {
-            if (rand < items[i].weight) { winIdx = i; break; }
-            rand -= items[i].weight;
-        }
+      document.getElementById('resMsg').innerText = playerName + " đã trúng: " + resultLabel;
+      document.getElementById('resWish').innerText = wishes[Math.floor(Math.random() * wishes.length)];
+      document.getElementById('resultModal').style.display = 'flex';
 
-        const segDeg = 360 / items.length;
-        const targetPos = (360 - (winIdx * segDeg)) - (segDeg / 2) - 90;
-        const finalRotation = currentRotation + (360 * 10) + (targetPos - (currentRotation % 360));
+      document.getElementById('spinStatus').innerHTML = "Đã nhận lộc: <b style='color:var(--gold)'>" + resultLabel + "</b>";
+      spinBtn.innerText = "HẾT LƯỢT QUAY";
+      spinBtn.style.filter = "grayscale(1)";
+    }, 8500);
+  };
 
-        canvas.style.transform = `rotate(${finalRotation}deg)`;
-        currentRotation = finalRotation;
-
-        setTimeout(() => {
-            wheelCont.classList.remove('spinning');
-            const resultLabel = items[winIdx].label;
-
-            // LƯU Tên + Kết quả VÀO STORAGE
-            localStorage.setItem('tet_2026_spun', 'true');
-            localStorage.setItem('tet_2026_name', playerName);
-            localStorage.setItem('tet_2026_result', resultLabel);
-
-            document.getElementById('resMsg').innerText = playerName + " đã trúng: " + resultLabel;
-            document.getElementById('resWish').innerText = wishes[Math.floor(Math.random() * wishes.length)];
-            document.getElementById('resultModal').style.display = 'flex';
-
-            document.getElementById('spinStatus').innerHTML = "Đã nhận lộc: <b style='color:var(--gold)'>" + resultLabel + "</b>";
-            spinBtn.innerText = "HẾT LƯỢT QUAY";
-            spinBtn.style.filter = "grayscale(1)";
-        }, 8500);
-    };
-
-    function closeModal() {
-        document.getElementById('resultModal').style.display = 'none';
-    }
+  function closeModal() {
+    document.getElementById('resultModal').style.display = 'none';
+  }
 </script>
 </body>
 </html>
