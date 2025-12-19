@@ -108,12 +108,36 @@ export class WebRTCService implements OnDestroy {
   // WebRTC configuration
   private rtcConfig: RTCConfiguration = {
     iceServers: [
+      // STUN servers for NAT discovery
       { urls: 'stun:stun.l.google.com:19302' },
       { urls: 'stun:stun1.l.google.com:19302' },
       { urls: 'stun:stun2.l.google.com:19302' },
       { urls: 'stun:stun3.l.google.com:19302' },
       { urls: 'stun:stun4.l.google.com:19302' },
-    ]
+      // Additional STUN servers
+      { urls: 'stun:stun.stunprotocol.org:3478' },
+      { urls: 'stun:stun.voiparound.com' },
+      { urls: 'stun:stun.voipbuster.com' },
+      { urls: 'stun:stun.voipstunt.com' },
+      // TURN servers for better connectivity (public free TURN servers)
+      {
+        urls: 'turn:openrelay.metered.ca:80',
+        username: 'openrelayproject',
+        credential: 'openrelayproject'
+      },
+      {
+        urls: 'turn:openrelay.metered.ca:443',
+        username: 'openrelayproject',
+        credential: 'openrelayproject'
+      },
+      {
+        urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+        username: 'openrelayproject',
+        credential: 'openrelayproject'
+      }
+    ],
+    iceCandidatePoolSize: 10, // Pre-gather more candidates
+    iceTransportPolicy: 'all' // Use both relay and direct connections
   };
 
   private peerConnections = new Map<string, RTCPeerConnection>();
@@ -787,6 +811,13 @@ export class WebRTCService implements OnDestroy {
             newStreams.set(peerId, remoteStream);
             return newStreams;
           });
+          
+          // Setup voice activity detection for remote stream
+          try {
+            this.setupRemoteVoiceActivity(peerId, remoteStream);
+          } catch (error) {
+            console.error('Error setting up remote voice activity:', error);
+          }
         } else {
           // This is a screen share stream
           console.log('Setting as screen share stream for:', peerId);
@@ -844,8 +875,32 @@ export class WebRTCService implements OnDestroy {
     // Handle connection state changes
     pc.onconnectionstatechange = () => {
       console.log('Connection state with', peerId, ':', pc.connectionState);
-      if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
-        this.handlePeerDisconnect(peerId);
+      
+      if (pc.connectionState === 'failed') {
+        console.error('Peer connection failed with', peerId, '- attempting reconnection');
+        // Try to reconnect
+        this.reconnectPeer(peerId);
+      } else if (pc.connectionState === 'disconnected') {
+        // Wait a bit to see if it reconnects automatically
+        setTimeout(() => {
+          if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
+            console.log('Connection still disconnected, handling disconnect for:', peerId);
+            this.handlePeerDisconnect(peerId);
+          }
+        }, 3000);
+      } else if (pc.connectionState === 'connected') {
+        console.log('Peer connection established with', peerId);
+        // Setup remote voice activity when connected (if not already setup)
+        setTimeout(() => {
+          const remoteStream = this.remoteStreams().get(peerId);
+          if (remoteStream && !this.remoteAnalysers.has(peerId)) {
+            try {
+              this.setupRemoteVoiceActivity(peerId, remoteStream);
+            } catch (error) {
+              console.error('Error setting up remote voice activity on connect:', error);
+            }
+          }
+        }, 500);
       }
     };
 
@@ -854,12 +909,36 @@ export class WebRTCService implements OnDestroy {
       console.log('ICE connection state with', peerId, ':', pc.iceConnectionState);
 
       // Handle connection failures
-      if (pc.iceConnectionState === 'failed' || pc.iceConnectionState === 'disconnected') {
-        console.warn('ICE connection issue with', peerId, '- attempting to restart ICE');
+      if (pc.iceConnectionState === 'failed') {
+        console.warn('ICE connection failed with', peerId, '- attempting to restart ICE');
         // Try to restart ICE
-        if (pc.signalingState === 'stable') {
-          pc.restartIce();
+        if (pc.signalingState === 'stable' || pc.signalingState === 'have-local-offer' || pc.signalingState === 'have-remote-offer') {
+          try {
+            pc.restartIce();
+            console.log('ICE restart initiated for:', peerId);
+          } catch (error) {
+            console.error('Error restarting ICE:', error);
+            // If restart fails, try to recreate the connection
+            this.reconnectPeer(peerId);
+          }
         }
+      } else if (pc.iceConnectionState === 'disconnected') {
+        console.warn('ICE disconnected with', peerId, '- will retry');
+        // Wait a bit and check if it reconnects
+        setTimeout(() => {
+          if (pc.iceConnectionState === 'disconnected' || pc.iceConnectionState === 'failed') {
+            console.log('ICE still disconnected, attempting restart for:', peerId);
+            if (pc.signalingState === 'stable') {
+              try {
+                pc.restartIce();
+              } catch (error) {
+                console.error('Error restarting ICE after disconnect:', error);
+              }
+            }
+          }
+        }, 2000);
+      } else if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
+        console.log('ICE connection successful with', peerId);
       }
     };
 
@@ -1804,11 +1883,61 @@ export class WebRTCService implements OnDestroy {
 
   // ==================== END LIVE CAPTIONS ====================
 
+  // Reconnect to a peer when connection fails
+  private async reconnectPeer(peerId: string): Promise<void> {
+    console.log('Attempting to reconnect to peer:', peerId);
+    
+    const participantName = this.participantNames.get(peerId);
+    if (!participantName) {
+      console.warn('Cannot reconnect - participant name not found for:', peerId);
+      return;
+    }
+    
+    // Close old connection
+    const oldPc = this.peerConnections.get(peerId);
+    if (oldPc) {
+      try {
+        oldPc.close();
+      } catch (e) {
+        // Ignore errors when closing
+      }
+      this.peerConnections.delete(peerId);
+    }
+    
+    // Clear related data
+    this.dataChannels.delete(peerId);
+    this.pendingCandidates.delete(peerId);
+    this.peerStreamIds.delete(peerId);
+    
+    // Wait a bit before reconnecting
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Check if we're still in the room
+    if (!this.roomId() || !this.socket?.connected) {
+      console.log('Not in room anymore, skipping reconnect');
+      return;
+    }
+    
+    // Create new peer connection
+    try {
+      await this.createPeerConnection(peerId, true);
+      console.log('Reconnected to peer:', peerId);
+      this.addSystemMessage(`Reconnected to ${participantName}`);
+    } catch (error) {
+      console.error('Error reconnecting to peer:', error);
+      this.addSystemMessage(`Failed to reconnect to ${participantName}`);
+    }
+  }
+
   // Handle peer disconnection
   private handlePeerDisconnect(peerId: string): void {
     const pc = this.peerConnections.get(peerId);
     if (pc) {
-      pc.close();
+      try {
+        pc.close();
+      } catch (e) {
+        // Ignore errors when closing
+      }
       this.peerConnections.delete(peerId);
     }
 
@@ -1816,6 +1945,7 @@ export class WebRTCService implements OnDestroy {
     this.pendingCandidates.delete(peerId);
     this.participantMediaStates.delete(peerId);
     this.peerStreamIds.delete(peerId);
+    this.remoteAnalysers.delete(peerId);
 
     this.remoteStreams.update(streams => {
       const newStreams = new Map(streams);
