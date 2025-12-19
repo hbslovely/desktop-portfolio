@@ -456,7 +456,7 @@ export class WebRTCService implements OnDestroy {
     try {
       // Toggle facing mode
       this.currentFacingMode = this.currentFacingMode === 'user' ? 'environment' : 'user';
-      
+
       // Get new stream with different facing mode
       const newStream = await navigator.mediaDevices.getUserMedia({
         video: {
@@ -474,7 +474,7 @@ export class WebRTCService implements OnDestroy {
       });
 
       const newVideoTrack = newStream.getVideoTracks()[0];
-      
+
       // Replace track in all peer connections
       for (const [peerId, pc] of this.peerConnections.entries()) {
         const sender = pc.getSenders().find(s => s.track && s.track.kind === 'video' && s.track.id === videoTrack.id);
@@ -486,17 +486,17 @@ export class WebRTCService implements OnDestroy {
 
       // Stop old track
       videoTrack.stop();
-      
+
       // Replace track in local stream
       stream.removeTrack(videoTrack);
       stream.addTrack(newVideoTrack);
-      
+
       // Update local stream signal
       this.localStream.set(stream);
-      
+
       // Update available devices
       await this.enumerateVideoDevices();
-      
+
       console.log('Camera switched to:', this.currentFacingMode === 'user' ? 'front' : 'back');
       return true;
     } catch (error) {
@@ -910,7 +910,7 @@ export class WebRTCService implements OnDestroy {
       const isNewStream = !knownStreamIds.has(remoteStream.id);
 
       console.log('Stream ID:', remoteStream.id, 'isNew:', isNewStream, 'known streams:', knownStreamIds.size, 'peer:', peerId);
-      
+
       // Ensure track is not muted
       if (event.track.readyState === 'live' && event.track.muted) {
         console.warn('Track is muted from:', peerId, 'kind:', event.track.kind);
@@ -923,26 +923,26 @@ export class WebRTCService implements OnDestroy {
         if (knownStreamIds.size === 1) {
           // This is the camera stream
           console.log('Setting as camera stream for:', peerId, 'stream id:', remoteStream.id);
-          
+
           // Check if stream already exists and update it
           const existingStream = this.remoteStreams().get(peerId);
           if (existingStream && existingStream.id !== remoteStream.id) {
             console.log('Replacing existing stream for:', peerId, 'old id:', existingStream.id, 'new id:', remoteStream.id);
           }
-          
+
           this.remoteStreams.update(streams => {
             const newStreams = new Map(streams);
             newStreams.set(peerId, remoteStream);
             return newStreams;
           });
-          
+
           // Setup voice activity detection for remote stream
           try {
             this.setupRemoteVoiceActivity(peerId, remoteStream);
           } catch (error) {
             console.error('Error setting up remote voice activity:', error);
           }
-          
+
           // Log track info
           remoteStream.getTracks().forEach(track => {
             console.log('Remote track from', peerId, '- kind:', track.kind, 'enabled:', track.enabled, 'muted:', track.muted, 'readyState:', track.readyState);
@@ -1004,7 +1004,7 @@ export class WebRTCService implements OnDestroy {
     // Handle connection state changes
     pc.onconnectionstatechange = () => {
       console.log('Connection state with', peerId, ':', pc.connectionState);
-      
+
       if (pc.connectionState === 'failed') {
         console.error('Peer connection failed with', peerId, '- attempting reconnection');
         // Try to reconnect
@@ -1201,7 +1201,7 @@ export class WebRTCService implements OnDestroy {
     try {
       console.log('Setting remote description (answer) for:', senderId);
       await pc.setRemoteDescription(new RTCSessionDescription(answer));
-      
+
       // Apply any pending ICE candidates after setting remote description
       const pendingCandidates = this.pendingCandidates.get(senderId);
       if (pendingCandidates && pendingCandidates.length > 0) {
@@ -1215,7 +1215,7 @@ export class WebRTCService implements OnDestroy {
         }
         this.pendingCandidates.delete(senderId);
       }
-      
+
       console.log('Answer processed successfully for:', senderId);
     } catch (error) {
       console.error('Error handling answer:', error);
@@ -1430,7 +1430,7 @@ export class WebRTCService implements OnDestroy {
 
       // Store reference to avoid TypeScript issues in closure
       const dataChannel: RTCDataChannel = channel;
-      
+
       if (dataChannel.readyState === 'open') {
         sendPromises.push(this.sendFileToPeer(dataChannel, fileId, file, arrayBuffer, totalChunks));
       } else if (dataChannel.readyState === 'connecting') {
@@ -2048,13 +2048,13 @@ export class WebRTCService implements OnDestroy {
   // Reconnect to a peer when connection fails
   private async reconnectPeer(peerId: string): Promise<void> {
     console.log('Attempting to reconnect to peer:', peerId);
-    
+
     const participantName = this.participantNames.get(peerId);
     if (!participantName) {
       console.warn('Cannot reconnect - participant name not found for:', peerId);
       return;
     }
-    
+
     // Close old connection
     const oldPc = this.peerConnections.get(peerId);
     if (oldPc) {
@@ -2065,21 +2065,21 @@ export class WebRTCService implements OnDestroy {
       }
       this.peerConnections.delete(peerId);
     }
-    
+
     // Clear related data
     this.dataChannels.delete(peerId);
     this.pendingCandidates.delete(peerId);
     this.peerStreamIds.delete(peerId);
-    
+
     // Wait a bit before reconnecting
     await new Promise(resolve => setTimeout(resolve, 1000));
-    
+
     // Check if we're still in the room
     if (!this.roomId() || !this.socket?.connected) {
       console.log('Not in room anymore, skipping reconnect');
       return;
     }
-    
+
     // Create new peer connection
     try {
       await this.createPeerConnection(peerId, true);
