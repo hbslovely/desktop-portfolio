@@ -143,27 +143,6 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   // Metric dialog (for v2)
   showMetricDialog = signal<boolean>(false);
 
-  // Categories (from the sheet data)
-  categories = signal<string[]>([
-    'Kinh doanh',
-    'Đi chợ',
-    'Siêu thị',
-    'Ăn uống ngoài',
-    'Nhà hàng',
-    'Đi lại - xăng xe',
-    'Gia đình/Bạn bè',
-    'Điện - nước',
-    'Pet/Thú cưng/Vật nuôi khác',
-    'Sức khỏe',
-    'Thời trang / Mỹ Phẩm/ Làm đẹp',
-    'Mua sắm / Mua sắm online',
-    'Sữa/vitamin/chất bổ/Thuốc khác',
-    'Từ thiện',
-    'Điện thoại',
-    'Sinh hoạt (Lee)',
-    'Chi tiêu khác'
-  ]);
-
   // Category icons and colors mapping
   categoryConfig: { [key: string]: { icon: string; color: string; bgColor: string } } = {
     'Kinh doanh': { icon: 'pi-briefcase', color: '#6366f1', bgColor: '#eef2ff' },
@@ -182,8 +161,23 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     'Từ thiện': { icon: 'pi-gift', color: '#f472b6', bgColor: '#fce7f3' },
     'Điện thoại': { icon: 'pi-mobile', color: '#64748b', bgColor: '#f8fafc' },
     'Sinh hoạt (Lee)': { icon: 'pi-home', color: '#06b6d4', bgColor: '#ecfeff' },
-    'Chi tiêu khác': { icon: 'pi-ellipsis-h', color: '#71717a', bgColor: '#fafafa' }
+    'Chi tiêu khác': { icon: 'pi-ellipsis-h', color: '#71717a', bgColor: '#fafafa' },
+    'Ăn vặt / Ăn uống ngoài bữa chính': { icon: 'pi-utensils', color: '#b7d3ff', bgColor: '#011a6e' },
+    'Du lịch – Nghỉ dưỡng': {
+      icon: 'pi-map',
+      color: '#0d9488',
+      bgColor: '#ecfdf5'
+    },
+    'Thiết bị làm việc': {
+      icon: 'pi-desktop',
+      color: '#2563eb',
+      bgColor: '#eff6ff'
+    }
   };
+
+  categories = computed(() => {
+    return Object.keys(this.categoryConfig);
+  })
 
   getCategoryIcon(category: string): string {
     return this.categoryConfig[category]?.icon || 'pi-tag';
@@ -227,9 +221,9 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   currentScreen = signal<'transactions' | 'insights'>('transactions'); // Screen 1: Giao dịch, Screen 2: Insights
   activeTab = signal<'list' | 'summary' | 'budget' | 'insights'>('list');
   // Legacy signals (kept for compatibility)
-  currentView = signal<'main' | 'insights'>('main'); 
+  currentView = signal<'main' | 'insights'>('main');
   insightsActiveTab = signal<'budget' | 'insights'>('budget');
-  
+
   // Month/Year picker for insights view
   insightsYear = signal<number>(new Date().getFullYear());
   insightsMonth = signal<number | null>(new Date().getMonth() + 1); // null = whole year
@@ -241,7 +235,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   editCategoryBudgets = signal<{ [category: string]: number }>({});
   showSetAllDialog = signal<boolean>(false);
   setAllValue = signal<number>(1000000); // Default 1M for set all
-  
+
   // Budget mode: 'topDown' = set total and distribute by weight, 'bottomUp' = set each category
   budgetMode = signal<'topDown' | 'bottomUp'>('topDown');
   categoryWeights = signal<{ [category: string]: number }>({}); // Weight percentages for each category
@@ -1192,14 +1186,14 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     // If viewing whole year or a past month, return 0
     if (month === null) return 0;
-    
+
     const isCurrentMonth = year === now.getFullYear() && month === (now.getMonth() + 1);
-    
+
     if (isCurrentMonth) {
       const lastDay = new Date(year, month, 0);
       return lastDay.getDate() - now.getDate();
     }
-    
+
     // For past/future months, return total days in month
     const lastDay = new Date(year, month, 0);
     return lastDay.getDate();
@@ -1218,7 +1212,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const categories = this.categories();
     const catBudgets = this.editCategoryBudgets();
     const monthExpenses = this.currentMonthExpenses();
-    
+
     return categories.map(category => {
       const spent = monthExpenses
         .filter(e => e.category === category)
@@ -1226,7 +1220,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       const budget = catBudgets[category] || 0;
       const percentage = budget > 0 ? Math.round((spent / budget) * 100) : 0;
       const remaining = budget - spent;
-      
+
       return {
         category,
         spent,
@@ -1258,20 +1252,20 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     const dayNames = ['Chủ Nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
     const dayTotals: { [key: number]: { total: number; count: number } } = {};
-    
+
     for (let i = 0; i < 7; i++) {
       dayTotals[i] = { total: 0, count: 0 };
     }
-    
+
     expenses.forEach(expense => {
       const day = new Date(expense.date).getDay();
       dayTotals[day].total += expense.amount;
       dayTotals[day].count++;
     });
-    
+
     let maxDay = 0;
     let maxAverage = 0;
-    
+
     for (let i = 0; i < 7; i++) {
       const avg = dayTotals[i].count > 0 ? dayTotals[i].total / dayTotals[i].count : 0;
       if (avg > maxAverage) {
@@ -1279,7 +1273,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         maxDay = i;
       }
     }
-    
+
     return {
       day: maxDay,
       dayName: dayNames[maxDay],
@@ -1293,26 +1287,26 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const now = new Date();
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
     const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
-    
+
     const recent = expenses.filter(e => {
       const d = new Date(e.date);
       return d >= thirtyDaysAgo && d <= now;
     });
-    
+
     const previous = expenses.filter(e => {
       const d = new Date(e.date);
       return d >= sixtyDaysAgo && d < thirtyDaysAgo;
     });
-    
+
     const recentTotal = recent.reduce((sum, e) => sum + e.amount, 0);
     const previousTotal = previous.reduce((sum, e) => sum + e.amount, 0);
-    
+
     if (previousTotal === 0) {
       return { trend: 'Chưa đủ dữ liệu', percentage: 0 };
     }
-    
+
     const percentage = Math.round(((recentTotal - previousTotal) / previousTotal) * 100);
-    
+
     if (percentage > 10) return { trend: 'Tăng', percentage };
     if (percentage < -10) return { trend: 'Giảm', percentage };
     return { trend: 'Ổn định', percentage };
@@ -1327,7 +1321,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   });
 
   // ============ INSIGHTS COMPUTED VALUES (based on reportPeriodExpenses) ============
-  
+
   // Top spending category for insights (uses reportPeriodExpenses)
   insightsTopSpendingCategory = computed(() => {
     const expenses = this.reportPeriodExpenses();
@@ -1361,20 +1355,20 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     const dayNames = ['Chủ Nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
     const dayTotals: { [key: number]: { total: number; count: number } } = {};
-    
+
     for (let i = 0; i < 7; i++) {
       dayTotals[i] = { total: 0, count: 0 };
     }
-    
+
     expenses.forEach(expense => {
       const day = new Date(expense.date).getDay();
       dayTotals[day].total += expense.amount;
       dayTotals[day].count++;
     });
-    
+
     let maxDay = 0;
     let maxAverage = 0;
-    
+
     for (let i = 0; i < 7; i++) {
       const avg = dayTotals[i].count > 0 ? dayTotals[i].total / dayTotals[i].count : 0;
       if (avg > maxAverage) {
@@ -1382,7 +1376,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         maxDay = i;
       }
     }
-    
+
     return {
       day: maxDay,
       dayName: dayNames[maxDay],
@@ -1461,7 +1455,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       dateSet.add(expense.date);
     });
     const dates = Array.from(dateSet);
-    
+
     if (dates.length === 0) return 0;
     return expenses.length / dates.length;
   });
@@ -1516,24 +1510,24 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const dayNames = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
     const fullDayNames = ['Chủ Nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
     const dayData: { [key: number]: { total: number; count: number } } = {};
-    
+
     for (let i = 0; i < 7; i++) {
       dayData[i] = { total: 0, count: 0 };
     }
-    
+
     expenses.forEach(expense => {
       const day = new Date(expense.date).getDay();
       dayData[day].total += expense.amount;
       dayData[day].count++;
     });
-    
+
     const averages = Object.entries(dayData).map(([day, data]) => ({
       day: parseInt(day),
       average: data.count > 0 ? data.total / data.count : 0
     }));
-    
+
     const maxAverage = Math.max(...averages.map(d => d.average));
-    
+
     return averages.map(item => ({
       day: item.day,
       shortName: dayNames[item.day],
@@ -1550,24 +1544,24 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const dayNames = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
     const fullDayNames = ['Chủ Nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
     const dayData: { [key: number]: { total: number; count: number } } = {};
-    
+
     for (let i = 0; i < 7; i++) {
       dayData[i] = { total: 0, count: 0 };
     }
-    
+
     expenses.forEach(expense => {
       const day = new Date(expense.date).getDay();
       dayData[day].total += expense.amount;
       dayData[day].count++;
     });
-    
+
     const averages = Object.entries(dayData).map(([day, data]) => ({
       day: parseInt(day),
       average: data.count > 0 ? data.total / data.count : 0
     }));
-    
+
     const maxAverage = Math.max(...averages.map(d => d.average));
-    
+
     return averages.map(item => ({
       day: item.day,
       shortName: dayNames[item.day],
@@ -1583,11 +1577,11 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const expenses = this.filteredExpenses();
     const weekLabels = ['Tuần 1', 'Tuần 2', 'Tuần 3', 'Tuần 4', 'Tuần 5'];
     const weekData: { [key: number]: { total: number; count: number } } = {};
-    
+
     for (let i = 1; i <= 5; i++) {
       weekData[i] = { total: 0, count: 0 };
     }
-    
+
     expenses.forEach(expense => {
       const date = new Date(expense.date);
       const week = Math.ceil(date.getDate() / 7);
@@ -1596,14 +1590,14 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         weekData[week].count++;
       }
     });
-    
+
     const averages = Object.entries(weekData).map(([week, data]) => ({
       week: parseInt(week),
       average: data.count > 0 ? data.total / data.count : 0
     }));
-    
+
     const maxAverage = Math.max(...averages.map(w => w.average));
-    
+
     return averages.map(item => ({
       week: item.week,
       label: weekLabels[item.week - 1],
@@ -1616,7 +1610,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   // Spending tips based on analysis
   spendingTips = computed(() => {
     const tips: Array<{ title: string; description: string; type: 'warning' | 'success' | 'info'; icon: string; action?: string }> = [];
-    
+
     // Check budget status
     const budgetPercent = this.budgetPercentage();
     if (budgetPercent > 100) {
@@ -1636,7 +1630,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         action: 'Hạn chế chi tiêu để không vượt ngân sách'
       });
     }
-    
+
     // Top spending category tip
     const topCat = this.topSpendingCategory();
     if (topCat && topCat.percentage > 30) {
@@ -1648,7 +1642,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         action: 'Xem xét tối ưu chi tiêu cho danh mục này'
       });
     }
-    
+
     // Spending trend tip
     const trend = this.spendingTrend();
     if (trend.percentage < -15) {
@@ -1659,7 +1653,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         icon: 'pi-thumbs-up'
       });
     }
-    
+
     // Highest spending day tip
     const highestDay = this.highestSpendingDay();
     if (highestDay) {
@@ -1671,7 +1665,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         action: 'Cân nhắc lên kế hoạch chi tiêu cho ngày này'
       });
     }
-    
+
     // Add default tip if no warnings
     if (tips.length < 2) {
       tips.push({
@@ -1681,26 +1675,26 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         icon: 'pi-bookmark'
       });
     }
-    
+
     return tips.slice(0, 4); // Max 4 tips
   });
 
   // Recent achievements
   recentAchievements = computed(() => {
-    const achievements: Array<{ 
-      title: string; 
-      description: string; 
-      icon: string; 
-      achieved: boolean; 
-      progress?: number 
+    const achievements: Array<{
+      title: string;
+      description: string;
+      icon: string;
+      achieved: boolean;
+      progress?: number
     }> = [];
-    
+
     const budgetPercent = this.budgetPercentage();
     const trend = this.spendingTrend();
     const daysRemaining = this.remainingDaysInMonth();
     const totalDays = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
     const daysPassed = totalDays - daysRemaining;
-    
+
     // Budget control achievement
     if (budgetPercent <= 100) {
       const targetPercent = (daysPassed / totalDays) * 100;
@@ -1721,7 +1715,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         });
       }
     }
-    
+
     // Saving trend achievement
     if (trend.percentage < 0) {
       achievements.push({
@@ -1731,7 +1725,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         achieved: true
       });
     }
-    
+
     // Consistent tracking achievement
     const uniqueDates = this.uniqueDates();
     if (uniqueDates.length >= 7) {
@@ -1750,7 +1744,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         progress: Math.round((uniqueDates.length / 7) * 100)
       });
     }
-    
+
     // Low single transaction achievement
     const avgExpense = this.averageExpense();
     if (avgExpense > 0 && avgExpense < 200000) {
@@ -1761,7 +1755,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         achieved: true
       });
     }
-    
+
     return achievements.slice(0, 4);
   });
 
@@ -3063,7 +3057,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
    */
   switchScreen(screen: 'transactions' | 'insights'): void {
     this.currentScreen.set(screen);
-    
+
     // Set default tab for each screen
     if (screen === 'transactions') {
       this.activeTab.set('list');
@@ -4448,7 +4442,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         const saved = new Set(this.savedRowIndices());
         saved.add(index);
         this.savedRowIndices.set(saved);
-        
+
         // Save next expense
         this.saveExpensesSequentially(expenses, index + 1);
       },
@@ -5412,11 +5406,11 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   getCurrentMonthName(): string {
     const year = this.reportYear();
     const month = this.reportMonth();
-    
+
     if (month === null) {
       return `năm ${year}`;
     }
-    
+
     return `${month}/${year}`;
   }
 
@@ -5486,26 +5480,26 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     this.expenseService.getBudgets(forceRefresh).subscribe({
       next: (budgets) => {
         console.log('📊 Loaded budgets:', budgets);
-        
+
         // Map budgets to editCategoryBudgets signal
         const budgetMap: { [category: string]: number } = {};
         let totalBudget = 0;
-        
+
         budgets.forEach(b => {
           if (b.category && b.amount > 0) {
             budgetMap[b.category] = b.amount;
             totalBudget += b.amount;
           }
         });
-        
+
         this.editCategoryBudgets.set(budgetMap);
-        
+
         // If total budget was set via bottom-up, use sum of categories
         // Otherwise keep the default monthly budget
         if (totalBudget > 0) {
           this.editMonthlyBudget.set(totalBudget);
         }
-        
+
         // Initialize weights from loaded budgets
         this.calculateWeightsFromBudgets();
       },
@@ -5525,7 +5519,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     this.originalCategoryBudgets = { ...this.editCategoryBudgets() };
     this.originalCategoryWeights = { ...this.categoryWeights() };
     this.originalBudgetMode = this.budgetMode();
-    
+
     // Show dialog
     this.showBudgetSettings.set(true);
   }
@@ -5539,7 +5533,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     this.editCategoryBudgets.set({ ...this.originalCategoryBudgets });
     this.categoryWeights.set({ ...this.originalCategoryWeights });
     this.budgetMode.set(this.originalBudgetMode);
-    
+
     // Close dialogs
     this.showBudgetSettings.set(false);
     this.showSetAllDialog.set(false);
@@ -5562,7 +5556,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         this.showBudgetSettings.set(false);
         this.showSetAllDialog.set(false);
         this.showNotificationDialog('Đã lưu ngân sách thành công!', 'success');
-        
+
         // Refresh the budget trend chart
         setTimeout(() => {
           this.initBudgetTrendChart();
@@ -5581,7 +5575,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
    */
   switchBudgetMode(mode: 'topDown' | 'bottomUp'): void {
     this.budgetMode.set(mode);
-    
+
     if (mode === 'topDown') {
       // Calculate weights from current category budgets (for display only)
       this.calculateWeightsFromBudgets();
@@ -5597,7 +5591,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const budgets = this.editCategoryBudgets();
     const total = this.getTotalCategoryBudgets();
     const weights: { [category: string]: number } = {};
-    
+
     if (total > 0) {
       categories.forEach(cat => {
         const budget = budgets[cat] || 0;
@@ -5610,7 +5604,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         weights[cat] = equalWeight;
       });
     }
-    
+
     this.categoryWeights.set(weights);
   }
 
@@ -5622,13 +5616,13 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const weights = this.categoryWeights();
     const total = this.editMonthlyBudget();
     const newBudgets: { [category: string]: number } = {};
-    
+
     // Ensure weights exist
     let totalWeight = 0;
     categories.forEach(cat => {
       totalWeight += weights[cat] || 0;
     });
-    
+
     if (totalWeight === 0) {
       // Default equal weights
       const equalWeight = Math.floor(100 / categories.length);
@@ -5641,7 +5635,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         newBudgets[cat] = Math.floor(total * weight / totalWeight);
       });
     }
-    
+
     this.editCategoryBudgets.set(newBudgets);
   }
 
@@ -5652,7 +5646,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const weights = { ...this.categoryWeights() };
     weights[category] = Math.max(0, Math.min(100, weight));
     this.categoryWeights.set(weights);
-    
+
     // Recalculate budgets based on new weights
     this.applyWeightsToBudgets();
   }
@@ -5679,12 +5673,12 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const categories = this.categories();
     const weights = this.categoryWeights();
     const total = this.getTotalWeight();
-    
+
     if (total === 0) return;
-    
+
     const normalized: { [category: string]: number } = {};
     let remaining = 100;
-    
+
     categories.forEach((cat, index) => {
       if (index === categories.length - 1) {
         // Last category gets the remaining to ensure total is 100
@@ -5695,7 +5689,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         remaining -= normalizedWeight;
       }
     });
-    
+
     this.categoryWeights.set(normalized);
     this.applyWeightsToBudgets();
     this.showNotificationDialog('Đã chuẩn hóa trọng số về 100%', 'success');
@@ -5717,7 +5711,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const currentBudgets = { ...this.editCategoryBudgets() };
     currentBudgets[category] = amount;
     this.editCategoryBudgets.set(currentBudgets);
-    
+
     // Recalculate total from category budgets
     const newTotal = Object.values(currentBudgets).reduce((sum, val) => sum + val, 0);
     this.editMonthlyBudget.set(newTotal);
@@ -5741,12 +5735,12 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const newBudgets: { [category: string]: number } = {};
     const equalWeight = Math.floor(100 / categories.length);
     const newWeights: { [category: string]: number } = {};
-    
+
     categories.forEach(cat => {
       newBudgets[cat] = budgetPerCategory;
       newWeights[cat] = equalWeight;
     });
-    
+
     this.editCategoryBudgets.set(newBudgets);
     this.categoryWeights.set(newWeights);
     this.showNotificationDialog(`Đã chia đều ${this.formatCompactAmount(budgetPerCategory)} cho mỗi danh mục`, 'success');
@@ -5767,19 +5761,19 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const categories = this.categories();
     const value = this.setAllValue();
     const newBudgets: { [category: string]: number } = {};
-    
+
     categories.forEach(cat => {
       newBudgets[cat] = value;
     });
-    
+
     this.editCategoryBudgets.set(newBudgets);
-    
+
     // Update total in bottomUp mode
     if (this.budgetMode() === 'bottomUp') {
       const newTotal = value * categories.length;
       this.editMonthlyBudget.set(newTotal);
     }
-    
+
     this.showSetAllDialog.set(false);
     this.showNotificationDialog(`Đã đặt ${this.formatCompactAmount(value)} cho tất cả danh mục`, 'success');
   }
@@ -5791,7 +5785,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const currentBudgets = { ...this.editCategoryBudgets() };
     currentBudgets[category] = amount;
     this.editCategoryBudgets.set(currentBudgets);
-    
+
     // Update total in bottomUp mode
     if (this.budgetMode() === 'bottomUp') {
       const newTotal = Object.values(currentBudgets).reduce((sum, val) => sum + val, 0);
@@ -5806,14 +5800,14 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const budgets = this.editCategoryBudgets();
     return Object.values(budgets).reduce((sum, val) => sum + val, 0);
   }
-  
+
   /**
    * Initialize category weights with default values
    */
   initDefaultWeights(): void {
     const categories = this.categories();
     const weights = this.categoryWeights();
-    
+
     // Only initialize if weights are empty
     if (Object.keys(weights).length === 0 && categories.length > 0) {
       const equalWeight = Math.floor(100 / categories.length);
@@ -5847,7 +5841,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   selectedBudgetCategoryInfo = computed(() => {
     const category = this.selectedBudgetCategory();
     if (!category) return null;
-    
+
     const budgets = this.categoryBudgets();
     return budgets.find(b => b.category === category) || null;
   });
@@ -5858,16 +5852,16 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   budgetCategoryExpenses = computed(() => {
     const category = this.selectedBudgetCategory();
     if (!category) return [];
-    
+
     const now = new Date();
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
-    
+
     return this.expenses()
       .filter(e => {
         const expenseDate = new Date(e.date);
-        return e.category === category && 
-               expenseDate.getMonth() === currentMonth && 
+        return e.category === category &&
+               expenseDate.getMonth() === currentMonth &&
                expenseDate.getFullYear() === currentYear;
       })
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -5879,32 +5873,32 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   budgetCategoryDailySpending = computed(() => {
     const category = this.selectedBudgetCategory();
     if (!category) return [];
-    
+
     const now = new Date();
     const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
-    
+
     const dailyTotals: { day: number; amount: number }[] = [];
-    
+
     // Initialize all days
     for (let day = 1; day <= daysInMonth; day++) {
       dailyTotals.push({ day, amount: 0 });
     }
-    
+
     // Sum expenses by day
     this.expenses()
       .filter(e => {
         const expenseDate = new Date(e.date);
-        return e.category === category && 
-               expenseDate.getMonth() === currentMonth && 
+        return e.category === category &&
+               expenseDate.getMonth() === currentMonth &&
                expenseDate.getFullYear() === currentYear;
       })
       .forEach(e => {
         const day = new Date(e.date).getDate();
         dailyTotals[day - 1].amount += e.amount;
       });
-    
+
     return dailyTotals;
   });
 
@@ -5914,7 +5908,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   showBudgetCategoryDetail(category: string): void {
     this.selectedBudgetCategory.set(category);
     this.showBudgetCategoryDetailDialog.set(true);
-    
+
     // Initialize chart after dialog is shown
     setTimeout(() => {
       this.initBudgetCategoryMonthlyChart();
@@ -5927,7 +5921,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   hideBudgetCategoryDetail(): void {
     this.showBudgetCategoryDetailDialog.set(false);
     this.selectedBudgetCategory.set('');
-    
+
     // Destroy chart
     if (this.budgetCategoryMonthlyChart) {
       this.budgetCategoryMonthlyChart.destroy();
@@ -5940,25 +5934,25 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
    */
   initBudgetCategoryMonthlyChart(): void {
     if (!this.budgetCategoryMonthlyChartRef?.nativeElement) return;
-    
+
     // Destroy existing chart
     if (this.budgetCategoryMonthlyChart) {
       this.budgetCategoryMonthlyChart.destroy();
     }
-    
+
     const dailyData = this.budgetCategoryDailySpending();
     const categoryInfo = this.selectedBudgetCategoryInfo();
     const now = new Date();
     const daysInMonth = dailyData.length;
     const today = now.getDate();
-    
+
     // Calculate daily budget line
     const dailyBudget = categoryInfo?.budget ? categoryInfo.budget / daysInMonth : 0;
-    
+
     const labels = dailyData.map(d => d.day.toString());
     const actualData = dailyData.map(d => d.amount);
     const budgetLineData = dailyData.map(() => dailyBudget);
-    
+
     // Cumulative data for area chart
     let cumulative = 0;
     const cumulativeData = dailyData.map((d, index) => {
@@ -5968,15 +5962,15 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       }
       return null;
     });
-    
+
     // Budget cumulative line
     const budgetCumulativeData = dailyData.map((_, index) => dailyBudget * (index + 1));
-    
+
     const ctx = this.budgetCategoryMonthlyChartRef.nativeElement.getContext('2d')!;
     const gradient = ctx.createLinearGradient(0, 0, 0, 200);
     gradient.addColorStop(0, 'rgba(16, 185, 129, 0.3)');
     gradient.addColorStop(1, 'rgba(16, 185, 129, 0)');
-    
+
     const config: ChartConfiguration = {
       type: 'bar',
       data: {
@@ -6066,7 +6060,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         }
       }
     };
-    
+
     this.budgetCategoryMonthlyChart = new Chart(this.budgetCategoryMonthlyChartRef.nativeElement, config);
   }
 
@@ -6087,7 +6081,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const year = this.reportYear();
     const month = this.reportMonth();
     const now = new Date();
-    
+
     // If viewing whole year, don't show the chart
     if (month === null) return;
 
@@ -6095,31 +6089,31 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const labels: string[] = [];
     const budgetLine: number[] = [];
     const actualSpending: number[] = [];
-    
+
     // Generate cumulative budget line
     const dailyBudget = this.monthlyBudget() / daysInMonth;
     let cumulativeBudget = 0;
-    
+
     // Get actual daily spending for selected month
     const monthExpenses = this.currentMonthExpenses();
     const dailyTotals: { [key: number]: number } = {};
-    
+
     monthExpenses.forEach(expense => {
       const day = new Date(expense.date).getDate();
       dailyTotals[day] = (dailyTotals[day] || 0) + expense.amount;
     });
-    
+
     let cumulativeActual = 0;
-    
+
     // Determine how many days to show actual spending
     const isCurrentMonth = year === now.getFullYear() && month === (now.getMonth() + 1);
     const lastDayWithData = isCurrentMonth ? now.getDate() : daysInMonth;
-    
+
     for (let day = 1; day <= daysInMonth; day++) {
       labels.push(day.toString());
       cumulativeBudget += dailyBudget;
       budgetLine.push(Math.round(cumulativeBudget));
-      
+
       if (day <= lastDayWithData) {
         cumulativeActual += dailyTotals[day] || 0;
         actualSpending.push(cumulativeActual);
@@ -6144,8 +6138,8 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
           {
             label: 'Chi tiêu thực tế',
             data: actualSpending,
-            borderColor: actualSpending[actualSpending.length - 1] > budgetLine[actualSpending.length - 1] 
-              ? 'rgba(239, 68, 68, 1)' 
+            borderColor: actualSpending[actualSpending.length - 1] > budgetLine[actualSpending.length - 1]
+              ? 'rgba(239, 68, 68, 1)'
               : 'rgba(16, 185, 129, 1)',
             backgroundColor: actualSpending[actualSpending.length - 1] > budgetLine[actualSpending.length - 1]
               ? 'rgba(239, 68, 68, 0.1)'
@@ -6238,10 +6232,10 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const year = now.getFullYear();
     const month = now.getMonth();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
-    
+
     const dailyAmounts: number[] = new Array(31).fill(0);
     let total = 0;
-    
+
     this.expenses()
       .filter(e => {
         const d = new Date(e.date);
@@ -6252,7 +6246,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         dailyAmounts[day - 1] += e.amount;
         total += e.amount;
       });
-    
+
     return { dailyAmounts, total, daysInMonth };
   });
 
@@ -6263,16 +6257,16 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const now = new Date();
     let year = now.getFullYear();
     let month = now.getMonth() - 1;
-    
+
     if (month < 0) {
       month = 11;
       year--;
     }
-    
+
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const dailyAmounts: number[] = new Array(31).fill(0);
     let total = 0;
-    
+
     this.expenses()
       .filter(e => {
         const d = new Date(e.date);
@@ -6283,7 +6277,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         dailyAmounts[day - 1] += e.amount;
         total += e.amount;
       });
-    
+
     return { dailyAmounts, total, daysInMonth };
   });
 
@@ -6313,9 +6307,9 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   getMonthComparisonPercentage(): string {
     const current = this.currentMonthDailyData().total;
     const previous = this.previousMonthDailyData().total;
-    
+
     if (previous === 0) return '0';
-    
+
     const diff = ((current - previous) / previous) * 100;
     return Math.abs(diff).toFixed(1);
   }
@@ -6451,7 +6445,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         scales: {
           x: {
             grid: { display: false },
-            ticks: { 
+            ticks: {
               font: { size: 10 },
               maxRotation: 0,
               maxTicksLimit: 10
@@ -6645,7 +6639,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     });
 
     const ctx = this.monthDailyCompareChartRef.nativeElement.getContext('2d')!;
-    
+
     // Gradient for current month
     const currentGradient = ctx.createLinearGradient(0, 0, 0, 300);
     currentGradient.addColorStop(0, 'rgba(16, 185, 129, 0.3)');
@@ -6744,7 +6738,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
                 const dayIndex = items[0].dataIndex;
                 const currentDay = currentData.dailyAmounts[dayIndex];
                 const previousDay = previousData.dailyAmounts[dayIndex];
-                
+
                 const lines = [];
                 if (dayIndex + 1 <= today && currentDay > 0) {
                   lines.push(`Chi trong ngày (${this.getCurrentMonthLabel()}): ${this.formatAmount(currentDay)}`);
