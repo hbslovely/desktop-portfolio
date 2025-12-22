@@ -27,6 +27,7 @@ export interface ExpenseSettings {
   theme: ExpenseTheme;
   fontSize: ExpenseFontSize;
   prediction?: PredictionSettings;
+  excludeCategories?: string[]; // Categories to exclude from lists and filters
 }
 
 @Injectable({
@@ -54,7 +55,8 @@ export class ExpenseSettingsService {
       enableMovingAverage: true,
       enableExponentialSmoothing: true,
       enableSeasonalPattern: true
-    }
+    },
+    excludeCategories: []
   };
 
   // Signals for reactive updates
@@ -83,6 +85,10 @@ export class ExpenseSettingsService {
         // Ensure prediction settings exist (for backward compatibility)
         if (!settings.prediction) {
           settings.prediction = this.defaultSettings.prediction!;
+        }
+        // Ensure excludeCategories exists (for backward compatibility)
+        if (!settings.excludeCategories) {
+          settings.excludeCategories = [];
         }
         this.settings.set(settings);
         this.layout.set(settings.layout);
@@ -166,6 +172,14 @@ export class ExpenseSettingsService {
   resetPredictionSettings(): void {
     const current = this.settings();
     this.saveSettings({ ...current, prediction: this.defaultSettings.prediction! });
+  }
+
+  /**
+   * Update excluded categories
+   */
+  updateExcludeCategories(categories: string[]): void {
+    const current = this.settings();
+    this.saveSettings({ ...current, excludeCategories: categories });
   }
 }
 

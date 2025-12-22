@@ -251,7 +251,7 @@ export class WebRTCService implements OnDestroy {
         resolve();
       });
 
-      this.socket.on('connect_error', (error) => {
+      this.socket.on('connect_error', (error: any) => {
         console.error('Connection error:', error);
         this.connectionStatus.set('disconnected');
         this.addSystemMessage('Failed to connect to server. Using local mode.');
@@ -259,7 +259,7 @@ export class WebRTCService implements OnDestroy {
         resolve();
       });
 
-      this.socket.on('disconnect', (reason) => {
+      this.socket.on('disconnect', (reason: string) => {
         console.log('Disconnected from signaling server:', reason);
         if (reason === 'io server disconnect') {
           // Server disconnected, try to reconnect

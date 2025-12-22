@@ -143,44 +143,39 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   // Metric dialog (for v2)
   showMetricDialog = signal<boolean>(false);
 
-  // Category icons and colors mapping
+  // Category icons and colors mapping - Using Font Awesome icons directly with bright colors
   categoryConfig: { [key: string]: { icon: string; color: string; bgColor: string } } = {
-    'Kinh doanh': { icon: 'pi-briefcase', color: '#6366f1', bgColor: '#eef2ff' },
-    'Đi chợ': { icon: 'pi-shopping-bag', color: '#10b981', bgColor: '#ecfdf5' },
-    'Siêu thị': { icon: 'pi-shopping-cart', color: '#0ea5e9', bgColor: '#f0f9ff' },
-    'Ăn uống ngoài': { icon: 'pi-building-columns', color: '#f97316', bgColor: '#fff7ed' },
-    'Nhà hàng': { icon: 'pi-building', color: '#ec4899', bgColor: '#fdf2f8' },
-    'Đi lại - xăng xe': { icon: 'pi-car', color: '#8b5cf6', bgColor: '#f5f3ff' },
-    'Gia đình/Bạn bè': { icon: 'pi-users', color: '#14b8a6', bgColor: '#f0fdfa' },
-    'Điện - nước': { icon: 'pi-bolt', color: '#eab308', bgColor: '#fefce8' },
-    'Pet/Thú cưng/Vật nuôi khác': { icon: 'pi-reddit', color: '#f43f5e', bgColor: '#fff1f2' },
-    'Sức khỏe': { icon: 'pi-heart-fill', color: '#ef4444', bgColor: '#fef2f2' },
-    'Thời trang / Mỹ Phẩm/ Làm đẹp': { icon: 'pi-star', color: '#a855f7', bgColor: '#faf5ff' },
-    'Mua sắm / Mua sắm online': { icon: 'pi-box', color: '#3b82f6', bgColor: '#eff6ff' },
-    'Sữa/vitamin/chất bổ/Thuốc khác': { icon: 'pi-plus-circle', color: '#22c55e', bgColor: '#f0fdf4' },
-    'Từ thiện': { icon: 'pi-gift', color: '#f472b6', bgColor: '#fce7f3' },
-    'Điện thoại': { icon: 'pi-mobile', color: '#64748b', bgColor: '#f8fafc' },
-    'Sinh hoạt (Lee)': { icon: 'pi-home', color: '#06b6d4', bgColor: '#ecfeff' },
-    'Chi tiêu khác': { icon: 'pi-crown', color: '#71717a', bgColor: '#fafafa' },
-    'Ăn vặt / Ăn uống ngoài bữa chính': { icon: 'pi-apple', color: '#b7d3ff', bgColor: '#011a6e' },
-    'Du lịch – Nghỉ dưỡng': {
-      icon: 'pi-discord',
-      color: '#0d9488',
-      bgColor: '#ecfdf5'
-    },
-    'Thiết bị làm việc': {
-      icon: 'pi-desktop',
-      color: '#2563eb',
-      bgColor: '#eff6ff'
-    }
+    'Kinh doanh': { icon: 'fa-briefcase', color: '#4F46E5', bgColor: '#EEF2FF' },
+    'Đi chợ': { icon: 'fa-shopping-bag', color: '#059669', bgColor: '#ECFDF5' },
+    'Siêu thị': { icon: 'fa-shopping-cart', color: '#0284C7', bgColor: '#F0F9FF' },
+    'Ăn uống ngoài': { icon: 'fa-coffee', color: '#EA580C', bgColor: '#FFF7ED' },
+    'Nhà hàng': { icon: 'fa-cutlery', color: '#DB2777', bgColor: '#FDF2F8' },
+    'Đi lại - xăng xe': { icon: 'fa-bus', color: '#7C3AED', bgColor: '#F5F3FF' },
+    'Gia đình/Bạn bè': { icon: 'fa-users', color: '#0D9488', bgColor: '#F0FDFA' },
+    'Điện - nước': { icon: 'fa-tint', color: '#CA8A04', bgColor: '#FEFCE8' },
+    'Pet/Thú cưng/Vật nuôi khác': { icon: 'fa-paw', color: '#E11D48', bgColor: '#FFF1F2' },
+    'Sức khỏe': { icon: 'fa-user-md', color: '#DC2626', bgColor: '#FEF2F2' },
+    'Thời trang / Mỹ Phẩm/ Làm đẹp': { icon: 'fa-wand-magic-sparkles', color: '#9333EA', bgColor: '#FAF5FF' },
+    'Mua sắm / Mua sắm online': { icon: 'fa-shopping-cart', color: '#2563EB', bgColor: '#EFF6FF' },
+    'Sữa/vitamin/chất bổ/Thuốc khác': { icon: 'fa-pills', color: '#16A34A', bgColor: '#F0FDF4' },
+    'Từ thiện': { icon: 'fa-gift', color: '#EC4899', bgColor: '#FCE7F3' },
+    'Điện thoại': { icon: 'fa-mobile-alt', color: '#475569', bgColor: '#F8FAFC' },
+    'Sinh hoạt (Lee)': { icon: 'fa-home', color: '#0891B2', bgColor: '#ECFEFF' },
+    'Ăn vặt / Ăn uống ngoài bữa chính': { icon: 'fa-cookie-bite', color: '#F59E0B', bgColor: '#FFFBEB' },
+    'Du lịch – Nghỉ dưỡng': { icon: 'fa-plane', color: '#0D9488', bgColor: '#ECFDF5' },
+    'Thiết bị làm việc': { icon: 'fa-laptop', color: '#2563EB', bgColor: '#EFF6FF' },
+    'Chi tiêu khác': { icon: 'fa-circle-question', color: '#6B7280', bgColor: '#F9FAFB' }
   };
 
   categories = computed(() => {
-    return Object.keys(this.categoryConfig);
+    const allCategories = Object.keys(this.categoryConfig);
+    const settings = this.settingsService()?.settings();
+    const excludeCategories = settings?.excludeCategories || [];
+    return allCategories.filter(cat => !excludeCategories.includes(cat));
   })
 
   getCategoryIcon(category: string): string {
-    return this.categoryConfig[category]?.icon || 'pi-tag';
+    return this.categoryConfig[category]?.icon || 'fa-tag';
   }
 
   getCategoryColor(category: string): string {
@@ -196,16 +191,29 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   filterDateFrom = signal<string>('');
   filterDateTo = signal<string>('');
   searchText = signal<string>('');
+  searchInNote = signal<boolean>(false); // Search in note field
+  searchMode = signal<'contains' | 'starts' | 'ends' | 'exact' | 'regex'>('contains');
   filterAmountMin = signal<number | null>(null);
   filterAmountMax = signal<number | null>(null);
+  showHighAmountOnly = signal<boolean>(false); // Show only high amount expenses
+  showRecentOnly = signal<boolean>(false); // Show only recent expenses (last 7 days)
+  showWithNoteOnly = signal<boolean>(false); // Show only expenses with notes
+  showWithoutNoteOnly = signal<boolean>(false); // Show only expenses without notes
+  showAboveAverageOnly = signal<boolean>(false); // Show only above average
+  showBelowAverageOnly = signal<boolean>(false); // Show only below average
+  searchKeywords = signal<string[]>([]); // Multiple keywords search
+  showSearchSuggestions = signal<boolean>(false);
+  recentSearches = signal<string[]>([]);
+  savedFilterPresets = signal<Array<{ name: string; filters: any }>>([]);
 
   // Category filter dropdown state
   showCategoryDropdown = signal<boolean>(false);
   categorySearchText = signal<string>('');
   categoryDropdownPosition = signal<{ top: number; left: number } | null>(null);
 
-  // Filter sidebar collapsed state
-  filterSidebarCollapsed = signal<boolean>(false);
+  // Sidebar panels system (WebStorm style)
+  activeSidebarPanel = signal<'filters' | 'dates' | 'statistics' | 'categories' | null>('filters');
+  sidebarPanelsCollapsed = signal<boolean>(false); // All panels collapsed
 
   // Right info panel state
   rightPanelOpen = signal<boolean>(false);
@@ -367,16 +375,6 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     }
   }
 
-  // Get available years for picker
-  getAvailableYears(): number[] {
-    const currentYear = new Date().getFullYear();
-    const years: number[] = [];
-    for (let y = currentYear; y >= currentYear - 5; y--) {
-      years.push(y);
-    }
-    return years;
-  }
-
   // Check if report period is this month
   isThisMonthReport(): boolean {
     const now = new Date();
@@ -444,12 +442,30 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       filtered = filtered.filter(expense => expense.date <= dateTo);
     }
 
-    // Filter by search text
+    // Filter by search text with advanced options
     if (search) {
-      filtered = filtered.filter(expense =>
-        expense.content.toLowerCase().includes(search) ||
-        expense.category.toLowerCase().includes(search)
-      );
+      const searchInNote = this.searchInNote();
+      const searchMode = this.searchMode();
+      const keywords = this.searchKeywords();
+
+      filtered = filtered.filter(expense => {
+        // Multiple keywords search (AND logic)
+        if (keywords.length > 0) {
+          return keywords.every(keyword => {
+            const contentMatch = this.matchSearch(expense.content.toLowerCase(), keyword.toLowerCase(), searchMode);
+            const categoryMatch = this.matchSearch(expense.category.toLowerCase(), keyword.toLowerCase(), searchMode);
+            const noteMatch = searchInNote && expense.note ? this.matchSearch(expense.note.toLowerCase(), keyword.toLowerCase(), searchMode) : false;
+            return contentMatch || categoryMatch || noteMatch;
+          });
+        }
+
+        // Single search
+        const contentMatch = this.matchSearch(expense.content.toLowerCase(), search, searchMode);
+        const categoryMatch = this.matchSearch(expense.category.toLowerCase(), search, searchMode);
+        const noteMatch = searchInNote && expense.note ? this.matchSearch(expense.note.toLowerCase(), search, searchMode) : false;
+
+        return contentMatch || categoryMatch || noteMatch;
+      });
     }
 
     // Filter by amount range
@@ -458,6 +474,49 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     }
     if (amountMax !== null) {
       filtered = filtered.filter(expense => expense.amount <= amountMax);
+    }
+
+    // Quick filters
+    if (this.showHighAmountOnly()) {
+      const allExpenses = this.expenses();
+      if (allExpenses.length > 0) {
+        const total = allExpenses.reduce((sum, e) => sum + e.amount, 0);
+        const avg = total / allExpenses.length;
+        filtered = filtered.filter(expense => expense.amount > avg);
+      }
+    }
+
+    if (this.showRecentOnly()) {
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      const sevenDaysAgoStr = sevenDaysAgo.toISOString().split('T')[0];
+      filtered = filtered.filter(expense => expense.date >= sevenDaysAgoStr);
+    }
+
+    if (this.showWithNoteOnly()) {
+      filtered = filtered.filter(expense => expense.note && expense.note.trim().length > 0);
+    }
+
+    if (this.showWithoutNoteOnly()) {
+      filtered = filtered.filter(expense => !expense.note || expense.note.trim().length === 0);
+    }
+
+    if (this.showAboveAverageOnly()) {
+      const allExpenses = this.expenses();
+      if (allExpenses.length > 0) {
+        const total = allExpenses.reduce((sum, e) => sum + e.amount, 0);
+        const avg = total / allExpenses.length;
+        filtered = filtered.filter(expense => expense.amount > avg);
+      }
+    }
+
+    if (this.showBelowAverageOnly()) {
+      const allExpenses = this.expenses();
+      if (allExpenses.length > 0) {
+        const total = allExpenses.reduce((sum, e) => sum + e.amount, 0);
+        const avg = total / allExpenses.length;
+        filtered = filtered.filter(expense => expense.amount < avg);
+      }
     }
 
     // Sort expenses based on dropdown option
@@ -2769,31 +2828,6 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   /**
-   * Logout
-   * Security: Clears all authentication data including password
-   */
-  logout(): void {
-    this.isAuthenticated.set(false);
-    this.username.set(''); // Clear username
-    this.password.set(''); // Clear password
-    this.passwordError.set('');
-    this.expenses.set([]);
-    this.showAddForm.set(false);
-    sessionStorage.removeItem('expense_app_auth_hash');
-    // Note: Username is not stored in sessionStorage, so no need to remove it
-
-    // Destroy charts
-    if (this.categoryChart) {
-      this.categoryChart.destroy();
-      this.categoryChart = null;
-    }
-    if (this.dailyChart) {
-      this.dailyChart.destroy();
-      this.dailyChart = null;
-    }
-  }
-
-  /**
    * Handle input keydown (username or password)
    * Security: Password is only stored in signal temporarily, cleared immediately after use
    */
@@ -4504,6 +4538,112 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   /**
+   * Duplicate an expense
+   */
+  duplicateExpense(expense: Expense): void {
+    this.newExpense = {
+      date: expense.date,
+      content: expense.content,
+      amount: expense.amount,
+      category: expense.category,
+      note: expense.note
+    };
+    this.showAddForm.set(true);
+    this.inputMode.set('single');
+  }
+
+  /**
+   * Copy data from previous row in multiple expenses table
+   */
+  copyFromPreviousRow(index: number): void {
+    if (index === 0) return;
+    const expenses = this.multipleExpenses();
+    const previousExpense = expenses[index - 1];
+    if (previousExpense) {
+      expenses[index] = {
+        ...expenses[index],
+        date: previousExpense.date,
+        category: previousExpense.category,
+        note: previousExpense.note
+      };
+      this.multipleExpenses.set([...expenses]);
+    }
+  }
+
+  /**
+   * Check if a row is complete (has all required fields)
+   */
+  isRowComplete(rowIndex: number): boolean {
+    const expenses = this.multipleExpenses();
+    if (rowIndex >= expenses.length) return false;
+    const expense = expenses[rowIndex];
+    return !!(expense.content?.trim() && expense.amount > 0 && expense.category && expense.date);
+  }
+
+  /**
+   * Auto-focus next row after adding expense in multiple mode
+   * Only creates new row if current row is complete
+   */
+  focusNextRowInput(rowIndex: number, field: 'content' | 'amount' | 'category' | 'date' | 'note'): void {
+    setTimeout(() => {
+      const expenses = this.multipleExpenses();
+      const currentRow = expenses[rowIndex];
+
+      // Check if current row is complete
+      const isComplete = !!(currentRow?.content?.trim() && currentRow?.amount > 0 && currentRow?.category && currentRow?.date);
+
+      if (!isComplete) {
+        // Row is not complete, don't create new row
+        return;
+      }
+
+      const nextRowIndex = rowIndex + 1;
+      if (nextRowIndex < expenses.length) {
+        // Focus the same field in next row
+        let selector = '';
+        if (field === 'date') {
+          selector = `.expenses-table tbody tr:nth-child(${nextRowIndex + 1}) td input[type="date"]`;
+        } else if (field === 'content') {
+          selector = `.expenses-table tbody tr:nth-child(${nextRowIndex + 1}) td:nth-child(3) input[type="text"]`;
+        } else if (field === 'amount') {
+          selector = `.expenses-table tbody tr:nth-child(${nextRowIndex + 1}) td:nth-child(4) input[type="text"]`;
+        } else if (field === 'category') {
+          selector = `.expenses-table tbody tr:nth-child(${nextRowIndex + 1}) td select`;
+        } else if (field === 'note') {
+          selector = `.expenses-table tbody tr:nth-child(${nextRowIndex + 1}) td:nth-child(6) input[type="text"]`;
+        }
+
+        const nextInput = document.querySelector(selector) as HTMLElement;
+        if (nextInput) {
+          nextInput.focus();
+        }
+      } else {
+        // Add new row only if current row is complete
+        this.addExpenseRow();
+        setTimeout(() => {
+          let selector = '';
+          if (field === 'date') {
+            selector = `.expenses-table tbody tr:last-child td input[type="date"]`;
+          } else if (field === 'content') {
+            selector = `.expenses-table tbody tr:last-child td:nth-child(3) input[type="text"]`;
+          } else if (field === 'amount') {
+            selector = `.expenses-table tbody tr:last-child td:nth-child(4) input[type="text"]`;
+          } else if (field === 'category') {
+            selector = `.expenses-table tbody tr:last-child td select`;
+          } else if (field === 'note') {
+            selector = `.expenses-table tbody tr:last-child td:nth-child(6) input[type="text"]`;
+          }
+
+          const newInput = document.querySelector(selector) as HTMLElement;
+          if (newInput) {
+            newInput.focus();
+          }
+        }, 50);
+      }
+    }, 50);
+  }
+
+  /**
    * Format date for display
    */
   formatDate(dateStr: string): string {
@@ -4717,9 +4857,243 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     this.filterDateFrom.set('');
     this.filterDateTo.set('');
     this.searchText.set('');
+    this.searchInNote.set(false);
+    this.searchMode.set('contains');
     this.filterAmountMin.set(null);
     this.filterAmountMax.set(null);
+    this.showHighAmountOnly.set(false);
+    this.showRecentOnly.set(false);
+    this.showWithNoteOnly.set(false);
+    this.showWithoutNoteOnly.set(false);
+    this.showAboveAverageOnly.set(false);
+    this.showBelowAverageOnly.set(false);
+    this.searchKeywords.set([]);
+    this.showSearchSuggestions.set(false);
   }
+
+  /**
+   * Match search text based on search mode
+   */
+  matchSearch(text: string, search: string, mode: 'contains' | 'starts' | 'ends' | 'exact' | 'regex'): boolean {
+    switch (mode) {
+      case 'contains':
+        return text.includes(search);
+      case 'starts':
+        return text.startsWith(search);
+      case 'ends':
+        return text.endsWith(search);
+      case 'exact':
+        return text === search;
+      case 'regex':
+        try {
+          const regex = new RegExp(search, 'i');
+          return regex.test(text);
+        } catch (e) {
+          // Invalid regex, fallback to contains
+          return text.includes(search);
+        }
+      default:
+        return text.includes(search);
+    }
+  }
+
+  /**
+   * Get search suggestions based on expenses
+   */
+  getSearchSuggestions(query: string): string[] {
+    if (!query || query.length < 2) return [];
+
+    const suggestions = new Set<string>();
+    const lowerQuery = query.toLowerCase();
+
+    this.expenses().forEach(expense => {
+      // Content suggestions
+      if (expense.content.toLowerCase().includes(lowerQuery)) {
+        suggestions.add(expense.content);
+      }
+
+      // Category suggestions
+      if (expense.category.toLowerCase().includes(lowerQuery)) {
+        suggestions.add(expense.category);
+      }
+
+      // Note suggestions (first 50 chars)
+      if (expense.note && expense.note.toLowerCase().includes(lowerQuery)) {
+        const noteSnippet = expense.note.substring(0, 50);
+        if (noteSnippet.length === 50) {
+          suggestions.add(noteSnippet + '...');
+        } else {
+          suggestions.add(noteSnippet);
+        }
+      }
+    });
+
+    return Array.from(suggestions).slice(0, 5);
+  }
+
+  /**
+   * Add to recent searches
+   */
+  addToRecentSearches(search: string): void {
+    if (!search || search.trim().length === 0) return;
+
+    const recent = this.recentSearches();
+    const trimmedSearch = search.trim();
+
+    // Remove if already exists
+    const filtered = recent.filter(s => s !== trimmedSearch);
+
+    // Add to beginning
+    filtered.unshift(trimmedSearch);
+
+    // Keep only last 10
+    this.recentSearches.set(filtered.slice(0, 10));
+  }
+
+  /**
+   * Parse keywords from search text (comma or space separated)
+   */
+  parseKeywords(searchText: string): string[] {
+    if (!searchText) return [];
+
+    // Split by comma or space, filter empty
+    return searchText
+      .split(/[,\s]+/)
+      .map(k => k.trim())
+      .filter(k => k.length > 0);
+  }
+
+  /**
+   * Handle search text change
+   */
+  onSearchTextChange(text: string): void {
+    this.searchText.set(text);
+
+    // Parse keywords if multiple
+    const keywords = this.parseKeywords(text);
+    if (keywords.length > 1) {
+      this.searchKeywords.set(keywords);
+    } else {
+      this.searchKeywords.set([]);
+    }
+
+    // Show suggestions if text is long enough
+    this.showSearchSuggestions.set(text.length >= 2);
+  }
+
+  /**
+   * Handle search input focus
+   */
+  onSearchFocus(): void {
+    this.showSearchSuggestions.set(this.searchText().length >= 2);
+  }
+
+  /**
+   * Handle search input blur
+   */
+  onSearchBlur(): void {
+    // Delay hiding suggestions to allow clicking on them
+    setTimeout(() => {
+      this.showSearchSuggestions.set(false);
+    }, 200);
+  }
+
+  /**
+   * Toggle sidebar panel
+   */
+  toggleSidebarPanel(panel: 'filters' | 'dates' | 'statistics' | 'categories'): void {
+    if (this.activeSidebarPanel() === panel && !this.sidebarPanelsCollapsed()) {
+      // If clicking the same panel, collapse it
+      this.sidebarPanelsCollapsed.set(true);
+    } else {
+      // Open the selected panel
+      this.activeSidebarPanel.set(panel);
+      this.sidebarPanelsCollapsed.set(false);
+
+      // Sync filters when switching panels
+      // This ensures UI reflects current filter state when switching between panels
+      // The signals are already shared, but this triggers change detection
+      if (panel === 'categories' || panel === 'filters') {
+        // Force update by reading the signal (triggers change detection)
+        this.filterCategory();
+      }
+      if (panel === 'dates' || panel === 'filters') {
+        // Force update date filters
+        this.filterDateFrom();
+        this.filterDateTo();
+      }
+    }
+  }
+
+  /**
+   * Get unique dates from expenses with stats (computed signal)
+   */
+  uniqueDatesWithStats = computed((): Array<{ date: string; count: number; total: number }> => {
+    const dateMap = new Map<string, { count: number; total: number }>();
+
+    this.expenses().forEach(expense => {
+      const existing = dateMap.get(expense.date) || { count: 0, total: 0 };
+      dateMap.set(expense.date, {
+        count: existing.count + 1,
+        total: existing.total + expense.amount
+      });
+    });
+
+    return Array.from(dateMap.entries())
+      .map(([date, stats]) => ({ date, ...stats }))
+      .sort((a, b) => b.date.localeCompare(a.date)); // Newest first
+  });
+
+  /**
+   * Check if date is selected
+   */
+  isDateSelected(date: string): boolean {
+    return this.filterDateFrom() === date && this.filterDateTo() === date;
+  }
+
+  /**
+   * Select a date to filter and show day detail
+   */
+  selectDate(date: string): void {
+    this.filterDateFrom.set(date);
+    this.filterDateTo.set(date);
+  }
+
+  /**
+   * Get max expense amount
+   */
+  getMaxExpense(): number {
+    const expenses = this.filteredExpenses();
+    if (expenses.length === 0) return 0;
+    return Math.max(...expenses.map(e => e.amount));
+  }
+
+  /**
+   * Get min expense amount
+   */
+  getMinExpense(): number {
+    const expenses = this.filteredExpenses();
+    if (expenses.length === 0) return 0;
+    return Math.min(...expenses.map(e => e.amount));
+  }
+
+  // Date search for date list panel
+  dateSearchText = signal<string>('');
+
+  /**
+   * Get filtered unique dates based on search (computed signal)
+   */
+  filteredUniqueDates = computed((): Array<{ date: string; count: number; total: number }> => {
+    const dates = this.uniqueDatesWithStats();
+    const search = this.dateSearchText().toLowerCase().trim();
+
+    if (!search) return dates;
+
+    return dates.filter(dateGroup => {
+      const dateStr = this.formatDate(dateGroup.date).toLowerCase();
+      return dateStr.includes(search);
+    });
+  });
 
   /**
    * Toggle category selection

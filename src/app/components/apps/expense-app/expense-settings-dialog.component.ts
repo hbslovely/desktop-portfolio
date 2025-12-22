@@ -113,6 +113,28 @@ import { ExpenseSettingsService, ExpenseTheme, ExpenseFontSize, ExpenseLayout, P
             </div>
           </div>
 
+          <!-- Category Exclusion -->
+          <div class="settings-section">
+            <h4 class="section-title">
+              <i class="pi pi-ban"></i>
+              Loại trừ Danh mục
+            </h4>
+            <p class="section-description">Chọn các danh mục sẽ bị ẩn khỏi danh sách và bộ lọc</p>
+            
+            <div class="exclude-categories-list">
+              <label *ngFor="let cat of allCategories()" class="exclude-category-item">
+                <input type="checkbox" 
+                       [checked]="isCategoryExcluded(cat)"
+                       (change)="toggleExcludeCategory(cat)">
+                <span class="category-name">{{ cat }}</span>
+              </label>
+            </div>
+            <div class="exclude-actions">
+              <button (click)="selectAllCategories()" class="action-btn-small">Chọn tất cả</button>
+              <button (click)="deselectAllCategories()" class="action-btn-small">Bỏ chọn tất cả</button>
+            </div>
+          </div>
+
           <!-- Prediction Settings -->
           <div class="settings-section">
             <h4 class="section-title">
@@ -600,6 +622,90 @@ import { ExpenseSettingsService, ExpenseTheme, ExpenseFontSize, ExpenseLayout, P
       }
     }
 
+    .exclude-categories-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 300px;
+      overflow-y: auto;
+      padding: 12px;
+      background: #f9f9f9;
+      border-radius: 8px;
+      border: 1px solid #e0e0e0;
+      margin-bottom: 12px;
+
+      &::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      &::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 3px;
+      }
+
+      .exclude-category-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px;
+        background: white;
+        border-radius: 6px;
+        border: 1px solid #e0e0e0;
+        cursor: pointer;
+        transition: all 0.2s;
+
+        &:hover {
+          border-color: #2196F3;
+          background: #f0f9ff;
+        }
+
+        input[type="checkbox"] {
+          width: 18px;
+          height: 18px;
+          cursor: pointer;
+          accent-color: #2196F3;
+        }
+
+        .category-name {
+          font-size: 14px;
+          color: #212121;
+          user-select: none;
+        }
+
+        &:has(input:checked) {
+          background: #e3f2fd;
+          border-color: #2196F3;
+
+          .category-name {
+            font-weight: 600;
+            color: #1976D2;
+          }
+        }
+      }
+    }
+
+    .exclude-actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+
+      .action-btn-small {
+        padding: 6px 12px;
+        background: #f5f5f5;
+        color: #212121;
+        border: 1px solid #e0e0e0;
+        border-radius: 6px;
+        font-size: 12px;
+        cursor: pointer;
+        transition: all 0.2s;
+
+        &:hover {
+          background: #e0e0e0;
+          border-color: #bdbdbd;
+        }
+      }
+    }
+
     .simple-params {
       display: flex;
       flex-direction: column;
@@ -824,6 +930,42 @@ export class ExpenseSettingsDialogComponent implements OnInit, OnChanges {
     enableSeasonalPattern: true
   });
 
+  // Category exclusion
+  excludeCategories = signal<string[]>([]);
+  allCategoriesList = [
+    'Kinh doanh', 'Đi chợ', 'Siêu thị', 'Ăn uống ngoài', 'Nhà hàng',
+    'Đi lại - xăng xe', 'Gia đình/Bạn bè', 'Điện - nước', 'Pet/Thú cưng/Vật nuôi khác',
+    'Sức khỏe', 'Thời trang / Mỹ Phẩm/ Làm đẹp', 'Mua sắm / Mua sắm online',
+    'Sữa/vitamin/chất bổ/Thuốc khác', 'Từ thiện', 'Điện thoại', 'Sinh hoạt (Lee)',
+    'Chi tiêu khác', 'Ăn vặt / Ăn uống ngoài bữa chính', 'Du lịch – Nghỉ dưỡng',
+    'Thiết bị làm việc'
+  ];
+
+  allCategories(): string[] {
+    return this.allCategoriesList;
+  }
+
+  isCategoryExcluded(category: string): boolean {
+    return this.excludeCategories().includes(category);
+  }
+
+  toggleExcludeCategory(category: string): void {
+    const current = this.excludeCategories();
+    if (current.includes(category)) {
+      this.excludeCategories.set(current.filter(c => c !== category));
+    } else {
+      this.excludeCategories.set([...current, category]);
+    }
+  }
+
+  selectAllCategories(): void {
+    this.excludeCategories.set([...this.allCategoriesList]);
+  }
+
+  deselectAllCategories(): void {
+    this.excludeCategories.set([]);
+  }
+
   constructor(private settingsService: ExpenseSettingsService) {}
 
   ngOnInit(): void {
@@ -844,6 +986,11 @@ export class ExpenseSettingsDialogComponent implements OnInit, OnChanges {
     if (settings.prediction) {
       this.predictionSettings.set({ ...settings.prediction });
     }
+    if (settings.excludeCategories) {
+      this.excludeCategories.set([...settings.excludeCategories]);
+    } else {
+      this.excludeCategories.set([]);
+    }
   }
 
   close(): void {
@@ -856,7 +1003,8 @@ export class ExpenseSettingsDialogComponent implements OnInit, OnChanges {
       layout: this.selectedLayout(),
       theme: 'compact' as ExpenseTheme, // Always use compact theme (like v1)
       fontSize: this.selectedFontSize(),
-      prediction: this.predictionSettings()
+      prediction: this.predictionSettings(),
+      excludeCategories: this.excludeCategories()
     };
     this.settingsService.saveSettings(settings);
     this.onSave.emit({
