@@ -135,32 +135,32 @@
       <div class="sidebar-container-webstorm" [class.collapsed]="sidebarPanelsCollapsed()">
         <!-- Icon Bar (Left) -->
         <div class="sidebar-icon-bar">
-          <button class="sidebar-icon-btn" 
+          <button class="sidebar-icon-btn"
                   [class.active]="activeSidebarPanel() === 'filters' && !sidebarPanelsCollapsed()"
                   (click)="toggleSidebarPanel('filters')"
                   title="Bộ lọc">
             <i class="fas fa-filter"></i>
           </button>
-          <button class="sidebar-icon-btn" 
+          <button class="sidebar-icon-btn"
                   [class.active]="activeSidebarPanel() === 'dates' && !sidebarPanelsCollapsed()"
                   (click)="toggleSidebarPanel('dates')"
                   title="Chọn ngày">
             <i class="fas fa-calendar-alt"></i>
           </button>
-          <button class="sidebar-icon-btn" 
+          <button class="sidebar-icon-btn"
                   [class.active]="activeSidebarPanel() === 'categories' && !sidebarPanelsCollapsed()"
                   (click)="toggleSidebarPanel('categories')"
                   title="Danh mục">
             <i class="fas fa-tags"></i>
           </button>
-          <button class="sidebar-icon-btn" 
+          <button class="sidebar-icon-btn"
                   [class.active]="activeSidebarPanel() === 'statistics' && !sidebarPanelsCollapsed()"
                   (click)="toggleSidebarPanel('statistics')"
                   title="Thống kê">
             <i class="fas fa-chart-bar"></i>
           </button>
           <div class="sidebar-divider"></div>
-          <button class="sidebar-icon-btn collapse-all-btn" 
+          <button class="sidebar-icon-btn collapse-all-btn"
                   (click)="sidebarPanelsCollapsed.set(!sidebarPanelsCollapsed())"
                   [title]="sidebarPanelsCollapsed() ? 'Mở sidebar' : 'Thu gọn sidebar'">
             <i class="fas" [ngClass]="sidebarPanelsCollapsed() ? 'fa-chevron-right' : 'fa-chevron-left'"></i>
@@ -194,18 +194,18 @@
               <span>Tìm kiếm nâng cao</span>
             </div>
             <div class="search-input-wrapper-flat">
-              <input type="text" 
-                     [ngModel]="searchText()" 
+              <input type="text"
+                     [ngModel]="searchText()"
                      (ngModelChange)="onSearchTextChange($event)"
                      (focus)="onSearchFocus()"
                      (blur)="onSearchBlur()"
-                     placeholder="Tìm kiếm (dùng dấu phẩy để tìm nhiều từ)..." 
+                     placeholder="Tìm kiếm (dùng dấu phẩy để tìm nhiều từ)..."
                      class="search-input-flat">
               <button *ngIf="searchText()" (click)="searchText.set(''); searchKeywords.set([])" class="clear-input-btn-flat">
                 <i class="fas fa-times"></i>
               </button>
             </div>
-            
+
             <!-- Search Suggestions -->
             <div class="search-suggestions-flat" *ngIf="showSearchSuggestions() && searchText().length >= 2">
               <div class="suggestions-header">
@@ -213,7 +213,7 @@
                 <span>Gợi ý</span>
               </div>
               <div class="suggestions-list">
-                <button *ngFor="let suggestion of getSearchSuggestions(searchText())" 
+                <button *ngFor="let suggestion of getSearchSuggestions(searchText())"
                         class="suggestion-item"
                         (click)="searchText.set(suggestion); addToRecentSearches(suggestion); showSearchSuggestions.set(false)">
                   <i class="fas fa-search"></i>
@@ -232,7 +232,7 @@
                 </button>
               </div>
               <div class="recent-list">
-                <button *ngFor="let recent of recentSearches()" 
+                <button *ngFor="let recent of recentSearches()"
                         class="recent-item"
                         (click)="searchText.set(recent); addToRecentSearches(recent)">
                   <i class="fas fa-clock"></i>
@@ -240,7 +240,7 @@
                 </button>
               </div>
             </div>
-            
+
             <!-- Search Options -->
             <div class="search-options-flat" *ngIf="searchText()">
               <div class="search-mode-selector">
@@ -271,27 +271,27 @@
               <span>Lọc nhanh</span>
             </div>
             <div class="quick-filters-flat">
-              <button class="quick-filter-btn" [class.active]="showAboveAverageOnly()" 
+              <button class="quick-filter-btn" [class.active]="showAboveAverageOnly()"
                       (click)="showAboveAverageOnly.set(!showAboveAverageOnly()); showBelowAverageOnly.set(false)">
                 <i class="fas fa-arrow-up"></i>
                 <span>Trên trung bình</span>
               </button>
-              <button class="quick-filter-btn" [class.active]="showBelowAverageOnly()" 
+              <button class="quick-filter-btn" [class.active]="showBelowAverageOnly()"
                       (click)="showBelowAverageOnly.set(!showBelowAverageOnly()); showAboveAverageOnly.set(false)">
                 <i class="fas fa-arrow-down"></i>
                 <span>Dưới trung bình</span>
               </button>
-              <button class="quick-filter-btn" [class.active]="showRecentOnly()" 
+              <button class="quick-filter-btn" [class.active]="showRecentOnly()"
                       (click)="showRecentOnly.set(!showRecentOnly())">
                 <i class="fas fa-clock"></i>
                 <span>7 ngày gần đây</span>
               </button>
-              <button class="quick-filter-btn" [class.active]="showWithNoteOnly()" 
+              <button class="quick-filter-btn" [class.active]="showWithNoteOnly()"
                       (click)="showWithNoteOnly.set(!showWithNoteOnly()); showWithoutNoteOnly.set(false)">
                 <i class="fas fa-sticky-note"></i>
                 <span>Có ghi chú</span>
               </button>
-              <button class="quick-filter-btn" [class.active]="showWithoutNoteOnly()" 
+              <button class="quick-filter-btn" [class.active]="showWithoutNoteOnly()"
                       (click)="showWithoutNoteOnly.set(!showWithoutNoteOnly()); showWithNoteOnly.set(false)">
                 <i class="fas fa-file-alt"></i>
                 <span>Không có ghi chú</span>
@@ -343,25 +343,25 @@
               <span>Danh mục</span>
             </div>
             <div class="category-search-wrapper">
-              <input type="text" 
-                     [ngModel]="categorySearchText()" 
+              <input type="text"
+                     [ngModel]="categorySearchText()"
                      (ngModelChange)="categorySearchText.set($event)"
-                     placeholder="Tìm danh mục..." 
+                     placeholder="Tìm danh mục..."
                      class="category-search-input">
             </div>
             <div class="category-filter-checkboxes-flat">
               <label class="category-checkbox-item-flat all-categories-flat">
-                <input type="checkbox" 
+                <input type="checkbox"
                        [checked]="filterCategory().length === 0"
                        (change)="filterCategory.set([])">
                 <span class="checkbox-label-flat">Tất cả</span>
               </label>
               <div class="category-checkbox-list-flat">
-                <label *ngFor="let cat of filteredCategories()" 
+                <label *ngFor="let cat of filteredCategories()"
                        class="category-checkbox-item-flat"
                        [style.--cat-color]="getCategoryColor(cat)"
                        [style.--cat-bg]="getCategoryBgColor(cat)">
-                  <input type="checkbox" 
+                  <input type="checkbox"
                          [checked]="isCategorySelected(cat)"
                          (change)="toggleCategory(cat)">
                   <i class="fas" [ngClass]="getCategoryIcon(cat)"></i>
@@ -411,14 +411,14 @@
               <!-- Date List -->
               <div class="date-list-panel">
                 <div class="date-list-header">
-                  <input type="text" 
+                  <input type="text"
                          [ngModel]="dateSearchText()"
                          (ngModelChange)="dateSearchText.set($event)"
-                         placeholder="Tìm ngày..." 
+                         placeholder="Tìm ngày..."
                          class="date-search-input">
                 </div>
                 <div class="date-list-content">
-                  <button *ngFor="let dateGroup of filteredUniqueDates()" 
+                  <button *ngFor="let dateGroup of filteredUniqueDates()"
                           class="date-list-item"
                           [class.active]="isDateSelected(dateGroup.date)"
                           (click)="selectDate(dateGroup.date)">
@@ -450,25 +450,25 @@
             <div class="panel-body-webstorm">
               <!-- Categories content sẽ được copy từ phần categories hiện tại -->
               <div class="category-search-wrapper">
-                <input type="text" 
-                       [ngModel]="categorySearchText()" 
+                <input type="text"
+                       [ngModel]="categorySearchText()"
                        (ngModelChange)="categorySearchText.set($event)"
-                       placeholder="Tìm danh mục..." 
+                       placeholder="Tìm danh mục..."
                        class="category-search-input">
               </div>
               <div class="category-filter-checkboxes-flat">
                 <label class="category-checkbox-item-flat all-categories-flat">
-                  <input type="checkbox" 
+                  <input type="checkbox"
                          [checked]="filterCategory().length === 0"
                          (change)="filterCategory.set([])">
                   <span class="checkbox-label-flat">Tất cả</span>
                 </label>
                 <div class="category-checkbox-list-flat">
-                  <label *ngFor="let cat of filteredCategories()" 
+                  <label *ngFor="let cat of filteredCategories()"
                          class="category-checkbox-item-flat"
                          [style.--cat-color]="getCategoryColor(cat)"
                          [style.--cat-bg]="getCategoryBgColor(cat)">
-                    <input type="checkbox" 
+                    <input type="checkbox"
                            [checked]="isCategorySelected(cat)"
                            (change)="toggleCategory(cat)">
                     <i class="fas" [ngClass]="getCategoryIcon(cat)"></i>
@@ -606,6 +606,9 @@
                 <span class="expense-content-compact">{{ expense.content }}</span>
                 <span class="expense-category-compact" [style.color]="getCategoryColor(expense.category)">
                   {{ expense.category }}
+                </span>
+                <span class="expense-note-compact" *ngIf="expense.note">
+                  {{ expense.note }}
                 </span>
               </div>
 
@@ -2138,7 +2141,7 @@
                   <span class="date-total">{{ formatAmount(dateGroup.total) }}</span>
                 </div>
                 <div class="date-expenses-list">
-                  <div class="expense-item-detail" 
+                  <div class="expense-item-detail"
                        *ngFor="let expense of dateGroup.items; let i = index"
                        [style.--cat-color]="getCategoryColor(expense.category)"
                        [style.--cat-bg]="getCategoryBgColor(expense.category)">
@@ -2289,7 +2292,7 @@
               <span class="list-total">Tổng: {{ formatAmount(selectedBudgetCategoryInfo()?.spent || 0) }}</span>
             </div>
             <div class="expense-list-scroll" *ngIf="budgetCategoryExpenses().length > 0">
-              <div class="expense-row" 
+              <div class="expense-row"
                    *ngFor="let expense of budgetCategoryExpenses(); let i = index"
                    [style.--cat-color]="getCategoryColor(expense.category)"
                    [style.--cat-bg]="getCategoryBgColor(expense.category)">
@@ -2496,14 +2499,10 @@
                     [class.invalid-row]="!expense.content.trim() || !expense.amount || !expense.category || !expense.date">
                   <td class="row-number">{{ i + 1 }}</td>
                   <td>
-                    <input type="date" [(ngModel)]="expense.date" class="table-input"
-                           (keydown.enter)="$event.preventDefault(); focusNextRowInput(i, 'date')"
-                           (keydown.tab)="$event.preventDefault(); focusNextRowInput(i, 'date')">
+                    <input type="date" [(ngModel)]="expense.date" class="table-input">
                   </td>
                   <td>
-                    <input type="text" [(ngModel)]="expense.content" class="table-input" placeholder="Nội dung"
-                           (keydown.enter)="$event.preventDefault(); focusNextRowInput(i, 'content')"
-                           (keydown.tab)="$event.preventDefault(); focusNextRowInput(i, 'content')">
+                    <input type="text" [(ngModel)]="expense.content" class="table-input" placeholder="Nội dung">
                   </td>
                   <td>
                     <input
@@ -2511,8 +2510,6 @@
                       [value]="formatNumberInput(expense.amount)"
                       (input)="onMultipleAmountInput($event, i)"
                       (blur)="onMultipleAmountBlur($event, i)"
-                      (keydown.enter)="$event.preventDefault(); focusNextRowInput(i, 'amount')"
-                      (keydown.tab)="$event.preventDefault(); focusNextRowInput(i, 'amount')"
                       mask="separator"
                       thousandSeparator="."
                       [showMaskTyped]="false"
@@ -2521,17 +2518,13 @@
                       placeholder="0">
                   </td>
                   <td>
-                    <select [(ngModel)]="expense.category" class="table-input"
-                            (keydown.enter)="$event.preventDefault(); focusNextRowInput(i, 'category')"
-                            (keydown.tab)="$event.preventDefault(); focusNextRowInput(i, 'category')">
+                    <select [(ngModel)]="expense.category" class="table-input">
                       <option value="">Chọn</option>
                       <option *ngFor="let cat of categories()" [value]="cat">{{ cat }}</option>
                     </select>
                   </td>
                   <td>
-                    <input type="text" [(ngModel)]="expense.note" class="table-input" placeholder="Ghi chú"
-                           (keydown.enter)="$event.preventDefault(); focusNextRowInput(i, 'note')"
-                           (keydown.tab)="$event.preventDefault(); focusNextRowInput(i, 'note')">
+                    <input type="text" [(ngModel)]="expense.note" class="table-input" placeholder="Ghi chú">
                   </td>
                   <td class="action-cell">
                     <button (click)="copyFromPreviousRow(i)" class="copy-row-btn"
@@ -2823,7 +2816,7 @@
               <span class="list-count">{{ selectedDayExpenses().length }} mục</span>
             </div>
             <div class="expense-list-detail">
-              <div class="expense-item-detail" 
+              <div class="expense-item-detail"
                    *ngFor="let expense of selectedDayExpenses(); let i = index"
                    [style.--cat-color]="getCategoryColor(expense.category)"
                    [style.--cat-bg]="getCategoryBgColor(expense.category)">
@@ -3419,7 +3412,7 @@
               <span class="list-count">{{ selectedDayOfWeekExpenses().length }} mục</span>
             </div>
             <div class="expense-list-detail">
-              <div class="expense-item-detail" 
+              <div class="expense-item-detail"
                    *ngFor="let expense of selectedDayOfWeekExpenses(); let i = index"
                    [style.--cat-color]="getCategoryColor(expense.category)"
                    [style.--cat-bg]="getCategoryBgColor(expense.category)">
