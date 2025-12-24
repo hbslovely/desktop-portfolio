@@ -24,6 +24,7 @@ export interface Expense {
   category: string;
   note?: string;
   rowIndex?: number;
+  groupId?: string;
 }
 
 export interface ExpenseRow {
@@ -36,6 +37,17 @@ export interface ExpenseRow {
 export interface CategoryBudget {
   category: string;
   amount: number;
+}
+
+export interface ExpenseGroup {
+  id: string;
+  name: string;
+  content?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  totalAmount: number;
+  createdAt?: string;
+  rowIndex?: number;
 }
 
 @Injectable({
@@ -92,7 +104,8 @@ class ExpenseService {
     }
 
     // Use API key for read access (Apps Script is only for write operations)
-    const range = `${this.SHEET_NAME}!A2:F`;
+    // Read columns A-G: A=date, B=content, C='212', D=amount, E=category, F=note, G=groupId
+    const range = `${this.SHEET_NAME}!A2:G`;
     const url = `${this.BASE_URL}/values/${range}?key=${this.API_KEY}`;
 
     this.isLoading = true;
@@ -125,12 +138,16 @@ class ExpenseService {
             // F: Note (Ghi chú)
             const note = row[5]?.trim() || '';
 
+            // G: Group ID (Nhóm chi tiêu)
+            const groupId = row[6]?.trim() || '';
+
             return {
               date: date,
               content: content,
               amount: amount,
               category: category,
-              note: note || undefined
+              note: note || undefined,
+              groupId: groupId || undefined
             };
           });
 
@@ -643,6 +660,158 @@ class ExpenseService {
     
     // No match found
     return false;
+  }
+
+  // ========== EXPENSE GROUPS METHODS ==========
+
+  private cachedGroups$: Observable<ExpenseGroup[]> | null = null;
+  private lastGroupsLoadTime: number = 0;
+
+  /**
+   * Get all expense groups from Google Sheets "Nhóm chi tiêu" tab
+   * Uses Google Apps Script API
+   */
+  getGroups(forceRefresh: boolean = false): Observable<ExpenseGroup[]> {
+    // Check cache first
+    const now = Date.now();
+    if (!forceRefresh && this.cachedGroups$ && (now - this.lastGroupsLoadTime) < this.CACHE_DURATION) {
+      console.log('📦 Using cached groups');
+      return this.cachedGroups$;
+    }
+
+    if (!this.APPS_SCRIPT_URL) {
+      return throwError(() => new Error('Google Apps Script URL not configured'));
+    }
+
+    const url = `${this.APPS_SCRIPT_URL}?action=getGroups`;
+
+    this.cachedGroups$ = this.http.get<ExpenseGroup[]>(url).pipe(
+      shareReplay(1),
+      map((groups) => {
+        // Parse dates and amounts
+        const parsedGroups = groups.map((group: any, index) => {
+          let totalAmount = 0;
+          const amountValue = group.totalAmount;
+          if (typeof amountValue === 'string') {
+            totalAmount = parseFloat(amountValue.replace(/[^\d]/g, '')) || 0;
+          } else if (typeof amountValue === 'number') {
+            totalAmount = amountValue;
+          }
+          
+          return {
+            ...group,
+            totalAmount: totalAmount,
+            rowIndex: index + 2 // Row index in sheet (row 1 is header)
+          } as ExpenseGroup;
+        });
+        this.lastGroupsLoadTime = Date.now();
+        return parsedGroups;
+      }),
+      catchError((error) => {
+        console.error('Failed to get groups from Apps Script:', error);
+        this.cachedGroups$ = null;
+        return throwError(() => error);
+      })
+    );
+
+    return this.cachedGroups$;
+  }
+
+  /**
+   * Add a new expense group
+   */
+  addGroup(group: ExpenseGroup): Observable<any> {
+    if (!this.APPS_SCRIPT_URL) {
+      return throwError(() => new Error('Google Apps Script URL not configured'));
+    }
+
+    return this.http.post(this.APPS_SCRIPT_URL, {
+      action: 'addGroup',
+      group: group
+    }, {
+      headers: new HttpHeaders({
+        'Content-Type': 'application/json'
+      })
+    }).pipe(
+      map((response) => {
+        // Clear cache after adding
+        this.cachedGroups$ = null;
+        this.lastGroupsLoadTime = 0;
+        return response;
+      }),
+      catchError((error) => {
+        console.error('Failed to add group via Apps Script:', error);
+        return throwError(() => new Error('Không thể thêm nhóm chi tiêu. Vui lòng kiểm tra cấu hình Google Apps Script.'));
+      })
+    );
+  }
+
+  /**
+   * Update an existing expense group
+   */
+  updateGroup(group: ExpenseGroup, rowIndex: number): Observable<any> {
+    if (!this.APPS_SCRIPT_URL) {
+      return throwError(() => new Error('Google Apps Script URL not configured'));
+    }
+
+    return this.http.post(this.APPS_SCRIPT_URL, {
+      action: 'updateGroup',
+      group: group,
+      row: rowIndex
+    }, {
+      headers: new HttpHeaders({
+        'Content-Type': 'application/json'
+      })
+    }).pipe(
+      map((response) => {
+        // Clear cache after updating
+        this.cachedGroups$ = null;
+        this.lastGroupsLoadTime = 0;
+        return response;
+      }),
+      catchError((error) => {
+        console.error('Failed to update group via Apps Script:', error);
+        return throwError(() => new Error('Không thể cập nhật nhóm chi tiêu. Vui lòng kiểm tra cấu hình Google Apps Script.'));
+      })
+    );
+  }
+
+  /**
+   * Delete an expense group
+   */
+  deleteGroup(rowIndex: number): Observable<any> {
+    if (!this.APPS_SCRIPT_URL) {
+      return throwError(() => new Error('Google Apps Script URL not configured'));
+    }
+
+    return this.http.post(this.APPS_SCRIPT_URL, {
+      action: 'deleteGroup',
+      row: rowIndex
+    }, {
+      headers: new HttpHeaders({
+        'Content-Type': 'application/json'
+      })
+    }).pipe(
+      map((response) => {
+        // Clear cache after deleting
+        this.cachedGroups$ = null;
+        this.lastGroupsLoadTime = 0;
+        return response;
+      }),
+      catchError((error) => {
+        console.error('Failed to delete group via Apps Script:', error);
+        return throwError(() => new Error('Không thể xóa nhóm chi tiêu. Vui lòng kiểm tra cấu hình Google Apps Script.'));
+      })
+    );
+  }
+
+  /**
+   * Clear groups cache
+   */
+  clearGroupsCache(): void {
+    this.cachedGroups$ = null;
+    this.lastGroupsLoadTime = 0;
+    console.log('🗑️ Groups cache cleared');
   }
 }
 
