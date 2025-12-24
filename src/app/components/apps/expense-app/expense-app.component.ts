@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy, signal, computed, ViewChild, ElementRef, 
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NgxMaskDirective, provideNgxMask } from 'ngx-mask';
-import ExpenseService, { Expense } from '../../../services/expense.service';
+import ExpenseService, { Expense, ExpenseGroup } from '../../../services/expense.service';
 import { ExpenseSettingsService, ExpenseTheme, ExpenseFontSize, ExpenseLayout } from '../../../services/expense-settings.service';
 import { ExpenseSettingsDialogComponent } from './expense-settings-dialog.component';
 import { Chart, ChartConfiguration, registerables } from 'chart.js';
@@ -65,6 +65,8 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   multipleExpenses = signal<Expense[]>([]);
   savingProgress = signal<{ current: number; total: number; saving: boolean }>({ current: 0, total: 0, saving: false });
   savedRowIndices = signal<Set<number>>(new Set()); // Track which rows have been saved
+  selectedGroupForAll = signal<string>(''); // Group selected for all rows
+  expandedGroupId = signal<string | null>(null); // Currently expanded group in groups tab
 
   // Category detail dialog
   showCategoryDetail = signal<boolean>(false);
@@ -108,12 +110,117 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     return expenses.reduce((sum, expense) => sum + expense.amount, 0);
   });
 
+  // Computed total for selected group expenses
+  selectedGroupTotal = computed(() => {
+    const expenses = this.selectedGroupExpenses();
+    return expenses.reduce((sum, expense) => sum + expense.amount, 0);
+  });
+
+  // Expense Groups
+  expenseGroups = signal<ExpenseGroup[]>([]);
+  isLoadingGroups = signal<boolean>(false);
+  showGroupDetail = signal<boolean>(false);
+  selectedGroup = signal<ExpenseGroup | null>(null);
+  selectedGroupExpenses = signal<Expense[]>([]);
+  showGroupForm = signal<boolean>(false);
+  editingGroup = signal<ExpenseGroup | null>(null);
+  newGroup: ExpenseGroup = {
+    id: '',
+    name: '',
+    content: '',
+    dateFrom: '',
+    dateTo: '',
+    totalAmount: 0
+  };
+
+  // Computed: Group expenses by groupId
+  expensesByGroup = computed(() => {
+    const expenses = this.expenses();
+    const groups = this.expenseGroups();
+    const grouped: { [groupId: string]: Expense[] } = {};
+    
+    expenses.forEach(expense => {
+      if (expense.groupId) {
+        if (!grouped[expense.groupId]) {
+          grouped[expense.groupId] = [];
+        }
+        grouped[expense.groupId].push(expense);
+      }
+    });
+
+    // Calculate total amount for each group
+    groups.forEach(group => {
+      if (grouped[group.id]) {
+        const total = grouped[group.id].reduce((sum, exp) => sum + exp.amount, 0);
+        // Update group totalAmount if different
+        if (group.totalAmount !== total) {
+          // Note: This doesn't update the signal, just for display
+        }
+      }
+    });
+
+    return grouped;
+  });
+
+  // Computed: Expenses list with groups merged
+  expensesWithGroups = computed(() => {
+    const expenses = this.expenses();
+    const groups = this.expenseGroups();
+    const expensesByGroup = this.expensesByGroup();
+    const result: Array<Expense | ExpenseGroup> = [];
+    const processedGroupIds = new Set<string>();
+
+    // Sort expenses by date descending
+    const sortedExpenses = [...expenses].sort((a, b) => {
+      return new Date(b.date).getTime() - new Date(a.date).getTime();
+    });
+
+    // Group expenses by groupId
+    const expensesByGroupId: { [groupId: string]: Expense[] } = {};
+    const expensesWithoutGroup: Expense[] = [];
+
+    sortedExpenses.forEach(expense => {
+      if (expense.groupId) {
+        if (!expensesByGroupId[expense.groupId]) {
+          expensesByGroupId[expense.groupId] = [];
+        }
+        expensesByGroupId[expense.groupId].push(expense);
+      } else {
+        expensesWithoutGroup.push(expense);
+      }
+    });
+
+    // Add groups with their expenses
+    groups.forEach(group => {
+      if (expensesByGroupId[group.id] && expensesByGroupId[group.id].length > 0) {
+        // Use the first expense date as group date for sorting
+        const groupExpenses = expensesByGroupId[group.id];
+        const groupDate = groupExpenses[0].date;
+        result.push({ ...group, date: groupDate } as any);
+        processedGroupIds.add(group.id);
+      }
+    });
+
+    // Add expenses without groups
+    result.push(...expensesWithoutGroup);
+
+    // Sort by date descending
+    result.sort((a, b) => {
+      const dateA = 'date' in a ? new Date(a.date).getTime() : 0;
+      const dateB = 'date' in b ? new Date(b.date).getTime() : 0;
+      return dateB - dateA;
+    });
+
+    return result;
+  });
+
   newExpense: Expense = {
     date: '',
     content: '',
     amount: 0,
     category: '',
-    note: ''
+    note: '',
+    groupId: ''
   };
 
   // Edit expense
@@ -125,7 +232,8 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     content: '',
     amount: 0,
     category: '',
-    note: ''
+    note: '',
+    groupId: ''
   };
   editExpenseAmountDisplay = signal<string>(''); // String value for ngx-mask display
 
@@ -227,7 +335,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
   // Screens and Tabs
   currentScreen = signal<'transactions' | 'insights'>('transactions'); // Screen 1: Giao dịch, Screen 2: Insights
-  activeTab = signal<'list' | 'summary' | 'budget' | 'insights'>('list');
+  activeTab = signal<'list' | 'summary' | 'budget' | 'insights' | 'groups'>('list');
   // Legacy signals (kept for compatibility)
   currentView = signal<'main' | 'insights'>('main');
   insightsActiveTab = signal<'budget' | 'insights'>('budget');
@@ -566,6 +674,51 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     });
 
     return filtered;
+  });
+
+  // Computed: Merge groups with filtered expenses for display
+  filteredExpensesWithGroups = computed(() => {
+    const filtered = this.filteredExpenses();
+    const groups = this.expenseGroups();
+    const expensesByGroup = this.expensesByGroup();
+    const result: Array<Expense | ExpenseGroup> = [];
+    const processedGroupIds = new Set<string>();
+    const expensesInGroups = new Set<Expense>();
+
+    // Find groups that have at least one expense in filtered list
+    groups.forEach(group => {
+      const groupExpenses = expensesByGroup[group.id] || [];
+      const filteredGroupExpenses = groupExpenses.filter(exp => 
+        filtered.some(fExp => fExp.date === exp.date && fExp.content === exp.content && fExp.amount === exp.amount)
+      );
+
+      if (filteredGroupExpenses.length > 0 && !processedGroupIds.has(group.id)) {
+        // Use the first expense date as group date for sorting
+        const firstExpense = filteredGroupExpenses[0];
+        if (firstExpense) {
+          result.push({ ...group, date: firstExpense.date } as any);
+          processedGroupIds.add(group.id);
+          // Mark all expenses in this group as processed
+          groupExpenses.forEach(exp => expensesInGroups.add(exp));
+        }
+      }
+    });
+
+    // Add filtered expenses that are not in any processed group
+    filtered.forEach(expense => {
+      if (!expense.groupId || !processedGroupIds.has(expense.groupId)) {
+        result.push(expense);
+      }
+    });
+
+    // Sort by date descending
+    result.sort((a, b) => {
+      const dateA = 'date' in a ? new Date(a.date).getTime() : 0;
+      const dateB = 'date' in b ? new Date(b.date).getTime() : 0;
+      return dateB - dateA;
+    });
+
+    return result;
   });
 
   totalAmount = computed(() => {
@@ -2669,6 +2822,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       // Auto-login if hash is valid
       this.isAuthenticated.set(true);
       this.loadExpenses();
+      this.loadGroups();
       this.loadBudgets(); // Load budgets from Google Sheets
     } else {
       // Clear invalid authentication and logout
@@ -2818,8 +2972,9 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         sessionStorage.setItem('expense_app_auth_hash', credentialsHash);
       }
 
-      // Load expenses
+      // Load expenses and groups
       this.loadExpenses();
+      this.loadGroups();
     } else {
       // Generic error message - don't reveal which field is incorrect
       this.passwordError.set(genericError);
@@ -2904,6 +3059,211 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   /**
+   * Load expense groups from Google Sheets
+   */
+  loadGroups(forceRefresh: boolean = false): void {
+    if (this.isLoadingGroups() && !forceRefresh) {
+      return;
+    }
+
+    this.isLoadingGroups.set(true);
+
+    this.expenseService.getGroups(forceRefresh).subscribe({
+      next: (groups) => {
+        this.expenseGroups.set(groups);
+        this.isLoadingGroups.set(false);
+      },
+      error: (err) => {
+        console.error('Error loading groups:', err);
+        this.isLoadingGroups.set(false);
+        // Don't show error to user, groups are optional
+      }
+    });
+  }
+
+  /**
+   * Show group detail dialog
+   */
+  showGroupDetailDialog(group: ExpenseGroup): void {
+    const expenses = this.expenses();
+    const groupExpenses = expenses.filter(exp => exp.groupId === group.id);
+    this.selectedGroup.set(group);
+    this.selectedGroupExpenses.set(groupExpenses);
+    this.showGroupDetail.set(true);
+  }
+
+  /**
+   * Hide group detail dialog
+   */
+  hideGroupDetailDialog(): void {
+    this.showGroupDetail.set(false);
+    this.selectedGroup.set(null);
+    this.selectedGroupExpenses.set([]);
+  }
+
+  /**
+   * Toggle group expanded state in groups tab
+   */
+  toggleGroupExpanded(groupId: string): void {
+    if (this.expandedGroupId() === groupId) {
+      this.expandedGroupId.set(null);
+    } else {
+      this.expandedGroupId.set(groupId);
+    }
+  }
+
+  /**
+   * Apply selected group to all expenses in multiple input mode
+   */
+  applyGroupToAll(): void {
+    const groupId = this.selectedGroupForAll();
+    const expenses = this.multipleExpenses();
+    expenses.forEach(expense => {
+      expense.groupId = groupId;
+    });
+    this.multipleExpenses.set([...expenses]);
+  }
+
+  /**
+   * Show add/edit group form
+   */
+  showAddGroupForm(): void {
+    this.newGroup = {
+      id: this.generateGroupId(),
+      name: '',
+      content: '',
+      dateFrom: '',
+      dateTo: '',
+      totalAmount: 0
+    };
+    this.editingGroup.set(null);
+    this.showGroupForm.set(true);
+  }
+
+  /**
+   * Show edit group form
+   */
+  showEditGroupForm(group: ExpenseGroup): void {
+    this.newGroup = { ...group };
+    this.editingGroup.set(group);
+    this.showGroupForm.set(true);
+  }
+
+  /**
+   * Hide group form
+   */
+  hideGroupForm(): void {
+    this.showGroupForm.set(false);
+    this.editingGroup.set(null);
+  }
+
+  /**
+   * Save group (add or update)
+   */
+  saveGroup(): void {
+    if (!this.newGroup.name || !this.newGroup.id) {
+      this.showNotificationDialog('Vui lòng nhập tên nhóm và ID nhóm', 'error');
+      return;
+    }
+
+    const group = { ...this.newGroup };
+    const isEditing = this.editingGroup() !== null;
+
+    if (isEditing && this.editingGroup()) {
+      const rowIndex = this.editingGroup()!.rowIndex || 0;
+      this.expenseService.updateGroup(group, rowIndex).subscribe({
+        next: () => {
+          this.showNotificationDialog('Đã cập nhật nhóm chi tiêu thành công', 'success');
+          this.loadGroups(true);
+          this.hideGroupForm();
+        },
+        error: (err) => {
+          this.showNotificationDialog('Không thể cập nhật nhóm chi tiêu: ' + err.message, 'error');
+        }
+      });
+    } else {
+      this.expenseService.addGroup(group).subscribe({
+        next: () => {
+          this.showNotificationDialog('Đã thêm nhóm chi tiêu thành công', 'success');
+          this.loadGroups(true);
+          this.hideGroupForm();
+        },
+        error: (err) => {
+          this.showNotificationDialog('Không thể thêm nhóm chi tiêu: ' + err.message, 'error');
+        }
+      });
+    }
+  }
+
+  /**
+   * Delete group
+   */
+  deleteGroup(group: ExpenseGroup): void {
+    if (!confirm(`Bạn có chắc chắn muốn xóa nhóm "${group.name}"?`)) {
+      return;
+    }
+
+    const rowIndex = group.rowIndex || 0;
+    if (rowIndex < 2) {
+      this.showNotificationDialog('Không thể xóa nhóm: Row index không hợp lệ', 'error');
+      return;
+    }
+
+    this.expenseService.deleteGroup(rowIndex).subscribe({
+      next: () => {
+        this.showNotificationDialog('Đã xóa nhóm chi tiêu thành công', 'success');
+        this.loadGroups(true);
+        if (this.showGroupDetail()) {
+          this.hideGroupDetailDialog();
+        }
+      },
+      error: (err) => {
+        this.showNotificationDialog('Không thể xóa nhóm chi tiêu: ' + err.message, 'error');
+      }
+    });
+  }
+
+  /**
+   * Generate unique group ID
+   */
+  generateGroupId(): string {
+    return 'group_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+  }
+
+  /**
+   * Check if item is a group (not an expense)
+   */
+  isGroup(item: Expense | ExpenseGroup): item is ExpenseGroup {
+    return 'id' in item && 'name' in item && !('content' in item && 'category' in item);
+  }
+
+  /**
+   * Get total amount for a group
+   */
+  getGroupTotalAmount(group: ExpenseGroup): number {
+    const groupExpenses = this.expensesByGroup()[group.id] || [];
+    const calculatedTotal = groupExpenses.reduce((sum, e) => sum + e.amount, 0);
+    // Use calculated total if group.totalAmount is 0 or not set, otherwise use group.totalAmount
+    return group.totalAmount && group.totalAmount > 0 ? group.totalAmount : calculatedTotal;
+  }
+
+  /**
+   * Get expenses count for a group
+   */
+  getGroupExpensesCount(group: ExpenseGroup): number {
+    const groupExpenses = this.expensesByGroup()[group.id] || [];
+    return groupExpenses.length;
+  }
+
+  /**
+   * Get first expense date for a group
+   */
+  getGroupFirstExpenseDate(group: ExpenseGroup): string {
+    const groupExpenses = this.expensesByGroup()[group.id] || [];
+    return groupExpenses.length > 0 ? groupExpenses[0].date : '';
+  }
+
+  /**
    * Show add expense dialog
    */
   showAddExpenseForm(): void {
@@ -2912,7 +3272,8 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       content: '',
       amount: 0,
       category: '',
-      note: ''
+      note: '',
+      groupId: ''
     };
     this.inputMode.set('single');
     this.multipleExpenses.set([this.createEmptyExpense()]);
@@ -2931,7 +3292,8 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       content: '',
       amount: 0,
       category: '',
-      note: ''
+      note: '',
+      groupId: ''
     };
   }
 
@@ -2949,7 +3311,9 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       date: this.expenseService.getTodayDate(),
       content: '',
       amount: 0,
-      category: ''
+      category: '',
+      note: '',
+      groupId: ''
     };
   }
 
@@ -2960,6 +3324,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     this.newExpense.content = '';
     this.newExpense.amount = 0;
     this.newExpense.note = '';
+    this.newExpense.groupId = '';
   }
 
   /**
@@ -2971,7 +3336,8 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       content: expense.content,
       amount: expense.amount,
       category: expense.category,
-      note: expense.note || ''
+      note: expense.note || '',
+      groupId: expense.groupId || ''
     };
     // Set formatted amount for display - format immediately
     const formatted = this.formatNumberInput(expense.amount);
@@ -3107,7 +3473,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   /**
    * Switch tab
    */
-  switchTab(tab: 'list' | 'summary' | 'budget' | 'insights'): void {
+  switchTab(tab: 'list' | 'summary' | 'budget' | 'insights' | 'groups'): void {
     this.activeTab.set(tab);
     if (tab === 'summary') {
       // Initialize charts when switching to summary tab
@@ -4546,7 +4912,8 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       content: expense.content,
       amount: expense.amount,
       category: expense.category,
-      note: expense.note
+      note: expense.note || '',
+      groupId: expense.groupId || ''
     };
     this.showAddForm.set(true);
     this.inputMode.set('single');

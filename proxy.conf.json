@@ -125,7 +125,7 @@
     "changeOrigin": true,
     "logLevel": "debug",
     "pathRewrite": {
-      "^/api/google-apps-script": "/macros/s/AKfycbwRpjkR_zWjSJUNhXBHhTO5bxq18iYMaJEYvOKaQlE6v-ofJgj5xNlHc-v9RuIRXqg0EA/exec"
+      "^/api/google-apps-script": "/macros/s/AKfycbxeq8IaFmt6U-iihS-JwXF3tyGvekHQiRdRX7ZTPGsmktpovzYghy9WSJcw2flvYGUHqA/exec"
     },
     "headers": {
       "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",

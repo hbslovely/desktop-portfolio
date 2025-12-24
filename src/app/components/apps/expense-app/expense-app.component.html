@@ -75,6 +75,10 @@
           <i class="fas fa-plus"></i>
           <span>Thêm chi tiêu mới</span>
         </button>
+        <button (click)="showAddGroupForm()" class="add-group-header-btn">
+          <i class="fas fa-layer-group"></i>
+          <span>Thêm nhóm</span>
+        </button>
         <button
           class="screen-toggle-header-btn"
           (click)="switchScreen(currentScreen() === 'transactions' ? 'insights' : 'transactions')"
@@ -561,6 +565,13 @@
             <i class="fas fa-chart-bar"></i>
             <span>Thống kê</span>
           </button>
+          <button
+            (click)="switchTab('groups')"
+            class="tab-btn"
+            [class.active]="activeTab() === 'groups'">
+            <i class="fas fa-layer-group"></i>
+            <span>Nhóm chi tiêu</span>
+          </button>
         </div>
 
         <!-- Tab Content: List -->
@@ -572,9 +583,9 @@
           </div>
 
           <!-- Sort & View Controls -->
-          <div class="list-toolbar-v3" *ngIf="!isLoading() && filteredExpenses().length > 0">
+          <div class="list-toolbar-v3" *ngIf="!isLoading() && filteredExpensesWithGroups().length > 0">
             <div class="toolbar-left">
-              <span class="results-count">{{ filteredExpenses().length }} kết quả</span>
+              <span class="results-count">{{ filteredExpensesWithGroups().length }} kết quả</span>
             </div>
             <div class="toolbar-right">
               <div class="sort-dropdown-v3">
@@ -591,49 +602,88 @@
           </div>
 
           <!-- Expenses List -->
-          <div class="expenses-list-v3" *ngIf="!isLoading() && filteredExpenses().length > 0">
-            <div class="expense-row-v3"
-                 *ngFor="let expense of filteredExpenses(); let i = index"
-                 [style.--row-bg]="getCategoryBgColor(expense.category)"
-                 [style.--row-border]="getCategoryColor(expense.category)"
-                 [class.highlight-above-average]="isAboveAverage(expense.amount)">
-
-              <div class="expense-icon-compact" [style.color]="getCategoryColor(expense.category)">
-                <i class="fas" [ngClass]="getCategoryIcon(expense.category)"></i>
+          <div class="expenses-list-v3" *ngIf="!isLoading() && filteredExpensesWithGroups().length > 0">
+            <ng-container *ngFor="let item of filteredExpensesWithGroups(); let i = index">
+              <!-- Group Row -->
+              <div class="expense-group-row-v3"
+                   *ngIf="isGroup(item)"
+                   (click)="showGroupDetailDialog(item)"
+                   [style.cursor]="'pointer'">
+                <div class="expense-group-icon-compact">
+                  <i class="fas fa-layer-group"></i>
+                </div>
+                <div class="expense-group-info-compact">
+                  <span class="expense-group-name-compact">{{ item.name }}</span>
+                  <span class="expense-group-content-compact" *ngIf="item.content">{{ item.content }}</span>
+                  <span class="expense-group-count-compact">
+                    {{ getGroupExpensesCount(item) }} chi tiêu
+                  </span>
+                </div>
+                <div class="expense-group-date-compact">
+                  <span *ngIf="item.dateFrom && item.dateTo">
+                    {{ formatDate(item.dateFrom) }} - {{ formatDate(item.dateTo) }}
+                  </span>
+                  <span *ngIf="!item.dateFrom || !item.dateTo">
+                    {{ formatDate(getGroupFirstExpenseDate(item)) }}
+                  </span>
+                </div>
+                <div class="expense-group-amount-compact">
+                  {{ formatAmount(getGroupTotalAmount(item)) }}
+                </div>
+                <div class="expense-group-actions-compact" (click)="$event.stopPropagation()">
+                  <button class="expense-action-btn" (click)="showEditGroupForm(item)" title="Chỉnh sửa">
+                    <i class="fas fa-pencil-alt"></i>
+                  </button>
+                  <button class="expense-action-btn" (click)="deleteGroup(item)" title="Xóa">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
               </div>
 
-              <div class="expense-info-compact">
-                <span class="expense-content-compact">{{ expense.content }}</span>
-                <span class="expense-category-compact" [style.color]="getCategoryColor(expense.category)">
-                  {{ expense.category }}
-                </span>
-                <span class="expense-note-compact" *ngIf="expense.note">
-                  {{ expense.note }}
-                </span>
-              </div>
+              <!-- Expense Row -->
+              <div class="expense-row-v3"
+                   *ngIf="!isGroup(item)"
+                   [style.--row-bg]="getCategoryBgColor(item.category)"
+                   [style.--row-border]="getCategoryColor(item.category)"
+                   [class.highlight-above-average]="isAboveAverage(item.amount)">
 
-              <div class="expense-date-compact">
-                {{ formatDate(expense.date) }}
-              </div>
+                <div class="expense-icon-compact" [style.color]="getCategoryColor(item.category)">
+                  <i class="fas" [ngClass]="getCategoryIcon(item.category)"></i>
+                </div>
 
-              <div class="expense-amount-compact" [class.high-amount]="isAboveAverage(expense.amount)">
-                <i class="fas fa-exclamation-triangle warning-icon" *ngIf="isAboveAverage(expense.amount)"></i>
-                {{ formatAmount(expense.amount) }}
-              </div>
+                <div class="expense-info-compact">
+                  <span class="expense-content-compact">{{ item.content }}</span>
+                  <span class="expense-category-compact" [style.color]="getCategoryColor(item.category)">
+                    {{ item.category }}
+                  </span>
+                  <span class="expense-note-compact" *ngIf="item.note">
+                    {{ item.note }}
+                  </span>
+                </div>
 
-              <div class="expense-actions-compact">
-                <button class="expense-action-btn" (click)="duplicateExpense(expense)" title="Nhân đôi">
-                  <i class="fas fa-copy"></i>
-                </button>
-                <button class="expense-action-btn" (click)="showEditExpenseForm(expense, i)" title="Chỉnh sửa">
-                  <i class="fas fa-pencil-alt"></i>
-                </button>
+                <div class="expense-date-compact">
+                  {{ formatDate(item.date) }}
+                </div>
+
+                <div class="expense-amount-compact" [class.high-amount]="isAboveAverage(item.amount)">
+                  <i class="fas fa-exclamation-triangle warning-icon" *ngIf="isAboveAverage(item.amount)"></i>
+                  {{ formatAmount(item.amount) }}
+                </div>
+
+                <div class="expense-actions-compact">
+                  <button class="expense-action-btn" (click)="duplicateExpense(item)" title="Nhân đôi">
+                    <i class="fas fa-copy"></i>
+                  </button>
+                  <button class="expense-action-btn" (click)="showEditExpenseForm(item, i)" title="Chỉnh sửa">
+                    <i class="fas fa-pencil-alt"></i>
+                  </button>
+                </div>
               </div>
-            </div>
+            </ng-container>
           </div>
 
           <!-- Empty State -->
-          <div class="empty-state-v3" *ngIf="!isLoading() && filteredExpenses().length === 0">
+          <div class="empty-state-v3" *ngIf="!isLoading() && filteredExpensesWithGroups().length === 0">
             <div class="empty-icon">
               <i class="fas fa-wallet"></i>
             </div>
@@ -758,6 +808,125 @@
                   <div class="expense-amount">{{ formatAmount(expense.amount) }}</div>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab Content: Groups -->
+        <div class="tab-content-v3 groups-tab" *ngIf="activeTab() === 'groups'">
+          <div class="groups-management-view">
+            <!-- Header -->
+            <div class="groups-header">
+              <div class="header-left">
+                <h3>
+                  <i class="fas fa-layer-group"></i>
+                  Quản lý nhóm chi tiêu
+                </h3>
+                <p class="header-subtitle">Tổ chức và quản lý các nhóm chi tiêu của bạn</p>
+              </div>
+              <button class="add-group-header-btn" (click)="showAddGroupForm()">
+                <i class="fas fa-plus"></i>
+                <span>Thêm nhóm mới</span>
+              </button>
+            </div>
+
+            <!-- Loading State -->
+            <div class="loading-state-v3" *ngIf="isLoadingGroups()">
+              <div class="loading-spinner"></div>
+              <p>Đang tải danh sách nhóm...</p>
+            </div>
+
+            <!-- Groups List -->
+            <div class="groups-list-v3" *ngIf="!isLoadingGroups() && expenseGroups().length > 0">
+              <div class="group-card-v3"
+                   *ngFor="let group of expenseGroups()"
+                   [class.expanded]="expandedGroupId() === group.id">
+                <div class="group-card-header" (click)="toggleGroupExpanded(group.id)">
+                  <div class="group-icon-wrapper">
+                    <i class="fas fa-layer-group"></i>
+                  </div>
+                  <div class="group-info">
+                    <h4 class="group-name">{{ group.name }}</h4>
+                    <p class="group-content" *ngIf="group.content">{{ group.content }}</p>
+                    <div class="group-meta">
+                      <span class="group-id">ID: {{ group.id }}</span>
+                      <span class="group-count">{{ getGroupExpensesCount(group) }} chi tiêu</span>
+                    </div>
+                  </div>
+                  <div class="expand-icon">
+                    <i class="fas" [ngClass]="expandedGroupId() === group.id ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+                  </div>
+                </div>
+                <div class="group-card-body">
+                  <div class="group-stat">
+                    <div class="stat-label">Tổng tiền</div>
+                    <div class="stat-value">{{ formatAmount(getGroupTotalAmount(group)) }}</div>
+                  </div>
+                  <div class="group-stat" *ngIf="group.dateFrom && group.dateTo">
+                    <div class="stat-label">Thời gian</div>
+                    <div class="stat-value-small">{{ formatDate(group.dateFrom) }} - {{ formatDate(group.dateTo) }}</div>
+                  </div>
+                  <div class="group-stat" *ngIf="group.createdAt">
+                    <div class="stat-label">Ngày tạo</div>
+                    <div class="stat-value-small">{{ formatDate(group.createdAt) }}</div>
+                  </div>
+                </div>
+                <div class="group-card-actions" (click)="$event.stopPropagation()">
+                  <button class="action-btn edit-btn" (click)="showEditGroupForm(group)" title="Chỉnh sửa">
+                    <i class="fas fa-pencil-alt"></i>
+                  </button>
+                  <button class="action-btn delete-btn" (click)="deleteGroup(group)" title="Xóa">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+                <!-- Expanded Expenses List -->
+                <div class="group-expenses-list" *ngIf="expandedGroupId() === group.id">
+                  <div class="expenses-list-header">
+                    <h5>
+                      <i class="fas fa-list"></i>
+                      Danh sách chi tiêu ({{ getGroupExpensesCount(group) }})
+                    </h5>
+                  </div>
+                  <div class="expenses-list-content">
+                    <div class="expense-item-inline"
+                         *ngFor="let expense of (expensesByGroup()[group.id] || []); let i = index"
+                         [style.--cat-color]="getCategoryColor(expense.category)"
+                         [style.--cat-bg]="getCategoryBgColor(expense.category)">
+                      <div class="expense-icon-inline">
+                        <i class="fas" [ngClass]="getCategoryIcon(expense.category)"></i>
+                      </div>
+                      <div class="expense-info-inline">
+                        <div class="expense-content-inline">{{ expense.content }}</div>
+                        <div class="expense-meta-inline">
+                          <span class="expense-category-inline">{{ expense.category }}</span>
+                          <span class="expense-date-inline">{{ formatDate(expense.date) }}</span>
+                          <span class="expense-note-inline" *ngIf="expense.note">
+                            <i class="fas fa-comment"></i> {{ expense.note }}
+                          </span>
+                        </div>
+                      </div>
+                      <div class="expense-amount-inline">{{ formatAmount(expense.amount) }}</div>
+                    </div>
+                    <div class="empty-expenses" *ngIf="getGroupExpensesCount(group) === 0">
+                      <i class="fas fa-inbox"></i>
+                      <span>Chưa có chi tiêu nào trong nhóm này</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Empty State -->
+            <div class="empty-state-v3" *ngIf="!isLoadingGroups() && expenseGroups().length === 0">
+              <div class="empty-icon">
+                <i class="fas fa-layer-group"></i>
+              </div>
+              <h4>Chưa có nhóm chi tiêu nào</h4>
+              <p>Tạo nhóm chi tiêu để tổ chức các khoản chi tiêu liên quan với nhau</p>
+              <button class="add-first-btn" (click)="showAddGroupForm()">
+                <i class="fas fa-plus"></i>
+                <span>Tạo nhóm đầu tiên</span>
+              </button>
             </div>
           </div>
         </div>
@@ -2442,6 +2611,20 @@
                         placeholder="Thêm ghi chú chi tiết..." rows="2"></textarea>
             </div>
 
+            <!-- Group Selection -->
+            <div class="form-group-v2">
+              <label>
+                <i class="fas fa-layer-group"></i>
+                Nhóm chi tiêu <span class="optional-label">(tùy chọn)</span>
+              </label>
+              <select [(ngModel)]="newExpense.groupId" class="form-input-v2">
+                <option value="">-- Không thuộc nhóm nào --</option>
+                <option *ngFor="let group of expenseGroups()" [value]="group.id">
+                  {{ group.name }} {{ group.content ? ' - ' + group.content : '' }}
+                </option>
+              </select>
+            </div>
+
             <!-- Create Another Checkbox -->
             <div class="checkbox-group-v2">
               <label class="checkbox-label-v2">
@@ -2480,6 +2663,20 @@
               </div>
             </div>
 
+            <!-- Group Selection for All -->
+            <div class="form-group-v2 multiple-group-selector">
+              <label>
+                <i class="fas fa-layer-group"></i>
+                Áp dụng nhóm cho tất cả (tùy chọn)
+              </label>
+              <select [(ngModel)]="selectedGroupForAll" class="form-input-v2" (change)="applyGroupToAll()">
+                <option value="">-- Không chọn --</option>
+                <option *ngFor="let group of expenseGroups()" [value]="group.id">
+                  {{ group.name }} {{ group.content ? ' - ' + group.content : '' }}
+                </option>
+              </select>
+            </div>
+
             <!-- Expenses Table -->
             <div class="expenses-table-container">
               <table class="expenses-table">
@@ -2490,6 +2687,7 @@
                   <th>Nội dung</th>
                   <th>Số tiền</th>
                   <th>Phân loại</th>
+                  <th>Nhóm</th>
                   <th>Ghi chú</th>
                   <th style="width: 60px;">Thao tác</th>
                 </tr>
@@ -2521,6 +2719,14 @@
                     <select [(ngModel)]="expense.category" class="table-input">
                       <option value="">Chọn</option>
                       <option *ngFor="let cat of categories()" [value]="cat">{{ cat }}</option>
+                    </select>
+                  </td>
+                  <td>
+                    <select [(ngModel)]="expense.groupId" class="table-input">
+                      <option value="">--</option>
+                      <option *ngFor="let group of expenseGroups()" [value]="group.id">
+                        {{ group.name }}
+                      </option>
                     </select>
                   </td>
                   <td>
@@ -2627,6 +2833,16 @@
             <label>Ghi chú:</label>
             <textarea [(ngModel)]="editExpense.note" class="form-input" placeholder="Nhập ghi chú (tùy chọn)"
                       rows="3"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label>Nhóm chi tiêu:</label>
+            <select [(ngModel)]="editExpense.groupId" class="form-input">
+              <option value="">-- Không thuộc nhóm nào --</option>
+              <option *ngFor="let group of expenseGroups()" [value]="group.id">
+                {{ group.name }} {{ group.content ? ' - ' + group.content : '' }}
+              </option>
+            </select>
           </div>
         </div>
 
@@ -3423,7 +3639,7 @@
                 <div class="expense-info">
                   <div class="expense-date-detail">
                     <i class="fas fa-calendar-day"></i>
-                    <span>{{ formatDateDDMMYYYY(expense.date) }}</span>
+                    <span>{{ formatDate(expense.date) }}</span>
                   </div>
                   <div class="expense-category-badge-detail">
                     <span class="category-badge-text">{{ expense.category }}</span>
@@ -3454,6 +3670,166 @@
             <i class="pi pi-check"></i>
             Đóng
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Group Detail Dialog -->
+    <div class="dialog-overlay" *ngIf="showGroupDetail()" (click)="hideGroupDetailDialog()">
+      <div class="dialog-container group-detail-dialog" (click)="$event.stopPropagation()">
+        <div class="dialog-header group-detail-header">
+          <div class="header-content">
+            <div class="header-icon">
+              <i class="fas fa-layer-group"></i>
+            </div>
+            <div class="header-text">
+              <h3>{{ selectedGroup()?.name }}</h3>
+              <p class="header-subtitle" *ngIf="selectedGroup()?.content">{{ selectedGroup()?.content }}</p>
+            </div>
+          </div>
+          <button (click)="hideGroupDetailDialog()" class="close-btn">
+            <i class="pi pi-times"></i>
+          </button>
+        </div>
+
+        <div class="dialog-body group-detail-body">
+          <div class="group-detail-summary">
+            <div class="detail-summary-card total-card">
+              <div class="card-icon">
+                <i class="pi pi-money-bill"></i>
+              </div>
+              <div class="card-content">
+                <div class="detail-summary-label">Tổng chi tiêu</div>
+                <div class="detail-summary-value">{{ formatAmount(selectedGroupTotal()) }}</div>
+              </div>
+            </div>
+            <div class="detail-summary-card count-card">
+              <div class="card-icon">
+                <i class="pi pi-list"></i>
+              </div>
+              <div class="card-content">
+                <div class="detail-summary-label">Số chi tiêu</div>
+                <div class="detail-summary-value">{{ selectedGroupExpenses().length }}</div>
+              </div>
+            </div>
+            <div class="detail-summary-card date-card" *ngIf="selectedGroup()?.dateFrom && selectedGroup()?.dateTo">
+              <div class="card-icon">
+                <i class="pi pi-calendar"></i>
+              </div>
+              <div class="card-content">
+                <div class="detail-summary-label">Thời gian</div>
+                <div class="detail-summary-value">{{ formatDate(selectedGroup()!.dateFrom!) }} - {{ formatDate(selectedGroup()!.dateTo!) }}</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="group-detail-list" *ngIf="selectedGroupExpenses().length > 0">
+            <div class="list-header">
+              <h4>
+                <i class="pi pi-list-check"></i>
+                Danh sách chi tiêu trong nhóm
+              </h4>
+              <span class="list-count">{{ selectedGroupExpenses().length }} mục</span>
+            </div>
+            <div class="expense-list-detail">
+              <div class="expense-item-detail"
+                   *ngFor="let expense of selectedGroupExpenses(); let i = index"
+                   [style.--cat-color]="getCategoryColor(expense.category)"
+                   [style.--cat-bg]="getCategoryBgColor(expense.category)">
+                <div class="expense-icon-wrapper">
+                  <i class="fas" [ngClass]="getCategoryIcon(expense.category)"></i>
+                </div>
+                <div class="expense-number">{{ i + 1 }}</div>
+                <div class="expense-info">
+                  <div class="expense-date-detail">
+                    <i class="fas fa-calendar-day"></i>
+                    <span>{{ formatDate(expense.date) }}</span>
+                  </div>
+                  <div class="expense-category-badge-detail">
+                    <span class="category-badge-text">{{ expense.category }}</span>
+                  </div>
+                  <div class="expense-content-detail">{{ expense.content }}</div>
+                  <div class="expense-note-detail" *ngIf="expense.note">
+                    <i class="fas fa-comment"></i>
+                    <span>{{ expense.note }}</span>
+                  </div>
+                </div>
+                <div class="expense-amount-detail">
+                  <span class="amount-value">{{ formatAmount(expense.amount) }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="empty-state" *ngIf="selectedGroupExpenses().length === 0">
+            <div class="empty-icon">
+              <i class="pi pi-inbox"></i>
+            </div>
+            <p>Không có chi tiêu nào trong nhóm này</p>
+          </div>
+        </div>
+
+        <div class="dialog-footer group-detail-footer">
+          <button (click)="showEditGroupForm(selectedGroup()!)" class="edit-btn" *ngIf="selectedGroup()">
+            <i class="pi pi-pencil"></i>
+            Chỉnh sửa
+          </button>
+          <button (click)="hideGroupDetailDialog()" class="close-detail-btn">
+            <i class="pi pi-check"></i>
+            Đóng
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Group Form Dialog -->
+    <div class="dialog-overlay" *ngIf="showGroupForm()" (click)="hideGroupForm()">
+      <div class="dialog-container group-form-dialog" (click)="$event.stopPropagation()">
+        <div class="dialog-header">
+          <h3>{{ editingGroup() ? 'Chỉnh sửa nhóm chi tiêu' : 'Thêm nhóm chi tiêu' }}</h3>
+          <button (click)="hideGroupForm()" class="close-btn">
+            <i class="pi pi-times"></i>
+          </button>
+        </div>
+
+        <div class="dialog-body">
+          <div class="form-group">
+            <label>ID Nhóm *</label>
+            <input type="text" [(ngModel)]="newGroup.id" class="form-input" placeholder="group_123" [readonly]="editingGroup() !== null">
+            <small class="form-hint">ID duy nhất để nhận diện nhóm (không thể thay đổi sau khi tạo)</small>
+          </div>
+
+          <div class="form-group">
+            <label>Tên nhóm *</label>
+            <input type="text" [(ngModel)]="newGroup.name" class="form-input" placeholder="Ví dụ: Du lịch Vũng Tàu">
+          </div>
+
+          <div class="form-group">
+            <label>Nội dung/Ghi chú</label>
+            <textarea [(ngModel)]="newGroup.content" class="form-input" rows="3" placeholder="Mô tả về nhóm chi tiêu này..."></textarea>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Từ ngày</label>
+              <input type="date" [(ngModel)]="newGroup.dateFrom" class="form-input">
+            </div>
+            <div class="form-group">
+              <label>Đến ngày</label>
+              <input type="date" [(ngModel)]="newGroup.dateTo" class="form-input">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Tổng tiền</label>
+            <input type="number" [(ngModel)]="newGroup.totalAmount" class="form-input" placeholder="0" [readonly]="true">
+            <small class="form-hint">Tổng tiền sẽ được tính tự động từ các chi tiêu trong nhóm</small>
+          </div>
+        </div>
+
+        <div class="dialog-footer">
+          <button (click)="hideGroupForm()" class="cancel-btn">Hủy</button>
+          <button (click)="saveGroup()" class="save-btn">Lưu</button>
         </div>
       </div>
     </div>

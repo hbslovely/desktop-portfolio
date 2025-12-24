@@ -69,7 +69,7 @@
     },
     {
       "source": "/api/google-apps-script",
-      "destination": "https://script.google.com/macros/s/AKfycbwRpjkR_zWjSJUNhXBHhTO5bxq18iYMaJEYvOKaQlE6v-ofJgj5xNlHc-v9RuIRXqg0EA/exec"
+      "destination": "https://script.google.com/macros/s/AKfycbxeq8IaFmt6U-iihS-JwXF3tyGvekHQiRdRX7ZTPGsmktpovzYghy9WSJcw2flvYGUHqA/exec"
     },
     {
       "source": "/api/business-apps-script",
