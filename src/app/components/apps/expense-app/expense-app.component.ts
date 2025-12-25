@@ -676,8 +676,18 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     return filtered;
   });
 
+  // Computed: Check if data is ready (both expenses and groups loaded)
+  isDataReady = computed(() => {
+    return !this.isLoading() && !this.isLoadingGroups();
+  });
+
   // Computed: Merge groups with filtered expenses for display
   filteredExpensesWithGroups = computed(() => {
+    // Only compute if data is ready
+    if (!this.isDataReady()) {
+      return [];
+    }
+
     const filtered = this.filteredExpenses();
     const groups = this.expenseGroups();
     const expensesByGroup = this.expensesByGroup();
@@ -3141,10 +3151,28 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   /**
+   * Format date string to YYYY-MM-DD for HTML date input
+   */
+  private formatDateForInput(dateStr: string | undefined): string {
+    if (!dateStr) return '';
+    const date = this.parseDate(dateStr);
+    if (!date) return dateStr;
+    return this.formatDateLocal(date);
+  }
+
+  /**
    * Show edit group form
    */
   showEditGroupForm(group: ExpenseGroup): void {
-    this.newGroup = { ...group };
+    // Calculate total amount from actual expenses in the group
+    const calculatedTotal = this.getGroupTotalAmount(group);
+    
+    this.newGroup = { 
+      ...group,
+      dateFrom: this.formatDateForInput(group.dateFrom),
+      dateTo: this.formatDateForInput(group.dateTo),
+      totalAmount: calculatedTotal // Use calculated total from expenses
+    };
     this.editingGroup.set(group);
     this.showGroupForm.set(true);
   }
@@ -3166,7 +3194,14 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       return;
     }
 
-    const group = { ...this.newGroup };
+    // Calculate total amount from actual expenses in the group
+    const groupExpenses = this.expensesByGroup()[this.newGroup.id] || [];
+    const calculatedTotal = groupExpenses.reduce((sum, e) => sum + e.amount, 0);
+    
+    const group = { 
+      ...this.newGroup,
+      totalAmount: calculatedTotal // Always use calculated total from expenses
+    };
     const isEditing = this.editingGroup() !== null;
 
     if (isEditing && this.editingGroup()) {
@@ -3261,6 +3296,111 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   getGroupFirstExpenseDate(group: ExpenseGroup): string {
     const groupExpenses = this.expensesByGroup()[group.id] || [];
     return groupExpenses.length > 0 ? groupExpenses[0].date : '';
+  }
+
+  /**
+   * Get average expense amount for a group
+   */
+  getGroupAverageExpense(group: ExpenseGroup): number {
+    const groupExpenses = this.expensesByGroup()[group.id] || [];
+    if (groupExpenses.length === 0) return 0;
+    return this.getGroupTotalAmount(group) / groupExpenses.length;
+  }
+
+  /**
+   * Get max expense amount for a group
+   */
+  getGroupMaxExpense(group: ExpenseGroup): Expense | null {
+    const groupExpenses = this.expensesByGroup()[group.id] || [];
+    if (groupExpenses.length === 0) return null;
+    return groupExpenses.reduce((max, e) => e.amount > max.amount ? e : max, groupExpenses[0]);
+  }
+
+  /**
+   * Get min expense amount for a group
+   */
+  getGroupMinExpense(group: ExpenseGroup): Expense | null {
+    const groupExpenses = this.expensesByGroup()[group.id] || [];
+    if (groupExpenses.length === 0) return null;
+    return groupExpenses.reduce((min, e) => e.amount < min.amount ? e : min, groupExpenses[0]);
+  }
+
+  /**
+   * Get top categories for a group
+   */
+  getGroupTopCategories(group: ExpenseGroup, limit: number = 5): Array<{category: string, total: number, count: number}> {
+    const groupExpenses = this.expensesByGroup()[group.id] || [];
+    const categoryMap: {[key: string]: {total: number, count: number}} = {};
+    
+    groupExpenses.forEach(expense => {
+      if (!expense.category) return;
+      if (!categoryMap[expense.category]) {
+        categoryMap[expense.category] = {total: 0, count: 0};
+      }
+      categoryMap[expense.category].total += expense.amount;
+      categoryMap[expense.category].count += 1;
+    });
+
+    return Object.entries(categoryMap)
+      .map(([category, data]) => ({category, ...data}))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, limit);
+  }
+
+  /**
+   * Get date range for a group (from first to last expense)
+   */
+  getGroupDateRange(group: ExpenseGroup): {from: string, to: string} | null {
+    const groupExpenses = this.expensesByGroup()[group.id] || [];
+    if (groupExpenses.length === 0) return null;
+    
+    const sortedExpenses = [...groupExpenses].sort((a, b) => 
+      new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
+    
+    return {
+      from: sortedExpenses[0].date,
+      to: sortedExpenses[sortedExpenses.length - 1].date
+    };
+  }
+
+  /**
+   * Get total groups statistics
+   */
+  getGroupsStatistics(): {
+    totalGroups: number;
+    totalAmount: number;
+    totalExpenses: number;
+    averagePerGroup: number;
+    averagePerExpense: number;
+  } {
+    const groups = this.expenseGroups();
+    let totalAmount = 0;
+    let totalExpenses = 0;
+
+    groups.forEach(group => {
+      const groupExpenses = this.expensesByGroup()[group.id] || [];
+      totalAmount += this.getGroupTotalAmount(group);
+      totalExpenses += groupExpenses.length;
+    });
+
+    return {
+      totalGroups: groups.length,
+      totalAmount,
+      totalExpenses,
+      averagePerGroup: groups.length > 0 ? totalAmount / groups.length : 0,
+      averagePerExpense: totalExpenses > 0 ? totalAmount / totalExpenses : 0
+    };
+  }
+
+  /**
+   * Get top groups sorted by total amount
+   */
+  getTopGroups(limit: number = 5): ExpenseGroup[] {
+    return this.expenseGroups()
+      .slice()
+      .sort((a, b) => this.getGroupTotalAmount(b) - this.getGroupTotalAmount(a))
+      .slice(0, limit);
   }
 
   /**
