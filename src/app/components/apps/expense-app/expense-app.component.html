@@ -542,6 +542,86 @@
                   </div>
                 </div>
               </div>
+
+              <!-- Groups Statistics Section -->
+              <div class="groups-stats-section" *ngIf="expenseGroups().length > 0">
+                <div class="section-divider">
+                  <i class="fas fa-layer-group"></i>
+                  <span>Thống kê nhóm chi tiêu</span>
+                </div>
+                
+                <div class="stat-card-webstorm">
+                  <div class="stat-icon-wrapper">
+                    <i class="fas fa-layer-group"></i>
+                  </div>
+                  <div class="stat-info">
+                    <span class="stat-label">Tổng số nhóm</span>
+                    <span class="stat-value-large">{{ getGroupsStatistics().totalGroups }}</span>
+                  </div>
+                </div>
+                
+                <div class="stat-card-webstorm">
+                  <div class="stat-icon-wrapper">
+                    <i class="fas fa-wallet"></i>
+                  </div>
+                  <div class="stat-info">
+                    <span class="stat-label">Tổng tiền các nhóm</span>
+                    <span class="stat-value-large">{{ formatAmount(getGroupsStatistics().totalAmount) }}</span>
+                  </div>
+                </div>
+                
+                <div class="stat-card-webstorm">
+                  <div class="stat-icon-wrapper">
+                    <i class="fas fa-list"></i>
+                  </div>
+                  <div class="stat-info">
+                    <span class="stat-label">Tổng chi tiêu trong nhóm</span>
+                    <span class="stat-value-large">{{ getGroupsStatistics().totalExpenses }}</span>
+                  </div>
+                </div>
+                
+                <div class="stat-card-webstorm">
+                  <div class="stat-icon-wrapper">
+                    <i class="fas fa-calculator"></i>
+                  </div>
+                  <div class="stat-info">
+                    <span class="stat-label">TB mỗi nhóm</span>
+                    <span class="stat-value-large">{{ formatAmount(getGroupsStatistics().averagePerGroup) }}</span>
+                  </div>
+                </div>
+                
+                <div class="stat-card-webstorm">
+                  <div class="stat-icon-wrapper">
+                    <i class="fas fa-chart-line"></i>
+                  </div>
+                  <div class="stat-info">
+                    <span class="stat-label">TB mỗi chi tiêu</span>
+                    <span class="stat-value-large">{{ formatAmount(getGroupsStatistics().averagePerExpense) }}</span>
+                  </div>
+                </div>
+
+                <!-- Top Groups -->
+                <div class="top-groups-section" *ngIf="expenseGroups().length > 0">
+                  <div class="section-subtitle">
+                    <i class="fas fa-trophy"></i>
+                    <span>Top nhóm chi tiêu</span>
+                  </div>
+                  <div class="top-groups-list">
+                    <div class="top-group-item" 
+                         *ngFor="let group of getTopGroups(5); let i = index">
+                      <div class="group-rank">{{ i + 1 }}</div>
+                      <div class="group-icon-small">
+                        <i class="fas fa-layer-group"></i>
+                      </div>
+                      <div class="group-info-small">
+                        <span class="group-name-small">{{ group.name }}</span>
+                        <span class="group-meta-small">{{ getGroupExpensesCount(group) }} chi tiêu</span>
+                      </div>
+                      <div class="group-amount-small">{{ formatAmount(getGroupTotalAmount(group)) }}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -583,7 +663,7 @@
           </div>
 
           <!-- Sort & View Controls -->
-          <div class="list-toolbar-v3" *ngIf="!isLoading() && filteredExpensesWithGroups().length > 0">
+          <div class="list-toolbar-v3" *ngIf="isDataReady() && filteredExpensesWithGroups().length > 0">
             <div class="toolbar-left">
               <span class="results-count">{{ filteredExpensesWithGroups().length }} kết quả</span>
             </div>
@@ -602,41 +682,42 @@
           </div>
 
           <!-- Expenses List -->
-          <div class="expenses-list-v3" *ngIf="!isLoading() && filteredExpensesWithGroups().length > 0">
+          <div class="expenses-list-v3" *ngIf="isDataReady() && filteredExpensesWithGroups().length > 0">
             <ng-container *ngFor="let item of filteredExpensesWithGroups(); let i = index">
               <!-- Group Row -->
-              <div class="expense-group-row-v3"
+              <div class="expense-group-row-flat"
                    *ngIf="isGroup(item)"
-                   (click)="showGroupDetailDialog(item)"
-                   [style.cursor]="'pointer'">
-                <div class="expense-group-icon-compact">
-                  <i class="fas fa-layer-group"></i>
+                   (click)="showGroupDetailDialog(item)">
+                <div class="group-row-left">
+                  <div class="group-icon-flat">
+                    <i class="fas fa-layer-group"></i>
+                  </div>
+                  <div class="group-info-flat">
+                    <div class="group-name-flat">{{ item.name }}</div>
+                    <div class="group-meta-flat">
+                      <span class="group-count-badge">{{ getGroupExpensesCount(item) }} chi tiêu</span>
+                      <span class="group-date-flat" *ngIf="item.dateFrom && item.dateTo">
+                        <i class="fas fa-calendar-alt"></i>
+                        {{ formatDate(item.dateFrom) }} - {{ formatDate(item.dateTo) }}
+                      </span>
+                      <span class="group-date-flat" *ngIf="!item.dateFrom || !item.dateTo">
+                        <i class="fas fa-calendar-alt"></i>
+                        {{ formatDate(getGroupFirstExpenseDate(item)) }}
+                      </span>
+                    </div>
+                    <div class="group-content-flat" *ngIf="item.content">{{ item.content }}</div>
+                  </div>
                 </div>
-                <div class="expense-group-info-compact">
-                  <span class="expense-group-name-compact">{{ item.name }}</span>
-                  <span class="expense-group-content-compact" *ngIf="item.content">{{ item.content }}</span>
-                  <span class="expense-group-count-compact">
-                    {{ getGroupExpensesCount(item) }} chi tiêu
-                  </span>
-                </div>
-                <div class="expense-group-date-compact">
-                  <span *ngIf="item.dateFrom && item.dateTo">
-                    {{ formatDate(item.dateFrom) }} - {{ formatDate(item.dateTo) }}
-                  </span>
-                  <span *ngIf="!item.dateFrom || !item.dateTo">
-                    {{ formatDate(getGroupFirstExpenseDate(item)) }}
-                  </span>
-                </div>
-                <div class="expense-group-amount-compact">
-                  {{ formatAmount(getGroupTotalAmount(item)) }}
-                </div>
-                <div class="expense-group-actions-compact" (click)="$event.stopPropagation()">
-                  <button class="expense-action-btn" (click)="showEditGroupForm(item)" title="Chỉnh sửa">
-                    <i class="fas fa-pencil-alt"></i>
-                  </button>
-                  <button class="expense-action-btn" (click)="deleteGroup(item)" title="Xóa">
-                    <i class="fas fa-trash"></i>
-                  </button>
+                <div class="group-row-right">
+                  <div class="group-amount-flat">{{ formatAmount(getGroupTotalAmount(item)) }}</div>
+                  <div class="group-actions-flat" (click)="$event.stopPropagation()">
+                    <button class="action-btn-flat edit" (click)="showEditGroupForm(item)" title="Chỉnh sửa">
+                      <i class="fas fa-pencil-alt"></i>
+                    </button>
+                    <button class="action-btn-flat delete" (click)="deleteGroup(item)" title="Xóa">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -683,7 +764,7 @@
           </div>
 
           <!-- Empty State -->
-          <div class="empty-state-v3" *ngIf="!isLoading() && filteredExpensesWithGroups().length === 0">
+          <div class="empty-state-v3" *ngIf="isDataReady() && filteredExpensesWithGroups().length === 0">
             <div class="empty-icon">
               <i class="fas fa-wallet"></i>
             </div>
@@ -696,7 +777,7 @@
           </div>
 
           <!-- Loading State -->
-          <div class="loading-state-v3" *ngIf="isLoading()">
+          <div class="loading-state-v3" *ngIf="isLoading() || isLoadingGroups()">
             <div class="loading-spinner">
               <i class="fas fa-spinner fa-spin"></i>
             </div>
@@ -832,7 +913,9 @@
 
             <!-- Loading State -->
             <div class="loading-state-v3" *ngIf="isLoadingGroups()">
-              <div class="loading-spinner"></div>
+              <div class="loading-spinner">
+                <i class="fas fa-spinner fa-spin"></i>
+              </div>
               <p>Đang tải danh sách nhóm...</p>
             </div>
 
@@ -858,17 +941,100 @@
                   </div>
                 </div>
                 <div class="group-card-body">
-                  <div class="group-stat">
-                    <div class="stat-label">Tổng tiền</div>
-                    <div class="stat-value">{{ formatAmount(getGroupTotalAmount(group)) }}</div>
+                  <!-- Main Stats Grid -->
+                  <div class="group-stats-grid">
+                    <div class="group-stat-card primary">
+                      <div class="stat-icon">
+                        <i class="fas fa-wallet"></i>
+                      </div>
+                      <div class="stat-content">
+                        <div class="stat-label">Tổng tiền</div>
+                        <div class="stat-value-large">{{ formatAmount(getGroupTotalAmount(group)) }}</div>
+                      </div>
+                    </div>
+                    <div class="group-stat-card">
+                      <div class="stat-icon">
+                        <i class="fas fa-list"></i>
+                      </div>
+                      <div class="stat-content">
+                        <div class="stat-label">Số chi tiêu</div>
+                        <div class="stat-value">{{ getGroupExpensesCount(group) }}</div>
+                      </div>
+                    </div>
+                    <div class="group-stat-card">
+                      <div class="stat-icon">
+                        <i class="fas fa-calculator"></i>
+                      </div>
+                      <div class="stat-content">
+                        <div class="stat-label">Trung bình</div>
+                        <div class="stat-value">{{ formatAmount(getGroupAverageExpense(group)) }}</div>
+                      </div>
+                    </div>
                   </div>
-                  <div class="group-stat" *ngIf="group.dateFrom && group.dateTo">
-                    <div class="stat-label">Thời gian</div>
-                    <div class="stat-value-small">{{ formatDate(group.dateFrom) }} - {{ formatDate(group.dateTo) }}</div>
+
+                  <!-- Date Range -->
+                  <div class="group-date-info" *ngIf="getGroupDateRange(group) || (group.dateFrom && group.dateTo)">
+                    <div class="date-range-item">
+                      <i class="fas fa-calendar-alt"></i>
+                      <span class="date-label">Từ:</span>
+                      <span class="date-value">{{ formatDate(group.dateFrom || getGroupDateRange(group)?.from || '') }}</span>
+                    </div>
+                    <div class="date-range-item">
+                      <i class="fas fa-calendar-check"></i>
+                      <span class="date-label">Đến:</span>
+                      <span class="date-value">{{ formatDate(group.dateTo || getGroupDateRange(group)?.to || '') }}</span>
+                    </div>
+                    <div class="date-range-item" *ngIf="group.createdAt">
+                      <i class="fas fa-clock"></i>
+                      <span class="date-label">Tạo:</span>
+                      <span class="date-value">{{ formatDate(group.createdAt) }}</span>
+                    </div>
                   </div>
-                  <div class="group-stat" *ngIf="group.createdAt">
-                    <div class="stat-label">Ngày tạo</div>
-                    <div class="stat-value-small">{{ formatDate(group.createdAt) }}</div>
+
+                  <!-- Min/Max Expenses -->
+                  <div class="group-extremes" *ngIf="getGroupMaxExpense(group) && getGroupMinExpense(group)">
+                    <div class="extreme-item max">
+                      <i class="fas fa-arrow-up"></i>
+                      <div class="extreme-content">
+                        <span class="extreme-label">Cao nhất</span>
+                        <span class="extreme-value">{{ formatAmount(getGroupMaxExpense(group)!.amount) }}</span>
+                        <span class="extreme-detail">{{ getGroupMaxExpense(group)!.content }}</span>
+                      </div>
+                    </div>
+                    <div class="extreme-item min">
+                      <i class="fas fa-arrow-down"></i>
+                      <div class="extreme-content">
+                        <span class="extreme-label">Thấp nhất</span>
+                        <span class="extreme-value">{{ formatAmount(getGroupMinExpense(group)!.amount) }}</span>
+                        <span class="extreme-detail">{{ getGroupMinExpense(group)!.content }}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Top Categories -->
+                  <div class="group-top-categories" *ngIf="getGroupTopCategories(group, 3).length > 0">
+                    <div class="top-categories-header">
+                      <i class="fas fa-tags"></i>
+                      <span>Top danh mục</span>
+                    </div>
+                    <div class="top-categories-list">
+                      <div class="category-item" 
+                           *ngFor="let cat of getGroupTopCategories(group, 3); let i = index"
+                           [style.--cat-color]="getCategoryColor(cat.category)"
+                           [style.--cat-bg]="getCategoryBgColor(cat.category)">
+                        <div class="category-rank">{{ i + 1 }}</div>
+                        <div class="category-icon">
+                          <i class="fas" [ngClass]="getCategoryIcon(cat.category)"></i>
+                        </div>
+                        <div class="category-info">
+                          <span class="category-name">{{ cat.category }}</span>
+                          <span class="category-stats">{{ cat.count }} chi tiêu • {{ formatAmount(cat.total) }}</span>
+                        </div>
+                        <div class="category-percent">
+                          {{ getGroupTotalAmount(group) > 0 ? ((cat.total / getGroupTotalAmount(group)) * 100).toFixed(0) : 0 }}%
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
                 <div class="group-card-actions" (click)="$event.stopPropagation()">
