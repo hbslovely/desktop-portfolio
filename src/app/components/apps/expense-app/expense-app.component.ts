@@ -122,6 +122,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   showGroupDetail = signal<boolean>(false);
   selectedGroup = signal<ExpenseGroup | null>(null);
   selectedGroupExpenses = signal<Expense[]>([]);
+  groupDetailTab = signal<'list' | 'stats'>('list');
   showGroupForm = signal<boolean>(false);
   editingGroup = signal<ExpenseGroup | null>(null);
   newGroup: ExpenseGroup = {
@@ -160,6 +161,91 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     });
 
     return grouped;
+  });
+
+  // Computed: Group statistics cache (calculated once for all groups)
+  groupStatistics = computed(() => {
+    const groups = this.expenseGroups();
+    const expensesByGroup = this.expensesByGroup();
+    
+    const stats: {
+      totalAmounts: {[groupId: string]: number};
+      expensesCounts: {[groupId: string]: number};
+      firstExpenseDates: {[groupId: string]: string};
+      averageExpenses: {[groupId: string]: number};
+      maxExpenses: {[groupId: string]: Expense | null};
+      minExpenses: {[groupId: string]: Expense | null};
+      dateRanges: {[groupId: string]: {from: string, to: string} | null};
+      topCategories: {[groupId: string]: Array<{category: string, total: number, count: number}>};
+    } = {
+      totalAmounts: {},
+      expensesCounts: {},
+      firstExpenseDates: {},
+      averageExpenses: {},
+      maxExpenses: {},
+      minExpenses: {},
+      dateRanges: {},
+      topCategories: {}
+    };
+    
+    groups.forEach(group => {
+      const groupExpenses = expensesByGroup[group.id] || [];
+      const count = groupExpenses.length;
+      
+      // Count
+      stats.expensesCounts[group.id] = count;
+      
+      // First expense date
+      stats.firstExpenseDates[group.id] = count > 0 ? groupExpenses[0].date : '';
+      
+      if (count === 0) {
+        stats.totalAmounts[group.id] = 0;
+        stats.averageExpenses[group.id] = 0;
+        stats.maxExpenses[group.id] = null;
+        stats.minExpenses[group.id] = null;
+        stats.dateRanges[group.id] = null;
+        stats.topCategories[group.id] = [];
+        return;
+      }
+      
+      // Total amount
+      const total = groupExpenses.reduce((sum, e) => sum + e.amount, 0);
+      stats.totalAmounts[group.id] = group.totalAmount && group.totalAmount > 0 ? group.totalAmount : total;
+      
+      // Average
+      stats.averageExpenses[group.id] = stats.totalAmounts[group.id] / count;
+      
+      // Max and Min
+      stats.maxExpenses[group.id] = groupExpenses.reduce((max, e) => e.amount > max.amount ? e : max, groupExpenses[0]);
+      stats.minExpenses[group.id] = groupExpenses.reduce((min, e) => e.amount < min.amount ? e : min, groupExpenses[0]);
+      
+      // Date range
+      const sortedExpenses = [...groupExpenses].sort((a, b) => 
+        new Date(a.date).getTime() - new Date(b.date).getTime()
+      );
+      stats.dateRanges[group.id] = {
+        from: sortedExpenses[0].date,
+        to: sortedExpenses[sortedExpenses.length - 1].date
+      };
+      
+      // Top categories (limit 3 for display)
+      const categoryMap: {[key: string]: {total: number, count: number}} = {};
+      groupExpenses.forEach(expense => {
+        if (!expense.category) return;
+        if (!categoryMap[expense.category]) {
+          categoryMap[expense.category] = {total: 0, count: 0};
+        }
+        categoryMap[expense.category].total += expense.amount;
+        categoryMap[expense.category].count += 1;
+      });
+      
+      stats.topCategories[group.id] = Object.entries(categoryMap)
+        .map(([category, data]) => ({category, ...data}))
+        .sort((a, b) => b.total - a.total)
+        .slice(0, 3);
+    });
+    
+    return stats;
   });
 
   // Computed: Expenses list with groups merged
@@ -634,19 +720,53 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
           const dateANew = this.parseDate(a.date);
           const dateBNew = this.parseDate(b.date);
           if (!dateANew || !dateBNew) return 0;
-          return dateBNew.getTime() - dateANew.getTime();
+          const dateDiff = dateBNew.getTime() - dateANew.getTime();
+          // If same date, sort by rowIndex descending (newer index on top)
+          if (dateDiff === 0) {
+            return (b.rowIndex || 0) - (a.rowIndex || 0);
+          }
+          return dateDiff;
 
         case 'oldest':
           const dateAOld = this.parseDate(a.date);
           const dateBOld = this.parseDate(b.date);
           if (!dateAOld || !dateBOld) return 0;
-          return dateAOld.getTime() - dateBOld.getTime();
+          const dateDiffOld = dateAOld.getTime() - dateBOld.getTime();
+          // If same date, sort by rowIndex ascending (older index on top)
+          if (dateDiffOld === 0) {
+            return (a.rowIndex || 0) - (b.rowIndex || 0);
+          }
+          return dateDiffOld;
 
         case 'amount_desc':
-          return b.amount - a.amount;
+          const amountDiffDesc = b.amount - a.amount;
+          if (amountDiffDesc === 0) {
+            // If same amount, sort by date desc, then by rowIndex desc
+            const dateA = this.parseDate(a.date);
+            const dateB = this.parseDate(b.date);
+            if (!dateA || !dateB) return 0;
+            const dateDiff = dateB.getTime() - dateA.getTime();
+            if (dateDiff === 0) {
+              return (b.rowIndex || 0) - (a.rowIndex || 0);
+            }
+            return dateDiff;
+          }
+          return amountDiffDesc;
 
         case 'amount_asc':
-          return a.amount - b.amount;
+          const amountDiffAsc = a.amount - b.amount;
+          if (amountDiffAsc === 0) {
+            // If same amount, sort by date desc, then by rowIndex desc
+            const dateA = this.parseDate(a.date);
+            const dateB = this.parseDate(b.date);
+            if (!dateA || !dateB) return 0;
+            const dateDiff = dateB.getTime() - dateA.getTime();
+            if (dateDiff === 0) {
+              return (b.rowIndex || 0) - (a.rowIndex || 0);
+            }
+            return dateDiff;
+          }
+          return amountDiffAsc;
 
         case 'most_frequent':
           const freqAMost = frequencyMap.get(a.content.toLowerCase().trim()) || 0;
@@ -656,7 +776,12 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
           const dateAFreq = this.parseDate(a.date);
           const dateBFreq = this.parseDate(b.date);
           if (!dateAFreq || !dateBFreq) return 0;
-          return dateBFreq.getTime() - dateAFreq.getTime();
+          const dateDiffFreq = dateBFreq.getTime() - dateAFreq.getTime();
+          // If same date, sort by rowIndex descending
+          if (dateDiffFreq === 0) {
+            return (b.rowIndex || 0) - (a.rowIndex || 0);
+          }
+          return dateDiffFreq;
 
         case 'least_frequent':
           const freqALeast = frequencyMap.get(a.content.toLowerCase().trim()) || 0;
@@ -666,7 +791,12 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
           const dateALFreq = this.parseDate(a.date);
           const dateBLFreq = this.parseDate(b.date);
           if (!dateALFreq || !dateBLFreq) return 0;
-          return dateBLFreq.getTime() - dateALFreq.getTime();
+          const dateDiffLFreq = dateBLFreq.getTime() - dateALFreq.getTime();
+          // If same date, sort by rowIndex descending
+          if (dateDiffLFreq === 0) {
+            return (b.rowIndex || 0) - (a.rowIndex || 0);
+          }
+          return dateDiffLFreq;
 
         default:
           return 0;
@@ -691,6 +821,8 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const filtered = this.filteredExpenses();
     const groups = this.expenseGroups();
     const expensesByGroup = this.expensesByGroup();
+    const sortOption = this.sortOption();
+    const frequencyMap = this.contentFrequencyMap();
     const result: Array<Expense | ExpenseGroup> = [];
     const processedGroupIds = new Set<string>();
     const expensesInGroups = new Set<Expense>();
@@ -703,14 +835,54 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       );
 
       if (filteredGroupExpenses.length > 0 && !processedGroupIds.has(group.id)) {
-        // Use the first expense date as group date for sorting
-        const firstExpense = filteredGroupExpenses[0];
-        if (firstExpense) {
-          result.push({ ...group, date: firstExpense.date } as any);
-          processedGroupIds.add(group.id);
-          // Mark all expenses in this group as processed
-          groupExpenses.forEach(exp => expensesInGroups.add(exp));
+        // For groups, use the most relevant expense date based on sort option
+        let groupDate = filteredGroupExpenses[0].date;
+        let groupRowIndex = filteredGroupExpenses[0].rowIndex || 0;
+        
+        if (sortOption === 'newest') {
+          // Use the newest expense in the group
+          const sorted = [...filteredGroupExpenses].sort((a, b) => {
+            const dateA = this.parseDate(a.date);
+            const dateB = this.parseDate(b.date);
+            if (!dateA || !dateB) return 0;
+            const dateDiff = dateB.getTime() - dateA.getTime();
+            if (dateDiff === 0) {
+              return (b.rowIndex || 0) - (a.rowIndex || 0);
+            }
+            return dateDiff;
+          });
+          groupDate = sorted[0].date;
+          groupRowIndex = sorted[0].rowIndex || 0;
+        } else if (sortOption === 'oldest') {
+          // Use the oldest expense in the group
+          const sorted = [...filteredGroupExpenses].sort((a, b) => {
+            const dateA = this.parseDate(a.date);
+            const dateB = this.parseDate(b.date);
+            if (!dateA || !dateB) return 0;
+            const dateDiff = dateA.getTime() - dateB.getTime();
+            if (dateDiff === 0) {
+              return (a.rowIndex || 0) - (b.rowIndex || 0);
+            }
+            return dateDiff;
+          });
+          groupDate = sorted[0].date;
+          groupRowIndex = sorted[0].rowIndex || 0;
+        } else if (sortOption === 'amount_desc') {
+          // Use the expense with highest amount
+          const sorted = [...filteredGroupExpenses].sort((a, b) => b.amount - a.amount);
+          groupDate = sorted[0].date;
+          groupRowIndex = sorted[0].rowIndex || 0;
+        } else if (sortOption === 'amount_asc') {
+          // Use the expense with lowest amount
+          const sorted = [...filteredGroupExpenses].sort((a, b) => a.amount - b.amount);
+          groupDate = sorted[0].date;
+          groupRowIndex = sorted[0].rowIndex || 0;
         }
+        
+        result.push({ ...group, date: groupDate, rowIndex: groupRowIndex } as any);
+        processedGroupIds.add(group.id);
+        // Mark all expenses in this group as processed
+        groupExpenses.forEach(exp => expensesInGroups.add(exp));
       }
     });
 
@@ -721,11 +893,118 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       }
     });
 
-    // Sort by date descending
+    // Sort using the same logic as filteredExpenses
     result.sort((a, b) => {
-      const dateA = 'date' in a ? new Date(a.date).getTime() : 0;
-      const dateB = 'date' in b ? new Date(b.date).getTime() : 0;
-      return dateB - dateA;
+      switch (sortOption) {
+        case 'newest': {
+          const dateA = this.parseDate('date' in a ? a.date : '');
+          const dateB = this.parseDate('date' in b ? b.date : '');
+          if (!dateA || !dateB) return 0;
+          const dateDiff = dateB.getTime() - dateA.getTime();
+          // If same date, sort by rowIndex descending (newer index on top)
+          if (dateDiff === 0) {
+            const rowIndexA = 'rowIndex' in a ? (a.rowIndex || 0) : 0;
+            const rowIndexB = 'rowIndex' in b ? (b.rowIndex || 0) : 0;
+            return rowIndexB - rowIndexA;
+          }
+          return dateDiff;
+        }
+
+        case 'oldest': {
+          const dateA = this.parseDate('date' in a ? a.date : '');
+          const dateB = this.parseDate('date' in b ? b.date : '');
+          if (!dateA || !dateB) return 0;
+          const dateDiff = dateA.getTime() - dateB.getTime();
+          // If same date, sort by rowIndex ascending (older index on top)
+          if (dateDiff === 0) {
+            const rowIndexA = 'rowIndex' in a ? (a.rowIndex || 0) : 0;
+            const rowIndexB = 'rowIndex' in b ? (b.rowIndex || 0) : 0;
+            return rowIndexA - rowIndexB;
+          }
+          return dateDiff;
+        }
+
+        case 'amount_desc': {
+          const amountA = 'amount' in a ? a.amount : this.getGroupTotalAmount(a as ExpenseGroup);
+          const amountB = 'amount' in b ? b.amount : this.getGroupTotalAmount(b as ExpenseGroup);
+          const amountDiff = amountB - amountA;
+          if (amountDiff === 0) {
+            // If same amount, sort by date desc, then by rowIndex desc
+            const dateA = this.parseDate('date' in a ? a.date : '');
+            const dateB = this.parseDate('date' in b ? b.date : '');
+            if (!dateA || !dateB) return 0;
+            const dateDiff = dateB.getTime() - dateA.getTime();
+            if (dateDiff === 0) {
+              const rowIndexA = 'rowIndex' in a ? (a.rowIndex || 0) : 0;
+              const rowIndexB = 'rowIndex' in b ? (b.rowIndex || 0) : 0;
+              return rowIndexB - rowIndexA;
+            }
+            return dateDiff;
+          }
+          return amountDiff;
+        }
+
+        case 'amount_asc': {
+          const amountA = 'amount' in a ? a.amount : this.getGroupTotalAmount(a as ExpenseGroup);
+          const amountB = 'amount' in b ? b.amount : this.getGroupTotalAmount(b as ExpenseGroup);
+          const amountDiff = amountA - amountB;
+          if (amountDiff === 0) {
+            // If same amount, sort by date desc, then by rowIndex desc
+            const dateA = this.parseDate('date' in a ? a.date : '');
+            const dateB = this.parseDate('date' in b ? b.date : '');
+            if (!dateA || !dateB) return 0;
+            const dateDiff = dateB.getTime() - dateA.getTime();
+            if (dateDiff === 0) {
+              const rowIndexA = 'rowIndex' in a ? (a.rowIndex || 0) : 0;
+              const rowIndexB = 'rowIndex' in b ? (b.rowIndex || 0) : 0;
+              return rowIndexB - rowIndexA;
+            }
+            return dateDiff;
+          }
+          return amountDiff;
+        }
+
+        case 'most_frequent': {
+          const contentA = 'content' in a ? (a.content || '').toLowerCase().trim() : '';
+          const contentB = 'content' in b ? (b.content || '').toLowerCase().trim() : '';
+          const freqA = frequencyMap.get(contentA) || 0;
+          const freqB = frequencyMap.get(contentB) || 0;
+          // Sort by frequency desc, then by date desc for same frequency
+          if (freqB !== freqA) return freqB - freqA;
+          const dateA = this.parseDate('date' in a ? a.date : '');
+          const dateB = this.parseDate('date' in b ? b.date : '');
+          if (!dateA || !dateB) return 0;
+          const dateDiff = dateB.getTime() - dateA.getTime();
+          if (dateDiff === 0) {
+            const rowIndexA = 'rowIndex' in a ? (a.rowIndex || 0) : 0;
+            const rowIndexB = 'rowIndex' in b ? (b.rowIndex || 0) : 0;
+            return rowIndexB - rowIndexA;
+          }
+          return dateDiff;
+        }
+
+        case 'least_frequent': {
+          const contentA = 'content' in a ? (a.content || '').toLowerCase().trim() : '';
+          const contentB = 'content' in b ? (b.content || '').toLowerCase().trim() : '';
+          const freqA = frequencyMap.get(contentA) || 0;
+          const freqB = frequencyMap.get(contentB) || 0;
+          // Sort by frequency asc, then by date desc for same frequency
+          if (freqA !== freqB) return freqA - freqB;
+          const dateA = this.parseDate('date' in a ? a.date : '');
+          const dateB = this.parseDate('date' in b ? b.date : '');
+          if (!dateA || !dateB) return 0;
+          const dateDiff = dateB.getTime() - dateA.getTime();
+          if (dateDiff === 0) {
+            const rowIndexA = 'rowIndex' in a ? (a.rowIndex || 0) : 0;
+            const rowIndexB = 'rowIndex' in b ? (b.rowIndex || 0) : 0;
+            return rowIndexB - rowIndexA;
+          }
+          return dateDiff;
+        }
+
+        default:
+          return 0;
+      }
     });
 
     return result;
@@ -3096,9 +3375,24 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
    */
   showGroupDetailDialog(group: ExpenseGroup): void {
     const expenses = this.expenses();
-    const groupExpenses = expenses.filter(exp => exp.groupId === group.id);
+    let groupExpenses = expenses.filter(exp => exp.groupId === group.id);
+    
+    // Sort by date descending, then by rowIndex descending (newer on top)
+    groupExpenses.sort((a, b) => {
+      const dateA = this.parseDate(a.date);
+      const dateB = this.parseDate(b.date);
+      if (!dateA || !dateB) return 0;
+      const dateDiff = dateB.getTime() - dateA.getTime();
+      // If same date, sort by rowIndex descending (newer index on top)
+      if (dateDiff === 0) {
+        return (b.rowIndex || 0) - (a.rowIndex || 0);
+      }
+      return dateDiff;
+    });
+    
     this.selectedGroup.set(group);
     this.selectedGroupExpenses.set(groupExpenses);
+    this.groupDetailTab.set('list');
     this.showGroupDetail.set(true);
   }
 
@@ -3273,95 +3567,61 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   /**
-   * Get total amount for a group
+   * Get total amount for a group (uses cache)
    */
   getGroupTotalAmount(group: ExpenseGroup): number {
-    const groupExpenses = this.expensesByGroup()[group.id] || [];
-    const calculatedTotal = groupExpenses.reduce((sum, e) => sum + e.amount, 0);
-    // Use calculated total if group.totalAmount is 0 or not set, otherwise use group.totalAmount
-    return group.totalAmount && group.totalAmount > 0 ? group.totalAmount : calculatedTotal;
+    return this.groupStatistics().totalAmounts[group.id] || 0;
   }
 
   /**
-   * Get expenses count for a group
+   * Get expenses count for a group (uses cache)
    */
   getGroupExpensesCount(group: ExpenseGroup): number {
-    const groupExpenses = this.expensesByGroup()[group.id] || [];
-    return groupExpenses.length;
+    return this.groupStatistics().expensesCounts[group.id] || 0;
   }
 
   /**
-   * Get first expense date for a group
+   * Get first expense date for a group (uses cache)
    */
   getGroupFirstExpenseDate(group: ExpenseGroup): string {
-    const groupExpenses = this.expensesByGroup()[group.id] || [];
-    return groupExpenses.length > 0 ? groupExpenses[0].date : '';
+    return this.groupStatistics().firstExpenseDates[group.id] || '';
   }
 
   /**
-   * Get average expense amount for a group
+   * Get average expense amount for a group (uses cache)
    */
   getGroupAverageExpense(group: ExpenseGroup): number {
-    const groupExpenses = this.expensesByGroup()[group.id] || [];
-    if (groupExpenses.length === 0) return 0;
-    return this.getGroupTotalAmount(group) / groupExpenses.length;
+    return this.groupStatistics().averageExpenses[group.id] || 0;
   }
 
   /**
-   * Get max expense amount for a group
+   * Get max expense amount for a group (uses cache)
    */
   getGroupMaxExpense(group: ExpenseGroup): Expense | null {
-    const groupExpenses = this.expensesByGroup()[group.id] || [];
-    if (groupExpenses.length === 0) return null;
-    return groupExpenses.reduce((max, e) => e.amount > max.amount ? e : max, groupExpenses[0]);
+    return this.groupStatistics().maxExpenses[group.id] || null;
   }
 
   /**
-   * Get min expense amount for a group
+   * Get min expense amount for a group (uses cache)
    */
   getGroupMinExpense(group: ExpenseGroup): Expense | null {
-    const groupExpenses = this.expensesByGroup()[group.id] || [];
-    if (groupExpenses.length === 0) return null;
-    return groupExpenses.reduce((min, e) => e.amount < min.amount ? e : min, groupExpenses[0]);
+    return this.groupStatistics().minExpenses[group.id] || null;
   }
 
   /**
-   * Get top categories for a group
+   * Get top categories for a group (uses cache, limit 3 for display)
    */
   getGroupTopCategories(group: ExpenseGroup, limit: number = 5): Array<{category: string, total: number, count: number}> {
-    const groupExpenses = this.expensesByGroup()[group.id] || [];
-    const categoryMap: {[key: string]: {total: number, count: number}} = {};
-    
-    groupExpenses.forEach(expense => {
-      if (!expense.category) return;
-      if (!categoryMap[expense.category]) {
-        categoryMap[expense.category] = {total: 0, count: 0};
-      }
-      categoryMap[expense.category].total += expense.amount;
-      categoryMap[expense.category].count += 1;
-    });
-
-    return Object.entries(categoryMap)
-      .map(([category, data]) => ({category, ...data}))
-      .sort((a, b) => b.total - a.total)
-      .slice(0, limit);
+    const cached = this.groupStatistics().topCategories[group.id] || [];
+    // Return cached (limit 3) or slice if limit is different
+    return limit === 3 ? cached : cached.slice(0, limit);
   }
 
   /**
-   * Get date range for a group (from first to last expense)
+   * Get date range for a group (from first to last expense) (uses cache)
    */
   getGroupDateRange(group: ExpenseGroup): {from: string, to: string} | null {
-    const groupExpenses = this.expensesByGroup()[group.id] || [];
-    if (groupExpenses.length === 0) return null;
-    
-    const sortedExpenses = [...groupExpenses].sort((a, b) => 
-      new Date(a.date).getTime() - new Date(b.date).getTime()
-    );
-    
-    return {
-      from: sortedExpenses[0].date,
-      to: sortedExpenses[sortedExpenses.length - 1].date
-    };
+    return this.groupStatistics().dateRanges[group.id] || null;
   }
 
   /**
