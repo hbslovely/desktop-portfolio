@@ -12670,182 +12670,182 @@ $font-numbers: 'JetBrains Mono', 'Roboto Mono', 'SF Mono', 'Cascadia Code', 'Con
         display: flex;
         flex-direction: column;
         gap: 12px;
+      }
 
-        .stat-card-webstorm {
+      .stat-card-webstorm {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 16px;
+        background: white;
+        border: 2px solid #e5e7eb;
+        border-radius: 12px;
+        transition: all 0.2s;
+
+        &:hover {
+          border-color: #0ea5e9;
+          box-shadow: 0 2px 8px rgba(14, 165, 233, 0.1);
+        }
+
+        .stat-icon-wrapper {
+          width: 48px;
+          height: 48px;
           display: flex;
           align-items: center;
-          gap: 16px;
-          padding: 16px;
-          background: white;
-          border: 2px solid #e5e7eb;
-          border-radius: 12px;
-          transition: all 0.2s;
+          justify-content: center;
+          background: #f0f9ff;
+          border-radius: 10px;
+          flex-shrink: 0;
 
-          &:hover {
-            border-color: #0ea5e9;
-            box-shadow: 0 2px 8px rgba(14, 165, 233, 0.1);
-          }
-
-          .stat-icon-wrapper {
-            width: 48px;
-            height: 48px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #f0f9ff;
-            border-radius: 10px;
-            flex-shrink: 0;
-
-            i {
-              font-size: 20px;
-              color: #0ea5e9;
-            }
-          }
-
-          .stat-info {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            flex: 1;
-            min-width: 0;
-
-            .stat-label {
-              font-size: 12px;
-              color: #6b7280;
-              font-weight: 500;
-            }
-
-            .stat-value-large {
-              font-size: 18px;
-              font-weight: 700;
-              color: #1f2937;
-              white-space: nowrap;
-              overflow: hidden;
-              text-overflow: ellipsis;
-            }
+          i {
+            font-size: 20px;
+            color: #0ea5e9;
           }
         }
 
-        // Groups Statistics Section
-        .groups-stats-section {
-          margin-top: 24px;
-          padding-top: 24px;
-          border-top: 2px solid #e5e7eb;
+        .stat-info {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+          flex: 1;
+          min-width: 0;
 
-          .section-divider {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 16px;
-            font-size: 14px;
+          .stat-label {
+            font-size: 12px;
+            color: #6b7280;
+            font-weight: 500;
+          }
+
+          .stat-value-large {
+            font-size: 18px;
             font-weight: 700;
             color: #1f2937;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-
-            i {
-              color: #0ea5e9;
-              font-size: 16px;
-            }
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
           }
+        }
+      }
 
-          .section-subtitle {
+      // Groups Statistics Section
+      .groups-stats-section {
+        margin-top: 24px;
+        padding-top: 24px;
+        border-top: 2px solid #e5e7eb;
+
+        .section-divider {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin-bottom: 16px;
+          font-size: 14px;
+          font-weight: 700;
+          color: #1f2937;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+
+          i {
+            color: #0ea5e9;
+            font-size: 16px;
+          }
+        }
+
+        .section-subtitle {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin: 20px 0 12px 0;
+          font-size: 13px;
+          font-weight: 600;
+          color: #374151;
+
+          i {
+            color: #f59e0b;
+          }
+        }
+
+        .top-groups-section {
+          margin-top: 16px;
+
+          .top-groups-list {
             display: flex;
-            align-items: center;
+            flex-direction: column;
             gap: 8px;
-            margin: 20px 0 12px 0;
-            font-size: 13px;
-            font-weight: 600;
-            color: #374151;
 
-            i {
-              color: #f59e0b;
-            }
-          }
-
-          .top-groups-section {
-            margin-top: 16px;
-
-            .top-groups-list {
+            .top-group-item {
               display: flex;
-              flex-direction: column;
-              gap: 8px;
+              align-items: center;
+              gap: 12px;
+              padding: 12px;
+              background: white;
+              border: 1px solid #e5e7eb;
+              border-radius: 8px;
+              transition: all 0.2s;
 
-              .top-group-item {
+              &:hover {
+                border-color: #0ea5e9;
+                box-shadow: 0 2px 8px rgba(14, 165, 233, 0.1);
+                transform: translateX(2px);
+              }
+
+              .group-rank {
+                width: 28px;
+                height: 28px;
+                border-radius: 6px;
+                background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+                color: white;
                 display: flex;
                 align-items: center;
-                gap: 12px;
-                padding: 12px;
-                background: white;
-                border: 1px solid #e5e7eb;
+                justify-content: center;
+                font-size: 12px;
+                font-weight: 700;
+                flex-shrink: 0;
+              }
+
+              .group-icon-small {
+                width: 36px;
+                height: 36px;
                 border-radius: 8px;
-                transition: all 0.2s;
+                background: #f0f9ff;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-shrink: 0;
 
-                &:hover {
-                  border-color: #0ea5e9;
-                  box-shadow: 0 2px 8px rgba(14, 165, 233, 0.1);
-                  transform: translateX(2px);
+                i {
+                  font-size: 16px;
+                  color: #0ea5e9;
                 }
+              }
 
-                .group-rank {
-                  width: 28px;
-                  height: 28px;
-                  border-radius: 6px;
-                  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
-                  color: white;
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                  font-size: 12px;
-                  font-weight: 700;
-                  flex-shrink: 0;
-                }
+              .group-info-small {
+                flex: 1;
+                min-width: 0;
 
-                .group-icon-small {
-                  width: 36px;
-                  height: 36px;
-                  border-radius: 8px;
-                  background: #f0f9ff;
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                  flex-shrink: 0;
-
-                  i {
-                    font-size: 16px;
-                    color: #0ea5e9;
-                  }
-                }
-
-                .group-info-small {
-                  flex: 1;
-                  min-width: 0;
-
-                  .group-name-small {
-                    display: block;
-                    font-size: 13px;
-                    font-weight: 600;
-                    color: #1f2937;
-                    margin-bottom: 2px;
-                    white-space: nowrap;
-                    overflow: hidden;
-                    text-overflow: ellipsis;
-                  }
-
-                  .group-meta-small {
-                    display: block;
-                    font-size: 11px;
-                    color: #6b7280;
-                  }
-                }
-
-                .group-amount-small {
-                  font-size: 15px;
-                  font-weight: 700;
-                  color: #0c4a6e;
-                  font-family: $font-numbers;
+                .group-name-small {
+                  display: block;
+                  font-size: 13px;
+                  font-weight: 600;
+                  color: #1f2937;
+                  margin-bottom: 2px;
                   white-space: nowrap;
+                  overflow: hidden;
+                  text-overflow: ellipsis;
                 }
+
+                .group-meta-small {
+                  display: block;
+                  font-size: 11px;
+                  color: #6b7280;
+                }
+              }
+
+              .group-amount-small {
+                font-size: 15px;
+                font-weight: 700;
+                color: #0c4a6e;
+                font-family: $font-numbers;
+                white-space: nowrap;
               }
             }
           }
