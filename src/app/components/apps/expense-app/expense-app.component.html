@@ -728,13 +728,13 @@
                 </div>
 
                 <div class="expense-info-compact-flat">
-                  <span class="expense-content-compact-flat">{{ item.content }}</span>
-                  <div class="expense-meta-compact-flat">
+                  <div class="expense-row-1">
+                    <span class="expense-content-compact-flat">{{ item.content }}</span>
+                    <span class="expense-date-compact-flat"> {{ formatDate(item.date) }}</span>
+                  </div>
+                  <div class="expense-row-2">
                     <span class="expense-category-compact-flat" [style.--row-border]="getCategoryColor(item.category)" [style.color]="getCategoryColor(item.category)" [style.border-color]="getCategoryColor(item.category) + '40'" [style.background]="getCategoryBgColor(item.category)">
                       {{ item.category }}
-                    </span>
-                    <span class="expense-date-compact-flat">
-                      {{ formatDate(item.date) }}
                     </span>
                     <span class="expense-note-compact-flat" *ngIf="item.note">
                       <i class="fas fa-comment"></i>
