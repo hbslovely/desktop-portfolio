@@ -4,7 +4,6 @@ import { FormsModule } from '@angular/forms';
 import { NgxMaskDirective, provideNgxMask } from 'ngx-mask';
 import ExpenseService, { Expense, ExpenseGroup } from '../../../services/expense.service';
 import { ExpenseSettingsService, ExpenseTheme, ExpenseFontSize, ExpenseLayout } from '../../../services/expense-settings.service';
-import { ExpenseSettingsDialogComponent } from './expense-settings-dialog.component';
 import { Chart, ChartConfiguration, registerables } from 'chart.js';
 
 Chart.register(...registerables);
@@ -12,7 +11,7 @@ Chart.register(...registerables);
 @Component({
   selector: 'app-expense-app',
   standalone: true,
-  imports: [CommonModule, FormsModule, ExpenseSettingsDialogComponent, NgxMaskDirective],
+  imports: [CommonModule, FormsModule, NgxMaskDirective],
   providers: [provideNgxMask()],
   templateUrl: './expense-app.component.html',
   styleUrl: './expense-app.component.scss'
@@ -26,9 +25,6 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   @ViewChild('outlierChart') outlierChartRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('boxPlotChart') boxPlotChartRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('zScoreChart') zScoreChartRef!: ElementRef<HTMLCanvasElement>;
-  @ViewChild('predictionChart') predictionChartRef!: ElementRef<HTMLCanvasElement>;
-  @ViewChild('weeklyPredictionChart') weeklyPredictionChartRef!: ElementRef<HTMLCanvasElement>;
-  @ViewChild('monthlyPredictionChart') monthlyPredictionChartRef!: ElementRef<HTMLCanvasElement>;
 
   // Authentication
   isAuthenticated = signal<boolean>(false);
@@ -81,17 +77,6 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   showDayDetail = signal<boolean>(false);
   selectedDay = signal<string>('');
   selectedDayExpenses = signal<Expense[]>([]);
-
-  // Matrix detail dialog
-  showMatrixDetail = signal<boolean>(false);
-  selectedMatrixDate = signal<string>('');
-  selectedMatrixCategory = signal<string>('');
-  selectedMatrixExpenses = signal<Expense[]>([]);
-
-  // Computed total for selected matrix expenses
-  selectedMatrixTotal = computed(() => {
-    return this.selectedMatrixExpenses().reduce((sum, expense) => sum + expense.amount, 0);
-  });
 
   // Computed total for selected day expenses
   selectedDayTotal = computed(() => {
@@ -248,58 +233,6 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     return stats;
   });
 
-  // Computed: Expenses list with groups merged
-  expensesWithGroups = computed(() => {
-    const expenses = this.expenses();
-    const groups = this.expenseGroups();
-    const expensesByGroup = this.expensesByGroup();
-    const result: Array<Expense | ExpenseGroup> = [];
-    const processedGroupIds = new Set<string>();
-
-    // Sort expenses by date descending
-    const sortedExpenses = [...expenses].sort((a, b) => {
-      return new Date(b.date).getTime() - new Date(a.date).getTime();
-    });
-
-    // Group expenses by groupId
-    const expensesByGroupId: { [groupId: string]: Expense[] } = {};
-    const expensesWithoutGroup: Expense[] = [];
-
-    sortedExpenses.forEach(expense => {
-      if (expense.groupId) {
-        if (!expensesByGroupId[expense.groupId]) {
-          expensesByGroupId[expense.groupId] = [];
-        }
-        expensesByGroupId[expense.groupId].push(expense);
-      } else {
-        expensesWithoutGroup.push(expense);
-      }
-    });
-
-    // Add groups with their expenses
-    groups.forEach(group => {
-      if (expensesByGroupId[group.id] && expensesByGroupId[group.id].length > 0) {
-        // Use the first expense date as group date for sorting
-        const groupExpenses = expensesByGroupId[group.id];
-        const groupDate = groupExpenses[0].date;
-        result.push({ ...group, date: groupDate } as any);
-        processedGroupIds.add(group.id);
-      }
-    });
-
-    // Add expenses without groups
-    result.push(...expensesWithoutGroup);
-
-    // Sort by date descending
-    result.sort((a, b) => {
-      const dateA = 'date' in a ? new Date(a.date).getTime() : 0;
-      const dateB = 'date' in b ? new Date(b.date).getTime() : 0;
-      return dateB - dateA;
-    });
-
-    return result;
-  });
-
   newExpense: Expense = {
     date: '',
     content: '',
@@ -327,9 +260,6 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   showNotification = signal<boolean>(false);
   notificationMessage = signal<string>('');
   notificationType = signal<'success' | 'error'>('success');
-
-  // Settings dialog
-  showSettings = signal<boolean>(false);
 
   // Filter dialog (for v2)
   showFilterDialog = signal<boolean>(false);
@@ -398,7 +328,6 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   searchKeywords = signal<string[]>([]); // Multiple keywords search
   showSearchSuggestions = signal<boolean>(false);
   recentSearches = signal<string[]>([]);
-  savedFilterPresets = signal<Array<{ name: string; filters: any }>>([]);
 
   // Category filter dropdown state
   showCategoryDropdown = signal<boolean>(false);
@@ -422,15 +351,6 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   // Screens and Tabs
   currentScreen = signal<'transactions' | 'insights'>('transactions'); // Screen 1: Giao dịch, Screen 2: Insights
   activeTab = signal<'list' | 'summary' | 'budget' | 'insights' | 'groups'>('list');
-  // Legacy signals (kept for compatibility)
-  currentView = signal<'main' | 'insights'>('main');
-  insightsActiveTab = signal<'budget' | 'insights'>('budget');
-
-  // Month/Year picker for insights view
-  insightsYear = signal<number>(new Date().getFullYear());
-  insightsMonth = signal<number | null>(new Date().getMonth() + 1); // null = whole year
-  predictionTab = signal<'thisWeek' | 'nextWeek' | 'thisMonth'>('thisWeek');
-
   // Budget Settings
   showBudgetSettings = signal<boolean>(false);
   editMonthlyBudget = signal<number>(10000000); // Default 10M VND
@@ -1084,87 +1004,6 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     return Array.from(dateSet).sort();
   });
 
-  // Calculate total amount per date for matrix
-  dateTotals = computed(() => {
-    const totals: { [date: string]: number } = {};
-    this.filteredExpenses().forEach(expense => {
-      totals[expense.date] = (totals[expense.date] || 0) + expense.amount;
-    });
-    return totals;
-  });
-
-  // Calculate average expense per day (for matrix comparison)
-  dailyAverages = computed(() => {
-    const dates = this.uniqueDates();
-    const matrix = this.matrixData();
-    const averages: { [date: string]: number } = {};
-
-    dates.forEach(date => {
-      const dayData = matrix[date];
-      if (!dayData) {
-        averages[date] = 0;
-        return;
-      }
-
-      // Count categories with expenses and calculate average
-      const categoriesWithExpenses = Object.values(dayData).filter(val => val > 0);
-      if (categoriesWithExpenses.length === 0) {
-        averages[date] = 0;
-        return;
-      }
-
-      const total = categoriesWithExpenses.reduce((sum, val) => sum + val, 0);
-      averages[date] = total / categoriesWithExpenses.length;
-    });
-
-    return averages;
-  });
-
-  // Calculate average amount per category
-  categoryAverages = computed(() => {
-    const averages: { [key: string]: number } = {};
-    const categoryCounts: { [key: string]: number } = {};
-    const categoryTotals: { [key: string]: number } = {};
-
-    this.filteredExpenses().forEach(expense => {
-      if (expense.category) {
-        categoryCounts[expense.category] = (categoryCounts[expense.category] || 0) + 1;
-        categoryTotals[expense.category] = (categoryTotals[expense.category] || 0) + expense.amount;
-      }
-    });
-
-    Object.keys(categoryTotals).forEach(category => {
-      averages[category] = Math.round(categoryTotals[category] / categoryCounts[category]);
-    });
-
-    return averages;
-  });
-
-  // Matrix data: date x category
-  matrixData = computed(() => {
-    const dates = this.uniqueDates();
-    const cats = this.uniqueCategories();
-    const expenses = this.filteredExpenses();
-    const matrix: { [date: string]: { [category: string]: number } } = {};
-
-    // Initialize matrix
-    dates.forEach(date => {
-      matrix[date] = {};
-      cats.forEach(category => {
-        matrix[date][category] = 0;
-      });
-    });
-
-    // Fill matrix with expense data
-    expenses.forEach(expense => {
-      if (expense.category && matrix[expense.date]) {
-        matrix[expense.date][expense.category] = (matrix[expense.date][expense.category] || 0) + expense.amount;
-      }
-    });
-
-    return matrix;
-  });
-
   dailyExpenses = computed(() => {
     const expenses = this.filteredExpenses();
     const dailyMap: { [key: string]: number } = {};
@@ -1363,47 +1202,6 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         average: data.count > 0 ? Math.round(data.total / data.count) : 0
       };
     }).filter(item => item.count > 0);
-  });
-
-  categoryTrends = computed(() => {
-    const expenses = this.filteredExpenses();
-    if (expenses.length === 0) return [];
-
-    const categoryMap: { [key: string]: { current: number; previous: number } } = {};
-    const sorted = [...expenses].sort((a, b) =>
-      new Date(a.date).getTime() - new Date(b.date).getTime()
-    );
-
-    const mid = Math.floor(sorted.length / 2);
-    const current = sorted.slice(mid);
-    const previous = sorted.slice(0, mid);
-
-    current.forEach(e => {
-      if (!categoryMap[e.category]) {
-        categoryMap[e.category] = { current: 0, previous: 0 };
-      }
-      categoryMap[e.category].current += e.amount;
-    });
-
-    previous.forEach(e => {
-      if (!categoryMap[e.category]) {
-        categoryMap[e.category] = { current: 0, previous: 0 };
-      }
-      categoryMap[e.category].previous += e.amount;
-    });
-
-    return Object.keys(categoryMap).map(category => {
-      const data = categoryMap[category];
-      const change = data.previous > 0
-        ? ((data.current - data.previous) / data.previous) * 100
-        : 0;
-      return {
-        category,
-        current: data.current,
-        previous: data.previous,
-        change: Math.round(change)
-      };
-    }).sort((a, b) => b.current - a.current);
   });
 
   maxExpense = computed(() => {
@@ -1821,168 +1619,6 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     return expenses.length / dates.length;
   });
 
-  // ============ INSIGHTS COMPUTED VALUES (based on reportPeriodExpenses) ============
-
-  // Top spending category for insights (uses reportPeriodExpenses)
-  insightsTopSpendingCategory = computed(() => {
-    const expenses = this.reportPeriodExpenses();
-    if (expenses.length === 0) return null;
-
-    const totals: { [key: string]: number } = {};
-    expenses.forEach(expense => {
-      if (expense.category) {
-        totals[expense.category] = (totals[expense.category] || 0) + expense.amount;
-      }
-    });
-
-    const byCategory = Object.keys(totals).map(category => ({
-      category,
-      total: totals[category]
-    })).sort((a, b) => b.total - a.total);
-
-    if (byCategory.length === 0) return null;
-    const total = expenses.reduce((sum, e) => sum + e.amount, 0);
-    const top = byCategory[0];
-    return {
-      ...top,
-      percentage: total > 0 ? Math.round((top.total / total) * 100) : 0
-    };
-  });
-
-  // Highest spending day of week for insights (uses reportPeriodExpenses)
-  insightsHighestSpendingDay = computed(() => {
-    const expenses = this.reportPeriodExpenses();
-    if (expenses.length === 0) return null;
-
-    const dayNames = ['Chủ Nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
-    const dayTotals: { [key: number]: { total: number; count: number } } = {};
-
-    for (let i = 0; i < 7; i++) {
-      dayTotals[i] = { total: 0, count: 0 };
-    }
-
-    expenses.forEach(expense => {
-      const day = new Date(expense.date).getDay();
-      dayTotals[day].total += expense.amount;
-      dayTotals[day].count++;
-    });
-
-    let maxDay = 0;
-    let maxAverage = 0;
-
-    for (let i = 0; i < 7; i++) {
-      const avg = dayTotals[i].count > 0 ? dayTotals[i].total / dayTotals[i].count : 0;
-      if (avg > maxAverage) {
-        maxAverage = avg;
-        maxDay = i;
-      }
-    }
-
-    return {
-      day: maxDay,
-      dayName: dayNames[maxDay],
-      average: Math.round(maxAverage)
-    };
-  });
-
-  // Spending trend for insights (compares selected period vs previous period)
-  insightsSpendingTrend = computed(() => {
-    const expenses = this.expenses();
-    const year = this.reportYear();
-    const month = this.reportMonth();
-
-    if (month === null) {
-      // Year view: compare this year vs last year
-      const thisYear = expenses.filter(e => {
-        const d = new Date(e.date);
-        return d.getFullYear() === year;
-      });
-      const lastYear = expenses.filter(e => {
-        const d = new Date(e.date);
-        return d.getFullYear() === year - 1;
-      });
-
-      const thisYearTotal = thisYear.reduce((sum, e) => sum + e.amount, 0);
-      const lastYearTotal = lastYear.reduce((sum, e) => sum + e.amount, 0);
-
-      if (lastYearTotal === 0) {
-        return { trend: 'Chưa đủ dữ liệu', percentage: 0 };
-      }
-
-      const percentage = Math.round(((thisYearTotal - lastYearTotal) / lastYearTotal) * 100);
-      if (percentage > 10) return { trend: 'Tăng', percentage };
-      if (percentage < -10) return { trend: 'Giảm', percentage };
-      return { trend: 'Ổn định', percentage };
-    } else {
-      // Month view: compare this month vs last month
-      const thisMonth = expenses.filter(e => {
-        const d = new Date(e.date);
-        return d.getFullYear() === year && d.getMonth() + 1 === month;
-      });
-
-      let lastMonthYear = year;
-      let lastMonthNum = month - 1;
-      if (lastMonthNum === 0) {
-        lastMonthNum = 12;
-        lastMonthYear = year - 1;
-      }
-
-      const lastMonth = expenses.filter(e => {
-        const d = new Date(e.date);
-        return d.getFullYear() === lastMonthYear && d.getMonth() + 1 === lastMonthNum;
-      });
-
-      const thisMonthTotal = thisMonth.reduce((sum, e) => sum + e.amount, 0);
-      const lastMonthTotal = lastMonth.reduce((sum, e) => sum + e.amount, 0);
-
-      if (lastMonthTotal === 0) {
-        return { trend: 'Chưa đủ dữ liệu', percentage: 0 };
-      }
-
-      const percentage = Math.round(((thisMonthTotal - lastMonthTotal) / lastMonthTotal) * 100);
-      if (percentage > 10) return { trend: 'Tăng', percentage };
-      if (percentage < -10) return { trend: 'Giảm', percentage };
-      return { trend: 'Ổn định', percentage };
-    }
-  });
-
-  // Average transactions per day for insights (uses reportPeriodExpenses)
-  insightsAverageTransactionsPerDay = computed(() => {
-    const expenses = this.reportPeriodExpenses();
-    if (expenses.length === 0) return 0;
-
-    const dateSet = new Set<string>();
-    expenses.forEach(expense => {
-      dateSet.add(expense.date);
-    });
-    const dates = Array.from(dateSet);
-
-    if (dates.length === 0) return 0;
-    return expenses.length / dates.length;
-  });
-
-  // Average daily expense for insights (uses reportPeriodExpenses)
-  insightsAverageDailyExpense = computed(() => {
-    const expenses = this.reportPeriodExpenses();
-    if (expenses.length === 0) return 0;
-
-    const dailyMap: { [key: string]: number } = {};
-    expenses.forEach(expense => {
-      const date = expense.date;
-      if (dailyMap[date]) {
-        dailyMap[date] += expense.amount;
-      } else {
-        dailyMap[date] = expense.amount;
-      }
-    });
-
-    const dailyTotals = Object.values(dailyMap);
-    if (dailyTotals.length === 0) return 0;
-
-    const total = dailyTotals.reduce((sum, item) => sum + item, 0);
-    return Math.round(total / dailyTotals.length);
-  });
-
   // Total by category for insights (uses reportPeriodExpenses)
   insightsTotalByCategory = computed(() => {
     const expenses = this.reportPeriodExpenses();
@@ -1998,11 +1634,6 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       category,
       total: totals[category]
     })).sort((a, b) => b.total - a.total);
-  });
-
-  // Total amount for insights (uses reportPeriodExpenses)
-  insightsTotalAmount = computed(() => {
-    return this.reportPeriodExpenses().reduce((sum, expense) => sum + expense.amount, 0);
   });
 
   // Weekday spending for insights (uses reportPeriodExpenses)
@@ -2388,31 +2019,6 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     };
   });
 
-  // Outlier analysis by date
-  outlierAnalysisByDate = computed(() => {
-    const analysis = this.statisticalAnalysis();
-    if (analysis.outliers.length === 0) return [];
-
-    const dateMap: { [date: string]: Array<Expense & { zScore: number; isOutlier: boolean; outlierType: 'low' | 'high' | 'normal' }> } = {};
-
-    analysis.outliers.forEach(outlier => {
-      if (!dateMap[outlier.date]) {
-        dateMap[outlier.date] = [];
-      }
-      dateMap[outlier.date].push(outlier);
-    });
-
-    return Object.keys(dateMap)
-      .sort()
-      .map(date => ({
-        date,
-        outliers: dateMap[date],
-        total: dateMap[date].reduce((sum, o) => sum + o.amount, 0),
-        count: dateMap[date].length,
-        avgZScore: dateMap[date].reduce((sum, o) => sum + Math.abs(o.zScore), 0) / dateMap[date].length
-      }));
-  });
-
   // Future Prediction using Supervised Learning Algorithms
   futurePredictions = computed(() => {
     const allExpenses = this.expenses(); // Use all expenses for training
@@ -2478,7 +2084,6 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     // Predict tomorrow
     const tomorrowDate = new Date(today);
     tomorrowDate.setDate(today.getDate() + 1);
-    const tomorrowStr = this.formatDateLocal(tomorrowDate);
     const dayOfWeek = tomorrowDate.getDay();
 
     const tomorrowLinear = linearPrediction.predict(dates.length);
@@ -3065,15 +2670,6 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
               this.initTodayComparisonChart();
               this.initTodayTrendChart();
             }, 150);
-          }
-          // Init prediction charts
-          const predictions = this.futurePredictions();
-          if (predictions.method !== 'insufficient_data') {
-            setTimeout(() => {
-              this.initPredictionChart();
-              this.initWeeklyPredictionChart();
-              this.initMonthlyPredictionChart();
-            }, 200);
           }
         }, 100);
       }
@@ -3887,15 +3483,6 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
             this.initTodayTrendChart();
           }, 150);
         }
-        // Init prediction charts
-        const predictions = this.futurePredictions();
-        if (predictions.method !== 'insufficient_data') {
-          setTimeout(() => {
-            this.initPredictionChart();
-            this.initWeeklyPredictionChart();
-            this.initMonthlyPredictionChart();
-          }, 200);
-        }
       }, 100);
     } else if (tab === 'budget') {
       // Initialize budget chart when switching to budget tab
@@ -3922,9 +3509,6 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     this.initOutlierChart();
     this.initBoxPlotChart();
     this.initZScoreChart();
-    this.initPredictionChart();
-    this.initWeeklyPredictionChart();
-    this.initMonthlyPredictionChart();
   }
 
   /**
@@ -4379,7 +3963,6 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     );
 
     const labels = sortedExpenses.map(e => this.formatDateShort(e.date));
-    const amounts = sortedExpenses.map(e => e.amount);
     const isOutlier = sortedExpenses.map(e =>
       analysis.outliers.some(o => o.date === e.date && o.content === e.content && o.amount === e.amount)
     );
@@ -4536,17 +4119,6 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const amounts = expenses.map(e => e.amount).sort((a, b) => a - b);
     const min = amounts[0];
     const max = amounts[amounts.length - 1];
-
-    // Create box plot data
-    const boxPlotData = {
-      min: min,
-      q1: analysis.q1,
-      median: analysis.q2,
-      q3: analysis.q3,
-      max: max,
-      mean: analysis.mean,
-      outliers: analysis.outliers.map(o => o.amount)
-    };
 
     const config: ChartConfiguration = {
       type: 'bar',
@@ -4725,312 +4297,6 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     };
 
     this.zScoreChart = new Chart(this.zScoreChartRef.nativeElement, config);
-  }
-
-  /**
-   * Initialize prediction chart (historical + future)
-   */
-  initPredictionChart(): void {
-    if (!this.predictionChartRef?.nativeElement) return;
-
-    const predictions = this.futurePredictions();
-    if (predictions.method === 'insufficient_data') return;
-
-    // Get historical data (last 30 days)
-    const today = new Date();
-    const thirtyDaysAgo = new Date(today);
-    thirtyDaysAgo.setDate(today.getDate() - 30);
-    const thirtyDaysAgoStr = this.formatDateLocal(thirtyDaysAgo);
-
-    const allExpenses = this.expenses();
-    const historicalExpenses = allExpenses.filter(e => e.date >= thirtyDaysAgoStr && e.date <= this.formatDateLocal(today));
-
-    const dailyData: { [date: string]: number } = {};
-    historicalExpenses.forEach(expense => {
-      dailyData[expense.date] = (dailyData[expense.date] || 0) + expense.amount;
-    });
-
-    const historicalDates = Object.keys(dailyData).sort();
-    const historicalValues = historicalDates.map(date => dailyData[date]);
-
-    // Future predictions (next 14 days)
-    const futureDates = predictions.predictions.map(p => this.formatDateShort(p.date));
-    const futureValues = predictions.predictions.map(p => p.prediction);
-    const confidenceValues = predictions.predictions.map(p => p.confidence);
-
-    // Destroy existing chart
-    if (this.predictionChart) {
-      this.predictionChart.destroy();
-    }
-
-    const config: ChartConfiguration = {
-      type: 'line',
-      data: {
-        labels: [...historicalDates.map(d => this.formatDateShort(d)), ...futureDates],
-        datasets: [
-          {
-            label: 'Chi tiêu thực tế',
-            data: [...historicalValues.map(v => v !== undefined && v !== null ? v : null), ...Array(futureDates.length).fill(null)],
-            borderColor: '#2196F3',
-            backgroundColor: 'rgba(33, 150, 243, 0.1)',
-            borderWidth: 2,
-            fill: true,
-            tension: 0.4,
-            pointRadius: 3
-          },
-          {
-            label: 'Dự đoán',
-            data: [...Array(historicalDates.length).fill(null), ...futureValues.map(v => v !== undefined && v !== null ? v : null)],
-            borderColor: '#ff9800',
-            backgroundColor: 'rgba(255, 152, 0, 0.1)',
-            borderWidth: 2,
-            borderDash: [5, 5],
-            fill: true,
-            tension: 0.4,
-            pointRadius: 4,
-            pointBackgroundColor: futureValues.map((_, i) => {
-              const conf = confidenceValues[i];
-              if (conf >= 80) return '#4caf50';
-              if (conf >= 60) return '#ff9800';
-              return '#f44336';
-            })
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            display: true,
-            position: 'top'
-          },
-          tooltip: {
-            callbacks: {
-              label: (context) => {
-                const value = context.parsed.y;
-                const numValue = value !== null && value !== undefined ? value : 0;
-                if (context.datasetIndex === 1 && context.dataIndex >= historicalDates.length) {
-                  const conf = confidenceValues[context.dataIndex - historicalDates.length];
-                  return `${context.dataset.label}: ${this.formatAmount(numValue)} (Độ tin cậy: ${conf}%)`;
-                }
-                return `${context.dataset.label}: ${this.formatAmount(numValue)}`;
-              }
-            }
-          }
-        },
-        scales: {
-          y: {
-            beginAtZero: true,
-            ticks: {
-              callback: (value) => {
-                if (value === null || value === undefined) return '';
-                const numValue = typeof value === 'number' ? value : 0;
-                return this.formatAmount(numValue);
-              }
-            }
-          },
-          x: {
-            ticks: {
-              maxRotation: 45,
-              minRotation: 45
-            }
-          }
-        }
-      }
-    };
-
-    this.predictionChart = new Chart(this.predictionChartRef.nativeElement, config);
-  }
-
-  /**
-   * Initialize weekly prediction chart
-   */
-  initWeeklyPredictionChart(): void {
-    if (!this.weeklyPredictionChartRef?.nativeElement) return;
-
-    const predictions = this.futurePredictions();
-    if (predictions.method === 'insufficient_data') return;
-
-    // Destroy existing chart
-    if (this.weeklyPredictionChart) {
-      this.weeklyPredictionChart.destroy();
-    }
-
-    const thisWeekLabels = predictions.thisWeek.map(p => this.formatDateShort(p.date));
-    const thisWeekValues = predictions.thisWeek.map(p => p.prediction);
-    const thisWeekConfidence = predictions.thisWeek.map(p => p.confidence);
-
-    const nextWeekLabels = predictions.nextWeek.map(p => this.formatDateShort(p.date));
-    const nextWeekValues = predictions.nextWeek.map(p => p.prediction);
-    const nextWeekConfidence = predictions.nextWeek.map(p => p.confidence);
-
-    const config: ChartConfiguration = {
-      type: 'bar',
-      data: {
-        labels: [...thisWeekLabels, ...nextWeekLabels],
-        datasets: [
-          {
-            label: 'Tuần này',
-            data: [...thisWeekValues.map(v => v !== undefined && v !== null ? v : null), ...Array(nextWeekLabels.length).fill(null)],
-            backgroundColor: 'rgba(33, 150, 243, 0.6)',
-            borderColor: '#2196F3',
-            borderWidth: 2,
-            borderRadius: 4
-          },
-          {
-            label: 'Tuần sau',
-            data: [...Array(thisWeekLabels.length).fill(null), ...nextWeekValues.map(v => v !== undefined && v !== null ? v : null)],
-            backgroundColor: 'rgba(255, 152, 0, 0.6)',
-            borderColor: '#ff9800',
-            borderWidth: 2,
-            borderRadius: 4
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            display: true,
-            position: 'top'
-          },
-          tooltip: {
-            callbacks: {
-              label: (context) => {
-                const value = context.parsed.y;
-                const index = context.dataIndex;
-                let conf = 0;
-                if (context.datasetIndex === 0 && index < thisWeekConfidence.length) {
-                  conf = thisWeekConfidence[index];
-                } else if (context.datasetIndex === 1 && index >= thisWeekLabels.length) {
-                  conf = nextWeekConfidence[index - thisWeekLabels.length];
-                }
-                const numValue = value !== null && value !== undefined ? value : 0;
-                return `${context.dataset.label}: ${this.formatAmount(numValue)} (TC: ${conf}%)`;
-              }
-            }
-          }
-        },
-        scales: {
-          y: {
-            beginAtZero: true,
-            ticks: {
-              callback: (value) => {
-                if (value === null || value === undefined) return '';
-                const numValue = typeof value === 'number' ? value : 0;
-                return this.formatAmount(numValue);
-              }
-            }
-          },
-          x: {
-            ticks: {
-              maxRotation: 45,
-              minRotation: 45
-            }
-          }
-        }
-      }
-    };
-
-    this.weeklyPredictionChart = new Chart(this.weeklyPredictionChartRef.nativeElement, config);
-  }
-
-  /**
-   * Initialize monthly prediction chart
-   */
-  initMonthlyPredictionChart(): void {
-    if (!this.monthlyPredictionChartRef?.nativeElement) return;
-
-    const predictions = this.futurePredictions();
-    if (predictions.method === 'insufficient_data') return;
-
-    // Destroy existing chart
-    if (this.monthlyPredictionChart) {
-      this.monthlyPredictionChart.destroy();
-    }
-
-    // Group by week for better visualization
-    const weeklyData: { week: string; total: number; days: number }[] = [];
-    let currentWeek: { week: string; total: number; days: number } | null = null;
-
-    predictions.thisMonth.forEach((pred, index) => {
-      const date = new Date(pred.date);
-      const weekStart = new Date(date);
-      weekStart.setDate(date.getDate() - date.getDay());
-      const weekKey = `${this.formatDateShort(this.formatDateLocal(weekStart))} - ${this.formatDateShort(pred.date)}`;
-
-      if (!currentWeek || currentWeek.week !== weekKey) {
-        if (currentWeek) weeklyData.push(currentWeek);
-        currentWeek = { week: weekKey, total: 0, days: 0 };
-      }
-      currentWeek.total += pred.prediction;
-      currentWeek.days += 1;
-    });
-    if (currentWeek) weeklyData.push(currentWeek);
-
-    const weekLabels = weeklyData.map(w => w.week);
-    const weekTotals = weeklyData.map(w => w.total);
-
-    const config: ChartConfiguration = {
-      type: 'bar',
-      data: {
-        labels: weekLabels,
-        datasets: [{
-          label: 'Dự đoán chi tiêu theo tuần',
-            data: weekTotals.map(v => v !== undefined && v !== null ? v : null),
-          backgroundColor: weekTotals.map((_, i) => {
-            const avg = weekTotals.reduce((a, b) => a + b, 0) / weekTotals.length;
-            return weekTotals[i] > avg ? 'rgba(244, 67, 54, 0.6)' : 'rgba(76, 175, 80, 0.6)';
-          }),
-          borderColor: weekTotals.map((_, i) => {
-            const avg = weekTotals.reduce((a, b) => a + b, 0) / weekTotals.length;
-            return weekTotals[i] > avg ? '#f44336' : '#4caf50';
-          }),
-          borderWidth: 2,
-          borderRadius: 4
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            display: false
-          },
-          tooltip: {
-            callbacks: {
-              label: (context) => {
-                const y = context.parsed.y;
-                const numValue = y !== null && y !== undefined ? y : 0;
-                return `Dự đoán: ${this.formatAmount(numValue)}`;
-              }
-            }
-          }
-        },
-        scales: {
-          y: {
-            beginAtZero: true,
-            ticks: {
-              callback: (value) => {
-                if (value === null || value === undefined) return '';
-                const numValue = typeof value === 'number' ? value : 0;
-                return this.formatAmount(numValue);
-              }
-            }
-          },
-          x: {
-            ticks: {
-              maxRotation: 45,
-              minRotation: 45
-            }
-          }
-        }
-      }
-    };
-
-    this.monthlyPredictionChart = new Chart(this.monthlyPredictionChartRef.nativeElement, config);
   }
 
   /**
@@ -5257,11 +4523,6 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     });
   }
 
-  // Check if a row has been saved
-  isRowSaved(index: number): boolean {
-    return this.savedRowIndices().has(index);
-  }
-
   /**
    * Add new row to multiple expenses table
    */
@@ -5480,32 +4741,6 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   private updateContentWidth(): void {
     // Content width will be calculated dynamically via CSS flex: 1
     // No need to set explicit width for content column
-  }
-
-  /**
-   * Start resizing a column
-   */
-  startResize(event: MouseEvent, column: 'date' | 'content' | 'actions'): void {
-    event.preventDefault();
-    event.stopPropagation();
-
-    this.isResizing = true;
-    this.resizingColumn = column;
-    this.startX = event.clientX;
-
-    const widths = this.columnWidths();
-    if (column === 'date') {
-      this.startWidth = widths.date;
-    } else if (column === 'content') {
-      this.startWidth = widths.content;
-    } else if (column === 'actions') {
-      this.startWidth = widths.actions;
-    }
-
-    document.addEventListener('mousemove', this.handleResize);
-    document.addEventListener('mouseup', this.stopResize);
-    document.body.style.cursor = 'col-resize';
-    document.body.style.userSelect = 'none';
   }
 
   /**
@@ -5809,17 +5044,6 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   /**
-   * Get selected categories display text
-   */
-  getSelectedCategoriesText(): string {
-    const selected = this.filterCategory();
-    if (selected.length === 0) return 'Tất cả';
-    if (selected.length === 1) return selected[0];
-    if (selected.length <= 3) return selected.join(', ');
-    return `${selected.length} phân loại`;
-  }
-
-  /**
    * Select all filtered categories
    */
   selectAllFilteredCategories(): void {
@@ -5865,51 +5089,10 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   /**
-   * Get current sort option label
-   */
-  getSortOptionLabel(): string {
-    const option = this.sortOptions.find(o => o.value === this.sortOption());
-    return option?.label || 'Mới nhất';
-  }
-
-  /**
-   * Legacy: Sort expenses by field (kept for backward compatibility)
-   */
-  sortBy(field: 'date' | 'amount' | 'category' | 'content'): void {
-    if (this.sortField() === field) {
-      // Toggle direction if same field
-      this.sortDirection.set(this.sortDirection() === 'asc' ? 'desc' : 'asc');
-    } else {
-      // Set new field with default direction
-      this.sortField.set(field);
-      this.sortDirection.set(field === 'date' ? 'desc' : 'asc');
-    }
-  }
-
-  /**
-   * Legacy: Get sort icon for field (kept for backward compatibility)
-   */
-  getSortIcon(field: 'date' | 'amount' | 'category' | 'content'): string {
-    if (this.sortField() !== field) {
-      return 'pi-sort';
-    }
-    return this.sortDirection() === 'asc' ? 'pi-sort-up' : 'pi-sort-down';
-  }
-
-  /**
    * Check if expense is above average
    */
   isAboveAverage(amount: number): boolean {
     return amount > this.averageExpense();
-  }
-
-  /**
-   * Get percentage above average
-   */
-  getPercentageAboveAverage(amount: number): number {
-    const avg = this.averageExpense();
-    if (avg === 0) return 0;
-    return Math.round(((amount - avg) / avg) * 100);
   }
 
   /**
@@ -6243,68 +5426,6 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   /**
-   * Show matrix detail dialog
-   */
-  showMatrixDetailDialog(date: string, category: string): void {
-    const expenses = this.filteredExpenses().filter(
-      expense => expense.date === date && expense.category === category
-    );
-    this.selectedMatrixDate.set(date);
-    this.selectedMatrixCategory.set(category);
-    this.selectedMatrixExpenses.set(expenses);
-    this.showMatrixDetail.set(true);
-  }
-
-  /**
-   * Hide matrix detail dialog
-   */
-  hideMatrixDetailDialog(): void {
-    this.showMatrixDetail.set(false);
-    this.selectedMatrixDate.set('');
-    this.selectedMatrixCategory.set('');
-    this.selectedMatrixExpenses.set([]);
-  }
-
-  /**
-   * Get matrix cell class based on value compared to daily average
-   */
-  getMatrixCellClass(value: number, date: string): string {
-    if (value === 0) {
-      return 'matrix-cell-empty';
-    }
-
-    const dailyAverage = this.dailyAverages()[date] || 0;
-    if (dailyAverage === 0) {
-      return 'matrix-cell-normal-light';
-    }
-
-    const percentage = (value / dailyAverage) * 100;
-
-    // Xanh lá đậm: ít chi tiêu nhất (< 50% trung bình)
-    if (percentage < 50) {
-      return 'matrix-cell-very-low';
-    }
-
-    // Xanh lá nhạt: chi tiêu hơi nhiều nhưng < trung bình (50-100%)
-    if (percentage < 100) {
-      return 'matrix-cell-low';
-    }
-
-    // Vàng: chi tiêu nhiều hơn trung bình 5% (100-105%)
-    if (percentage <= 105) {
-      return 'matrix-cell-medium';
-    }
-
-    // Đỏ nhạt: chi tiêu nhiều hơn trung bình 15-20% (115-120%)
-    if (percentage <= 120) {
-      return 'matrix-cell-high';
-    }
-
-    // Đỏ đậm: chi tiêu nhiều >25% (>125%)
-    return 'matrix-cell-very-high';
-  }
-
-  /**
    * Initialize category detail chart
    */
   initCategoryDetailChart(): void {
@@ -6371,31 +5492,6 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     if (chartElement) {
       this.categoryDetailChart = new Chart(chartElement, config);
     }
-  }
-
-  /**
-   * Show settings dialog
-   */
-  showSettingsDialog(): void {
-    this.showSettings.set(true);
-  }
-
-  /**
-   * Hide settings dialog
-   */
-  hideSettingsDialog(): void {
-    this.showSettings.set(false);
-  }
-
-  /**
-   * Handle settings save
-   */
-  onSettingsSave(settings: { layout: ExpenseLayout; fontSize: ExpenseFontSize }): void {
-    this.currentLayout.set(settings.layout);
-    this.currentTheme.set('compact'); // Always use compact theme (like v1)
-    this.currentFontSize.set(settings.fontSize);
-    // Apply settings to component class
-    this.applySettings();
   }
 
   /**
@@ -6764,28 +5860,6 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   /**
-   * Update total budget (in topDown mode)
-   * Note: Does NOT auto-recalculate category budgets - user must click "Chia đều" to redistribute
-   */
-  onTotalBudgetChange(amount: number): void {
-    this.editMonthlyBudget.set(amount);
-    // Don't auto-apply weights - let user explicitly click "Chia đều" button
-  }
-
-  /**
-   * Update category budget (in bottomUp mode) - recalculates total
-   */
-  onCategoryBudgetChangeBottomUp(category: string, amount: number): void {
-    const currentBudgets = { ...this.editCategoryBudgets() };
-    currentBudgets[category] = amount;
-    this.editCategoryBudgets.set(currentBudgets);
-
-    // Recalculate total from category budgets
-    const newTotal = Object.values(currentBudgets).reduce((sum, val) => sum + val, 0);
-    this.editMonthlyBudget.set(newTotal);
-  }
-
-  /**
    * Set monthly budget preset
    * Note: Does NOT auto-apply weights - user must click "Chia đều" to redistribute
    */
@@ -6870,24 +5944,6 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   /**
-   * Initialize category weights with default values
-   */
-  initDefaultWeights(): void {
-    const categories = this.categories();
-    const weights = this.categoryWeights();
-
-    // Only initialize if weights are empty
-    if (Object.keys(weights).length === 0 && categories.length > 0) {
-      const equalWeight = Math.floor(100 / categories.length);
-      const newWeights: { [category: string]: number } = {};
-      categories.forEach(cat => {
-        newWeights[cat] = equalWeight;
-      });
-      this.categoryWeights.set(newWeights);
-    }
-  }
-
-  /**
    * Format compact amount (e.g., 1.5M, 500K)
    */
   formatCompactAmount(amount: number): string {
@@ -6921,7 +5977,6 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const category = this.selectedBudgetCategory();
     if (!category) return [];
 
-    const now = new Date();
     const currentYear = this.reportYear();
     const currentMonth = (this.reportMonth() ?? 1) - 1;
 
@@ -7020,19 +6075,6 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const labels = dailyData.map(d => d.day.toString());
     const actualData = dailyData.map(d => d.amount);
     const budgetLineData = dailyData.map(() => dailyBudget);
-
-    // Cumulative data for area chart
-    let cumulative = 0;
-    const cumulativeData = dailyData.map((d, index) => {
-      if (index + 1 <= today) {
-        cumulative += d.amount;
-        return cumulative;
-      }
-      return null;
-    });
-
-    // Budget cumulative line
-    const budgetCumulativeData = dailyData.map((_, index) => dailyBudget * (index + 1));
 
     const ctx = this.budgetCategoryMonthlyChartRef.nativeElement.getContext('2d')!;
     const gradient = ctx.createLinearGradient(0, 0, 0, 200);
@@ -7680,15 +6722,6 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     // Create labels for days 1-31
     const labels = Array.from({ length: 31 }, (_, i) => (i + 1).toString());
-
-    // Current month data (only up to today)
-    const currentMonthData = currentData.dailyAmounts.map((val, idx) => {
-      if (idx + 1 <= today) return val;
-      return null; // Future days show as null
-    });
-
-    // Previous month data (all days)
-    const previousMonthData = previousData.dailyAmounts;
 
     // Calculate cumulative data
     let currentCumulative = 0;
