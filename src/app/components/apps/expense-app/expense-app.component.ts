@@ -139,7 +139,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const expenses = this.expenses();
     const groups = this.expenseGroups();
     const grouped: { [groupId: string]: Expense[] } = {};
-    
+
     expenses.forEach(expense => {
       if (expense.groupId) {
         if (!grouped[expense.groupId]) {
@@ -167,7 +167,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   groupStatistics = computed(() => {
     const groups = this.expenseGroups();
     const expensesByGroup = this.expensesByGroup();
-    
+
     const stats: {
       totalAmounts: {[groupId: string]: number};
       expensesCounts: {[groupId: string]: number};
@@ -187,17 +187,17 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       dateRanges: {},
       topCategories: {}
     };
-    
+
     groups.forEach(group => {
       const groupExpenses = expensesByGroup[group.id] || [];
       const count = groupExpenses.length;
-      
+
       // Count
       stats.expensesCounts[group.id] = count;
-      
+
       // First expense date
       stats.firstExpenseDates[group.id] = count > 0 ? groupExpenses[0].date : '';
-      
+
       if (count === 0) {
         stats.totalAmounts[group.id] = 0;
         stats.averageExpenses[group.id] = 0;
@@ -207,27 +207,27 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         stats.topCategories[group.id] = [];
         return;
       }
-      
+
       // Total amount
       const total = groupExpenses.reduce((sum, e) => sum + e.amount, 0);
       stats.totalAmounts[group.id] = group.totalAmount && group.totalAmount > 0 ? group.totalAmount : total;
-      
+
       // Average
       stats.averageExpenses[group.id] = stats.totalAmounts[group.id] / count;
-      
+
       // Max and Min
       stats.maxExpenses[group.id] = groupExpenses.reduce((max, e) => e.amount > max.amount ? e : max, groupExpenses[0]);
       stats.minExpenses[group.id] = groupExpenses.reduce((min, e) => e.amount < min.amount ? e : min, groupExpenses[0]);
-      
+
       // Date range
-      const sortedExpenses = [...groupExpenses].sort((a, b) => 
+      const sortedExpenses = [...groupExpenses].sort((a, b) =>
         new Date(a.date).getTime() - new Date(b.date).getTime()
       );
       stats.dateRanges[group.id] = {
         from: sortedExpenses[0].date,
         to: sortedExpenses[sortedExpenses.length - 1].date
       };
-      
+
       // Top categories (limit 3 for display)
       const categoryMap: {[key: string]: {total: number, count: number}} = {};
       groupExpenses.forEach(expense => {
@@ -238,13 +238,13 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         categoryMap[expense.category].total += expense.amount;
         categoryMap[expense.category].count += 1;
       });
-      
+
       stats.topCategories[group.id] = Object.entries(categoryMap)
         .map(([category, data]) => ({category, ...data}))
         .sort((a, b) => b.total - a.total)
         .slice(0, 3);
     });
-    
+
     return stats;
   });
 
@@ -830,7 +830,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     // Find groups that have at least one expense in filtered list
     groups.forEach(group => {
       const groupExpenses = expensesByGroup[group.id] || [];
-      const filteredGroupExpenses = groupExpenses.filter(exp => 
+      const filteredGroupExpenses = groupExpenses.filter(exp =>
         filtered.some(fExp => fExp.date === exp.date && fExp.content === exp.content && fExp.amount === exp.amount)
       );
 
@@ -838,7 +838,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         // For groups, use the most relevant expense date based on sort option
         let groupDate = filteredGroupExpenses[0].date;
         let groupRowIndex = filteredGroupExpenses[0].rowIndex || 0;
-        
+
         if (sortOption === 'newest') {
           // Use the newest expense in the group
           const sorted = [...filteredGroupExpenses].sort((a, b) => {
@@ -878,7 +878,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
           groupDate = sorted[0].date;
           groupRowIndex = sorted[0].rowIndex || 0;
         }
-        
+
         result.push({ ...group, date: groupDate, rowIndex: groupRowIndex } as any);
         processedGroupIds.add(group.id);
         // Mark all expenses in this group as processed
@@ -3376,7 +3376,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   showGroupDetailDialog(group: ExpenseGroup): void {
     const expenses = this.expenses();
     let groupExpenses = expenses.filter(exp => exp.groupId === group.id);
-    
+
     // Sort by date descending, then by rowIndex descending (newer on top)
     groupExpenses.sort((a, b) => {
       const dateA = this.parseDate(a.date);
@@ -3389,7 +3389,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       }
       return dateDiff;
     });
-    
+
     this.selectedGroup.set(group);
     this.selectedGroupExpenses.set(groupExpenses);
     this.groupDetailTab.set('list');
@@ -3460,8 +3460,8 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   showEditGroupForm(group: ExpenseGroup): void {
     // Calculate total amount from actual expenses in the group
     const calculatedTotal = this.getGroupTotalAmount(group);
-    
-    this.newGroup = { 
+
+    this.newGroup = {
       ...group,
       dateFrom: this.formatDateForInput(group.dateFrom),
       dateTo: this.formatDateForInput(group.dateTo),
@@ -3491,8 +3491,8 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     // Calculate total amount from actual expenses in the group
     const groupExpenses = this.expensesByGroup()[this.newGroup.id] || [];
     const calculatedTotal = groupExpenses.reduce((sum, e) => sum + e.amount, 0);
-    
-    const group = { 
+
+    const group = {
       ...this.newGroup,
       totalAmount: calculatedTotal // Always use calculated total from expenses
     };
@@ -6922,8 +6922,8 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     if (!category) return [];
 
     const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
+    const currentYear = this.reportYear();
+    const currentMonth = (this.reportMonth() ?? 1) - 1;
 
     return this.expenses()
       .filter(e => {
