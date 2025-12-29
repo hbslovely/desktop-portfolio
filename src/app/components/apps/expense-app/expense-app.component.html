@@ -681,81 +681,78 @@
             </div>
           </div>
 
-          <!-- Expenses List -->
-          <div class="expenses-list-v3" *ngIf="isDataReady() && filteredExpensesWithGroups().length > 0">
+          <!-- Expenses List - Compact Flat Design -->
+          <div class="expenses-list-compact-flat" *ngIf="isDataReady() && filteredExpensesWithGroups().length > 0">
             <ng-container *ngFor="let item of filteredExpensesWithGroups(); let i = index">
-              <!-- Group Row -->
-              <div class="expense-group-row-flat"
+              <!-- Group Row - Compact Flat Design -->
+              <div class="expense-group-row-compact-flat"
                    *ngIf="isGroup(item)"
                    (click)="showGroupDetailDialog(item)">
-                <div class="group-row-left">
-                  <div class="group-icon-flat">
-                    <i class="fas fa-layer-group"></i>
-                  </div>
-                  <div class="group-info-flat">
-                    <div class="group-name-flat">{{ item.name }}</div>
-                    <div class="group-meta-flat">
-                      <span class="group-count-badge">{{ getGroupExpensesCount(item) }} chi tiêu</span>
-                      <span class="group-date-flat" *ngIf="item.dateFrom && item.dateTo">
-                        <i class="fas fa-calendar-alt"></i>
-                        {{ formatDate(item.dateFrom) }} - {{ formatDate(item.dateTo) }}
-                      </span>
-                      <span class="group-date-flat" *ngIf="!item.dateFrom || !item.dateTo">
-                        <i class="fas fa-calendar-alt"></i>
-                        {{ formatDate(getGroupFirstExpenseDate(item)) }}
-                      </span>
-                    </div>
-                    <div class="group-content-flat" *ngIf="item.content">{{ item.content }}</div>
-                  </div>
+                <div class="group-icon-compact">
+                  <i class="fas fa-layer-group"></i>
                 </div>
-                <div class="group-row-right">
-                  <div class="group-amount-flat">{{ formatAmount(getGroupTotalAmount(item)) }}</div>
-                  <div class="group-actions-flat" (click)="$event.stopPropagation()">
-                    <button class="action-btn-flat edit" (click)="showEditGroupForm(item)" title="Chỉnh sửa">
-                      <i class="fas fa-pencil-alt"></i>
-                    </button>
-                    <button class="action-btn-flat delete" (click)="deleteGroup(item)" title="Xóa">
-                      <i class="fas fa-trash"></i>
-                    </button>
+                <div class="group-info-compact">
+                  <div class="group-name-compact">{{ item.name }}</div>
+                  <div class="group-meta-compact">
+                    <span class="group-count-badge-compact">{{ getGroupExpensesCount(item) }} chi tiêu</span>
+                    <span class="group-date-compact" *ngIf="item.dateFrom && item.dateTo">
+                      <i class="fas fa-calendar-alt"></i>
+                      {{ formatDate(item.dateFrom) }} - {{ formatDate(item.dateTo) }}
+                    </span>
+                    <span class="group-date-compact" *ngIf="!item.dateFrom || !item.dateTo">
+                      <i class="fas fa-calendar-alt"></i>
+                      {{ formatDate(getGroupFirstExpenseDate(item)) }}
+                    </span>
                   </div>
+                  <div class="group-content-compact" *ngIf="item.content">{{ item.content }}</div>
+                </div>
+                <div class="group-amount-compact">{{ formatAmount(getGroupTotalAmount(item)) }}</div>
+                <div class="group-actions-compact" (click)="$event.stopPropagation()">
+                  <button class="action-btn-compact edit" (click)="showEditGroupForm(item)" title="Chỉnh sửa">
+                    <i class="fas fa-pencil-alt"></i>
+                  </button>
+                  <button class="action-btn-compact delete" (click)="deleteGroup(item)" title="Xóa">
+                    <i class="fas fa-trash"></i>
+                  </button>
                 </div>
               </div>
 
-              <!-- Expense Row -->
-              <div class="expense-row-v3"
+              <!-- Expense Row - Compact Flat Design -->
+              <div class="expense-item-compact-flat"
                    *ngIf="!isGroup(item)"
-                   [style.--row-bg]="getCategoryBgColor(item.category)"
                    [style.--row-border]="getCategoryColor(item.category)"
                    [class.highlight-above-average]="isAboveAverage(item.amount)">
 
-                <div class="expense-icon-compact" [style.color]="getCategoryColor(item.category)">
-                  <i class="fas" [ngClass]="getCategoryIcon(item.category)"></i>
+                <div class="expense-icon-compact-flat" [style.--row-border]="getCategoryColor(item.category)" [style.color]="getCategoryColor(item.category)">
+                  <i class="fas" [ngClass]="getCategoryIcon(item.category)" [style.color]="getCategoryColor(item.category)"></i>
                 </div>
 
-                <div class="expense-info-compact">
-                  <span class="expense-content-compact">{{ item.content }}</span>
-                  <span class="expense-category-compact" [style.color]="getCategoryColor(item.category)">
-                    {{ item.category }}
-                  </span>
-                  <span class="expense-note-compact" *ngIf="item.note">
-                    {{ item.note }}
-                  </span>
+                <div class="expense-info-compact-flat">
+                  <span class="expense-content-compact-flat">{{ item.content }}</span>
+                  <div class="expense-meta-compact-flat">
+                    <span class="expense-category-compact-flat" [style.--row-border]="getCategoryColor(item.category)" [style.color]="getCategoryColor(item.category)" [style.border-color]="getCategoryColor(item.category) + '40'" [style.background]="getCategoryBgColor(item.category)">
+                      {{ item.category }}
+                    </span>
+                    <span class="expense-date-compact-flat">
+                      {{ formatDate(item.date) }}
+                    </span>
+                    <span class="expense-note-compact-flat" *ngIf="item.note">
+                      <i class="fas fa-comment"></i>
+                      {{ item.note }}
+                    </span>
+                  </div>
                 </div>
 
-                <div class="expense-date-compact">
-                  {{ formatDate(item.date) }}
-                </div>
-
-                <div class="expense-amount-compact" [class.high-amount]="isAboveAverage(item.amount)">
+                <div class="expense-amount-compact-flat" [class.high-amount]="isAboveAverage(item.amount)">
                   <i class="fas fa-exclamation-triangle warning-icon" *ngIf="isAboveAverage(item.amount)"></i>
                   {{ formatAmount(item.amount) }}
                 </div>
 
-                <div class="expense-actions-compact">
-                  <button class="expense-action-btn" (click)="duplicateExpense(item)" title="Nhân đôi">
+                <div class="expense-actions-compact-flat">
+                  <button class="expense-action-btn-compact" (click)="duplicateExpense(item)" title="Nhân đôi">
                     <i class="fas fa-copy"></i>
                   </button>
-                  <button class="expense-action-btn" (click)="showEditExpenseForm(item, i)" title="Chỉnh sửa">
+                  <button class="expense-action-btn-compact" (click)="showEditExpenseForm(item, i)" title="Chỉnh sửa">
                     <i class="fas fa-pencil-alt"></i>
                   </button>
                 </div>
@@ -1056,24 +1053,24 @@
                     </h5>
                   </div>
                   <div class="expenses-list-content">
-                    <div class="expense-item-inline"
+                    <div class="expense-item-inline-compact-flat"
                          *ngFor="let expense of (expensesByGroup()[group.id] || []); let i = index"
                          [style.--cat-color]="getCategoryColor(expense.category)"
                          [style.--cat-bg]="getCategoryBgColor(expense.category)">
-                      <div class="expense-icon-inline">
+                      <div class="expense-icon-inline-compact">
                         <i class="fas" [ngClass]="getCategoryIcon(expense.category)"></i>
                       </div>
-                      <div class="expense-info-inline">
-                        <div class="expense-content-inline">{{ expense.content }}</div>
-                        <div class="expense-meta-inline">
-                          <span class="expense-category-inline">{{ expense.category }}</span>
-                          <span class="expense-date-inline">{{ formatDate(expense.date) }}</span>
-                          <span class="expense-note-inline" *ngIf="expense.note">
+                      <div class="expense-info-inline-compact">
+                        <div class="expense-content-inline-compact">{{ expense.content }}</div>
+                        <div class="expense-meta-inline-compact">
+                          <span class="expense-category-inline-compact">{{ expense.category }}</span>
+                          <span class="expense-date-inline-compact">{{ formatDate(expense.date) }}</span>
+                          <span class="expense-note-inline-compact" *ngIf="expense.note">
                             <i class="fas fa-comment"></i> {{ expense.note }}
                           </span>
                         </div>
                       </div>
-                      <div class="expense-amount-inline">{{ formatAmount(expense.amount) }}</div>
+                      <div class="expense-amount-inline-compact">{{ formatAmount(expense.amount) }}</div>
                     </div>
                     <div class="empty-expenses" *ngIf="getGroupExpensesCount(group) === 0">
                       <i class="fas fa-inbox"></i>
@@ -3457,14 +3454,6 @@
         </div>
       </div>
     </div>
-
-    <!-- Settings Dialog -->
-    <app-expense-settings-dialog
-      *ngIf="showSettings()"
-      [isVisible]="showSettings()"
-      (onClose)="hideSettingsDialog()"
-      (onSave)="onSettingsSave($event)">
-    </app-expense-settings-dialog>
 
     <!-- Filter Dialog (V2) -->
     <div class="dialog-overlay" *ngIf="showFilterDialog() && currentLayout() === 'v2'"
