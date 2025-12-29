@@ -549,7 +549,7 @@
                   <i class="fas fa-layer-group"></i>
                   <span>Thống kê nhóm chi tiêu</span>
                 </div>
-                
+
                 <div class="stat-card-webstorm">
                   <div class="stat-icon-wrapper">
                     <i class="fas fa-layer-group"></i>
@@ -559,7 +559,7 @@
                     <span class="stat-value-large">{{ getGroupsStatistics().totalGroups }}</span>
                   </div>
                 </div>
-                
+
                 <div class="stat-card-webstorm">
                   <div class="stat-icon-wrapper">
                     <i class="fas fa-wallet"></i>
@@ -569,7 +569,7 @@
                     <span class="stat-value-large">{{ formatAmount(getGroupsStatistics().totalAmount) }}</span>
                   </div>
                 </div>
-                
+
                 <div class="stat-card-webstorm">
                   <div class="stat-icon-wrapper">
                     <i class="fas fa-list"></i>
@@ -579,7 +579,7 @@
                     <span class="stat-value-large">{{ getGroupsStatistics().totalExpenses }}</span>
                   </div>
                 </div>
-                
+
                 <div class="stat-card-webstorm">
                   <div class="stat-icon-wrapper">
                     <i class="fas fa-calculator"></i>
@@ -589,7 +589,7 @@
                     <span class="stat-value-large">{{ formatAmount(getGroupsStatistics().averagePerGroup) }}</span>
                   </div>
                 </div>
-                
+
                 <div class="stat-card-webstorm">
                   <div class="stat-icon-wrapper">
                     <i class="fas fa-chart-line"></i>
@@ -607,7 +607,7 @@
                     <span>Top nhóm chi tiêu</span>
                   </div>
                   <div class="top-groups-list">
-                    <div class="top-group-item" 
+                    <div class="top-group-item"
                          *ngFor="let group of getTopGroups(5); let i = index">
                       <div class="group-rank">{{ i + 1 }}</div>
                       <div class="group-icon-small">
@@ -1020,7 +1020,7 @@
                       <span>Top danh mục</span>
                     </div>
                     <div class="top-categories-list">
-                      <div class="category-item" 
+                      <div class="category-item"
                            *ngFor="let cat of getGroupTopCategories(group, 3); let i = index"
                            [style.--cat-color]="getCategoryColor(cat.category)"
                            [style.--cat-bg]="getCategoryBgColor(cat.category)">
@@ -2543,79 +2543,83 @@
         </div>
 
         <div class="dialog-body budget-detail-body">
-          <!-- Budget Overview Cards -->
-          <div class="budget-detail-overview">
-            <div class="overview-card spent-card"
-                 [class.over-budget]="(selectedBudgetCategoryInfo()?.spent || 0) > (selectedBudgetCategoryInfo()?.budget || 0) && (selectedBudgetCategoryInfo()?.budget || 0) > 0">
-              <div class="card-icon">
-                <i class="pi pi-shopping-cart"></i>
+          <div class="budget-detail-content-2">
+
+
+            <!-- Budget Overview Cards -->
+            <div class="budget-detail-overview">
+              <div class="overview-card spent-card"
+                   [class.over-budget]="(selectedBudgetCategoryInfo()?.spent || 0) > (selectedBudgetCategoryInfo()?.budget || 0) && (selectedBudgetCategoryInfo()?.budget || 0) > 0">
+                <div class="card-icon">
+                  <i class="pi pi-shopping-cart"></i>
+                </div>
+                <div class="card-content">
+                  <span class="card-label">Đã chi tiêu</span>
+                  <span class="card-value">{{ formatAmount(selectedBudgetCategoryInfo()?.spent || 0) }}</span>
+                </div>
               </div>
-              <div class="card-content">
-                <span class="card-label">Đã chi tiêu</span>
-                <span class="card-value">{{ formatAmount(selectedBudgetCategoryInfo()?.spent || 0) }}</span>
+              <div class="overview-card budget-card">
+                <div class="card-icon">
+                  <i class="pi pi-wallet"></i>
+                </div>
+                <div class="card-content">
+                  <span class="card-label">Ngân sách</span>
+                  <span class="card-value">{{ formatAmount(selectedBudgetCategoryInfo()?.budget || 0) }}</span>
+                </div>
               </div>
-            </div>
-            <div class="overview-card budget-card">
-              <div class="card-icon">
-                <i class="pi pi-wallet"></i>
-              </div>
-              <div class="card-content">
-                <span class="card-label">Ngân sách</span>
-                <span class="card-value">{{ formatAmount(selectedBudgetCategoryInfo()?.budget || 0) }}</span>
-              </div>
-            </div>
-            <div class="overview-card remaining-card"
-                 [class.positive]="(selectedBudgetCategoryInfo()?.remaining || 0) >= 0"
-                 [class.negative]="(selectedBudgetCategoryInfo()?.remaining || 0) < 0">
-              <div class="card-icon">
-                <i class="pi" [class.pi-check-circle]="(selectedBudgetCategoryInfo()?.remaining || 0) >= 0"
-                   [class.pi-exclamation-triangle]="(selectedBudgetCategoryInfo()?.remaining || 0) < 0"></i>
-              </div>
-              <div class="card-content">
+              <div class="overview-card remaining-card"
+                   [class.positive]="(selectedBudgetCategoryInfo()?.remaining || 0) >= 0"
+                   [class.negative]="(selectedBudgetCategoryInfo()?.remaining || 0) < 0">
+                <div class="card-icon">
+                  <i class="pi" [class.pi-check-circle]="(selectedBudgetCategoryInfo()?.remaining || 0) >= 0"
+                     [class.pi-exclamation-triangle]="(selectedBudgetCategoryInfo()?.remaining || 0) < 0"></i>
+                </div>
+                <div class="card-content">
                 <span
                   class="card-label">{{ (selectedBudgetCategoryInfo()?.remaining || 0) >= 0 ? 'Còn lại' : 'Vượt ngân sách' }}</span>
-                <span
-                  class="card-value">{{ formatAmount(Math.abs(selectedBudgetCategoryInfo()?.remaining || 0)) }}</span>
+                  <span
+                    class="card-value">{{ formatAmount(Math.abs(selectedBudgetCategoryInfo()?.remaining || 0)) }}</span>
+                </div>
               </div>
-            </div>
-            <div class="overview-card percentage-card">
-              <div class="card-icon">
-                <i class="pi pi-percentage"></i>
-              </div>
-              <div class="card-content">
-                <span class="card-label">Tỷ lệ sử dụng</span>
-                <span class="card-value" [class.over-budget]="(selectedBudgetCategoryInfo()?.percentage || 0) > 100">
+              <div class="overview-card percentage-card">
+                <div class="card-icon">
+                  <i class="pi pi-percentage"></i>
+                </div>
+                <div class="card-content">
+                  <span class="card-label">Tỷ lệ sử dụng</span>
+                  <span class="card-value" [class.over-budget]="(selectedBudgetCategoryInfo()?.percentage || 0) > 100">
                   {{ selectedBudgetCategoryInfo()?.percentage || 0 }}%
                 </span>
+                </div>
               </div>
             </div>
-          </div>
 
-          <!-- Progress Bar -->
-          <div class="budget-progress-section" *ngIf="(selectedBudgetCategoryInfo()?.budget || 0) > 0">
-            <div class="progress-labels">
-              <span>0%</span>
-              <span class="warning-mark">80%</span>
-              <span>100%</span>
-            </div>
-            <div class="budget-progress-track">
-              <div class="progress-fill"
-                   [style.width.%]="Math.min(selectedBudgetCategoryInfo()?.percentage || 0, 100)"
-                   [class.warning]="(selectedBudgetCategoryInfo()?.percentage || 0) > 80 && (selectedBudgetCategoryInfo()?.percentage || 0) <= 100"
-                   [class.over-budget]="(selectedBudgetCategoryInfo()?.percentage || 0) > 100">
+            <!-- Progress Bar -->
+            <div class="budget-progress-section" *ngIf="(selectedBudgetCategoryInfo()?.budget || 0) > 0">
+              <div class="progress-labels">
+                <span>0%</span>
+                <span class="warning-mark">80%</span>
+                <span>100%</span>
               </div>
-              <div class="warning-line" style="left: 80%"></div>
+              <div class="budget-progress-track">
+                <div class="progress-fill"
+                     [style.width.%]="Math.min(selectedBudgetCategoryInfo()?.percentage || 0, 100)"
+                     [class.warning]="(selectedBudgetCategoryInfo()?.percentage || 0) > 80 && (selectedBudgetCategoryInfo()?.percentage || 0) <= 100"
+                     [class.over-budget]="(selectedBudgetCategoryInfo()?.percentage || 0) > 100">
+                </div>
+                <div class="warning-line" style="left: 80%"></div>
+              </div>
             </div>
-          </div>
 
-          <!-- Monthly Daily Chart -->
-          <div class="budget-monthly-chart-section">
-            <h4>
-              <i class="pi pi-chart-bar"></i>
-              Chi tiêu theo ngày trong tháng
-            </h4>
-            <div class="monthly-chart-container">
-              <canvas #budgetCategoryMonthlyChart></canvas>
+            <!-- Monthly Daily Chart -->
+            <div class="budget-monthly-chart-section">
+              <h4>
+                <i class="pi pi-chart-bar"></i>
+                Chi tiêu theo ngày trong tháng
+              </h4>
+              <div class="monthly-chart-container">
+                <canvas #budgetCategoryMonthlyChart></canvas>
+              </div>
             </div>
           </div>
 
@@ -3863,13 +3867,13 @@
         <div class="dialog-body group-detail-body">
           <!-- Tabs -->
           <div class="group-detail-tabs">
-            <button class="tab-btn" 
+            <button class="tab-btn"
                     [class.active]="groupDetailTab() === 'list'"
                     (click)="groupDetailTab.set('list')">
               <i class="fas fa-list"></i>
               <span>Danh sách chi tiêu</span>
             </button>
-            <button class="tab-btn" 
+            <button class="tab-btn"
                     [class.active]="groupDetailTab() === 'stats'"
                     (click)="groupDetailTab.set('stats')">
               <i class="fas fa-chart-bar"></i>

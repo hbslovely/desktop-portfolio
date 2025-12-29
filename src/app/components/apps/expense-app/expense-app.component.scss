@@ -9844,9 +9844,9 @@ $font-numbers: 'JetBrains Mono', 'Roboto Mono', 'SF Mono', 'Cascadia Code', 'Con
 
 // ============ BUDGET CATEGORY DETAIL DIALOG ============
 .budget-category-detail-dialog {
-  max-width: 700px;
+  max-width: 80vw !important;
   width: 95%;
-  max-height: 90vh;
+  max-height: 92vh;
 
   .budget-detail-header {
     .header-icon-budget-category {
@@ -9909,6 +9909,17 @@ $font-numbers: 'JetBrains Mono', 'Roboto Mono', 'SF Mono', 'Cascadia Code', 'Con
     padding: 20px;
     max-height: 65vh;
     overflow-y: auto;
+    display: flex;
+    width: 100%;
+    gap: 12px;
+  }
+
+  .budget-detail-content-2 {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-width: 50vw;
+    min-width: 460px;
   }
 
   // Budget Overview Cards
@@ -10129,6 +10140,11 @@ $font-numbers: 'JetBrains Mono', 'Roboto Mono', 'SF Mono', 'Cascadia Code', 'Con
 
   // Expense List Section
   .budget-expense-list-section {
+    width: 100%;
+    max-height: calc(100vh - 100px);
+    display: flex;
+    flex-direction: column;
+
     .list-header {
       display: flex;
       justify-content: space-between;
@@ -10158,7 +10174,7 @@ $font-numbers: 'JetBrains Mono', 'Roboto Mono', 'SF Mono', 'Cascadia Code', 'Con
     }
 
     .expense-list-scroll {
-      max-height: 250px;
+      flex: 1;
       overflow-y: auto;
       background: #f8fafc;
       border-radius: 12px;
