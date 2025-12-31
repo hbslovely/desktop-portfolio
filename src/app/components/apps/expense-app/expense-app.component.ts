@@ -2441,6 +2441,20 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       }
     });
 
+    // Effect to update budget category monthly chart when month/year changes
+    effect(() => {
+      const month = this.reportMonth();
+      const year = this.reportYear();
+      const dialogOpen = this.showBudgetCategoryDetailDialog();
+      
+      // Re-initialize chart if dialog is open and month/year changes
+      if (dialogOpen && this.budgetCategoryMonthlyChartRef?.nativeElement) {
+        setTimeout(() => {
+          this.initBudgetCategoryMonthlyChart();
+        }, 150);
+      }
+    });
+
     // Load saved column widths from localStorage
     const savedWidths = localStorage.getItem('expense-column-widths');
     if (savedWidths) {
@@ -6060,16 +6074,16 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   });
 
   /**
-   * Get daily spending for selected budget category in current month
+   * Get daily spending for selected budget category in selected month
    */
   budgetCategoryDailySpending = computed(() => {
     const category = this.selectedBudgetCategory();
     if (!category) return [];
 
-    const now = new Date();
-    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
+    const year = this.reportYear();
+    const month = this.reportMonth() ?? new Date().getMonth() + 1;
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const selectedMonth = month - 1; // Convert to 0-based month index
 
     const dailyTotals: { day: number; amount: number }[] = [];
 
@@ -6083,8 +6097,8 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       .filter(e => {
         const expenseDate = new Date(e.date);
         return e.category === category &&
-               expenseDate.getMonth() === currentMonth &&
-               expenseDate.getFullYear() === currentYear;
+               expenseDate.getMonth() === selectedMonth &&
+               expenseDate.getFullYear() === year;
       })
       .forEach(e => {
         const day = new Date(e.date).getDate();
@@ -6134,9 +6148,19 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     const dailyData = this.budgetCategoryDailySpending();
     const categoryInfo = this.selectedBudgetCategoryInfo();
+    const year = this.reportYear();
+    const month = this.reportMonth() ?? new Date().getMonth() + 1;
     const now = new Date();
     const daysInMonth = dailyData.length;
-    const today = now.getDate();
+    
+    // Calculate today based on selected month
+    let today = 0;
+    if (year === now.getFullYear() && month === (now.getMonth() + 1)) {
+      today = now.getDate();
+    } else {
+      // For past or future months, show all days
+      today = daysInMonth + 1;
+    }
 
     // Calculate daily budget line
     const dailyBudget = categoryInfo?.budget ? categoryInfo.budget / daysInMonth : 0;

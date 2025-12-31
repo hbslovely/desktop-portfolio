@@ -2472,6 +2472,35 @@
               </div>
             </div>
 
+            <!-- Current vs Previous Month Daily Chart -->
+            <div class="chart-card">
+              <div class="chart-header">
+                <h4><i class="pi pi-calendar-plus"></i> So sánh chi tiêu theo ngày trong tháng</h4>
+                <div class="chart-summary">
+                <span class="summary-item current-month">
+                  <span class="legend-dot current"></span>
+                  <span class="summary-label">{{ getCurrentMonthLabel() }}:</span>
+                  <span class="summary-value">{{ formatCompactAmount(currentMonthDailyData().total) }}</span>
+                </span>
+                  <span class="summary-item previous-month">
+                  <span class="legend-dot previous"></span>
+                  <span class="summary-label">{{ getPreviousMonthLabel() }}:</span>
+                  <span class="summary-value">{{ formatCompactAmount(previousMonthDailyData().total) }}</span>
+                </span>
+                  <span class="summary-item difference"
+                        [class.positive]="currentMonthDailyData().total < previousMonthDailyData().total"
+                        [class.negative]="currentMonthDailyData().total > previousMonthDailyData().total">
+                  <i class="pi" [class.pi-arrow-down]="currentMonthDailyData().total < previousMonthDailyData().total"
+                     [class.pi-arrow-up]="currentMonthDailyData().total > previousMonthDailyData().total"></i>
+                  <span class="summary-value">{{ getMonthComparisonPercentage() }}%</span>
+                </span>
+                </div>
+              </div>
+              <div class="chart-body tall">
+                <canvas #monthDailyCompareChart></canvas>
+              </div>
+            </div>
+
             <!-- Daily Trend Line Chart -->
             <div class="chart-card wide">
               <div class="chart-header">
@@ -2509,35 +2538,6 @@
               </div>
               <div class="chart-body">
                 <canvas #monthlyCompareChart></canvas>
-              </div>
-            </div>
-
-            <!-- Current vs Previous Month Daily Chart -->
-            <div class="chart-card full-width">
-              <div class="chart-header">
-                <h4><i class="pi pi-calendar-plus"></i> So sánh chi tiêu theo ngày trong tháng</h4>
-                <div class="chart-summary">
-                <span class="summary-item current-month">
-                  <span class="legend-dot current"></span>
-                  <span class="summary-label">{{ getCurrentMonthLabel() }}:</span>
-                  <span class="summary-value">{{ formatCompactAmount(currentMonthDailyData().total) }}</span>
-                </span>
-                  <span class="summary-item previous-month">
-                  <span class="legend-dot previous"></span>
-                  <span class="summary-label">{{ getPreviousMonthLabel() }}:</span>
-                  <span class="summary-value">{{ formatCompactAmount(previousMonthDailyData().total) }}</span>
-                </span>
-                  <span class="summary-item difference"
-                        [class.positive]="currentMonthDailyData().total < previousMonthDailyData().total"
-                        [class.negative]="currentMonthDailyData().total > previousMonthDailyData().total">
-                  <i class="pi" [class.pi-arrow-down]="currentMonthDailyData().total < previousMonthDailyData().total"
-                     [class.pi-arrow-up]="currentMonthDailyData().total > previousMonthDailyData().total"></i>
-                  <span class="summary-value">{{ getMonthComparisonPercentage() }}%</span>
-                </span>
-                </div>
-              </div>
-              <div class="chart-body tall">
-                <canvas #monthDailyCompareChart></canvas>
               </div>
             </div>
           </div>
@@ -2948,14 +2948,14 @@
               class="mode-btn-v2"
               [class.active]="inputMode() === 'single'">
               <i class="fas fa-pencil-alt"></i>
-              <span>Nhập đơn</span>
+              <span>Chế độ đơn giản</span>
             </button>
             <button
               (click)="switchInputMode('multiple')"
               class="mode-btn-v2"
               [class.active]="inputMode() === 'multiple'">
               <i class="fas fa-table"></i>
-              <span>Nhập nhiều</span>
+              <span>Chế độ nhập nhiều chi tiêu</span>
             </button>
           </div>
 
@@ -3181,22 +3181,22 @@
         </div>
 
         <div class="dialog-footer-v2">
-          <button (click)="hideAddExpenseForm()" class="cancel-btn-v2" [disabled]="savingProgress().saving">
+          <button (click)="hideAddExpenseForm()" class="btn-v2 btn-cancel" [disabled]="savingProgress().saving">
             <i class="fas fa-times"></i>
             Hủy
           </button>
           <button
             *ngIf="inputMode() === 'single'"
             (click)="addExpense()"
-            class="save-btn-v2"
+            class="btn-v2 btn-primary"
             [disabled]="isLoading() || savingProgress().saving || !newExpense.content || !newExpense.amount || !newExpense.category">
             <i class="fas fa-check"></i>
-            Lưu chi tiêu
+            Lưu
           </button>
           <button
             *ngIf="inputMode() === 'multiple'"
             (click)="addMultipleExpenses()"
-            class="save-btn-v2"
+            class="btn-v2 btn-primary"
             [disabled]="isLoading() || savingProgress().saving">
             <i class="fas fa-check-circle"></i>
             <span *ngIf="!savingProgress().saving">Lưu tất cả ({{ multipleExpenses().length }})</span>
