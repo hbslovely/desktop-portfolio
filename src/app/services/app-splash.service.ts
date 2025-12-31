@@ -18,7 +18,7 @@ export class AppSplashService {
   currentApp = signal<AppSplashConfig | null>(null);
   loadingProgress = signal(0);
   currentStep = signal('');
-  
+
   // Callback to execute after splash completes
   private onCompleteCallback: (() => void) | null = null;
   private progressInterval: any = null;
@@ -34,16 +34,6 @@ export class AppSplashService {
         'Chuẩn bị giao diện...'
       ],
       duration: 1800
-    },
-    'expense': {
-      appName: 'Quản lý chi tiêu',
-      loadingSteps: [
-        'Đang đồng bộ dữ liệu...',
-        'Đang tải giao dịch...',
-        'Đang tính toán thống kê...',
-        'Sẵn sàng!'
-      ],
-      duration: 1500
     },
     'weather': {
       appName: 'Thời tiết',
@@ -133,7 +123,7 @@ export class AppSplashService {
   showSplash(config: AppSplashConfig, onComplete: () => void): void {
     // Get app-specific config or use defaults
     const appConfig = this.appConfigs[config.appId] || {};
-    
+
     const finalConfig: AppSplashConfig = {
       ...config,
       loadingText: config.loadingText || appConfig.loadingSteps?.[0] || 'Đang tải...',
@@ -159,19 +149,19 @@ export class AppSplashService {
     const steps = config.loadingSteps!;
     const stepDuration = duration / steps.length;
     const progressIncrement = 100 / (duration / 30); // Update every 30ms
-    
+
     let currentProgress = 0;
     let currentStepIndex = 0;
 
     this.progressInterval = setInterval(() => {
       currentProgress += progressIncrement;
-      
+
       // Update step based on progress
       const newStepIndex = Math.min(
         Math.floor((currentProgress / 100) * steps.length),
         steps.length - 1
       );
-      
+
       if (newStepIndex !== currentStepIndex) {
         currentStepIndex = newStepIndex;
         this.currentStep.set(steps[currentStepIndex]);
@@ -198,7 +188,7 @@ export class AppSplashService {
     // Small delay before hiding for smooth transition
     setTimeout(() => {
       this.isVisible.set(false);
-      
+
       // Execute callback
       if (this.onCompleteCallback) {
         this.onCompleteCallback();
@@ -234,7 +224,7 @@ export class AppSplashService {
     // Apps that should show splash screen
     const appsWithSplash = [
       'stock',
-      'expense', 
+      'expense',
       'weather',
       'news',
       'tuoitre-news',
