@@ -4207,6 +4207,105 @@ $font-mono: 'JetBrains Mono', 'Fira Code', 'SF Mono', 'Consolas', monospace;
       color: $gray-800;
       margin: 0 0 10px 0;
     }
+
+    .achievements-flex {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .achievement-badge {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      padding: 12px;
+      background: $white;
+      border: 2px solid $gray-300;
+      border-radius: 8px;
+      min-width: 100px;
+      transition: all 0.2s;
+
+      &.achieved {
+        border-color: $success;
+        background: $success-light;
+
+        .badge-icon {
+          background: $success;
+          color: $white;
+        }
+
+        .badge-title {
+          color: darken($success, 15%);
+          font-weight: 600;
+        }
+      }
+
+      &.locked {
+        opacity: 0.6;
+
+        .badge-icon {
+          background: $gray-300;
+          color: $gray-500;
+        }
+      }
+
+      .badge-icon {
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        font-size: 18px;
+        transition: all 0.2s;
+      }
+
+      .badge-title {
+        font-size: 11px;
+        color: $gray-700;
+        text-align: center;
+        line-height: 1.3;
+      }
+
+      .badge-progress {
+        .progress-ring {
+          position: relative;
+          width: 36px;
+          height: 36px;
+
+          svg {
+            width: 100%;
+            height: 100%;
+            transform: rotate(-90deg);
+
+            .ring-bg {
+              fill: none;
+              stroke: $gray-200;
+              stroke-width: 3;
+            }
+
+            .ring-fill {
+              fill: none;
+              stroke: $primary;
+              stroke-width: 3;
+              stroke-linecap: round;
+              transition: stroke-dasharray 0.3s;
+            }
+          }
+
+          .ring-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 9px;
+            font-weight: 600;
+            color: $primary;
+          }
+        }
+      }
+    }
   }
 
   // Patterns Section Enhanced
@@ -4837,6 +4936,32 @@ $font-mono: 'JetBrains Mono', 'Fira Code', 'SF Mono', 'Consolas', monospace;
     }
 
     .cash-flow-body {
+      .projected-spending {
+        text-align: center;
+        padding: 20px 0;
+
+        .projected-value {
+          font-size: 28px;
+          font-weight: 700;
+          color: $gray-900;
+          font-family: $font-mono;
+          margin-bottom: 8px;
+        }
+
+        .projected-label {
+          font-size: 13px;
+          color: $gray-600;
+          margin-bottom: 6px;
+          display: block;
+        }
+
+        .projected-note {
+          font-size: 11px;
+          color: $gray-500;
+          font-style: italic;
+        }
+      }
+
       .cash-flow-summary {
         display: flex;
         gap: 16px;
@@ -8549,7 +8674,21 @@ $font-mono: 'JetBrains Mono', 'Fira Code', 'SF Mono', 'Consolas', monospace;
         display: flex;
         flex-direction: column;
 
+        // First two charts (Category Pie and Month Daily Comparison) on same row
+        &:nth-child(1),
+        &:nth-child(2) {
+          grid-column: span 1;
+        }
+
         &.wide {
+          grid-column: span 2;
+
+          @media (max-width: 900px) {
+            grid-column: span 1;
+          }
+        }
+
+        &.full-width {
           grid-column: span 2;
 
           @media (max-width: 900px) {
@@ -8970,6 +9109,124 @@ $font-mono: 'JetBrains Mono', 'Fira Code', 'SF Mono', 'Consolas', monospace;
           background: $gray-400;
         }
       }
+
+      .group-detail-list {
+        .expenses-list-group-dialog {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+
+          .expense-row-group-dialog {
+            background: $white;
+            border: 1px solid $gray-200;
+            border-radius: 8px;
+            padding: 12px;
+            transition: all 0.2s;
+
+            &:hover {
+              border-color: var(--cat-color, $primary);
+              box-shadow: 0 2px 8px rgba(var(--cat-color, $primary), 0.1);
+            }
+
+            .expense-row-main {
+              display: flex;
+              align-items: center;
+              gap: 12px;
+
+              .expense-icon-group {
+                width: 40px;
+                height: 40px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: var(--cat-bg, $gray-100);
+                border-radius: 8px;
+                color: var(--cat-color, $gray-700);
+                font-size: 16px;
+                flex-shrink: 0;
+              }
+
+              .expense-name-group {
+                flex: 1;
+                font-size: 14px;
+                font-weight: 500;
+                color: $gray-800;
+                min-width: 0;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+              }
+
+              .expense-date-group {
+                font-size: 12px;
+                color: $gray-600;
+                min-width: 100px;
+              }
+
+              .expense-amount-group {
+                font-size: 15px;
+                font-weight: 600;
+                color: $gray-900;
+                font-family: $font-mono;
+                min-width: 120px;
+                text-align: right;
+              }
+
+              .expense-actions-group {
+                display: flex;
+                gap: 6px;
+
+                .action-btn-group {
+                  width: 32px;
+                  height: 32px;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  background: $gray-100;
+                  border: none;
+                  border-radius: 6px;
+                  color: $gray-600;
+                  cursor: pointer;
+                  transition: all 0.2s;
+                  font-size: 13px;
+
+                  &:hover {
+                    background: $primary-light;
+                    color: $primary;
+                  }
+                }
+              }
+            }
+
+            .expense-row-meta {
+              display: flex;
+              align-items: center;
+              gap: 12px;
+              margin-top: 8px;
+              padding-top: 8px;
+              border-top: 1px solid $gray-100;
+
+              .expense-category-group {
+                font-size: 11px;
+                font-weight: 500;
+                padding: 4px 8px;
+                background: var(--cat-bg, $gray-100);
+                border-radius: 4px;
+              }
+
+              .expense-note-group {
+                font-size: 11px;
+                color: $gray-600;
+                font-style: italic;
+                flex: 1;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+              }
+            }
+          }
+        }
+      }
     }
   }
 
@@ -9172,6 +9429,11 @@ $font-mono: 'JetBrains Mono', 'Fira Code', 'SF Mono', 'Consolas', monospace;
       }
     }
 
+    // Weekday vs Weekend specific grid (2 columns)
+    .cash-flow-body .comparison-grid:has(.weekday):has(.weekend) {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
     .comparison-item {
       padding: 16px;
       background: $gray-50;
@@ -9193,6 +9455,13 @@ $font-mono: 'JetBrains Mono', 'Fira Code', 'SF Mono', 'Consolas', monospace;
         margin-bottom: 4px;
       }
 
+      .comparison-detail {
+        font-size: 10px;
+        color: $gray-600;
+        margin-top: 8px;
+        line-height: 1.4;
+      }
+
       .comparison-change {
         font-size: 11px;
         font-weight: 600;
@@ -9211,6 +9480,44 @@ $font-mono: 'JetBrains Mono', 'Fira Code', 'SF Mono', 'Consolas', monospace;
 
         &.neutral {
           color: $gray-500;
+        }
+      }
+
+      &.weekday {
+        background: $primary-light;
+        border: 1px solid rgba($primary, 0.2);
+
+        .comparison-label {
+          color: $primary-dark;
+          font-weight: 600;
+        }
+
+        .comparison-value {
+          color: $primary-dark;
+        }
+
+        .comparison-detail {
+          color: $primary-dark;
+          opacity: 0.8;
+        }
+      }
+
+      &.weekend {
+        background: rgba($coral, 0.08);
+        border: 1px solid rgba($coral, 0.2);
+
+        .comparison-label {
+          color: $coral;
+          font-weight: 600;
+        }
+
+        .comparison-value {
+          color: $coral;
+        }
+
+        .comparison-detail {
+          color: $coral;
+          opacity: 0.8;
         }
       }
     }
@@ -10728,11 +11035,14 @@ $font-mono: 'JetBrains Mono', 'Fira Code', 'SF Mono', 'Consolas', monospace;
           padding: 16px;
           background: $gray-50;
           text-align: center;
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
 
           .stat-label {
             font-size: 11px;
             color: $gray-500;
-            margin-bottom: 6px;
+            order: 1;
           }
 
           .stat-value {
@@ -10740,6 +11050,7 @@ $font-mono: 'JetBrains Mono', 'Fira Code', 'SF Mono', 'Consolas', monospace;
             font-weight: 700;
             color: $gray-900;
             font-family: $font-mono;
+            order: 2;
           }
         }
       }
