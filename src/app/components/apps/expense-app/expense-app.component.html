@@ -86,16 +86,6 @@
           <i class="fas" [ngClass]="currentScreen() === 'transactions' ? 'fa-chart-pie' : 'fa-list'"></i>
           <span>{{ currentScreen() === 'transactions' ? 'Xem phân tích' : 'Xem giao dịch' }}</span>
         </button>
-        <button (click)="showMetricDialog.set(true)" class="metric-header-btn" title="Xem số liệu"
-                *ngIf="currentLayout() === 'v2'">
-          <i class="fas fa-chart-line"></i>
-          <span>Xem số liệu</span>
-        </button>
-        <button (click)="showFilterDialog.set(true)" class="filter-header-btn" title="Bộ lọc"
-                *ngIf="currentLayout() === 'v2'">
-          <i class="fas fa-filter"></i>
-          <span class="filter-badge" *ngIf="getActiveFilterCount() > 0">{{ getActiveFilterCount() }}</span>
-        </button>
         <button (click)="loadExpenses()" class="refresh-header-btn" [class.loading]="isLoading()" title="Làm mới dữ liệu">
           <i class="fas fa-sync-alt" [class.fa-spin]="isLoading()"></i>
           <span>Làm mới</span>
@@ -345,6 +335,26 @@
             <div class="filter-block-header">
               <i class="fas fa-tag"></i>
               <span>Danh mục</span>
+              <div class="category-mode-mini">
+                <button class="mode-mini-btn"
+                        [class.active]="filterCategoryMode() === 'include'"
+                        (click)="filterCategoryMode.set('include')"
+                        title="Chỉ hiện các danh mục đã chọn">
+                  <i class="fas fa-check"></i>
+                </button>
+                <button class="mode-mini-btn exclude"
+                        [class.active]="filterCategoryMode() === 'exclude'"
+                        (click)="filterCategoryMode.set('exclude')"
+                        title="Ẩn các danh mục đã chọn">
+                  <i class="fas fa-ban"></i>
+                </button>
+                <button class="mode-mini-btn mixed"
+                        [class.active]="filterCategoryMode() === 'mixed'"
+                        (click)="filterCategoryMode.set('mixed')"
+                        title="Chọn xen kẽ (include + exclude)">
+                  <i class="fas fa-random"></i>
+                </button>
+              </div>
             </div>
             <div class="category-search-wrapper">
               <input type="text"
@@ -356,22 +366,73 @@
             <div class="category-filter-checkboxes-flat">
               <label class="category-checkbox-item-flat all-categories-flat">
                 <input type="checkbox"
-                       [checked]="filterCategory().length === 0"
-                       (change)="filterCategory.set([])">
+                       [checked]="filterCategory().length === 0 && getMixedCategoryCount() === 0"
+                       (change)="clearCategoryFilter()">
                 <span class="checkbox-label-flat">Tất cả</span>
               </label>
               <div class="category-checkbox-list-flat">
-                <label *ngFor="let cat of filteredCategories()"
-                       class="category-checkbox-item-flat"
+                <!-- Normal mode (include/exclude) -->
+                <ng-container *ngIf="filterCategoryMode() !== 'mixed'">
+                  <label *ngFor="let cat of filteredCategories()"
+                         class="category-checkbox-item-flat"
+                         [class.excluded]="filterCategoryMode() === 'exclude' && isCategorySelected(cat)"
+                         [style.--cat-color]="getCategoryColor(cat)"
+                         [style.--cat-bg]="getCategoryBgColor(cat)">
+                    <input type="checkbox"
+                           [checked]="isCategorySelected(cat)"
+                           (change)="toggleCategory(cat)">
+                    <i class="fas" [ngClass]="getCategoryIcon(cat)"></i>
+                    <div class="category-label-info">
+                      <span class="checkbox-label-flat">{{ cat }}</span>
+                      <span class="category-spending-info">{{ formatAmount(getCategorySpending(cat).total) }}</span>
+                    </div>
+                  </label>
+                </ng-container>
+
+                <!-- Mixed mode - with include/exclude buttons per category -->
+                <ng-container *ngIf="filterCategoryMode() === 'mixed'">
+                  <div *ngFor="let cat of filteredCategories()"
+                       class="category-mixed-item"
+                       [class.included]="getCategoryMixedMode(cat) === 'include'"
+                       [class.excluded]="getCategoryMixedMode(cat) === 'exclude'"
                        [style.--cat-color]="getCategoryColor(cat)"
                        [style.--cat-bg]="getCategoryBgColor(cat)">
-                  <input type="checkbox"
-                         [checked]="isCategorySelected(cat)"
-                         (change)="toggleCategory(cat)">
-                  <i class="fas" [ngClass]="getCategoryIcon(cat)"></i>
-                  <span class="checkbox-label-flat">{{ cat }}</span>
-                </label>
+                    <i class="fas category-icon-mixed" [ngClass]="getCategoryIcon(cat)"></i>
+                    <div class="category-label-info">
+                      <span class="checkbox-label-flat">{{ cat }}</span>
+                      <span class="category-spending-info">{{ formatAmount(getCategorySpending(cat).total) }}</span>
+                    </div>
+                    <div class="mixed-mode-buttons">
+                      <button class="mixed-btn include-btn"
+                              [class.active]="getCategoryMixedMode(cat) === 'include'"
+                              (click)="toggleCategoryMixed(cat, 'include')"
+                              title="Chỉ hiện">
+                        <i class="fas fa-check"></i>
+                      </button>
+                      <button class="mixed-btn exclude-btn"
+                              [class.active]="getCategoryMixedMode(cat) === 'exclude'"
+                              (click)="toggleCategoryMixed(cat, 'exclude')"
+                              title="Loại trừ">
+                        <i class="fas fa-ban"></i>
+                      </button>
+                    </div>
+                  </div>
+                </ng-container>
               </div>
+            </div>
+            <!-- Summary when categories selected -->
+            <div class="category-summary-mini" *ngIf="filterCategory().length > 0 || getMixedCategoryCount() > 0">
+              <span class="summary-badge"
+                    [class.exclude]="filterCategoryMode() === 'exclude'"
+                    [class.mixed]="filterCategoryMode() === 'mixed'">
+                <i class="fas" [ngClass]="{
+                  'fa-check': filterCategoryMode() === 'include',
+                  'fa-ban': filterCategoryMode() === 'exclude',
+                  'fa-random': filterCategoryMode() === 'mixed'
+                }"></i>
+                {{ filterCategoryMode() === 'mixed' ? getMixedCategoryCount() : filterCategory().length }}
+              </span>
+              <span class="summary-amount">{{ formatAmount(selectedCategoriesTotal()) }}</span>
             </div>
           </div>
 
@@ -414,6 +475,37 @@
             <div class="panel-body-webstorm">
               <!-- Date List -->
               <div class="date-list-panel">
+                <!-- Date Mode Toggle -->
+                <div class="date-mode-toggle">
+                  <button class="mode-btn"
+                          [class.active]="filterDateMode() === 'range'"
+                          (click)="filterDateMode.set('range')">
+                    <i class="fas fa-arrows-alt-h"></i>
+                    <span>Khoảng ngày</span>
+                  </button>
+                  <button class="mode-btn"
+                          [class.active]="filterDateMode() === 'multiple'"
+                          (click)="filterDateMode.set('multiple')">
+                    <i class="fas fa-check-double"></i>
+                    <span>Chọn nhiều</span>
+                  </button>
+                </div>
+
+                <!-- Multi-select Actions -->
+                <div class="date-actions" *ngIf="filterDateMode() === 'multiple'">
+                  <button class="date-action-btn" (click)="selectAllVisibleDates()" title="Chọn tất cả">
+                    <i class="fas fa-check-square"></i>
+                    <span>Tất cả</span>
+                  </button>
+                  <button class="date-action-btn" (click)="clearSelectedDates()" title="Bỏ chọn">
+                    <i class="fas fa-square"></i>
+                    <span>Bỏ chọn</span>
+                  </button>
+                  <span class="selected-count" *ngIf="filterSelectedDates().length > 0">
+                    {{ filterSelectedDates().length }} ngày
+                  </span>
+                </div>
+
                 <div class="date-list-header">
                   <input type="text"
                          [ngModel]="dateSearchText()"
@@ -426,8 +518,11 @@
                           class="date-list-item"
                           [class.active]="isDateSelected(dateGroup.date)"
                           (click)="selectDate(dateGroup.date)">
+                    <div class="date-item-checkbox" *ngIf="filterDateMode() === 'multiple'">
+                      <i class="fas" [ngClass]="isDateSelected(dateGroup.date) ? 'fa-check-square' : 'fa-square'"></i>
+                    </div>
                     <div class="date-item-main">
-                      <i class="fas fa-calendar-day"></i>
+                      <i class="fas fa-calendar-day" *ngIf="filterDateMode() !== 'multiple'"></i>
                       <div class="date-item-info">
                         <span class="date-item-label">{{ formatDate(dateGroup.date) }}</span>
                         <span class="date-item-count">{{ dateGroup.count }} giao dịch</span>
@@ -452,6 +547,35 @@
               </button>
             </div>
             <div class="panel-body-webstorm">
+              <!-- Category Mode Toggle -->
+              <div class="category-mode-toggle">
+                <button class="mode-btn"
+                        [class.active]="filterCategoryMode() === 'include'"
+                        (click)="filterCategoryMode.set('include')">
+                  <i class="fas fa-check"></i>
+                  <span>Chỉ hiện</span>
+                </button>
+                <button class="mode-btn exclude"
+                        [class.active]="filterCategoryMode() === 'exclude'"
+                        (click)="filterCategoryMode.set('exclude')">
+                  <i class="fas fa-ban"></i>
+                  <span>Loại trừ</span>
+                </button>
+              </div>
+
+              <!-- Quick Actions -->
+              <div class="category-quick-actions">
+                <button class="quick-action-btn" (click)="selectAllFilteredCategories()" title="Chọn tất cả">
+                  <i class="fas fa-check-double"></i>
+                </button>
+                <button class="quick-action-btn" (click)="deselectAllFilteredCategories()" title="Bỏ chọn">
+                  <i class="fas fa-times"></i>
+                </button>
+                <button class="quick-action-btn" (click)="filterCategory.set([])" title="Reset">
+                  <i class="fas fa-redo"></i>
+                </button>
+              </div>
+
               <!-- Categories content sẽ được copy từ phần categories hiện tại -->
               <div class="category-search-wrapper">
                 <input type="text"
@@ -470,14 +594,39 @@
                 <div class="category-checkbox-list-flat">
                   <label *ngFor="let cat of filteredCategories()"
                          class="category-checkbox-item-flat"
+                         [class.excluded]="filterCategoryMode() === 'exclude' && isCategorySelected(cat)"
                          [style.--cat-color]="getCategoryColor(cat)"
                          [style.--cat-bg]="getCategoryBgColor(cat)">
                     <input type="checkbox"
                            [checked]="isCategorySelected(cat)"
                            (change)="toggleCategory(cat)">
                     <i class="fas" [ngClass]="getCategoryIcon(cat)"></i>
-                    <span class="checkbox-label-flat">{{ cat }}</span>
+                    <div class="category-label-info">
+                      <span class="checkbox-label-flat">{{ cat }}</span>
+                      <span class="category-spending-info">
+                        {{ getCategorySpending(cat).count }} • {{ formatAmount(getCategorySpending(cat).total) }}
+                      </span>
+                    </div>
                   </label>
+                </div>
+              </div>
+
+              <!-- Selected Categories Summary -->
+              <div class="category-summary" *ngIf="filterCategory().length > 0">
+                <div class="summary-header">
+                  <span class="summary-mode" [class.exclude-mode]="filterCategoryMode() === 'exclude'">
+                    <i class="fas" [ngClass]="filterCategoryMode() === 'include' ? 'fa-check-circle' : 'fa-ban'"></i>
+                    {{ filterCategoryMode() === 'include' ? 'Đang chọn' : 'Đang loại trừ' }}
+                  </span>
+                  <span class="summary-count">{{ filterCategory().length }} danh mục</span>
+                </div>
+                <div class="summary-total">
+                  <span class="total-label">Tổng chi tiêu:</span>
+                  <span class="total-amount">{{ formatAmount(selectedCategoriesTotal()) }}</span>
+                </div>
+                <div class="summary-count-info">
+                  <span class="count-label">Số giao dịch:</span>
+                  <span class="count-value">{{ selectedCategoriesCount() }}</span>
                 </div>
               </div>
             </div>
@@ -654,6 +803,98 @@
           </button>
         </div>
 
+        <!-- Active Filters Display -->
+        <div class="active-filters-bar" *ngIf="hasActiveFilters()">
+          <span class="filters-label">Bộ lọc:</span>
+          <div class="filter-badges">
+            <!-- Date Range Badge -->
+            <div class="filter-badge" *ngIf="filterDateFrom() || filterDateTo()">
+              <i class="pi pi-calendar"></i>
+              <span *ngIf="filterDateFrom() && filterDateTo()">
+                {{ formatDateShort(filterDateFrom()) }} - {{ formatDateShort(filterDateTo()) }}
+              </span>
+              <span *ngIf="filterDateFrom() && !filterDateTo()">Từ {{ formatDateShort(filterDateFrom()) }}</span>
+              <span *ngIf="!filterDateFrom() && filterDateTo()">Đến {{ formatDateShort(filterDateTo()) }}</span>
+              <button class="badge-remove" (click)="clearDateRange(); $event.stopPropagation()">
+                <i class="pi pi-times"></i>
+              </button>
+            </div>
+
+            <!-- Selected Dates Badge (Multiple Mode) -->
+            <div class="filter-badge" *ngIf="filterSelectedDates().length > 0">
+              <i class="pi pi-calendar-plus"></i>
+              <span>{{ filterSelectedDates().length }} ngày</span>
+              <button class="badge-remove" (click)="clearSelectedDates(); $event.stopPropagation()">
+                <i class="pi pi-times"></i>
+              </button>
+            </div>
+
+            <!-- Category Badges -->
+            <div class="filter-badge category-badge" *ngFor="let cat of filterCategory().slice(0, 3)"
+                 [style.--cat-color]="getCategoryColor(cat)"
+                 [style.--cat-bg]="getCategoryBgColor(cat)">
+              <i class="fas" [ngClass]="getCategoryIcon(cat)"></i>
+              <span>{{ cat }}</span>
+              <button class="badge-remove" (click)="removeCategory(cat); $event.stopPropagation()">
+                <i class="pi pi-times"></i>
+              </button>
+            </div>
+            <div class="filter-badge more-badge" *ngIf="filterCategory().length > 3">
+              <span>+{{ filterCategory().length - 3 }} khác</span>
+            </div>
+
+            <!-- Amount Range Badge -->
+            <div class="filter-badge" *ngIf="filterAmountMin() !== null || filterAmountMax() !== null">
+              <i class="pi pi-money-bill"></i>
+              <span *ngIf="filterAmountMin() !== null && filterAmountMax() !== null">
+                {{ formatCompactAmount(filterAmountMin()!) }} - {{ formatCompactAmount(filterAmountMax()!) }}
+              </span>
+              <span *ngIf="filterAmountMin() !== null && filterAmountMax() === null">
+                ≥ {{ formatCompactAmount(filterAmountMin()!) }}
+              </span>
+              <span *ngIf="filterAmountMin() === null && filterAmountMax() !== null">
+                ≤ {{ formatCompactAmount(filterAmountMax()!) }}
+              </span>
+              <button class="badge-remove" (click)="clearAmountFilter(); $event.stopPropagation()">
+                <i class="pi pi-times"></i>
+              </button>
+            </div>
+
+            <!-- Search Text Badge -->
+            <div class="filter-badge search-badge" *ngIf="searchText()">
+              <i class="pi pi-search"></i>
+              <span>"{{ searchText() }}"</span>
+              <button class="badge-remove" (click)="searchText.set(''); $event.stopPropagation()">
+                <i class="pi pi-times"></i>
+              </button>
+            </div>
+
+            <!-- Expense Level Filter Badge -->
+            <div class="filter-badge level-badge" *ngIf="filterExpenseLevel() !== 'all'"
+                 [class.high]="filterExpenseLevel() === 'high'"
+                 [class.above-avg]="filterExpenseLevel() === 'above-average'"
+                 [class.below-avg]="filterExpenseLevel() === 'below-average'"
+                 [class.low]="filterExpenseLevel() === 'low'">
+              <i class="pi" [ngClass]="{
+                'pi-arrow-up': filterExpenseLevel() === 'high',
+                'pi-chevron-up': filterExpenseLevel() === 'above-average',
+                'pi-chevron-down': filterExpenseLevel() === 'below-average',
+                'pi-arrow-down': filterExpenseLevel() === 'low'
+              }"></i>
+              <span>{{ getExpenseLevelLabel(filterExpenseLevel()) }}</span>
+              <button class="badge-remove" (click)="filterExpenseLevel.set('all'); $event.stopPropagation()">
+                <i class="pi pi-times"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Clear All Button -->
+          <button class="clear-all-filters-btn" (click)="clearAllFilters()">
+            <i class="pi pi-trash"></i>
+            <span>Xóa hết</span>
+          </button>
+        </div>
+
         <!-- Tab Content: List -->
         <div class="tab-content-v3" *ngIf="activeTab() === 'list'">
           <!-- Error Message -->
@@ -721,6 +962,7 @@
               <div class="expense-item-compact-flat"
                    *ngIf="!isGroup(item)"
                    [style.--row-border]="getCategoryColor(item.category)"
+                   [style.--cat-bg]="getCategoryBgColor(item.category)"
                    [class.highlight-above-average]="isAboveAverage(item.amount)">
 
                 <div class="expense-icon-compact-flat" [style.--row-border]="getCategoryColor(item.category)" [style.color]="getCategoryColor(item.category)">
@@ -730,22 +972,26 @@
                 <div class="expense-info-compact-flat">
                   <div class="expense-row-1">
                     <span class="expense-content-compact-flat">{{ item.content }}</span>
-                    <span class="expense-date-compact-flat"> {{ formatDate(item.date) }}</span>
-                  </div>
-                  <div class="expense-row-2">
                     <span class="expense-category-compact-flat" [style.--row-border]="getCategoryColor(item.category)" [style.color]="getCategoryColor(item.category)" [style.border-color]="getCategoryColor(item.category) + '40'" [style.background]="getCategoryBgColor(item.category)">
                       {{ item.category }}
                     </span>
-                    <span class="expense-note-compact-flat" *ngIf="item.note">
+                    <span class="expense-amount-compact-flat" [class.high-amount]="isAboveAverage(item.amount)">
+                      <i class="fas fa-exclamation-triangle warning-icon" *ngIf="isAboveAverage(item.amount)"></i>
+                      {{ formatAmount(item.amount) }}
+                    </span>
+                  </div>
+                  <div class="expense-row-2">
+                    <span class="expense-date-compact-flat">
+                      <i class="fas fa-calendar-alt"></i>
+                      {{ formatDate(item.date) }}
+                    </span>
+                  </div>
+                  <div class="expense-row-3" *ngIf="item.note">
+                    <span class="expense-note-compact-flat">
                       <i class="fas fa-comment"></i>
                       {{ item.note }}
                     </span>
                   </div>
-                </div>
-
-                <div class="expense-amount-compact-flat" [class.high-amount]="isAboveAverage(item.amount)">
-                  <i class="fas fa-exclamation-triangle warning-icon" *ngIf="isAboveAverage(item.amount)"></i>
-                  {{ formatAmount(item.amount) }}
                 </div>
 
                 <div class="expense-actions-compact-flat">
@@ -1010,27 +1256,69 @@
                     </div>
                   </div>
 
-                  <!-- Top Categories -->
-                  <div class="group-top-categories" *ngIf="getGroupTopCategories(group, 3).length > 0">
+                  <!-- Top Categories with Expandable Expenses -->
+                  <div class="group-top-categories" *ngIf="getGroupTopCategories(group, 5).length > 0">
                     <div class="top-categories-header">
                       <i class="fas fa-tags"></i>
                       <span>Top danh mục</span>
+                      <span class="header-hint">(nhấn để xem chi tiết)</span>
                     </div>
                     <div class="top-categories-list">
-                      <div class="category-item"
-                           *ngFor="let cat of getGroupTopCategories(group, 3); let i = index"
-                           [style.--cat-color]="getCategoryColor(cat.category)"
-                           [style.--cat-bg]="getCategoryBgColor(cat.category)">
-                        <div class="category-rank">{{ i + 1 }}</div>
-                        <div class="category-icon">
-                          <i class="fas" [ngClass]="getCategoryIcon(cat.category)"></i>
+                      <div class="category-item-wrapper"
+                           *ngFor="let cat of getGroupTopCategories(group, 5); let i = index">
+                        <div class="category-item"
+                             [class.expanded]="isGroupCategoryExpensesShowing(group.id, cat.category)"
+                             [style.--cat-color]="getCategoryColor(cat.category)"
+                             [style.--cat-bg]="getCategoryBgColor(cat.category)"
+                             (click)="toggleGroupCategoryExpenses(group.id, cat.category, $event)">
+                          <div class="category-rank">{{ i + 1 }}</div>
+                          <div class="category-icon">
+                            <i class="fas" [ngClass]="getCategoryIcon(cat.category)"></i>
+                          </div>
+                          <div class="category-info">
+                            <span class="category-name">{{ cat.category }}</span>
+                            <span class="category-stats">{{ cat.count }} chi tiêu • {{ formatAmount(cat.total) }}</span>
+                          </div>
+                          <div class="category-percent">
+                            {{ getGroupTotalAmount(group) > 0 ? ((cat.total / getGroupTotalAmount(group)) * 100).toFixed(0) : 0 }}%
+                          </div>
+                          <div class="category-expand-icon">
+                            <i class="fas" [ngClass]="isGroupCategoryExpensesShowing(group.id, cat.category) ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+                          </div>
                         </div>
-                        <div class="category-info">
-                          <span class="category-name">{{ cat.category }}</span>
-                          <span class="category-stats">{{ cat.count }} chi tiêu • {{ formatAmount(cat.total) }}</span>
-                        </div>
-                        <div class="category-percent">
-                          {{ getGroupTotalAmount(group) > 0 ? ((cat.total / getGroupTotalAmount(group)) * 100).toFixed(0) : 0 }}%
+                        <!-- Category Expenses List (shows when clicked) -->
+                        <div class="category-expenses-list"
+                             *ngIf="isGroupCategoryExpensesShowing(group.id, cat.category)"
+                             (click)="$event.stopPropagation()">
+                          <div class="category-expenses-header">
+                            <span class="expenses-title">
+                              <i class="fas fa-list"></i>
+                              {{ cat.count }} chi tiêu trong "{{ cat.category }}"
+                            </span>
+                            <button class="close-category-btn" (click)="closeGroupCategoryExpenses()">
+                              <i class="fas fa-times"></i>
+                            </button>
+                          </div>
+                          <div class="category-expenses-content">
+                            <div class="expense-item-inline-compact-flat"
+                                 *ngFor="let expense of getGroupCategoryExpenses(group.id, cat.category)"
+                                 [style.--cat-color]="getCategoryColor(expense.category)"
+                                 [style.--cat-bg]="getCategoryBgColor(expense.category)">
+                              <div class="expense-icon-inline-compact">
+                                <i class="fas" [ngClass]="getCategoryIcon(expense.category)"></i>
+                              </div>
+                              <div class="expense-info-inline-compact">
+                                <div class="expense-content-inline-compact">{{ expense.content }}</div>
+                                <div class="expense-meta-inline-compact">
+                                  <span class="expense-date-inline-compact">{{ formatDate(expense.date) }}</span>
+                                  <span class="expense-note-inline-compact" *ngIf="expense.note">
+                                    <i class="fas fa-comment"></i> {{ expense.note }}
+                                  </span>
+                                </div>
+                              </div>
+                              <div class="expense-amount-inline-compact">{{ formatAmount(expense.amount) }}</div>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -1043,40 +1331,6 @@
                   <button class="action-btn delete-btn" (click)="deleteGroup(group)" title="Xóa">
                     <i class="fas fa-trash"></i>
                   </button>
-                </div>
-                <!-- Expanded Expenses List -->
-                <div class="group-expenses-list" *ngIf="expandedGroupId() === group.id">
-                  <div class="expenses-list-header">
-                    <h5>
-                      <i class="fas fa-list"></i>
-                      Danh sách chi tiêu ({{ getGroupExpensesCount(group) }})
-                    </h5>
-                  </div>
-                  <div class="expenses-list-content">
-                    <div class="expense-item-inline-compact-flat"
-                         *ngFor="let expense of (expensesByGroup()[group.id] || []); let i = index"
-                         [style.--cat-color]="getCategoryColor(expense.category)"
-                         [style.--cat-bg]="getCategoryBgColor(expense.category)">
-                      <div class="expense-icon-inline-compact">
-                        <i class="fas" [ngClass]="getCategoryIcon(expense.category)"></i>
-                      </div>
-                      <div class="expense-info-inline-compact">
-                        <div class="expense-content-inline-compact">{{ expense.content }}</div>
-                        <div class="expense-meta-inline-compact">
-                          <span class="expense-category-inline-compact">{{ expense.category }}</span>
-                          <span class="expense-date-inline-compact">{{ formatDate(expense.date) }}</span>
-                          <span class="expense-note-inline-compact" *ngIf="expense.note">
-                            <i class="fas fa-comment"></i> {{ expense.note }}
-                          </span>
-                        </div>
-                      </div>
-                      <div class="expense-amount-inline-compact">{{ formatAmount(expense.amount) }}</div>
-                    </div>
-                    <div class="empty-expenses" *ngIf="getGroupExpensesCount(group) === 0">
-                      <i class="fas fa-inbox"></i>
-                      <span>Chưa có chi tiêu nào trong nhóm này</span>
-                    </div>
-                  </div>
                 </div>
               </div>
             </div>
@@ -1462,151 +1716,9 @@
               </div>
             </div>
 
-            <!-- Enhanced Statistics for V2 -->
-            <div class="enhanced-statistics-v2"
-                 *ngIf="currentLayout() === 'v2' && !isLoading() && filteredExpenses().length > 0">
-              <div class="stat-grid">
-                <div class="stat-card-large">
-                  <div class="stat-header">
-                    <i class="pi pi-chart-bar"></i>
-                    <h4>Thống kê chi tiêu</h4>
-                  </div>
-                  <div class="stat-body">
-                    <div class="stat-row">
-                      <span class="stat-label">Chi tiêu lớn nhất:</span>
-                      <span class="stat-value" *ngIf="maxExpense()">{{ formatAmount(maxExpense()!.amount) }}</span>
-                      <span class="stat-detail" *ngIf="maxExpense()">{{ maxExpense()!.content }}</span>
-                    </div>
-                    <div class="stat-row">
-                      <span class="stat-label">Chi tiêu nhỏ nhất:</span>
-                      <span class="stat-value" *ngIf="minExpense()">{{ formatAmount(minExpense()!.amount) }}</span>
-                      <span class="stat-detail" *ngIf="minExpense()">{{ minExpense()!.content }}</span>
-                    </div>
-                    <div class="stat-row">
-                      <span class="stat-label">Trung vị:</span>
-                      <span class="stat-value">{{ formatAmount(medianExpense()) }}</span>
-                    </div>
-                    <div class="stat-row">
-                      <span class="stat-label">Xu hướng (7 ngày):</span>
-                      <span class="stat-value trend" [class.trend-up]="expenseTrend() === 'increasing'"
-                            [class.trend-down]="expenseTrend() === 'decreasing'"
-                            [class.trend-stable]="expenseTrend() === 'stable'">
-                    <i class="pi" [class.pi-arrow-up]="expenseTrend() === 'increasing'"
-                       [class.pi-arrow-down]="expenseTrend() === 'decreasing'"
-                       [class.pi-minus]="expenseTrend() === 'stable'"></i>
-                    <span *ngIf="expenseTrend() === 'increasing'">Tăng</span>
-                    <span *ngIf="expenseTrend() === 'decreasing'">Giảm</span>
-                    <span *ngIf="expenseTrend() === 'stable'">Ổn định</span>
-                  </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="stat-card-large">
-                  <div class="stat-header">
-                    <i class="pi pi-calendar-clock"></i>
-                    <h4>Thống kê theo thứ</h4>
-                  </div>
-                  <div class="stat-body">
-                    <div class="day-stat-item" *ngFor="let dayData of spendingByDayOfWeek()">
-                      <div class="day-name">{{ dayData.day }}</div>
-                      <div class="day-stats-row">
-                        <span class="day-stat">Tổng: {{ formatAmount(dayData.total) }}</span>
-                        <span class="day-stat">TB: {{ formatAmount(dayData.average) }}</span>
-                        <span class="day-stat">Số GD: {{ dayData.count }}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="stat-card-large">
-                  <div class="stat-header">
-                    <i class="pi pi-tag"></i>
-                    <h4>Top phân loại</h4>
-                  </div>
-                  <div class="stat-body">
-                    <div class="category-stat-item" *ngFor="let item of totalByCategory().slice(0, 5)">
-                      <div class="category-name-row">
-                        <span class="category-name">{{ item.category }}</span>
-                        <span class="category-percentage">{{ ((item.total / totalAmount()) * 100).toFixed(1) }}%</span>
-                      </div>
-                      <div class="category-amount">{{ formatAmount(item.total) }}</div>
-                      <div class="category-bar">
-                        <div class="category-bar-fill" [style.width.%]="(item.total / totalAmount()) * 100"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Cash Flow Statistics Card -->
-                <div class="stat-card-large">
-                  <div class="stat-header">
-                    <i class="pi pi-wallet"></i>
-                    <h4>Dòng tiền</h4>
-                  </div>
-                  <div class="stat-body">
-                    <div class="stat-row">
-                      <span class="stat-label">TB/tuần:</span>
-                      <span class="stat-value">{{ formatAmount(averageWeeklyExpense()) }}</span>
-                      <span class="stat-detail">{{ weeklyExpenses().length }} tuần</span>
-                    </div>
-                    <div class="stat-row">
-                      <span class="stat-label">TB/tháng:</span>
-                      <span class="stat-value">{{ formatAmount(averageMonthlyExpense()) }}</span>
-                      <span class="stat-detail">{{ monthlyExpenses().length }} tháng</span>
-                    </div>
-                    <div class="stat-row">
-                      <span class="stat-label">Dự kiến/tháng:</span>
-                      <span class="stat-value">{{ formatAmount(projectedMonthlySpending()) }}</span>
-                      <span class="stat-detail">Dựa trên tốc độ hiện tại</span>
-                    </div>
-                    <div class="stat-row">
-                      <span class="stat-label">Tần suất chi tiêu:</span>
-                      <span class="stat-value">{{ spendingFrequency().frequency }}%</span>
-                      <span class="stat-detail">{{ spendingFrequency().daysWithExpenses }}
-                        /{{ spendingFrequency().totalDays }} ngày</span>
-                    </div>
-                    <div class="stat-row">
-                      <span class="stat-label">GD/ngày:</span>
-                      <span class="stat-value">{{ transactionsPerDay() }}</span>
-                      <span class="stat-detail">Giao dịch trung bình</span>
-                    </div>
-                    <div class="stat-row" *ngIf="largestSpendingStreak().streak > 0">
-                      <span class="stat-label">Chuỗi chi tiêu dài nhất:</span>
-                      <span class="stat-value">{{ largestSpendingStreak().streak }} ngày</span>
-                      <span class="stat-detail">{{ formatDateShort(largestSpendingStreak().startDate) }}
-                        - {{ formatDateShort(largestSpendingStreak().endDate) }}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Weekday vs Weekend Card -->
-                <div class="stat-card-large">
-                  <div class="stat-header">
-                    <i class="pi pi-calendar-times"></i>
-                    <h4>Ngày thường vs Cuối tuần</h4>
-                  </div>
-                  <div class="stat-body">
-                    <div class="stat-row">
-                      <span class="stat-label">Ngày thường:</span>
-                      <span class="stat-value">{{ formatAmount(weekdayWeekendComparison().weekday.total) }}</span>
-                      <span class="stat-detail">{{ weekdayWeekendComparison().weekday.count }}
-                        GD, TB: {{ formatAmount(weekdayWeekendComparison().weekday.average) }}</span>
-                    </div>
-                    <div class="stat-row">
-                      <span class="stat-label">Cuối tuần:</span>
-                      <span class="stat-value">{{ formatAmount(weekdayWeekendComparison().weekend.total) }}</span>
-                      <span class="stat-detail">{{ weekdayWeekendComparison().weekend.count }}
-                        GD, TB: {{ formatAmount(weekdayWeekendComparison().weekend.average) }}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
             <!-- Statistics Cards -->
             <div class="statistics-section"
-                 *ngIf="currentLayout() !== 'v2' && !isLoading() && filteredExpenses().length > 0">
+                 *ngIf="!isLoading() && filteredExpenses().length > 0">
               <div class="stat-card">
                 <div class="stat-icon">
                   <i class="pi pi-arrow-up"></i>
@@ -1905,7 +2017,9 @@
                  *ngIf="!isLoading() && !isSingleDayFilter() && spendingByDayOfWeek().length > 0">
               <h3>Thống kê theo thứ</h3>
               <div class="day-of-week-grid">
-                <div class="day-of-week-card" *ngFor="let dayData of spendingByDayOfWeek()"
+                <div class="day-of-week-card"
+                     *ngFor="let dayData of spendingByDayOfWeek()"
+                     [class.weekend]="dayData.day === 'CN' || dayData.day === 'Thứ 7'"
                      (click)="showDayOfWeekDetailDialog(dayData.day)">
                   <div class="day-name">{{ dayData.day }}</div>
                   <div class="day-stats">
@@ -1958,19 +2072,35 @@
               <h3>Chi tiết theo phân loại</h3>
               <div class="category-list">
                 <div class="category-item" *ngFor="let item of totalByCategory()"
-                     (click)="showCategoryDetailDialog(item.category)">
-                  <div class="category-info">
-                    <div class="category-name">{{ item.category }}</div>
-                    <div class="category-percentage">
-                      {{ ((item.total / totalAmount()) * 100).toFixed(1) }}%
+                     (click)="showCategoryDetailDialog(item.category)"
+                     [style.--cat-color]="getCategoryColor(item.category)"
+                     [style.--cat-bg]="getCategoryBgColor(item.category)">
+                  <div class="category-icon-small">
+                    <i class="fas" [ngClass]="getCategoryIcon(item.category)"></i>
+                  </div>
+                  <div class="category-main">
+                    <div class="category-header">
+                      <div class="category-name">{{ item.category }}</div>
+                      <div class="category-amount">{{ formatAmount(item.total) }}</div>
+                    </div>
+                    <div class="category-progress-row">
+                      <div class="category-progress-bar">
+                        <div class="category-progress-fill"
+                             [style.width.%]="(item.total / totalAmount()) * 100"
+                             [style.background]="getCategoryColor(item.category)">
+                        </div>
+                      </div>
+                      <div class="category-percentage">
+                        {{ ((item.total / totalAmount()) * 100).toFixed(1) }}%
+                      </div>
+                    </div>
+                    <div class="category-stats-mini">
+                      <span class="stat-mini">{{ item.count }} giao dịch</span>
+                      <span class="stat-mini">TB: {{ formatAmount(item.total / item.count) }}</span>
                     </div>
                   </div>
-                  <div class="category-amount">{{ formatAmount(item.total) }}</div>
-                  <div class="category-bar">
-                    <div
-                      class="category-bar-fill"
-                      [style.width.%]="(item.total / totalAmount()) * 100">
-                    </div>
+                  <div class="category-arrow">
+                    <i class="pi pi-chevron-right"></i>
                   </div>
                 </div>
               </div>
@@ -2144,6 +2274,127 @@
             </div>
             <div class="budget-chart-container">
               <canvas #budgetTrendChart></canvas>
+            </div>
+          </div>
+
+          <!-- Additional Trend Charts -->
+          <div class="additional-trends-section">
+            <!-- Weekly Spending Pattern -->
+            <div class="trend-chart-card">
+              <div class="chart-header">
+                <h4>
+                  <i class="pi pi-calendar"></i>
+                  Chi tiêu theo tuần
+                </h4>
+                <span class="chart-badge">{{ reportMonth() ? getCurrentMonthName() : reportYear() }}</span>
+              </div>
+              <div class="chart-container">
+                <canvas #weeklyTrendChart></canvas>
+              </div>
+              <div class="chart-summary-row">
+                <div class="summary-item">
+                  <span class="summary-label">Tuần cao nhất:</span>
+                  <span class="summary-value">{{ formatCompactAmount(getHighestWeekSpending()) }}</span>
+                </div>
+                <div class="summary-item">
+                  <span class="summary-label">TB/tuần:</span>
+                  <span class="summary-value">{{ formatCompactAmount(getAverageWeekSpending()) }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Category Trend -->
+            <div class="trend-chart-card">
+              <div class="chart-header">
+                <h4>
+                  <i class="pi pi-tags"></i>
+                  Top 5 danh mục
+                </h4>
+                <span class="chart-badge">{{ formatCompactAmount(monthlySpent()) }}</span>
+              </div>
+              <div class="chart-container">
+                <canvas #categoryTrendChart></canvas>
+              </div>
+            </div>
+
+            <!-- Daily Average Comparison -->
+            <div class="trend-chart-card">
+              <div class="chart-header">
+                <h4>
+                  <i class="pi pi-clock"></i>
+                  Chi tiêu theo ngày trong tuần
+                </h4>
+              </div>
+              <div class="chart-container">
+                <canvas #dayOfWeekChart></canvas>
+              </div>
+            </div>
+
+            <!-- Spending Velocity -->
+            <div class="trend-chart-card">
+              <div class="chart-header">
+                <h4>
+                  <i class="pi pi-bolt"></i>
+                  Tốc độ chi tiêu
+                </h4>
+                <span class="chart-badge" [class.over-budget]="budgetPercentage() > 100">
+                  {{ budgetPercentage() > 100 ? 'Vượt ngân sách' : 'Trong ngân sách' }}
+                </span>
+              </div>
+              <div class="chart-container">
+                <canvas #velocityChart></canvas>
+              </div>
+              <div class="chart-summary-row">
+                <div class="summary-item">
+                  <span class="summary-label">TB/ngày:</span>
+                  <span class="summary-value">{{ formatCompactAmount(getDailyAverageThisMonth()) }}</span>
+                </div>
+                <div class="summary-item">
+                  <span class="summary-label">Dự kiến cuối tháng:</span>
+                  <span class="summary-value" [class.negative]="getProjectedMonthEnd() > monthlyBudget()">
+                    {{ formatCompactAmount(getProjectedMonthEnd()) }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Spending Comparison Card -->
+          <div class="spending-comparison-card" *ngIf="getPreviousMonthComparison() as comparison">
+            <div class="comparison-header">
+              <h4>
+                <i class="pi pi-chart-bar"></i>
+                So sánh với tháng trước
+              </h4>
+            </div>
+            <div class="comparison-grid">
+              <div class="comparison-item">
+                <span class="comparison-label">Tháng này</span>
+                <span class="comparison-value">{{ formatCompactAmount(monthlySpent()) }}</span>
+                <span class="comparison-change"
+                      [class.positive]="comparison.percentChange > 0"
+                      [class.negative]="comparison.percentChange < 0"
+                      [class.neutral]="comparison.percentChange === 0">
+                  <i class="pi" [ngClass]="comparison.percentChange > 0 ? 'pi-arrow-up' : (comparison.percentChange < 0 ? 'pi-arrow-down' : 'pi-minus')"></i>
+                  {{ Math.abs(comparison.percentChange).toFixed(1) }}%
+                </span>
+              </div>
+              <div class="comparison-item">
+                <span class="comparison-label">Tháng trước</span>
+                <span class="comparison-value">{{ formatCompactAmount(comparison.previousTotal) }}</span>
+                <span class="comparison-change neutral">
+                  {{ comparison.previousMonth }}
+                </span>
+              </div>
+              <div class="comparison-item">
+                <span class="comparison-label">Chênh lệch</span>
+                <span class="comparison-value">{{ formatCompactAmount(Math.abs(comparison.difference)) }}</span>
+                <span class="comparison-change"
+                      [class.positive]="comparison.difference > 0"
+                      [class.negative]="comparison.difference < 0">
+                  {{ comparison.difference > 0 ? 'Tăng' : (comparison.difference < 0 ? 'Giảm' : 'Không đổi') }}
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -2660,7 +2911,9 @@
 
     <!-- Add Expense Dialog -->
     <div class="dialog-overlay" *ngIf="showAddForm()" (click)="hideAddExpenseForm()">
-      <div class="dialog-container add-expense-dialog-v2" (click)="$event.stopPropagation()">
+      <div class="dialog-container add-expense-dialog-v2"
+           [class.multiple-mode]="inputMode() === 'multiple'"
+           (click)="$event.stopPropagation()">
         <div class="dialog-header-v2">
           <div class="header-left">
             <div class="header-icon-wrapper">
@@ -3100,9 +3353,25 @@
 
           <div class="divider"></div>
 
-          <!-- Custom Date Inputs -->
-          <div class="custom-date-section">
-            <label class="custom-date-label">Hoặc chọn khoảng thời gian tùy chỉnh:</label>
+          <!-- Date Mode Toggle -->
+          <div class="date-mode-toggle-dialog">
+            <button class="mode-btn"
+                    [class.active]="filterDateMode() === 'range'"
+                    (click)="filterDateMode.set('range')">
+              <i class="pi pi-calendar-times"></i>
+              <span>Khoảng ngày</span>
+            </button>
+            <button class="mode-btn"
+                    [class.active]="filterDateMode() === 'multiple'"
+                    (click)="filterDateMode.set('multiple')">
+              <i class="pi pi-check-square"></i>
+              <span>Chọn nhiều ngày</span>
+            </button>
+          </div>
+
+          <!-- Range Mode: Custom Date Inputs -->
+          <div class="custom-date-section" *ngIf="filterDateMode() === 'range'">
+            <label class="custom-date-label">Chọn khoảng thời gian:</label>
             <div class="date-inputs-row">
               <div class="form-group date-input-group">
                 <label>Từ ngày:</label>
@@ -3118,23 +3387,67 @@
             </div>
           </div>
 
+          <!-- Multiple Mode: Select Specific Dates -->
+          <div class="multi-date-section" *ngIf="filterDateMode() === 'multiple'">
+            <label class="multi-date-label">Chọn các ngày cụ thể:</label>
+            <input type="text"
+                   [ngModel]="multiDateInput()"
+                   (ngModelChange)="multiDateInput.set($event)"
+                   (blur)="parseMultiDateInput()"
+                   placeholder="VD: 1, 5, 10, 15 hoặc 1-5, 10-15"
+                   class="multi-date-input">
+            <p class="multi-date-hint">
+              <i class="pi pi-info-circle"></i>
+              Nhập số ngày cách nhau bởi dấu phẩy (1, 5, 10) hoặc khoảng ngày (1-5). Tháng: {{ getCurrentMonthName() }}
+            </p>
+
+            <!-- Selected dates preview -->
+            <div class="selected-dates-preview" *ngIf="filterSelectedDates().length > 0">
+              <div class="date-chip" *ngFor="let date of filterSelectedDates()">
+                <span>{{ formatDate(date) }}</span>
+                <button class="remove-chip" (click)="removeSelectedDate(date)">
+                  <i class="pi pi-times"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Quick select available dates -->
+            <div class="available-dates-section" *ngIf="uniqueDatesWithStats().length > 0">
+              <label class="available-dates-label">Hoặc chọn từ danh sách có giao dịch:</label>
+              <div class="available-dates-grid">
+                <button *ngFor="let dateInfo of uniqueDatesWithStats().slice(0, 20)"
+                        class="available-date-btn"
+                        [class.selected]="filterSelectedDates().includes(dateInfo.date)"
+                        (click)="toggleDateSelection(dateInfo.date)">
+                  <span class="date-day">{{ formatDate(dateInfo.date) }}</span>
+                  <span class="date-amount">{{ formatCompactAmount(dateInfo.total) }}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
           <!-- Current Selection Display -->
-          <div class="current-selection" *ngIf="filterDateFrom() || filterDateTo()">
+          <div class="current-selection" *ngIf="(filterDateMode() === 'range' && (filterDateFrom() || filterDateTo())) || (filterDateMode() === 'multiple' && filterSelectedDates().length > 0)">
             <div class="selection-content">
-              <div class="selection-label">Khoảng thời gian đã chọn:</div>
+              <div class="selection-label">
+                {{ filterDateMode() === 'range' ? 'Khoảng thời gian đã chọn:' : 'Số ngày đã chọn:' }}
+              </div>
               <div class="selection-value">
-                <span *ngIf="filterDateFrom() && filterDateTo()">
+                <span *ngIf="filterDateMode() === 'range' && filterDateFrom() && filterDateTo()">
                   {{ formatDate(filterDateFrom()) }} - {{ formatDate(filterDateTo()) }}
                 </span>
-                <span *ngIf="filterDateFrom() && !filterDateTo()">
+                <span *ngIf="filterDateMode() === 'range' && filterDateFrom() && !filterDateTo()">
                   Từ {{ formatDate(filterDateFrom()) }}
                 </span>
-                <span *ngIf="!filterDateFrom() && filterDateTo()">
+                <span *ngIf="filterDateMode() === 'range' && !filterDateFrom() && filterDateTo()">
                   Đến {{ formatDate(filterDateTo()) }}
+                </span>
+                <span *ngIf="filterDateMode() === 'multiple'">
+                  {{ filterSelectedDates().length }} ngày
                 </span>
               </div>
             </div>
-            <button (click)="clearDateRange()" class="clear-selection-btn">
+            <button (click)="clearAllDateFilters()" class="clear-selection-btn">
               <i class="pi pi-times"></i>
               <span>Xóa</span>
             </button>
@@ -3142,12 +3455,12 @@
         </div>
 
         <div class="dialog-footer">
-          <button (click)="clearDateRange()" class="clear-btn" *ngIf="filterDateFrom() || filterDateTo()">
+          <button (click)="clearAllDateFilters()" class="btn btn-secondary" *ngIf="filterDateFrom() || filterDateTo() || filterSelectedDates().length > 0">
             <i class="pi pi-trash"></i>
             Xóa bộ lọc
           </button>
-          <button (click)="hideCustomDateRangeDialog()" class="cancel-btn">Hủy</button>
-          <button (click)="applyCustomDateRange()" class="save-btn">Áp dụng</button>
+          <button (click)="hideCustomDateRangeDialog()" class="btn btn-secondary">Hủy</button>
+          <button (click)="applyCustomDateRange()" class="btn btn-primary">Áp dụng</button>
         </div>
       </div>
     </div>
@@ -3455,302 +3768,17 @@
       </div>
     </div>
 
-    <!-- Filter Dialog (V2) -->
-    <div class="dialog-overlay" *ngIf="showFilterDialog() && currentLayout() === 'v2'"
-         (click)="showFilterDialog.set(false)">
-      <div class="dialog-container filter-dialog-v2" (click)="$event.stopPropagation()">
-        <div class="dialog-header">
-          <h3>
-            <i class="pi pi-filter"></i>
-            Bộ lọc
-          </h3>
-          <button (click)="showFilterDialog.set(false)" class="close-btn">
-            <i class="pi pi-times"></i>
-          </button>
-        </div>
-
-        <div class="dialog-body">
-          <!-- Time-based Filter Section -->
-          <div class="filter-section">
-            <h4 class="filter-section-title">
-              <i class="pi pi-calendar"></i>
-              Lọc theo thời gian
-            </h4>
-
-            <!-- Quick Filter Buttons -->
-            <div class="quick-filters">
-              <button (click)="filterToday()" class="quick-filter-btn" [class.active]="isTodayActive()">
-                <i class="pi pi-calendar-check"></i>
-                <span>Hôm nay</span>
-              </button>
-              <button (click)="filterYesterday()" class="quick-filter-btn" [class.active]="isYesterdayActive()">
-                <i class="pi pi-calendar-minus"></i>
-                <span>Hôm qua</span>
-              </button>
-              <button (click)="filterLast7Days()" class="quick-filter-btn" [class.active]="isLast7DaysActive()">
-                <i class="pi pi-calendar"></i>
-                <span>7 ngày qua</span>
-              </button>
-              <button (click)="filterLast30Days()" class="quick-filter-btn" [class.active]="isLast30DaysActive()">
-                <i class="pi pi-calendar-times"></i>
-                <span>30 ngày qua</span>
-              </button>
-              <button (click)="filterCurrentMonth()" class="quick-filter-btn" [class.active]="isCurrentMonthActive()">
-                <i class="pi pi-calendar-clock"></i>
-                <span>Tháng này</span>
-              </button>
-              <button (click)="showCustomDateRangeDialog()" class="quick-filter-btn custom">
-                <i class="pi pi-sliders-h"></i>
-                <span>Tùy chỉnh</span>
-              </button>
-            </div>
-
-            <!-- Date Range Display -->
-            <div class="date-range-display" *ngIf="filterDateFrom() || filterDateTo()">
-              <i class="pi pi-calendar"></i>
-              <span *ngIf="filterDateFrom() && filterDateTo()">
-                {{ formatDate(filterDateFrom()) }} - {{ formatDate(filterDateTo()) }}
-              </span>
-              <span *ngIf="filterDateFrom() && !filterDateTo()">
-                Từ {{ formatDate(filterDateFrom()) }}
-              </span>
-              <span *ngIf="!filterDateFrom() && filterDateTo()">
-                Đến {{ formatDate(filterDateTo()) }}
-              </span>
-              <button (click)="clearDateRange()" class="clear-date-btn">
-                <i class="pi pi-times"></i>
-              </button>
-            </div>
-          </div>
-
-          <!-- Search and Category Filter Section -->
-          <div class="filter-section">
-            <h4 class="filter-section-title">
-              <i class="pi pi-search"></i>
-              Tìm kiếm và phân loại
-            </h4>
-
-            <!-- Search Bar -->
-            <div class="search-bar">
-              <i class="pi pi-search"></i>
-              <input
-                type="text"
-                [ngModel]="searchText()"
-                (ngModelChange)="searchText.set($event)"
-                class="search-input"
-                placeholder="Tìm kiếm theo nội dung hoặc phân loại...">
-              <button *ngIf="searchText()" (click)="searchText.set('')" class="clear-search-btn">
-                <i class="pi pi-times"></i>
-              </button>
-            </div>
-
-            <div class="filter-row">
-              <div class="filter-group category-multi-select">
-                <label>Phân loại:</label>
-                <div class="category-select-wrapper">
-                  <button
-                    class="category-select-btn"
-                    [class.has-selection]="filterCategory().length > 0"
-                    (click)="toggleDropdown($event)">
-                    <span class="category-select-text">
-                      <span *ngIf="filterCategory().length === 0">Tất cả</span>
-                      <span *ngIf="filterCategory().length === 1">{{ filterCategory()[0] }}</span>
-                      <span *ngIf="filterCategory().length > 1">{{ filterCategory().length }} phân loại đã chọn</span>
-                    </span>
-                    <i class="pi" [class.pi-chevron-down]="!showCategoryDropdown()"
-                       [class.pi-chevron-up]="showCategoryDropdown()"></i>
-                  </button>
-
-                  <div class="category-dropdown" *ngIf="showCategoryDropdown()"
-                       [ngStyle]="currentLayout() === 'v2' && categoryDropdownPosition() ? {
-                         'position': 'fixed',
-                         'top.px': categoryDropdownPosition()!.top,
-                         'left.px': categoryDropdownPosition()!.left
-                       } : {}">
-                    <div class="category-dropdown-header">
-                      <span>Chọn phân loại</span>
-                      <button (click)="filterCategory.set([])" class="clear-all-categories-btn"
-                              *ngIf="filterCategory().length > 0">
-                        <i class="pi pi-times"></i>
-                        Xóa tất cả
-                      </button>
-                    </div>
-                    <div class="category-dropdown-search">
-                      <i class="pi pi-search"></i>
-                      <input
-                        type="text"
-                        [ngModel]="categorySearchText()"
-                        (ngModelChange)="categorySearchText.set($event)"
-                        (click)="$event.stopPropagation()"
-                        class="category-search-input"
-                        placeholder="Tìm kiếm phân loại...">
-                      <button
-                        *ngIf="categorySearchText()"
-                        (click)="categorySearchText.set(''); $event.stopPropagation()"
-                        class="clear-search-btn-small">
-                        <i class="pi pi-times"></i>
-                      </button>
-                    </div>
-                    <div class="category-select-all-section">
-                      <div
-                        class="category-checkbox-item select-all-item"
-                        (click)="toggleSelectAllFilteredCategories()">
-                        <input
-                          type="checkbox"
-                          [checked]="isAllFilteredCategoriesSelected()"
-                          [indeterminate]="isSomeFilteredCategoriesSelected()"
-                          (click)="$event.stopPropagation()"
-                          (change)="toggleSelectAllFilteredCategories()">
-                        <span class="checkbox-label select-all-label">
-                          <strong>Chọn tất cả</strong>
-                          <span class="select-all-count" *ngIf="filteredCategories().length > 0">
-                            ({{ filteredCategories().length }})
-                          </span>
-                        </span>
-                      </div>
-                    </div>
-                    <div class="category-dropdown-list">
-                      <div
-                        class="category-checkbox-item"
-                        *ngFor="let cat of filteredCategories()"
-                        (click)="toggleCategory(cat)">
-                        <input
-                          type="checkbox"
-                          [checked]="isCategorySelected(cat)"
-                          (click)="$event.stopPropagation()"
-                          (change)="toggleCategory(cat)">
-                        <span class="checkbox-label">{{ cat }}</span>
-                      </div>
-                      <div class="no-results" *ngIf="filteredCategories().length === 0">
-                        <i class="pi pi-search"></i>
-                        <span>Không tìm thấy phân loại nào</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="filter-group">
-                <label>Số tiền:</label>
-                <div class="amount-input-group">
-                  <input
-                    type="number"
-                    [ngModel]="filterAmountMin()"
-                    (ngModelChange)="filterAmountMin.set($event ? Number($event) : null)"
-                    class="filter-input"
-                    placeholder="Từ">
-                  <span class="filter-separator">-</span>
-                  <input
-                    type="number"
-                    [ngModel]="filterAmountMax()"
-                    (ngModelChange)="filterAmountMax.set($event ? Number($event) : null)"
-                    class="filter-input"
-                    placeholder="Đến">
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="dialog-footer">
-          <button (click)="clearFilters()" class="clear-all-btn"
-                  *ngIf="filterCategory() || searchText() || filterAmountMin() !== null || filterAmountMax() !== null">
-            <i class="pi pi-trash"></i>
-            Xóa tất cả
-          </button>
-          <button (click)="showFilterDialog.set(false)" class="apply-btn">
-            <i class="pi pi-check"></i>
-            Áp dụng
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Metric Dialog (V2) -->
-    <div class="dialog-overlay" *ngIf="showMetricDialog() && currentLayout() === 'v2'"
-         (click)="showMetricDialog.set(false)">
-      <div class="dialog-container metric-dialog-v2" (click)="$event.stopPropagation()">
-        <div class="dialog-header">
-          <h3>
-            <i class="pi pi-chart-line"></i>
-            Số liệu tổng hợp
-          </h3>
-          <button (click)="showMetricDialog.set(false)" class="close-btn">
-            <i class="pi pi-times"></i>
-          </button>
-        </div>
-
-        <div class="dialog-body">
-          <div class="summary-section compact">
-            <div class="summary-card">
-              <div class="summary-icon">
-                <i class="pi pi-money-bill"></i>
-              </div>
-              <div class="summary-content">
-                <div class="summary-label">Tổng chi tiêu</div>
-                <div class="summary-value">{{ formatAmount(totalAmount()) }}</div>
-                <div class="summary-change" *ngIf="periodComparison()">
-                  <i class="pi" [class.pi-arrow-up]="periodComparison()!.change > 0"
-                     [class.pi-arrow-down]="periodComparison()!.change < 0"
-                     [class.pi-minus]="periodComparison()!.change === 0"></i>
-                  <span [class.positive]="periodComparison()!.change > 0"
-                        [class.negative]="periodComparison()!.change < 0">
-                    {{ Math.abs(periodComparison()!.change) }}%
-                  </span>
-                  <span class="change-label">vs {{ periodComparison()!.period }} trước</span>
-                </div>
-              </div>
-            </div>
-            <div class="summary-card">
-              <div class="summary-icon">
-                <i class="pi pi-list"></i>
-              </div>
-              <div class="summary-content">
-                <div class="summary-label">Số giao dịch</div>
-                <div class="summary-value">{{ filteredExpenses().length }}</div>
-              </div>
-            </div>
-            <div class="summary-card">
-              <div class="summary-icon">
-                <i class="pi pi-chart-line"></i>
-              </div>
-              <div class="summary-content">
-                <div class="summary-label">TB/giao dịch</div>
-                <div class="summary-value">{{ formatAmount(averageExpense()) }}</div>
-              </div>
-            </div>
-            <div class="summary-card">
-              <div class="summary-icon">
-                <i class="pi pi-calendar"></i>
-              </div>
-              <div class="summary-content">
-                <div class="summary-label">TB/ngày</div>
-                <div class="summary-value">{{ formatAmount(averageDailyExpense()) }}</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="dialog-footer">
-          <button (click)="showMetricDialog.set(false)" class="close-btn-footer">
-            <i class="pi pi-check"></i>
-            Đóng
-          </button>
-        </div>
-      </div>
-    </div>
-
     <!-- Day of Week Detail Dialog -->
     <div class="dialog-overlay" *ngIf="showDayOfWeekDetail()" (click)="hideDayOfWeekDetailDialog()">
-      <div class="dialog-container day-detail-dialog" (click)="$event.stopPropagation()">
-        <div class="dialog-header day-detail-header">
+      <div class="dialog-container day-of-week-detail-dialog" (click)="$event.stopPropagation()">
+        <div class="dialog-header">
           <div class="header-content">
             <div class="header-icon">
               <i class="pi pi-calendar-clock"></i>
             </div>
             <div class="header-text">
               <h3>Chi tiết thống kê</h3>
-              <p class="header-date">{{ selectedDayOfWeek() }}</p>
+              <p class="header-subtitle">{{ selectedDayOfWeek() }}</p>
             </div>
           </div>
           <button (click)="hideDayOfWeekDetailDialog()" class="close-btn">
@@ -3758,62 +3786,57 @@
           </button>
         </div>
 
-        <div class="dialog-body day-detail-body">
-          <div class="day-detail-summary">
-            <div class="detail-summary-card total-card">
-              <div class="card-icon">
-                <i class="pi pi-money-bill"></i>
-              </div>
-              <div class="card-content">
-                <div class="detail-summary-label">Tổng chi tiêu</div>
-                <div class="detail-summary-value">{{ formatAmount(selectedDayOfWeekTotal()) }}</div>
-              </div>
+        <div class="dialog-body">
+          <!-- Summary Stats -->
+          <div class="day-summary-stats">
+            <div class="summary-stat-card">
+              <span class="stat-label">Tổng chi tiêu</span>
+              <span class="stat-value">{{ formatAmount(selectedDayOfWeekTotal()) }}</span>
             </div>
-            <div class="detail-summary-card count-card">
-              <div class="card-icon">
-                <i class="pi pi-list"></i>
-              </div>
-              <div class="card-content">
-                <div class="detail-summary-label">Số giao dịch</div>
-                <div class="detail-summary-value">{{ selectedDayOfWeekExpenses().length }}</div>
-              </div>
+            <div class="summary-stat-card">
+              <span class="stat-label">Số giao dịch</span>
+              <span class="stat-value">{{ selectedDayOfWeekExpenses().length }}</span>
+            </div>
+            <div class="summary-stat-card">
+              <span class="stat-label">TB/giao dịch</span>
+              <span class="stat-value">{{ formatAmount(selectedDayOfWeekExpenses().length > 0 ? selectedDayOfWeekTotal() / selectedDayOfWeekExpenses().length : 0) }}</span>
             </div>
           </div>
 
-          <div class="day-detail-list" *ngIf="selectedDayOfWeekExpenses().length > 0">
-            <div class="list-header">
-              <h4>
-                <i class="pi pi-list-check"></i>
-                Danh sách chi tiêu
-              </h4>
-              <span class="list-count">{{ selectedDayOfWeekExpenses().length }} mục</span>
+          <!-- Chart Section -->
+          <div class="day-chart-section" *ngIf="getDayOfWeekChartData().length > 0">
+            <h4>
+              <i class="pi pi-chart-bar"></i>
+              Chi tiêu theo từng ngày ({{ selectedDayOfWeek() }})
+            </h4>
+            <div class="chart-container">
+              <canvas #dayOfWeekDetailChart></canvas>
             </div>
-            <div class="expense-list-detail">
-              <div class="expense-item-detail"
-                   *ngFor="let expense of selectedDayOfWeekExpenses(); let i = index"
+          </div>
+
+          <!-- Expenses List -->
+          <div class="day-expenses-list" *ngIf="selectedDayOfWeekExpenses().length > 0">
+            <h4>
+              <i class="pi pi-list"></i>
+              Danh sách chi tiêu
+              <span class="expense-count">({{ selectedDayOfWeekExpenses().length }} mục)</span>
+            </h4>
+            <div class="expenses-grid">
+              <div class="expense-row"
+                   *ngFor="let expense of selectedDayOfWeekExpenses()"
                    [style.--cat-color]="getCategoryColor(expense.category)"
                    [style.--cat-bg]="getCategoryBgColor(expense.category)">
-                <div class="expense-icon-wrapper">
+                <div class="expense-icon">
                   <i class="fas" [ngClass]="getCategoryIcon(expense.category)"></i>
                 </div>
-                <div class="expense-number">{{ i + 1 }}</div>
                 <div class="expense-info">
-                  <div class="expense-date-detail">
-                    <i class="fas fa-calendar-day"></i>
-                    <span>{{ formatDate(expense.date) }}</span>
-                  </div>
-                  <div class="expense-category-badge-detail">
-                    <span class="category-badge-text">{{ expense.category }}</span>
-                  </div>
-                  <div class="expense-content-detail">{{ expense.content }}</div>
-                  <div class="expense-note-detail" *ngIf="expense.note">
-                    <i class="fas fa-comment"></i>
-                    <span>{{ expense.note }}</span>
+                  <div class="expense-content">{{ expense.content }}</div>
+                  <div class="expense-meta">
+                    {{ formatDate(expense.date) }} • {{ expense.category }}
+                    <span *ngIf="expense.note"> • {{ expense.note }}</span>
                   </div>
                 </div>
-                <div class="expense-amount-detail">
-                  <span class="amount-value">{{ formatAmount(expense.amount) }}</span>
-                </div>
+                <div class="expense-amount">{{ formatAmount(expense.amount) }}</div>
               </div>
             </div>
           </div>
@@ -3826,8 +3849,8 @@
           </div>
         </div>
 
-        <div class="dialog-footer day-detail-footer">
-          <button (click)="hideDayOfWeekDetailDialog()" class="close-detail-btn">
+        <div class="dialog-footer">
+          <button (click)="hideDayOfWeekDetailDialog()" class="btn btn-primary">
             <i class="pi pi-check"></i>
             Đóng
           </button>
@@ -4038,4 +4061,5 @@
     </div>
   </div>
 </div>
+
 
