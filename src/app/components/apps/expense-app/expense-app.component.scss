@@ -1770,6 +1770,10 @@ $font-mono: 'Segoe UI', sans-serif;
     }
   }
 
+  .edit-expense-dialog-overlay {
+    z-index: 10001;
+  }
+
   .dialog-container,
   .modal-container {
     background: $white;
@@ -1806,7 +1810,7 @@ $font-mono: 'Segoe UI', sans-serif;
       align-items: center;
       justify-content: space-between;
       padding: 16px 20px;
-      background: $gray-50;
+      background: $primary;
       border-bottom: 1px solid $gray-200;
 
       .dialog-title,
@@ -7141,16 +7145,39 @@ $font-mono: 'Segoe UI', sans-serif;
   .multiple-input-mode {
     .saving-progress {
       display: flex;
-      align-items: center;
-      gap: 12px;
+      flex-direction: column;
+      gap: 10px;
       padding: 12px 16px;
       background: $primary-light;
+      border-radius: 8px;
       margin-bottom: 16px;
 
-      .progress-text {
+      .progress-info {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
         font-size: 13px;
         color: $primary;
         font-weight: 500;
+
+        .progress-percent {
+          font-weight: 600;
+          font-family: $font-mono;
+        }
+      }
+
+      .progress-bar {
+        height: 8px;
+        background: rgba($primary, 0.2);
+        border-radius: 4px;
+        overflow: hidden;
+
+        .progress-fill {
+          height: 100%;
+          background: $primary;
+          transition: width 0.3s ease;
+          border-radius: 4px;
+        }
       }
     }
 
@@ -9105,6 +9132,206 @@ $font-mono: 'Segoe UI', sans-serif;
         span {
           font-size: 11px;
         }
+      }
+    }
+  }
+
+  // ============================================
+  // GROUP DETAIL DIALOG
+  // ============================================
+  .group-detail-dialog {
+    max-width: 900px;
+    width: 100%;
+  }
+
+  .group-detail-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+    background: linear-gradient(135deg, $primary 0%, $secondary 100%);
+    border-bottom: none;
+
+    .header-content {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex: 1;
+
+      .header-icon {
+        width: 56px;
+        height: 56px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba($white, 0.2);
+        color: $white;
+        font-size: 24px;
+        border-radius: 12px;
+        flex-shrink: 0;
+      }
+
+      .header-text {
+        flex: 1;
+        min-width: 0;
+
+        h3 {
+          margin: 0 0 4px 0;
+          font-size: 20px;
+          font-weight: 700;
+          color: $white;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .header-subtitle {
+          margin: 0;
+          font-size: 13px;
+          color: rgba($white, 0.8);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+      }
+    }
+
+    .close-btn {
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba($white, 0.2);
+      border: none;
+      color: $white;
+      cursor: pointer;
+      transition: all 0.2s;
+      border-radius: 8px;
+      flex-shrink: 0;
+
+      &:hover {
+        background: rgba($white, 0.3);
+      }
+
+      i {
+        font-size: 16px;
+      }
+    }
+  }
+
+  .group-detail-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+
+    .detail-summary-card {
+      padding: 16px;
+      background: $white;
+      border: 1px solid $gray-200;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      transition: all 0.2s;
+
+      &:hover {
+        border-color: $primary-muted;
+        box-shadow: 0 2px 8px rgba($gray-900, 0.06);
+      }
+
+      .card-icon {
+        width: 44px;
+        height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        border-radius: 8px;
+        flex-shrink: 0;
+      }
+
+      &.total-card .card-icon {
+        background: $primary-light;
+        color: $primary;
+      }
+
+      &.count-card .card-icon {
+        background: $success-light;
+        color: $success;
+      }
+
+      &.date-card .card-icon {
+        background: $accent-light;
+        color: $accent;
+      }
+
+      .card-content {
+        flex: 1;
+        min-width: 0;
+
+        .detail-summary-label {
+          font-size: 12px;
+          color: $gray-600;
+          margin-bottom: 4px;
+          font-weight: 500;
+        }
+
+        .detail-summary-value {
+          font-size: 18px;
+          font-weight: 700;
+          color: $gray-900;
+          font-family: $font-mono;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+      }
+    }
+  }
+
+  .group-stats-detail {
+    padding: 20px 24px;
+    background: $white;
+    border-top: 1px solid $gray-200;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+
+    .stat-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 12px 16px;
+      background: $gray-50;
+      border-radius: 8px;
+      border: 1px solid $gray-200;
+      transition: all 0.2s;
+
+      &:hover {
+        border-color: $primary-muted;
+        background: $gray-100;
+      }
+
+      .stat-label {
+        font-size: 12px;
+        color: $gray-600;
+        font-weight: 500;
+      }
+
+      .stat-value {
+        font-size: 16px;
+        font-weight: 700;
+        color: $gray-900;
+        font-family: $font-mono;
+      }
+
+      .stat-detail {
+        font-size: 11px;
+        color: $gray-500;
+        margin-top: 2px;
+        font-style: italic;
       }
     }
   }
