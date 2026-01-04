@@ -608,7 +608,9 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
             const contentMatch = this.matchSearch(expense.content.toLowerCase(), keyword.toLowerCase(), searchMode);
             const categoryMatch = this.matchSearch(expense.category.toLowerCase(), keyword.toLowerCase(), searchMode);
             const noteMatch = searchInNote && expense.note ? this.matchSearch(expense.note.toLowerCase(), keyword.toLowerCase(), searchMode) : false;
-            return contentMatch || categoryMatch || noteMatch;
+            // Check if keyword is a number and match against amount
+            const amountMatch = this.isNumericString(keyword) ? this.matchAmount(expense.amount, keyword) : false;
+            return contentMatch || categoryMatch || noteMatch || amountMatch;
           });
         }
 
@@ -616,8 +618,10 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         const contentMatch = this.matchSearch(expense.content.toLowerCase(), search, searchMode);
         const categoryMatch = this.matchSearch(expense.category.toLowerCase(), search, searchMode);
         const noteMatch = searchInNote && expense.note ? this.matchSearch(expense.note.toLowerCase(), search, searchMode) : false;
+        // Check if search text is a number and match against amount
+        const amountMatch = this.isNumericString(search) ? this.matchAmount(expense.amount, search) : false;
 
-        return contentMatch || categoryMatch || noteMatch;
+        return contentMatch || categoryMatch || noteMatch || amountMatch;
       });
     }
 
@@ -4968,28 +4972,78 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
   /**
    * Match search text based on search mode
+   * Supports Vietnamese text with and without diacritics
    */
   matchSearch(text: string, search: string, mode: 'contains' | 'starts' | 'ends' | 'exact' | 'regex'): boolean {
-    switch (mode) {
-      case 'contains':
-        return text.includes(search);
-      case 'starts':
-        return text.startsWith(search);
-      case 'ends':
-        return text.endsWith(search);
-      case 'exact':
-        return text === search;
-      case 'regex':
-        try {
-          const regex = new RegExp(search, 'i');
-          return regex.test(text);
-        } catch (e) {
-          // Invalid regex, fallback to contains
-          return text.includes(search);
-        }
-      default:
-        return text.includes(search);
-    }
+    // Normalize both text and search for Vietnamese diacritic-insensitive matching
+    const normalizedText = this.normalizeVietnamese(text);
+    const normalizedSearch = this.normalizeVietnamese(search);
+    
+    // Check both original and normalized versions
+    const checkMatch = (textToCheck: string, searchToCheck: string): boolean => {
+      switch (mode) {
+        case 'contains':
+          return textToCheck.includes(searchToCheck);
+        case 'starts':
+          return textToCheck.startsWith(searchToCheck);
+        case 'ends':
+          return textToCheck.endsWith(searchToCheck);
+        case 'exact':
+          return textToCheck === searchToCheck;
+        case 'regex':
+          try {
+            const regex = new RegExp(searchToCheck, 'i');
+            return regex.test(textToCheck);
+          } catch (e) {
+            // Invalid regex, fallback to contains
+            return textToCheck.includes(searchToCheck);
+          }
+        default:
+          return textToCheck.includes(searchToCheck);
+      }
+    };
+    
+    // Match on original text first, then normalized (for Vietnamese without diacritics)
+    return checkMatch(text, search) || checkMatch(normalizedText, normalizedSearch);
+  }
+
+  /**
+   * Check if a string is numeric (can be parsed as a number)
+   */
+  isNumericString(str: string): boolean {
+    if (!str || str.trim().length === 0) return false;
+    // Remove any whitespace and check if it's a valid number
+    const trimmed = str.trim();
+    // Allow numbers with optional decimal point and digits
+    return /^\d+(\.\d+)?$/.test(trimmed);
+  }
+
+  /**
+   * Match search number against expense amount
+   * Returns true if the amount contains the search number as a substring
+   * (e.g., searching "120" matches 120, 1200, 12000, 120.5, etc.)
+   */
+  matchAmount(amount: number, searchNumber: string): boolean {
+    if (!this.isNumericString(searchNumber)) return false;
+    
+    // Convert amount to string and check if it contains the search number
+    const amountStr = amount.toString();
+    const searchNum = searchNumber.trim();
+    
+    // Check if amount string contains the search number
+    return amountStr.includes(searchNum);
+  }
+
+  /**
+   * Normalize Vietnamese text (remove diacritics for search)
+   * Example: "ướt" -> "uot", "đường" -> "duong"
+   */
+  normalizeVietnamese(text: string): string {
+    return text
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/đ/g, 'd')
+      .replace(/Đ/g, 'D');
   }
 
   /**
