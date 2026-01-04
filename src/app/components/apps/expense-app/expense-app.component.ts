@@ -1741,6 +1741,143 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     }));
   });
 
+  // ============ INSIGHTS-SPECIFIC COMPUTED VALUES (uses reportPeriodExpenses) ============
+
+  // Top spending category for insights (uses reportPeriodExpenses)
+  insightsTopSpendingCategory = computed(() => {
+    const byCategory = this.insightsTotalByCategory();
+    if (byCategory.length === 0) return null;
+    const expenses = this.reportPeriodExpenses();
+    const total = expenses.reduce((sum, e) => sum + e.amount, 0);
+    const top = byCategory[0];
+    return {
+      ...top,
+      percentage: total > 0 ? Math.round((top.total / total) * 100) : 0
+    };
+  });
+
+  // Highest spending day of week for insights (uses reportPeriodExpenses)
+  insightsHighestSpendingDay = computed(() => {
+    const expenses = this.reportPeriodExpenses();
+    if (expenses.length === 0) return null;
+
+    const dayNames = ['Chủ Nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
+    const dayTotals: { [key: number]: { total: number; count: number } } = {};
+
+    for (let i = 0; i < 7; i++) {
+      dayTotals[i] = { total: 0, count: 0 };
+    }
+
+    expenses.forEach(expense => {
+      const day = new Date(expense.date).getDay();
+      dayTotals[day].total += expense.amount;
+      dayTotals[day].count++;
+    });
+
+    let maxDay = 0;
+    let maxAverage = 0;
+
+    for (let i = 0; i < 7; i++) {
+      const avg = dayTotals[i].count > 0 ? dayTotals[i].total / dayTotals[i].count : 0;
+      if (avg > maxAverage) {
+        maxAverage = avg;
+        maxDay = i;
+      }
+    }
+
+    return {
+      day: maxDay,
+      dayName: dayNames[maxDay],
+      average: Math.round(maxAverage)
+    };
+  });
+
+  // Spending trend for insights (compares selected period with previous period)
+  insightsSpendingTrend = computed(() => {
+    const year = this.reportYear();
+    const month = this.reportMonth();
+    const allExpenses = this.expenses();
+
+    let currentPeriodExpenses: any[] = [];
+    let previousPeriodExpenses: any[] = [];
+
+    if (month === null) {
+      // Whole year view: compare with previous year
+      currentPeriodExpenses = allExpenses.filter(e => {
+        const d = new Date(e.date);
+        return d.getFullYear() === year;
+      });
+      previousPeriodExpenses = allExpenses.filter(e => {
+        const d = new Date(e.date);
+        return d.getFullYear() === year - 1;
+      });
+    } else {
+      // Month view: compare with previous month
+      const currentMonthStart = new Date(year, month - 1, 1);
+      const currentMonthEnd = new Date(year, month, 0);
+      
+      const prevMonth = month === 1 ? 12 : month - 1;
+      const prevYear = month === 1 ? year - 1 : year;
+      const prevMonthStart = new Date(prevYear, prevMonth - 1, 1);
+      const prevMonthEnd = new Date(prevYear, prevMonth, 0);
+
+      currentPeriodExpenses = allExpenses.filter(e => {
+        const d = new Date(e.date);
+        return d >= currentMonthStart && d <= currentMonthEnd;
+      });
+
+      previousPeriodExpenses = allExpenses.filter(e => {
+        const d = new Date(e.date);
+        return d >= prevMonthStart && d <= prevMonthEnd;
+      });
+    }
+
+    const currentTotal = currentPeriodExpenses.reduce((sum, e) => sum + e.amount, 0);
+    const previousTotal = previousPeriodExpenses.reduce((sum, e) => sum + e.amount, 0);
+
+    if (previousTotal === 0) {
+      return { trend: 'Chưa đủ dữ liệu', percentage: 0 };
+    }
+
+    const percentage = Math.round(((currentTotal - previousTotal) / previousTotal) * 100);
+
+    if (percentage > 10) return { trend: 'Tăng', percentage };
+    if (percentage < -10) return { trend: 'Giảm', percentage };
+    return { trend: 'Ổn định', percentage };
+  });
+
+  // Average transactions per day for insights (uses reportPeriodExpenses)
+  insightsAverageTransactionsPerDay = computed(() => {
+    const expenses = this.reportPeriodExpenses();
+    if (expenses.length === 0) return 0;
+    
+    const dateSet = new Set<string>();
+    expenses.forEach(expense => {
+      dateSet.add(expense.date);
+    });
+    const uniqueDates = Array.from(dateSet);
+    
+    if (uniqueDates.length === 0) return 0;
+    return expenses.length / uniqueDates.length;
+  });
+
+  // Average daily expense for insights (uses reportPeriodExpenses)
+  insightsAverageDailyExpense = computed(() => {
+    const expenses = this.reportPeriodExpenses();
+    if (expenses.length === 0) return 0;
+
+    const dateSet = new Set<string>();
+    expenses.forEach(expense => {
+      dateSet.add(expense.date);
+    });
+    const uniqueDates = Array.from(dateSet);
+    
+    if (uniqueDates.length === 0) return 0;
+
+    const total = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+    return Math.round(total / uniqueDates.length);
+  });
+
   // Weekday spending analysis
   weekdaySpending = computed(() => {
     const expenses = this.filteredExpenses();
@@ -1778,6 +1915,41 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   // Week of month spending analysis
   weekOfMonthSpending = computed(() => {
     const expenses = this.filteredExpenses();
+    const weekLabels = ['Tuần 1', 'Tuần 2', 'Tuần 3', 'Tuần 4', 'Tuần 5'];
+    const weekData: { [key: number]: { total: number; count: number } } = {};
+
+    for (let i = 1; i <= 5; i++) {
+      weekData[i] = { total: 0, count: 0 };
+    }
+
+    expenses.forEach(expense => {
+      const date = new Date(expense.date);
+      const week = Math.ceil(date.getDate() / 7);
+      if (week <= 5) {
+        weekData[week].total += expense.amount;
+        weekData[week].count++;
+      }
+    });
+
+    const averages = Object.entries(weekData).map(([week, data]) => ({
+      week: parseInt(week),
+      average: data.count > 0 ? data.total / data.count : 0
+    }));
+
+    const maxAverage = Math.max(...averages.map(w => w.average));
+
+    return averages.map(item => ({
+      week: item.week,
+      label: weekLabels[item.week - 1],
+      average: Math.round(item.average),
+      percentage: maxAverage > 0 ? Math.round((item.average / maxAverage) * 100) : 0,
+      isHighest: item.average === maxAverage && maxAverage > 0
+    }));
+  });
+
+  // Week of month spending analysis for insights (uses reportPeriodExpenses)
+  insightsWeekOfMonthSpending = computed(() => {
+    const expenses = this.reportPeriodExpenses();
     const weekLabels = ['Tuần 1', 'Tuần 2', 'Tuần 3', 'Tuần 4', 'Tuần 5'];
     const weekData: { [key: number]: { total: number; count: number } } = {};
 
@@ -1881,6 +2053,186 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     return tips.slice(0, 4); // Max 4 tips
   });
+
+  // Spending tips for insights (uses insights-specific computed properties)
+  insightsSpendingTips = computed(() => {
+    const tips: Array<{ title: string; description: string; type: 'warning' | 'success' | 'info'; icon: string; action?: string }> = [];
+
+    // Top spending category tip
+    const topCat = this.insightsTopSpendingCategory();
+    if (topCat && topCat.percentage > 30) {
+      const periodLabel = this.reportMonth() === null ? 'năm' : 'tháng';
+      tips.push({
+        title: `${topCat.category} chiếm ${topCat.percentage}%`,
+        description: `Danh mục này chiếm tỷ trọng lớn trong chi tiêu ${periodLabel} này.`,
+        type: 'info',
+        icon: 'pi-chart-pie',
+        action: 'Xem xét tối ưu chi tiêu cho danh mục này'
+      });
+    }
+
+    // Spending trend tip
+    const trend = this.insightsSpendingTrend();
+    if (trend.percentage < -15) {
+      const periodLabel = this.reportMonth() === null ? 'năm' : 'tháng';
+      tips.push({
+        title: 'Chi tiêu giảm đáng kể!',
+        description: `Chi tiêu ${periodLabel} này giảm ${Math.abs(trend.percentage)}% so với ${periodLabel} trước.`,
+        type: 'success',
+        icon: 'pi-thumbs-up'
+      });
+    } else if (trend.percentage > 15) {
+      const periodLabel = this.reportMonth() === null ? 'năm' : 'tháng';
+      tips.push({
+        title: 'Chi tiêu tăng đáng kể',
+        description: `Chi tiêu ${periodLabel} này tăng ${trend.percentage}% so với ${periodLabel} trước.`,
+        type: 'warning',
+        icon: 'pi-exclamation-triangle',
+        action: 'Xem xét lại các khoản chi tiêu'
+      });
+    }
+
+    // Highest spending day tip
+    const highestDay = this.insightsHighestSpendingDay();
+    if (highestDay) {
+      tips.push({
+        title: `${highestDay.dayName} là ngày chi tiêu nhiều`,
+        description: `Trung bình ${this.formatAmount(highestDay.average)} mỗi ${highestDay.dayName}.`,
+        type: 'info',
+        icon: 'pi-calendar',
+        action: 'Cân nhắc lên kế hoạch chi tiêu cho ngày này'
+      });
+    }
+
+    // Add default tip if no warnings
+    if (tips.length < 2) {
+      tips.push({
+        title: 'Theo dõi chi tiêu thường xuyên',
+        description: 'Ghi chép chi tiêu hàng ngày giúp bạn kiểm soát tài chính tốt hơn.',
+        type: 'info',
+        icon: 'pi-bookmark'
+      });
+    }
+
+    return tips.slice(0, 4); // Max 4 tips
+  });
+
+  // Daily spending data for selected month in Insights (uses reportMonth/reportYear)
+  insightsCurrentMonthDailyData = computed(() => {
+    const year = this.reportYear();
+    const month = this.reportMonth();
+    
+    // If viewing whole year, return empty data
+    if (month === null) {
+      return { dailyAmounts: new Array(31).fill(0), total: 0, daysInMonth: 0 };
+    }
+
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const dailyAmounts: number[] = new Array(31).fill(0);
+    let total = 0;
+
+    this.expenses()
+      .filter(e => {
+        const d = new Date(e.date);
+        return d.getFullYear() === year && d.getMonth() === (month - 1);
+      })
+      .forEach(e => {
+        const day = new Date(e.date).getDate();
+        dailyAmounts[day - 1] += e.amount;
+        total += e.amount;
+      });
+
+    return { dailyAmounts, total, daysInMonth };
+  });
+
+  // Daily spending data for previous month in Insights
+  insightsPreviousMonthDailyData = computed(() => {
+    const year = this.reportYear();
+    const month = this.reportMonth();
+    
+    // If viewing whole year, return empty data
+    if (month === null) {
+      return { dailyAmounts: new Array(31).fill(0), total: 0, daysInMonth: 0 };
+    }
+
+    let prevYear = year;
+    let prevMonth = month - 1;
+
+    if (prevMonth < 1) {
+      prevMonth = 12;
+      prevYear--;
+    }
+
+    const daysInMonth = new Date(prevYear, prevMonth, 0).getDate();
+    const dailyAmounts: number[] = new Array(31).fill(0);
+    let total = 0;
+
+    this.expenses()
+      .filter(e => {
+        const d = new Date(e.date);
+        return d.getFullYear() === prevYear && d.getMonth() === (prevMonth - 1);
+      })
+      .forEach(e => {
+        const day = new Date(e.date).getDate();
+        dailyAmounts[day - 1] += e.amount;
+        total += e.amount;
+      });
+
+    return { dailyAmounts, total, daysInMonth };
+  });
+
+  /**
+   * Get current month label for Insights chart (based on selected month)
+   */
+  getInsightsCurrentMonthLabel(): string {
+    const year = this.reportYear();
+    const month = this.reportMonth();
+    
+    if (month === null) {
+      return `Năm ${year}`;
+    }
+
+    const monthNames = ['', 'Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6',
+                        'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'];
+    return `${monthNames[month]} ${year}`;
+  }
+
+  /**
+   * Get previous month label for Insights chart
+   */
+  getInsightsPreviousMonthLabel(): string {
+    const year = this.reportYear();
+    const month = this.reportMonth();
+    
+    if (month === null) {
+      return `Năm ${year - 1}`;
+    }
+
+    let prevYear = year;
+    let prevMonth = month - 1;
+
+    if (prevMonth < 1) {
+      prevMonth = 12;
+      prevYear--;
+    }
+
+    const monthNames = ['', 'Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6',
+                        'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'];
+    return `${monthNames[prevMonth]} ${prevYear}`;
+  }
+
+  /**
+   * Get month comparison percentage for Insights
+   */
+  getInsightsMonthComparisonPercentage(): string {
+    const current = this.insightsCurrentMonthDailyData().total;
+    const previous = this.insightsPreviousMonthDailyData().total;
+
+    if (previous === 0) return '0';
+
+    const diff = ((current - previous) / previous) * 100;
+    return Math.abs(diff).toFixed(1);
+  }
 
   // Recent achievements
   recentAchievements = computed(() => {
@@ -7268,10 +7620,16 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       this.monthDailyCompareChart.destroy();
     }
 
-    const currentData = this.currentMonthDailyData();
-    const previousData = this.previousMonthDailyData();
+    // Use insights-specific data if in Insights tab, otherwise use current month data
+    const isInsightsTab = this.activeTab() === 'insights';
+    const currentData = isInsightsTab ? this.insightsCurrentMonthDailyData() : this.currentMonthDailyData();
+    const previousData = isInsightsTab ? this.insightsPreviousMonthDailyData() : this.previousMonthDailyData();
+    
     const now = new Date();
     const today = now.getDate();
+    
+    // For insights, use the last day of the selected month
+    const lastDay = isInsightsTab ? currentData.daysInMonth : today;
 
     // Create labels for days 1-31
     const labels = Array.from({ length: 31 }, (_, i) => (i + 1).toString());
@@ -7279,7 +7637,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     // Calculate cumulative data
     let currentCumulative = 0;
     const currentCumulativeData = currentData.dailyAmounts.map((val, idx) => {
-      if (idx + 1 <= today) {
+      if (idx + 1 <= lastDay) {
         currentCumulative += val;
         return currentCumulative;
       }
@@ -7310,20 +7668,20 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         labels,
         datasets: [
           {
-            label: this.getCurrentMonthLabel(),
+            label: isInsightsTab ? this.getInsightsCurrentMonthLabel() : this.getCurrentMonthLabel(),
             data: currentCumulativeData,
             borderColor: '#10b981',
             backgroundColor: currentGradient,
             borderWidth: 3,
             fill: true,
             tension: 0.3,
-            pointRadius: currentCumulativeData.map((_, idx) => idx + 1 === today ? 6 : 0),
+            pointRadius: currentCumulativeData.map((_, idx) => idx + 1 === lastDay ? 6 : 0),
             pointBackgroundColor: '#10b981',
             pointBorderColor: '#ffffff',
             pointBorderWidth: 2
           },
           {
-            label: this.getPreviousMonthLabel(),
+            label: isInsightsTab ? this.getInsightsPreviousMonthLabel() : this.getPreviousMonthLabel(),
             data: previousCumulativeData,
             borderColor: '#8b5cf6',
             backgroundColor: previousGradient,
@@ -7394,11 +7752,14 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
                 const previousDay = previousData.dailyAmounts[dayIndex];
 
                 const lines = [];
-                if (dayIndex + 1 <= today && currentDay > 0) {
-                  lines.push(`Chi trong ngày (${this.getCurrentMonthLabel()}): ${this.formatAmount(currentDay)}`);
+                const currentLabel = isInsightsTab ? this.getInsightsCurrentMonthLabel() : this.getCurrentMonthLabel();
+                const previousLabel = isInsightsTab ? this.getInsightsPreviousMonthLabel() : this.getPreviousMonthLabel();
+                
+                if (dayIndex + 1 <= lastDay && currentDay > 0) {
+                  lines.push(`Chi trong ngày (${currentLabel}): ${this.formatAmount(currentDay)}`);
                 }
                 if (previousDay > 0) {
-                  lines.push(`Chi trong ngày (${this.getPreviousMonthLabel()}): ${this.formatAmount(previousDay)}`);
+                  lines.push(`Chi trong ngày (${previousLabel}): ${this.formatAmount(previousDay)}`);
                 }
                 return lines.length > 0 ? ['\n' + lines.join('\n')] : [];
               }
