@@ -1,10 +1,14 @@
 <div class="fb-id-finder-app">
   <div class="app-header">
     <div class="header-content">
-      <i class="pi pi-facebook"></i>
-      <h2>Facebook Scanner</h2>
+      <div class="header-icon">
+        <i class="pi pi-facebook"></i>
+      </div>
+      <div class="header-text">
+        <h2>Facebook Scanner</h2>
+        <p class="header-subtitle">Tìm Facebook ID từ số điện thoại</p>
+      </div>
     </div>
-    <p class="header-subtitle">Tìm Facebook ID từ số điện thoại</p>
   </div>
 
   <div class="app-body">
@@ -12,20 +16,22 @@
     <div class="search-section">
       <div class="search-box">
         <div class="input-wrapper">
-          <i class="pi pi-phone"></i>
+          <i class="pi pi-phone input-icon"></i>
           <input
             #phoneInput
-            type="text"
+            type="tel"
+            inputmode="numeric"
             [(ngModel)]="phone"
             (keydown)="onPhoneKeyDown($event)"
             class="phone-input"
-            placeholder="Nhập số điện thoại (ví dụ: 705604560)"
+            placeholder="Nhập số điện thoại"
             [disabled]="loading()">
           <button
             *ngIf="phone()"
             (click)="clearPhone()"
             class="clear-btn"
-            type="button">
+            type="button"
+            aria-label="Xóa">
             <i class="pi pi-times"></i>
           </button>
         </div>
@@ -34,7 +40,7 @@
           class="search-btn"
           [disabled]="loading() || !phone().trim()">
           <i class="pi" [class.pi-spin]="loading()" [class.pi-spinner]="loading()" [class.pi-search]="!loading()"></i>
-          <span>{{ loading() ? 'Đang tìm...' : 'Tìm kiếm' }}</span>
+          <span class="btn-text">{{ loading() ? 'Đang tìm...' : 'Tìm kiếm' }}</span>
         </button>
       </div>
 
@@ -71,46 +77,46 @@
       <div class="profile-header">
         <h3>
           <i class="pi pi-facebook"></i>
-          Facebook Profile
+          <span>Thông tin Facebook</span>
         </h3>
         <div class="profile-actions">
           <button (click)="copyFacebookLink()" class="action-btn" type="button" title="Sao chép link">
             <i class="pi pi-copy"></i>
+            <span class="action-label">Sao chép</span>
           </button>
-          <button (click)="openFacebookLink()" class="action-btn open-btn" type="button" title="Mở trong tab mới">
+          <button (click)="openFacebookLink()" class="action-btn primary" type="button" title="Mở Facebook">
             <i class="pi pi-external-link"></i>
+            <span class="action-label">Mở</span>
           </button>
         </div>
       </div>
       <div class="profile-content">
-        <div class="profile-info">
-          <div class="profile-image-wrapper" *ngIf="facebookProfile()?.profileImage">
-            <img [src]="facebookProfile()!.profileImage" alt="Profile" class="profile-image" />
+        <div class="profile-main" *ngIf="facebookProfile()?.profileImage || facebookProfile()?.name">
+          <div class="profile-avatar" *ngIf="facebookProfile()?.profileImage">
+            <img [src]="facebookProfile()!.profileImage" [alt]="facebookProfile()!.name || 'Profile'" class="profile-image" />
           </div>
-          <div class="profile-details">
+          <div class="profile-info">
             <div class="profile-name" *ngIf="facebookProfile()?.name">
-              <i class="pi pi-user"></i>
               <span>{{ facebookProfile()!.name }}</span>
             </div>
             <div class="profile-id">
-              <i class="pi pi-id-card"></i>
               <span>ID: {{ facebookProfile()!.id }}</span>
-            </div>
-            <div class="profile-link">
-              <i class="pi pi-link"></i>
-              <a [href]="facebookProfile()!.link" target="_blank" class="fb-link">
-                {{ facebookProfile()!.link }}
-              </a>
-            </div>
-            <div class="profile-about" *ngIf="facebookProfile()?.about">
-              <i class="pi pi-info-circle"></i>
-              <span>{{ facebookProfile()!.about }}</span>
             </div>
           </div>
         </div>
+        <div class="profile-link-card">
+          <i class="pi pi-link"></i>
+          <a [href]="facebookProfile()!.link" target="_blank" rel="noopener noreferrer" class="fb-link">
+            {{ facebookProfile()!.link }}
+          </a>
+        </div>
+        <div class="profile-about" *ngIf="facebookProfile()?.about">
+          <i class="pi pi-info-circle"></i>
+          <p>{{ facebookProfile()!.about }}</p>
+        </div>
         <div class="loading-profile" *ngIf="loadingProfile()">
           <i class="pi pi-spin pi-spinner"></i>
-          <span>Đang tải thông tin profile...</span>
+          <span>Đang tải thông tin...</span>
         </div>
       </div>
     </div>
@@ -120,85 +126,18 @@
       <div class="result-header">
         <h3>
           <i class="pi pi-check-circle"></i>
-          Kết quả tìm kiếm
+          <span>Kết quả tìm kiếm</span>
         </h3>
         <button (click)="copyResult()" class="copy-btn" type="button" title="Sao chép ID">
           <i class="pi pi-copy"></i>
+          <span class="btn-label">Sao chép</span>
         </button>
       </div>
 
       <!-- Facebook ID Display -->
       <div class="fb-id-display">
-        <div class="fb-id-label">Facebook ID:</div>
+        <div class="fb-id-label">Facebook ID</div>
         <div class="fb-id-value">{{ result() }}</div>
-      </div>
-
-      <!-- Facebook Profile Section -->
-      <div class="profile-section" *ngIf="facebookProfile()">
-        <div class="profile-header">
-          <h4>
-            <i class="pi pi-user"></i>
-            Thông tin Facebook
-          </h4>
-          <div class="profile-actions">
-            <button
-              (click)="copyFacebookLink()"
-              class="action-btn"
-              type="button"
-              title="Sao chép link">
-              <i class="pi pi-copy"></i>
-            </button>
-            <button
-              (click)="openFacebookLink()"
-              class="action-btn primary"
-              type="button"
-              title="Mở trên Facebook">
-              <i class="pi pi-external-link"></i>
-              Mở Facebook
-            </button>
-          </div>
-        </div>
-
-        <!-- Profile Link -->
-        <div class="profile-link">
-          <i class="pi pi-link"></i>
-          <a [href]="facebookProfile()!.link" target="_blank" rel="noopener noreferrer">
-            {{ facebookProfile()!.link }}
-          </a>
-        </div>
-
-        <!-- Loading Profile -->
-        <div class="profile-loading" *ngIf="loadingProfile()">
-          <i class="pi pi-spin pi-spinner"></i>
-          <span>Đang tải thông tin người dùng...</span>
-        </div>
-
-        <!-- Profile Info -->
-        <div class="profile-info" *ngIf="!loadingProfile() && facebookProfile()">
-          <!-- Profile Image and Name -->
-          <div class="profile-main" *ngIf="facebookProfile()!.name || facebookProfile()!.profileImage">
-            <div class="profile-avatar" *ngIf="facebookProfile()!.profileImage">
-              <img [src]="facebookProfile()!.profileImage" [alt]="facebookProfile()!.name || 'Profile'"
-                   onerror="this.style.display='none'">
-            </div>
-            <div class="profile-details">
-              <div class="profile-name" *ngIf="facebookProfile()!.name">
-                <i class="pi pi-user"></i>
-                <span>{{ facebookProfile()!.name }}</span>
-              </div>
-              <div class="profile-id">
-                <i class="pi pi-id-card"></i>
-                <span>ID: {{ facebookProfile()!.id }}</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- About/Description -->
-          <div class="profile-about" *ngIf="facebookProfile()!.about">
-            <i class="pi pi-info-circle"></i>
-            <p>{{ facebookProfile()!.about }}</p>
-          </div>
-        </div>
       </div>
     </div>
 

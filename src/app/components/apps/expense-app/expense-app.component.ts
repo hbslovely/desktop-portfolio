@@ -4694,7 +4694,14 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
    */
   addExpenseRow(): void {
     const expenses = this.multipleExpenses();
-    expenses.push(this.createEmptyExpense());
+    // Get date from last row if exists, otherwise use today's date
+    const lastRowDate = expenses.length > 0 ? expenses[expenses.length - 1].date : this.expenseService.getTodayDate();
+    
+    // Create new expense with date from last row
+    const newExpense = this.createEmptyExpense();
+    newExpense.date = lastRowDate;
+    
+    expenses.push(newExpense);
     this.multipleExpenses.set([...expenses]);
   }
 

@@ -765,8 +765,21 @@
     if(mode === 'puzzle') title = "Phá Thế Cờ";
     document.getElementById('game-title').innerText = title;
 
-    const types = ['BALANCED', 'CHARIOT', 'CANNON_HORSE'];
-    aiPreference = types[Math.floor(Math.random() * types.length)];
+    if (mode === 'coups') {
+      // Random profile cho cờ úp
+      const coupsProfiles = [
+        'CHECK_AND_CAPTURE_HORSE',  // Chiếu và ăn mã
+        'CANNON_AGGRESSIVE',        // Pháo tấn công
+        'ROOK_PRESSURE',            // Xe gây áp lực
+        'HORSE_JUMP',               // Mã nhảy
+        'PAWN_PUSH',                // Tốt tiến
+        'BALANCED'                  // Cân bằng
+      ];
+      aiPreference = coupsProfiles[Math.floor(Math.random() * coupsProfiles.length)];
+    } else {
+      const types = ['BALANCED', 'CHARIOT', 'CANNON_HORSE'];
+      aiPreference = types[Math.floor(Math.random() * types.length)];
+    }
 
     if (mode === 'coups') initHiddenChess();
     else initStandardChess();
@@ -1065,10 +1078,112 @@
     return s;
   }
 
+  // Evaluate move quality based on profile (for Hidden Chess)
+  function evaluateMoveByProfile(move) {
+    if (gameMode !== 'coups') return 0;
+    
+    const piece = board[move.fromR][move.fromC];
+    const cap = board[move.toR][move.toC];
+    const pieceType = getType(piece);
+    const moveColor = getColor(piece);
+    
+    if (moveColor !== BLACK) return 0; // Only evaluate AI moves
+    
+    let score = 0;
+    let resultsInCheck = false;
+    
+    // Make move temporarily to check effects
+    const originalTo = board[move.toR][move.toC];
+    const originalFrom = board[move.fromR][move.fromC];
+    board[move.toR][move.toC] = piece;
+    board[move.fromR][move.fromC] = 0;
+    
+    resultsInCheck = inCheck(RED);
+    const capturedType = cap !== 0 ? getType(cap) : 0;
+    
+    // Undo move
+    board[move.fromR][move.fromC] = originalFrom;
+    board[move.toR][move.toC] = originalTo;
+    
+    // Profile: CHECK_AND_CAPTURE_HORSE - Chiếu và ăn mã
+    if (aiPreference === 'CHECK_AND_CAPTURE_HORSE') {
+      if (resultsInCheck && capturedType === PIECE_HORSE) {
+        score += 500; // Rất tốt: vừa chiếu vừa ăn mã
+      } else if (resultsInCheck) {
+        score += 200; // Tốt: chiếu
+      } else if (capturedType === PIECE_HORSE) {
+        score += 300; // Tốt: ăn mã
+      }
+      if (pieceType === PIECE_CANNON || pieceType === PIECE_ROOK) {
+        score += 50; // Ưu tiên pháo và xe
+      }
+    }
+    
+    // Profile: CANNON_AGGRESSIVE - Pháo tấn công
+    if (aiPreference === 'CANNON_AGGRESSIVE') {
+      if (pieceType === PIECE_CANNON) {
+        score += 150;
+        if (resultsInCheck) score += 200;
+        if (capturedType !== 0) score += 100;
+        // Ưu tiên pháo ở vị trí tấn công
+        if (move.toR >= 7) score += 100;
+      }
+    }
+    
+    // Profile: ROOK_PRESSURE - Xe gây áp lực
+    if (aiPreference === 'ROOK_PRESSURE') {
+      if (pieceType === PIECE_ROOK) {
+        score += 200;
+        if (resultsInCheck) score += 150;
+        if (capturedType !== 0) score += 150;
+        // Ưu tiên xe vào sâu
+        if (move.toR >= 8) score += 100;
+      }
+    }
+    
+    // Profile: HORSE_JUMP - Mã nhảy
+    if (aiPreference === 'HORSE_JUMP') {
+      if (pieceType === PIECE_HORSE) {
+        score += 150;
+        if (resultsInCheck) score += 200;
+        if (capturedType !== 0) score += 100;
+        // Ưu tiên mã nhảy vào trung tâm
+        if (move.toC >= 3 && move.toC <= 5 && move.toR >= 7) score += 100;
+      }
+    }
+    
+    // Profile: PAWN_PUSH - Tốt tiến
+    if (aiPreference === 'PAWN_PUSH') {
+      if (pieceType === PIECE_PAWN) {
+        score += 100;
+        if (move.toR >= 8) score += 150; // Tốt tiến sâu
+        if (capturedType !== 0) score += 100;
+      }
+    }
+    
+    // General bonuses
+    if (resultsInCheck) score += 100; // Chiếu luôn tốt
+    if (capturedType !== 0) {
+      score += VALUES[capturedType] * 0.5; // Ăn quân có giá trị
+    }
+    
+    return score;
+  }
+
   function sortMoves(moves) {
     return moves.sort((a, b) => {
       const valA = board[a.toR][a.toC] !== 0 ? VALUES[getType(board[a.toR][a.toC])] : 0;
       const valB = board[b.toR][b.toC] !== 0 ? VALUES[getType(board[b.toR][b.toC])] : 0;
+      
+      // For Hidden Chess, also consider profile-based evaluation
+      if (gameMode === 'coups') {
+        const profileA = evaluateMoveByProfile(a);
+        const profileB = evaluateMoveByProfile(b);
+        if (Math.abs(profileA - profileB) > 50) {
+          return profileB - profileA; // Sort by profile score if difference is significant
+        }
+      }
+      
       return valB - valA;
     });
   }
@@ -1110,6 +1225,89 @@
     }
   }
 
+  // Detect repetitive checks (same check pattern repeating)
+  function detectRepetitiveCheck() {
+    if (moveHistory.length < 6) return false; // Need at least 3 pairs of moves
+    
+    // Check last 6 moves (3 full cycles) - look for checks on RED (player)
+    const recentMoves = moveHistory.slice(-6);
+    const checkMovesOnRed = recentMoves.filter(m => m.isCheck && m.checkTarget === RED);
+    
+    // If we have at least 3 consecutive checks on RED in the last 6 moves, it's repetitive
+    if (checkMovesOnRed.length >= 3) {
+      // Check if the last 3 checks are all on RED (meaning BLACK is repeatedly checking)
+      const lastThreeChecks = recentMoves.slice(-3).filter(m => m.isCheck && m.checkTarget === RED);
+      if (lastThreeChecks.length >= 3) {
+        return true; // Same side being checked 3+ times consecutively
+      }
+    }
+    
+    // Also check for alternating check pattern (A checks B, B checks A, repeat)
+    if (recentMoves.length >= 6) {
+      const pattern = recentMoves.slice(-6).map(m => {
+        if (m.isCheck && m.checkTarget === RED) return 'B->R'; // BLACK checking RED
+        if (m.isCheck && m.checkTarget === BLACK) return 'R->B'; // RED checking BLACK
+        return 'N'; // No check
+      });
+      
+      // Check for pattern like: B->R, R->B, B->R, R->B, B->R, R->B (alternating checks)
+      if (pattern.length === 6 && 
+          pattern[0] === 'B->R' && pattern[1] === 'R->B' &&
+          pattern[2] === 'B->R' && pattern[3] === 'R->B' &&
+          pattern[4] === 'B->R' && pattern[5] === 'R->B') {
+        return true; // Alternating checks pattern detected
+      }
+      
+      // Check for pattern: B->R, R->B, B->R, R->B, B->R (5 consecutive alternating)
+      if (pattern.length >= 5 &&
+          pattern.slice(-5).every((p, i) => 
+            (i % 2 === 0 && p === 'B->R') || (i % 2 === 1 && p === 'R->B')
+          )) {
+        return true;
+      }
+    }
+    
+    return false;
+  }
+
+  // Check if a move would create a repetitive check pattern
+  function wouldCreateRepetitiveCheck(move) {
+    const piece = board[move.fromR][move.fromC];
+    const cap = board[move.toR][move.toC];
+    const moveColor = getColor(piece);
+    
+    // Make the move
+    board[move.toR][move.toC] = piece; board[move.fromR][move.fromC] = 0;
+    
+    // Check if this results in check
+    const opponentColor = (moveColor === RED) ? BLACK : RED;
+    const resultsInCheck = inCheck(opponentColor);
+    
+    // If it doesn't result in check, it can't be repetitive
+    if (!resultsInCheck) {
+      board[move.fromR][move.fromC] = piece; board[move.toR][move.toC] = cap;
+      return false;
+    }
+    
+    // Count how many times we've checked the opponent in recent moves
+    const recentMoves = moveHistory.slice(-4);
+    const recentChecks = recentMoves.filter(m => 
+      m.isCheck && m.checkTarget === opponentColor
+    ).length;
+    
+    // If we're BLACK and checking RED, and we've already checked RED 2+ times recently
+    // this would be the 3rd+ consecutive check, which is repetitive
+    if (moveColor === BLACK && recentChecks >= 2) {
+      board[move.fromR][move.fromC] = piece; board[move.toR][move.toC] = cap;
+      return true;
+    }
+    
+    // Undo the move
+    board[move.fromR][move.fromC] = piece; board[move.toR][move.toC] = cap;
+    
+    return false;
+  }
+
   function getBestMove() {
     const fen = generateFEN();
     if (OPENING_BOOK[fen]) {
@@ -1118,23 +1316,73 @@
       return bookMove;
     }
 
+    // Check if we're already in a repetitive check situation
+    if (detectRepetitiveCheck()) {
+      end("Hòa! (Chiếu lặp lại nhiều lần)");
+      return null;
+    }
+
     let moves=[];
     for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++)
       if(getColor(board[r][c])===BLACK)
         generateMoves(r,c,true).forEach(t=>moves.push({fromR:r,fromC:c,toR:t.r,toC:t.c}));
 
+    // Filter out moves that would create repetitive checks
+    const nonRepetitiveMoves = moves.filter(m => !wouldCreateRepetitiveCheck(m));
+    
+    // If all moves would create repetitive checks, allow them anyway (better than no move)
+    const movesToConsider = nonRepetitiveMoves.length > 0 ? nonRepetitiveMoves : moves;
+    
+    // For Hidden Chess, prioritize moves based on profile
+    if (gameMode === 'coups' && aiPreference !== 'BALANCED') {
+      // Find moves that match the profile strategy
+      const profileMoves = movesToConsider.filter(m => {
+        const profileScore = evaluateMoveByProfile(m);
+        return profileScore > 100; // Moves with good profile score
+      });
+      
+      // If we have good profile moves, prioritize them
+      if (profileMoves.length > 0) {
+        const sortedProfileMoves = sortMoves([...profileMoves]);
+        // Try top profile moves first
+        for(let m of sortedProfileMoves.slice(0, Math.min(5, sortedProfileMoves.length))) {
+          const cap=board[m.toR][m.toC];
+          board[m.toR][m.toC]=board[m.fromR][m.fromC]; board[m.fromR][m.fromC]=0;
+          const v = minimax(config.difficulty - 1, false, -Infinity, Infinity);
+          board[m.fromR][m.fromC]=board[m.toR][m.toC]; board[m.toR][m.toC]=cap;
+          
+          // If profile move is very good, use it (with some randomness for variety)
+          const profileScore = evaluateMoveByProfile(m);
+          if (profileScore > 300 && v > -10000) {
+            // 70% chance to use high-scoring profile move
+            if (Math.random() < 0.7) {
+              return m;
+            }
+          }
+        }
+      }
+    }
+    
     let best=null, max=-Infinity;
-    moves = sortMoves(moves);
+    const sortedMoves = sortMoves([...movesToConsider]);
 
     // Use configured depth
     const searchDepth = config.difficulty || 4;
 
-    for(let m of moves) {
+    for(let m of sortedMoves) {
       const cap=board[m.toR][m.toC];
       board[m.toR][m.toC]=board[m.fromR][m.fromC]; board[m.fromR][m.fromC]=0;
       const v = minimax(searchDepth - 1, false, -Infinity, Infinity); // -1 because this loop is depth 1
       board[m.fromR][m.fromC]=board[m.toR][m.toC]; board[m.toR][m.toC]=cap;
-      if(v>max) { max=v; best=m; }
+      
+      // For Hidden Chess, add profile bonus
+      let finalScore = v;
+      if (gameMode === 'coups') {
+        const profileScore = evaluateMoveByProfile(m);
+        finalScore += profileScore * 0.1; // Add 10% of profile score to evaluation
+      }
+      
+      if(finalScore>max) { max=finalScore; best=m; }
     }
     return best;
   }
@@ -1208,12 +1456,22 @@
 
     const notation = getMoveNotation({fromR: m.fromR, fromC: m.fromC, toR: m.toR, toC: m.toC, piece: piece});
 
+    // Make the move temporarily to check if it results in check
+    board[m.toR][m.toC] = piece; board[m.fromR][m.fromC] = 0;
+    const moveColor = getColor(piece);
+    const opponentColor = (moveColor === RED) ? BLACK : RED;
+    const resultsInCheck = inCheck(opponentColor);
+    // Undo the move
+    board[m.fromR][m.fromC] = piece; board[m.toR][m.toC] = cap;
+
     moveHistory.push({
       fromR: m.fromR, fromC: m.fromC, toR: m.toR, toC: m.toC,
       piece: piece, captured: cap, lastMoveState: lastMove,
       notation: notation,
       boardHash: getBoardHash(),
-      capturedStateSnapshot: JSON.parse(JSON.stringify(capturedState))
+      capturedStateSnapshot: JSON.parse(JSON.stringify(capturedState)),
+      isCheck: resultsInCheck,
+      checkTarget: resultsInCheck ? opponentColor : null
     });
 
     board[m.toR][m.toC] = piece; board[m.fromR][m.fromC] = 0;
@@ -1250,6 +1508,42 @@
     if(!rKing) { end("Bạn Thua! (Đỏ bị chiếu bí)"); return; }
     if(!bKing) { end("Bạn Thắng! (Đen bị chiếu bí)"); return; }
 
+    // Check for repetitive checks after the move
+    if (detectRepetitiveCheck()) {
+      end("Hòa! (Chiếu lặp lại nhiều lần)");
+      return;
+    }
+
+    // Check if RED (player) has no valid moves
+    if(turn === RED && !gameOver) {
+      const redHasMoves = hasValidMoves(RED);
+      if(!redHasMoves) {
+        const redInCheck = inCheck(RED);
+        if(redInCheck) {
+          end("Bạn Thua! (Bị chiếu bí)");
+          return;
+        } else {
+          end("Hòa! (Hết nước đi)");
+          return;
+        }
+      }
+    }
+
+    // Check if BLACK (AI) has no valid moves
+    if(turn === BLACK && !gameOver) {
+      const blackHasMoves = hasValidMoves(BLACK);
+      if(!blackHasMoves) {
+        const blackInCheck = inCheck(BLACK);
+        if(blackInCheck) {
+          end("Bạn Thắng! (Đen bị chiếu bí)");
+          return;
+        } else {
+          end("Hòa! (Máy hết nước đi)");
+          return;
+        }
+      }
+    }
+
     updateStatus(turn===RED?"Lượt của bạn":"Máy đang tính sâu...");
     draw();
 
@@ -1257,7 +1551,20 @@
       setTimeout(() => {
         const best = getBestMove();
         if(best) startMoveAnimation(best, finalizeMove);
-        else end("Bạn Thắng! (Máy hết nước đi)");
+        else {
+          // Double check if BLACK really has no moves
+          const blackHasMoves = hasValidMoves(BLACK);
+          if(!blackHasMoves) {
+            const blackInCheck = inCheck(BLACK);
+            if(blackInCheck) {
+              end("Bạn Thắng! (Đen bị chiếu bí)");
+            } else {
+              end("Hòa! (Máy hết nước đi)");
+            }
+          } else {
+            end("Bạn Thắng! (Máy hết nước đi)");
+          }
+        }
       }, 300);
     }
   }
@@ -1265,6 +1572,19 @@
   function findKing(color) {
     for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++)
       if(getType(board[r][c])===PIECE_KING && getColor(board[r][c])===color) return true;
+    return false;
+  }
+
+  // Check if a side has any valid moves
+  function hasValidMoves(color) {
+    for(let r=0;r<ROWS;r++) {
+      for(let c=0;c<COLS;c++) {
+        if(getColor(board[r][c])===color) {
+          const moves = generateMoves(r,c,true);
+          if(moves.length > 0) return true;
+        }
+      }
+    }
     return false;
   }
 
