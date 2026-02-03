@@ -4,8 +4,8 @@ import { saveStock, getStockBySymbol } from '../../lib/db.js';
  * Fetch stock basic info from DNSE
  */
 async function fetchBasicInfo(symbol) {
-  const url = `https://www.dnse.com.vn/senses/_next/data/TNgKE3JbtnJNequvT4tmO/co-phieu-${symbol.toUpperCase()}.json`;
-  
+  const url = `https://www.dnse.com.vn/senses/_next/data/yUHwJypQ2IIqiMTGeFUaH/co-phieu-${symbol.toUpperCase()}.json`;
+
   try {
     const response = await fetch(url, {
       headers: {
@@ -33,7 +33,7 @@ async function fetchPriceData(symbol, days = 1095) {
   const now = Math.floor(Date.now() / 1000);
   const from = now - (days * 24 * 60 * 60);
   const url = `https://api.dnse.com.vn/chart-api/v2/ohlcs/stock?from=${from}&to=${now}&symbol=${symbol.toUpperCase()}&resolution=1D`;
-  
+
   try {
     const response = await fetch(url, {
       headers: {
