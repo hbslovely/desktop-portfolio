@@ -306,6 +306,47 @@
       opacity: 0; pointer-events: none; transition: opacity 0.3s; z-index: 400;
     }
     #toast.show { opacity: 1; }
+    
+    /* --- CHECK ALERT --- */
+    #check-alert {
+      position: absolute;
+      top: 20%;
+      left: 50%;
+      transform: translateX(-50%) scale(0.8);
+      background: linear-gradient(135deg, #c0392b, #e74c3c);
+      color: white;
+      padding: 12px 35px;
+      border-radius: 8px;
+      font-weight: bold;
+      font-size: 1.4rem;
+      box-shadow: 0 0 30px rgba(231, 76, 60, 0.8), 0 0 60px rgba(231, 76, 60, 0.4);
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+      z-index: 160;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      border: 2px solid rgba(255,255,255,0.3);
+    }
+    #check-alert.show {
+      opacity: 1;
+      transform: translateX(-50%) scale(1);
+    }
+    #check-alert i {
+      font-size: 1.2rem;
+      animation: pulse-icon 0.5s ease-in-out infinite alternate;
+    }
+    @keyframes pulse-icon {
+      from { transform: scale(1); }
+      to { transform: scale(1.2); }
+    }
+    @keyframes check-pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.7); }
+      50% { box-shadow: 0 0 0 15px rgba(231, 76, 60, 0); }
+    }
 
     /* --- PUZZLE MENU --- */
     #puzzle-menu { display: none; width: 100%; height: 80%; flex-direction: column; align-items: center; overflow-y: auto; }
@@ -385,8 +426,8 @@
   <h2 class="text-3xl font-bold text-center text-amber-400 mb-2" id="result-title">Kết Quả</h2>
   <div class="text-center text-gray-300 mb-4" id="result-message"></div>
 
-  <div class="text-xs text-gray-400 uppercase">Biên Bản Ván Đấu (Kỳ Phổ)</div>
-  <textarea id="pgn-area" class="notation-box" readonly></textarea>
+  <div class="text-xs text-gray-400 uppercase">Biên Bản Ván Đấu (Kỳ Phổ Việt Nam)</div>
+  <textarea id="pgn-area" class="notation-box" readonly style="font-size: 0.85rem; line-height: 1.6;"></textarea>
 
   <div class="flex gap-2 justify-center mt-2">
     <button class="game-btn text-sm" onclick="copyPGN()"><i class="fas fa-copy mr-2"></i>Copy</button>
@@ -432,6 +473,9 @@
 
     <!-- Strategy Alert -->
     <div id="strategy-toast"><i class="fas fa-book-open"></i> Tuyệt Chiêu!</div>
+    
+    <!-- Check Alert -->
+    <div id="check-alert"><i class="fas fa-crosshairs"></i> Chiếu Tướng!</div>
 
     <!-- Captured Pieces -->
     <div class="captured-group top">
@@ -775,6 +819,17 @@
       gainNode.gain.setValueAtTime(0.1, now);
       gainNode.gain.linearRampToValueAtTime(0, now + 0.2);
       osc.start(); osc.stop(now + 0.2);
+    } else if (type === 'check') {
+      // Dramatic check sound - two quick warning tones
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(880, now);
+      osc.frequency.setValueAtTime(660, now + 0.1);
+      osc.frequency.setValueAtTime(880, now + 0.2);
+      gainNode.gain.setValueAtTime(0.2, now);
+      gainNode.gain.setValueAtTime(0.15, now + 0.1);
+      gainNode.gain.setValueAtTime(0.2, now + 0.2);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+      osc.start(); osc.stop(now + 0.4);
     }
   }
 
@@ -839,6 +894,55 @@
   const MAX_POSITION_HISTORY = 12;
   const REPETITION_PENALTY = 800;
   const PERPETUAL_CHECK_PENALTY = 2000;
+  
+  // --- CHECK STATE ---
+  let currentCheckState = { inCheck: false, kingPos: null, color: null };
+  
+  // Show check alert with animation
+  function showCheckAlert(color) {
+    const alert = document.getElementById('check-alert');
+    const isRed = (color === RED);
+    alert.innerHTML = `<i class="fas fa-crosshairs"></i> ${isRed ? 'Chiếu Tướng Đỏ!' : 'Chiếu Tướng Đen!'}`;
+    alert.style.background = isRed ? 'linear-gradient(135deg, #c0392b, #e74c3c)' : 'linear-gradient(135deg, #2c3e50, #34495e)';
+    alert.classList.add('show');
+    playSound('check');
+    
+    // Hide after 2 seconds
+    setTimeout(() => {
+      alert.classList.remove('show');
+    }, 2000);
+  }
+  
+  // Find king position for a color
+  function findKingPosition(color) {
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        const p = board[r][c];
+        if (getType(p) === PIECE_KING && getColor(p) === color) {
+          return { r, c };
+        }
+      }
+    }
+    return null;
+  }
+  
+  // Update check state after each move
+  function updateCheckState() {
+    const redInCheck = inCheck(RED);
+    const blackInCheck = inCheck(BLACK);
+    
+    if (redInCheck) {
+      const kingPos = findKingPosition(RED);
+      currentCheckState = { inCheck: true, kingPos, color: RED };
+      showCheckAlert(RED);
+    } else if (blackInCheck) {
+      const kingPos = findKingPosition(BLACK);
+      currentCheckState = { inCheck: true, kingPos, color: BLACK };
+      showCheckAlert(BLACK);
+    } else {
+      currentCheckState = { inCheck: false, kingPos: null, color: null };
+    }
+  }
 
   const canvas = document.getElementById('board');
   const ctx = canvas.getContext('2d');
@@ -867,33 +971,70 @@
   document.getElementById('toggle-music').addEventListener('change', (e) => toggleMusic(e.target.checked));
 
   // --- NOTATION & EXPORT ---
+  // Vietnamese chess notation standard (Ký hiệu cờ tướng Việt Nam)
+  // Reference: https://zigavn.com/cotuong/doc-hieu-ban-ghi-co-tuong
   function getMoveNotation(m) {
     const piece = m.piece;
     const type = getType(piece);
     const color = getColor(piece);
-    const chars = ["","K","A","E","H","R","C","P"];
+    
+    // Vietnamese piece abbreviations: Tg (Tướng), S (Sĩ), T (Tượng), X (Xe), P (Pháo), M (Mã), B (Binh)
+    const chars = ["", "Tg", "S", "T", "M", "X", "P", "B"];
     const char = chars[type];
+    
+    // Column numbers: Red counts right-to-left (9-1), Black counts left-to-right (1-9)
     const fromCol = (color === RED) ? (9 - m.fromC) : (m.fromC + 1);
     const toCol = (color === RED) ? (9 - m.toC) : (m.toC + 1);
-    let dir = ".";
-    if (color === RED) {
-      if (m.toR < m.fromR) dir = "+"; else if (m.toR > m.fromR) dir = "-";
+    
+    // Direction symbols: "." = tấn (advance), "/" = thoái (retreat), "-" = bình (horizontal)
+    let dir;
+    const isVertical = (m.fromC === m.toC);
+    const isHorizontal = (m.fromR === m.toR);
+    
+    if (isHorizontal) {
+      dir = "-"; // Bình (horizontal move)
     } else {
-      if (m.toR > m.fromR) dir = "+"; else if (m.toR < m.fromR) dir = "-";
+      // For RED: moving up (smaller row) = advance, moving down = retreat
+      // For BLACK: moving down (larger row) = advance, moving up = retreat
+      if (color === RED) {
+        dir = (m.toR < m.fromR) ? "." : "/";
+      } else {
+        dir = (m.toR > m.fromR) ? "." : "/";
+      }
     }
-    let dest = toCol;
-    if ((type === PIECE_ROOK || type === PIECE_CANNON || type === PIECE_PAWN || type === PIECE_KING) && m.fromC === m.toC) {
+    
+    // Destination: column number for horizontal/diagonal moves, step count for vertical moves
+    let dest;
+    if (isVertical && (type === PIECE_ROOK || type === PIECE_CANNON || type === PIECE_PAWN || type === PIECE_KING)) {
+      // For straight-moving pieces on same column: use number of steps
       dest = Math.abs(m.toR - m.fromR);
+    } else {
+      // For diagonal moves (Mã, Tượng, Sĩ) or horizontal moves: use destination column
+      dest = toCol;
     }
+    
     return char + fromCol + dir + dest;
   }
 
   function generatePGN() {
-    let pgn = "";
+    let pgn = "=== KỲ PHỔ CỜ TƯỚNG ===\n";
+    pgn += "Ký hiệu: Tg=Tướng, S=Sĩ, T=Tượng, X=Xe, P=Pháo, M=Mã, B=Binh\n";
+    pgn += "Hướng: .=Tấn, /=Thoái, -=Bình\n\n";
+    
     moveHistory.forEach((m, i) => {
-      if (i % 2 === 0) pgn += `${Math.floor(i/2)+1}. `;
-      pgn += m.notation + " ";
+      const moveNum = Math.floor(i/2) + 1;
+      if (i % 2 === 0) {
+        pgn += `${moveNum}. Đỏ: ${m.notation}`;
+      } else {
+        pgn += `  |  Đen: ${m.notation}\n`;
+      }
     });
+    
+    // If last move was Red's, add newline
+    if (moveHistory.length % 2 === 1) {
+      pgn += "\n";
+    }
+    
     return pgn;
   }
 
@@ -1136,10 +1277,14 @@
     capturedState = { redCaptures: [], blackCaptures: [] };
     positionHistory = [];  // Reset position history
     aiCheckHistory = [];   // Reset check tracking
+    currentCheckState = { inCheck: false, kingPos: null, color: null };  // Reset check state
     renderCaptured();
     boardHistory[getBoardHash()] = 1;
     positionHistory.push(getSimpleBoardHash());
     updateStatus("Lượt của bạn (Đỏ)");
+    
+    // Hide check alert if visible
+    document.getElementById('check-alert')?.classList.remove('show');
   }
 
   function renderCaptured() {
@@ -1897,6 +2042,9 @@
     if(!rKing) { end("Bạn Thua! (Đỏ bị chiếu bí)"); return; }
     if(!bKing) { end("Bạn Thắng! (Đen bị chiếu bí)"); return; }
     
+    // Update check state and show alert if in check
+    updateCheckState();
+    
     // Check for no legal moves (stalemate or checkmate)
     let hasLegalMoves = false;
     outer: for(let r=0; r<ROWS; r++) {
@@ -2090,6 +2238,12 @@
       highlightSq(lastMove.toR, lastMove.toC, 'rgba(52, 152, 219, 0.3)');
     }
     if(selectedPiece) highlightSq(selectedPiece.r, selectedPiece.c, theme.highlight);
+    
+    // Draw check highlight on the king that is in check
+    if (currentCheckState.inCheck && currentCheckState.kingPos) {
+      const { r, c } = currentCheckState.kingPos;
+      drawCheckHighlight(r, c);
+    }
 
     for(let m of possibleMoves) {
       ctx.fillStyle = theme.highlight;
@@ -2124,6 +2278,38 @@
     const x = MARGIN+c*CELL_SIZE, y=MARGIN+r*CELL_SIZE;
     ctx.fillStyle = color;
     ctx.fillRect(x-CELL_SIZE/2+2, y-CELL_SIZE/2+2, CELL_SIZE-4, CELL_SIZE-4);
+  }
+  
+  // Draw pulsing red highlight for king in check
+  function drawCheckHighlight(r, c) {
+    const x = MARGIN + c * CELL_SIZE;
+    const y = MARGIN + r * CELL_SIZE;
+    const time = Date.now() / 200;
+    const pulse = 0.4 + 0.3 * Math.sin(time); // Pulsing opacity
+    const pulseRadius = PIECE_RADIUS * (1.3 + 0.15 * Math.sin(time)); // Pulsing size
+    
+    // Outer glow
+    const gradient = ctx.createRadialGradient(x, y, PIECE_RADIUS * 0.5, x, y, pulseRadius * 1.5);
+    gradient.addColorStop(0, `rgba(231, 76, 60, ${pulse})`);
+    gradient.addColorStop(0.5, `rgba(231, 76, 60, ${pulse * 0.5})`);
+    gradient.addColorStop(1, 'rgba(231, 76, 60, 0)');
+    
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.arc(x, y, pulseRadius * 1.5, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Inner ring
+    ctx.strokeStyle = `rgba(255, 100, 100, ${0.6 + 0.4 * Math.sin(time)})`;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(x, y, pulseRadius, 0, Math.PI * 2);
+    ctx.stroke();
+    
+    // Request animation frame for continuous animation
+    if (currentCheckState.inCheck && !gameOver) {
+      requestAnimationFrame(() => draw());
+    }
   }
 
   function drawPiece(r, c, p) {
