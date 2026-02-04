@@ -536,7 +536,7 @@
           </div>
 
           <!-- Categories Panel -->
-          <div class="sidebar-panel" *ngIf="activeSidebarPanel() === 'categories'">
+          <div class="sidebar-panel sidebar-panel filter-block-flat" *ngIf="activeSidebarPanel() === 'categories'">
             <div class="panel-header-webstorm">
               <div class="panel-title">
                 <i class="fas fa-tags"></i>
@@ -1148,10 +1148,6 @@
                 </h3>
                 <p class="header-subtitle">Tổ chức và quản lý các nhóm chi tiêu của bạn</p>
               </div>
-              <button class="add-group-header-btn" (click)="showAddGroupForm()">
-                <i class="fas fa-plus"></i>
-                <span>Thêm nhóm mới</span>
-              </button>
             </div>
 
             <!-- Loading State -->
@@ -2408,48 +2404,48 @@
 
       <!-- Tab Content: Insights -->
       <div class="tab-content insights-tab" *ngIf="activeTab() === 'insights'">
-        <div class="insights-view" *ngIf="!isLoading() && filteredExpenses().length > 0">
+        <div class="insights-view" *ngIf="!isLoading() && reportPeriodExpenses().length > 0">
 
           <!-- Quick Stats Cards - Compact Row -->
           <div class="insights-stats-row">
             <div class="mini-stat-card">
               <i class="pi pi-fire stat-icon-mini"></i>
               <div class="mini-stat-info">
-                <span class="mini-stat-value">{{ topSpendingCategory()?.category || 'N/A' }}</span>
+                <span class="mini-stat-value">{{ insightsTopSpendingCategory()?.category || 'N/A' }}</span>
                 <span class="mini-stat-label">Top danh mục</span>
               </div>
-              <span class="mini-stat-amount">{{ formatCompactAmount(topSpendingCategory()?.total || 0) }}</span>
+              <span class="mini-stat-amount">{{ formatCompactAmount(insightsTopSpendingCategory()?.total || 0) }}</span>
             </div>
 
             <div class="mini-stat-card">
               <i class="pi pi-calendar stat-icon-mini"></i>
               <div class="mini-stat-info">
-                <span class="mini-stat-value">{{ highestSpendingDay()?.dayName || 'N/A' }}</span>
+                <span class="mini-stat-value">{{ insightsHighestSpendingDay()?.dayName || 'N/A' }}</span>
                 <span class="mini-stat-label">Ngày chi nhiều</span>
               </div>
-              <span class="mini-stat-amount">{{ formatCompactAmount(highestSpendingDay()?.average || 0) }}</span>
+              <span class="mini-stat-amount">{{ formatCompactAmount(insightsHighestSpendingDay()?.average || 0) }}</span>
             </div>
 
             <div class="mini-stat-card">
-              <i class="pi pi-chart-line stat-icon-mini" [class.trending-up]="spendingTrend().percentage > 0"
-                 [class.trending-down]="spendingTrend().percentage < 0"></i>
+              <i class="pi pi-chart-line stat-icon-mini" [class.trending-up]="insightsSpendingTrend().percentage > 0"
+                 [class.trending-down]="insightsSpendingTrend().percentage < 0"></i>
               <div class="mini-stat-info">
-                <span class="mini-stat-value">{{ spendingTrend().trend }}</span>
-                <span class="mini-stat-label">Xu hướng 30 ngày</span>
+                <span class="mini-stat-value">{{ insightsSpendingTrend().trend }}</span>
+                <span class="mini-stat-label">{{ reportMonth() === null ? 'Xu hướng năm' : 'Xu hướng tháng' }}</span>
               </div>
-              <span class="mini-stat-amount" [class.positive]="spendingTrend().percentage < 0"
-                    [class.negative]="spendingTrend().percentage > 0">
-              {{ spendingTrend().percentage >= 0 ? '+' : '' }}{{ spendingTrend().percentage }}%
+              <span class="mini-stat-amount" [class.positive]="insightsSpendingTrend().percentage < 0"
+                    [class.negative]="insightsSpendingTrend().percentage > 0">
+              {{ insightsSpendingTrend().percentage >= 0 ? '+' : '' }}{{ insightsSpendingTrend().percentage }}%
             </span>
             </div>
 
             <div class="mini-stat-card">
               <i class="pi pi-wallet stat-icon-mini"></i>
               <div class="mini-stat-info">
-                <span class="mini-stat-value">{{ averageTransactionsPerDay() | number:'1.1-1' }} GD</span>
+                <span class="mini-stat-value">{{ insightsAverageTransactionsPerDay() | number:'1.1-1' }} GD</span>
                 <span class="mini-stat-label">Trung bình/ngày</span>
               </div>
-              <span class="mini-stat-amount">{{ formatCompactAmount(averageDailyExpense()) }}</span>
+              <span class="mini-stat-amount">{{ formatCompactAmount(insightsAverageDailyExpense()) }}</span>
             </div>
           </div>
 
@@ -2469,6 +2465,35 @@
                   <span class="legend-label">{{ cat.category }}</span>
                   <span class="legend-value">{{ formatCompactAmount(cat.total) }}</span>
                 </div>
+              </div>
+            </div>
+
+            <!-- Current vs Previous Month Daily Chart -->
+            <div class="chart-card">
+              <div class="chart-header">
+                <h4><i class="pi pi-calendar-plus"></i> So sánh chi tiêu theo ngày trong tháng</h4>
+                <div class="chart-summary">
+                <span class="summary-item current-month">
+                  <span class="legend-dot current"></span>
+                  <span class="summary-label">{{ getInsightsCurrentMonthLabel() }}:</span>
+                  <span class="summary-value">{{ formatCompactAmount(insightsCurrentMonthDailyData().total) }}</span>
+                </span>
+                  <span class="summary-item previous-month">
+                  <span class="legend-dot previous"></span>
+                  <span class="summary-label">{{ getInsightsPreviousMonthLabel() }}:</span>
+                  <span class="summary-value">{{ formatCompactAmount(insightsPreviousMonthDailyData().total) }}</span>
+                </span>
+                  <span class="summary-item difference"
+                        [class.positive]="insightsCurrentMonthDailyData().total < insightsPreviousMonthDailyData().total"
+                        [class.negative]="insightsCurrentMonthDailyData().total > insightsPreviousMonthDailyData().total">
+                  <i class="pi" [class.pi-arrow-down]="insightsCurrentMonthDailyData().total < insightsPreviousMonthDailyData().total"
+                     [class.pi-arrow-up]="insightsCurrentMonthDailyData().total > insightsPreviousMonthDailyData().total"></i>
+                  <span class="summary-value">{{ getInsightsMonthComparisonPercentage() }}%</span>
+                </span>
+                </div>
+              </div>
+              <div class="chart-body tall">
+                <canvas #monthDailyCompareChart></canvas>
               </div>
             </div>
 
@@ -2511,35 +2536,6 @@
                 <canvas #monthlyCompareChart></canvas>
               </div>
             </div>
-
-            <!-- Current vs Previous Month Daily Chart -->
-            <div class="chart-card full-width">
-              <div class="chart-header">
-                <h4><i class="pi pi-calendar-plus"></i> So sánh chi tiêu theo ngày trong tháng</h4>
-                <div class="chart-summary">
-                <span class="summary-item current-month">
-                  <span class="legend-dot current"></span>
-                  <span class="summary-label">{{ getCurrentMonthLabel() }}:</span>
-                  <span class="summary-value">{{ formatCompactAmount(currentMonthDailyData().total) }}</span>
-                </span>
-                  <span class="summary-item previous-month">
-                  <span class="legend-dot previous"></span>
-                  <span class="summary-label">{{ getPreviousMonthLabel() }}:</span>
-                  <span class="summary-value">{{ formatCompactAmount(previousMonthDailyData().total) }}</span>
-                </span>
-                  <span class="summary-item difference"
-                        [class.positive]="currentMonthDailyData().total < previousMonthDailyData().total"
-                        [class.negative]="currentMonthDailyData().total > previousMonthDailyData().total">
-                  <i class="pi" [class.pi-arrow-down]="currentMonthDailyData().total < previousMonthDailyData().total"
-                     [class.pi-arrow-up]="currentMonthDailyData().total > previousMonthDailyData().total"></i>
-                  <span class="summary-value">{{ getMonthComparisonPercentage() }}%</span>
-                </span>
-                </div>
-              </div>
-              <div class="chart-body tall">
-                <canvas #monthDailyCompareChart></canvas>
-              </div>
-            </div>
           </div>
 
           <!-- Spending Tips Section - Compact -->
@@ -2548,7 +2544,7 @@
               <h4><i class="pi pi-lightbulb"></i> Gợi ý tiết kiệm</h4>
             </div>
             <div class="tips-scroll">
-              <div class="tip-chip" *ngFor="let tip of spendingTips()"
+              <div class="tip-chip" *ngFor="let tip of insightsSpendingTips()"
                    [class.warning]="tip.type === 'warning'"
                    [class.success]="tip.type === 'success'"
                    [class.info]="tip.type === 'info'">
@@ -2563,7 +2559,7 @@
             <div class="pattern-card-enhanced">
               <h5><i class="pi pi-clock"></i> Tuần trong tháng</h5>
               <div class="horizontal-bars">
-                <div class="h-bar-item" *ngFor="let week of weekOfMonthSpending()">
+                <div class="h-bar-item" *ngFor="let week of insightsWeekOfMonthSpending()">
                   <span class="h-bar-label">{{ week.label }}</span>
                   <div class="h-bar-track">
                     <div class="h-bar-fill" [style.width.%]="week.percentage" [class.highest]="week.isHighest">
@@ -2609,7 +2605,7 @@
         </div>
 
         <!-- Empty State -->
-        <div class="empty-state" *ngIf="!isLoading() && filteredExpenses().length === 0">
+        <div class="empty-state" *ngIf="!isLoading() && reportPeriodExpenses().length === 0">
           <i class="pi pi-lightbulb"></i>
           <p>Chưa có đủ dữ liệu để phân tích</p>
           <span class="empty-hint">Thêm chi tiêu để xem insights</span>
@@ -2948,14 +2944,14 @@
               class="mode-btn-v2"
               [class.active]="inputMode() === 'single'">
               <i class="fas fa-pencil-alt"></i>
-              <span>Nhập đơn</span>
+              <span>Chế độ đơn giản</span>
             </button>
             <button
               (click)="switchInputMode('multiple')"
               class="mode-btn-v2"
               [class.active]="inputMode() === 'multiple'">
               <i class="fas fa-table"></i>
-              <span>Nhập nhiều</span>
+              <span>Chế độ nhập nhiều chi tiêu</span>
             </button>
           </div>
 
@@ -3181,22 +3177,22 @@
         </div>
 
         <div class="dialog-footer-v2">
-          <button (click)="hideAddExpenseForm()" class="cancel-btn-v2" [disabled]="savingProgress().saving">
+          <button (click)="hideAddExpenseForm()" class="btn-v2 btn-cancel" [disabled]="savingProgress().saving">
             <i class="fas fa-times"></i>
             Hủy
           </button>
           <button
             *ngIf="inputMode() === 'single'"
             (click)="addExpense()"
-            class="save-btn-v2"
+            class="btn-v2 btn-primary"
             [disabled]="isLoading() || savingProgress().saving || !newExpense.content || !newExpense.amount || !newExpense.category">
             <i class="fas fa-check"></i>
-            Lưu chi tiêu
+            Lưu
           </button>
           <button
             *ngIf="inputMode() === 'multiple'"
             (click)="addMultipleExpenses()"
-            class="save-btn-v2"
+            class="btn-v2 btn-primary"
             [disabled]="isLoading() || savingProgress().saving">
             <i class="fas fa-check-circle"></i>
             <span *ngIf="!savingProgress().saving">Lưu tất cả ({{ multipleExpenses().length }})</span>
