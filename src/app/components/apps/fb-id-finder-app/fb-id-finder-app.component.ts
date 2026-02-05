@@ -2,6 +2,7 @@ import { Component, signal, ViewChild, ElementRef, AfterViewInit } from '@angula
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { trigger, style, animate, transition } from '@angular/animations';
 
 interface ApiResponse {
   data?: string;
@@ -21,6 +22,26 @@ interface FacebookProfile {
   imports: [CommonModule, FormsModule],
   templateUrl: './fb-id-finder-app.component.html',
   styleUrl: './fb-id-finder-app.component.scss',
+  animations: [
+    trigger('slideUp', [
+      transition(':enter', [
+        style({ opacity: 0, transform: 'translateY(20px)' }),
+        animate('400ms ease-out', style({ opacity: 1, transform: 'translateY(0)' }))
+      ]),
+      transition(':leave', [
+        animate('300ms ease-in', style({ opacity: 0, transform: 'translateY(20px)' }))
+      ])
+    ]),
+    trigger('fadeSlide', [
+      transition(':enter', [
+        style({ opacity: 0, transform: 'translateY(-10px)' }),
+        animate('300ms ease-out', style({ opacity: 1, transform: 'translateY(0)' }))
+      ]),
+      transition(':leave', [
+        animate('200ms ease-in', style({ opacity: 0, transform: 'translateY(-10px)' }))
+      ])
+    ])
+  ]
 })
 export class FbIdFinderAppComponent implements AfterViewInit {
   @ViewChild('phoneInput') phoneInput!: ElementRef<HTMLInputElement>;
@@ -50,13 +71,13 @@ export class FbIdFinderAppComponent implements AfterViewInit {
     const phoneNumber = this.phone().trim();
     
     if (!phoneNumber) {
-      this.error.set('Vui lòng nhập số điện thoại');
+      this.error.set('Please enter a phone number');
       return;
     }
 
     // Validate phone number (basic check)
     if (!/^\d+$/.test(phoneNumber)) {
-      this.error.set('Số điện thoại chỉ được chứa số');
+      this.error.set('Phone number should only contain digits');
       return;
     }
 
@@ -117,10 +138,10 @@ export class FbIdFinderAppComponent implements AfterViewInit {
           } else if (err.error.message) {
             this.error.set(err.error.message);
           } else {
-            this.error.set('Có lỗi xảy ra khi tìm Facebook ID');
+            this.error.set('Error occurred while searching for Facebook ID');
           }
         } else {
-          this.error.set('Không thể kết nối đến server');
+          this.error.set('Unable to connect to server');
         }
         
         console.error('Error searching FB ID:', err);
@@ -187,7 +208,7 @@ export class FbIdFinderAppComponent implements AfterViewInit {
       navigator.clipboard.writeText(result).then(() => {
         // Show temporary notification
         const originalResult = this.result();
-        this.result.set('✓ Đã sao chép!');
+        this.result.set('✓ Copied!');
         setTimeout(() => {
           this.result.set(originalResult);
         }, 1000);
@@ -203,7 +224,7 @@ export class FbIdFinderAppComponent implements AfterViewInit {
       navigator.clipboard.writeText(profile.link).then(() => {
         // Show temporary notification
         const originalLink = profile.link;
-        this.facebookProfile.set({ ...profile, link: '✓ Đã sao chép link!' });
+        this.facebookProfile.set({ ...profile, link: '✓ Link copied!' });
         setTimeout(() => {
           this.facebookProfile.set({ ...profile, link: originalLink });
         }, 1000);
@@ -308,4 +329,3 @@ export class FbIdFinderAppComponent implements AfterViewInit {
     }
   }
 }
-

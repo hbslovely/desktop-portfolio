@@ -71,7 +71,10 @@
     (onRestore)="onRestoreMyInfoWindow()"
     (onFocus)="onFocusMyInfoWindow()">
 
-    <app-machine-info></app-machine-info>
+    <app-iframe-app
+      url="https://hpphat1992.vercel.app/"
+      title="About Me">
+    </app-iframe-app>
   </app-window>
 
 
@@ -274,29 +277,6 @@
     <app-pdf-viewer
       [pdfPath]="currentPdfFile()!.path">
     </app-pdf-viewer>
-  </app-window>
-
-  <!-- Machine Info Window -->
-  <app-window
-    *ngIf="showMachineInfoWindow()"
-    title="System Information"
-    icon="pi pi-desktop"
-    statusText="Ready"
-    [initialWidth]="1000"
-    [initialHeight]="700"
-    [initialX]="200"
-    [initialY]="100"
-    [maximizable]="true"
-    [zIndex]="getWindowZIndex('machine-info')"
-    [isFocused]="isWindowFocused('machine-info')"
-    [isMinimizedExternal]="isWindowMinimized('machine-info')"
-    (onClose)="onCloseMachineInfoWindow()"
-    (onMinimize)="onMinimizeMachineInfoWindow()"
-    (onMaximize)="onMaximizeMachineInfoWindow()"
-    (onRestore)="onRestoreMachineInfoWindow()"
-    (onFocus)="onFocusMachineInfoWindow()">
-
-    <app-machine-info></app-machine-info>
   </app-window>
 
   <!-- Search Window -->
@@ -539,17 +519,6 @@
       </button>
 
       <button
-        *ngIf="showMachineInfoWindow() || isWindowMinimized('machine-info')"
-        class="taskbar-app"
-        [class.active]="isWindowFocused('machine-info')"
-        [class.minimized]="isWindowMinimized('machine-info')"
-        (click)="toggleTaskbarApp('machine-info')"
-        title="System Information">
-        <i class="pi pi-desktop"></i>
-        <span>System Info</span>
-      </button>
-
-      <button
         *ngIf="showPaintWindow() || isWindowMinimized('paint')"
         class="taskbar-app"
         [class.active]="isWindowFocused('paint')"
@@ -750,11 +719,6 @@
       <i class="pi pi-angle-right context-menu-arrow"></i>
     </div>
 
-    <div class="context-menu-item" (click)="quickActionViewAllWindows()">
-      <i class="pi pi-th-large"></i>
-      <span>View All Windows</span>
-    </div>
-
     <div class="context-menu-item" (click)="quickActionShowDesktop()">
       <i class="pi pi-desktop"></i>
       <span>Show Desktop</span>
@@ -791,11 +755,6 @@
 
     <div class="context-menu-separator"></div>
 
-    <div class="context-menu-item" (click)="openApp('task-manager')">
-      <i class="pi pi-th-large"></i>
-      <span>Task Manager</span>
-    </div>
-
     <div class="context-menu-item" (click)="lockScreen()">
       <i class="pi pi-lock"></i>
       <span>Lock Screen</span>
@@ -809,23 +768,13 @@
          top: quickActionsMenuPosition().y + 'px'
        }"
        (click)="$event.stopPropagation()">
-    
+
     <div class="quick-actions-header">
       <i class="pi pi-bolt"></i>
       <span>Quick Actions</span>
     </div>
 
     <div class="quick-actions-separator"></div>
-
-    <div class="quick-action-item" (click)="quickActionViewAllWindows()">
-      <div class="quick-action-icon">
-        <i class="pi pi-th-large"></i>
-      </div>
-      <div class="quick-action-content">
-        <div class="quick-action-title">View All Windows</div>
-        <div class="quick-action-desc">See all open windows</div>
-      </div>
-    </div>
 
     <div class="quick-action-item" (click)="quickActionShowDesktop()">
       <div class="quick-action-icon">
@@ -933,7 +882,7 @@
   <div class="window-switcher-container">
     <!-- Window List -->
     <div class="window-switcher-windows">
-      <div 
+      <div
         *ngFor="let window of getAllOpenWindows(); let i = index"
         class="window-switcher-item"
         [class.selected]="i === windowSwitcherSelectedIndex()"
@@ -1003,8 +952,6 @@
         [pdfPath]="window.data?.path">
       </app-pdf-viewer>
 
-      <app-machine-info *ngSwitchCase="'machine-info'"></app-machine-info>
-
       <app-paint-app *ngSwitchCase="'paint'"></app-paint-app>
 
       <app-hcmc-app *ngSwitchCase="'hcmc'"></app-hcmc-app>
@@ -1014,7 +961,6 @@
       <app-settings-app *ngSwitchCase="'settings'"
         (onSettingsChange)="onSettingsChange($event)">
       </app-settings-app>
-      <app-task-manager *ngSwitchCase="'task-manager'"></app-task-manager>
       <app-weather-app *ngSwitchCase="'weather'"></app-weather-app>
       <app-dictionary-app *ngSwitchCase="'dictionary'"></app-dictionary-app>
       <app-countries-app *ngSwitchCase="'countries'"></app-countries-app>

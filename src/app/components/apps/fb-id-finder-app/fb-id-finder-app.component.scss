@@ -1,250 +1,287 @@
 // ============================================
-// FACEBOOK ID FINDER - MODERN MOBILE-FRIENDLY
+// FB SCANNER - MODERN GLASSMORPHISM DESIGN
 // ============================================
 
-// Color Palette
-$fb-blue: #1877f2;
-$fb-blue-dark: #166fe5;
-$fb-blue-light: #e7f3ff;
+// Color System
+$bg-dark: #0a0a0f;
+$bg-card: rgba(255, 255, 255, 0.03);
+$glass-bg: rgba(255, 255, 255, 0.05);
+$glass-border: rgba(255, 255, 255, 0.08);
+$accent: #6366f1;
+$accent-glow: rgba(99, 102, 241, 0.4);
+$accent-secondary: #818cf8;
 $success: #10b981;
-$error: #ef4444;
-$warning: #f59e0b;
-$gray-50: #f9fafb;
-$gray-100: #f3f4f6;
-$gray-200: #e5e7eb;
-$gray-300: #d1d5db;
-$gray-400: #9ca3af;
-$gray-500: #6b7280;
-$gray-600: #4b5563;
-$gray-700: #374151;
-$gray-800: #1f2937;
-$gray-900: #111827;
-$white: #ffffff;
+$error: #f43f5e;
+$text-primary: #f8fafc;
+$text-secondary: rgba(248, 250, 252, 0.6);
+$text-muted: rgba(248, 250, 252, 0.4);
 
-// Breakpoints
-$mobile: 640px;
-$tablet: 768px;
-$desktop: 1024px;
+// Typography
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
 
-.fb-id-finder-app {
+$font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+$font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+
+// Animations
+@keyframes float {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(30px, -30px) scale(1.1); }
+  66% { transform: translate(-20px, 20px) scale(0.9); }
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(0.8); opacity: 1; }
+  100% { transform: scale(2); opacity: 0; }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeSlide {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+// Main Container
+.fb-scanner {
   width: 100%;
   height: 100%;
+  background: $bg-dark;
+  font-family: $font-sans;
+  color: $text-primary;
+  position: relative;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  background: $gray-50;
-  overflow: hidden;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 
-  // ============================================
-  // HEADER
-  // ============================================
-  .app-header {
-    background: $fb-blue;
-    color: $white;
-    padding: 20px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    position: relative;
+  // Background Effects
+  .bg-effects {
+    position: absolute;
+    inset: 0;
     overflow: hidden;
+    pointer-events: none;
 
-    &::before {
-      content: '';
+    .gradient-orb {
       position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, transparent 100%);
-      pointer-events: none;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.5;
+      animation: float 20s ease-in-out infinite;
+
+      &.orb-1 {
+        width: 300px;
+        height: 300px;
+        background: linear-gradient(135deg, $accent, #8b5cf6);
+        top: -100px;
+        right: -50px;
+        animation-delay: 0s;
+      }
+
+      &.orb-2 {
+        width: 250px;
+        height: 250px;
+        background: linear-gradient(135deg, #06b6d4, $accent);
+        bottom: -50px;
+        left: -50px;
+        animation-delay: -7s;
+      }
+
+      &.orb-3 {
+        width: 200px;
+        height: 200px;
+        background: linear-gradient(135deg, #f472b6, #8b5cf6);
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        animation-delay: -14s;
+        opacity: 0.3;
+      }
+    }
+  }
+
+  // Content
+  .scanner-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    overflow-y: auto;
+    position: relative;
+    z-index: 1;
+    gap: 16px;
+
+    &::-webkit-scrollbar {
+      width: 4px;
     }
 
-    .header-content {
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 2px;
+    }
+  }
+
+  // Header
+  .scanner-header {
+    .logo {
       display: flex;
       align-items: center;
-      gap: 16px;
-      position: relative;
-      z-index: 1;
+      gap: 12px;
 
-      .header-icon {
-        width: 56px;
-        height: 56px;
+      .logo-icon {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, $accent, #8b5cf6);
+        border-radius: 10px;
         display: flex;
         align-items: center;
         justify-content: center;
-        background: rgba(255, 255, 255, 0.2);
-        border: 2px solid rgba(255, 255, 255, 0.3);
-        flex-shrink: 0;
+        box-shadow: 0 4px 20px $accent-glow;
 
-        i {
-          font-size: 28px;
+        svg {
+          width: 22px;
+          height: 22px;
+          color: white;
         }
       }
 
-      .header-text {
-        flex: 1;
-        min-width: 0;
-
-        h2 {
-          margin: 0 0 4px 0;
-          font-size: 22px;
+      .logo-text {
+        h1 {
+          font-size: 18px;
           font-weight: 700;
-          line-height: 1.2;
-          letter-spacing: -0.3px;
-        }
-
-        .header-subtitle {
           margin: 0;
-          font-size: 13px;
-          opacity: 0.95;
-          font-weight: 400;
+          letter-spacing: -0.5px;
+          background: linear-gradient(135deg, $text-primary, $text-secondary);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+        }
+
+        span {
+          font-size: 11px;
+          color: $text-muted;
+          font-weight: 500;
+          letter-spacing: 0.5px;
+          text-transform: uppercase;
         }
       }
     }
   }
 
-  // ============================================
-  // BODY
-  // ============================================
-  .app-body {
-    flex: 1;
-    padding: 16px;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    -webkit-overflow-scrolling: touch;
-
-    @media (min-width: $tablet) {
-      padding: 24px;
-      gap: 20px;
-    }
+  // Glass Card
+  .glass {
+    background: $glass-bg;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid $glass-border;
+    border-radius: 16px;
   }
 
-  // ============================================
-  // SEARCH SECTION
-  // ============================================
-  .search-section {
-    background: $white;
-    border: 2px solid $gray-200;
-    padding: 20px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  // Search Card
+  .search-card {
+    padding: 16px;
 
-    @media (min-width: $tablet) {
-      padding: 24px;
-    }
-
-    .search-box {
+    .search-input-group {
       display: flex;
-      flex-direction: column;
-      gap: 12px;
-      margin-bottom: 16px;
+      gap: 10px;
 
-      @media (min-width: $mobile) {
-        flex-direction: row;
-        gap: 12px;
-      }
-
-      .input-wrapper {
+      .input-container {
         flex: 1;
-        position: relative;
         display: flex;
         align-items: center;
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid $glass-border;
+        border-radius: 12px;
+        overflow: hidden;
+        transition: all 0.2s ease;
 
-        .input-icon {
-          position: absolute;
-          left: 16px;
-          color: $gray-500;
-          font-size: 20px;
-          z-index: 1;
-          pointer-events: none;
+        &:focus-within {
+          border-color: $accent;
+          box-shadow: 0 0 0 3px rgba($accent, 0.15);
         }
 
-        .phone-input {
-          width: 100%;
-          padding: 14px 16px 14px 48px;
-          border: 2px solid $gray-300;
-          background: $white;
-          font-size: 16px;
-          outline: none;
-          transition: all 0.2s;
-          -webkit-appearance: none;
-          appearance: none;
-          min-height: 48px; // Touch target
+        .input-prefix {
+          padding: 0 12px;
+          font-size: 14px;
+          font-weight: 600;
+          color: $text-muted;
+          border-right: 1px solid $glass-border;
+          user-select: none;
+        }
 
-          &:focus {
-            border-color: $fb-blue;
-            box-shadow: 0 0 0 3px rgba($fb-blue, 0.1);
+        input {
+          flex: 1;
+          background: transparent;
+          border: none;
+          padding: 14px 12px;
+          font-size: 15px;
+          font-family: $font-mono;
+          font-weight: 500;
+          color: $text-primary;
+          outline: none;
+          min-width: 0;
+
+          &::placeholder {
+            color: $text-muted;
+            font-family: $font-sans;
           }
 
           &:disabled {
-            background: $gray-50;
-            cursor: not-allowed;
-            opacity: 0.6;
-          }
-
-          &::placeholder {
-            color: $gray-400;
+            opacity: 0.5;
           }
         }
 
         .clear-btn {
-          position: absolute;
-          right: 12px;
-          background: $gray-100;
+          background: none;
           border: none;
-          color: $gray-600;
+          padding: 10px;
+          color: $text-muted;
           cursor: pointer;
-          padding: 8px;
           display: flex;
           align-items: center;
           justify-content: center;
-          width: 32px;
-          height: 32px;
-          transition: all 0.2s;
-          z-index: 1;
-          min-width: 32px; // Touch target
-          min-height: 32px;
+          transition: color 0.2s;
 
           &:hover {
-            background: $gray-200;
-            color: $gray-800;
+            color: $text-primary;
           }
 
-          &:active {
-            transform: scale(0.95);
-          }
-
-          i {
-            font-size: 14px;
+          svg {
+            width: 16px;
+            height: 16px;
           }
         }
       }
 
       .search-btn {
-        padding: 14px 24px;
-        background: $fb-blue;
-        color: $white;
-        border: 2px solid $fb-blue;
-        font-size: 16px;
+        background: linear-gradient(135deg, $accent, #8b5cf6);
+        border: none;
+        border-radius: 12px;
+        padding: 14px 20px;
+        color: white;
+        font-family: $font-sans;
+        font-size: 14px;
         font-weight: 600;
         cursor: pointer;
         display: flex;
         align-items: center;
-        justify-content: center;
         gap: 8px;
-        transition: all 0.2s;
+        transition: all 0.2s ease;
         white-space: nowrap;
-        min-height: 48px; // Touch target
-        width: 100%;
-
-        @media (min-width: $mobile) {
-          width: auto;
-        }
+        box-shadow: 0 4px 20px $accent-glow;
 
         &:hover:not(:disabled) {
-          background: $fb-blue-dark;
-          border-color: $fb-blue-dark;
-          transform: translateY(-1px);
-          box-shadow: 0 4px 12px rgba($fb-blue, 0.3);
+          transform: translateY(-2px);
+          box-shadow: 0 6px 30px $accent-glow;
         }
 
         &:active:not(:disabled) {
@@ -256,516 +293,295 @@ $desktop: 1024px;
           cursor: not-allowed;
         }
 
-        i {
-          font-size: 18px;
+        &.loading {
+          pointer-events: none;
         }
 
-        .btn-text {
-          @media (max-width: $mobile - 1px) {
-            display: none;
-          }
-        }
-      }
-    }
-
-    // History Section
-    .history-section {
-      border-top: 2px solid $gray-200;
-      padding-top: 16px;
-
-      .history-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 12px;
-
-        .history-label {
-          font-size: 14px;
-          font-weight: 600;
-          color: $gray-700;
-        }
-
-        .clear-history-btn {
-          background: none;
-          border: none;
-          color: $error;
-          cursor: pointer;
-          padding: 6px 12px;
-          font-size: 13px;
-          font-weight: 600;
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          transition: all 0.2s;
-          min-height: 36px; // Touch target
-
-          &:hover {
-            background: rgba($error, 0.1);
-          }
-
-          &:active {
-            transform: scale(0.95);
-          }
-
-          i {
-            font-size: 14px;
-          }
-        }
-      }
-
-      .history-list {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-
-        .history-item {
-          background: $gray-100;
-          border: 2px solid $gray-300;
-          padding: 8px 14px;
-          font-size: 14px;
-          color: $gray-700;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          transition: all 0.2s;
-          min-height: 36px; // Touch target
-          font-weight: 500;
-
-          &:hover {
-            background: $fb-blue-light;
-            border-color: $fb-blue;
-            color: $fb-blue;
-          }
-
-          &:active {
-            transform: scale(0.98);
-          }
-
-          i {
-            font-size: 14px;
-          }
-        }
-      }
-    }
-  }
-
-  // ============================================
-  // ERROR MESSAGE
-  // ============================================
-  .error-message {
-    background: rgba($error, 0.1);
-    border: 2px solid $error;
-    padding: 14px 16px;
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    color: $error;
-
-    i {
-      font-size: 20px;
-      flex-shrink: 0;
-      margin-top: 2px;
-    }
-
-    span {
-      flex: 1;
-      font-size: 14px;
-      font-weight: 500;
-      line-height: 1.5;
-    }
-  }
-
-  // ============================================
-  // FACEBOOK PROFILE SECTION
-  // ============================================
-  .facebook-profile-section {
-    background: $white;
-    border: 2px solid $gray-200;
-    padding: 20px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-
-    @media (min-width: $tablet) {
-      padding: 24px;
-    }
-
-    .profile-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-      padding-bottom: 16px;
-      border-bottom: 2px solid $gray-200;
-      flex-wrap: wrap;
-      gap: 12px;
-
-      h3 {
-        margin: 0;
-        font-size: 18px;
-        font-weight: 700;
-        color: $fb-blue;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        flex: 1;
-        min-width: 0;
-
-        i {
-          font-size: 22px;
-          flex-shrink: 0;
-        }
-
-        span {
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-      }
-
-      .profile-actions {
-        display: flex;
-        gap: 8px;
-        flex-shrink: 0;
-
-        .action-btn {
-          background: $gray-100;
-          border: 2px solid $gray-300;
-          padding: 10px 16px;
-          color: $gray-700;
-          cursor: pointer;
+        .btn-content {
           display: flex;
           align-items: center;
           gap: 8px;
-          transition: all 0.2s;
-          font-size: 14px;
-          font-weight: 600;
-          min-height: 40px; // Touch target
-
-          &:hover {
-            background: $gray-200;
-            border-color: $gray-400;
-          }
-
-          &.primary {
-            background: $fb-blue;
-            border-color: $fb-blue;
-            color: $white;
-
-            &:hover {
-              background: $fb-blue-dark;
-              border-color: $fb-blue-dark;
-              transform: translateY(-1px);
-              box-shadow: 0 4px 12px rgba($fb-blue, 0.3);
-            }
-          }
-
-          &:active {
-            transform: scale(0.98);
-          }
-
-          i {
-            font-size: 16px;
-          }
-
-          .action-label {
-            @media (max-width: $mobile - 1px) {
-              display: none;
-            }
-          }
-        }
-      }
-    }
-
-    .profile-content {
-      .profile-main {
-        display: flex;
-        gap: 16px;
-        align-items: center;
-        margin-bottom: 16px;
-        padding: 16px;
-        background: $gray-50;
-        border: 2px solid $gray-200;
-
-        @media (max-width: $mobile - 1px) {
-          flex-direction: column;
-          text-align: center;
         }
 
-        .profile-avatar {
-          flex-shrink: 0;
-          width: 80px;
-          height: 80px;
-          overflow: hidden;
-          border: 3px solid $white;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-          background: $gray-100;
-
-          @media (min-width: $tablet) {
-            width: 100px;
-            height: 100px;
-          }
-
-          .profile-image {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-          }
+        svg {
+          width: 18px;
+          height: 18px;
         }
 
-        .profile-info {
-          flex: 1;
-          min-width: 0;
-
-          .profile-name {
-            font-size: 20px;
-            font-weight: 700;
-            color: $gray-900;
-            margin-bottom: 6px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-
-            @media (min-width: $tablet) {
-              font-size: 24px;
-            }
-          }
-
-          .profile-id {
-            font-size: 14px;
-            color: $gray-600;
-            font-family: 'Courier New', monospace;
-            font-weight: 600;
-
-            @media (min-width: $tablet) {
-              font-size: 16px;
-            }
-          }
-        }
-      }
-
-      .profile-link-card {
-        background: $fb-blue-light;
-        border: 2px solid $fb-blue;
-        padding: 14px 16px;
-        margin-bottom: 16px;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        transition: all 0.2s;
-        min-height: 48px; // Touch target
-
-        &:hover {
-          background: rgba($fb-blue, 0.15);
+        .spinner {
+          width: 16px;
+          height: 16px;
+          border: 2px solid rgba(255, 255, 255, 0.3);
+          border-top-color: white;
+          border-radius: 50%;
+          animation: spin 0.8s linear infinite;
         }
 
-        i {
-          color: $fb-blue;
-          font-size: 20px;
-          flex-shrink: 0;
-        }
-
-        .fb-link {
-          color: $fb-blue;
-          text-decoration: none;
-          font-size: 14px;
-          font-weight: 600;
-          word-break: break-all;
-          flex: 1;
-          min-width: 0;
-
-          &:hover {
-            text-decoration: underline;
-          }
-
-          @media (min-width: $tablet) {
-            font-size: 16px;
-          }
-        }
-      }
-
-      .profile-about {
-        background: $gray-50;
-        border: 2px solid $gray-200;
-        padding: 16px;
-        display: flex;
-        gap: 12px;
-        align-items: flex-start;
-
-        i {
-          color: $fb-blue;
-          font-size: 20px;
-          flex-shrink: 0;
-          margin-top: 2px;
-        }
-
-        p {
-          margin: 0;
-          font-size: 14px;
-          line-height: 1.6;
-          color: $gray-700;
-          flex: 1;
-
-          @media (min-width: $tablet) {
-            font-size: 15px;
-          }
-        }
-      }
-
-      .loading-profile {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 12px;
-        padding: 24px;
-        color: $gray-600;
-
-        i {
-          font-size: 24px;
-          color: $fb-blue;
-        }
-
-        span {
-          font-size: 14px;
-          font-weight: 500;
-        }
-      }
-    }
-  }
-
-  // ============================================
-  // RESULT SECTION
-  // ============================================
-  .result-section {
-    background: $white;
-    border: 2px solid $gray-200;
-    padding: 20px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-
-    @media (min-width: $tablet) {
-      padding: 24px;
-    }
-
-    .result-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-      padding-bottom: 16px;
-      border-bottom: 2px solid $gray-200;
-      flex-wrap: wrap;
-      gap: 12px;
-
-      h3 {
-        margin: 0;
-        font-size: 18px;
-        font-weight: 700;
-        color: $gray-900;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        flex: 1;
-        min-width: 0;
-
-        i {
-          color: $success;
-          font-size: 22px;
-          flex-shrink: 0;
-        }
-
-        span {
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-      }
-
-      .copy-btn {
-        background: $gray-100;
-        border: 2px solid $gray-300;
-        padding: 10px 16px;
-        color: $gray-700;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        transition: all 0.2s;
-        font-size: 14px;
-        font-weight: 600;
-        min-height: 40px; // Touch target
-
-        &:hover {
-          background: $gray-200;
-          border-color: $gray-400;
-          color: $fb-blue;
-        }
-
-        &:active {
-          transform: scale(0.98);
-        }
-
-        i {
-          font-size: 16px;
-        }
-
-        .btn-label {
-          @media (max-width: $mobile - 1px) {
+        .btn-text {
+          @media (max-width: 400px) {
             display: none;
           }
         }
       }
     }
 
-    .fb-id-display {
-      background: $fb-blue;
-      border: 2px solid $fb-blue-dark;
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      color: $white;
-      text-align: center;
+    // Quick History
+    .quick-history {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid $glass-border;
 
-      @media (min-width: $tablet) {
-        flex-direction: row;
+      .history-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
         align-items: center;
-        justify-content: space-between;
-        text-align: left;
-        padding: 24px;
-      }
 
-      .fb-id-label {
-        font-size: 13px;
-        font-weight: 600;
-        opacity: 0.9;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
+        .history-chip {
+          background: rgba(0, 0, 0, 0.3);
+          border: 1px solid $glass-border;
+          border-radius: 20px;
+          padding: 6px 14px;
+          font-size: 13px;
+          font-family: $font-mono;
+          font-weight: 500;
+          color: $text-secondary;
+          cursor: pointer;
+          transition: all 0.2s ease;
 
-        @media (min-width: $tablet) {
-          font-size: 14px;
+          &:hover {
+            background: rgba($accent, 0.1);
+            border-color: rgba($accent, 0.3);
+            color: $accent-secondary;
+          }
         }
-      }
 
-      .fb-id-value {
-        font-size: 24px;
-        font-weight: 700;
-        font-family: 'Courier New', monospace;
-        letter-spacing: 1px;
-        word-break: break-all;
+        .clear-all-btn {
+          background: none;
+          border: none;
+          padding: 6px;
+          color: $text-muted;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 6px;
+          transition: all 0.2s;
+          margin-left: auto;
 
-        @media (min-width: $tablet) {
-          font-size: 28px;
+          &:hover {
+            color: $error;
+            background: rgba($error, 0.1);
+          }
+
+          svg {
+            width: 16px;
+            height: 16px;
+          }
         }
       }
     }
   }
 
-  // ============================================
-  // EMPTY & LOADING STATES
-  // ============================================
-  .empty-state,
-  .loading-state {
+  // Error Toast
+  .error-toast {
+    background: rgba($error, 0.1);
+    border: 1px solid rgba($error, 0.3);
+    border-radius: 12px;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: $error;
+    font-size: 13px;
+    font-weight: 500;
+    animation: fadeSlide 0.3s ease;
+
+    svg {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+    }
+  }
+
+  // Result Card
+  .result-card {
+    padding: 20px;
+    animation: slideUp 0.4s ease;
+    position: relative;
+    overflow: hidden;
+
+    .profile-section {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 20px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid $glass-border;
+
+      .profile-avatar {
+        position: relative;
+        flex-shrink: 0;
+
+        img {
+          width: 64px;
+          height: 64px;
+          border-radius: 16px;
+          object-fit: cover;
+          display: block;
+        }
+
+        .avatar-ring {
+          position: absolute;
+          inset: -3px;
+          border-radius: 18px;
+          border: 2px solid transparent;
+          background: linear-gradient(135deg, $accent, #8b5cf6) border-box;
+          mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+          mask-composite: exclude;
+          -webkit-mask-composite: xor;
+        }
+      }
+
+      .profile-info {
+        min-width: 0;
+        flex: 1;
+
+        h3 {
+          margin: 0 0 4px;
+          font-size: 18px;
+          font-weight: 700;
+          color: $text-primary;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .profile-id {
+          margin: 0;
+          font-size: 13px;
+          font-family: $font-mono;
+          color: $text-muted;
+        }
+      }
+    }
+
+    // ID Display
+    .id-display {
+      background: linear-gradient(135deg, rgba($accent, 0.15), rgba(#8b5cf6, 0.15));
+      border: 1px solid rgba($accent, 0.2);
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 16px;
+
+      .label {
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: $accent-secondary;
+      }
+
+      .value {
+        font-size: 22px;
+        font-family: $font-mono;
+        font-weight: 600;
+        color: $text-primary;
+        word-break: break-all;
+      }
+    }
+
+    // Action Buttons
+    .action-buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+
+      .action-btn {
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid $glass-border;
+        border-radius: 10px;
+        padding: 12px 16px;
+        color: $text-secondary;
+        font-family: $font-sans;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition: all 0.2s ease;
+
+        svg {
+          width: 16px;
+          height: 16px;
+        }
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.05);
+          border-color: rgba(255, 255, 255, 0.15);
+          color: $text-primary;
+        }
+
+        &.primary {
+          background: linear-gradient(135deg, $accent, #8b5cf6);
+          border-color: transparent;
+          color: white;
+          box-shadow: 0 4px 20px $accent-glow;
+
+          &:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 30px $accent-glow;
+          }
+        }
+      }
+    }
+
+    // About Section
+    .about-section {
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid $glass-border;
+
+      p {
+        margin: 0;
+        font-size: 13px;
+        line-height: 1.6;
+        color: $text-secondary;
+      }
+    }
+
+    // Loading Overlay
+    .loading-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba($bg-dark, 0.8);
+      backdrop-filter: blur(4px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      color: $text-muted;
+      font-size: 13px;
+
+      .spinner {
+        width: 24px;
+        height: 24px;
+        border: 2px solid $glass-border;
+        border-top-color: $accent;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+    }
+  }
+
+  // Empty State
+  .empty-state {
     flex: 1;
     display: flex;
     flex-direction: column;
@@ -773,72 +589,70 @@ $desktop: 1024px;
     justify-content: center;
     text-align: center;
     padding: 40px 20px;
-    color: $gray-500;
+    gap: 16px;
 
-    i {
-      font-size: 56px;
-      margin-bottom: 16px;
-      opacity: 0.6;
+    .empty-icon {
+      width: 80px;
+      height: 80px;
+      background: $glass-bg;
+      border: 1px solid $glass-border;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
 
-      @media (min-width: $tablet) {
-        font-size: 64px;
+      svg {
+        width: 40px;
+        height: 40px;
+        color: $text-muted;
       }
     }
 
     p {
-      font-size: 16px;
       margin: 0;
-      font-weight: 500;
-      max-width: 400px;
+      font-size: 14px;
+      color: $text-muted;
+      max-width: 280px;
+      line-height: 1.6;
+    }
+  }
 
-      @media (min-width: $tablet) {
-        font-size: 18px;
+  // Loading State
+  .loading-state {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+
+    .scan-animation {
+      position: relative;
+      width: 80px;
+      height: 80px;
+
+      .scan-ring {
+        position: absolute;
+        inset: 0;
+        border: 2px solid $accent;
+        border-radius: 50%;
+        animation: pulse-ring 1.5s ease-out infinite;
+
+        &:nth-child(2) {
+          animation-delay: 0.5s;
+        }
+
+        &:nth-child(3) {
+          animation-delay: 1s;
+        }
       }
     }
-  }
 
-  .loading-state {
-    i {
-      color: $fb-blue;
-      opacity: 1;
-    }
-  }
-}
-
-// ============================================
-// MOBILE OPTIMIZATIONS
-// ============================================
-@media (max-width: $mobile - 1px) {
-  .fb-id-finder-app {
-    .app-body {
-      padding: 12px;
-      gap: 12px;
-    }
-
-    .search-section,
-    .facebook-profile-section,
-    .result-section {
-      padding: 16px;
-    }
-  }
-}
-
-// ============================================
-// TOUCH DEVICE OPTIMIZATIONS
-// ============================================
-@media (hover: none) and (pointer: coarse) {
-  .fb-id-finder-app {
-    // Increase touch targets
-    button,
-    .history-item,
-    .action-btn {
-      min-height: 44px;
-    }
-
-    // Remove hover effects on touch devices
-    button:hover,
-    .history-item:hover {
-      transform: none;
+    p {
+      margin: 0;
+      font-size: 14px;
+      color: $text-muted;
+      font-weight: 500;
     }
   }
 }

@@ -248,7 +248,6 @@ export class SearchService {
       'my-info': 'pi pi-user',
       'love': 'pi pi-heart',
       'explorer': 'pi pi-folder',
-      'machine-info': 'pi pi-desktop',
       'credit': 'pi pi-dollar',
       'paint': 'pi pi-palette',
       'credits': 'pi pi-star',

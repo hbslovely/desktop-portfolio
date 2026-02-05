@@ -79,6 +79,8 @@ export class WelcomeScreenComponent implements OnInit, OnDestroy {
     if (storedAuth === 'true' && storedPassword === currentPassword) {
       // User was previously authenticated and password is still valid
       this.isAuthenticated.set(true);
+      // Stop the time interval since we're auto-logging in
+      this.stopTimeInterval();
     } else if (storedAuth === 'true' && storedPassword !== currentPassword) {
       // Password has changed (new day), clear storage and show lock screen
       this.clearAuthenticationStorage();
@@ -105,6 +107,8 @@ export class WelcomeScreenComponent implements OnInit, OnDestroy {
     this.errorMessage.set('');
     // Clear storage when manually locking
     this.clearAuthenticationStorage();
+    // Restart the time interval for the lock screen
+    this.startTimeInterval();
   }
 
   updateTime() {
@@ -120,6 +124,20 @@ export class WelcomeScreenComponent implements OnInit, OnDestroy {
       month: 'long',
       day: 'numeric'
     }));
+  }
+
+  private startTimeInterval() {
+    // Stop existing interval first to prevent duplicates
+    this.stopTimeInterval();
+    this.updateTime();
+    this.timeInterval = window.setInterval(() => this.updateTime(), 1000);
+  }
+
+  private stopTimeInterval() {
+    if (this.timeInterval) {
+      clearInterval(this.timeInterval);
+      this.timeInterval = undefined;
+    }
   }
 
   onPasswordInput(event: any) {
@@ -148,6 +166,8 @@ export class WelcomeScreenComponent implements OnInit, OnDestroy {
         this.isLocked.set(false);
         this.saveAuthenticationStatus();
         this.isLoading.set(false);
+        // Stop the time interval after successful login
+        this.stopTimeInterval();
       }, 1000);
     } else {
       this.errorMessage.set('Incorrect password. Hint: Use today\'s date in ddmmyyyy format');
@@ -197,12 +217,12 @@ export class WelcomeScreenComponent implements OnInit, OnDestroy {
     this.bootProgress.set(0);
     this.isAuthenticated.set(false);
     this.isLocked.set(false);
+    // Restart time interval for boot/lock screen
+    this.startTimeInterval();
     this.startBootSequence();
   }
   
   ngOnDestroy() {
-    if (this.timeInterval) {
-      clearInterval(this.timeInterval);
-    }
+    this.stopTimeInterval();
   }
 }
