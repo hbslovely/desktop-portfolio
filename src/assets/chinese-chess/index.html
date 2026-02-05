@@ -586,25 +586,65 @@
     return fen;
   }
 
-  // Expanded opening book with varied strategies
+  // Expanded opening book with varied strategies - Focus on pawn protection
   const OPENING_BOOK = {
-    // Standard opening: Central Cannon (Pháo Đầu)
-    "rheakaehr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RHEAKAEHR": {fromR:7, fromC:1, toR:7, toC:4},
+    // === KHAI CUỘC CHO QUÂN ĐEN (AI) ===
     
-    // Response to central cannon: Screen Horse (Bình Phong Mã)
+    // --- Nước 1: Bình Phong Mã - Phát triển Mã bảo vệ chốt đầu ---
+    // Đáp lại Pháo Đầu của Đỏ: Mã trái ra c8 (bảo vệ chốt e7)
     "rheakaehr/9/1c5c1/p1p1p1p1p/9/9/P1P1C1P1P/1C7/9/RHEAKAEHR": {fromR:0, fromC:1, toR:2, toC:2},
     
-    // Develop horse instead of cannon take horse pattern
-    "rheakaehr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RHEAKA2R": {fromR:0, fromC:7, toR:2, toC:6},
+    // Đáp lại Pháo Đầu: Mã phải ra g8 (bảo vệ chốt e7 từ phải)  
+    "rheakaehr/9/1c5c1/p1p1p1p1p/9/4C4/P1P1P1P1P/1C7/9/RHEAKAEHR": {fromR:0, fromC:7, toR:2, toC:6},
     
-    // Counter-attack cannon development
-    "rheakaehr/9/1c5c1/p1p1p1p1p/9/4C4/P1P1P1P1P/1C7/9/RHEAKAEHR": {fromR:0, fromC:1, toR:2, toC:4},
+    // --- Nước 2: Phát triển Mã thứ hai ---
+    // Sau khi Mã trái đã ra, phát triển Mã phải
+    "rhe1kaehr/9/1cn4c1/p1p1p1p1p/9/9/P1P1C1P1P/1C7/9/RHEAKAEHR": {fromR:0, fromC:7, toR:2, toC:6},
+    "rheaka1hr/9/1c5c1/p1p1p1p1p/9/9/P1P1C1P1P/7C1/4A4/RHEAKAEHR": {fromR:0, fromC:1, toR:2, toC:2},
     
-    // Elephant opening defense
-    "rheakaehr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C2C4/9/RHEAKAEHR": {fromR:0, fromC:2, toR:2, toC:0},
+    // --- Nước 3: Pháo bình đội hình ---
+    // Pháo ra cánh để tấn công hoặc phòng thủ
+    "rhe1ka1hr/9/1cn2c1n1/p1p1p1p1p/9/9/P1P1C1P1P/1C7/9/RHEAKAEHR": {fromR:2, fromC:7, toR:2, toC:4},
     
-    // Horse development priority
-    "rheakaehr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/4A4/RHEAKAEHR": {fromR:0, fromC:1, toR:2, toC:2},
+    // --- Đáp lại các khai cuộc phổ biến ---
+    
+    // Đỏ đi Pháo Đầu + tiến chốt: Đen phát triển Mã bảo vệ
+    "rheakaehr/9/1c5c1/p1p1p1p1p/9/4P4/P1P3P1P/1C2C4/9/RHEAKAEHR": {fromR:0, fromC:1, toR:2, toC:2},
+    
+    // Đỏ tấn công cánh phải: Đen củng cố phòng thủ
+    "rheakaehr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/7C1/9/RHEAKAEHR": {fromR:0, fromC:7, toR:2, toC:6},
+    
+    // Đỏ Pháo biên: Đen Mã ra chặn
+    "rheakaehr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1PCP/1C7/9/RHEAKAEHR": {fromR:0, fromC:7, toR:2, toC:8},
+    
+    // --- Thế cờ phòng thủ vững chắc ---
+    
+    // Đỏ Pháo Đầu + Xe ra: Đen Sĩ lên để bảo vệ
+    "rheakaehr/9/1c5c1/p1p1p1p1p/9/4C4/P1P1P1P1P/9/9/RHEAKAEHR": {fromR:0, fromC:3, toR:1, toC:4},
+    
+    // Sau khi có Sĩ, phát triển Tượng
+    "rhe1kaehr/4a4/1c5c1/p1p1p1p1p/9/4C4/P1P1P1P1P/9/9/RHEAKAEHR": {fromR:0, fromC:2, toR:2, toC:4},
+    
+    // --- Phản công khi có cơ hội ---
+    
+    // Đỏ để hở chốt: Pháo bắn chốt
+    "rheakaehr/9/1c5c1/p1p1p1p1p/9/9/2P1P1P1P/PC5C1/9/RHEAKAEHR": {fromR:2, fromC:1, toR:6, toC:1},
+    
+    // Xe ra cột mở
+    "rheakaehr/9/1c5c1/p1p1p1p1p/9/9/P1P1P3P/1C5C1/9/RHEAKA1HR": {fromR:0, fromC:8, toR:0, toC:7},
+    
+    // === KHAI CUỘC MẶC ĐỊNH ===
+    // Thế cờ ban đầu: Mã trái ra (Bình Phong Mã - ưu tiên bảo vệ chốt)
+    "rheakaehr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RHEAKAEHR": {fromR:0, fromC:1, toR:2, toC:2},
+  };
+  
+  // Đánh giá ưu tiên khai cuộc - Bảo vệ chốt đầu
+  const OPENING_PRIORITIES = {
+    PROTECT_CENTER_PAWN: 80,    // Bonus cho việc bảo vệ chốt giữa
+    DEVELOP_HORSE_EARLY: 60,    // Bonus cho việc phát triển Mã sớm
+    CASTLE_ADVISORS: 40,        // Bonus cho việc Sĩ lên bảo vệ Tướng
+    CONTROL_CENTER: 50,         // Bonus cho việc kiểm soát trung tâm
+    UNPROTECTED_PAWN_PENALTY: -100,  // Penalty cho chốt không được bảo vệ
   };
 
   const PUZZLE_DB = [
@@ -894,6 +934,69 @@
   const MAX_POSITION_HISTORY = 12;
   const REPETITION_PENALTY = 800;
   const PERPETUAL_CHECK_PENALTY = 2000;
+  
+  // === 🧠 ADVANCED AI: TRANSPOSITION TABLE & SEARCH ENHANCEMENTS ===
+  
+  // Transposition Table - Cache các vị trí đã đánh giá
+  const transpositionTable = new Map();
+  const TT_EXACT = 0;    // Giá trị chính xác
+  const TT_LOWER = 1;    // Giá trị tối thiểu (alpha cutoff)
+  const TT_UPPER = 2;    // Giá trị tối đa (beta cutoff)
+  const MAX_TT_SIZE = 100000;  // Giới hạn kích thước bảng
+  
+  // Killer Moves - Lưu các nước đi gây cutoff ở mỗi độ sâu
+  const killerMoves = Array(20).fill(null).map(() => [null, null]);
+  
+  // History Heuristic - Đếm số lần nước đi tốt
+  const historyTable = {};
+  
+  // === 🎲 MONTE CARLO TREE SEARCH (MCTS) ===
+  class MCTSNode {
+    constructor(state, parent = null, move = null) {
+      this.state = state;           // FEN hoặc hash của vị trí
+      this.parent = parent;
+      this.move = move;             // Nước đi dẫn đến node này
+      this.children = [];
+      this.wins = 0;
+      this.visits = 0;
+      this.untriedMoves = null;     // Các nước chưa thử
+      this.isTerminal = false;
+    }
+    
+    // UCB1 formula để chọn node con tốt nhất
+    ucb1(explorationParam = 1.414) {
+      if (this.visits === 0) return Infinity;
+      return (this.wins / this.visits) + 
+             explorationParam * Math.sqrt(Math.log(this.parent.visits) / this.visits);
+    }
+    
+    // Chọn node con có UCB1 cao nhất
+    selectChild() {
+      let best = null;
+      let bestScore = -Infinity;
+      for (const child of this.children) {
+        const score = child.ucb1();
+        if (score > bestScore) {
+          bestScore = score;
+          best = child;
+        }
+      }
+      return best;
+    }
+    
+    // Thêm node con mới
+    addChild(move, state) {
+      const child = new MCTSNode(state, this, move);
+      this.children.push(child);
+      return child;
+    }
+    
+    // Cập nhật thống kê
+    update(result) {
+      this.visits++;
+      this.wins += result;
+    }
+  }
   
   // --- CHECK STATE ---
   let currentCheckState = { inCheck: false, kingPos: null, color: null };
@@ -1414,6 +1517,17 @@
   }
 
   const VALUES = { [PIECE_KING]:10000, [PIECE_ROOK]:900, [PIECE_CANNON]:450, [PIECE_HORSE]:400, [PIECE_ELEPHANT]:120, [PIECE_ADVISOR]:120, [PIECE_PAWN]:100 };
+  
+  // Trọng số đặc biệt cho chốt đầu (chốt giữa cột e)
+  const CENTER_PAWN_BONUS = 80;  // Bonus thêm cho chốt đầu
+  const PAWN_VALUES_BY_COLUMN = {
+    // Cột a, c, e, g, i (0, 2, 4, 6, 8)
+    0: 80,   // Chốt cạnh trái
+    2: 100,  // Chốt cánh trái
+    4: 180,  // CHỐT ĐẦU - giá trị cao nhất
+    6: 100,  // Chốt cánh phải  
+    8: 80    // Chốt cạnh phải
+  };
 
   // --- PIECE-SQUARE TABLES (from Black's perspective, row 0-9) ---
   const PST = {
@@ -1457,15 +1571,191 @@
       [  0,   0,   0,   0,   0,   0,   0,   0,   0],
       [  0,   0,   0,   0,   0,   0,   0,   0,   0],
       [  0,   0,   0,   0,   0,   0,   0,   0,   0],
-      [  1,   0,   2,   0,   3,   0,   2,   0,   1],
-      [  2,   2,   4,   5,   6,   5,   4,   2,   2],
-      [  3,   6,   9,  10,  12,  10,   9,   6,   3],
-      [  4,   8,  12,  14,  16,  14,  12,   8,   4],
-      [ 10,  18,  22,  28,  32,  28,  22,  18,  10],
-      [ 15,  25,  30,  40,  50,  40,  30,  25,  15],
-      [ 20,  30,  40,  50,  60,  50,  40,  30,  20]
+      [  1,   0,   2,   0,  15,   0,   2,   0,   1],  // Chốt đầu (e) bonus cao hơn
+      [  2,   2,   4,   8,  18,   8,   4,   2,   2],  // Qua sông, chốt đầu vẫn quan trọng
+      [  3,   6,   9,  12,  20,  12,   9,   6,   3],
+      [  4,   8,  12,  16,  24,  16,  12,   8,   4],
+      [ 10,  18,  22,  30,  40,  30,  22,  18,  10],
+      [ 15,  25,  30,  42,  55,  42,  30,  25,  15],
+      [ 20,  30,  40,  55,  70,  55,  40,  30,  20]   // Chốt đầu gần cung vua cực kỳ nguy hiểm
     ]
   };
+  
+  // === HỆ THỐNG PHÁT HIỆN VÀ ĐÁNH GIÁ MỐI ĐE DỌA ===
+  
+  // Tìm tất cả các quân đang bị đe dọa
+  function findThreatenedPieces(color) {
+    const threats = [];
+    const enemyColor = (color === RED) ? BLACK : RED;
+    
+    for(let r=0; r<ROWS; r++) {
+      for(let c=0; c<COLS; c++) {
+        const p = board[r][c];
+        if (p === 0 || getColor(p) !== color) continue;
+        
+        // Tìm các quân địch có thể ăn quân này
+        const attackers = findAttackers(r, c, enemyColor);
+        
+        if (attackers.length > 0) {
+          const pieceValue = getPieceValue(p, r, c, color);
+          const defenders = findDefenders(r, c, color);
+          
+          threats.push({
+            r, c,
+            piece: p,
+            type: getType(p),
+            value: pieceValue,
+            attackers: attackers,
+            defenders: defenders,
+            isHanging: defenders.length === 0,  // Quân "treo" không có ai bảo vệ
+            netLoss: calculateExchangeValue(pieceValue, attackers, defenders)
+          });
+        }
+      }
+    }
+    
+    return threats;
+  }
+  
+  // Tìm các quân đang tấn công một ô
+  function findAttackers(r, c, attackerColor) {
+    const attackers = [];
+    
+    for(let ar=0; ar<ROWS; ar++) {
+      for(let ac=0; ac<COLS; ac++) {
+        const p = board[ar][ac];
+        if (p === 0 || getColor(p) !== attackerColor) continue;
+        
+        const moves = generateMoves(ar, ac, false);
+        if (moves.some(m => m.r === r && m.c === c)) {
+          attackers.push({
+            r: ar, c: ac,
+            piece: p,
+            type: getType(p),
+            value: getPieceValue(p, ar, ac, attackerColor)
+          });
+        }
+      }
+    }
+    
+    // Sắp xếp theo giá trị tăng dần (quân nhỏ tấn công trước)
+    attackers.sort((a, b) => a.value - b.value);
+    return attackers;
+  }
+  
+  // Tìm các quân đang bảo vệ một ô
+  function findDefenders(r, c, defenderColor) {
+    const defenders = [];
+    const originalPiece = board[r][c];
+    
+    // Tạm thời đặt quân địch giả ở đó để kiểm tra ai có thể "ăn lại"
+    const enemyColor = (defenderColor === RED) ? BLACK : RED;
+    board[r][c] = enemyColor | PIECE_PAWN; // Đặt quân giả
+    
+    for(let dr=0; dr<ROWS; dr++) {
+      for(let dc=0; dc<COLS; dc++) {
+        if (dr === r && dc === c) continue;
+        const p = board[dr][dc];
+        if (p === 0 || getColor(p) !== defenderColor) continue;
+        
+        const moves = generateMoves(dr, dc, false);
+        if (moves.some(m => m.r === r && m.c === c)) {
+          defenders.push({
+            r: dr, c: dc,
+            piece: p,
+            type: getType(p),
+            value: getPieceValue(p, dr, dc, defenderColor)
+          });
+        }
+      }
+    }
+    
+    board[r][c] = originalPiece; // Khôi phục
+    
+    // Sắp xếp theo giá trị tăng dần (quân nhỏ bảo vệ trước)
+    defenders.sort((a, b) => a.value - b.value);
+    return defenders;
+  }
+  
+  // Lấy giá trị thực của quân (bao gồm bonus vị trí và chốt đầu)
+  function getPieceValue(piece, r, c, color) {
+    const type = getType(piece);
+    let value = VALUES[type];
+    
+    // Bonus đặc biệt cho chốt đầu
+    if (type === PIECE_PAWN) {
+      if (PAWN_VALUES_BY_COLUMN[c] !== undefined) {
+        value = PAWN_VALUES_BY_COLUMN[c];
+      }
+      // Thêm bonus nếu chốt đã qua sông
+      if ((color === BLACK && r >= 5) || (color === RED && r <= 4)) {
+        value += 30;
+      }
+    }
+    
+    // Thêm bonus vị trí
+    value += getPositionalBonus(type, r, c, color);
+    
+    return value;
+  }
+  
+  // Tính toán giá trị trao đổi (SEE - Static Exchange Evaluation)
+  function calculateExchangeValue(pieceValue, attackers, defenders) {
+    if (attackers.length === 0) return 0;
+    
+    // Mô phỏng chuỗi ăn quân
+    let gain = pieceValue;  // Giá trị quân bị ăn đầu tiên
+    let currentAttackerIdx = 0;
+    let currentDefenderIdx = 0;
+    let isAttackerTurn = true;
+    
+    const attackerValues = attackers.map(a => a.value);
+    const defenderValues = defenders.map(d => d.value);
+    
+    let lastCapturedValue = pieceValue;
+    let totalGain = 0;
+    
+    while (true) {
+      if (isAttackerTurn) {
+        if (currentAttackerIdx >= attackerValues.length) break;
+        totalGain += lastCapturedValue;
+        lastCapturedValue = attackerValues[currentAttackerIdx];
+        currentAttackerIdx++;
+      } else {
+        if (currentDefenderIdx >= defenderValues.length) break;
+        totalGain -= lastCapturedValue;
+        lastCapturedValue = defenderValues[currentDefenderIdx];
+        currentDefenderIdx++;
+      }
+      isAttackerTurn = !isAttackerTurn;
+    }
+    
+    return totalGain;
+  }
+  
+  // Đánh giá xem có nên để bị ăn quân không (sacrifice evaluation)
+  function evaluateSacrifice(threat) {
+    // Nếu quân "treo" (không ai bảo vệ) -> không nên để bị ăn
+    if (threat.isHanging) {
+      return -threat.value;
+    }
+    
+    // Tính toán nếu trao đổi xảy ra
+    if (threat.attackers.length > 0 && threat.defenders.length > 0) {
+      const attackerValue = threat.attackers[0].value;
+      const defenderCanRecapture = threat.defenders[0].value;
+      
+      // Nếu quân tấn công có giá trị cao hơn quân bị ăn -> có thể đáng để trao đổi
+      if (attackerValue > threat.value) {
+        return attackerValue - threat.value; // Lợi nhuận từ trao đổi
+      }
+      
+      // Nếu quân tấn công có giá trị bằng hoặc thấp hơn -> thua lỗ
+      return threat.value - attackerValue;
+    }
+    
+    return -threat.value;
+  }
 
   // Get positional bonus from piece-square table
   function getPositionalBonus(type, r, c, color) {
@@ -1538,15 +1828,146 @@
     let blackKing = null, redKing = null;
     let blackMobility = 0, redMobility = 0;
     let blackAttacks = 0, redAttacks = 0;
+    
+    // Track pieces for opening evaluation
+    let blackHorses = [];
+    let redHorses = [];
+    let blackPawns = [];
+    let redPawns = [];
+    let blackCannons = [];
+    let redCannons = [];
 
-    // Find kings first
+    // Find kings and track pieces first
     for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) {
       const p = board[r][c];
-      if (getType(p)===PIECE_KING) {
-        if (getColor(p)===BLACK) blackKing = {r,c}; else redKing = {r,c};
+      if (p === 0) continue;
+      const type = getType(p);
+      const color = getColor(p);
+      
+      if (type === PIECE_KING) {
+        if (color === BLACK) blackKing = {r,c}; else redKing = {r,c};
+      } else if (type === PIECE_HORSE) {
+        if (color === BLACK) blackHorses.push({r,c}); else redHorses.push({r,c});
+      } else if (type === PIECE_PAWN) {
+        if (color === BLACK) blackPawns.push({r,c}); else redPawns.push({r,c});
+      } else if (type === PIECE_CANNON) {
+        if (color === BLACK) blackCannons.push({r,c}); else redCannons.push({r,c});
+      }
+    }
+    
+    // === OPENING PHASE EVALUATION (first 10 moves) ===
+    const isOpening = moveHistory.length < 20;
+    
+    if (isOpening) {
+      // --- BẢO VỆ CHỐT ĐẦU (Chốt giữa e7 cho Đen, e4 cho Đỏ) ---
+      
+      // Kiểm tra chốt đầu Đen (e7 = row 3, col 4)
+      const blackCenterPawn = blackPawns.find(p => p.r === 3 && p.c === 4);
+      if (blackCenterPawn) {
+        // Kiểm tra xem chốt có được Mã bảo vệ không
+        let isProtected = false;
+        for (const horse of blackHorses) {
+          // Mã ở c8 (row 2, col 2) bảo vệ chốt e7
+          // Mã ở g8 (row 2, col 6) bảo vệ chốt e7
+          if ((horse.r === 2 && horse.c === 2) || (horse.r === 2 && horse.c === 6)) {
+            // Kiểm tra Mã có thể nhảy đến bảo vệ chốt không
+            const horseMoves = generateMoves(horse.r, horse.c, false);
+            if (horseMoves.some(m => m.r === 3 && m.c === 4)) {
+              isProtected = true;
+              break;
+            }
+          }
+          // Mã đã phát triển và có thể bảo vệ
+          if (horse.r >= 2 && horse.r <= 4) {
+            const dist = Math.abs(horse.r - 3) + Math.abs(horse.c - 4);
+            if (dist <= 3) isProtected = true;
+          }
+        }
+        
+        if (isProtected) {
+          s += OPENING_PRIORITIES.PROTECT_CENTER_PAWN;
+        } else {
+          // Kiểm tra nếu chốt đang bị đe dọa
+          const threatenedByRedCannon = redCannons.some(cannon => {
+            if (cannon.c === 4) { // Cùng cột với chốt
+              // Kiểm tra có quân ở giữa để Pháo bắn không
+              let piecesBetween = 0;
+              const minR = Math.min(cannon.r, 3);
+              const maxR = Math.max(cannon.r, 3);
+              for (let checkR = minR + 1; checkR < maxR; checkR++) {
+                if (board[checkR][4] !== 0) piecesBetween++;
+              }
+              return piecesBetween === 1; // Pháo có thể bắn
+            }
+            return false;
+          });
+          
+          if (threatenedByRedCannon) {
+            s += OPENING_PRIORITIES.UNPROTECTED_PAWN_PENALTY;
+          }
+        }
+      } else {
+        // Chốt đầu đã bị mất - penalty lớn trong khai cuộc
+        s -= 60;
+      }
+      
+      // --- PHÁT TRIỂN MÃ SỚM ---
+      for (const horse of blackHorses) {
+        // Mã đã rời vị trí ban đầu (row 0)
+        if (horse.r > 0) {
+          s += OPENING_PRIORITIES.DEVELOP_HORSE_EARLY;
+          // Bonus thêm nếu Mã ở vị trí tốt (hàng 2-3)
+          if (horse.r >= 2 && horse.r <= 3) {
+            s += 20;
+          }
+        }
+      }
+      
+      // Penalty nếu Mã chưa phát triển sau vài nước
+      if (moveHistory.length > 6) {
+        const undevelopedHorses = blackHorses.filter(h => h.r === 0).length;
+        s -= undevelopedHorses * 30;
+      }
+      
+      // --- SĨ TƯỢNG BẢO VỆ ---
+      // Bonus nếu Sĩ đã lên (bảo vệ Tướng và chốt)
+      for(let r=0;r<3;r++) for(let c=3;c<=5;c++) {
+        const p = board[r][c];
+        if (getType(p) === PIECE_ADVISOR && getColor(p) === BLACK) {
+          if (r === 1) s += OPENING_PRIORITIES.CASTLE_ADVISORS;
+        }
+      }
+      
+      // === ĐÁNH GIÁ CHỐT ĐỎ (đối xứng) ===
+      const redCenterPawn = redPawns.find(p => p.r === 6 && p.c === 4);
+      if (redCenterPawn) {
+        let isProtected = false;
+        for (const horse of redHorses) {
+          if (horse.r >= 5 && horse.r <= 7) {
+            const dist = Math.abs(horse.r - 6) + Math.abs(horse.c - 4);
+            if (dist <= 3) isProtected = true;
+          }
+        }
+        if (!isProtected) {
+          // Bonus cho Đen nếu chốt Đỏ không được bảo vệ
+          const threatenedByBlackCannon = blackCannons.some(cannon => {
+            if (cannon.c === 4) {
+              let piecesBetween = 0;
+              const minR = Math.min(cannon.r, 6);
+              const maxR = Math.max(cannon.r, 6);
+              for (let checkR = minR + 1; checkR < maxR; checkR++) {
+                if (board[checkR][4] !== 0) piecesBetween++;
+              }
+              return piecesBetween === 1;
+            }
+            return false;
+          });
+          if (threatenedByBlackCannon) s += 50; // Cơ hội tấn công
+        }
       }
     }
 
+    // === ĐÁNH GIÁ TỪNG QUÂN ===
     for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) {
       const p = board[r][c];
       if(p===0) continue;
@@ -1557,6 +1978,24 @@
       if (isHidden(p)) {
         val = 50; // Hidden pieces have uncertain value
       } else {
+        // === TRỌNG SỐ ĐẶC BIỆT CHO CHỐT ===
+        if (type === PIECE_PAWN) {
+          // Sử dụng giá trị theo cột (chốt đầu cao hơn)
+          val = PAWN_VALUES_BY_COLUMN[c] || VALUES[PIECE_PAWN];
+          
+          // Bonus nếu chốt đã qua sông
+          if ((color === BLACK && r >= 5) || (color === RED && r <= 4)) {
+            val += 40;
+          }
+          
+          // Bonus thêm cho chốt đầu ở vị trí ban đầu (chưa bị mất)
+          if (c === 4) {
+            if ((color === BLACK && r === 3) || (color === RED && r === 6)) {
+              val += CENTER_PAWN_BONUS; // Chốt đầu còn nguyên rất quan trọng
+            }
+          }
+        }
+        
         // Add positional bonus
         val += getPositionalBonus(type, r, c, color);
         
@@ -1620,6 +2059,41 @@
       }
       
       if(color===BLACK) s+=val; else s-=val;
+    }
+    
+    // === ĐÁNH GIÁ MỐI ĐE DỌA ===
+    // Phân tích các quân Đen bị đe dọa
+    const blackThreats = findThreatenedPieces(BLACK);
+    for (const threat of blackThreats) {
+      // Penalty cho quân "treo" (không được bảo vệ)
+      if (threat.isHanging) {
+        // Penalty nặng hơn cho quân có giá trị cao
+        s -= threat.value * 0.3;
+        
+        // Penalty đặc biệt nặng cho chốt đầu không được bảo vệ
+        if (threat.type === PIECE_PAWN && threat.c === 4) {
+          s -= 50;
+        }
+      } else if (threat.netLoss > 0) {
+        // Nếu trao đổi không có lợi, penalty nhẹ hơn
+        s -= threat.netLoss * 0.15;
+      }
+    }
+    
+    // Phân tích các quân Đỏ bị đe dọa (cơ hội cho Đen)
+    const redThreats = findThreatenedPieces(RED);
+    for (const threat of redThreats) {
+      if (threat.isHanging) {
+        // Bonus cho Đen vì Đỏ có quân yếu
+        s += threat.value * 0.25;
+        
+        // Bonus đặc biệt nếu chốt đầu Đỏ không được bảo vệ
+        if (threat.type === PIECE_PAWN && threat.c === 4) {
+          s += 40;
+        }
+      } else if (threat.netLoss > 0) {
+        s += threat.netLoss * 0.1;
+      }
     }
     
     // Add mobility difference
@@ -1770,11 +2244,32 @@
   function getBestMove() {
     const fen = generateFEN();
     
-    // Only use opening book for first few moves
-    if (moveHistory.length < 6 && OPENING_BOOK[fen]) {
+    // Use opening book for first several moves
+    if (moveHistory.length < 12 && OPENING_BOOK[fen]) {
       const bookMove = OPENING_BOOK[fen];
       showStrategyToast();
       return bookMove;
+    }
+    
+    // === CHIẾN THUẬT KHAI CUỘC ĐẶC BIỆT ===
+    const isEarlyOpening = moveHistory.length < 8;
+    
+    if (isEarlyOpening) {
+      // Ưu tiên phát triển Mã để bảo vệ chốt đầu
+      const openingMove = getOpeningDevelopmentMove();
+      if (openingMove) {
+        showStrategyToast();
+        return openingMove;
+      }
+    }
+    
+    // === PHÂN TÍCH Ý ĐỒ CỦA ĐỐI PHƯƠNG ===
+    const opponentIntention = analyzeOpponentIntention();
+    
+    // Nếu có quân quan trọng đang bị đe dọa, ưu tiên bảo vệ
+    const urgentDefense = getUrgentDefensiveMove(opponentIntention);
+    if (urgentDefense) {
+      return urgentDefense;
     }
 
     let moves=[];
@@ -1885,6 +2380,396 @@
     return matchCount >= 2;
   }
   
+  // === HÀM CHIẾN THUẬT KHAI CUỘC - BẢO VỆ CHỐT ĐẦU ===
+  function getOpeningDevelopmentMove() {
+    // Tìm vị trí các quân
+    let leftHorse = null, rightHorse = null;
+    let leftCannon = null, rightCannon = null;
+    let centerPawn = null;
+    let leftAdvisor = null, rightAdvisor = null;
+    
+    for(let r=0; r<ROWS; r++) {
+      for(let c=0; c<COLS; c++) {
+        const p = board[r][c];
+        if (p === 0 || getColor(p) !== BLACK) continue;
+        const type = getType(p);
+        
+        if (type === PIECE_HORSE) {
+          if (c <= 4) leftHorse = {r, c};
+          else rightHorse = {r, c};
+        } else if (type === PIECE_CANNON) {
+          if (c <= 4) leftCannon = {r, c};
+          else rightCannon = {r, c};
+        } else if (type === PIECE_PAWN && c === 4 && r === 3) {
+          centerPawn = {r, c};
+        } else if (type === PIECE_ADVISOR) {
+          if (c < 4) leftAdvisor = {r, c};
+          else rightAdvisor = {r, c};
+        }
+      }
+    }
+    
+    // Kiểm tra xem chốt giữa có đang bị đe dọa không
+    const centerPawnThreatened = isCenterPawnThreatened();
+    
+    // === ƯU TIÊN 1: PHÁT TRIỂN MÃ ĐỂ BẢO VỆ CHỐT ===
+    
+    // Nếu Mã trái vẫn ở vị trí ban đầu (b10), phát triển ra c8
+    if (leftHorse && leftHorse.r === 0 && leftHorse.c === 1) {
+      const moves = generateMoves(0, 1, true);
+      // Nước đi ưu tiên: Mã b10 -> c8 (bảo vệ chốt e7)
+      const developMove = moves.find(m => m.r === 2 && m.c === 2);
+      if (developMove) {
+        return {fromR: 0, fromC: 1, toR: 2, toC: 2};
+      }
+      // Nước đi thay thế: Mã b10 -> a8
+      const altMove = moves.find(m => m.r === 2 && m.c === 0);
+      if (altMove) {
+        return {fromR: 0, fromC: 1, toR: 2, toC: 0};
+      }
+    }
+    
+    // Nếu Mã phải vẫn ở vị trí ban đầu (h10), phát triển ra g8
+    if (rightHorse && rightHorse.r === 0 && rightHorse.c === 7) {
+      const moves = generateMoves(0, 7, true);
+      // Nước đi ưu tiên: Mã h10 -> g8 (bảo vệ chốt e7)
+      const developMove = moves.find(m => m.r === 2 && m.c === 6);
+      if (developMove) {
+        return {fromR: 0, fromC: 7, toR: 2, toC: 6};
+      }
+      // Nước đi thay thế: Mã h10 -> i8
+      const altMove = moves.find(m => m.r === 2 && m.c === 8);
+      if (altMove) {
+        return {fromR: 0, fromC: 7, toR: 2, toC: 8};
+      }
+    }
+    
+    // === ƯU TIÊN 2: NẾU CHỐT BỊ ĐE DỌA, TÌM NƯỚC BẢO VỆ ===
+    if (centerPawnThreatened && centerPawn) {
+      // Tìm quân có thể bảo vệ chốt
+      for(let r=0; r<ROWS; r++) {
+        for(let c=0; c<COLS; c++) {
+          const p = board[r][c];
+          if (p === 0 || getColor(p) !== BLACK) continue;
+          const type = getType(p);
+          
+          // Ưu tiên dùng Mã hoặc Pháo để bảo vệ
+          if (type === PIECE_HORSE || type === PIECE_CANNON) {
+            const moves = generateMoves(r, c, true);
+            for (const m of moves) {
+              // Kiểm tra nước đi này có chặn được mối đe dọa không
+              board[m.r][m.c] = p;
+              board[r][c] = 0;
+              const stillThreatened = isCenterPawnThreatened();
+              board[r][c] = p;
+              board[m.r][m.c] = 0;
+              
+              if (!stillThreatened) {
+                return {fromR: r, fromC: c, toR: m.r, toC: m.c};
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    // === ƯU TIÊN 3: PHÁO RA VỊ TRÍ TỐT ===
+    // Nếu cả 2 Mã đã phát triển, xem xét di chuyển Pháo
+    const leftHorseDeveloped = leftHorse && leftHorse.r > 0;
+    const rightHorseDeveloped = rightHorse && rightHorse.r > 0;
+    
+    if (leftHorseDeveloped && rightHorseDeveloped) {
+      // Pháo ra cột giữa nếu có cơ hội
+      if (leftCannon && leftCannon.r === 2 && leftCannon.c === 1) {
+        const moves = generateMoves(2, 1, true);
+        // Pháo ra cột e (giữa) để tạo áp lực
+        const centerMove = moves.find(m => m.r === 2 && m.c === 4);
+        if (centerMove) {
+          return {fromR: 2, fromC: 1, toR: 2, toC: 4};
+        }
+      }
+    }
+    
+    // === ƯU TIÊN 4: SĨ LÊN BẢO VỆ ===
+    if (leftHorseDeveloped && rightHorseDeveloped) {
+      // Sĩ trái lên e9
+      if (leftAdvisor && leftAdvisor.r === 0 && leftAdvisor.c === 3) {
+        const moves = generateMoves(0, 3, true);
+        const advanceMove = moves.find(m => m.r === 1 && m.c === 4);
+        if (advanceMove) {
+          return {fromR: 0, fromC: 3, toR: 1, toC: 4};
+        }
+      }
+    }
+    
+    return null; // Không có nước khai cuộc đặc biệt, dùng minimax
+  }
+  
+  // Kiểm tra chốt giữa Đen (e7) có bị đe dọa không
+  function isCenterPawnThreatened() {
+    const centerPawnR = 3, centerPawnC = 4;
+    const centerPawn = board[centerPawnR][centerPawnC];
+    
+    if (centerPawn === 0 || getColor(centerPawn) !== BLACK || getType(centerPawn) !== PIECE_PAWN) {
+      return false; // Chốt không còn ở đó
+    }
+    
+    // Kiểm tra các quân Đỏ có thể ăn chốt không
+    for(let r=0; r<ROWS; r++) {
+      for(let c=0; c<COLS; c++) {
+        const p = board[r][c];
+        if (p === 0 || getColor(p) !== RED) continue;
+        
+        const moves = generateMoves(r, c, false);
+        if (moves.some(m => m.r === centerPawnR && m.c === centerPawnC)) {
+          // Kiểm tra xem chốt có được bảo vệ không
+          const isDefended = isPieceDefended(centerPawnR, centerPawnC, BLACK);
+          if (!isDefended) return true;
+          
+          // Nếu quân tấn công có giá trị thấp hơn, vẫn coi là đe dọa
+          const attackerValue = VALUES[getType(p)];
+          const pawnValue = VALUES[PIECE_PAWN];
+          if (attackerValue <= pawnValue) return true;
+        }
+      }
+    }
+    
+    return false;
+  }
+  
+  // Kiểm tra một quân có được bảo vệ không
+  function isPieceDefended(r, c, defenderColor) {
+    for(let dr=0; dr<ROWS; dr++) {
+      for(let dc=0; dc<COLS; dc++) {
+        if (dr === r && dc === c) continue;
+        const p = board[dr][dc];
+        if (p === 0 || getColor(p) !== defenderColor) continue;
+        
+        const moves = generateMoves(dr, dc, false);
+        if (moves.some(m => m.r === r && m.c === c)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+  
+  // === PHÂN TÍCH Ý ĐỒ CỦA ĐỐI PHƯƠNG ===
+  function analyzeOpponentIntention() {
+    const result = {
+      threatenedPieces: [],      // Quân Đen đang bị đe dọa
+      possibleCaptures: [],       // Quân Đen có thể bị ăn ngay
+      attackingPieces: [],        // Quân Đỏ đang tấn công
+      mostDangerousThreat: null,  // Mối đe dọa nguy hiểm nhất
+      opponentLastMoveIntent: null // Ý đồ của nước đi cuối
+    };
+    
+    // Phân tích nước đi cuối của Đỏ (nếu có)
+    if (lastMove && moveHistory.length > 0) {
+      const lastMoveData = moveHistory[moveHistory.length - 1];
+      if (lastMoveData && getColor(lastMoveData.piece) === RED) {
+        // Xem quân Đỏ vừa di chuyển đang nhắm vào đâu
+        const movedPieceR = lastMove.toR;
+        const movedPieceC = lastMove.toC;
+        const movedPiece = board[movedPieceR][movedPieceC];
+        
+        if (movedPiece && getColor(movedPiece) === RED) {
+          const newThreats = generateMoves(movedPieceR, movedPieceC, false);
+          
+          // Tìm các quân Đen bị quân vừa di chuyển đe dọa
+          for (const threat of newThreats) {
+            const targetPiece = board[threat.r][threat.c];
+            if (targetPiece && getColor(targetPiece) === BLACK) {
+              const targetValue = getPieceValue(targetPiece, threat.r, threat.c, BLACK);
+              result.opponentLastMoveIntent = {
+                attacker: { r: movedPieceR, c: movedPieceC, piece: movedPiece },
+                target: { r: threat.r, c: threat.c, piece: targetPiece, value: targetValue },
+                type: getType(targetPiece)
+              };
+              
+              // Nếu nhắm vào quân có giá trị cao, đánh dấu là quan trọng
+              if (targetValue >= VALUES[PIECE_HORSE]) {
+                result.attackingPieces.push({
+                  r: movedPieceR, c: movedPieceC,
+                  targeting: threat,
+                  targetValue: targetValue
+                });
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    // Tìm tất cả quân Đen đang bị đe dọa
+    result.threatenedPieces = findThreatenedPieces(BLACK);
+    
+    // Sắp xếp theo giá trị giảm dần (quân quan trọng nhất trước)
+    result.threatenedPieces.sort((a, b) => b.value - a.value);
+    
+    // Xác định mối đe dọa nguy hiểm nhất
+    if (result.threatenedPieces.length > 0) {
+      const mostValuable = result.threatenedPieces[0];
+      
+      // Đặc biệt nguy hiểm nếu:
+      // 1. Quân có giá trị cao
+      // 2. Quân "treo" không được bảo vệ
+      // 3. Chốt đầu bị đe dọa
+      if (mostValuable.isHanging || 
+          mostValuable.value >= VALUES[PIECE_CANNON] ||
+          (mostValuable.type === PIECE_PAWN && mostValuable.c === 4)) {
+        result.mostDangerousThreat = mostValuable;
+      }
+    }
+    
+    return result;
+  }
+  
+  // Tìm nước đi phòng thủ khẩn cấp
+  function getUrgentDefensiveMove(opponentIntention) {
+    const { mostDangerousThreat, threatenedPieces } = opponentIntention;
+    
+    // Không có mối đe dọa nghiêm trọng
+    if (!mostDangerousThreat) return null;
+    
+    // Kiểm tra xem có nên bảo vệ không
+    const threat = mostDangerousThreat;
+    
+    // Nếu quân bị đe dọa có giá trị thấp và đổi được quân cao hơn -> không cần bảo vệ
+    if (!threat.isHanging && threat.attackers.length > 0) {
+      const attackerValue = threat.attackers[0].value;
+      if (attackerValue > threat.value * 1.5) {
+        // Trao đổi có lợi cho ta, không cần phòng thủ
+        return null;
+      }
+    }
+    
+    // === TÌM NƯỚC PHÒNG THỦ TỐT NHẤT ===
+    let bestDefense = null;
+    let bestDefenseScore = -Infinity;
+    
+    const threatR = threat.r;
+    const threatC = threat.c;
+    const threatValue = threat.value;
+    
+    // Duyệt tất cả quân Đen để tìm nước phòng thủ
+    for(let r=0; r<ROWS; r++) {
+      for(let c=0; c<COLS; c++) {
+        const p = board[r][c];
+        if (p === 0 || getColor(p) !== BLACK) continue;
+        
+        const moves = generateMoves(r, c, true);
+        
+        for (const m of moves) {
+          let defenseScore = 0;
+          
+          // === OPTION 1: Di chuyển quân bị đe dọa đi chỗ khác ===
+          if (r === threatR && c === threatC) {
+            // Kiểm tra vị trí mới có an toàn không
+            board[m.r][m.c] = p;
+            board[r][c] = 0;
+            
+            const stillThreatened = findAttackers(m.r, m.c, RED).length > 0;
+            const isDefendedAtNew = findDefenders(m.r, m.c, BLACK).length > 0;
+            
+            board[r][c] = p;
+            board[m.r][m.c] = 0;
+            
+            if (!stillThreatened) {
+              defenseScore = threatValue + 100; // Rất tốt nếu thoát hoàn toàn
+            } else if (isDefendedAtNew) {
+              defenseScore = threatValue + 30; // Tốt nếu được bảo vệ
+            }
+            
+            // Bonus nếu ăn được quân khi chạy
+            const captured = board[m.r][m.c];
+            if (captured && getColor(captured) === RED) {
+              defenseScore += VALUES[getType(captured)];
+            }
+          }
+          
+          // === OPTION 2: Dùng quân khác chặn hoặc bảo vệ ===
+          else {
+            // Check if this move blocks the attack
+            board[m.r][m.c] = p;
+            board[r][c] = 0;
+            
+            const attackersAfter = findAttackers(threatR, threatC, RED);
+            const defendersAfter = findDefenders(threatR, threatC, BLACK);
+            
+            board[r][c] = p;
+            board[m.r][m.c] = 0;
+            
+            // Nếu chặn được hoàn toàn
+            if (attackersAfter.length === 0) {
+              defenseScore = threatValue + 50;
+            }
+            // Nếu thêm quân bảo vệ
+            else if (defendersAfter.length > threat.defenders.length) {
+              // Kiểm tra trao đổi có lợi không
+              if (defendersAfter.length >= attackersAfter.length) {
+                const lowestAttacker = attackersAfter[0]?.value || 0;
+                if (lowestAttacker >= threatValue * 0.8) {
+                  defenseScore = threatValue * 0.5 + 30; // Đáng để bảo vệ
+                }
+              }
+            }
+            
+            // Bonus nếu vừa bảo vệ vừa ăn quân
+            const captured = board[m.r][m.c];
+            if (captured && getColor(captured) === RED) {
+              const captureValue = VALUES[getType(captured)];
+              defenseScore += captureValue;
+              
+              // Super bonus nếu ăn được quân đang tấn công
+              const attackerPositions = threat.attackers.map(a => `${a.r},${a.c}`);
+              if (attackerPositions.includes(`${m.r},${m.c}`)) {
+                defenseScore += captureValue * 0.5; // Bonus ăn quân tấn công
+              }
+            }
+          }
+          
+          // === OPTION 3: Phản công - đe dọa quân có giá trị cao hơn ===
+          board[m.r][m.c] = p;
+          board[r][c] = 0;
+          
+          const counterThreats = generateMoves(m.r, m.c, false);
+          for (const ct of counterThreats) {
+            const counterTarget = board[ct.r][ct.c];
+            if (counterTarget && getColor(counterTarget) === RED) {
+              const counterValue = VALUES[getType(counterTarget)];
+              // Nếu đe dọa được quân có giá trị cao hơn quân bị đe dọa
+              if (counterValue > threatValue) {
+                defenseScore += (counterValue - threatValue) * 0.3;
+              }
+              // Đặc biệt nếu đe dọa được Tướng (chiếu)
+              if (getType(counterTarget) === PIECE_KING) {
+                defenseScore += 200;
+              }
+            }
+          }
+          
+          board[r][c] = p;
+          board[m.r][m.c] = 0;
+          
+          // Cập nhật nước đi tốt nhất
+          if (defenseScore > bestDefenseScore) {
+            bestDefenseScore = defenseScore;
+            bestDefense = { fromR: r, fromC: c, toR: m.r, toC: m.c };
+          }
+        }
+      }
+    }
+    
+    // Chỉ trả về nước phòng thủ nếu đủ tốt
+    // (giá trị phòng thủ phải đáng so với giá trị quân bị đe dọa)
+    if (bestDefense && bestDefenseScore >= threatValue * 0.5) {
+      return bestDefense;
+    }
+    
+    return null; // Để minimax quyết định
+  }
+
   // Advanced move sorting for better pruning
   function sortMovesAdvanced(moves, color) {
     return moves.sort((a, b) => {

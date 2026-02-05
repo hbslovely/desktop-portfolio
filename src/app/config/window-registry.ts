@@ -96,18 +96,6 @@ export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
     maximizable: true,
     statusText: 'Ready'
   },
-  'machine-info': {
-    id: 'machine-info',
-    title: 'System Information',
-    icon: 'pi pi-desktop',
-    component: 'machine-info',
-    defaultWidth: 700,
-    defaultHeight: 600,
-    defaultX: 250,
-    defaultY: 100,
-    maximizable: true,
-    statusText: 'Ready'
-  },
   paint: {
     id: 'paint',
     title: 'Paint',
@@ -167,18 +155,6 @@ export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
     defaultY: 80,
     maximizable: true,
     statusText: 'Configure your desktop'
-  },
-  'task-manager': {
-    id: 'task-manager',
-    title: 'Task Manager',
-    icon: 'pi pi-th-large',
-    component: 'task-manager',
-    defaultWidth: 1100,
-    defaultHeight: 750,
-    defaultX: 200,
-    defaultY: 60,
-    maximizable: true,
-    statusText: 'Managing processes'
   },
   'weather': {
     id: 'weather',

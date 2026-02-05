@@ -30,20 +30,6 @@ export const APP_ICONS: DesktopIconData[] = [
     type: 'application',
     position: { x: 20, y: 320 }
   },
-  {
-    id: 'task-manager',
-    name: 'Task Manager',
-    icon: 'assets/images/icons/system.png',
-    type: 'application',
-    position: { x: 20, y: 420 }
-  },
-  {
-    id: 'machine-info',
-    name: 'System Info',
-    icon: 'assets/images/icons/info.png',
-    type: 'application',
-    position: { x: 20, y: 520 }
-  },
   // Column 2 (x: 120) - Information & Reference
   {
     id: 'news',
@@ -200,11 +186,9 @@ function getAppDescription(appId: string): string {
     'my-info': 'View personal information and portfolio details',
     'love': 'Explore love and relationship content',
     'explorer': 'Browse and manage files and folders',
-    'machine-info': 'View system information and device details',
     'paint': 'Create drawings and artwork with various tools',
     'hcmc': 'Explore Ho Chi Minh City attractions and culture',
     'news': 'Read latest news headlines from around the world',
-    'task-manager': 'View and manage all open windows and processes',
     'weather': 'View current weather and forecast for your location',
     'dictionary': 'Look up word definitions, pronunciations, and synonyms',
     'countries': 'Explore detailed information about countries around the world',
@@ -231,11 +215,9 @@ function getAppKeywords(appId: string): string[] {
     'my-info': ['profile', 'personal', 'information', 'about', 'portfolio'],
     'love': ['relationship', 'romance', 'heart', 'dating'],
     'explorer': ['files', 'folders', 'browse', 'manage', 'directory'],
-    'machine-info': ['system', 'device', 'hardware', 'specs', 'info'],
     'paint': ['draw', 'art', 'design', 'canvas', 'creative'],
     'hcmc': ['vietnam', 'saigon', 'city', 'travel', 'culture', 'attractions'],
     'news': ['headlines', 'articles', 'media', 'journalism', 'current', 'events'],
-    'task-manager': ['processes', 'windows', 'performance', 'monitor', 'manager', 'tasks'],
     'weather': ['forecast', 'temperature', 'rain', 'cloud', 'wind', 'climate', 'meteorology'],
     'dictionary': ['words', 'definitions', 'meaning', 'vocabulary', 'thesaurus', 'synonyms', 'antonyms', 'pronunciation'],
     'countries': ['world', 'nations', 'flags', 'capitals', 'geography', 'borders', 'population', 'currencies', 'languages', 'maps', 'continents', 'regions'],

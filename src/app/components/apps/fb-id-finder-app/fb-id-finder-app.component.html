@@ -1,157 +1,163 @@
-<div class="fb-id-finder-app">
-  <div class="app-header">
-    <div class="header-content">
-      <div class="header-icon">
-        <i class="pi pi-facebook"></i>
-      </div>
-      <div class="header-text">
-        <h2>Facebook Scanner</h2>
-        <p class="header-subtitle">Tìm Facebook ID từ số điện thoại</p>
-      </div>
-    </div>
+<div class="fb-scanner">
+  <!-- Animated Background -->
+  <div class="bg-effects">
+    <div class="gradient-orb orb-1"></div>
+    <div class="gradient-orb orb-2"></div>
+    <div class="gradient-orb orb-3"></div>
   </div>
 
-  <div class="app-body">
-    <!-- Search Section -->
-    <div class="search-section">
-      <div class="search-box">
-        <div class="input-wrapper">
-          <i class="pi pi-phone input-icon"></i>
+  <!-- Main Content -->
+  <div class="scanner-content">
+    <!-- Header -->
+    <header class="scanner-header">
+      <div class="logo">
+        <div class="logo-icon">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2C6.477 2 2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.879V14.89h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.989C18.343 21.129 22 16.99 22 12c0-5.523-4.477-10-10-10z"/>
+          </svg>
+        </div>
+        <div class="logo-text">
+          <h1>FB Scanner</h1>
+          <span>Phone to Facebook ID</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Search Card -->
+    <div class="search-card glass">
+      <div class="search-input-group">
+        <div class="input-container">
+          <span class="input-prefix">+84</span>
           <input
             #phoneInput
             type="tel"
             inputmode="numeric"
             [(ngModel)]="phone"
             (keydown)="onPhoneKeyDown($event)"
-            class="phone-input"
-            placeholder="Nhập số điện thoại"
+            placeholder="Enter phone number"
             [disabled]="loading()">
           <button
             *ngIf="phone()"
             (click)="clearPhone()"
             class="clear-btn"
-            type="button"
-            aria-label="Xóa">
-            <i class="pi pi-times"></i>
+            type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 6L6 18M6 6l12 12"/>
+            </svg>
           </button>
         </div>
         <button
           (click)="searchFbId()"
           class="search-btn"
+          [class.loading]="loading()"
           [disabled]="loading() || !phone().trim()">
-          <i class="pi" [class.pi-spin]="loading()" [class.pi-spinner]="loading()" [class.pi-search]="!loading()"></i>
-          <span class="btn-text">{{ loading() ? 'Đang tìm...' : 'Tìm kiếm' }}</span>
+          <span class="btn-content">
+            <svg *ngIf="!loading()" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"/>
+              <path d="m21 21-4.35-4.35"/>
+            </svg>
+            <span class="spinner" *ngIf="loading()"></span>
+            <span class="btn-text">{{ loading() ? 'Scanning...' : 'Scan' }}</span>
+          </span>
         </button>
       </div>
 
-      <!-- Search History -->
-      <div class="history-section" *ngIf="searchHistory().length > 0">
-        <div class="history-header">
-          <span class="history-label">Lịch sử tìm kiếm:</span>
-          <button (click)="clearHistory()" class="clear-history-btn" type="button">
-            <i class="pi pi-trash"></i>
-            Xóa
-          </button>
-        </div>
-        <div class="history-list">
+      <!-- Quick History -->
+      <div class="quick-history" *ngIf="searchHistory().length > 0">
+        <div class="history-chips">
           <button
-            *ngFor="let phone of searchHistory()"
+            *ngFor="let phone of searchHistory().slice(0, 5)"
             (click)="useHistory(phone)"
-            class="history-item"
+            class="history-chip"
             type="button">
-            <i class="pi pi-phone"></i>
-            <span>{{ phone }}</span>
+            {{ phone }}
+          </button>
+          <button (click)="clearHistory()" class="clear-all-btn" type="button" title="Clear history">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+            </svg>
           </button>
         </div>
       </div>
     </div>
 
     <!-- Error Message -->
-    <div class="error-message" *ngIf="error()">
-      <i class="pi pi-exclamation-triangle"></i>
+    <div class="error-toast" *ngIf="error()" @fadeSlide>
+      <svg viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10zm-1-7v2h2v-2h-2zm0-8v6h2V7h-2z"/>
+      </svg>
       <span>{{ error() }}</span>
     </div>
 
-    <!-- Facebook Profile Section -->
-    <div class="facebook-profile-section" *ngIf="facebookProfile()">
-      <div class="profile-header">
-        <h3>
-          <i class="pi pi-facebook"></i>
-          <span>Thông tin Facebook</span>
-        </h3>
-        <div class="profile-actions">
-          <button (click)="copyFacebookLink()" class="action-btn" type="button" title="Sao chép link">
-            <i class="pi pi-copy"></i>
-            <span class="action-label">Sao chép</span>
-          </button>
-          <button (click)="openFacebookLink()" class="action-btn primary" type="button" title="Mở Facebook">
-            <i class="pi pi-external-link"></i>
-            <span class="action-label">Mở</span>
-          </button>
+    <!-- Result Card -->
+    <div class="result-card glass" *ngIf="facebookProfile()" @slideUp>
+      <!-- Profile Section -->
+      <div class="profile-section" *ngIf="facebookProfile()?.profileImage || facebookProfile()?.name">
+        <div class="profile-avatar" *ngIf="facebookProfile()?.profileImage">
+          <img [src]="facebookProfile()!.profileImage" [alt]="facebookProfile()!.name || 'Profile'" />
+          <div class="avatar-ring"></div>
+        </div>
+        <div class="profile-info">
+          <h3 *ngIf="facebookProfile()?.name">{{ facebookProfile()!.name }}</h3>
+          <p class="profile-id">ID: {{ facebookProfile()!.id }}</p>
         </div>
       </div>
-      <div class="profile-content">
-        <div class="profile-main" *ngIf="facebookProfile()?.profileImage || facebookProfile()?.name">
-          <div class="profile-avatar" *ngIf="facebookProfile()?.profileImage">
-            <img [src]="facebookProfile()!.profileImage" [alt]="facebookProfile()!.name || 'Profile'" class="profile-image" />
-          </div>
-          <div class="profile-info">
-            <div class="profile-name" *ngIf="facebookProfile()?.name">
-              <span>{{ facebookProfile()!.name }}</span>
-            </div>
-            <div class="profile-id">
-              <span>ID: {{ facebookProfile()!.id }}</span>
-            </div>
-          </div>
-        </div>
-        <div class="profile-link-card">
-          <i class="pi pi-link"></i>
-          <a [href]="facebookProfile()!.link" target="_blank" rel="noopener noreferrer" class="fb-link">
-            {{ facebookProfile()!.link }}
-          </a>
-        </div>
-        <div class="profile-about" *ngIf="facebookProfile()?.about">
-          <i class="pi pi-info-circle"></i>
-          <p>{{ facebookProfile()!.about }}</p>
-        </div>
-        <div class="loading-profile" *ngIf="loadingProfile()">
-          <i class="pi pi-spin pi-spinner"></i>
-          <span>Đang tải thông tin...</span>
-        </div>
-      </div>
-    </div>
 
-    <!-- Result Section -->
-    <div class="result-section" *ngIf="result()">
-      <div class="result-header">
-        <h3>
-          <i class="pi pi-check-circle"></i>
-          <span>Kết quả tìm kiếm</span>
-        </h3>
-        <button (click)="copyResult()" class="copy-btn" type="button" title="Sao chép ID">
-          <i class="pi pi-copy"></i>
-          <span class="btn-label">Sao chép</span>
+      <!-- ID Display -->
+      <div class="id-display">
+        <span class="label">Facebook ID</span>
+        <span class="value">{{ result() }}</span>
+      </div>
+
+      <!-- Actions -->
+      <div class="action-buttons">
+        <button (click)="copyFacebookLink()" class="action-btn" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="9" y="9" width="13" height="13" rx="2"/>
+            <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+          </svg>
+          <span>Copy Link</span>
+        </button>
+        <button (click)="openFacebookLink()" class="action-btn primary" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/>
+          </svg>
+          <span>Open Profile</span>
         </button>
       </div>
 
-      <!-- Facebook ID Display -->
-      <div class="fb-id-display">
-        <div class="fb-id-label">Facebook ID</div>
-        <div class="fb-id-value">{{ result() }}</div>
+      <!-- About -->
+      <div class="about-section" *ngIf="facebookProfile()?.about">
+        <p>{{ facebookProfile()!.about }}</p>
+      </div>
+
+      <!-- Loading Profile Overlay -->
+      <div class="loading-overlay" *ngIf="loadingProfile()">
+        <span class="spinner"></span>
+        <span>Fetching profile...</span>
       </div>
     </div>
 
     <!-- Empty State -->
     <div class="empty-state" *ngIf="!loading() && !result() && !error()">
-      <i class="pi pi-info-circle"></i>
-      <p>Nhập số điện thoại và nhấn "Tìm kiếm" để tìm Facebook ID</p>
+      <div class="empty-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="11" cy="11" r="8"/>
+          <path d="m21 21-4.35-4.35"/>
+          <path d="M11 8v6M8 11h6"/>
+        </svg>
+      </div>
+      <p>Enter a phone number to find the associated Facebook account</p>
     </div>
 
     <!-- Loading State -->
-    <div class="loading-state" *ngIf="loading()">
-      <i class="pi pi-spin pi-spinner"></i>
-      <p>Đang tìm kiếm Facebook ID...</p>
+    <div class="loading-state" *ngIf="loading() && !facebookProfile()">
+      <div class="scan-animation">
+        <div class="scan-ring"></div>
+        <div class="scan-ring"></div>
+        <div class="scan-ring"></div>
+      </div>
+      <p>Scanning database...</p>
     </div>
   </div>
 </div>
-

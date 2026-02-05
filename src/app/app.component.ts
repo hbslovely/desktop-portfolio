@@ -8,12 +8,10 @@ import { ExplorerComponent, FileOpenEvent, ContextMenuEvent } from './components
 import { TextViewerComponent } from './components/apps/text-viewer/text-viewer.component';
 import { ImageViewerComponent } from './components/apps/image-viewer/image-viewer.component';
 import { PdfViewerComponent } from './components/apps/pdf-viewer/pdf-viewer.component';
-import { MachineInfoComponent } from './components/apps/machine-info/machine-info.component';
 import { PaintAppComponent } from './components/apps/paint-app/paint-app.component';
 import { HcmcAppComponent } from './components/apps/hcmc-app/hcmc-app.component';
 import { NewsAppComponent } from './components/apps/news-app/news-app.component';
 import { SettingsAppComponent } from './components/apps/settings-app/settings-app.component';
-import { TaskManagerComponent } from './components/apps/task-manager/task-manager.component';
 import { WeatherAppComponent } from './components/apps/weather-app/weather-app.component';
 import { DictionaryAppComponent } from './components/apps/dictionary-app/dictionary-app.component';
 import { CountriesAppComponent } from './components/apps/countries-app/countries-app.component';
@@ -50,7 +48,7 @@ import { AppSplashComponent } from './components/app-splash/app-splash.component
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [ WelcomeScreenComponent, WindowComponent, DesktopIconComponent, CalculatorComponent, IframeAppComponent, LoveAppComponent, ExplorerComponent, TextViewerComponent, ImageViewerComponent, PdfViewerComponent, MachineInfoComponent, PaintAppComponent, HcmcAppComponent, NewsAppComponent, SettingsAppComponent, TaskManagerComponent, WeatherAppComponent, DictionaryAppComponent, CountriesAppComponent, YugiohAppComponent, YugiohCardDetailComponent, CalendarAppComponent, AngularLoveAppComponent, MusicAppComponent, AngularGuidelinesAppComponent, TuoiTreNewsAppComponent, ExpenseAppComponent, BusinessAppComponent, ChineseChessAppComponent, OcrAppComponent, FbIdFinderAppComponent, GraphVisualizerAppComponent, StockAppComponent, CommonModule, FormsModule, SettingsDialogComponent, AppSplashComponent, RouterOutlet ],
+  imports: [ WelcomeScreenComponent, WindowComponent, DesktopIconComponent, CalculatorComponent, IframeAppComponent, LoveAppComponent, ExplorerComponent, TextViewerComponent, ImageViewerComponent, PdfViewerComponent, PaintAppComponent, HcmcAppComponent, NewsAppComponent, SettingsAppComponent, WeatherAppComponent, DictionaryAppComponent, CountriesAppComponent, YugiohAppComponent, YugiohCardDetailComponent, CalendarAppComponent, AngularLoveAppComponent, MusicAppComponent, AngularGuidelinesAppComponent, TuoiTreNewsAppComponent, ExpenseAppComponent, BusinessAppComponent, ChineseChessAppComponent, OcrAppComponent, FbIdFinderAppComponent, GraphVisualizerAppComponent, StockAppComponent, CommonModule, FormsModule, SettingsDialogComponent, AppSplashComponent, RouterOutlet ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
 })
@@ -111,7 +109,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   showExplorerWindow = signal(false);
   showTextViewerWindow = signal(false);
   showImageViewerWindow = signal(false);
-  showMachineInfoWindow = signal(false);
   showCreditWindow = signal(false);
   showPaintWindow = signal(false);
   showCreditsWindow = signal(false);
@@ -194,13 +191,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
 
   @HostListener('window:keydown', ['$event'])
   handleGlobalKeyboard(event: KeyboardEvent) {
-    // Ctrl+Shift+Esc opens Task Manager (like Windows)
-    if (event.ctrlKey && event.shiftKey && event.key === 'Escape') {
-      event.preventDefault();
-      this.openApp('task-manager');
-      return;
-    }
-
     // Use Option/Alt + Arrow Left/Right for window switcher (doesn't conflict with browser or macOS)
     const isOptionKey = this.isMac ? event.altKey : event.altKey; // Option on Mac = Alt on Windows
     const isArrowLeft = event.key === 'ArrowLeft';
@@ -272,7 +262,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
       icon: 'pi pi-info-circle',
       apps: [
         { id: 'my-info', name: 'My Information', icon: 'pi pi-user' },
-        { id: 'machine-info', name: 'System Info', icon: 'pi pi-desktop' },
         { id: 'hcmc', name: 'Ho Chi Minh City', icon: 'pi pi-globe' },
         { id: 'news', name: 'News Headlines', icon: 'pi pi-globe' },
         { id: 'weather', name: 'Weather Forecast', icon: 'pi pi-cloud' },
@@ -285,7 +274,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
       icon: 'pi pi-cog',
       apps: [
         { id: 'settings', name: 'Settings', icon: 'pi pi-cog' },
-        { id: 'task-manager', name: 'Task Manager', icon: 'pi pi-th-large' },
         { id: 'credits', name: 'Credits', icon: 'pi pi-star' }
       ]
     }
@@ -687,37 +675,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     this.focusWindow('pdf-viewer');
   }
 
-  // Machine Info Window Methods
-  onCloseMachineInfoWindow() {
-    this.showMachineInfoWindow.set(false);
-    if (this.focusedWindow() === 'machine-info') {
-      this.focusedWindow.set(null);
-    }
-  }
-
-  onMinimizeMachineInfoWindow() {
-
-    this.minimizedWindows.update(set => new Set(set).add('machine-info'));
-  }
-
-  onMaximizeMachineInfoWindow() {
-
-  }
-
-  onRestoreMachineInfoWindow() {
-
-    this.minimizedWindows.update(set => {
-      const newSet = new Set(set);
-      newSet.delete('machine-info');
-      return newSet;
-    });
-  }
-
-  onFocusMachineInfoWindow() {
-
-    this.focusWindow('machine-info');
-  }
-
   // File Open Handler
   onExplorerFileOpen(event: FileOpenEvent) {
     const { item, fileType, extension } = event;
@@ -936,9 +893,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     } else if (icon.id === 'explorer') {
       this.showExplorerWindow.set(true);
       this.focusWindow('explorer');
-    } else if (icon.id === 'machine-info') {
-      this.showMachineInfoWindow.set(true);
-      this.focusWindow('machine-info');
     } else if (icon.id === 'credit') {
       this.showCreditWindow.set(true);
       this.focusWindow('credit');
@@ -1277,21 +1231,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
         } else {
           this.showImageViewerWindow.set(true);
           this.focusWindow('image-viewer');
-        }
-        break;
-
-      case 'machine-info':
-        if (this.showMachineInfoWindow()) {
-          if (this.isWindowMinimized('machine-info')) {
-            this.focusWindow('machine-info');
-          } else if (this.focusedWindow() === 'machine-info') {
-            this.minimizeWindow('machine-info');
-          } else {
-            this.focusWindow('machine-info');
-          }
-        } else {
-          this.showMachineInfoWindow.set(true);
-          this.focusWindow('machine-info');
         }
         break;
 
@@ -1738,17 +1677,12 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   }
 
   // Quick Actions handlers
-  quickActionViewAllWindows() {
-    this.openApp('task-manager');
-    this.closeQuickActionsMenu();
-  }
-
   quickActionMinimizeAll() {
     this.windowManager.minimizeAllWindows();
     // Also minimize legacy windows
     this.minimizedWindows.update(set => {
       const allWindows = ['calculator', 'my-info', 'love', 'explorer', 'text-viewer', 
-                         'image-viewer', 'pdf-viewer', 'machine-info', 'credit', 
+                         'image-viewer', 'pdf-viewer', 'credit', 
                          'paint', 'credits', 'hcmc', 'news'];
       return new Set(allWindows);
     });
@@ -1759,7 +1693,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     this.windowManager.minimizeAllWindows();
     this.minimizedWindows.update(set => {
       const allWindows = ['calculator', 'my-info', 'love', 'explorer', 'text-viewer', 
-                         'image-viewer', 'pdf-viewer', 'machine-info', 'credit', 
+                         'image-viewer', 'pdf-viewer', 'credit', 
                          'paint', 'credits', 'hcmc', 'news'];
       return new Set(allWindows);
     });
@@ -1798,7 +1732,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
       shortcuts: [
         { keys: ['Option', '←'], description: 'Switch to previous window' },
         { keys: ['Option', '→'], description: 'Switch to next window' },
-        { keys: ['Ctrl', 'Shift', 'Esc'], description: 'Open Task Manager' },
       ]
     },
     {
@@ -2057,7 +1990,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
       { id: 'text-viewer', title: 'Text Viewer', icon: 'pi pi-file', show: this.showTextViewerWindow },
       { id: 'image-viewer', title: 'Image Viewer', icon: 'pi pi-image', show: this.showImageViewerWindow },
       { id: 'pdf-viewer', title: 'PDF Viewer', icon: 'pi pi-file-pdf', show: this.showPdfViewerWindow },
-      { id: 'machine-info', title: 'System Info', icon: 'pi pi-desktop', show: this.showMachineInfoWindow },
       { id: 'credit', title: 'Finance Tracker', icon: 'pi pi-wallet', show: this.showCreditWindow },
       { id: 'paint', title: 'Paint', icon: 'pi pi-palette', show: this.showPaintWindow },
       { id: 'credits', title: 'Credits', icon: 'pi pi-star', show: this.showCreditsWindow },
