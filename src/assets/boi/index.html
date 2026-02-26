@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hồng Thị Danh Gia | Tinh Hoa Đặt Tên & Chiết Tự Chuyên Sâu</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Quicksand:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <style>
+    :root {
+      --primary: #881337;
+      --gold: #92400e;
+      --bg: #fffcf9;
+    }
+    body {
+      font-family: 'Quicksand', sans-serif;
+      background-color: var(--bg);
+      color: #1a1a1a;
+      scroll-behavior: smooth;
+    }
+    h1, h2, h3, h4, .font-serif {
+      font-family: 'Playfair Display', serif;
+    }
+    .nav-luxury {
+      background: rgba(255, 255, 255, 0.98);
+      backdrop-filter: blur(15px);
+      z-index: 1000;
+      border-bottom: 3px solid var(--primary);
+    }
+    .main-container {
+      padding-top: 100px;
+    }
+    .name-card {
+      transition: all 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+      background: white;
+      border: 1px solid #f3f4f6;
+    }
+    .name-card:hover {
+      transform: translateY(-10px);
+      box-shadow: 0 40px 60px -15px rgba(136, 19, 55, 0.1);
+      border-color: var(--primary);
+    }
+    .active-link {
+      color: var(--primary) !important;
+      border-bottom: 3px solid var(--primary);
+    }
+    .element-badge {
+      font-size: 0.65rem;
+      padding: 2px 10px;
+      border-radius: 50px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+    .el-Thủy { background: #e0f2fe; color: #0369a1; }
+    .el-Mộc { background: #f0fdf4; color: #166534; }
+    .el-Hỏa { background: #fef2f2; color: #991b1b; }
+    .el-Kim { background: #f8fafc; color: #475569; }
+    .el-Thổ { background: #fefce8; color: #854d0e; }
+
+    .custom-scroll::-webkit-scrollbar { width: 6px; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+
+    /* Fix list colors */
+    .wheel-item-label { color: #334155 !important; }
+    .wheel-item-label.inactive { color: #cbd5e1 !important; text-decoration: line-through; }
+
+    .analysis-box {
+      background: linear-gradient(to bottom right, #ffffff, #fffafb);
+      border-left: 5px solid var(--primary);
+    }
+  </style>
+</head>
+<body>
+
+<!-- Navigation -->
+<nav class="nav-luxury fixed top-0 left-0 right-0 py-4 shadow-sm">
+  <div class="container mx-auto px-6 flex justify-between items-center">
+    <div class="flex items-center gap-3">
+      <div class="w-12 h-12 bg-rose-900 rounded-xl flex items-center justify-center text-white font-serif text-2xl shadow-xl">洪</div>
+      <div>
+        <h1 class="text-lg font-black text-slate-900 leading-none">Hồng Thị Danh Gia</h1>
+        <p class="text-[8px] uppercase tracking-[0.3em] text-rose-700 font-bold mt-1">Luxury Edition v10</p>
+      </div>
+    </div>
+    <div class="flex gap-4 md:gap-8 overflow-x-auto no-scrollbar">
+      <button onclick="showPage('explore', this)" class="nav-item active-link font-bold text-slate-500 pb-1 whitespace-nowrap">Bộ sưu tập</button>
+      <button onclick="showPage('wheel', this)" class="nav-item font-bold text-slate-500 pb-1 whitespace-nowrap">Vòng quay</button>
+      <button onclick="showPage('surname', this)" class="nav-item font-bold text-slate-500 pb-1 whitespace-nowrap">Họ Hồng</button>
+      <button onclick="showPage('fengshui', this)" class="nav-item font-bold text-slate-500 pb-1 whitespace-nowrap">Phong thủy</button>
+    </div>
+  </div>
+</nav>
+
+<main class="main-container container mx-auto px-6 pb-20">
+
+  <!-- SECTION: EXPLORE -->
+  <div id="page-explore" class="section-view space-y-12">
+    <div class="max-w-3xl mx-auto text-center space-y-4">
+      <h2 class="text-5xl font-black text-slate-900 leading-tight">Mỹ Danh Cho Công Chúa <br><span class="text-rose-900 italic font-serif">Họ Hồng (洪)</span></h2>
+      <p class="text-slate-500 font-medium italic">"Mỗi nét chữ là một lời chúc, mỗi âm thanh là một vận mệnh."</p>
+    </div>
+
+    <!-- Filters -->
+    <div class="flex flex-wrap justify-center gap-2">
+      <button onclick="filterGrid('all')" class="tab-btn bg-rose-900 text-white px-6 py-2 rounded-full text-xs font-bold shadow-md">Tất cả</button>
+      <button onclick="filterGrid('power')" class="tab-btn bg-white text-slate-600 border px-6 py-2 rounded-full text-xs font-bold hover:bg-rose-50 transition-all">Mạnh mẽ</button>
+      <button onclick="filterGrid('gentle')" class="tab-btn bg-white text-slate-600 border px-6 py-2 rounded-full text-xs font-bold hover:bg-rose-50 transition-all">Dịu dàng</button>
+      <button onclick="filterGrid('noble')" class="tab-btn bg-white text-slate-600 border px-6 py-2 rounded-full text-xs font-bold hover:bg-rose-50 transition-all">Quý phái</button>
+      <button onclick="filterGrid('treasure')" class="tab-btn bg-white text-slate-600 border px-6 py-2 rounded-full text-xs font-bold hover:bg-rose-50 transition-all">Trân bảo</button>
+      <button onclick="filterGrid('nature')" class="tab-btn bg-white text-slate-600 border px-6 py-2 rounded-full text-xs font-bold hover:bg-rose-50 transition-all">Thiên nhiên</button>
+      <button onclick="filterGrid('fav')" class="tab-btn bg-amber-50 text-amber-900 border border-amber-200 px-6 py-2 rounded-full text-xs font-bold hover:bg-amber-100 transition-all italic underline">Yêu thích (Gia/Tuệ/Nhi)</button>
+    </div>
+
+    <div id="namesGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+      <!-- Javascript renders here -->
+    </div>
+  </div>
+
+  <!-- SECTION: WHEEL -->
+  <div id="page-wheel" class="section-view hidden py-10">
+    <div class="flex flex-col lg:flex-row gap-16 items-start bg-white p-12 rounded-[3rem] shadow-2xl border border-rose-50">
+      <div class="flex-1 text-center space-y-10 w-full">
+        <h2 class="text-4xl font-black text-slate-900">Vòng Quay Định Mệnh</h2>
+        <div class="relative inline-block">
+          <div class="absolute -top-10 left-1/2 -translate-x-1/2 z-30">
+            <svg width="60" height="60" viewBox="0 0 24 24" fill="#881337"><path d="M12 21l-8-14h16l-8 14z"/></svg>
+          </div>
+          <canvas id="wheelCanvas" width="500" height="500" class="max-w-full h-auto transition-transform duration-[5000ms] ease-out shadow-2xl rounded-full"></canvas>
+          <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div class="w-20 h-20 bg-white rounded-full border-[8px] border-rose-900 shadow-2xl z-20 flex items-center justify-center font-black text-rose-900">NAME</div>
+          </div>
+        </div>
+        <button id="spinBtn" onclick="spinNow()" class="w-full max-w-xs mx-auto block bg-rose-900 text-white py-5 rounded-2xl font-black text-xl shadow-2xl hover:scale-105 active:scale-95 transition-all">QUAY NGAY</button>
+      </div>
+      <div class="w-full lg:w-96 space-y-6">
+        <h3 class="font-bold text-slate-800 uppercase tracking-widest text-xs border-b pb-2">Danh sách quay số</h3>
+        <div id="wheelManager" class="space-y-2 max-h-[450px] overflow-y-auto pr-4 custom-scroll">
+          <!-- JS Renders Checkboxes -->
+        </div>
+        <div class="pt-4 flex gap-2">
+          <input type="text" id="addInput" placeholder="Thêm tên tâm đắc..." class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-rose-200 outline-none">
+          <button onclick="addManual()" class="bg-slate-900 text-white px-5 rounded-xl font-bold">+</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION: SURNAME -->
+  <div id="page-surname" class="section-view hidden py-10">
+    <div class="max-w-4xl mx-auto bg-white p-16 rounded-[4rem] shadow-2xl border border-rose-50 space-y-12">
+      <div class="flex flex-col md:flex-row items-center gap-12 border-b border-rose-100 pb-12 text-center md:text-left">
+        <div class="w-48 h-48 bg-rose-900 rounded-[2.5rem] flex items-center justify-center text-white text-[10rem] font-serif shadow-2xl">洪</div>
+        <div class="space-y-4">
+          <h2 class="text-6xl font-black text-rose-950">Họ Hồng</h2>
+          <p class="text-rose-600 font-black tracking-[0.5em] uppercase text-sm">Pinyin: Hóng | Ngũ hành: Thủy</p>
+        </div>
+      </div>
+
+      <div class="grid gap-12 text-slate-700 leading-relaxed">
+        <section class="space-y-8">
+          <h3 class="text-2xl font-bold text-slate-900 border-l-4 border-rose-800 pl-4">Phân tích Cấu trúc Chiết tự</h3>
+          <div class="analysis-box p-10 rounded-2xl space-y-8">
+            <div class="flex gap-6">
+              <div class="text-6xl font-serif text-rose-800">氵</div>
+              <div class="space-y-2">
+                <h4 class="font-black text-rose-900 uppercase text-sm tracking-widest">Bộ phận 1: Bộ Thủy (Biểu hình)</h4>
+                <p class="text-sm">Tượng trưng cho nước, đại dương bao la. Đây là thành phần định hình ý nghĩa gốc của họ Hồng: sự mênh mông, hào sảng và trí tuệ sâu sắc như biển cả.</p>
+              </div>
+            </div>
+            <div class="flex gap-6">
+              <div class="text-6xl font-serif text-slate-400">共</div>
+              <div class="space-y-2">
+                <h4 class="font-black text-slate-900 uppercase text-sm tracking-widest">Bộ phận 2: Chữ Cộng (Biểu thanh)</h4>
+                <p class="text-sm">Chữ Cộng (Gòng) cung cấp âm đọc cho chữ Hồng (Hóng). Về mặt hội ý, 'Cộng' nghĩa là cùng nhau, chung tay. Nó gợi ý một dòng họ luôn có sự cộng hưởng sức mạnh, đoàn kết để tạo nên sự nghiệp lớn lao.</p>
+              </div>
+            </div>
+            <div class="pt-6 border-t font-medium italic text-rose-900">
+              Kết luận: Họ Hồng mang ý nghĩa "Dòng nước lớn tràn đầy", tượng trưng cho sự trù phú, thông tuệ và bản lĩnh bao dung.
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION: FENG SHUI -->
+  <div id="page-fengshui" class="section-view hidden py-10">
+    <div class="max-w-4xl mx-auto bg-white p-12 rounded-[3rem] shadow-xl border border-rose-50 space-y-10">
+      <h2 class="text-4xl font-black text-rose-900 border-b pb-6 text-center">Tư Vấn Phong Thủy Đặt Tên</h2>
+      <div class="grid md:grid-cols-2 gap-12">
+        <div class="space-y-6">
+          <h4 class="text-xl font-bold text-slate-900 border-b pb-2">Quy luật Tương sinh</h4>
+          <p class="text-sm text-slate-600 leading-relaxed">Họ Hồng mang hành **Thủy**. Kim sinh Thủy và Thủy dưỡng Mộc. Do đó, tên có hành **Kim** sẽ giúp bé có khí chất quý phái, sắc sảo. Tên có hành **Mộc** giúp cuộc đời bé luôn sinh sôi, nảy nở và gặp nhiều may mắn.</p>
+        </div>
+        <div class="space-y-6">
+          <h4 class="text-xl font-bold text-slate-900 border-b pb-2">Quy luật Tương khắc</h4>
+          <p class="text-sm text-slate-600 leading-relaxed">Hành **Thổ** (đất) khắc Thủy, có thể làm cản trở dòng chảy tự nhiên của bé. Vì thế, nên tránh các tên mang ý nghĩa đất đá khô cằn hoặc núi non hiểm trở để giữ cho vận mệnh luôn được hanh thông.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Detailed Modal -->
+<div id="detailModal" class="fixed inset-0 bg-slate-900/90 backdrop-blur-xl z-[2000] hidden items-center justify-center p-4">
+  <div class="bg-white w-full max-w-6xl rounded-[3.5rem] overflow-hidden shadow-2xl flex flex-col lg:flex-row animate-in fade-in zoom-in duration-300">
+    <!-- Left Panel -->
+    <div class="lg:w-1/3 bg-rose-900 p-12 text-center text-white flex flex-col justify-center items-center border-r border-rose-800">
+      <div id="modalHanIcon" class="text-[9rem] font-serif mb-6 opacity-30 select-none leading-none">洪</div>
+      <h2 id="modalViTitle" class="text-5xl font-black mb-4 uppercase tracking-tighter">HỒNG GIA HÂN</h2>
+      <div id="modalElements" class="flex flex-wrap justify-center gap-2 mb-8"></div>
+      <p id="modalPinyinText" class="text-rose-300 tracking-[0.4em] font-black uppercase text-[10px]">PINYIN</p>
+    </div>
+    <!-- Right Panel -->
+    <div class="lg:w-2/3 p-12 max-h-[90vh] overflow-y-auto custom-scroll bg-white">
+      <div class="flex justify-between items-start mb-10 border-b pb-6">
+        <h3 id="modalMainMeaning" class="text-xl font-serif text-slate-800 italic leading-relaxed">---</h3>
+        <button onclick="closeModal()" class="text-slate-300 hover:text-rose-900 transition-colors p-2">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div id="modalAnalysisList" class="space-y-16 pb-10">
+        <!-- JS renders detailed analysis here -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const nameData = [
+    // MẠNH MẼ (POWER)
+    { id: 1, vi: "Hồng Anh Thư", han: "洪英书", pinyin: "Hóng Yīng Shū", cat: "power", elements: ["Thủy", "Mộc", "Kim"], is4: false,
+      mean: "Nữ anh hùng có học thức, tài năng lỗi lạc đi kèm với khí chất kiên cường.",
+      chars: [
+        { c: "英", n: "Anh", p: "Yīng",
+          r: "Bộ Thảo (艹)", r_detail: "Tượng trưng cho tinh hoa của cỏ cây, đại diện cho vẻ đẹp và sự rực rỡ phát lộ ra bên ngoài.",
+          rem: "Chữ Ương (央)", rem_detail: "Thành phần Biểu thanh (Yāng -> Yīng). Ý nghĩa hội ý là nằm ở trung tâm, ở giữa đám đông, thể hiện vị thế xuất chúng của người tài.",
+          l: "Chữ Anh là sự kết hợp giữa tinh hoa thiên nhiên và vị trí trung tâm. Người mang chữ này luôn tỏa sáng, có năng khiếu thiên bẩm và sức hút mãnh liệt."
+        },
+        { c: "书", n: "Thư", p: "Shū",
+          r: "Bộ Viết (曰)", r_detail: "Tượng trưng cho lời nói hoặc văn tự được lưu truyền. Gợi sự điềm đạm, có giáo dục.",
+          rem: "Nét bút và thẻ tre", rem_detail: "Mô phỏng hình ảnh tay cầm bút viết lên thẻ tre. Đây là bộ phận biểu hình cho tri thức và học vấn.",
+          l: "Chữ Thư biến sự mạnh mẽ của tên Anh Thư thành sự mạnh mẽ có trí tuệ, có sự tu dưỡng và am tường giáo lý nhân gian."
+        }
+      ]
+    },
+    { id: 2, vi: "Hồng Mộc Lan", han: "洪木兰", pinyin: "Hóng Mù Lán", cat: "power", elements: ["Thủy", "Mộc", "Mộc"], is4: false,
+      mean: "Sức sống dẻo dai, lòng hiếu thảo và bản lĩnh vượt qua nghịch cảnh.",
+      chars: [
+        { c: "木", n: "Mộc", p: "Mù", r: "Chính nó (木)", r_detail: "Hình ảnh cái cây với gốc rễ cắm sâu, cành lá vươn lên.", rem: "Cấu tạo Tượng hình", rem_detail: "Không có bộ phận biểu thanh, đây là chữ tượng hình thuần túy chỉ sự sinh trưởng, ngay thẳng và lòng nhân từ.", l: "Hành Mộc giúp dưỡng Thủy của họ Hồng, tạo nên sự bền bỉ tuyệt vời." },
+        { c: "兰", n: "Lan", p: "Lán", r: "Bộ Thảo (艹)", r_detail: "Chỉ loài cỏ thơm quý phái.", rem: "Chữ Lan (阑)", rem_detail: "Phần Biểu thanh cung cấp âm đọc. Hội ý chỉ sự thanh cao thoát tục, hoa trong tuyết giá vẫn tỏa hương.", l: "Tượng trưng cho nữ nhi kiên cường, phong thái vương giả." }
+      ]
+    },
+    { id: 3, vi: "Hồng Lam Anh Thư", han: "洪蓝英书", pinyin: "Hóng Lán Yīng Shū", cat: "power", elements: ["Thủy", "Mộc", "Mộc", "Kim"], is4: true,
+      mean: "Sự điềm tĩnh như đại dương kết hợp với trí tuệ và bản lĩnh xuất chúng.",
+      chars: [
+        { c: "蓝", n: "Lam", p: "Lán", r: "Bộ Thảo (艹)", r_detail: "Cỏ chàm dùng để nhuộm màu xanh.", rem: "Chữ Giám (监)", rem_detail: "Thành phần biểu thanh. Nghĩa gốc là soi gương, quan sát. Gợi sự sáng suốt, tỉnh táo và điềm tĩnh.", l: "Màu lam là màu của hy vọng và trí tuệ bao la." },
+        { c: "英", n: "Anh", p: "Yīng", r: "Bộ Thảo", r_detail: "Tinh hoa cỏ cây.", rem: "Chữ Ương", rem_detail: "Trung tâm.", l: "Tài giỏi lỗi lạc." },
+        { c: "书", n: "Thư", p: "Shū", r: "Bộ Viết", r_detail: "Lời nói, văn tự.", rem: "Tay cầm bút", rem_detail: "Tri thức.", l: "Sâu sắc, học rộng." }
+      ]
+    },
+
+    // DỊU DÀNG (GENTLE)
+    { id: 6, vi: "Hồng Thục Nghi", han: "洪淑宜", pinyin: "Hóng Shū Yí", cat: "gentle", elements: ["Thủy", "Thủy", "Thổ"], is4: false,
+      mean: "Người con gái đức hạnh, nết na, mang lại sự chuẩn mực cho gia đình.",
+      chars: [
+        { c: "淑", n: "Thục", p: "Shū", r: "Bộ Thủy (氵)", r_detail: "Dòng nước trong vắt, không vẩn đục.", rem: "Chữ Thúc (叔)", rem_detail: "Phần Biểu thanh. Nghĩa là thu hoạch hoặc trẻ tuổi. Gợi vẻ đẹp thanh xuân và đức hạnh thuần khiết.", l: "Đại diện cho mỹ đức của người phụ nữ đoan trang, tinh tế." },
+        { c: "宜", n: "Nghi", p: "Yí", r: "Bộ Miên (宀)", r_detail: "Mái nhà che chở, an toàn.", rem: "Bộ Thả (且)", rem_detail: "Hình ảnh thớt tế lễ, gợi sự tôn nghiêm, nề nếp và chuẩn mực.", l: "Mọi sự hài hòa, tốt đẹp, an cư lạc nghiệp." }
+      ]
+    },
+    { id: 7, vi: "Hồng Nhã Kỳ", han: "洪雅琦", pinyin: "Hóng Yǎ Qí", cat: "gentle", elements: ["Thủy", "Mộc", "Kim"], is4: false,
+      mean: "Vẻ đẹp thanh tao, lịch thiệp và cốt cách quý giá như ngọc báu.",
+      chars: [
+        { c: "雅", n: "Nhã", p: "Yǎ", r: "Bộ Truy (隹)", r_detail: "Loài chim đuôi ngắn, thường bay cao.", rem: "Chữ Nha (牙)", rem_detail: "Phần Biểu thanh. Hội ý về sự tinh xảo, trau chuốt như ngà voi.", l: "Thanh lịch, thoát tục, không phàm tục." },
+        { c: "琦", n: "Kỳ", p: "Qí", r: "Bộ Ngọc (王)", r_detail: "Ngọc quý, phẩm chất cao đẹp.", rem: "Chữ Kỳ (奇)", rem_detail: "Phần Biểu thanh. Ý nghĩa là lạ lùng, đặc biệt, hiếm có.", l: "Viên ngọc tinh xảo, đáng trân trọng." }
+      ]
+    },
+    { id: 8, vi: "Hồng Tuyết Diệu Nghi", han: "洪雪妙宜", pinyin: "Hóng Xuě Miào Yí", cat: "gentle", elements: ["Thủy", "Thủy", "Hỏa", "Thổ"], is4: true,
+      mean: "Vẻ đẹp tinh khôi như tuyết trắng, mang lại sự diệu kỳ và chuẩn mực.",
+      chars: [
+        { c: "雪", n: "Tuyết", p: "Xuě", r: "Bộ Vũ (雨)", r_detail: "Nước từ trời rơi xuống dưới dạng tinh thể.", rem: "Chữ Tuệ (彗)", rem_detail: "Hình ảnh cái chổi quét sạch. Tuyết rơi như gột rửa vạn vật.", l: "Trắng trong, thuần khiết vô ngần." },
+        { c: "妙", n: "Diệu", p: "Miào", r: "Bộ Nữ (女)", r_detail: "Vẻ đẹp phái nữ.", rem: "Chữ Thiếu (少)", rem_detail: "Sự nhỏ nhắn, tinh tế, trẻ trung.", l: "Vẻ đẹp kỳ ảo, huyền diệu." },
+        { c: "宜", n: "Nghi", p: "Yí", r: "Bộ Miên", r_detail: "Mái nhà.", rem: "Bộ Thả", rem_detail: "Chuẩn mực.", l: "Hài hòa, đức hạnh." }
+      ]
+    },
+
+    // QUÝ PHÁI (NOBLE)
+    { id: 12, vi: "Hồng Phượng Các", han: "洪凤阁", pinyin: "Hóng Fèng Gé", cat: "noble", elements: ["Thủy", "Hỏa", "Thổ"], is4: false,
+      mean: "Người con gái vương giả, cuộc đời vinh hiển như phượng hoàng chốn lầu gác.",
+      chars: [
+        { c: "凤", n: "Phượng", p: "Fèng", r: "Bộ Điểu (鸟)", r_detail: "Chim chóc, linh vật tối cao.", rem: "Chữ Phàm (凡)", rem_detail: "Mô phỏng bộ lông rực rỡ và sức mạnh thần thánh.", l: "Biểu tượng của sự cao quý nhất dành cho phái nữ." },
+        { c: "阁", n: "Các", p: "Gé", r: "Bộ Môn (门)", r_detail: "Cánh cửa lớn trang trọng.", rem: "Chữ Các (各)", rem_detail: "Biểu thanh. Ý nghĩa là tòa lầu cao dành cho tầng lớp thượng lưu.", l: "Sự kín đáo, sang trọng và giàu có." }
+      ]
+    },
+    { id: 13, vi: "Hồng Minh Khuê", han: "洪明圭", pinyin: "Hóng Míng Guī", cat: "noble", elements: ["Thủy", "Hỏa", "Thổ"], is4: false,
+      mean: "Vì sao Khuê rạng rỡ, tượng trưng cho trí tuệ đỉnh cao và địa vị xã hội.",
+      chars: [
+        { c: "明", n: "Minh", p: "Míng", r: "Bộ Nhật (日)", r_detail: "Mặt trời rạng rỡ.", rem: "Bộ Nguyệt (月)", rem_detail: "Mặt trăng dịu hiền. Sự kết hợp Nhật + Nguyệt tạo ra ánh sáng vĩnh cửu.", l: "Thông tuệ, sáng suốt tuyệt đối." },
+        { c: "圭", n: "Khuê", p: "Guī", r: "Bộ Thổ (土)", r_detail: "Đất đai, nền tảng.", rem: "Chồng hai chữ Thổ", rem_detail: "Hình ảnh một loại ngọc khí cổ dùng trong cung đình để phong chức tước.", l: "Giá trị quý tộc, địa vị vương giả." }
+      ]
+    },
+
+    // TRÂN BẢO (TREASURE)
+    { id: 20, vi: "Hồng Bảo Châu", han: "洪宝珠", pinyin: "Hóng Bǎo Zhū", cat: "treasure", elements: ["Thủy", "Thổ", "Kim"], is4: false,
+      mean: "Viên ngọc trai vô giá, báu vật được nâng niu trọn đời.",
+      chars: [
+        { c: "宝", n: "Bảo", p: "Bǎo", r: "Bộ Miên (宀)", r_detail: "Mái nhà che chở.", rem: "Chữ Ngọc (玉) và Bối (贝)", rem_detail: "Ngọc quý và vỏ sò (tiền tệ cổ) đặt trong nhà. Hội ý về sự giàu sang và trân quý.", l: "Mọi thứ quý giá nhất đều hội tụ." },
+        { c: "珠", n: "Châu", p: "Zhū", r: "Bộ Ngọc (王)", r_detail: "Ngọc thạch quý.", rem: "Chữ Chu (朱)", rem_detail: "Phần Biểu thanh. Nghĩa gốc là màu đỏ quý hiếm. Gợi vẻ đẹp rực rỡ của viên ngọc kết tinh.", l: "Ngọc trai quý từ biển sâu." }
+      ]
+    },
+
+    // THIÊN NHIÊN (NATURE)
+    { id: 30, vi: "Hồng Hải Đường", han: "洪海棠", pinyin: "Hóng Hǎi Táng", cat: "nature", elements: ["Thủy", "Thủy", "Mộc"], is4: false,
+      mean: "Đóa hoa tượng trưng cho sự sum vầy và phú quý gia đình.",
+      chars: [
+        { c: "海", n: "Hải", p: "Hǎi", r: "Bộ Thủy (氵)", r_detail: "Biển cả mênh mông.", rem: "Chữ Mỗi (每)", rem_detail: "Phần Biểu thanh. Ý nghĩa là mỗi ngày, luôn luôn. Gợi sự vận động không ngừng của đại dương.", l: "Tâm hồn khoáng đạt, bao dung." },
+        { c: "棠", n: "Đường", p: "Táng", r: "Bộ Mộc (木)", r_detail: "Cây thân gỗ lâu năm.", rem: "Chữ Thượng (尚)", rem_detail: "Biểu thanh. Ý nghĩa là tôn kính, cao quý. Một loài cây nở hoa vương giả.", l: "Sự rạng rỡ của mùa xuân." }
+      ]
+    },
+
+    // YÊU THÍCH (GIA/TUỆ/NHI)
+    { id: 40, vi: "Hồng Gia Hân", han: "洪嘉欣", pinyin: "Hóng Jiā Xīn", cat: "fav", elements: ["Thủy", "Mộc", "Mộc"], is4: false,
+      mean: "Niềm vui hân hoan lan tỏa, người mang lại hưng thịnh cho dòng họ.",
+      chars: [
+        { c: "嘉", n: "Gia", p: "Jiā", r: "Bộ Khẩu (口)", r_detail: "Lời nói, tiếng khen.", rem: "Chữ Sĩ (士) và Chữ Gia (加)", rem_detail: "Người có học thức (Sĩ) nỗ lực (Gia) để đạt được sự tốt đẹp. Hội ý về đức hạnh chuẩn mực.", l: "Tốt lành, được vạn người khen ngợi." },
+        { c: "欣", n: "Hân", p: "Xīn", r: "Bộ Khiếm (欠)", r_detail: "Hình người đang cười, há miệng hít thở không khí vui tươi.", rem: "Chữ Cân (斤)", rem_detail: "Biểu thanh. Gợi sự phấn khởi và yêu đời.", l: "Niềm hạnh phúc rạng ngời từ tâm can." }
+      ]
+    },
+    { id: 41, vi: "Hồng Gia Tuệ", han: "洪嘉慧", pinyin: "Hóng Jiā Huì", cat: "fav", elements: ["Thủy", "Mộc", "Hỏa"], is4: false,
+      mean: "Trí tuệ thông thái được nuôi dưỡng trên nền tảng đạo đức gia đình.",
+      chars: [
+        { c: "嘉", n: "Gia", p: "Jiā", r: "Bộ Khẩu", r_detail: "Lời nói chuẩn mực.", rem: "Sĩ + Gia", rem_detail: "Đức hạnh.", l: "Tốt đẹp." },
+        { c: "慧", n: "Tuệ", p: "Huì", r: "Bộ Tâm (心)", r_detail: "Trái tim, tâm thức.", rem: "Bộ Tuệ (彗)", rem_detail: "Hình ảnh cái chổi. Ý nghĩa là trí tuệ giúp quét sạch bụi mờ của sự ngu muội.", l: "Sự thông minh nhạy bén." }
+      ]
+    },
+    { id: 42, vi: "Hồng Uyển Nhi", han: "洪婉儿", pinyin: "Hóng Wǎn Ér", cat: "fav", elements: ["Thủy", "Thổ", "Hỏa"], is4: false,
+      mean: "Người con gái duyên dáng, uyển chuyển và linh hoạt.",
+      chars: [
+        { c: "婉", n: "Uyển", p: "Wǎn", r: "Bộ Nữ (女)", r_detail: "Phái đẹp.", rem: "Chữ Uyển (宛)", rem_detail: "Biểu thanh. Ý nghĩa là uốn lượn, mềm mại như tơ.", l: "Sự khéo léo, tinh tế." },
+        { c: "儿", n: "Nhi", p: "Ér", r: "Bộ Nhân (人)", r_detail: "Con người.", rem: "Hình tượng đứa trẻ", rem_detail: "Sự ngây thơ, yêu thương, đáng yêu.", l: "Sự khởi đầu mới mẻ." }
+      ]
+    },
+    { id: 43, vi: "Hồng Mai Gia Tuệ", han: "洪梅嘉慧", pinyin: "Hóng Méi Jiā Huì", cat: "fav", elements: ["Thủy", "Mộc", "Mộc", "Hỏa"], is4: true,
+      mean: "Đóa hoa mai rực rỡ mang trí tuệ hưng thịnh của dòng họ.",
+      chars: [
+        { c: "梅", n: "Mai", p: "Méi", r: "Bộ Mộc (木)", r_detail: "Cây cối sinh sôi.", rem: "Chữ Mỗi (每)", rem_detail: "Biểu thanh. Ý chí kiên cường nở hoa trong giá lạnh.", l: "Sự quý phái." },
+        { c: "嘉", n: "Gia", p: "Jiā", r: "Bộ Khẩu", r_detail: "Tốt đẹp.", rem: "Sĩ + Gia", rem_detail: "Hội ý đạo đức.", l: "Chuẩn mực." },
+        { c: "慧", n: "Tuệ", p: "Huì", r: "Bộ Tâm", r_detail: "Trí óc.", rem: "Bộ Tuệ", rem_detail: "Sự tinh anh.", l: "Sáng suốt." }
+      ]
+    }
+  ];
+
+  let spinning = false;
+  let rotation = 0;
+  let wheelDataState = nameData.map(n => ({ ...n, active: true }));
+
+  function renderGrid(data) {
+    const grid = document.getElementById('namesGrid');
+    grid.innerHTML = data.map(n => `
+                <div onclick="openModal(${n.id})" class="name-card p-6 rounded-[2.5rem] cursor-pointer relative">
+                    ${n.is4 ? '<span class="absolute top-4 right-4 bg-rose-800 text-white text-[8px] font-black px-2 py-1 rounded shadow-sm">4 CHỮ</span>' : ''}
+                    <div class="flex gap-1.5 mb-4">
+                        ${n.elements.map(e => `<span class="element-badge el-${e}">${e}</span>`).join('')}
+                    </div>
+                    <div class="space-y-1">
+                        <h3 class="text-2xl font-black text-rose-950 tracking-tight">${n.vi}</h3>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl font-serif text-slate-700">${n.han}</span>
+                            <span class="text-[9px] uppercase font-black text-slate-300 tracking-[0.2em]">${n.pinyin}</span>
+                        </div>
+                    </div>
+                    <p class="mt-4 text-xs text-slate-500 line-clamp-2 leading-relaxed italic">"${n.mean}"</p>
+                </div>
+            `).join('');
+  }
+
+  function filterGrid(cat) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('bg-rose-900', 'text-white'));
+    event.target.classList.add('bg-rose-900', 'text-white');
+    if (cat === 'all') renderGrid(nameData);
+    else renderGrid(nameData.filter(n => n.cat === cat));
+  }
+
+  function showPage(id, btn) {
+    document.querySelectorAll('.section-view').forEach(s => s.classList.add('hidden'));
+    document.getElementById(`page-${id}`).classList.remove('hidden');
+    document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active-link'));
+    btn.classList.add('active-link');
+    if (id === 'wheel') {
+      setTimeout(drawWheel, 100);
+      renderWheelManager();
+    }
+    window.scrollTo(0,0);
+  }
+
+  function openModal(id) {
+    const n = nameData.find(x => x.id === id);
+    if (!n) return;
+
+    document.getElementById('modalHanIcon').innerText = n.han.charAt(n.han.length - 1);
+    document.getElementById('modalViTitle').innerText = n.vi;
+    document.getElementById('modalPinyinText').innerText = n.pinyin;
+    document.getElementById('modalMainMeaning').innerText = n.mean;
+
+    document.getElementById('modalElements').innerHTML = n.elements.map(e =>
+      `<span class="element-badge el-${e} px-4 py-1.5 text-xs">${e}</span>`
+    ).join('');
+
+    document.getElementById('modalAnalysisList').innerHTML = n.chars.map(char => `
+                <div class="analysis-box p-8 rounded-[2rem] space-y-6">
+                    <div class="flex items-center gap-6 pb-4 border-b border-rose-50">
+                        <div class="w-16 h-16 bg-rose-900 rounded-2xl flex items-center justify-center text-4xl font-serif text-white shadow-xl">${char.c}</div>
+                        <div>
+                            <h5 class="text-xl font-black text-slate-800">Chữ ${char.n} <span class="text-sm font-medium text-rose-600">(${char.p})</span></h5>
+                            <span class="text-[10px] font-black bg-rose-50 text-rose-700 px-3 py-1 rounded-full uppercase tracking-widest border border-rose-100">Phân tích chi tiết</span>
+                        </div>
+                    </div>
+                    <div class="grid md:grid-cols-2 gap-8">
+                        <div class="space-y-4">
+                            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-50">
+                                <h6 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Cơ sở: ${char.r} (Biểu hình)</h6>
+                                <p class="text-xs text-slate-600 leading-relaxed">${char.r_detail}</p>
+                            </div>
+                            <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                                <h6 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Thành phần: ${char.rem} (Biểu thanh/Hội ý)</h6>
+                                <p class="text-xs text-slate-600 leading-relaxed">${char.rem_detail}</p>
+                            </div>
+                        </div>
+                        <div class="flex flex-col justify-center">
+                            <h6 class="text-[10px] font-black text-rose-600 uppercase tracking-widest mb-2">Triết lý nhân sinh</h6>
+                            <p class="text-sm text-slate-700 leading-relaxed font-medium italic">"${char.l}"</p>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+    document.getElementById('detailModal').classList.remove('hidden');
+    document.getElementById('detailModal').classList.add('flex');
+  }
+
+  function closeModal() {
+    document.getElementById('detailModal').classList.add('hidden');
+    document.getElementById('detailModal').classList.remove('flex');
+  }
+
+  // Wheel Context
+  const canvas = document.getElementById('wheelCanvas');
+  const ctx = canvas.getContext('2d');
+
+  function drawWheel() {
+    const active = wheelDataState.filter(n => n.active);
+    if (active.length === 0) {
+      ctx.clearRect(0,0,500,500);
+      return;
+    }
+    const arc = (2 * Math.PI) / active.length;
+    ctx.clearRect(0, 0, 500, 500);
+
+    active.forEach((n, i) => {
+      const angle = i * arc;
+      ctx.beginPath();
+      ctx.fillStyle = i % 2 === 0 ? '#fff1f2' : '#881337';
+      ctx.moveTo(250, 250);
+      ctx.arc(250, 250, 245, angle, angle + arc);
+      ctx.fill();
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 4;
+      ctx.stroke();
+
+      ctx.save();
+      ctx.translate(250, 250);
+      ctx.rotate(angle + arc / 2);
+      ctx.textAlign = "right";
+      ctx.fillStyle = i % 2 === 0 ? '#881337' : '#ffffff';
+      ctx.font = "bold 14px Quicksand";
+      ctx.fillText(n.vi.replace('Hồng ', ''), 220, 5);
+      ctx.restore();
+    });
+  }
+
+  function spinNow() {
+    if (spinning) return;
+    const active = wheelDataState.filter(n => n.active);
+    if (active.length < 2) return;
+
+    spinning = true;
+    const extra = Math.floor(Math.random() * 360) + 2160;
+    rotation += extra;
+    canvas.style.transform = `rotate(${rotation}deg)`;
+
+    setTimeout(() => {
+      spinning = false;
+      const actual = rotation % 360;
+      const arcSize = 360 / active.length;
+      const index = Math.floor((360 - actual + 270) % 360 / arcSize);
+      const winner = active[index];
+
+      confetti({ particleCount: 200, spread: 80, origin: { y: 0.6 }, colors: ['#881337', '#92400e', '#fff'] });
+
+      if (winner.id < 900) openModal(winner.id);
+      else alert("Đã chọn: " + winner.vi);
+    }, 5000);
+  }
+
+  function renderWheelManager() {
+    const list = document.getElementById('wheelManager');
+    document.getElementById('activeBadge').innerText = wheelDataState.filter(n => n.active).length + " TÊN";
+
+    list.innerHTML = wheelDataState.map((n, i) => `
+                <label class="flex items-center justify-between p-4 bg-white border border-slate-100 rounded-2xl cursor-pointer hover:bg-rose-50 transition-all">
+                    <span class="text-sm font-bold wheel-item-label ${n.active ? '' : 'inactive'}">${n.vi}</span>
+                    <input type="checkbox" ${n.active ? 'checked' : ''} onchange="toggleWheelEntry(${i})" class="w-5 h-5 accent-rose-900">
+                </label>
+            `).join('');
+    drawWheel();
+  }
+
+  function toggleWheelEntry(i) {
+    wheelDataState[i].active = !wheelDataState[i].active;
+    renderWheelManager();
+  }
+
+  function addManual() {
+    const inp = document.getElementById('addInput');
+    if (inp.value.trim()) {
+      wheelDataState.unshift({ id: Date.now(), vi: inp.value, han: "---", active: true, elements: ["?"], chars: [] });
+      inp.value = "";
+      renderWheelManager();
+    }
+  }
+
+  window.onload = () => renderGrid(nameData);
+</script>
+</body>
+</html>
