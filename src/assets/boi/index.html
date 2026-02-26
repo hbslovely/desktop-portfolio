@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hồng Thị Danh Gia | Tinh Hoa Đặt Tên & Ngũ Hành v15</title>
+  <title>Hồng Thị Danh Gia | Tinh Hoa Đặt Tên & Phong Thủy v16</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Quicksand:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
@@ -45,7 +45,6 @@
       color: var(--primary) !important;
       border-bottom: 3px solid var(--primary);
     }
-    /* Ngũ hành badges */
     .el-badge {
       font-size: 0.6rem;
       padding: 2px 8px;
@@ -62,9 +61,6 @@
     .custom-scroll::-webkit-scrollbar { width: 5px; }
     .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
 
-    .wheel-item-label { color: #1e293b !important; font-weight: 700; }
-    .wheel-item-label.inactive { color: #cbd5e1 !important; text-decoration: line-through; }
-
     #toast {
       visibility: hidden;
       min-width: 200px;
@@ -79,13 +75,11 @@
       bottom: 40px;
       transform: translateX(-50%);
       font-weight: 600;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
     }
     #toast.show { visibility: visible; animation: fadein 0.5s, fadeout 0.5s 2.5s; }
     @keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: 40px; opacity: 1;} }
     @keyframes fadeout { from {bottom: 40px; opacity: 1;} to {bottom: 0; opacity: 0;} }
 
-    /* Dialog UI */
     .modal-zoom { animation: zoomIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
     @keyframes zoomIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
@@ -93,7 +87,13 @@
       background-color: #881337 !important;
       color: white !important;
       border-color: #881337 !important;
-      box-shadow: 0 4px 12px rgba(136, 19, 55, 0.2);
+      box-shadow: 0 4px 12px rgba(136, 19, 55, 0.3);
+    }
+
+    /* Pointer Animation */
+    .wheel-pointer {
+      filter: drop-shadow(0 4px 6px rgba(0,0,0,0.2));
+      z-index: 50;
     }
   </style>
 </head>
@@ -108,13 +108,13 @@
       <div class="w-10 h-10 bg-rose-900 rounded-lg flex items-center justify-center text-white font-serif text-xl shadow-lg">洪</div>
       <div>
         <h1 class="text-base font-black text-slate-900 leading-none">Hồng Thị Danh Gia</h1>
-        <p class="text-[7px] uppercase tracking-[0.3em] text-rose-700 font-bold mt-1">Perfect Master v15</p>
+        <p class="text-[7px] uppercase tracking-[0.3em] text-rose-700 font-bold mt-1">Master Class v16</p>
       </div>
     </div>
     <div class="flex gap-4 md:gap-8 overflow-x-auto no-scrollbar">
       <button onclick="showPage('explore', this)" class="nav-item active-link font-bold text-slate-500 pb-1 whitespace-nowrap text-sm">Bộ sưu tập</button>
       <button onclick="showPage('wheel', this)" class="nav-item font-bold text-slate-500 pb-1 whitespace-nowrap text-sm">Vòng quay</button>
-      <button onclick="showPage('surname', this)" class="nav-item font-bold text-slate-500 pb-1 whitespace-nowrap text-sm">Họ Hồng</button>
+      <button onclick="showPage('surname', this)" class="nav-item font-bold text-slate-500 pb-1 whitespace-nowrap text-sm text-rose-700">Họ Hồng (9 nét)</button>
       <button onclick="showPage('fengshui', this)" class="nav-item font-bold text-slate-500 pb-1 whitespace-nowrap text-sm">Phong thủy</button>
     </div>
   </div>
@@ -126,10 +126,10 @@
   <div id="page-explore" class="section-view space-y-12">
     <div class="max-w-3xl mx-auto text-center space-y-4">
       <h2 class="text-4xl md:text-5xl font-black text-slate-900 leading-tight">Mỹ Danh Hồng Tộc <br><span class="text-rose-900 italic font-serif">Ngũ Hành & Chiết Tự</span></h2>
-      <p class="text-slate-500 font-medium italic">Bản đối soát dữ liệu hoàn chỉnh nhất cho từng cái tên.</p>
+      <p class="text-slate-500 font-medium italic">Kho dữ liệu 50+ tên được rà soát đối soát 100% bản luận giải.</p>
     </div>
 
-    <!-- Tabs -->
+    <!-- Filters -->
     <div class="flex flex-wrap justify-center gap-2" id="filterGroup">
       <button onclick="filterGrid('all', this)" class="tab-btn tab-btn-active px-6 py-2 rounded-full text-[11px] font-bold border transition-all">Tất cả</button>
       <button onclick="filterGrid('power', this)" class="tab-btn bg-white text-slate-600 border px-6 py-2 rounded-full text-[11px] font-bold hover:bg-rose-50 transition-all">Mạnh mẽ</button>
@@ -141,22 +141,33 @@
     </div>
 
     <div id="namesGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-      <!-- Javascript will populate -->
+      <!-- Content injected by JS -->
     </div>
   </div>
 
-  <!-- WHEEL, SURNAME, FENGSHUI SECTIONS (KEEP AS BEFORE) -->
+  <!-- SECTION: WHEEL -->
   <div id="page-wheel" class="section-view hidden py-10">
-    <!-- Content here -->
-    <div class="flex flex-col lg:flex-row gap-12 items-start bg-white p-10 rounded-[3rem] shadow-xl border border-rose-50">
-      <div class="flex-1 text-center space-y-10 w-full">
-        <h2 class="text-3xl font-black text-slate-900">Vòng Quay May Mắn</h2>
-        <canvas id="wheelCanvas" width="500" height="500" class="max-w-full h-auto transition-transform duration-[5000ms] ease-out shadow-2xl rounded-full"></canvas>
-        <button id="spinBtn" onclick="spinNow()" class="w-full max-w-xs mx-auto block bg-rose-900 text-white py-4 rounded-2xl font-black text-lg shadow-2xl transition-all">QUAY NGAY</button>
+    <div class="flex flex-col lg:flex-row gap-12 items-start bg-white p-10 rounded-[3.5rem] shadow-2xl border border-rose-50">
+      <div class="flex-1 text-center space-y-12 w-full">
+        <h2 class="text-3xl font-black text-slate-900">Vòng Quay Nhân Duyên</h2>
+        <div class="relative inline-block scale-95 md:scale-100">
+          <!-- MŨI KIM VÒNG QUAY -->
+          <div class="absolute -top-12 left-1/2 -translate-x-1/2 wheel-pointer">
+            <svg width="60" height="70" viewBox="0 0 60 70" fill="none">
+              <path d="M30 65L5 10C2.5 5 6.5 0 11.5 0H48.5C53.5 0 57.5 5 55 10L30 65Z" fill="#881337" stroke="white" stroke-width="3"/>
+              <circle cx="30" cy="15" r="5" fill="white" opacity="0.5"/>
+            </svg>
+          </div>
+          <canvas id="wheelCanvas" width="500" height="500" class="max-w-full h-auto transition-transform duration-[5000ms] ease-out shadow-2xl rounded-full"></canvas>
+          <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div class="w-16 h-16 bg-white rounded-full border-[6px] border-rose-900 shadow-xl z-20 flex items-center justify-center font-bold text-rose-900">NAME</div>
+          </div>
+        </div>
+        <button id="spinBtn" onclick="spinNow()" class="w-full max-w-xs mx-auto block bg-rose-900 text-white py-5 rounded-3xl font-black text-xl shadow-2xl hover:scale-105 active:scale-95 transition-all">QUAY NGAY</button>
       </div>
-      <div class="w-full lg:w-80 space-y-6">
+      <div class="w-full lg:w-96 space-y-6">
         <div class="flex justify-between items-center border-b pb-3">
-          <h3 class="font-bold text-slate-800 uppercase tracking-widest text-[10px]">Danh sách quay</h3>
+          <h3 class="font-bold text-slate-800 uppercase tracking-widest text-[10px]">Lựa chọn quay</h3>
           <span id="activeBadge" class="text-[10px] font-black text-rose-600 bg-rose-50 px-2 py-1 rounded">0 TÊN</span>
         </div>
         <div id="wheelManager" class="space-y-2 max-h-[450px] overflow-y-auto pr-4 custom-scroll"></div>
@@ -164,67 +175,95 @@
     </div>
   </div>
 
+  <!-- SECTION: SURNAME -->
   <div id="page-surname" class="section-view hidden py-10">
-    <div class="max-w-3xl mx-auto bg-white p-12 rounded-[3rem] shadow-xl border border-rose-50 space-y-8 text-center">
-      <div class="w-32 h-32 bg-rose-900 rounded-3xl mx-auto flex items-center justify-center text-white text-7xl font-serif shadow-xl">洪</div>
-      <h2 class="text-4xl font-black text-rose-950">Họ Hồng (Thủy)</h2>
-      <p class="text-lg text-slate-700 leading-relaxed italic">"Tượng trưng cho dòng nước mênh mông, trí tuệ thâm thâm tự hải. Người mang họ này có tâm hồn bao dung và khả năng thích nghi linh hoạt."</p>
+    <div class="max-w-4xl mx-auto bg-white p-12 rounded-[3.5rem] shadow-xl border border-rose-50 space-y-10">
+      <div class="flex items-center gap-10 border-b pb-10">
+        <div class="w-36 h-36 bg-rose-900 rounded-[2.5rem] flex items-center justify-center text-white text-8xl font-serif shadow-xl">洪</div>
+        <div>
+          <h2 class="text-5xl font-black text-rose-950 leading-none">Họ Hồng (洪)</h2>
+          <p class="text-rose-600 font-bold uppercase text-xs tracking-widest mt-3">Ngũ Hành: Thủy | Số Nét: 9 (Đại Cát)</p>
+        </div>
+      </div>
+      <div class="grid md:grid-cols-2 gap-10 text-slate-700 leading-relaxed text-lg italic">
+        <div class="space-y-4">
+          <p class="font-bold text-rose-800">● Tượng Hình Dòng Thác:</p>
+          <p>Họ Hồng mô phỏng dòng nước cuộn trào, mang khí thế của bậc quân tử hào hiệp, bao dung như biển cả. Trong phong thủy, Thủy chủ về Trí - biểu thị trí thông minh vượt bậc.</p>
+        </div>
+        <div class="space-y-4">
+          <p class="font-bold text-rose-800">● Năng Lượng 9 Nét:</p>
+          <p>Số 9 là số cực Dương, đại diện cho sự viên mãn, trường cửu. Người họ Hồng thường có hậu vận tốt, được quý nhân phù trợ nếu tên gọi hòa hợp.</p>
+        </div>
+      </div>
     </div>
   </div>
 
+  <!-- SECTION: FENG SHUI (EXPANDED) -->
   <div id="page-fengshui" class="section-view hidden py-10">
-    <div class="max-w-4xl mx-auto bg-white p-12 rounded-[3rem] shadow-xl border border-rose-50 space-y-10">
-      <h2 class="text-3xl font-black text-rose-900 text-center border-b pb-6">Ngũ Hành & Tương Sinh</h2>
-      <div class="grid md:grid-cols-2 gap-12 text-lg">
-        <div class="space-y-4">
-          <h4 class="font-bold text-slate-900 border-b pb-2 text-rose-800">Liên Sinh</h4>
-          <p class="text-slate-600 text-base">Họ Hồng (Thủy) rất hợp với các tên hành **Mộc** (Thủy dưỡng Mộc) và hành **Kim** (Kim sinh Thủy). Điều này giúp gia chủ bình an, tài lộc hanh thông.</p>
+    <div class="max-w-5xl mx-auto space-y-12">
+      <div class="bg-white p-12 rounded-[3.5rem] shadow-xl border border-rose-50 text-center">
+        <h2 class="text-4xl font-black text-rose-900 border-b pb-8 inline-block tracking-tighter">Đại Pháp Phong Thủy Đặt Tên</h2>
+
+        <div class="grid md:grid-cols-3 gap-8 text-left mt-12">
+          <div class="p-8 bg-blue-50 rounded-3xl space-y-4 border border-blue-100">
+            <h4 class="font-black text-blue-900 uppercase text-xs tracking-widest border-b border-blue-200 pb-2">1. Quy Luật Ngũ Hành</h4>
+            <p class="text-sm text-slate-600">**Kim sinh Thủy - Thủy dưỡng Mộc**. <br><br>Người họ Hồng (Thủy) tuyệt đối nên dùng tên hành Kim để hút tài lộc, hoặc hành Mộc để bồi đắp sức khỏe và sự sinh sôi.</p>
+          </div>
+          <div class="p-8 bg-rose-50 rounded-3xl space-y-4 border border-rose-100">
+            <h4 class="font-black text-rose-900 uppercase text-xs tracking-widest border-b border-rose-200 pb-2">2. Âm Luật Bằng Trắc</h4>
+            <p class="text-sm text-slate-600">Âm điệu của tên cần có sự cân bằng giữa **Thanh Bằng** (Huyền, Không dấu) và **Thanh Trắc** (Sắc, Hỏi, Ngã, Nặng). Sự phối hợp này giúp cuộc đời bé có nhịp điệu hài hòa, tránh sóng gió.</p>
+          </div>
+          <div class="p-8 bg-amber-50 rounded-3xl space-y-4 border border-amber-100">
+            <h4 class="font-black text-amber-900 uppercase text-xs tracking-widest border-b border-amber-200 pb-2">3. Ý Nghĩa Bộ Thủ</h4>
+            <p class="text-sm text-slate-600">Bộ thủ định hình bản chất. Ưu tiên các chữ có bộ **Ngọc, Thảo, Mộc, Miên**. Tránh các bộ mang tính sát phạt hoặc đất đá cản trở dòng chảy của Thủy.</p>
+          </div>
         </div>
-        <div class="space-y-4">
-          <h4 class="font-bold text-slate-900 border-b pb-2 text-rose-800">Hòa Hợp</h4>
-          <p class="text-slate-600 text-base">Sự xuất hiện của hành **Hỏa** (Minh, Tuệ, Tâm) giúp dòng nước không quá lạnh lẽo, mang lại nhiệt huyết và sự sáng tạo rạng rỡ.</p>
+
+        <div class="mt-12 p-10 bg-slate-900 text-white rounded-[3rem] text-left">
+          <h4 class="text-gold font-bold mb-4 text-xl">Lưu ý về Tên 4 Chữ:</h4>
+          <p class="text-slate-300 leading-relaxed">Tên 4 chữ của họ Hồng giúp tạo ra chuỗi **Liên Sinh Ngũ Hành**. Ví dụ: Hồng (Thủy) - Kim - Thủy - Mộc. Đây là cấu trúc hoàn hảo để dòng nước luôn được tinh khiết (Kim) và nuôi dưỡng sự sống (Mộc).</p>
         </div>
       </div>
     </div>
   </div>
 </main>
 
-<!-- Modal (Dialog Compact) -->
+<!-- Detailed Modal (Dialog) -->
 <div id="detailModal" class="fixed inset-0 bg-slate-900/95 backdrop-blur-xl z-[2000] hidden items-center justify-center p-4 overflow-y-auto">
-  <div class="bg-white w-full max-w-4xl rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col lg:flex-row my-4 modal-zoom">
-    <!-- Left Side -->
-    <div class="lg:w-1/3 bg-rose-900 p-8 text-center text-white flex flex-col justify-center items-center border-r border-rose-800 relative">
-      <div id="modalHanIcon" class="text-[8rem] font-serif mb-4 opacity-10 select-none leading-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">洪</div>
-      <div class="relative z-10 w-full space-y-6">
+  <div class="bg-white w-full max-w-4xl rounded-[3rem] overflow-hidden shadow-2xl flex flex-col lg:flex-row my-4 modal-zoom">
+    <!-- Left Panel -->
+    <div class="lg:w-1/3 bg-rose-900 p-10 text-center text-white flex flex-col justify-center items-center border-r border-rose-800 relative">
+      <div id="modalHanIcon" class="text-[8rem] font-serif mb-4 opacity-10 select-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">洪</div>
+      <div class="relative z-10 w-full space-y-8">
         <div class="group cursor-pointer p-4 hover:bg-white/5 rounded-2xl transition-all" onclick="copyText('modalViTitle')">
           <h2 id="modalViTitle" class="text-3xl font-black uppercase tracking-tighter mb-1">TÊN BÉ</h2>
           <span class="text-[8px] font-bold text-rose-300 uppercase tracking-widest opacity-0 group-hover:opacity-100">Click để copy</span>
         </div>
         <div id="modalElementsMain" class="flex flex-wrap justify-center gap-2"></div>
         <div class="group cursor-pointer p-3 hover:bg-white/5 rounded-xl transition-all" onclick="copyText('modalHanFull')">
-          <p id="modalHanFull" class="text-3xl font-serif text-white opacity-90 italic">---</p>
+          <p id="modalHanFull" class="text-3xl font-serif text-white opacity-95 italic">---</p>
         </div>
         <div class="group cursor-pointer p-2 hover:bg-white/5 rounded-lg transition-all" onclick="copyText('modalPinyinText')">
           <p id="modalPinyinText" class="text-rose-300 tracking-[0.3em] font-black uppercase text-[10px]">PINYIN</p>
         </div>
       </div>
     </div>
-    <!-- Right Side -->
+    <!-- Right Panel -->
     <div class="lg:w-2/3 p-10 max-h-[85vh] overflow-y-auto custom-scroll bg-white">
-      <div class="flex justify-between items-start mb-8 border-b pb-6">
-        <h3 id="modalMainMeaning" class="text-xl font-serif text-slate-800 italic leading-relaxed font-semibold">Luận giải ý nghĩa</h3>
-        <button onclick="closeModal()" class="text-slate-400 hover:text-rose-900 transition-colors p-2 bg-slate-100 rounded-full">
+      <div class="flex justify-between items-start mb-10 border-b pb-8">
+        <h3 id="modalMainMeaning" class="text-2xl font-serif text-slate-800 italic leading-relaxed font-bold">Luận giải ý nghĩa</h3>
+        <button onclick="closeModal()" class="text-slate-400 hover:text-rose-900 transition-colors p-2 bg-slate-50 rounded-full">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 6L6 18M6 6l12 12"/></svg>
         </button>
       </div>
 
-      <div id="modalAnalysisList" class="space-y-12">
-        <!-- Javascript will inject data -->
+      <div id="modalAnalysisList" class="space-y-16">
+        <!-- Javascript injections -->
       </div>
 
       <div id="modalRelationSection" class="mt-12 p-8 bg-rose-50 rounded-3xl border border-rose-100">
-        <h4 class="text-xs font-black text-rose-700 uppercase tracking-[0.3em] mb-4">Hòa hợp Ngũ hành & Liên sinh</h4>
-        <p id="modalElementsRelation" class="text-lg text-rose-950 font-medium leading-relaxed italic">---</p>
+        <h4 class="text-xs font-black text-rose-700 uppercase tracking-[0.3em] mb-4">Hòa hợp Ngũ hành & Tương sinh</h4>
+        <p id="modalElementsRelation" class="text-xl text-rose-950 font-medium leading-relaxed italic">---</p>
       </div>
     </div>
   </div>
@@ -418,35 +457,35 @@
     document.getElementById('modalHanFull').innerText = n.han;
     document.getElementById('modalPinyinText').innerText = n.pinyin;
     document.getElementById('modalMainMeaning').innerText = n.mean;
-    document.getElementById('modalElementsRelation').innerText = n.relation || "Hòa hợp Ngũ hành mang lại vận khí hanh thông.";
+    document.getElementById('modalElementsRelation').innerText = n.relation || "Sự kết hợp Ngũ hành mang lại vận khí hanh thông, bồi đắp khí chất cho bé.";
 
     document.getElementById('modalElementsMain').innerHTML = (n.elements || []).map(e =>
       `<span class="el-badge el-${e} px-3 py-1 text-xs font-bold shadow-sm">${e}</span>`
     ).join('');
 
     document.getElementById('modalAnalysisList').innerHTML = (n.chars || []).map(char => `
-                <div class="bg-slate-50 p-6 rounded-[2rem] border border-slate-100 shadow-sm space-y-6">
-                    <div class="flex flex-col md:flex-row items-center gap-6 pb-4 border-b border-rose-100">
-                        <div class="w-14 h-14 bg-rose-900 rounded-2xl flex items-center justify-center text-3xl font-serif text-white shadow-xl border-4 border-white shrink-0">${char.c}</div>
-                        <div class="text-center md:text-left">
-                            <h5 class="text-xl font-black text-slate-800">Chữ ${char.n} <span class="text-sm font-medium text-rose-600 uppercase tracking-widest">(${char.p})</span></h5>
-                            <span class="el-badge el-${char.el} text-[9px] px-2 py-0.5">Hành: ${char.el}</span>
+                <div class="bg-slate-50 p-8 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-8 text-left">
+                    <div class="flex flex-col md:flex-row items-center gap-6 pb-6 border-b border-rose-100">
+                        <div class="w-16 h-16 bg-rose-900 rounded-3xl flex items-center justify-center text-4xl font-serif text-white shadow-xl border-4 border-white shrink-0">${char.c}</div>
+                        <div>
+                            <h5 class="text-2xl font-black text-slate-800">Chữ ${char.n} <span class="text-sm font-medium text-rose-600 uppercase tracking-widest">(${char.p})</span></h5>
+                            <span class="el-badge el-${char.el} text-[10px] px-3 py-1">Hành: ${char.el}</span>
                         </div>
                     </div>
-                    <div class="grid md:grid-cols-2 gap-8">
-                        <div class="space-y-4 text-left">
-                            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-50">
-                                <h6 class="text-[10px] font-black text-rose-800 uppercase tracking-widest mb-1">Biểu hình (Gốc): ${char.r}</h6>
-                                <p class="text-[14px] text-slate-600 leading-relaxed font-medium">${char.r_d || "Thành phần gốc."}</p>
+                    <div class="grid md:grid-cols-2 gap-10">
+                        <div class="space-y-6">
+                            <div class="bg-white p-6 rounded-2xl shadow-sm">
+                                <h6 class="text-[10px] font-black text-rose-800 uppercase tracking-widest mb-2 flex items-center gap-2"><span class="w-1.5 h-3 bg-rose-800 rounded-full"></span>Biểu hình: ${char.r}</h6>
+                                <p class="text-[15px] text-slate-600 leading-relaxed font-medium">${char.r_d || "Thành phần biểu đạt ý nghĩa."}</p>
                             </div>
-                            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-50">
-                                <h6 class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Bổ trợ: ${char.rem}</h6>
-                                <p class="text-[14px] text-slate-600 leading-relaxed font-medium">${char.rem_d || "Thành phần âm/nghĩa."}</p>
+                            <div class="bg-white p-6 rounded-2xl shadow-sm">
+                                <h6 class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-2"><span class="w-1.5 h-3 bg-slate-400 rounded-full"></span>Thành phần: ${char.rem}</h6>
+                                <p class="text-[15px] text-slate-600 leading-relaxed font-medium">${char.rem_d || "Thành phần bổ trợ âm/nghĩa."}</p>
                             </div>
                         </div>
-                        <div class="flex flex-col justify-center bg-rose-50/50 p-6 rounded-2xl border border-rose-100 text-center">
-                            <h6 class="text-[10px] font-black text-rose-600 uppercase mb-2 italic">Triết lý nhân sinh</h6>
-                            <p class="text-lg font-serif text-slate-800 leading-snug font-bold italic">"${char.l}"</p>
+                        <div class="flex flex-col justify-center bg-rose-50/50 p-8 rounded-3xl border border-rose-100 text-center">
+                            <h6 class="text-[11px] font-black text-rose-600 uppercase mb-3 italic">Triết lý Nhân sinh</h6>
+                            <p class="text-xl font-serif text-slate-800 leading-snug font-bold italic">"${char.l}"</p>
                         </div>
                     </div>
                 </div>
