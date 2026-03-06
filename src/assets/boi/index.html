@@ -132,12 +132,12 @@
     <!-- Filters -->
     <div class="flex flex-wrap justify-center gap-2" id="filterGroup">
       <button onclick="filterGrid('all', this)" class="tab-btn tab-btn-active px-6 py-2 rounded-full text-[11px] font-bold border transition-all">Tất cả</button>
-      <button onclick="filterGrid('power', this)" class="tab-btn bg-white text-slate-600 border px-6 py-2 rounded-full text-[11px] font-bold hover:bg-rose-50 transition-all">Mạnh mẽ</button>
-      <button onclick="filterGrid('gentle', this)" class="tab-btn bg-white text-slate-600 border px-6 py-2 rounded-full text-[11px] font-bold hover:bg-rose-50 transition-all">Dịu dàng</button>
-      <button onclick="filterGrid('noble', this)" class="tab-btn bg-white text-slate-600 border px-6 py-2 rounded-full text-[11px] font-bold hover:bg-rose-50 transition-all">Quý phái</button>
-      <button onclick="filterGrid('treasure', this)" class="tab-btn bg-white text-slate-600 border px-6 py-2 rounded-full text-[11px] font-bold hover:bg-rose-50 transition-all">Trân bảo</button>
-      <button onclick="filterGrid('nature', this)" class="tab-btn bg-white text-slate-600 border px-6 py-2 rounded-full text-[11px] font-bold hover:bg-rose-50 transition-all">Thiên nhiên</button>
-      <button onclick="filterGrid('fav', this)" class="tab-btn bg-amber-50 text-amber-900 border border-amber-200 px-6 py-2 rounded-full text-[11px] font-bold hover:bg-amber-100 transition-all underline">Yêu thích</button>
+      <button onclick="filterGrid('power', this)" class="tab-btn bg-white text-slate-600 border px-6 py-2 rounded-full text-[11px] font-bold hover:bg-rose-50 transition-all">💪 Mạnh mẽ</button>
+      <button onclick="filterGrid('gentle', this)" class="tab-btn bg-white text-slate-600 border px-6 py-2 rounded-full text-[11px] font-bold hover:bg-rose-50 transition-all">🌸 Dịu dàng</button>
+      <button onclick="filterGrid('noble', this)" class="tab-btn bg-white text-slate-600 border px-6 py-2 rounded-full text-[11px] font-bold hover:bg-rose-50 transition-all">👑 Quý phái</button>
+      <button onclick="filterGrid('treasure', this)" class="tab-btn bg-white text-slate-600 border px-6 py-2 rounded-full text-[11px] font-bold hover:bg-rose-50 transition-all">💎 Trân bảo</button>
+      <button onclick="filterGrid('nature', this)" class="tab-btn bg-white text-slate-600 border px-6 py-2 rounded-full text-[11px] font-bold hover:bg-teal-50 transition-all">🌿 Thiên nhiên</button>
+      <button onclick="filterGrid('fav', this)" class="tab-btn bg-amber-50 text-amber-900 border border-amber-200 px-6 py-2 rounded-full text-[11px] font-bold hover:bg-amber-100 transition-all underline">⭐ Yêu thích</button>
     </div>
 
     <div id="namesGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
@@ -149,7 +149,7 @@
   <div id="page-wheel" class="section-view hidden py-10">
     <div class="flex flex-col lg:flex-row gap-12 items-start bg-white p-10 rounded-[3.5rem] shadow-2xl border border-rose-50">
       <div class="flex-1 text-center space-y-12 w-full">
-        <h2 class="text-3xl font-black text-slate-900">Vòng Quay Nhân Duyên</h2>
+        <h2 class="text-3xl font-black text-slate-900">Vòng Quay Chọn Tên</h2>
         <div class="relative inline-block scale-95 md:scale-100">
           <!-- MŨI KIM VÒNG QUAY -->
           <div class="absolute -top-12 left-1/2 -translate-x-1/2 wheel-pointer">
@@ -166,11 +166,30 @@
         <button id="spinBtn" onclick="spinNow()" class="w-full max-w-xs mx-auto block bg-rose-900 text-white py-5 rounded-3xl font-black text-xl shadow-2xl hover:scale-105 active:scale-95 transition-all">QUAY NGAY</button>
       </div>
       <div class="w-full lg:w-96 space-y-6">
+        <!-- Category Filter Section -->
+        <div class="bg-gradient-to-br from-rose-50 to-amber-50 p-5 rounded-3xl border border-rose-100 space-y-4">
+          <div class="flex justify-between items-center">
+            <h3 class="font-black text-rose-900 uppercase tracking-widest text-[10px]">Lọc theo loại tên</h3>
+            <div class="flex gap-2">
+              <button onclick="selectAllCategories()" class="text-[9px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2 py-1 rounded-full transition-all">Chọn tất cả</button>
+              <button onclick="deselectAllCategories()" class="text-[9px] font-bold text-rose-700 bg-rose-100 hover:bg-rose-200 px-2 py-1 rounded-full transition-all">Bỏ chọn</button>
+            </div>
+          </div>
+          <div id="categoryFilters" class="flex flex-wrap gap-2">
+            <!-- Category checkboxes will be rendered here -->
+          </div>
+        </div>
+
+        <!-- Name List Section -->
         <div class="flex justify-between items-center border-b pb-3">
-          <h3 class="font-bold text-slate-800 uppercase tracking-widest text-[10px]">Lựa chọn quay</h3>
+          <h3 class="font-bold text-slate-800 uppercase tracking-widest text-[10px]">Danh sách tên trong vòng quay</h3>
           <span id="activeBadge" class="text-[10px] font-black text-rose-600 bg-rose-50 px-2 py-1 rounded">0 TÊN</span>
         </div>
-        <div id="wheelManager" class="space-y-2 max-h-[450px] overflow-y-auto pr-4 custom-scroll"></div>
+        <div class="flex gap-2 mb-2">
+          <button onclick="selectAllNames()" class="flex-1 text-[10px] font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 px-3 py-2 rounded-xl transition-all">✓ Chọn tất cả tên</button>
+          <button onclick="deselectAllNames()" class="flex-1 text-[10px] font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 px-3 py-2 rounded-xl transition-all">✗ Bỏ chọn tất cả</button>
+        </div>
+        <div id="wheelManager" class="space-y-2 max-h-[350px] overflow-y-auto pr-4 custom-scroll"></div>
       </div>
     </div>
   </div>
@@ -342,30 +361,285 @@
         { c: "琦", n: "Kỳ", p: "Qí", r: "Ngọc", el: "Kim", r_d: "Ngọc thạch.", rem: "Kỳ", rem_d: "Đặc biệt hiếm có.", l: "Giá trị tự thân tôn quý." }
       ]
     },
-
-    // QUÝ PHÁI (NOBLE - 7 Tên)
-    { id: 20, vi: "Hồng Phượng Các", han: "洪凤阁", pinyin: "Hóng Fèng Gé", cat: "noble", elements: ["Thủy", "Hỏa", "Thổ"],
-      mean: "Vương giả chốn cung đình như chim phượng hoàng.",
+    { id: 13, vi: "Hồng Uyên Nhi", han: "洪渊儿", pinyin: "Hóng Yuān Ér", cat: "gentle", elements: ["Thủy", "Thủy", "Hỏa"],
+      mean: "Cô gái nhỏ với tâm hồn sâu lắng như vực nước.",
+      relation: "Song Thủy hòa hợp, Hỏa mang đến sự ấm áp và đáng yêu.",
       chars: [
-        { c: "凤", n: "Phượng", p: "Fèng", r: "Điểu", el: "Hỏa", r_d: "Vua loài chim.", rem: "Linh vật", rem_d: "Sức mạnh tái sinh huy hoàng.", l: "Sự kiêu sa và cao quý nhất." },
-        { c: "阁", n: "Các", p: "Gé", r: "Môn", el: "Thổ", r_d: "Cánh cửa cao.", rem: "Các", rem_d: "Tòa lầu sang trọng.", l: "Giàu sang kín đáo quyền quý." }
+        { c: "渊", n: "Uyên", p: "Yuān", r: "Thủy (氵)", el: "Thủy", r_d: "Nước chảy.", rem: "Uyên (渊)", rem_d: "Vực sâu thăm thẳm.", l: "Tâm hồn sâu sắc, trí tuệ uyên thâm." },
+        { c: "儿", n: "Nhi", p: "Ér", r: "Nhân (儿)", el: "Hỏa", r_d: "Đứa trẻ.", rem: "Tượng hình", rem_d: "Em bé ngây thơ.", l: "Sự đáng yêu và được nâng niu." }
       ]
     },
-    { id: 21, vi: "Hồng Hoàng Gia Tuệ", han: "洪皇家慧", pinyin: "Hóng Huáng Jiā Huì", cat: "noble", is4: true, elements: ["Thủy", "Thổ", "Mộc", "Hỏa"],
+    { id: 14, vi: "Hồng Ý Nhi", han: "洪意儿", pinyin: "Hóng Yì Ér", cat: "gentle", elements: ["Thủy", "Thổ", "Hỏa"],
+      mean: "Cô gái nhỏ đầy ý nghĩa và tình cảm sâu đậm.",
+      relation: "Thổ trung hòa, Hỏa ấm áp. Sự cân bằng giữa lý trí và tình cảm.",
+      chars: [
+        { c: "意", n: "Ý", p: "Yì", r: "Tâm (心)", el: "Thổ", r_d: "Trái tim suy nghĩ.", rem: "Âm (音) + Tâm", rem_d: "Tiếng lòng, ý niệm.", l: "Tâm tư sâu sắc, giàu cảm xúc." },
+        { c: "儿", n: "Nhi", p: "Ér", r: "Nhân (儿)", el: "Hỏa", r_d: "Đứa trẻ.", rem: "Tượng hình", rem_d: "Em bé đáng yêu.", l: "Niềm vui và hạnh phúc của gia đình." }
+      ]
+    },
+    { id: 15, vi: "Hồng Mộng Dao", han: "洪梦瑶", pinyin: "Hóng Mèng Yáo", cat: "gentle", elements: ["Thủy", "Mộc", "Kim"],
+      mean: "Giấc mộng đẹp như ngọc dao quý hiếm.",
+      relation: "Thủy sinh Mộc, Mộc hài hòa với Kim. Sự mơ mộng và quý giá.",
+      chars: [
+        { c: "梦", n: "Mộng", p: "Mèng", r: "Mộc (木)", el: "Mộc", r_d: "Cây cối trong giấc mơ.", rem: "Tịch (夕)", rem_d: "Buổi tối, lúc mơ màng.", l: "Ước mơ đẹp đẽ, tâm hồn lãng mạn." },
+        { c: "瑶", n: "Dao", p: "Yáo", r: "Ngọc (玉)", el: "Kim", r_d: "Ngọc quý.", rem: "Dao (爻)", rem_d: "Quẻ dịch, huyền bí.", l: "Vẻ đẹp huyền ảo như tiên nữ." }
+      ]
+    },
+    { id: 16, vi: "Hồng Tịnh Nhi", han: "洪静儿", pinyin: "Hóng Jìng Ér", cat: "gentle", elements: ["Thủy", "Kim", "Hỏa"],
+      mean: "Cô gái nhỏ điềm tĩnh, thanh thản như mặt hồ thu.",
+      relation: "Kim sinh Thủy, Hỏa cân bằng. Sự bình yên trong tâm hồn.",
+      chars: [
+        { c: "静", n: "Tịnh", p: "Jìng", r: "Thanh (青)", el: "Kim", r_d: "Màu xanh thanh khiết.", rem: "Tranh (争)", rem_d: "Không tranh giành, an nhiên.", l: "Tĩnh lặng nội tâm, bình thản trước sóng gió." },
+        { c: "儿", n: "Nhi", p: "Ér", r: "Nhân (儿)", el: "Hỏa", r_d: "Đứa trẻ.", rem: "Tượng hình", rem_d: "Em bé ngây thơ.", l: "Sự trong sáng và đáng yêu." }
+      ]
+    },
+    { id: 17, vi: "Hồng Hiểu Mạn", han: "洪晓曼", pinyin: "Hóng Xiǎo Màn", cat: "gentle", elements: ["Thủy", "Hỏa", "Thủy"],
+      mean: "Ánh bình minh dịu dàng và uyển chuyển.",
+      relation: "Hỏa ở giữa hai Thủy tạo sự hài hòa âm dương.",
+      chars: [
+        { c: "晓", n: "Hiểu", p: "Xiǎo", r: "Nhật (日)", el: "Hỏa", r_d: "Mặt trời mọc.", rem: "Nghiêu (尧)", rem_d: "Vua Nghiêu, sáng suốt.", l: "Sự thông tuệ và sáng suốt." },
+        { c: "曼", n: "Mạn", p: "Màn", r: "Nhật (日)", el: "Thủy", r_d: "Ánh sáng lan tỏa.", rem: "Mạn (曼)", rem_d: "Kéo dài, uyển chuyển.", l: "Dáng vẻ dịu dàng, thanh thoát." }
+      ]
+    },
+    { id: 18, vi: "Hồng Nhược Tuyên", han: "洪若萱", pinyin: "Hóng Ruò Xuān", cat: "gentle", elements: ["Thủy", "Mộc", "Mộc"],
+      mean: "Như cỏ huyên thảo dịu dàng, xua tan phiền muộn.",
+      relation: "Thủy nuôi dưỡng song Mộc, mang lại sự tươi mới và bình yên.",
+      chars: [
+        { c: "若", n: "Nhược", p: "Ruò", r: "Thảo (艹)", el: "Mộc", r_d: "Cỏ cây.", rem: "Hữu (右)", rem_d: "Bên phải, thuận lợi.", l: "Dịu dàng như cỏ non, thích nghi mọi hoàn cảnh." },
+        { c: "萱", n: "Tuyên", p: "Xuān", r: "Thảo (艹)", el: "Mộc", r_d: "Cỏ huyên.", rem: "Tuyên (宣)", rem_d: "Công bố, lan tỏa.", l: "Xua tan phiền muộn, mang lại niềm vui." }
+      ]
+    },
+    { id: 19, vi: "Hồng Vũ Đồng", han: "洪雨彤", pinyin: "Hóng Yǔ Tóng", cat: "gentle", elements: ["Thủy", "Thủy", "Hỏa"],
+      mean: "Cơn mưa nhẹ nhuộm hồng bầu trời.",
+      relation: "Song Thủy hài hòa, Hỏa tô điểm. Vẻ đẹp tự nhiên và rạng rỡ.",
+      chars: [
+        { c: "雨", n: "Vũ", p: "Yǔ", r: "Vũ (雨)", el: "Thủy", r_d: "Mưa rơi.", rem: "Tượng hình", rem_d: "Hạt mưa từ trời.", l: "Sự tươi mát, làm mới cuộc sống." },
+        { c: "彤", n: "Đồng", p: "Tóng", r: "Chương (彡)", el: "Hỏa", r_d: "Vằn đẹp.", rem: "Đan (丹)", rem_d: "Màu đỏ son.", l: "Rạng rỡ, tươi sáng như bình minh." }
+      ]
+    },
+
+    // QUÝ PHÁI (NOBLE)
+    { id: 20, vi: "Hồng Ngọc Đình", han: "洪玉庭", pinyin: "Hóng Yù Tíng", cat: "noble", elements: ["Thủy", "Kim", "Thổ"],
+      mean: "Viên ngọc quý tỏa sáng giữa sân vàng quyền quý.",
+      relation: "Kim sinh Thủy (Họ), Thổ ổn định nền tảng. Chuỗi ngũ hành mang lại sự sang trọng và vững chãi.",
+      chars: [
+        { c: "玉", n: "Ngọc", p: "Yù", r: "Ngọc (玉)", el: "Kim", r_d: "Đá quý thuần khiết.", rem: "Điểm ngọc", rem_d: "Vết chấm biểu thị tì vết làm ngọc thật.", l: "Phẩm hạnh thanh cao, tâm hồn trong sáng." },
+        { c: "庭", n: "Đình", p: "Tíng", r: "Nghiễm (广)", el: "Thổ", r_d: "Mái nhà che chở.", rem: "Đình (廷)", rem_d: "Sân triều đình, nơi quyền quý.", l: "Gia thế danh giá, nền tảng vững vàng." }
+      ]
+    },
+    { id: 21, vi: "Hồng Quỳnh Trang", han: "洪琼庄", pinyin: "Hóng Qióng Zhuāng", cat: "noble", elements: ["Thủy", "Kim", "Thổ"],
+      mean: "Ngọc quỳnh đẹp đẽ, trang nhã và cao sang.",
+      relation: "Kim sinh Thủy, Thổ hỗ trợ Kim. Tam hợp mang lại vẻ đẹp vĩnh cửu và sự đoan trang.",
+      chars: [
+        { c: "琼", n: "Quỳnh", p: "Qióng", r: "Ngọc (玉)", el: "Kim", r_d: "Ngọc quý hiếm.", rem: "Kinh (京)", rem_d: "Kinh thành, nơi cao quý.", l: "Vẻ đẹp hiếm có, quý giá vô song." },
+        { c: "庄", n: "Trang", p: "Zhuāng", r: "Nghiễm (广)", el: "Thổ", r_d: "Nhà cửa khang trang.", rem: "Sĩ (士)", rem_d: "Người có học thức.", l: "Đoan trang, nghiêm cẩn và lịch thiệp." }
+      ]
+    },
+    { id: 22, vi: "Hồng Vân Khánh", han: "洪云庆", pinyin: "Hóng Yún Qìng", cat: "noble", elements: ["Thủy", "Thủy", "Mộc"],
+      mean: "Mây lành báo điềm vui, phúc khí dồi dào.",
+      relation: "Song Thủy hòa hợp, sinh Mộc phát triển. Cát tường và may mắn luôn đồng hành.",
+      chars: [
+        { c: "云", n: "Vân", p: "Yún", r: "Nhị (二)", el: "Thủy", r_d: "Hai nét như tầng mây.", rem: "Vân (云)", rem_d: "Hơi nước bay lên thành mây.", l: "Tự do phiêu diêu, không bị ràng buộc." },
+        { c: "庆", n: "Khánh", p: "Qìng", r: "Nghiễm (广)", el: "Mộc", r_d: "Mái nhà chúc phúc.", rem: "Đại + Tâm", rem_d: "Trái tim rộng lớn.", l: "Niềm vui lớn lao, phúc lộc dài lâu." }
+      ]
+    },
+    { id: 23, vi: "Hồng Mỹ Khanh", han: "洪美卿", pinyin: "Hóng Měi Qīng", cat: "noble", elements: ["Thủy", "Thủy", "Mộc"],
+      mean: "Người đẹp thanh cao, phẩm hạnh như khanh tướng.",
+      relation: "Thủy sinh Mộc, tạo nên vẻ đẹp tự nhiên và địa vị cao quý.",
+      chars: [
+        { c: "美", n: "Mỹ", p: "Měi", r: "Dương (羊)", el: "Thủy", r_d: "Con dê - biểu tượng tốt lành.", rem: "Đại (大)", rem_d: "To lớn, vĩ đại.", l: "Vẻ đẹp toàn diện cả hình thức và tâm hồn." },
+        { c: "卿", n: "Khanh", p: "Qīng", r: "Tiết (卩)", el: "Mộc", r_d: "Dấu ấn quan chức.", rem: "Hương (乡)", rem_d: "Quê hương, cội nguồn.", l: "Địa vị tôn quý, được mọi người kính trọng." }
+      ]
+    },
+    { id: 24, vi: "Hồng Ái Linh", han: "洪爱玲", pinyin: "Hóng Ài Líng", cat: "noble", elements: ["Thủy", "Thổ", "Kim"],
+      mean: "Tình yêu thương và tiếng ngọc trong trẻo.",
+      relation: "Thổ sinh Kim, Kim sinh Thủy. Chuỗi tương sinh mang lại tình cảm bền vững và quý giá.",
+      chars: [
+        { c: "爱", n: "Ái", p: "Ài", r: "Tâm (心)", el: "Thổ", r_d: "Trái tim yêu thương.", rem: "Trảo + Miên", rem_d: "Bàn tay che chở mái nhà.", l: "Tình yêu vô điều kiện, sự quan tâm sâu sắc." },
+        { c: "玲", n: "Linh", p: "Líng", r: "Ngọc (玉)", el: "Kim", r_d: "Ngọc quý.", rem: "Linh (令)", rem_d: "Mệnh lệnh, sự thanh tao.", l: "Tiếng ngọc trong trẻo, tâm hồn thuần khiết." }
+      ]
+    },
+    { id: 25, vi: "Hồng Thiên Hương", han: "洪天香", pinyin: "Hóng Tiān Xiāng", cat: "noble", elements: ["Thủy", "Hỏa", "Mộc"],
+      mean: "Hương thơm từ trời cao, thanh khiết và cao quý.",
+      relation: "Mộc sinh Hỏa, Hỏa chiếu sáng. Tên mang năng lượng thăng hoa và lan tỏa.",
+      chars: [
+        { c: "天", n: "Thiên", p: "Tiān", r: "Đại (大)", el: "Hỏa", r_d: "Bầu trời bao la.", rem: "Nhất (一)", rem_d: "Một - đỉnh cao nhất.", l: "Hoài bão lớn lao, hướng tới đỉnh cao." },
+        { c: "香", n: "Hương", p: "Xiāng", r: "Hương (香)", el: "Mộc", r_d: "Mùi thơm tự nhiên.", rem: "Hòa (禾) + Nhật", rem_d: "Lúa chín dưới nắng.", l: "Đức hạnh lan tỏa, được mọi người yêu mến." }
+      ]
+    },
+    { id: 26, vi: "Hồng Nguyệt Cầm", han: "洪月琴", pinyin: "Hóng Yuè Qín", cat: "noble", elements: ["Thủy", "Thủy", "Kim"],
+      mean: "Tiếng đàn du dương dưới ánh trăng thanh.",
+      relation: "Song Thủy hài hòa với Kim. Sự thanh tao và nghệ thuật kết hợp hoàn mỹ.",
+      chars: [
+        { c: "月", n: "Nguyệt", p: "Yuè", r: "Nguyệt (月)", el: "Thủy", r_d: "Vầng trăng sáng.", rem: "Tượng hình", rem_d: "Hình trăng khuyết.", l: "Vẻ đẹp dịu dàng, bí ẩn và thanh cao." },
+        { c: "琴", n: "Cầm", p: "Qín", r: "Ngọc (玉)", el: "Kim", r_d: "Nhạc cụ quý.", rem: "Kim + Kim", rem_d: "Hai viên ngọc trên dây đàn.", l: "Tâm hồn nghệ sĩ, thanh nhã và tinh tế." }
+      ]
+    },
+    { id: 27, vi: "Hồng Diễm Nhi", han: "洪艳儿", pinyin: "Hóng Yàn Ér", cat: "noble", elements: ["Thủy", "Mộc", "Hỏa"],
+      mean: "Cô gái rực rỡ như đóa hoa kiều diễm.",
+      relation: "Mộc sinh Hỏa, tạo nên vẻ đẹp rực rỡ nhưng không kiêu ngạo.",
+      chars: [
+        { c: "艳", n: "Diễm", p: "Yàn", r: "Sắc (色)", el: "Mộc", r_d: "Màu sắc rực rỡ.", rem: "Phong (丰)", rem_d: "Phong phú, đầy đặn.", l: "Vẻ đẹp lộng lẫy, thu hút mọi ánh nhìn." },
+        { c: "儿", n: "Nhi", p: "Ér", r: "Nhân (儿)", el: "Hỏa", r_d: "Đứa trẻ ngây thơ.", rem: "Thóp đầu", rem_d: "Hình em bé.", l: "Sự đáng yêu và được nâng niu." }
+      ]
+    },
+    { id: 28, vi: "Hồng Hoàng Gia Tuệ", han: "洪皇家慧", pinyin: "Hóng Huáng Jiā Huì", cat: "noble", is4: true, elements: ["Thủy", "Thổ", "Mộc", "Hỏa"],
       mean: "Trí tuệ hoàng tộc mang vinh hiển cho dòng họ.",
+      relation: "Thổ sinh Kim (ẩn), Mộc sinh Hỏa. Chuỗi liên sinh mang lại trí tuệ và địa vị.",
       chars: [
-        { c: "皇", n: "Hoàng", p: "Huáng", r: "Bạch", el: "Thổ", r_d: "Màu vương giả.", rem: "Vương", rem_d: "Địa vị tối cao.", l: "Sự rạng rỡ vương tôn." },
-        { c: "家", n: "Gia", p: "Jiā", r: "Miên", el: "Mộc", r_d: "Mái nhà ấm.", rem: "Sung túc", rem_d: "Nền tảng gia đình.", l: "Sự vững bền vĩnh cửu." },
-        { c: "慧", n: "Tuệ", p: "Huì", r: "Tâm", el: "Hỏa", r_d: "Tâm trí.", rem: "Chổi", rem_d: "Quét sạch bụi u tối.", l: "Thông tuệ lý trí." }
+        { c: "皇", n: "Hoàng", p: "Huáng", r: "Bạch (白)", el: "Thổ", r_d: "Màu vương giả.", rem: "Vương (王)", rem_d: "Vua chúa, địa vị tối cao.", l: "Sự rạng rỡ vương tôn, phẩm cách cao quý." },
+        { c: "家", n: "Gia", p: "Jiā", r: "Miên (宀)", el: "Mộc", r_d: "Mái nhà ấm.", rem: "Thỉ (豕)", rem_d: "Sung túc, đủ đầy.", l: "Nền tảng gia đình vững bền vĩnh cửu." },
+        { c: "慧", n: "Tuệ", p: "Huì", r: "Tâm (心)", el: "Hỏa", r_d: "Tâm trí sáng suốt.", rem: "Tuệ (彗)", rem_d: "Chổi quét sạch bụi u tối.", l: "Thông tuệ, sáng suốt trong mọi quyết định." }
+      ]
+    },
+    { id: 29, vi: "Hồng Uyển Nhi", han: "洪婉儿", pinyin: "Hóng Wǎn Ér", cat: "noble", elements: ["Thủy", "Thổ", "Hỏa"],
+      mean: "Cô gái dịu dàng, uyển chuyển và đáng yêu.",
+      relation: "Thổ trung hòa Thủy và Hỏa, tạo nên tính cách cân bằng và hài hòa.",
+      chars: [
+        { c: "婉", n: "Uyển", p: "Wǎn", r: "Nữ (女)", el: "Thổ", r_d: "Phái đẹp.", rem: "Uyển (宛)", rem_d: "Mềm mại, uyển chuyển.", l: "Dịu dàng, tinh tế trong cử chỉ lời nói." },
+        { c: "儿", n: "Nhi", p: "Ér", r: "Nhân (儿)", el: "Hỏa", r_d: "Đứa trẻ.", rem: "Tượng hình", rem_d: "Em bé ngây thơ.", l: "Được yêu thương và bảo bọc suốt đời." }
       ]
     },
 
-    // TRÂN BẢO (TREASURE - 6 Tên)
+    // TRÂN BẢO (TREASURE)
     { id: 30, vi: "Hồng Bảo Châu", han: "洪宝珠", pinyin: "Hóng Bǎo Zhū", cat: "treasure", elements: ["Thủy", "Thổ", "Kim"],
       mean: "Viên ngọc trai báu vật vô giá của gia đình.",
+      relation: "Thổ sinh Kim, Kim sinh Thủy. Chuỗi tam sinh mang lại phú quý.",
       chars: [
-        { c: "宝", n: "Bảo", p: "Bǎo", r: "Miên", el: "Thổ", r_d: "Mái nhà.", rem: "Ngọc & Bối", rem_d: "Đồ quý cất giữ kỹ.", l: "Sự trân quý tuyệt đối." },
-        { c: "珠", n: "Châu", p: "Zhū", r: "Ngọc", el: "Kim", r_d: "Ngọc trai.", rem: "Chu", rem_d: "Màu đỏ bóng bẩy.", l: "Sự kết tinh tròn đầy." }
+        { c: "宝", n: "Bảo", p: "Bǎo", r: "Miên (宀)", el: "Thổ", r_d: "Mái nhà.", rem: "Ngọc & Bối", rem_d: "Đồ quý cất giữ kỹ.", l: "Sự trân quý tuyệt đối." },
+        { c: "珠", n: "Châu", p: "Zhū", r: "Ngọc (玉)", el: "Kim", r_d: "Ngọc trai.", rem: "Chu (朱)", rem_d: "Màu đỏ bóng bẩy.", l: "Sự kết tinh tròn đầy viên mãn." }
+      ]
+    },
+    { id: 31, vi: "Hồng Kim Ngân", han: "洪金银", pinyin: "Hóng Jīn Yín", cat: "treasure", elements: ["Thủy", "Kim", "Kim"],
+      mean: "Vàng bạc châu báu, phú quý song toàn.",
+      relation: "Song Kim sinh Thủy mạnh mẽ. Tài lộc dồi dào, thịnh vượng.",
+      chars: [
+        { c: "金", n: "Kim", p: "Jīn", r: "Kim (金)", el: "Kim", r_d: "Vàng ròng.", rem: "Thổ che kim", rem_d: "Vàng ẩn trong đất.", l: "Giá trị vĩnh hằng, sáng chói muôn đời." },
+        { c: "银", n: "Ngân", p: "Yín", r: "Kim (金)", el: "Kim", r_d: "Bạc trắng.", rem: "Cấn (艮)", rem_d: "Núi non vững chãi.", l: "Sự tinh khiết và thanh cao." }
+      ]
+    },
+    { id: 32, vi: "Hồng Như Ý", han: "洪如意", pinyin: "Hóng Rú Yì", cat: "treasure", elements: ["Thủy", "Kim", "Thổ"],
+      mean: "Như ý cát tường, mọi việc đều thuận lợi.",
+      relation: "Kim sinh Thủy, Thổ ổn định. Mọi ước nguyện đều thành.",
+      chars: [
+        { c: "如", n: "Như", p: "Rú", r: "Nữ (女)", el: "Kim", r_d: "Phái đẹp.", rem: "Khẩu (口)", rem_d: "Lời nói tuân theo.", l: "Thuận theo tự nhiên, như ý sở cầu." },
+        { c: "意", n: "Ý", p: "Yì", r: "Tâm (心)", el: "Thổ", r_d: "Trái tim.", rem: "Âm + Tâm", rem_d: "Tiếng lòng chân thật.", l: "Ý nguyện thành hiện thực." }
+      ]
+    },
+    { id: 33, vi: "Hồng Phỉ Thúy", han: "洪翡翠", pinyin: "Hóng Fěi Cuì", cat: "treasure", elements: ["Thủy", "Mộc", "Mộc"],
+      mean: "Ngọc phỉ thúy xanh biếc, báu vật trời ban.",
+      relation: "Thủy sinh song Mộc tươi tốt. Sức sống mãnh liệt và quý giá.",
+      chars: [
+        { c: "翡", n: "Phỉ", p: "Fěi", r: "Vũ (羽)", el: "Mộc", r_d: "Lông chim.", rem: "Phi (非)", rem_d: "Chim phỉ đỏ.", l: "Vẻ đẹp rực rỡ hiếm có." },
+        { c: "翠", n: "Thúy", p: "Cuì", r: "Vũ (羽)", el: "Mộc", r_d: "Lông chim xanh.", rem: "Tốt (卒)", rem_d: "Hoàn thành, viên mãn.", l: "Màu xanh vĩnh cửu của thiên nhiên." }
+      ]
+    },
+    { id: 34, vi: "Hồng Mỹ Ngọc", han: "洪美玉", pinyin: "Hóng Měi Yù", cat: "treasure", elements: ["Thủy", "Thủy", "Kim"],
+      mean: "Ngọc đẹp long lanh, hoàn mỹ vô khuyết.",
+      relation: "Song Thủy hài hòa với Kim. Vẻ đẹp tỏa sáng và quý giá.",
+      chars: [
+        { c: "美", n: "Mỹ", p: "Měi", r: "Dương (羊)", el: "Thủy", r_d: "Con dê - cát tường.", rem: "Đại (大)", rem_d: "To lớn, vĩ đại.", l: "Vẻ đẹp toàn diện, hoàn hảo." },
+        { c: "玉", n: "Ngọc", p: "Yù", r: "Ngọc (玉)", el: "Kim", r_d: "Đá quý.", rem: "Vương + điểm", rem_d: "Vua của các loại đá.", l: "Phẩm chất cao quý, đạo đức sáng trong." }
+      ]
+    },
+    { id: 35, vi: "Hồng Bội Ngọc", han: "洪佩玉", pinyin: "Hóng Pèi Yù", cat: "treasure", elements: ["Thủy", "Thủy", "Kim"],
+      mean: "Ngọc đeo bên mình, bảo vật hộ thân.",
+      relation: "Song Thủy sinh Kim. Được che chở và bảo vệ suốt đời.",
+      chars: [
+        { c: "佩", n: "Bội", p: "Pèi", r: "Nhân (亻)", el: "Thủy", r_d: "Người đeo.", rem: "Phàm (凡) + Cân", rem_d: "Vật trang sức.", l: "Sự trân trọng và gìn giữ cẩn thận." },
+        { c: "玉", n: "Ngọc", p: "Yù", r: "Ngọc (玉)", el: "Kim", r_d: "Đá quý.", rem: "Vương + điểm", rem_d: "Ngọc hoàng gia.", l: "Tâm hồn trong sáng như ngọc." }
+      ]
+    },
+    { id: 36, vi: "Hồng Bảo Trân", han: "洪宝珍", pinyin: "Hóng Bǎo Zhēn", cat: "treasure", elements: ["Thủy", "Thổ", "Kim"],
+      mean: "Báu vật quý hiếm, trân châu vô giá.",
+      relation: "Thổ sinh Kim, Kim sinh Thủy. Chuỗi tam hợp tài lộc.",
+      chars: [
+        { c: "宝", n: "Bảo", p: "Bǎo", r: "Miên (宀)", el: "Thổ", r_d: "Mái nhà che chở.", rem: "Ngọc + Bối", rem_d: "Của cải quý giá.", l: "Sự trân quý và bảo vệ." },
+        { c: "珍", n: "Trân", p: "Zhēn", r: "Ngọc (玉)", el: "Kim", r_d: "Ngọc quý.", rem: "Chân (珎)", rem_d: "Hiếm có khó tìm.", l: "Giá trị độc nhất vô nhị." }
+      ]
+    },
+    { id: 37, vi: "Hồng Kim Khánh Nhi", han: "洪金庆儿", pinyin: "Hóng Jīn Qìng Ér", cat: "treasure", is4: true, elements: ["Thủy", "Kim", "Mộc", "Hỏa"],
+      mean: "Cô gái nhỏ mang điềm vàng son và phúc lộc.",
+      relation: "Kim sinh Thủy, Mộc sinh Hỏa. Tứ hành hài hòa, phú quý an khang.",
+      chars: [
+        { c: "金", n: "Kim", p: "Jīn", r: "Kim (金)", el: "Kim", r_d: "Vàng ròng.", rem: "Thổ che kim", rem_d: "Châu báu ẩn giấu.", l: "Giá trị bền vững theo thời gian." },
+        { c: "庆", n: "Khánh", p: "Qìng", r: "Nghiễm (广)", el: "Mộc", r_d: "Mái nhà phúc.", rem: "Đại + Tâm", rem_d: "Niềm vui lớn.", l: "Phúc lộc dồi dào, chúc mừng cát tường." },
+        { c: "儿", n: "Nhi", p: "Ér", r: "Nhân (儿)", el: "Hỏa", r_d: "Đứa trẻ.", rem: "Tượng hình", rem_d: "Em bé ngây thơ.", l: "Niềm vui và hạnh phúc gia đình." }
+      ]
+    },
+
+    // THIÊN NHIÊN (NATURE)
+    { id: 40, vi: "Hồng Xuân Hoa", han: "洪春花", pinyin: "Hóng Chūn Huā", cat: "nature", elements: ["Thủy", "Mộc", "Mộc"],
+      mean: "Hoa nở rộ trong mùa xuân tươi đẹp.",
+      relation: "Thủy sinh song Mộc. Sức sống mãnh liệt như mùa xuân.",
+      chars: [
+        { c: "春", n: "Xuân", p: "Chūn", r: "Nhật (日)", el: "Mộc", r_d: "Mặt trời ấm áp.", rem: "Đồn (屯)", rem_d: "Mầm non nhú lên.", l: "Khởi đầu mới, tràn đầy hy vọng." },
+        { c: "花", n: "Hoa", p: "Huā", r: "Thảo (艹)", el: "Mộc", r_d: "Cỏ cây hoa lá.", rem: "Hóa (化)", rem_d: "Biến hóa thành hoa.", l: "Vẻ đẹp rực rỡ, tỏa hương thơm ngát." }
+      ]
+    },
+    { id: 41, vi: "Hồng Thu Nguyệt", han: "洪秋月", pinyin: "Hóng Qiū Yuè", cat: "nature", elements: ["Thủy", "Kim", "Thủy"],
+      mean: "Vầng trăng thu trong vắt, thanh bình và thơ mộng.",
+      relation: "Kim sinh Thủy, Song Thủy hài hòa. Sự thanh cao và bình yên.",
+      chars: [
+        { c: "秋", n: "Thu", p: "Qiū", r: "Hòa (禾)", el: "Kim", r_d: "Lúa chín.", rem: "Hỏa (火)", rem_d: "Lá đỏ mùa thu.", l: "Sự chín chắn và viên mãn." },
+        { c: "月", n: "Nguyệt", p: "Yuè", r: "Nguyệt (月)", el: "Thủy", r_d: "Vầng trăng.", rem: "Tượng hình", rem_d: "Hình trăng khuyết.", l: "Vẻ đẹp dịu dàng và bí ẩn." }
+      ]
+    },
+    { id: 42, vi: "Hồng Hạ Vân", han: "洪霞云", pinyin: "Hóng Xiá Yún", cat: "nature", elements: ["Thủy", "Hỏa", "Thủy"],
+      mean: "Mây ráng chiều rực rỡ trên bầu trời.",
+      relation: "Hỏa ở giữa hai Thủy, tạo sự hài hòa âm dương tuyệt đẹp.",
+      chars: [
+        { c: "霞", n: "Hạ", p: "Xiá", r: "Vũ (雨)", el: "Hỏa", r_d: "Mưa và nắng.", rem: "Giả (假)", rem_d: "Ánh sáng mượn.", l: "Vẻ đẹp rực rỡ lúc hoàng hôn." },
+        { c: "云", n: "Vân", p: "Yún", r: "Nhị (二)", el: "Thủy", r_d: "Hai tầng mây.", rem: "Vân", rem_d: "Hơi nước bay lên.", l: "Tự do bay bổng, không ràng buộc." }
+      ]
+    },
+    { id: 43, vi: "Hồng Lâm Tuyền", han: "洪林泉", pinyin: "Hóng Lín Quán", cat: "nature", elements: ["Thủy", "Mộc", "Thủy"],
+      mean: "Suối trong giữa rừng xanh, thanh tịnh và mát lành.",
+      relation: "Thủy sinh Mộc, Mộc lại gần Thủy. Sự tuần hoàn sinh sôi.",
+      chars: [
+        { c: "林", n: "Lâm", p: "Lín", r: "Mộc (木)", el: "Mộc", r_d: "Hai cây thành rừng.", rem: "Song mộc", rem_d: "Rừng cây um tùm.", l: "Sự sinh sôi và phát triển." },
+        { c: "泉", n: "Tuyền", p: "Quán", r: "Thủy (水)", el: "Thủy", r_d: "Nước suối.", rem: "Bạch + Thủy", rem_d: "Nước trong vắt.", l: "Nguồn sống tinh khiết, vô tận." }
+      ]
+    },
+    { id: 44, vi: "Hồng Tuyết Mai", han: "洪雪梅", pinyin: "Hóng Xuě Méi", cat: "nature", elements: ["Thủy", "Thủy", "Mộc"],
+      mean: "Hoa mai nở trong tuyết trắng, kiên cường bất khuất.",
+      relation: "Song Thủy nuôi Mộc. Sức sống mạnh mẽ vượt gian khó.",
+      chars: [
+        { c: "雪", n: "Tuyết", p: "Xuě", r: "Vũ (雨)", el: "Thủy", r_d: "Mưa đông lạnh.", rem: "Tuệ (彗)", rem_d: "Gột sạch bụi trần.", l: "Sự trong trắng và tinh khiết." },
+        { c: "梅", n: "Mai", p: "Méi", r: "Mộc (木)", el: "Mộc", r_d: "Cây mai.", rem: "Mỗi (每)", rem_d: "Mỗi năm lại nở.", l: "Khí tiết cao thượng, vượt qua nghịch cảnh." }
+      ]
+    },
+    { id: 45, vi: "Hồng Hải Đường", han: "洪海棠", pinyin: "Hóng Hǎi Táng", cat: "nature", elements: ["Thủy", "Thủy", "Mộc"],
+      mean: "Hoa hải đường kiều diễm, vẻ đẹp mỹ nhân.",
+      relation: "Song Thủy sinh Mộc. Vẻ đẹp tự nhiên và duyên dáng.",
+      chars: [
+        { c: "海", n: "Hải", p: "Hǎi", r: "Thủy (氵)", el: "Thủy", r_d: "Biển cả.", rem: "Mỗi (每)", rem_d: "Mỗi giọt nước tụ thành.", l: "Lòng bao dung rộng lớn như biển." },
+        { c: "棠", n: "Đường", p: "Táng", r: "Mộc (木)", el: "Mộc", r_d: "Cây lê đường.", rem: "Thượng + Mộc", rem_d: "Cây cao quý.", l: "Vẻ đẹp thanh tao, được yêu mến." }
+      ]
+    },
+    { id: 46, vi: "Hồng Thanh Trúc", han: "洪青竹", pinyin: "Hóng Qīng Zhú", cat: "nature", elements: ["Thủy", "Mộc", "Mộc"],
+      mean: "Trúc xanh thanh tao, khí tiết quân tử.",
+      relation: "Thủy sinh song Mộc. Phẩm cách cao thượng và kiên định.",
+      chars: [
+        { c: "青", n: "Thanh", p: "Qīng", r: "Thanh (青)", el: "Mộc", r_d: "Màu xanh.", rem: "Sinh + Đan", rem_d: "Màu của sự sống.", l: "Sức sống trường tồn, tươi mới mãi." },
+        { c: "竹", n: "Trúc", p: "Zhú", r: "Trúc (竹)", el: "Mộc", r_d: "Cây trúc.", rem: "Tượng hình", rem_d: "Lá trúc rủ xuống.", l: "Khí tiết ngay thẳng, không cúi đầu." }
+      ]
+    },
+    { id: 47, vi: "Hồng Yên Hà", han: "洪烟霞", pinyin: "Hóng Yān Xiá", cat: "nature", elements: ["Thủy", "Hỏa", "Hỏa"],
+      mean: "Khói sương và ráng chiều, cảnh tiên huyền ảo.",
+      relation: "Song Hỏa cân bằng với Thủy. Vẻ đẹp hư ảo như tiên cảnh.",
+      chars: [
+        { c: "烟", n: "Yên", p: "Yān", r: "Hỏa (火)", el: "Hỏa", r_d: "Lửa và khói.", rem: "Nhân + Thổ", rem_d: "Khói bay từ đất.", l: "Sự huyền bí và mơ màng." },
+        { c: "霞", n: "Hà", p: "Xiá", r: "Vũ (雨)", el: "Hỏa", r_d: "Mây ráng.", rem: "Giả", rem_d: "Ánh sáng phản chiếu.", l: "Vẻ đẹp rực rỡ và độc đáo." }
+      ]
+    },
+    { id: 48, vi: "Hồng Sơn Hà Nhi", han: "洪山荷儿", pinyin: "Hóng Shān Hé Ér", cat: "nature", is4: true, elements: ["Thủy", "Thổ", "Mộc", "Hỏa"],
+      mean: "Cô gái nhỏ như hoa sen trên núi, thanh khiết và cao quý.",
+      relation: "Tứ hành quân bình: Thổ sinh Kim ẩn, Mộc sinh Hỏa. Sự hài hòa thiên nhiên.",
+      chars: [
+        { c: "山", n: "Sơn", p: "Shān", r: "Sơn (山)", el: "Thổ", r_d: "Núi non.", rem: "Tượng hình", rem_d: "Ba đỉnh núi.", l: "Sự vững chãi và kiên định." },
+        { c: "荷", n: "Hà", p: "Hé", r: "Thảo (艹)", el: "Mộc", r_d: "Hoa sen.", rem: "Hà (何)", rem_d: "Gánh vác, thanh cao.", l: "Vẻ đẹp thuần khiết, không nhiễm bụi trần." },
+        { c: "儿", n: "Nhi", p: "Ér", r: "Nhân (儿)", el: "Hỏa", r_d: "Đứa trẻ.", rem: "Tượng hình", rem_d: "Em bé ngây thơ.", l: "Sự đáng yêu và trong sáng." }
       ]
     },
 
@@ -400,9 +674,136 @@
     }
   ];
 
+  // Category definitions with labels and colors
+  const categories = [
+    { key: 'fav', label: 'Yêu thích', color: 'amber', icon: '⭐' },
+    { key: 'power', label: 'Mạnh mẽ', color: 'red', icon: '💪' },
+    { key: 'gentle', label: 'Dịu dàng', color: 'pink', icon: '🌸' },
+    { key: 'noble', label: 'Quý phái', color: 'purple', icon: '👑' },
+    { key: 'treasure', label: 'Trân bảo', color: 'emerald', icon: '💎' },
+    { key: 'nature', label: 'Thiên nhiên', color: 'teal', icon: '🌿' }
+  ];
+
   let spinning = false;
   let rotation = 0;
   let wheelActiveState = nameData.map(n => ({ ...n, active: true }));
+  let categoryActiveState = categories.reduce((acc, cat) => ({ ...acc, [cat.key]: true }), {});
+
+  // Get inline styles for category buttons
+  function getCategoryStyles(color, isActive) {
+    const colorMap = {
+      amber: { 
+        active: 'background: #f59e0b; color: white; border-color: #f59e0b;', 
+        inactive: 'background: #fffbeb; color: #b45309; border-color: #fde68a;' 
+      },
+      red: { 
+        active: 'background: #ef4444; color: white; border-color: #ef4444;', 
+        inactive: 'background: #fef2f2; color: #b91c1c; border-color: #fecaca;' 
+      },
+      pink: { 
+        active: 'background: #ec4899; color: white; border-color: #ec4899;', 
+        inactive: 'background: #fdf2f8; color: #be185d; border-color: #fbcfe8;' 
+      },
+      purple: { 
+        active: 'background: #8b5cf6; color: white; border-color: #8b5cf6;', 
+        inactive: 'background: #faf5ff; color: #7c3aed; border-color: #e9d5ff;' 
+      },
+      emerald: { 
+        active: 'background: #10b981; color: white; border-color: #10b981;', 
+        inactive: 'background: #ecfdf5; color: #047857; border-color: #a7f3d0;' 
+      },
+      teal: { 
+        active: 'background: #14b8a6; color: white; border-color: #14b8a6;', 
+        inactive: 'background: #f0fdfa; color: #0f766e; border-color: #99f6e4;' 
+      }
+    };
+    const styles = colorMap[color] || colorMap.amber;
+    return isActive ? styles.active : styles.inactive;
+  }
+
+  // Render category filter buttons
+  function renderCategoryFilters() {
+    const container = document.getElementById('categoryFilters');
+    if (!container) return;
+
+    container.innerHTML = categories.map(cat => {
+      const isActive = categoryActiveState[cat.key];
+      const styles = getCategoryStyles(cat.color, isActive);
+      const count = nameData.filter(n => n.cat === cat.key).length;
+      const activeCount = wheelActiveState.filter(n => n.cat === cat.key && n.active).length;
+      return `
+        <button onclick="toggleCategory('${cat.key}')" 
+                class="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-bold border-2 transition-all"
+                style="${styles}">
+          <span>${cat.icon}</span>
+          <span>${cat.label}</span>
+          <span style="opacity: 0.7">(${activeCount}/${count})</span>
+        </button>
+      `;
+    }).join('');
+  }
+
+  // Toggle category inclusion/exclusion
+  function toggleCategory(key) {
+    categoryActiveState[key] = !categoryActiveState[key];
+    
+    // Update individual name states based on category
+    wheelActiveState.forEach((n, i) => {
+      if (n.cat === key) {
+        wheelActiveState[i].active = categoryActiveState[key];
+      }
+    });
+    
+    renderCategoryFilters();
+    renderWheelManager();
+  }
+
+  // Select all categories
+  function selectAllCategories() {
+    categories.forEach(cat => {
+      categoryActiveState[cat.key] = true;
+    });
+    wheelActiveState.forEach((n, i) => {
+      wheelActiveState[i].active = true;
+    });
+    renderCategoryFilters();
+    renderWheelManager();
+  }
+
+  // Deselect all categories
+  function deselectAllCategories() {
+    categories.forEach(cat => {
+      categoryActiveState[cat.key] = false;
+    });
+    wheelActiveState.forEach((n, i) => {
+      wheelActiveState[i].active = false;
+    });
+    renderCategoryFilters();
+    renderWheelManager();
+  }
+
+  // Select all names (within active categories)
+  function selectAllNames() {
+    wheelActiveState.forEach((n, i) => {
+      if (categoryActiveState[n.cat]) {
+        wheelActiveState[i].active = true;
+      }
+    });
+    renderWheelManager();
+  }
+
+  // Deselect all names
+  function deselectAllNames() {
+    wheelActiveState.forEach((n, i) => {
+      wheelActiveState[i].active = false;
+    });
+    // Also update category states to reflect
+    categories.forEach(cat => {
+      categoryActiveState[cat.key] = false;
+    });
+    renderCategoryFilters();
+    renderWheelManager();
+  }
 
   function renderGrid(data) {
     const grid = document.getElementById('namesGrid');
@@ -443,6 +844,7 @@
     btn.classList.add('active-link');
     if (id === 'wheel') {
       setTimeout(drawWheel, 100);
+      renderCategoryFilters();
       renderWheelManager();
     }
     window.scrollTo(0,0);
@@ -566,27 +968,79 @@
     }, 5000);
   }
 
+  // Get category header styles
+  function getCategoryHeaderStyles(color) {
+    const styles = {
+      amber: { bg: 'background: linear-gradient(to right, #fef3c7, transparent);', text: 'color: #b45309;', subtext: 'color: #fbbf24;' },
+      red: { bg: 'background: linear-gradient(to right, #fee2e2, transparent);', text: 'color: #b91c1c;', subtext: 'color: #f87171;' },
+      pink: { bg: 'background: linear-gradient(to right, #fce7f3, transparent);', text: 'color: #be185d;', subtext: 'color: #f472b6;' },
+      purple: { bg: 'background: linear-gradient(to right, #f3e8ff, transparent);', text: 'color: #7c3aed;', subtext: 'color: #a78bfa;' },
+      emerald: { bg: 'background: linear-gradient(to right, #d1fae5, transparent);', text: 'color: #047857;', subtext: 'color: #34d399;' },
+      teal: { bg: 'background: linear-gradient(to right, #ccfbf1, transparent);', text: 'color: #0f766e;', subtext: 'color: #2dd4bf;' }
+    };
+    return styles[color] || styles.amber;
+  }
+
   function renderWheelManager() {
     const list = document.getElementById('wheelManager');
     const badge = document.getElementById('activeBadge');
-    if (badge) badge.innerText = wheelActiveState.filter(n => n.active).length + " TÊN";
+    const activeCount = wheelActiveState.filter(n => n.active).length;
+    if (badge) badge.innerText = activeCount + " TÊN";
 
-    list.innerHTML = wheelActiveState.map((n, i) => `
-                <label class="flex items-center justify-between p-4 bg-white border border-slate-100 rounded-2xl cursor-pointer hover:bg-rose-50 transition-all">
-                    <span class="text-sm wheel-item-label ${n.active ? '' : 'inactive'}">${n.vi}</span>
-                    <input type="checkbox" ${n.active ? 'checked' : ''} onchange="toggleWheelEntry(${i})" class="w-5 h-5 accent-rose-900 rounded">
-                </label>
-            `).join('');
+    // Group names by category
+    let html = '';
+    categories.forEach(cat => {
+      const namesInCat = wheelActiveState.filter(n => n.cat === cat.key);
+      if (namesInCat.length === 0) return;
+      
+      const isExpanded = categoryActiveState[cat.key];
+      const activeInCat = namesInCat.filter(n => n.active).length;
+      const headerStyles = getCategoryHeaderStyles(cat.color);
+      
+      html += `
+        <div class="mb-4">
+          <div class="flex items-center justify-between px-3 py-2 rounded-xl mb-2" style="${headerStyles.bg}">
+            <span class="text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5" style="${headerStyles.text}">
+              ${cat.icon} ${cat.label}
+              <span style="${headerStyles.subtext}">(${activeInCat}/${namesInCat.length})</span>
+            </span>
+          </div>
+          ${isExpanded ? namesInCat.map((n, idx) => {
+            const originalIndex = wheelActiveState.findIndex(x => x.id === n.id);
+            return `
+              <label class="flex items-center justify-between p-3 bg-white border border-slate-100 rounded-xl cursor-pointer hover:bg-rose-50 transition-all mb-1.5 ${n.active ? '' : 'opacity-50'}">
+                <div class="flex items-center gap-2">
+                  <span class="text-sm font-medium ${n.active ? 'text-slate-800' : 'text-slate-400 line-through'}">${n.vi}</span>
+                  ${n.is4 ? '<span class="text-[8px] font-bold text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded">4 chữ</span>' : ''}
+                </div>
+                <input type="checkbox" ${n.active ? 'checked' : ''} onchange="toggleWheelEntry(${originalIndex})" class="w-5 h-5 accent-rose-900 rounded">
+              </label>
+            `;
+          }).join('') : `<p class="text-xs text-slate-400 italic px-3 py-2">Loại này đang bị ẩn. Bật lại ở bộ lọc phía trên.</p>`}
+        </div>
+      `;
+    });
+
+    list.innerHTML = html;
     drawWheel();
   }
 
   function toggleWheelEntry(i) {
     wheelActiveState[i].active = !wheelActiveState[i].active;
+    
+    // Update category state based on names in that category
+    const cat = wheelActiveState[i].cat;
+    const namesInCat = wheelActiveState.filter(n => n.cat === cat);
+    const anyActive = namesInCat.some(n => n.active);
+    categoryActiveState[cat] = anyActive;
+    
+    renderCategoryFilters();
     renderWheelManager();
   }
 
   window.onload = () => {
     renderGrid(nameData);
+    renderCategoryFilters();
     renderWheelManager();
   };
 </script>
