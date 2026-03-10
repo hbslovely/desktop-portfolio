@@ -180,6 +180,20 @@
           </div>
         </div>
 
+        <!-- Custom Names Section -->
+        <div class="bg-gradient-to-br from-indigo-50 to-blue-50 p-4 rounded-2xl border border-indigo-100 mb-4">
+          <div class="flex justify-between items-center">
+            <div>
+              <h3 class="font-black text-indigo-900 uppercase tracking-widest text-[10px]">✨ Tên tùy chọn</h3>
+              <p class="text-[9px] text-indigo-500 mt-1">Thêm tên riêng vào vòng quay</p>
+            </div>
+            <button onclick="openCustomNamesDialog()" class="text-[10px] font-bold text-white bg-indigo-500 hover:bg-indigo-600 px-4 py-2 rounded-xl transition-all flex items-center gap-1.5 shadow-lg">
+              <span>⚙️</span> Quản lý
+              <span id="customNameCount" class="bg-white/20 px-1.5 py-0.5 rounded text-[9px]">0</span>
+            </button>
+          </div>
+        </div>
+
         <!-- Name List Section -->
         <div class="flex justify-between items-center border-b pb-3">
           <h3 class="font-bold text-slate-800 uppercase tracking-widest text-[10px]">Danh sách tên trong vòng quay</h3>
@@ -189,7 +203,7 @@
           <button onclick="selectAllNames()" class="flex-1 text-[10px] font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 px-3 py-2 rounded-xl transition-all">✓ Chọn tất cả tên</button>
           <button onclick="deselectAllNames()" class="flex-1 text-[10px] font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 px-3 py-2 rounded-xl transition-all">✗ Bỏ chọn tất cả</button>
         </div>
-        <div id="wheelManager" class="space-y-2 max-h-[350px] overflow-y-auto pr-4 custom-scroll"></div>
+        <div id="wheelManager" class="space-y-2 max-h-[300px] overflow-y-auto pr-4 custom-scroll"></div>
       </div>
     </div>
   </div>
@@ -283,6 +297,73 @@
       <div id="modalRelationSection" class="mt-12 p-8 bg-rose-50 rounded-3xl border border-rose-100">
         <h4 class="text-xs font-black text-rose-700 uppercase tracking-[0.3em] mb-4">Hòa hợp Ngũ hành & Tương sinh</h4>
         <p id="modalElementsRelation" class="text-xl text-rose-950 font-medium leading-relaxed italic">---</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Custom Names Dialog -->
+<div id="customNamesDialog" class="fixed inset-0 bg-slate-900/95 backdrop-blur-xl z-[2000] hidden items-center justify-center p-4">
+  <div class="bg-white w-full max-w-xl rounded-[2rem] overflow-hidden shadow-2xl modal-zoom">
+    <!-- Header -->
+    <div class="bg-gradient-to-r from-indigo-600 to-purple-600 p-6 text-white">
+      <div class="flex justify-between items-center">
+        <div>
+          <h2 class="text-xl font-black flex items-center gap-2">✨ Quản Lý Tên Tùy Chọn</h2>
+          <p class="text-indigo-200 text-sm mt-1">Thêm tên riêng của bạn vào vòng quay</p>
+        </div>
+        <button onclick="closeCustomNamesDialog()" class="text-white/70 hover:text-white transition-colors p-2 hover:bg-white/10 rounded-full">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+    </div>
+    
+    <!-- Add New Name Form -->
+    <div class="p-6 border-b bg-gradient-to-br from-indigo-50 to-white">
+      <h3 class="text-xs font-black text-indigo-800 uppercase tracking-widest mb-4">➕ Thêm tên mới</h3>
+      <div class="flex gap-3">
+        <input type="text" id="customNameInput" placeholder="Nhập tên (VD: Hồng Minh Anh)" 
+               class="flex-1 px-4 py-3 border-2 border-indigo-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
+               onkeypress="if(event.key==='Enter') addCustomName()">
+        <button onclick="addCustomName()" class="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition-all shadow-lg hover:shadow-xl flex items-center gap-2">
+          <span>+</span> Thêm
+        </button>
+      </div>
+      <p class="text-xs text-indigo-400 mt-2 italic">💡 Nhấn Enter hoặc nút Thêm để thêm tên vào danh sách</p>
+    </div>
+    
+    <!-- Custom Names List -->
+    <div class="p-6">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-xs font-black text-slate-700 uppercase tracking-widest">📋 Danh sách tên tùy chọn</h3>
+        <span id="customNameListCount" class="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded">0 tên</span>
+      </div>
+      
+      <div id="customNamesList" class="space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scroll">
+        <!-- Custom names will be rendered here -->
+        <div class="text-center py-8 text-slate-400">
+          <p class="text-4xl mb-2">📝</p>
+          <p class="text-sm">Chưa có tên tùy chọn nào</p>
+          <p class="text-xs mt-1">Thêm tên ở form phía trên</p>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Footer Actions -->
+    <div class="p-4 bg-slate-50 border-t flex justify-between items-center">
+      <button onclick="clearAllCustomNames()" class="text-[11px] font-bold text-rose-600 hover:text-rose-700 px-4 py-2 hover:bg-rose-50 rounded-lg transition-all">
+        🗑️ Xóa tất cả
+      </button>
+      <div class="flex gap-2">
+        <button onclick="toggleAllCustomNames(true)" class="text-[11px] font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 px-3 py-2 rounded-lg transition-all">
+          ✓ Bật tất cả
+        </button>
+        <button onclick="toggleAllCustomNames(false)" class="text-[11px] font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 px-3 py-2 rounded-lg transition-all">
+          ✗ Tắt tất cả
+        </button>
+        <button onclick="closeCustomNamesDialog()" class="text-[11px] font-bold text-white bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded-lg transition-all shadow">
+          Hoàn tất
+        </button>
       </div>
     </div>
   </div>
@@ -681,13 +762,194 @@
     { key: 'gentle', label: 'Dịu dàng', color: 'pink', icon: '🌸' },
     { key: 'noble', label: 'Quý phái', color: 'purple', icon: '👑' },
     { key: 'treasure', label: 'Trân bảo', color: 'emerald', icon: '💎' },
-    { key: 'nature', label: 'Thiên nhiên', color: 'teal', icon: '🌿' }
+    { key: 'nature', label: 'Thiên nhiên', color: 'teal', icon: '🌿' },
+    { key: 'custom', label: 'Tùy chọn', color: 'indigo', icon: '✨' }
   ];
 
   let spinning = false;
   let rotation = 0;
   let wheelActiveState = nameData.map(n => ({ ...n, active: true }));
   let categoryActiveState = categories.reduce((acc, cat) => ({ ...acc, [cat.key]: true }), {});
+  
+  // Custom names management
+  let customNames = JSON.parse(localStorage.getItem('hongCustomNames') || '[]');
+  let customNameIdCounter = parseInt(localStorage.getItem('hongCustomNameIdCounter') || '1000');
+
+  // Save custom names to localStorage
+  function saveCustomNames() {
+    localStorage.setItem('hongCustomNames', JSON.stringify(customNames));
+    localStorage.setItem('hongCustomNameIdCounter', customNameIdCounter.toString());
+  }
+
+  // Open custom names dialog
+  function openCustomNamesDialog() {
+    document.getElementById('customNamesDialog').classList.remove('hidden');
+    document.getElementById('customNamesDialog').classList.add('flex');
+    document.getElementById('customNameInput').focus();
+    renderCustomNamesList();
+  }
+
+  // Close custom names dialog
+  function closeCustomNamesDialog() {
+    document.getElementById('customNamesDialog').classList.add('hidden');
+    document.getElementById('customNamesDialog').classList.remove('flex');
+    updateCustomNameCount();
+    renderWheelManager();
+    drawWheel();
+  }
+
+  // Add a new custom name
+  function addCustomName() {
+    const input = document.getElementById('customNameInput');
+    const name = input.value.trim();
+    
+    if (!name) {
+      input.classList.add('border-rose-500');
+      setTimeout(() => input.classList.remove('border-rose-500'), 1000);
+      return;
+    }
+    
+    // Check if name already exists
+    const exists = customNames.some(n => n.vi.toLowerCase() === name.toLowerCase()) ||
+                   nameData.some(n => n.vi.toLowerCase() === name.toLowerCase());
+    if (exists) {
+      showToast('Tên này đã tồn tại!');
+      return;
+    }
+    
+    const newCustomName = {
+      id: customNameIdCounter++,
+      vi: name,
+      cat: 'custom',
+      isCustom: true,
+      active: true
+    };
+    
+    customNames.push(newCustomName);
+    wheelActiveState.push({ ...newCustomName });
+    saveCustomNames();
+    
+    input.value = '';
+    renderCustomNamesList();
+    showToast('Đã thêm: ' + name);
+  }
+
+  // Remove a custom name
+  function removeCustomName(id) {
+    customNames = customNames.filter(n => n.id !== id);
+    wheelActiveState = wheelActiveState.filter(n => n.id !== id);
+    saveCustomNames();
+    renderCustomNamesList();
+    renderWheelManager();
+    drawWheel();
+  }
+
+  // Toggle custom name active state
+  function toggleCustomName(id) {
+    const customIdx = customNames.findIndex(n => n.id === id);
+    const wheelIdx = wheelActiveState.findIndex(n => n.id === id);
+    
+    if (customIdx !== -1) {
+      customNames[customIdx].active = !customNames[customIdx].active;
+    }
+    if (wheelIdx !== -1) {
+      wheelActiveState[wheelIdx].active = !wheelActiveState[wheelIdx].active;
+    }
+    
+    saveCustomNames();
+    renderCustomNamesList();
+  }
+
+  // Toggle all custom names
+  function toggleAllCustomNames(active) {
+    customNames.forEach((n, i) => {
+      customNames[i].active = active;
+    });
+    wheelActiveState.forEach((n, i) => {
+      if (n.isCustom) {
+        wheelActiveState[i].active = active;
+      }
+    });
+    saveCustomNames();
+    renderCustomNamesList();
+  }
+
+  // Clear all custom names
+  function clearAllCustomNames() {
+    if (customNames.length === 0) return;
+    if (!confirm('Bạn có chắc muốn xóa tất cả tên tùy chọn?')) return;
+    
+    customNames = [];
+    wheelActiveState = wheelActiveState.filter(n => !n.isCustom);
+    saveCustomNames();
+    renderCustomNamesList();
+    renderWheelManager();
+    drawWheel();
+    showToast('Đã xóa tất cả tên tùy chọn');
+  }
+
+  // Render custom names list in dialog
+  function renderCustomNamesList() {
+    const list = document.getElementById('customNamesList');
+    const countEl = document.getElementById('customNameListCount');
+    
+    if (countEl) {
+      countEl.textContent = customNames.length + ' tên';
+    }
+    
+    if (customNames.length === 0) {
+      list.innerHTML = `
+        <div class="text-center py-8 text-slate-400">
+          <p class="text-4xl mb-2">📝</p>
+          <p class="text-sm">Chưa có tên tùy chọn nào</p>
+          <p class="text-xs mt-1">Thêm tên ở form phía trên</p>
+        </div>
+      `;
+      return;
+    }
+    
+    list.innerHTML = customNames.map(n => `
+      <div class="flex items-center justify-between p-3 bg-gradient-to-r ${n.active ? 'from-indigo-50 to-white border-indigo-200' : 'from-slate-50 to-white border-slate-200'} border rounded-xl group transition-all">
+        <div class="flex items-center gap-3">
+          <button onclick="toggleCustomName(${n.id})" class="w-6 h-6 rounded-lg border-2 ${n.active ? 'bg-indigo-500 border-indigo-500 text-white' : 'bg-white border-slate-300'} flex items-center justify-center text-xs font-bold transition-all">
+            ${n.active ? '✓' : ''}
+          </button>
+          <span class="font-medium ${n.active ? 'text-slate-800' : 'text-slate-400 line-through'}">${n.vi}</span>
+        </div>
+        <button onclick="removeCustomName(${n.id})" class="text-rose-400 hover:text-rose-600 opacity-0 group-hover:opacity-100 transition-all p-1.5 hover:bg-rose-50 rounded-lg" title="Xóa">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+    `).join('');
+  }
+
+  // Update custom name count badge
+  function updateCustomNameCount() {
+    const countEl = document.getElementById('customNameCount');
+    if (countEl) {
+      const activeCount = customNames.filter(n => n.active).length;
+      countEl.textContent = activeCount;
+    }
+  }
+
+  // Show toast notification
+  function showToast(message) {
+    const t = document.getElementById('toast');
+    t.textContent = message;
+    t.className = "show";
+    setTimeout(() => { t.className = t.className.replace("show", ""); }, 3000);
+  }
+
+  // Initialize custom names on load
+  function initCustomNames() {
+    // Add saved custom names to wheel state
+    customNames.forEach(n => {
+      if (!wheelActiveState.find(w => w.id === n.id)) {
+        wheelActiveState.push({ ...n });
+      }
+    });
+    updateCustomNameCount();
+  }
 
   // Get inline styles for category buttons
   function getCategoryStyles(color, isActive) {
@@ -715,6 +977,10 @@
       teal: { 
         active: 'background: #14b8a6; color: white; border-color: #14b8a6;', 
         inactive: 'background: #f0fdfa; color: #0f766e; border-color: #99f6e4;' 
+      },
+      indigo: { 
+        active: 'background: #6366f1; color: white; border-color: #6366f1;', 
+        inactive: 'background: #eef2ff; color: #4338ca; border-color: #c7d2fe;' 
       }
     };
     const styles = colorMap[color] || colorMap.amber;
@@ -751,8 +1017,22 @@
     wheelActiveState.forEach((n, i) => {
       if (n.cat === key) {
         wheelActiveState[i].active = categoryActiveState[key];
+        
+        // If it's custom category, also update customNames
+        if (key === 'custom' && n.isCustom) {
+          const customIdx = customNames.findIndex(c => c.id === n.id);
+          if (customIdx !== -1) {
+            customNames[customIdx].active = categoryActiveState[key];
+          }
+        }
       }
     });
+    
+    // Save custom names if toggling custom category
+    if (key === 'custom') {
+      saveCustomNames();
+      updateCustomNameCount();
+    }
     
     renderCategoryFilters();
     renderWheelManager();
@@ -846,6 +1126,7 @@
       setTimeout(drawWheel, 100);
       renderCategoryFilters();
       renderWheelManager();
+      updateCustomNameCount();
     }
     window.scrollTo(0,0);
   }
@@ -976,7 +1257,8 @@
       pink: { bg: 'background: linear-gradient(to right, #fce7f3, transparent);', text: 'color: #be185d;', subtext: 'color: #f472b6;' },
       purple: { bg: 'background: linear-gradient(to right, #f3e8ff, transparent);', text: 'color: #7c3aed;', subtext: 'color: #a78bfa;' },
       emerald: { bg: 'background: linear-gradient(to right, #d1fae5, transparent);', text: 'color: #047857;', subtext: 'color: #34d399;' },
-      teal: { bg: 'background: linear-gradient(to right, #ccfbf1, transparent);', text: 'color: #0f766e;', subtext: 'color: #2dd4bf;' }
+      teal: { bg: 'background: linear-gradient(to right, #ccfbf1, transparent);', text: 'color: #0f766e;', subtext: 'color: #2dd4bf;' },
+      indigo: { bg: 'background: linear-gradient(to right, #e0e7ff, transparent);', text: 'color: #4338ca;', subtext: 'color: #818cf8;' }
     };
     return styles[color] || styles.amber;
   }
@@ -1012,6 +1294,7 @@
                 <div class="flex items-center gap-2">
                   <span class="text-sm font-medium ${n.active ? 'text-slate-800' : 'text-slate-400 line-through'}">${n.vi}</span>
                   ${n.is4 ? '<span class="text-[8px] font-bold text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded">4 chữ</span>' : ''}
+                  ${n.isCustom ? '<span class="text-[8px] font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded">✨</span>' : ''}
                 </div>
                 <input type="checkbox" ${n.active ? 'checked' : ''} onchange="toggleWheelEntry(${originalIndex})" class="w-5 h-5 accent-rose-900 rounded">
               </label>
@@ -1034,11 +1317,27 @@
     const anyActive = namesInCat.some(n => n.active);
     categoryActiveState[cat] = anyActive;
     
+    // If it's a custom name, update customNames array too
+    if (wheelActiveState[i].isCustom) {
+      const customIdx = customNames.findIndex(n => n.id === wheelActiveState[i].id);
+      if (customIdx !== -1) {
+        customNames[customIdx].active = wheelActiveState[i].active;
+        saveCustomNames();
+      }
+    }
+    
     renderCategoryFilters();
     renderWheelManager();
+    updateCustomNameCount();
   }
 
   window.onload = () => {
+    // Initialize custom category state
+    categoryActiveState['custom'] = true;
+    
+    // Initialize custom names
+    initCustomNames();
+    
     renderGrid(nameData);
     renderCategoryFilters();
     renderWheelManager();
