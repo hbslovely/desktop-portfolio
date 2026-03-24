@@ -233,6 +233,20 @@
   </div>
 </div>
 
+<!-- Modal Lỗi Nhận Diện Hình Ảnh -->
+<div id="errorModal" class="fixed inset-0 bg-slate-950/90 z-[120] hidden flex-col items-center justify-center p-4 backdrop-blur-sm">
+  <div class="w-full max-w-sm bg-slate-900 rounded-2xl overflow-hidden border border-red-500/50 shadow-[0_0_30px_rgba(239,68,68,0.2)] relative text-center p-6">
+    <div class="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4 text-red-400">
+      <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+    </div>
+    <h3 class="text-xl font-bold text-white mb-2">Hình Ảnh Không Hợp Lệ</h3>
+    <p id="errorModalText" class="text-slate-300 text-sm mb-6">Vui lòng tải lên hình ảnh bàn tay 5 ngón rõ nét.</p>
+    <button id="closeErrorBtn" class="w-full py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-xl font-medium transition-colors">
+      Thử Lại
+    </button>
+  </div>
+</div>
+
 <script>
   // ------------------ AUTH / OTP LOGIC ------------------
   const authModal = document.getElementById('authModal');
@@ -340,6 +354,16 @@
 
   closeLimitBtn.addEventListener('click', () => {
     limitModal.classList.add('hidden');
+  });
+
+  // Modal Error DOM
+  const errorModal = document.getElementById('errorModal');
+  const errorModalText = document.getElementById('errorModalText');
+  const closeErrorBtn = document.getElementById('closeErrorBtn');
+
+  closeErrorBtn.addEventListener('click', () => {
+    errorModal.classList.add('hidden');
+    errorModal.classList.remove('flex');
   });
 
   let originalCtx = originalCanvas.getContext('2d', { willReadFrequently: true });
@@ -468,6 +492,7 @@
     const skinMask = new Uint8Array(width * height);
     const grayscale = new Uint8Array(width * height);
     let minX = width, maxX = 0, minY = height, maxY = 0;
+    let skinCount = 0;
 
     // BƯỚC 1: Tách nền da
     for (let i = 0; i < data.length; i += 4) {
@@ -482,6 +507,7 @@
 
       if (isSkin) {
         skinMask[idx] = 1;
+        skinCount++;
         if(x < minX) minX = x; if(x > maxX) maxX = x;
         if(y < minY) minY = y; if(y > maxY) maxY = y;
       } else {
@@ -493,6 +519,56 @@
 
     let handW = Math.max(1, maxX - minX);
     let handH = Math.max(1, maxY - minY);
+
+    // BƯỚC 1.5: KIỂM TRA TÍNH HỢP LỆ CỦA BÀN TAY (Heuristics Validation)
+    let fillRatio = skinCount / (handW * handH);
+    let aspectRatio = handW / handH;
+
+    let isValid = true;
+    let errorMsg = "";
+
+    if (skinCount < (width * height * 0.05)) {
+      isValid = false;
+      errorMsg = "Không nhận diện được vùng da tay. Vui lòng chụp rõ bàn tay ở nơi đủ sáng.";
+    } else if (aspectRatio > 1.8 || aspectRatio < 0.4) {
+      isValid = false;
+      errorMsg = "Tỷ lệ khung hình không giống bàn tay. Vui lòng chụp dọc tay, bao gồm cả lòng bàn tay và xòe các ngón.";
+    } else if (fillRatio > 0.88) {
+      isValid = false;
+      errorMsg = "Ảnh quá sát hoặc bị che khuất. Hệ thống cần nhìn thấy tổng thể hình dáng bàn tay và các ngón tay.";
+    } else {
+      // Đếm "đỉnh" (ngón tay) bằng cách quét ngang 30% phía trên của bounding box
+      let maxPeaks = 0;
+      for (let scanY = minY + Math.floor(handH * 0.05); scanY < minY + Math.floor(handH * 0.3); scanY += 5) {
+        let peaks = 0;
+        let isInside = false;
+        for (let x = minX; x <= maxX; x++) {
+          if (skinMask[scanY * width + x] === 1) {
+            if (!isInside) { isInside = true; peaks++; }
+          } else {
+            isInside = false;
+          }
+        }
+        maxPeaks = Math.max(maxPeaks, peaks);
+      }
+
+      // Cần thấy từ 2 đến 6 nhánh ngón tay (xòe ra)
+      if (maxPeaks < 2 || maxPeaks > 7) {
+        isValid = false;
+        errorMsg = "Không nhận diện đủ 5 ngón tay. Vui lòng xòe bàn tay tự nhiên và không để các ngón quá dính vào nhau hoặc chụp lệch góc.";
+      }
+    }
+
+    if (!isValid) {
+      analyzeBtn.innerHTML = `
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                    Phân Tích Thất Bại
+                `;
+      errorModalText.innerText = errorMsg;
+      errorModal.classList.remove('hidden');
+      errorModal.classList.add('flex');
+      return; // Ngừng chạy các bước phía sau
+    }
 
     // BƯỚC 2: Erosion & Blur (Khử nhiễu)
     const erodedMask = new Uint8Array(width * height);
