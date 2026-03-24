@@ -2,6 +2,11 @@ import { Routes } from '@angular/router';
 
 export const routes: Routes = [
   {
+    path: 'boi-vui',
+    loadComponent: () => import('./pages/boi-vui/boi-vui.component').then(m => m.BoiVuiComponent),
+    title: 'Bói Vui'
+  },
+  {
     path: 'chat',
     loadComponent: () => import('./pages/chat/chat.component').then(m => m.ChatComponent),
     title: 'Video Chat - WebRTC'
