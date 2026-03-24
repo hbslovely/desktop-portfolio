@@ -42,6 +42,25 @@
     .custom-scrollbar::-webkit-scrollbar { width: 6px; }
     .custom-scrollbar::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.5); border-radius: 10px; }
     .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(168, 85, 247, 0.3); border-radius: 10px; }
+
+    /* Hiệu ứng mờ ảo cho màn hình khóa */
+    .glass-panel {
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(168, 85, 247, 0.3);
+    }
+
+    #otpInput {
+      caret-color: #a855f7;
+      -webkit-text-security: disc;
+      text-security: disc;
+      /* Xóa bỏ text-security để người dùng thấy chữ 'showme' khi gõ */
+    }
+
+    #authModal {
+      z-index: 9999;
+      pointer-events: auto;
+    }
   </style>
 </head>
 <body class="bg-slate-950 text-slate-200 min-h-screen">
@@ -51,17 +70,15 @@
   <div class="relative z-10">
     <h1 class="text-3xl font-bold text-white mb-2">Đọc Vị Chỉ Tay <span class="text-purple-400">Chuyên Sâu</span></h1>
     <p class="text-slate-400 text-sm max-w-2xl mx-auto px-4">
-      Luận giải Công Danh, Tình Duyên, Vận Mệnh dựa trên hình thái kỹ thuật số của đường Tâm Đạo, Trí Đạo, Sinh Đạo và Định Mệnh.
+      Luận giải Công Danh, Tình Duyên, Vận Mệnh dựa trên hình thái kỹ thuật số của các đường chỉ tay chính.
     </p>
   </div>
 </header>
 
 <main class="max-w-6xl mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
-
   <!-- CỘT 1: HÌNH ẢNH & XỬ LÝ -->
   <div class="space-y-6">
     <div class="bg-slate-900 rounded-2xl p-6 border border-slate-800 shadow-xl">
-
       <div class="flex flex-wrap justify-between items-center gap-3 mb-4">
         <h2 class="text-lg font-semibold text-white">Ảnh Lòng Bàn Tay</h2>
         <div class="flex gap-2">
@@ -100,7 +117,6 @@
           </div>
         </div>
       </div>
-
     </div>
   </div>
 
@@ -108,686 +124,401 @@
   <div class="flex flex-col space-y-6">
     <div class="bg-slate-900 rounded-2xl p-6 lg:p-8 border border-slate-800 shadow-xl h-full flex flex-col relative overflow-hidden">
       <div class="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
-
       <h2 class="text-xl font-semibold text-white mb-6 border-b border-slate-700/50 pb-4 flex items-center gap-2">
         <svg class="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
         Bản Đồ Vận Mệnh
       </h2>
-
       <div id="resultsPanel" class="flex-1 overflow-y-auto hidden custom-scrollbar pr-2">
         <div class="space-y-5">
-
-          <!-- Đường Tâm Đạo -->
           <div class="relative bg-slate-800/40 p-5 rounded-xl border-l-4 border-pink-500 hover:bg-slate-800/60 transition-colors">
-            <h3 class="text-pink-400 font-bold mb-2 flex items-center gap-2 text-lg">
-              Tâm Đạo <span class="text-sm font-normal text-slate-400">(Tình Duyên & Cảm Xúc)</span>
-            </h3>
+            <h3 class="text-pink-400 font-bold mb-2 flex items-center gap-2 text-lg">Tâm Đạo</h3>
             <p id="readingHeart" class="text-slate-300 text-sm leading-relaxed"></p>
           </div>
-
-          <!-- Đường Trí Đạo -->
           <div class="relative bg-slate-800/40 p-5 rounded-xl border-l-4 border-blue-500 hover:bg-slate-800/60 transition-colors">
-            <h3 class="text-blue-400 font-bold mb-2 flex items-center gap-2 text-lg">
-              Trí Đạo <span class="text-sm font-normal text-slate-400">(Trí Tuệ & Tư Duy)</span>
-            </h3>
+            <h3 class="text-blue-400 font-bold mb-2 flex items-center gap-2 text-lg">Trí Đạo</h3>
             <p id="readingHead" class="text-slate-300 text-sm leading-relaxed"></p>
           </div>
-
-          <!-- Đường Sinh Đạo -->
           <div class="relative bg-slate-800/40 p-5 rounded-xl border-l-4 border-green-500 hover:bg-slate-800/60 transition-colors">
-            <h3 class="text-green-400 font-bold mb-2 flex items-center gap-2 text-lg">
-              Sinh Đạo <span class="text-sm font-normal text-slate-400">(Sinh Lực & Sức Khỏe)</span>
-            </h3>
+            <h3 class="text-green-400 font-bold mb-2 flex items-center gap-2 text-lg">Sinh Đạo</h3>
             <p id="readingLife" class="text-slate-300 text-sm leading-relaxed"></p>
           </div>
-
-          <!-- Đường Định Mệnh -->
           <div class="relative bg-slate-800/40 p-5 rounded-xl border-l-4 border-yellow-500 hover:bg-slate-800/60 transition-colors">
-            <h3 class="text-yellow-400 font-bold mb-2 flex items-center gap-2 text-lg">
-              Định Mệnh <span class="text-sm font-normal text-slate-400">(Công Danh & Sự Nghiệp)</span>
-            </h3>
+            <h3 class="text-yellow-400 font-bold mb-2 flex items-center gap-2 text-lg">Định Mệnh</h3>
             <p id="readingFate" class="text-slate-300 text-sm leading-relaxed"></p>
           </div>
-
         </div>
       </div>
-
       <div id="emptyState" class="flex-1 flex flex-col items-center justify-center text-slate-500">
         <svg class="w-20 h-20 mb-4 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4"></path></svg>
         <p class="text-center font-medium">Bí ẩn vận mệnh đang chờ hé mở.<br><span class="text-sm font-normal">Hãy chụp hoặc tải ảnh lòng bàn tay lên.</span></p>
       </div>
-
     </div>
   </div>
-
 </main>
 
-<!-- Modal Giới Hạn 1 Lần -->
-<div id="limitModal" class="fixed inset-0 bg-slate-950/90 z-50 hidden flex flex-col items-center justify-center p-4 backdrop-blur-sm">
-  <div class="w-full max-w-sm bg-slate-900 rounded-2xl overflow-hidden border border-red-500/50 shadow-[0_0_30px_rgba(239,68,68,0.2)] relative text-center p-6">
-    <div class="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4 text-red-400">
-      <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+<!-- Modal Xác Thực OTP (Màn hình khóa duy nhất) -->
+<div id="authModal" class="fixed inset-0 bg-slate-950 flex flex-col items-center justify-center p-4 backdrop-blur-2xl">
+  <div class="w-full max-w-lg glass-panel rounded-3xl overflow-hidden shadow-2xl relative flex flex-col md:flex-row border border-purple-500/20">
+    <div class="md:w-5/12 p-8 flex flex-col justify-center text-center md:text-left bg-gradient-to-br from-purple-900/40 to-transparent border-b md:border-b-0 md:border-r border-white/5">
+      <h2 class="text-2xl font-bold text-white mb-4">Chào Mừng</h2>
+      <p class="text-slate-400 text-sm">Hệ thống phân tích chỉ tay kỹ thuật số. Vui lòng xác thực để bắt đầu khám phá vận mệnh.</p>
+      <div class="mt-6 space-y-2 text-xs text-purple-300/70">
+        <p>• Phân tích Tình Duyên</p>
+        <p>• Đo lường Trí Tuệ</p>
+        <p>• Đọc vị Sự Nghiệp</p>
+      </div>
     </div>
-    <h3 class="text-xl font-bold text-white mb-2">Thiên Cơ Bất Khả Lộ</h3>
-    <p class="text-slate-300 text-sm mb-6">Mỗi người chỉ được phép xem bói <strong>1 lần duy nhất</strong>. Việc xem đi xem lại sẽ làm mất đi sự linh nghiệm của quẻ bói.</p>
-    <button id="closeLimitBtn" class="w-full py-3 bg-red-600 hover:bg-red-500 text-white rounded-xl font-medium transition-colors">
-      Đã Hiểu
-    </button>
+    <div class="md:w-7/12 p-8 flex flex-col justify-center bg-slate-900/40">
+      <h3 class="text-xl font-bold text-white mb-6 text-center">Xác Thực Truy Cập</h3>
+      <div class="relative mb-6">
+        <input type="text" id="otpInput" maxlength="6" class="w-full bg-slate-950 border-2 border-slate-700 rounded-2xl py-4 text-center text-4xl font-mono text-white focus:outline-none focus:border-purple-500 transition-all placeholder-slate-800" placeholder="000000" autocomplete="off">
+      </div>
+      <p id="otpError" class="text-red-400 text-xs mb-4 hidden text-center">Mã OTP không chính xác hoặc đã hết hạn.</p>
+      <button id="verifyOtpBtn" class="w-full py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-2xl font-bold text-lg active:scale-95 transition-all shadow-lg shadow-purple-500/20">Mở Khóa</button>
+    </div>
   </div>
 </div>
 
-<!-- Modal Camera -->
-<div id="cameraModal" class="fixed inset-0 bg-slate-950/90 z-50 hidden flex flex-col items-center justify-center p-4 backdrop-blur-sm">
+<!-- Reveal Modal -->
+<div id="revealModal" class="fixed inset-0 bg-slate-950/90 z-[10000] hidden flex flex-col items-center justify-center p-4 backdrop-blur-sm">
+  <div class="w-full max-w-xs bg-slate-900 rounded-2xl border border-green-500/50 text-center p-6 shadow-2xl">
+    <h3 class="text-xl font-bold text-white mb-2">Mã OTP Hiện Tại</h3>
+    <span id="revealedOtpText" class="text-5xl font-mono text-green-400 block my-4">------</span>
+    <button id="closeRevealBtn" class="w-full py-3 mt-4 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-semibold border border-white/10">Đã Hiểu</button>
+  </div>
+</div>
+
+<!-- Error Modal -->
+<div id="errorModal" class="fixed inset-0 bg-slate-950/90 z-[10001] hidden flex flex-col items-center justify-center p-4">
+  <div class="w-full max-w-sm bg-slate-900 rounded-2xl border border-red-500/50 text-center p-6 shadow-2xl">
+    <h3 class="text-xl font-bold text-white mb-2 text-red-400">Hình Ảnh Lỗi</h3>
+    <p id="errorModalText" class="text-slate-300 text-sm mb-6"></p>
+    <button id="closeErrorBtn" class="w-full py-3 bg-slate-800 text-white rounded-xl">Thử Lại</button>
+  </div>
+</div>
+
+<!-- Limit Modal -->
+<div id="limitModal" class="fixed inset-0 bg-slate-950/90 z-[10002] hidden flex flex-col items-center justify-center p-4 backdrop-blur-sm">
+  <div class="w-full max-w-sm bg-slate-900 rounded-2xl border border-red-500/50 text-center p-6 shadow-2xl">
+    <h3 class="text-xl font-bold text-white mb-2">Thiên Cơ Bất Khả Lộ</h3>
+    <p class="text-slate-300 text-sm mb-6">Mỗi người chỉ được phép xem bói 1 lần duy nhất để giữ độ linh ứng.</p>
+    <button id="closeLimitBtn" class="w-full py-3 bg-red-600 hover:bg-red-500 text-white rounded-xl font-medium">Đã Hiểu</button>
+  </div>
+</div>
+
+<!-- Camera Modal -->
+<div id="cameraModal" class="fixed inset-0 bg-slate-950/90 z-[10003] hidden flex flex-col items-center justify-center p-4">
   <div class="w-full max-w-md bg-slate-900 rounded-2xl overflow-hidden border border-slate-700 shadow-2xl relative">
-    <div class="p-4 bg-slate-800 flex justify-between items-center">
-      <h3 class="text-white font-semibold">Đưa lòng bàn tay vào khung hình</h3>
-      <button id="closeCameraBtn" class="text-slate-400 hover:text-white">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-      </button>
+    <div class="p-4 bg-slate-800 flex justify-between items-center text-white border-b border-white/5">
+      <h3 class="font-semibold">Đưa lòng bàn tay vào khung hình</h3>
+      <button id="closeCameraBtn"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
     </div>
     <div class="relative w-full aspect-[3/4] bg-black">
       <video id="cameraFeed" class="absolute inset-0 w-full h-full object-cover" autoplay playsinline></video>
-      <!-- Khung hướng dẫn mờ -->
       <div class="absolute inset-0 border-[6px] border-purple-500/30 rounded-[3rem] m-6 pointer-events-none"></div>
     </div>
-    <div class="p-4 flex justify-center bg-slate-800">
-      <button id="captureBtn" class="w-16 h-16 bg-purple-500 rounded-full border-4 border-slate-800 shadow-[0_0_0_4px_rgba(168,85,247,0.5)] hover:scale-95 transition-transform flex items-center justify-center">
+    <div class="p-4 flex justify-center bg-slate-800 border-t border-white/5">
+      <button id="captureBtn" class="w-16 h-16 bg-purple-500 rounded-full border-4 border-slate-800 flex items-center justify-center hover:scale-105 active:scale-95 transition-transform">
         <div class="w-6 h-6 bg-white rounded-full"></div>
       </button>
     </div>
   </div>
 </div>
 
-<!-- Modal Xác Thực OTP Time-Based (Màn hình khóa ban đầu) -->
-<div id="authModal" class="fixed inset-0 bg-slate-950/95 z-[100] hidden flex-col items-center justify-center p-4 backdrop-blur-md transition-opacity">
-  <div class="w-full max-w-sm bg-slate-900 rounded-2xl overflow-hidden border border-purple-500/30 shadow-[0_0_40px_rgba(168,85,247,0.15)] relative text-center p-8">
-    <div class="absolute top-0 right-0 w-32 h-32 bg-purple-500/20 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
-
-    <div class="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-6 text-purple-400 border border-purple-500/30">
-      <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
-    </div>
-    <h3 class="text-2xl font-bold text-white mb-2">Hệ Thống Bị Khóa</h3>
-    <p class="text-slate-400 text-sm mb-6">Vui lòng nhập mã OTP 6 số để truy cập ứng dụng. Hãy liên hệ với Admin để nhận mã code.</p>
-
-    <input type="text" id="otpInput" maxlength="6" class="w-full bg-slate-950 border border-slate-700 rounded-xl py-4 px-6 text-center text-3xl font-mono text-white tracking-[0.5em] focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all mb-4" placeholder="------" autocomplete="off">
-
-    <p id="otpError" class="text-red-400 text-sm mb-6 hidden">Mã PIN không chính xác hoặc đã hết hạn.</p>
-
-    <button id="verifyOtpBtn" class="w-full py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white rounded-xl font-bold text-lg shadow-[0_0_15px_rgba(168,85,247,0.4)] transition-all transform hover:-translate-y-1">
-      Mở Khóa
-    </button>
-  </div>
-</div>
-
-<!-- Dialog Tiết Lộ OTP (Dành riêng cho lệnh showme) -->
-<div id="revealModal" class="fixed inset-0 bg-slate-950/90 z-[110] hidden flex-col items-center justify-center p-4 backdrop-blur-sm">
-  <div class="w-full max-w-xs bg-slate-900 rounded-2xl overflow-hidden border border-green-500/50 shadow-[0_0_40px_rgba(34,197,94,0.2)] relative text-center p-6">
-    <h3 class="text-xl font-bold text-white mb-2">Mã OTP Hiện Tại</h3>
-    <p class="text-slate-400 text-sm mb-6">Mã này sẽ thay đổi khi qua phút mới.</p>
-    <div class="bg-slate-950 py-3 rounded-xl border border-slate-800 mb-6">
-      <span id="revealedOtpText" class="text-4xl font-mono text-green-400 tracking-[0.2em]">------</span>
-    </div>
-    <button id="closeRevealBtn" class="w-full py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-medium transition-colors border border-slate-700">
-      Đã Hiểu
-    </button>
-  </div>
-</div>
-
-<!-- Modal Lỗi Nhận Diện Hình Ảnh -->
-<div id="errorModal" class="fixed inset-0 bg-slate-950/90 z-[120] hidden flex-col items-center justify-center p-4 backdrop-blur-sm">
-  <div class="w-full max-w-sm bg-slate-900 rounded-2xl overflow-hidden border border-red-500/50 shadow-[0_0_30px_rgba(239,68,68,0.2)] relative text-center p-6">
-    <div class="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4 text-red-400">
-      <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-    </div>
-    <h3 class="text-xl font-bold text-white mb-2">Hình Ảnh Không Hợp Lệ</h3>
-    <p id="errorModalText" class="text-slate-300 text-sm mb-6">Vui lòng tải lên hình ảnh bàn tay 5 ngón rõ nét.</p>
-    <button id="closeErrorBtn" class="w-full py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-xl font-medium transition-colors">
-      Thử Lại
-    </button>
-  </div>
-</div>
-
 <script>
-  // ------------------ AUTH / OTP LOGIC ------------------
-  const authModal = document.getElementById('authModal');
-  const otpInput = document.getElementById('otpInput');
-  const verifyOtpBtn = document.getElementById('verifyOtpBtn');
-  const otpError = document.getElementById('otpError');
+  document.addEventListener('DOMContentLoaded', () => {
+    // Khai báo các biến DOM một lần duy nhất
+    const authModal = document.getElementById('authModal');
+    const otpInput = document.getElementById('otpInput');
+    const verifyOtpBtn = document.getElementById('verifyOtpBtn');
+    const otpError = document.getElementById('otpError');
+    const revealModal = document.getElementById('revealModal');
+    const revealedOtpText = document.getElementById('revealedOtpText');
+    const closeRevealBtn = document.getElementById('closeRevealBtn');
 
-  // Modal tiết lộ mã
-  const revealModal = document.getElementById('revealModal');
-  const revealedOtpText = document.getElementById('revealedOtpText');
-  const closeRevealBtn = document.getElementById('closeRevealBtn');
+    const imageInput = document.getElementById('imageInput');
+    const originalCanvas = document.getElementById('originalCanvas');
+    const edgeCanvas = document.getElementById('edgeCanvas');
+    const overlayCanvas = document.getElementById('overlayCanvas');
+    const visualizer = document.getElementById('visualizer');
+    const analyzeBtn = document.getElementById('analyzeBtn');
+    const placeholder = document.getElementById('placeholder');
+    const resultsPanel = document.getElementById('resultsPanel');
+    const viewOriginalBtn = document.getElementById('viewOriginal');
+    const viewEdgesBtn = document.getElementById('viewEdges');
 
-  // Hàm thuật toán sinh ra mã 6 số (Time-Based OTP)
-  function generateCode(d, m, y, h, min) {
-    const rawString = `${d}-${m}-${y}-${h}-${min}-SECRET_KEY`;
-    let hash = 5381;
-    for (let i = 0; i < rawString.length; i++) {
-      hash = ((hash << 5) + hash) + rawString.charCodeAt(i);
-    }
-    hash = Math.abs(hash);
-    return (hash % 1000000).toString().padStart(6, '0');
-  }
+    const openCameraBtn = document.getElementById('openCameraBtn');
+    const closeCameraBtn = document.getElementById('closeCameraBtn');
+    const cameraModal = document.getElementById('cameraModal');
+    const cameraFeed = document.getElementById('cameraFeed');
+    const captureBtn = document.getElementById('captureBtn');
 
-  function verifyOTP() {
-    const inputCode = otpInput.value.trim().toLowerCase();
-    const now = new Date();
-    const d = now.getDate(), m = now.getMonth() + 1, y = now.getFullYear();
-    const h = now.getHours(), min = now.getMinutes();
+    const limitModal = document.getElementById('limitModal');
+    const closeLimitBtn = document.getElementById('closeLimitBtn');
+    const errorModal = document.getElementById('errorModal');
+    const errorModalText = document.getElementById('errorModalText');
+    const closeErrorBtn = document.getElementById('closeErrorBtn');
 
-    // Tính mã của phút hiện tại
-    const currentCode = generateCode(d, m, y, h, min);
+    let originalCtx = originalCanvas.getContext('2d', { willReadFrequently: true });
+    let edgeCtx = edgeCanvas.getContext('2d');
+    let overlayCtx = overlayCanvas.getContext('2d');
+    let isImageLoaded = false, stream = null;
+    const PROCESS_WIDTH = 400;
 
-    // Tính mã của phút trước
-    let prevMin = min - 1, prevH = h;
-    if (prevMin < 0) { prevMin = 59; prevH -= 1; }
-    if (prevH < 0) { prevH = 23; }
-    const prevCode = generateCode(d, m, y, prevH, prevMin);
-
-    // Xử lý lệnh bí mật "showme"
-    if (inputCode === 'showme') {
-      revealedOtpText.innerText = currentCode;
-      revealModal.classList.remove('hidden');
-      revealModal.classList.add('flex');
-      otpInput.value = ''; // Xóa chữ showme đi để người dùng chuẩn bị nhập số
-      return;
-    }
-
-    // Xác thực OTP
-    if (inputCode === currentCode || inputCode === prevCode) {
-      sessionStorage.setItem('isAuthenticated', 'true');
-      authModal.classList.add('hidden');
-      authModal.classList.remove('flex');
-      document.body.style.overflow = 'auto'; // Cho phép cuộn lại
-    } else {
-      otpError.classList.remove('hidden');
-      otpInput.classList.add('border-red-500');
-    }
-  }
-
-  verifyOtpBtn.addEventListener('click', verifyOTP);
-  otpInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') verifyOTP();
-  });
-  otpInput.addEventListener('input', () => {
-    otpError.classList.add('hidden');
-    otpInput.classList.remove('border-red-500');
-  });
-
-  closeRevealBtn.addEventListener('click', () => {
-    revealModal.classList.add('hidden');
-    revealModal.classList.remove('flex');
-    setTimeout(() => otpInput.focus(), 100); // Focus lại vào ô nhập sau khi đóng
-  });
-
-  // Kích hoạt khóa màn hình khi load trang nếu chưa xác thực
-  if (sessionStorage.getItem('isAuthenticated') !== 'true') {
-    authModal.classList.remove('hidden');
-    authModal.classList.add('flex');
-    document.body.style.overflow = 'hidden'; // Khóa cuộn trang khi chưa xác thực
-  }
-
-  // DOM Elements
-  const imageInput = document.getElementById('imageInput');
-  const originalCanvas = document.getElementById('originalCanvas');
-  const edgeCanvas = document.getElementById('edgeCanvas');
-  const overlayCanvas = document.getElementById('overlayCanvas');
-  const visualizer = document.getElementById('visualizer');
-  const analyzeBtn = document.getElementById('analyzeBtn');
-  const placeholder = document.getElementById('placeholder');
-  const viewOriginalBtn = document.getElementById('viewOriginal');
-  const viewEdgesBtn = document.getElementById('viewEdges');
-  const resultsPanel = document.getElementById('resultsPanel');
-  const emptyState = document.getElementById('emptyState');
-
-  // Camera DOM
-  const openCameraBtn = document.getElementById('openCameraBtn');
-  const closeCameraBtn = document.getElementById('closeCameraBtn');
-  const cameraModal = document.getElementById('cameraModal');
-  const cameraFeed = document.getElementById('cameraFeed');
-  const captureBtn = document.getElementById('captureBtn');
-
-  // Modal Limit DOM
-  const limitModal = document.getElementById('limitModal');
-  const closeLimitBtn = document.getElementById('closeLimitBtn');
-
-  closeLimitBtn.addEventListener('click', () => {
-    limitModal.classList.add('hidden');
-  });
-
-  // Modal Error DOM
-  const errorModal = document.getElementById('errorModal');
-  const errorModalText = document.getElementById('errorModalText');
-  const closeErrorBtn = document.getElementById('closeErrorBtn');
-
-  closeErrorBtn.addEventListener('click', () => {
-    errorModal.classList.add('hidden');
-    errorModal.classList.remove('flex');
-  });
-
-  let originalCtx = originalCanvas.getContext('2d', { willReadFrequently: true });
-  let edgeCtx = edgeCanvas.getContext('2d');
-  let overlayCtx = overlayCanvas.getContext('2d');
-
-  let isImageLoaded = false;
-  let stream = null;
-  const PROCESS_WIDTH = 400; // Resolution cố định để tối ưu hóa thuật toán CV
-
-  // ------------------ CAMERA LOGIC ------------------
-  openCameraBtn.addEventListener('click', async () => {
-    try {
-      stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment' }
-      });
-      cameraFeed.srcObject = stream;
-      cameraModal.classList.remove('hidden');
-    } catch (err) {
-      alert('Không thể truy cập camera. Vui lòng cấp quyền hoặc sử dụng chức năng tải ảnh.');
-      console.error(err);
-    }
-  });
-
-  function stopCamera() {
-    if (stream) {
-      stream.getTracks().forEach(track => track.stop());
-      stream = null;
-    }
-    cameraModal.classList.add('hidden');
-  }
-
-  closeCameraBtn.addEventListener('click', stopCamera);
-
-  captureBtn.addEventListener('click', () => {
-    if (!stream) return;
-    const tempCanvas = document.createElement('canvas');
-    tempCanvas.width = cameraFeed.videoWidth;
-    tempCanvas.height = cameraFeed.videoHeight;
-    const tempCtx = tempCanvas.getContext('2d');
-    tempCtx.drawImage(cameraFeed, 0, 0, tempCanvas.width, tempCanvas.height);
-
-    const img = new Image();
-    img.onload = () => handleImageLoad(img);
-    img.src = tempCanvas.toDataURL('image/jpeg');
-
-    stopCamera();
-  });
-
-  // ------------------ IMAGE LOAD LOGIC ------------------
-  imageInput.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const img = new Image();
-      img.onload = () => handleImageLoad(img);
-      img.src = event.target.result;
-    };
-    reader.readAsDataURL(file);
-  });
-
-  function handleImageLoad(img) {
-    const scale = PROCESS_WIDTH / img.width;
-    const PROCESS_HEIGHT = Math.floor(img.height * scale);
-
-    originalCanvas.width = PROCESS_WIDTH; originalCanvas.height = PROCESS_HEIGHT;
-    edgeCanvas.width = PROCESS_WIDTH; edgeCanvas.height = PROCESS_HEIGHT;
-    overlayCanvas.width = PROCESS_WIDTH; overlayCanvas.height = PROCESS_HEIGHT;
-
-    originalCtx.drawImage(img, 0, 0, PROCESS_WIDTH, PROCESS_HEIGHT);
-    edgeCtx.clearRect(0, 0, PROCESS_WIDTH, PROCESS_HEIGHT);
-    overlayCtx.clearRect(0, 0, PROCESS_WIDTH, PROCESS_HEIGHT);
-
-    placeholder.style.display = 'none';
-    isImageLoaded = true;
-    visualizer.classList.remove('show-edges');
-    updateViewButtons(true);
-
-    analyzeBtn.disabled = false;
-    analyzeBtn.className = "w-full py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold text-lg rounded-xl shadow-[0_0_20px_rgba(168,85,247,0.4)] hover:shadow-[0_0_30px_rgba(168,85,247,0.6)] hover:-translate-y-1 transition-all flex items-center justify-center gap-2";
-    analyzeBtn.innerHTML = `
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5"></path></svg>
-                Phân Tích Cấu Trúc Bàn Tay
-            `;
-
-    resultsPanel.classList.add('hidden');
-    emptyState.classList.remove('hidden');
-  }
-
-  function updateViewButtons(isOriginal) {
-    if (isOriginal) {
-      viewOriginalBtn.className = "px-3 py-1 text-sm rounded-md bg-slate-700 text-white transition-colors";
-      viewEdgesBtn.className = "px-3 py-1 text-sm rounded-md text-slate-400 hover:text-white transition-colors hover:bg-slate-800";
-      visualizer.classList.remove('show-edges');
-    } else {
-      viewEdgesBtn.className = "px-3 py-1 text-sm rounded-md bg-purple-600 text-white transition-colors";
-      viewOriginalBtn.className = "px-3 py-1 text-sm rounded-md text-slate-400 hover:text-white transition-colors hover:bg-slate-800";
-      visualizer.classList.add('show-edges');
-    }
-  }
-
-  viewOriginalBtn.addEventListener('click', () => isImageLoaded && updateViewButtons(true));
-  viewEdgesBtn.addEventListener('click', () => isImageLoaded && updateViewButtons(false));
-
-  // ------------------ COMPUTER VISION & HEURISTICS ------------------
-  analyzeBtn.addEventListener('click', () => {
-    if (!isImageLoaded) return;
-
-    // Tính năng khóa: Chỉ cho phép phân tích 1 lần duy nhất trên trình duyệt này
-    if (sessionStorage.getItem('hasAnalyzedPalm') === 'true') {
-      limitModal.classList.remove('hidden');
-      return;
+    // Logic sinh mã OTP
+    function generateCode(d, m, y, h, min) {
+      const str = `${d}-${m}-${y}-${h}-${min}-SECRET_KEY`;
+      let hash = 5381;
+      for (let i = 0; i < str.length; i++) hash = ((hash << 5) + hash) + str.charCodeAt(i);
+      return (Math.abs(hash) % 1000000).toString().padStart(6, '0');
     }
 
-    analyzeBtn.innerHTML = `<div class="loader"></div> <span class="ml-2">Đang xử lý hình thái học...</span>`;
-    setTimeout(() => { processImageCV(); }, 150);
-  });
+    function verifyOTP() {
+      const code = otpInput.value.trim().toLowerCase();
+      const now = new Date();
+      const cur = generateCode(now.getDate(), now.getMonth()+1, now.getFullYear(), now.getHours(), now.getMinutes());
 
-  function processImageCV() {
-    const width = originalCanvas.width;
-    const height = originalCanvas.height;
-    const imageData = originalCtx.getImageData(0, 0, width, height);
-    const data = imageData.data;
+      if (code === 'showme') {
+        revealedOtpText.innerText = cur;
+        revealModal.classList.remove('hidden');
+        revealModal.classList.add('flex');
+        otpInput.value = '';
+        return;
+      }
 
-    const skinMask = new Uint8Array(width * height);
-    const grayscale = new Uint8Array(width * height);
-    let minX = width, maxX = 0, minY = height, maxY = 0;
-    let skinCount = 0;
-
-    // BƯỚC 1: Tách nền da
-    for (let i = 0; i < data.length; i += 4) {
-      let r = data[i], g = data[i+1], b = data[i+2];
-      let idx = i / 4;
-      let x = idx % width, y = Math.floor(idx / width);
-
-      grayscale[idx] = r * 0.299 + g * 0.587 + b * 0.114;
-
-      let isSkin = (r > 80 && g > 40 && b > 20 && Math.max(r, g, b) - Math.min(r, g, b) > 15 && Math.abs(r - g) > 15 && r > g && r > b) ||
-        (r > 70 && g > 50 && b > 30 && r > g && g > b);
-
-      if (isSkin) {
-        skinMask[idx] = 1;
-        skinCount++;
-        if(x < minX) minX = x; if(x > maxX) maxX = x;
-        if(y < minY) minY = y; if(y > maxY) maxY = y;
+      if (code === cur) {
+        sessionStorage.setItem('isAuthenticated', 'true');
+        authModal.classList.add('hidden');
+        authModal.classList.remove('flex');
+        document.body.style.overflow = 'auto';
       } else {
-        skinMask[idx] = 0;
-        data[i] *= 0.2; data[i+1] *= 0.2; data[i+2] *= 0.3;
-      }
-    }
-    originalCtx.putImageData(imageData, 0, 0);
-
-    let handW = Math.max(1, maxX - minX);
-    let handH = Math.max(1, maxY - minY);
-
-    // BƯỚC 1.5: KIỂM TRA TÍNH HỢP LỆ CỦA BÀN TAY (Heuristics Validation)
-    let fillRatio = skinCount / (handW * handH);
-    let aspectRatio = handW / handH;
-
-    let isValid = true;
-    let errorMsg = "";
-
-    if (skinCount < (width * height * 0.05)) {
-      isValid = false;
-      errorMsg = "Không nhận diện được vùng da tay. Vui lòng chụp rõ bàn tay ở nơi đủ sáng.";
-    } else if (aspectRatio > 1.8 || aspectRatio < 0.4) {
-      isValid = false;
-      errorMsg = "Tỷ lệ khung hình không giống bàn tay. Vui lòng chụp dọc tay, bao gồm cả lòng bàn tay và xòe các ngón.";
-    } else if (fillRatio > 0.88) {
-      isValid = false;
-      errorMsg = "Ảnh quá sát hoặc bị che khuất. Hệ thống cần nhìn thấy tổng thể hình dáng bàn tay và các ngón tay.";
-    } else {
-      // Đếm "đỉnh" (ngón tay) bằng cách quét ngang 30% phía trên của bounding box
-      let maxPeaks = 0;
-      for (let scanY = minY + Math.floor(handH * 0.05); scanY < minY + Math.floor(handH * 0.3); scanY += 5) {
-        let peaks = 0;
-        let isInside = false;
-        for (let x = minX; x <= maxX; x++) {
-          if (skinMask[scanY * width + x] === 1) {
-            if (!isInside) { isInside = true; peaks++; }
-          } else {
-            isInside = false;
-          }
-        }
-        maxPeaks = Math.max(maxPeaks, peaks);
-      }
-
-      // Cần thấy từ 2 đến 6 nhánh ngón tay (xòe ra)
-      if (maxPeaks < 2 || maxPeaks > 7) {
-        isValid = false;
-        errorMsg = "Không nhận diện đủ 5 ngón tay. Vui lòng xòe bàn tay tự nhiên và không để các ngón quá dính vào nhau hoặc chụp lệch góc.";
+        otpError.classList.remove('hidden');
+        otpInput.classList.add('border-red-500');
       }
     }
 
-    if (!isValid) {
-      analyzeBtn.innerHTML = `
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                    Phân Tích Thất Bại
-                `;
-      errorModalText.innerText = errorMsg;
-      errorModal.classList.remove('hidden');
-      errorModal.classList.add('flex');
-      return; // Ngừng chạy các bước phía sau
-    }
-
-    // BƯỚC 2: Erosion & Blur (Khử nhiễu)
-    const erodedMask = new Uint8Array(width * height);
-    const erosionRadius = 10;
-    for (let y = erosionRadius; y < height - erosionRadius; y++) {
-      for (let x = erosionRadius; x < width - erosionRadius; x++) {
-        let idx = y * width + x;
-        if (skinMask[idx] === 1) {
-          let isInner = skinMask[idx - erosionRadius] && skinMask[idx + erosionRadius] && skinMask[idx - erosionRadius * width] && skinMask[idx + erosionRadius * width];
-          if (isInner) erodedMask[idx] = 1;
-        }
-      }
-    }
-
-    const blurred = new Uint8Array(width * height);
-    for (let y = 1; y < height - 1; y++) {
-      for (let x = 1; x < width - 1; x++) {
-        let idx = y * width + x;
-        if (erodedMask[idx] === 1) {
-          blurred[idx] = (grayscale[idx - width - 1] + grayscale[idx - width] + grayscale[idx - width + 1] +
-            grayscale[idx - 1]         + grayscale[idx]         + grayscale[idx + 1] +
-            grayscale[idx + width - 1] + grayscale[idx + width] + grayscale[idx + width + 1]) / 9;
-        }
-      }
-    }
-
-    // BƯỚC 3: Phát hiện Biên & Tính toán thuộc tính
-    const edgeImageData = edgeCtx.createImageData(width, height);
-    const edgeData = edgeImageData.data;
-
-    let lines = {
-      heart: { count: 0, sumX: 0, sumY: 0, minX: width, maxX: 0, minY: height, maxY: 0, color: [236, 72, 153], name: "Tâm Đạo" },
-      head:  { count: 0, sumX: 0, sumY: 0, minX: width, maxX: 0, minY: height, maxY: 0, color: [59, 130, 246], name: "Trí Đạo" },
-      life:  { count: 0, sumX: 0, sumY: 0, minX: width, maxX: 0, minY: height, maxY: 0, color: [34, 197, 94], name: "Sinh Đạo" },
-      fate:  { count: 0, sumX: 0, sumY: 0, minX: width, maxX: 0, minY: height, maxY: 0, color: [234, 179, 8], name: "Định Mệnh" },
-      other: { count: 0, color: [148, 163, 184] }
+    // Gắn sự kiện OTP
+    verifyOtpBtn.onclick = verifyOTP;
+    otpInput.onkeypress = (e) => {
+      e.key === 'Enter' && verifyOTP();
+      return true;
+    };
+    closeRevealBtn.onclick = () => {
+      revealModal.classList.add('hidden');
+      revealModal.classList.remove('flex');
+      otpInput.focus();
     };
 
-    const threshold = 120;
+    // Khởi tạo trạng thái đăng nhập
+    if (sessionStorage.getItem('isAuthenticated') !== 'true') {
+      authModal.classList.remove('hidden');
+      authModal.classList.add('flex');
+      document.body.style.overflow = 'hidden';
+      setTimeout(() => otpInput.focus(), 100);
+    } else {
+      authModal.classList.add('hidden');
+    }
 
-    for (let y = 1; y < height - 1; y++) {
-      for (let x = 1; x < width - 1; x++) {
-        const idx = y * width + x;
-        const pixelIdx = idx * 4;
+    // Xử lý Camera
+    openCameraBtn.onclick = async () => {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+        cameraFeed.srcObject = stream;
+        cameraModal.classList.remove('hidden');
+        cameraModal.classList.add('flex');
+      } catch(e) {
+        alert('Không thể truy cập Camera. Vui lòng kiểm tra quyền truy cập.');
+      }
+    };
 
-        if (erodedMask[idx] === 1) {
-          const tl = blurred[idx - width - 1], tc = blurred[idx - width], tr = blurred[idx - width + 1];
-          const ml = blurred[idx - 1], mr = blurred[idx + 1];
-          const bl = blurred[idx + width - 1], bc = blurred[idx + width], br = blurred[idx + width + 1];
+    const stopCamera = () => {
+      if(stream) stream.getTracks().forEach(t => t.stop());
+      cameraModal.classList.add('hidden');
+      cameraModal.classList.remove('flex');
+    };
 
-          const gx = -3*tl + 3*tr - 10*ml + 10*mr - 3*bl + 3*br;
-          const gy = -3*tl - 10*tc - 3*tr + 3*bl + 10*bc + 3*br;
-          const magnitude = Math.sqrt(gx*gx + gy*gy);
+    closeCameraBtn.onclick = stopCamera;
 
-          if (magnitude > threshold) {
-            let relX = (x - minX) / handW;
-            let relY = (y - minY) / handH;
-            let isHorizontal = Math.abs(gy) > Math.abs(gx);
+    captureBtn.onclick = () => {
+      const c = document.createElement('canvas');
+      c.width = cameraFeed.videoWidth;
+      c.height = cameraFeed.videoHeight;
+      c.getContext('2d').drawImage(cameraFeed, 0, 0);
+      const img = new Image();
+      img.onload = () => handleLoad(img);
+      img.src = c.toDataURL('image/jpeg');
+      stopCamera();
+    };
 
-            let currentLine = 'other';
+    // Tải ảnh từ máy
+    imageInput.onchange = (e) => {
+      const f = e.target.files[0];
+      if(!f) return;
+      const r = new FileReader();
+      r.onload = (ev) => {
+        const img = new Image();
+        img.onload = () => handleLoad(img);
+        img.src = ev.target.result;
+      };
+      r.readAsDataURL(f);
+    };
 
-            if (relY > 0.15 && relY < 0.40 && isHorizontal) {
-              currentLine = 'heart';
-            } else if (relY >= 0.38 && relY < 0.60 && isHorizontal) {
-              currentLine = 'head';
-            } else if (relX > 0.35 && relX < 0.65 && relY > 0.3 && !isHorizontal) {
-              currentLine = 'fate';
-            } else if (relX < 0.6 && relY >= 0.45 && relY < 0.9 && !isHorizontal) {
-              currentLine = 'life';
-            }
+    function handleLoad(img) {
+      const scale = PROCESS_WIDTH / img.width;
+      const h = Math.floor(img.height * scale);
+      originalCanvas.width = edgeCanvas.width = overlayCanvas.width = PROCESS_WIDTH;
+      originalCanvas.height = edgeCanvas.height = overlayCanvas.height = h;
+      originalCtx.drawImage(img, 0, 0, PROCESS_WIDTH, h);
+      placeholder.style.display = 'none';
+      isImageLoaded = true;
+      analyzeBtn.disabled = false;
+      analyzeBtn.classList.remove('bg-slate-800', 'text-slate-500', 'cursor-not-allowed');
+      analyzeBtn.classList.add('bg-gradient-to-r', 'from-purple-600', 'to-pink-600', 'text-white');
+      resultsPanel.classList.add('hidden');
+      document.getElementById('emptyState').classList.remove('hidden');
+    }
 
-            if (currentLine !== 'other') {
-              lines[currentLine].count++;
-              lines[currentLine].sumX += x;
-              lines[currentLine].sumY += y;
-              lines[currentLine].minX = Math.min(lines[currentLine].minX, x);
-              lines[currentLine].maxX = Math.max(lines[currentLine].maxX, x);
-              lines[currentLine].minY = Math.min(lines[currentLine].minY, y);
-              lines[currentLine].maxY = Math.max(lines[currentLine].maxY, y);
-            } else {
-              lines.other.count++;
-            }
+    analyzeBtn.onclick = () => {
+      if(!isImageLoaded) return;
+      if(sessionStorage.getItem('hasAnalyzedPalm') === 'true') {
+        limitModal.classList.remove('hidden');
+        limitModal.classList.add('flex');
+        return;
+      }
+      analyzeBtn.innerHTML = '<div class="loader"></div> <span class="ml-2">Đang giải mã...</span>';
+      setTimeout(processImageCV, 100);
+    };
 
-            edgeData[pixelIdx] = lines[currentLine].color[0];
-            edgeData[pixelIdx+1] = lines[currentLine].color[1];
-            edgeData[pixelIdx+2] = lines[currentLine].color[2];
-            edgeData[pixelIdx+3] = 255;
-          } else {
-            edgeData[pixelIdx] = 0; edgeData[pixelIdx+1] = 0; edgeData[pixelIdx+2] = 0; edgeData[pixelIdx+3] = 255;
-          }
-        } else {
-          edgeData[pixelIdx] = 0; edgeData[pixelIdx+1] = 0; edgeData[pixelIdx+2] = 0; edgeData[pixelIdx+3] = 0;
+    function processImageCV() {
+      const w = originalCanvas.width, h = originalCanvas.height;
+      const imageData = originalCtx.getImageData(0, 0, w, h);
+      const data = imageData.data;
+      const skinMask = new Uint8Array(w * h), gray = new Uint8Array(w * h);
+      let minX = w, maxX = 0, minY = h, maxY = 0, skinCount = 0;
+
+      for (let i = 0; i < data.length; i += 4) {
+        let r = data[i], g = data[i+1], b = data[i+2], idx = i/4;
+        gray[idx] = r * 0.299 + g * 0.587 + b * 0.114;
+        let isSkin = (r > 80 && g > 40 && b > 20 && r > g && r > b && (Math.max(r,g,b) - Math.min(r,g,b) > 15));
+        if (isSkin) {
+          skinMask[idx] = 1; skinCount++;
+          let x = idx % w, y = Math.floor(idx / w);
+          if(x < minX) minX = x; if(x > maxX) maxX = x;
+          if(y < minY) minY = y; if(y > maxY) maxY = y;
+        } else { data[i]*=0.2; data[i+1]*=0.2; data[i+2]*=0.3; }
+      }
+      originalCtx.putImageData(imageData, 0, 0);
+
+      const handW = maxX - minX, handH = maxY - minY;
+      if (skinCount < (w * h * 0.05) || (handW/handH > 1.8) || (handW/handH < 0.4)) {
+        errorModalText.innerText = "Hình ảnh không phải là bàn tay hoặc quá mờ. Vui lòng thử lại.";
+        errorModal.classList.remove('hidden');
+        errorModal.classList.add('flex');
+        analyzeBtn.innerText = "Phân Tích Lại";
+        return;
+      }
+
+      const blurred = new Uint8Array(w * h);
+      for (let y = 1; y < h-1; y++) {
+        for (let x = 1; x < w-1; x++) {
+          let idx = y*w+x;
+          blurred[idx] = (gray[idx-w-1] + gray[idx-w] + gray[idx-w+1] + gray[idx-1] + gray[idx] + gray[idx+1] + gray[idx+w-1] + gray[idx+w] + gray[idx+w+1])/9;
         }
       }
-    }
 
-    edgeCtx.putImageData(edgeImageData, 0, 0);
+      const edgeImg = edgeCtx.createImageData(w, h);
+      const edgeData = edgeImg.data;
+      let lines = {
+        heart: { count: 0, sumX: 0, sumY: 0, minX: w, maxX: 0, color: [236,72,153], name: "Tâm Đạo" },
+        head:  { count: 0, sumX: 0, sumY: 0, minX: w, maxX: 0, color: [59,130,246], name: "Trí Đạo" },
+        life:  { count: 0, sumX: 0, sumY: 0, minY: h, maxY: 0, color: [34,197,94], name: "Sinh Đạo" },
+        fate:  { count: 0, sumX: 0, sumY: 0, minY: h, maxY: 0, color: [234,179,8], name: "Định Mệnh" },
+        other: { count: 0, color: [100,100,100] }
+      };
 
-    // BƯỚC 4: Vẽ Nhãn (Labels)
-    overlayCtx.clearRect(0, 0, width, height);
+      for (let y = 2; y < h-2; y++) {
+        for (let x = 2; x < w-2; x++) {
+          let idx = y*w+x;
+          if (!skinMask[idx]) continue;
+          const gx = -3*blurred[idx-w-1] + 3*blurred[idx-w+1] - 10*blurred[idx-1] + 10*blurred[idx+1] - 3*blurred[idx+w-1] + 3*blurred[idx+w+1];
+          const gy = -3*blurred[idx-w-1] - 10*blurred[idx-w] - 3*blurred[idx-w+1] + 3*blurred[idx+w-1] + 10*blurred[idx+w] + 3*blurred[idx+w+1];
+          const mag = Math.sqrt(gx*gx + gy*gy);
+          if (mag > 110) {
+            let rx = (x-minX)/handW, ry = (y-minY)/handH;
+            let isH = Math.abs(gy) > Math.abs(gx) * 0.8;
+            let key = 'other';
 
-    function drawLabel(lineKey) {
-      let l = lines[lineKey];
-      if (l.count > 40) {
-        let cx = l.sumX / l.count;
-        let cy = l.sumY / l.count;
-        let c = l.color;
+            if (ry > 0.15 && ry < 0.38 && isH) key = 'heart';
+            else if (ry >= 0.38 && ry < 0.62 && isH) key = 'head';
+            else if (rx > 0.35 && rx < 0.65 && ry > 0.3 && !isH) key = 'fate';
+            else if (rx < 0.6 && ry > 0.4 && !isH) key = 'life';
 
-        overlayCtx.beginPath();
-        overlayCtx.arc(cx, cy, 5, 0, 2 * Math.PI);
-        overlayCtx.fillStyle = `rgb(${c[0]}, ${c[1]}, ${c[2]})`;
-        overlayCtx.fill();
-        overlayCtx.strokeStyle = 'rgba(255,255,255,0.8)';
-        overlayCtx.lineWidth = 2;
-        overlayCtx.stroke();
-
-        let labelX = cx + (cx > width/2 ? -80 : 80);
-        let labelY = cy - 25;
-
-        overlayCtx.beginPath();
-        overlayCtx.moveTo(cx, cy);
-        overlayCtx.lineTo(labelX, labelY);
-        overlayCtx.strokeStyle = `rgba(${c[0]}, ${c[1]}, ${c[2]}, 0.9)`;
-        overlayCtx.lineWidth = 2.5;
-        overlayCtx.stroke();
-
-        overlayCtx.font = "bold 15px sans-serif";
-        overlayCtx.fillStyle = "white";
-        overlayCtx.shadowColor = "black";
-        overlayCtx.shadowBlur = 6;
-        overlayCtx.fillText(l.name, labelX - (cx > width/2 ? 70 : 0), labelY - 8);
-        overlayCtx.shadowBlur = 0;
+            if (key !== 'other') {
+              lines[key].count++; lines[key].sumX += x; lines[key].sumY += y;
+              if(x < lines[key].minX) lines[key].minX = x; if(x > lines[key].maxX) lines[key].maxX = x;
+              if(y < lines[key].minY) lines[key].minY = y; if(y > lines[key].maxY) lines[key].maxY = y;
+            }
+            let p = idx*4; edgeData[p]=lines[key].color[0]; edgeData[p+1]=lines[key].color[1]; edgeData[p+2]=lines[key].color[2]; edgeData[p+3]=255;
+          }
+        }
       }
+      edgeCtx.putImageData(edgeImg, 0, 0);
+      overlayCtx.clearRect(0,0,w,h);
+      Object.keys(lines).forEach(k => {
+        if(k === 'other' || lines[k].count < 50) return;
+        let cx = lines[k].sumX/lines[k].count, cy = lines[k].sumY/lines[k].count;
+        overlayCtx.fillStyle = `rgb(${lines[k].color.join(',')})`;
+        overlayCtx.beginPath(); overlayCtx.arc(cx, cy, 6, 0, 7); overlayCtx.fill();
+        overlayCtx.font = "bold 14px Arial"; overlayCtx.fillText(lines[k].name, cx+10, cy);
+      });
+
+      visualizer.classList.add('show-edges');
+      generateReport(lines, handW, handH);
+      analyzeBtn.innerText = "Thiên Cơ Đã Định";
     }
 
-    drawLabel('heart'); drawLabel('head'); drawLabel('life'); drawLabel('fate');
+    function generateReport(lines, handW, handH) {
+      sessionStorage.setItem('hasAnalyzedPalm', 'true');
+      document.getElementById('emptyState').classList.add('hidden');
+      resultsPanel.classList.remove('hidden');
 
-    updateViewButtons(false);
-    generateExpertReport(lines, handW, handH);
+      const heartLen = (lines.heart.maxX - lines.heart.minX) / handW;
+      const headLen = (lines.head.maxX - lines.head.minX) / handW;
+      const lifeLen = (lines.life.maxY - lines.life.minY) / handH;
 
-    analyzeBtn.innerHTML = `
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                Thiên Cơ Đã Định
-            `;
-  }
+      document.getElementById('readingHeart').innerHTML = heartLen > 0.6
+        ? "Đường Tâm Đạo dài, sâu: Bạn là người <strong>giàu tình cảm, chân thành</strong> và luôn hết mình trong các mối quan hệ."
+        : "Đường Tâm Đạo ngắn hoặc mảnh: Bạn là người <strong>lý trí, thực tế</strong>. Bạn kiểm soát cảm xúc tốt.";
 
-  // ------------------ LUẬN GIẢI CHUYÊN GIA ------------------
-  function generateExpertReport(lines, handW, handH) {
-    emptyState.classList.add('hidden');
-    resultsPanel.classList.remove('hidden');
+      document.getElementById('readingHead').innerHTML = headLen > 0.5
+        ? "Đường Trí Đạo dài và rõ: Bạn sở hữu <strong>tư duy logic sắc bén</strong>, khả năng tập trung cao."
+        : "Đường Trí Đạo ngắn hoặc cong nhẹ: Bạn là người có <strong>trí tưởng tượng phong phú, sáng tạo</strong>.";
 
-    sessionStorage.setItem('hasAnalyzedPalm', 'true');
+      document.getElementById('readingLife').innerHTML = lifeLen > 0.5
+        ? "Đường Sinh Đạo tạo hình vòng cung lớn: Bạn có <strong>nguồn năng lượng dồi dào, sức khỏe tốt</strong>."
+        : "Đường Sinh Đạo mảnh hoặc đứt đoạn nhẹ: Hãy chú ý <strong>chăm sóc bản thân và nghỉ ngơi điều độ</strong>.";
 
-    // Tâm Đạo
-    let heartSpanX = lines.heart.maxX - lines.heart.minX;
-    let heartCurvature = lines.heart.maxY - lines.heart.minY;
-    let heartSolidity = lines.heart.count / (heartSpanX || 1);
-    let heartDesc = "";
-
-    if (lines.heart.count < 30 || heartSpanX < handW * 0.3) {
-      heartDesc = "Đường Tâm Đạo khá ngắn hoặc mờ. Bạn thường dùng <strong>lý trí để kiểm soát cảm xúc</strong>. Trong tình yêu, bạn đề cao tính thực tế, không dễ bị những lời đường mật đánh lừa. Thỉnh thoảng người khác có thể thấy bạn hơi lạnh lùng hoặc xa cách.";
-    } else if (heartSolidity < 1.4) {
-      heartDesc = "Đường Tâm Đạo đứt đoạn hoặc có nhiều vân phụ cắt ngang. Tướng tay này báo hiệu <strong>đường tình duyên nhiều thử thách, lận đận</strong>. Bạn dễ rung động nhưng cũng dễ chịu tổn thương, cần cẩn trọng để không bị lợi dụng tình cảm.";
-    } else if (heartSpanX > handW * 0.7) {
-      heartDesc = "Đường Tâm Đạo kéo dài xuyên suốt lòng bàn tay. Bạn là người <strong>yêu mãnh liệt, ghen tuông và có tính sở hữu cao</strong>. Khi yêu bạn trao đi tất cả, nhưng cũng đòi hỏi sự chung thủy tuyệt đối từ đối phương.";
-    } else if (heartCurvature > handH * 0.15) {
-      heartDesc = "Đường Tâm Đạo cong uốn lượn hướng lên ngón trỏ/giữa. Bạn có <strong>đời sống nội tâm phong phú, lãng mạn và tinh tế</strong>. Bạn biết cách chăm sóc người khác và thường tạo ra bầu không khí ấm áp trong các mối quan hệ.";
-    } else {
-      heartDesc = "Đường Tâm Đạo rõ nét và cân bằng. Chúc mừng, bạn có <strong>tình cảm dạt dào, chân thành và chung thủy</strong>. Bạn biết cách quan tâm mọi người và thường là chỗ dựa tinh thần vững chắc cho bạn bè, người thân.";
+      document.getElementById('readingFate').innerHTML = lines.fate.count > 100
+        ? "Đường Định Mệnh hiện rõ: Bạn có <strong>mục tiêu sự nghiệp kiên định</strong>, dễ đạt được thành tựu sớm."
+        : "Đường Định Mệnh mờ hoặc không có: Bạn là người <strong>yêu tự do, thích khám phá</strong>.";
     }
-    document.getElementById('readingHeart').innerHTML = heartDesc;
 
-    // Trí Đạo
-    let headSpanX = lines.head.maxX - lines.head.minX;
-    let headCurvature = lines.head.maxY - lines.head.minY;
-    let headDesc = "";
-
-    if (lines.head.count < 30 || headSpanX < handW * 0.3) {
-      headDesc = "Đường Trí Đạo ngắn. Bạn thuộc tuýp người <strong>hành động nhanh nhạy, bộc trực và phản ứng tức thì</strong>. Bạn không thích suy nghĩ rườm rà hay phân tích lý thuyết dài dòng. Phù hợp với công việc đòi hỏi quyết định dứt khoát, ra tay chớp nhoáng.";
-    } else if (headCurvature > handH * 0.2) {
-      headDesc = "Đường Trí Đạo rất cong, hướng sâu xuống cổ tay. Bạn sở hữu <strong>bộ óc bay bổng, giàu trí tưởng tượng và tính nghệ sĩ cực cao</strong>. Rất hợp với các ngành sáng tạo, nghệ thuật. Tuy nhiên cần cẩn thận vì bạn dễ rơi vào ảo tưởng, xa rời thực tế.";
-    } else if (headSpanX > handW * 0.6 && headCurvature < handH * 0.1) {
-      headDesc = "Đường Trí Đạo thẳng tắp và dài. Bạn có <strong>tư duy logic sắc bén, lập trường vững vàng và trí nhớ siêu phàm</strong>. Rất giỏi phân tích dữ liệu, cực kỳ phù hợp làm lãnh đạo, tài chính, kỹ thuật hoặc các ngành khoa học.";
-    } else {
-      headDesc = "Đường Trí Đạo rõ ràng, có độ cong nhẹ. Bạn có khả năng <strong>tập trung tốt, học hỏi nhanh và xử lý tình huống cực kỳ linh hoạt</strong>. Công danh sự nghiệp của bạn phát triển thuận lợi nhờ sự thông minh và ứng biến khôn khéo giữa lý trí lẫn tình cảm.";
-    }
-    document.getElementById('readingHead').innerHTML = headDesc;
-
-    // Sinh Đạo
-    let lifeSpanY = lines.life.maxY - lines.life.minY;
-    let lifeSpanX = lines.life.maxX - lines.life.minX;
-    let lifeSolidity = lines.life.count / (lifeSpanY || 1);
-    let lifeDesc = "";
-
-    if (lines.life.count < 30 || lifeSpanY < handH * 0.3) {
-      lifeDesc = "Đường Sinh Đạo ngắn. Điều này không có nghĩa là tuổi thọ ngắn, mà báo hiệu <strong>thể trạng của bạn dễ bị suy nhược nếu làm việc quá sức</strong>. Hệ miễn dịch ở mức vừa phải. Cần đặc biệt chú ý đến sức khỏe, ăn uống khoa học và tránh làm việc đến cạn kiệt năng lượng.";
-    } else if (lifeSolidity < 1.2) {
-      lifeDesc = "Đường Sinh Đạo đứt gãy hoặc có hình chuỗi. Có thể bạn đã hoặc sẽ trải qua <strong>những biến cố lớn về sức khỏe hoặc thay đổi đột ngột về môi trường sống (như định cư, chuyển nghề)</strong>. Hãy duy trì tinh thần lạc quan, các đường vân phụ sẽ hỗ trợ bạn vượt qua.";
-    } else if (lifeSpanX > handW * 0.35) {
-      lifeDesc = "Đường Sinh Đạo tạo thành vòng cung rất rộng ôm lấy ngón cái. Bạn là người <strong>hướng ngoại, tràn đầy năng lượng, thích phiêu lưu và đi lại nhiều</strong>. Sức chịu đựng dẻo dai giúp bạn dễ dàng thích nghi với mọi hoàn cảnh sống khắc nghiệt nhất.";
-    } else {
-      lifeDesc = "Đường Sinh Đạo cong đều đặn, đậm nét. Tuyệt vời! Bạn có <strong>nền tảng sức khỏe xuất sắc, sinh lực dồi dào và tinh thần cực kỳ ổn định</strong>. Cuộc sống ít gặp sóng gió lớn về mặt thể chất, luôn có đủ năng lượng để theo đuổi mục tiêu lâu dài.";
-    }
-    document.getElementById('readingLife').innerHTML = lifeDesc;
-
-    // Định Mệnh
-    let fateSpanY = lines.fate.maxY - lines.fate.minY;
-    let fateDesc = "";
-
-    if (lines.fate.count < 25 || fateSpanY < handH * 0.2) {
-      fateDesc = "Đường Định Mệnh không hiện rõ hoặc không có. (Rất nhiều người không có đường này!). Nó cho thấy bạn là người <strong>yêu tự do, không thích bị gò bó bởi số phận hay một công việc nhàm chán cố định</strong>. Bạn thường tự tạo ra con đường riêng và có xu hướng làm nhiều nghề khác nhau trong đời.";
-    } else if (fateSpanY > handH * 0.5) {
-      fateDesc = "Đường Định Mệnh thẳng tắp, dài xuyên suốt. Cực kỳ hiếm! Bạn sinh ra đã có <strong>mục tiêu lớn, dễ gặp quý nhân phù trợ và sẽ đạt được thành tựu rực rỡ trong sự nghiệp</strong>. Bạn có tố chất làm chủ, dễ dàng giữ vị trí quản lý hoặc các vị trí nòng cốt trong xã hội.";
-    } else {
-      fateDesc = "Đường Định Mệnh bắt đầu muộn hoặc khá ngắn. Báo hiệu sự nghiệp của bạn có <strong>bước ngoặt phát triển rực rỡ vào giai đoạn trung vận (sau 30 tuổi)</strong>. Thành công của bạn thường đến từ sự nỗ lực tự thân không ngừng nghỉ (bàn tay trắng làm nên) chứ ít khi nhờ vả gia đình.";
-    }
-    document.getElementById('readingFate').innerHTML = fateDesc;
-  }
-
+    viewOriginalBtn.onclick = () => {
+      visualizer.classList.remove('show-edges');
+      viewOriginalBtn.classList.add('bg-slate-700');
+      viewEdgesBtn.classList.remove('bg-purple-600');
+    };
+    viewEdgesBtn.onclick = () => {
+      if(isImageLoaded) {
+        visualizer.classList.add('show-edges');
+        viewEdgesBtn.classList.add('bg-purple-600');
+        viewOriginalBtn.classList.remove('bg-slate-700');
+      }
+    };
+    closeErrorBtn.onclick = () => { errorModal.classList.add('hidden'); errorModal.classList.remove('flex'); };
+    closeLimitBtn.onclick = () => { limitModal.classList.add('hidden'); limitModal.classList.remove('flex'); };
+    closeRevealBtn.onclick = () => { revealModal.classList.add('hidden'); revealModal.classList.remove('flex'); otpInput.focus(); };
+  });
 </script>
 </body>
 </html>
