@@ -1,144 +1,211 @@
-<!-- Boot Screen - Minimalist with Effects -->
+<!-- Boot Screen - Modern & Beautiful -->
 <div class="boot-screen" *ngIf="isBooting()">
+  <!-- Animated Background Elements -->
+  <div class="boot-bg-elements">
+    <div class="floating-orb orb-1"></div>
+    <div class="floating-orb orb-2"></div>
+    <div class="floating-orb orb-3"></div>
+    <div class="grid-pattern"></div>
+  </div>
+
   <div class="boot-content">
+    <!-- Logo with animated rings -->
     <div class="boot-logo">
-      <div class="logo-circle">
-        <div class="logo-inner"></div>
+      <div class="logo-rings">
+        <div class="ring ring-1"></div>
+        <div class="ring ring-2"></div>
+        <div class="ring ring-3"></div>
+      </div>
+      <div class="logo-core">
+        <span class="logo-text">DP</span>
       </div>
     </div>
-    <div class="boot-text">Desktop Portfolio</div>
-    <div class="boot-progress-container">
-      <div class="boot-progress-bar">
-        <div class="boot-progress-fill" [style.width.%]="bootProgress()"></div>
+
+    <!-- Title -->
+    <div class="boot-title">
+      <span class="title-main">Desktop Portfolio</span>
+      <span class="title-version">v2.0</span>
+    </div>
+
+    <!-- Progress Section -->
+    <div class="boot-progress-section">
+      <div class="progress-bar-container">
+        <div class="progress-bar">
+          <div class="progress-fill" [style.width.%]="bootProgress()"></div>
+          <div class="progress-glow" [style.left.%]="bootProgress()"></div>
+        </div>
+      </div>
+      <div class="progress-info">
+        <span class="progress-text">Đang khởi động hệ thống</span>
+        <span class="progress-percent">{{ bootProgress() }}%</span>
       </div>
     </div>
-    <div class="boot-status">Đang khởi động...</div>
+
+    <!-- Loading dots -->
+    <div class="loading-dots">
+      <span class="dot"></span>
+      <span class="dot"></span>
+      <span class="dot"></span>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="boot-footer">
+    <span>© 2024 Phat Nguyen</span>
   </div>
 </div>
 
-<!-- Welcome/Lock Screen - Flat & Elegant -->
-<div class="welcome-screen" *ngIf="!isAuthenticated() && !isBooting()">
-  <!-- Animated Background -->
-  <div class="welcome-background">
-    <div class="wallpaper"></div>
-    <div class="gradient-overlay"></div>
-    <div class="particles">
-      <div 
-        class="particle" 
-        *ngFor="let i of particles; let idx = index"
-        [style.left.%]="(idx * 10 + 5)"
-        [style.animation-delay.s]="idx * 2">
-      </div>
-    </div>
+<!-- Welcome/Lock Screen - Professional & Cool -->
+<div class="welcome-screen" *ngIf="!isAuthenticated() && !isBooting() && !showWelcomeLoading()">
+  <!-- Background -->
+  <div class="lock-background">
+    <div class="bg-gradient"></div>
+    <div class="bg-grid"></div>
+    <div class="bg-glow glow-1"></div>
+    <div class="bg-glow glow-2"></div>
+    <div class="bg-scanline"></div>
   </div>
 
-  <!-- Main content -->
-  <div class="welcome-content">
-    <div class="lock-screen-container">
-      <!-- Top Section: Time & Greeting -->
-      <div class="top-section">
-        <div class="time-display">
-          <div class="current-time">{{ currentTime() }}</div>
-          <div class="current-date">{{ currentDate() }}</div>
+  <!-- Main Lock Screen -->
+  <div class="lock-main">
+    <!-- Time Section -->
+    <div class="time-block">
+      <div class="time-wrapper">
+        <span class="time-digit">{{ currentTime() }}</span>
+      </div>
+      <div class="date-wrapper">
+        <span class="date-text">{{ currentDate() }}</span>
+      </div>
+    </div>
+
+    <!-- Divider -->
+    <div class="lock-divider">
+      <span class="divider-line"></span>
+      <span class="divider-dot"></span>
+      <span class="divider-line"></span>
+    </div>
+
+    <!-- Login Section -->
+    <div class="login-block">
+      <!-- Avatar -->
+      <div class="avatar-container">
+        <div class="avatar-ring">
+          <svg viewBox="0 0 100 100">
+            <defs>
+              <linearGradient id="ringGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#06b6d4"/>
+                <stop offset="50%" style="stop-color:#10b981"/>
+                <stop offset="100%" style="stop-color:#3b82f6"/>
+              </linearGradient>
+            </defs>
+            <circle class="ring-bg" cx="50" cy="50" r="46"/>
+            <circle class="ring-progress" cx="50" cy="50" r="46" stroke="url(#ringGradient)"/>
+          </svg>
         </div>
-        <div class="greeting-text">{{ greeting() }}</div>
+        <div class="avatar-inner">
+          <img src="assets/images/icons/profile.png" alt="User" class="avatar-img">
+        </div>
+        <div class="avatar-status"></div>
       </div>
 
-      <!-- Middle Section: Login -->
-      <div class="middle-section">
-        <div class="login-card">
-          <div class="user-avatar">
-            <div class="avatar-glow"></div>
-            <img src="assets/images/icons/profile.png" alt="User Avatar" class="avatar-image">
-          </div>
-
-          <!-- Password Input Section -->
-          <div class="login-section">
-            <div class="password-input-wrapper">
-              <div class="input-container" [class.has-error]="errorMessage()">
-                <div class="input-icon">
-                  <i class="pi pi-lock"></i>
-                </div>
-                <input
-                  [type]="showPassword() ? 'text' : 'password'"
-                  class="password-input"
-                  [value]="password()"
-                  (input)="onPasswordInput($event)"
-                  (keypress)="onKeyPress($event)"
-                  placeholder="Nhập mật khẩu"
-                  autofocus>
-                <button 
-                  type="button" 
-                  class="password-toggle"
-                  (click)="togglePasswordVisibility()"
-                  [title]="showPassword() ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'">
-                  <i [class]="showPassword() ? 'pi pi-eye-slash' : 'pi pi-eye'"></i>
-                </button>
-                <button 
-                  type="button" 
-                  class="unlock-button"
-                  [class.loading]="isLoading()"
-                  [disabled]="!password() || isLoading()"
-                  (click)="onSubmit()">
-                  <i class="pi pi-arrow-right" *ngIf="!isLoading()"></i>
-                  <div *ngIf="isLoading()" class="loading-spinner"></div>
-                </button>
-              </div>
-            </div>
-
-            <!-- Error Message -->
-            <div class="error-message" *ngIf="errorMessage()">
-              <i class="pi pi-exclamation-triangle"></i>
-              <span>{{ errorMessage() }}</span>
-            </div>
-
-            <!-- Password Hint -->
-            <div class="hint-section">
-              <button class="hint-btn" (click)="toggleHint()">
-                <i [class]="showHint() ? 'pi pi-eye-slash' : 'pi pi-info-circle'"></i>
-                {{ showHint() ? 'Ẩn gợi ý' : 'Gợi ý mật khẩu' }}
-              </button>
-              <div class="password-hint" *ngIf="showHint()">
-                <i class="pi pi-lightbulb"></i>
-                <span>{{ getPasswordHint() }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
+      <!-- Greeting -->
+      <div class="user-greeting">
+        <span class="greeting-text">{{ greeting() }}</span>
       </div>
 
-      <!-- Bottom Section: Actions -->
-      <div class="bottom-section">
-        <div class="action-buttons">
-          <button class="action-btn restart-btn" (click)="onRestartRequest()" title="Khởi động lại">
-            <i class="pi pi-refresh"></i>
-            <span>Khởi động lại</span>
+      <!-- Password Form -->
+      <div class="password-form">
+        <div class="input-group" [class.error]="errorMessage()" [class.focused]="password()">
+          <div class="input-field">
+            <i class="pi pi-lock field-icon"></i>
+            <input
+              [type]="showPassword() ? 'text' : 'password'"
+              class="field-input"
+              [value]="password()"
+              (input)="onPasswordInput($event)"
+              (keypress)="onKeyPress($event)"
+              placeholder="Enter password"
+              autofocus>
+            <button 
+              type="button" 
+              class="field-toggle"
+              (click)="togglePasswordVisibility()">
+              <i [class]="showPassword() ? 'pi pi-eye-slash' : 'pi pi-eye'"></i>
+            </button>
+          </div>
+          <button 
+            type="button" 
+            class="submit-btn"
+            [class.loading]="isLoading()"
+            [disabled]="!password() || isLoading()"
+            (click)="onSubmit()">
+            <i class="pi pi-arrow-right" *ngIf="!isLoading()"></i>
+            <span class="spinner" *ngIf="isLoading()"></span>
           </button>
         </div>
+
+        <!-- Error -->
+        <div class="form-error" *ngIf="errorMessage()">
+          <i class="pi pi-exclamation-circle"></i>
+          <span>{{ errorMessage() }}</span>
+        </div>
+
+        <!-- Hint -->
+        <div class="form-hint">
+          <button class="hint-toggle" (click)="toggleHint()">
+            <i class="pi pi-info-circle"></i>
+            <span>{{ showHint() ? 'Hide hint' : 'Password hint' }}</span>
+          </button>
+          <div class="hint-content" *ngIf="showHint()">
+            <i class="pi pi-key"></i>
+            <span>{{ getPasswordHint() }}</span>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- Unlock Success Screen -->
-  <div class="loading-screen" *ngIf="isAuthenticated()">
-    <div class="loading-content">
-      <div class="loading-avatar">
-        <img src="assets/images/icons/profile.png" alt="User Avatar" class="avatar-image">
-        <div class="success-checkmark">
-          <i class="pi pi-check"></i>
-        </div>
+  <!-- Bottom Bar -->
+  <div class="lock-footer">
+    <div class="footer-left">
+      <span class="system-info">Desktop Portfolio v2.0</span>
+    </div>
+    <div class="footer-center">
+      <button class="footer-btn" (click)="onRestartRequest()" title="Restart">
+        <i class="pi pi-refresh"></i>
+      </button>
+      <button class="footer-btn" title="Sleep">
+        <i class="pi pi-moon"></i>
+      </button>
+      <button class="footer-btn" title="Settings">
+        <i class="pi pi-cog"></i>
+      </button>
+    </div>
+    <div class="footer-right">
+      <span class="copyright">© 2024 Phat Nguyen</span>
+    </div>
+  </div>
+</div>
+
+<!-- Unlock Success Screen -->
+<div class="loading-screen" *ngIf="showWelcomeLoading()">
+  <div class="loading-content">
+    <div class="loading-avatar">
+      <img src="assets/images/icons/profile.png" alt="User Avatar" class="avatar-image">
+      <div class="success-checkmark">
+        <i class="pi pi-check"></i>
       </div>
-      <div class="loading-text">Chào mừng trở lại!</div>
-      <div class="loading-subtext">Đang tải môi trường làm việc...</div>
-      <div class="loading-progress">
-        <div class="progress-bar">
-          <div class="progress-fill"></div>
-        </div>
-        <div class="progress-dots">
-          <div class="dot"></div>
-          <div class="dot"></div>
-          <div class="dot"></div>
-        </div>
+    </div>
+    <div class="loading-text">Chào mừng trở lại!</div>
+    <div class="loading-subtext">Đang tải môi trường làm việc...</div>
+    <div class="loading-progress">
+      <div class="progress-bar">
+        <div class="progress-fill"></div>
+      </div>
+      <div class="progress-dots">
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
       </div>
     </div>
   </div>

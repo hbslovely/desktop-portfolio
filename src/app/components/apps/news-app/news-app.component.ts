@@ -1,6 +1,7 @@
-import { Component, OnInit, signal, computed, ChangeDetectionStrategy, ViewEncapsulation } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal, computed, ChangeDetectionStrategy, ViewEncapsulation } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
+import { Subject, takeUntil } from 'rxjs';
 import { FormatNumberPipe } from '../../../pipes/format-number.pipe';
 
 // Article interface for Dev.to
@@ -62,8 +63,9 @@ interface DevToTag {
   changeDetection: ChangeDetectionStrategy.OnPush,
   encapsulation: ViewEncapsulation.None
 })
-export class NewsAppComponent implements OnInit {
+export class NewsAppComponent implements OnInit, OnDestroy {
   private readonly DEVTO_API = 'https://dev.to/api/articles';
+  private readonly destroy$ = new Subject<void>();
   
   articles = signal<Article[]>([]);
   loading = signal<boolean>(true);
@@ -132,11 +134,16 @@ export class NewsAppComponent implements OnInit {
 
   constructor(private http: HttpClient) {}
 
-  ngOnInit() {
+  ngOnInit(): void {
     this.loadArticles();
   }
 
-  loadArticles() {
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  loadArticles(): void {
     const category = this.categories.find(c => c.id === this.selectedCategory());
     if (!category) return;
 
@@ -154,7 +161,9 @@ export class NewsAppComponent implements OnInit {
       url += `&tag=${category.tag}`;
     }
 
-    this.http.get<DevToArticle[]>(url).subscribe({
+    this.http.get<DevToArticle[]>(url).pipe(
+      takeUntil(this.destroy$)
+    ).subscribe({
       next: (response) => {
         const articles: Article[] = response.map(article => ({
           id: `${article.id}`,
@@ -177,54 +186,49 @@ export class NewsAppComponent implements OnInit {
         this.articles.set(articles);
         this.loading.set(false);
       },
-      error: (err) => {
-
+      error: () => {
         this.error.set('Failed to load articles. Please try again later.');
         this.loading.set(false);
       }
     });
   }
 
-  async openArticle(article: Article) {
+  openArticle(article: Article): void {
     this.selectedArticle.set(article);
     this.showArticleViewer.set(true);
     this.articleLoading.set(true);
     this.articleError.set(null);
 
-    try {
-      // Fetch full article content
-      const articleId = article.id;
-      const url = `${this.DEVTO_API}/${articleId}`;
+    // Fetch full article content
+    const articleId = article.id;
+    const url = `${this.DEVTO_API}/${articleId}`;
 
-      this.http.get<DevToArticle>(url).subscribe({
-        next: (response) => {
-          const detailedArticle: Article = {
-            ...article,
-            body: response.body_html || article.summary,
-            author: response.user.name,
-            tags: response.tag_list,
-            reading_time: response.reading_time_minutes,
-            reactions: response.public_reactions_count || 0,
-            comments_count: response.comments_count || 0
-          };
-          this.selectedArticle.set(detailedArticle);
-          this.articleLoading.set(false);
-          this.setupCodeBlocks();
-        },
-        error: () => {
-          // Fallback to summary if full content fails
-          this.selectedArticle.set({
-            ...article,
-            body: `<p>${article.summary}</p>`
-          });
-          this.articleLoading.set(false);
-        }
-      });
-    } catch (error) {
-
-      this.articleError.set('Failed to load article details.');
-      this.articleLoading.set(false);
-    }
+    this.http.get<DevToArticle>(url).pipe(
+      takeUntil(this.destroy$)
+    ).subscribe({
+      next: (response) => {
+        const detailedArticle: Article = {
+          ...article,
+          body: response.body_html || article.summary,
+          author: response.user.name,
+          tags: response.tag_list,
+          reading_time: response.reading_time_minutes,
+          reactions: response.public_reactions_count || 0,
+          comments_count: response.comments_count || 0
+        };
+        this.selectedArticle.set(detailedArticle);
+        this.articleLoading.set(false);
+        this.setupCodeBlocks();
+      },
+      error: () => {
+        // Fallback to summary if full content fails
+        this.selectedArticle.set({
+          ...article,
+          body: `<p>${article.summary}</p>`
+        });
+        this.articleLoading.set(false);
+      }
+    });
   }
 
   getPlaceholderImage(): string {

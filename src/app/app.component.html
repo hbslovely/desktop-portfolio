@@ -37,9 +37,9 @@
     [initialX]="100"
     [initialY]="100"
     [maximizable]="true"
-    [zIndex]="getWindowZIndex('calculator')"
-    [isFocused]="isWindowFocused('calculator')"
-    [isMinimizedExternal]="isWindowMinimized('calculator')"
+    [zIndex]="calculatorZIndex()"
+    [isFocused]="calculatorFocused()"
+    [isMinimizedExternal]="calculatorMinimized()"
     data-window-id="calculator"
     (onClose)="onCloseTestWindow()"
     (onMinimize)="onMinimizeTestWindow()"
@@ -61,9 +61,9 @@
     [initialX]="200"
     [initialY]="50"
     [maximizable]="true"
-    [zIndex]="getWindowZIndex('my-info')"
-    [isFocused]="isWindowFocused('my-info')"
-    [isMinimizedExternal]="isWindowMinimized('my-info')"
+    [zIndex]="myInfoZIndex()"
+    [isFocused]="myInfoFocused()"
+    [isMinimizedExternal]="myInfoMinimized()"
     data-window-id="my-info"
     (onClose)="onCloseMyInfoWindow()"
     (onMinimize)="onMinimizeMyInfoWindow()"
@@ -89,9 +89,9 @@
     [initialX]="200"
     [initialY]="150"
     [maximizable]="true"
-    [zIndex]="getWindowZIndex('love')"
-    [isFocused]="isWindowFocused('love')"
-    [isMinimizedExternal]="isWindowMinimized('love')"
+    [zIndex]="loveZIndex()"
+    [isFocused]="loveFocused()"
+    [isMinimizedExternal]="loveMinimized()"
     (onClose)="onCloseLoveWindow()"
     (onMinimize)="onMinimizeLoveWindow()"
     (onMaximize)="onMaximizeLoveWindow()"
@@ -115,9 +115,9 @@
     [initialX]="300"
     [initialY]="100"
     [maximizable]="true"
-    [zIndex]="getWindowZIndex('explorer')"
-    [isFocused]="isWindowFocused('explorer')"
-    [isMinimizedExternal]="isWindowMinimized('explorer')"
+    [zIndex]="explorerZIndex()"
+    [isFocused]="explorerFocused()"
+    [isMinimizedExternal]="explorerMinimized()"
     (onClose)="onCloseExplorerWindow()"
     (onMinimize)="onMinimizeExplorerWindow()"
     (onMaximize)="onMaximizeExplorerWindow()"
@@ -141,9 +141,9 @@
     [initialX]="150"
     [initialY]="50"
     [maximizable]="true"
-    [zIndex]="getWindowZIndex('paint')"
-    [isFocused]="isWindowFocused('paint')"
-    [isMinimizedExternal]="isWindowMinimized('paint')"
+    [zIndex]="paintZIndex()"
+    [isFocused]="paintFocused()"
+    [isMinimizedExternal]="paintMinimized()"
     (onClose)="onClosePaintWindow()"
     (onMinimize)="onMinimizePaintWindow()"
     (onMaximize)="onMaximizePaintWindow()"
@@ -164,9 +164,9 @@
     [initialX]="100"
     [initialY]="50"
     [maximizable]="true"
-    [zIndex]="getWindowZIndex('hcmc')"
-    [isFocused]="isWindowFocused('hcmc')"
-    [isMinimizedExternal]="isWindowMinimized('hcmc')"
+    [zIndex]="hcmcZIndex()"
+    [isFocused]="hcmcFocused()"
+    [isMinimizedExternal]="hcmcMinimized()"
     (onClose)="onCloseHcmcWindow()"
     (onMinimize)="onMinimizeHcmcWindow()"
     (onMaximize)="onMaximizeHcmcWindow()"
@@ -178,7 +178,7 @@
 
   <!-- News Window -->
   <app-window
-    *ngIf="showNewsWindow() || isWindowMinimized('news')"
+    *ngIf="showNewsWindow() || newsMinimized()"
     title="News Headlines"
     icon="pi pi-globe"
     statusText="Latest News"
@@ -187,8 +187,9 @@
     [initialX]="250"
     [initialY]="100"
     [maximizable]="true"
-    [zIndex]="getWindowZIndex('news')"
-    [isFocused]="isWindowFocused('news')"
+    [zIndex]="newsZIndex()"
+    [isFocused]="newsFocused()"
+    [isMinimizedExternal]="newsMinimized()"
     (onClose)="onCloseNewsWindow()"
     (onMinimize)="onMinimizeNewsWindow()"
     (onMaximize)="onMaximizeNewsWindow()"
@@ -209,9 +210,9 @@
     [initialX]="350"
     [initialY]="120"
     [maximizable]="true"
-    [zIndex]="getWindowZIndex('text-viewer')"
-    [isFocused]="isWindowFocused('text-viewer')"
-    [isMinimizedExternal]="isWindowMinimized('text-viewer')"
+    [zIndex]="textViewerZIndex()"
+    [isFocused]="textViewerFocused()"
+    [isMinimizedExternal]="textViewerMinimized()"
     windowId="text-viewer"
     (onClose)="onCloseTextViewerWindow()"
     (onMinimize)="onMinimizeTextViewerWindow()"
@@ -237,9 +238,9 @@
     [initialX]="400"
     [initialY]="80"
     [maximizable]="true"
-    [zIndex]="getWindowZIndex('image-viewer')"
-    [isFocused]="isWindowFocused('image-viewer')"
-    [isMinimizedExternal]="isWindowMinimized('image-viewer')"
+    [zIndex]="imageViewerZIndex()"
+    [isFocused]="imageViewerFocused()"
+    [isMinimizedExternal]="imageViewerMinimized()"
     windowId="image-viewer"
     (onClose)="onCloseImageViewerWindow()"
     (onMinimize)="onMinimizeImageViewerWindow()"
@@ -264,9 +265,9 @@
     [initialX]="350"
     [initialY]="60"
     [maximizable]="true"
-    [zIndex]="getWindowZIndex('pdf-viewer')"
-    [isFocused]="isWindowFocused('pdf-viewer')"
-    [isMinimizedExternal]="isWindowMinimized('pdf-viewer')"
+    [zIndex]="pdfViewerZIndex()"
+    [isFocused]="pdfViewerFocused()"
+    [isMinimizedExternal]="pdfViewerMinimized()"
     windowId="pdf-viewer"
     (onClose)="onClosePdfViewerWindow()"
     (onMinimize)="onMinimizePdfViewerWindow()"
@@ -452,10 +453,10 @@
     <!-- Taskbar Apps -->
     <div class="taskbar-apps">
       <button
-        *ngIf="showTestWindow() || isWindowMinimized('calculator')"
+        *ngIf="showTestWindow() || calculatorMinimized()"
         class="taskbar-app"
-        [class.active]="isWindowFocused('calculator')"
-        [class.minimized]="isWindowMinimized('calculator')"
+        [class.active]="calculatorFocused()"
+        [class.minimized]="calculatorMinimized()"
         (click)="toggleTaskbarApp('calculator')"
         title="Calculator">
         <i class="pi pi-calculator"></i>
@@ -463,10 +464,10 @@
       </button>
 
       <button
-        *ngIf="showMyInfoWindow() || isWindowMinimized('my-info')"
+        *ngIf="showMyInfoWindow() || myInfoMinimized()"
         class="taskbar-app"
-        [class.active]="isWindowFocused('my-info')"
-        [class.minimized]="isWindowMinimized('my-info')"
+        [class.active]="myInfoFocused()"
+        [class.minimized]="myInfoMinimized()"
         (click)="toggleTaskbarApp('my-info')"
         title="My Information">
         <i class="pi pi-user"></i>
@@ -475,10 +476,10 @@
 
 
       <button
-        *ngIf="showLoveWindow() || isWindowMinimized('love')"
+        *ngIf="showLoveWindow() || loveMinimized()"
         class="taskbar-app"
-        [class.active]="isWindowFocused('love')"
-        [class.minimized]="isWindowMinimized('love')"
+        [class.active]="loveFocused()"
+        [class.minimized]="loveMinimized()"
         (click)="toggleTaskbarApp('love')"
         title="Love">
         <i class="pi pi-heart"></i>
@@ -486,10 +487,10 @@
       </button>
 
       <button
-        *ngIf="showExplorerWindow() || isWindowMinimized('explorer')"
+        *ngIf="showExplorerWindow() || explorerMinimized()"
         class="taskbar-app"
-        [class.active]="isWindowFocused('explorer')"
-        [class.minimized]="isWindowMinimized('explorer')"
+        [class.active]="explorerFocused()"
+        [class.minimized]="explorerMinimized()"
         (click)="toggleTaskbarApp('explorer')"
         title="Explorer">
         <i class="pi pi-folder"></i>
@@ -497,10 +498,10 @@
       </button>
 
       <button
-        *ngIf="showTextViewerWindow() || isWindowMinimized('text-viewer')"
+        *ngIf="showTextViewerWindow() || textViewerMinimized()"
         class="taskbar-app"
-        [class.active]="isWindowFocused('text-viewer')"
-        [class.minimized]="isWindowMinimized('text-viewer')"
+        [class.active]="textViewerFocused()"
+        [class.minimized]="textViewerMinimized()"
         (click)="toggleTaskbarApp('text-viewer')"
         title="Text Viewer">
         <i class="pi pi-file"></i>
@@ -508,10 +509,10 @@
       </button>
 
       <button
-        *ngIf="showImageViewerWindow() || isWindowMinimized('image-viewer')"
+        *ngIf="showImageViewerWindow() || imageViewerMinimized()"
         class="taskbar-app"
-        [class.active]="isWindowFocused('image-viewer')"
-        [class.minimized]="isWindowMinimized('image-viewer')"
+        [class.active]="imageViewerFocused()"
+        [class.minimized]="imageViewerMinimized()"
         (click)="toggleTaskbarApp('image-viewer')"
         title="Image Viewer">
         <i class="pi pi-image"></i>
@@ -519,10 +520,10 @@
       </button>
 
       <button
-        *ngIf="showPaintWindow() || isWindowMinimized('paint')"
+        *ngIf="showPaintWindow() || paintMinimized()"
         class="taskbar-app"
-        [class.active]="isWindowFocused('paint')"
-        [class.minimized]="isWindowMinimized('paint')"
+        [class.active]="paintFocused()"
+        [class.minimized]="paintMinimized()"
         (click)="toggleTaskbarApp('paint')"
         title="Paint">
         <i class="pi pi-palette"></i>
@@ -530,10 +531,10 @@
       </button>
 
       <button
-        *ngIf="showCreditsWindow() || isWindowMinimized('credits')"
+        *ngIf="showCreditsWindow() || creditsMinimized()"
         class="taskbar-app"
-        [class.active]="isWindowFocused('credits')"
-        [class.minimized]="isWindowMinimized('credits')"
+        [class.active]="creditsFocused()"
+        [class.minimized]="creditsMinimized()"
         (click)="toggleTaskbarApp('credits')"
         title="Credits">
         <i class="pi pi-star"></i>
@@ -541,10 +542,10 @@
       </button>
 
       <button
-        *ngIf="showHcmcWindow() || isWindowMinimized('hcmc')"
+        *ngIf="showHcmcWindow() || hcmcMinimized()"
         class="taskbar-app"
-        [class.active]="isWindowFocused('hcmc')"
-        [class.minimized]="isWindowMinimized('hcmc')"
+        [class.active]="hcmcFocused()"
+        [class.minimized]="hcmcMinimized()"
         (click)="toggleTaskbarApp('hcmc')"
         title="Ho Chi Minh City">
         <i class="pi pi-globe"></i>
@@ -552,10 +553,10 @@
       </button>
 
       <button
-        *ngIf="showNewsWindow() || isWindowMinimized('news')"
+        *ngIf="showNewsWindow() || newsMinimized()"
         class="taskbar-app"
-        [class.active]="isWindowFocused('news')"
-        [class.minimized]="isWindowMinimized('news')"
+        [class.active]="newsFocused()"
+        [class.minimized]="newsMinimized()"
         (click)="toggleTaskbarApp('news')"
         title="News Headlines">
         <i class="pi pi-globe"></i>
@@ -883,7 +884,7 @@
     <!-- Window List -->
     <div class="window-switcher-windows">
       <div
-        *ngFor="let window of getAllOpenWindows(); let i = index"
+        *ngFor="let window of openWindowsList(); let i = index"
         class="window-switcher-item"
         [class.selected]="i === windowSwitcherSelectedIndex()"
         [class.minimized]="window.isMinimized">
