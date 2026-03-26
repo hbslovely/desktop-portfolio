@@ -1,4 +1,4 @@
-import { Component, Output, EventEmitter, signal, computed, OnInit } from '@angular/core';
+import { Component, Output, EventEmitter, signal, computed, OnInit, ViewEncapsulation } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
@@ -25,7 +25,8 @@ export interface SettingsData {
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './settings-app.component.html',
-  styleUrl: './settings-app.component.scss',
+  styleUrls: ['./settings-app.component.scss'],
+  encapsulation: ViewEncapsulation.None,
 })
 export class SettingsAppComponent implements OnInit {
   @Output() onSettingsChange = new EventEmitter<SettingsData>();
@@ -150,8 +151,19 @@ export class SettingsAppComponent implements OnInit {
       fontSize: 'medium'
     };
     
+    // Update all signals with default values
+    this.selectedWallpaper.set(defaultSettings.wallpaper);
+    this.selectedTheme.set(defaultSettings.theme);
+    this.selectedThemeColor.set(defaultSettings.themeColor);
+    this.backdropEnabled.set(defaultSettings.backdropEnabled);
+    this.selectedWindowColor.set(defaultSettings.windowColor);
+    this.windowOpacity.set(defaultSettings.windowOpacity);
+    this.animations.set(defaultSettings.animations);
+    this.fontSize.set(defaultSettings.fontSize);
+    
     this.originalSettings.set(defaultSettings);
     this.saveSettingsToStorage(defaultSettings);
+    this.onSettingsChange.emit(defaultSettings);
   }
 
   onWallpaperChange(wallpaperId: string) {
@@ -209,7 +221,6 @@ export class SettingsAppComponent implements OnInit {
   resetSettings() {
     if (confirm('Are you sure you want to reset all settings to default?')) {
       this.setDefaultSettings();
-      this.loadSettings();
     }
   }
 }

@@ -21,6 +21,7 @@ export class WelcomeScreenComponent implements OnInit, OnDestroy {
   isLocked = signal(false);
   isBooting = signal(true);
   bootProgress = signal(0);
+  showWelcomeLoading = signal(false); // Loading screen after successful login
 
   // Current time and date
   currentTime = signal('');
@@ -78,9 +79,14 @@ export class WelcomeScreenComponent implements OnInit, OnDestroy {
     
     if (storedAuth === 'true' && storedPassword === currentPassword) {
       // User was previously authenticated and password is still valid
-      this.isAuthenticated.set(true);
-      // Stop the time interval since we're auto-logging in
+      // Show welcome loading screen briefly
+      this.showWelcomeLoading.set(true);
       this.stopTimeInterval();
+      
+      setTimeout(() => {
+        this.isAuthenticated.set(true);
+        this.showWelcomeLoading.set(false);
+      }, 1500);
     } else if (storedAuth === 'true' && storedPassword !== currentPassword) {
       // Password has changed (new day), clear storage and show lock screen
       this.clearAuthenticationStorage();
@@ -103,6 +109,7 @@ export class WelcomeScreenComponent implements OnInit, OnDestroy {
     this.isLocked.set(true);
     this.isAuthenticated.set(false);
     this.isBooting.set(false); // Don't show boot screen when manually locking
+    this.showWelcomeLoading.set(false);
     this.password.set('');
     this.errorMessage.set('');
     // Clear storage when manually locking
@@ -160,20 +167,28 @@ export class WelcomeScreenComponent implements OnInit, OnDestroy {
     
     if (enteredPassword === expectedPassword) {
       this.isLoading.set(true);
-      // Simulate authentication delay
+      
+      // Brief delay for button loading animation
       setTimeout(() => {
-        this.isAuthenticated.set(true);
+        this.isLoading.set(false);
         this.isLocked.set(false);
         this.saveAuthenticationStatus();
-        this.isLoading.set(false);
-        // Stop the time interval after successful login
         this.stopTimeInterval();
-      }, 1000);
+        
+        // Show welcome loading screen
+        this.showWelcomeLoading.set(true);
+        
+        // After loading animation, show desktop
+        setTimeout(() => {
+          this.isAuthenticated.set(true);
+          this.showWelcomeLoading.set(false);
+        }, 1500);
+      }, 500);
     } else {
       this.errorMessage.set('Incorrect password. Hint: Use today\'s date in ddmmyyyy format');
       this.password.set('');
       // Shake animation trigger
-      const input = document.querySelector('.password-input');
+      const input = document.querySelector('.field-input');
       if (input) {
         input.classList.add('shake');
         setTimeout(() => input.classList.remove('shake'), 500);
@@ -217,6 +232,7 @@ export class WelcomeScreenComponent implements OnInit, OnDestroy {
     this.bootProgress.set(0);
     this.isAuthenticated.set(false);
     this.isLocked.set(false);
+    this.showWelcomeLoading.set(false);
     // Restart time interval for boot/lock screen
     this.startTimeInterval();
     this.startBootSequence();

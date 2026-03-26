@@ -7,7 +7,7 @@ import { YugiohService, YugiohCard } from '../../../services/yugioh.service';
   standalone: true,
   imports: [CommonModule],
   templateUrl: './yugioh-card-detail.component.html',
-  styleUrl: './yugioh-card-detail.component.scss'
+  styleUrls: ['./yugioh-card-detail.component.scss']
 })
 export class YugiohCardDetailComponent implements OnInit {
   @Input() cardId?: number;

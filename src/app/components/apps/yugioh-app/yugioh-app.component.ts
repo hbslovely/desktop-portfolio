@@ -1,6 +1,7 @@
-import { Component, OnInit, OnDestroy, signal, computed } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal, computed, ChangeDetectionStrategy, TrackByFunction } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Subject, takeUntil, debounceTime, distinctUntilChanged } from 'rxjs';
 import { YugiohService, YugiohCard, FilterOptions } from '../../../services/yugioh.service';
 import { YugiohCardDetailComponent } from '../yugioh-card-detail/yugioh-card-detail.component';
 
@@ -9,17 +10,28 @@ import { YugiohCardDetailComponent } from '../yugioh-card-detail/yugioh-card-det
   standalone: true,
   imports: [CommonModule, FormsModule, YugiohCardDetailComponent],
   templateUrl: './yugioh-app.component.html',
-  styleUrl: './yugioh-app.component.scss',
+  styleUrls: ['./yugioh-app.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class YugiohAppComponent implements OnInit, OnDestroy {
   // State signals
   allCards = signal<YugiohCard[]>([]);
-  displayedCards = signal<YugiohCard[]>([]); // Cards currently displayed (lazy loaded)
+  displayedCards = signal<YugiohCard[]>([]);
   filteredCards = signal<YugiohCard[]>([]);
   isLoading = signal(false);
   isLoadingMore = signal(false);
   
-  private subscriptions: any[] = [];
+  // Favorites
+  favorites = signal<Set<number>>(new Set());
+  showFavoritesOnly = signal(false);
+  
+  // Deck Builder
+  deck = signal<YugiohCard[]>([]);
+  showDeckPanel = signal(false);
+  maxDeckSize = 60;
+  
+  private readonly destroy$ = new Subject<void>();
+  private readonly searchSubject$ = new Subject<string>();
   
   // Filter state
   searchQuery = signal('');
@@ -30,15 +42,17 @@ export class YugiohAppComponent implements OnInit, OnDestroy {
   selectedSort = signal('name');
   
   // View mode
-  viewMode = signal<'grid' | 'list'>('grid');
+  viewMode = signal<'grid' | 'list' | 'compact'>('grid');
   
   // Navigation state
   currentView = signal<'list' | 'detail'>('list');
   selectedCard = signal<YugiohCard | null>(null);
   
-  // Lazy Loading
-  batchSize = 100; // Load 100 cards at a time
+  // Lazy Loading with requestAnimationFrame
+  batchSize = 50;
   currentBatchIndex = signal(0);
+  isRendering = signal(false);
+  
   hasMoreCards = computed(() => {
     return this.displayedCards().length < this.filteredCards().length;
   });
@@ -60,64 +74,98 @@ export class YugiohAppComponent implements OnInit, OnDestroy {
     return this.yugiohService.getUniqueAttributes(this.allCards());
   });
   
-  // Statistics (based on filtered, not displayed)
+  // Statistics
   totalCards = computed(() => this.filteredCards().length);
   displayedCount = computed(() => this.displayedCards().length);
   monsterCards = computed(() => this.filteredCards().filter(c => c.frameType !== 'spell' && c.frameType !== 'trap').length);
   spellCards = computed(() => this.filteredCards().filter(c => c.frameType === 'spell').length);
   trapCards = computed(() => this.filteredCards().filter(c => c.frameType === 'trap').length);
+  
+  // Deck statistics
+  deckCount = computed(() => this.deck().length);
+  deckMonsters = computed(() => this.deck().filter(c => c.frameType !== 'spell' && c.frameType !== 'trap').length);
+  deckSpells = computed(() => this.deck().filter(c => c.frameType === 'spell').length);
+  deckTraps = computed(() => this.deck().filter(c => c.frameType === 'trap').length);
+  
+  // TrackBy for performance
+  trackByCardId: TrackByFunction<YugiohCard> = (index, card) => card.id;
 
-  constructor(
-    private yugiohService: YugiohService
-  ) {}
+  constructor(private yugiohService: YugiohService) {
+    // Debounced search
+    this.searchSubject$.pipe(
+      debounceTime(300),
+      distinctUntilChanged(),
+      takeUntil(this.destroy$)
+    ).subscribe(query => {
+      this.searchQuery.set(query);
+      this.applyFilters();
+    });
+  }
 
-  ngOnInit() {
+  ngOnInit(): void {
+    this.loadFavorites();
+    this.loadDeck();
     this.loadInitialBatch();
   }
 
-  loadInitialBatch() {
+  // === DATA LOADING ===
+  
+  loadInitialBatch(): void {
     this.isLoading.set(true);
-    // Load all cards for filtering purposes, but only display first batch
-    const sub = this.yugiohService.getAllCards().subscribe({
+    
+    this.yugiohService.getAllCards().pipe(
+      takeUntil(this.destroy$)
+    ).subscribe({
       next: (cards) => {
-        this.allCards.set(cards);
-        this.applyFilters();
-        this.isLoading.set(false);
+        // Use requestAnimationFrame to prevent UI blocking
+        requestAnimationFrame(() => {
+          this.allCards.set(cards);
+          this.applyFilters();
+          this.isLoading.set(false);
+        });
       },
-      error: (error) => {
-
+      error: () => {
         this.isLoading.set(false);
       }
     });
-    this.subscriptions.push(sub);
   }
 
-  loadMoreCards() {
-    if (!this.hasMoreCards() || this.isLoadingMore()) return;
+  loadMoreCards(): void {
+    if (!this.hasMoreCards() || this.isLoadingMore() || this.isRendering()) return;
     
     this.isLoadingMore.set(true);
+    this.isRendering.set(true);
+    
     const currentLength = this.displayedCards().length;
     const nextBatch = this.filteredCards().slice(currentLength, currentLength + this.batchSize);
     
-    // Simulate async loading for smooth UX
-    setTimeout(() => {
+    // Use requestAnimationFrame for smooth rendering
+    requestAnimationFrame(() => {
       this.displayedCards.update(cards => [...cards, ...nextBatch]);
       this.currentBatchIndex.update(i => i + 1);
       this.isLoadingMore.set(false);
-    }, 100);
+      
+      // Small delay to prevent rapid consecutive loads
+      setTimeout(() => this.isRendering.set(false), 100);
+    });
   }
 
-  applyFilters() {
-    // Check if we should use API filtering (when any filter is selected)
+  // === FILTERING ===
+  
+  applyFilters(): void {
     const hasFilters = this.selectedType() || this.selectedRace() || 
                       this.selectedFrameType() || this.selectedAttribute();
     
     if (hasFilters || this.searchQuery()) {
-      // Use API filtering for better performance
       this.searchWithAPI();
     } else {
-      // No filters - show all cards
       let cards = this.allCards();
+      
+      // Filter favorites if enabled
+      if (this.showFavoritesOnly()) {
+        cards = cards.filter(c => this.favorites().has(c.id));
+      }
+      
       const sort = this.selectedSort();
       cards = this.sortCards(cards, sort);
       this.filteredCards.set(cards);
@@ -125,52 +173,51 @@ export class YugiohAppComponent implements OnInit, OnDestroy {
     }
   }
 
-  loadFirstBatch() {
-    // Reset and load first batch of filtered cards
+  loadFirstBatch(): void {
     this.currentBatchIndex.set(0);
     const firstBatch = this.filteredCards().slice(0, this.batchSize);
     this.displayedCards.set(firstBatch);
   }
 
-  searchWithAPI() {
+  searchWithAPI(): void {
     this.isLoading.set(true);
     
-    const filters: any = {
+    const filters: Record<string, string> = {
       sort: this.selectedSort()
     };
     
-    // Add search query
     if (this.searchQuery()) {
-      filters.fname = this.searchQuery(); // Fuzzy search
+      filters['fname'] = this.searchQuery();
     }
     
-    // Add filters
-    if (this.selectedType()) filters.type = this.selectedType();
-    if (this.selectedRace()) filters.race = this.selectedRace();
-    if (this.selectedFrameType()) {
-      // Note: API doesn't support frameType filter directly
-      // We'll filter client-side for frameType
-    }
-    if (this.selectedAttribute()) filters.attribute = this.selectedAttribute();
+    if (this.selectedType()) filters['type'] = this.selectedType();
+    if (this.selectedRace()) filters['race'] = this.selectedRace();
+    if (this.selectedAttribute()) filters['attribute'] = this.selectedAttribute();
     
-    const sub = this.yugiohService.searchCards(filters).subscribe({
+    this.yugiohService.searchCards(filters).pipe(
+      takeUntil(this.destroy$)
+    ).subscribe({
       next: (cards) => {
-        // Apply frameType filter client-side if needed
-        let filteredCards = cards;
-        if (this.selectedFrameType()) {
-          filteredCards = cards.filter(card => card.frameType === this.selectedFrameType());
-        }
-        
-        this.filteredCards.set(filteredCards);
-        this.loadFirstBatch();
-        this.isLoading.set(false);
+        requestAnimationFrame(() => {
+          let filteredCards = cards;
+          
+          if (this.selectedFrameType()) {
+            filteredCards = cards.filter(card => card.frameType === this.selectedFrameType());
+          }
+          
+          if (this.showFavoritesOnly()) {
+            filteredCards = filteredCards.filter(c => this.favorites().has(c.id));
+          }
+          
+          this.filteredCards.set(filteredCards);
+          this.loadFirstBatch();
+          this.isLoading.set(false);
+        });
       },
-      error: (error) => {
-
+      error: () => {
         this.isLoading.set(false);
       }
     });
-    this.subscriptions.push(sub);
   }
 
   sortCards(cards: YugiohCard[], sortBy: string): YugiohCard[] {
@@ -192,61 +239,165 @@ export class YugiohAppComponent implements OnInit, OnDestroy {
     });
   }
 
-  onSearchChange() {
+  // === EVENT HANDLERS ===
+  
+  onSearchInput(event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    this.searchSubject$.next(value);
+  }
+
+  onFilterChange(): void {
     this.applyFilters();
   }
 
-  onFilterChange() {
-    this.applyFilters();
-  }
-
-  clearFilters() {
+  clearFilters(): void {
     this.searchQuery.set('');
     this.selectedType.set('');
     this.selectedRace.set('');
     this.selectedFrameType.set('');
     this.selectedAttribute.set('');
     this.selectedSort.set('name');
+    this.showFavoritesOnly.set(false);
     this.applyFilters();
   }
 
-  onScroll(event: Event) {
+  onScroll(event: Event): void {
     const element = event.target as HTMLElement;
-    const threshold = 200; // Load more when 200px from bottom
+    const threshold = 300;
     const atBottom = element.scrollHeight - element.scrollTop - element.clientHeight < threshold;
     
-    if (atBottom && this.hasMoreCards() && !this.isLoadingMore()) {
+    if (atBottom && this.hasMoreCards() && !this.isLoadingMore() && !this.isRendering()) {
       this.loadMoreCards();
     }
   }
 
-  toggleViewMode() {
-    this.viewMode.set(this.viewMode() === 'grid' ? 'list' : 'grid');
+  // === VIEW MODES ===
+  
+  setViewMode(mode: 'grid' | 'list' | 'compact'): void {
+    this.viewMode.set(mode);
   }
 
-  openCardDetail(card: YugiohCard) {
-    // Show card detail within the same component
+  openCardDetail(card: YugiohCard): void {
     this.selectedCard.set(card);
     this.currentView.set('detail');
   }
   
-  backToList() {
+  backToList(): void {
     this.currentView.set('list');
     this.selectedCard.set(null);
   }
 
-  getRandomCard() {
-    const sub = this.yugiohService.getRandomCard().subscribe({
+  // === FAVORITES ===
+  
+  toggleFavorite(card: YugiohCard, event?: Event): void {
+    event?.stopPropagation();
+    
+    this.favorites.update(favs => {
+      const newFavs = new Set(favs);
+      if (newFavs.has(card.id)) {
+        newFavs.delete(card.id);
+      } else {
+        newFavs.add(card.id);
+      }
+      return newFavs;
+    });
+    
+    this.saveFavorites();
+  }
+
+  isFavorite(cardId: number): boolean {
+    return this.favorites().has(cardId);
+  }
+
+  toggleFavoritesFilter(): void {
+    this.showFavoritesOnly.update(v => !v);
+    this.applyFilters();
+  }
+
+  private loadFavorites(): void {
+    const saved = localStorage.getItem('yugioh-favorites');
+    if (saved) {
+      try {
+        const ids = JSON.parse(saved) as number[];
+        this.favorites.set(new Set(ids));
+      } catch {}
+    }
+  }
+
+  private saveFavorites(): void {
+    const ids = Array.from(this.favorites());
+    localStorage.setItem('yugioh-favorites', JSON.stringify(ids));
+  }
+
+  // === DECK BUILDER ===
+  
+  toggleDeckPanel(): void {
+    this.showDeckPanel.update(v => !v);
+  }
+
+  addToDeck(card: YugiohCard, event?: Event): void {
+    event?.stopPropagation();
+    
+    if (this.deck().length >= this.maxDeckSize) return;
+    
+    // Check if card already exists 3 times
+    const cardCount = this.deck().filter(c => c.id === card.id).length;
+    if (cardCount >= 3) return;
+    
+    this.deck.update(d => [...d, card]);
+    this.saveDeck();
+  }
+
+  removeFromDeck(index: number, event?: Event): void {
+    event?.stopPropagation();
+    this.deck.update(d => d.filter((_, i) => i !== index));
+    this.saveDeck();
+  }
+
+  clearDeck(): void {
+    if (confirm('Clear all cards from deck?')) {
+      this.deck.set([]);
+      this.saveDeck();
+    }
+  }
+
+  isInDeck(cardId: number): boolean {
+    return this.deck().some(c => c.id === cardId);
+  }
+
+  getCardCountInDeck(cardId: number): number {
+    return this.deck().filter(c => c.id === cardId).length;
+  }
+
+  private loadDeck(): void {
+    const saved = localStorage.getItem('yugioh-deck');
+    if (saved) {
+      try {
+        const cards = JSON.parse(saved) as YugiohCard[];
+        this.deck.set(cards);
+      } catch {}
+    }
+  }
+
+  private saveDeck(): void {
+    localStorage.setItem('yugioh-deck', JSON.stringify(this.deck()));
+  }
+
+  // === UTILITIES ===
+  
+  getRandomCard(): void {
+    this.yugiohService.getRandomCard().pipe(
+      takeUntil(this.destroy$)
+    ).subscribe({
       next: (card) => {
         if (card) {
           this.openCardDetail(card);
         }
       }
     });
-    this.subscriptions.push(sub);
   }
+
   getCardImageUrl(card: YugiohCard, size: 'normal' | 'small' | 'cropped' = 'small'): string {
-    // Use local images - use the first image ID from card_images array
     const imageId = card.card_images[0]?.id || card.id;
     return this.yugiohService.getCardImageUrl(imageId, size);
   }
@@ -268,12 +419,26 @@ export class YugiohAppComponent implements OnInit, OnDestroy {
     };
     return icons[attribute.toUpperCase()] || '';
   }
+
+  getFrameTypeIcon(frameType: string): string {
+    const icons: { [key: string]: string } = {
+      'normal': '⭐',
+      'effect': '✨',
+      'ritual': '🔮',
+      'fusion': '🌀',
+      'synchro': '⚡',
+      'xyz': '🌟',
+      'link': '🔗',
+      'spell': '📜',
+      'trap': '⚠️'
+    };
+    return icons[frameType.toLowerCase()] || '🃏';
+  }
   
-  ngOnDestroy() {
-    // Unsubscribe from all subscriptions
-    this.subscriptions.forEach(sub => sub?.unsubscribe());
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
     
-    // Clear large data structures to free memory
     this.allCards.set([]);
     this.filteredCards.set([]);
     this.displayedCards.set([]);

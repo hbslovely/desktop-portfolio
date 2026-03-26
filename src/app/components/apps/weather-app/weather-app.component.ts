@@ -1,5 +1,6 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Subject, takeUntil } from 'rxjs';
 import { WeatherService, WeatherData, HourlyData, DailyData } from '../../../services/weather.service';
 
 @Component({
@@ -8,8 +9,9 @@ import { WeatherService, WeatherData, HourlyData, DailyData } from '../../../ser
   imports: [CommonModule],
   templateUrl: './weather-app.component.html',
   styleUrls: ['./weather-app.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class WeatherAppComponent implements OnInit {
+export class WeatherAppComponent implements OnInit, OnDestroy {
   weatherData = signal<WeatherData | null>(null);
   loading = signal<boolean>(true);
   error = signal<string | null>(null);
@@ -17,13 +19,20 @@ export class WeatherAppComponent implements OnInit {
   units = signal<'metric' | 'us'>('metric');
   locationName = signal<string>('Current Location');
 
+  private readonly destroy$ = new Subject<void>();
+
   constructor(private weatherService: WeatherService) {}
 
-  async ngOnInit() {
+  async ngOnInit(): Promise<void> {
     await this.loadWeather();
   }
 
-  async loadWeather() {
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  async loadWeather(): Promise<void> {
     this.loading.set(true);
     this.error.set(null);
 
@@ -33,22 +42,22 @@ export class WeatherAppComponent implements OnInit {
         this.units()
       );
 
-      weatherObservable.subscribe({
+      weatherObservable.pipe(
+        takeUntil(this.destroy$)
+      ).subscribe({
         next: (data) => {
           this.weatherData.set(data);
           this.loading.set(false);
           this.updateLocationName(data.lat, data.lon);
         },
-        error: (err) => {
+        error: () => {
           this.error.set('Failed to load weather data. Please try again.');
           this.loading.set(false);
-
         }
       });
-    } catch (err) {
+    } catch {
       this.error.set('Failed to get location. Please enable location services.');
       this.loading.set(false);
-
     }
   }
 
