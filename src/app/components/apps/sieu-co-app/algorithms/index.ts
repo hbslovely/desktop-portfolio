@@ -2,11 +2,13 @@ import { AlgorithmRegistry, IAIAlgorithm, AlgorithmConfig } from '../interfaces'
 import { MinimaxAlgorithm, MINIMAX_METADATA } from './minimax.algorithm';
 import { RandomAlgorithm, RANDOM_METADATA } from './random.algorithm';
 import { GreedyAlgorithm, GREEDY_METADATA } from './greedy.algorithm';
+import { HiddenChessAlgorithm, HIDDEN_CHESS_METADATA } from './hidden-chess.algorithm';
 
 export * from './base.algorithm';
 export * from './minimax.algorithm';
 export * from './random.algorithm';
 export * from './greedy.algorithm';
+export * from './hidden-chess.algorithm';
 
 /**
  * Registry các thuật toán AI có sẵn
@@ -24,8 +26,32 @@ export const ALGORITHM_REGISTRY: AlgorithmRegistry = {
   'greedy': {
     metadata: GREEDY_METADATA,
     factory: (config?: AlgorithmConfig) => new GreedyAlgorithm(config)
+  },
+  'hidden-chess': {
+    metadata: HIDDEN_CHESS_METADATA,
+    factory: () => new HiddenChessAlgorithm()
   }
 };
+
+// List of available algorithms for UI
+export const AVAILABLE_ALGORITHMS = [
+  new MinimaxAlgorithm(),
+  new RandomAlgorithm(),
+  new GreedyAlgorithm(),
+  new HiddenChessAlgorithm()
+];
+
+// Get default algorithm
+export function getDefaultAlgorithm(): IAIAlgorithm {
+  return new MinimaxAlgorithm();
+}
+
+// Create algorithm instance by id
+export function createAlgorithm(id: string, config?: AlgorithmConfig): IAIAlgorithm {
+  const entry = ALGORITHM_REGISTRY[id];
+  if (!entry) return new MinimaxAlgorithm(config);
+  return entry.factory(config);
+}
 
 /**
  * Lấy thuật toán theo ID

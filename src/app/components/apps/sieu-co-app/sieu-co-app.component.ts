@@ -6,7 +6,7 @@ import { takeUntil } from 'rxjs/operators';
 
 import { GameService, PuzzleService, AudioService } from './services';
 import { GameState, GameStatus, GameMode, AIDifficulty, BOARD_THEMES, BoardTheme } from './models/game-state.model';
-import { PieceColor, PieceType, PIECE_CHARS, Piece } from './models/piece.model';
+import { PieceColor, PieceType, PIECE_CHARS, Piece, PieceState } from './models/piece.model';
 import { Board, BOARD_ROWS, BOARD_COLS, getPieceAt, Position } from './models/board.model';
 import { Move } from './models/move.model';
 import { getAvailableAlgorithms } from './algorithms';
@@ -15,6 +15,10 @@ import { PuzzleInfo } from './models';
 // Pre-computed board indices
 const BOARD_ROWS_ARRAY = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 const BOARD_COLS_ARRAY = [0, 1, 2, 3, 4, 5, 6, 7, 8];
+
+// Hidden chess board indices (4 rows x 8 cols)
+const HIDDEN_ROWS_ARRAY = [0, 1, 2, 3];
+const HIDDEN_COLS_ARRAY = [0, 1, 2, 3, 4, 5, 6, 7];
 const DIFFICULTY_LEVELS = [AIDifficulty.BEGINNER, AIDifficulty.AMATEUR, AIDifficulty.EXPERT, AIDifficulty.MASTER];
 const STAR_RATINGS = [1, 2, 3, 4, 5];
 
@@ -40,6 +44,7 @@ export class SieuCoAppComponent implements OnInit, OnDestroy {
   gameState = signal<GameState | null>(null);
   currentTab = signal<'game' | 'settings' | 'puzzles' | 'notation'>('game');
   showNewGameDialog = signal(false);
+  isAIThinking = signal(false);
 
   // Settings signals
   selectedMode = signal<GameMode>(GameMode.XIANGQI);
@@ -179,12 +184,15 @@ export class SieuCoAppComponent implements OnInit, OnDestroy {
   // Constants for template
   readonly boardRows = BOARD_ROWS_ARRAY;
   readonly boardCols = BOARD_COLS_ARRAY;
+  readonly hiddenRows = HIDDEN_ROWS_ARRAY;
+  readonly hiddenCols = HIDDEN_COLS_ARRAY;
   readonly difficultyLevels = DIFFICULTY_LEVELS;
   readonly difficultyNames = DIFFICULTY_NAMES;
   readonly starRatings = STAR_RATINGS;
   readonly GameMode = GameMode;
   readonly GameStatus = GameStatus;
   readonly PieceColor = PieceColor;
+  readonly PieceState = PieceState;
   readonly AIDifficulty = AIDifficulty;
 
   private destroy$ = new Subject<void>();
@@ -202,6 +210,13 @@ export class SieuCoAppComponent implements OnInit, OnDestroy {
       .subscribe(state => {
         this.gameState.set(state);
         this.selectedTheme.set(state.config.theme);
+      });
+
+    // Subscribe to AI thinking state
+    this.gameService.isAIThinking$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(thinking => {
+        this.isAIThinking.set(thinking);
       });
 
     // Load puzzles
@@ -225,9 +240,20 @@ export class SieuCoAppComponent implements OnInit, OnDestroy {
    * Get piece character for display
    */
   getPieceChar(piece: Piece): string {
+    // Hidden piece shows "?"
+    if (piece.state === PieceState.HIDDEN) {
+      return '?';
+    }
     const chars = PIECE_CHARS[piece.type];
     return piece.color === PieceColor.RED ? chars.red : chars.black;
   }
+
+  /**
+   * Check if current game is hidden chess
+   */
+  isHiddenChessMode = computed(() => {
+    return this.gameState()?.config.mode === GameMode.HIDDEN;
+  });
 
 
   // ============ Game Actions ============
