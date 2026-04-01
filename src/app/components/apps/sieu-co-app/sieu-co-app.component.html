@@ -32,9 +32,11 @@
       <button class="btn-icon" (click)="onToggleSound()" [title]="soundEnabled() ? 'Tắt âm' : 'Bật âm'">
         {{ soundEnabled() ? '🔊' : '🔇' }}
       </button>
-      <button class="btn-primary" (click)="onOpenNewGameDialog()">
-        + Ván Mới
-      </button>
+      @if (!isNotStarted()) {
+        <button class="btn-primary" (click)="onOpenNewGameDialog()">
+          + Ván Mới
+        </button>
+      }
     </div>
   </header>
 
@@ -100,17 +102,28 @@
               </div>
             } @else {
               <!-- Game Board -->
-              <div class="status-bar" [class.check]="isCheck()" [class.game-over]="isGameOver()">
-                {{ statusText() }}
+              <div class="status-bar" [class.check]="isCheck()" [class.game-over]="isGameOver()" [class.ai-thinking]="isAIThinking()">
+                @if (isAIThinking()) {
+                  <span class="thinking-indicator">
+                    <span class="thinking-dots">
+                      <span></span><span></span><span></span>
+                    </span>
+                    Đen đang suy nghĩ...
+                  </span>
+                } @else {
+                  {{ statusText() }}
+                }
               </div>
 
               <div class="board-wrapper">
-                <div class="board">
-                  <!-- River -->
-                  <div class="river">
-                    <span class="river-text">楚河</span>
-                    <span class="river-text">漢界</span>
-                  </div>
+                <div class="board" [class.hidden-mode]="isHiddenChessMode()">
+                  <!-- River (ẩn khi chơi cờ úp) -->
+                  @if (!isHiddenChessMode()) {
+                    <div class="river">
+                      <span class="river-text">楚河</span>
+                      <span class="river-text">漢界</span>
+                    </div>
+                  }
 
                   <!-- Board Grid -->
                   <div class="board-grid">
@@ -127,8 +140,9 @@
                           <!-- Piece -->
                           @if (boardPieces()[row][col]; as piece) {
                             <div class="piece"
-                                 [class.red]="piece.color === PieceColor.RED"
-                                 [class.black]="piece.color === PieceColor.BLACK"
+                                 [class.red]="piece.color === PieceColor.RED && piece.state !== PieceState.HIDDEN"
+                                 [class.black]="piece.color === PieceColor.BLACK && piece.state !== PieceState.HIDDEN"
+                                 [class.hidden-piece]="piece.state === PieceState.HIDDEN"
                                  [class.last-moved]="cellStates()[row][col].isLastMoveTo">
                               <span class="piece-char">{{ getPieceChar(piece) }}</span>
                             </div>
@@ -315,9 +329,8 @@
                 <span>Cờ Tướng</span>
               </button>
               <button [class.selected]="selectedMode() === GameMode.HIDDEN"
-                      (click)="onSetMode(GameMode.HIDDEN)"
-                      disabled title="Sắp ra mắt">
-                <span class="mode-icon">❓</span>
+                      (click)="onSetMode(GameMode.HIDDEN)">
+                <span class="mode-icon">🎲</span>
                 <span>Cờ Úp</span>
               </button>
               <button [class.selected]="selectedMode() === GameMode.PUZZLE"

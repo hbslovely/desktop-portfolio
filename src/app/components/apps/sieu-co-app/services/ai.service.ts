@@ -121,11 +121,12 @@ export class AIService {
         useOpeningBook: true
       },
       [AIDifficulty.MASTER]: {
-        maxDepth: 5,
-        maxTime: 5000,
+        maxDepth: 7,
+        maxTime: 15000,
         useQuiescence: true,
         useOpeningBook: true,
-        useTranspositionTable: true
+        useTranspositionTable: true,
+        useIterativeDeepening: true
       }
     };
     
