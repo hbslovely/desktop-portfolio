@@ -302,8 +302,16 @@ export class GameService {
       return;
     }
 
-    const bestMove = algorithm.findBestMove(state.board, state.currentTurn, state.config.aiDifficulty);
+    const result = algorithm.findBestMove(state.board, state.currentTurn, state.config.aiDifficulty);
     this.isAIThinkingSubject.next(false);
+
+    // Handle both return types (Move | SearchResult)
+    let bestMove: Move | null = null;
+    if (result && typeof result === 'object' && 'bestMove' in result) {
+      bestMove = (result as { bestMove: Move | null }).bestMove;
+    } else {
+      bestMove = result as Move | null;
+    }
 
     if (bestMove) {
       this.makeHiddenMove(bestMove.from, bestMove.to);
@@ -434,7 +442,7 @@ export class GameService {
       return;
     }
 
-    const bestMove = algorithm.findBestMove(
+    const result = algorithm.findBestMove(
       state.board,
       state.currentTurn,
       state.config.aiDifficulty
@@ -442,6 +450,14 @@ export class GameService {
 
     // Clear thinking state
     this.isAIThinkingSubject.next(false);
+
+    // Handle both return types (Move | SearchResult)
+    let bestMove: Move | null = null;
+    if (result && typeof result === 'object' && 'bestMove' in result) {
+      bestMove = (result as { bestMove: Move | null }).bestMove;
+    } else {
+      bestMove = result as Move | null;
+    }
 
     if (bestMove) {
       this.makeMove(bestMove.from, bestMove.to);
@@ -455,7 +471,15 @@ export class GameService {
     const state = this.state;
     const algorithm = getAlgorithm('minimax', { maxDepth: 3 });
     if (!algorithm) return null;
-    return algorithm.getHint(state.board, state.currentTurn);
+    
+    const result = algorithm.getHint?.(state.board, state.currentTurn);
+    if (!result) return null;
+    
+    // Handle both return types
+    if (typeof result === 'object' && 'bestMove' in result) {
+      return (result as { bestMove: Move | null }).bestMove;
+    }
+    return result as Move | null;
   }
 
   /**

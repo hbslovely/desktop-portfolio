@@ -1,6 +1,19 @@
 import { Board, Position } from '../models/board.model';
 import { Move } from '../models/move.model';
 import { PieceColor } from '../models/piece.model';
+import { GameState } from '../models/game-state.model';
+
+/**
+ * Tùy chọn tìm kiếm cho AI
+ */
+export interface SearchOptions {
+  maxDepth: number;
+  maxTime?: number;
+  useQuiescence?: boolean;
+  useOpeningBook?: boolean;
+  useTranspositionTable?: boolean;
+  useIterativeDeepening?: boolean;
+}
 
 /**
  * Interface cho các thuật toán AI
@@ -18,25 +31,37 @@ export interface IAIAlgorithm {
   readonly description: string;
 
   /**
-   * Độ sâu tìm kiếm mặc định
+   * Độ sâu tìm kiếm mặc định (tùy chọn cho thuật toán mới)
    */
-  readonly defaultDepth: number;
+  readonly defaultDepth?: number;
+
+  /**
+   * Thông tin thuật toán (cho thuật toán mới)
+   */
+  readonly info?: {
+    name: string;
+    description: string;
+    version?: string;
+  };
 
   /**
    * Tìm nước đi tốt nhất cho màu quân chỉ định
-   * @param board Bàn cờ hiện tại
-   * @param color Màu quân cần tìm nước đi
-   * @param depth Độ sâu tìm kiếm
-   * @returns Nước đi tốt nhất hoặc null nếu không có
+   * Hỗ trợ cả interface cũ và mới
    */
-  findBestMove(board: Board, color: PieceColor, depth: number): Move | null;
+  findBestMove(
+    board: Board,
+    color: PieceColor,
+    depthOrOptions?: number | SearchOptions,
+    gameState?: GameState
+  ): Move | null | SearchResult;
 
   /**
    * Đánh giá điểm của bàn cờ
    * @param board Bàn cờ cần đánh giá
+   * @param color Màu quân (tùy chọn)
    * @returns Điểm đánh giá (dương = lợi thế Đen, âm = lợi thế Đỏ)
    */
-  evaluate(board: Board): number;
+  evaluate?(board: Board, color?: PieceColor): number;
 
   /**
    * Lấy gợi ý nước đi cho người chơi
@@ -44,7 +69,12 @@ export interface IAIAlgorithm {
    * @param color Màu quân cần gợi ý
    * @returns Nước đi gợi ý hoặc null
    */
-  getHint(board: Board, color: PieceColor): Move | null;
+  getHint?(board: Board, color: PieceColor): Move | null;
+
+  /**
+   * Dừng tìm kiếm (tùy chọn)
+   */
+  stop?(): void;
 }
 
 /**
@@ -66,9 +96,11 @@ export interface SearchResult {
   bestMove: Move | null;
   score: number;
   nodesSearched: number;
-  timeMs: number;
+  time?: number;      // milliseconds
+  timeMs?: number;    // alias for time
   depth: number;
-  principalVariation?: Move[];  // Dãy nước đi tốt nhất
+  pv?: Move[];        // Principal Variation
+  principalVariation?: Move[];  // Alias for pv
 }
 
 /**
