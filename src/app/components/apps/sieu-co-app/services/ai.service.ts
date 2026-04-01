@@ -65,9 +65,24 @@ export class AIService {
       return new Promise((resolve) => {
         setTimeout(() => {
           const result = this.currentAlgorithm.findBestMove(board, color, options, gameState);
-          this.lastResult = result;
-          this.isThinking = false;
-          resolve(result.bestMove);
+          
+          // Handle both old (Move | null) and new (SearchResult) return types
+          if (result && typeof result === 'object' && 'bestMove' in result) {
+            // New format: SearchResult
+            this.lastResult = result as SearchResult;
+            this.isThinking = false;
+            resolve((result as SearchResult).bestMove);
+          } else {
+            // Old format: Move | null
+            this.lastResult = {
+              bestMove: result as Move | null,
+              score: 0,
+              nodesSearched: 0,
+              depth: options.maxDepth
+            };
+            this.isThinking = false;
+            resolve(result as Move | null);
+          }
         }, 50);
       });
     } catch (error) {
@@ -94,7 +109,12 @@ export class AIService {
     options.maxDepth = Math.min(options.maxDepth, 3);
     
     const result = this.currentAlgorithm.findBestMove(board, color, options);
-    return result.bestMove;
+    
+    // Handle both return types
+    if (result && typeof result === 'object' && 'bestMove' in result) {
+      return (result as SearchResult).bestMove;
+    }
+    return result as Move | null;
   }
   
   /**
@@ -109,20 +129,21 @@ export class AIService {
         useOpeningBook: false
       },
       [AIDifficulty.AMATEUR]: {
-        maxDepth: 3,
-        maxTime: 2000,
+        maxDepth: 4,
+        maxTime: 3000,
         useQuiescence: true,
         useOpeningBook: false
       },
       [AIDifficulty.EXPERT]: {
-        maxDepth: 4,
-        maxTime: 3000,
+        maxDepth: 6,
+        maxTime: 8000,
         useQuiescence: true,
-        useOpeningBook: true
+        useOpeningBook: true,
+        useTranspositionTable: true
       },
       [AIDifficulty.MASTER]: {
-        maxDepth: 7,
-        maxTime: 15000,
+        maxDepth: 10,
+        maxTime: 30000,
         useQuiescence: true,
         useOpeningBook: true,
         useTranspositionTable: true,

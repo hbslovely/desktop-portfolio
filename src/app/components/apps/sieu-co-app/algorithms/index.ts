@@ -3,18 +3,24 @@ import { MinimaxAlgorithm, MINIMAX_METADATA } from './minimax.algorithm';
 import { RandomAlgorithm, RANDOM_METADATA } from './random.algorithm';
 import { GreedyAlgorithm, GREEDY_METADATA } from './greedy.algorithm';
 import { HiddenChessAlgorithm, HIDDEN_CHESS_METADATA } from './hidden-chess.algorithm';
+import { AdvancedAlgorithm, ADVANCED_METADATA } from './advanced.algorithm';
 
 export * from './base.algorithm';
 export * from './minimax.algorithm';
 export * from './random.algorithm';
 export * from './greedy.algorithm';
 export * from './hidden-chess.algorithm';
+export * from './advanced.algorithm';
 
 /**
  * Registry các thuật toán AI có sẵn
  * Người dùng có thể đăng ký thêm thuật toán của riêng họ
  */
 export const ALGORITHM_REGISTRY: AlgorithmRegistry = {
+  'advanced': {
+    metadata: ADVANCED_METADATA,
+    factory: () => new AdvancedAlgorithm()
+  },
   'minimax': {
     metadata: MINIMAX_METADATA,
     factory: (config?: AlgorithmConfig) => new MinimaxAlgorithm(config)
@@ -35,15 +41,16 @@ export const ALGORITHM_REGISTRY: AlgorithmRegistry = {
 
 // List of available algorithms for UI
 export const AVAILABLE_ALGORITHMS = [
+  new AdvancedAlgorithm(),
   new MinimaxAlgorithm(),
   new RandomAlgorithm(),
   new GreedyAlgorithm(),
   new HiddenChessAlgorithm()
 ];
 
-// Get default algorithm
+// Get default algorithm - Sử dụng Advanced AI mặc định
 export function getDefaultAlgorithm(): IAIAlgorithm {
-  return new MinimaxAlgorithm();
+  return new AdvancedAlgorithm();
 }
 
 // Create algorithm instance by id
