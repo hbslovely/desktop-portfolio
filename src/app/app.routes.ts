@@ -25,5 +25,10 @@ export const routes: Routes = [
     path: 'pit',
     loadComponent: () => import('./pages/pit-2026/pit-2026.component').then(m => m.Pit2026Component),
     title: 'Công cụ tính thuế TNCN 2026'
+  },
+  {
+    path: 'tax',
+    loadComponent: () => import('./pages/pit-2026/pit-2026.component').then(m => m.Pit2026Component),
+    title: 'Công cụ tính thuế TNCN 2026'
   }
 ];
