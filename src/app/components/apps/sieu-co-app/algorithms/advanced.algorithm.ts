@@ -80,16 +80,115 @@ export class AdvancedAlgorithm implements IAIAlgorithm {
   }
 
   /**
-   * Initialize opening book
+   * Initialize opening book - Các khai cuộc phổ biến
    */
   private initOpeningBook(): void {
-    // 中炮 - Central Cannon
-    this.openingBook.set('initial', [
-      { from: { row: 7, col: 4 }, to: { row: 4, col: 4 }, piece: { type: PieceType.CANNON, color: PieceColor.BLACK } as Piece },
-      { from: { row: 7, col: 1 }, to: { row: 7, col: 4 }, piece: { type: PieceType.CANNON, color: PieceColor.BLACK } as Piece },
-      { from: { row: 9, col: 1 }, to: { row: 7, col: 2 }, piece: { type: PieceType.HORSE, color: PieceColor.BLACK } as Piece },
-      { from: { row: 9, col: 7 }, to: { row: 7, col: 6 }, piece: { type: PieceType.HORSE, color: PieceColor.BLACK } as Piece },
+    // Khai cuộc cho Đen (đi sau)
+    // 順手炮 - Thuận Thủ Pháo (phản công Trung Pháo)
+    this.openingBook.set('black_response_central_cannon', [
+      // Pháo đầu (Trung Pháo phản kích)
+      { from: { row: 2, col: 7 }, to: { row: 2, col: 4 }, piece: { type: PieceType.CANNON, color: PieceColor.BLACK } as Piece },
+      // Phi Tượng
+      { from: { row: 0, col: 2 }, to: { row: 2, col: 4 }, piece: { type: PieceType.ELEPHANT, color: PieceColor.BLACK } as Piece },
+      // Xuất Mã trái
+      { from: { row: 0, col: 1 }, to: { row: 2, col: 2 }, piece: { type: PieceType.HORSE, color: PieceColor.BLACK } as Piece },
+      // Xuất Mã phải
+      { from: { row: 0, col: 7 }, to: { row: 2, col: 6 }, piece: { type: PieceType.HORSE, color: PieceColor.BLACK } as Piece },
+      // Xe chạy dọc
+      { from: { row: 0, col: 0 }, to: { row: 1, col: 0 }, piece: { type: PieceType.ROOK, color: PieceColor.BLACK } as Piece },
+      { from: { row: 0, col: 8 }, to: { row: 1, col: 8 }, piece: { type: PieceType.ROOK, color: PieceColor.BLACK } as Piece },
     ]);
+
+    // Khai cuộc cho Đỏ (đi trước)
+    // 中炮 - Trung Pháo
+    this.openingBook.set('red_central_cannon', [
+      // Pháo 2 tiến 5 (Trung Pháo)
+      { from: { row: 7, col: 1 }, to: { row: 7, col: 4 }, piece: { type: PieceType.CANNON, color: PieceColor.RED } as Piece },
+      // Mã 2 tiến 3
+      { from: { row: 9, col: 1 }, to: { row: 7, col: 2 }, piece: { type: PieceType.HORSE, color: PieceColor.RED } as Piece },
+      // Mã 8 tiến 7
+      { from: { row: 9, col: 7 }, to: { row: 7, col: 6 }, piece: { type: PieceType.HORSE, color: PieceColor.RED } as Piece },
+      // Xe 1 tiến 1
+      { from: { row: 9, col: 0 }, to: { row: 8, col: 0 }, piece: { type: PieceType.ROOK, color: PieceColor.RED } as Piece },
+      // Xe 9 tiến 1
+      { from: { row: 9, col: 8 }, to: { row: 8, col: 8 }, piece: { type: PieceType.ROOK, color: PieceColor.RED } as Piece },
+    ]);
+
+    // 仙人指路 - Tiên Nhân Chỉ Lộ (Tốt đầu)
+    this.openingBook.set('red_pawn_opening', [
+      // Binh 3 tiến 1 hoặc Binh 7 tiến 1
+      { from: { row: 6, col: 2 }, to: { row: 5, col: 2 }, piece: { type: PieceType.PAWN, color: PieceColor.RED } as Piece },
+      { from: { row: 6, col: 6 }, to: { row: 5, col: 6 }, piece: { type: PieceType.PAWN, color: PieceColor.RED } as Piece },
+    ]);
+
+    // 飛相局 - Phi Tượng Cục
+    this.openingBook.set('red_elephant_opening', [
+      { from: { row: 9, col: 2 }, to: { row: 7, col: 4 }, piece: { type: PieceType.ELEPHANT, color: PieceColor.RED } as Piece },
+      { from: { row: 9, col: 6 }, to: { row: 7, col: 4 }, piece: { type: PieceType.ELEPHANT, color: PieceColor.RED } as Piece },
+    ]);
+
+    // 起馬局 - Khởi Mã Cục
+    this.openingBook.set('red_horse_opening', [
+      { from: { row: 9, col: 1 }, to: { row: 7, col: 0 }, piece: { type: PieceType.HORSE, color: PieceColor.RED } as Piece },
+      { from: { row: 9, col: 1 }, to: { row: 7, col: 2 }, piece: { type: PieceType.HORSE, color: PieceColor.RED } as Piece },
+      { from: { row: 9, col: 7 }, to: { row: 7, col: 6 }, piece: { type: PieceType.HORSE, color: PieceColor.RED } as Piece },
+      { from: { row: 9, col: 7 }, to: { row: 7, col: 8 }, piece: { type: PieceType.HORSE, color: PieceColor.RED } as Piece },
+    ]);
+  }
+
+  /**
+   * Get opening move from book
+   */
+  private getOpeningMove(board: Board, color: PieceColor, moveCount: number): Move | null {
+    // Chỉ dùng opening book cho 6 nước đầu
+    if (moveCount > 6) return null;
+
+    const moves = generateAllMoves(board, color);
+    let candidates: Move[] = [];
+
+    if (color === PieceColor.RED) {
+      // Đỏ đi trước - chọn ngẫu nhiên từ các khai cuộc
+      const openings = ['red_central_cannon', 'red_pawn_opening', 'red_elephant_opening', 'red_horse_opening'];
+      const selectedOpening = openings[Math.floor(Math.random() * openings.length)];
+      const bookMoves = this.openingBook.get(selectedOpening);
+      
+      if (bookMoves) {
+        for (const bookMove of bookMoves) {
+          const validMove = moves.find(m =>
+            m.from.row === bookMove.from.row &&
+            m.from.col === bookMove.from.col &&
+            m.to.row === bookMove.to.row &&
+            m.to.col === bookMove.to.col
+          );
+          if (validMove) {
+            candidates.push(validMove);
+          }
+        }
+      }
+    } else {
+      // Đen phản công
+      const bookMoves = this.openingBook.get('black_response_central_cannon');
+      if (bookMoves) {
+        for (const bookMove of bookMoves) {
+          const validMove = moves.find(m =>
+            m.from.row === bookMove.from.row &&
+            m.from.col === bookMove.from.col &&
+            m.to.row === bookMove.to.row &&
+            m.to.col === bookMove.to.col
+          );
+          if (validMove) {
+            candidates.push(validMove);
+          }
+        }
+      }
+    }
+
+    // Chọn ngẫu nhiên từ các nước hợp lệ
+    if (candidates.length > 0) {
+      return candidates[Math.floor(Math.random() * candidates.length)];
+    }
+
+    return null;
   }
 
   /**
@@ -125,28 +224,19 @@ export class AdvancedAlgorithm implements IAIAlgorithm {
     let bestMove: Move | null = null;
     let bestScore = -Infinity;
 
-    // Check opening book
-    if (options?.useOpeningBook && gameState?.moveHistory.length === 0) {
-      const bookMoves = this.openingBook.get('initial');
-      if (bookMoves && bookMoves.length > 0) {
-        const moves = generateAllMoves(board, color);
-        const randomBook = bookMoves[Math.floor(Math.random() * bookMoves.length)];
-        const validBookMove = moves.find(m => 
-          m.from.row === randomBook.from.row && 
-          m.from.col === randomBook.from.col &&
-          m.to.row === randomBook.to.row &&
-          m.to.col === randomBook.to.col
-        );
-        if (validBookMove) {
-          return {
-            bestMove: validBookMove,
-            score: 0,
-            depth: 0,
-            nodesSearched: 0,
-            time: 0,
-            pv: [validBookMove]
-          };
-        }
+    // Check opening book (trong 6 nước đầu)
+    if (options?.useOpeningBook) {
+      const moveCount = gameState?.moveHistory?.length ?? 0;
+      const openingMove = this.getOpeningMove(board, color, moveCount);
+      if (openingMove) {
+        return {
+          bestMove: openingMove,
+          score: 0,
+          depth: 0,
+          nodesSearched: 0,
+          time: 0,
+          pv: [openingMove]
+        };
       }
     }
 
@@ -392,6 +482,9 @@ export class AdvancedAlgorithm implements IAIAlgorithm {
       // SEE pruning - Skip bad captures
       if (move.capturedPiece && !this.isGoodCapture(move)) continue;
 
+      // Trap detection - Skip trap moves (chỉ ở depth thấp để không quá chậm)
+      if (ply < 4 && move.capturedPiece && this.isTrap(move, board)) continue;
+
       const newBoard = this.makeMove(board, move);
       const score = -this.quiescenceSearch(newBoard, -beta, -alpha, enemyColor, ply + 1);
 
@@ -403,7 +496,8 @@ export class AdvancedAlgorithm implements IAIAlgorithm {
   }
 
   /**
-   * Static Exchange Evaluation (SEE) - kiểm tra nước ăn có tốt không
+   * Static Exchange Evaluation (SEE) - đánh giá nước đổi quân
+   * Trả về true nếu nước ăn có lợi hoặc hòa
    */
   private isGoodCapture(move: Move): boolean {
     if (!move.capturedPiece) return false;
@@ -411,13 +505,235 @@ export class AdvancedAlgorithm implements IAIAlgorithm {
     const capturedValue = PIECE_VALUES[move.capturedPiece.type];
     const attackerValue = PIECE_VALUES[move.piece.type];
     
-    // Nếu ăn quân có giá trị cao hơn hoặc bằng, luôn tốt
+    // Rule 1: Ăn quân giá trị cao hơn hoặc bằng = luôn tốt
     if (capturedValue >= attackerValue) return true;
+
+    // Rule 2: Ăn Tướng = luôn tốt
+    if (move.capturedPiece.type === PieceType.KING) return true;
     
-    // Tốt ăn gì cũng tốt (trừ bị bảo vệ)
+    // Rule 3: Tốt ăn quân nào cũng tốt (giá trị thấp nhất)
     if (move.piece.type === PieceType.PAWN) return true;
     
-    return capturedValue > attackerValue - 100;
+    // Rule 4: Pháo ăn Mã/Sĩ/Tượng - thường tốt (giá trị tương đương)
+    if (move.piece.type === PieceType.CANNON) {
+      if (move.capturedPiece.type === PieceType.HORSE ||
+          move.capturedPiece.type === PieceType.ADVISOR ||
+          move.capturedPiece.type === PieceType.ELEPHANT) {
+        return true;
+      }
+    }
+
+    // Rule 5: Mã ăn Pháo - tốt
+    if (move.piece.type === PieceType.HORSE && 
+        move.capturedPiece.type === PieceType.CANNON) {
+      return true;
+    }
+
+    // Rule 6: Xe ăn gì cũng cẩn thận - chỉ ăn khi lợi rõ ràng
+    if (move.piece.type === PieceType.ROOK) {
+      // Xe chỉ nên ăn Xe hoặc 2+ quân nhỏ
+      return capturedValue >= 800; // Xe = 900, chỉ ăn Xe
+    }
+    
+    // Rule 7: Tránh thí quân lớn ăn quân nhỏ
+    // Chênh lệch > 200 điểm = không nên đổi
+    const valueDiff = capturedValue - attackerValue;
+    if (valueDiff < -200) return false;
+
+    return true;
+  }
+
+  /**
+   * Kiểm tra xem nước ăn có phải là bẫy không
+   * Phát hiện khi đối phương thí quân để bắt quân lớn hơn
+   */
+  private isTrap(move: Move, board: Board): boolean {
+    if (!move.capturedPiece) return false;
+
+    const myColor = move.piece.color;
+    const enemyColor = myColor === PieceColor.RED ? PieceColor.BLACK : PieceColor.RED;
+    
+    // Thực hiện nước ăn
+    const boardAfterCapture = this.makeMove(board, move);
+    
+    // Xem đối phương có nước phản công nguy hiểm không
+    const enemyResponses = generateAllMoves(boardAfterCapture, enemyColor);
+    
+    for (const response of enemyResponses) {
+      if (!response.capturedPiece) continue;
+      
+      const responseValue = PIECE_VALUES[response.capturedPiece.type];
+      const capturedValue = PIECE_VALUES[move.capturedPiece.type];
+      
+      // Nếu đối phương có thể ăn quân lớn hơn = bẫy!
+      if (responseValue > capturedValue + 100) {
+        // Kiểm tra xem ta có thể cứu quân không
+        const boardAfterResponse = this.makeMove(boardAfterCapture, response);
+        const myCounterMoves = generateAllMoves(boardAfterResponse, myColor);
+        
+        // Kiểm tra xem có thể ăn lại không
+        const canRecapture = myCounterMoves.some(m => 
+          m.to.row === response.to.row && 
+          m.to.col === response.to.col && 
+          m.capturedPiece
+        );
+        
+        if (!canRecapture) {
+          return true; // Đây là bẫy!
+        }
+      }
+    }
+
+    // Kiểm tra chiếu mở (discovered attack)
+    // Sau khi ăn, có quân nào của đối phương có thể tấn công quân lớn không?
+    for (const response of enemyResponses) {
+      if (response.isCheck) {
+        // Chiếu! Kiểm tra xem có kèm theo ăn quân không
+        const afterCheck = this.makeMove(boardAfterCapture, response);
+        const afterCheckMoves = generateAllMoves(afterCheck, enemyColor);
+        
+        for (const followUp of afterCheckMoves) {
+          if (followUp.capturedPiece) {
+            const followUpValue = PIECE_VALUES[followUp.capturedPiece.type];
+            const capturedValue = PIECE_VALUES[move.capturedPiece.type];
+            
+            if (followUpValue > capturedValue) {
+              return true; // Chiếu mở để ăn quân lớn hơn
+            }
+          }
+        }
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   * Phát hiện bắt đôi (fork) - một quân tấn công 2+ quân cùng lúc
+   */
+  private detectFork(board: Board, color: PieceColor): { attacker: { row: number; col: number }; targets: { row: number; col: number; value: number }[] }[] {
+    const forks: { attacker: { row: number; col: number }; targets: { row: number; col: number; value: number }[] }[] = [];
+    const moves = generateAllMoves(board, color);
+    
+    // Nhóm các nước đi theo điểm đến
+    const attacksByPiece = new Map<string, Move[]>();
+    
+    for (const move of moves) {
+      const key = `${move.from.row},${move.from.col}`;
+      if (!attacksByPiece.has(key)) {
+        attacksByPiece.set(key, []);
+      }
+      if (move.capturedPiece) {
+        attacksByPiece.get(key)!.push(move);
+      }
+    }
+
+    // Tìm quân có thể ăn 2+ quân
+    for (const [key, attacks] of attacksByPiece) {
+      if (attacks.length >= 2) {
+        const [row, col] = key.split(',').map(Number);
+        const targets = attacks.map(a => ({
+          row: a.to.row,
+          col: a.to.col,
+          value: PIECE_VALUES[a.capturedPiece!.type]
+        }));
+        
+        // Chỉ tính fork nếu tổng giá trị đủ lớn
+        const totalValue = targets.reduce((sum, t) => sum + t.value, 0);
+        if (totalValue >= 400) {
+          forks.push({ attacker: { row, col }, targets });
+        }
+      }
+    }
+
+    return forks;
+  }
+
+  /**
+   * Đánh giá mối đe dọa chiến thuật
+   */
+  private evaluateTactics(board: Board, color: PieceColor): number {
+    let score = 0;
+    const enemyColor = color === PieceColor.RED ? PieceColor.BLACK : PieceColor.RED;
+
+    // Tìm bắt đôi của ta
+    const myForks = this.detectFork(board, color);
+    for (const fork of myForks) {
+      // Lợi thế khi có thể bắt đôi
+      const minTargetValue = Math.min(...fork.targets.map(t => t.value));
+      score += minTargetValue * 0.5; // Sẽ ăn được ít nhất 1 quân
+    }
+
+    // Tìm bắt đôi của đối phương
+    const enemyForks = this.detectFork(board, enemyColor);
+    for (const fork of enemyForks) {
+      const minTargetValue = Math.min(...fork.targets.map(t => t.value));
+      score -= minTargetValue * 0.5;
+    }
+
+    return score;
+  }
+
+  /**
+   * Đánh giá đổi quân chi tiết hơn - có xét bẫy
+   * Trả về điểm lợi/hại của nước đổi
+   */
+  private evaluateExchange(move: Move, board: Board): number {
+    if (!move.capturedPiece) return 0;
+
+    // Kiểm tra bẫy trước
+    if (this.isTrap(move, board)) {
+      return -1000; // Đây là bẫy, tránh xa!
+    }
+
+    const capturedValue = PIECE_VALUES[move.capturedPiece.type];
+    const attackerValue = PIECE_VALUES[move.piece.type];
+    
+    // Lợi cơ bản = giá trị quân bị ăn - giá trị quân tấn công (nếu bị ăn lại)
+    let gain = capturedValue;
+    
+    // Kiểm tra xem quân tấn công có bị ăn lại không
+    const enemyColor = move.piece.color === PieceColor.RED ? PieceColor.BLACK : PieceColor.RED;
+    const newBoard = this.makeMove(board, move);
+    const counterMoves = generateAllMoves(newBoard, enemyColor);
+    
+    // Tìm nước phản công vào vị trí vừa ăn
+    const counterCapture = counterMoves.find(m => 
+      m.to.row === move.to.row && m.to.col === move.to.col && m.capturedPiece
+    );
+    
+    if (counterCapture) {
+      // Quân tấn công sẽ bị ăn lại
+      gain -= attackerValue;
+      
+      // Nhưng ta lại có thể ăn lại quân phản công
+      // Đơn giản hóa: chỉ xét 1 lớp
+      const lowestDefenderValue = this.findLowestAttacker(newBoard, move.to, move.piece.color);
+      if (lowestDefenderValue > 0 && lowestDefenderValue < PIECE_VALUES[counterCapture.piece.type]) {
+        gain += PIECE_VALUES[counterCapture.piece.type] - lowestDefenderValue;
+      }
+    }
+
+    return gain;
+  }
+
+  /**
+   * Tìm quân tấn công có giá trị thấp nhất vào một ô
+   */
+  private findLowestAttacker(board: Board, pos: { row: number; col: number }, color: PieceColor): number {
+    const moves = generateAllMoves(board, color);
+    let lowestValue = Infinity;
+
+    for (const m of moves) {
+      if (m.to.row === pos.row && m.to.col === pos.col) {
+        const value = PIECE_VALUES[m.piece.type];
+        if (value < lowestValue) {
+          lowestValue = value;
+        }
+      }
+    }
+
+    return lowestValue === Infinity ? 0 : lowestValue;
   }
 
   /**
@@ -437,7 +753,18 @@ export class AdvancedAlgorithm implements IAIAlgorithm {
       if (move.capturedPiece) {
         const victimValue = PIECE_VALUES[move.capturedPiece.type];
         const attackerValue = PIECE_VALUES[move.piece.type];
-        score += 50000 + victimValue * 10 - attackerValue;
+        
+        // Ưu tiên nước ăn có lợi
+        if (victimValue >= attackerValue) {
+          // Ăn quân lớn hơn hoặc bằng = rất tốt
+          score += 50000 + victimValue * 10 - attackerValue;
+        } else if (this.isGoodCapture(move)) {
+          // Ăn quân nhỏ hơn nhưng vẫn có lợi
+          score += 40000 + victimValue * 5;
+        } else {
+          // Nước đổi quân có thể bị lỗ - xếp sau
+          score += 10000 + victimValue - attackerValue;
+        }
       }
 
       // Killer moves
@@ -536,6 +863,7 @@ export class AdvancedAlgorithm implements IAIAlgorithm {
    */
   evaluate(board: Board, color: PieceColor): number {
     let score = 0;
+    const enemyColor = color === PieceColor.RED ? PieceColor.BLACK : PieceColor.RED;
 
     // Material & Position
     for (let row = 0; row < BOARD_ROWS; row++) {
@@ -558,7 +886,10 @@ export class AdvancedAlgorithm implements IAIAlgorithm {
 
     // King safety
     score += this.evaluateKingSafety(board, color);
-    score -= this.evaluateKingSafety(board, color === PieceColor.RED ? PieceColor.BLACK : PieceColor.RED);
+    score -= this.evaluateKingSafety(board, enemyColor);
+
+    // Tactical threats (forks, discovered attacks)
+    score += this.evaluateTactics(board, color);
 
     // Piece coordination
     score += this.evaluateCoordination(board, color);
@@ -566,7 +897,76 @@ export class AdvancedAlgorithm implements IAIAlgorithm {
     // Attack potential
     score += this.evaluateAttackPotential(board, color);
 
+    // Piece safety - Phạt quân bị đe dọa không được bảo vệ
+    score += this.evaluatePieceSafety(board, color);
+    score -= this.evaluatePieceSafety(board, enemyColor);
+
     return score;
+  }
+
+  /**
+   * Đánh giá an toàn của quân cờ
+   * Phạt quân bị đe dọa mà không được bảo vệ hoặc bảo vệ bởi quân nhỏ hơn
+   */
+  private evaluatePieceSafety(board: Board, color: PieceColor): number {
+    let penalty = 0;
+    const enemyColor = color === PieceColor.RED ? PieceColor.BLACK : PieceColor.RED;
+    const enemyMoves = generateAllMoves(board, enemyColor);
+    const myMoves = generateAllMoves(board, color);
+
+    for (let row = 0; row < BOARD_ROWS; row++) {
+      for (let col = 0; col < BOARD_COLS; col++) {
+        const piece = getPieceAt(board, { row, col });
+        if (!piece || piece.color !== color) continue;
+        if (piece.type === PieceType.KING) continue; // Tướng xử lý riêng
+
+        const pieceValue = PIECE_VALUES[piece.type];
+        
+        // Kiểm tra xem quân này có bị tấn công không
+        const attackers = enemyMoves.filter(m => 
+          m.to.row === row && m.to.col === col
+        );
+
+        if (attackers.length > 0) {
+          // Quân đang bị tấn công
+          // Tìm quân tấn công có giá trị thấp nhất
+          let lowestAttackerValue = Infinity;
+          for (const atk of attackers) {
+            const atkValue = PIECE_VALUES[atk.piece.type];
+            if (atkValue < lowestAttackerValue) {
+              lowestAttackerValue = atkValue;
+            }
+          }
+
+          // Kiểm tra có quân bảo vệ không
+          const defenders = myMoves.filter(m => 
+            m.to.row === row && m.to.col === col
+          );
+
+          if (defenders.length === 0) {
+            // Quân bị treo - không có ai bảo vệ
+            penalty -= pieceValue * 0.8; // Phạt nặng
+          } else if (lowestAttackerValue < pieceValue) {
+            // Bị tấn công bởi quân nhỏ hơn
+            // Tìm quân bảo vệ nhỏ nhất
+            let lowestDefenderValue = Infinity;
+            for (const def of defenders) {
+              const defValue = PIECE_VALUES[def.piece.type];
+              if (defValue < lowestDefenderValue) {
+                lowestDefenderValue = defValue;
+              }
+            }
+
+            // Nếu phải đổi quân lỗ
+            if (lowestDefenderValue > lowestAttackerValue) {
+              penalty -= (pieceValue - lowestAttackerValue) * 0.5;
+            }
+          }
+        }
+      }
+    }
+
+    return penalty;
   }
 
   /**

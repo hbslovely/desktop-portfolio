@@ -108,7 +108,7 @@
                     <span class="thinking-dots">
                       <span></span><span></span><span></span>
                     </span>
-                    Đen đang suy nghĩ...
+                    {{ aiColorName() }} đang suy nghĩ...
                   </span>
                 } @else {
                   {{ statusText() }}
@@ -119,16 +119,21 @@
                 <div class="board" [class.hidden-mode]="isHiddenChessMode()">
                   <!-- River (ẩn khi chơi cờ úp) -->
                   @if (!isHiddenChessMode()) {
-                    <div class="river">
-                      <span class="river-text">楚河</span>
-                      <span class="river-text">漢界</span>
+                    <div class="river" [class.flipped]="isBoardFlipped()">
+                      @if (isBoardFlipped()) {
+                        <span class="river-text">漢界</span>
+                        <span class="river-text">楚河</span>
+                      } @else {
+                        <span class="river-text">楚河</span>
+                        <span class="river-text">漢界</span>
+                      }
                     </div>
                   }
 
                   <!-- Board Grid -->
-                  <div class="board-grid">
-                    @for (row of boardRows; track row) {
-                      @for (col of boardCols; track col) {
+                  <div class="board-grid" [class.flipped]="isBoardFlipped()">
+                    @for (row of displayBoardRows(); track row) {
+                      @for (col of displayBoardCols(); track col) {
                         <div class="cell"
                              [class.selected]="cellStates()[row][col].isSelected"
                              [class.possible-move]="cellStates()[row][col].isPossibleMove"
