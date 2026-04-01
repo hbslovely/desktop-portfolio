@@ -165,6 +165,13 @@ export const APP_ICONS: DesktopIconData[] = [
     icon: 'pi pi-chart-line',
     type: 'application',
     position: { x: 420, y: 320 }
+  },
+  {
+    id: 'sieu-co',
+    name: 'Siêu Cờ',
+    icon: 'pi pi-th-large',
+    type: 'application',
+    position: { x: 420, y: 420 }
   }
 ];
 
@@ -204,7 +211,8 @@ function getAppDescription(appId: string): string {
     'ocr': 'Đọc và trích xuất nội dung văn bản từ hình ảnh sử dụng công nghệ OCR (Optical Character Recognition)',
     'fb-id-finder': 'Tìm Facebook ID từ số điện thoại, tra cứu thông tin Facebook',
     'graph-visualizer': 'Tạo và phân tích đồ thị, tìm đường đi ngắn nhất với các thuật toán Dijkstra, Bellman-Ford, Floyd-Warshall, A*',
-    'stock': 'Quản lý và fetch dữ liệu cổ phiếu từ DNSE, lưu vào Google Sheets. Hỗ trợ HOSE, HNX, UPCOM, VN30'
+    'stock': 'Quản lý và fetch dữ liệu cổ phiếu từ DNSE, lưu vào Google Sheets. Hỗ trợ HOSE, HNX, UPCOM, VN30',
+    'sieu-co': 'Siêu Cờ - Chơi Cờ Tướng, Cờ Úp, giải Cờ Thế với AI thông minh. Ghi chép kỳ phổ, nhiều theme đẹp mắt'
   };
   return descriptions[appId] || 'Application';
 }
@@ -233,7 +241,8 @@ function getAppKeywords(appId: string): string[] {
     'ocr': ['ocr', 'đọc hình ảnh', 'doc hinh anh', 'nhận dạng văn bản', 'nhan dang van ban', 'text recognition', 'image to text', 'optical character recognition', 'trích xuất văn bản', 'trich xuat van ban', 'scan text', 'read image'],
     'fb-id-finder': ['facebook', 'fb', 'id', 'tìm facebook id', 'tim facebook id', 'số điện thoại', 'so dien thoai', 'phone', 'find facebook id', 'facebook id finder', 'lookup', 'search facebook'],
     'graph-visualizer': ['graph', 'đồ thị', 'do thi', 'graph visualization', 'shortest path', 'đường đi ngắn nhất', 'duong di ngan nhat', 'dijkstra', 'bellman-ford', 'floyd-warshall', 'a-star', 'algorithm', 'thuật toán', 'thuat toan', 'node', 'edge', 'weighted graph', 'directed graph', 'undirected graph'],
-    'stock': ['stock', 'chứng khoán', 'chung khoan', 'cổ phiếu', 'co phieu', 'dnse', 'hose', 'hnx', 'upcom', 'vn30', 'stock market', 'securities', 'trading', 'symbol', 'mã cổ phiếu', 'ma co phieu']
+    'stock': ['stock', 'chứng khoán', 'chung khoan', 'cổ phiếu', 'co phieu', 'dnse', 'hose', 'hnx', 'upcom', 'vn30', 'stock market', 'securities', 'trading', 'symbol', 'mã cổ phiếu', 'ma co phieu'],
+    'sieu-co': ['siêu cờ', 'sieu co', 'cờ tướng', 'co tuong', 'xiangqi', 'cờ úp', 'co up', 'cờ thế', 'co the', 'puzzle chess', 'chinese chess', 'AI chess', 'game', 'kỳ phổ', 'ky pho', 'minimax', 'alpha-beta']
   };
   return keywords[appId] || [];
 }

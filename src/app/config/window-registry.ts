@@ -359,6 +359,18 @@ export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
     defaultY: 50,
     maximizable: true,
     statusText: 'Quản lý và fetch dữ liệu cổ phiếu từ DNSE'
+  },
+  'sieu-co': {
+    id: 'sieu-co',
+    title: 'Siêu Cờ',
+    icon: 'pi pi-th-large',
+    component: 'sieu-co',
+    defaultWidth: 1200,
+    defaultHeight: 850,
+    defaultX: 100,
+    defaultY: 40,
+    maximizable: true,
+    statusText: 'Cờ Tướng, Cờ Úp & Cờ Thế'
   }
 };
 
