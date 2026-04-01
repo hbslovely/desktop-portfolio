@@ -242,12 +242,28 @@
 
 <script>
     const LCSC = 2340000;
+    // Biểu thuế THÁNG
     const OLD = { pers: 11e6, dep: 4.4e6, steps: [
             { m: 5e6, r: 0.05 }, { m: 10e6, r: 0.1 }, { m: 18e6, r: 0.15 }, { m: 32e6, r: 0.2 }, { m: 52e6, r: 0.25 }, { m: 80e6, r: 0.3 }, { m: Infinity, r: 0.35 }
         ]};
     const NEW = { pers: 15.5e6, dep: 6.2e6, steps: [
             { m: 10e6, r: 0.05 }, { m: 30e6, r: 0.1 }, { m: 60e6, r: 0.2 }, { m: 100e6, r: 0.3 }, { m: Infinity, r: 0.35 }
         ]};
+    
+    // Biểu thuế NĂM (x12) - dùng cho quyết toán
+    const OLD_ANNUAL = { 
+        pers: 11e6 * 12,  // 132 triệu
+        dep: 4.4e6,       // giảm trừ NPT vẫn tính theo tháng
+        steps: [
+            { m: 60e6, r: 0.05, label: 'Đến 60 triệu' },           // 5tr x 12
+            { m: 120e6, r: 0.1, label: '60 - 120 triệu' },         // 10tr x 12
+            { m: 216e6, r: 0.15, label: '120 - 216 triệu' },       // 18tr x 12
+            { m: 384e6, r: 0.2, label: '216 - 384 triệu' },        // 32tr x 12
+            { m: 624e6, r: 0.25, label: '384 - 624 triệu' },       // 52tr x 12
+            { m: 960e6, r: 0.3, label: '624 - 960 triệu' },        // 80tr x 12
+            { m: Infinity, r: 0.35, label: 'Trên 960 triệu' }
+        ]
+    };
 
     function f(n) { return new Intl.NumberFormat('vi-VN').format(Math.round(n)) + " ₫"; }
 
@@ -563,19 +579,19 @@
             const fromMonth = parseInt(entry.querySelector('.from-month').value);
             const toMonth = parseInt(entry.querySelector('.to-month').value);
             const months = Math.max(0, toMonth - fromMonth + 1);
-            const deduction = months * OLD.dep;
+            const deduction = months * OLD_ANNUAL.dep;  // 4.4tr/tháng/NPT
             totalDependentDeduction += deduction;
             dependentDetails.push({ from: fromMonth, to: toMonth, months, deduction });
         });
 
         // Calculate annual deductions
-        const personalDeduction = 12 * OLD.pers; // 12 months of personal deduction
+        const personalDeduction = OLD_ANNUAL.pers; // 132 triệu/năm (11tr x 12)
 
         // Calculate taxable income (annual)
         const taxableIncome = Math.max(0, totalGross - totalInsurance - personalDeduction - totalDependentDeduction);
 
-        // Calculate tax using progressive rates (2025)
-        const annualTaxResult = calcTax(taxableIncome, OLD.steps);
+        // Calculate tax using ANNUAL progressive rates (2025)
+        const annualTaxResult = calcTax(taxableIncome, OLD_ANNUAL.steps);
         const taxDue = annualTaxResult.total;
 
         // Calculate difference
@@ -634,23 +650,23 @@
             </tr>
         `;
 
-        // Personal deduction
+        // Personal deduction (annual)
         html += `
             <tr class="font-bold">
                 <td class="p-4 text-center border-r stt-font">[3]</td>
-                <td class="p-4 text-sm">Giảm trừ bản thân (12 tháng × ${f(OLD.pers)})</td>
+                <td class="p-4 text-sm">Giảm trừ bản thân cả năm (${f(OLD.pers)}/tháng × 12)</td>
                 <td class="p-4 text-right text-red-600">- ${f(personalDeduction)}</td>
             </tr>
         `;
 
-        // Dependent deductions
+        // Dependent deductions (4.4tr/tháng/NPT)
         if (dependentDetails.length > 0) {
-            html += `<tr class="row-header"><td class="p-3 text-center border-r stt-font">[4]</td><td colspan="2" class="p-3">Giảm trừ người phụ thuộc (${dependentDetails.length} NPT)</td></tr>`;
+            html += `<tr class="row-header"><td class="p-3 text-center border-r stt-font">[4]</td><td colspan="2" class="p-3">Giảm trừ người phụ thuộc (${dependentDetails.length} NPT × ${f(OLD_ANNUAL.dep)}/tháng)</td></tr>`;
             dependentDetails.forEach((dep, idx) => {
                 html += `
                     <tr class="sub-row-style">
                         <td class="p-3 text-center border-r stt-font text-[11px]">[4.${idx + 1}]</td>
-                        <td class="p-3 pl-6">NPT #${idx + 1}: Tháng ${dep.from} → ${dep.to} (${dep.months} tháng)</td>
+                        <td class="p-3 pl-6">NPT #${idx + 1}: Tháng ${dep.from} → ${dep.to} (${dep.months} tháng × ${f(OLD_ANNUAL.dep)})</td>
                         <td class="p-3 text-right text-red-600">- ${f(dep.deduction)}</td>
                     </tr>
                 `;
@@ -674,15 +690,15 @@
             </tr>
         `;
 
-        // Tax calculation details
-        html += `<tr class="row-header"><td class="p-3 text-center border-r stt-font">[6]</td><td colspan="2" class="p-3">Chi tiết thuế TNCN theo biểu lũy tiến 2025</td></tr>`;
-        const stepLabels = ['5 triệu đầu', '5-10 triệu', '10-18 triệu', '18-32 triệu', '32-52 triệu', '52-80 triệu', 'Trên 80 triệu'];
+        // Tax calculation details - using ANNUAL brackets
+        html += `<tr class="row-header"><td class="p-3 text-center border-r stt-font">[6]</td><td colspan="2" class="p-3">Chi tiết thuế TNCN theo biểu lũy tiến NĂM 2025</td></tr>`;
         annualTaxResult.detail.forEach((step, idx) => {
             if (step.amt > 0) {
+                const stepInfo = OLD_ANNUAL.steps[idx];
                 html += `
                     <tr class="sub-row-style">
                         <td class="p-3 text-center border-r stt-font text-[11px]">[6.${idx + 1}]</td>
-                        <td class="p-3 pl-6"><span class="pct-label">[${step.r}%]</span> ${stepLabels[idx] || `Bậc ${idx + 1}`}</td>
+                        <td class="p-3 pl-6"><span class="pct-label">[${step.r}%]</span> ${stepInfo?.label || `Bậc ${idx + 1}`}</td>
                         <td class="p-3 text-right">${f(step.tax)}</td>
                     </tr>
                 `;
