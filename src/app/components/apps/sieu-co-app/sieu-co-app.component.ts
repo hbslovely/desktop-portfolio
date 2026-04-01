@@ -15,6 +15,9 @@ import { PuzzleInfo } from './models';
 // Pre-computed board indices
 const BOARD_ROWS_ARRAY = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 const BOARD_COLS_ARRAY = [0, 1, 2, 3, 4, 5, 6, 7, 8];
+// Flipped board indices (when playing as Black)
+const BOARD_ROWS_FLIPPED = [9, 8, 7, 6, 5, 4, 3, 2, 1, 0];
+const BOARD_COLS_FLIPPED = [8, 7, 6, 5, 4, 3, 2, 1, 0];
 
 // Hidden chess board indices (4 rows x 8 cols)
 const HIDDEN_ROWS_ARRAY = [0, 1, 2, 3];
@@ -175,6 +178,25 @@ export class SieuCoAppComponent implements OnInit, OnDestroy {
   });
   isPlaying = computed(() => this.gameState()?.status === GameStatus.PLAYING);
   hasHistory = computed(() => (this.moveHistory()?.length ?? 0) > 0);
+
+  // Board orientation - flip when player is Black
+  isBoardFlipped = computed(() => {
+    const state = this.gameState();
+    // Flip board if player chose Black
+    return state?.config?.playerColor === PieceColor.BLACK;
+  });
+
+  // AI color name for display
+  aiColorName = computed(() => {
+    const state = this.gameState();
+    // AI plays the opposite color of player
+    const aiColor = state?.config?.playerColor === PieceColor.RED ? PieceColor.BLACK : PieceColor.RED;
+    return aiColor === PieceColor.RED ? 'Đỏ' : 'Đen';
+  });
+
+  // Computed board rows/cols based on orientation
+  displayBoardRows = computed(() => this.isBoardFlipped() ? BOARD_ROWS_FLIPPED : BOARD_ROWS_ARRAY);
+  displayBoardCols = computed(() => this.isBoardFlipped() ? BOARD_COLS_FLIPPED : BOARD_COLS_ARRAY);
 
   // ============ Static Data ============
   readonly availableAlgorithms = getAvailableAlgorithms();
