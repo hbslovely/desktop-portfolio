@@ -84,6 +84,10 @@
       "destination": "https://www.dnse.com.vn/:path*"
     },
     {
+      "source": "/api/huggingface/:path*",
+      "destination": "https://router.huggingface.co/:path*"
+    },
+    {
       "source": "/api/securities-apps-script/:scriptId/exec",
       "destination": "https://script.google.com/macros/s/:scriptId/exec"
     },
@@ -296,6 +300,23 @@
     },
     {
       "source": "/api/stocks/:path*",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, POST, OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "Content-Type, Authorization"
+        }
+      ]
+    },
+    {
+      "source": "/api/huggingface/:path*",
       "headers": [
         {
           "key": "Access-Control-Allow-Origin",
