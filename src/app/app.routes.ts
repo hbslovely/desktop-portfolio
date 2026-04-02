@@ -30,5 +30,15 @@ export const routes: Routes = [
     path: 'tax',
     loadComponent: () => import('./pages/pit-2026/pit-2026.component').then(m => m.Pit2026Component),
     title: 'Công cụ tính thuế TNCN 2026'
+  },
+  {
+    path: 'chi-tieu-gia-dinh-cua-toi',
+    loadComponent: () => import('./pages/chi-tieu/chi-tieu.component').then(m => m.ChiTieuPageComponent),
+    title: 'Chi tiêu gia đình'
+  },
+  {
+    path: 'chi-tieu',
+    loadComponent: () => import('./pages/chi-tieu/chi-tieu.component').then(m => m.ChiTieuPageComponent),
+    title: 'Chi tiêu gia đình'
   }
 ];
