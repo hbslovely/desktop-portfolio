@@ -1,12 +1,12 @@
 import { Component, OnInit, OnDestroy, signal, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, DecimalPipe } from '@angular/common';
 import { Subject, takeUntil } from 'rxjs';
 import { WeatherService, WeatherData, HourlyData, DailyData } from '../../../services/weather.service';
 
 @Component({
   selector: 'app-weather-app',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, DecimalPipe],
   templateUrl: './weather-app.component.html',
   styleUrls: ['./weather-app.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -20,6 +20,10 @@ export class WeatherAppComponent implements OnInit, OnDestroy {
   locationName = signal<string>('Current Location');
 
   private readonly destroy$ = new Subject<void>();
+
+  // For temperature bar calculation
+  private minTempRange = 0;
+  private maxTempRange = 40;
 
   constructor(private weatherService: WeatherService) {}
 
@@ -49,6 +53,7 @@ export class WeatherAppComponent implements OnInit, OnDestroy {
           this.weatherData.set(data);
           this.loading.set(false);
           this.updateLocationName(data.lat, data.lon);
+          this.calculateTempRange(data);
         },
         error: () => {
           this.error.set('Failed to load weather data. Please try again.');
@@ -61,10 +66,19 @@ export class WeatherAppComponent implements OnInit, OnDestroy {
     }
   }
 
+  private calculateTempRange(data: WeatherData): void {
+    if (data.daily?.data) {
+      const temps = data.daily.data.flatMap(d => [
+        d.all_day?.temperature_min || 0,
+        d.all_day?.temperature_max || 0
+      ]);
+      this.minTempRange = Math.min(...temps) - 5;
+      this.maxTempRange = Math.max(...temps) + 5;
+    }
+  }
+
   async updateLocationName(lat: number, lon: number) {
-    // Use OpenStreetMap Nominatim for reverse geocoding
     try {
-      // Ensure lat and lon are proper numbers without any suffixes
       const cleanLat = parseFloat(String(lat).replace(/[NSEW]/gi, ''));
       const cleanLon = parseFloat(String(lon).replace(/[NSEW]/gi, ''));
       
@@ -76,7 +90,6 @@ export class WeatherAppComponent implements OnInit, OnDestroy {
       const data = await response.json();
       
       if (data.error) {
-
         this.locationName.set(`${cleanLat.toFixed(2)}°, ${cleanLon.toFixed(2)}°`);
         return;
       }
@@ -89,7 +102,6 @@ export class WeatherAppComponent implements OnInit, OnDestroy {
         this.locationName.set(`${cleanLat.toFixed(2)}°, ${cleanLon.toFixed(2)}°`);
       }
     } catch (error) {
-
       const cleanLat = parseFloat(String(lat).replace(/[NSEW]/gi, ''));
       const cleanLon = parseFloat(String(lon).replace(/[NSEW]/gi, ''));
       this.locationName.set(`${cleanLat.toFixed(2)}°, ${cleanLon.toFixed(2)}°`);
@@ -169,6 +181,50 @@ export class WeatherAppComponent implements OnInit, OnDestroy {
   }
 
   getCurrentTime(): string {
-    return new Date().toLocaleTimeString();
+    return new Date().toLocaleTimeString('en-US', { 
+      hour: 'numeric', 
+      minute: '2-digit',
+      hour12: true 
+    });
+  }
+
+  // Get weather condition for dynamic background
+  getWeatherCondition(): string {
+    const data = this.weatherData();
+    if (!data) return 'default';
+
+    const iconNum = data.current.icon_num;
+    const hour = new Date().getHours();
+    const isNight = hour < 6 || hour > 20;
+
+    if (isNight && iconNum <= 3) return 'night';
+    if (iconNum <= 2) return 'sunny';
+    if (iconNum <= 5) return 'cloudy';
+    if (iconNum >= 9 && iconNum <= 12) return 'rainy';
+    if (iconNum >= 13 && iconNum <= 14) return 'stormy';
+    if (iconNum >= 15 && iconNum <= 17) return 'snowy';
+    
+    return 'cloudy';
+  }
+
+  // Get tab indicator position
+  getTabPosition(): number {
+    switch (this.selectedView()) {
+      case 'current': return 0;
+      case 'hourly': return 100;
+      case 'daily': return 200;
+      default: return 0;
+    }
+  }
+
+  // Temperature bar calculations for daily view
+  getTempBarPosition(minTemp: number): number {
+    const range = this.maxTempRange - this.minTempRange;
+    return ((minTemp - this.minTempRange) / range) * 100;
+  }
+
+  getTempBarWidth(minTemp: number, maxTemp: number): number {
+    const range = this.maxTempRange - this.minTempRange;
+    return ((maxTemp - minTemp) / range) * 100;
   }
 }

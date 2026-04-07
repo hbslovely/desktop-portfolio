@@ -1,0 +1,79 @@
+<div class="weather-widget" [class]="'weather-' + getWeatherCondition()">
+  <!-- Clean Gradient Background -->
+  <div class="widget-bg">
+    <div class="bg-gradient"></div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading()" class="widget-loading">
+    <div class="loading-dots">
+      <span></span><span></span><span></span>
+    </div>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="error() && !loading()" class="widget-error">
+    <i class="pi pi-cloud-slash"></i>
+    <span>{{ error() }}</span>
+    <button class="retry-btn" (click)="refresh()">
+      <i class="pi pi-refresh"></i>
+    </button>
+  </div>
+
+  <!-- Weather Content -->
+  <div *ngIf="weatherData() && !loading()" class="widget-content">
+    <!-- Header Row -->
+    <div class="widget-header">
+      <div class="location">
+        <i class="pi pi-map-marker"></i>
+        <span class="location-name">{{ locationName() }}</span>
+      </div>
+      <button class="refresh-btn" (click)="refresh()" title="Refresh">
+        <i class="pi pi-refresh"></i>
+      </button>
+    </div>
+
+    <!-- Main Weather -->
+    <div class="widget-main">
+      <div class="weather-icon">
+        <img [src]="getWeatherIcon(weatherData()!.current.icon_num)" 
+             [alt]="weatherData()!.current.summary">
+      </div>
+      <div class="weather-info">
+        <div class="temperature">{{ weatherData()!.current.temperature | number:'1.0-0' }}°</div>
+        <div class="condition">{{ weatherData()!.current.summary }}</div>
+      </div>
+    </div>
+
+    <!-- Weather Details -->
+    <div class="widget-details">
+      <div class="detail">
+        <i class="pi pi-user"></i>
+        <span>{{ formatTemperature(weatherData()!.current.feels_like) }}</span>
+      </div>
+      <div class="detail">
+        <i class="pi pi-percentage"></i>
+        <span>{{ weatherData()!.current.humidity }}%</span>
+      </div>
+      <div class="detail">
+        <i class="pi pi-send"></i>
+        <span>{{ weatherData()!.current.wind.speed }}m/s</span>
+      </div>
+    </div>
+
+    <!-- Hourly Preview -->
+    <div class="hourly-preview">
+      <div class="hourly-item" *ngFor="let hour of getHourlyForecast(); let i = index">
+        <span class="hour-time">{{ formatHour(hour.date, i) }}</span>
+        <img [src]="getWeatherIcon(hour.icon)" class="hour-icon">
+        <span class="hour-temp">{{ formatTemperature(hour.temperature) }}</span>
+      </div>
+    </div>
+
+    <!-- Open App Button -->
+    <button class="open-app-btn" (click)="onOpenApp()">
+      <span>Open Weather App</span>
+      <i class="pi pi-arrow-right"></i>
+    </button>
+  </div>
+</div>
