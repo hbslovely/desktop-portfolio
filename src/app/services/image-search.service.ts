@@ -755,17 +755,21 @@ export class ImageSearchService {
     canvas.width = size;
     canvas.height = size;
     const ctx = canvas.getContext('2d')!;
+    // Disable image smoothing for more consistent results
+    ctx.imageSmoothingEnabled = false;
     ctx.drawImage(img, 0, 0, size, size);
     const imageData = ctx.getImageData(0, 0, size, size);
     const pixels = imageData.data;
 
-    // Convert to grayscale matrix
+    // Convert to grayscale matrix with quantization for consistency
     const gray: number[][] = [];
     for (let y = 0; y < size; y++) {
       gray[y] = [];
       for (let x = 0; x < size; x++) {
         const i = (y * size + x) * 4;
-        gray[y][x] = 0.299 * pixels[i] + 0.587 * pixels[i + 1] + 0.114 * pixels[i + 2];
+        const g = 0.299 * pixels[i] + 0.587 * pixels[i + 1] + 0.114 * pixels[i + 2];
+        // Quantize to reduce sensitivity to minor pixel variations
+        gray[y][x] = Math.round(g / 2) * 2;
       }
     }
 
@@ -832,18 +836,22 @@ export class ImageSearchService {
     canvas.width = width;
     canvas.height = height;
     const ctx = canvas.getContext('2d')!;
+    ctx.imageSmoothingEnabled = false;
     ctx.drawImage(img, 0, 0, width, height);
     const imageData = ctx.getImageData(0, 0, width, height);
     const pixels = imageData.data;
 
     let hash = '';
+    
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width - 1; x++) {
         const i1 = (y * width + x) * 4;
         const i2 = (y * width + x + 1) * 4;
         
-        const gray1 = 0.299 * pixels[i1] + 0.587 * pixels[i1 + 1] + 0.114 * pixels[i1 + 2];
-        const gray2 = 0.299 * pixels[i2] + 0.587 * pixels[i2 + 1] + 0.114 * pixels[i2 + 2];
+        // Quantize grayscale values to reduce sensitivity to minor pixel variations
+        // This helps produce more consistent hashes for similar images
+        const gray1 = Math.round((0.299 * pixels[i1] + 0.587 * pixels[i1 + 1] + 0.114 * pixels[i1 + 2]) / 4) * 4;
+        const gray2 = Math.round((0.299 * pixels[i2] + 0.587 * pixels[i2 + 1] + 0.114 * pixels[i2 + 2]) / 4) * 4;
         
         hash += gray1 < gray2 ? '1' : '0';
       }
@@ -860,13 +868,16 @@ export class ImageSearchService {
     canvas.width = size;
     canvas.height = size;
     const ctx = canvas.getContext('2d')!;
+    ctx.imageSmoothingEnabled = false;
     ctx.drawImage(img, 0, 0, size, size);
     const imageData = ctx.getImageData(0, 0, size, size);
     const pixels = imageData.data;
 
     const grayValues: number[] = [];
     for (let i = 0; i < pixels.length; i += 4) {
-      grayValues.push(0.299 * pixels[i] + 0.587 * pixels[i + 1] + 0.114 * pixels[i + 2]);
+      // Quantize to reduce sensitivity to minor variations
+      const gray = 0.299 * pixels[i] + 0.587 * pixels[i + 1] + 0.114 * pixels[i + 2];
+      grayValues.push(Math.round(gray / 4) * 4);
     }
 
     const mean = grayValues.reduce((a, b) => a + b, 0) / grayValues.length;
@@ -1780,6 +1791,44 @@ export class ImageSearchService {
     );
   }
 
+  // ==================== HELPER: CONSISTENT CANVAS ====================
+  /**
+   * Create a canvas with consistent rendering settings for feature extraction
+   * This helps reduce variations between different renders of the same image
+   */
+  private createConsistentCanvas(img: HTMLImageElement, width: number, height: number): { 
+    canvas: HTMLCanvasElement; 
+    ctx: CanvasRenderingContext2D; 
+    pixels: Uint8ClampedArray 
+  } {
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d', { 
+      willReadFrequently: true,
+      alpha: false 
+    })!;
+    
+    // Disable image smoothing for deterministic results
+    ctx.imageSmoothingEnabled = false;
+    ctx.imageSmoothingQuality = 'low';
+    
+    // Draw image
+    ctx.drawImage(img, 0, 0, width, height);
+    
+    const imageData = ctx.getImageData(0, 0, width, height);
+    return { canvas, ctx, pixels: imageData.data };
+  }
+
+  /**
+   * Quantize grayscale value to reduce sensitivity to minor variations
+   * Groups similar values together
+   */
+  private quantizeGray(value: number, levels: number = 32): number {
+    const step = 256 / levels;
+    return Math.floor(value / step) * step + step / 2;
+  }
+
   // ==================== COMPARISON FUNCTIONS ====================
 
   private compareHashes(hash1: string, hash2: string): number {
@@ -1790,8 +1839,24 @@ export class ImageSearchService {
       if (hash1[i] !== hash2[i]) diff++;
     }
     
-    const result = 1 - (diff / hash1.length);
-    return isNaN(result) ? 0 : result;
+    // Use a non-linear similarity curve for better perceptual matching
+    // Small differences (< 10%) are considered nearly identical
+    // This adds tolerance for minor variations in hash computation
+    const hammingDistance = diff / hash1.length;
+    
+    let similarity: number;
+    if (hammingDistance <= 0.1) {
+      // Very similar: 90-100% similarity
+      similarity = 1 - (hammingDistance * 0.5);
+    } else if (hammingDistance <= 0.25) {
+      // Similar: 70-95% similarity
+      similarity = 0.95 - (hammingDistance - 0.1) * 1.67;
+    } else {
+      // Less similar: linear falloff
+      similarity = Math.max(0, 1 - hammingDistance);
+    }
+    
+    return isNaN(similarity) ? 0 : similarity;
   }
 
   private compareHistograms(h1: number[], h2: number[]): number {
