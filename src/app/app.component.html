@@ -438,6 +438,13 @@
     (onContextMenu)="onDesktopIconContextMenu($event)">
   </app-desktop-icon>
 
+  <!-- Desktop Widgets -->
+  <div class="desktop-widgets" *ngIf="showWeatherWidget()">
+    <app-weather-widget
+      (openWeatherApp)="openApp('weather')">
+    </app-weather-widget>
+  </div>
+
   <!-- Taskbar -->
   <div class="taskbar">
     <!-- Start Button -->

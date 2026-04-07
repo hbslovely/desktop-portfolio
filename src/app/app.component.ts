@@ -31,6 +31,7 @@ import { GraphVisualizerAppComponent } from './components/apps/graph-visualizer-
 import { StockAppComponent } from './components/apps/stock-app/stock-app.component';
 import { SieuCoAppComponent } from './components/apps/sieu-co-app/sieu-co-app.component';
 import { ImageSearchAppComponent } from './components/apps/image-search-app/image-search-app.component';
+import { WeatherWidgetComponent } from './components/desktop-widgets/weather-widget/weather-widget.component';
 import { WelcomeScreenComponent } from './components/welcome-screen/welcome-screen.component';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -69,7 +70,7 @@ interface WindowConfig {
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [ WelcomeScreenComponent, WindowComponent, DesktopIconComponent, CalculatorComponent, IframeAppComponent, LoveAppComponent, ExplorerComponent, TextViewerComponent, ImageViewerComponent, PdfViewerComponent, PaintAppComponent, HcmcAppComponent, NewsAppComponent, SettingsAppComponent, WeatherAppComponent, DictionaryAppComponent, CountriesAppComponent, YugiohAppComponent, YugiohCardDetailComponent, CalendarAppComponent, AngularLoveAppComponent, MusicAppComponent, AngularGuidelinesAppComponent, TuoiTreNewsAppComponent, ExpenseAppComponent, BusinessAppComponent, ChineseChessAppComponent, OcrAppComponent, FbIdFinderAppComponent, GraphVisualizerAppComponent, StockAppComponent, SieuCoAppComponent, ImageSearchAppComponent, CommonModule, FormsModule, SettingsDialogComponent, AppSplashComponent, RouterOutlet ],
+  imports: [ WelcomeScreenComponent, WindowComponent, DesktopIconComponent, CalculatorComponent, IframeAppComponent, LoveAppComponent, ExplorerComponent, TextViewerComponent, ImageViewerComponent, PdfViewerComponent, PaintAppComponent, HcmcAppComponent, NewsAppComponent, SettingsAppComponent, WeatherAppComponent, DictionaryAppComponent, CountriesAppComponent, YugiohAppComponent, YugiohCardDetailComponent, CalendarAppComponent, AngularLoveAppComponent, MusicAppComponent, AngularGuidelinesAppComponent, TuoiTreNewsAppComponent, ExpenseAppComponent, BusinessAppComponent, ChineseChessAppComponent, OcrAppComponent, FbIdFinderAppComponent, GraphVisualizerAppComponent, StockAppComponent, SieuCoAppComponent, ImageSearchAppComponent, WeatherWidgetComponent, CommonModule, FormsModule, SettingsDialogComponent, AppSplashComponent, RouterOutlet ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -139,6 +140,9 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   showCreditsWindow = signal(false);
   showHcmcWindow = signal(false);
   showNewsWindow = signal(false);
+
+  // Widget visibility
+  showWeatherWidget = signal(true);
 
   // File viewer data
   currentTextFile = signal<{ path: string; name: string; type: 'txt' | 'md' } | null>(null);
