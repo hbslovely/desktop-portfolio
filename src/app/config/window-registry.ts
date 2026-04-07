@@ -371,6 +371,18 @@ export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
     defaultY: 40,
     maximizable: true,
     statusText: 'Cờ Tướng, Cờ Úp & Cờ Thế'
+  },
+  'image-search': {
+    id: 'image-search',
+    title: 'Tìm Kiếm Hình Ảnh',
+    icon: 'pi pi-images',
+    component: 'image-search',
+    defaultWidth: 1100,
+    defaultHeight: 800,
+    defaultX: 150,
+    defaultY: 60,
+    maximizable: true,
+    statusText: 'Tìm kiếm hình ảnh tương tự bằng thuật toán CV'
   }
 };
 
