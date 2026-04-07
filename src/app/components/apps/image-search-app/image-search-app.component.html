@@ -4,6 +4,7 @@
     <div class="header-title">
       <i class="pi pi-images"></i>
       <h1>Tìm Kiếm Hình Ảnh</h1>
+      <span class="badge">CV Algorithms</span>
     </div>
     <div class="header-stats">
       <span class="stat">
@@ -47,20 +48,151 @@
     </button>
   </div>
 
-  <!-- Processing Indicator -->
-  <div class="processing-overlay" *ngIf="imageSearchService.isProcessing()">
-    <div class="processing-content">
-      <div class="spinner"></div>
-      <div class="processing-text">{{ imageSearchService.processingStatus() }}</div>
-      <div class="progress-bar">
-        <div 
-          class="progress-fill"
-          [style.width.%]="imageSearchService.processingProgress()">
+  <!-- Upload Dialog -->
+  @if (showUploadDialog()) {
+    <div class="dialog-backdrop" (click)="closeUploadDialog()">
+      <div class="upload-dialog" (click)="$event.stopPropagation()">
+        <div class="dialog-header">
+          <div class="header-left">
+            <h3>
+              <i class="pi pi-upload"></i>
+              Tải lên hình ảnh
+            </h3>
+            <span class="file-count">{{ uploadFiles().length }} file</span>
+          </div>
+          <button class="close-btn" (click)="closeUploadDialog()" [disabled]="isUploading()">
+            <i class="pi pi-times"></i>
+          </button>
+        </div>
+
+        <!-- Global Progress Bar -->
+        @if (isUploading()) {
+          <div class="global-progress">
+            <div class="global-progress-bar">
+              <div class="global-progress-fill" [style.width.%]="getOverallProgress()"></div>
+            </div>
+            <span class="global-progress-text">{{ getOverallProgress() }}%</span>
+          </div>
+        }
+
+        <div class="dialog-body">
+          <!-- File list -->
+          <div class="file-list">
+            @for (item of uploadFiles(); track item.name; let i = $index) {
+              <div class="file-item" [class.completed]="item.status === 'completed'" [class.error]="item.status === 'error'" [class.processing]="item.status === 'processing'">
+                <div class="file-preview">
+                  <img [src]="item.preview" [alt]="item.name">
+                </div>
+                <div class="file-info">
+                  <span class="file-name">{{ item.name }}</span>
+                  <span class="file-size">{{ imageSearchService.formatFileSize(item.size) }}</span>
+                  
+                  @if (item.status === 'processing') {
+                    <div class="file-progress">
+                      <div class="progress-bar">
+                        <div class="progress-fill" [style.width.%]="item.progress"></div>
+                      </div>
+                      <span class="progress-text">{{ item.progress }}%</span>
+                    </div>
+                  }
+                  
+                  @if (item.status === 'error' && item.error) {
+                    <span class="file-error">{{ item.error }}</span>
+                  }
+                </div>
+                <div class="file-status">
+                  @switch (item.status) {
+                    @case ('pending') {
+                      <span class="status-badge pending">Chờ xử lý</span>
+                    }
+                    @case ('processing') {
+                      <span class="status-badge processing">
+                        <i class="pi pi-spin pi-spinner"></i>
+                        Đang xử lý
+                      </span>
+                    }
+                    @case ('completed') {
+                      <span class="status-badge completed">
+                        <i class="pi pi-check"></i>
+                        Hoàn thành
+                      </span>
+                    }
+                    @case ('error') {
+                      <span class="status-badge error">
+                        <i class="pi pi-times"></i>
+                        Lỗi
+                      </span>
+                    }
+                  }
+                </div>
+                @if (!isUploading() && item.status !== 'completed') {
+                  <button class="remove-btn" (click)="removeUploadFile(i)" title="Xóa">
+                    <i class="pi pi-trash"></i>
+                  </button>
+                }
+              </div>
+            }
+          </div>
+
+          <!-- Summary -->
+          <div class="upload-summary">
+            <span class="summary-item">
+              <i class="pi pi-images"></i>
+              {{ uploadFiles().length }} file
+            </span>
+            @if (getCompletedCount() > 0) {
+              <span class="summary-item completed">
+                <i class="pi pi-check-circle"></i>
+                {{ getCompletedCount() }} hoàn thành
+              </span>
+            }
+            @if (getErrorCount() > 0) {
+              <span class="summary-item error">
+                <i class="pi pi-exclamation-circle"></i>
+                {{ getErrorCount() }} lỗi
+              </span>
+            }
+          </div>
+        </div>
+
+        <div class="dialog-footer">
+          @if (!isUploading() && getPendingCount() > 0) {
+            <button class="secondary-btn" (click)="closeUploadDialog()">
+              Hủy
+            </button>
+            <button class="primary-btn" (click)="startUpload()">
+              <i class="pi pi-upload"></i>
+              Bắt đầu tải lên
+            </button>
+          }
+          
+          @if (isUploading()) {
+            <span class="uploading-text">
+              <i class="pi pi-spin pi-spinner"></i>
+              Đang xử lý...
+            </span>
+          }
+          
+          @if (!isUploading() && getPendingCount() === 0) {
+            <button class="primary-btn" (click)="finishUpload()">
+              <i class="pi pi-check"></i>
+              Hoàn tất
+            </button>
+          }
         </div>
       </div>
-      <div class="progress-percent">{{ imageSearchService.processingProgress() }}%</div>
     </div>
-  </div>
+  }
+
+  <!-- Search Processing Indicator (keep for search only) -->
+  @if (imageSearchService.isProcessing() && !showUploadDialog()) {
+    <div class="processing-overlay">
+      <div class="processing-content">
+        <div class="spinner"></div>
+        <div class="processing-text">{{ imageSearchService.processingStatus() }}</div>
+      </div>
+    </div>
+  }
 
   <!-- Main Content -->
   <main class="app-content">
@@ -86,18 +218,111 @@
         </div>
         <h3>Kéo thả hình ảnh vào đây</h3>
         <p>hoặc click để chọn file</p>
-        <span class="hint">Hỗ trợ: JPG, PNG, GIF, WebP</span>
+        <span class="hint">Hỗ trợ: JPG, PNG, GIF, WebP • Nhiều file cùng lúc</span>
       </div>
 
       <!-- Algorithm Info -->
-      <div class="algorithm-info">
-        <h3><i class="pi pi-info-circle"></i> Thuật toán sử dụng</h3>
-        <div class="algorithm-grid">
-          <div class="algorithm-card" *ngFor="let key of getWeightKeys()">
-            <span class="algo-icon">{{ algorithmInfo[key].icon }}</span>
-            <div class="algo-content">
-              <strong>{{ algorithmInfo[key].name }}</strong>
-              <p>{{ algorithmInfo[key].description }}</p>
+      <div class="algorithm-section">
+        <h3><i class="pi pi-cpu"></i> Thuật toán Computer Vision</h3>
+        <p class="section-desc">Hệ thống sử dụng 9 thuật toán CV cổ điển, không cần AI/API</p>
+        
+        <div class="algorithm-categories">
+          <div class="algo-category">
+            <div class="category-header">
+              <span class="cat-icon">🏗️</span>
+              <span>Cấu trúc</span>
+            </div>
+            <div class="algo-list">
+              <div class="algo-item">
+                <span class="algo-icon">🔍</span>
+                <div class="algo-info">
+                  <strong>pHash (DCT)</strong>
+                  <small>So sánh cấu trúc tổng thể</small>
+                </div>
+              </div>
+              <div class="algo-item">
+                <span class="algo-icon">📊</span>
+                <div class="algo-info">
+                  <strong>dHash (Gradient)</strong>
+                  <small>So sánh gradient pixel</small>
+                </div>
+              </div>
+              <div class="algo-item">
+                <span class="algo-icon">📈</span>
+                <div class="algo-info">
+                  <strong>aHash (Average)</strong>
+                  <small>So sánh độ sáng</small>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="algo-category">
+            <div class="category-header">
+              <span class="cat-icon">🎨</span>
+              <span>Màu sắc</span>
+            </div>
+            <div class="algo-list">
+              <div class="algo-item">
+                <span class="algo-icon">🎨</span>
+                <div class="algo-info">
+                  <strong>RGB Histogram</strong>
+                  <small>Phân bố màu RGB</small>
+                </div>
+              </div>
+              <div class="algo-item">
+                <span class="algo-icon">🌈</span>
+                <div class="algo-info">
+                  <strong>HSV Histogram</strong>
+                  <small>Màu theo nhận thức</small>
+                </div>
+              </div>
+              <div class="algo-item">
+                <span class="algo-icon">📉</span>
+                <div class="algo-info">
+                  <strong>Color Moments</strong>
+                  <small>Mean, Std, Skewness</small>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="algo-category">
+            <div class="category-header">
+              <span class="cat-icon">📐</span>
+              <span>Hình dạng</span>
+            </div>
+            <div class="algo-list">
+              <div class="algo-item">
+                <span class="algo-icon">📐</span>
+                <div class="algo-info">
+                  <strong>Edge Detection</strong>
+                  <small>Sobel operator</small>
+                </div>
+              </div>
+              <div class="algo-item">
+                <span class="algo-icon">🔷</span>
+                <div class="algo-info">
+                  <strong>Hu Moments</strong>
+                  <small>Bất biến xoay/scale</small>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="algo-category">
+            <div class="category-header">
+              <span class="cat-icon">🧩</span>
+              <span>Kết cấu</span>
+            </div>
+            <div class="algo-list">
+              <div class="algo-item">
+                <span class="algo-icon">🧩</span>
+                <div class="algo-info">
+                  <strong>LBP Texture</strong>
+                  <small>Local Binary Pattern</small>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -107,16 +332,16 @@
     <!-- GALLERY TAB -->
     <div class="tab-content gallery-tab" *ngIf="activeTab() === 'gallery' && viewMode() === 'gallery'">
       <div class="gallery-header" *ngIf="imageSearchService.images().length > 0">
-        <span>{{ imageSearchService.images().length }} hình ảnh</span>
-        <button class="danger-btn" (click)="clearAllImages()">
+        <span>{{ imageSearchService.images().length }} hình ảnh trong kho</span>
+        <button class="danger-btn small" (click)="clearAllImages()">
           <i class="pi pi-trash"></i> Xóa tất cả
         </button>
       </div>
 
       <div class="empty-state" *ngIf="imageSearchService.images().length === 0">
-        <i class="pi pi-images"></i>
+        <div class="empty-icon">📁</div>
         <h3>Chưa có hình ảnh</h3>
-        <p>Tải lên hình ảnh để bắt đầu</p>
+        <p>Tải lên hình ảnh để bắt đầu tìm kiếm</p>
         <button class="primary-btn" (click)="setTab('upload')">
           <i class="pi pi-upload"></i> Tải lên ngay
         </button>
@@ -128,9 +353,9 @@
           *ngFor="let image of imageSearchService.images()"
           (click)="viewImage(image)">
           <div class="image-thumb">
-            <img [src]="image.thumbnail" [alt]="image.name">
+            <img [src]="image.thumbnail" [alt]="image.name" loading="lazy">
             <div class="image-overlay">
-              <button class="icon-btn" (click)="searchSimilar(image)" title="Tìm ảnh tương tự">
+              <button class="icon-btn" (click)="searchSimilar(image); $event.stopPropagation()" title="Tìm ảnh tương tự">
                 <i class="pi pi-search"></i>
               </button>
               <button class="icon-btn danger" (click)="deleteImage(image, $event)" title="Xóa">
@@ -141,6 +366,14 @@
           <div class="image-info">
             <span class="image-name" [title]="image.name">{{ image.name }}</span>
             <span class="image-meta">{{ image.width }}×{{ image.height }}</span>
+          </div>
+          <div class="image-colors">
+            <div 
+              class="color-dot"
+              *ngFor="let color of image.dominantColors.slice(0, 4)"
+              [style.backgroundColor]="color"
+              [title]="color">
+            </div>
           </div>
         </div>
       </div>
@@ -172,46 +405,60 @@
           
           <div class="info-section">
             <h4><i class="pi pi-info-circle"></i> Thông tin</h4>
-            <div class="info-row">
-              <span>Kích thước:</span>
-              <strong>{{ selectedImage()!.width }} × {{ selectedImage()!.height }}</strong>
-            </div>
-            <div class="info-row">
-              <span>Dung lượng:</span>
-              <strong>{{ imageSearchService.formatFileSize(selectedImage()!.size) }}</strong>
-            </div>
-            <div class="info-row">
-              <span>Ngày thêm:</span>
-              <strong>{{ formatDate(selectedImage()!.addedAt) }}</strong>
+            <div class="info-grid">
+              <div class="info-item">
+                <span class="label">Kích thước</span>
+                <span class="value">{{ selectedImage()!.width }} × {{ selectedImage()!.height }}</span>
+              </div>
+              <div class="info-item">
+                <span class="label">Dung lượng</span>
+                <span class="value">{{ imageSearchService.formatFileSize(selectedImage()!.size) }}</span>
+              </div>
+              <div class="info-item">
+                <span class="label">Tỷ lệ</span>
+                <span class="value">{{ selectedImage()!.aspectRatio.toFixed(2) }}</span>
+              </div>
+              <div class="info-item">
+                <span class="label">Độ sáng</span>
+                <span class="value">{{ (selectedImage()!.brightness * 100).toFixed(0) }}%</span>
+              </div>
+              <div class="info-item">
+                <span class="label">Độ tương phản</span>
+                <span class="value">{{ (selectedImage()!.contrast * 100).toFixed(0) }}%</span>
+              </div>
+              <div class="info-item">
+                <span class="label">Ngày thêm</span>
+                <span class="value">{{ formatDate(selectedImage()!.addedAt) }}</span>
+              </div>
             </div>
           </div>
 
           <div class="info-section">
-            <h4><i class="pi pi-palette"></i> Màu chủ đạo</h4>
+            <h4><i class="pi pi-palette"></i> Màu chủ đạo (K-Means)</h4>
             <div class="dominant-colors">
               <div 
                 class="color-swatch"
                 *ngFor="let color of selectedImage()!.dominantColors"
-                [style.backgroundColor]="color"
-                [title]="color">
+                [style.backgroundColor]="color">
+                <span class="color-code">{{ color }}</span>
               </div>
             </div>
           </div>
 
           <div class="info-section">
-            <h4><i class="pi pi-key"></i> Hash Values</h4>
+            <h4><i class="pi pi-key"></i> Hash Fingerprints</h4>
             <div class="hash-values">
               <div class="hash-row">
-                <span>pHash:</span>
-                <code>{{ selectedImage()!.pHash.substring(0, 16) }}...</code>
+                <span class="hash-label">🔍 pHash</span>
+                <code class="hash-code">{{ selectedImage()!.pHash.substring(0, 24) }}...</code>
               </div>
               <div class="hash-row">
-                <span>dHash:</span>
-                <code>{{ selectedImage()!.dHash.substring(0, 16) }}...</code>
+                <span class="hash-label">📊 dHash</span>
+                <code class="hash-code">{{ selectedImage()!.dHash.substring(0, 24) }}...</code>
               </div>
               <div class="hash-row">
-                <span>aHash:</span>
-                <code>{{ selectedImage()!.aHash.substring(0, 16) }}...</code>
+                <span class="hash-label">📈 aHash</span>
+                <code class="hash-code">{{ selectedImage()!.aHash.substring(0, 24) }}...</code>
               </div>
             </div>
           </div>
@@ -235,35 +482,49 @@
           hidden
           (change)="onSearchFileSelected($event)">
         
-        <div class="drop-icon">
+        <div class="drop-icon search">
           <i class="pi pi-search"></i>
         </div>
         <h3>Tải lên ảnh để tìm kiếm</h3>
-        <p>Hệ thống sẽ tìm các ảnh tương tự trong kho</p>
+        <p>Hệ thống sẽ phân tích và tìm các ảnh tương tự trong kho</p>
+        <span class="hint">Kho hiện có {{ imageSearchService.images().length }} ảnh</span>
       </div>
 
       <!-- Weight Adjustment -->
       <div class="weight-config">
         <div class="weight-header">
-          <h3><i class="pi pi-sliders-h"></i> Điều chỉnh trọng số thuật toán</h3>
-          <button class="text-btn" (click)="resetWeights()">
-            <i class="pi pi-refresh"></i> Reset
-          </button>
+          <h3><i class="pi pi-sliders-h"></i> Trọng số thuật toán</h3>
+          <div class="weight-actions">
+            <button class="text-btn" (click)="toggleAdvancedWeights()">
+              {{ showAdvancedWeights() ? 'Ẩn chi tiết' : 'Hiện chi tiết' }}
+            </button>
+            <button class="text-btn" (click)="resetWeights()">
+              <i class="pi pi-refresh"></i> Reset
+            </button>
+          </div>
         </div>
         
-        <div class="weight-sliders">
+        <div class="weight-sliders" *ngIf="showAdvancedWeights()">
           <div class="weight-item" *ngFor="let key of getWeightKeys()">
             <div class="weight-label">
-              <span class="algo-icon">{{ algorithmInfo[key].icon }}</span>
-              <span>{{ algorithmInfo[key].name }}</span>
-              <strong>{{ (weights()[key] * 100).toFixed(0) }}%</strong>
+              <span class="algo-icon">{{ getAlgorithmMeta(key).icon }}</span>
+              <span class="algo-name">{{ getAlgorithmMeta(key).name }}</span>
+              <span class="algo-value">{{ (weights()[key] * 100).toFixed(0) }}%</span>
             </div>
             <input 
               type="range"
               min="0"
-              max="100"
+              max="50"
               [value]="weights()[key] * 100"
               (input)="updateWeight(key, $any($event.target).value)">
+            <small class="algo-desc">{{ getAlgorithmMeta(key).description }}</small>
+          </div>
+        </div>
+
+        <div class="weight-summary" *ngIf="!showAdvancedWeights()">
+          <div class="weight-badge" *ngFor="let key of getWeightKeys()">
+            <span class="badge-icon">{{ getAlgorithmMeta(key).icon }}</span>
+            <span class="badge-value">{{ (weights()[key] * 100).toFixed(0) }}%</span>
           </div>
         </div>
       </div>
@@ -275,54 +536,262 @@
         <button class="back-btn" (click)="backToSearch()">
           <i class="pi pi-arrow-left"></i> Tìm kiếm mới
         </button>
-        <span class="results-count">
-          Tìm thấy {{ searchResults().length }} kết quả
-        </span>
+        <div class="results-header-right">
+          <span class="results-count">
+            <strong>{{ searchResults().length }}</strong> kết quả
+          </span>
+          <button class="learning-btn" (click)="toggleLearningPanel()" [class.active]="showLearningPanel()">
+            <i class="pi pi-sliders-v"></i>
+            Learning
+            @if (getLearnedWeights()) {
+              <span class="learned-badge">AI</span>
+            }
+          </button>
+        </div>
       </div>
 
-      <div class="results-content">
+      <!-- Search Filters -->
+      <div class="search-filters">
+        <div class="filter-item">
+          <label>Độ giống tối thiểu:</label>
+          <div class="filter-options">
+            @for (threshold of similarityThresholds; track threshold.value) {
+              <button 
+                class="filter-btn"
+                [class.active]="minSimilarity() === threshold.value"
+                (click)="setMinSimilarity(threshold.value)">
+                {{ threshold.label }}
+              </button>
+            }
+          </div>
+        </div>
+        <div class="filter-item">
+          <label>Số kết quả:</label>
+          <div class="filter-options">
+            @for (max of maxResultsOptions; track max) {
+              <button 
+                class="filter-btn"
+                [class.active]="maxResults() === max"
+                (click)="setMaxResults(max)">
+                {{ max }}
+              </button>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- Learning Panel -->
+      @if (showLearningPanel()) {
+        <div class="learning-panel">
+          <div class="learning-header">
+            <h4><i class="pi pi-cog"></i> Feedback Learning</h4>
+            <span class="learning-hint">Đánh giá kết quả để hệ thống học và cải thiện</span>
+          </div>
+          
+          <div class="learning-stats">
+            <div class="stat-item">
+              <span class="stat-label">Feedback</span>
+              <span class="stat-value">{{ getFeedbackStats().total }}</span>
+            </div>
+            <div class="stat-item positive">
+              <span class="stat-label">Đúng</span>
+              <span class="stat-value">{{ getFeedbackStats().positive }}</span>
+            </div>
+            <div class="stat-item negative">
+              <span class="stat-label">Sai</span>
+              <span class="stat-value">{{ getFeedbackStats().negative }}</span>
+            </div>
+            @if (getLearnedWeights()) {
+              <div class="stat-item accuracy">
+                <span class="stat-label">Độ chính xác</span>
+                <span class="stat-value">{{ (getLearnedWeights()!.accuracy * 100).toFixed(0) }}%</span>
+              </div>
+            }
+          </div>
+
+          @if (getLearnedWeights()) {
+            <div class="learned-weights-info">
+              <span class="info-text">
+                <i class="pi pi-check-circle"></i>
+                Đã học từ {{ getLearnedWeights()!.feedbackCount }} feedback
+              </span>
+              <div class="learned-actions">
+                <button class="mini-btn" (click)="useLearnedWeights()">Dùng trọng số đã học</button>
+                <button class="mini-btn outline" (click)="useDefaultWeights()">Dùng mặc định</button>
+              </div>
+            </div>
+          }
+
+          <div class="learning-actions">
+            <button class="text-btn danger" (click)="resetLearning()">
+              <i class="pi pi-trash"></i> Reset Learning
+            </button>
+          </div>
+        </div>
+      }
+
+      <div class="results-layout">
         <!-- Query Image -->
-        <div class="query-image" *ngIf="searchQueryImage()">
-          <h4>Ảnh tìm kiếm</h4>
-          <img [src]="searchQueryImage()!" alt="Query image">
+        <div class="query-section" *ngIf="searchQueryImage()">
+          <h4>🔎 Ảnh tìm kiếm</h4>
+          <div class="query-image-wrapper">
+            <img [src]="searchQueryImage()!" alt="Query image">
+          </div>
         </div>
 
-        <!-- Results Grid -->
-        <div class="results-grid">
-          <div 
-            class="result-card"
-            *ngFor="let result of searchResults(); let i = index"
-            [class]="getSimilarityClass(result.similarity)"
-            (click)="viewImage(result.image)">
-            <div class="result-rank">#{{ i + 1 }}</div>
-            <div class="result-thumb">
-              <img [src]="result.image.thumbnail" [alt]="result.image.name">
+        <!-- Results -->
+        <div class="results-section">
+          <div class="results-grid" *ngIf="searchResults().length > 0">
+            <div 
+              class="result-card"
+              *ngFor="let result of searchResults(); let i = index"
+              [class]="getSimilarityClass(result.similarity)"
+              [class.feedback-positive]="getFeedbackValue(result.image.id) === true"
+              [class.feedback-negative]="getFeedbackValue(result.image.id) === false"
+              (click)="viewResultDetail(result)">
+              
+              <div class="result-rank">#{{ i + 1 }}</div>
+              
+              <!-- Feedback indicator -->
+              @if (hasFeedback(result.image.id)) {
+                <div class="feedback-indicator" [class.positive]="getFeedbackValue(result.image.id)">
+                  <i class="pi" [class.pi-check]="getFeedbackValue(result.image.id)" [class.pi-times]="!getFeedbackValue(result.image.id)"></i>
+                </div>
+              }
+              
+              <div class="result-thumb">
+                <img [src]="result.image.thumbnail" [alt]="result.image.name" loading="lazy">
+              </div>
+              
+              <div class="result-info">
+                <div class="similarity-badge" [class]="getSimilarityClass(result.similarity)">
+                  <span class="score">{{ (result.similarity * 100).toFixed(1) }}%</span>
+                  <span class="label">{{ getSimilarityLabel(result.similarity) }}</span>
+                </div>
+                
+                <div class="primary-reason">
+                  {{ result.primaryReason }}
+                </div>
+
+                <div class="top-scores">
+                  <div class="mini-score" *ngFor="let reason of getTopReasons(result.matchReasons)">
+                    <span class="reason-icon">{{ reason.icon }}</span>
+                    <span class="reason-value" [class]="reason.level">{{ (reason.score * 100).toFixed(0) }}%</span>
+                  </div>
+                </div>
+
+                <!-- Feedback buttons -->
+                <div class="feedback-buttons" (click)="$event.stopPropagation()">
+                  <button 
+                    class="feedback-btn positive"
+                    [class.active]="getFeedbackValue(result.image.id) === true"
+                    (click)="giveFeedback(result, true)"
+                    title="Kết quả đúng">
+                    <i class="pi pi-thumbs-up"></i>
+                  </button>
+                  <button 
+                    class="feedback-btn negative"
+                    [class.active]="getFeedbackValue(result.image.id) === false"
+                    (click)="giveFeedback(result, false)"
+                    title="Kết quả sai">
+                    <i class="pi pi-thumbs-down"></i>
+                  </button>
+                </div>
+
+                <span class="result-name">{{ result.image.name }}</span>
+              </div>
             </div>
-            <div class="result-info">
-              <div class="similarity-score">
-                <span class="score">{{ (result.similarity * 100).toFixed(1) }}%</span>
-                <span class="label">{{ getSimilarityLabel(result.similarity) }}</span>
+          </div>
+
+          <div class="empty-results" *ngIf="searchResults().length === 0">
+            <div class="empty-icon">🔍</div>
+            <h3>Không tìm thấy kết quả</h3>
+            <p>Thử tải thêm ảnh vào kho hoặc sử dụng ảnh khác để tìm kiếm</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RESULT DETAIL VIEW -->
+    <div class="tab-content result-detail-view" *ngIf="viewMode() === 'result-detail' && selectedResult()">
+      <div class="detail-header">
+        <button class="back-btn" (click)="backToResults()">
+          <i class="pi pi-arrow-left"></i> Quay lại kết quả
+        </button>
+      </div>
+
+      <div class="comparison-view">
+        <!-- Images comparison -->
+        <div class="comparison-images">
+          <div class="compare-image query">
+            <span class="compare-label">Ảnh tìm kiếm</span>
+            <img [src]="searchQueryImage()!" alt="Query">
+          </div>
+          <div class="compare-arrow">
+            <i class="pi pi-arrow-right"></i>
+          </div>
+          <div class="compare-image result">
+            <span class="compare-label">Ảnh kết quả</span>
+            <img [src]="selectedResult()!.image.dataUrl" [alt]="selectedResult()!.image.name">
+          </div>
+        </div>
+
+        <!-- Overall similarity -->
+        <div class="overall-similarity">
+          <div class="big-score" [class]="getSimilarityClass(selectedResult()!.similarity)">
+            <span class="score-value">{{ (selectedResult()!.similarity * 100).toFixed(1) }}%</span>
+            <span class="score-label">{{ getSimilarityLabel(selectedResult()!.similarity) }}</span>
+          </div>
+          <div class="primary-reason-large">
+            {{ selectedResult()!.primaryReason }}
+          </div>
+        </div>
+
+        <!-- Detailed breakdown -->
+        <div class="breakdown-section">
+          <h4>📊 Phân tích chi tiết</h4>
+          
+          <div class="breakdown-grid">
+            <div 
+              class="breakdown-card" 
+              *ngFor="let reason of selectedResult()!.matchReasons"
+              [class]="reason.level">
+              <div class="breakdown-header">
+                <span class="breakdown-icon">{{ reason.icon }}</span>
+                <span class="breakdown-name">{{ reason.algorithm }}</span>
               </div>
-              <div class="score-breakdown">
-                <div class="mini-score" title="pHash">
-                  🔍 {{ (result.scores.pHash * 100).toFixed(0) }}%
+              <div class="breakdown-score">
+                <div class="score-bar">
+                  <div class="score-fill" [style.width.%]="reason.score * 100"></div>
                 </div>
-                <div class="mini-score" title="Color Histogram">
-                  🎨 {{ (result.scores.colorHistogram * 100).toFixed(0) }}%
-                </div>
-                <div class="mini-score" title="Edge">
-                  📐 {{ (result.scores.edgeHistogram * 100).toFixed(0) }}%
-                </div>
+                <span class="score-text">{{ (reason.score * 100).toFixed(1) }}%</span>
               </div>
-              <span class="result-name">{{ result.image.name }}</span>
+              <p class="breakdown-desc">{{ reason.description }}</p>
+              <div class="breakdown-footer">
+                <span class="weight-info">Trọng số: {{ (reason.weight * 100).toFixed(0) }}%</span>
+                <span class="contrib-info">Đóng góp: {{ (reason.contribution * 100).toFixed(1) }}%</span>
+              </div>
             </div>
           </div>
         </div>
 
-        <div class="empty-results" *ngIf="searchResults().length === 0">
-          <i class="pi pi-search"></i>
-          <h3>Không tìm thấy kết quả</h3>
-          <p>Thử tải thêm ảnh vào kho hoặc sử dụng ảnh khác</p>
+        <!-- Image info -->
+        <div class="result-image-info">
+          <h4>📷 Thông tin ảnh kết quả</h4>
+          <div class="info-compact">
+            <span><strong>Tên:</strong> {{ selectedResult()!.image.name }}</span>
+            <span><strong>Kích thước:</strong> {{ selectedResult()!.image.width }}×{{ selectedResult()!.image.height }}</span>
+            <span><strong>Dung lượng:</strong> {{ imageSearchService.formatFileSize(selectedResult()!.image.size) }}</span>
+          </div>
+          <div class="dominant-colors-mini">
+            <span>Màu chủ đạo:</span>
+            <div 
+              class="color-mini"
+              *ngFor="let color of selectedResult()!.image.dominantColors"
+              [style.backgroundColor]="color"
+              [title]="color">
+            </div>
+          </div>
         </div>
       </div>
     </div>
