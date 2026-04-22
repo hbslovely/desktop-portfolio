@@ -58,27 +58,28 @@ function stddev(nums: number[]): number {
   return Math.sqrt(v);
 }
 
-/**
- * Lấy bucket giờ trong ngày:
- *  0-5 đêm, 6-10 sáng, 11-14 trưa, 15-18 chiều, 19-23 tối
- */
-function hourBucket(hour: number): string {
-  if (hour < 6) return 'night';
-  if (hour < 11) return 'morning';
-  if (hour < 15) return 'noon';
-  if (hour < 19) return 'afternoon';
-  return 'evening';
+/** Số phút tính từ 00:00 của ngày đó */
+function minuteOfDay(d: Date): number {
+  return d.getHours() * 60 + d.getMinutes();
+}
+
+/** Khoảng cách vòng (tính cả đêm) giữa 2 phút-trong-ngày */
+function circularDiff(a: number, b: number): number {
+  const d = Math.abs(a - b);
+  return Math.min(d, 1440 - d);
 }
 
 /**
- * Predict next feeding time & volume.
+ * Predict next feeding time & volume bằng **pattern-matching theo giờ trong ngày**.
  *
- * Heuristics (lightweight time-series):
- *  - nextTime = lastFeed + median(last N intervals, ≤14 ngày)
- *  - nextVolume =
- *      0.6 * EMA(volumes, α=0.35)            // xu hướng gần đây
- *    + 0.4 * meanVolumeInSameHourBucket()    // pattern theo giờ trong ngày
- *  - confidence dựa trên số sample + coefficient of variation
+ * Ý tưởng: cữ cuối xảy ra lúc T (vd: hôm nay 3:00). Đi tìm các cặp
+ *   (cữ trước, cữ kế tiếp)  trong lịch sử
+ * mà "cữ trước" có **giờ-trong-ngày gần T**. Lấy median của:
+ *   - interval → dự đoán GIỜ cữ tiếp theo
+ *   - volume cữ kế tiếp → dự đoán DUNG TÍCH
+ *
+ * VD: hôm qua 3:05 bú → 4:10 bú 40ml, hôm kia 2:55 bú → 4:05 bú 45ml.
+ * Hôm nay 3:00 vừa bú → pattern gợi ý ~1h5p nữa, ~40ml.
  */
 export function predictNextFeeding(
   logs: FeedingLog[],
@@ -99,97 +100,139 @@ export function predictNextFeeding(
     .filter((x) => !isNaN(x.at.getTime()))
     .sort((a, b) => a.at.getTime() - b.at.getTime());
 
-  // Chỉ dùng 14 ngày gần nhất để phản ánh xu hướng
-  const cutoff = now.getTime() - 14 * MS_PER_DAY;
+  // Chỉ dùng 30 ngày gần nhất cho pattern
+  const cutoff = now.getTime() - 30 * MS_PER_DAY;
   const recent = withDates.filter((x) => x.at.getTime() >= cutoff);
   const sample = recent.length >= 4 ? recent : withDates;
 
   if (sample.length < 2) {
-    // Chỉ có 1 cữ → không đủ để tính interval
     const only = sample[0];
     return {
       hasData: true,
       samples: sample.length,
-      nextVolume: Math.round(only.log.volume / 5) * 5,
-      volumeRange: [only.log.volume, only.log.volume],
+      nextVolume: only ? Math.round(only.log.volume / 5) * 5 : undefined,
+      volumeRange: only ? [only.log.volume, only.log.volume] : undefined,
       confidence: 'low',
       reasoning: [
-        `Mới có 1 cữ bú, chưa đủ để dự đoán giờ. Sẽ tốt hơn sau khi có 4-5 cữ.`,
+        `Mới có ${sample.length} cữ bú, chưa đủ để dự đoán giờ. Sẽ tốt hơn sau khi có 4-5 cữ.`,
       ],
     };
   }
 
-  // ===== 1. INTERVALS =====
-  const intervalsMin: number[] = [];
-  for (let i = 1; i < sample.length; i++) {
-    const diff = (sample[i].at.getTime() - sample[i - 1].at.getTime()) / MS_PER_MIN;
-    // Chỉ lấy interval hợp lý (15 phút – 8 giờ) để lọc outliers & gap giữa các ngày
-    if (diff >= 15 && diff <= 8 * 60) {
-      intervalsMin.push(diff);
-    }
-  }
-
-  const medIv = median(intervalsMin);
-  const stdIv = stddev(intervalsMin);
-  const cvIv = medIv > 0 ? stdIv / medIv : 1;
-
-  // ===== 2. VOLUMES =====
-  const volumes = sample.map((x) => x.log.volume);
-  // EMA α=0.35 – cữ mới nhất có trọng số cao nhất
-  let ema = volumes[0];
-  const alpha = 0.35;
-  for (let i = 1; i < volumes.length; i++) {
-    ema = alpha * volumes[i] + (1 - alpha) * ema;
-  }
-
-  // ===== 3. TIME-OF-DAY PATTERN =====
   const lastFeed = sample[sample.length - 1];
-  const predictedAt = medIv > 0
-    ? new Date(lastFeed.at.getTime() + medIv * MS_PER_MIN)
-    : undefined;
+  const lastMinute = minuteOfDay(lastFeed.at);
 
-  let bucketVolume = ema;
-  if (predictedAt) {
-    const bucket = hourBucket(predictedAt.getHours());
-    const sameBucketVolumes = sample
-      .filter((x) => hourBucket(x.at.getHours()) === bucket)
-      .map((x) => x.log.volume);
-    if (sameBucketVolumes.length >= 2) {
-      bucketVolume = mean(sameBucketVolumes);
+  // ===== 1. BUILD ADJACENT PAIRS =====
+  // Mỗi pair: (cữ trước, cữ kế tiếp) — chỉ giữ khi interval nằm 15p..8h
+  interface Pair {
+    prevMinute: number; // giờ-trong-ngày của cữ trước (phút)
+    intervalMin: number; // khoảng thời gian → cữ tiếp theo
+    nextVolume: number; // dung tích cữ tiếp theo
+  }
+  const allPairs: Pair[] = [];
+  for (let i = 0; i < sample.length - 1; i++) {
+    const prev = sample[i];
+    const next = sample[i + 1];
+    const iv = (next.at.getTime() - prev.at.getTime()) / MS_PER_MIN;
+    if (iv < 15 || iv > 8 * 60) continue;
+    allPairs.push({
+      prevMinute: minuteOfDay(prev.at),
+      intervalMin: iv,
+      nextVolume: next.log.volume,
+    });
+  }
+
+  if (allPairs.length === 0) {
+    // Không có cặp hợp lệ → fallback tối thiểu
+    return {
+      hasData: true,
+      samples: sample.length,
+      nextVolume: Math.round(lastFeed.log.volume / 5) * 5,
+      volumeRange: [lastFeed.log.volume, lastFeed.log.volume],
+      confidence: 'low',
+      reasoning: ['Chưa có cặp cữ liên tiếp trong 8 tiếng để học pattern.'],
+    };
+  }
+
+  // ===== 2. MATCH BY TIME-OF-DAY =====
+  // Mở rộng cửa sổ dần nếu không đủ mẫu: ±45p → ±75p → ±120p → full.
+  const windows = [45, 75, 120, Infinity];
+  let matched: Pair[] = [];
+  let usedWindowMin = 0;
+  for (const w of windows) {
+    matched = allPairs.filter(
+      (p) => w === Infinity || circularDiff(p.prevMinute, lastMinute) <= w
+    );
+    if (matched.length >= 3 || w === Infinity) {
+      usedWindowMin = w === Infinity ? 0 : w;
+      break;
     }
   }
 
-  // Trộn: 60% EMA + 40% same-bucket mean
-  const predictedVolumeRaw = 0.6 * ema + 0.4 * bucketVolume;
+  // Nếu số match quá ít (<2) ta fallback về allPairs
+  if (matched.length < 2) {
+    matched = allPairs;
+    usedWindowMin = 0;
+  }
+
+  const intervals = matched.map((p) => p.intervalMin);
+  const vols = matched.map((p) => p.nextVolume);
+
+  // Kết hợp với EMA toàn cục để tránh bị lệch do cửa sổ hẹp
+  const allVolumes = sample.map((x) => x.log.volume);
+  let ema = allVolumes[0];
+  const alpha = 0.35;
+  for (let i = 1; i < allVolumes.length; i++) {
+    ema = alpha * allVolumes[i] + (1 - alpha) * ema;
+  }
+
+  const medIv = median(intervals);
+  const medVolMatched = median(vols);
+
+  // ===== 3. COMBINE =====
+  // Interval: chỉ dựa trên median matched (thuần pattern theo giờ)
+  const predictedAt =
+    medIv > 0 ? new Date(lastFeed.at.getTime() + medIv * MS_PER_MIN) : undefined;
+
+  // Volume: trộn 70% pattern + 30% EMA (để không quá bám sample hẹp)
+  const predictedVolumeRaw = 0.7 * medVolMatched + 0.3 * ema;
   const predictedVolume = Math.max(10, Math.round(predictedVolumeRaw / 5) * 5);
 
-  // Volume range = ± 1 std
-  const stdVol = stddev(volumes);
+  const stdVol = stddev(vols.length >= 2 ? vols : allVolumes);
   const low = Math.max(10, Math.round((predictedVolumeRaw - stdVol) / 5) * 5);
   const high = Math.round((predictedVolumeRaw + stdVol) / 5) * 5;
 
+  const stdIv = stddev(intervals);
+  const cvIv = medIv > 0 ? stdIv / medIv : 1;
+
   // ===== 4. CONFIDENCE =====
   let confidence: 'low' | 'medium' | 'high' = 'low';
-  if (sample.length >= 10 && cvIv < 0.35) confidence = 'high';
-  else if (sample.length >= 5 && cvIv < 0.5) confidence = 'medium';
+  if (matched.length >= 8 && cvIv < 0.3) confidence = 'high';
+  else if (matched.length >= 4 && cvIv < 0.45) confidence = 'medium';
   else confidence = 'low';
 
   // ===== 5. REASONING =====
   const reasoning: string[] = [];
-  reasoning.push(
-    `Dựa trên ${sample.length} cữ bú gần đây${
-      recent.length >= 4 ? ' (14 ngày)' : ''
-    }.`
-  );
+  const lastH = lastFeed.at.getHours().toString().padStart(2, '0');
+  const lastM = lastFeed.at.getMinutes().toString().padStart(2, '0');
+  if (usedWindowMin > 0) {
+    reasoning.push(
+      `So khớp ${matched.length} cặp cữ trước–sau có giờ tương tự ${lastH}:${lastM} (±${usedWindowMin}p) trong ${sample.length} cữ gần đây.`
+    );
+  } else {
+    reasoning.push(
+      `Dựa trên ${matched.length} cặp cữ trong ${sample.length} cữ gần đây (pattern theo giờ chưa đủ, dùng toàn bộ).`
+    );
+  }
   if (medIv > 0) {
     const h = Math.floor(medIv / 60);
     const m = Math.round(medIv % 60);
     reasoning.push(
-      `Khoảng cách trung vị giữa các cữ: ${h > 0 ? `${h} giờ ` : ''}${m} phút.`
+      `Cữ kế tiếp thường cách khoảng ${h > 0 ? `${h}h ` : ''}${m}p.`
     );
   }
   reasoning.push(
-    `Xu hướng gần đây (EMA): ${Math.round(ema)}ml · trung bình cùng khung giờ: ${Math.round(bucketVolume)}ml.`
+    `Dung tích trong pattern: ${Math.round(medVolMatched)}ml · EMA toàn cục: ${Math.round(ema)}ml.`
   );
   if (confidence === 'low') {
     reasoning.push('Dữ liệu còn ít/biến động, hãy coi đây là tham khảo.');
@@ -204,7 +247,7 @@ export function predictNextFeeding(
 
   return {
     hasData: true,
-    samples: sample.length,
+    samples: matched.length,
     nextTime: nextTimeStr,
     nextAt: predictedAt,
     nextVolume: predictedVolume,

@@ -196,6 +196,60 @@
         <i class="pi pi-exclamation-triangle"></i> {{ syncError() }}
       </div>
 
+      <!-- ============ BOTTLE PREP (quick save) ============ -->
+      <section class="bottle-prep">
+        <ng-container *ngIf="!bottlePrepEditing(); else bottlePrepEdit">
+          <ng-container *ngIf="bottlePrep() as prep; else noBottlePrep">
+            <div class="bp-info">
+              <i class="pi pi-inbox"></i>
+              <span class="bp-text">
+                Đã pha <strong>{{ prep.volumeMl }}ml</strong>
+                <span class="muted">· lúc {{ formatBottleAt(prep.at) }}</span>
+              </span>
+            </div>
+            <div class="bp-actions">
+              <button type="button" class="bp-btn" (click)="editBottlePrep()" title="Sửa">
+                <i class="pi pi-pencil"></i>
+              </button>
+              <button type="button" class="bp-btn danger" (click)="clearBottlePrep()" title="Xoá bình">
+                <i class="pi pi-times"></i>
+              </button>
+            </div>
+          </ng-container>
+          <ng-template #noBottlePrep>
+            <button type="button" class="bp-add" (click)="editBottlePrep()">
+              <i class="pi pi-inbox"></i>
+              Lưu lượng sữa đã pha vào bình
+            </button>
+          </ng-template>
+        </ng-container>
+
+        <ng-template #bottlePrepEdit>
+          <form class="bp-form" (ngSubmit)="saveBottlePrep()">
+            <i class="pi pi-inbox"></i>
+            <label class="bp-label">Sữa pha vào bình</label>
+            <input
+              type="text"
+              inputmode="numeric"
+              maxlength="4"
+              class="bp-input"
+              [value]="bottlePrepDraft()"
+              (input)="updateBottlePrepDraft($any($event.target).value)"
+              placeholder="100"
+              autocomplete="off"
+              autofocus
+            />
+            <span class="bp-unit">ml</span>
+            <button type="submit" class="bp-btn primary" [disabled]="!bottlePrepDraft()" title="Lưu">
+              <i class="pi pi-check"></i>
+            </button>
+            <button type="button" class="bp-btn" (click)="cancelBottlePrep()" title="Huỷ">
+              <i class="pi pi-times"></i>
+            </button>
+          </form>
+        </ng-template>
+      </section>
+
       <!-- ============ ML PREDICTION (compact hero) ============ -->
       <section
         class="card predict-card compact"
@@ -1027,6 +1081,50 @@
           <button type="button" class="quick-chip now-chip" (click)="setLogNow()">
             <i class="pi pi-history"></i> Bây giờ
           </button>
+        </div>
+
+        <!-- Tính từ sữa còn lại (dùng bình đã lưu) -->
+        <div class="calc-block" *ngIf="bottlePrep() as prep">
+          <div class="calc-head">
+            <div class="prep-info">
+              <i class="pi pi-inbox"></i>
+              Bình đã pha <strong>{{ prep.volumeMl }}ml</strong>
+              <span class="muted">· {{ formatBottleAt(prep.at) }}</span>
+            </div>
+          </div>
+          <div class="calc-body">
+            <label class="field mini remaining-input">
+              <span class="label">Sữa còn lại trong bình</span>
+              <input
+                type="text"
+                inputmode="numeric"
+                maxlength="4"
+                [value]="remainingInput()"
+                (input)="updateRemaining($any($event.target).value)"
+                placeholder="VD: 25"
+                autocomplete="off"
+              />
+              <span class="suffix">ml</span>
+            </label>
+            <div class="calc-result-row">
+              <div class="calc-result">
+                <span class="calc-label">Đã bú:</span>
+                <ng-container *ngIf="calcResult() !== null; else calcEmpty">
+                  <strong>{{ calcResult() }}</strong><span class="u">ml</span>
+                </ng-container>
+                <ng-template #calcEmpty><span class="muted">—</span></ng-template>
+              </div>
+              <button
+                type="button"
+                class="btn primary small calc-apply"
+                [disabled]="calcResult() === null"
+                (click)="applyCalcVolume()"
+              >
+                <i class="pi pi-check"></i>
+                Áp dụng
+              </button>
+            </div>
+          </div>
         </div>
 
         <!-- Prediction hint in dialog -->
