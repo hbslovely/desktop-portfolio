@@ -2778,6 +2778,292 @@
   }
 }
 
+/* ========== BOTTLE PREP (widget trên trang) ========== */
+.bottle-prep {
+  background: #fffaf0;
+  border: 1px solid #fde7c2;
+  border-radius: 12px;
+  padding: 8px 12px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+
+  .bp-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: var(--text);
+    flex: 1;
+    min-width: 0;
+
+    > i {
+      color: #f59e0b;
+      font-size: 16px;
+    }
+
+    strong {
+      color: #d97706;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .muted {
+      color: var(--muted);
+      font-size: 13px;
+    }
+  }
+
+  .bp-actions {
+    display: flex;
+    gap: 4px;
+  }
+
+  .bp-add {
+    flex: 1;
+    background: transparent;
+    border: none;
+    padding: 6px 4px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #d97706;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: inherit;
+    text-align: left;
+
+    > i {
+      font-size: 15px;
+    }
+
+    &:hover { color: #b45309; }
+  }
+
+  .bp-form {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+
+    > i:first-child {
+      color: #f59e0b;
+      font-size: 16px;
+    }
+
+    .bp-label {
+      font-size: 13px;
+      color: var(--muted);
+      font-weight: 600;
+      white-space: nowrap;
+
+      @media (max-width: 480px) { display: none; }
+    }
+
+    .bp-input {
+      flex: 1;
+      min-width: 70px;
+      padding: 7px 10px;
+      font-size: 15px;
+      font-weight: 700;
+      border: 1px solid #fadf9e;
+      border-radius: 8px;
+      background: #ffffff;
+      font-variant-numeric: tabular-nums;
+      font-family: inherit;
+      color: #d97706;
+
+      &:focus {
+        outline: none;
+        border-color: #f59e0b;
+        box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
+      }
+    }
+
+    .bp-unit {
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+  }
+
+  .bp-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: none;
+    background: #ffffff;
+    color: var(--muted);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    transition: all 0.15s;
+    flex-shrink: 0;
+
+    &:hover:not(:disabled) {
+      background: #fef3c7;
+      color: #d97706;
+    }
+
+    &.primary {
+      background: #f59e0b;
+      color: #ffffff;
+
+      &:hover:not(:disabled) { background: #d97706; }
+
+      &:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+    }
+
+    &.danger:hover {
+      background: var(--rose-soft);
+      color: var(--rose);
+    }
+  }
+}
+
+/* ========== CALC: tính từ sữa còn lại (trong dialog log) ========== */
+.calc-block {
+  border: 1px solid #fde7c2;
+  background: #fffaf0;
+  border-radius: 12px;
+  overflow: hidden;
+
+  .calc-head {
+    padding: 10px 14px 0;
+  }
+
+  .prep-info {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--text);
+
+    > i {
+      color: #f59e0b;
+      font-size: 14px;
+    }
+
+    strong {
+      color: #d97706;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .muted {
+      color: var(--muted-2);
+      font-size: 12px;
+    }
+  }
+
+  .calc-body {
+    padding: 8px 14px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .field.mini.remaining-input {
+    position: relative;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+
+    .label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px 36px 10px 12px;
+      font-size: 16px;
+      font-weight: 700;
+      border: 1px solid #fadf9e;
+      border-radius: 8px;
+      background: #ffffff;
+      font-variant-numeric: tabular-nums;
+      font-family: inherit;
+      color: #d97706;
+
+      &:focus {
+        outline: none;
+        border-color: #f59e0b;
+        box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
+      }
+    }
+
+    .suffix {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(4px);
+      font-size: 12px;
+      color: var(--muted-2);
+      pointer-events: none;
+    }
+  }
+
+  .calc-result-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .calc-result {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+    font-variant-numeric: tabular-nums;
+
+    .calc-label {
+      font-size: 13px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    strong {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--primary);
+    }
+
+    .u {
+      font-size: 12px;
+      color: var(--primary);
+      margin-left: 2px;
+    }
+
+    .muted {
+      color: var(--muted-2);
+      font-size: 18px;
+    }
+  }
+
+  .calc-apply {
+    flex-shrink: 0;
+
+    &:disabled {
+      background: #e5e7eb;
+      color: var(--muted-2);
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+  }
+}
+
 .predict-hint {
   display: flex;
   align-items: center;

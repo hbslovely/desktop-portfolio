@@ -102,6 +102,23 @@ export class FeedingComponent {
   tipsGuideIndex = signal<number>(0);
   chartTab = signal<'volume' | 'count' | 'timeline'>('volume');
 
+  // ===== Bình sữa đã pha (persistent) =====
+  bottlePrep = signal<{ volumeMl: number; at: string } | null>(null);
+  bottlePrepDraft = signal<string>('');
+  bottlePrepEditing = signal<boolean>(false);
+
+  /** Trong log dialog: chỉ 1 input cho "sữa còn lại" */
+  remainingInput = signal<string>('');
+  calcResult = computed<number | null>(() => {
+    const prep = this.bottlePrep();
+    if (!prep) return null;
+    const r = parseFloat(this.remainingInput());
+    if (isNaN(r) || r < 0) return null;
+    const consumed = prep.volumeMl - r;
+    if (consumed <= 0) return null;
+    return Math.round(consumed);
+  });
+
   ageInDays = computed<number | null>(() => {
     const p = this.profile();
     if (!p?.birthDate) return null;
@@ -605,6 +622,8 @@ export class FeedingComponent {
     });
 
     setInterval(() => this.now.set(new Date()), 60_000);
+
+    this.loadBottlePrep();
   }
 
   // ===== Profile management =====
@@ -753,6 +772,77 @@ export class FeedingComponent {
 
   quickVolume(v: number) {
     this.logDraft.update((d) => ({ ...d, volume: v }));
+  }
+
+  // ===== Bottle prep (persistent) =====
+  private readonly BOTTLE_PREP_KEY = 'feeding:bottle-prep';
+
+  private loadBottlePrep() {
+    try {
+      const raw = localStorage.getItem(this.BOTTLE_PREP_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as { volumeMl: number; at: string };
+      if (parsed?.volumeMl > 0) this.bottlePrep.set(parsed);
+    } catch (e) {
+      console.warn('Could not load bottle prep', e);
+    }
+  }
+
+  editBottlePrep() {
+    const current = this.bottlePrep();
+    this.bottlePrepDraft.set(current ? String(current.volumeMl) : '');
+    this.bottlePrepEditing.set(true);
+  }
+
+  cancelBottlePrep() {
+    this.bottlePrepEditing.set(false);
+    this.bottlePrepDraft.set('');
+  }
+
+  updateBottlePrepDraft(v: string) {
+    this.bottlePrepDraft.set(String(v ?? '').replace(/[^\d]/g, ''));
+  }
+
+  saveBottlePrep() {
+    const n = parseInt(this.bottlePrepDraft(), 10);
+    if (isNaN(n) || n <= 0) return;
+    const entry = { volumeMl: n, at: new Date().toISOString() };
+    localStorage.setItem(this.BOTTLE_PREP_KEY, JSON.stringify(entry));
+    this.bottlePrep.set(entry);
+    this.bottlePrepEditing.set(false);
+    this.bottlePrepDraft.set('');
+  }
+
+  clearBottlePrep() {
+    localStorage.removeItem(this.BOTTLE_PREP_KEY);
+    this.bottlePrep.set(null);
+    this.bottlePrepEditing.set(false);
+    this.bottlePrepDraft.set('');
+  }
+
+  /** "14:30" từ ISO timestamp */
+  formatBottleAt(iso: string): string {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    return this.toTimeStr(d);
+  }
+
+  // ===== Log dialog: input "còn lại" =====
+  updateRemaining(v: string) {
+    this.remainingInput.set(String(v ?? '').replace(/[^\d]/g, ''));
+  }
+
+  applyCalcVolume() {
+    const r = this.calcResult();
+    if (r === null) return;
+    this.logDraft.update((d) => ({ ...d, volume: r }));
+    // Sau khi áp dụng, clear bình đã pha để lần sau cần lưu lại mới
+    this.clearBottlePrep();
+    this.remainingInput.set('');
+  }
+
+  private resetRemaining() {
+    this.remainingInput.set('');
   }
 
   submitLog() {
@@ -976,6 +1066,7 @@ export class FeedingComponent {
         volume: null,
         note: '',
       });
+      this.resetRemaining();
     }
     this.syncError.set('');
     this.syncMessage.set('');
@@ -984,6 +1075,7 @@ export class FeedingComponent {
 
   closeLogDialog() {
     this.logDialogOpen.set(false);
+    this.resetRemaining();
   }
 
   minutesToHuman(minutes: number): string {
