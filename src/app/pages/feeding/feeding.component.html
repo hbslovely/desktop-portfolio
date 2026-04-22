@@ -810,82 +810,181 @@
       </section>
 
       <!-- ============ NUTRITION EVALUATION ============ -->
-      <section class="card nutrition-card" *ngIf="nutritionEval() as ev">
-        <div class="nutrition-head">
-          <div>
-            <div class="eyebrow"><i class="pi pi-heart"></i> Đánh giá dinh dưỡng</div>
-            <h2>Lượng sữa hôm nay vs khuyến nghị</h2>
+      <section
+        class="card nutri-card"
+        *ngIf="nutritionEval() as ev"
+        [attr.data-status]="ev.status"
+      >
+        <header class="nutri-head">
+          <div class="nutri-head__lead">
+            <div class="eyebrow"><i class="pi pi-heart-fill"></i> Dinh dưỡng hôm nay</div>
+            <h2>
+              {{ ev.target.ageLabel }}
+              <span class="nutri-weight" *ngIf="profile()?.weightKg as w">
+                <i class="pi pi-circle-fill tiny-dot"></i> {{ w }} kg
+              </span>
+            </h2>
           </div>
-          <div class="status-pill" [attr.data-status]="ev.status">
+          <div class="nutri-badge" [attr.data-status]="ev.status">
+            <span class="dot"></span>
             {{ ev.statusLabel }}
           </div>
+        </header>
+
+        <!-- Hero: big progress bar with recommended range -->
+        <div class="nutri-hero" *ngIf="nutritionZones() as z">
+          <div class="nutri-hero__top">
+            <div class="nutri-hero__lead">
+              <span class="h-label">
+                <i class="pi pi-bolt"></i> Đã nạp hôm nay
+              </span>
+              <div class="h-value">
+                {{ ev.actualMl }}<em>ml</em>
+                <small>· {{ ev.actualCount }} cữ</small>
+              </div>
+            </div>
+            <div class="nutri-hero__pct" [attr.data-status]="ev.status">
+              {{ ev.percentOfTarget }}%
+              <span>so với KN</span>
+            </div>
+          </div>
+
+          <div class="nutri-bar" [attr.data-status]="ev.status">
+            <div class="nb-track">
+              <!-- Recommended band (min → max) -->
+              <div
+                class="nb-range"
+                [style.left.%]="(z.minLabel / z.scaleMax) * 100"
+                [style.width.%]="((z.maxLabel - z.minLabel) / z.scaleMax) * 100"
+              ></div>
+              <!-- Fill up to actualMl -->
+              <div
+                class="nb-fill"
+                [attr.data-status]="ev.status"
+                [style.width.%]="z.pointerPct"
+              ></div>
+              <!-- Pointer with current value -->
+              <div class="nb-pointer" [style.left.%]="z.pointerPct">
+                <span class="nb-pointer__pill">{{ ev.actualMl }}ml</span>
+                <span class="nb-pointer__stem"></span>
+              </div>
+              <!-- Min / max tick marks -->
+              <div
+                class="nb-tick nb-tick--min"
+                [style.left.%]="(z.minLabel / z.scaleMax) * 100"
+              ></div>
+              <div
+                class="nb-tick nb-tick--max"
+                [style.left.%]="(z.maxLabel / z.scaleMax) * 100"
+              ></div>
+            </div>
+            <div class="nb-axis">
+              <span class="nb-ax nb-ax--start">0</span>
+              <span
+                class="nb-ax nb-ax--min"
+                [style.left.%]="(z.minLabel / z.scaleMax) * 100"
+              >min <b>{{ z.minLabel }}</b></span>
+              <span
+                class="nb-ax nb-ax--max"
+                [style.left.%]="(z.maxLabel / z.scaleMax) * 100"
+              >max <b>{{ z.maxLabel }}</b></span>
+              <span class="nb-ax nb-ax--end">{{ z.scaleMax }}</span>
+            </div>
+          </div>
         </div>
 
-        <div class="target-summary">
-          <div class="target-item">
-            <div class="t-label">Khuyến nghị/ngày</div>
-            <div class="t-value">
-              {{ ev.target.dailyMlMin }}–{{ ev.target.dailyMlMax }}<span class="u">ml</span>
-            </div>
-            <div class="t-sub">
-              {{ ev.target.perKgFactor }}ml/kg · {{ ev.target.ageLabel }}
-            </div>
+        <!-- Facts -->
+        <div class="nutri-facts">
+          <div class="fact">
+            <span class="fact-label">
+              <i class="pi pi-compass"></i> Khuyến nghị/ngày
+            </span>
+            <strong class="fact-value">
+              {{ ev.target.dailyMlMin }}<em>–</em>{{ ev.target.dailyMlMax }}<em>ml</em>
+            </strong>
+            <span class="fact-sub">
+              {{ ev.target.perKgFactor }} ml/kg/ngày
+            </span>
           </div>
-          <div class="target-item">
-            <div class="t-label">Đã bú hôm nay</div>
-            <div class="t-value hi">
-              {{ ev.actualMl }}<span class="u">ml</span>
-            </div>
-            <div class="t-sub">
-              {{ ev.actualCount }} cữ · {{ ev.percentOfTarget }}% mục tiêu
-            </div>
+
+          <div class="fact" *ngIf="ev.remainingToMin > 0">
+            <span class="fact-label warn">
+              <i class="pi pi-arrow-circle-down"></i> Còn thiếu
+            </span>
+            <strong class="fact-value warn">
+              {{ ev.remainingToMin }}<em>ml</em>
+            </strong>
+            <span class="fact-sub">để đạt mức tối thiểu</span>
           </div>
-          <div class="target-item">
-            <div class="t-label">Mỗi cữ gợi ý</div>
-            <div class="t-value">
-              {{ ev.target.perFeedMin }}–{{ ev.target.perFeedMax }}<span class="u">ml</span>
-            </div>
-            <div class="t-sub">
-              {{ ev.target.feedsPerDayMin }}–{{ ev.target.feedsPerDayMax }} cữ/ngày
-            </div>
+
+          <div
+            class="fact"
+            *ngIf="ev.remainingToMin === 0 && ev.remainingToMax > 0"
+          >
+            <span class="fact-label ok">
+              <i class="pi pi-check-circle"></i> Còn có thể bú
+            </span>
+            <strong class="fact-value ok">
+              {{ ev.remainingToMax }}<em>ml</em>
+            </strong>
+            <span class="fact-sub">tới mức tối đa khuyến nghị</span>
+          </div>
+
+          <div
+            class="fact"
+            *ngIf="ev.actualMl > ev.target.dailyMlMax"
+          >
+            <span class="fact-label over">
+              <i class="pi pi-arrow-circle-up"></i> Vượt mức tối đa
+            </span>
+            <strong class="fact-value over">
+              +{{ ev.actualMl - ev.target.dailyMlMax }}<em>ml</em>
+            </strong>
+            <span class="fact-sub">theo dõi dấu hiệu đầy bụng</span>
           </div>
         </div>
 
-        <div class="nutri-progress">
-          <div class="progress-track">
-            <div class="progress-range"></div>
-            <div
-              class="progress-fill"
-              [attr.data-status]="ev.status"
-              [style.width.%]="Math.min(100, (ev.actualMl / ev.target.dailyMlMax) * 100)"
-            ></div>
-            <div
-              class="marker min-marker"
-              [style.left.%]="(ev.target.dailyMlMin / ev.target.dailyMlMax) * 100"
-            >
-              <span>{{ ev.target.dailyMlMin }}</span>
+        <!-- Metric chips -->
+        <ul class="nutri-metrics">
+          <li>
+            <span class="m-icon mint"><i class="pi pi-prime"></i></span>
+            <div>
+              <strong>{{ ev.target.perFeedMin }}–{{ ev.target.perFeedMax }} ml</strong>
+              <span>gợi ý mỗi cữ</span>
             </div>
-            <div class="marker max-marker" style="left: 100%;">
-              <span>{{ ev.target.dailyMlMax }}</span>
+          </li>
+          <li>
+            <span class="m-icon lavender"><i class="pi pi-replay"></i></span>
+            <div>
+              <strong>{{ ev.target.feedsPerDayMin }}–{{ ev.target.feedsPerDayMax }}</strong>
+              <span>cữ/ngày</span>
             </div>
-          </div>
-          <div class="progress-labels">
-            <span>0</span>
-            <span class="current">Hiện tại: {{ ev.actualMl }}ml</span>
-          </div>
-        </div>
+          </li>
+          <li>
+            <span class="m-icon peach"><i class="pi pi-chart-line"></i></span>
+            <div>
+              <strong>{{ ev.percentOfMin }}%</strong>
+              <span>so với mức tối thiểu</span>
+            </div>
+          </li>
+        </ul>
 
+        <!-- Advice banner -->
         <div class="nutri-advice" [attr.data-status]="ev.status">
-          <i class="pi" [class.pi-check-circle]="ev.status === 'ok'"
-             [class.pi-info-circle]="ev.status === 'under' || ev.status === 'no-data'"
-             [class.pi-exclamation-circle]="ev.status === 'low' || ev.status === 'high'"
-             [class.pi-arrow-circle-up]="ev.status === 'over'"></i>
-          {{ ev.advice }}
+          <span class="adv-icon">
+            <i class="pi"
+              [class.pi-check-circle]="ev.status === 'ok'"
+              [class.pi-info-circle]="ev.status === 'under' || ev.status === 'no-data'"
+              [class.pi-exclamation-circle]="ev.status === 'low' || ev.status === 'high'"
+              [class.pi-arrow-circle-up]="ev.status === 'over'"
+            ></i>
+          </span>
+          <span class="adv-text">{{ ev.advice }}</span>
         </div>
 
         <div class="nutri-note">
           <i class="pi pi-info-circle"></i>
-          {{ ev.target.note }}
+          <span>{{ ev.target.note }}</span>
         </div>
       </section>
 
@@ -971,6 +1070,101 @@
             <i class="pi pi-arrow-circle-right"></i>
             {{ u.label }}
           </div>
+        </div>
+      </section>
+
+      <!-- ============ MOM FOOD SUGGESTIONS ============ -->
+      <section
+        class="card mom-food-card"
+        *ngIf="activeMomStage() as ms"
+        [attr.data-accent]="ms.accent"
+      >
+        <header class="mf-head">
+          <div class="mf-head__lead">
+            <div class="eyebrow">
+              <i class="pi pi-apple"></i> Món ăn cho mẹ sau sinh
+            </div>
+            <h2>{{ ms.label }}</h2>
+            <p class="mf-headline">{{ ms.headline }}</p>
+          </div>
+
+          <div class="mf-nav">
+            <button
+              type="button"
+              class="mf-arrow"
+              (click)="prevMomStage()"
+              [disabled]="activeMomStageIndex() === 0"
+              aria-label="Giai đoạn trước"
+            >
+              <i class="pi pi-chevron-left"></i>
+            </button>
+            <div class="mf-step">
+              <strong>{{ activeMomStageIndex() + 1 }}</strong>
+              <span>/ {{ momStageTotal }}</span>
+            </div>
+            <button
+              type="button"
+              class="mf-arrow"
+              (click)="nextMomStage()"
+              [disabled]="activeMomStageIndex() === momStageTotal - 1"
+              aria-label="Giai đoạn kế tiếp"
+            >
+              <i class="pi pi-chevron-right"></i>
+            </button>
+          </div>
+        </header>
+
+        <button
+          *ngIf="!isMomStageAuto()"
+          type="button"
+          class="mf-reset"
+          (click)="resetMomStage()"
+        >
+          <i class="pi pi-refresh"></i>
+          Về giai đoạn hiện tại của bé
+        </button>
+
+        <p class="mf-desc">{{ ms.description }}</p>
+
+        <div class="mf-columns">
+          <div class="mf-col mf-col--good">
+            <h3 class="mf-col-title">
+              <span class="mf-dot good"><i class="pi pi-check"></i></span>
+              Nên ăn
+            </h3>
+            <ul class="mf-list">
+              <li *ngFor="let item of ms.encourage" class="mf-item mf-item--good">
+                <span class="mf-emoji" *ngIf="item.emoji">{{ item.emoji }}</span>
+                <div class="mf-item-body">
+                  <span class="mf-name">{{ item.name }}</span>
+                  <span class="mf-note" *ngIf="item.note">{{ item.note }}</span>
+                </div>
+              </li>
+            </ul>
+          </div>
+
+          <div class="mf-col mf-col--bad">
+            <h3 class="mf-col-title">
+              <span class="mf-dot bad"><i class="pi pi-times"></i></span>
+              Nên hạn chế
+            </h3>
+            <ul class="mf-list">
+              <li *ngFor="let item of ms.avoid" class="mf-item mf-item--bad">
+                <span class="mf-emoji mf-emoji--x">
+                  <i class="pi pi-ban"></i>
+                </span>
+                <div class="mf-item-body">
+                  <span class="mf-name">{{ item.name }}</span>
+                  <span class="mf-note" *ngIf="item.note">{{ item.note }}</span>
+                </div>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="mf-tip" *ngIf="ms.tip">
+          <i class="pi pi-lightbulb"></i>
+          <span>{{ ms.tip }}</span>
         </div>
       </section>
 
