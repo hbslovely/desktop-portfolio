@@ -77,15 +77,14 @@
             <span class="label-hint">giúp đánh giá lượng sữa theo cân nặng</span>
           </span>
           <input
-            type="number"
+            type="text"
             inputmode="decimal"
-            min="0.5"
-            max="30"
-            step="0.1"
-            [ngModel]="draft().weightKg"
-            (ngModelChange)="updateDraftWeight($any($event))"
+            maxlength="5"
+            [value]="weightInput()"
+            (input)="updateDraftWeight($any($event.target).value)"
             name="babyWeight"
             placeholder="VD: 4.2"
+            autocomplete="off"
           />
         </label>
 

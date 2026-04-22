@@ -74,6 +74,8 @@ export class FeedingComponent {
     gender: '',
     weightKg: undefined,
   });
+  /** Raw text của input cân nặng — giữ nguyên để không bị mất số khi đang gõ "3." */
+  weightInput = signal<string>('');
   editing = signal<boolean>(true);
   activeCategory = signal<FeedingTip['category'] | 'all'>('all');
 
@@ -444,39 +446,75 @@ export class FeedingComponent {
     const yOf = (v: number) => PAD_T + chartH - (v / max) * chartH;
 
     /**
-     * Mượt hoá đường thẳng bằng Catmull-Rom → cubic Bezier.
-     * Với dữ liệu tích luỹ (không giảm), chúng ta kẹp y của control point
-     * để tránh overshoot (đường đi xuống rồi lại lên).
+     * Mượt hoá đường cong bằng monotone cubic (Fritsch–Carlson):
+     *   - Giữ tính đơn điệu (tích luỹ không bao giờ giảm).
+     *   - Gộp các điểm trùng y liên tiếp để tránh "bậc thang" gây cong xấu
+     *     tại các đoạn phẳng giữa các cữ bú.
      */
     const toPath = (pts: { m: number; v: number }[]) => {
       if (pts.length === 0) return '';
-      if (pts.length === 1) {
-        const p = pts[0];
+
+      // 1) Gộp các điểm có cùng y liên tiếp → chỉ giữ đầu và cuối của mỗi đoạn phẳng.
+      const compacted: { m: number; v: number }[] = [];
+      for (let i = 0; i < pts.length; i++) {
+        const p = pts[i];
+        const prev = compacted[compacted.length - 1];
+        const next = pts[i + 1];
+        if (prev && next && prev.v === p.v && next.v === p.v) continue;
+        compacted.push(p);
+      }
+
+      if (compacted.length === 1) {
+        const p = compacted[0];
         return `M ${xOf(p.m)},${yOf(p.v)}`;
       }
 
-      const screen = pts.map((p) => ({ x: xOf(p.m), y: yOf(p.v) }));
-      const tension = 0.2;
-      let d = `M ${screen[0].x},${screen[0].y}`;
+      const sp = compacted.map((p) => ({ x: xOf(p.m), y: yOf(p.v) }));
+      const n = sp.length;
 
-      for (let i = 0; i < screen.length - 1; i++) {
-        const p0 = screen[i - 1] || screen[i];
-        const p1 = screen[i];
-        const p2 = screen[i + 1];
-        const p3 = screen[i + 2] || p2;
+      // 2) Monotone cubic interpolation (Fritsch–Carlson).
+      const dx: number[] = new Array(n - 1);
+      const slope: number[] = new Array(n - 1);
+      for (let i = 0; i < n - 1; i++) {
+        dx[i] = sp[i + 1].x - sp[i].x;
+        slope[i] = dx[i] === 0 ? 0 : (sp[i + 1].y - sp[i].y) / dx[i];
+      }
 
-        const cp1x = p1.x + (p2.x - p0.x) * tension;
-        let cp1y = p1.y + (p2.y - p0.y) * tension;
-        const cp2x = p2.x - (p3.x - p1.x) * tension;
-        let cp2y = p2.y - (p3.y - p1.y) * tension;
+      const t: number[] = new Array(n);
+      t[0] = slope[0];
+      t[n - 1] = slope[n - 2];
+      for (let i = 1; i < n - 1; i++) {
+        if (slope[i - 1] * slope[i] <= 0) {
+          t[i] = 0;
+        } else {
+          t[i] = (slope[i - 1] + slope[i]) / 2;
+        }
+      }
+      // Fritsch condition
+      for (let i = 0; i < n - 1; i++) {
+        if (slope[i] === 0) {
+          t[i] = 0;
+          t[i + 1] = 0;
+          continue;
+        }
+        const a = t[i] / slope[i];
+        const b = t[i + 1] / slope[i];
+        const h = a * a + b * b;
+        if (h > 9) {
+          const s = 3 / Math.sqrt(h);
+          t[i] = s * a * slope[i];
+          t[i + 1] = s * b * slope[i];
+        }
+      }
 
-        // Monotonic y trong SVG (tích luỹ tăng → y giảm)
-        const yMin = Math.min(p1.y, p2.y);
-        const yMax = Math.max(p1.y, p2.y);
-        cp1y = Math.min(yMax, Math.max(yMin, cp1y));
-        cp2y = Math.min(yMax, Math.max(yMin, cp2y));
-
-        d += ` C ${cp1x},${cp1y} ${cp2x},${cp2y} ${p2.x},${p2.y}`;
+      // 3) Dựng cubic bezier từ Hermite tangents.
+      let d = `M ${sp[0].x},${sp[0].y}`;
+      for (let i = 0; i < n - 1; i++) {
+        const cp1x = sp[i].x + dx[i] / 3;
+        const cp1y = sp[i].y + (t[i] * dx[i]) / 3;
+        const cp2x = sp[i + 1].x - dx[i] / 3;
+        const cp2y = sp[i + 1].y - (t[i + 1] * dx[i]) / 3;
+        d += ` C ${cp1x},${cp1y} ${cp2x},${cp2y} ${sp[i + 1].x},${sp[i + 1].y}`;
       }
       return d;
     };
@@ -577,6 +615,7 @@ export class FeedingComponent {
         const parsed = JSON.parse(raw) as Profile;
         this.profile.set(parsed);
         this.draft.set({ ...parsed });
+        this.weightInput.set(parsed.weightKg ? String(parsed.weightKg) : '');
         this.editing.set(false);
         return;
       }
@@ -585,12 +624,14 @@ export class FeedingComponent {
     }
     this.profile.set(null);
     this.draft.set({ babyName: '', birthDate: '', gender: '' });
+    this.weightInput.set('');
     this.editing.set(true);
   }
 
   startEdit() {
     const p = this.profile();
     this.draft.set(p ? { ...p } : { babyName: '', birthDate: '', gender: '' });
+    this.weightInput.set(p?.weightKg ? String(p.weightKg) : '');
     this.editing.set(true);
   }
 
@@ -604,15 +645,22 @@ export class FeedingComponent {
     const d = this.draft();
     if (!d.babyName?.trim() || !d.birthDate) return;
 
+    // Parse cân nặng từ raw text (cho phép "3", "3.", "3.8")
+    const raw = this.weightInput().trim().replace(',', '.');
+    const w = raw === '' ? NaN : parseFloat(raw);
+    const weightKg = !isNaN(w) && w > 0 ? Math.round(w * 10) / 10 : undefined;
+
     const clean: Profile = {
       babyName: d.babyName.trim(),
       birthDate: d.birthDate,
       gender: d.gender || '',
-      weightKg: d.weightKg && d.weightKg > 0 ? d.weightKg : undefined,
+      weightKg,
     };
 
     localStorage.setItem(STORAGE_PREFIX + this.user(), JSON.stringify(clean));
     this.profile.set(clean);
+    this.draft.set({ ...clean });
+    this.weightInput.set(weightKg ? String(weightKg) : '');
     this.editing.set(false);
   }
 
@@ -621,6 +669,7 @@ export class FeedingComponent {
     localStorage.removeItem(STORAGE_PREFIX + this.user());
     this.profile.set(null);
     this.draft.set({ babyName: '', birthDate: '', gender: '' });
+    this.weightInput.set('');
     this.editing.set(true);
   }
 
@@ -637,8 +686,18 @@ export class FeedingComponent {
   setDraftGender(gender: Profile['gender']) {
     this.draft.update((d) => ({ ...d, gender }));
   }
-  updateDraftWeight(value: string | number) {
-    const num = typeof value === 'number' ? value : parseFloat(value);
+  updateDraftWeight(value: string) {
+    // Chỉ giữ chữ số, dấu chấm, và dấu phẩy (đổi sang chấm).
+    // Cho phép 1 dấu thập phân duy nhất. Giữ nguyên raw text để
+    // không phá trạng thái khi user đang gõ dở "3." hoặc "3,".
+    let s = String(value ?? '').replace(/[^\d.,]/g, '').replace(',', '.');
+    const firstDot = s.indexOf('.');
+    if (firstDot !== -1) {
+      s = s.slice(0, firstDot + 1) + s.slice(firstDot + 1).replace(/\./g, '');
+    }
+    this.weightInput.set(s);
+
+    const num = parseFloat(s);
     this.draft.update((d) => ({
       ...d,
       weightKg: isNaN(num) || num <= 0 ? undefined : num,
