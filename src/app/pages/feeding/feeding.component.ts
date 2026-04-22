@@ -95,9 +95,10 @@ export class FeedingComponent {
 
   logDialogOpen = signal<boolean>(false);
   historyDialogOpen = signal<boolean>(false);
+  historyFilter = signal<'all' | 'today'>('all');
   tipsDialogOpen = signal<boolean>(false);
   tipsGuideIndex = signal<number>(0);
-  chartTab = signal<'volume' | 'count' | 'hourly'>('volume');
+  chartTab = signal<'volume' | 'count' | 'timeline'>('volume');
 
   ageInDays = computed<number | null>(() => {
     const p = this.profile();
@@ -295,12 +296,29 @@ export class FeedingComponent {
       return { x, y, d };
     });
 
-    const linePath = points.map((p) => `${p.x},${p.y}`).join(' ');
+    // Mượt hoá với Catmull-Rom → cubic Bezier
+    let smoothPath = '';
+    if (points.length > 0) {
+      smoothPath = `M ${points[0].x},${points[0].y}`;
+      const tension = 0.22;
+      for (let i = 0; i < points.length - 1; i++) {
+        const p0 = points[i - 1] || points[i];
+        const p1 = points[i];
+        const p2 = points[i + 1];
+        const p3 = points[i + 2] || p2;
+
+        const cp1x = p1.x + (p2.x - p0.x) * tension;
+        const cp1y = p1.y + (p2.y - p0.y) * tension;
+        const cp2x = p2.x - (p3.x - p1.x) * tension;
+        const cp2y = p2.y - (p3.y - p1.y) * tension;
+
+        smoothPath += ` C ${cp1x},${cp1y} ${cp2x},${cp2y} ${p2.x},${p2.y}`;
+      }
+    }
+
     const areaPath =
-      points.length > 0
-        ? `M ${points[0].x},${PAD_T + chartH} ` +
-          points.map((p) => `L ${p.x},${p.y}`).join(' ') +
-          ` L ${points[points.length - 1].x},${PAD_T + chartH} Z`
+      smoothPath && points.length > 0
+        ? `${smoothPath} L ${points[points.length - 1].x},${PAD_T + chartH} L ${points[0].x},${PAD_T + chartH} Z`
         : '';
 
     const gridLines = [0.25, 0.5, 0.75, 1].map((r) => ({
@@ -308,7 +326,16 @@ export class FeedingComponent {
       label: Math.round(max * r),
     }));
 
-    return { points, linePath, areaPath, gridLines, W, H, PAD_L, PAD_B };
+    return {
+      points,
+      linePath: smoothPath,
+      areaPath,
+      gridLines,
+      W,
+      H,
+      PAD_L,
+      PAD_B,
+    };
   });
 
   /** Bar chart: số cữ bú/ngày trong 7 ngày */
@@ -338,71 +365,175 @@ export class FeedingComponent {
     return { bars, gridLines, W, H, PAD_L, PAD_B, max };
   });
 
-  /** Hourly distribution: 24 cột, gom theo giờ bú (30 ngày gần nhất) */
-  hourlyDistribution = computed(() => {
-    const buckets = Array.from({ length: 24 }, (_, h) => ({
-      hour: h,
-      count: 0,
-      total: 0,
-      avg: 0,
-    }));
-
-    const cutoff = this.now().getTime() - 30 * 86400000;
-    for (const log of this.logs()) {
-      const [y, mo, d] = log.date.split('-').map((n) => parseInt(n, 10));
-      const [hh, mm] = log.time.split(':').map((n) => parseInt(n, 10));
-      const ts = new Date(y, (mo || 1) - 1, d || 1, hh || 0, mm || 0).getTime();
-      if (ts < cutoff) continue;
-      const hr = hh || 0;
-      buckets[hr].count++;
-      buckets[hr].total += log.volume;
-    }
-    for (const b of buckets) {
-      b.avg = b.count > 0 ? Math.round(b.total / b.count) : 0;
-    }
-
-    const max = Math.max(...buckets.map((b) => b.count), 1);
+  /**
+   * Timeline chart: cumulative ml theo thời gian trong ngày (0h → 24h)
+   * 3 dataset:
+   *  - Hôm nay (dừng ở giờ hiện tại)
+   *  - Hôm qua (cả ngày)
+   *  - Trung bình 3 ngày trước (2 ngày + hôm qua)
+   */
+  timelineChart = computed(() => {
     const W = 700, H = 300, PAD_L = 44, PAD_R = 16, PAD_T = 24, PAD_B = 44;
     const chartW = W - PAD_L - PAD_R;
     const chartH = H - PAD_T - PAD_B;
-    const slot = chartW / 24;
-    const barW = slot * 0.7;
 
-    const bars = buckets.map((b, i) => {
-      const x = PAD_L + i * slot + (slot - barW) / 2;
-      const h = b.count > 0 ? Math.max(2, (b.count / max) * chartH) : 0;
-      const y = PAD_T + chartH - h;
-      const cx = x + barW / 2;
-      return { x, y, h, barW, cx, b };
+    const todayStr = this.todayDateStr();
+    const yStr = this.yesterdayDateStr();
+
+    // Group logs by date
+    const logsByDate = new Map<string, FeedingLog[]>();
+    for (const log of this.logs()) {
+      const arr = logsByDate.get(log.date);
+      if (arr) arr.push(log);
+      else logsByDate.set(log.date, [log]);
+    }
+
+    const cumulativeAt = (dateStr: string, minute: number): number => {
+      const logs = logsByDate.get(dateStr);
+      if (!logs) return 0;
+      let total = 0;
+      for (const l of logs) {
+        const [h, m] = l.time.split(':').map((n) => parseInt(n, 10));
+        const lm = (h || 0) * 60 + (m || 0);
+        if (lm <= minute) total += l.volume;
+      }
+      return total;
+    };
+
+    // 3 previous days (day-1..day-3)
+    const baseDate = new Date(this.now());
+    baseDate.setHours(0, 0, 0, 0);
+    const prev3Dates: string[] = [];
+    for (let i = 1; i <= 3; i++) {
+      const d = new Date(baseDate);
+      d.setDate(d.getDate() - i);
+      prev3Dates.push(this.toDateStr(d));
+    }
+    const prev3WithData = prev3Dates.filter((ds) => logsByDate.has(ds));
+
+    // Sample every 10 minutes
+    const STEP = 10;
+    const samples: number[] = [];
+    for (let m = 0; m <= 1440; m += STEP) samples.push(m);
+
+    const nowMinute =
+      this.now().getHours() * 60 + this.now().getMinutes();
+
+    const todayData = samples
+      .filter((m) => m <= nowMinute)
+      .map((m) => ({ m, v: cumulativeAt(todayStr, m) }));
+    const yesterdayData = samples.map((m) => ({
+      m,
+      v: cumulativeAt(yStr, m),
+    }));
+    const avg3Data = samples.map((m) => {
+      if (prev3WithData.length === 0) return { m, v: 0 };
+      let sum = 0;
+      for (const ds of prev3WithData) sum += cumulativeAt(ds, m);
+      return { m, v: sum / prev3WithData.length };
     });
 
-    const gridLines = [0.25, 0.5, 0.75, 1].map((r) => ({
+    const allVals = [
+      ...todayData.map((p) => p.v),
+      ...yesterdayData.map((p) => p.v),
+      ...avg3Data.map((p) => p.v),
+    ];
+    const max = Math.max(...allVals, 100);
+
+    const xOf = (m: number) => PAD_L + (m / 1440) * chartW;
+    const yOf = (v: number) => PAD_T + chartH - (v / max) * chartH;
+
+    /**
+     * Mượt hoá đường thẳng bằng Catmull-Rom → cubic Bezier.
+     * Với dữ liệu tích luỹ (không giảm), chúng ta kẹp y của control point
+     * để tránh overshoot (đường đi xuống rồi lại lên).
+     */
+    const toPath = (pts: { m: number; v: number }[]) => {
+      if (pts.length === 0) return '';
+      if (pts.length === 1) {
+        const p = pts[0];
+        return `M ${xOf(p.m)},${yOf(p.v)}`;
+      }
+
+      const screen = pts.map((p) => ({ x: xOf(p.m), y: yOf(p.v) }));
+      const tension = 0.2;
+      let d = `M ${screen[0].x},${screen[0].y}`;
+
+      for (let i = 0; i < screen.length - 1; i++) {
+        const p0 = screen[i - 1] || screen[i];
+        const p1 = screen[i];
+        const p2 = screen[i + 1];
+        const p3 = screen[i + 2] || p2;
+
+        const cp1x = p1.x + (p2.x - p0.x) * tension;
+        let cp1y = p1.y + (p2.y - p0.y) * tension;
+        const cp2x = p2.x - (p3.x - p1.x) * tension;
+        let cp2y = p2.y - (p3.y - p1.y) * tension;
+
+        // Monotonic y trong SVG (tích luỹ tăng → y giảm)
+        const yMin = Math.min(p1.y, p2.y);
+        const yMax = Math.max(p1.y, p2.y);
+        cp1y = Math.min(yMax, Math.max(yMin, cp1y));
+        cp2y = Math.min(yMax, Math.max(yMin, cp2y));
+
+        d += ` C ${cp1x},${cp1y} ${cp2x},${cp2y} ${p2.x},${p2.y}`;
+      }
+      return d;
+    };
+
+    const yGrid = [0.25, 0.5, 0.75, 1].map((r) => ({
       y: PAD_T + chartH - r * chartH,
       label: Math.round(max * r),
     }));
-
-    // Tick labels ở trục X: 0h, 6h, 12h, 18h, 23h
-    const xTicks = [0, 6, 12, 18, 23].map((h) => ({
+    const xTicks = [0, 4, 8, 12, 16, 20, 24].map((h) => ({
       hour: h,
-      x: PAD_L + h * slot + slot / 2,
+      x: xOf(h * 60),
     }));
 
+    const lastToday = todayData.length > 0 ? todayData[todayData.length - 1] : null;
+    const todayEndPoint = lastToday
+      ? { x: xOf(lastToday.m), y: yOf(lastToday.v), v: Math.round(lastToday.v) }
+      : null;
+
+    const yesterdayTotal =
+      yesterdayData.length > 0
+        ? Math.round(yesterdayData[yesterdayData.length - 1].v)
+        : 0;
+    const avg3Total =
+      avg3Data.length > 0
+        ? Math.round(avg3Data[avg3Data.length - 1].v)
+        : 0;
+    const todayTotal = lastToday ? Math.round(lastToday.v) : 0;
+
     return {
-      bars,
-      gridLines,
-      xTicks,
       W,
       H,
       PAD_L,
       PAD_B,
-      totalFeeds: buckets.reduce((s, b) => s + b.count, 0),
+      yGrid,
+      xTicks,
+      todayPath: toPath(todayData),
+      yesterdayPath: toPath(yesterdayData),
+      avg3Path: toPath(avg3Data),
+      todayEndPoint,
+      todayTotal,
+      yesterdayTotal,
+      avg3Total,
+      prev3DaysCount: prev3WithData.length,
+      nowMinute,
+      nowX: xOf(nowMinute),
+      chartTop: PAD_T,
+      chartBottom: PAD_T + chartH,
     };
   });
 
   /** Tất cả cữ bú gom theo ngày (cho dialog) */
   feedingsByDate = computed(() => {
+    const filter = this.historyFilter();
+    const todayStr = this.todayDateStr();
     const groups = new Map<string, FeedingLog[]>();
     for (const log of this.logs()) {
+      if (filter === 'today' && log.date !== todayStr) continue;
       if (!groups.has(log.date)) groups.set(log.date, []);
       groups.get(log.date)!.push(log);
     }
@@ -724,8 +855,16 @@ export class FeedingComponent {
     this.openLogDialog(false);
   }
 
-  setChartTab(tab: 'volume' | 'count' | 'hourly') {
+  setChartTab(tab: 'volume' | 'count' | 'timeline') {
     this.chartTab.set(tab);
+  }
+
+  formatMinuteAsTime(m: number): string {
+    const hh = Math.floor(m / 60)
+      .toString()
+      .padStart(2, '0');
+    const mm = (m % 60).toString().padStart(2, '0');
+    return `${hh}:${mm}`;
   }
 
   openTipsDialog() {
@@ -758,7 +897,8 @@ export class FeedingComponent {
     return this.tipsGuideIndex() < this.allGuides().length - 1;
   }
 
-  openHistoryDialog() {
+  openHistoryDialog(filter: 'all' | 'today' = 'all') {
+    this.historyFilter.set(filter);
     this.historyDialogOpen.set(true);
   }
 
