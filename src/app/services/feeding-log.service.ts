@@ -100,32 +100,26 @@ export class FeedingLogService {
       return throwError(() => new Error('Chưa cấu hình Google Apps Script URL'));
     }
 
-    return this.http
-      .post<FeedingSheetResponse>(
-        this.APPS_SCRIPT_URL,
-        {
-          action: 'addFeeding',
-          log: {
-            user: log.user,
-            date: log.date,
-            time: log.time,
-            volume: log.volume,
-            note: log.note || '',
-          },
-        },
-        { headers: new HttpHeaders({ 'Content-Type': 'application/json' }) }
-      )
-      .pipe(
-        catchError((err) => {
-          console.error('FeedingLogService.addLog failed', err);
-          return throwError(
-            () =>
-              new Error(
-                'Không thể lưu cữ bú lên Google Sheet. Xem FEEDING_SETUP.md để cập nhật Apps Script.'
-              )
-          );
-        })
-      );
+    return this.postToAppsScript({
+      action: 'addFeeding',
+      log: {
+        user: log.user,
+        date: log.date,
+        time: log.time,
+        volume: log.volume,
+        note: log.note || '',
+      },
+    }).pipe(
+      catchError((err) => {
+        console.error('FeedingLogService.addLog failed', err);
+        return throwError(
+          () =>
+            new Error(
+              'Không thể lưu cữ bú lên Google Sheet. Xem FEEDING_SETUP.md để cập nhật Apps Script.'
+            )
+        );
+      })
+    );
   }
 
   deleteLog(rowIndex: number): Observable<FeedingSheetResponse> {
@@ -133,18 +127,53 @@ export class FeedingLogService {
       return throwError(() => new Error('Chưa cấu hình Google Apps Script URL'));
     }
 
+    return this.postToAppsScript({
+      action: 'deleteFeeding',
+      row: rowIndex,
+    }).pipe(
+      catchError((err) => {
+        console.error('FeedingLogService.deleteLog failed', err);
+        return throwError(
+          () => new Error('Không thể xoá cữ bú. Vui lòng thử lại.')
+        );
+      })
+    );
+  }
+
+  /**
+   * Gửi POST tới Google Apps Script web app.
+   *
+   * Quan trọng: dùng Content-Type `text/plain;charset=utf-8` để tránh
+   * preflight CORS (là "CORS-safelisted" content type). Nếu dùng
+   * `application/json` browser sẽ gửi preflight OPTIONS và GAS không trả
+   * CORS headers cho OPTIONS ⇒ request failed ở phía client dù GAS đã
+   * ghi thành công. GAS vẫn đọc được body qua `e.postData.contents`.
+   */
+  private postToAppsScript(
+    body: Record<string, unknown>
+  ): Observable<FeedingSheetResponse> {
+    const url = this.APPS_SCRIPT_URL;
+    const isProxy = !environment.production; // dev dùng proxy, không cần text/plain
+
+    const headers = new HttpHeaders({
+      'Content-Type': isProxy
+        ? 'application/json'
+        : 'text/plain;charset=utf-8',
+    });
+
     return this.http
       .post<FeedingSheetResponse>(
-        this.APPS_SCRIPT_URL,
-        { action: 'deleteFeeding', row: rowIndex },
-        { headers: new HttpHeaders({ 'Content-Type': 'application/json' }) }
+        url,
+        isProxy ? body : JSON.stringify(body),
+        { headers }
       )
       .pipe(
-        catchError((err) => {
-          console.error('FeedingLogService.deleteLog failed', err);
-          return throwError(
-            () => new Error('Không thể xoá cữ bú. Vui lòng thử lại.')
-          );
+        map((resp) => {
+          // Khi GAS trả về success:false nhưng HTTP 200 thì vẫn cần quăng error
+          if (resp && resp.success === false) {
+            throw new Error(resp.error || 'Apps Script trả về lỗi');
+          }
+          return resp;
         })
       );
   }
