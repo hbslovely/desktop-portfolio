@@ -1,9 +1,10 @@
-import { Component, OnInit, OnDestroy, signal, computed, ViewChild, ElementRef, AfterViewInit, effect, HostListener } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal, computed, ViewChild, ElementRef, AfterViewInit, effect, HostListener, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NgxMaskDirective, provideNgxMask } from 'ngx-mask';
 import ExpenseService, { Expense, ExpenseGroup } from '../../../services/expense.service';
 import { ExpenseSettingsService } from '../../../services/expense-settings.service';
+import { LLMService, ParsedExpense, EXPENSE_CATEGORIES } from '../../../services/llm.service';
 import { Chart, ChartConfiguration, registerables } from 'chart.js';
 
 Chart.register(...registerables);
@@ -25,6 +26,9 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   @ViewChild('outlierChart') outlierChartRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('boxPlotChart') boxPlotChartRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('zScoreChart') zScoreChartRef!: ElementRef<HTMLCanvasElement>;
+
+  // Input to bypass authentication (for direct URL access)
+  @Input() bypassAuth: boolean = false;
 
   // Authentication
   isAuthenticated = signal<boolean>(false);
@@ -56,6 +60,32 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   createAnother = signal<boolean>(false);
   showSuccessMessage = signal<boolean>(false);
   inputMode = signal<'single' | 'multiple'>('single'); // Single or multiple input mode
+
+  // Quick input with AI parsing
+  quickInputText = signal<string>('');
+  quickInputParsed = signal<ParsedExpense | null>(null);
+  quickInputParsing = signal<boolean>(false);
+  quickInputError = signal<string | null>(null);
+  quickInputSaving = signal<boolean>(false);
+  showQuickInput = signal<boolean>(false);
+  isAIAvailable = signal<boolean>(false);
+
+  // AI Insights Panel
+  showAIInsights = signal<boolean>(false);
+  aiInsightsLoading = signal<boolean>(false);
+  aiInsightsSummary = signal<string>('');
+  aiInsightsAdvice = signal<string[]>([]);
+  aiInsightsPatterns = signal<string>('');
+  aiInsightsError = signal<string | null>(null);
+  aiChatQuestion = signal<string>('');
+  aiChatAnswer = signal<string>('');
+  aiChatLoading = signal<boolean>(false);
+
+  // Full AI Chat Panel
+  showAIChatPanel = signal<boolean>(false);
+  aiChatMessages = signal<Array<{role: 'user' | 'assistant'; content: string; timestamp: Date}>>([]);
+  aiChatInput = signal<string>('');
+  aiChatProcessing = signal<boolean>(false);
 
   // Multiple expenses input
   multipleExpenses = signal<Expense[]>([]);
@@ -2327,6 +2357,18 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
   }
 
+  /**
+   * Get start of week (Monday) for a given date
+   */
+  private getStartOfWeek(date: Date): Date {
+    const d = new Date(date);
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Adjust to Monday
+    d.setDate(diff);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }
+
   // Statistical Analysis - Outliers and Anomalies
   statisticalAnalysis = computed(() => {
     const expenses = this.filteredExpenses();
@@ -2770,7 +2812,8 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
   constructor(
     private expenseService: ExpenseService,
-    private expenseSettingsService: ExpenseSettingsService
+    private expenseSettingsService: ExpenseSettingsService,
+    private llmService: LLMService
   ) {
     this.settingsService.set(expenseSettingsService);
 
@@ -2833,6 +2876,21 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   ngOnInit(): void {
     // Set default date to today
     this.newExpense.date = this.expenseService.getTodayDate();
+
+    // Check HuggingFace AI availability
+    this.isAIAvailable.set(this.llmService.isHuggingFaceAvailable());
+    // Recheck status
+    this.llmService.checkHuggingFaceStatus();
+
+    // Check if bypassAuth is enabled (direct URL access)
+    if (this.bypassAuth) {
+      // Bypass authentication - auto-login without password
+      this.isAuthenticated.set(true);
+      this.loadExpenses();
+      this.loadGroups();
+      this.loadBudgets();
+      return;
+    }
 
     // Check if already authenticated and still valid
     // Validates the stored hash by trying all valid usernames
@@ -4592,6 +4650,651 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         alert('Lỗi: Không thể thêm chi tiêu. Vui lòng kiểm tra kết nối hoặc quyền truy cập Google Sheets.');
       }
     });
+  }
+
+  // ========== QUICK INPUT WITH AI PARSING ==========
+
+  /**
+   * Toggle quick input visibility
+   */
+  toggleQuickInput(): void {
+    this.showQuickInput.update(v => !v);
+    if (this.showQuickInput()) {
+      // Focus on input when opened
+      setTimeout(() => {
+        const input = document.querySelector('.quick-input-field') as HTMLInputElement;
+        if (input) input.focus();
+      }, 100);
+    } else {
+      // Reset when closed
+      this.resetQuickInput();
+    }
+  }
+
+  /**
+   * Reset quick input state
+   */
+  resetQuickInput(): void {
+    this.quickInputText.set('');
+    this.quickInputParsed.set(null);
+    this.quickInputError.set(null);
+    this.quickInputParsing.set(false);
+    this.quickInputSaving.set(false);
+  }
+
+  /**
+   * Parse quick input text using AI
+   * Called on input change (debounced) or on button click
+   */
+  parseQuickInput(): void {
+    const text = this.quickInputText().trim();
+    if (!text) {
+      this.quickInputParsed.set(null);
+      this.quickInputError.set(null);
+      return;
+    }
+
+    this.quickInputParsing.set(true);
+    this.quickInputError.set(null);
+
+    this.llmService.parseExpenseFromText(text).subscribe({
+      next: (parsed) => {
+        this.quickInputParsed.set(parsed);
+        this.quickInputParsing.set(false);
+      },
+      error: (err) => {
+        console.error('Error parsing quick input:', err);
+        this.quickInputError.set(err.message || 'Không thể phân tích chi tiêu');
+        this.quickInputParsing.set(false);
+      }
+    });
+  }
+
+  /**
+   * Handle quick input text change
+   */
+  onQuickInputChange(event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    this.quickInputText.set(value);
+    
+    // Auto-parse after user stops typing (debounce)
+    if (this.quickInputDebounceTimer) {
+      clearTimeout(this.quickInputDebounceTimer);
+    }
+    
+    if (value.trim()) {
+      this.quickInputDebounceTimer = setTimeout(() => {
+        this.parseQuickInput();
+      }, 500); // 500ms debounce
+    } else {
+      this.quickInputParsed.set(null);
+    }
+  }
+  private quickInputDebounceTimer: any = null;
+
+  /**
+   * Handle Enter key in quick input
+   */
+  onQuickInputKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      const parsed = this.quickInputParsed();
+      if (parsed && parsed.amount > 0) {
+        this.saveQuickExpense();
+      } else {
+        this.parseQuickInput();
+      }
+    } else if (event.key === 'Escape') {
+      this.toggleQuickInput();
+    }
+  }
+
+  /**
+   * Save the parsed quick expense
+   */
+  saveQuickExpense(): void {
+    const parsed = this.quickInputParsed();
+    if (!parsed) {
+      this.quickInputError.set('Chưa có dữ liệu để lưu. Vui lòng nhập chi tiêu.');
+      return;
+    }
+
+    if (parsed.amount <= 0) {
+      this.quickInputError.set('Số tiền không hợp lệ. Vui lòng kiểm tra lại.');
+      return;
+    }
+
+    this.quickInputSaving.set(true);
+    this.quickInputError.set(null);
+
+    const expense: Expense = {
+      date: parsed.date,
+      content: parsed.content,
+      amount: parsed.amount,
+      category: parsed.category,
+      note: parsed.note
+    };
+
+    this.expenseService.addExpense(expense).subscribe({
+      next: () => {
+        // Success - reload expenses and reset input
+        this.loadExpenses(true);
+        this.quickInputSaving.set(false);
+        
+        // Show success briefly then reset
+        this.quickInputText.set('✓ Đã thêm: ' + parsed.content);
+        setTimeout(() => {
+          this.resetQuickInput();
+        }, 1500);
+      },
+      error: (err) => {
+        console.error('Error saving quick expense:', err);
+        this.quickInputError.set('Không thể lưu chi tiêu: ' + (err.message || 'Lỗi không xác định'));
+        this.quickInputSaving.set(false);
+      }
+    });
+  }
+
+  /**
+   * Update parsed expense field (for manual editing)
+   */
+  updateParsedExpenseField(field: keyof ParsedExpense, value: any): void {
+    const current = this.quickInputParsed();
+    if (current) {
+      this.quickInputParsed.set({
+        ...current,
+        [field]: value
+      });
+    }
+  }
+
+  /**
+   * Format amount for display in quick input
+   */
+  formatQuickInputAmount(amount: number): string {
+    return amount.toLocaleString('vi-VN') + ' đ';
+  }
+
+  /**
+   * Get all available expense categories
+   */
+  getAvailableCategories(): string[] {
+    return [...EXPENSE_CATEGORIES];
+  }
+
+  /**
+   * Add expense directly from quick input and reload
+   */
+  quickAddAndReload(): void {
+    const text = this.quickInputText().trim();
+    if (!text) return;
+
+    this.quickInputSaving.set(true);
+    
+    // Use the local parsing first (faster)
+    const localParsed = this.llmService.parseExpenseLocally(text);
+    
+    if (localParsed.amount > 0) {
+      const expense: Expense = {
+        date: localParsed.date,
+        content: localParsed.content,
+        amount: localParsed.amount,
+        category: localParsed.category,
+        note: localParsed.note
+      };
+
+      this.expenseService.addExpense(expense).subscribe({
+        next: () => {
+          this.loadExpenses(true);
+          this.quickInputText.set('');
+          this.quickInputParsed.set(null);
+          this.quickInputSaving.set(false);
+        },
+        error: (err) => {
+          this.quickInputError.set('Lỗi: ' + err.message);
+          this.quickInputSaving.set(false);
+        }
+      });
+    } else {
+      this.quickInputError.set('Không thể phân tích. VD: "mua bánh 10k"');
+      this.quickInputSaving.set(false);
+    }
+  }
+
+  /**
+   * Add multiple expenses from quick input (comma separated)
+   * Example: "bánh 10k, grab 50k, cafe 35k"
+   */
+  quickAddMultiple(): void {
+    const text = this.quickInputText().trim();
+    if (!text) return;
+
+    this.quickInputSaving.set(true);
+    
+    this.llmService.parseMultipleExpenses(text).subscribe({
+      next: (parsedList) => {
+        const validExpenses = parsedList.filter(p => p.amount > 0);
+        if (validExpenses.length === 0) {
+          this.quickInputError.set('Không tìm thấy chi tiêu hợp lệ');
+          this.quickInputSaving.set(false);
+          return;
+        }
+
+        // Save expenses sequentially
+        this.saveQuickExpensesSequentially(validExpenses, 0);
+      },
+      error: (err) => {
+        this.quickInputError.set('Lỗi phân tích: ' + err.message);
+        this.quickInputSaving.set(false);
+      }
+    });
+  }
+
+  /**
+   * Save quick expenses one by one
+   */
+  private saveQuickExpensesSequentially(parsedList: ParsedExpense[], index: number): void {
+    if (index >= parsedList.length) {
+      // All done
+      this.loadExpenses(true);
+      this.quickInputText.set(`✓ Đã thêm ${parsedList.length} chi tiêu`);
+      this.quickInputSaving.set(false);
+      setTimeout(() => this.resetQuickInput(), 2000);
+      return;
+    }
+
+    const parsed = parsedList[index];
+    const expense: Expense = {
+      date: parsed.date,
+      content: parsed.content,
+      amount: parsed.amount,
+      category: parsed.category,
+      note: parsed.note
+    };
+
+    this.expenseService.addExpense(expense).subscribe({
+      next: () => {
+        this.saveQuickExpensesSequentially(parsedList, index + 1);
+      },
+      error: (err) => {
+        console.error('Error saving expense:', err);
+        this.quickInputError.set(`Lỗi khi lưu "${parsed.content}"`);
+        this.quickInputSaving.set(false);
+        // Still reload to get what was saved
+        this.loadExpenses(true);
+      }
+    });
+  }
+
+  // ========== AI INSIGHTS METHODS ==========
+
+  /**
+   * Toggle AI Insights panel
+   */
+  toggleAIInsights(): void {
+    this.showAIInsights.update(v => !v);
+    if (this.showAIInsights() && !this.aiInsightsSummary()) {
+      // Load insights automatically when first opened
+      this.loadAIInsights();
+    }
+  }
+
+  /**
+   * Load all AI insights (summary, advice, patterns)
+   */
+  loadAIInsights(): void {
+    this.aiInsightsLoading.set(true);
+    this.aiInsightsError.set(null);
+
+    const expenses = this.reportPeriodExpenses();
+    if (expenses.length === 0) {
+      this.aiInsightsError.set('Không có dữ liệu chi tiêu để phân tích');
+      this.aiInsightsLoading.set(false);
+      return;
+    }
+
+    // Get quick summary
+    this.llmService.getQuickSummary(expenses, 'vi').subscribe({
+      next: (summary) => {
+        this.aiInsightsSummary.set(summary);
+      },
+      error: (err) => {
+        console.error('Error getting AI summary:', err);
+        this.aiInsightsSummary.set('Không thể tạo tóm tắt.');
+      }
+    });
+
+    // Get spending advice
+    this.expenseService.getBudgets().subscribe({
+      next: (budgets) => {
+        this.llmService.getSpendingAdvice(expenses, budgets, 'vi').subscribe({
+          next: (advice) => {
+            this.aiInsightsAdvice.set(advice);
+            this.aiInsightsLoading.set(false);
+          },
+          error: (err) => {
+            console.error('Error getting AI advice:', err);
+            this.aiInsightsAdvice.set(['Không thể tạo lời khuyên.']);
+            this.aiInsightsLoading.set(false);
+          }
+        });
+      },
+      error: () => {
+        // Still try to get advice without budgets
+        this.llmService.getSpendingAdvice(expenses, [], 'vi').subscribe({
+          next: (advice) => {
+            this.aiInsightsAdvice.set(advice);
+            this.aiInsightsLoading.set(false);
+          },
+          error: () => {
+            this.aiInsightsAdvice.set(['Không thể tạo lời khuyên.']);
+            this.aiInsightsLoading.set(false);
+          }
+        });
+      }
+    });
+
+    // Get spending patterns
+    this.llmService.analyzePatterns(expenses, 'vi').subscribe({
+      next: (patterns) => {
+        this.aiInsightsPatterns.set(patterns);
+      },
+      error: (err) => {
+        console.error('Error getting AI patterns:', err);
+        this.aiInsightsPatterns.set('Không thể phân tích xu hướng.');
+      }
+    });
+  }
+
+  /**
+   * Refresh AI insights
+   */
+  refreshAIInsights(): void {
+    this.aiInsightsSummary.set('');
+    this.aiInsightsAdvice.set([]);
+    this.aiInsightsPatterns.set('');
+    this.loadAIInsights();
+  }
+
+  /**
+   * Ask AI a question about expenses
+   */
+  askAIQuestion(): void {
+    const question = this.aiChatQuestion().trim();
+    if (!question) return;
+
+    this.aiChatLoading.set(true);
+    this.aiChatAnswer.set('');
+
+    const expenses = this.reportPeriodExpenses();
+    this.llmService.askAboutExpenses(question, expenses, 'vi').subscribe({
+      next: (answer) => {
+        this.aiChatAnswer.set(answer);
+        this.aiChatLoading.set(false);
+      },
+      error: (err) => {
+        console.error('Error asking AI:', err);
+        this.aiChatAnswer.set('Xin lỗi, tôi không thể trả lời câu hỏi này. ' + (err.message || ''));
+        this.aiChatLoading.set(false);
+      }
+    });
+  }
+
+  /**
+   * Handle Enter key in AI chat input
+   */
+  onAIChatKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      this.askAIQuestion();
+    }
+  }
+
+  /**
+   * Quick ask predefined questions
+   */
+  askPredefinedQuestion(question: string): void {
+    this.aiChatQuestion.set(question);
+    this.askAIQuestion();
+  }
+
+  /**
+   * Clear AI chat
+   */
+  clearAIChat(): void {
+    this.aiChatQuestion.set('');
+    this.aiChatAnswer.set('');
+  }
+
+  // ========== FULL AI CHAT PANEL METHODS ==========
+
+  /**
+   * Toggle AI Chat Panel
+   */
+  toggleAIChatPanel(): void {
+    this.showAIChatPanel.update(v => !v);
+    if (this.showAIChatPanel() && this.aiChatMessages().length === 0) {
+      // Add welcome message
+      this.aiChatMessages.set([{
+        role: 'assistant',
+        content: 'Xin chào! Tôi là trợ lý AI giúp bạn phân tích chi tiêu. Bạn có thể hỏi tôi bất kỳ điều gì về chi tiêu của mình, ví dụ:\n\n• "Tôi đã chi bao nhiêu tháng này?"\n• "So sánh chi tiêu tuần này với tuần trước"\n• "Danh mục nào tôi chi nhiều nhất?"\n• "Làm sao để tiết kiệm hơn?"',
+        timestamp: new Date()
+      }]);
+    }
+  }
+
+  /**
+   * Send message to AI Chat
+   */
+  sendAIChatMessage(): void {
+    const message = this.aiChatInput().trim();
+    if (!message || this.aiChatProcessing()) return;
+
+    // Add user message
+    const messages = [...this.aiChatMessages()];
+    messages.push({
+      role: 'user',
+      content: message,
+      timestamp: new Date()
+    });
+    this.aiChatMessages.set(messages);
+    this.aiChatInput.set('');
+    this.aiChatProcessing.set(true);
+
+    // Scroll to bottom after user message
+    this.scrollChatToBottom();
+
+    // Process with AI
+    const expenses = this.expenses();
+    
+    // Check for special commands
+    if (this.isCompareCommand(message)) {
+      this.handleCompareCommand(message);
+    } else {
+      this.llmService.askAboutExpenses(message, expenses, 'vi').subscribe({
+        next: (response) => {
+          this.addAssistantMessage(response);
+        },
+        error: (err) => {
+          this.addAssistantMessage('Xin lỗi, tôi gặp lỗi khi xử lý câu hỏi. ' + (err.message || ''));
+        },
+        complete: () => {
+          // Ensure loading is stopped even if no response
+          if (this.aiChatProcessing()) {
+            this.aiChatProcessing.set(false);
+          }
+        }
+      });
+    }
+  }
+
+  /**
+   * Add assistant message to chat
+   */
+  private addAssistantMessage(content: string): void {
+    const messages = [...this.aiChatMessages()];
+    messages.push({
+      role: 'assistant',
+      content,
+      timestamp: new Date()
+    });
+    this.aiChatMessages.set(messages);
+    this.aiChatProcessing.set(false);
+
+    // Scroll to bottom
+    this.scrollChatToBottom();
+  }
+
+  /**
+   * Scroll chat panel to bottom
+   */
+  private scrollChatToBottom(): void {
+    setTimeout(() => {
+      const chatBody = document.querySelector('.ai-chat-panel-body');
+      if (chatBody) {
+        chatBody.scrollTo({
+          top: chatBody.scrollHeight,
+          behavior: 'smooth'
+        });
+      }
+    }, 50);
+  }
+
+  /**
+   * Check if message is a compare command
+   */
+  private isCompareCommand(message: string): boolean {
+    const lowerMsg = message.toLowerCase();
+    return lowerMsg.includes('so sánh') || 
+           lowerMsg.includes('compare') ||
+           lowerMsg.includes('tuần trước') ||
+           lowerMsg.includes('tháng trước');
+  }
+
+  /**
+   * Handle compare command
+   */
+  private handleCompareCommand(message: string): void {
+    const lowerMsg = message.toLowerCase();
+    const today = new Date();
+    
+    let period1: { from: string; to: string };
+    let period2: { from: string; to: string };
+    
+    if (lowerMsg.includes('tuần')) {
+      // Compare this week vs last week
+      const thisWeekStart = this.getStartOfWeek(today);
+      const thisWeekEnd = new Date(thisWeekStart);
+      thisWeekEnd.setDate(thisWeekEnd.getDate() + 6);
+      
+      const lastWeekStart = new Date(thisWeekStart);
+      lastWeekStart.setDate(lastWeekStart.getDate() - 7);
+      const lastWeekEnd = new Date(thisWeekStart);
+      lastWeekEnd.setDate(lastWeekEnd.getDate() - 1);
+      
+      period1 = {
+        from: lastWeekStart.toISOString().split('T')[0],
+        to: lastWeekEnd.toISOString().split('T')[0]
+      };
+      period2 = {
+        from: thisWeekStart.toISOString().split('T')[0],
+        to: thisWeekEnd.toISOString().split('T')[0]
+      };
+    } else {
+      // Compare this month vs last month
+      const thisMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+      const thisMonthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+      
+      const lastMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+      const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0);
+      
+      period1 = {
+        from: lastMonthStart.toISOString().split('T')[0],
+        to: lastMonthEnd.toISOString().split('T')[0]
+      };
+      period2 = {
+        from: thisMonthStart.toISOString().split('T')[0],
+        to: thisMonthEnd.toISOString().split('T')[0]
+      };
+    }
+
+    this.expenseService.compareExpensePeriods(period1, period2, 'vi').subscribe({
+      next: (comparison) => {
+        this.addAssistantMessage(comparison);
+      },
+      error: (err) => {
+        this.addAssistantMessage('Không thể so sánh được. ' + (err.message || ''));
+      },
+      complete: () => {
+        // Ensure loading is stopped
+        if (this.aiChatProcessing()) {
+          this.aiChatProcessing.set(false);
+        }
+      }
+    });
+  }
+
+  /**
+   * Handle Enter key in AI Chat input
+   */
+  onAIChatPanelKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      this.sendAIChatMessage();
+    }
+  }
+
+  /**
+   * Quick action buttons in chat
+   */
+  sendQuickChatMessage(message: string): void {
+    this.aiChatInput.set(message);
+    this.sendAIChatMessage();
+  }
+
+  /**
+   * Clear chat history
+   */
+  clearAIChatHistory(): void {
+    this.aiChatMessages.set([{
+      role: 'assistant',
+      content: 'Đã xóa lịch sử chat. Bạn muốn hỏi gì?',
+      timestamp: new Date()
+    }]);
+  }
+
+  /**
+   * Get summary for chat
+   */
+  requestAISummaryInChat(): void {
+    this.aiChatInput.set('Tóm tắt chi tiêu của tôi');
+    this.sendAIChatMessage();
+  }
+
+  /**
+   * Get advice for chat
+   */
+  requestAIAdviceInChat(): void {
+    this.aiChatInput.set('Cho tôi lời khuyên về chi tiêu');
+    this.sendAIChatMessage();
+  }
+
+  /**
+   * Format chat timestamp
+   */
+  formatChatTimestamp(date: Date): string {
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    
+    if (diff < 60000) {
+      return 'Vừa xong';
+    } else if (diff < 3600000) {
+      return `${Math.floor(diff / 60000)} phút trước`;
+    } else if (date.toDateString() === now.toDateString()) {
+      return date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+    } else {
+      return date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+    }
   }
 
   /**

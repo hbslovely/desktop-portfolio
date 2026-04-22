@@ -1,4 +1,4 @@
-import { Component, signal, computed, ViewChild, AfterViewInit, OnDestroy, ChangeDetectorRef, ElementRef, inject, HostListener } from '@angular/core';
+import { Component, signal, computed, ViewChild, AfterViewInit, OnDestroy, ChangeDetectorRef, ElementRef, inject, HostListener, ChangeDetectionStrategy } from '@angular/core';
 import { WindowComponent } from './components/window/window.component';
 import { DesktopIconComponent, DesktopIconData } from './components/desktop-icon/desktop-icon.component';
 import { CalculatorComponent } from './components/apps/calculator/calculator.component';
@@ -8,12 +8,10 @@ import { ExplorerComponent, FileOpenEvent, ContextMenuEvent } from './components
 import { TextViewerComponent } from './components/apps/text-viewer/text-viewer.component';
 import { ImageViewerComponent } from './components/apps/image-viewer/image-viewer.component';
 import { PdfViewerComponent } from './components/apps/pdf-viewer/pdf-viewer.component';
-import { MachineInfoComponent } from './components/apps/machine-info/machine-info.component';
 import { PaintAppComponent } from './components/apps/paint-app/paint-app.component';
 import { HcmcAppComponent } from './components/apps/hcmc-app/hcmc-app.component';
 import { NewsAppComponent } from './components/apps/news-app/news-app.component';
 import { SettingsAppComponent } from './components/apps/settings-app/settings-app.component';
-import { TaskManagerComponent } from './components/apps/task-manager/task-manager.component';
 import { WeatherAppComponent } from './components/apps/weather-app/weather-app.component';
 import { DictionaryAppComponent } from './components/apps/dictionary-app/dictionary-app.component';
 import { CountriesAppComponent } from './components/apps/countries-app/countries-app.component';
@@ -31,12 +29,16 @@ import { OcrAppComponent } from './components/apps/ocr-app/ocr-app.component';
 import { FbIdFinderAppComponent } from './components/apps/fb-id-finder-app/fb-id-finder-app.component';
 import { GraphVisualizerAppComponent } from './components/apps/graph-visualizer-app/graph-visualizer-app.component';
 import { StockAppComponent } from './components/apps/stock-app/stock-app.component';
+import { SieuCoAppComponent } from './components/apps/sieu-co-app/sieu-co-app.component';
+import { ImageSearchAppComponent } from './components/apps/image-search-app/image-search-app.component';
+import { WeatherWidgetComponent } from './components/desktop-widgets/weather-widget/weather-widget.component';
 import { WelcomeScreenComponent } from './components/welcome-screen/welcome-screen.component';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DomSanitizer } from "@angular/platform-browser";
 import { Router, RouterOutlet, NavigationEnd } from '@angular/router';
-import { filter } from 'rxjs/operators';
+import { filter, takeUntil } from 'rxjs/operators';
+import { Subject, Subscription } from 'rxjs';
 import { SettingsDialogComponent } from "./components/settings-dialog/settings-dialog.component";
 import { APP_ICONS, APP_SEARCH_CONFIG } from './config/app-icons.config';
 import { SearchService, SearchResult } from './services/search.service';
@@ -47,12 +49,31 @@ import { FileSystemService } from './services/file-system.service';
 import { AppSplashService } from './services/app-splash.service';
 import { AppSplashComponent } from './components/app-splash/app-splash.component';
 
+/** Window state interface for legacy window tracking */
+interface LegacyWindowState {
+  id: string;
+  title: string;
+  icon: string;
+  show: () => boolean;
+}
+
+/**
+ * Window configuration for centralized management
+ * Applies Single Responsibility and DRY principles
+ */
+interface WindowConfig {
+  id: string;
+  showSignal: ReturnType<typeof signal<boolean>>;
+  onCloseExtra?: () => void; // Additional cleanup on close
+}
+
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [ WelcomeScreenComponent, WindowComponent, DesktopIconComponent, CalculatorComponent, IframeAppComponent, LoveAppComponent, ExplorerComponent, TextViewerComponent, ImageViewerComponent, PdfViewerComponent, MachineInfoComponent, PaintAppComponent, HcmcAppComponent, NewsAppComponent, SettingsAppComponent, TaskManagerComponent, WeatherAppComponent, DictionaryAppComponent, CountriesAppComponent, YugiohAppComponent, YugiohCardDetailComponent, CalendarAppComponent, AngularLoveAppComponent, MusicAppComponent, AngularGuidelinesAppComponent, TuoiTreNewsAppComponent, ExpenseAppComponent, BusinessAppComponent, ChineseChessAppComponent, OcrAppComponent, FbIdFinderAppComponent, GraphVisualizerAppComponent, StockAppComponent, CommonModule, FormsModule, SettingsDialogComponent, AppSplashComponent, RouterOutlet ],
+  imports: [ WelcomeScreenComponent, WindowComponent, DesktopIconComponent, CalculatorComponent, IframeAppComponent, LoveAppComponent, ExplorerComponent, TextViewerComponent, ImageViewerComponent, PdfViewerComponent, PaintAppComponent, HcmcAppComponent, NewsAppComponent, SettingsAppComponent, WeatherAppComponent, DictionaryAppComponent, CountriesAppComponent, YugiohAppComponent, YugiohCardDetailComponent, CalendarAppComponent, AngularLoveAppComponent, MusicAppComponent, AngularGuidelinesAppComponent, TuoiTreNewsAppComponent, ExpenseAppComponent, BusinessAppComponent, ChineseChessAppComponent, OcrAppComponent, FbIdFinderAppComponent, GraphVisualizerAppComponent, StockAppComponent, SieuCoAppComponent, ImageSearchAppComponent, WeatherWidgetComponent, CommonModule, FormsModule, SettingsDialogComponent, AppSplashComponent, RouterOutlet ],
   templateUrl: './app.component.html',
-  styleUrl: './app.component.scss'
+  styleUrl: './app.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AppComponent implements AfterViewInit, OnDestroy {
   @ViewChild(WelcomeScreenComponent) welcomeScreen!: WelcomeScreenComponent;
@@ -67,8 +88,10 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   // Track if we're on desktop or a routed page
   isDesktopRoute = signal(false);
 
-  // Track subscriptions for cleanup
-  private subscriptions: any[] = [];
+  // Track subscriptions for cleanup - Use proper typing
+  private readonly destroy$ = new Subject<void>();
+  private subscriptions: Subscription[] = [];
+  private typeMessageInterval: ReturnType<typeof setInterval> | null = null;
 
   // Restart state
   showRestartScreen = signal(false);
@@ -88,9 +111,9 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     this.systemRestartHandler = () => this.restartSystem();
     window.addEventListener('system-restart-requested', this.systemRestartHandler);
 
-    // Track route changes to show/hide desktop
     this.router.events.pipe(
-      filter((event): event is NavigationEnd => event instanceof NavigationEnd)
+      filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+      takeUntil(this.destroy$)
     ).subscribe((event) => {
       // Show desktop only on root route
       this.isDesktopRoute.set(event.url === '/' || event.url === '');
@@ -104,19 +127,21 @@ export class AppComponent implements AfterViewInit, OnDestroy {
 
   title = 'Desktop Portfolio';
 
-  // Test windows
+  // Window visibility signals
   showTestWindow = signal(false); // Start with calculator closed so users can test double-click
   showMyInfoWindow = signal(false);
   showLoveWindow = signal(false);
   showExplorerWindow = signal(false);
   showTextViewerWindow = signal(false);
   showImageViewerWindow = signal(false);
-  showMachineInfoWindow = signal(false);
   showCreditWindow = signal(false);
   showPaintWindow = signal(false);
   showCreditsWindow = signal(false);
   showHcmcWindow = signal(false);
   showNewsWindow = signal(false);
+
+  // Widget visibility
+  showWeatherWidget = signal(true);
 
   // File viewer data
   currentTextFile = signal<{ path: string; name: string; type: 'txt' | 'md' } | null>(null);
@@ -125,12 +150,99 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   showPdfViewerWindow = signal(false);
   showSearchWindow = signal(false);
 
+  /**
+   * Centralized window registry for DRY window management
+   * Maps window IDs to their configuration and show signals
+   */
+  private readonly windowRegistry: Map<string, WindowConfig> = new Map([
+    ['calculator', { id: 'calculator', showSignal: this.showTestWindow }],
+    ['my-info', { id: 'my-info', showSignal: this.showMyInfoWindow }],
+    ['love', { id: 'love', showSignal: this.showLoveWindow }],
+    ['explorer', { id: 'explorer', showSignal: this.showExplorerWindow }],
+    ['credit', { id: 'credit', showSignal: this.showCreditWindow }],
+    ['paint', { id: 'paint', showSignal: this.showPaintWindow }],
+    ['credits', { id: 'credits', showSignal: this.showCreditsWindow }],
+    ['hcmc', { id: 'hcmc', showSignal: this.showHcmcWindow }],
+    ['news', { id: 'news', showSignal: this.showNewsWindow }],
+    ['text-viewer', {
+      id: 'text-viewer',
+      showSignal: this.showTextViewerWindow,
+      onCloseExtra: () => this.currentTextFile.set(null)
+    }],
+    ['image-viewer', {
+      id: 'image-viewer',
+      showSignal: this.showImageViewerWindow,
+      onCloseExtra: () => this.currentImageFile.set(null)
+    }],
+    ['pdf-viewer', {
+      id: 'pdf-viewer',
+      showSignal: this.showPdfViewerWindow,
+      onCloseExtra: () => this.currentPdfFile.set(null)
+    }]
+  ]);
+
   // Window management
   focusedWindow = signal<string | null>(null);
   maxZIndex = signal(1040); // Track the maximum z-index used
 
   // Track minimized state for each window
   minimizedWindows = signal<Set<string>>(new Set());
+
+  // Computed signals for window states - Avoid method calls in template
+  calculatorZIndex = computed(() => this.computeWindowZIndex('calculator'));
+  calculatorFocused = computed(() => this.focusedWindow() === 'calculator');
+  calculatorMinimized = computed(() => this.minimizedWindows().has('calculator'));
+
+  myInfoZIndex = computed(() => this.computeWindowZIndex('my-info'));
+  myInfoFocused = computed(() => this.focusedWindow() === 'my-info');
+  myInfoMinimized = computed(() => this.minimizedWindows().has('my-info'));
+
+  loveZIndex = computed(() => this.computeWindowZIndex('love'));
+  loveFocused = computed(() => this.focusedWindow() === 'love');
+  loveMinimized = computed(() => this.minimizedWindows().has('love'));
+
+  explorerZIndex = computed(() => this.computeWindowZIndex('explorer'));
+  explorerFocused = computed(() => this.focusedWindow() === 'explorer');
+  explorerMinimized = computed(() => this.minimizedWindows().has('explorer'));
+
+  textViewerZIndex = computed(() => this.computeWindowZIndex('text-viewer'));
+  textViewerFocused = computed(() => this.focusedWindow() === 'text-viewer');
+  textViewerMinimized = computed(() => this.minimizedWindows().has('text-viewer'));
+
+  imageViewerZIndex = computed(() => this.computeWindowZIndex('image-viewer'));
+  imageViewerFocused = computed(() => this.focusedWindow() === 'image-viewer');
+  imageViewerMinimized = computed(() => this.minimizedWindows().has('image-viewer'));
+
+  pdfViewerZIndex = computed(() => this.computeWindowZIndex('pdf-viewer'));
+  pdfViewerFocused = computed(() => this.focusedWindow() === 'pdf-viewer');
+  pdfViewerMinimized = computed(() => this.minimizedWindows().has('pdf-viewer'));
+
+  paintZIndex = computed(() => this.computeWindowZIndex('paint'));
+  paintFocused = computed(() => this.focusedWindow() === 'paint');
+  paintMinimized = computed(() => this.minimizedWindows().has('paint'));
+
+  creditsZIndex = computed(() => this.computeWindowZIndex('credits'));
+  creditsFocused = computed(() => this.focusedWindow() === 'credits');
+  creditsMinimized = computed(() => this.minimizedWindows().has('credits'));
+
+  hcmcZIndex = computed(() => this.computeWindowZIndex('hcmc'));
+  hcmcFocused = computed(() => this.focusedWindow() === 'hcmc');
+  hcmcMinimized = computed(() => this.minimizedWindows().has('hcmc'));
+
+  newsZIndex = computed(() => this.computeWindowZIndex('news'));
+  newsFocused = computed(() => this.focusedWindow() === 'news');
+  newsMinimized = computed(() => this.minimizedWindows().has('news'));
+
+  // Computed for open windows list - cached to avoid recalculation in template
+  openWindowsList = computed(() => this.computeAllOpenWindows());
+
+  // Private method for z-index computation
+  private computeWindowZIndex(windowId: string): number {
+    if (this.focusedWindow() === windowId) {
+      return this.maxZIndex();
+    }
+    return 1000;
+  }
 
   // Clipboard for copy/cut/paste operations
   clipboardItem = signal<any>(null);
@@ -194,13 +306,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
 
   @HostListener('window:keydown', ['$event'])
   handleGlobalKeyboard(event: KeyboardEvent) {
-    // Ctrl+Shift+Esc opens Task Manager (like Windows)
-    if (event.ctrlKey && event.shiftKey && event.key === 'Escape') {
-      event.preventDefault();
-      this.openApp('task-manager');
-      return;
-    }
-
     // Use Option/Alt + Arrow Left/Right for window switcher (doesn't conflict with browser or macOS)
     const isOptionKey = this.isMac ? event.altKey : event.altKey; // Option on Mac = Alt on Windows
     const isArrowLeft = event.key === 'ArrowLeft';
@@ -272,7 +377,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
       icon: 'pi pi-info-circle',
       apps: [
         { id: 'my-info', name: 'My Information', icon: 'pi pi-user' },
-        { id: 'machine-info', name: 'System Info', icon: 'pi pi-desktop' },
         { id: 'hcmc', name: 'Ho Chi Minh City', icon: 'pi pi-globe' },
         { id: 'news', name: 'News Headlines', icon: 'pi pi-globe' },
         { id: 'weather', name: 'Weather Forecast', icon: 'pi pi-cloud' },
@@ -285,7 +389,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
       icon: 'pi pi-cog',
       apps: [
         { id: 'settings', name: 'Settings', icon: 'pi pi-cog' },
-        { id: 'task-manager', name: 'Task Manager', icon: 'pi pi-th-large' },
         { id: 'credits', name: 'Credits', icon: 'pi pi-star' }
       ]
     }
@@ -308,414 +411,316 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     })).filter(group => group.apps.length > 0);
   });
 
-  onCloseTestWindow() {
-    this.showTestWindow.set(false);
-    // Clear focus if this was the focused window
-    if (this.focusedWindow() === 'calculator') {
-      this.focusedWindow.set(null);
+  // ============================================
+  // 🎯 GENERIC WINDOW HANDLERS (DRY Principle)
+  // ============================================
+
+  /**
+   * Generic close handler for any registered window
+   * @param windowId - The window identifier
+   */
+  protected closeWindow(windowId: string): void {
+    const config = this.windowRegistry.get(windowId);
+    if (config) {
+      config.showSignal.set(false);
+      config.onCloseExtra?.();
+      if (this.focusedWindow() === windowId) {
+        this.focusedWindow.set(null);
+      }
     }
   }
 
-  onMinimizeTestWindow() {
-
-    this.minimizedWindows.update(set => new Set(set).add('calculator'));
+  /**
+   * Generic minimize handler for any registered window
+   * @param windowId - The window identifier
+   */
+  protected minimizeWindow(windowId: string): void {
+    this.minimizedWindows.update(set => new Set(set).add(windowId));
   }
 
-  onMaximizeTestWindow() {
-
+  /**
+   * Generic maximize handler (placeholder for future implementation)
+   * @param windowId - The window identifier
+   */
+  protected maximizeWindow(windowId: string): void {
+    // Maximize logic can be added here if needed
   }
 
-  onRestoreTestWindow() {
-
+  /**
+   * Generic restore handler for any registered window
+   * @param windowId - The window identifier
+   */
+  protected restoreWindow(windowId: string): void {
     this.minimizedWindows.update(set => {
       const newSet = new Set(set);
-      newSet.delete('calculator');
+      newSet.delete(windowId);
       return newSet;
     });
   }
 
-  onFocusTestWindow() {
+  /**
+   * Generic open handler for any registered window
+   * @param windowId - The window identifier
+   */
+  protected openWindow(windowId: string): void {
+    const config = this.windowRegistry.get(windowId);
+    if (config) {
+      config.showSignal.set(true);
+      this.restoreWindow(windowId);
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          this.focusWindow(windowId);
+        });
+      });
+    }
+  }
 
+  // ============================================
+  // 📦 SPECIFIC WINDOW HANDLERS (Use generic methods)
+  // ============================================
+
+  onCloseTestWindow() {
+    this.closeWindow('calculator');
+  }
+
+  onMinimizeTestWindow() {
+    this.minimizeWindow('calculator');
+  }
+
+  onMaximizeTestWindow() {
+    this.maximizeWindow('calculator');
+  }
+
+  onRestoreTestWindow() {
+    this.restoreWindow('calculator');
+  }
+
+  onFocusTestWindow() {
     this.focusWindow('calculator');
   }
 
   onCloseMyInfoWindow() {
-    this.showMyInfoWindow.set(false);
-    // Clear focus if this was the focused window
-    if (this.focusedWindow() === 'my-info') {
-      this.focusedWindow.set(null);
-    }
+    this.closeWindow('my-info');
   }
 
   onMinimizeMyInfoWindow() {
-
-    this.minimizedWindows.update(set => new Set(set).add('my-info'));
+    this.minimizeWindow('my-info');
   }
 
   onMaximizeMyInfoWindow() {
-
+    this.maximizeWindow('my-info');
   }
 
   onRestoreMyInfoWindow() {
-
-    this.minimizedWindows.update(set => {
-      const newSet = new Set(set);
-      newSet.delete('my-info');
-      return newSet;
-    });
+    this.restoreWindow('my-info');
   }
 
   onFocusMyInfoWindow() {
-
     this.focusWindow('my-info');
   }
 
-
   onCloseLoveWindow() {
-    this.showLoveWindow.set(false);
-    // Clear focus if this was the focused window
-    if (this.focusedWindow() === 'love') {
-      this.focusedWindow.set(null);
-    }
+    this.closeWindow('love');
   }
 
   onMinimizeLoveWindow() {
-
-    this.minimizedWindows.update(set => new Set(set).add('love'));
+    this.minimizeWindow('love');
   }
 
   onMaximizeLoveWindow() {
-
+    this.maximizeWindow('love');
   }
 
   onRestoreLoveWindow() {
-
-    this.minimizedWindows.update(set => {
-      const newSet = new Set(set);
-      newSet.delete('love');
-      return newSet;
-    });
+    this.restoreWindow('love');
   }
 
   onFocusLoveWindow() {
-
     this.focusWindow('love');
   }
 
   onCloseExplorerWindow() {
-    this.showExplorerWindow.set(false);
-    // Clear focus if this was the focused window
-    if (this.focusedWindow() === 'explorer') {
-      this.focusedWindow.set(null);
-    }
+    this.closeWindow('explorer');
   }
 
   onMinimizeExplorerWindow() {
-
-    this.minimizedWindows.update(set => new Set(set).add('explorer'));
+    this.minimizeWindow('explorer');
   }
 
   onMaximizeExplorerWindow() {
-
+    this.maximizeWindow('explorer');
   }
 
   onRestoreExplorerWindow() {
-
-    this.minimizedWindows.update(set => {
-      const newSet = new Set(set);
-      newSet.delete('explorer');
-      return newSet;
-    });
+    this.restoreWindow('explorer');
   }
 
   onFocusExplorerWindow() {
-
     this.focusWindow('explorer');
   }
 
   onCloseCreditWindow() {
-    this.showCreditWindow.set(false);
-    // Clear focus if this was the focused window
-    if (this.focusedWindow() === 'credit') {
-      this.focusedWindow.set(null);
-    }
+    this.closeWindow('credit');
   }
 
   onMinimizeCreditWindow() {
-
-    this.minimizedWindows.update(set => new Set(set).add('credit'));
+    this.minimizeWindow('credit');
   }
 
   onMaximizeCreditWindow() {
-
+    this.maximizeWindow('credit');
   }
 
   onRestoreCreditWindow() {
-
-    this.minimizedWindows.update(set => {
-      const newSet = new Set(set);
-      newSet.delete('credit');
-      return newSet;
-    });
+    this.restoreWindow('credit');
   }
 
   onFocusCreditWindow() {
-
     this.focusWindow('credit');
   }
 
   onClosePaintWindow() {
-    this.showPaintWindow.set(false);
-    // Clear focus if this was the focused window
-    if (this.focusedWindow() === 'paint') {
-      this.focusedWindow.set(null);
-    }
+    this.closeWindow('paint');
   }
 
   onMinimizePaintWindow() {
-
-    this.minimizedWindows.update(set => new Set(set).add('paint'));
+    this.minimizeWindow('paint');
   }
 
   onMaximizePaintWindow() {
-
+    this.maximizeWindow('paint');
   }
 
   onRestorePaintWindow() {
-
-    this.minimizedWindows.update(set => {
-      const newSet = new Set(set);
-      newSet.delete('paint');
-      return newSet;
-    });
+    this.restoreWindow('paint');
   }
 
   onFocusPaintWindow() {
-
     this.focusWindow('paint');
   }
 
   onCloseCreditsWindow() {
-    this.showCreditsWindow.set(false);
-    // Clear focus if this was the focused window
-    if (this.focusedWindow() === 'credits') {
-      this.focusedWindow.set(null);
-    }
+    this.closeWindow('credits');
   }
 
   onMinimizeCreditsWindow() {
-
-    this.minimizedWindows.update(set => new Set(set).add('credits'));
+    this.minimizeWindow('credits');
   }
 
   onMaximizeCreditsWindow() {
-
+    this.maximizeWindow('credits');
   }
 
   onRestoreCreditsWindow() {
-
-    this.minimizedWindows.update(set => {
-      const newSet = new Set(set);
-      newSet.delete('credits');
-      return newSet;
-    });
+    this.restoreWindow('credits');
   }
 
   onFocusCreditsWindow() {
-
     this.focusWindow('credits');
   }
 
   onCloseHcmcWindow() {
-    this.showHcmcWindow.set(false);
-    // Clear focus if this was the focused window
-    if (this.focusedWindow() === 'hcmc') {
-      this.focusedWindow.set(null);
-    }
+    this.closeWindow('hcmc');
   }
 
   onMinimizeHcmcWindow() {
-
-    this.minimizedWindows.update(set => new Set(set).add('hcmc'));
+    this.minimizeWindow('hcmc');
   }
 
   onMaximizeHcmcWindow() {
-
+    this.maximizeWindow('hcmc');
   }
 
   onRestoreHcmcWindow() {
-
-    this.minimizedWindows.update(set => {
-      const newSet = new Set(set);
-      newSet.delete('hcmc');
-      return newSet;
-    });
+    this.restoreWindow('hcmc');
   }
 
   onFocusHcmcWindow() {
-
     this.focusWindow('hcmc');
   }
 
   // News Window Methods
   onCloseNewsWindow() {
-    this.showNewsWindow.set(false);
-    if (this.focusedWindow() === 'news') {
-      this.focusedWindow.set(null);
-    }
+    this.closeWindow('news');
   }
 
   onMinimizeNewsWindow() {
-
-    this.minimizedWindows.update(set => new Set(set).add('news'));
+    this.minimizeWindow('news');
   }
 
   onMaximizeNewsWindow() {
-
+    this.maximizeWindow('news');
   }
 
   onRestoreNewsWindow() {
-
-    this.minimizedWindows.update(set => {
-      const newSet = new Set(set);
-      newSet.delete('news');
-      return newSet;
-    });
+    this.restoreWindow('news');
   }
 
   onFocusNewsWindow() {
-
     this.focusWindow('news');
   }
 
   // Text Viewer Window Methods
   onCloseTextViewerWindow() {
-    this.showTextViewerWindow.set(false);
-    this.currentTextFile.set(null);
-    if (this.focusedWindow() === 'text-viewer') {
-      this.focusedWindow.set(null);
-    }
+    this.closeWindow('text-viewer');
   }
 
   onMinimizeTextViewerWindow() {
-
-    this.minimizedWindows.update(set => new Set(set).add('text-viewer'));
+    this.minimizeWindow('text-viewer');
   }
 
   onMaximizeTextViewerWindow() {
-
+    this.maximizeWindow('text-viewer');
   }
 
   onRestoreTextViewerWindow() {
-
-    this.minimizedWindows.update(set => {
-      const newSet = new Set(set);
-      newSet.delete('text-viewer');
-      return newSet;
-    });
+    this.restoreWindow('text-viewer');
   }
 
   onFocusTextViewerWindow() {
-
     this.focusWindow('text-viewer');
   }
 
   // Image Viewer Window Methods
   onCloseImageViewerWindow() {
-    this.showImageViewerWindow.set(false);
-    this.currentImageFile.set(null);
-    if (this.focusedWindow() === 'image-viewer') {
-      this.focusedWindow.set(null);
-    }
+    this.closeWindow('image-viewer');
   }
 
   onMinimizeImageViewerWindow() {
-
-    this.minimizedWindows.update(set => new Set(set).add('image-viewer'));
+    this.minimizeWindow('image-viewer');
   }
 
   onMaximizeImageViewerWindow() {
-
+    this.maximizeWindow('image-viewer');
   }
 
   onRestoreImageViewerWindow() {
-
-    this.minimizedWindows.update(set => {
-      const newSet = new Set(set);
-      newSet.delete('image-viewer');
-      return newSet;
-    });
+    this.restoreWindow('image-viewer');
   }
 
   onFocusImageViewerWindow() {
-
     this.focusWindow('image-viewer');
   }
 
   // PDF Viewer Window Methods
   onClosePdfViewerWindow() {
-    this.showPdfViewerWindow.set(false);
-    this.currentPdfFile.set(null);
-    if (this.focusedWindow() === 'pdf-viewer') {
-      this.focusedWindow.set(null);
-    }
+    this.closeWindow('pdf-viewer');
   }
 
   onMinimizePdfViewerWindow() {
-
-    this.minimizedWindows.update(set => new Set(set).add('pdf-viewer'));
-    if (this.focusedWindow() === 'pdf-viewer') {
-      this.focusedWindow.set(null);
-    }
+    this.minimizeWindow('pdf-viewer');
   }
 
   onRestorePdfViewerWindow() {
-
-    this.minimizedWindows.update(set => {
-      const newSet = new Set(set);
-      newSet.delete('pdf-viewer');
-      return newSet;
-    });
+    this.restoreWindow('pdf-viewer');
   }
 
   onMaximizePdfViewerWindow() {
-
+    this.maximizeWindow('pdf-viewer');
   }
 
   onFocusPdfViewerWindow() {
-
     this.focusWindow('pdf-viewer');
-  }
-
-  // Machine Info Window Methods
-  onCloseMachineInfoWindow() {
-    this.showMachineInfoWindow.set(false);
-    if (this.focusedWindow() === 'machine-info') {
-      this.focusedWindow.set(null);
-    }
-  }
-
-  onMinimizeMachineInfoWindow() {
-
-    this.minimizedWindows.update(set => new Set(set).add('machine-info'));
-  }
-
-  onMaximizeMachineInfoWindow() {
-
-  }
-
-  onRestoreMachineInfoWindow() {
-
-    this.minimizedWindows.update(set => {
-      const newSet = new Set(set);
-      newSet.delete('machine-info');
-      return newSet;
-    });
-  }
-
-  onFocusMachineInfoWindow() {
-
-    this.focusWindow('machine-info');
   }
 
   // File Open Handler
@@ -936,9 +941,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     } else if (icon.id === 'explorer') {
       this.showExplorerWindow.set(true);
       this.focusWindow('explorer');
-    } else if (icon.id === 'machine-info') {
-      this.showMachineInfoWindow.set(true);
-      this.focusWindow('machine-info');
     } else if (icon.id === 'credit') {
       this.showCreditWindow.set(true);
       this.focusWindow('credit');
@@ -1080,32 +1082,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-  // Restore a minimized window
-  restoreWindow(windowId: string) {
-
-    this.minimizedWindows.update(set => {
-      const newSet = new Set(set);
-      newSet.delete(windowId);
-      return newSet;
-    });
-  }
-
-  // Minimize a window
-  minimizeWindow(windowId: string) {
-
-    this.minimizedWindows.update(set => new Set(set).add(windowId));
-
-    // Clear focus if this was the focused window
-    if (this.focusedWindow() === windowId) {
-      this.focusedWindow.set(null);
-    }
-  }
-
-  focusWindow(windowId: string, forceHighZIndex: boolean = false) {
-
-    console.log('Previous focused window:', this.focusedWindow());
-    console.log('Previous max z-index:', this.maxZIndex());
-
+  focusWindow(windowId: string, forceHighZIndex: boolean = false): void {
     // If window is minimized, restore it first
     if (this.minimizedWindows().has(windowId)) {
       this.restoreWindow(windowId);
@@ -1123,17 +1100,13 @@ export class AppComponent implements AfterViewInit, OnDestroy {
       this.maxZIndex.update(max => max + 1);
     }
 
-    console.log('New focused window:', this.focusedWindow());
-    console.log('New max z-index:', this.maxZIndex());
-    console.log('Window z-index for', windowId, ':', this.getWindowZIndex(windowId));
-
     // Force change detection to ensure z-index updates are reflected
     this.cdr.detectChanges();
 
     // Also directly update DOM z-index as a fallback
-    setTimeout(() => {
+    requestAnimationFrame(() => {
       this.updateWindowZIndex(windowId);
-    }, 0);
+    });
   }
 
   // Directly update window z-index in DOM as fallback
@@ -1168,35 +1141,21 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   }
 
   // Toggle window: minimize if focused, restore/focus if not focused, open if closed
-  toggleTaskbarApp(windowId: string) {
-
-
-    console.log('Current focused window:', this.focusedWindow());
-    console.log('Minimized windows:', Array.from(this.minimizedWindows()));
-    console.log('Current max z-index:', this.maxZIndex());
-
+  toggleTaskbarApp(windowId: string): void {
     switch (windowId) {
       case 'calculator':
-        console.log('Calculator case - showTestWindow:', this.showTestWindow());
-        console.log('Calculator is minimized:', this.isWindowMinimized('calculator'));
-        console.log('Calculator is focused:', this.isWindowFocused('calculator'));
-
         if (this.showTestWindow()) {
-          if (this.isWindowMinimized('calculator')) {
-
+          if (this.calculatorMinimized()) {
             // Window is minimized, restore and focus it
             this.focusWindow('calculator');
           } else if (this.focusedWindow() === 'calculator') {
-
             // Window is focused, minimize it
             this.minimizeWindow('calculator');
           } else {
-
             // Window is open but not focused, focus it
             this.focusWindow('calculator');
           }
         } else {
-
           // Window is closed, open it
           this.showTestWindow.set(true);
           this.focusWindow('calculator');
@@ -1277,21 +1236,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
         } else {
           this.showImageViewerWindow.set(true);
           this.focusWindow('image-viewer');
-        }
-        break;
-
-      case 'machine-info':
-        if (this.showMachineInfoWindow()) {
-          if (this.isWindowMinimized('machine-info')) {
-            this.focusWindow('machine-info');
-          } else if (this.focusedWindow() === 'machine-info') {
-            this.minimizeWindow('machine-info');
-          } else {
-            this.focusWindow('machine-info');
-          }
-        } else {
-          this.showMachineInfoWindow.set(true);
-          this.focusWindow('machine-info');
         }
         break;
 
@@ -1416,11 +1360,9 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     this.closeQuickActionsMenu();
   }
 
-  openSettings() {
+  openSettings(): void {
     this.hideDesktopContextMenu();
-
     this.showSettingsDialog.set(true);
-    console.log('Settings dialog state:', this.showSettingsDialog());
   }
 
   closeSettingsDialog() {
@@ -1738,17 +1680,13 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   }
 
   // Quick Actions handlers
-  quickActionViewAllWindows() {
-    this.openApp('task-manager');
-    this.closeQuickActionsMenu();
-  }
-
   quickActionMinimizeAll() {
     this.windowManager.minimizeAllWindows();
     // Also minimize legacy windows
     this.minimizedWindows.update(set => {
+
       const allWindows = ['calculator', 'my-info', 'love', 'explorer', 'text-viewer',
-                         'image-viewer', 'pdf-viewer', 'machine-info', 'credit',
+                         'image-viewer', 'pdf-viewer', 'credit',
                          'paint', 'credits', 'hcmc', 'news'];
       return new Set(allWindows);
     });
@@ -1759,7 +1697,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     this.windowManager.minimizeAllWindows();
     this.minimizedWindows.update(set => {
       const allWindows = ['calculator', 'my-info', 'love', 'explorer', 'text-viewer',
-                         'image-viewer', 'pdf-viewer', 'machine-info', 'credit',
+                         'image-viewer', 'pdf-viewer', 'credit',
                          'paint', 'credits', 'hcmc', 'news'];
       return new Set(allWindows);
     });
@@ -1798,7 +1736,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
       shortcuts: [
         { keys: ['Option', '←'], description: 'Switch to previous window' },
         { keys: ['Option', '→'], description: 'Switch to next window' },
-        { keys: ['Ctrl', 'Shift', 'Esc'], description: 'Open Task Manager' },
       ]
     },
     {
@@ -1969,7 +1906,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   }
 
   // Type message character by character
-  private typeMessage(message: BootMessage) {
+  private typeMessage(message: BootMessage): void {
     const fullText = message.text;
     const timestamp = message.timestamp;
     let charIndex = 0;
@@ -1997,22 +1934,31 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     // Set this message as currently typing
     this.currentTypingIndex.set(messageIndex);
 
+    // Clear any existing interval to prevent memory leaks
+    if (this.typeMessageInterval) {
+      clearInterval(this.typeMessageInterval);
+    }
+
     // Type each character
-    const typeInterval = setInterval(() => {
+    this.typeMessageInterval = setInterval(() => {
       if (charIndex < fullText.length) {
         typingMessage.text += fullText[charIndex];
         this.restartMessages = [...this.restartMessages]; // Trigger change detection
         charIndex++;
 
-        // Auto-scroll terminal to bottom
-        setTimeout(() => {
+        // Auto-scroll terminal to bottom using ViewChild would be better,
+        // but keeping DOM query for backward compatibility
+        requestAnimationFrame(() => {
           const terminalBody = document.querySelector('.terminal-body');
           if (terminalBody) {
             terminalBody.scrollTop = terminalBody.scrollHeight;
           }
-        }, 10);
+        });
       } else {
-        clearInterval(typeInterval);
+        if (this.typeMessageInterval) {
+          clearInterval(this.typeMessageInterval);
+          this.typeMessageInterval = null;
+        }
         // Clear the typing indicator when done
         this.currentTypingIndex.set(-1);
       }
@@ -2031,12 +1977,28 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-  // Window Switcher Methods
-  getAllOpenWindows(): Array<{ id: string; title: string; icon: string; isWindowManager: boolean; isMinimized: boolean; statusText?: string }> {
+  // Legacy windows configuration - moved to class level for reuse
+  private readonly legacyWindowsConfig: LegacyWindowState[] = [
+    { id: 'calculator', title: 'Calculator', icon: 'pi pi-calculator', show: () => this.showTestWindow() },
+    { id: 'my-info', title: 'About Me', icon: 'pi pi-user', show: () => this.showMyInfoWindow() },
+    { id: 'love', title: 'Love', icon: 'pi pi-heart', show: () => this.showLoveWindow() },
+    { id: 'explorer', title: 'File Explorer', icon: 'pi pi-folder', show: () => this.showExplorerWindow() },
+    { id: 'text-viewer', title: 'Text Viewer', icon: 'pi pi-file', show: () => this.showTextViewerWindow() },
+    { id: 'image-viewer', title: 'Image Viewer', icon: 'pi pi-image', show: () => this.showImageViewerWindow() },
+    { id: 'pdf-viewer', title: 'PDF Viewer', icon: 'pi pi-file-pdf', show: () => this.showPdfViewerWindow() },
+    { id: 'credit', title: 'Finance Tracker', icon: 'pi pi-wallet', show: () => this.showCreditWindow() },
+    { id: 'paint', title: 'Paint', icon: 'pi pi-palette', show: () => this.showPaintWindow() },
+    { id: 'credits', title: 'Credits', icon: 'pi pi-star', show: () => this.showCreditsWindow() },
+    { id: 'hcmc', title: 'Ho Chi Minh City', icon: 'pi pi-globe', show: () => this.showHcmcWindow() },
+    { id: 'news', title: 'News Headlines', icon: 'pi pi-globe', show: () => this.showNewsWindow() }
+  ];
+
+  // Window Switcher Methods - Private compute method for cached computed signal
+  private computeAllOpenWindows(): Array<{ id: string; title: string; icon: string; isWindowManager: boolean; isMinimized: boolean; statusText?: string }> {
     const windows: Array<{ id: string; title: string; icon: string; isWindowManager: boolean; isMinimized: boolean; statusText?: string }> = [];
 
     // Add windows from WindowManagerService (including minimized)
-    const windowManagerWindows = this.windowManager.windowList(); // Get all windows, not just open ones
+    const windowManagerWindows = this.windowManager.windowList();
     windowManagerWindows.forEach(w => {
       windows.push({
         id: w.id,
@@ -2049,30 +2011,14 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     });
 
     // Add legacy windows (old system) - including minimized
-    const legacyWindows = [
-      { id: 'calculator', title: 'Calculator', icon: 'pi pi-calculator', show: this.showTestWindow },
-      { id: 'my-info', title: 'About Me', icon: 'pi pi-user', show: this.showMyInfoWindow },
-      { id: 'love', title: 'Love', icon: 'pi pi-heart', show: this.showLoveWindow },
-      { id: 'explorer', title: 'File Explorer', icon: 'pi pi-folder', show: this.showExplorerWindow },
-      { id: 'text-viewer', title: 'Text Viewer', icon: 'pi pi-file', show: this.showTextViewerWindow },
-      { id: 'image-viewer', title: 'Image Viewer', icon: 'pi pi-image', show: this.showImageViewerWindow },
-      { id: 'pdf-viewer', title: 'PDF Viewer', icon: 'pi pi-file-pdf', show: this.showPdfViewerWindow },
-      { id: 'machine-info', title: 'System Info', icon: 'pi pi-desktop', show: this.showMachineInfoWindow },
-      { id: 'credit', title: 'Finance Tracker', icon: 'pi pi-wallet', show: this.showCreditWindow },
-      { id: 'paint', title: 'Paint', icon: 'pi pi-palette', show: this.showPaintWindow },
-      { id: 'credits', title: 'Credits', icon: 'pi pi-star', show: this.showCreditsWindow },
-      { id: 'hcmc', title: 'Ho Chi Minh City', icon: 'pi pi-globe', show: this.showHcmcWindow },
-      { id: 'news', title: 'News Headlines', icon: 'pi pi-globe', show: this.showNewsWindow }
-    ];
-
-    legacyWindows.forEach(w => {
+    this.legacyWindowsConfig.forEach(w => {
       if (w.show()) {
         windows.push({
           id: w.id,
           title: w.title,
           icon: w.icon,
           isWindowManager: false,
-          isMinimized: this.isWindowMinimized(w.id)
+          isMinimized: this.minimizedWindows().has(w.id)
         });
       }
     });
@@ -2085,8 +2031,13 @@ export class AppComponent implements AfterViewInit, OnDestroy {
       const aZIndex = aWindow?.zIndex || 0;
       const bZIndex = bWindow?.zIndex || 0;
 
-      return bZIndex - aZIndex; // Higher z-index first
+      return bZIndex - aZIndex;
     });
+  }
+
+  // Public method that uses the computed signal - for external calls
+  getAllOpenWindows(): Array<{ id: string; title: string; icon: string; isWindowManager: boolean; isMinimized: boolean; statusText?: string }> {
+    return this.openWindowsList();
   }
 
   getSelectedWindowPreview() {
@@ -2347,9 +2298,20 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     });
   }
 
-  ngOnDestroy() {
+  ngOnDestroy(): void {
+    // Complete the destroy subject to clean up all takeUntil subscriptions
+    this.destroy$.next();
+    this.destroy$.complete();
+
     // Unsubscribe from all subscriptions
     this.subscriptions.forEach(sub => sub?.unsubscribe());
+    this.subscriptions = [];
+
+    // Clear any active typing interval
+    if (this.typeMessageInterval) {
+      clearInterval(this.typeMessageInterval);
+      this.typeMessageInterval = null;
+    }
 
     // Remove event listener
     if (this.systemRestartHandler) {

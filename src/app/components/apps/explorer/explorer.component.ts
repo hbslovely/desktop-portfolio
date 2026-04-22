@@ -1,6 +1,7 @@
-import { Component, OnInit, Output, EventEmitter, Input, signal, computed, effect } from '@angular/core';
+import { Component, OnInit, OnDestroy, Output, EventEmitter, Input, signal, computed, effect, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
+import { Subject, takeUntil } from 'rxjs';
 import { FileSystemService } from '../../../services/file-system.service';
 import { FormatDatePipe } from '../../../pipes/format-date.pipe';
 import { FormatFileSizePipe } from '../../../pipes/format-file-size.pipe';
@@ -41,8 +42,10 @@ export interface ContextMenuEvent {
   imports: [CommonModule, FormatDatePipe, FormatFileSizePipe],
   templateUrl: './explorer.component.html',
   styleUrl: './explorer.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class ExplorerComponent implements OnInit {
+export class ExplorerComponent implements OnInit, OnDestroy {
+  private readonly destroy$ = new Subject<void>();
   @Input() externalFileSystem: FileSystemItem | null = null;
   @Output() onFileOpen = new EventEmitter<FileOpenEvent>();
   @Output() onContextMenuAction = new EventEmitter<ContextMenuEvent>();
@@ -96,7 +99,7 @@ export class ExplorerComponent implements OnInit {
     }, { allowSignalWrites: true });
   }
 
-  ngOnInit() {
+  ngOnInit(): void {
     if (this.externalFileSystem) {
       this.fileSystem.set(this.externalFileSystem);
     } else {
@@ -104,10 +107,15 @@ export class ExplorerComponent implements OnInit {
     }
   }
 
-  ngOnChanges() {
+  ngOnChanges(): void {
     if (this.externalFileSystem) {
       this.fileSystem.set(this.externalFileSystem);
     }
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   private getIconForFileType(extension: string): string {
@@ -182,20 +190,19 @@ export class ExplorerComponent implements OnInit {
     return breadcrumbs;
   });
 
-  private loadFileSystem() {
-    this.http.get<{fileSystem: FileSystemItem}>('assets/json/explore.json')
-      .subscribe({
-        next: (data) => {
-
-          this.fileSystem.set(data.fileSystem);
-          // Also update the shared file system service
-          this.fileSystemService.setFileSystem(data.fileSystem);
-
-        },
-        error: (error) => {
-
-        }
-      });
+  private loadFileSystem(): void {
+    this.http.get<{fileSystem: FileSystemItem}>('assets/json/explore.json').pipe(
+      takeUntil(this.destroy$)
+    ).subscribe({
+      next: (data) => {
+        this.fileSystem.set(data.fileSystem);
+        // Also update the shared file system service
+        this.fileSystemService.setFileSystem(data.fileSystem);
+      },
+      error: () => {
+        // Handle error silently or show user-friendly message
+      }
+    });
   }
 
   private findItemByPath(root: FileSystemItem, path: string): FileSystemItem | null {

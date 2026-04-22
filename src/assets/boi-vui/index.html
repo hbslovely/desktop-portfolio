@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Phân Tích Chỉ Tay Chuyên Sâu & Camera</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    .canvas-container {
+      position: relative;
+      width: 100%;
+      max-width: 400px;
+      aspect-ratio: 3/4;
+      margin: 0 auto;
+      border-radius: 0.75rem;
+      overflow: hidden;
+      background-color: #0f172a;
+    }
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      transition: opacity 0.5s ease;
+    }
+    #edgeCanvas { opacity: 0; mix-blend-mode: screen; }
+    #overlayCanvas { opacity: 0; pointer-events: none; }
+    .show-edges #edgeCanvas, .show-edges #overlayCanvas { opacity: 1; }
+    .show-edges #originalCanvas { opacity: 0.25; }
+    .loader {
+      border: 4px solid rgba(255, 255, 255, 0.1);
+      border-left-color: #a855f7;
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.5); border-radius: 10px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(168, 85, 247, 0.3); border-radius: 10px; }
+
+    /* Hiệu ứng mờ ảo cho màn hình khóa */
+    .glass-panel {
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(168, 85, 247, 0.3);
+    }
+
+    #otpInput {
+      caret-color: #a855f7;
+      -webkit-text-security: disc;
+      text-security: disc;
+      /* Xóa bỏ text-security để người dùng thấy chữ 'showme' khi gõ */
+    }
+
+    #authModal {
+      z-index: 9999;
+      pointer-events: auto;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-200 min-h-screen">
+
+<header class="bg-slate-900 border-b border-slate-800 py-6 text-center shadow-lg relative overflow-hidden">
+  <div class="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-purple-900/20 via-slate-900/0 to-slate-900/0 pointer-events-none"></div>
+  <div class="relative z-10">
+    <h1 class="text-3xl font-bold text-white mb-2">Đọc Vị Chỉ Tay <span class="text-purple-400">Chuyên Sâu</span></h1>
+    <p class="text-slate-400 text-sm max-w-2xl mx-auto px-4">
+      Luận giải Công Danh, Tình Duyên, Vận Mệnh dựa trên hình thái kỹ thuật số của các đường chỉ tay chính.
+    </p>
+  </div>
+</header>
+
+<main class="max-w-6xl mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
+  <!-- CỘT 1: HÌNH ẢNH & XỬ LÝ -->
+  <div class="space-y-6">
+    <div class="bg-slate-900 rounded-2xl p-6 border border-slate-800 shadow-xl">
+      <div class="flex flex-wrap justify-between items-center gap-3 mb-4">
+        <h2 class="text-lg font-semibold text-white">Ảnh Lòng Bàn Tay</h2>
+        <div class="flex gap-2">
+          <label class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm py-2 px-4 rounded-lg cursor-pointer transition-colors flex items-center gap-2 border border-slate-700">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+            Tải Ảnh
+            <input type="file" id="imageInput" accept="image/*" class="hidden">
+          </label>
+          <button id="openCameraBtn" class="bg-purple-600 hover:bg-purple-500 text-white text-sm py-2 px-4 rounded-lg transition-colors flex items-center gap-2 shadow-[0_0_10px_rgba(168,85,247,0.3)]">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+            Chụp Ảnh
+          </button>
+        </div>
+      </div>
+
+      <div id="visualizer" class="canvas-container border border-slate-700 bg-black">
+        <div id="placeholder" class="absolute inset-0 flex flex-col items-center justify-center text-slate-500 pointer-events-none z-10">
+          <svg class="w-12 h-12 mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 11.5V14m0-2.5v-6a1.5 1.5 0 113 0m-3 6a1.5 1.5 0 00-3 0v2a7.5 7.5 0 0015 0v-5a1.5 1.5 0 00-3 0m-6-3V11m0-5.5v-1a1.5 1.5 0 013 0v1m0 0V11m0-5.5a1.5 1.5 0 013 0v3m0 0V11"></path></svg>
+          <span class="text-sm">Vui lòng tải ảnh hoặc chụp lòng bàn tay</span>
+        </div>
+        <canvas id="originalCanvas"></canvas>
+        <canvas id="edgeCanvas"></canvas>
+        <canvas id="overlayCanvas"></canvas>
+      </div>
+
+      <div class="mt-6 space-y-3">
+        <button id="analyzeBtn" disabled class="w-full py-3 bg-slate-800 text-slate-500 font-bold rounded-xl transition-all flex items-center justify-center gap-2 cursor-not-allowed">
+          <span>Bắt Đầu Luận Giải</span>
+        </button>
+
+        <div class="flex items-center justify-between bg-slate-950 p-3 rounded-lg border border-slate-800">
+          <span class="text-sm text-slate-400">Chế độ phân tích:</span>
+          <div class="flex bg-slate-800 rounded-lg p-1">
+            <button id="viewOriginal" class="px-3 py-1 text-sm rounded-md bg-slate-700 text-white transition-colors">Ảnh Gốc</button>
+            <button id="viewEdges" class="px-3 py-1 text-sm rounded-md text-slate-400 hover:text-white transition-colors">Sơ Đồ Đường Chỉ</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CỘT 2: KẾT QUẢ LUẬN GIẢI -->
+  <div class="flex flex-col space-y-6">
+    <div class="bg-slate-900 rounded-2xl p-6 lg:p-8 border border-slate-800 shadow-xl h-full flex flex-col relative overflow-hidden">
+      <div class="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
+      <h2 class="text-xl font-semibold text-white mb-6 border-b border-slate-700/50 pb-4 flex items-center gap-2">
+        <svg class="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+        Bản Đồ Vận Mệnh
+      </h2>
+      <div id="resultsPanel" class="flex-1 overflow-y-auto hidden custom-scrollbar pr-2">
+        <div class="space-y-5">
+          <div class="relative bg-slate-800/40 p-5 rounded-xl border-l-4 border-pink-500 hover:bg-slate-800/60 transition-colors">
+            <h3 class="text-pink-400 font-bold mb-2 flex items-center gap-2 text-lg">Tâm Đạo</h3>
+            <p id="readingHeart" class="text-slate-300 text-sm leading-relaxed"></p>
+          </div>
+          <div class="relative bg-slate-800/40 p-5 rounded-xl border-l-4 border-blue-500 hover:bg-slate-800/60 transition-colors">
+            <h3 class="text-blue-400 font-bold mb-2 flex items-center gap-2 text-lg">Trí Đạo</h3>
+            <p id="readingHead" class="text-slate-300 text-sm leading-relaxed"></p>
+          </div>
+          <div class="relative bg-slate-800/40 p-5 rounded-xl border-l-4 border-green-500 hover:bg-slate-800/60 transition-colors">
+            <h3 class="text-green-400 font-bold mb-2 flex items-center gap-2 text-lg">Sinh Đạo</h3>
+            <p id="readingLife" class="text-slate-300 text-sm leading-relaxed"></p>
+          </div>
+          <div class="relative bg-slate-800/40 p-5 rounded-xl border-l-4 border-yellow-500 hover:bg-slate-800/60 transition-colors">
+            <h3 class="text-yellow-400 font-bold mb-2 flex items-center gap-2 text-lg">Định Mệnh</h3>
+            <p id="readingFate" class="text-slate-300 text-sm leading-relaxed"></p>
+          </div>
+        </div>
+      </div>
+      <div id="emptyState" class="flex-1 flex flex-col items-center justify-center text-slate-500">
+        <svg class="w-20 h-20 mb-4 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4"></path></svg>
+        <p class="text-center font-medium">Bí ẩn vận mệnh đang chờ hé mở.<br><span class="text-sm font-normal">Hãy chụp hoặc tải ảnh lòng bàn tay lên.</span></p>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Modal Xác Thực OTP (Màn hình khóa duy nhất) -->
+<div id="authModal" class="fixed inset-0 bg-slate-950 flex flex-col items-center justify-center p-4 backdrop-blur-2xl">
+  <div class="w-full max-w-lg glass-panel rounded-3xl overflow-hidden shadow-2xl relative flex flex-col md:flex-row border border-purple-500/20">
+    <div class="md:w-5/12 p-8 flex flex-col justify-center text-center md:text-left bg-gradient-to-br from-purple-900/40 to-transparent border-b md:border-b-0 md:border-r border-white/5">
+      <h2 class="text-2xl font-bold text-white mb-4">Chào Mừng</h2>
+      <p class="text-slate-400 text-sm">Hệ thống phân tích chỉ tay kỹ thuật số. Vui lòng xác thực để bắt đầu khám phá vận mệnh.</p>
+      <div class="mt-6 space-y-2 text-xs text-purple-300/70">
+        <p>• Phân tích Tình Duyên</p>
+        <p>• Đo lường Trí Tuệ</p>
+        <p>• Đọc vị Sự Nghiệp</p>
+      </div>
+    </div>
+    <div class="md:w-7/12 p-8 flex flex-col justify-center bg-slate-900/40">
+      <h3 class="text-xl font-bold text-white mb-6 text-center">Xác Thực Truy Cập</h3>
+      <div class="relative mb-6">
+        <input type="text" id="otpInput" maxlength="6" class="w-full bg-slate-950 border-2 border-slate-700 rounded-2xl py-4 text-center text-4xl font-mono text-white focus:outline-none focus:border-purple-500 transition-all placeholder-slate-800" placeholder="000000" autocomplete="off">
+      </div>
+      <p id="otpError" class="text-red-400 text-xs mb-4 hidden text-center">Mã OTP không chính xác hoặc đã hết hạn.</p>
+      <button id="verifyOtpBtn" class="w-full py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-2xl font-bold text-lg active:scale-95 transition-all shadow-lg shadow-purple-500/20">Mở Khóa</button>
+    </div>
+  </div>
+</div>
+
+<!-- Reveal Modal -->
+<div id="revealModal" class="fixed inset-0 bg-slate-950/90 z-[10000] hidden flex flex-col items-center justify-center p-4 backdrop-blur-sm">
+  <div class="w-full max-w-xs bg-slate-900 rounded-2xl border border-green-500/50 text-center p-6 shadow-2xl">
+    <h3 class="text-xl font-bold text-white mb-2">Mã OTP Hiện Tại</h3>
+    <span id="revealedOtpText" class="text-5xl font-mono text-green-400 block my-4">------</span>
+    <button id="closeRevealBtn" class="w-full py-3 mt-4 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-semibold border border-white/10">Đã Hiểu</button>
+  </div>
+</div>
+
+<!-- Error Modal -->
+<div id="errorModal" class="fixed inset-0 bg-slate-950/90 z-[10001] hidden flex flex-col items-center justify-center p-4">
+  <div class="w-full max-w-sm bg-slate-900 rounded-2xl border border-red-500/50 text-center p-6 shadow-2xl">
+    <h3 class="text-xl font-bold text-white mb-2 text-red-400">Hình Ảnh Lỗi</h3>
+    <p id="errorModalText" class="text-slate-300 text-sm mb-6"></p>
+    <button id="closeErrorBtn" class="w-full py-3 bg-slate-800 text-white rounded-xl">Thử Lại</button>
+  </div>
+</div>
+
+<!-- Limit Modal -->
+<div id="limitModal" class="fixed inset-0 bg-slate-950/90 z-[10002] hidden flex flex-col items-center justify-center p-4 backdrop-blur-sm">
+  <div class="w-full max-w-sm bg-slate-900 rounded-2xl border border-red-500/50 text-center p-6 shadow-2xl">
+    <h3 class="text-xl font-bold text-white mb-2">Thiên Cơ Bất Khả Lộ</h3>
+    <p class="text-slate-300 text-sm mb-6">Mỗi người chỉ được phép xem bói 1 lần duy nhất để giữ độ linh ứng.</p>
+    <button id="closeLimitBtn" class="w-full py-3 bg-red-600 hover:bg-red-500 text-white rounded-xl font-medium">Đã Hiểu</button>
+  </div>
+</div>
+
+<!-- Camera Modal -->
+<div id="cameraModal" class="fixed inset-0 bg-slate-950/90 z-[10003] hidden flex flex-col items-center justify-center p-4">
+  <div class="w-full max-w-md bg-slate-900 rounded-2xl overflow-hidden border border-slate-700 shadow-2xl relative">
+    <div class="p-4 bg-slate-800 flex justify-between items-center text-white border-b border-white/5">
+      <h3 class="font-semibold">Đưa lòng bàn tay vào khung hình</h3>
+      <button id="closeCameraBtn"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+    </div>
+    <div class="relative w-full aspect-[3/4] bg-black">
+      <video id="cameraFeed" class="absolute inset-0 w-full h-full object-cover" autoplay playsinline></video>
+      <div class="absolute inset-0 border-[6px] border-purple-500/30 rounded-[3rem] m-6 pointer-events-none"></div>
+    </div>
+    <div class="p-4 flex justify-center bg-slate-800 border-t border-white/5">
+      <button id="captureBtn" class="w-16 h-16 bg-purple-500 rounded-full border-4 border-slate-800 flex items-center justify-center hover:scale-105 active:scale-95 transition-transform">
+        <div class="w-6 h-6 bg-white rounded-full"></div>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    // Khai báo các biến DOM một lần duy nhất
+    const authModal = document.getElementById('authModal');
+    const otpInput = document.getElementById('otpInput');
+    const verifyOtpBtn = document.getElementById('verifyOtpBtn');
+    const otpError = document.getElementById('otpError');
+    const revealModal = document.getElementById('revealModal');
+    const revealedOtpText = document.getElementById('revealedOtpText');
+    const closeRevealBtn = document.getElementById('closeRevealBtn');
+
+    const imageInput = document.getElementById('imageInput');
+    const originalCanvas = document.getElementById('originalCanvas');
+    const edgeCanvas = document.getElementById('edgeCanvas');
+    const overlayCanvas = document.getElementById('overlayCanvas');
+    const visualizer = document.getElementById('visualizer');
+    const analyzeBtn = document.getElementById('analyzeBtn');
+    const placeholder = document.getElementById('placeholder');
+    const resultsPanel = document.getElementById('resultsPanel');
+    const viewOriginalBtn = document.getElementById('viewOriginal');
+    const viewEdgesBtn = document.getElementById('viewEdges');
+
+    const openCameraBtn = document.getElementById('openCameraBtn');
+    const closeCameraBtn = document.getElementById('closeCameraBtn');
+    const cameraModal = document.getElementById('cameraModal');
+    const cameraFeed = document.getElementById('cameraFeed');
+    const captureBtn = document.getElementById('captureBtn');
+
+    const limitModal = document.getElementById('limitModal');
+    const closeLimitBtn = document.getElementById('closeLimitBtn');
+    const errorModal = document.getElementById('errorModal');
+    const errorModalText = document.getElementById('errorModalText');
+    const closeErrorBtn = document.getElementById('closeErrorBtn');
+
+    let originalCtx = originalCanvas.getContext('2d', { willReadFrequently: true });
+    let edgeCtx = edgeCanvas.getContext('2d');
+    let overlayCtx = overlayCanvas.getContext('2d');
+    let isImageLoaded = false, stream = null;
+    const PROCESS_WIDTH = 400;
+
+    // Logic sinh mã OTP
+    function generateCode(d, m, y, h, min) {
+      const str = `${d}-${m}-${y}-${h}-${min}-SECRET_KEY`;
+      let hash = 5381;
+      for (let i = 0; i < str.length; i++) hash = ((hash << 5) + hash) + str.charCodeAt(i);
+      return (Math.abs(hash) % 1000000).toString().padStart(6, '0');
+    }
+
+    function verifyOTP() {
+      const code = otpInput.value.trim().toLowerCase();
+      const now = new Date();
+      const cur = generateCode(now.getDate(), now.getMonth()+1, now.getFullYear(), now.getHours(), now.getMinutes());
+
+      if (code === 'showme') {
+        revealedOtpText.innerText = cur;
+        revealModal.classList.remove('hidden');
+        revealModal.classList.add('flex');
+        otpInput.value = '';
+        return;
+      }
+
+      if (code === cur) {
+        sessionStorage.setItem('isAuthenticated', 'true');
+        authModal.classList.add('hidden');
+        authModal.classList.remove('flex');
+        document.body.style.overflow = 'auto';
+      } else {
+        otpError.classList.remove('hidden');
+        otpInput.classList.add('border-red-500');
+      }
+    }
+
+    // Gắn sự kiện OTP
+    verifyOtpBtn.onclick = verifyOTP;
+    otpInput.onkeypress = (e) => {
+      e.key === 'Enter' && verifyOTP();
+      return true;
+    };
+    closeRevealBtn.onclick = () => {
+      revealModal.classList.add('hidden');
+      revealModal.classList.remove('flex');
+      otpInput.focus();
+    };
+
+    // Khởi tạo trạng thái đăng nhập
+    if (sessionStorage.getItem('isAuthenticated') !== 'true') {
+      authModal.classList.remove('hidden');
+      authModal.classList.add('flex');
+      document.body.style.overflow = 'hidden';
+      setTimeout(() => otpInput.focus(), 100);
+    } else {
+      authModal.classList.add('hidden');
+    }
+
+    // Xử lý Camera
+    openCameraBtn.onclick = async () => {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+        cameraFeed.srcObject = stream;
+        cameraModal.classList.remove('hidden');
+        cameraModal.classList.add('flex');
+      } catch(e) {
+        alert('Không thể truy cập Camera. Vui lòng kiểm tra quyền truy cập.');
+      }
+    };
+
+    const stopCamera = () => {
+      if(stream) stream.getTracks().forEach(t => t.stop());
+      cameraModal.classList.add('hidden');
+      cameraModal.classList.remove('flex');
+    };
+
+    closeCameraBtn.onclick = stopCamera;
+
+    captureBtn.onclick = () => {
+      const c = document.createElement('canvas');
+      c.width = cameraFeed.videoWidth;
+      c.height = cameraFeed.videoHeight;
+      c.getContext('2d').drawImage(cameraFeed, 0, 0);
+      const img = new Image();
+      img.onload = () => handleLoad(img);
+      img.src = c.toDataURL('image/jpeg');
+      stopCamera();
+    };
+
+    // Tải ảnh từ máy
+    imageInput.onchange = (e) => {
+      const f = e.target.files[0];
+      if(!f) return;
+      const r = new FileReader();
+      r.onload = (ev) => {
+        const img = new Image();
+        img.onload = () => handleLoad(img);
+        img.src = ev.target.result;
+      };
+      r.readAsDataURL(f);
+    };
+
+    function handleLoad(img) {
+      const scale = PROCESS_WIDTH / img.width;
+      const h = Math.floor(img.height * scale);
+      originalCanvas.width = edgeCanvas.width = overlayCanvas.width = PROCESS_WIDTH;
+      originalCanvas.height = edgeCanvas.height = overlayCanvas.height = h;
+      originalCtx.drawImage(img, 0, 0, PROCESS_WIDTH, h);
+      placeholder.style.display = 'none';
+      isImageLoaded = true;
+      analyzeBtn.disabled = false;
+      analyzeBtn.classList.remove('bg-slate-800', 'text-slate-500', 'cursor-not-allowed');
+      analyzeBtn.classList.add('bg-gradient-to-r', 'from-purple-600', 'to-pink-600', 'text-white');
+      resultsPanel.classList.add('hidden');
+      document.getElementById('emptyState').classList.remove('hidden');
+    }
+
+    analyzeBtn.onclick = () => {
+      if(!isImageLoaded) return;
+      if(sessionStorage.getItem('hasAnalyzedPalm') === 'true') {
+        limitModal.classList.remove('hidden');
+        limitModal.classList.add('flex');
+        return;
+      }
+      analyzeBtn.innerHTML = '<div class="loader"></div> <span class="ml-2">Đang giải mã...</span>';
+      setTimeout(processImageCV, 100);
+    };
+
+    function processImageCV() {
+      const w = originalCanvas.width, h = originalCanvas.height;
+      const imageData = originalCtx.getImageData(0, 0, w, h);
+      const data = imageData.data;
+      const skinMask = new Uint8Array(w * h), gray = new Uint8Array(w * h);
+      let minX = w, maxX = 0, minY = h, maxY = 0, skinCount = 0;
+
+      for (let i = 0; i < data.length; i += 4) {
+        let r = data[i], g = data[i+1], b = data[i+2], idx = i/4;
+        gray[idx] = r * 0.299 + g * 0.587 + b * 0.114;
+        let isSkin = (r > 80 && g > 40 && b > 20 && r > g && r > b && (Math.max(r,g,b) - Math.min(r,g,b) > 15));
+        if (isSkin) {
+          skinMask[idx] = 1; skinCount++;
+          let x = idx % w, y = Math.floor(idx / w);
+          if(x < minX) minX = x; if(x > maxX) maxX = x;
+          if(y < minY) minY = y; if(y > maxY) maxY = y;
+        } else { data[i]*=0.2; data[i+1]*=0.2; data[i+2]*=0.3; }
+      }
+      originalCtx.putImageData(imageData, 0, 0);
+
+      const handW = maxX - minX, handH = maxY - minY;
+      if (skinCount < (w * h * 0.05) || (handW/handH > 1.8) || (handW/handH < 0.4)) {
+        errorModalText.innerText = "Hình ảnh không phải là bàn tay hoặc quá mờ. Vui lòng thử lại.";
+        errorModal.classList.remove('hidden');
+        errorModal.classList.add('flex');
+        analyzeBtn.innerText = "Phân Tích Lại";
+        return;
+      }
+
+      const blurred = new Uint8Array(w * h);
+      for (let y = 1; y < h-1; y++) {
+        for (let x = 1; x < w-1; x++) {
+          let idx = y*w+x;
+          blurred[idx] = (gray[idx-w-1] + gray[idx-w] + gray[idx-w+1] + gray[idx-1] + gray[idx] + gray[idx+1] + gray[idx+w-1] + gray[idx+w] + gray[idx+w+1])/9;
+        }
+      }
+
+      const edgeImg = edgeCtx.createImageData(w, h);
+      const edgeData = edgeImg.data;
+      let lines = {
+        heart: { count: 0, sumX: 0, sumY: 0, minX: w, maxX: 0, color: [236,72,153], name: "Tâm Đạo" },
+        head:  { count: 0, sumX: 0, sumY: 0, minX: w, maxX: 0, color: [59,130,246], name: "Trí Đạo" },
+        life:  { count: 0, sumX: 0, sumY: 0, minY: h, maxY: 0, color: [34,197,94], name: "Sinh Đạo" },
+        fate:  { count: 0, sumX: 0, sumY: 0, minY: h, maxY: 0, color: [234,179,8], name: "Định Mệnh" },
+        other: { count: 0, color: [100,100,100] }
+      };
+
+      for (let y = 2; y < h-2; y++) {
+        for (let x = 2; x < w-2; x++) {
+          let idx = y*w+x;
+          if (!skinMask[idx]) continue;
+          const gx = -3*blurred[idx-w-1] + 3*blurred[idx-w+1] - 10*blurred[idx-1] + 10*blurred[idx+1] - 3*blurred[idx+w-1] + 3*blurred[idx+w+1];
+          const gy = -3*blurred[idx-w-1] - 10*blurred[idx-w] - 3*blurred[idx-w+1] + 3*blurred[idx+w-1] + 10*blurred[idx+w] + 3*blurred[idx+w+1];
+          const mag = Math.sqrt(gx*gx + gy*gy);
+          if (mag > 110) {
+            let rx = (x-minX)/handW, ry = (y-minY)/handH;
+            let isH = Math.abs(gy) > Math.abs(gx) * 0.8;
+            let key = 'other';
+
+            if (ry > 0.15 && ry < 0.38 && isH) key = 'heart';
+            else if (ry >= 0.38 && ry < 0.62 && isH) key = 'head';
+            else if (rx > 0.35 && rx < 0.65 && ry > 0.3 && !isH) key = 'fate';
+            else if (rx < 0.6 && ry > 0.4 && !isH) key = 'life';
+
+            if (key !== 'other') {
+              lines[key].count++; lines[key].sumX += x; lines[key].sumY += y;
+              if(x < lines[key].minX) lines[key].minX = x; if(x > lines[key].maxX) lines[key].maxX = x;
+              if(y < lines[key].minY) lines[key].minY = y; if(y > lines[key].maxY) lines[key].maxY = y;
+            }
+            let p = idx*4; edgeData[p]=lines[key].color[0]; edgeData[p+1]=lines[key].color[1]; edgeData[p+2]=lines[key].color[2]; edgeData[p+3]=255;
+          }
+        }
+      }
+      edgeCtx.putImageData(edgeImg, 0, 0);
+      overlayCtx.clearRect(0,0,w,h);
+      Object.keys(lines).forEach(k => {
+        if(k === 'other' || lines[k].count < 50) return;
+        let cx = lines[k].sumX/lines[k].count, cy = lines[k].sumY/lines[k].count;
+        overlayCtx.fillStyle = `rgb(${lines[k].color.join(',')})`;
+        overlayCtx.beginPath(); overlayCtx.arc(cx, cy, 6, 0, 7); overlayCtx.fill();
+        overlayCtx.font = "bold 14px Arial"; overlayCtx.fillText(lines[k].name, cx+10, cy);
+      });
+
+      visualizer.classList.add('show-edges');
+      generateReport(lines, handW, handH);
+      analyzeBtn.innerText = "Thiên Cơ Đã Định";
+    }
+
+    function generateReport(lines, handW, handH) {
+      sessionStorage.setItem('hasAnalyzedPalm', 'true');
+      document.getElementById('emptyState').classList.add('hidden');
+      resultsPanel.classList.remove('hidden');
+
+      const heartLen = (lines.heart.maxX - lines.heart.minX) / handW;
+      const headLen = (lines.head.maxX - lines.head.minX) / handW;
+      const lifeLen = (lines.life.maxY - lines.life.minY) / handH;
+
+      document.getElementById('readingHeart').innerHTML = heartLen > 0.6
+        ? "Đường Tâm Đạo dài, sâu: Bạn là người <strong>giàu tình cảm, chân thành</strong> và luôn hết mình trong các mối quan hệ."
+        : "Đường Tâm Đạo ngắn hoặc mảnh: Bạn là người <strong>lý trí, thực tế</strong>. Bạn kiểm soát cảm xúc tốt.";
+
+      document.getElementById('readingHead').innerHTML = headLen > 0.5
+        ? "Đường Trí Đạo dài và rõ: Bạn sở hữu <strong>tư duy logic sắc bén</strong>, khả năng tập trung cao."
+        : "Đường Trí Đạo ngắn hoặc cong nhẹ: Bạn là người có <strong>trí tưởng tượng phong phú, sáng tạo</strong>.";
+
+      document.getElementById('readingLife').innerHTML = lifeLen > 0.5
+        ? "Đường Sinh Đạo tạo hình vòng cung lớn: Bạn có <strong>nguồn năng lượng dồi dào, sức khỏe tốt</strong>."
+        : "Đường Sinh Đạo mảnh hoặc đứt đoạn nhẹ: Hãy chú ý <strong>chăm sóc bản thân và nghỉ ngơi điều độ</strong>.";
+
+      document.getElementById('readingFate').innerHTML = lines.fate.count > 100
+        ? "Đường Định Mệnh hiện rõ: Bạn có <strong>mục tiêu sự nghiệp kiên định</strong>, dễ đạt được thành tựu sớm."
+        : "Đường Định Mệnh mờ hoặc không có: Bạn là người <strong>yêu tự do, thích khám phá</strong>.";
+    }
+
+    viewOriginalBtn.onclick = () => {
+      visualizer.classList.remove('show-edges');
+      viewOriginalBtn.classList.add('bg-slate-700');
+      viewEdgesBtn.classList.remove('bg-purple-600');
+    };
+    viewEdgesBtn.onclick = () => {
+      if(isImageLoaded) {
+        visualizer.classList.add('show-edges');
+        viewEdgesBtn.classList.add('bg-purple-600');
+        viewOriginalBtn.classList.remove('bg-slate-700');
+      }
+    };
+    closeErrorBtn.onclick = () => { errorModal.classList.add('hidden'); errorModal.classList.remove('flex'); };
+    closeLimitBtn.onclick = () => { limitModal.classList.add('hidden'); limitModal.classList.remove('flex'); };
+    closeRevealBtn.onclick = () => { revealModal.classList.add('hidden'); revealModal.classList.remove('flex'); otpInput.focus(); };
+  });
+</script>
+</body>
+</html>

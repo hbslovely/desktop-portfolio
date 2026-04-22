@@ -1,0 +1,387 @@
+<div class="sieu-co-container" [style.--board-light]="selectedTheme().boardLight"
+     [style.--board-dark]="selectedTheme().boardDark"
+     [style.--line-color]="selectedTheme().lineColor"
+     [style.--red-color]="selectedTheme().redColor"
+     [style.--black-color]="selectedTheme().blackColor"
+     [style.--highlight-color]="selectedTheme().highlightColor"
+     [style.--selected-color]="selectedTheme().selectedColor">
+
+  <!-- Header -->
+  <header class="app-header">
+    <div class="logo">
+      <span class="logo-icon">♚</span>
+      <span class="logo-text">Siêu Cờ</span>
+    </div>
+
+    <nav class="tabs">
+      <button [class.active]="currentTab() === 'game'" (click)="onSetTab('game')">
+        <span class="tab-icon">♟</span> Bàn Cờ
+      </button>
+      <button [class.active]="currentTab() === 'puzzles'" (click)="onSetTab('puzzles')">
+        <span class="tab-icon">🧩</span> Cờ Thế
+      </button>
+      <button [class.active]="currentTab() === 'notation'" (click)="onSetTab('notation')">
+        <span class="tab-icon">📜</span> Kỳ Phổ
+      </button>
+      <button [class.active]="currentTab() === 'settings'" (click)="onSetTab('settings')">
+        <span class="tab-icon">⚙</span> Cài đặt
+      </button>
+    </nav>
+
+    <div class="header-actions">
+      <button class="btn-icon" (click)="onToggleSound()" [title]="soundEnabled() ? 'Tắt âm' : 'Bật âm'">
+        {{ soundEnabled() ? '🔊' : '🔇' }}
+      </button>
+      @if (!isNotStarted()) {
+        <button class="btn-primary" (click)="onOpenNewGameDialog()">
+          + Ván Mới
+        </button>
+      }
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <!-- Game Tab -->
+    @if (currentTab() === 'game') {
+      <div class="tab-content">
+        <div class="game-layout">
+          <!-- Left Panel: Captured pieces -->
+          <aside class="captured-panel">
+            <h3>Quân bị ăn</h3>
+            <div class="captured-section">
+              <span class="side-label">Đen mất:</span>
+              <div class="captured-pieces">
+                @for (piece of capturedByRed(); track $index) {
+                  <span class="captured-piece red">{{ getPieceChar(piece) }}</span>
+                }
+                @if (capturedByRed().length === 0) {
+                  <span class="empty">-</span>
+                }
+              </div>
+            </div>
+            <div class="captured-section">
+              <span class="side-label">Đỏ mất:</span>
+              <div class="captured-pieces">
+                @for (piece of capturedByBlack(); track $index) {
+                  <span class="captured-piece black">{{ getPieceChar(piece) }}</span>
+                }
+                @if (capturedByBlack().length === 0) {
+                  <span class="empty">-</span>
+                }
+              </div>
+            </div>
+          </aside>
+
+          <!-- Center: Board -->
+          <div class="board-area">
+            @if (isNotStarted()) {
+              <!-- Welcome Screen -->
+              <div class="welcome-screen">
+                <div class="welcome-icon">♚</div>
+                <h2>Chào mừng đến với Siêu Cờ!</h2>
+                <p>Trải nghiệm cờ tướng với AI thông minh</p>
+                <div class="welcome-features">
+                  <div class="feature">
+                    <span class="feature-icon">♟</span>
+                    <span>Cờ Tướng cổ điển</span>
+                  </div>
+                  <div class="feature">
+                    <span class="feature-icon">🎯</span>
+                    <span>Cờ Úp (sắp ra mắt)</span>
+                  </div>
+                  <div class="feature">
+                    <span class="feature-icon">🧩</span>
+                    <span>Giải cờ thế</span>
+                  </div>
+                </div>
+                <button class="btn-start" (click)="onOpenNewGameDialog()">
+                  <span class="btn-icon">▶</span>
+                  Bắt Đầu Chơi
+                </button>
+              </div>
+            } @else {
+              <!-- Game Board -->
+              <div class="status-bar" [class.check]="isCheck()" [class.game-over]="isGameOver()" [class.ai-thinking]="isAIThinking()">
+                @if (isAIThinking()) {
+                  <span class="thinking-indicator">
+                    <span class="thinking-dots">
+                      <span></span><span></span><span></span>
+                    </span>
+                    {{ aiColorName() }} đang suy nghĩ...
+                  </span>
+                } @else {
+                  {{ statusText() }}
+                }
+              </div>
+
+              <div class="board-wrapper">
+                <div class="board" [class.hidden-mode]="isHiddenChessMode()">
+                  <!-- River (ẩn khi chơi cờ úp) -->
+                  @if (!isHiddenChessMode()) {
+                    <div class="river" [class.flipped]="isBoardFlipped()">
+                      @if (isBoardFlipped()) {
+                        <span class="river-text">漢界</span>
+                        <span class="river-text">楚河</span>
+                      } @else {
+                        <span class="river-text">楚河</span>
+                        <span class="river-text">漢界</span>
+                      }
+                    </div>
+                  }
+
+                  <!-- Board Grid -->
+                  <div class="board-grid" [class.flipped]="isBoardFlipped()">
+                    @for (row of displayBoardRows(); track row) {
+                      @for (col of displayBoardCols(); track col) {
+                        <div class="cell"
+                             [class.selected]="cellStates()[row][col].isSelected"
+                             [class.possible-move]="cellStates()[row][col].isPossibleMove"
+                             [class.last-move-from]="cellStates()[row][col].isLastMoveFrom"
+                             [class.last-move-to]="cellStates()[row][col].isLastMoveTo"
+                             [class.palace]="(row <= 2 && col >= 3 && col <= 5) || (row >= 7 && col >= 3 && col <= 5)"
+                             (click)="onCellClick(row, col)">
+
+                          <!-- Piece -->
+                          @if (boardPieces()[row][col]; as piece) {
+                            <div class="piece"
+                                 [class.red]="piece.color === PieceColor.RED && piece.state !== PieceState.HIDDEN"
+                                 [class.black]="piece.color === PieceColor.BLACK && piece.state !== PieceState.HIDDEN"
+                                 [class.hidden-piece]="piece.state === PieceState.HIDDEN"
+                                 [class.last-moved]="cellStates()[row][col].isLastMoveTo">
+                              <span class="piece-char">{{ getPieceChar(piece) }}</span>
+                            </div>
+                          }
+
+                          <!-- Move indicator -->
+                          @if (cellStates()[row][col].isPossibleMove && !boardPieces()[row][col]) {
+                            <div class="move-indicator"></div>
+                          }
+                          @if (cellStates()[row][col].isPossibleMove && boardPieces()[row][col]) {
+                            <div class="capture-indicator"></div>
+                          }
+                        </div>
+                      }
+                    }
+                  </div>
+                </div>
+              </div>
+
+              <div class="game-controls">
+                <button class="btn-secondary" (click)="onUndoMove()" [disabled]="!hasHistory()">
+                  ↩ Hoàn tác
+                </button>
+                <button class="btn-secondary" (click)="onGetHint()" [disabled]="!isPlaying()">
+                  💡 Gợi ý
+                </button>
+              </div>
+            }
+          </div>
+
+          <!-- Right Panel: Move history -->
+          <aside class="history-panel">
+            <h3>Lịch sử nước đi</h3>
+            <div class="move-list">
+              @for (history of moveHistory(); track $index) {
+                <div class="move-entry"
+                     [class.red-move]="$index % 2 === 0"
+                     [class.black-move]="$index % 2 === 1">
+                  <span class="move-number">{{ ($index / 2 | number:'1.0-0') }}.</span>
+                  <span class="move-notation">{{ history.move.notation }}</span>
+                  @if (history.move.isCheck) {
+                    <span class="check-badge">+</span>
+                  }
+                </div>
+              }
+              @if (!hasHistory()) {
+                <div class="empty-history">Chưa có nước đi nào</div>
+              }
+            </div>
+          </aside>
+        </div>
+      </div>
+    }
+
+    <!-- Puzzles Tab -->
+    @if (currentTab() === 'puzzles') {
+      <div class="tab-content">
+        <div class="puzzles-container">
+          <h2>Cờ Thế - Các bài toán cờ cổ điển</h2>
+          <p class="puzzles-intro">Rèn luyện tư duy chiến thuật với các bài cờ thế kinh điển</p>
+
+          <div class="puzzle-list">
+            @for (puzzle of puzzles(); track puzzle.id) {
+              <div class="puzzle-card" (click)="onStartPuzzle(puzzle.id)">
+                <div class="puzzle-id">#{{ puzzle.id }}</div>
+                <h3>{{ puzzle.name }}</h3>
+                <p>{{ puzzle.description }}</p>
+                <div class="puzzle-difficulty">
+                  @for (star of starRatings; track star) {
+                    <span class="star" [class.filled]="star <= puzzle.difficulty">★</span>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Notation Tab -->
+    @if (currentTab() === 'notation') {
+      <div class="tab-content">
+        <div class="notation-container">
+          <h2>Kỳ Phổ - Ghi chép nước đi</h2>
+
+          <div class="notation-info">
+            <h3>Ký hiệu quân cờ</h3>
+            <div class="notation-legend">
+              <div class="legend-item"><span class="symbol">Tg</span> = Tướng/Soái</div>
+              <div class="legend-item"><span class="symbol">S</span> = Sĩ</div>
+              <div class="legend-item"><span class="symbol">T</span> = Tượng/Tịnh</div>
+              <div class="legend-item"><span class="symbol">X</span> = Xe</div>
+              <div class="legend-item"><span class="symbol">P</span> = Pháo</div>
+              <div class="legend-item"><span class="symbol">M</span> = Mã</div>
+              <div class="legend-item"><span class="symbol">B</span> = Binh/Tốt</div>
+            </div>
+
+            <h3>Ký hiệu hướng đi</h3>
+            <div class="notation-legend">
+              <div class="legend-item"><span class="symbol">.</span> = Tấn (tiến)</div>
+              <div class="legend-item"><span class="symbol">/</span> = Thoái (lùi)</div>
+              <div class="legend-item"><span class="symbol">-</span> = Bình (ngang)</div>
+            </div>
+          </div>
+
+          @if (hasHistory()) {
+            <div class="current-game-record">
+              <h3>Ván đấu hiện tại</h3>
+              <div class="record-content">
+                @for (moveNum of moveNumbers(); track moveNum) {
+                  <div class="record-line">
+                    <span class="move-num">{{ moveNum + 1 }}.</span>
+                    <span class="red-move">Đỏ: {{ moveNotations()[moveNum * 2] }}</span>
+                    @if (moveNotations()[moveNum * 2 + 1]) {
+                      <span class="black-move">| Đen: {{ moveNotations()[moveNum * 2 + 1] }}</span>
+                    }
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- Settings Tab -->
+    @if (currentTab() === 'settings') {
+      <div class="tab-content">
+        <div class="settings-container">
+          <h2>Cài đặt</h2>
+
+          <section class="setting-section">
+            <h3>Giao diện</h3>
+            <div class="theme-picker">
+              @for (theme of themes; track theme.id) {
+                <div class="theme-option"
+                     [class.selected]="theme.id === selectedTheme().id"
+                     (click)="onSetTheme(theme)">
+                  <div class="theme-preview"
+                       [style.background]="'linear-gradient(135deg, ' + theme.boardLight + ' 50%, ' + theme.boardDark + ' 50%)'">
+                    <span class="preview-piece" [style.color]="theme.redColor">帥</span>
+                    <span class="preview-piece" [style.color]="theme.blackColor">將</span>
+                  </div>
+                  <span class="theme-name">{{ theme.name }}</span>
+                </div>
+              }
+            </div>
+          </section>
+
+          <section class="setting-section">
+            <h3>Thuật toán AI</h3>
+            <div class="algorithm-list">
+              @for (algo of availableAlgorithms; track algo.id) {
+                <div class="algorithm-item">
+                  <strong>{{ algo.name }}</strong>
+                  <p>{{ algo.description }}</p>
+                </div>
+              }
+            </div>
+            <p class="info-text">
+              💡 Bạn có thể tự implement thuật toán mới bằng cách implement interface <code>IAIAlgorithm</code>
+              và đăng ký qua <code>registerAlgorithm()</code>.
+            </p>
+          </section>
+        </div>
+      </div>
+    }
+  </main>
+
+  <!-- New Game Dialog -->
+  @if (showNewGameDialog()) {
+    <div class="dialog-overlay" (click)="onCloseNewGameDialog()">
+      <div class="dialog" (click)="$event.stopPropagation()">
+        <h2>Ván Mới</h2>
+
+        <div class="dialog-content">
+          <!-- Game Mode -->
+          <div class="form-group">
+            <label>Chế độ chơi</label>
+            <div class="mode-selector">
+              <button [class.selected]="selectedMode() === GameMode.XIANGQI"
+                      (click)="onSetMode(GameMode.XIANGQI)">
+                <span class="mode-icon">♚</span>
+                <span>Cờ Tướng</span>
+              </button>
+              <button [class.selected]="selectedMode() === GameMode.HIDDEN"
+                      (click)="onSetMode(GameMode.HIDDEN)">
+                <span class="mode-icon">🎲</span>
+                <span>Cờ Úp</span>
+              </button>
+              <button [class.selected]="selectedMode() === GameMode.PUZZLE"
+                      disabled title="Xem tab Cờ Thế">
+                <span class="mode-icon">🧩</span>
+                <span>Cờ Thế</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Player Color -->
+          <div class="form-group">
+            <label>Bạn chơi quân</label>
+            <div class="color-selector">
+              <button [class.selected]="selectedPlayerColor() === PieceColor.RED"
+                      (click)="onSetPlayerColor(PieceColor.RED)">
+                <span class="color-preview red">帥</span>
+                <span>Đỏ (đi trước)</span>
+              </button>
+              <button [class.selected]="selectedPlayerColor() === PieceColor.BLACK"
+                      (click)="onSetPlayerColor(PieceColor.BLACK)">
+                <span class="color-preview black">將</span>
+                <span>Đen</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Difficulty -->
+          <div class="form-group">
+            <label>Độ khó AI</label>
+            <div class="difficulty-selector">
+              @for (diff of difficultyLevels; track diff) {
+                <button [class.selected]="selectedDifficulty() === diff"
+                        (click)="onSetDifficulty(diff)">
+                  {{ difficultyNames[diff] }}
+                </button>
+              }
+            </div>
+          </div>
+        </div>
+
+        <div class="dialog-actions">
+          <button class="btn-secondary" (click)="onCloseNewGameDialog()">Hủy</button>
+          <button class="btn-primary" (click)="startNewGame()">Bắt đầu</button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

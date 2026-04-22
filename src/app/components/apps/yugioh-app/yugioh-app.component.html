@@ -1,210 +1,328 @@
-<div class="yugioh-app-container">
+<div class="yugioh-app">
   <!-- List View -->
-  <div *ngIf="currentView() === 'list'" class="list-view-container">
+  <div *ngIf="currentView() === 'list'" class="list-view">
     <!-- Header -->
-    <div class="app-header">
-      <div class="header-title">
-        <h1>Yu-Gi-Oh! Card Database</h1>
-        <p class="subtitle">Powered by YGOPRODeck API</p>
+    <header class="app-header">
+      <div class="header-left">
+        <div class="app-logo">
+          <span class="logo-icon">🃏</span>
+          <div class="logo-text">
+            <h1>Yu-Gi-Oh! Database</h1>
+            <span class="subtitle">{{ totalCards() | number }} cards available</span>
+          </div>
+        </div>
       </div>
+      
       <div class="header-actions">
-        <button class="btn-icon" (click)="getRandomCard()" title="Random Card">
-          <i class="pi pi-refresh"></i>
+        <button 
+          class="action-btn" 
+          [class.active]="showFavoritesOnly()"
+          (click)="toggleFavoritesFilter()" 
+          title="Show Favorites">
+          <i class="pi pi-heart{{ showFavoritesOnly() ? '-fill' : '' }}"></i>
+          <span class="badge" *ngIf="favorites().size > 0">{{ favorites().size }}</span>
         </button>
-        <button class="btn-icon" (click)="toggleViewMode()" title="Toggle View">
-          <i [class]="viewMode() === 'grid' ? 'pi pi-list' : 'pi pi-th-large'"></i>
+        
+        <button 
+          class="action-btn" 
+          [class.active]="showDeckPanel()"
+          (click)="toggleDeckPanel()" 
+          title="Deck Builder">
+          <i class="pi pi-folder"></i>
+          <span class="badge" *ngIf="deckCount() > 0">{{ deckCount() }}</span>
+        </button>
+        
+        <button class="action-btn" (click)="getRandomCard()" title="Random Card">
+          <i class="pi pi-bolt"></i>
+        </button>
+        
+        <div class="view-toggle">
+          <button 
+            class="view-btn" 
+            [class.active]="viewMode() === 'grid'"
+            (click)="setViewMode('grid')" 
+            title="Grid View">
+            <i class="pi pi-th-large"></i>
+          </button>
+          <button 
+            class="view-btn" 
+            [class.active]="viewMode() === 'compact'"
+            (click)="setViewMode('compact')" 
+            title="Compact View">
+            <i class="pi pi-table"></i>
+          </button>
+          <button 
+            class="view-btn" 
+            [class.active]="viewMode() === 'list'"
+            (click)="setViewMode('list')" 
+            title="List View">
+            <i class="pi pi-list"></i>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Search & Filters -->
+    <div class="filters-bar">
+      <div class="search-wrapper">
+        <i class="pi pi-search search-icon"></i>
+        <input 
+          type="text"
+          class="search-input"
+          [value]="searchQuery()"
+          (input)="onSearchInput($event)"
+          placeholder="Search cards by name...">
+        <button 
+          class="clear-btn" 
+          *ngIf="searchQuery()" 
+          (click)="searchQuery.set(''); applyFilters()">
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+
+      <div class="filter-chips">
+        <select class="filter-select" [(ngModel)]="selectedFrameType" (ngModelChange)="onFilterChange()">
+          <option value="">All Cards</option>
+          <option *ngFor="let ft of availableFrameTypes()" [value]="ft">{{ ft }}</option>
+        </select>
+
+        <select class="filter-select" [(ngModel)]="selectedType" (ngModelChange)="onFilterChange()">
+          <option value="">All Types</option>
+          <option *ngFor="let type of availableTypes()" [value]="type">{{ type }}</option>
+        </select>
+
+        <select class="filter-select" [(ngModel)]="selectedAttribute" (ngModelChange)="onFilterChange()">
+          <option value="">All Attributes</option>
+          <option *ngFor="let attr of availableAttributes()" [value]="attr">{{ attr }}</option>
+        </select>
+
+        <select class="filter-select" [(ngModel)]="selectedSort" (ngModelChange)="onFilterChange()">
+          <option value="name">Name A-Z</option>
+          <option value="atk">Highest ATK</option>
+          <option value="def">Highest DEF</option>
+          <option value="level">Highest Level</option>
+        </select>
+
+        <button class="clear-filters-btn" (click)="clearFilters()" *ngIf="searchQuery() || selectedType() || selectedFrameType() || selectedAttribute()">
+          <i class="pi pi-filter-slash"></i>
+          Clear
         </button>
       </div>
     </div>
 
-  <!-- Statistics Bar -->
-  <div class="stats-bar">
-    <div class="stat-item">
-      <span class="stat-label">Showing:</span>
-      <span class="stat-value">{{ displayedCount() }} / {{ totalCards() }}</span>
-    </div>
-    <div class="stat-item">
-      <span class="stat-label">Monsters:</span>
-      <span class="stat-value">{{ monsterCards() }}</span>
-    </div>
-    <div class="stat-item">
-      <span class="stat-label">Spells:</span>
-      <span class="stat-value">{{ spellCards() }}</span>
-    </div>
-    <div class="stat-item">
-      <span class="stat-label">Traps:</span>
-      <span class="stat-value">{{ trapCards() }}</span>
-    </div>
-  </div>
-
-  <!-- Search and Filters -->
-  <div class="filters-section">
-    <div class="search-box">
-      <i class="pi pi-search"></i>
-      <input 
-        type="text" 
-        [(ngModel)]="searchQuery"
-        (ngModelChange)="onSearchChange()"
-        placeholder="Search by name or description..."
-        class="search-input">
-      <button 
-        *ngIf="searchQuery()" 
-        class="clear-search"
-        (click)="searchQuery.set(''); onSearchChange()">
-        <i class="pi pi-times"></i>
-      </button>
+    <!-- Stats Bar -->
+    <div class="stats-bar">
+      <div class="stat">
+        <span class="stat-value">{{ displayedCount() }}</span>
+        <span class="stat-label">Shown</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat monsters">
+        <span class="stat-value">{{ monsterCards() }}</span>
+        <span class="stat-label">Monsters</span>
+      </div>
+      <div class="stat spells">
+        <span class="stat-value">{{ spellCards() }}</span>
+        <span class="stat-label">Spells</span>
+      </div>
+      <div class="stat traps">
+        <span class="stat-value">{{ trapCards() }}</span>
+        <span class="stat-label">Traps</span>
+      </div>
     </div>
 
-    <div class="filter-row">
-      <select [(ngModel)]="selectedFrameType" (ngModelChange)="onFilterChange()" class="filter-select">
-        <option value="">All Frame Types</option>
-        <option *ngFor="let frameType of availableFrameTypes()" [value]="frameType">
-          {{ frameType }}
-        </option>
-      </select>
-
-      <select [(ngModel)]="selectedType" (ngModelChange)="onFilterChange()" class="filter-select">
-        <option value="">All Types</option>
-        <option *ngFor="let type of availableTypes()" [value]="type">
-          {{ type }}
-        </option>
-      </select>
-
-      <select [(ngModel)]="selectedRace" (ngModelChange)="onFilterChange()" class="filter-select">
-        <option value="">All Races</option>
-        <option *ngFor="let race of availableRaces()" [value]="race">
-          {{ race }}
-        </option>
-      </select>
-
-      <select [(ngModel)]="selectedAttribute" (ngModelChange)="onFilterChange()" class="filter-select">
-        <option value="">All Attributes</option>
-        <option *ngFor="let attribute of availableAttributes()" [value]="attribute">
-          {{ attribute }}
-        </option>
-      </select>
-
-      <select [(ngModel)]="selectedSort" (ngModelChange)="onFilterChange()" class="filter-select">
-        <option value="name">Sort by Name</option>
-        <option value="atk">Sort by ATK</option>
-        <option value="def">Sort by DEF</option>
-        <option value="level">Sort by Level</option>
-        <option value="type">Sort by Type</option>
-      </select>
-
-      <button class="btn-clear-filters" (click)="clearFilters()">
-        <i class="pi pi-filter-slash"></i>
-        Clear Filters
-      </button>
-    </div>
-  </div>
-
-  <!-- Loading State -->
-  <div class="loading-overlay" *ngIf="isLoading()">
-    <div class="loading-spinner">
-      <i class="pi pi-spin pi-spinner"></i>
-    </div>
-    <p>Loading Yu-Gi-Oh! cards...</p>
-  </div>
-
-  <!-- Cards Content -->
-  <div class="cards-content" *ngIf="!isLoading()" (scroll)="onScroll($event)">
-    <!-- Grid View -->
-    <div class="cards-grid" *ngIf="viewMode() === 'grid'">
-      <div 
-        *ngFor="let card of displayedCards()" 
-        class="card-item"
-        [class]="getFrameTypeClass(card.frameType)"
-        (click)="openCardDetail(card)">
-        <div class="card-image-wrapper">
-          <img 
-            [src]="getCardImageUrl(card, 'small')" 
-            [alt]="card.name"
-            class="card-image"
-            loading="lazy">
+    <!-- Main Content Area -->
+    <div class="main-content" [class.with-deck]="showDeckPanel()">
+      <!-- Cards Container -->
+      <div class="cards-container" (scroll)="onScroll($event)">
+        <!-- Loading State -->
+        <div class="loading-state" *ngIf="isLoading()">
+          <div class="spinner"></div>
+          <p>Loading cards...</p>
         </div>
-        <div class="card-info">
-          <h3 class="card-name">{{ card.name }}</h3>
-          <div class="card-meta">
-            <span class="card-type">{{ card.race }}</span>
-            <span class="card-attribute" *ngIf="card.attribute">
-              {{ getAttributeIcon(card.attribute) }}
+
+        <!-- Grid View -->
+        <div class="cards-grid" *ngIf="!isLoading() && viewMode() === 'grid'">
+          <div 
+            *ngFor="let card of displayedCards(); trackBy: trackByCardId" 
+            class="card-item"
+            [class]="getFrameTypeClass(card.frameType)"
+            (click)="openCardDetail(card)">
+            
+            <div class="card-image">
+              <img [src]="getCardImageUrl(card, 'small')" [alt]="card.name" loading="lazy">
+              <div class="card-overlay">
+                <button class="overlay-btn favorite" (click)="toggleFavorite(card, $event)" [class.active]="isFavorite(card.id)">
+                  <i class="pi pi-heart{{ isFavorite(card.id) ? '-fill' : '' }}"></i>
+                </button>
+                <button class="overlay-btn add-deck" (click)="addToDeck(card, $event)" [disabled]="getCardCountInDeck(card.id) >= 3">
+                  <i class="pi pi-plus"></i>
+                  <span *ngIf="getCardCountInDeck(card.id) > 0">{{ getCardCountInDeck(card.id) }}/3</span>
+                </button>
+              </div>
+            </div>
+            
+            <div class="card-info">
+              <h3 class="card-name">{{ card.name }}</h3>
+              <div class="card-meta">
+                <span class="card-type">{{ card.race }}</span>
+                <span class="card-attr">{{ getAttributeIcon(card.attribute) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Compact View -->
+        <div class="cards-compact" *ngIf="!isLoading() && viewMode() === 'compact'">
+          <div 
+            *ngFor="let card of displayedCards(); trackBy: trackByCardId" 
+            class="compact-item"
+            [class]="getFrameTypeClass(card.frameType)"
+            (click)="openCardDetail(card)">
+            <img [src]="getCardImageUrl(card, 'cropped')" [alt]="card.name" loading="lazy" class="compact-img">
+            <span class="compact-name">{{ card.name }}</span>
+            <span class="compact-type">{{ card.type }}</span>
+            <span class="compact-stats" *ngIf="card.atk !== undefined">
+              {{ card.atk }}/{{ card.def }}
             </span>
+            <div class="compact-actions">
+              <button (click)="toggleFavorite(card, $event)" [class.active]="isFavorite(card.id)">
+                <i class="pi pi-heart{{ isFavorite(card.id) ? '-fill' : '' }}"></i>
+              </button>
+              <button (click)="addToDeck(card, $event)">
+                <i class="pi pi-plus"></i>
+              </button>
+            </div>
           </div>
         </div>
-      </div>
-    </div>
 
-    <!-- List View -->
-    <div class="cards-list" *ngIf="viewMode() === 'list'">
-      <div 
-        *ngFor="let card of displayedCards()" 
-        class="list-item"
-        [class]="getFrameTypeClass(card.frameType)"
-        (click)="openCardDetail(card)">
-        <img 
-          [src]="getCardImageUrl(card, 'cropped')" 
-          [alt]="card.name"
-          class="list-image"
-          loading="lazy">
-        <div class="list-info">
-          <h3 class="list-name">{{ card.name }}</h3>
-          <p class="list-type">{{ card.type }} • {{ card.race }}</p>
-          <p class="list-desc">{{ card.desc | slice:0:150 }}{{ card.desc.length > 150 ? '...' : '' }}</p>
-          <div class="list-stats" *ngIf="card.atk !== undefined">
-            <span>ATK: {{ card.atk }}</span>
-            <span *ngIf="card.def !== undefined">DEF: {{ card.def }}</span>
-            <span *ngIf="card.level">Level: {{ card.level }}</span>
+        <!-- List View -->
+        <div class="cards-list" *ngIf="!isLoading() && viewMode() === 'list'">
+          <div 
+            *ngFor="let card of displayedCards(); trackBy: trackByCardId" 
+            class="list-item"
+            [class]="getFrameTypeClass(card.frameType)"
+            (click)="openCardDetail(card)">
+            
+            <img [src]="getCardImageUrl(card, 'cropped')" [alt]="card.name" loading="lazy" class="list-img">
+            
+            <div class="list-content">
+              <h3 class="list-name">{{ card.name }}</h3>
+              <p class="list-type">{{ card.type }} • {{ card.race }}</p>
+              <p class="list-desc">{{ card.desc | slice:0:120 }}{{ card.desc.length > 120 ? '...' : '' }}</p>
+              <div class="list-stats" *ngIf="card.atk !== undefined">
+                <span class="atk">ATK {{ card.atk }}</span>
+                <span class="def" *ngIf="card.def !== undefined">DEF {{ card.def }}</span>
+                <span class="level" *ngIf="card.level">★{{ card.level }}</span>
+              </div>
+            </div>
+            
+            <div class="list-actions">
+              <button class="action" [class.active]="isFavorite(card.id)" (click)="toggleFavorite(card, $event)">
+                <i class="pi pi-heart{{ isFavorite(card.id) ? '-fill' : '' }}"></i>
+              </button>
+              <button class="action" (click)="addToDeck(card, $event)">
+                <i class="pi pi-plus"></i>
+              </button>
+            </div>
           </div>
         </div>
+
+        <!-- Load More -->
+        <div class="load-more" *ngIf="!isLoading() && hasMoreCards()">
+          <button class="load-more-btn" (click)="loadMoreCards()" [disabled]="isLoadingMore()">
+            <i class="pi pi-spin pi-spinner" *ngIf="isLoadingMore()"></i>
+            <span *ngIf="!isLoadingMore()">Load More ({{ totalCards() - displayedCount() }} remaining)</span>
+            <span *ngIf="isLoadingMore()">Loading...</span>
+          </button>
+        </div>
+
+        <!-- All Loaded -->
+        <div class="all-loaded" *ngIf="!isLoading() && !hasMoreCards() && displayedCount() > 0">
+          <i class="pi pi-check-circle"></i>
+          <span>All {{ totalCards() }} cards loaded</span>
+        </div>
+
+        <!-- Empty State -->
+        <div class="empty-state" *ngIf="!isLoading() && filteredCards().length === 0">
+          <i class="pi pi-search"></i>
+          <h3>No cards found</h3>
+          <p>Try different filters or search terms</p>
+          <button class="primary-btn" (click)="clearFilters()">Clear Filters</button>
+        </div>
       </div>
-    </div>
 
-    <!-- Loading More Indicator -->
-    <div class="loading-more" *ngIf="isLoadingMore()">
-      <div class="loading-spinner">
-        <i class="pi pi-spin pi-spinner"></i>
-      </div>
-      <p>Loading more cards...</p>
-    </div>
+      <!-- Deck Panel -->
+      <aside class="deck-panel" *ngIf="showDeckPanel()">
+        <div class="deck-header">
+          <h3>🎴 Deck Builder</h3>
+          <span class="deck-count">{{ deckCount() }}/{{ maxDeckSize }}</span>
+        </div>
+        
+        <div class="deck-stats">
+          <div class="deck-stat">
+            <span class="value">{{ deckMonsters() }}</span>
+            <span class="label">Monsters</span>
+          </div>
+          <div class="deck-stat">
+            <span class="value">{{ deckSpells() }}</span>
+            <span class="label">Spells</span>
+          </div>
+          <div class="deck-stat">
+            <span class="value">{{ deckTraps() }}</span>
+            <span class="label">Traps</span>
+          </div>
+        </div>
 
-    <!-- Load More Button -->
-    <div class="load-more-section" *ngIf="hasMoreCards() && !isLoadingMore()">
-      <button class="btn-load-more" (click)="loadMoreCards()">
-        <i class="pi pi-angle-down"></i>
-        Load More Cards
-        <span class="badge">{{ totalCards() - displayedCount() }} remaining</span>
-      </button>
-    </div>
+        <div class="deck-cards">
+          <div 
+            *ngFor="let card of deck(); let i = index" 
+            class="deck-card"
+            [class]="getFrameTypeClass(card.frameType)">
+            <img [src]="getCardImageUrl(card, 'cropped')" [alt]="card.name">
+            <span class="deck-card-name">{{ card.name }}</span>
+            <button class="remove-btn" (click)="removeFromDeck(i, $event)">
+              <i class="pi pi-times"></i>
+            </button>
+          </div>
+          
+          <div class="deck-empty" *ngIf="deck().length === 0">
+            <i class="pi pi-inbox"></i>
+            <p>Click + on cards to add them</p>
+          </div>
+        </div>
 
-    <!-- All Loaded Message -->
-    <div class="all-loaded" *ngIf="!hasMoreCards() && displayedCount() > 0">
-      <i class="pi pi-check-circle"></i>
-      <p>All {{ totalCards() }} cards loaded</p>
+        <div class="deck-actions" *ngIf="deck().length > 0">
+          <button class="clear-deck-btn" (click)="clearDeck()">
+            <i class="pi pi-trash"></i>
+            Clear Deck
+          </button>
+        </div>
+      </aside>
     </div>
-  </div>
-
-  <!-- Empty State -->
-  <div class="empty-state" *ngIf="!isLoading() && filteredCards().length === 0">
-    <i class="pi pi-search"></i>
-    <h3>No cards found</h3>
-    <p>Try adjusting your search or filters</p>
-    <button class="btn-primary" (click)="clearFilters()">Clear Filters</button>
-  </div>
   </div>
 
   <!-- Detail View -->
-  <div *ngIf="currentView() === 'detail' && selectedCard()" class="detail-view-container">
-    <!-- Back Button Header -->
-    <div class="detail-header" [class]="getFrameTypeClass(selectedCard()!.frameType)">
-      <button class="btn-back" (click)="backToList()">
+  <div *ngIf="currentView() === 'detail' && selectedCard()" class="detail-view">
+    <header class="detail-header" [class]="getFrameTypeClass(selectedCard()!.frameType)">
+      <button class="back-btn" (click)="backToList()">
         <i class="pi pi-arrow-left"></i>
-        Back to List
+        Back
       </button>
-      <h2 class="detail-title">{{ selectedCard()?.name }}</h2>
-    </div>
+      <h2>{{ selectedCard()?.name }}</h2>
+      <div class="detail-actions">
+        <button 
+          class="action-btn" 
+          [class.active]="isFavorite(selectedCard()!.id)"
+          (click)="toggleFavorite(selectedCard()!)">
+          <i class="pi pi-heart{{ isFavorite(selectedCard()!.id) ? '-fill' : '' }}"></i>
+        </button>
+        <button class="action-btn" (click)="addToDeck(selectedCard()!)">
+          <i class="pi pi-plus"></i>
+        </button>
+      </div>
+    </header>
 
-    <!-- Card Detail Component -->
     <div class="detail-content" [class]="getFrameTypeClass(selectedCard()!.frameType)">
       <app-yugioh-card-detail 
         [cardId]="selectedCard()!.id"
@@ -213,5 +331,3 @@
     </div>
   </div>
 </div>
-
-

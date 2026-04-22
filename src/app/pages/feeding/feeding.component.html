@@ -132,39 +132,25 @@
     <!-- Overview -->
     <ng-container *ngIf="profile() && !editing() && ageBreakdown() as age">
       <section class="overview">
-        <div class="card summary-card">
-          <div class="baby-name">
-            <span class="avatar">
-              {{ profile()?.gender === 'boy' ? '👦' : profile()?.gender === 'girl' ? '👧' : '🍼' }}
-            </span>
-            <div>
-              <div class="eyebrow">Bé của bạn</div>
+        <div class="card summary-card compact">
+          <span class="avatar-sm">
+            {{ profile()?.gender === 'boy' ? '👦' : profile()?.gender === 'girl' ? '👧' : '🍼' }}
+          </span>
+          <div class="summary-info">
+            <div class="summary-top">
               <h2>{{ profile()?.babyName }}</h2>
-              <div class="sub">
-                Sinh ngày
-                {{ profile()?.birthDate | date: 'dd/MM/yyyy' }}
-              </div>
-              <div class="sub weight" *ngIf="profile()?.weightKg">
-                <i class="pi pi-heart-fill"></i>
-                Cân nặng: <strong>{{ profile()?.weightKg }}kg</strong>
-              </div>
+              <span class="age-chip">
+                {{ age.years > 0 ? age.years + 'y' : '' }}
+                {{ age.years > 0 ? age.remainingMonths : age.months }}m
+                {{ age.years > 0 ? '' : age.remainingDays + 'd' }}
+              </span>
             </div>
-          </div>
-
-          <div class="age-stats">
-            <div class="stat">
-              <div class="num">{{ age.years > 0 ? age.years : age.months }}</div>
-              <div class="unit">{{ age.years > 0 ? 'năm' : 'tháng' }}</div>
-            </div>
-            <div class="dot">·</div>
-            <div class="stat">
-              <div class="num">{{ age.years > 0 ? age.remainingMonths : age.weeks }}</div>
-              <div class="unit">{{ age.years > 0 ? 'tháng' : 'tuần tuổi' }}</div>
-            </div>
-            <div class="dot">·</div>
-            <div class="stat">
-              <div class="num">{{ age.days }}</div>
-              <div class="unit">ngày</div>
+            <div class="summary-meta">
+              <span><i class="pi pi-calendar"></i> {{ profile()?.birthDate | date: 'dd/MM/yyyy' }}</span>
+              <span class="sep">·</span>
+              <span *ngIf="profile()?.weightKg"><i class="pi pi-heart-fill"></i> {{ profile()?.weightKg }}kg</span>
+              <span class="sep" *ngIf="profile()?.weightKg">·</span>
+              <span>{{ age.days }} ngày tuổi</span>
             </div>
           </div>
         </div>
@@ -201,105 +187,102 @@
         <i class="pi pi-exclamation-triangle"></i> {{ syncError() }}
       </div>
 
-      <!-- ============ ML PREDICTION (TOP) ============ -->
-      <section class="card predict-card" *ngIf="logs().length > 0">
-        <div class="predict-head">
-          <div>
-            <div class="eyebrow sparkle">
-              <i class="pi pi-bolt"></i> Dự đoán thông minh
-            </div>
-            <h2>Cữ bú tiếp theo</h2>
+      <!-- ============ ML PREDICTION (compact hero) ============ -->
+      <section
+        class="card predict-card compact"
+        *ngIf="logs().length > 0"
+        [attr.data-status]="countdownStatus()"
+      >
+        <div class="predict-top">
+          <div class="predict-title">
+            <i class="pi pi-bolt sparkle"></i>
+            <span>Cữ bú tiếp theo</span>
           </div>
           <div
             class="confidence-pill"
             *ngIf="prediction().hasData"
             [attr.data-level]="prediction().confidence"
           >
-            <i class="pi pi-chart-line"></i>
-            Độ tin cậy: {{
-              prediction().confidence === 'high' ? 'Cao'
-              : prediction().confidence === 'medium' ? 'Khá'
-              : 'Thấp'
+            {{
+              prediction().confidence === 'high' ? 'Tin cậy cao'
+              : prediction().confidence === 'medium' ? 'Tin cậy khá'
+              : 'Tin cậy thấp'
             }}
           </div>
         </div>
 
-        <!-- Last feeding strip -->
-        <div class="last-feed" *ngIf="lastFeeding() as last">
-          <div class="last-feed-icon"><i class="pi pi-history"></i></div>
-          <div class="last-feed-body">
-            <div class="last-feed-label">Cữ gần nhất</div>
-            <div class="last-feed-value">
-              <strong>{{ last.volume }}ml</strong>
-              <span class="sep">·</span>
-              <span>{{ last.time }} {{ formatDateDisplay(last.date) }}</span>
-              <span class="sep">·</span>
-              <span class="ago">{{ lastFeedingAgo() }}</span>
+        <ng-container *ngIf="prediction().hasData && prediction().nextTime; else notEnough">
+          <!-- Hero countdown -->
+          <div class="countdown-hero" [attr.data-status]="countdownStatus()">
+            <div class="countdown-main">
+              <div class="countdown-label">
+                <ng-container [ngSwitch]="countdownStatus()">
+                  <span *ngSwitchCase="'late'">
+                    <i class="pi pi-exclamation-circle"></i> Đã qua giờ bú
+                  </span>
+                  <span *ngSwitchCase="'now'">
+                    <i class="pi pi-bell"></i> Sắp đến giờ bú
+                  </span>
+                  <span *ngSwitchDefault>
+                    <i class="pi pi-hourglass"></i> Còn đến cữ tiếp theo
+                  </span>
+                </ng-container>
+              </div>
+              <div class="countdown-value">{{ getTimeUntilNext() || '—' }}</div>
             </div>
-            <div class="last-feed-note" *ngIf="last.note">"{{ last.note }}"</div>
-          </div>
-        </div>
-
-        <ng-container *ngIf="prediction().hasData && prediction().nextTime">
-          <div class="predict-body">
-            <div class="predict-metric">
-              <div class="metric-label"><i class="pi pi-clock"></i> Giờ dự đoán</div>
-              <div class="metric-value">
-                {{ prediction().nextTime || '—' }}
+            <div class="countdown-next">
+              <div class="next-item">
+                <i class="pi pi-clock"></i>
+                <strong>{{ prediction().nextTime }}</strong>
               </div>
-              <div class="metric-sub" *ngIf="prediction().nextAt">
-                {{ getTimeUntilNext() }}
-              </div>
-            </div>
-
-            <div class="predict-metric">
-              <div class="metric-label"><i class="pi pi-apple"></i> Dung tích</div>
-              <div class="metric-value">
-                {{ prediction().nextVolume }}<span class="ml-unit">ml</span>
-              </div>
-              <div class="metric-sub" *ngIf="prediction().volumeRange as r">
-                Khoảng {{ r[0] }}–{{ r[1] }}ml
-              </div>
-            </div>
-
-            <div class="predict-metric">
-              <div class="metric-label"><i class="pi pi-history"></i> Giữa các cữ</div>
-              <div class="metric-value">
-                {{ minutesToHuman(prediction().medianIntervalMinutes || 0) || '—' }}
-              </div>
-              <div class="metric-sub">
-                {{ prediction().samples }} mẫu gần đây
+              <div class="next-item">
+                <i class="pi pi-apple"></i>
+                <strong>{{ prediction().nextVolume }}ml</strong>
               </div>
             </div>
           </div>
 
-          <div class="reasoning">
-            <div class="reasoning-head"><i class="pi pi-info-circle"></i> Căn cứ dự đoán</div>
-            <ul>
-              <li *ngFor="let r of prediction().reasoning">{{ r }}</li>
-            </ul>
-          </div>
-
-          <div class="predict-actions">
-            <button
-              type="button"
-              class="btn primary"
-              (click)="usePredictionValues()"
-              [disabled]="!prediction().nextTime || !prediction().nextVolume"
-            >
-              <i class="pi pi-arrow-up"></i> Dùng dự đoán này cho cữ mới
-            </button>
+          <!-- Progress bar: last feed → predicted next feed -->
+          <div class="countdown-progress" *ngIf="lastFeeding() as last">
+            <div class="cp-track">
+              <div
+                class="cp-fill"
+                [attr.data-status]="countdownStatus()"
+                [style.width.%]="countdownProgress()"
+              ></div>
+            </div>
+            <div class="cp-labels">
+              <span class="cp-left">
+                <i class="pi pi-history"></i>
+                {{ last.time }} · {{ last.volume }}ml
+                <span class="muted">({{ lastFeedingAgo() }})</span>
+              </span>
+              <span class="cp-right">
+                TB {{ minutesToHuman(prediction().medianIntervalMinutes || 0) }}
+              </span>
+            </div>
           </div>
         </ng-container>
 
-        <!-- Not enough data yet -->
-        <div
-          class="predict-empty"
-          *ngIf="!prediction().hasData || !prediction().nextTime"
-        >
-          <i class="pi pi-info-circle"></i>
-          Cần thêm vài cữ bú nữa để có thể dự đoán giờ/dung tích tiếp theo.
-        </div>
+        <ng-template #notEnough>
+          <div class="last-feed" *ngIf="lastFeeding() as last">
+            <div class="last-feed-icon"><i class="pi pi-history"></i></div>
+            <div class="last-feed-body">
+              <div class="last-feed-label">Cữ gần nhất</div>
+              <div class="last-feed-value">
+                <strong>{{ last.volume }}ml</strong>
+                <span class="sep">·</span>
+                <span>{{ last.time }}</span>
+                <span class="sep">·</span>
+                <span class="ago">{{ lastFeedingAgo() }}</span>
+              </div>
+            </div>
+          </div>
+          <div class="predict-empty">
+            <i class="pi pi-info-circle"></i>
+            Cần thêm vài cữ bú nữa để dự đoán giờ/dung tích tiếp theo.
+          </div>
+        </ng-template>
       </section>
 
 
@@ -351,11 +334,22 @@
             </div>
           </div>
 
-          <!-- Today's logs -->
+          <!-- Today's logs (collapsed) -->
           <div class="today-logs" *ngIf="todayLogs().length > 0">
-            <div class="logs-header">Các cữ bú hôm nay</div>
+            <div class="logs-header">
+              <span>Các cữ bú hôm nay</span>
+              <button
+                *ngIf="todayLogs().length > 2"
+                type="button"
+                class="logs-more"
+                (click)="openHistoryDialog()"
+              >
+                Xem tất cả {{ todayLogs().length }}
+                <i class="pi pi-chevron-right"></i>
+              </button>
+            </div>
             <div class="log-list">
-              <div class="log-row" *ngFor="let l of todayLogs()">
+              <div class="log-row" *ngFor="let l of todayLogsPreview()">
                 <span class="log-time">{{ l.time }}</span>
                 <span class="log-volume">{{ l.volume }}ml</span>
                 <span class="log-note" *ngIf="l.note">· {{ l.note }}</span>
@@ -798,6 +792,22 @@
         </div>
       </section>
 
+      <!-- Tips section header + navigate -->
+      <section class="tips-section-head">
+        <div>
+          <div class="eyebrow"><i class="pi pi-book"></i> Tips theo giai đoạn</div>
+          <h2 *ngIf="currentGuide() as g">{{ g.period.label }}</h2>
+        </div>
+        <button
+          type="button"
+          class="btn ghost small"
+          (click)="openTipsDialog()"
+        >
+          <i class="pi pi-history"></i>
+          Xem các giai đoạn khác
+        </button>
+      </section>
+
       <!-- Category filter -->
       <section class="filter-bar">
         <button
@@ -1064,6 +1074,107 @@
 
         <div class="empty-mini" *ngIf="feedingsByDate().length === 0">
           Chưa có cữ bú nào được ghi nhận.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ TIPS DIALOG (navigate periods) ============ -->
+  <div
+    class="dialog-overlay"
+    *ngIf="tipsDialogOpen()"
+    (click)="closeTipsDialog()"
+  >
+    <div
+      class="dialog dialog-wide"
+      role="dialog"
+      aria-modal="true"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="dialog-head">
+        <div>
+          <div class="eyebrow">Giai đoạn {{ tipsGuideIndex() + 1 }} / {{ allGuides().length }}</div>
+          <h2 *ngIf="selectedGuide() as sg"><i class="pi pi-book"></i> {{ sg.guide.label }}</h2>
+        </div>
+        <button
+          type="button"
+          class="dialog-close"
+          (click)="closeTipsDialog()"
+          aria-label="Đóng"
+        >
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+
+      <!-- Nav bar with arrows -->
+      <div class="tips-nav">
+        <button
+          type="button"
+          class="nav-arrow"
+          (click)="prevGuide()"
+          [disabled]="!canPrevGuide"
+          aria-label="Giai đoạn trước"
+        >
+          <i class="pi pi-chevron-left"></i>
+        </button>
+
+        <button
+          type="button"
+          class="tips-now-btn"
+          [class.active]="tipsGuideIndex() === currentGuideIndex()"
+          (click)="jumpToCurrentGuide()"
+          title="Về giai đoạn hiện tại"
+        >
+          <i class="pi pi-home"></i> Giai đoạn hiện tại
+        </button>
+
+        <button
+          type="button"
+          class="nav-arrow"
+          (click)="nextGuide()"
+          [disabled]="!canNextGuide"
+          aria-label="Giai đoạn sau"
+        >
+          <i class="pi pi-chevron-right"></i>
+        </button>
+      </div>
+
+      <!-- Content -->
+      <div class="tips-dialog-body" *ngIf="selectedGuide() as sg">
+        <p class="period-summary">{{ sg.guide.summary }}</p>
+
+        <div class="schedule-grid">
+          <div class="schedule">
+            <i class="pi pi-apple"></i>
+            <div>
+              <div class="schedule-title">Lịch bú / ăn gợi ý</div>
+              <div class="schedule-text">{{ sg.guide.feedingSchedule }}</div>
+            </div>
+          </div>
+          <div class="schedule">
+            <i class="pi pi-moon"></i>
+            <div>
+              <div class="schedule-title">Giấc ngủ</div>
+              <div class="schedule-text">{{ sg.guide.sleepSchedule }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="dialog-tips-grid">
+          <article
+            *ngFor="let tip of sg.guide.tips"
+            class="tip-card"
+            [style.--cat-color]="getCategoryMeta(tip.category).color"
+          >
+            <div class="tip-head">
+              <span class="tip-pill">
+                <i [class]="getCategoryMeta(tip.category).icon"></i>
+                {{ getCategoryMeta(tip.category).label }}
+              </span>
+            </div>
+            <h3 class="tip-title">{{ tip.title }}</h3>
+            <p class="tip-body">{{ tip.content }}</p>
+          </article>
         </div>
       </div>
     </div>

@@ -249,6 +249,1093 @@
   }
 }
 
+// ==================== CUSTOM APP ICONS ====================
+// Beautiful gradient icons for specific apps
+
+// Image Search App - Modern gradient icon with glassmorphism
+.desktop-icon[data-app-id="image-search"] {
+  .icon-image {
+    width: 52px;
+    height: 52px;
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
+    border-radius: 14px;
+    position: relative;
+    box-shadow: 
+      0 4px 15px rgba(99, 102, 241, 0.4),
+      0 2px 6px rgba(139, 92, 246, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    
+    // Glassmorphism overlay
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 14px;
+      background: linear-gradient(
+        135deg, 
+        rgba(255, 255, 255, 0.25) 0%, 
+        rgba(255, 255, 255, 0.05) 50%,
+        transparent 100%
+      );
+      opacity: 1;
+      pointer-events: none;
+    }
+    
+    // Shine effect
+    &::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      right: 2px;
+      height: 50%;
+      border-radius: 12px 12px 50% 50%;
+      background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.3) 0%,
+        rgba(255, 255, 255, 0.1) 50%,
+        transparent 100%
+      );
+      pointer-events: none;
+    }
+    
+    i {
+      font-size: 26px;
+      color: white;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.15));
+      position: relative;
+      z-index: 1;
+    }
+  }
+  
+  &:hover .icon-image {
+    transform: scale(1.08) translateY(-2px);
+    box-shadow: 
+      0 8px 25px rgba(99, 102, 241, 0.5),
+      0 4px 10px rgba(139, 92, 246, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  }
+}
+
+// Calculator App - Modern orange gradient
+.desktop-icon[data-app-id="calculator"] {
+  .icon-image {
+    width: 52px;
+    height: 52px;
+    background: linear-gradient(135deg, #f59e0b 0%, #f97316 50%, #ea580c 100%);
+    border-radius: 14px;
+    position: relative;
+    box-shadow: 
+      0 4px 15px rgba(245, 158, 11, 0.4),
+      0 2px 6px rgba(249, 115, 22, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 14px;
+      background: linear-gradient(
+        135deg, 
+        rgba(255, 255, 255, 0.25) 0%, 
+        rgba(255, 255, 255, 0.05) 50%,
+        transparent 100%
+      );
+    }
+    
+    &::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      right: 2px;
+      height: 50%;
+      border-radius: 12px 12px 50% 50%;
+      background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.35) 0%,
+        rgba(255, 255, 255, 0.1) 50%,
+        transparent 100%
+      );
+    }
+    
+    i {
+      font-size: 26px;
+      color: white;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      position: relative;
+      z-index: 1;
+    }
+  }
+  
+  &:hover .icon-image {
+    transform: scale(1.08) translateY(-2px);
+    box-shadow: 
+      0 8px 25px rgba(245, 158, 11, 0.5),
+      0 4px 10px rgba(249, 115, 22, 0.4);
+  }
+}
+
+// Tetris App - Modern teal gradient
+.desktop-icon[data-app-id="tetris"] {
+  .icon-image {
+    width: 52px;
+    height: 52px;
+    background: linear-gradient(135deg, #14b8a6 0%, #0d9488 50%, #0f766e 100%);
+    border-radius: 14px;
+    position: relative;
+    box-shadow: 
+      0 4px 15px rgba(20, 184, 166, 0.4),
+      0 2px 6px rgba(13, 148, 136, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 14px;
+      background: linear-gradient(
+        135deg, 
+        rgba(255, 255, 255, 0.25) 0%, 
+        rgba(255, 255, 255, 0.05) 50%,
+        transparent 100%
+      );
+    }
+    
+    &::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      right: 2px;
+      height: 50%;
+      border-radius: 12px 12px 50% 50%;
+      background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.3) 0%,
+        rgba(255, 255, 255, 0.1) 50%,
+        transparent 100%
+      );
+    }
+    
+    i {
+      font-size: 26px;
+      color: white;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      position: relative;
+      z-index: 1;
+    }
+  }
+  
+  &:hover .icon-image {
+    transform: scale(1.08) translateY(-2px);
+    box-shadow: 
+      0 8px 25px rgba(20, 184, 166, 0.5),
+      0 4px 10px rgba(13, 148, 136, 0.4);
+  }
+}
+
+// Chatbot App - Modern blue gradient with AI feel
+.desktop-icon[data-app-id="chatbot"] {
+  .icon-image {
+    width: 52px;
+    height: 52px;
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 50%, #1d4ed8 100%);
+    border-radius: 14px;
+    position: relative;
+    box-shadow: 
+      0 4px 15px rgba(59, 130, 246, 0.4),
+      0 2px 6px rgba(37, 99, 235, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    
+    // Animated pulse for AI feel
+    animation: aiPulse 3s ease-in-out infinite;
+    
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 14px;
+      background: linear-gradient(
+        135deg, 
+        rgba(255, 255, 255, 0.25) 0%, 
+        rgba(255, 255, 255, 0.05) 50%,
+        transparent 100%
+      );
+    }
+    
+    &::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      right: 2px;
+      height: 50%;
+      border-radius: 12px 12px 50% 50%;
+      background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.3) 0%,
+        rgba(255, 255, 255, 0.1) 50%,
+        transparent 100%
+      );
+    }
+    
+    i {
+      font-size: 26px;
+      color: white;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      position: relative;
+      z-index: 1;
+    }
+  }
+  
+  &:hover .icon-image {
+    transform: scale(1.08) translateY(-2px);
+    animation: none;
+    box-shadow: 
+      0 8px 25px rgba(59, 130, 246, 0.5),
+      0 4px 10px rgba(37, 99, 235, 0.4);
+  }
+}
+
+@keyframes aiPulse {
+  0%, 100% {
+    box-shadow: 
+      0 4px 15px rgba(59, 130, 246, 0.4),
+      0 2px 6px rgba(37, 99, 235, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+  50% {
+    box-shadow: 
+      0 4px 20px rgba(59, 130, 246, 0.6),
+      0 2px 8px rgba(37, 99, 235, 0.5),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  }
+}
+
+// Sieu Co (Chess) App - Elegant dark gradient
+.desktop-icon[data-app-id="sieu-co"] {
+  .icon-image {
+    width: 52px;
+    height: 52px;
+    background: linear-gradient(135deg, #334155 0%, #1e293b 50%, #0f172a 100%);
+    border-radius: 14px;
+    position: relative;
+    box-shadow: 
+      0 4px 15px rgba(30, 41, 59, 0.5),
+      0 2px 6px rgba(15, 23, 42, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 14px;
+      background: linear-gradient(
+        135deg, 
+        rgba(255, 255, 255, 0.15) 0%, 
+        rgba(255, 255, 255, 0.02) 50%,
+        transparent 100%
+      );
+    }
+    
+    &::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      right: 2px;
+      height: 50%;
+      border-radius: 12px 12px 50% 50%;
+      background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.15) 0%,
+        rgba(255, 255, 255, 0.05) 50%,
+        transparent 100%
+      );
+    }
+    
+    i {
+      font-size: 26px;
+      color: #fbbf24;
+      text-shadow: 0 2px 8px rgba(251, 191, 36, 0.4);
+      filter: drop-shadow(0 0 4px rgba(251, 191, 36, 0.3));
+      position: relative;
+      z-index: 1;
+    }
+  }
+  
+  &:hover .icon-image {
+    transform: scale(1.08) translateY(-2px);
+    box-shadow: 
+      0 8px 25px rgba(30, 41, 59, 0.6),
+      0 4px 10px rgba(15, 23, 42, 0.5);
+    
+    i {
+      filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.5));
+    }
+  }
+}
+
+// About Me App - Modern rose gradient
+.desktop-icon[data-app-id="about-me"] {
+  .icon-image {
+    width: 52px;
+    height: 52px;
+    background: linear-gradient(135deg, #ec4899 0%, #db2777 50%, #be185d 100%);
+    border-radius: 14px;
+    position: relative;
+    box-shadow: 
+      0 4px 15px rgba(236, 72, 153, 0.4),
+      0 2px 6px rgba(219, 39, 119, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 14px;
+      background: linear-gradient(
+        135deg, 
+        rgba(255, 255, 255, 0.25) 0%, 
+        rgba(255, 255, 255, 0.05) 50%,
+        transparent 100%
+      );
+    }
+    
+    &::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      right: 2px;
+      height: 50%;
+      border-radius: 12px 12px 50% 50%;
+      background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.3) 0%,
+        rgba(255, 255, 255, 0.1) 50%,
+        transparent 100%
+      );
+    }
+    
+    i {
+      font-size: 26px;
+      color: white;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      position: relative;
+      z-index: 1;
+    }
+  }
+  
+  &:hover .icon-image {
+    transform: scale(1.08) translateY(-2px);
+    box-shadow: 
+      0 8px 25px rgba(236, 72, 153, 0.5),
+      0 4px 10px rgba(219, 39, 119, 0.4);
+  }
+}
+
+// Terminal App - Hacker green gradient
+.desktop-icon[data-app-id="terminal"] {
+  .icon-image {
+    width: 52px;
+    height: 52px;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f0f23 100%);
+    border-radius: 14px;
+    position: relative;
+    box-shadow: 
+      0 4px 15px rgba(16, 185, 129, 0.2),
+      0 2px 6px rgba(0, 0, 0, 0.4),
+      inset 0 1px 0 rgba(16, 185, 129, 0.1);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 14px;
+      background: linear-gradient(
+        135deg, 
+        rgba(16, 185, 129, 0.1) 0%, 
+        transparent 50%
+      );
+    }
+    
+    &::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      right: 2px;
+      height: 50%;
+      border-radius: 12px 12px 50% 50%;
+      background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.08) 0%,
+        transparent 100%
+      );
+    }
+    
+    i {
+      font-size: 26px;
+      color: #10b981;
+      text-shadow: 0 0 10px rgba(16, 185, 129, 0.6);
+      filter: drop-shadow(0 0 4px rgba(16, 185, 129, 0.4));
+      position: relative;
+      z-index: 1;
+      animation: terminalBlink 2s ease-in-out infinite;
+    }
+  }
+  
+  &:hover .icon-image {
+    transform: scale(1.08) translateY(-2px);
+    box-shadow: 
+      0 8px 25px rgba(16, 185, 129, 0.3),
+      0 4px 10px rgba(0, 0, 0, 0.5);
+    
+    i {
+      animation: none;
+      text-shadow: 0 0 15px rgba(16, 185, 129, 0.8);
+    }
+  }
+}
+
+@keyframes terminalBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+// Weather App - Sky blue gradient
+.desktop-icon[data-app-id="weather"] {
+  .icon-image {
+    width: 52px;
+    height: 52px;
+    background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 50%, #0284c7 100%);
+    border-radius: 14px;
+    position: relative;
+    box-shadow: 
+      0 4px 15px rgba(56, 189, 248, 0.4),
+      0 2px 6px rgba(14, 165, 233, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+    
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 14px;
+      background: linear-gradient(
+        135deg, 
+        rgba(255, 255, 255, 0.3) 0%, 
+        rgba(255, 255, 255, 0.1) 50%,
+        transparent 100%
+      );
+    }
+    
+    // Cloud effect
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: 5px;
+      left: -10px;
+      width: 30px;
+      height: 15px;
+      background: rgba(255, 255, 255, 0.4);
+      border-radius: 50%;
+      filter: blur(4px);
+      animation: cloudFloat 4s ease-in-out infinite;
+    }
+    
+    i {
+      font-size: 26px;
+      color: #fcd34d;
+      text-shadow: 0 0 10px rgba(252, 211, 77, 0.6);
+      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+      position: relative;
+      z-index: 1;
+    }
+  }
+  
+  &:hover .icon-image {
+    transform: scale(1.08) translateY(-2px);
+    box-shadow: 
+      0 8px 25px rgba(56, 189, 248, 0.5),
+      0 4px 10px rgba(14, 165, 233, 0.4);
+  }
+}
+
+@keyframes cloudFloat {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(10px); }
+}
+
+// Settings App - Gear with smooth gradient
+.desktop-icon[data-app-id="settings"] {
+  .icon-image {
+    width: 52px;
+    height: 52px;
+    background: linear-gradient(135deg, #64748b 0%, #475569 50%, #334155 100%);
+    border-radius: 14px;
+    position: relative;
+    box-shadow: 
+      0 4px 15px rgba(100, 116, 139, 0.4),
+      0 2px 6px rgba(71, 85, 105, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 14px;
+      background: linear-gradient(
+        135deg, 
+        rgba(255, 255, 255, 0.2) 0%, 
+        rgba(255, 255, 255, 0.05) 50%,
+        transparent 100%
+      );
+    }
+    
+    &::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      right: 2px;
+      height: 50%;
+      border-radius: 12px 12px 50% 50%;
+      background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.2) 0%,
+        rgba(255, 255, 255, 0.05) 50%,
+        transparent 100%
+      );
+    }
+    
+    i {
+      font-size: 26px;
+      color: white;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+      position: relative;
+      z-index: 1;
+      transition: transform 0.5s ease;
+    }
+  }
+  
+  &:hover .icon-image {
+    transform: scale(1.08) translateY(-2px);
+    box-shadow: 
+      0 8px 25px rgba(100, 116, 139, 0.5),
+      0 4px 10px rgba(71, 85, 105, 0.4);
+    
+    i {
+      transform: rotate(90deg);
+    }
+  }
+}
+
+// Paint App - Creative rainbow gradient
+.desktop-icon[data-app-id="paint"] {
+  .icon-image {
+    width: 52px;
+    height: 52px;
+    background: linear-gradient(135deg, #f472b6 0%, #a855f7 33%, #3b82f6 66%, #22c55e 100%);
+    border-radius: 14px;
+    position: relative;
+    box-shadow: 
+      0 4px 15px rgba(168, 85, 247, 0.4),
+      0 2px 6px rgba(59, 130, 246, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 14px;
+      background: linear-gradient(
+        135deg, 
+        rgba(255, 255, 255, 0.3) 0%, 
+        rgba(255, 255, 255, 0.1) 50%,
+        transparent 100%
+      );
+    }
+    
+    &::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      right: 2px;
+      height: 50%;
+      border-radius: 12px 12px 50% 50%;
+      background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.35) 0%,
+        rgba(255, 255, 255, 0.1) 50%,
+        transparent 100%
+      );
+    }
+    
+    i {
+      font-size: 26px;
+      color: white;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+      position: relative;
+      z-index: 1;
+    }
+  }
+  
+  &:hover .icon-image {
+    transform: scale(1.08) translateY(-2px);
+    box-shadow: 
+      0 8px 25px rgba(168, 85, 247, 0.5),
+      0 4px 10px rgba(59, 130, 246, 0.4);
+  }
+}
+
+// Music App - YouTube-style red gradient
+.desktop-icon[data-app-id="music"] {
+  .icon-image {
+    width: 52px;
+    height: 52px;
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 50%, #b91c1c 100%);
+    border-radius: 14px;
+    position: relative;
+    box-shadow: 
+      0 4px 15px rgba(239, 68, 68, 0.4),
+      0 2px 6px rgba(220, 38, 38, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 14px;
+      background: linear-gradient(
+        135deg, 
+        rgba(255, 255, 255, 0.25) 0%, 
+        rgba(255, 255, 255, 0.05) 50%,
+        transparent 100%
+      );
+    }
+    
+    &::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      right: 2px;
+      height: 50%;
+      border-radius: 12px 12px 50% 50%;
+      background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.3) 0%,
+        rgba(255, 255, 255, 0.1) 50%,
+        transparent 100%
+      );
+    }
+    
+    i {
+      font-size: 26px;
+      color: white;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      position: relative;
+      z-index: 1;
+    }
+  }
+  
+  &:hover .icon-image {
+    transform: scale(1.08) translateY(-2px);
+    box-shadow: 
+      0 8px 25px rgba(239, 68, 68, 0.5),
+      0 4px 10px rgba(220, 38, 38, 0.4);
+  }
+}
+
+// Expense App - Money green gradient
+.desktop-icon[data-app-id="expense"] {
+  .icon-image {
+    width: 52px;
+    height: 52px;
+    background: linear-gradient(135deg, #22c55e 0%, #16a34a 50%, #15803d 100%);
+    border-radius: 14px;
+    position: relative;
+    box-shadow: 
+      0 4px 15px rgba(34, 197, 94, 0.4),
+      0 2px 6px rgba(22, 163, 74, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 14px;
+      background: linear-gradient(
+        135deg, 
+        rgba(255, 255, 255, 0.25) 0%, 
+        rgba(255, 255, 255, 0.05) 50%,
+        transparent 100%
+      );
+    }
+    
+    &::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      right: 2px;
+      height: 50%;
+      border-radius: 12px 12px 50% 50%;
+      background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.3) 0%,
+        rgba(255, 255, 255, 0.1) 50%,
+        transparent 100%
+      );
+    }
+    
+    i {
+      font-size: 26px;
+      color: white;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      position: relative;
+      z-index: 1;
+    }
+  }
+  
+  &:hover .icon-image {
+    transform: scale(1.08) translateY(-2px);
+    box-shadow: 
+      0 8px 25px rgba(34, 197, 94, 0.5),
+      0 4px 10px rgba(22, 163, 74, 0.4);
+  }
+}
+
+// Business/Shopping App - E-commerce amber gradient
+.desktop-icon[data-app-id="business"] {
+  .icon-image {
+    width: 52px;
+    height: 52px;
+    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%);
+    border-radius: 14px;
+    position: relative;
+    box-shadow: 
+      0 4px 15px rgba(251, 191, 36, 0.4),
+      0 2px 6px rgba(245, 158, 11, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 14px;
+      background: linear-gradient(
+        135deg, 
+        rgba(255, 255, 255, 0.3) 0%, 
+        rgba(255, 255, 255, 0.1) 50%,
+        transparent 100%
+      );
+    }
+    
+    &::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      right: 2px;
+      height: 50%;
+      border-radius: 12px 12px 50% 50%;
+      background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.35) 0%,
+        rgba(255, 255, 255, 0.1) 50%,
+        transparent 100%
+      );
+    }
+    
+    i {
+      font-size: 26px;
+      color: white;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      position: relative;
+      z-index: 1;
+    }
+  }
+  
+  &:hover .icon-image {
+    transform: scale(1.08) translateY(-2px);
+    box-shadow: 
+      0 8px 25px rgba(251, 191, 36, 0.5),
+      0 4px 10px rgba(245, 158, 11, 0.4);
+  }
+}
+
+// OCR App - Vision cyan gradient
+.desktop-icon[data-app-id="ocr"] {
+  .icon-image {
+    width: 52px;
+    height: 52px;
+    background: linear-gradient(135deg, #06b6d4 0%, #0891b2 50%, #0e7490 100%);
+    border-radius: 14px;
+    position: relative;
+    box-shadow: 
+      0 4px 15px rgba(6, 182, 212, 0.4),
+      0 2px 6px rgba(8, 145, 178, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    
+    // Scan line animation
+    overflow: hidden;
+    
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: rgba(255, 255, 255, 0.6);
+      animation: scanLine 2s ease-in-out infinite;
+    }
+    
+    &::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      right: 2px;
+      height: 50%;
+      border-radius: 12px 12px 50% 50%;
+      background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.3) 0%,
+        rgba(255, 255, 255, 0.1) 50%,
+        transparent 100%
+      );
+    }
+    
+    i {
+      font-size: 26px;
+      color: white;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      position: relative;
+      z-index: 1;
+    }
+  }
+  
+  &:hover .icon-image {
+    transform: scale(1.08) translateY(-2px);
+    box-shadow: 
+      0 8px 25px rgba(6, 182, 212, 0.5),
+      0 4px 10px rgba(8, 145, 178, 0.4);
+    
+    &::before {
+      animation: none;
+      opacity: 0;
+    }
+  }
+}
+
+@keyframes scanLine {
+  0%, 100% { top: 0; opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { top: calc(100% - 3px); opacity: 0; }
+}
+
+// Facebook Scanner - Facebook blue gradient
+.desktop-icon[data-app-id="fb-id-finder"] {
+  .icon-image {
+    width: 52px;
+    height: 52px;
+    background: linear-gradient(135deg, #1877f2 0%, #166fe5 50%, #0d65e1 100%);
+    border-radius: 14px;
+    position: relative;
+    box-shadow: 
+      0 4px 15px rgba(24, 119, 242, 0.4),
+      0 2px 6px rgba(22, 111, 229, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 14px;
+      background: linear-gradient(
+        135deg, 
+        rgba(255, 255, 255, 0.25) 0%, 
+        rgba(255, 255, 255, 0.05) 50%,
+        transparent 100%
+      );
+    }
+    
+    &::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      right: 2px;
+      height: 50%;
+      border-radius: 12px 12px 50% 50%;
+      background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.3) 0%,
+        rgba(255, 255, 255, 0.1) 50%,
+        transparent 100%
+      );
+    }
+    
+    i {
+      font-size: 26px;
+      color: white;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      position: relative;
+      z-index: 1;
+    }
+  }
+  
+  &:hover .icon-image {
+    transform: scale(1.08) translateY(-2px);
+    box-shadow: 
+      0 8px 25px rgba(24, 119, 242, 0.5),
+      0 4px 10px rgba(22, 111, 229, 0.4);
+  }
+}
+
+// Graph Visualizer - Network indigo gradient
+.desktop-icon[data-app-id="graph-visualizer"] {
+  .icon-image {
+    width: 52px;
+    height: 52px;
+    background: linear-gradient(135deg, #818cf8 0%, #6366f1 50%, #4f46e5 100%);
+    border-radius: 14px;
+    position: relative;
+    box-shadow: 
+      0 4px 15px rgba(129, 140, 248, 0.4),
+      0 2px 6px rgba(99, 102, 241, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 14px;
+      background: linear-gradient(
+        135deg, 
+        rgba(255, 255, 255, 0.25) 0%, 
+        rgba(255, 255, 255, 0.05) 50%,
+        transparent 100%
+      );
+    }
+    
+    &::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      right: 2px;
+      height: 50%;
+      border-radius: 12px 12px 50% 50%;
+      background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.3) 0%,
+        rgba(255, 255, 255, 0.1) 50%,
+        transparent 100%
+      );
+    }
+    
+    i {
+      font-size: 26px;
+      color: white;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      position: relative;
+      z-index: 1;
+    }
+  }
+  
+  &:hover .icon-image {
+    transform: scale(1.08) translateY(-2px);
+    box-shadow: 
+      0 8px 25px rgba(129, 140, 248, 0.5),
+      0 4px 10px rgba(99, 102, 241, 0.4);
+  }
+}
+
+// Stock App - Finance emerald-teal gradient
+.desktop-icon[data-app-id="stock"] {
+  .icon-image {
+    width: 52px;
+    height: 52px;
+    background: linear-gradient(135deg, #34d399 0%, #10b981 50%, #059669 100%);
+    border-radius: 14px;
+    position: relative;
+    box-shadow: 
+      0 4px 15px rgba(52, 211, 153, 0.4),
+      0 2px 6px rgba(16, 185, 129, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 14px;
+      background: linear-gradient(
+        135deg, 
+        rgba(255, 255, 255, 0.25) 0%, 
+        rgba(255, 255, 255, 0.05) 50%,
+        transparent 100%
+      );
+    }
+    
+    &::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      right: 2px;
+      height: 50%;
+      border-radius: 12px 12px 50% 50%;
+      background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.3) 0%,
+        rgba(255, 255, 255, 0.1) 50%,
+        transparent 100%
+      );
+    }
+    
+    i {
+      font-size: 26px;
+      color: white;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      position: relative;
+      z-index: 1;
+    }
+  }
+  
+  &:hover .icon-image {
+    transform: scale(1.08) translateY(-2px);
+    box-shadow: 
+      0 8px 25px rgba(52, 211, 153, 0.5),
+      0 4px 10px rgba(16, 185, 129, 0.4);
+  }
+}
+
 // Responsive adjustments
 @media (max-width: 768px) {
   .desktop-icon {

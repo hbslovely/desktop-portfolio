@@ -2,6 +2,7 @@
   class="desktop-icon"
   [class.selected]="isSelected"
   [class.dragging]="isDragging()"
+  [attr.data-app-id]="iconData.id"
   [ngStyle]="iconPosition()"
   (click)="onIconClick(); $event.stopPropagation()"
   (dblclick)="onIconDoubleClick()"
@@ -9,7 +10,7 @@
   (contextmenu)="onIconRightClick($event); $event.stopPropagation()">
   
   <!-- Icon Image -->
-  <div class="icon-image">
+  <div class="icon-image" [attr.data-app-id]="iconData.id">
     <!-- Local icon image -->
     <img [src]="iconData.icon" *ngIf="iconData.icon && !iconData.icon.startsWith('pi ')" [alt]="iconData.name">
     <!-- Font icon -->

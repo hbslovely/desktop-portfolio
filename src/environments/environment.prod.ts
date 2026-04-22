@@ -12,5 +12,7 @@ export const environment = {
   securitiesSheetScriptId: import.meta.env['NG_APP_SECURITIES_SHEET_SCRIPT_ID'] || '',
   // WebRTC Signaling Server URL
   signalingServerUrl: (import.meta.env as unknown as Record<string, string>)['NG_APP_SIGNALING_SERVER_URL'] || 'https://webrtc-signaling-r7o2.onrender.com',
+  // HuggingFace API Token
+  huggingfaceToken: import.meta.env['NG_APP_HUGGINGFACE_TOKEN'] || '',
 };
 
