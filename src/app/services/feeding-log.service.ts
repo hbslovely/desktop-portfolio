@@ -40,20 +40,21 @@ export class FeedingLogService {
 
   /**
    * Columns:
-   *  A: User
+   *  A: User  (chỉ để ghi nhận ai là người log, KHÔNG dùng để filter)
    *  B: Ngày (DD/MM/YYYY)
    *  C: Giờ (HH:mm)
    *  D: Dung tích (ml)
    *  E: Ghi chú
+   *
+   * Trả về TẤT CẢ cữ bú trong sheet — mọi user share chung dữ liệu của bé.
    */
-  getLogs(user: string): Observable<FeedingLog[]> {
+  getLogs(): Observable<FeedingLog[]> {
     const range = `${this.SHEET_NAME}!A2:E`;
     const url = `${this.BASE_URL}/values/${range}?key=${this.API_KEY}&valueRenderOption=FORMATTED_VALUE`;
 
     return this.http.get<{ values?: string[][] }>(url).pipe(
       map((resp) => {
         const rows = resp.values || [];
-        const filterUser = (user || '').trim().toLowerCase();
 
         return rows
           .map((row, idx) => {
@@ -81,7 +82,6 @@ export class FeedingLogService {
             return log;
           })
           .filter((l): l is FeedingLog => !!l)
-          .filter((l) => !filterUser || l.user === filterUser)
           .sort((a, b) => {
             const aK = `${a.date} ${a.time}`;
             const bK = `${b.date} ${b.time}`;

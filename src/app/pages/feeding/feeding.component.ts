@@ -706,12 +706,10 @@ export class FeedingComponent {
 
   // ===== Feeding log management =====
   loadLogs() {
-    const user = this.user();
-    if (!user) return;
     this.loadingLogs.set(true);
     this.syncError.set('');
 
-    this.feedingLogService.getLogs(user).subscribe({
+    this.feedingLogService.getLogs().subscribe({
       next: (logs) => {
         this.logs.set(logs);
         this.loadingLogs.set(false);
