@@ -63,9 +63,9 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   windowManager = inject(WindowManagerService);
   appSplashService = inject(AppSplashService);
   private router = inject(Router);
-  
+
   // Track if we're on desktop or a routed page
-  isDesktopRoute = signal(true);
+  isDesktopRoute = signal(false);
 
   // Track subscriptions for cleanup
   private subscriptions: any[] = [];
@@ -87,7 +87,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     // Listen for restart requests from lock screen
     this.systemRestartHandler = () => this.restartSystem();
     window.addEventListener('system-restart-requested', this.systemRestartHandler);
-    
+
     // Track route changes to show/hide desktop
     this.router.events.pipe(
       filter((event): event is NavigationEnd => event instanceof NavigationEnd)
@@ -95,7 +95,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
       // Show desktop only on root route
       this.isDesktopRoute.set(event.url === '/' || event.url === '');
     });
-    
+
     // Check initial route
     this.isDesktopRoute.set(this.router.url === '/' || this.router.url === '');
   }
@@ -157,7 +157,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
 
   // Keyboard Shortcuts Viewer
   showShortcutsViewer = signal(false);
-  
+
   // Check if running on Mac
   isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
 
@@ -205,16 +205,16 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     const isOptionKey = this.isMac ? event.altKey : event.altKey; // Option on Mac = Alt on Windows
     const isArrowLeft = event.key === 'ArrowLeft';
     const isArrowRight = event.key === 'ArrowRight';
-    
+
     if (isOptionKey && (isArrowLeft || isArrowRight)) {
       event.preventDefault();
-      
+
       if (!this.isCommandTabPressed) {
         // First press - show switcher
         this.isCommandTabPressed = true;
         this.openWindowSwitcher();
       }
-      
+
       // Cycle through windows based on arrow direction
       const direction = isArrowRight ? 1 : -1;
       this.cycleWindowSwitcher(direction);
@@ -230,7 +230,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   @HostListener('window:keyup', ['$event'])
   handleGlobalKeyUp(event: KeyboardEvent) {
     const isOptionKey = event.altKey; // Option on Mac = Alt on Windows
-    
+
     // Release Option/Alt key - close switcher and select window
     if (this.isCommandTabPressed && !isOptionKey) {
       this.closeWindowSwitcher(true);
@@ -1747,8 +1747,8 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     this.windowManager.minimizeAllWindows();
     // Also minimize legacy windows
     this.minimizedWindows.update(set => {
-      const allWindows = ['calculator', 'my-info', 'love', 'explorer', 'text-viewer', 
-                         'image-viewer', 'pdf-viewer', 'machine-info', 'credit', 
+      const allWindows = ['calculator', 'my-info', 'love', 'explorer', 'text-viewer',
+                         'image-viewer', 'pdf-viewer', 'machine-info', 'credit',
                          'paint', 'credits', 'hcmc', 'news'];
       return new Set(allWindows);
     });
@@ -1758,8 +1758,8 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   quickActionShowDesktop() {
     this.windowManager.minimizeAllWindows();
     this.minimizedWindows.update(set => {
-      const allWindows = ['calculator', 'my-info', 'love', 'explorer', 'text-viewer', 
-                         'image-viewer', 'pdf-viewer', 'machine-info', 'credit', 
+      const allWindows = ['calculator', 'my-info', 'love', 'explorer', 'text-viewer',
+                         'image-viewer', 'pdf-viewer', 'machine-info', 'credit',
                          'paint', 'credits', 'hcmc', 'news'];
       return new Set(allWindows);
     });
@@ -2081,10 +2081,10 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     return windows.sort((a, b) => {
       const aWindow = a.isWindowManager ? this.windowManager.getWindow(a.id) : null;
       const bWindow = b.isWindowManager ? this.windowManager.getWindow(b.id) : null;
-      
+
       const aZIndex = aWindow?.zIndex || 0;
       const bZIndex = bWindow?.zIndex || 0;
-      
+
       return bZIndex - aZIndex; // Higher z-index first
     });
   }
@@ -2092,11 +2092,11 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   getSelectedWindowPreview() {
     const windows = this.getAllOpenWindows();
     const selectedIndex = this.windowSwitcherSelectedIndex();
-    
+
     if (selectedIndex >= 0 && selectedIndex < windows.length) {
       return windows[selectedIndex];
     }
-    
+
     return null;
   }
 
@@ -2110,7 +2110,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     // Find current focused window index
     const currentFocused = this.windowManager.focusedWindow();
     const currentFocusedId = currentFocused?.id || this.focusedWindow();
-    
+
     let currentIndex = windows.findIndex(w => w.id === currentFocusedId);
     if (currentIndex === -1) {
       currentIndex = 0;
@@ -2129,7 +2129,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     }
 
     let newIndex = this.windowSwitcherSelectedIndex() + direction;
-    
+
     // Wrap around
     if (newIndex < 0) {
       newIndex = windows.length - 1;
@@ -2158,7 +2158,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     // Get window element and clone content
     setTimeout(() => {
       let windowElement: HTMLElement | null = null;
-      
+
       if (selected.isWindowManager) {
         windowElement = document.querySelector(`app-window[data-window-id="${selected.id}"]`) as HTMLElement;
       } else {
@@ -2181,7 +2181,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
         const originalWidth = contentElement.offsetWidth;
         const originalHeight = contentElement.offsetHeight;
         const scale = 0.35; // Scale down to 35%
-        
+
         clone.style.width = originalWidth + 'px';
         clone.style.height = originalHeight + 'px';
         clone.style.transform = `scale(${scale})`;
@@ -2195,7 +2195,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
         clone.style.background = 'white';
         clone.style.borderRadius = '4px';
         clone.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)';
-        
+
         // Disable all interactive elements
         const interactiveElements = clone.querySelectorAll('button, input, select, textarea, a, [onclick]');
         interactiveElements.forEach(el => {
@@ -2221,7 +2221,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     if (selectWindow) {
       const windows = this.getAllOpenWindows();
       const selectedIndex = this.windowSwitcherSelectedIndex();
-      
+
       if (selectedIndex >= 0 && selectedIndex < windows.length) {
         const selectedWindow = windows[selectedIndex];
         this.switchToWindow(selectedWindow.id, selectedWindow.isWindowManager);
@@ -2258,7 +2258,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   getWindowPreview(windowId: string, isWindowManager: boolean): string | null {
     // Try to get window element
     let windowElement: HTMLElement | null = null;
-    
+
     if (isWindowManager) {
       windowElement = document.querySelector(`app-window[data-window-id="${windowId}"]`) as HTMLElement;
     } else {
@@ -2280,7 +2280,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
       const rect = contentElement.getBoundingClientRect();
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
-      
+
       if (!ctx) {
         return null;
       }
@@ -2306,7 +2306,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     return new Promise((resolve) => {
       setTimeout(() => {
         let windowElement: HTMLElement | null = null;
-        
+
         if (isWindowManager) {
           windowElement = document.querySelector(`app-window[data-window-id="${windowId}"]`) as HTMLElement;
         } else {
@@ -2337,7 +2337,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
           clone.style.left = '0';
           clone.style.opacity = '0';
           clone.style.pointerEvents = 'none';
-          
+
           // Return a marker that we can use to show cloned content
           resolve('cloned');
         } catch (err) {

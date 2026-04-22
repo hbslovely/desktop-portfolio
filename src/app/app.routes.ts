@@ -15,5 +15,10 @@ export const routes: Routes = [
     path: 'pit',
     loadComponent: () => import('./pages/pit-2026/pit-2026.component').then(m => m.Pit2026Component),
     title: 'Công cụ tính thuế TNCN 2026'
+  },
+  {
+    path: 'feeding',
+    loadComponent: () => import('./pages/feeding/feeding.component').then(m => m.FeedingComponent),
+    title: 'Tips chăm bé theo ngày'
   }
 ];
