@@ -61,6 +61,10 @@
 /* ========== HERO ========== */
 .hero {
   padding: 28px 20px 12px;
+  /* Trên mobile: thêm không gian trên đầu (cộng safe-area để tránh notch/status bar) */
+  @media (max-width: 640px) {
+    padding-top: calc(48px + env(safe-area-inset-top, 0px));
+  }
 }
 
 .hero-inner {
