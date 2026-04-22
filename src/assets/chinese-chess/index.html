@@ -307,6 +307,47 @@
     }
     #toast.show { opacity: 1; }
 
+    /* --- CHECK ALERT --- */
+    #check-alert {
+      position: absolute;
+      top: 20%;
+      left: 50%;
+      transform: translateX(-50%) scale(0.8);
+      background: linear-gradient(135deg, #c0392b, #e74c3c);
+      color: white;
+      padding: 12px 35px;
+      border-radius: 8px;
+      font-weight: bold;
+      font-size: 1.4rem;
+      box-shadow: 0 0 30px rgba(231, 76, 60, 0.8), 0 0 60px rgba(231, 76, 60, 0.4);
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+      z-index: 160;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      border: 2px solid rgba(255,255,255,0.3);
+    }
+    #check-alert.show {
+      opacity: 1;
+      transform: translateX(-50%) scale(1);
+    }
+    #check-alert i {
+      font-size: 1.2rem;
+      animation: pulse-icon 0.5s ease-in-out infinite alternate;
+    }
+    @keyframes pulse-icon {
+      from { transform: scale(1); }
+      to { transform: scale(1.2); }
+    }
+    @keyframes check-pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.7); }
+      50% { box-shadow: 0 0 0 15px rgba(231, 76, 60, 0); }
+    }
+
     /* --- PUZZLE MENU --- */
     #puzzle-menu { display: none; width: 100%; height: 80%; flex-direction: column; align-items: center; overflow-y: auto; }
     .puzzle-list-container {
@@ -319,12 +360,22 @@
       padding-bottom: 20px;
     }
     .puzzle-item {
-      padding: 15px; margin: 8px; width: 70%;
+      padding: 15px 20px; margin: 8px; width: 80%;
       background: rgba(255,255,255,0.05);
-      border: 1px solid transparent;
-      border-radius: 8px; cursor: pointer; text-align: center; transition: 0.2s;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px; cursor: pointer; text-align: left; transition: 0.3s;
     }
-    .puzzle-item:hover { border-color: #d4af37; background: rgba(255,255,255,0.1); }
+    .puzzle-item:hover {
+      border-color: #d4af37;
+      background: rgba(255,255,255,0.1);
+      transform: translateX(5px);
+      box-shadow: 0 4px 15px rgba(212, 175, 55, 0.2);
+    }
+    .puzzle-difficulty-1 { border-left: 3px solid #4ade80 !important; }
+    .puzzle-difficulty-2 { border-left: 3px solid #fbbf24 !important; }
+    .puzzle-difficulty-3 { border-left: 3px solid #f97316 !important; }
+    .puzzle-difficulty-4 { border-left: 3px solid #ef4444 !important; }
+    .puzzle-difficulty-5 { border-left: 3px solid #a855f7 !important; }
   </style>
 </head>
 <body>
@@ -339,10 +390,10 @@
   <div class="setting-row">
     <span>Độ Khó AI</span>
     <div class="flex gap-2">
-      <div class="diff-btn" onclick="setDifficulty(2)" id="diff-2">Dễ</div>
-      <div class="diff-btn" onclick="setDifficulty(3)" id="diff-3">Vừa</div>
-      <div class="diff-btn active" onclick="setDifficulty(4)" id="diff-4">Khó</div>
-      <div class="diff-btn" onclick="setDifficulty(5)" id="diff-5">Kỳ Thánh</div>
+      <div class="diff-btn" onclick="setDifficulty(2)" id="diff-2">Tập Sự</div>
+      <div class="diff-btn" onclick="setDifficulty(3)" id="diff-3">Nghiệp Dư</div>
+      <div class="diff-btn active" onclick="setDifficulty(4)" id="diff-4">Kỳ Thủ</div>
+      <div class="diff-btn" onclick="setDifficulty(5)" id="diff-5">Đại Sư</div>
     </div>
   </div>
 
@@ -375,8 +426,8 @@
   <h2 class="text-3xl font-bold text-center text-amber-400 mb-2" id="result-title">Kết Quả</h2>
   <div class="text-center text-gray-300 mb-4" id="result-message"></div>
 
-  <div class="text-xs text-gray-400 uppercase">Biên Bản Ván Đấu (Kỳ Phổ)</div>
-  <textarea id="pgn-area" class="notation-box" readonly></textarea>
+  <div class="text-xs text-gray-400 uppercase">Biên Bản Ván Đấu (Kỳ Phổ Việt Nam)</div>
+  <textarea id="pgn-area" class="notation-box" readonly style="font-size: 0.85rem; line-height: 1.6;"></textarea>
 
   <div class="flex gap-2 justify-center mt-2">
     <button class="game-btn text-sm" onclick="copyPGN()"><i class="fas fa-copy mr-2"></i>Copy</button>
@@ -399,7 +450,15 @@
     </div>
 
     <div id="puzzle-menu">
-      <h2 class="text-2xl text-amber-400 mb-6 font-bold uppercase tracking-widest">Danh Sách Thế Cờ</h2>
+      <h2 class="text-2xl text-amber-400 mb-4 font-bold uppercase tracking-widest">Luyện Sát Pháp</h2>
+      <div class="flex gap-2 mb-4 flex-wrap justify-center">
+        <button class="diff-btn active" onclick="filterPuzzles(0)" id="filter-all">Tất Cả</button>
+        <button class="diff-btn" onclick="filterPuzzles(1)" id="filter-1" style="border-bottom: 2px solid #4ade80;">⭐</button>
+        <button class="diff-btn" onclick="filterPuzzles(2)" id="filter-2" style="border-bottom: 2px solid #fbbf24;">⭐⭐</button>
+        <button class="diff-btn" onclick="filterPuzzles(3)" id="filter-3" style="border-bottom: 2px solid #f97316;">⭐⭐⭐</button>
+        <button class="diff-btn" onclick="filterPuzzles(4)" id="filter-4" style="border-bottom: 2px solid #ef4444;">⭐⭐⭐⭐</button>
+        <button class="diff-btn" onclick="filterPuzzles(5)" id="filter-5" style="border-bottom: 2px solid #a855f7;">⭐⭐⭐⭐⭐</button>
+      </div>
       <div class="puzzle-list-container" id="puzzle-list">
         <!-- JS will populate this -->
       </div>
@@ -414,6 +473,9 @@
 
     <!-- Strategy Alert -->
     <div id="strategy-toast"><i class="fas fa-book-open"></i> Tuyệt Chiêu!</div>
+
+    <!-- Check Alert -->
+    <div id="check-alert"><i class="fas fa-crosshairs"></i> Chiếu Tướng!</div>
 
     <!-- Captured Pieces -->
     <div class="captured-group top">
@@ -524,21 +586,197 @@
     return fen;
   }
 
+  // Expanded opening book with varied strategies
   const OPENING_BOOK = {
+    // Standard opening: Central Cannon (Pháo Đầu)
     "rheakaehr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RHEAKAEHR": {fromR:7, fromC:1, toR:7, toC:4},
+
+    // Response to central cannon: Screen Horse (Bình Phong Mã)
     "rheakaehr/9/1c5c1/p1p1p1p1p/9/9/P1P1C1P1P/1C7/9/RHEAKAEHR": {fromR:0, fromC:1, toR:2, toC:2},
-    "rheakaehr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RHEAKA2R": {fromR:2, fromC:1, toR:2, toC:4},
+
+    // Develop horse instead of cannon take horse pattern
+    "rheakaehr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RHEAKA2R": {fromR:0, fromC:7, toR:2, toC:6},
+
+    // Counter-attack cannon development
+    "rheakaehr/9/1c5c1/p1p1p1p1p/9/4C4/P1P1P1P1P/1C7/9/RHEAKAEHR": {fromR:0, fromC:1, toR:2, toC:4},
+
+    // Elephant opening defense
+    "rheakaehr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C2C4/9/RHEAKAEHR": {fromR:0, fromC:2, toR:2, toC:0},
+
+    // Horse development priority
+    "rheakaehr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/4A4/RHEAKAEHR": {fromR:0, fromC:1, toR:2, toC:2},
   };
 
   const PUZZLE_DB = [
-    { name: "Thiết Môn Thuyên", desc: "Xe chặn cửa, Pháo bắn xuyên tâm.", setup: (b) => { b[0][4]=BLACK|1; b[0][3]=BLACK|2; b[0][5]=BLACK|2; b[2][4]=RED|6; b[0][8]=RED|5; b[9][4]=RED|1; }},
-    { name: "Đại Đao Oa Tâm", desc: "Xe cắm thẳng tim Tướng.", setup: (b) => { b[0][4]=BLACK|1; b[0][3]=BLACK|2; b[0][5]=BLACK|2; b[1][4]=RED|5; b[2][4]=RED|7; b[2][5]=RED|6; b[9][4]=RED|1; }},
-    { name: "Mã Ngọa Tào", desc: "Mã nằm chuồng, khóa đường Tướng.", setup: (b) => { b[0][4]=BLACK|1; b[0][3]=BLACK|2; b[2][2]=RED|4; b[2][4]=RED|5; b[9][4]=RED|1; }},
-    { name: "Thiên Địa Pháo", desc: "Một pháo đầu, một pháo giác.", setup: (b) => { b[0][4]=BLACK|1; b[0][3]=BLACK|2; b[2][4]=RED|6; b[1][8]=RED|5; b[8][4]=RED|6; b[9][4]=RED|1; /*Simulated*/ }},
-    { name: "Tam Tử Quy Biên", desc: "Xe Pháo Mã tập kích 1 cánh.", setup: (b) => { b[0][3]=BLACK|1; b[0][4]=BLACK|2; b[1][0]=RED|5; b[2][1]=RED|4; b[2][0]=RED|6; b[9][4]=RED|1; }},
-    { name: "Song Xe Lệch", desc: "Hai xe so le tấn công.", setup: (b) => { b[0][4]=BLACK|1; b[0][3]=BLACK|2; b[1][4]=RED|5; b[1][6]=RED|5; b[9][4]=RED|1; }},
-    { name: "Giáp Xe Pháo", desc: "Xe và Pháo kẹp cổ.", setup: (b) => { b[0][4]=BLACK|1; b[0][3]=BLACK|2; b[0][5]=BLACK|2; b[0][6]=RED|5; b[2][4]=RED|6; b[9][4]=RED|1; }},
-    { name: "Mã Hậu Pháo", desc: "Mã làm ngòi, Pháo bắn.", setup: (b) => { b[0][3]=BLACK|1; b[2][4]=RED|4; b[1][4]=RED|6; b[7][4]=RED|1; }}
+    // ===== CẤP ĐỘ 1: CƠ BẢN (3-4 nước) =====
+    {
+      name: "Trùng Pháo",
+      desc: "Hai Pháo cùng cột, chiếu hết đẹp mắt. (3 nước)",
+      difficulty: 1,
+      setup: (b) => {
+        // Đen: Tướng d10, Sĩ c9
+        b[0][3]=BLACK|1; b[1][2]=BLACK|2;
+        // Đỏ: Tướng e1, Pháo d3, Pháo d6 - cần di chuyển để tạo trùng pháo
+        b[9][4]=RED|1; b[7][3]=RED|6; b[4][0]=RED|6;
+      }
+    },
+    {
+      name: "Mã Hậu Pháo",
+      desc: "Mã làm ngòi, Pháo bắn chiếu bí. (3 nước)",
+      difficulty: 1,
+      setup: (b) => {
+        // Đen: Tướng e10, Sĩ d10
+        b[0][4]=BLACK|1; b[0][3]=BLACK|2;
+        // Đỏ: Tướng e1, Mã d8, Pháo e6
+        b[9][4]=RED|1; b[2][3]=RED|4; b[4][4]=RED|6;
+      }
+    },
+    {
+      name: "Thiết Môn Sân",
+      desc: "Xe chặn đường, Pháo chiếu bí. (4 nước)",
+      difficulty: 1,
+      setup: (b) => {
+        // Đen: Tướng e10, Sĩ d10+f10, Xe a10
+        b[0][4]=BLACK|1; b[0][3]=BLACK|2; b[0][5]=BLACK|2; b[0][0]=BLACK|5;
+        // Đỏ: Tướng e1, Xe i9, Pháo e6
+        b[9][4]=RED|1; b[1][8]=RED|5; b[4][4]=RED|6;
+      }
+    },
+
+    // ===== CẤP ĐỘ 2: TRUNG BÌNH (5-6 nước) =====
+    {
+      name: "Song Xa Hiệp Sĩ",
+      desc: "Hai Xe kẹp chết Tướng trong cung. (5 nước)",
+      difficulty: 2,
+      setup: (b) => {
+        // Đen: Tướng e10, Sĩ d10+f9, Tượng c10
+        b[0][4]=BLACK|1; b[0][3]=BLACK|2; b[1][5]=BLACK|2; b[0][2]=BLACK|3;
+        // Đỏ: Tướng e1, Xe a8, Xe i7
+        b[9][4]=RED|1; b[2][0]=RED|5; b[3][8]=RED|5;
+      }
+    },
+    {
+      name: "Đơn Mã Diệt Quân",
+      desc: "Một Mã một Xe phối hợp tinh diệu. (5 nước)",
+      difficulty: 2,
+      setup: (b) => {
+        // Đen: Tướng d10, Sĩ e9, Sĩ c9
+        b[0][3]=BLACK|1; b[1][4]=BLACK|2; b[1][2]=BLACK|2;
+        // Đỏ: Tướng e1, Xe f10, Mã b8
+        b[9][4]=RED|1; b[0][5]=RED|5; b[2][1]=RED|4;
+      }
+    },
+    {
+      name: "Pháo Niệm Tướng",
+      desc: "Pháo và Xe kết hợp bắt Tướng. (6 nước)",
+      difficulty: 2,
+      setup: (b) => {
+        // Đen: Tướng e10, Sĩ d9+f9, Mã b10
+        b[0][4]=BLACK|1; b[1][3]=BLACK|2; b[1][5]=BLACK|2; b[0][1]=BLACK|4;
+        // Đỏ: Tướng e1, Xe a9, Pháo h8
+        b[9][4]=RED|1; b[1][0]=RED|5; b[2][7]=RED|6;
+      }
+    },
+
+    // ===== CẤP ĐỘ 3: KHÓ (7-9 nước) =====
+    {
+      name: "Mã Đạp Liên Hoàn",
+      desc: "Mã chiếu liên tiếp, Tướng không lối thoát. (7 nước)",
+      difficulty: 3,
+      setup: (b) => {
+        // Đen: Tướng d10, Sĩ c9+e10, Tượng a10, Xe h10
+        b[0][3]=BLACK|1; b[1][2]=BLACK|2; b[0][4]=BLACK|2; b[0][0]=BLACK|3; b[0][7]=BLACK|5;
+        // Đỏ: Tướng e1, Mã c7, Xe f9
+        b[9][4]=RED|1; b[3][2]=RED|4; b[1][5]=RED|5;
+      }
+    },
+    {
+      name: "Xa Pháo Lãnh Sát",
+      desc: "Xe Pháo phối hợp chiếu lạnh. (7 nước)",
+      difficulty: 3,
+      setup: (b) => {
+        // Đen: Tướng e10, Sĩ d10+f10, Tượng c10+g10, Mã b9
+        b[0][4]=BLACK|1; b[0][3]=BLACK|2; b[0][5]=BLACK|2; b[0][2]=BLACK|3; b[0][6]=BLACK|3; b[1][1]=BLACK|4;
+        // Đỏ: Tướng e1, Xe h10, Pháo a8, Mã f8
+        b[9][4]=RED|1; b[0][7]=RED|5; b[2][0]=RED|6; b[2][5]=RED|4;
+      }
+    },
+    {
+      name: "Ngũ Quỷ Bái Đường",
+      desc: "5 quân phối hợp công phá thành trì. (8 nước)",
+      difficulty: 3,
+      setup: (b) => {
+        // Đen: Tướng e10, Sĩ d9+f9, Tượng c10+g10, Xe a10
+        b[0][4]=BLACK|1; b[1][3]=BLACK|2; b[1][5]=BLACK|2; b[0][2]=BLACK|3; b[0][6]=BLACK|3; b[0][0]=BLACK|5;
+        // Đỏ: Tướng e1, Xe i10, Mã d8+f7, Pháo b10
+        b[9][4]=RED|1; b[0][8]=RED|5; b[2][3]=RED|4; b[3][5]=RED|4; b[0][1]=RED|6;
+      }
+    },
+
+    // ===== CẤP ĐỘ 4: RẤT KHÓ (10+ nước) =====
+    {
+      name: "Thiên La Địa Võng",
+      desc: "Giăng lưới trời đất, Tướng hết đường lui. (10 nước)",
+      difficulty: 4,
+      setup: (b) => {
+        // Đen: Tướng d10, Sĩ c9+e9, Tượng a10+g10, Xe h8
+        b[0][3]=BLACK|1; b[1][2]=BLACK|2; b[1][4]=BLACK|2; b[0][0]=BLACK|3; b[0][6]=BLACK|3; b[2][7]=BLACK|5;
+        // Đỏ: Tướng e1, Xe a9, Mã c8+e7, Pháo f10
+        b[9][4]=RED|1; b[1][0]=RED|5; b[2][2]=RED|4; b[3][4]=RED|4; b[0][5]=RED|6;
+      }
+    },
+    {
+      name: "Liên Hoàn Sát",
+      desc: "Chiếu liên tiếp, mỗi nước đều chiếu. (11 nước)",
+      difficulty: 4,
+      setup: (b) => {
+        // Đen: Tướng d10, Sĩ c10+e9, Tượng a8, Xe i10, Pháo g8
+        b[0][3]=BLACK|1; b[0][2]=BLACK|2; b[1][4]=BLACK|2; b[2][0]=BLACK|3; b[0][8]=BLACK|5; b[2][6]=BLACK|6;
+        // Đỏ: Tướng e1, Xe b10, Mã e8+g6, Pháo d7
+        b[9][4]=RED|1; b[0][1]=RED|5; b[2][4]=RED|4; b[4][6]=RED|4; b[3][3]=RED|6;
+      }
+    },
+    {
+      name: "Cửu Cung Phi Tinh",
+      desc: "Mã bay lượn trong cửu cung. (12 nước)",
+      difficulty: 4,
+      setup: (b) => {
+        // Đen: Tướng e10, Sĩ d9+f10, Tượng c10, Xe a9, Mã g8
+        b[0][4]=BLACK|1; b[1][3]=BLACK|2; b[0][5]=BLACK|2; b[0][2]=BLACK|3; b[1][0]=BLACK|5; b[2][6]=BLACK|4;
+        // Đỏ: Tướng e1, Xe h9, Mã c8+f6, Pháo b7
+        b[9][4]=RED|1; b[1][7]=RED|5; b[2][2]=RED|4; b[4][5]=RED|4; b[3][1]=RED|6;
+      }
+    },
+
+    // ===== CẤP ĐỘ 5: SIÊU KHÓ - KINH ĐIỂN =====
+    {
+      name: "Bát Quái Trận",
+      desc: "Biến hóa khôn lường, bậc thầy mới giải. (14 nước)",
+      difficulty: 5,
+      setup: (b) => {
+        // Đen: Phòng thủ vững chắc với nhiều quân
+        b[0][4]=BLACK|1; b[0][3]=BLACK|2; b[1][5]=BLACK|2; b[0][2]=BLACK|3; b[2][6]=BLACK|3;
+        b[1][1]=BLACK|4; b[0][7]=BLACK|5; b[3][0]=BLACK|6; b[3][8]=BLACK|7;
+        // Đỏ: Đủ quân để tấn công nhưng cần tính toán sâu
+        b[9][4]=RED|1; b[8][5]=RED|2;
+        b[0][0]=RED|5; b[2][4]=RED|4; b[4][2]=RED|4;
+        b[5][3]=RED|6; b[6][7]=RED|6; b[5][6]=RED|7;
+      }
+    },
+    {
+      name: "Hoa Sơn Luận Kiếm",
+      desc: "Đỉnh cao đối quyết như kiếm khách tỉ thí. (15 nước)",
+      difficulty: 5,
+      setup: (b) => {
+        // Đen: Thế trận phức tạp với cả tấn công lẫn phòng thủ
+        b[0][3]=BLACK|1; b[1][4]=BLACK|2; b[1][2]=BLACK|2; b[0][0]=BLACK|3; b[2][4]=BLACK|3;
+        b[3][5]=BLACK|4; b[0][8]=BLACK|5; b[4][1]=BLACK|6; b[4][7]=BLACK|7;
+        // Đỏ: Phải tính toán cẩn thận để chiếu bí
+        b[9][4]=RED|1; b[8][3]=RED|2; b[9][5]=RED|2; b[7][2]=RED|3;
+        b[5][4]=RED|4; b[1][0]=RED|5; b[3][3]=RED|5;
+        b[6][4]=RED|6; b[5][8]=RED|7;
+      }
+    }
   ];
 
   // --- AUDIO ---
@@ -581,6 +819,17 @@
       gainNode.gain.setValueAtTime(0.1, now);
       gainNode.gain.linearRampToValueAtTime(0, now + 0.2);
       osc.start(); osc.stop(now + 0.2);
+    } else if (type === 'check') {
+      // Dramatic check sound - two quick warning tones
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(880, now);
+      osc.frequency.setValueAtTime(660, now + 0.1);
+      osc.frequency.setValueAtTime(880, now + 0.2);
+      gainNode.gain.setValueAtTime(0.2, now);
+      gainNode.gain.setValueAtTime(0.15, now + 0.1);
+      gainNode.gain.setValueAtTime(0.2, now + 0.2);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+      osc.start(); osc.stop(now + 0.4);
     }
   }
 
@@ -639,6 +888,62 @@
   let capturedState = { redCaptures: [], blackCaptures: [] };
   let aiPreference = 'BALANCED';
 
+  // --- ANTI-REPETITION & PERPETUAL CHECK TRACKING ---
+  let positionHistory = [];  // Track last N positions for repetition detection
+  let aiCheckHistory = [];   // Track AI's checking moves to prevent perpetual check
+  const MAX_POSITION_HISTORY = 12;
+  const REPETITION_PENALTY = 800;
+  const PERPETUAL_CHECK_PENALTY = 2000;
+
+  // --- CHECK STATE ---
+  let currentCheckState = { inCheck: false, kingPos: null, color: null };
+
+  // Show check alert with animation
+  function showCheckAlert(color) {
+    const alert = document.getElementById('check-alert');
+    const isRed = (color === RED);
+    alert.innerHTML = `<i class="fas fa-crosshairs"></i> ${isRed ? 'Chiếu Tướng Đỏ!' : 'Chiếu Tướng Đen!'}`;
+    alert.style.background = isRed ? 'linear-gradient(135deg, #c0392b, #e74c3c)' : 'linear-gradient(135deg, #2c3e50, #34495e)';
+    alert.classList.add('show');
+    playSound('check');
+
+    // Hide after 2 seconds
+    setTimeout(() => {
+      alert.classList.remove('show');
+    }, 2000);
+  }
+
+  // Find king position for a color
+  function findKingPosition(color) {
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        const p = board[r][c];
+        if (getType(p) === PIECE_KING && getColor(p) === color) {
+          return { r, c };
+        }
+      }
+    }
+    return null;
+  }
+
+  // Update check state after each move
+  function updateCheckState() {
+    const redInCheck = inCheck(RED);
+    const blackInCheck = inCheck(BLACK);
+
+    if (redInCheck) {
+      const kingPos = findKingPosition(RED);
+      currentCheckState = { inCheck: true, kingPos, color: RED };
+      showCheckAlert(RED);
+    } else if (blackInCheck) {
+      const kingPos = findKingPosition(BLACK);
+      currentCheckState = { inCheck: true, kingPos, color: BLACK };
+      showCheckAlert(BLACK);
+    } else {
+      currentCheckState = { inCheck: false, kingPos: null, color: null };
+    }
+  }
+
   const canvas = document.getElementById('board');
   const ctx = canvas.getContext('2d');
   let CELL_SIZE, MARGIN, PIECE_RADIUS;
@@ -666,33 +971,70 @@
   document.getElementById('toggle-music').addEventListener('change', (e) => toggleMusic(e.target.checked));
 
   // --- NOTATION & EXPORT ---
+  // Vietnamese chess notation standard (Ký hiệu cờ tướng Việt Nam)
+  // Reference: https://zigavn.com/cotuong/doc-hieu-ban-ghi-co-tuong
   function getMoveNotation(m) {
     const piece = m.piece;
     const type = getType(piece);
     const color = getColor(piece);
-    const chars = ["","K","A","E","H","R","C","P"];
+
+    // Vietnamese piece abbreviations: Tg (Tướng), S (Sĩ), T (Tượng), X (Xe), P (Pháo), M (Mã), B (Binh)
+    const chars = ["", "Tg", "S", "T", "M", "X", "P", "B"];
     const char = chars[type];
+
+    // Column numbers: Red counts right-to-left (9-1), Black counts left-to-right (1-9)
     const fromCol = (color === RED) ? (9 - m.fromC) : (m.fromC + 1);
     const toCol = (color === RED) ? (9 - m.toC) : (m.toC + 1);
-    let dir = ".";
-    if (color === RED) {
-      if (m.toR < m.fromR) dir = "+"; else if (m.toR > m.fromR) dir = "-";
+
+    // Direction symbols: "." = tấn (advance), "/" = thoái (retreat), "-" = bình (horizontal)
+    let dir;
+    const isVertical = (m.fromC === m.toC);
+    const isHorizontal = (m.fromR === m.toR);
+
+    if (isHorizontal) {
+      dir = "-"; // Bình (horizontal move)
     } else {
-      if (m.toR > m.fromR) dir = "+"; else if (m.toR < m.fromR) dir = "-";
+      // For RED: moving up (smaller row) = advance, moving down = retreat
+      // For BLACK: moving down (larger row) = advance, moving up = retreat
+      if (color === RED) {
+        dir = (m.toR < m.fromR) ? "." : "/";
+      } else {
+        dir = (m.toR > m.fromR) ? "." : "/";
+      }
     }
-    let dest = toCol;
-    if ((type === PIECE_ROOK || type === PIECE_CANNON || type === PIECE_PAWN || type === PIECE_KING) && m.fromC === m.toC) {
+
+    // Destination: column number for horizontal/diagonal moves, step count for vertical moves
+    let dest;
+    if (isVertical && (type === PIECE_ROOK || type === PIECE_CANNON || type === PIECE_PAWN || type === PIECE_KING)) {
+      // For straight-moving pieces on same column: use number of steps
       dest = Math.abs(m.toR - m.fromR);
+    } else {
+      // For diagonal moves (Mã, Tượng, Sĩ) or horizontal moves: use destination column
+      dest = toCol;
     }
+
     return char + fromCol + dir + dest;
   }
 
   function generatePGN() {
-    let pgn = "";
+    let pgn = "=== KỲ PHỔ CỜ TƯỚNG ===\n";
+    pgn += "Ký hiệu: Tg=Tướng, S=Sĩ, T=Tượng, X=Xe, P=Pháo, M=Mã, B=Binh\n";
+    pgn += "Hướng: .=Tấn, /=Thoái, -=Bình\n\n";
+
     moveHistory.forEach((m, i) => {
-      if (i % 2 === 0) pgn += `${Math.floor(i/2)+1}. `;
-      pgn += m.notation + " ";
+      const moveNum = Math.floor(i/2) + 1;
+      if (i % 2 === 0) {
+        pgn += `${moveNum}. Đỏ: ${m.notation}`;
+      } else {
+        pgn += `  |  Đen: ${m.notation}\n`;
+      }
     });
+
+    // If last move was Red's, add newline
+    if (moveHistory.length % 2 === 1) {
+      pgn += "\n";
+    }
+
     return pgn;
   }
 
@@ -739,17 +1081,52 @@
     document.getElementById('puzzle-menu').style.display = 'none';
     document.getElementById('main-buttons').style.display = 'flex';
   }
+  let currentPuzzleFilter = 0;
+
   function showPuzzleMenu() {
     document.getElementById('main-buttons').style.display = 'none';
     document.getElementById('puzzle-menu').style.display = 'flex';
+    filterPuzzles(0);
+  }
+
+  function filterPuzzles(diffLevel) {
+    currentPuzzleFilter = diffLevel;
+
+    // Update filter buttons
+    document.querySelectorAll('#puzzle-menu .diff-btn').forEach(btn => btn.classList.remove('active'));
+    const filterBtn = diffLevel === 0 ? 'filter-all' : `filter-${diffLevel}`;
+    document.getElementById(filterBtn).classList.add('active');
 
     const list = document.getElementById('puzzle-list');
-    list.innerHTML = PUZZLE_DB.map((p, idx) => `
-        <div class="puzzle-item" onclick="startPuzzle(${idx})">
-            <div class="font-bold text-amber-300">${idx+1}. ${p.name}</div>
-            <div class="text-xs text-gray-400">${p.desc}</div>
+    const diffColors = ['#4ade80', '#fbbf24', '#f97316', '#ef4444', '#a855f7'];
+    const diffNames = ['Cơ Bản', 'Trung Bình', 'Khó', 'Rất Khó', 'Siêu Khó'];
+    const diffStars = ['⭐', '⭐⭐', '⭐⭐⭐', '⭐⭐⭐⭐', '⭐⭐⭐⭐⭐'];
+
+    const filteredPuzzles = PUZZLE_DB
+      .map((p, idx) => ({ ...p, originalIndex: idx }))
+      .filter(p => diffLevel === 0 || p.difficulty === diffLevel);
+
+    if (filteredPuzzles.length === 0) {
+      list.innerHTML = '<div class="text-gray-400 text-center py-8">Không có thế cờ nào ở độ khó này.</div>';
+      return;
+    }
+
+    list.innerHTML = filteredPuzzles.map((p) => {
+      const diff = p.difficulty || 1;
+      const color = diffColors[diff - 1];
+      const stars = diffStars[diff - 1];
+      const name = diffNames[diff - 1];
+      return `
+        <div class="puzzle-item" onclick="startPuzzle(${p.originalIndex})" style="border-left: 3px solid ${color};">
+            <div class="flex justify-between items-center">
+              <div class="font-bold text-amber-300">${p.originalIndex + 1}. ${p.name}</div>
+              <div class="text-xs" style="color: ${color};">${stars}</div>
+            </div>
+            <div class="text-xs text-gray-400 mt-1">${p.desc}</div>
+            <div class="text-xs mt-1" style="color: ${color};">Độ khó: ${name}</div>
         </div>
-    `).join('');
+      `;
+    }).join('');
   }
 
   function startGame(mode) {
@@ -765,21 +1142,8 @@
     if(mode === 'puzzle') title = "Phá Thế Cờ";
     document.getElementById('game-title').innerText = title;
 
-    if (mode === 'coups') {
-      // Random profile cho cờ úp
-      const coupsProfiles = [
-        'CHECK_AND_CAPTURE_HORSE',  // Chiếu và ăn mã
-        'CANNON_AGGRESSIVE',        // Pháo tấn công
-        'ROOK_PRESSURE',            // Xe gây áp lực
-        'HORSE_JUMP',               // Mã nhảy
-        'PAWN_PUSH',                // Tốt tiến
-        'BALANCED'                  // Cân bằng
-      ];
-      aiPreference = coupsProfiles[Math.floor(Math.random() * coupsProfiles.length)];
-    } else {
-      const types = ['BALANCED', 'CHARIOT', 'CANNON_HORSE'];
-      aiPreference = types[Math.floor(Math.random() * types.length)];
-    }
+    const types = ['BALANCED', 'CHARIOT', 'CANNON_HORSE'];
+    aiPreference = types[Math.floor(Math.random() * types.length)];
 
     if (mode === 'coups') initHiddenChess();
     else initStandardChess();
@@ -796,7 +1160,10 @@
     document.getElementById('solve-btn').classList.remove('hidden');
     closeResult();
 
-    document.getElementById('game-title').innerText = "Thế: " + PUZZLE_DB[index].name;
+    const puzzle = PUZZLE_DB[index];
+    const diffStars = ['⭐', '⭐⭐', '⭐⭐⭐', '⭐⭐⭐⭐', '⭐⭐⭐⭐⭐'];
+    const diff = puzzle.difficulty || 1;
+    document.getElementById('game-title').innerText = `${diffStars[diff-1]} ${puzzle.name}`;
     initPuzzle(index);
     resize();
   }
@@ -908,9 +1275,16 @@
     lastMove = null;
     hintMove = null;
     capturedState = { redCaptures: [], blackCaptures: [] };
+    positionHistory = [];  // Reset position history
+    aiCheckHistory = [];   // Reset check tracking
+    currentCheckState = { inCheck: false, kingPos: null, color: null };  // Reset check state
     renderCaptured();
     boardHistory[getBoardHash()] = 1;
+    positionHistory.push(getSimpleBoardHash());
     updateStatus("Lượt của bạn (Đỏ)");
+
+    // Hide check alert if visible
+    document.getElementById('check-alert')?.classList.remove('show');
   }
 
   function renderCaptured() {
@@ -1039,12 +1413,133 @@
     return false;
   }
 
-  const VALUES = { [PIECE_KING]:10000, [PIECE_ROOK]:900, [PIECE_CANNON]:450, [PIECE_HORSE]:400, [PIECE_ELEPHANT]:20, [PIECE_ADVISOR]:20, [PIECE_PAWN]:10 };
+  const VALUES = { [PIECE_KING]:10000, [PIECE_ROOK]:900, [PIECE_CANNON]:450, [PIECE_HORSE]:400, [PIECE_ELEPHANT]:120, [PIECE_ADVISOR]:120, [PIECE_PAWN]:100 };
+
+  // --- PIECE-SQUARE TABLES (from Black's perspective, row 0-9) ---
+  const PST = {
+    [PIECE_HORSE]: [
+      [  0,  -3,   5,   4,   2,   4,   5,  -3,   0],
+      [ -3,   2,   4,   6,  10,   6,   4,   2,  -3],
+      [  4,   6,  12,  14,  14,  14,  12,   6,   4],
+      [  2,  10,  12,  16,  14,  16,  12,  10,   2],
+      [  0,  12,  10,  14,  18,  14,  10,  12,   0],
+      [  0,  12,  10,  14,  18,  14,  10,  12,   0],
+      [  2,  10,  12,  16,  14,  16,  12,  10,   2],
+      [  4,   6,  12,  14,  14,  14,  12,   6,   4],
+      [ -3,   2,   4,   6,  10,   6,   4,   2,  -3],
+      [  0,  -3,   5,   4,   2,   4,   5,  -3,   0]
+    ],
+    [PIECE_CANNON]: [
+      [  0,   0,   1,   0,  -1,   0,   1,   0,   0],
+      [  0,   1,   0,   0,   0,   0,   0,   1,   0],
+      [  1,   2,   4,   3,   3,   3,   4,   2,   1],
+      [  2,   4,   6,   5,   4,   5,   6,   4,   2],
+      [  2,   5,   6,   5,   4,   5,   6,   5,   2],
+      [  2,   5,   6,   5,   4,   5,   6,   5,   2],
+      [  2,   4,   6,   5,   4,   5,   6,   4,   2],
+      [  1,   2,   4,   3,   3,   3,   4,   2,   1],
+      [  0,   1,   0,   0,   0,   0,   0,   1,   0],
+      [  0,   0,   1,   0,  -1,   0,   1,   0,   0]
+    ],
+    [PIECE_ROOK]: [
+      [  0,   0,   0,   2,   4,   2,   0,   0,   0],
+      [  0,   0,   0,   1,   2,   1,   0,   0,   0],
+      [  0,   0,   0,   3,   4,   3,   0,   0,   0],
+      [  2,   3,   3,   4,   6,   4,   3,   3,   2],
+      [  4,   6,   5,   6,   8,   6,   5,   6,   4],
+      [  4,   6,   5,   6,   8,   6,   5,   6,   4],
+      [  2,   3,   3,   4,   6,   4,   3,   3,   2],
+      [  0,   0,   0,   3,   4,   3,   0,   0,   0],
+      [  0,   0,   0,   1,   2,   1,   0,   0,   0],
+      [  0,   0,   0,   2,   4,   2,   0,   0,   0]
+    ],
+    [PIECE_PAWN]: [
+      [  0,   0,   0,   0,   0,   0,   0,   0,   0],
+      [  0,   0,   0,   0,   0,   0,   0,   0,   0],
+      [  0,   0,   0,   0,   0,   0,   0,   0,   0],
+      [  1,   0,   2,   0,   3,   0,   2,   0,   1],
+      [  2,   2,   4,   5,   6,   5,   4,   2,   2],
+      [  3,   6,   9,  10,  12,  10,   9,   6,   3],
+      [  4,   8,  12,  14,  16,  14,  12,   8,   4],
+      [ 10,  18,  22,  28,  32,  28,  22,  18,  10],
+      [ 15,  25,  30,  40,  50,  40,  30,  25,  15],
+      [ 20,  30,  40,  50,  60,  50,  40,  30,  20]
+    ]
+  };
+
+  // Get positional bonus from piece-square table
+  function getPositionalBonus(type, r, c, color) {
+    if (!PST[type]) return 0;
+    // For RED, flip the row
+    const row = (color === RED) ? (9 - r) : r;
+    return PST[type][row][c] * 3; // Scale factor
+  }
+
+  // Detect if a move results in check
+  function moveCausesCheck(fromR, fromC, toR, toC, targetColor) {
+    const piece = board[fromR][fromC];
+    const cap = board[toR][toC];
+    board[toR][toC] = piece;
+    board[fromR][fromC] = 0;
+    const checking = inCheck(targetColor);
+    board[fromR][fromC] = piece;
+    board[toR][toC] = cap;
+    return checking;
+  }
+
+  // Get a simplified board hash for repetition detection
+  function getSimpleBoardHash() {
+    let hash = '';
+    for(let r=0; r<ROWS; r++) {
+      for(let c=0; c<COLS; c++) {
+        const p = board[r][c];
+        if (p !== 0) {
+          hash += `${r}${c}${p}|`;
+        }
+      }
+    }
+    return hash + turn;
+  }
+
+  // Count how many times current position has appeared
+  function countPositionRepetitions() {
+    const currentHash = getSimpleBoardHash();
+    return positionHistory.filter(h => h === currentHash).length;
+  }
+
+  // Check if a move is a repeating check (perpetual check pattern)
+  function isRepeatingCheck(move) {
+    if (aiCheckHistory.length < 4) return false;
+
+    // Check if this is a checking move
+    if (!moveCausesCheck(move.fromR, move.fromC, move.toR, move.toC, RED)) {
+      return false;
+    }
+
+    // Look for pattern: same piece returning to similar positions
+    const last4Checks = aiCheckHistory.slice(-4);
+    const pieceType = getType(board[move.fromR][move.fromC]);
+
+    // Count similar checking patterns
+    let similarPatterns = 0;
+    for (const checkMove of last4Checks) {
+      if (checkMove.pieceType === pieceType) {
+        // Same piece type making checks
+        const dist = Math.abs(checkMove.toR - move.toR) + Math.abs(checkMove.toC - move.toC);
+        if (dist <= 2) similarPatterns++;
+      }
+    }
+
+    return similarPatterns >= 2;
+  }
 
   function evaluate() {
     let s = 0;
     let blackKing = null, redKing = null;
+    let blackMobility = 0, redMobility = 0;
+    let blackAttacks = 0, redAttacks = 0;
 
+    // Find kings first
     for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) {
       const p = board[r][c];
       if (getType(p)===PIECE_KING) {
@@ -1058,268 +1553,228 @@
       const type = getType(p);
       const color = getColor(p);
       let val = VALUES[type];
-      if (isHidden(p)) val = 30;
 
-      if (aiPreference === 'CHARIOT' && type === PIECE_ROOK) val *= 1.1;
-      if (aiPreference === 'CANNON_HORSE' && (type === PIECE_CANNON || type === PIECE_HORSE)) val *= 1.1;
+      if (isHidden(p)) {
+        val = 50; // Hidden pieces have uncertain value
+      } else {
+        // Add positional bonus
+        val += getPositionalBonus(type, r, c, color);
 
-      if (color === BLACK && redKing) {
-        const dr = Math.abs(r - redKing.r);
-        const dc = Math.abs(c - redKing.c);
-        if (type === PIECE_HORSE && r >= 7 && (c===3 || c===5 || c===2 || c===6)) val += 200;
-        if (type === PIECE_CANNON && c === redKing.c) val += 100;
-        if (type === PIECE_ROOK && r === 9 && dc <= 2) val += 150;
-        if (dr <= 2 && dc <= 2) val += 50;
+        // Mobility bonus - count number of legal moves
+        const moves = generateMoves(r, c, false); // Don't check safety for speed
+        const mobility = moves.length * 2;
+        if (color === BLACK) blackMobility += mobility;
+        else redMobility += mobility;
+
+        // Attacking bonuses (more strategic)
+        if (color === BLACK && redKing) {
+          const dr = Math.abs(r - redKing.r);
+          const dc = Math.abs(c - redKing.c);
+
+          // Horse attacking palace area - but not overvalue simple captures
+          if (type === PIECE_HORSE && r >= 6) {
+            if (c >= 2 && c <= 6) val += 40; // Moderate bonus for attacking position
+          }
+
+          // Cannon with good alignment - but penalize early unsupported attacks
+          if (type === PIECE_CANNON) {
+            // Check if cannon has pieces to jump over for meaningful attack
+            let hasMiddlePiece = false;
+            if (c === redKing.c) {
+              for (let tr = r + 1; tr < redKing.r; tr++) {
+                if (board[tr][c] !== 0) { hasMiddlePiece = true; break; }
+              }
+              if (hasMiddlePiece) val += 60; // Only bonus if cannon can actually threaten
+            }
+          }
+
+          // Rook in strong position
+          if (type === PIECE_ROOK) {
+            if (r >= 5) val += 30; // Rook advanced
+            if (r === 9) val += 20; // Rook on back rank
+          }
+
+          // Bonus for pieces near enemy king but with support
+          if (dr <= 3 && dc <= 2) val += 25;
+        }
+
+        // King safety - advisor and elephant protection
+        if (color === BLACK && blackKing) {
+          if (type === PIECE_ADVISOR || type === PIECE_ELEPHANT) {
+            const dr = Math.abs(r - blackKing.r);
+            const dc = Math.abs(c - blackKing.c);
+            if (dr <= 2 && dc <= 2) val += 30; // Protecting king
+          }
+        }
+
+        if (color === RED && redKing) {
+          if (type === PIECE_ADVISOR || type === PIECE_ELEPHANT) {
+            const dr = Math.abs(r - redKing.r);
+            const dc = Math.abs(c - redKing.c);
+            if (dr <= 2 && dc <= 2) val += 30;
+          }
+        }
+
+        // Central control bonus
+        if (c >= 3 && c <= 5) val += 5;
       }
 
-      if(c>2 && c<6) val += 10;
-      if(getColor(p)===BLACK) s+=val; else s-=val;
+      if(color===BLACK) s+=val; else s-=val;
     }
+
+    // Add mobility difference
+    s += (blackMobility - redMobility) * 2;
+
+    // Check status bonus
+    if (inCheck(RED)) s += 50;
+    if (inCheck(BLACK)) s -= 50;
+
     return s;
-  }
-
-  // Evaluate move quality based on profile (for Hidden Chess)
-  function evaluateMoveByProfile(move) {
-    if (gameMode !== 'coups') return 0;
-    
-    const piece = board[move.fromR][move.fromC];
-    const cap = board[move.toR][move.toC];
-    const pieceType = getType(piece);
-    const moveColor = getColor(piece);
-    
-    if (moveColor !== BLACK) return 0; // Only evaluate AI moves
-    
-    let score = 0;
-    let resultsInCheck = false;
-    
-    // Make move temporarily to check effects
-    const originalTo = board[move.toR][move.toC];
-    const originalFrom = board[move.fromR][move.fromC];
-    board[move.toR][move.toC] = piece;
-    board[move.fromR][move.fromC] = 0;
-    
-    resultsInCheck = inCheck(RED);
-    const capturedType = cap !== 0 ? getType(cap) : 0;
-    
-    // Undo move
-    board[move.fromR][move.fromC] = originalFrom;
-    board[move.toR][move.toC] = originalTo;
-    
-    // Profile: CHECK_AND_CAPTURE_HORSE - Chiếu và ăn mã
-    if (aiPreference === 'CHECK_AND_CAPTURE_HORSE') {
-      if (resultsInCheck && capturedType === PIECE_HORSE) {
-        score += 500; // Rất tốt: vừa chiếu vừa ăn mã
-      } else if (resultsInCheck) {
-        score += 200; // Tốt: chiếu
-      } else if (capturedType === PIECE_HORSE) {
-        score += 300; // Tốt: ăn mã
-      }
-      if (pieceType === PIECE_CANNON || pieceType === PIECE_ROOK) {
-        score += 50; // Ưu tiên pháo và xe
-      }
-    }
-    
-    // Profile: CANNON_AGGRESSIVE - Pháo tấn công
-    if (aiPreference === 'CANNON_AGGRESSIVE') {
-      if (pieceType === PIECE_CANNON) {
-        score += 150;
-        if (resultsInCheck) score += 200;
-        if (capturedType !== 0) score += 100;
-        // Ưu tiên pháo ở vị trí tấn công
-        if (move.toR >= 7) score += 100;
-      }
-    }
-    
-    // Profile: ROOK_PRESSURE - Xe gây áp lực
-    if (aiPreference === 'ROOK_PRESSURE') {
-      if (pieceType === PIECE_ROOK) {
-        score += 200;
-        if (resultsInCheck) score += 150;
-        if (capturedType !== 0) score += 150;
-        // Ưu tiên xe vào sâu
-        if (move.toR >= 8) score += 100;
-      }
-    }
-    
-    // Profile: HORSE_JUMP - Mã nhảy
-    if (aiPreference === 'HORSE_JUMP') {
-      if (pieceType === PIECE_HORSE) {
-        score += 150;
-        if (resultsInCheck) score += 200;
-        if (capturedType !== 0) score += 100;
-        // Ưu tiên mã nhảy vào trung tâm
-        if (move.toC >= 3 && move.toC <= 5 && move.toR >= 7) score += 100;
-      }
-    }
-    
-    // Profile: PAWN_PUSH - Tốt tiến
-    if (aiPreference === 'PAWN_PUSH') {
-      if (pieceType === PIECE_PAWN) {
-        score += 100;
-        if (move.toR >= 8) score += 150; // Tốt tiến sâu
-        if (capturedType !== 0) score += 100;
-      }
-    }
-    
-    // General bonuses
-    if (resultsInCheck) score += 100; // Chiếu luôn tốt
-    if (capturedType !== 0) {
-      score += VALUES[capturedType] * 0.5; // Ăn quân có giá trị
-    }
-    
-    return score;
   }
 
   function sortMoves(moves) {
     return moves.sort((a, b) => {
-      const valA = board[a.toR][a.toC] !== 0 ? VALUES[getType(board[a.toR][a.toC])] : 0;
-      const valB = board[b.toR][b.toC] !== 0 ? VALUES[getType(board[b.toR][b.toC])] : 0;
-      
-      // For Hidden Chess, also consider profile-based evaluation
-      if (gameMode === 'coups') {
-        const profileA = evaluateMoveByProfile(a);
-        const profileB = evaluateMoveByProfile(b);
-        if (Math.abs(profileA - profileB) > 50) {
-          return profileB - profileA; // Sort by profile score if difference is significant
-        }
+      let scoreA = 0, scoreB = 0;
+
+      // Capture value (MVV-LVA)
+      if (board[a.toR][a.toC] !== 0) {
+        scoreA = VALUES[getType(board[a.toR][a.toC])] * 10 - VALUES[getType(board[a.fromR][a.fromC])];
       }
-      
-      return valB - valA;
+      if (board[b.toR][b.toC] !== 0) {
+        scoreB = VALUES[getType(board[b.toR][b.toC])] * 10 - VALUES[getType(board[b.fromR][b.fromC])];
+      }
+
+      return scoreB - scoreA;
     });
   }
 
+  // Quiescence search - continue searching captures to avoid horizon effect
+  function quiescence(alpha, beta, isMax, depth = 0) {
+    const standPat = evaluate();
+
+    if (depth >= 4) return standPat; // Limit quiescence depth
+
+    if (isMax) {
+      if (standPat >= beta) return beta;
+      if (alpha < standPat) alpha = standPat;
+    } else {
+      if (standPat <= alpha) return alpha;
+      if (beta > standPat) beta = standPat;
+    }
+
+    // Only look at captures
+    let captures = [];
+    for(let r=0; r<ROWS; r++) {
+      for(let c=0; c<COLS; c++) {
+        if(getColor(board[r][c]) === (isMax ? BLACK : RED)) {
+          const moves = generateMoves(r, c, true);
+          for (const m of moves) {
+            if (board[m.r][m.c] !== 0) { // Is capture
+              captures.push({fromR: r, fromC: c, toR: m.r, toC: m.c});
+            }
+          }
+        }
+      }
+    }
+
+    captures = sortMoves(captures);
+
+    for (const m of captures) {
+      const cap = board[m.toR][m.toC];
+      const piece = board[m.fromR][m.fromC];
+      board[m.toR][m.toC] = piece;
+      board[m.fromR][m.fromC] = 0;
+
+      const score = quiescence(alpha, beta, !isMax, depth + 1);
+
+      board[m.fromR][m.fromC] = piece;
+      board[m.toR][m.toC] = cap;
+
+      if (isMax) {
+        if (score >= beta) return beta;
+        if (score > alpha) alpha = score;
+      } else {
+        if (score <= alpha) return alpha;
+        if (score < beta) beta = score;
+      }
+    }
+
+    return isMax ? alpha : beta;
+  }
+
   function minimax(depth, isMax, alpha, beta) {
-    if(depth===0) return evaluate();
+    // Use quiescence search at leaf nodes
+    if (depth === 0) {
+      return quiescence(alpha, beta, isMax);
+    }
 
     let moves = [];
-    for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++)
-      if(getColor(board[r][c])===(isMax?BLACK:RED))
-        generateMoves(r,c,true).forEach(t=>moves.push({fromR:r,fromC:c,toR:t.r,toC:t.c}));
+    for(let r=0; r<ROWS; r++) {
+      for(let c=0; c<COLS; c++) {
+        if(getColor(board[r][c]) === (isMax ? BLACK : RED)) {
+          generateMoves(r, c, true).forEach(t => moves.push({fromR: r, fromC: c, toR: t.r, toC: t.c}));
+        }
+      }
+    }
 
-    if(moves.length===0) return isMax?-20000:20000;
+    if (moves.length === 0) {
+      // Checkmate or stalemate
+      const color = isMax ? BLACK : RED;
+      if (inCheck(color)) {
+        return isMax ? -20000 + (config.difficulty - depth) : 20000 - (config.difficulty - depth);
+      }
+      return 0; // Stalemate
+    }
 
     moves = sortMoves(moves);
 
-    if(isMax) {
+    if (isMax) {
       let max = -Infinity;
-      for(let m of moves) {
-        const cap=board[m.toR][m.toC];
-        board[m.toR][m.toC]=board[m.fromR][m.fromC]; board[m.fromR][m.fromC]=0;
-        const v = minimax(depth-1, false, alpha, beta);
-        board[m.fromR][m.fromC]=board[m.toR][m.toC]; board[m.toR][m.toC]=cap;
-        max=Math.max(max,v); alpha=Math.max(alpha,v);
-        if(beta<=alpha) break;
+      for (let m of moves) {
+        const cap = board[m.toR][m.toC];
+        const piece = board[m.fromR][m.fromC];
+        board[m.toR][m.toC] = piece;
+        board[m.fromR][m.fromC] = 0;
+
+        let v = minimax(depth - 1, false, alpha, beta);
+
+        board[m.fromR][m.fromC] = piece;
+        board[m.toR][m.toC] = cap;
+
+        max = Math.max(max, v);
+        alpha = Math.max(alpha, v);
+        if (beta <= alpha) break;
       }
       return max;
     } else {
       let min = Infinity;
-      for(let m of moves) {
-        const cap=board[m.toR][m.toC];
-        board[m.toR][m.toC]=board[m.fromR][m.fromC]; board[m.fromR][m.fromC]=0;
-        const v = minimax(depth-1, true, alpha, beta);
-        board[m.fromR][m.fromC]=board[m.toR][m.toC]; board[m.toR][m.toC]=cap;
-        min=Math.min(min,v); beta=Math.min(beta,v);
-        if(beta<=alpha) break;
+      for (let m of moves) {
+        const cap = board[m.toR][m.toC];
+        const piece = board[m.fromR][m.fromC];
+        board[m.toR][m.toC] = piece;
+        board[m.fromR][m.fromC] = 0;
+
+        let v = minimax(depth - 1, true, alpha, beta);
+
+        board[m.fromR][m.fromC] = piece;
+        board[m.toR][m.toC] = cap;
+
+        min = Math.min(min, v);
+        beta = Math.min(beta, v);
+        if (beta <= alpha) break;
       }
       return min;
     }
   }
 
-  // Detect repetitive checks (same check pattern repeating)
-  function detectRepetitiveCheck() {
-    if (moveHistory.length < 6) return false; // Need at least 3 pairs of moves
-    
-    // Check last 6 moves (3 full cycles) - look for checks on RED (player)
-    const recentMoves = moveHistory.slice(-6);
-    const checkMovesOnRed = recentMoves.filter(m => m.isCheck && m.checkTarget === RED);
-    
-    // If we have at least 3 consecutive checks on RED in the last 6 moves, it's repetitive
-    if (checkMovesOnRed.length >= 3) {
-      // Check if the last 3 checks are all on RED (meaning BLACK is repeatedly checking)
-      const lastThreeChecks = recentMoves.slice(-3).filter(m => m.isCheck && m.checkTarget === RED);
-      if (lastThreeChecks.length >= 3) {
-        return true; // Same side being checked 3+ times consecutively
-      }
-    }
-    
-    // Also check for alternating check pattern (A checks B, B checks A, repeat)
-    if (recentMoves.length >= 6) {
-      const pattern = recentMoves.slice(-6).map(m => {
-        if (m.isCheck && m.checkTarget === RED) return 'B->R'; // BLACK checking RED
-        if (m.isCheck && m.checkTarget === BLACK) return 'R->B'; // RED checking BLACK
-        return 'N'; // No check
-      });
-      
-      // Check for pattern like: B->R, R->B, B->R, R->B, B->R, R->B (alternating checks)
-      if (pattern.length === 6 && 
-          pattern[0] === 'B->R' && pattern[1] === 'R->B' &&
-          pattern[2] === 'B->R' && pattern[3] === 'R->B' &&
-          pattern[4] === 'B->R' && pattern[5] === 'R->B') {
-        return true; // Alternating checks pattern detected
-      }
-      
-      // Check for pattern: B->R, R->B, B->R, R->B, B->R (5 consecutive alternating)
-      if (pattern.length >= 5 &&
-          pattern.slice(-5).every((p, i) => 
-            (i % 2 === 0 && p === 'B->R') || (i % 2 === 1 && p === 'R->B')
-          )) {
-        return true;
-      }
-    }
-    
-    return false;
-  }
-
-  // Check if a move would create a repetitive check pattern
-  function wouldCreateRepetitiveCheck(move) {
-    const piece = board[move.fromR][move.fromC];
-    const cap = board[move.toR][move.toC];
-    const moveColor = getColor(piece);
-    
-    // Make the move
-    board[move.toR][move.toC] = piece; board[move.fromR][move.fromC] = 0;
-    
-    // Check if this results in check
-    const opponentColor = (moveColor === RED) ? BLACK : RED;
-    const resultsInCheck = inCheck(opponentColor);
-    
-    // If it doesn't result in check, it can't be repetitive
-    if (!resultsInCheck) {
-      board[move.fromR][move.fromC] = piece; board[move.toR][move.toC] = cap;
-      return false;
-    }
-    
-    // Count how many times we've checked the opponent in recent moves
-    const recentMoves = moveHistory.slice(-4);
-    const recentChecks = recentMoves.filter(m => 
-      m.isCheck && m.checkTarget === opponentColor
-    ).length;
-    
-    // If we're BLACK and checking RED, and we've already checked RED 2+ times recently
-    // this would be the 3rd+ consecutive check, which is repetitive
-    if (moveColor === BLACK && recentChecks >= 2) {
-      board[move.fromR][move.fromC] = piece; board[move.toR][move.toC] = cap;
-      return true;
-    }
-    
-    // Undo the move
-    board[move.fromR][move.fromC] = piece; board[move.toR][move.toC] = cap;
-    
-    return false;
-  }
-
   function getBestMove() {
     const fen = generateFEN();
-    if (OPENING_BOOK[fen]) {
+
+    // Only use opening book for first few moves
+    if (moveHistory.length < 6 && OPENING_BOOK[fen]) {
       const bookMove = OPENING_BOOK[fen];
       showStrategyToast();
       return bookMove;
-    }
-
-    // Check if we're already in a repetitive check situation
-    if (detectRepetitiveCheck()) {
-      end("Hòa! (Chiếu lặp lại nhiều lần)");
-      return null;
     }
 
     let moves=[];
@@ -1327,64 +1782,139 @@
       if(getColor(board[r][c])===BLACK)
         generateMoves(r,c,true).forEach(t=>moves.push({fromR:r,fromC:c,toR:t.r,toC:t.c}));
 
-    // Filter out moves that would create repetitive checks
-    const nonRepetitiveMoves = moves.filter(m => !wouldCreateRepetitiveCheck(m));
-    
-    // If all moves would create repetitive checks, allow them anyway (better than no move)
-    const movesToConsider = nonRepetitiveMoves.length > 0 ? nonRepetitiveMoves : moves;
-    
-    // For Hidden Chess, prioritize moves based on profile
-    if (gameMode === 'coups' && aiPreference !== 'BALANCED') {
-      // Find moves that match the profile strategy
-      const profileMoves = movesToConsider.filter(m => {
-        const profileScore = evaluateMoveByProfile(m);
-        return profileScore > 100; // Moves with good profile score
-      });
-      
-      // If we have good profile moves, prioritize them
-      if (profileMoves.length > 0) {
-        const sortedProfileMoves = sortMoves([...profileMoves]);
-        // Try top profile moves first
-        for(let m of sortedProfileMoves.slice(0, Math.min(5, sortedProfileMoves.length))) {
-          const cap=board[m.toR][m.toC];
-          board[m.toR][m.toC]=board[m.fromR][m.fromC]; board[m.fromR][m.fromC]=0;
-          const v = minimax(config.difficulty - 1, false, -Infinity, Infinity);
-          board[m.fromR][m.fromC]=board[m.toR][m.toC]; board[m.toR][m.toC]=cap;
-          
-          // If profile move is very good, use it (with some randomness for variety)
-          const profileScore = evaluateMoveByProfile(m);
-          if (profileScore > 300 && v > -10000) {
-            // 70% chance to use high-scoring profile move
-            if (Math.random() < 0.7) {
-              return m;
-            }
-          }
-        }
-      }
-    }
-    
-    let best=null, max=-Infinity;
-    const sortedMoves = sortMoves([...movesToConsider]);
+    if (moves.length === 0) return null;
+
+    // Sort moves for better alpha-beta pruning
+    moves = sortMovesAdvanced(moves, BLACK);
 
     // Use configured depth
     const searchDepth = config.difficulty || 4;
 
-    for(let m of sortedMoves) {
-      const cap=board[m.toR][m.toC];
-      board[m.toR][m.toC]=board[m.fromR][m.fromC]; board[m.fromR][m.fromC]=0;
-      const v = minimax(searchDepth - 1, false, -Infinity, Infinity); // -1 because this loop is depth 1
-      board[m.fromR][m.fromC]=board[m.toR][m.toC]; board[m.toR][m.toC]=cap;
-      
-      // For Hidden Chess, add profile bonus
-      let finalScore = v;
-      if (gameMode === 'coups') {
-        const profileScore = evaluateMoveByProfile(m);
-        finalScore += profileScore * 0.1; // Add 10% of profile score to evaluation
+    let best = null;
+    let max = -Infinity;
+    let candidateMoves = []; // Keep track of good moves for variety
+
+    for(let m of moves) {
+      const cap = board[m.toR][m.toC];
+      const piece = board[m.fromR][m.fromC];
+
+      board[m.toR][m.toC] = piece;
+      board[m.fromR][m.fromC] = 0;
+
+      let v = minimax(searchDepth - 1, false, -Infinity, Infinity);
+
+      // --- ANTI-REPETITION LOGIC ---
+      // Penalize moves that lead to repeated positions
+      const testHash = getSimpleBoardHash();
+      const repetitions = positionHistory.filter(h => h === testHash).length;
+      if (repetitions > 0) {
+        v -= REPETITION_PENALTY * repetitions;
       }
-      
-      if(finalScore>max) { max=finalScore; best=m; }
+
+      // --- ANTI-PERPETUAL CHECK LOGIC ---
+      const causesCheck = inCheck(RED);
+      if (causesCheck) {
+        // Check if this is a repeating check pattern
+        const pieceType = getType(piece);
+        if (isRepeatingCheckPattern(pieceType, m.toR, m.toC)) {
+          v -= PERPETUAL_CHECK_PENALTY;
+        }
+      }
+
+      // Restore board
+      board[m.fromR][m.fromC] = piece;
+      board[m.toR][m.toC] = cap;
+
+      // Track good moves
+      if (v > max - 50) { // Within 50 points of best
+        candidateMoves.push({ move: m, score: v });
+      }
+
+      if (v > max) {
+        max = v;
+        best = m;
+      }
     }
+
+    // If best move is a repeating pattern, try to find alternative
+    if (best && candidateMoves.length > 1) {
+      const bestCausesCheck = moveCausesCheck(best.fromR, best.fromC, best.toR, best.toC, RED);
+      if (bestCausesCheck && isRepeatingCheck(best)) {
+        // Find best non-repeating move
+        candidateMoves.sort((a, b) => b.score - a.score);
+        for (const candidate of candidateMoves) {
+          if (!isRepeatingCheck(candidate.move)) {
+            best = candidate.move;
+            break;
+          }
+        }
+      }
+    }
+
+    // Update check history if this move causes check
+    if (best) {
+      const piece = board[best.fromR][best.fromC];
+      if (moveCausesCheck(best.fromR, best.fromC, best.toR, best.toC, RED)) {
+        aiCheckHistory.push({
+          fromR: best.fromR, fromC: best.fromC,
+          toR: best.toR, toC: best.toC,
+          pieceType: getType(piece)
+        });
+        // Keep only last 8 checks
+        if (aiCheckHistory.length > 8) aiCheckHistory.shift();
+      } else {
+        // Non-checking move breaks the check pattern
+        aiCheckHistory = [];
+      }
+    }
+
     return best;
+  }
+
+  // Check if this is part of a repeating check pattern
+  function isRepeatingCheckPattern(pieceType, toR, toC) {
+    if (aiCheckHistory.length < 3) return false;
+
+    let matchCount = 0;
+    for (const check of aiCheckHistory) {
+      if (check.pieceType === pieceType) {
+        const dist = Math.abs(check.toR - toR) + Math.abs(check.toC - toC);
+        if (dist <= 2) matchCount++;
+      }
+    }
+    return matchCount >= 2;
+  }
+
+  // Advanced move sorting for better pruning
+  function sortMovesAdvanced(moves, color) {
+    return moves.sort((a, b) => {
+      let scoreA = 0, scoreB = 0;
+
+      // Captures (MVV-LVA: Most Valuable Victim - Least Valuable Attacker)
+      const victimA = board[a.toR][a.toC];
+      const victimB = board[b.toR][b.toC];
+      if (victimA !== 0) scoreA += VALUES[getType(victimA)] * 10 - VALUES[getType(board[a.fromR][a.fromC])];
+      if (victimB !== 0) scoreB += VALUES[getType(victimB)] * 10 - VALUES[getType(board[b.fromR][b.fromC])];
+
+      // Check moves
+      if (moveCausesCheck(a.fromR, a.fromC, a.toR, a.toC, color === BLACK ? RED : BLACK)) {
+        // Penalize repeated check patterns
+        if (!isRepeatingCheckPattern(getType(board[a.fromR][a.fromC]), a.toR, a.toC)) {
+          scoreA += 200;
+        }
+      }
+      if (moveCausesCheck(b.fromR, b.fromC, b.toR, b.toC, color === BLACK ? RED : BLACK)) {
+        if (!isRepeatingCheckPattern(getType(board[b.fromR][b.fromC]), b.toR, b.toC)) {
+          scoreB += 200;
+        }
+      }
+
+      // Central control
+      if (a.toC >= 3 && a.toC <= 5) scoreA += 10;
+      if (b.toC >= 3 && b.toC <= 5) scoreB += 10;
+
+      return scoreB - scoreA;
+    });
   }
 
   function showStrategyToast() {
@@ -1456,22 +1986,12 @@
 
     const notation = getMoveNotation({fromR: m.fromR, fromC: m.fromC, toR: m.toR, toC: m.toC, piece: piece});
 
-    // Make the move temporarily to check if it results in check
-    board[m.toR][m.toC] = piece; board[m.fromR][m.fromC] = 0;
-    const moveColor = getColor(piece);
-    const opponentColor = (moveColor === RED) ? BLACK : RED;
-    const resultsInCheck = inCheck(opponentColor);
-    // Undo the move
-    board[m.fromR][m.fromC] = piece; board[m.toR][m.toC] = cap;
-
     moveHistory.push({
       fromR: m.fromR, fromC: m.fromC, toR: m.toR, toC: m.toC,
       piece: piece, captured: cap, lastMoveState: lastMove,
       notation: notation,
       boardHash: getBoardHash(),
-      capturedStateSnapshot: JSON.parse(JSON.stringify(capturedState)),
-      isCheck: resultsInCheck,
-      checkTarget: resultsInCheck ? opponentColor : null
+      capturedStateSnapshot: JSON.parse(JSON.stringify(capturedState))
     });
 
     board[m.toR][m.toC] = piece; board[m.fromR][m.fromC] = 0;
@@ -1503,45 +2023,49 @@
     turn = (turn===RED)?BLACK:RED;
     selectedPiece = null; possibleMoves = [];
 
+    // Track position for repetition detection
+    const currentHash = getSimpleBoardHash();
+    positionHistory.push(currentHash);
+    if (positionHistory.length > MAX_POSITION_HISTORY) {
+      positionHistory.shift();
+    }
+
+    // Check for threefold repetition (draw by perpetual)
+    const repetitions = positionHistory.filter(h => h === currentHash).length;
+    if (repetitions >= 3) {
+      end("Hòa! (Lặp thế cờ 3 lần)");
+      return;
+    }
+
     const rKing = findKing(RED);
     const bKing = findKing(BLACK);
     if(!rKing) { end("Bạn Thua! (Đỏ bị chiếu bí)"); return; }
     if(!bKing) { end("Bạn Thắng! (Đen bị chiếu bí)"); return; }
 
-    // Check for repetitive checks after the move
-    if (detectRepetitiveCheck()) {
-      end("Hòa! (Chiếu lặp lại nhiều lần)");
+    // Update check state and show alert if in check
+    updateCheckState();
+
+    // Check for no legal moves (stalemate or checkmate)
+    let hasLegalMoves = false;
+    outer: for(let r=0; r<ROWS; r++) {
+      for(let c=0; c<COLS; c++) {
+        if(getColor(board[r][c]) === turn) {
+          if(generateMoves(r, c, true).length > 0) {
+            hasLegalMoves = true;
+            break outer;
+          }
+        }
+      }
+    }
+
+    if (!hasLegalMoves) {
+      if (inCheck(turn)) {
+        if (turn === RED) end("Bạn Thua! (Chiếu bí)");
+        else end("Bạn Thắng! (Chiếu bí)");
+      } else {
+        end("Hòa! (Hết nước đi)");
+      }
       return;
-    }
-
-    // Check if RED (player) has no valid moves
-    if(turn === RED && !gameOver) {
-      const redHasMoves = hasValidMoves(RED);
-      if(!redHasMoves) {
-        const redInCheck = inCheck(RED);
-        if(redInCheck) {
-          end("Bạn Thua! (Bị chiếu bí)");
-          return;
-        } else {
-          end("Hòa! (Hết nước đi)");
-          return;
-        }
-      }
-    }
-
-    // Check if BLACK (AI) has no valid moves
-    if(turn === BLACK && !gameOver) {
-      const blackHasMoves = hasValidMoves(BLACK);
-      if(!blackHasMoves) {
-        const blackInCheck = inCheck(BLACK);
-        if(blackInCheck) {
-          end("Bạn Thắng! (Đen bị chiếu bí)");
-          return;
-        } else {
-          end("Hòa! (Máy hết nước đi)");
-          return;
-        }
-      }
     }
 
     updateStatus(turn===RED?"Lượt của bạn":"Máy đang tính sâu...");
@@ -1551,20 +2075,7 @@
       setTimeout(() => {
         const best = getBestMove();
         if(best) startMoveAnimation(best, finalizeMove);
-        else {
-          // Double check if BLACK really has no moves
-          const blackHasMoves = hasValidMoves(BLACK);
-          if(!blackHasMoves) {
-            const blackInCheck = inCheck(BLACK);
-            if(blackInCheck) {
-              end("Bạn Thắng! (Đen bị chiếu bí)");
-            } else {
-              end("Hòa! (Máy hết nước đi)");
-            }
-          } else {
-            end("Bạn Thắng! (Máy hết nước đi)");
-          }
-        }
+        else end("Bạn Thắng! (Máy hết nước đi)");
       }, 300);
     }
   }
@@ -1572,19 +2083,6 @@
   function findKing(color) {
     for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++)
       if(getType(board[r][c])===PIECE_KING && getColor(board[r][c])===color) return true;
-    return false;
-  }
-
-  // Check if a side has any valid moves
-  function hasValidMoves(color) {
-    for(let r=0;r<ROWS;r++) {
-      for(let c=0;c<COLS;c++) {
-        if(getColor(board[r][c])===color) {
-          const moves = generateMoves(r,c,true);
-          if(moves.length > 0) return true;
-        }
-      }
-    }
     return false;
   }
 
@@ -1636,6 +2134,7 @@
   function undo() {
     if(animating || moveHistory.length<2 || gameOver) return;
     undoOne(); undoOne(); draw();
+    updateStatus("Lượt của bạn (Đỏ)");
   }
   function undoOne() {
     const m = moveHistory.pop();
@@ -1646,6 +2145,14 @@
     if (m.capturedStateSnapshot) {
       capturedState = m.capturedStateSnapshot;
       renderCaptured();
+    }
+    // Remove last position from history
+    if (positionHistory.length > 0) {
+      positionHistory.pop();
+    }
+    // Clear check history on undo to reset perpetual check detection
+    if (aiCheckHistory.length > 0) {
+      aiCheckHistory.pop();
     }
     turn = (turn===RED)?BLACK:RED;
   }
@@ -1732,6 +2239,12 @@
     }
     if(selectedPiece) highlightSq(selectedPiece.r, selectedPiece.c, theme.highlight);
 
+    // Draw check highlight on the king that is in check
+    if (currentCheckState.inCheck && currentCheckState.kingPos) {
+      const { r, c } = currentCheckState.kingPos;
+      drawCheckHighlight(r, c);
+    }
+
     for(let m of possibleMoves) {
       ctx.fillStyle = theme.highlight;
       ctx.beginPath(); ctx.arc(MARGIN+m.c*CELL_SIZE, MARGIN+m.r*CELL_SIZE, PIECE_RADIUS*0.3, 0, 6.28); ctx.fill();
@@ -1765,6 +2278,38 @@
     const x = MARGIN+c*CELL_SIZE, y=MARGIN+r*CELL_SIZE;
     ctx.fillStyle = color;
     ctx.fillRect(x-CELL_SIZE/2+2, y-CELL_SIZE/2+2, CELL_SIZE-4, CELL_SIZE-4);
+  }
+
+  // Draw pulsing red highlight for king in check
+  function drawCheckHighlight(r, c) {
+    const x = MARGIN + c * CELL_SIZE;
+    const y = MARGIN + r * CELL_SIZE;
+    const time = Date.now() / 200;
+    const pulse = 0.4 + 0.3 * Math.sin(time); // Pulsing opacity
+    const pulseRadius = PIECE_RADIUS * (1.3 + 0.15 * Math.sin(time)); // Pulsing size
+
+    // Outer glow
+    const gradient = ctx.createRadialGradient(x, y, PIECE_RADIUS * 0.5, x, y, pulseRadius * 1.5);
+    gradient.addColorStop(0, `rgba(231, 76, 60, ${pulse})`);
+    gradient.addColorStop(0.5, `rgba(231, 76, 60, ${pulse * 0.5})`);
+    gradient.addColorStop(1, 'rgba(231, 76, 60, 0)');
+
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.arc(x, y, pulseRadius * 1.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Inner ring
+    ctx.strokeStyle = `rgba(255, 100, 100, ${0.6 + 0.4 * Math.sin(time)})`;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(x, y, pulseRadius, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Request animation frame for continuous animation
+    if (currentCheckState.inCheck && !gameOver) {
+      requestAnimationFrame(() => draw());
+    }
   }
 
   function drawPiece(r, c, p) {

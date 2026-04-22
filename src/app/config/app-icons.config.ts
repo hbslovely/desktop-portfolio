@@ -30,20 +30,6 @@ export const APP_ICONS: DesktopIconData[] = [
     type: 'application',
     position: { x: 20, y: 320 }
   },
-  {
-    id: 'task-manager',
-    name: 'Task Manager',
-    icon: 'assets/images/icons/system.png',
-    type: 'application',
-    position: { x: 20, y: 420 }
-  },
-  {
-    id: 'machine-info',
-    name: 'System Info',
-    icon: 'assets/images/icons/info.png',
-    type: 'application',
-    position: { x: 20, y: 520 }
-  },
   // Column 2 (x: 120) - Information & Reference
   {
     id: 'news',
@@ -179,6 +165,20 @@ export const APP_ICONS: DesktopIconData[] = [
     icon: 'pi pi-chart-line',
     type: 'application',
     position: { x: 420, y: 320 }
+  },
+  {
+    id: 'sieu-co',
+    name: 'Siêu Cờ',
+    icon: 'pi pi-th-large',
+    type: 'application',
+    position: { x: 420, y: 420 }
+  },
+  {
+    id: 'image-search',
+    name: 'Tìm Kiếm Ảnh',
+    icon: 'pi pi-images',
+    type: 'application',
+    position: { x: 520, y: 20 }
   }
 ];
 
@@ -200,11 +200,9 @@ function getAppDescription(appId: string): string {
     'my-info': 'View personal information and portfolio details',
     'love': 'Explore love and relationship content',
     'explorer': 'Browse and manage files and folders',
-    'machine-info': 'View system information and device details',
     'paint': 'Create drawings and artwork with various tools',
     'hcmc': 'Explore Ho Chi Minh City attractions and culture',
     'news': 'Read latest news headlines from around the world',
-    'task-manager': 'View and manage all open windows and processes',
     'weather': 'View current weather and forecast for your location',
     'dictionary': 'Look up word definitions, pronunciations, and synonyms',
     'countries': 'Explore detailed information about countries around the world',
@@ -220,7 +218,9 @@ function getAppDescription(appId: string): string {
     'ocr': 'Đọc và trích xuất nội dung văn bản từ hình ảnh sử dụng công nghệ OCR (Optical Character Recognition)',
     'fb-id-finder': 'Tìm Facebook ID từ số điện thoại, tra cứu thông tin Facebook',
     'graph-visualizer': 'Tạo và phân tích đồ thị, tìm đường đi ngắn nhất với các thuật toán Dijkstra, Bellman-Ford, Floyd-Warshall, A*',
-    'stock': 'Quản lý và fetch dữ liệu cổ phiếu từ DNSE, lưu vào Google Sheets. Hỗ trợ HOSE, HNX, UPCOM, VN30'
+    'stock': 'Quản lý và fetch dữ liệu cổ phiếu từ DNSE, lưu vào Google Sheets. Hỗ trợ HOSE, HNX, UPCOM, VN30',
+    'sieu-co': 'Siêu Cờ - Chơi Cờ Tướng, Cờ Úp, giải Cờ Thế với AI thông minh. Ghi chép kỳ phổ, nhiều theme đẹp mắt',
+    'image-search': 'Tìm kiếm hình ảnh tương tự sử dụng thuật toán Computer Vision: pHash, dHash, Color Histogram, Edge Detection'
   };
   return descriptions[appId] || 'Application';
 }
@@ -231,11 +231,9 @@ function getAppKeywords(appId: string): string[] {
     'my-info': ['profile', 'personal', 'information', 'about', 'portfolio'],
     'love': ['relationship', 'romance', 'heart', 'dating'],
     'explorer': ['files', 'folders', 'browse', 'manage', 'directory'],
-    'machine-info': ['system', 'device', 'hardware', 'specs', 'info'],
     'paint': ['draw', 'art', 'design', 'canvas', 'creative'],
     'hcmc': ['vietnam', 'saigon', 'city', 'travel', 'culture', 'attractions'],
     'news': ['headlines', 'articles', 'media', 'journalism', 'current', 'events'],
-    'task-manager': ['processes', 'windows', 'performance', 'monitor', 'manager', 'tasks'],
     'weather': ['forecast', 'temperature', 'rain', 'cloud', 'wind', 'climate', 'meteorology'],
     'dictionary': ['words', 'definitions', 'meaning', 'vocabulary', 'thesaurus', 'synonyms', 'antonyms', 'pronunciation'],
     'countries': ['world', 'nations', 'flags', 'capitals', 'geography', 'borders', 'population', 'currencies', 'languages', 'maps', 'continents', 'regions'],
@@ -251,7 +249,9 @@ function getAppKeywords(appId: string): string[] {
     'ocr': ['ocr', 'đọc hình ảnh', 'doc hinh anh', 'nhận dạng văn bản', 'nhan dang van ban', 'text recognition', 'image to text', 'optical character recognition', 'trích xuất văn bản', 'trich xuat van ban', 'scan text', 'read image'],
     'fb-id-finder': ['facebook', 'fb', 'id', 'tìm facebook id', 'tim facebook id', 'số điện thoại', 'so dien thoai', 'phone', 'find facebook id', 'facebook id finder', 'lookup', 'search facebook'],
     'graph-visualizer': ['graph', 'đồ thị', 'do thi', 'graph visualization', 'shortest path', 'đường đi ngắn nhất', 'duong di ngan nhat', 'dijkstra', 'bellman-ford', 'floyd-warshall', 'a-star', 'algorithm', 'thuật toán', 'thuat toan', 'node', 'edge', 'weighted graph', 'directed graph', 'undirected graph'],
-    'stock': ['stock', 'chứng khoán', 'chung khoan', 'cổ phiếu', 'co phieu', 'dnse', 'hose', 'hnx', 'upcom', 'vn30', 'stock market', 'securities', 'trading', 'symbol', 'mã cổ phiếu', 'ma co phieu']
+    'stock': ['stock', 'chứng khoán', 'chung khoan', 'cổ phiếu', 'co phieu', 'dnse', 'hose', 'hnx', 'upcom', 'vn30', 'stock market', 'securities', 'trading', 'symbol', 'mã cổ phiếu', 'ma co phieu'],
+    'sieu-co': ['siêu cờ', 'sieu co', 'cờ tướng', 'co tuong', 'xiangqi', 'cờ úp', 'co up', 'cờ thế', 'co the', 'puzzle chess', 'chinese chess', 'AI chess', 'game', 'kỳ phổ', 'ky pho', 'minimax', 'alpha-beta'],
+    'image-search': ['image search', 'tìm kiếm ảnh', 'tim kiem anh', 'hình ảnh tương tự', 'hinh anh tuong tu', 'similar image', 'reverse image search', 'phash', 'dhash', 'color histogram', 'edge detection', 'computer vision', 'image matching', 'so sánh ảnh', 'so sanh anh', 'thuật toán', 'thuat toan', 'perceptual hash']
   };
   return keywords[appId] || [];
 }

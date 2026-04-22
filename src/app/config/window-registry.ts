@@ -96,18 +96,6 @@ export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
     maximizable: true,
     statusText: 'Ready'
   },
-  'machine-info': {
-    id: 'machine-info',
-    title: 'System Information',
-    icon: 'pi pi-desktop',
-    component: 'machine-info',
-    defaultWidth: 700,
-    defaultHeight: 600,
-    defaultX: 250,
-    defaultY: 100,
-    maximizable: true,
-    statusText: 'Ready'
-  },
   paint: {
     id: 'paint',
     title: 'Paint',
@@ -167,18 +155,6 @@ export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
     defaultY: 80,
     maximizable: true,
     statusText: 'Configure your desktop'
-  },
-  'task-manager': {
-    id: 'task-manager',
-    title: 'Task Manager',
-    icon: 'pi pi-th-large',
-    component: 'task-manager',
-    defaultWidth: 1100,
-    defaultHeight: 750,
-    defaultX: 200,
-    defaultY: 60,
-    maximizable: true,
-    statusText: 'Managing processes'
   },
   'weather': {
     id: 'weather',
@@ -383,6 +359,30 @@ export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
     defaultY: 50,
     maximizable: true,
     statusText: 'Quản lý và fetch dữ liệu cổ phiếu từ DNSE'
+  },
+  'sieu-co': {
+    id: 'sieu-co',
+    title: 'Siêu Cờ',
+    icon: 'pi pi-th-large',
+    component: 'sieu-co',
+    defaultWidth: 1200,
+    defaultHeight: 850,
+    defaultX: 100,
+    defaultY: 40,
+    maximizable: true,
+    statusText: 'Cờ Tướng, Cờ Úp & Cờ Thế'
+  },
+  'image-search': {
+    id: 'image-search',
+    title: 'Tìm Kiếm Hình Ảnh',
+    icon: 'pi pi-images',
+    component: 'image-search',
+    defaultWidth: 1100,
+    defaultHeight: 800,
+    defaultX: 150,
+    defaultY: 60,
+    maximizable: true,
+    statusText: 'Tìm kiếm hình ảnh tương tự bằng thuật toán CV'
   }
 };
 

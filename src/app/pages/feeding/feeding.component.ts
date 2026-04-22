@@ -95,6 +95,8 @@ export class FeedingComponent {
 
   logDialogOpen = signal<boolean>(false);
   historyDialogOpen = signal<boolean>(false);
+  tipsDialogOpen = signal<boolean>(false);
+  tipsGuideIndex = signal<number>(0);
   chartTab = signal<'volume' | 'count' | 'hourly'>('volume');
 
   ageInDays = computed<number | null>(() => {
@@ -141,6 +143,32 @@ export class FeedingComponent {
   });
 
   getCategoryMeta = getCategoryMeta;
+
+  /** Toàn bộ giai đoạn (week 1-4 + month 1-24) đã sort theo tuổi tăng dần */
+  allGuides = computed(() => {
+    const list: Array<{ key: string; label: string; guide: any }> = [];
+    Object.entries(WEEK_GUIDES).forEach(([k, v]) =>
+      list.push({ key: `week-${k}`, label: v.label, guide: v })
+    );
+    Object.entries(MONTH_GUIDES).forEach(([k, v]) =>
+      list.push({ key: `month-${k}`, label: v.label, guide: v })
+    );
+    return list;
+  });
+
+  currentGuideIndex = computed<number>(() => {
+    const current = this.currentGuide();
+    if (!current) return 0;
+    const all = this.allGuides();
+    const idx = all.findIndex((g) => g.key === current.key);
+    return idx >= 0 ? idx : 0;
+  });
+
+  selectedGuide = computed(() => {
+    const all = this.allGuides();
+    const i = Math.max(0, Math.min(all.length - 1, this.tipsGuideIndex()));
+    return all[i] || null;
+  });
 
   upcomingGuides = computed(() => {
     const guide = this.currentGuide();
@@ -700,6 +728,36 @@ export class FeedingComponent {
     this.chartTab.set(tab);
   }
 
+  openTipsDialog() {
+    this.tipsGuideIndex.set(this.currentGuideIndex());
+    this.tipsDialogOpen.set(true);
+  }
+
+  closeTipsDialog() {
+    this.tipsDialogOpen.set(false);
+  }
+
+  prevGuide() {
+    this.tipsGuideIndex.update((i) => Math.max(0, i - 1));
+  }
+
+  nextGuide() {
+    const max = this.allGuides().length - 1;
+    this.tipsGuideIndex.update((i) => Math.min(max, i + 1));
+  }
+
+  jumpToCurrentGuide() {
+    this.tipsGuideIndex.set(this.currentGuideIndex());
+  }
+
+  get canPrevGuide(): boolean {
+    return this.tipsGuideIndex() > 0;
+  }
+
+  get canNextGuide(): boolean {
+    return this.tipsGuideIndex() < this.allGuides().length - 1;
+  }
+
   openHistoryDialog() {
     this.historyDialogOpen.set(true);
   }
@@ -748,6 +806,34 @@ export class FeedingComponent {
     if (diffMin <= 5) return 'Sắp tới giờ bú';
     return `Còn ${this.minutesToHuman(diffMin)}`;
   }
+
+  /** Trạng thái countdown: 'now' (sắp/đã tới), 'late', hoặc 'waiting' */
+  countdownStatus = computed<'late' | 'now' | 'waiting'>(() => {
+    const p = this.prediction();
+    if (!p?.nextAt) return 'waiting';
+    const diffMin = Math.round((p.nextAt.getTime() - this.now().getTime()) / 60000);
+    if (diffMin < -5) return 'late';
+    if (diffMin <= 5) return 'now';
+    return 'waiting';
+  });
+
+  /** % tiến độ từ cữ cuối → cữ dự đoán tiếp theo (0-100) */
+  countdownProgress = computed<number>(() => {
+    const p = this.prediction();
+    const last = this.lastFeeding();
+    if (!p?.nextAt || !last) return 0;
+    const [y, mo, d] = last.date.split('-').map((n) => parseInt(n, 10));
+    const [h, mi] = last.time.split(':').map((n) => parseInt(n, 10));
+    const lastAt = new Date(y, (mo || 1) - 1, d || 1, h || 0, mi || 0).getTime();
+    const nextAt = p.nextAt.getTime();
+    const now = this.now().getTime();
+    const total = nextAt - lastAt;
+    if (total <= 0) return 100;
+    return Math.max(0, Math.min(100, Math.round(((now - lastAt) / total) * 100)));
+  });
+
+  /** 2 cữ bú hôm nay mới nhất (cho summary) */
+  todayLogsPreview = computed<FeedingLog[]>(() => this.todayLogs().slice(0, 2));
 
   get todayStr(): string {
     const d = this.now();

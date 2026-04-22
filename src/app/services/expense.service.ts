@@ -1,7 +1,7 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
-import { catchError, map, shareReplay } from 'rxjs/operators';
+import { catchError, map, shareReplay, switchMap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { 
   _0xgenerateToken, 
@@ -16,6 +16,7 @@ import {
   _0xhashUsername,
   _0xhashCredentials
 } from '../utils/crypto-obfuscator.util';
+import { LLMService, ExpenseSummaryResponse, ExpenseSummaryRequest, ParsedExpense, EXPENSE_CATEGORIES } from './llm.service';
 
 export interface Expense {
   date: string;
@@ -81,6 +82,9 @@ class ExpenseService {
   private lastLoadTime: number = 0;
   private readonly CACHE_DURATION = 5000; // 5 seconds cache
   private isLoading = false;
+
+  // LLM Service for AI-powered summaries
+  private llmService = inject(LLMService);
 
   constructor(private http: HttpClient) {}
 
@@ -812,6 +816,334 @@ class ExpenseService {
     this.cachedGroups$ = null;
     this.lastGroupsLoadTime = 0;
     console.log('🗑️ Groups cache cleared');
+  }
+
+  // ========== LLM SUMMARIZATION METHODS ==========
+
+  /**
+   * Get AI-powered summary of expenses
+   * Uses LLM to analyze and summarize spending patterns
+   */
+  getExpenseSummary(
+    expenses?: Expense[],
+    budgets?: CategoryBudget[],
+    options?: {
+      timeRange?: { from: string; to: string };
+      language?: 'vi' | 'en';
+    }
+  ): Observable<ExpenseSummaryResponse> {
+    // If no expenses provided, fetch them first
+    if (!expenses) {
+      return this.getExpenses().pipe(
+        switchMap(fetchedExpenses => {
+          return this.llmService.summarizeExpenses({
+            expenses: fetchedExpenses,
+            budgets,
+            timeRange: options?.timeRange,
+            language: options?.language || 'vi'
+          });
+        })
+      );
+    }
+
+    return this.llmService.summarizeExpenses({
+      expenses,
+      budgets,
+      timeRange: options?.timeRange,
+      language: options?.language || 'vi'
+    });
+  }
+
+  /**
+   * Get a quick summary of recent expenses
+   * Returns a short 1-2 sentence summary
+   */
+  getQuickExpenseSummary(
+    expenses?: Expense[],
+    language: 'vi' | 'en' = 'vi'
+  ): Observable<string> {
+    if (!expenses) {
+      return this.getExpenses().pipe(
+        switchMap(fetchedExpenses => 
+          this.llmService.getQuickSummary(fetchedExpenses, language)
+        )
+      );
+    }
+    return this.llmService.getQuickSummary(expenses, language);
+  }
+
+  /**
+   * Get spending advice based on expenses and budgets
+   * Returns actionable recommendations
+   */
+  getSpendingAdvice(
+    expenses?: Expense[],
+    budgets?: CategoryBudget[],
+    language: 'vi' | 'en' = 'vi'
+  ): Observable<string[]> {
+    if (!expenses || !budgets) {
+      return this.getExpenses().pipe(
+        switchMap(fetchedExpenses => 
+          this.getBudgets().pipe(
+            switchMap(fetchedBudgets => 
+              this.llmService.getSpendingAdvice(
+                expenses || fetchedExpenses, 
+                budgets || fetchedBudgets, 
+                language
+              )
+            )
+          )
+        )
+      );
+    }
+    return this.llmService.getSpendingAdvice(expenses, budgets, language);
+  }
+
+  /**
+   * Analyze spending patterns over time
+   * Identifies trends and patterns in spending behavior
+   */
+  analyzeSpendingPatterns(
+    expenses?: Expense[],
+    language: 'vi' | 'en' = 'vi'
+  ): Observable<string> {
+    if (!expenses) {
+      return this.getExpenses().pipe(
+        switchMap(fetchedExpenses => 
+          this.llmService.analyzePatterns(fetchedExpenses, language)
+        )
+      );
+    }
+    return this.llmService.analyzePatterns(expenses, language);
+  }
+
+  /**
+   * Ask a custom question about expenses using AI
+   * Allows users to query their expense data naturally
+   */
+  askAboutExpenses(
+    question: string,
+    expenses?: Expense[],
+    language: 'vi' | 'en' = 'vi'
+  ): Observable<string> {
+    if (!expenses) {
+      return this.getExpenses().pipe(
+        switchMap(fetchedExpenses => 
+          this.llmService.askAboutExpenses(question, fetchedExpenses, language)
+        )
+      );
+    }
+    return this.llmService.askAboutExpenses(question, expenses, language);
+  }
+
+  /**
+   * Get monthly expense summary using AI
+   * Summarizes expenses for a specific month
+   */
+  getMonthlyExpenseSummary(
+    year: number,
+    month: number,
+    language: 'vi' | 'en' = 'vi'
+  ): Observable<ExpenseSummaryResponse> {
+    return this.getExpenses().pipe(
+      switchMap(expenses => {
+        // Filter expenses for the specified month
+        const monthlyExpenses = expenses.filter(expense => {
+          const date = new Date(expense.date);
+          return date.getFullYear() === year && date.getMonth() === month - 1;
+        });
+
+        const startDate = new Date(year, month - 1, 1);
+        const endDate = new Date(year, month, 0);
+
+        return this.getBudgets().pipe(
+          switchMap(budgets => 
+            this.llmService.summarizeExpenses({
+              expenses: monthlyExpenses,
+              budgets,
+              timeRange: {
+                from: startDate.toISOString().split('T')[0],
+                to: endDate.toISOString().split('T')[0]
+              },
+              language
+            })
+          )
+        );
+      })
+    );
+  }
+
+  /**
+   * Get weekly expense summary using AI
+   * Summarizes expenses for the current or specified week
+   */
+  getWeeklyExpenseSummary(
+    startDate?: Date,
+    language: 'vi' | 'en' = 'vi'
+  ): Observable<ExpenseSummaryResponse> {
+    const start = startDate || this.getStartOfWeek(new Date());
+    const end = new Date(start);
+    end.setDate(end.getDate() + 6);
+
+    return this.getExpenses().pipe(
+      switchMap(expenses => {
+        const weeklyExpenses = expenses.filter(expense => {
+          const date = new Date(expense.date);
+          return date >= start && date <= end;
+        });
+
+        return this.getBudgets().pipe(
+          switchMap(budgets =>
+            this.llmService.summarizeExpenses({
+              expenses: weeklyExpenses,
+              budgets,
+              timeRange: {
+                from: start.toISOString().split('T')[0],
+                to: end.toISOString().split('T')[0]
+              },
+              language
+            })
+          )
+        );
+      })
+    );
+  }
+
+  /**
+   * Get start of week (Monday)
+   */
+  private getStartOfWeek(date: Date): Date {
+    const d = new Date(date);
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+    return new Date(d.setDate(diff));
+  }
+
+  /**
+   * Compare expenses between two periods using AI
+   */
+  compareExpensePeriods(
+    period1: { from: string; to: string },
+    period2: { from: string; to: string },
+    language: 'vi' | 'en' = 'vi'
+  ): Observable<string> {
+    return this.getExpenses().pipe(
+      switchMap(expenses => {
+        const expenses1 = expenses.filter(e => {
+          const date = new Date(e.date);
+          return date >= new Date(period1.from) && date <= new Date(period1.to);
+        });
+
+        const expenses2 = expenses.filter(e => {
+          const date = new Date(e.date);
+          return date >= new Date(period2.from) && date <= new Date(period2.to);
+        });
+
+        const total1 = expenses1.reduce((sum, e) => sum + e.amount, 0);
+        const total2 = expenses2.reduce((sum, e) => sum + e.amount, 0);
+
+        const prompt = language === 'vi'
+          ? `So sánh chi tiêu giữa 2 khoảng thời gian:
+Kỳ 1 (${period1.from} - ${period1.to}): ${total1.toLocaleString('vi-VN')} đ (${expenses1.length} giao dịch)
+Kỳ 2 (${period2.from} - ${period2.to}): ${total2.toLocaleString('vi-VN')} đ (${expenses2.length} giao dịch)
+
+Đưa ra nhận xét ngắn gọn (2-3 câu) về sự thay đổi. Không dùng markdown.`
+          : `Compare expenses between 2 periods:
+Period 1 (${period1.from} - ${period1.to}): ${total1.toLocaleString('vi-VN')} VND (${expenses1.length} transactions)
+Period 2 (${period2.from} - ${period2.to}): ${total2.toLocaleString('vi-VN')} VND (${expenses2.length} transactions)
+
+Give a brief comment (2-3 sentences) about the change. No markdown.`;
+
+        return this.llmService.chat([{ role: 'user', content: prompt }]);
+      })
+    );
+  }
+
+  // ========== RAW EXPENSE PARSING METHODS ==========
+
+  /**
+   * Parse raw expense text to structured expense data
+   * Examples:
+   *   - "mua bánh 10k" -> { content: "Mua bánh", amount: 10000, category: "Ăn uống" }
+   *   - "grab 50k đi làm" -> { content: "Grab đi làm", amount: 50000, category: "Di chuyển" }
+   *   - "cà phê 35000" -> { content: "Cà phê", amount: 35000, category: "Ăn uống" }
+   */
+  parseRawExpense(rawInput: string): Observable<ParsedExpense> {
+    return this.llmService.parseExpenseFromText(rawInput);
+  }
+
+  /**
+   * Parse multiple raw expenses from a single input
+   * Example: "mua bánh 10k, grab 50k, cafe 35k"
+   */
+  parseMultipleRawExpenses(rawInput: string): Observable<ParsedExpense[]> {
+    return this.llmService.parseMultipleExpenses(rawInput);
+  }
+
+  /**
+   * Parse raw expense and immediately add to Google Sheets
+   * Convenience method that combines parsing and adding
+   */
+  parseAndAddExpense(rawInput: string): Observable<{ parsed: ParsedExpense; saved: any }> {
+    return this.llmService.parseExpenseFromText(rawInput).pipe(
+      switchMap(parsed => {
+        const expense: Expense = {
+          date: parsed.date,
+          content: parsed.content,
+          amount: parsed.amount,
+          category: parsed.category,
+          note: parsed.note
+        };
+        
+        return this.addExpense(expense).pipe(
+          map(saved => ({ parsed, saved }))
+        );
+      })
+    );
+  }
+
+  /**
+   * Get available expense categories
+   */
+  getExpenseCategories(): string[] {
+    return [...EXPENSE_CATEGORIES];
+  }
+
+  /**
+   * Check if AI (HuggingFace) is available
+   */
+  isAIAvailable(): boolean {
+    return this.llmService.isHuggingFaceAvailable();
+  }
+
+  /**
+   * Get LLM processing status
+   */
+  isLLMProcessing(): boolean {
+    return this.llmService.isProcessing();
+  }
+
+  /**
+   * Get LLM last error
+   */
+  getLLMLastError(): string | null {
+    return this.llmService.lastError();
+  }
+
+  /**
+   * Configure LLM
+   */
+  configureLLM(config: {
+    model?: string;
+  }): void {
+    this.llmService.saveConfig(config);
+  }
+
+  /**
+   * Get current LLM configuration
+   */
+  getLLMConfig() {
+    return this.llmService.getConfig();
   }
 }
 
