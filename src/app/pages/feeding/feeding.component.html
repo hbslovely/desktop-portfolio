@@ -14,6 +14,16 @@
       </div>
 
       <div class="hero-actions" *ngIf="profile() && !editing()">
+        <button
+          class="btn icon-btn"
+          type="button"
+          (click)="loadLogs()"
+          [disabled]="loadingLogs()"
+          [title]="loadingLogs() ? 'Đang tải…' : 'Tải lại dữ liệu'"
+          aria-label="Tải lại dữ liệu"
+        >
+          <i class="pi pi-refresh" [class.spin]="loadingLogs()"></i>
+        </button>
         <button class="btn ghost" (click)="startEdit()">
           <i class="pi pi-pencil"></i> Sửa profile
         </button>
@@ -342,7 +352,7 @@
                 *ngIf="todayLogs().length > 2"
                 type="button"
                 class="logs-more"
-                (click)="openHistoryDialog()"
+                (click)="openHistoryDialog('today')"
               >
                 Xem tất cả {{ todayLogs().length }}
                 <i class="pi pi-chevron-right"></i>
@@ -435,11 +445,11 @@
           <button
             type="button"
             class="chart-tab"
-            [class.active]="chartTab() === 'hourly'"
-            (click)="setChartTab('hourly')"
+            [class.active]="chartTab() === 'timeline'"
+            (click)="setChartTab('timeline')"
           >
-            <i class="pi pi-clock"></i>
-            Phân bố giờ
+            <i class="pi pi-stopwatch"></i>
+            Timeline
           </button>
         </div>
 
@@ -476,7 +486,7 @@
             </g>
 
             <path class="line-area" [attr.d]="weeklyLineChart().areaPath" />
-            <polyline class="line-stroke" [attr.points]="weeklyLineChart().linePath" />
+            <path class="line-stroke" [attr.d]="weeklyLineChart().linePath" fill="none" />
 
             <g class="dots">
               <g *ngFor="let p of weeklyLineChart().points">
@@ -585,67 +595,115 @@
           </svg>
         </div>
 
-        <!-- TAB: Phân bố giờ -->
-        <div class="chart-wrapper tall" *ngIf="chartTab() === 'hourly'">
+        <!-- TAB: Timeline trong ngày -->
+        <div class="chart-wrapper tall" *ngIf="chartTab() === 'timeline'">
           <div class="chart-title">
-            Phân bố cữ bú theo giờ
-            <span class="muted-small">· 30 ngày gần nhất · tổng {{ hourlyDistribution().totalFeeds }} cữ</span>
+            Tiến độ bú trong ngày
+            <span class="muted-small">
+              · tích luỹ ml từ 00h → 24h
+            </span>
           </div>
+
+          <!-- Legend + totals -->
+          <div class="timeline-legend">
+            <div class="tl-item today">
+              <span class="tl-swatch"></span>
+              <span class="tl-label">Hôm nay</span>
+              <strong class="tl-value">{{ timelineChart().todayTotal }}ml</strong>
+            </div>
+            <div class="tl-item yesterday">
+              <span class="tl-swatch"></span>
+              <span class="tl-label">Hôm qua</span>
+              <strong class="tl-value">{{ timelineChart().yesterdayTotal }}ml</strong>
+            </div>
+            <div class="tl-item avg3">
+              <span class="tl-swatch"></span>
+              <span class="tl-label">
+                TB 3 ngày trước
+                <span class="muted-small" *ngIf="timelineChart().prev3DaysCount < 3">
+                  (có {{ timelineChart().prev3DaysCount }} ngày dữ liệu)
+                </span>
+              </span>
+              <strong class="tl-value">{{ timelineChart().avg3Total }}ml</strong>
+            </div>
+          </div>
+
           <svg
-            class="bar-chart tall"
-            [attr.viewBox]="'0 0 ' + hourlyDistribution().W + ' ' + hourlyDistribution().H"
+            class="line-chart tall timeline-svg"
+            [attr.viewBox]="'0 0 ' + timelineChart().W + ' ' + timelineChart().H"
             preserveAspectRatio="xMidYMid meet"
-            *ngIf="hourlyDistribution().totalFeeds > 0; else noHourly"
+            *ngIf="timelineChart().yesterdayTotal > 0 || timelineChart().avg3Total > 0 || timelineChart().todayTotal > 0; else noTimeline"
           >
             <g class="grid">
               <line
-                *ngFor="let g of hourlyDistribution().gridLines"
-                [attr.x1]="hourlyDistribution().PAD_L"
-                [attr.x2]="hourlyDistribution().W - 16"
+                *ngFor="let g of timelineChart().yGrid"
+                [attr.x1]="timelineChart().PAD_L"
+                [attr.x2]="timelineChart().W - 16"
                 [attr.y1]="g.y"
                 [attr.y2]="g.y"
               />
               <text
-                *ngFor="let g of hourlyDistribution().gridLines"
-                [attr.x]="hourlyDistribution().PAD_L - 6"
+                *ngFor="let g of timelineChart().yGrid"
+                [attr.x]="timelineChart().PAD_L - 6"
                 [attr.y]="g.y + 4"
                 text-anchor="end"
                 class="grid-label"
               >{{ g.label }}</text>
             </g>
 
-            <g class="bars hourly">
-              <g *ngFor="let b of hourlyDistribution().bars">
-                <rect
-                  [attr.x]="b.x"
-                  [attr.y]="b.y"
-                  [attr.width]="b.barW"
-                  [attr.height]="b.h"
-                  rx="4"
-                  class="bar hourly-bar"
-                  [class.empty]="b.b.count === 0"
-                >
-                  <title>{{ formatHourLabel(b.b.hour) }}: {{ b.b.count }} cữ, TB {{ b.b.avg }}ml</title>
-                </rect>
-              </g>
+            <!-- "Now" vertical line -->
+            <g class="now-marker">
+              <line
+                [attr.x1]="timelineChart().nowX"
+                [attr.x2]="timelineChart().nowX"
+                [attr.y1]="timelineChart().chartTop"
+                [attr.y2]="timelineChart().chartBottom"
+                class="now-line"
+              />
+              <text
+                [attr.x]="timelineChart().nowX"
+                [attr.y]="timelineChart().chartTop - 6"
+                text-anchor="middle"
+                class="now-label"
+              >bây giờ</text>
             </g>
 
+            <!-- Lines (avg first so it sits behind) -->
+            <path class="tl-path avg3" [attr.d]="timelineChart().avg3Path" />
+            <path class="tl-path yesterday" [attr.d]="timelineChart().yesterdayPath" />
+            <path class="tl-path today" [attr.d]="timelineChart().todayPath" />
+
+            <!-- Today end marker -->
+            <g *ngIf="timelineChart().todayEndPoint as pt">
+              <circle [attr.cx]="pt.x" [attr.cy]="pt.y" r="6" class="tl-end-outer" />
+              <circle [attr.cx]="pt.x" [attr.cy]="pt.y" r="3" class="tl-end-inner" />
+              <text
+                [attr.x]="pt.x"
+                [attr.y]="pt.y - 12"
+                text-anchor="middle"
+                class="tl-end-label"
+              >{{ pt.v }}ml</text>
+            </g>
+
+            <!-- X tick labels -->
             <g class="x-labels">
               <text
-                *ngFor="let t of hourlyDistribution().xTicks"
+                *ngFor="let t of timelineChart().xTicks"
                 [attr.x]="t.x"
-                [attr.y]="hourlyDistribution().H - 14"
+                [attr.y]="timelineChart().H - 14"
                 text-anchor="middle"
                 class="x-label"
-              >{{ formatHourLabel(t.hour) }}</text>
+              >{{ t.hour }}h</text>
             </g>
           </svg>
-          <ng-template #noHourly>
-            <div class="empty-mini">Chưa đủ dữ liệu để hiển thị phân bố theo giờ.</div>
+          <ng-template #noTimeline>
+            <div class="empty-mini">
+              Chưa đủ dữ liệu. Cần ít nhất vài cữ bú trong 3 ngày gần đây.
+            </div>
           </ng-template>
         </div>
 
-        <div class="empty-mini" *ngIf="chartTab() !== 'hourly' && weeklyAverage() === 0">
+        <div class="empty-mini" *ngIf="chartTab() !== 'timeline' && weeklyAverage() === 0">
           Chưa có dữ liệu nào trong 7 ngày qua.
         </div>
       </section>
@@ -1020,8 +1078,18 @@
     >
       <div class="dialog-head">
         <div>
-          <div class="eyebrow">Lịch sử đầy đủ</div>
-          <h2><i class="pi pi-list"></i> Tất cả cữ bú ({{ logs().length }})</h2>
+          <div class="eyebrow">
+            {{ historyFilter() === 'today' ? 'Cữ bú hôm nay' : 'Lịch sử đầy đủ' }}
+          </div>
+          <h2>
+            <i class="pi pi-list"></i>
+            <ng-container *ngIf="historyFilter() === 'today'; else allHistTitle">
+              Hôm nay ({{ todayLogs().length }} cữ · {{ todayStats().total }}ml)
+            </ng-container>
+            <ng-template #allHistTitle>
+              Tất cả cữ bú ({{ logs().length }})
+            </ng-template>
+          </h2>
         </div>
         <button
           type="button"
@@ -1073,7 +1141,7 @@
         </div>
 
         <div class="empty-mini" *ngIf="feedingsByDate().length === 0">
-          Chưa có cữ bú nào được ghi nhận.
+          {{ historyFilter() === 'today' ? 'Chưa có cữ bú nào trong hôm nay.' : 'Chưa có cữ bú nào được ghi nhận.' }}
         </div>
       </div>
     </div>
