@@ -24,6 +24,11 @@ import {
   NutritionEvaluation,
   NutritionTarget,
 } from './feeding-nutrition';
+import {
+  POSTPARTUM_STAGES,
+  PostpartumStage,
+  resolvePostpartumStage,
+} from './postpartum-food.data';
 
 interface Profile {
   babyName: string;
@@ -190,6 +195,52 @@ export class FeedingComponent {
     return all[i] || null;
   });
 
+  // ===== Postpartum food (món ăn cho mẹ) =====
+  /** null = auto theo tuổi bé; number = override do user navigate */
+  momFoodStageOverride = signal<number | null>(null);
+
+  activeMomStage = computed<PostpartumStage>(() => {
+    const override = this.momFoodStageOverride();
+    if (override !== null) {
+      const i = Math.max(0, Math.min(POSTPARTUM_STAGES.length - 1, override));
+      return POSTPARTUM_STAGES[i];
+    }
+    const days = this.ageInDays() ?? 0;
+    return resolvePostpartumStage(days);
+  });
+
+  activeMomStageIndex = computed<number>(() => {
+    const stage = this.activeMomStage();
+    return POSTPARTUM_STAGES.findIndex((s) => s.id === stage.id);
+  });
+
+  momStageTotal = POSTPARTUM_STAGES.length;
+
+  currentMomStage = computed<PostpartumStage>(() => {
+    const days = this.ageInDays() ?? 0;
+    return resolvePostpartumStage(days);
+  });
+
+  isMomStageAuto = computed<boolean>(() => {
+    if (this.momFoodStageOverride() === null) return true;
+    return this.activeMomStage().id === this.currentMomStage().id;
+  });
+
+  prevMomStage() {
+    const i = this.activeMomStageIndex();
+    if (i > 0) this.momFoodStageOverride.set(i - 1);
+  }
+
+  nextMomStage() {
+    const i = this.activeMomStageIndex();
+    if (i < POSTPARTUM_STAGES.length - 1)
+      this.momFoodStageOverride.set(i + 1);
+  }
+
+  resetMomStage() {
+    this.momFoodStageOverride.set(null);
+  }
+
   upcomingGuides = computed(() => {
     const guide = this.currentGuide();
     if (!guide) return [];
@@ -265,6 +316,28 @@ export class FeedingComponent {
     if (!target) return null;
     const today = this.todayStats();
     return evaluateNutrition(target, today.total, today.count);
+  });
+
+  /**
+   * Dữ liệu cho progress bar nutrition.
+   * scaleMax = max * 1.2 hoặc actualMl (nếu vượt xa) để pointer luôn nằm trong track.
+   * Cung cấp vị trí tick min/max và pointer (%) cho template bind style.
+   */
+  nutritionZones = computed(() => {
+    const ev = this.nutritionEval();
+    if (!ev) return null;
+    const min = ev.target.dailyMlMin;
+    const max = ev.target.dailyMlMax;
+    const scaleMax = Math.max(max * 1.2, ev.actualMl + 10);
+    return {
+      minLabel: min,
+      maxLabel: max,
+      scaleMax: Math.round(scaleMax),
+      lowPct: Math.max(0, (min / scaleMax) * 100),
+      okPct: Math.max(0, ((max - min) / scaleMax) * 100),
+      overPct: Math.max(0, ((scaleMax - max) / scaleMax) * 100),
+      pointerPct: Math.max(0, Math.min(100, (ev.actualMl / scaleMax) * 100)),
+    };
   });
 
   lastFeedingAgo = computed<string>(() => {
