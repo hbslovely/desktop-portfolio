@@ -163,28 +163,27 @@
           </div>
         </div>
 
-        <div class="card period-card" *ngIf="currentGuide() as guide">
-          <div class="eyebrow">Giai đoạn hiện tại</div>
-          <h2>{{ guide.period.label }}</h2>
-          <p class="period-summary">{{ guide.period.summary }}</p>
+        <button
+          type="button"
+          class="timeline-cta"
+          (click)="openTimelineDialog()"
+          *ngIf="currentTimelineMilestone() as cur"
+          [title]="'Xem dòng thời gian phát triển của bé'"
+        >
+          <span class="tcta-emoji">{{ cur.heroEmoji }}</span>
+          <span class="tcta-body">
+            <span class="tcta-label">
+              <i class="pi pi-chart-line"></i>
+              Timeline phát triển
+            </span>
+            <span class="tcta-now">{{ cur.periodLabel }} · {{ cur.tagline }}</span>
+          </span>
+          <span class="tcta-progress">
+            {{ timelineStats().past }}/{{ timelineStats().total }}
+          </span>
+          <i class="pi pi-chevron-right"></i>
+        </button>
 
-          <div class="schedule-grid">
-            <div class="schedule">
-              <i class="pi pi-apple"></i>
-              <div>
-                <div class="schedule-title">Lịch bú / ăn gợi ý</div>
-                <div class="schedule-text">{{ guide.period.feedingSchedule }}</div>
-              </div>
-            </div>
-            <div class="schedule">
-              <i class="pi pi-moon"></i>
-              <div>
-                <div class="schedule-title">Giấc ngủ</div>
-                <div class="schedule-text">{{ guide.period.sleepSchedule }}</div>
-              </div>
-            </div>
-          </div>
-        </div>
       </section>
 
       <!-- Inline sync banner (floating above FAB when present) -->
@@ -453,6 +452,37 @@
             </div>
             <div *ngIf="yesterdayStats().firstTime">
               <i class="pi pi-clock"></i> {{ yesterdayStats().firstTime }} → {{ yesterdayStats().lastTime }}
+            </div>
+          </div>
+
+          <!-- Yesterday's logs (collapsed) -->
+          <div class="today-logs" *ngIf="yesterdayLogs().length > 0">
+            <div class="logs-header">
+              <span>Các cữ bú hôm qua</span>
+              <button
+                *ngIf="yesterdayLogs().length > 2"
+                type="button"
+                class="logs-more"
+                (click)="openHistoryDialog('yesterday')"
+              >
+                Xem tất cả {{ yesterdayLogs().length }}
+                <i class="pi pi-chevron-right"></i>
+              </button>
+            </div>
+            <div class="log-list">
+              <div class="log-row" *ngFor="let l of yesterdayLogsPreview()">
+                <span class="log-time">{{ l.time }}</span>
+                <span class="log-volume">{{ l.volume }}ml</span>
+                <span class="log-note" *ngIf="l.note">· {{ l.note }}</span>
+                <button
+                  class="log-del"
+                  (click)="deleteLog(l)"
+                  title="Xoá cữ bú này"
+                  *ngIf="l.rowIndex"
+                >
+                  <i class="pi pi-trash"></i>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -1001,77 +1031,6 @@
         </div>
       </section>
 
-      <!-- Tips section header + navigate -->
-      <section class="tips-section-head">
-        <div>
-          <div class="eyebrow"><i class="pi pi-book"></i> Tips theo giai đoạn</div>
-          <h2 *ngIf="currentGuide() as g">{{ g.period.label }}</h2>
-        </div>
-        <button
-          type="button"
-          class="btn ghost small"
-          (click)="openTipsDialog()"
-        >
-          <i class="pi pi-history"></i>
-          Xem các giai đoạn khác
-        </button>
-      </section>
-
-      <!-- Category filter -->
-      <section class="filter-bar">
-        <button
-          class="filter-chip"
-          [class.active]="activeCategory() === 'all'"
-          (click)="selectCategory('all')"
-        >
-          <i class="pi pi-th-large"></i> Tất cả
-        </button>
-        <button
-          *ngFor="let cat of availableCategories()"
-          class="filter-chip"
-          [class.active]="activeCategory() === cat"
-          [style.--cat-color]="getCategoryMeta(cat).color"
-          (click)="selectCategory(cat)"
-        >
-          <i [class]="getCategoryMeta(cat).icon"></i>
-          {{ getCategoryMeta(cat).label }}
-        </button>
-      </section>
-
-      <!-- Tips -->
-      <section class="tips-grid">
-        <article
-          *ngFor="let tip of filteredTips()"
-          class="tip-card"
-          [style.--cat-color]="getCategoryMeta(tip.category).color"
-        >
-          <div class="tip-head">
-            <span class="tip-pill">
-              <i [class]="getCategoryMeta(tip.category).icon"></i>
-              {{ getCategoryMeta(tip.category).label }}
-            </span>
-          </div>
-          <h3 class="tip-title">{{ tip.title }}</h3>
-          <p class="tip-body">{{ tip.content }}</p>
-        </article>
-
-        <div class="empty" *ngIf="filteredTips().length === 0">
-          <i class="pi pi-inbox"></i>
-          Không có tip nào ở mục này cho giai đoạn hiện tại.
-        </div>
-      </section>
-
-      <!-- Upcoming -->
-      <section class="upcoming" *ngIf="upcomingGuides().length > 0">
-        <h3><i class="pi pi-forward"></i> Sắp tới</h3>
-        <div class="upcoming-grid">
-          <div class="upcoming-item" *ngFor="let u of upcomingGuides()">
-            <i class="pi pi-arrow-circle-right"></i>
-            {{ u.label }}
-          </div>
-        </div>
-      </section>
-
       <!-- ============ MOM FOOD SUGGESTIONS ============ -->
       <section
         class="card mom-food-card"
@@ -1369,16 +1328,25 @@
       <div class="dialog-head">
         <div>
           <div class="eyebrow">
-            {{ historyFilter() === 'today' ? 'Cữ bú hôm nay' : 'Lịch sử đầy đủ' }}
+            <ng-container [ngSwitch]="historyFilter()">
+              <ng-container *ngSwitchCase="'today'">Cữ bú hôm nay</ng-container>
+              <ng-container *ngSwitchCase="'yesterday'">Cữ bú hôm qua</ng-container>
+              <ng-container *ngSwitchDefault>Lịch sử đầy đủ</ng-container>
+            </ng-container>
           </div>
           <h2>
             <i class="pi pi-list"></i>
-            <ng-container *ngIf="historyFilter() === 'today'; else allHistTitle">
-              Hôm nay ({{ todayLogs().length }} cữ · {{ todayStats().total }}ml)
+            <ng-container [ngSwitch]="historyFilter()">
+              <ng-container *ngSwitchCase="'today'">
+                Hôm nay ({{ todayLogs().length }} cữ · {{ todayStats().total }}ml)
+              </ng-container>
+              <ng-container *ngSwitchCase="'yesterday'">
+                Hôm qua ({{ yesterdayLogs().length }} cữ · {{ yesterdayStats().total }}ml)
+              </ng-container>
+              <ng-container *ngSwitchDefault>
+                Tất cả cữ bú ({{ logs().length }})
+              </ng-container>
             </ng-container>
-            <ng-template #allHistTitle>
-              Tất cả cữ bú ({{ logs().length }})
-            </ng-template>
           </h2>
         </div>
         <button
@@ -1437,103 +1405,443 @@
     </div>
   </div>
 
-  <!-- ============ TIPS DIALOG (navigate periods) ============ -->
+  <!-- ============ TIMELINE DIALOG (developmental milestones) ============ -->
   <div
     class="dialog-overlay"
-    *ngIf="tipsDialogOpen()"
-    (click)="closeTipsDialog()"
+    *ngIf="timelineDialogOpen()"
+    (click)="closeTimelineDialog()"
   >
     <div
-      class="dialog dialog-wide"
+      class="dialog dialog-wide timeline-dialog"
       role="dialog"
       aria-modal="true"
       (click)="$event.stopPropagation()"
     >
       <div class="dialog-head">
         <div>
-          <div class="eyebrow">Giai đoạn {{ tipsGuideIndex() + 1 }} / {{ allGuides().length }}</div>
-          <h2 *ngIf="selectedGuide() as sg"><i class="pi pi-book"></i> {{ sg.guide.label }}</h2>
+          <div class="eyebrow">
+            <i class="pi pi-chart-line"></i>
+            Dòng thời gian phát triển
+          </div>
+          <h2>🌱 Hành trình của {{ profile()?.babyName || 'bé' }}</h2>
+          <p class="dialog-lead" *ngIf="ageBreakdown() as age">
+            {{ age.days }} ngày tuổi ·
+            <span class="tl-head-stat">{{ timelineStats().past }}/{{ timelineStats().total }} cột mốc đã qua</span>
+          </p>
         </div>
         <button
           type="button"
           class="dialog-close"
-          (click)="closeTipsDialog()"
+          (click)="closeTimelineDialog()"
           aria-label="Đóng"
         >
           <i class="pi pi-times"></i>
         </button>
       </div>
 
-      <!-- Nav bar with arrows -->
-      <div class="tips-nav">
+      <!-- View tabs -->
+      <div class="tl-tabs" role="tablist">
         <button
           type="button"
-          class="nav-arrow"
-          (click)="prevGuide()"
-          [disabled]="!canPrevGuide"
-          aria-label="Giai đoạn trước"
+          role="tab"
+          class="tl-tab"
+          [class.active]="timelineView() === 'list'"
+          (click)="setTimelineView('list')"
         >
-          <i class="pi pi-chevron-left"></i>
+          <i class="pi pi-list"></i>
+          <span>Danh sách</span>
         </button>
-
         <button
           type="button"
-          class="tips-now-btn"
-          [class.active]="tipsGuideIndex() === currentGuideIndex()"
-          (click)="jumpToCurrentGuide()"
-          title="Về giai đoạn hiện tại"
+          role="tab"
+          class="tl-tab"
+          [class.active]="timelineView() === 'chart'"
+          (click)="setTimelineView('chart')"
         >
-          <i class="pi pi-home"></i> Giai đoạn hiện tại
-        </button>
-
-        <button
-          type="button"
-          class="nav-arrow"
-          (click)="nextGuide()"
-          [disabled]="!canNextGuide"
-          aria-label="Giai đoạn sau"
-        >
-          <i class="pi pi-chevron-right"></i>
+          <i class="pi pi-chart-line"></i>
+          <span>Biểu đồ tâm trạng</span>
         </button>
       </div>
 
-      <!-- Content -->
-      <div class="tips-dialog-body" *ngIf="selectedGuide() as sg">
-        <p class="period-summary">{{ sg.guide.summary }}</p>
 
-        <div class="schedule-grid">
-          <div class="schedule">
-            <i class="pi pi-apple"></i>
-            <div>
-              <div class="schedule-title">Lịch bú / ăn gợi ý</div>
-              <div class="schedule-text">{{ sg.guide.feedingSchedule }}</div>
-            </div>
-          </div>
-          <div class="schedule">
-            <i class="pi pi-moon"></i>
-            <div>
-              <div class="schedule-title">Giấc ngủ</div>
-              <div class="schedule-text">{{ sg.guide.sleepSchedule }}</div>
-            </div>
-          </div>
+      <!-- ============ CHART VIEW ============ -->
+      <div class="tl-chart-view" *ngIf="timelineView() === 'chart'">
+        <div class="tl-chart-mood-legend">
+          <span class="tl-mood-badge" data-mood="happy">
+            <i class="pi pi-heart-fill"></i> Vui
+          </span>
+          <span class="tl-mood-badge" data-mood="milestone">
+            <i class="pi pi-star-fill"></i> Cột mốc
+          </span>
+          <span class="tl-mood-badge" data-mood="calm">
+            <i class="pi pi-circle-fill"></i> Bình yên
+          </span>
+          <span class="tl-mood-badge" data-mood="growth">
+            <i class="pi pi-arrow-up"></i> Tăng trưởng
+          </span>
+          <span class="tl-mood-badge" data-mood="leap">
+            <i class="pi pi-bolt"></i> Leap/WW
+          </span>
         </div>
 
-        <div class="dialog-tips-grid">
-          <article
-            *ngFor="let tip of sg.guide.tips"
-            class="tip-card"
-            [style.--cat-color]="getCategoryMeta(tip.category).color"
+        <div class="tl-chart-scroll" *ngIf="timelineChartData() as cd">
+          <svg
+            [attr.viewBox]="'0 0 ' + cd.W + ' ' + cd.H"
+            [attr.width]="cd.W"
+            [attr.height]="cd.H"
+            class="tl-chart-svg"
+            preserveAspectRatio="xMinYMid meet"
           >
-            <div class="tip-head">
-              <span class="tip-pill">
-                <i [class]="getCategoryMeta(tip.category).icon"></i>
-                {{ getCategoryMeta(tip.category).label }}
-              </span>
+            <defs>
+              <linearGradient id="tlMoodGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#22c55e" stop-opacity="0.20" />
+                <stop offset="45%" stop-color="#eab308" stop-opacity="0.14" />
+                <stop offset="100%" stop-color="#ef4444" stop-opacity="0.08" />
+              </linearGradient>
+              <linearGradient id="tlMoodLine" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#16a34a" />
+                <stop offset="45%" stop-color="#eab308" />
+                <stop offset="100%" stop-color="#dc2626" />
+              </linearGradient>
+            </defs>
+
+            <!-- Horizontal mood reference lines -->
+            <g class="tl-chart-guides">
+              <line
+                *ngFor="let g of cd.moodGuides"
+                [attr.x1]="cd.PAD_L"
+                [attr.x2]="cd.W - cd.PAD_R"
+                [attr.y1]="g.y"
+                [attr.y2]="g.y"
+                stroke="#e5e7eb"
+                stroke-dasharray="2 4"
+                stroke-width="1"
+              />
+              <text
+                *ngFor="let g of cd.moodGuides"
+                [attr.x]="cd.PAD_L - 6"
+                [attr.y]="g.y + 3"
+                [attr.data-mood]="g.mood"
+                text-anchor="end"
+                class="tl-chart-guide-label"
+              >{{ g.label }}</text>
+            </g>
+
+            <!-- Area fill -->
+            <path [attr.d]="cd.areaPath" fill="url(#tlMoodGradient)" />
+
+            <!-- Smooth line (gradient theo tâm trạng) -->
+            <path
+              [attr.d]="cd.linePath"
+              fill="none"
+              stroke="url(#tlMoodLine)"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+
+            <!-- Period labels under nodes -->
+            <g class="tl-chart-x-labels">
+              <text
+                *ngFor="let p of cd.points"
+                [attr.x]="p.x"
+                [attr.y]="cd.PAD_T + cd.PLOT_H + 38"
+                text-anchor="middle"
+                class="tl-chart-x-label"
+                [class.past]="p.entry.state === 'past'"
+                [class.current]="p.entry.state === 'current'"
+              >{{ p.entry.milestone.periodLabel }}</text>
+            </g>
+
+            <!-- Nodes: clickable circles -->
+            <g class="tl-chart-nodes">
+              <g
+                *ngFor="let p of cd.points"
+                class="tl-chart-node"
+                [attr.data-state]="p.entry.state"
+                [attr.data-mood]="p.entry.milestone.mood"
+                [attr.data-accent]="p.entry.milestone.accent"
+                [attr.data-current]="p.entry.state === 'current' ? 'true' : null"
+                [attr.data-selected]="selectedTimelineId() === p.entry.milestone.id ? 'true' : null"
+                [attr.transform]="'translate(' + p.x + ',' + p.y + ')'"
+                (click)="selectTimelineNode(p.entry.milestone.id)"
+                role="button"
+                tabindex="0"
+                [attr.aria-label]="p.entry.milestone.periodLabel + ' - ' + p.entry.milestone.tagline"
+              >
+                <!-- Pulse ring for current -->
+                <circle
+                  *ngIf="p.entry.state === 'current'"
+                  class="tl-chart-pulse"
+                  r="22"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                />
+                <!-- Selected halo -->
+                <circle
+                  *ngIf="selectedTimelineId() === p.entry.milestone.id"
+                  class="tl-chart-halo"
+                  r="20"
+                  fill="currentColor"
+                  fill-opacity="0.18"
+                />
+                <!-- Main circle -->
+                <circle class="tl-chart-dot" r="15" />
+                <!-- Emoji inside -->
+                <text
+                  class="tl-chart-emoji"
+                  text-anchor="middle"
+                  dominant-baseline="central"
+                  y="1"
+                >{{ p.entry.milestone.heroEmoji }}</text>
+                <!-- Check mark for past -->
+                <g *ngIf="p.entry.state === 'past'" transform="translate(11,-11)">
+                  <circle r="6.5" fill="#10b981" />
+                  <text
+                    text-anchor="middle"
+                    dominant-baseline="central"
+                    fill="#ffffff"
+                    font-size="8"
+                    font-weight="700"
+                    y="0.5"
+                  >✓</text>
+                </g>
+              </g>
+            </g>
+          </svg>
+        </div>
+
+        <!-- Detail card: selected milestone -->
+        <div class="tl-chart-detail" *ngIf="selectedTimelineEntry() as sel">
+          <article
+            class="tl-item tl-item--detail"
+            [attr.data-accent]="sel.milestone.accent"
+            [attr.data-mood]="sel.milestone.mood"
+            [attr.data-state]="sel.state"
+          >
+            <div class="tl-card">
+              <header class="tl-card-head">
+                <div class="tl-marker">
+                  <span class="tl-hero-emoji">{{ sel.milestone.heroEmoji }}</span>
+                  <i class="pi pi-check tl-check" *ngIf="sel.state === 'past'"></i>
+                  <span class="tl-now-pulse" *ngIf="sel.state === 'current'"></span>
+                </div>
+                <div class="tl-period">
+                  <span class="tl-period-label">{{ sel.milestone.periodLabel }}</span>
+                  <span class="tl-tagline">{{ sel.milestone.tagline }}</span>
+                </div>
+                <span class="tl-mood-badge" [attr.data-mood]="sel.milestone.mood">
+                  <i class="pi"
+                    [class.pi-heart-fill]="sel.milestone.mood === 'happy'"
+                    [class.pi-circle-fill]="sel.milestone.mood === 'calm'"
+                    [class.pi-arrow-up]="sel.milestone.mood === 'growth'"
+                    [class.pi-bolt]="sel.milestone.mood === 'leap'"
+                    [class.pi-star-fill]="sel.milestone.mood === 'milestone'"
+                  ></i>
+                  {{ sel.milestone.moodLabel }}
+                </span>
+              </header>
+
+              <div class="tl-stomach">
+                <div class="tl-stomach-visual">
+                  <span
+                    class="tl-stomach-circle"
+                    [style.transform]="'scale(' + sel.milestone.stomach.scale + ')'"
+                  ></span>
+                  <span class="tl-stomach-emoji">{{ sel.milestone.stomach.emoji }}</span>
+                </div>
+                <div class="tl-stomach-text">
+                  <div class="tl-stomach-title">
+                    <i class="pi pi-apple"></i>
+                    Dạ dày bằng {{ sel.milestone.stomach.compareTo }}
+                  </div>
+                  <div class="tl-stomach-vol">{{ sel.milestone.stomach.volumeMl }}</div>
+                </div>
+              </div>
+
+              <div class="tl-now-banner" *ngIf="sel.state === 'current'">
+                <i class="pi pi-compass"></i>
+                Bé của bạn đang ở đây 🎯
+              </div>
+
+              <div class="tl-skills" *ngIf="sel.milestone.skills?.length">
+                <span class="tl-skills-label">
+                  <i class="pi pi-sparkles"></i> Kỹ năng:
+                </span>
+                <span class="tl-skill-chip" *ngFor="let s of sel.milestone.skills">{{ s }}</span>
+              </div>
+
+              <div class="tl-section">
+                <div class="tl-section-label">
+                  <i class="pi pi-lightbulb"></i> Điều thú vị
+                </div>
+                <ul class="tl-list">
+                  <li *ngFor="let f of sel.milestone.funFacts">{{ f }}</li>
+                </ul>
+              </div>
+
+              <div class="tl-section">
+                <div class="tl-section-label">
+                  <i class="pi pi-bookmark-fill"></i> Ba mẹ lưu ý
+                </div>
+                <ul class="tl-list">
+                  <li *ngFor="let n of sel.milestone.parentNotes">{{ n }}</li>
+                </ul>
+              </div>
             </div>
-            <h3 class="tip-title">{{ tip.title }}</h3>
-            <p class="tip-body">{{ tip.content }}</p>
           </article>
         </div>
+      </div>
+
+      <!-- ============ LIST (NAVIGATOR) VIEW ============ -->
+      <div class="tl-nav-view" *ngIf="timelineView() === 'list'">
+        <!-- Nav header: prev / position / next -->
+        <div class="tl-nav-bar">
+          <button
+            type="button"
+            class="tl-nav-btn"
+            (click)="prevTimeline()"
+            [disabled]="selectedTimelineIndex() === 0"
+            aria-label="Cột mốc trước"
+          >
+            <i class="pi pi-chevron-left"></i>
+            <span class="tl-nav-btn-label" *ngIf="selectedTimelineIndex() > 0">
+              {{ timelineEntries()[selectedTimelineIndex() - 1].milestone.periodLabel }}
+            </span>
+          </button>
+
+          <div class="tl-nav-position">
+            <button
+              type="button"
+              class="tl-nav-today"
+              (click)="goToCurrentTimeline()"
+              *ngIf="currentTimelineMilestone()"
+              [class.active]="selectedTimelineEntry() && selectedTimelineEntry()!.state === 'current'"
+              title="Về cột mốc hiện tại"
+            >
+              <i class="pi pi-compass"></i>
+              Hiện tại
+            </button>
+            <span class="tl-nav-count">
+              {{ selectedTimelineIndex() + 1 }}/{{ timelineEntries().length }}
+            </span>
+          </div>
+
+          <button
+            type="button"
+            class="tl-nav-btn tl-nav-btn--right"
+            (click)="nextTimeline()"
+            [disabled]="selectedTimelineIndex() >= timelineEntries().length - 1"
+            aria-label="Cột mốc tiếp theo"
+          >
+            <span class="tl-nav-btn-label" *ngIf="selectedTimelineIndex() < timelineEntries().length - 1">
+              {{ timelineEntries()[selectedTimelineIndex() + 1].milestone.periodLabel }}
+            </span>
+            <i class="pi pi-chevron-right"></i>
+          </button>
+        </div>
+
+        <!-- Progress rail: clickable dots -->
+        <div class="tl-progress-rail">
+          <button
+            *ngFor="let e of timelineEntries(); let i = index"
+            type="button"
+            class="tl-rail-dot"
+            [attr.data-state]="e.state"
+            [attr.data-selected]="selectedTimelineIndex() === i ? 'true' : null"
+            (click)="selectTimelineNode(e.milestone.id)"
+            [attr.aria-label]="e.milestone.periodLabel"
+            [title]="e.milestone.periodLabel + ' · ' + e.milestone.tagline"
+          ></button>
+        </div>
+
+        <!-- Detail card for selected milestone -->
+        <div class="tl-nav-body" *ngIf="selectedTimelineEntry() as sel">
+          <article
+            class="tl-item tl-item--nav"
+            [attr.data-accent]="sel.milestone.accent"
+            [attr.data-mood]="sel.milestone.mood"
+            [attr.data-state]="sel.state"
+          >
+            <div class="tl-card">
+              <header class="tl-card-head">
+                <div class="tl-marker">
+                  <span class="tl-hero-emoji">{{ sel.milestone.heroEmoji }}</span>
+                  <i class="pi pi-check tl-check" *ngIf="sel.state === 'past'"></i>
+                  <span class="tl-now-pulse" *ngIf="sel.state === 'current'"></span>
+                </div>
+                <div class="tl-period">
+                  <span class="tl-period-label">{{ sel.milestone.periodLabel }}</span>
+                  <span class="tl-tagline">{{ sel.milestone.tagline }}</span>
+                </div>
+                <span class="tl-mood-badge" [attr.data-mood]="sel.milestone.mood">
+                  <i class="pi"
+                    [class.pi-heart-fill]="sel.milestone.mood === 'happy'"
+                    [class.pi-circle-fill]="sel.milestone.mood === 'calm'"
+                    [class.pi-arrow-up]="sel.milestone.mood === 'growth'"
+                    [class.pi-bolt]="sel.milestone.mood === 'leap'"
+                    [class.pi-star-fill]="sel.milestone.mood === 'milestone'"
+                  ></i>
+                  {{ sel.milestone.moodLabel }}
+                </span>
+              </header>
+
+              <div class="tl-stomach">
+                <div class="tl-stomach-visual">
+                  <span
+                    class="tl-stomach-circle"
+                    [style.transform]="'scale(' + sel.milestone.stomach.scale + ')'"
+                  ></span>
+                  <span class="tl-stomach-emoji">{{ sel.milestone.stomach.emoji }}</span>
+                </div>
+                <div class="tl-stomach-text">
+                  <div class="tl-stomach-title">
+                    <i class="pi pi-apple"></i>
+                    Dạ dày bằng {{ sel.milestone.stomach.compareTo }}
+                  </div>
+                  <div class="tl-stomach-vol">{{ sel.milestone.stomach.volumeMl }}</div>
+                </div>
+              </div>
+
+              <div class="tl-now-banner" *ngIf="sel.state === 'current'">
+                <i class="pi pi-compass"></i>
+                Bé của bạn đang ở đây 🎯
+              </div>
+
+              <div class="tl-skills" *ngIf="sel.milestone.skills?.length">
+                <span class="tl-skills-label">
+                  <i class="pi pi-sparkles"></i> Kỹ năng:
+                </span>
+                <span class="tl-skill-chip" *ngFor="let s of sel.milestone.skills">{{ s }}</span>
+              </div>
+
+              <div class="tl-section">
+                <div class="tl-section-label">
+                  <i class="pi pi-lightbulb"></i> Điều thú vị
+                </div>
+                <ul class="tl-list">
+                  <li *ngFor="let f of sel.milestone.funFacts">{{ f }}</li>
+                </ul>
+              </div>
+
+              <div class="tl-section">
+                <div class="tl-section-label">
+                  <i class="pi pi-bookmark-fill"></i> Ba mẹ lưu ý
+                </div>
+                <ul class="tl-list">
+                  <li *ngFor="let n of sel.milestone.parentNotes">{{ n }}</li>
+                </ul>
+              </div>
+            </div>
+          </article>
+        </div>
+      </div>
+
+      <!-- Footer sources -->
+      <div class="tl-sources">
+        <i class="pi pi-info-circle"></i>
+        Tổng hợp từ: AAP HealthyChildren, CDC Milestones, WHO, The Wonder Weeks (Plooij), Vinmec.
       </div>
     </div>
   </div>

@@ -1,14 +1,7 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, HostListener, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
-import {
-  FeedingTip,
-  MONTH_GUIDES,
-  WEEK_GUIDES,
-  getCategoryMeta,
-  resolveGuide,
-} from './feeding-tips.data';
 import {
   FeedingLog,
   FeedingLogService,
@@ -29,6 +22,13 @@ import {
   PostpartumStage,
   resolvePostpartumStage,
 } from './postpartum-food.data';
+import {
+  BABY_TIMELINE,
+  TimelineMilestone,
+  MoodType,
+  getCurrentMilestone,
+  getMilestoneState,
+} from './baby-timeline.data';
 
 interface Profile {
   babyName: string;
@@ -82,7 +82,6 @@ export class FeedingComponent {
   /** Raw text của input cân nặng — giữ nguyên để không bị mất số khi đang gõ "3." */
   weightInput = signal<string>('');
   editing = signal<boolean>(true);
-  activeCategory = signal<FeedingTip['category'] | 'all'>('all');
 
   now = signal<Date>(new Date());
 
@@ -102,10 +101,11 @@ export class FeedingComponent {
 
   logDialogOpen = signal<boolean>(false);
   historyDialogOpen = signal<boolean>(false);
-  historyFilter = signal<'all' | 'today'>('all');
-  tipsDialogOpen = signal<boolean>(false);
-  tipsGuideIndex = signal<number>(0);
+  historyFilter = signal<'all' | 'today' | 'yesterday'>('all');
   chartTab = signal<'volume' | 'count' | 'timeline'>('volume');
+  timelineDialogOpen = signal<boolean>(false);
+  timelineView = signal<'list' | 'chart'>('list');
+  selectedTimelineId = signal<string | null>(null);
 
   // ===== Bình sữa đã pha (persistent) =====
   bottlePrep = signal<{ volumeMl: number; at: string } | null>(null);
@@ -179,55 +179,186 @@ export class FeedingComponent {
     };
   });
 
-  currentGuide = computed(() => {
+  // ===== Timeline phát triển =====
+  BABY_TIMELINE = BABY_TIMELINE;
+
+  currentTimelineMilestone = computed<TimelineMilestone | null>(() => {
     const days = this.ageInDays();
     if (days === null) return null;
-    return resolveGuide(days);
+    return getCurrentMilestone(days);
   });
 
-  filteredTips = computed(() => {
-    const guide = this.currentGuide();
-    if (!guide) return [];
-    const cat = this.activeCategory();
-    if (cat === 'all') return guide.period.tips;
-    return guide.period.tips.filter((t) => t.category === cat);
+  timelineEntries = computed<
+    Array<{ milestone: TimelineMilestone; state: 'past' | 'current' | 'future' }>
+  >(() => {
+    const days = this.ageInDays();
+    return BABY_TIMELINE.map((m) => ({
+      milestone: m,
+      state: getMilestoneState(m, days),
+    }));
   });
 
-  availableCategories = computed<Array<FeedingTip['category']>>(() => {
-    const guide = this.currentGuide();
-    if (!guide) return [];
-    const set = new Set<FeedingTip['category']>();
-    guide.period.tips.forEach((t) => set.add(t.category));
-    return Array.from(set);
+  timelineStats = computed(() => {
+    const entries = this.timelineEntries();
+    return {
+      total: entries.length,
+      past: entries.filter((e) => e.state === 'past').length,
+      current: entries.filter((e) => e.state === 'current').length,
+    };
   });
 
-  getCategoryMeta = getCategoryMeta;
+  /**
+   * Dữ liệu cho biểu đồ đường tâm trạng:
+   *  - X: tiến trình theo thứ tự milestone
+   *  - Y: mood (happy cao nhất, leap thấp nhất - càng thấp càng "khó ở")
+   */
+  timelineChartData = computed(() => {
+    const entries = this.timelineEntries();
+    const n = entries.length;
+    const SPACING = 58;
+    const PAD_L = 36;
+    const PAD_R = 36;
+    const PAD_T = 40;
+    const PAD_B = 60;
+    const PLOT_H = 160;
+    const H = PAD_T + PLOT_H + PAD_B;
+    const W = PAD_L + PAD_R + (n - 1) * SPACING;
 
-  /** Toàn bộ giai đoạn (week 1-4 + month 1-24) đã sort theo tuổi tăng dần */
-  allGuides = computed(() => {
-    const list: Array<{ key: string; label: string; guide: any }> = [];
-    Object.entries(WEEK_GUIDES).forEach(([k, v]) =>
-      list.push({ key: `week-${k}`, label: v.label, guide: v })
-    );
-    Object.entries(MONTH_GUIDES).forEach(([k, v]) =>
-      list.push({ key: `month-${k}`, label: v.label, guide: v })
-    );
-    return list;
+    // Mood → Y ratio (0 = top/happy, 1 = bottom/fussy)
+    const moodRatio: Record<MoodType, number> = {
+      happy: 0.12,
+      milestone: 0.22,
+      calm: 0.45,
+      growth: 0.70,
+      leap: 0.88,
+    };
+
+    const points = entries.map((e, i) => {
+      const x = PAD_L + i * SPACING;
+      const y = PAD_T + moodRatio[e.milestone.mood] * PLOT_H;
+      return { x, y, entry: e, index: i };
+    });
+
+    // Smooth path (Catmull-Rom → cubic Bezier)
+    let linePath = '';
+    if (points.length > 0) {
+      linePath = `M ${points[0].x},${points[0].y}`;
+      const tension = 0.22;
+      for (let i = 0; i < points.length - 1; i++) {
+        const p0 = points[i - 1] || points[i];
+        const p1 = points[i];
+        const p2 = points[i + 1];
+        const p3 = points[i + 2] || p2;
+        const cp1x = p1.x + (p2.x - p0.x) * tension;
+        const cp1y = p1.y + (p2.y - p0.y) * tension;
+        const cp2x = p2.x - (p3.x - p1.x) * tension;
+        const cp2y = p2.y - (p3.y - p1.y) * tension;
+        linePath += ` C ${cp1x},${cp1y} ${cp2x},${cp2y} ${p2.x},${p2.y}`;
+      }
+    }
+
+    const areaPath =
+      linePath && points.length > 0
+        ? `${linePath} L ${points[points.length - 1].x},${PAD_T + PLOT_H} L ${points[0].x},${PAD_T + PLOT_H} Z`
+        : '';
+
+    // Mood reference lines (guides)
+    const moodGuides: Array<{ y: number; label: string; mood: MoodType }> = [
+      { mood: 'happy', label: 'Vui vẻ', y: PAD_T + moodRatio.happy * PLOT_H },
+      { mood: 'calm', label: 'Bình yên', y: PAD_T + moodRatio.calm * PLOT_H },
+      { mood: 'growth', label: 'Tăng trưởng', y: PAD_T + moodRatio.growth * PLOT_H },
+      { mood: 'leap', label: 'Leap / WW', y: PAD_T + moodRatio.leap * PLOT_H },
+    ];
+
+    return { W, H, PAD_L, PAD_R, PAD_T, PAD_B, PLOT_H, points, linePath, areaPath, moodGuides };
   });
 
-  currentGuideIndex = computed<number>(() => {
-    const current = this.currentGuide();
-    if (!current) return 0;
-    const all = this.allGuides();
-    const idx = all.findIndex((g) => g.key === current.key);
+  /** Entry đang được chọn (trong chart view) hoặc milestone hiện tại */
+  selectedTimelineEntry = computed(() => {
+    const id = this.selectedTimelineId();
+    const entries = this.timelineEntries();
+    if (id) {
+      const found = entries.find((e) => e.milestone.id === id);
+      if (found) return found;
+    }
+    return entries.find((e) => e.state === 'current') || entries[0] || null;
+  });
+
+  setTimelineView(view: 'list' | 'chart') {
+    this.timelineView.set(view);
+  }
+
+  selectTimelineNode(id: string) {
+    this.selectedTimelineId.set(id);
+  }
+
+  /** Index của milestone đang chọn (trong mảng BABY_TIMELINE) */
+  selectedTimelineIndex = computed<number>(() => {
+    const id = this.selectedTimelineId();
+    const entries = this.timelineEntries();
+    if (!id) {
+      const curIdx = entries.findIndex((e) => e.state === 'current');
+      return curIdx >= 0 ? curIdx : 0;
+    }
+    const idx = entries.findIndex((e) => e.milestone.id === id);
     return idx >= 0 ? idx : 0;
   });
 
-  selectedGuide = computed(() => {
-    const all = this.allGuides();
-    const i = Math.max(0, Math.min(all.length - 1, this.tipsGuideIndex()));
-    return all[i] || null;
-  });
+  prevTimeline() {
+    const entries = this.timelineEntries();
+    const idx = this.selectedTimelineIndex();
+    if (idx > 0) {
+      this.selectedTimelineId.set(entries[idx - 1].milestone.id);
+    }
+  }
+
+  nextTimeline() {
+    const entries = this.timelineEntries();
+    const idx = this.selectedTimelineIndex();
+    if (idx < entries.length - 1) {
+      this.selectedTimelineId.set(entries[idx + 1].milestone.id);
+    }
+  }
+
+  goToCurrentTimeline() {
+    const cur = this.currentTimelineMilestone();
+    if (cur) this.selectedTimelineId.set(cur.id);
+  }
+
+  @HostListener('document:keydown', ['$event'])
+  onTimelineKey(ev: KeyboardEvent) {
+    if (!this.timelineDialogOpen()) return;
+    if (ev.key === 'ArrowLeft') {
+      ev.preventDefault();
+      this.prevTimeline();
+    } else if (ev.key === 'ArrowRight') {
+      ev.preventDefault();
+      this.nextTimeline();
+    } else if (ev.key === 'Escape') {
+      this.closeTimelineDialog();
+    }
+  }
+
+  openTimelineDialog() {
+    this.timelineDialogOpen.set(true);
+    // Mặc định chọn milestone hiện tại khi mở
+    const cur = this.currentTimelineMilestone();
+    if (cur) this.selectedTimelineId.set(cur.id);
+    // Scroll tới milestone hiện tại sau khi dialog render (trong list view)
+    setTimeout(() => {
+      if (this.timelineView() === 'list') {
+        const el = document.getElementById('timeline-current');
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else {
+        const el = document.querySelector('.tl-chart-scroll [data-current="true"]');
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      }
+    }, 150);
+  }
+
+  closeTimelineDialog() {
+    this.timelineDialogOpen.set(false);
+  }
 
   // ===== Postpartum food (món ăn cho mẹ) =====
   /** null = auto theo tuổi bé; number = override do user navigate */
@@ -275,21 +406,6 @@ export class FeedingComponent {
     this.momFoodStageOverride.set(null);
   }
 
-  upcomingGuides = computed(() => {
-    const guide = this.currentGuide();
-    if (!guide) return [];
-    const allKeys: Array<{ key: string; label: string }> = [];
-    Object.entries(WEEK_GUIDES).forEach(([k, v]) =>
-      allKeys.push({ key: `week-${k}`, label: v.label })
-    );
-    Object.entries(MONTH_GUIDES).forEach(([k, v]) =>
-      allKeys.push({ key: `month-${k}`, label: v.label })
-    );
-    const currentIdx = allKeys.findIndex((g) => g.key === guide.key);
-    if (currentIdx === -1) return [];
-    return allKeys.slice(currentIdx + 1, currentIdx + 4);
-  });
-
   // ===== Stats =====
   todayStats = computed<DayStats>(() => this.computeDayStats(this.todayDateStr()));
   yesterdayStats = computed<DayStats>(() =>
@@ -299,6 +415,12 @@ export class FeedingComponent {
   todayLogs = computed<FeedingLog[]>(() =>
     this.logs()
       .filter((l) => l.date === this.todayDateStr())
+      .sort((a, b) => b.time.localeCompare(a.time))
+  );
+
+  yesterdayLogs = computed<FeedingLog[]>(() =>
+    this.logs()
+      .filter((l) => l.date === this.yesterdayDateStr())
       .sort((a, b) => b.time.localeCompare(a.time))
   );
 
@@ -693,9 +815,11 @@ export class FeedingComponent {
   feedingsByDate = computed(() => {
     const filter = this.historyFilter();
     const todayStr = this.todayDateStr();
+    const yesterdayStr = this.yesterdayDateStr();
     const groups = new Map<string, FeedingLog[]>();
     for (const log of this.logs()) {
       if (filter === 'today' && log.date !== todayStr) continue;
+      if (filter === 'yesterday' && log.date !== yesterdayStr) continue;
       if (!groups.has(log.date)) groups.set(log.date, []);
       groups.get(log.date)!.push(log);
     }
@@ -797,10 +921,6 @@ export class FeedingComponent {
     this.draft.set({ babyName: '', birthDate: '', gender: '' });
     this.weightInput.set('');
     this.editing.set(true);
-  }
-
-  selectCategory(cat: FeedingTip['category'] | 'all') {
-    this.activeCategory.set(cat);
   }
 
   updateDraftName(value: string) {
@@ -1122,37 +1242,7 @@ export class FeedingComponent {
     return `${hh}:${mm}`;
   }
 
-  openTipsDialog() {
-    this.tipsGuideIndex.set(this.currentGuideIndex());
-    this.tipsDialogOpen.set(true);
-  }
-
-  closeTipsDialog() {
-    this.tipsDialogOpen.set(false);
-  }
-
-  prevGuide() {
-    this.tipsGuideIndex.update((i) => Math.max(0, i - 1));
-  }
-
-  nextGuide() {
-    const max = this.allGuides().length - 1;
-    this.tipsGuideIndex.update((i) => Math.min(max, i + 1));
-  }
-
-  jumpToCurrentGuide() {
-    this.tipsGuideIndex.set(this.currentGuideIndex());
-  }
-
-  get canPrevGuide(): boolean {
-    return this.tipsGuideIndex() > 0;
-  }
-
-  get canNextGuide(): boolean {
-    return this.tipsGuideIndex() < this.allGuides().length - 1;
-  }
-
-  openHistoryDialog(filter: 'all' | 'today' = 'all') {
+  openHistoryDialog(filter: 'all' | 'today' | 'yesterday' = 'all') {
     this.historyFilter.set(filter);
     this.historyDialogOpen.set(true);
   }
@@ -1231,6 +1321,7 @@ export class FeedingComponent {
 
   /** 2 cữ bú hôm nay mới nhất (cho summary) */
   todayLogsPreview = computed<FeedingLog[]>(() => this.todayLogs().slice(0, 2));
+  yesterdayLogsPreview = computed<FeedingLog[]>(() => this.yesterdayLogs().slice(0, 2));
 
   get todayStr(): string {
     const d = this.now();
