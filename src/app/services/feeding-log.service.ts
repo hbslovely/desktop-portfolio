@@ -1,6 +1,6 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, throwError } from 'rxjs';
+import { Observable, from, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 
@@ -143,15 +143,18 @@ export class FeedingLogService {
   /**
    * Gửi POST tới Google Apps Script web app.
    *
-   * Quan trọng:
-   *  - Content-Type `text/plain;charset=utf-8` để tránh preflight CORS
-   *    (là "CORS-safelisted" content type). Nếu dùng `application/json`
-   *    browser sẽ gửi preflight OPTIONS và GAS không trả CORS headers
-   *    cho OPTIONS ⇒ request failed dù GAS đã ghi thành công.
-   *  - `responseType: 'text'` + parse thủ công: GAS trả 302 → googleusercontent.
-   *    Một số mobile/WebView handle redirect không ổn định làm body rỗng
-   *    hoặc không phải JSON. Nếu HTTP 2xx thì vẫn coi là thành công
-   *    (lần load sau sẽ thấy dữ liệu mới), tránh false-negative error.
+   * Dev (proxy): dùng HttpClient bình thường, đọc JSON response.
+   *
+   * Prod (mobile-safe): dùng fetch với `mode: 'no-cors'`.
+   *  - GAS `doPost` trả 302 redirect sang `script.googleusercontent.com`.
+   *    XHR (HttpClient) cố gắng đọc CORS header ở endpoint cuối, và trên
+   *    mobile/WebView hành vi này rất flaky ⇒ request thường fail với
+   *    status 0 dù GAS đã ghi thành công.
+   *  - `fetch` với `mode: 'no-cors'` gửi request như form thường, không
+   *    expect đọc response, không cần CORS header ⇒ không bao giờ fail
+   *    vì CORS. Opaque response cũng OK vì ta sẽ reload để verify.
+   *  - Content-Type `text/plain;charset=utf-8` vẫn cần để nằm trong
+   *    "CORS-safelisted" và không trigger preflight OPTIONS.
    */
   private postToAppsScript(
     body: Record<string, unknown>
@@ -159,40 +162,30 @@ export class FeedingLogService {
     const url = this.APPS_SCRIPT_URL;
     const isProxy = !environment.production;
 
-    const headers = new HttpHeaders({
-      'Content-Type': isProxy
-        ? 'application/json'
-        : 'text/plain;charset=utf-8',
-    });
+    if (isProxy) {
+      const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+      return this.http
+        .post<FeedingSheetResponse>(url, body, { headers })
+        .pipe(
+          map((resp) => {
+            if (resp && resp.success === false) {
+              throw new Error(resp.error || 'Apps Script trả về lỗi');
+            }
+            return resp;
+          })
+        );
+    }
 
-    return this.http
-      .post(url, isProxy ? body : JSON.stringify(body), {
-        headers,
-        responseType: 'text',
-      })
-      .pipe(
-        map((raw): FeedingSheetResponse => {
-          const text = (raw || '').trim();
-          if (!text) {
-            // Không có body (ví dụ: mobile cắt 302 redirect) → coi như success
-            return { success: true };
-          }
-          try {
-            const parsed = JSON.parse(text) as FeedingSheetResponse;
-            if (parsed && parsed.success === false) {
-              throw new Error(parsed.error || 'Apps Script trả về lỗi');
-            }
-            return parsed;
-          } catch (e) {
-            // Body không phải JSON (HTML redirect page, v.v.) nhưng HTTP đã 2xx
-            // → giả định thành công, thông báo có thể reload để xác nhận.
-            if (e instanceof SyntaxError) {
-              return { success: true };
-            }
-            throw e;
-          }
-        })
-      );
+    const payload = JSON.stringify(body);
+    return from(
+      fetch(url, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: payload,
+        redirect: 'follow',
+      }).then((): FeedingSheetResponse => ({ success: true }))
+    );
   }
 
   /**

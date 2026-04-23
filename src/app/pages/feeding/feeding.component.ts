@@ -136,13 +136,47 @@ export class FeedingComponent {
   ageBreakdown = computed(() => {
     const days = this.ageInDays();
     if (days === null) return null;
-    const totalMonths = days / 30.4375;
-    const months = Math.floor(totalMonths);
-    const weeks = Math.floor(days / 7);
-    const remainingDays = days - weeks * 7;
-    const years = Math.floor(months / 12);
-    const remainingMonths = months - years * 12;
-    return { days, weeks, months, remainingDays, years, remainingMonths };
+
+    const p = this.profile();
+    const birth = p?.birthDate ? new Date(p.birthDate) : null;
+    const now = this.now();
+
+    let years = 0;
+    let months = 0;
+    let remDaysInMonth = days; // fallback nếu không parse được birthDate
+
+    if (birth && !isNaN(birth.getTime())) {
+      // Calendar-aware: đếm theo tháng dương lịch
+      years = now.getFullYear() - birth.getFullYear();
+      months = now.getMonth() - birth.getMonth();
+      let d = now.getDate() - birth.getDate();
+      if (d < 0) {
+        // Mượn ngày từ tháng trước
+        const prevMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+        d += prevMonth.getDate();
+        months -= 1;
+      }
+      if (months < 0) {
+        months += 12;
+        years -= 1;
+      }
+      remDaysInMonth = d;
+    }
+
+    // Tách tuần/ngày trong phần dư sau tháng
+    const weeksInMonth = Math.floor(remDaysInMonth / 7);
+    const remainingDays = remDaysInMonth - weeksInMonth * 7;
+    const totalWeeks = Math.floor(days / 7);
+
+    return {
+      days,
+      weeks: totalWeeks,
+      months: years * 12 + months,
+      remainingMonths: months,
+      years,
+      weeksInMonth,
+      remainingDays,
+    };
   });
 
   currentGuide = computed(() => {
@@ -955,7 +989,8 @@ export class FeedingComponent {
 
         setTimeout(() => this.syncMessage.set(''), 4000);
         this.logDialogOpen.set(false);
-        this.loadLogs();
+        // Delay nhẹ để GAS kịp ghi xong + Sheets API propagate trước khi reload
+        setTimeout(() => this.loadLogs(), 900);
       },
       error: (err) => {
         this.saving.set(false);
@@ -979,7 +1014,7 @@ export class FeedingComponent {
       next: () => {
         this.syncMessage.set('Đã xoá cữ bú.');
         setTimeout(() => this.syncMessage.set(''), 3000);
-        this.loadLogs();
+        setTimeout(() => this.loadLogs(), 900);
       },
       error: (err) => {
         this.syncError.set(err?.message || 'Xoá thất bại.');
