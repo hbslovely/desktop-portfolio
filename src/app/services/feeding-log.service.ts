@@ -143,17 +143,21 @@ export class FeedingLogService {
   /**
    * Gửi POST tới Google Apps Script web app.
    *
-   * Quan trọng: dùng Content-Type `text/plain;charset=utf-8` để tránh
-   * preflight CORS (là "CORS-safelisted" content type). Nếu dùng
-   * `application/json` browser sẽ gửi preflight OPTIONS và GAS không trả
-   * CORS headers cho OPTIONS ⇒ request failed ở phía client dù GAS đã
-   * ghi thành công. GAS vẫn đọc được body qua `e.postData.contents`.
+   * Quan trọng:
+   *  - Content-Type `text/plain;charset=utf-8` để tránh preflight CORS
+   *    (là "CORS-safelisted" content type). Nếu dùng `application/json`
+   *    browser sẽ gửi preflight OPTIONS và GAS không trả CORS headers
+   *    cho OPTIONS ⇒ request failed dù GAS đã ghi thành công.
+   *  - `responseType: 'text'` + parse thủ công: GAS trả 302 → googleusercontent.
+   *    Một số mobile/WebView handle redirect không ổn định làm body rỗng
+   *    hoặc không phải JSON. Nếu HTTP 2xx thì vẫn coi là thành công
+   *    (lần load sau sẽ thấy dữ liệu mới), tránh false-negative error.
    */
   private postToAppsScript(
     body: Record<string, unknown>
   ): Observable<FeedingSheetResponse> {
     const url = this.APPS_SCRIPT_URL;
-    const isProxy = !environment.production; // dev dùng proxy, không cần text/plain
+    const isProxy = !environment.production;
 
     const headers = new HttpHeaders({
       'Content-Type': isProxy
@@ -162,18 +166,31 @@ export class FeedingLogService {
     });
 
     return this.http
-      .post<FeedingSheetResponse>(
-        url,
-        isProxy ? body : JSON.stringify(body),
-        { headers }
-      )
+      .post(url, isProxy ? body : JSON.stringify(body), {
+        headers,
+        responseType: 'text',
+      })
       .pipe(
-        map((resp) => {
-          // Khi GAS trả về success:false nhưng HTTP 200 thì vẫn cần quăng error
-          if (resp && resp.success === false) {
-            throw new Error(resp.error || 'Apps Script trả về lỗi');
+        map((raw): FeedingSheetResponse => {
+          const text = (raw || '').trim();
+          if (!text) {
+            // Không có body (ví dụ: mobile cắt 302 redirect) → coi như success
+            return { success: true };
           }
-          return resp;
+          try {
+            const parsed = JSON.parse(text) as FeedingSheetResponse;
+            if (parsed && parsed.success === false) {
+              throw new Error(parsed.error || 'Apps Script trả về lỗi');
+            }
+            return parsed;
+          } catch (e) {
+            // Body không phải JSON (HTML redirect page, v.v.) nhưng HTTP đã 2xx
+            // → giả định thành công, thông báo có thể reload để xác nhận.
+            if (e instanceof SyntaxError) {
+              return { success: true };
+            }
+            throw e;
+          }
         })
       );
   }
