@@ -149,9 +149,8 @@
             <div class="summary-top">
               <h2>{{ profile()?.babyName }}</h2>
               <span class="age-chip">
-                {{ age.years > 0 ? age.years + 'y' : '' }}
-                {{ age.years > 0 ? age.remainingMonths : age.months }}m
-                {{ age.years > 0 ? '' : age.remainingDays + 'd' }}
+                <ng-container *ngIf="age.years > 0">{{ age.years }}y </ng-container>
+                {{ age.years > 0 ? age.remainingMonths : age.months }}m<ng-container *ngIf="age.weeksInMonth > 0"> {{ age.weeksInMonth }}w</ng-container><ng-container *ngIf="age.remainingDays > 0 || (age.weeksInMonth === 0 && age.months === 0 && age.years === 0)"> {{ age.remainingDays }}d</ng-container>
               </span>
             </div>
             <div class="summary-meta">
