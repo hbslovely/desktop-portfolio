@@ -109,17 +109,7 @@ export class FeedingLogService {
         volume: log.volume,
         note: log.note || '',
       },
-    }).pipe(
-      catchError((err) => {
-        console.error('FeedingLogService.addLog failed', err);
-        return throwError(
-          () =>
-            new Error(
-              'Không thể lưu cữ bú lên Google Sheet. Xem FEEDING_SETUP.md để cập nhật Apps Script.'
-            )
-        );
-      })
-    );
+    });
   }
 
   deleteLog(rowIndex: number): Observable<FeedingSheetResponse> {
@@ -130,14 +120,7 @@ export class FeedingLogService {
     return this.postToAppsScript({
       action: 'deleteFeeding',
       row: rowIndex,
-    }).pipe(
-      catchError((err) => {
-        console.error('FeedingLogService.deleteLog failed', err);
-        return throwError(
-          () => new Error('Không thể xoá cữ bú. Vui lòng thử lại.')
-        );
-      })
-    );
+    });
   }
 
   /**
@@ -168,9 +151,6 @@ export class FeedingLogService {
         .post<FeedingSheetResponse>(url, body, { headers })
         .pipe(
           map((resp) => {
-            if (resp && resp.success === false) {
-              throw new Error(resp.error || 'Apps Script trả về lỗi');
-            }
             return resp;
           })
         );
