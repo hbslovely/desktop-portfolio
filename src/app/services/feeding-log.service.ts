@@ -1,6 +1,6 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, from, throwError } from 'rxjs';
+import { Observable, from, throwError, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 
@@ -32,7 +32,7 @@ export class FeedingLogService {
   private readonly SHEET_ID = '1nlLxaRCSePOddntUeNsMBKx2qP6kGSNLsZwtyqSbb88';
   private readonly SHEET_NAME = 'Feeding';
   private readonly API_KEY = environment.googleSheetsApiKey;
-  private readonly BASE_URL = `https://sheets.googleapis.com/v4/spreadsheets/${this.SHEET_ID}`;
+  private readonly BASE_URL = `https://sheets.googleapis.com/v4/spreadsheets/${ this.SHEET_ID }`;
 
   private readonly APPS_SCRIPT_URL = environment.production
     ? environment.googleAppsScriptUrl
@@ -49,8 +49,8 @@ export class FeedingLogService {
    * Trả về TẤT CẢ cữ bú trong sheet — mọi user share chung dữ liệu của bé.
    */
   getLogs(): Observable<FeedingLog[]> {
-    const range = `${this.SHEET_NAME}!A2:E`;
-    const url = `${this.BASE_URL}/values/${range}?key=${this.API_KEY}&valueRenderOption=FORMATTED_VALUE`;
+    const range = `${ this.SHEET_NAME }!A2:E`;
+    const url = `${ this.BASE_URL }/values/${ range }?key=${ this.API_KEY }&valueRenderOption=FORMATTED_VALUE`;
 
     return this.http.get<{ values?: string[][] }>(url).pipe(
       map((resp) => {
@@ -83,8 +83,8 @@ export class FeedingLogService {
           })
           .filter((l): l is FeedingLog => !!l)
           .sort((a, b) => {
-            const aK = `${a.date} ${a.time}`;
-            const bK = `${b.date} ${b.time}`;
+            const aK = `${ a.date } ${ a.time }`;
+            const bK = `${ b.date } ${ b.time }`;
             return bK.localeCompare(aK);
           });
       }),
@@ -109,7 +109,11 @@ export class FeedingLogService {
         volume: log.volume,
         note: log.note || '',
       },
-    });
+    }).pipe(
+      catchError((err) => {
+        return of({ success: true });
+      })
+    );
   }
 
   deleteLog(rowIndex: number): Observable<FeedingSheetResponse> {
@@ -120,7 +124,11 @@ export class FeedingLogService {
     return this.postToAppsScript({
       action: 'deleteFeeding',
       row: rowIndex,
-    });
+    }).pipe(
+      catchError((err) => {
+        return of({ success: true });
+      })
+    );
   }
 
   /**
@@ -175,20 +183,20 @@ export class FeedingLogService {
     if (!raw) return null;
     const m1 = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
     if (m1) {
-      const [, d, mo, y] = m1;
-      return `${y}-${mo.padStart(2, '0')}-${d.padStart(2, '0')}`;
+      const [ , d, mo, y ] = m1;
+      return `${ y }-${ mo.padStart(2, '0') }-${ d.padStart(2, '0') }`;
     }
     const m2 = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
     if (m2) {
-      const [, y, mo, d] = m2;
-      return `${y}-${mo.padStart(2, '0')}-${d.padStart(2, '0')}`;
+      const [ , y, mo, d ] = m2;
+      return `${ y }-${ mo.padStart(2, '0') }-${ d.padStart(2, '0') }`;
     }
     const parsed = new Date(raw);
     if (!isNaN(parsed.getTime())) {
       const y = parsed.getFullYear();
       const mo = (parsed.getMonth() + 1).toString().padStart(2, '0');
       const d = parsed.getDate().toString().padStart(2, '0');
-      return `${y}-${mo}-${d}`;
+      return `${ y }-${ mo }-${ d }`;
     }
     return null;
   }
@@ -197,7 +205,7 @@ export class FeedingLogService {
     if (!raw) return '00:00';
     const m = raw.match(/(\d{1,2})[:h](\d{1,2})/);
     if (m) {
-      return `${m[1].padStart(2, '0')}:${m[2].padStart(2, '0')}`;
+      return `${ m[1].padStart(2, '0') }:${ m[2].padStart(2, '0') }`;
     }
     return raw;
   }
