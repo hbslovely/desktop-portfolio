@@ -28,12 +28,14 @@ export function getCategoryMeta(cat: FeedingTip['category']) {
 export const WEEK_GUIDES: Record<number, PeriodGuide> = {
   1: {
     label: 'Tuần 1 – Làm quen thế giới',
-    summary: 'Bé vừa chào đời, đang thích nghi với môi trường bên ngoài. Thời gian này bé ngủ rất nhiều và bú mẹ gần như liên tục.',
-    feedingSchedule: 'Bú mẹ theo nhu cầu (8–12 cữ/ngày), mỗi cữ cách nhau ~2 giờ. Lượng sữa ~30–60ml/cữ nếu dùng sữa công thức.',
+    summary: 'Bé vừa chào đời, đang thích nghi với môi trường bên ngoài. Thời gian này bé ngủ rất nhiều và bú mẹ gần như liên tục. Sụt 5–10% cân nặng là bình thường trong 3–5 ngày đầu.',
+    feedingSchedule: 'Bú mẹ theo nhu cầu (8–12 cữ/ngày), mỗi cữ cách nhau ~2 giờ. Ngày 1–2: sữa non 5–15ml/cữ. Ngày 3–7: 30–60ml/cữ nếu dùng sữa công thức.',
     sleepSchedule: 'Ngủ 16–18 giờ/ngày, mỗi giấc 2–3 giờ, chưa phân biệt ngày đêm.',
     tips: [
       { category: 'feeding', title: 'Cho bú sớm & da tiếp da', content: 'Cho bé bú trong vòng 1 giờ sau sinh và duy trì da tiếp da (skin-to-skin) để kích sữa non — loại "vàng lỏng" giàu kháng thể.' },
       { category: 'feeding', title: 'Đánh thức bú nếu ngủ quá 3 giờ', content: 'Trong tuần đầu bé có thể ngủ quên bú. Mẹ nhẹ nhàng đánh thức nếu cữ bú cách nhau hơn 3 giờ để tránh tụt cân.' },
+      { category: 'feeding', title: 'Growth spurt đầu tiên (7–10 ngày)', content: 'Khoảng ngày 7–10 bé có đợt tăng trưởng nhỏ đầu tiên: đòi bú liên tục 1–2 ngày. Cho bú theo nhu cầu, không cần thêm sữa công thức.' },
+      { category: 'health', title: 'Bổ sung Vitamin D (bú mẹ)', content: 'AAP khuyến cáo bé bú mẹ hoàn toàn cần bổ sung 400 IU vitamin D/ngày từ vài ngày sau sinh. Sữa công thức đã có sẵn nên thường không cần.' },
       { category: 'health', title: 'Theo dõi tã ướt', content: 'Ngày 1 ít nhất 1 tã ướt, đến ngày 5–6 nên có 6+ tã ướt/ngày. Phân chuyển từ phân su đen → vàng hoa cà hoa cải.' },
       { category: 'health', title: 'Vàng da sinh lý', content: 'Vàng da nhẹ thường xuất hiện ngày 2–4. Nếu da vàng đến bụng/đùi, bé bú kém hoặc ngủ li bì → đi khám ngay.' },
       { category: 'mom', title: 'Nghỉ ngơi song song với bé', content: 'Ngủ khi bé ngủ. Đừng cố làm việc nhà. Cơ thể mẹ cần hồi phục sau sinh — đây là tuần vàng cho việc "ở cữ".' },
@@ -54,25 +56,41 @@ export const WEEK_GUIDES: Record<number, PeriodGuide> = {
     ],
   },
   3: {
-    label: 'Tuần 3 – Wonder Week đầu tiên',
-    summary: 'Bé có thể quấy khóc nhiều hơn ("tuần khủng hoảng" đầu tiên). Đây là bước nhảy phát triển, giác quan nhạy bén hơn.',
-    feedingSchedule: 'Cluster feeding (bú dồn) thường xuyên, đặc biệt buổi tối. Bé có thể đòi bú mỗi 1–1.5 giờ.',
-    sleepSchedule: 'Ngủ 15–17 giờ/ngày nhưng giấc ngắn hơn, dễ thức giấc.',
+    label: 'Tuần 3 – Growth spurt thể chất',
+    summary: 'Đợt tăng trưởng thể chất đáng kể (growth spurt). Bé đòi bú liên tục để tăng cân 20–30g/ngày, chu vi vòng đầu tăng nhanh. KHÁC với Wonder Week (bước nhảy nhận thức — Leap 1 rơi vào tuần 5).',
+    feedingSchedule: 'Cluster feeding (bú dồn) thường xuyên, đặc biệt buổi tối. Bé có thể đòi bú mỗi 1–1.5 giờ trong 2–3 ngày.',
+    sleepSchedule: 'Ngủ 16–18 giờ/ngày, mỗi giấc 3–4 giờ. Có thể ngủ ít hơn chút trong đợt growth spurt.',
     tips: [
-      { category: 'feeding', title: 'Growth spurt', content: 'Tuần 3 là đợt tăng trưởng đầu tiên. Bé đòi bú liên tục — đừng nghĩ mình thiếu sữa, hãy cho bú theo nhu cầu.' },
+      { category: 'feeding', title: 'Growth spurt — bú theo nhu cầu', content: 'Các growth spurt xếp theo thứ tự: 7–10 ngày, tuần 3, tuần 6, tháng 3, 6, 9. Bé đòi bú liên tục — đừng nghĩ mình thiếu sữa, hãy cho bú theo nhu cầu để kích sữa.' },
+      { category: 'development', title: 'Chưa phải Wonder Week', content: 'Growth spurt khác với Wonder Week: đợt này bé TĂNG CÂN nhanh, bú nhiều. Wonder Week đầu tiên (nhảy vọt giác quan) sẽ đến ở tuần 5.' },
+      { category: 'health', title: 'Đau bụng colic có thể bắt đầu', content: '~15–20% trẻ sơ sinh bắt đầu có cơn colic (khóc không lý do, thường buổi tối, kéo dài 2–3 giờ) từ tuần 3. Thường hết sau 3 tháng.' },
       { category: 'mom', title: 'Baby blues', content: 'Nếu mẹ buồn vô cớ, khóc, lo âu → bình thường do thay đổi hormone. Nếu kéo dài > 2 tuần → cần tư vấn về trầm cảm sau sinh.' },
-      { category: 'activity', title: 'Tummy time', content: 'Mỗi ngày 2–3 lần, mỗi lần 1–3 phút cho bé nằm sấp khi thức để cứng cổ. Luôn giám sát.' },
+      { category: 'activity', title: 'Tummy time', content: 'Mỗi ngày 2–3 lần, mỗi lần 3–5 phút cho bé nằm sấp khi thức để cứng cổ. Luôn giám sát.' },
     ],
   },
   4: {
     label: 'Tuần 4 – Nụ cười đầu tiên',
-    summary: 'Bé có thể mỉm cười xã giao khi thấy khuôn mặt quen. Biết hóng chuyện và ê a nhẹ.',
+    summary: 'Bé có thể mỉm cười xã giao khi thấy khuôn mặt quen. Biết hóng chuyện và ê a nhẹ. Chuẩn bị cho Wonder Week 1 vào tuần 5.',
     feedingSchedule: 'Bú 7–9 cữ/ngày, mỗi cữ 90–120ml sữa công thức.',
     sleepSchedule: 'Ngủ 14–16 giờ/ngày, một giấc đêm có thể kéo dài 4–5 giờ.',
     tips: [
       { category: 'development', title: 'Kích thích giác quan', content: 'Treo đồ chơi đen-trắng trên nôi, cho bé nghe nhạc nhẹ, mát-xa chân tay mỗi ngày.' },
+      { category: 'development', title: 'Sắp Wonder Week 1', content: 'Tuần 5 là leap 1 — "World of Changing Sensations". Dấu hiệu báo trước: bé có thể quấy hơn, bám mẹ hơn, ngủ kém vài ngày trước.' },
       { category: 'health', title: 'Chuẩn bị tiêm chủng', content: 'Chuẩn bị lịch tiêm 2 tháng (5in1/6in1, Rota, Phế cầu). Hỏi bác sĩ trước nếu bé có dấu hiệu bất thường.' },
       { category: 'mom', title: 'Đi khám hậu sản 6 tuần', content: 'Lên lịch khám hậu sản để kiểm tra tử cung, vết mổ/rạch và tư vấn tránh thai.' },
+    ],
+  },
+  5: {
+    label: 'Tuần 5 – Wonder Week 1 (Giác quan thay đổi)',
+    summary: 'Leap 1 — "World of Changing Sensations". Bước nhảy nhận thức đầu tiên: giác quan bé bỗng rõ ràng hơn, có thể quấy 3–5 ngày ("fussy period"). Sau leap bé nhìn – nghe – cảm nhận thế giới tinh tế hơn.',
+    feedingSchedule: 'Bú 7–9 cữ/ngày, mỗi cữ 90–120ml. Có thể đòi bú dồn để tự trấn an.',
+    sleepSchedule: 'Ngủ 14–16 giờ/ngày nhưng giấc ngắn, dễ tỉnh. Thường kéo dài ~1 tuần.',
+    tips: [
+      { category: 'development', title: 'Dấu hiệu Wonder Week 1', content: '3 chữ C: Crying (khóc nhiều hơn), Clinginess (bám mẹ), Crankiness (cáu kỉnh). Là bình thường — bé đang tập tích hợp cảm giác mới.' },
+      { category: 'development', title: 'Sau leap bé làm được gì?', content: 'Nhìn theo đồ vật rõ hơn, phản ứng với tiếng động đa dạng, cười xã giao rõ hơn, nhận ra giọng mẹ trong nhiều giọng khác.' },
+      { category: 'activity', title: 'Cách hỗ trợ', content: 'Ôm ấp, skin-to-skin, nói chuyện nhẹ nhàng. Tránh kích thích quá mức (đông người, đèn quá sáng). Duy trì routine ổn định.' },
+      { category: 'feeding', title: 'Bú nhiều hơn bình thường', content: 'Không phải thiếu sữa — bé dùng bú để an tâm. Cho bú theo nhu cầu, mẹ ăn đủ, nghỉ đủ.' },
+      { category: 'mom', title: 'Mẹ đừng lo lắng', content: 'Giai đoạn fussy chỉ kéo dài vài ngày. Sau đó bé "nhảy" sang kỹ năng mới. Đừng vội nghĩ bé ốm hay mình sai.' },
     ],
   },
 };
@@ -81,7 +99,7 @@ export const MONTH_GUIDES: Record<number, PeriodGuide> = {
   1: {
     label: 'Tháng 1 – Tháng làm quen',
     summary: 'Bé dành phần lớn thời gian để ăn và ngủ. Cuối tháng bé có thể nhấc đầu vài giây khi nằm sấp.',
-    feedingSchedule: 'Bú mẹ/sữa công thức 8–12 cữ/ngày, tổng ~500–700ml/ngày.',
+    feedingSchedule: 'Bú mẹ/sữa công thức 7–10 cữ/ngày. Đầu tháng 60–90ml/cữ, cuối tháng 90–120ml/cữ. Tổng ~600–900ml/ngày (AAP: ~2.5oz/pound cân nặng).',
     sleepSchedule: '15–17 giờ/ngày, đêm ngủ 8–9 giờ với 2–3 lần thức bú.',
     tips: [
       { category: 'feeding', title: 'Chỉ bú sữa', content: 'WHO khuyến cáo bú mẹ hoàn toàn 6 tháng đầu. Không cho uống nước, nước ép, mật ong hoặc ăn dặm sớm.' },
@@ -91,11 +109,12 @@ export const MONTH_GUIDES: Record<number, PeriodGuide> = {
     ],
   },
   2: {
-    label: 'Tháng 2 – Cười thành tiếng',
-    summary: 'Bé bắt đầu cười thành tiếng, hóng chuyện, ê a "a", "ơ". Nhấc đầu 45° khi nằm sấp.',
+    label: 'Tháng 2 – Cười thành tiếng & Wonder Week 2',
+    summary: 'Bé bắt đầu cười thành tiếng, hóng chuyện, ê a "a", "ơ". Nhấc đầu 45° khi nằm sấp. Leap 2 rơi vào tuần 8 — "World of Patterns" (nhận biết mẫu hình).',
     feedingSchedule: '7–9 cữ/ngày, mỗi cữ 120–150ml. Tổng ~700–900ml/ngày.',
     sleepSchedule: '14–16 giờ/ngày. Bắt đầu có nhịp ngày-đêm rõ hơn.',
     tips: [
+      { category: 'development', title: 'Wonder Week 2 (tuần 8)', content: 'Leap 2 "World of Patterns": bé nhận ra mẫu hình lặp lại (ánh sáng, âm thanh, khuôn mặt). Dấu hiệu: quấy 1–2 tuần, ngắm tay mình, soi gương, chăm chú hơn.' },
       { category: 'health', title: 'Mũi tiêm 2 tháng', content: 'Lịch tiêm 5in1/6in1 (bạch hầu, ho gà, uốn ván, bại liệt, Hib, có thể thêm viêm gan B), Rota, Phế cầu.' },
       { category: 'development', title: 'Nói chuyện với bé', content: 'Đáp lại tiếng ê a của bé như hội thoại thật — đây là nền tảng ngôn ngữ.' },
       { category: 'activity', title: 'Tummy time dài hơn', content: '10–15 phút/ngày chia nhiều lần. Đặt gương hoặc đồ chơi trước mặt để bé ngẩng đầu.' },
@@ -103,19 +122,20 @@ export const MONTH_GUIDES: Record<number, PeriodGuide> = {
     ],
   },
   3: {
-    label: 'Tháng 3 – Bé đáng yêu nhất',
-    summary: 'Giai đoạn "thiên thần": bé cười nhiều, ngủ ngon hơn, ít khóc colic. Tay bé mở, bắt đầu với đồ vật.',
+    label: 'Tháng 3 – Wonder Week 3 & Bé đáng yêu',
+    summary: 'Leap 3 rơi vào tuần 12 — "World of Smooth Transitions" (chuyển động mượt). Sau leap là giai đoạn "thiên thần": bé cười nhiều, ngủ ngon hơn, ít khóc colic.',
     feedingSchedule: '6–8 cữ/ngày, mỗi cữ 120–180ml. Tổng ~800–1000ml/ngày.',
     sleepSchedule: '14–15 giờ/ngày. Giấc đêm 9–10 giờ, có thể ngủ liền 5–6 giờ.',
     tips: [
+      { category: 'development', title: 'Wonder Week 3 (tuần 12)', content: 'Leap 3 "World of Smooth Transitions": bé nhận ra các chuyển động/âm thanh mượt, liên tục. Tiếng cười rõ ràng, giọng nói có ngữ điệu, tay chân phối hợp mượt hơn.' },
       { category: 'development', title: 'Cầm nắm', content: 'Đưa bé cầm lục lạc nhẹ, khăn mềm. Bé bắt đầu đưa tay vào miệng — phản xạ khám phá.' },
       { category: 'feeding', title: 'Chưa ăn dặm', content: 'Dù bé có thể tỏ ra thích nhìn người lớn ăn, hệ tiêu hóa chưa sẵn sàng cho đồ ăn rắn.' },
       { category: 'activity', title: 'Đọc sách', content: 'Sách vải, sách tương phản đen-trắng hoặc màu sắc rực rỡ. Đọc to mỗi ngày 5–10 phút.' },
     ],
   },
   4: {
-    label: 'Tháng 4 – Wonder Week lớn',
-    summary: 'Tuần khủng hoảng 4 tháng: ngủ kém, bú ít, quấy. Đây là bước nhảy nhận thức lớn.',
+    label: 'Tháng 4 – Wonder Week 4 (leap lớn)',
+    summary: 'Leap 4 rơi vào tuần 19 — "World of Events": bước nhảy nhận thức lớn. Kèm 4-month sleep regression: ngủ kém, bú ít, quấy nhiều.',
     feedingSchedule: '5–7 cữ/ngày, mỗi cữ 150–180ml. Tổng ~900–1100ml/ngày.',
     sleepSchedule: '13–15 giờ/ngày. Nhiều bé có "4 month sleep regression".',
     tips: [
@@ -253,8 +273,8 @@ export function resolveGuide(ageInDays: number): { period: PeriodGuide; key: str
   const weeks = Math.floor(ageInDays / 7);
   const months = Math.floor(ageInDays / 30.4375);
 
-  if (weeks < 5) {
-    const wKey = Math.max(1, weeks + 1);
+  if (weeks < 6) {
+    const wKey = Math.min(5, Math.max(1, weeks + 1));
     const guide = WEEK_GUIDES[wKey];
     if (guide) return { period: guide, key: `week-${wKey}` };
   }
