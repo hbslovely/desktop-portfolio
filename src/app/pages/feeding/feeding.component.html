@@ -246,26 +246,61 @@
 
         <ng-template #bottlePrepEdit>
           <form class="bp-form" (ngSubmit)="saveBottlePrep()">
-            <i class="pi pi-inbox"></i>
-            <label class="bp-label">Sữa pha vào bình</label>
-            <input
-              type="text"
-              inputmode="numeric"
-              maxlength="4"
-              class="bp-input"
-              [value]="bottlePrepDraft()"
-              (input)="updateBottlePrepDraft($any($event.target).value)"
-              placeholder="100"
-              autocomplete="off"
-              autofocus
-            />
-            <span class="bp-unit">ml</span>
-            <button type="submit" class="bp-btn primary" [disabled]="!bottlePrepDraft()" title="Lưu">
-              <i class="pi pi-check"></i>
-            </button>
-            <button type="button" class="bp-btn" (click)="cancelBottlePrep()" title="Huỷ">
-              <i class="pi pi-times"></i>
-            </button>
+            <div class="bp-form-head">
+              <i class="pi pi-inbox"></i>
+              <label class="bp-label">Sữa pha vào bình</label>
+            </div>
+
+            <div class="bp-input-wrap">
+              <button
+                type="button"
+                class="bp-step"
+                (click)="adjustBottlePrepDraft(-5)"
+                title="Giảm 5ml"
+                aria-label="Giảm 5ml"
+              >
+                <i class="pi pi-minus"></i>
+              </button>
+              <input
+                type="text"
+                inputmode="numeric"
+                maxlength="4"
+                class="bp-input"
+                [value]="bottlePrepDraft()"
+                (input)="updateBottlePrepDraft($any($event.target).value)"
+                placeholder="100"
+                autocomplete="off"
+                autofocus
+              />
+              <span class="bp-unit">ml</span>
+              <button
+                type="button"
+                class="bp-step"
+                (click)="adjustBottlePrepDraft(5)"
+                title="Tăng 5ml"
+                aria-label="Tăng 5ml"
+              >
+                <i class="pi pi-plus"></i>
+              </button>
+            </div>
+
+            <div class="bp-quick">
+              <span class="bp-quick-label">Nhanh:</span>
+              <button type="button" class="bp-quick-chip" (click)="setBottlePrepDraft(60)">60</button>
+              <button type="button" class="bp-quick-chip" (click)="setBottlePrepDraft(80)">80</button>
+              <button type="button" class="bp-quick-chip" (click)="setBottlePrepDraft(100)">100</button>
+              <button type="button" class="bp-quick-chip" (click)="setBottlePrepDraft(120)">120</button>
+              <button type="button" class="bp-quick-chip" (click)="setBottlePrepDraft(150)">150</button>
+            </div>
+
+            <div class="bp-form-actions">
+              <button type="submit" class="bp-btn primary" [disabled]="!bottlePrepDraft()" title="Lưu">
+                <i class="pi pi-check"></i>
+              </button>
+              <button type="button" class="bp-btn" (click)="cancelBottlePrep()" title="Huỷ">
+                <i class="pi pi-times"></i>
+              </button>
+            </div>
           </form>
         </ng-template>
       </section>
@@ -1009,27 +1044,36 @@
         </div>
 
         <!-- Metric chips -->
-        <ul class="nutri-metrics">
-          <li>
+        <ul class="nutri-metrics" *ngIf="nutritionMetricsStatus() as ms">
+          <li [attr.data-met]="ms.perFeed">
             <span class="m-icon mint"><i class="pi pi-prime"></i></span>
-            <div>
+            <div class="m-body">
               <strong>{{ ev.target.perFeedMin }}–{{ ev.target.perFeedMax }} ml</strong>
               <span>gợi ý mỗi cữ</span>
             </div>
+            <span class="m-status" [attr.data-met]="ms.perFeed" [title]="metricStatusLabel(ms.perFeed)">
+              <i class="pi" [ngClass]="metricStatusIcon(ms.perFeed)"></i>
+            </span>
           </li>
-          <li>
+          <li [attr.data-met]="ms.feedsDay">
             <span class="m-icon lavender"><i class="pi pi-replay"></i></span>
-            <div>
+            <div class="m-body">
               <strong>{{ ev.target.feedsPerDayMin }}–{{ ev.target.feedsPerDayMax }}</strong>
               <span>cữ/ngày</span>
             </div>
+            <span class="m-status" [attr.data-met]="ms.feedsDay" [title]="metricStatusLabel(ms.feedsDay)">
+              <i class="pi" [ngClass]="metricStatusIcon(ms.feedsDay)"></i>
+            </span>
           </li>
-          <li>
+          <li [attr.data-met]="ms.pctMin">
             <span class="m-icon peach"><i class="pi pi-chart-line"></i></span>
-            <div>
+            <div class="m-body">
               <strong>{{ ev.percentOfMin }}%</strong>
               <span>so với mức tối thiểu</span>
             </div>
+            <span class="m-status" [attr.data-met]="ms.pctMin" [title]="metricStatusLabel(ms.pctMin)">
+              <i class="pi" [ngClass]="metricStatusIcon(ms.pctMin)"></i>
+            </span>
           </li>
         </ul>
 
@@ -1262,9 +1306,20 @@
           <span class="quick-label">Nhanh:</span>
           <button type="button" class="quick-chip" (click)="quickVolume(30)">30ml</button>
           <button type="button" class="quick-chip" (click)="quickVolume(50)">50ml</button>
+          <button type="button" class="quick-chip" (click)="quickVolume(60)">60ml</button>
           <button type="button" class="quick-chip" (click)="quickVolume(70)">70ml</button>
+          <button type="button" class="quick-chip" (click)="quickVolume(80)">80ml</button>
           <button type="button" class="quick-chip" (click)="quickVolume(90)">90ml</button>
           <button type="button" class="quick-chip" (click)="quickVolume(120)">120ml</button>
+          <button
+            type="button"
+            class="quick-chip formula-chip"
+            [class.active]="hasQuickNote('Sữa công thức')"
+            (click)="quickNote('Sữa công thức')"
+            title="Gắn nhãn 'Sữa công thức' cho cữ này"
+          >
+            <i class="pi pi-prime"></i> Sữa công thức
+          </button>
           <button type="button" class="quick-chip now-chip" (click)="setLogNow()">
             <i class="pi pi-history"></i> Bây giờ
           </button>

@@ -522,6 +522,54 @@ export class FeedingComponent {
   });
 
   /**
+   * Trạng thái đáp ứng của từng chỉ số dinh dưỡng hôm nay.
+   * - 'met' (xanh): đáp ứng đủ khuyến nghị
+   * - 'partial' (vàng): đáp ứng 1 phần / gần đạt
+   * - 'unmet' (đỏ): chưa đáp ứng
+   */
+  nutritionMetricsStatus = computed<{
+    perFeed: 'met' | 'partial' | 'unmet';
+    feedsDay: 'met' | 'partial' | 'unmet';
+    pctMin: 'met' | 'partial' | 'unmet';
+  } | null>(() => {
+    const ev = this.nutritionEval();
+    if (!ev) return null;
+    const today = this.todayStats();
+    const t = ev.target;
+    const avg = today.avg || 0;
+    const count = today.count || 0;
+
+    // 1. Gợi ý mỗi cữ (ml trung bình mỗi cữ so với range)
+    let perFeed: 'met' | 'partial' | 'unmet' = 'unmet';
+    if (count === 0) {
+      perFeed = 'unmet';
+    } else if (avg >= t.perFeedMin && avg <= t.perFeedMax) {
+      perFeed = 'met';
+    } else if (
+      avg >= t.perFeedMin * 0.7 ||
+      (avg > t.perFeedMax && avg <= t.perFeedMax * 1.3)
+    ) {
+      perFeed = 'partial';
+    }
+
+    // 2. Số cữ/ngày
+    let feedsDay: 'met' | 'partial' | 'unmet' = 'unmet';
+    if (count >= t.feedsPerDayMin) {
+      feedsDay = 'met';
+    } else if (count >= Math.max(1, t.feedsPerDayMin - 1) || count >= t.feedsPerDayMin * 0.6) {
+      feedsDay = 'partial';
+    }
+
+    // 3. % so với mức tối thiểu dung tích/ngày
+    let pctMin: 'met' | 'partial' | 'unmet' = 'unmet';
+    const pct = ev.percentOfMin || 0;
+    if (pct >= 100) pctMin = 'met';
+    else if (pct >= 60) pctMin = 'partial';
+
+    return { perFeed, feedsDay, pctMin };
+  });
+
+  /**
    * Dữ liệu cho progress bar nutrition.
    * scaleMax = max * 1.2 hoặc actualMl (nếu vượt xa) để pointer luôn nằm trong track.
    * Cung cấp vị trí tick min/max và pointer (%) cho template bind style.
@@ -1048,6 +1096,43 @@ export class FeedingComponent {
     this.logDraft.update((d) => ({ ...d, volume: v }));
   }
 
+  /** Icon PrimeIcon class cho từng trạng thái met/partial/unmet */
+  metricStatusIcon(s: 'met' | 'partial' | 'unmet'): string {
+    switch (s) {
+      case 'met':
+        return 'pi-check-circle';
+      case 'partial':
+        return 'pi-check-circle';
+      case 'unmet':
+      default:
+        return 'pi-times-circle';
+    }
+  }
+
+  metricStatusLabel(s: 'met' | 'partial' | 'unmet'): string {
+    switch (s) {
+      case 'met':
+        return 'Đã đáp ứng';
+      case 'partial':
+        return 'Gần đạt';
+      case 'unmet':
+      default:
+        return 'Chưa đáp ứng';
+    }
+  }
+
+  /** Toggle ghi chú preset (VD: "Sữa công thức"). Bấm lần 2 để bỏ. */
+  quickNote(tag: string) {
+    this.logDraft.update((d) => ({
+      ...d,
+      note: d.note === tag ? '' : tag,
+    }));
+  }
+
+  hasQuickNote(tag: string): boolean {
+    return this.logDraft().note === tag;
+  }
+
   // ===== Bottle prep (persistent) =====
   private readonly BOTTLE_PREP_KEY = 'feeding:bottle-prep';
 
@@ -1082,6 +1167,19 @@ export class FeedingComponent {
 
   updateBottlePrepDraft(v: string) {
     this.bottlePrepDraft.set(String(v ?? '').replace(/[^\d]/g, ''));
+  }
+
+  /** Đặt nhanh dung tích bình qua chip preset */
+  setBottlePrepDraft(v: number) {
+    if (v <= 0) return;
+    this.bottlePrepDraft.set(String(v));
+  }
+
+  /** Cộng/trừ delta (ml) cho draft hiện tại, kẹp trong [0, 9999] */
+  adjustBottlePrepDraft(delta: number) {
+    const current = parseInt(this.bottlePrepDraft(), 10) || 0;
+    const next = Math.max(0, Math.min(9999, current + delta));
+    this.bottlePrepDraft.set(next ? String(next) : '');
   }
 
   saveBottlePrep() {
