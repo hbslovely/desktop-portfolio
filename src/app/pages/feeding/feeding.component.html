@@ -5,10 +5,18 @@
     <div class="hero-inner">
       <div class="hero-title">
         <div class="emoji">👶</div>
-        <div>
-          <h1>Nhật ký bú & tips mỗi ngày</h1>
+        <div class="hero-text">
+          <h1>Nhật ký bú & tips</h1>
           <p class="subtitle">
-            Chào mừng <strong>{{ user() }}</strong> · {{ todayStr }}
+            <span class="hero-user">
+              <i class="pi pi-user"></i> <strong>{{ user() }}</strong>
+            </span>
+            <span class="hero-date">
+              <i class="pi pi-calendar"></i> {{ todayStr }}
+            </span>
+            <span class="hero-clock">
+              <i class="pi pi-clock"></i> {{ currentTimeStr }}
+            </span>
           </p>
         </div>
       </div>
@@ -23,12 +31,6 @@
           aria-label="Tải lại dữ liệu"
         >
           <i class="pi pi-refresh" [class.spin]="loadingLogs()"></i>
-        </button>
-        <button class="btn ghost" (click)="startEdit()">
-          <i class="pi pi-pencil"></i> Sửa profile
-        </button>
-        <button class="btn danger-ghost" (click)="clearProfile()">
-          <i class="pi pi-trash"></i> Xóa
         </button>
       </div>
     </div>
@@ -160,6 +162,26 @@
               <span class="sep" *ngIf="profile()?.weightKg">·</span>
               <span>{{ age.days }} ngày tuổi</span>
             </div>
+          </div>
+          <div class="summary-actions">
+            <button
+              type="button"
+              class="icon-action"
+              (click)="startEdit()"
+              title="Sửa profile"
+              aria-label="Sửa profile"
+            >
+              <i class="pi pi-pencil"></i>
+            </button>
+            <button
+              type="button"
+              class="icon-action danger"
+              (click)="clearProfile()"
+              title="Xoá profile"
+              aria-label="Xoá profile"
+            >
+              <i class="pi pi-trash"></i>
+            </button>
           </div>
         </div>
 
@@ -413,6 +435,9 @@
               <div class="log-row" *ngFor="let l of todayLogsPreview()">
                 <span class="log-time">{{ l.time }}</span>
                 <span class="log-volume">{{ l.volume }}ml</span>
+                <span class="log-gap" *ngIf="formatIntervalFromPrev(l, todayLogs()) as iv">
+                  <i class="pi pi-clock"></i> cách {{ iv }}
+                </span>
                 <span class="log-note" *ngIf="l.note">· {{ l.note }}</span>
                 <button
                   class="log-del"
@@ -473,6 +498,9 @@
               <div class="log-row" *ngFor="let l of yesterdayLogsPreview()">
                 <span class="log-time">{{ l.time }}</span>
                 <span class="log-volume">{{ l.volume }}ml</span>
+                <span class="log-gap" *ngIf="formatIntervalFromPrev(l, yesterdayLogs()) as iv">
+                  <i class="pi pi-clock"></i> cách {{ iv }}
+                </span>
                 <span class="log-note" *ngIf="l.note">· {{ l.note }}</span>
                 <button
                   class="log-del"
@@ -845,17 +873,24 @@
         [attr.data-status]="ev.status"
       >
         <header class="nutri-head">
-          <div class="nutri-head__lead">
-            <div class="eyebrow"><i class="pi pi-heart-fill"></i> Dinh dưỡng hôm nay</div>
-            <h2>
-              {{ ev.target.ageLabel }}
-              <span class="nutri-weight" *ngIf="profile()?.weightKg as w">
-                <i class="pi pi-circle-fill tiny-dot"></i> {{ w }} kg
+          <span class="nutri-head__icon" aria-hidden="true">
+            <i class="pi pi-heart-fill"></i>
+          </span>
+          <div class="nutri-head__text">
+            <div class="eyebrow">Dinh dưỡng hôm nay</div>
+            <h2>{{ ev.target.ageLabel }}</h2>
+            <div class="nutri-head__meta">
+              <span *ngIf="profile()?.weightKg as w">
+                <i class="pi pi-bookmark"></i> {{ w }} kg
               </span>
-            </h2>
+              <span class="sep" *ngIf="profile()?.weightKg">·</span>
+              <span>
+                <i class="pi pi-chart-bar"></i>
+                KN {{ ev.target.dailyMlMin }}–{{ ev.target.dailyMlMax }} ml
+              </span>
+            </div>
           </div>
           <div class="nutri-badge" [attr.data-status]="ev.status">
-            <span class="dot"></span>
             {{ ev.statusLabel }}
           </div>
         </header>
@@ -1375,6 +1410,9 @@
             <div class="feed-row" *ngFor="let l of g.logs">
               <div class="feed-row-time">
                 <div class="time">{{ l.time }}</div>
+                <div class="feed-row-gap" *ngIf="formatIntervalFromPrev(l, g.logs) as iv">
+                  <i class="pi pi-clock"></i> {{ iv }}
+                </div>
               </div>
               <div class="feed-row-volume">
                 <strong>{{ l.volume }}</strong>
