@@ -424,6 +424,53 @@ export class FeedingComponent {
       .sort((a, b) => b.time.localeCompare(a.time))
   );
 
+  /**
+   * Khoảng cách giữa cữ `current` và cữ ngay TRƯỚC nó (trong cùng ngày).
+   *
+   * `listDesc` là mảng đã sort theo thời gian giảm dần (mới nhất đầu tiên).
+   * → cữ ngay trước về thời gian = `listDesc[index + 1]`.
+   *
+   * Trả về chuỗi dạng "2h30p", "45p" hoặc "" nếu không có cữ trước.
+   */
+  formatIntervalFromPrev(current: FeedingLog, listDesc: FeedingLog[]): string {
+    let prev: FeedingLog | undefined;
+    const idx = listDesc.findIndex(
+      (l) => l.time === current.time && l.rowIndex === current.rowIndex
+    );
+    if (idx >= 0 && idx < listDesc.length - 1) {
+      prev = listDesc[idx + 1];
+    } else {
+      // Fallback: find the most recent feeding strictly before `current` from full logs.
+      const all = this.logs();
+      const curTs = this.logTimestamp(current);
+      let bestTs = -Infinity;
+      for (const l of all) {
+        if (l.rowIndex === current.rowIndex) continue;
+        const t = this.logTimestamp(l);
+        if (t < curTs && t > bestTs) {
+          bestTs = t;
+          prev = l;
+        }
+      }
+    }
+    if (!prev) return '';
+    const diffMs = this.logTimestamp(current) - this.logTimestamp(prev);
+    const diff = Math.round(diffMs / 60000);
+    if (diff <= 0) return '';
+    const hh = Math.floor(diff / 60);
+    const mm = diff % 60;
+    if (hh === 0) return `${mm}p`;
+    if (mm === 0) return `${hh}h`;
+    return `${hh}h${mm.toString().padStart(2, '0')}p`;
+  }
+
+  private logTimestamp(l: FeedingLog): number {
+    const [y, m, d] = (l.date || '').split('-').map(Number);
+    const [hh, mm] = (l.time || '').split(':').map(Number);
+    if (!y || !m || !d || isNaN(hh) || isNaN(mm)) return 0;
+    return new Date(y, m - 1, d, hh, mm, 0, 0).getTime();
+  }
+
   /** Tổng hôm qua nhưng chỉ tính các cữ có giờ ≤ giờ hiện tại — để so sánh ngang giờ */
   yesterdayUpToNowStats = computed<DayStats>(() => {
     const nowTime = this.toTimeStr(this.now());
@@ -852,7 +899,7 @@ export class FeedingComponent {
       this.loadLogs();
     });
 
-    setInterval(() => this.now.set(new Date()), 60_000);
+    setInterval(() => this.now.set(new Date()), 20_000);
 
     this.loadBottlePrep();
   }
@@ -1019,6 +1066,13 @@ export class FeedingComponent {
     const current = this.bottlePrep();
     this.bottlePrepDraft.set(current ? String(current.volumeMl) : '');
     this.bottlePrepEditing.set(true);
+    setTimeout(() => {
+      const el = document.querySelector<HTMLInputElement>('.bp-input');
+      if (el) {
+        el.focus();
+        el.select();
+      }
+    }, 50);
   }
 
   cancelBottlePrep() {
@@ -1331,6 +1385,11 @@ export class FeedingComponent {
       month: '2-digit',
       year: 'numeric',
     });
+  }
+
+  /** Giờ hiện tại dạng HH:MM — dùng cho live clock ở hero */
+  get currentTimeStr(): string {
+    return this.toTimeStr(this.now());
   }
 
   get maxBirthDate(): string {
