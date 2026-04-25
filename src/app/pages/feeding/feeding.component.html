@@ -598,146 +598,225 @@
           </button>
         </div>
 
+        <!-- Range filter (chỉ áp dụng cho volume + count) -->
+        <div class="chart-range" *ngIf="chartTab() !== 'timeline'">
+          <span class="range-label">Khoảng:</span>
+          <button
+            type="button"
+            class="range-chip"
+            [class.active]="chartRange() === 7"
+            (click)="setChartRange(7)"
+          >7 ngày</button>
+          <button
+            type="button"
+            class="range-chip"
+            [class.active]="chartRange() === 14"
+            (click)="setChartRange(14)"
+          >14 ngày</button>
+          <button
+            type="button"
+            class="range-chip"
+            [class.active]="chartRange() === 30"
+            (click)="setChartRange(30)"
+          >30 ngày</button>
+        </div>
+
         <!-- TAB: Xu hướng sữa -->
         <div class="chart-wrapper tall" *ngIf="chartTab() === 'volume' && weeklyAverage() > 0">
-          <div class="chart-title">Xu hướng sữa theo ngày (7 ngày)</div>
-          <svg
-            class="line-chart tall"
-            [attr.viewBox]="'0 0 ' + weeklyLineChart().W + ' ' + weeklyLineChart().H"
-            preserveAspectRatio="xMidYMid meet"
-          >
-            <defs>
-              <linearGradient id="lineGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stop-color="#5b6cff" stop-opacity="0.32" />
-                <stop offset="100%" stop-color="#5b6cff" stop-opacity="0" />
-              </linearGradient>
-            </defs>
+          <div class="chart-title">Xu hướng sữa theo ngày ({{ chartRange() }} ngày)</div>
+          <div class="chart-scroll" [class.scrollable]="chartRange() === 30">
+            <svg
+              class="bar-chart volume tall"
+              [attr.viewBox]="'0 0 ' + weeklyLineChart().W + ' ' + weeklyLineChart().H"
+              preserveAspectRatio="xMidYMid meet"
+            >
+              <defs>
+                <linearGradient id="volBarGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stop-color="#7c8aff" />
+                  <stop offset="100%" stop-color="#5b6cff" />
+                </linearGradient>
+                <linearGradient id="volBarGradToday" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stop-color="#34d399" />
+                  <stop offset="100%" stop-color="#10b981" />
+                </linearGradient>
+              </defs>
 
-            <g class="grid">
-              <line
-                *ngFor="let g of weeklyLineChart().gridLines"
-                [attr.x1]="weeklyLineChart().PAD_L"
-                [attr.x2]="weeklyLineChart().W - 16"
-                [attr.y1]="g.y"
-                [attr.y2]="g.y"
-              />
-              <text
-                *ngFor="let g of weeklyLineChart().gridLines"
-                [attr.x]="weeklyLineChart().PAD_L - 6"
-                [attr.y]="g.y + 4"
-                text-anchor="end"
-                class="grid-label"
-              >{{ g.label }}</text>
-            </g>
-
-            <path class="line-area" [attr.d]="weeklyLineChart().areaPath" />
-            <path class="line-stroke" [attr.d]="weeklyLineChart().linePath" fill="none" />
-
-            <g class="dots">
-              <g *ngFor="let p of weeklyLineChart().points">
-                <circle
-                  [attr.cx]="p.x"
-                  [attr.cy]="p.y"
-                  r="6"
-                  class="dot-outer"
-                  [class.today]="p.d.date === todayDateStr()"
+              <g class="grid">
+                <line
+                  *ngFor="let g of weeklyLineChart().gridLines"
+                  [attr.x1]="weeklyLineChart().PAD_L"
+                  [attr.x2]="weeklyLineChart().W - 16"
+                  [attr.y1]="g.y"
+                  [attr.y2]="g.y"
                 />
-                <circle [attr.cx]="p.x" [attr.cy]="p.y" r="3" class="dot-inner" />
                 <text
-                  *ngIf="p.d.total > 0"
-                  [attr.x]="p.x"
-                  [attr.y]="p.y - 12"
-                  text-anchor="middle"
-                  class="dot-label"
-                >{{ p.d.total }}</text>
+                  *ngFor="let g of weeklyLineChart().gridLines"
+                  [attr.x]="weeklyLineChart().PAD_L - 6"
+                  [attr.y]="g.y + 4"
+                  text-anchor="end"
+                  class="grid-label"
+                >{{ g.label }}</text>
               </g>
-            </g>
 
-            <g class="x-labels">
-              <text
-                *ngFor="let p of weeklyLineChart().points"
-                [attr.x]="p.x"
-                [attr.y]="weeklyLineChart().H - 20"
-                text-anchor="middle"
-                class="x-label"
-                [class.today]="p.d.date === todayDateStr()"
-              >{{ formatDayLabel(p.d.date) }}</text>
-              <text
-                *ngFor="let p of weeklyLineChart().points"
-                [attr.x]="p.x"
-                [attr.y]="weeklyLineChart().H - 6"
-                text-anchor="middle"
-                class="x-sublabel"
-              >{{ formatDateShort(p.d.date) }}</text>
-            </g>
-          </svg>
+              <g class="bars">
+                <g *ngFor="let b of weeklyLineChart().bars">
+                  <rect
+                    [attr.x]="b.x"
+                    [attr.y]="b.y"
+                    [attr.width]="b.barW"
+                    [attr.height]="b.h"
+                    rx="6"
+                    class="bar"
+                    [class.today]="b.d.date === todayDateStr()"
+                    [class.empty]="b.d.total === 0"
+                  />
+                  <text
+                    *ngIf="b.d.total > 0 && b.showValue"
+                    [attr.x]="b.cx"
+                    [attr.y]="b.y - 8"
+                    text-anchor="middle"
+                    class="bar-text bar-text-lg"
+                    [class.today]="b.d.date === todayDateStr()"
+                  >{{ b.d.total }}</text>
+                </g>
+              </g>
+
+              <g class="x-labels">
+                <ng-container *ngFor="let b of weeklyLineChart().bars">
+                  <text
+                    *ngIf="b.showLabel"
+                    [attr.x]="b.cx"
+                    [attr.y]="weeklyLineChart().H - 22"
+                    text-anchor="middle"
+                    class="x-label"
+                    [class.today]="b.d.date === todayDateStr()"
+                  >{{ formatDayLabel(b.d.date) }}</text>
+                  <text
+                    *ngIf="b.showLabel"
+                    [attr.x]="b.cx"
+                    [attr.y]="weeklyLineChart().H - 6"
+                    text-anchor="middle"
+                    class="x-sublabel"
+                  >{{ formatDateShort(b.d.date) }}</text>
+                </ng-container>
+              </g>
+            </svg>
+          </div>
+
+          <!-- Stats footer -->
+          <div class="chart-stats" *ngIf="chartStats() as cs">
+            <div class="cs-item">
+              <div class="cs-label"><i class="pi pi-arrow-up"></i> Cao nhất</div>
+              <div class="cs-value">{{ cs.maxMl }}<span class="u">ml</span></div>
+              <div class="cs-sub" *ngIf="cs.maxDate">{{ formatDateShort(cs.maxDate) }}</div>
+            </div>
+            <div class="cs-item">
+              <div class="cs-label"><i class="pi pi-arrow-down"></i> Thấp nhất</div>
+              <div class="cs-value">{{ cs.minMl }}<span class="u">ml</span></div>
+              <div class="cs-sub" *ngIf="cs.minDate">{{ formatDateShort(cs.minDate) }}</div>
+            </div>
+            <div class="cs-item">
+              <div class="cs-label"><i class="pi pi-chart-bar"></i> Trung bình</div>
+              <div class="cs-value">{{ cs.avgMl }}<span class="u">ml</span></div>
+              <div class="cs-sub">trên {{ cs.daysWithData }} ngày có cữ</div>
+            </div>
+            <div class="cs-item">
+              <div class="cs-label"><i class="pi pi-bookmark"></i> Tổng</div>
+              <div class="cs-value">{{ cs.totalMl }}<span class="u">ml</span></div>
+              <div class="cs-sub">{{ cs.rangeDays }} ngày gần nhất</div>
+            </div>
+          </div>
         </div>
 
         <!-- TAB: Số cữ/ngày -->
         <div class="chart-wrapper tall" *ngIf="chartTab() === 'count' && weeklyAverage() > 0">
-          <div class="chart-title">Số cữ bú mỗi ngày (7 ngày)</div>
-          <svg
-            class="bar-chart tall"
-            [attr.viewBox]="'0 0 ' + weeklyCountChart().W + ' ' + weeklyCountChart().H"
-            preserveAspectRatio="xMidYMid meet"
-          >
-            <g class="grid">
-              <line
-                *ngFor="let g of weeklyCountChart().gridLines"
-                [attr.x1]="weeklyCountChart().PAD_L"
-                [attr.x2]="weeklyCountChart().W - 16"
-                [attr.y1]="g.y"
-                [attr.y2]="g.y"
-              />
-              <text
-                *ngFor="let g of weeklyCountChart().gridLines"
-                [attr.x]="weeklyCountChart().PAD_L - 6"
-                [attr.y]="g.y + 4"
-                text-anchor="end"
-                class="grid-label"
-              >{{ g.label }}</text>
-            </g>
-
-            <g class="bars">
-              <g *ngFor="let b of weeklyCountChart().bars">
-                <rect
-                  [attr.x]="b.x"
-                  [attr.y]="b.y"
-                  [attr.width]="b.barW"
-                  [attr.height]="b.h"
-                  rx="6"
-                  class="bar"
-                  [class.today]="b.d.date === todayDateStr()"
-                  [class.empty]="b.d.count === 0"
+          <div class="chart-title">Số cữ bú mỗi ngày ({{ chartRange() }} ngày)</div>
+          <div class="chart-scroll" [class.scrollable]="chartRange() === 30">
+            <svg
+              class="bar-chart tall"
+              [attr.viewBox]="'0 0 ' + weeklyCountChart().W + ' ' + weeklyCountChart().H"
+              preserveAspectRatio="xMidYMid meet"
+            >
+              <g class="grid">
+                <line
+                  *ngFor="let g of weeklyCountChart().gridLines"
+                  [attr.x1]="weeklyCountChart().PAD_L"
+                  [attr.x2]="weeklyCountChart().W - 16"
+                  [attr.y1]="g.y"
+                  [attr.y2]="g.y"
                 />
                 <text
-                  *ngIf="b.d.count > 0"
-                  [attr.x]="b.cx"
-                  [attr.y]="b.y - 6"
-                  text-anchor="middle"
-                  class="bar-text"
-                >{{ b.d.count }}</text>
+                  *ngFor="let g of weeklyCountChart().gridLines"
+                  [attr.x]="weeklyCountChart().PAD_L - 6"
+                  [attr.y]="g.y + 4"
+                  text-anchor="end"
+                  class="grid-label"
+                >{{ g.label }}</text>
               </g>
-            </g>
 
-            <g class="x-labels">
-              <text
-                *ngFor="let b of weeklyCountChart().bars"
-                [attr.x]="b.cx"
-                [attr.y]="weeklyCountChart().H - 20"
-                text-anchor="middle"
-                class="x-label"
-                [class.today]="b.d.date === todayDateStr()"
-              >{{ formatDayLabel(b.d.date) }}</text>
-              <text
-                *ngFor="let b of weeklyCountChart().bars"
-                [attr.x]="b.cx"
-                [attr.y]="weeklyCountChart().H - 6"
-                text-anchor="middle"
-                class="x-sublabel"
-              >{{ formatDateShort(b.d.date) }}</text>
-            </g>
-          </svg>
+              <g class="bars">
+                <g *ngFor="let b of weeklyCountChart().bars">
+                  <rect
+                    [attr.x]="b.x"
+                    [attr.y]="b.y"
+                    [attr.width]="b.barW"
+                    [attr.height]="b.h"
+                    rx="6"
+                    class="bar"
+                    [class.today]="b.d.date === todayDateStr()"
+                    [class.empty]="b.d.count === 0"
+                  />
+                  <text
+                    *ngIf="b.d.count > 0 && b.showValue"
+                    [attr.x]="b.cx"
+                    [attr.y]="b.y - 6"
+                    text-anchor="middle"
+                    class="bar-text bar-text-lg"
+                    [class.today]="b.d.date === todayDateStr()"
+                  >{{ b.d.count }}</text>
+                </g>
+              </g>
+
+              <g class="x-labels">
+                <ng-container *ngFor="let b of weeklyCountChart().bars">
+                  <text
+                    *ngIf="b.showLabel"
+                    [attr.x]="b.cx"
+                    [attr.y]="weeklyCountChart().H - 22"
+                    text-anchor="middle"
+                    class="x-label"
+                    [class.today]="b.d.date === todayDateStr()"
+                  >{{ formatDayLabel(b.d.date) }}</text>
+                  <text
+                    *ngIf="b.showLabel"
+                    [attr.x]="b.cx"
+                    [attr.y]="weeklyCountChart().H - 6"
+                    text-anchor="middle"
+                    class="x-sublabel"
+                  >{{ formatDateShort(b.d.date) }}</text>
+                </ng-container>
+              </g>
+            </svg>
+          </div>
+
+          <!-- Stats footer -->
+          <div class="chart-stats" *ngIf="chartStats() as cs">
+            <div class="cs-item">
+              <div class="cs-label"><i class="pi pi-arrow-up"></i> Cao nhất</div>
+              <div class="cs-value">{{ cs.maxCount }}<span class="u">cữ</span></div>
+              <div class="cs-sub">trong {{ cs.rangeDays }} ngày</div>
+            </div>
+            <div class="cs-item">
+              <div class="cs-label"><i class="pi pi-chart-bar"></i> Trung bình</div>
+              <div class="cs-value">{{ cs.avgCount }}<span class="u">cữ</span></div>
+              <div class="cs-sub">mỗi ngày có cữ</div>
+            </div>
+            <div class="cs-item">
+              <div class="cs-label"><i class="pi pi-calendar"></i> Có cữ</div>
+              <div class="cs-value">{{ cs.daysWithData }}<span class="u">ngày</span></div>
+              <div class="cs-sub">trên {{ cs.rangeDays }} ngày</div>
+            </div>
+          </div>
         </div>
 
         <!-- TAB: Timeline trong ngày -->

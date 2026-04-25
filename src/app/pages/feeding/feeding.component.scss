@@ -2091,6 +2091,135 @@
   padding: 20px 16px 14px;
 }
 
+/* ===== Chart range filter ===== */
+.chart-range {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin: -4px 0 12px;
+
+  .range-label {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--muted);
+    margin-right: 2px;
+  }
+
+  .range-chip {
+    padding: 5px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: #ffffff;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s;
+
+    &:hover {
+      color: var(--primary);
+      border-color: var(--primary);
+    }
+
+    &.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #ffffff;
+      box-shadow: 0 2px 6px rgba(91, 108, 255, 0.25);
+    }
+  }
+}
+
+/* ===== Chart scroll container (for long ranges) ===== */
+.chart-scroll {
+  width: 100%;
+  overflow-x: hidden;
+
+  &.scrollable {
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+
+    svg {
+      min-width: 900px;
+    }
+
+    &::-webkit-scrollbar { height: 6px; }
+    &::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 3px;
+    }
+  }
+}
+
+/* ===== Chart stats footer ===== */
+.chart-stats {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 8px;
+  padding: 10px;
+  background: #f8fafc;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+
+  .cs-item {
+    padding: 8px 10px;
+    background: #ffffff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    text-align: center;
+  }
+
+  .cs-label {
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+
+    i {
+      font-size: 9px;
+      opacity: 0.65;
+    }
+  }
+
+  .cs-value {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--text);
+    line-height: 1.1;
+    margin-top: 4px;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+
+    .u {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      margin-left: 3px;
+      letter-spacing: 0;
+    }
+  }
+
+  .cs-sub {
+    font-size: 10.5px;
+    color: var(--muted-2);
+    margin-top: 2px;
+  }
+
+  @media (max-width: 480px) {
+    grid-template-columns: repeat(2, 1fr);
+
+    .cs-value { font-size: 18px; }
+  }
+}
+
 /* --- LINE CHART --- */
 .line-chart {
   width: 100%;
@@ -2099,8 +2228,8 @@
   display: block;
 
   &.tall {
-    max-height: 340px;
-    min-height: 260px;
+    max-height: 420px;
+    min-height: 320px;
   }
 
   .grid line {
@@ -2260,8 +2389,8 @@
   display: block;
 
   &.tall {
-    max-height: 340px;
-    min-height: 260px;
+    max-height: 420px;
+    min-height: 320px;
   }
 
   .grid line {
@@ -2296,6 +2425,26 @@
     font-weight: 700;
     font-family: inherit;
     font-variant-numeric: tabular-nums;
+  }
+
+  .bar-text-lg {
+    font-size: 15px;
+    font-weight: 800;
+    fill: var(--text);
+    letter-spacing: -0.02em;
+
+    &.today {
+      fill: #047857;
+    }
+  }
+
+  &.volume {
+    .bar {
+      fill: url(#volBarGrad);
+
+      &.today { fill: url(#volBarGradToday); }
+      &.empty { fill: #eef0f3; }
+    }
   }
 
   .x-label {
