@@ -103,6 +103,8 @@ export class FeedingComponent {
   historyDialogOpen = signal<boolean>(false);
   historyFilter = signal<'all' | 'today' | 'yesterday'>('all');
   chartTab = signal<'volume' | 'count' | 'timeline'>('volume');
+  /** Số ngày hiển thị trong biểu đồ phân tích (7 / 14 / 30) */
+  chartRange = signal<7 | 14 | 30>(7);
   timelineDialogOpen = signal<boolean>(false);
   timelineView = signal<'list' | 'chart'>('list');
   selectedTimelineId = signal<string | null>(null);
@@ -607,9 +609,9 @@ export class FeedingComponent {
     return `${days} ngày trước`;
   });
 
-  // ===== History (last 7 days) =====
+  // ===== History (range selectable: 7 / 14 / 30 days) =====
   weeklySummary = computed<DailySummary[]>(() =>
-    getDailySummaries(this.logs(), 7, this.now())
+    getDailySummaries(this.logs(), this.chartRange(), this.now())
   );
 
   maxDailyTotal = computed(() => {
@@ -624,80 +626,125 @@ export class FeedingComponent {
     return Math.round(arr.reduce((s, d) => s + d.total, 0) / arr.length);
   });
 
-  /** Line chart: tổng sữa 7 ngày */
+  /** Thống kê tổng quát theo dải ngày đã chọn */
+  chartStats = computed(() => {
+    const arr = this.weeklySummary();
+    const withData = arr.filter((d) => d.total > 0);
+    if (arr.length === 0) {
+      return {
+        rangeDays: this.chartRange(),
+        daysWithData: 0,
+        totalMl: 0,
+        avgMl: 0,
+        maxMl: 0,
+        maxDate: '',
+        minMl: 0,
+        minDate: '',
+        avgCount: 0,
+        maxCount: 0,
+      };
+    }
+
+    const totalMl = withData.reduce((s, d) => s + d.total, 0);
+    const totalCount = withData.reduce((s, d) => s + d.count, 0);
+    const avgMl = withData.length > 0 ? Math.round(totalMl / withData.length) : 0;
+    const avgCount = withData.length > 0 ? +(totalCount / withData.length).toFixed(1) : 0;
+
+    let maxDay = withData[0];
+    let minDay = withData[0];
+    for (const d of withData) {
+      if (d.total > maxDay.total) maxDay = d;
+      if (d.total < minDay.total) minDay = d;
+    }
+    const maxCount = Math.max(0, ...withData.map((d) => d.count));
+
+    return {
+      rangeDays: this.chartRange(),
+      daysWithData: withData.length,
+      totalMl,
+      avgMl,
+      maxMl: maxDay?.total || 0,
+      maxDate: maxDay?.date || '',
+      minMl: minDay?.total || 0,
+      minDate: minDay?.date || '',
+      avgCount,
+      maxCount,
+    };
+  });
+
+  /**
+   * Hỗ trợ co giãn chart theo số ngày: trả viewport SVG khá rộng cho 30 ngày
+   * (cho phép cuộn ngang). Đồng thời quy định mật độ label hiển thị.
+   */
+  private chartLayout() {
+    const range = this.chartRange();
+    const H = 360;
+    const PAD_L = 44, PAD_R = 16, PAD_T = 28, PAD_B = 48;
+    let W = 700;
+    if (range === 14) W = 760;
+    if (range === 30) W = 1320;
+
+    // Mật độ label trục X: hiển thị mỗi N cột
+    let labelStep = 1;
+    if (range === 14) labelStep = 1;
+    if (range === 30) labelStep = 3;
+
+    // Chỉ hiện số trên đỉnh cột nếu không quá nhiều cột
+    const showBarValueOnAll = range <= 14;
+
+    return { W, H, PAD_L, PAD_R, PAD_T, PAD_B, labelStep, showBarValueOnAll };
+  }
+
+  /** Bar chart: tổng sữa theo ngày (theo chartRange) */
   weeklyLineChart = computed(() => {
     const data = this.weeklySummary();
     const max = Math.max(...data.map((d) => d.total), 1);
-    const W = 700, H = 300, PAD_L = 44, PAD_R = 16, PAD_T = 24, PAD_B = 44;
+    const lay = this.chartLayout();
+    const { W, H, PAD_L, PAD_R, PAD_T, PAD_B, labelStep, showBarValueOnAll } = lay;
     const chartW = W - PAD_L - PAD_R;
     const chartH = H - PAD_T - PAD_B;
-    const stepX = data.length > 1 ? chartW / (data.length - 1) : 0;
+    const barCount = data.length;
+    const slot = chartW / barCount;
+    const barW = Math.max(8, slot * (this.chartRange() === 30 ? 0.7 : 0.62));
 
-    const points = data.map((d, i) => {
-      const x = PAD_L + i * stepX;
-      const y = PAD_T + chartH - (d.total / max) * chartH;
-      return { x, y, d };
+    const bars = data.map((d, i) => {
+      const x = PAD_L + i * slot + (slot - barW) / 2;
+      const h = (d.total / max) * chartH;
+      const y = PAD_T + chartH - h;
+      const cx = x + barW / 2;
+      const showLabel = i % labelStep === 0 || i === barCount - 1;
+      const showValue = showBarValueOnAll || (d.total > 0 && (i % labelStep === 0));
+      return { x, y, h, barW, cx, d, showLabel, showValue };
     });
-
-    // Mượt hoá với Catmull-Rom → cubic Bezier
-    let smoothPath = '';
-    if (points.length > 0) {
-      smoothPath = `M ${points[0].x},${points[0].y}`;
-      const tension = 0.22;
-      for (let i = 0; i < points.length - 1; i++) {
-        const p0 = points[i - 1] || points[i];
-        const p1 = points[i];
-        const p2 = points[i + 1];
-        const p3 = points[i + 2] || p2;
-
-        const cp1x = p1.x + (p2.x - p0.x) * tension;
-        const cp1y = p1.y + (p2.y - p0.y) * tension;
-        const cp2x = p2.x - (p3.x - p1.x) * tension;
-        const cp2y = p2.y - (p3.y - p1.y) * tension;
-
-        smoothPath += ` C ${cp1x},${cp1y} ${cp2x},${cp2y} ${p2.x},${p2.y}`;
-      }
-    }
-
-    const areaPath =
-      smoothPath && points.length > 0
-        ? `${smoothPath} L ${points[points.length - 1].x},${PAD_T + chartH} L ${points[0].x},${PAD_T + chartH} Z`
-        : '';
 
     const gridLines = [0.25, 0.5, 0.75, 1].map((r) => ({
       y: PAD_T + chartH - r * chartH,
       label: Math.round(max * r),
     }));
 
-    return {
-      points,
-      linePath: smoothPath,
-      areaPath,
-      gridLines,
-      W,
-      H,
-      PAD_L,
-      PAD_B,
-    };
+    return { bars, gridLines, W, H, PAD_L, PAD_B, max };
   });
 
-  /** Bar chart: số cữ bú/ngày trong 7 ngày */
+  /** Bar chart: số cữ bú/ngày */
   weeklyCountChart = computed(() => {
     const data = this.weeklySummary();
     const max = Math.max(...data.map((d) => d.count), 1);
-    const W = 700, H = 300, PAD_L = 44, PAD_R = 16, PAD_T = 24, PAD_B = 44;
+    const lay = this.chartLayout();
+    const { W, H, PAD_L, PAD_R, PAD_T, PAD_B, labelStep, showBarValueOnAll } = lay;
     const chartW = W - PAD_L - PAD_R;
     const chartH = H - PAD_T - PAD_B;
     const barCount = data.length;
     const slot = chartW / barCount;
-    const barW = slot * 0.6;
+    const barW = Math.max(8, slot * (this.chartRange() === 30 ? 0.7 : 0.6));
 
     const bars = data.map((d, i) => {
       const x = PAD_L + i * slot + (slot - barW) / 2;
       const h = (d.count / max) * chartH;
       const y = PAD_T + chartH - h;
       const cx = x + barW / 2;
-      return { x, y, h, barW, cx, d };
+      const showLabel = i % labelStep === 0 || i === barCount - 1;
+      const showValue = showBarValueOnAll || (d.count > 0 && i % labelStep === 0);
+      return { x, y, h, barW, cx, d, showLabel, showValue };
     });
 
     const gridLines = [0.25, 0.5, 0.75, 1].map((r) => ({
@@ -1384,6 +1431,10 @@ export class FeedingComponent {
 
   setChartTab(tab: 'volume' | 'count' | 'timeline') {
     this.chartTab.set(tab);
+  }
+
+  setChartRange(r: 7 | 14 | 30) {
+    this.chartRange.set(r);
   }
 
   formatMinuteAsTime(m: number): string {
