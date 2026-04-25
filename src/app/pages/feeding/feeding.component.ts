@@ -966,12 +966,17 @@ export class FeedingComponent {
       groups.get(log.date)!.push(log);
     }
     return Array.from(groups.entries())
-      .map(([date, logs]) => ({
-        date,
-        logs: logs.sort((a, b) => b.time.localeCompare(a.time)),
-        total: logs.reduce((s, l) => s + l.volume, 0),
-        count: logs.length,
-      }))
+      .map(([date, logs]) => {
+        const total = logs.reduce((s, l) => s + l.volume, 0);
+        const count = logs.length;
+        return {
+          date,
+          logs: logs.sort((a, b) => b.time.localeCompare(a.time)),
+          total,
+          count,
+          avg: count > 0 ? Math.round(total / count) : 0,
+        };
+      })
       .sort((a, b) => b.date.localeCompare(a.date));
   });
 

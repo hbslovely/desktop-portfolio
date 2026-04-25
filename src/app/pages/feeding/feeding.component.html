@@ -471,7 +471,7 @@
                 <span class="log-time">{{ l.time }}</span>
                 <span class="log-volume">{{ l.volume }}ml</span>
                 <span class="log-gap" *ngIf="formatIntervalFromPrev(l, todayLogs()) as iv">
-                  <i class="pi pi-clock"></i> cách {{ iv }}
+                  <i class="pi pi-clock"></i> {{ iv }}
                 </span>
                 <span class="log-note" *ngIf="l.note">· {{ l.note }}</span>
                 <button
@@ -534,7 +534,7 @@
                 <span class="log-time">{{ l.time }}</span>
                 <span class="log-volume">{{ l.volume }}ml</span>
                 <span class="log-gap" *ngIf="formatIntervalFromPrev(l, yesterdayLogs()) as iv">
-                  <i class="pi pi-clock"></i> cách {{ iv }}
+                  <i class="pi pi-clock"></i> {{ iv }}
                 </span>
                 <span class="log-note" *ngIf="l.note">· {{ l.note }}</span>
                 <button
@@ -1538,6 +1538,7 @@
             <div class="h-total">
               <strong>{{ g.total }}</strong>ml
               <span class="h-count">· {{ g.count }} cữ</span>
+              <span class="h-avg" *ngIf="g.avg > 0">· TB {{ g.avg }}ml</span>
             </div>
           </div>
           <div class="history-group-rows">
