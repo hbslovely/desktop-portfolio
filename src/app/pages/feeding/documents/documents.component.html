@@ -182,34 +182,62 @@
         <i class="pi" [class.pi-times-circle]="allFilesSelected()" [class.pi-check-circle]="!allFilesSelected()"></i>
         <span>{{ allFilesSelected() ? 'Bỏ chọn tất cả' : 'Chọn tất cả' }}</span>
       </button>
-      <button
-        type="button"
-        class="docs-btn ghost small"
-        (click)="bulkDownloadSelection()"
-        [disabled]="selectedCount() === 0 || saving()"
-        title="Tải toàn bộ ảnh đã chọn về máy"
-      >
-        <i class="pi pi-download"></i>
-        <span>Tải xuống</span>
-      </button>
-      <button
-        type="button"
-        class="docs-btn primary small"
-        (click)="cutSelection()"
-        [disabled]="selectedCount() === 0 || saving()"
-      >
-        <i class="pi pi-clone"></i>
-        <span>Cắt</span>
-      </button>
-      <button
-        type="button"
-        class="docs-btn danger small"
-        (click)="bulkDeleteSelection()"
-        [disabled]="selectedCount() === 0 || saving()"
-      >
-        <i class="pi pi-trash"></i>
-        <span>Xoá</span>
-      </button>
+      <!--
+        Gom Tải xuống / Cắt / Xoá vào dropdown 3-chấm để bar gọn gàng,
+        đặc biệt trên mobile. Disabled trigger khi chưa chọn ảnh nào.
+      -->
+      <div class="docs-menu select-actions" (click)="$event.stopPropagation()">
+        <button
+          type="button"
+          class="docs-btn ghost small icon-only"
+          (click)="toggleSelectActionsMenu($event)"
+          [class.open]="selectActionsMenuOpen()"
+          [disabled]="selectedCount() === 0 || saving()"
+          aria-haspopup="menu"
+          [attr.aria-expanded]="selectActionsMenuOpen()"
+          [title]="selectedCount() === 0 ? 'Chọn ảnh để xem thao tác' : 'Thao tác với ảnh đã chọn'"
+        >
+          <i class="pi pi-ellipsis-v"></i>
+        </button>
+
+        <div
+          class="docs-menu-pop docs-menu-pop--right"
+          *ngIf="selectActionsMenuOpen()"
+          role="menu"
+        >
+          <button
+            type="button"
+            class="docs-menu-item"
+            role="menuitem"
+            (click)="bulkDownloadSelection()"
+            [disabled]="saving()"
+          >
+            <i class="pi pi-download"></i>
+            <span>Tải xuống</span>
+          </button>
+          <button
+            type="button"
+            class="docs-menu-item"
+            role="menuitem"
+            (click)="cutSelection()"
+            [disabled]="saving()"
+          >
+            <i class="pi pi-clone"></i>
+            <span>Cắt</span>
+          </button>
+          <button
+            type="button"
+            class="docs-menu-item danger"
+            role="menuitem"
+            (click)="bulkDeleteSelection()"
+            [disabled]="saving()"
+          >
+            <i class="pi pi-trash"></i>
+            <span>Xoá</span>
+          </button>
+        </div>
+      </div>
+
       <button
         type="button"
         class="docs-btn ghost small"

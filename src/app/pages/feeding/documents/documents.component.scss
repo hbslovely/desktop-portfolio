@@ -210,6 +210,24 @@
       font-size: 12px;
     }
   }
+
+  /*
+    Modifier cho nút chỉ chứa icon (ví dụ nút 3-chấm trong selection bar):
+    bỏ gap & padding ngang vì không có text, giữ vuông gọn.
+  */
+  &.icon-only {
+    gap: 0;
+    padding-left: 8px;
+    padding-right: 8px;
+    min-width: 32px;
+    justify-content: center;
+
+    &.small {
+      padding-left: 6px;
+      padding-right: 6px;
+      min-width: 30px;
+    }
+  }
 }
 
 .docs-menu-caret {
@@ -227,7 +245,7 @@
   position: absolute;
   top: calc(100% + 6px);
   left: 0;
-  min-width: 240px;
+  min-width: 220px;
   background: #ffffff;
   border: 1px solid var(--docs-border);
   border-radius: 12px;
@@ -238,6 +256,15 @@
   flex-direction: column;
   gap: 2px;
   animation: docsPopIn 0.14s ease;
+
+  /*
+    Variant cho menu nằm bên phải (selection bar). Mở down-right từ nút
+    3-chấm thay vì down-left để khỏi tràn ra ngoài viewport.
+  */
+  &--right {
+    left: auto;
+    right: 0;
+  }
 }
 
 @keyframes docsPopIn {
@@ -282,6 +309,24 @@
   &:disabled {
     opacity: 0.45;
     cursor: not-allowed;
+  }
+
+  /* Item nguy hiểm (Xoá) — đỏ rõ rệt khi hover để giảm thao tác nhầm. */
+  &.danger {
+    color: var(--docs-rose);
+
+    i {
+      color: var(--docs-rose);
+    }
+
+    &:hover:not(:disabled) {
+      background: var(--docs-rose-soft);
+      color: var(--docs-rose);
+
+      i {
+        color: var(--docs-rose);
+      }
+    }
   }
 }
 
