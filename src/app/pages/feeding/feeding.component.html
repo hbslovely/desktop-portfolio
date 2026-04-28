@@ -474,14 +474,24 @@
                   <i class="pi pi-clock"></i> {{ iv }}
                 </span>
                 <span class="log-note" *ngIf="l.note">· {{ l.note }}</span>
-                <button
-                  class="log-del"
-                  (click)="deleteLog(l)"
-                  title="Xoá cữ bú này"
-                  *ngIf="l.rowIndex"
-                >
-                  <i class="pi pi-trash"></i>
-                </button>
+                <div class="log-actions" *ngIf="l.rowIndex">
+                  <button
+                    class="log-edit"
+                    (click)="openEditDialog(l)"
+                    title="Sửa cữ bú này"
+                    aria-label="Sửa cữ bú"
+                  >
+                    <i class="pi pi-pencil"></i>
+                  </button>
+                  <button
+                    class="log-del"
+                    (click)="deleteLog(l)"
+                    title="Xoá cữ bú này"
+                    aria-label="Xoá cữ bú"
+                  >
+                    <i class="pi pi-trash"></i>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -537,14 +547,24 @@
                   <i class="pi pi-clock"></i> {{ iv }}
                 </span>
                 <span class="log-note" *ngIf="l.note">· {{ l.note }}</span>
-                <button
-                  class="log-del"
-                  (click)="deleteLog(l)"
-                  title="Xoá cữ bú này"
-                  *ngIf="l.rowIndex"
-                >
-                  <i class="pi pi-trash"></i>
-                </button>
+                <div class="log-actions" *ngIf="l.rowIndex">
+                  <button
+                    class="log-edit"
+                    (click)="openEditDialog(l)"
+                    title="Sửa cữ bú này"
+                    aria-label="Sửa cữ bú"
+                  >
+                    <i class="pi pi-pencil"></i>
+                  </button>
+                  <button
+                    class="log-del"
+                    (click)="deleteLog(l)"
+                    title="Xoá cữ bú này"
+                    aria-label="Xoá cữ bú"
+                  >
+                    <i class="pi pi-trash"></i>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -968,14 +988,24 @@
             <ng-template #noNote>
               <div class="feed-row-note muted">—</div>
             </ng-template>
-            <button
-              *ngIf="l.rowIndex"
-              class="feed-row-del"
-              (click)="deleteLog(l)"
-              title="Xoá cữ này"
-            >
-              <i class="pi pi-trash"></i>
-            </button>
+            <div class="feed-row-actions" *ngIf="l.rowIndex">
+              <button
+                class="feed-row-edit"
+                (click)="openEditDialog(l)"
+                title="Sửa cữ này"
+                aria-label="Sửa cữ bú"
+              >
+                <i class="pi pi-pencil"></i>
+              </button>
+              <button
+                class="feed-row-del"
+                (click)="deleteLog(l)"
+                title="Xoá cữ này"
+                aria-label="Xoá cữ bú"
+              >
+                <i class="pi pi-trash"></i>
+              </button>
+            </div>
           </div>
         </div>
       </section>
@@ -1482,6 +1512,122 @@
     </div>
   </div>
 
+  <!-- ============ EDIT LOG DIALOG ============ -->
+  <div
+    class="dialog-overlay"
+    *ngIf="editingLog() as edit"
+    (click)="closeEditDialog()"
+  >
+    <div class="dialog" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+      <div class="dialog-head">
+        <div>
+          <div class="eyebrow">Chỉnh sửa cữ bú</div>
+          <h2><i class="pi pi-pencil"></i> Cập nhật thông tin</h2>
+        </div>
+        <button
+          type="button"
+          class="dialog-close"
+          (click)="closeEditDialog()"
+          aria-label="Đóng"
+        >
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+
+      <form class="log-form" (ngSubmit)="submitEditLog()">
+        <!-- Date hiển thị nhưng KHÔNG cho edit -->
+        <div class="edit-date-banner">
+          <i class="pi pi-calendar"></i>
+          <span class="edb-label">Ngày</span>
+          <strong class="edb-value">{{ formatDateDisplay(edit.date) }}</strong>
+          <span class="edb-hint">
+            <i class="pi pi-lock"></i>
+            Không đổi được ngày
+          </span>
+        </div>
+
+        <div class="log-grid">
+          <label class="field">
+            <span class="label">Giờ</span>
+            <input
+              type="time"
+              [ngModel]="editLogDraft().time"
+              (ngModelChange)="updateEditTime($event)"
+              name="editLogTime"
+              required
+            />
+          </label>
+
+          <label class="field">
+            <span class="label">Dung tích (ml)</span>
+            <input
+              type="number"
+              inputmode="numeric"
+              min="1"
+              max="500"
+              step="5"
+              [ngModel]="editLogDraft().volume"
+              (ngModelChange)="updateEditVolume($any($event))"
+              name="editLogVolume"
+              placeholder="50"
+              required
+            />
+          </label>
+
+          <label class="field full">
+            <span class="label">Ghi chú (tuỳ chọn)</span>
+            <input
+              type="text"
+              [ngModel]="editLogDraft().note"
+              (ngModelChange)="updateEditNote($event)"
+              name="editLogNote"
+              placeholder="VD: bú mẹ, vắt sữa, sữa công thức..."
+              autocomplete="off"
+            />
+          </label>
+        </div>
+
+        <div class="quick-volumes">
+          <span class="quick-label">Nhanh:</span>
+          <button type="button" class="quick-chip" (click)="quickEditVolume(30)">30ml</button>
+          <button type="button" class="quick-chip" (click)="quickEditVolume(50)">50ml</button>
+          <button type="button" class="quick-chip" (click)="quickEditVolume(60)">60ml</button>
+          <button type="button" class="quick-chip" (click)="quickEditVolume(70)">70ml</button>
+          <button type="button" class="quick-chip" (click)="quickEditVolume(80)">80ml</button>
+          <button type="button" class="quick-chip" (click)="quickEditVolume(90)">90ml</button>
+          <button type="button" class="quick-chip" (click)="quickEditVolume(120)">120ml</button>
+          <button
+            type="button"
+            class="quick-chip formula-chip"
+            [class.active]="hasEditNote('Sữa công thức')"
+            (click)="quickEditNote('Sữa công thức')"
+            title="Gắn nhãn 'Sữa công thức' cho cữ này"
+          >
+            <i class="pi pi-prime"></i> Sữa công thức
+          </button>
+        </div>
+
+        <div class="sync-error" *ngIf="syncError()">
+          <i class="pi pi-exclamation-triangle"></i> {{ syncError() }}
+        </div>
+
+        <div class="dialog-actions">
+          <button type="button" class="btn ghost" (click)="closeEditDialog()">
+            Huỷ
+          </button>
+          <button
+            type="submit"
+            class="btn primary"
+            [disabled]="editSaving() || !editLogDraft().volume || !editLogDraft().time"
+          >
+            <i class="pi" [class.pi-save]="!editSaving()" [class.pi-spin]="editSaving()" [class.pi-spinner]="editSaving()"></i>
+            {{ editSaving() ? 'Đang lưu...' : 'Lưu thay đổi' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- ============ HISTORY DIALOG (all feeds) ============ -->
   <div
     class="dialog-overlay"
@@ -1559,14 +1705,24 @@
               <ng-template #noNote2>
                 <div class="feed-row-note muted">—</div>
               </ng-template>
-              <button
-                *ngIf="l.rowIndex"
-                class="feed-row-del"
-                (click)="deleteLog(l)"
-                title="Xoá cữ này"
-              >
-                <i class="pi pi-trash"></i>
-              </button>
+              <div class="feed-row-actions" *ngIf="l.rowIndex">
+                <button
+                  class="feed-row-edit"
+                  (click)="openEditDialog(l)"
+                  title="Sửa cữ này"
+                  aria-label="Sửa cữ bú"
+                >
+                  <i class="pi pi-pencil"></i>
+                </button>
+                <button
+                  class="feed-row-del"
+                  (click)="deleteLog(l)"
+                  title="Xoá cữ này"
+                  aria-label="Xoá cữ bú"
+                >
+                  <i class="pi pi-trash"></i>
+                </button>
+              </div>
             </div>
           </div>
         </div>

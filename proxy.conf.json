@@ -133,6 +133,20 @@
       "Content-Type": "application/json"
     }
   },
+  "/api/feeding-apps-script": {
+    "target": "https://script.google.com",
+    "secure": true,
+    "changeOrigin": true,
+    "logLevel": "debug",
+    "pathRewrite": {
+      "^/api/feeding-apps-script": "/macros/s/AKfycbzlbMMhPm6S-Dm8XgqJgZqRm8vJSgLwJM19LUFxg_X9_Lorw0n_AUELNTpiH-8ULQyBRg/exec"
+    },
+    "headers": {
+      "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      "Accept": "application/json, text/plain, */*",
+      "Content-Type": "application/json"
+    }
+  },
   "/api/business-apps-script": {
     "target": "https://script.google.com",
     "secure": true,

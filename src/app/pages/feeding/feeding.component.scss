@@ -887,8 +887,15 @@
     white-space: nowrap;
   }
 
-  .log-del {
+  .log-actions {
     margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .log-edit,
+  .log-del {
     background: transparent;
     border: none;
     color: var(--muted-2);
@@ -896,11 +903,16 @@
     padding: 4px 6px;
     border-radius: 6px;
     font-size: 12px;
+  }
 
-    &:hover {
-      color: var(--rose);
-      background: var(--rose-soft);
-    }
+  .log-edit:hover {
+    color: var(--primary, #5b6cff);
+    background: rgba(91, 108, 255, 0.10);
+  }
+
+  .log-del:hover {
+    color: var(--rose);
+    background: var(--rose-soft);
   }
 }
 
@@ -2715,6 +2727,14 @@
     }
   }
 
+  .feed-row-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    margin-left: auto;
+  }
+
+  .feed-row-edit,
   .feed-row-del {
     background: transparent;
     border: none;
@@ -2723,11 +2743,16 @@
     padding: 6px 8px;
     border-radius: 6px;
     font-size: 13px;
+  }
 
-    &:hover {
-      color: var(--rose);
-      background: var(--rose-soft);
-    }
+  .feed-row-edit:hover {
+    color: var(--primary, #5b6cff);
+    background: rgba(91, 108, 255, 0.10);
+  }
+
+  .feed-row-del:hover {
+    color: var(--rose);
+    background: var(--rose-soft);
   }
 
   @media (max-width: 480px) {
@@ -3359,6 +3384,62 @@
   display: flex;
   flex-direction: column;
   gap: 14px;
+}
+
+/* ===== Edit dialog: locked-date banner ===== */
+.edit-date-banner {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 14px;
+  background: linear-gradient(135deg, #eef2ff 0%, #f5f3ff 100%);
+  border: 1px solid #dbe1ff;
+  border-radius: 12px;
+  font-size: 13px;
+  color: var(--text);
+
+  > i.pi-calendar {
+    color: var(--primary, #5b6cff);
+    font-size: 15px;
+  }
+
+  .edb-label {
+    color: var(--muted, #6b7280);
+    font-weight: 500;
+  }
+
+  .edb-value {
+    font-weight: 700;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+  }
+
+  .edb-hint {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 9px;
+    background: rgba(255, 255, 255, 0.7);
+    border-radius: 999px;
+    font-size: 11.5px;
+    color: var(--muted, #6b7280);
+    font-weight: 500;
+
+    i {
+      font-size: 10px;
+    }
+  }
+
+  @media (max-width: 460px) {
+    .edb-hint {
+      margin-left: 0;
+      width: 100%;
+      justify-content: center;
+    }
+  }
 }
 
 .log-grid {
