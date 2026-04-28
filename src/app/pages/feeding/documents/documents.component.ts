@@ -67,6 +67,12 @@ export class DocumentsComponent {
   /** Dropdown menu thư mục (Thêm thư mục / Đổi tên thư mục hiện tại) */
   folderMenuOpen = signal<boolean>(false);
 
+  /**
+   * Dropdown 3-chấm trong selection action bar — gom Tải xuống / Cắt /
+   * Xoá vào 1 menu để bar đỡ rối khi nhiều nút.
+   */
+  selectActionsMenuOpen = signal<boolean>(false);
+
   // ===== Selection / clipboard state =====
   /** Khi true: click vào file = toggle chọn (không mở preview). */
   selectMode = signal<boolean>(false);
@@ -281,10 +287,21 @@ export class DocumentsComponent {
     this.folderMenuOpen.set(false);
   }
 
-  /** Đóng menu khi click ra ngoài */
+  // ===== Selection actions ellipsis menu =====
+  toggleSelectActionsMenu(ev?: Event) {
+    ev?.stopPropagation();
+    this.selectActionsMenuOpen.update((v) => !v);
+  }
+
+  closeSelectActionsMenu() {
+    this.selectActionsMenuOpen.set(false);
+  }
+
+  /** Đóng tất cả popover khi click ra ngoài */
   @HostListener('document:click')
   onDocumentClick() {
     if (this.folderMenuOpen()) this.folderMenuOpen.set(false);
+    if (this.selectActionsMenuOpen()) this.selectActionsMenuOpen.set(false);
   }
 
   // ===== Folder add / rename =====
@@ -861,6 +878,7 @@ export class DocumentsComponent {
 
   // ===== Clipboard (cut & paste files) =====
   cutSelection() {
+    this.closeSelectActionsMenu();
     const ids = Array.from(this.selectedIds());
     if (ids.length === 0) return;
 
@@ -953,6 +971,7 @@ export class DocumentsComponent {
    * 1 lần đầu trong session.
    */
   async bulkDownloadSelection() {
+    this.closeSelectActionsMenu();
     const ids = Array.from(this.selectedIds()).filter((id) => {
       const e = this.entriesById().get(id);
       return e?.type === 'file' && !!e.content;
@@ -1053,6 +1072,7 @@ export class DocumentsComponent {
 
   // ===== Bulk delete =====
   bulkDeleteSelection() {
+    this.closeSelectActionsMenu();
     const ids = Array.from(this.selectedIds()).filter((id) => {
       const e = this.entriesById().get(id);
       return e?.type === 'file';
