@@ -1,39 +1,36 @@
-<div class="docs" [attr.data-view]="viewMode()">
-  <!-- ============ Toolbar ============ -->
-  <header class="docs-toolbar">
-    <div class="docs-toolbar__left">
+<div
+  class="docs"
+  [attr.data-view]="viewMode()"
+  [class.is-search]="searchOpen()"
+>
+  <!--
+    Path bar: Home icon đứng đầu kiêm vai trò "về root", theo sau là
+    breadcrumb. Khi đang ở root chỉ thấy mỗi icon Home (đậm) → đỡ chữ
+    "Thư mục" thừa và mũi tên "lên 1 cấp" (user đã có thể bấm thẳng vào
+    crumb cha hoặc Home). Refresh đặt ở header trang `feeding.component`
+    cho thống nhất, reload đồng thời cả Feeds + Documents.
+  -->
+  <header class="docs-toolbar" [class.searching]="searchOpen()">
+    <!-- Breadcrumb (ẩn khi search bật) -->
+    <nav
+      class="docs-crumbs"
+      *ngIf="!searchOpen()"
+      aria-label="Đường dẫn thư mục"
+    >
       <button
         type="button"
-        class="docs-btn ghost"
+        class="docs-crumb home"
+        [class.last]="breadcrumbs().length === 0"
         (click)="goRoot()"
-        [disabled]="isAtRoot()"
-        title="Về thư mục gốc"
-        aria-label="Về thư mục gốc"
+        [disabled]="breadcrumbs().length === 0"
+        [title]="breadcrumbs().length === 0 ? 'Thư mục gốc' : 'Về thư mục gốc'"
+        aria-label="Thư mục gốc"
       >
         <i class="pi pi-home"></i>
       </button>
-      <button
-        type="button"
-        class="docs-btn ghost"
-        (click)="goUp()"
-        [disabled]="isAtRoot()"
-        title="Lên thư mục trên"
-        aria-label="Lên thư mục trên"
-      >
-        <i class="pi pi-arrow-up"></i>
-      </button>
-    </div>
 
-    <!-- Breadcrumb (KHÔNG hiện root) -->
-    <nav class="docs-crumbs" aria-label="Đường dẫn thư mục">
-      <ng-container *ngIf="breadcrumbs().length === 0">
-        <span class="docs-crumb at-root">
-          <i class="pi pi-folder-open"></i>
-          Thư mục
-        </span>
-      </ng-container>
-
-      <ng-container *ngFor="let c of breadcrumbs(); let last = last">
+      <ng-container *ngFor="let c of breadcrumbs(); let last = last; let first = first">
+        <i class="pi pi-chevron-right docs-crumb-sep"></i>
         <button
           type="button"
           class="docs-crumb"
@@ -44,23 +41,119 @@
           <i class="pi" [class.pi-folder-open]="last" [class.pi-folder]="!last"></i>
           {{ c.name }}
         </button>
-        <i *ngIf="!last" class="pi pi-chevron-right docs-crumb-sep"></i>
       </ng-container>
     </nav>
 
-    <div class="docs-toolbar__right">
+    <!-- Search input (chiếm chỗ breadcrumb khi mở) -->
+    <div class="docs-search-bar" *ngIf="searchOpen()">
+      <i class="pi pi-search docs-search-bar__icon"></i>
+      <input
+        type="text"
+        class="docs-search-input"
+        [ngModel]="searchQuery()"
+        (ngModelChange)="setSearchQuery($event)"
+        name="docsSearch"
+        placeholder="Tìm thư mục hoặc ảnh…"
+        autocomplete="off"
+        autocapitalize="off"
+        spellcheck="false"
+        aria-label="Tìm trong tài liệu"
+      />
       <button
         type="button"
-        class="docs-btn ghost"
-        (click)="refresh()"
-        [disabled]="loading()"
-        title="Tải lại"
-        aria-label="Tải lại"
+        class="docs-search-bar__clear"
+        *ngIf="searchQuery().length > 0"
+        (click)="setSearchQuery('')"
+        aria-label="Xoá nội dung tìm"
+        title="Xoá"
       >
-        <i class="pi pi-refresh" [class.spin]="loading()"></i>
+        <i class="pi pi-times-circle"></i>
       </button>
     </div>
+
+    <!-- Toggle button: search ↔ close -->
+    <button
+      type="button"
+      class="docs-icon-btn search-toggle"
+      [class.active]="searchOpen()"
+      (click)="toggleSearch($event)"
+      [attr.aria-label]="searchOpen() ? 'Đóng tìm kiếm' : 'Mở tìm kiếm'"
+      [title]="searchOpen() ? 'Đóng tìm kiếm (Esc)' : 'Tìm kiếm (/)'"
+    >
+      <i class="pi" [class.pi-search]="!searchOpen()" [class.pi-times]="searchOpen()"></i>
+    </button>
   </header>
+
+  <!-- ============ Search results ============ -->
+  <section
+    class="docs-search-results"
+    *ngIf="searchOpen()"
+    aria-live="polite"
+  >
+    <div
+      class="docs-search-results__hint"
+      *ngIf="searchQuery().trim().length === 0"
+    >
+      <i class="pi pi-info-circle"></i>
+      Gõ tên thư mục hoặc ảnh để tìm. Bấm <kbd>Esc</kbd> để đóng.
+    </div>
+
+    <div
+      class="docs-search-results__empty"
+      *ngIf="searchQuery().trim().length > 0 && searchResults().length === 0"
+    >
+      <i class="pi pi-search"></i>
+      Không tìm thấy mục nào khớp với
+      <strong>"{{ searchQuery() }}"</strong>.
+    </div>
+
+    <div
+      class="docs-search-results__count"
+      *ngIf="searchResults().length > 0"
+    >
+      {{ searchResults().length }} kết quả
+    </div>
+
+    <ul class="docs-search-list" *ngIf="searchResults().length > 0" role="list">
+      <li *ngFor="let r of searchResults()">
+        <button
+          type="button"
+          class="docs-search-row"
+          (click)="clickSearchResult(r, $event)"
+          [attr.data-type]="r.type"
+        >
+          <span class="docs-search-row__thumb">
+            <ng-container *ngIf="r.type === 'folder'">
+              <i class="pi pi-folder"></i>
+            </ng-container>
+            <ng-container *ngIf="r.type === 'file'">
+              <img *ngIf="r.content; else fileIcon" [src]="r.content" alt="" />
+              <ng-template #fileIcon>
+                <i class="pi pi-image"></i>
+              </ng-template>
+            </ng-container>
+          </span>
+
+          <span class="docs-search-row__body">
+            <span class="docs-search-row__name">
+              <ng-container
+                *ngFor="let seg of highlightSegments(r.name, searchQuery())"
+              >
+                <mark *ngIf="seg.match">{{ seg.text }}</mark>
+                <ng-container *ngIf="!seg.match">{{ seg.text }}</ng-container>
+              </ng-container>
+            </span>
+            <span class="docs-search-row__path">
+              <i class="pi pi-folder"></i>
+              {{ getEntryPath(r) }}
+            </span>
+          </span>
+
+          <i class="pi pi-arrow-right docs-search-row__go"></i>
+        </button>
+      </li>
+    </ul>
+  </section>
 
   <!-- ============ Action bar (folder menu + view modes) ============ -->
   <div class="docs-actions">
@@ -154,14 +247,6 @@
       </button>
     </div>
 
-    <div class="docs-stats" *ngIf="!loading()">
-      <span class="docs-stat">
-        <i class="pi pi-folder"></i> {{ folderCount() }}
-      </span>
-      <span class="docs-stat">
-        <i class="pi pi-image"></i> {{ fileCount() }}
-      </span>
-    </div>
   </div>
 
   <!-- ============ Selection action bar ============ -->
@@ -332,6 +417,7 @@
         [class.folder]="entry.type === 'folder'"
         [class.file]="entry.type === 'file'"
         [class.selected]="entry.type === 'file' && isSelected(entry.id)"
+        [class.is-flash]="highlightedEntryId() === entry.id"
         (click)="onEntryClick(entry)"
       >
         <div class="dr-name">
@@ -385,6 +471,16 @@
             *ngIf="entry.type === 'file'"
             type="button"
             class="docs-icon-btn"
+            (click)="openRenameFile(entry, $event)"
+            title="Đổi tên ảnh"
+            aria-label="Đổi tên ảnh"
+          >
+            <i class="pi pi-pencil"></i>
+          </button>
+          <button
+            *ngIf="entry.type === 'file'"
+            type="button"
+            class="docs-icon-btn"
             (click)="downloadEntry(entry, $event)"
             [disabled]="!entry.content"
             title="Tải xuống"
@@ -417,6 +513,7 @@
       <article
         class="docs-card folder"
         *ngIf="entry.type === 'folder'"
+        [class.is-flash]="highlightedEntryId() === entry.id"
         (click)="openFolder(entry.id)"
         (keydown.enter)="openFolder(entry.id)"
         tabindex="0"
@@ -429,9 +526,10 @@
         <div class="docs-card__body">
           <div class="docs-card__name" [title]="entry.name">{{ entry.name }}</div>
           <div class="docs-card__meta">
-            <span>{{ describeFolderContent(entry.id) }}</span>
-            <span class="docs-card__date" *ngIf="entry.createdAt && viewMode() === 'large'">
-              · {{ formatDate(entry.createdAt) }}
+            <span class="docs-card__size">{{ describeFolderContent(entry.id) }}</span>
+            <span class="docs-card__date" *ngIf="entry.createdAt">
+              <span class="docs-card__sep">·</span>
+              {{ formatDate(entry.createdAt) }}
             </span>
           </div>
         </div>
@@ -462,6 +560,7 @@
         class="docs-card file"
         *ngIf="entry.type === 'file'"
         [class.selected]="isSelected(entry.id)"
+        [class.is-flash]="highlightedEntryId() === entry.id"
         (click)="onFileClick(entry)"
         (keydown.enter)="onFileClick(entry)"
         tabindex="0"
@@ -492,9 +591,10 @@
         <div class="docs-card__body">
           <div class="docs-card__name" [title]="entry.name">{{ entry.name }}</div>
           <div class="docs-card__meta">
-            <span>{{ formatSize(entry.sizeBytes) }}</span>
-            <span class="docs-card__date" *ngIf="entry.createdAt && viewMode() === 'large'">
-              · {{ formatDate(entry.createdAt) }}
+            <span class="docs-card__size">{{ formatSize(entry.sizeBytes) }}</span>
+            <span class="docs-card__date" *ngIf="entry.createdAt">
+              <span class="docs-card__sep">·</span>
+              {{ formatDate(entry.createdAt) }}
             </span>
           </div>
         </div>
@@ -507,6 +607,15 @@
             aria-label="Chọn ảnh"
           >
             <i class="pi pi-check-square"></i>
+          </button>
+          <button
+            type="button"
+            class="docs-icon-btn"
+            (click)="openRenameFile(entry, $event)"
+            title="Đổi tên ảnh"
+            aria-label="Đổi tên ảnh"
+          >
+            <i class="pi pi-pencil"></i>
           </button>
           <button
             type="button"
@@ -552,7 +661,7 @@
     />
   </label>
 
-  <!-- ============ Folder modal (add/rename) ============ -->
+  <!-- ============ Modal: add folder / rename folder hoặc file ============ -->
   <div
     class="docs-overlay"
     *ngIf="folderDraft() as draft"
@@ -561,8 +670,17 @@
     <div class="docs-modal" (click)="$event.stopPropagation()" role="dialog">
       <div class="docs-modal__head">
         <h3>
-          <i class="pi" [class.pi-folder]="draft.mode === 'add'" [class.pi-pencil]="draft.mode === 'rename'"></i>
-          {{ draft.mode === 'add' ? 'Thêm thư mục' : 'Đổi tên thư mục' }}
+          <i
+            class="pi"
+            [class.pi-folder]="draft.mode === 'add'"
+            [class.pi-pencil]="draft.mode === 'rename'"
+          ></i>
+          <ng-container [ngSwitch]="draft.mode + ':' + draft.entryType">
+            <span *ngSwitchCase="'add:folder'">Thêm thư mục</span>
+            <span *ngSwitchCase="'rename:folder'">Đổi tên thư mục</span>
+            <span *ngSwitchCase="'rename:file'">Đổi tên ảnh</span>
+            <span *ngSwitchDefault>Chỉnh sửa</span>
+          </ng-container>
         </h3>
         <button
           type="button"
@@ -576,19 +694,33 @@
 
       <form (ngSubmit)="submitFolderDraft()" class="docs-modal__body">
         <label class="docs-field">
-          <span class="docs-field__label">Tên thư mục</span>
-          <input
-            type="text"
-            class="docs-input"
-            [ngModel]="draft.name"
-            (ngModelChange)="updateFolderDraftName($event)"
-            name="folderName"
-            placeholder="VD: docs, img, hợp đồng…"
-            autocomplete="off"
-            autofocus
-            required
-            maxlength="80"
-          />
+          <span class="docs-field__label">
+            {{ draft.entryType === 'file' ? 'Tên ảnh' : 'Tên thư mục' }}
+          </span>
+          <div class="docs-input-group" [class.has-suffix]="draft.entryType === 'file' && !!draft.extension">
+            <input
+              type="text"
+              class="docs-input"
+              [ngModel]="draft.name"
+              (ngModelChange)="updateFolderDraftName($event)"
+              name="folderName"
+              [placeholder]="draft.entryType === 'file' ? 'VD: cat, hoa-don…' : 'VD: docs, img, hợp đồng…'"
+              autocomplete="off"
+              autofocus
+              required
+              maxlength="120"
+            />
+            <span
+              class="docs-input-suffix"
+              *ngIf="draft.entryType === 'file' && draft.extension"
+              [title]="'Phần đuôi ' + draft.extension + ' được giữ tự động'"
+            >
+              {{ draft.extension }}
+            </span>
+          </div>
+          <span class="docs-field__hint" *ngIf="draft.entryType === 'file'">
+            Phần đuôi <code>{{ draft.extension || '.jpg' }}</code> được giữ tự động — bạn chỉ cần gõ tên.
+          </span>
         </label>
 
         <div class="docs-modal__error" *ngIf="errorMsg()">
@@ -619,6 +751,15 @@
   >
     <button
       type="button"
+      class="docs-preview__rename"
+      (click)="openRenameFile(p, $event)"
+      aria-label="Đổi tên ảnh"
+      title="Đổi tên ảnh"
+    >
+      <i class="pi pi-pencil"></i>
+    </button>
+    <button
+      type="button"
       class="docs-preview__download"
       (click)="downloadEntry(p, $event)"
       [disabled]="!p.content"
@@ -638,12 +779,40 @@
     </button>
 
     <div class="docs-preview__name">
+      <span class="docs-preview__counter" *ngIf="previewTotal() > 1">
+        {{ previewIndex() + 1 }}/{{ previewTotal() }} ·
+      </span>
       {{ p.name }}
       <span class="docs-preview__meta" *ngIf="p.sizeBytes || p.createdAt">
         · {{ formatSize(p.sizeBytes) }}
         <ng-container *ngIf="p.createdAt"> · {{ formatDate(p.createdAt) }}</ng-container>
       </span>
     </div>
+
+    <!-- Prev / Next nav: chỉ hiện khi cùng thư mục có nhiều hơn 1 ảnh.
+         Disabled state vẫn render để user thấy được vị trí đầu/cuối. -->
+    <button
+      type="button"
+      class="docs-preview__nav prev"
+      *ngIf="previewTotal() > 1"
+      (click)="prevImage($event)"
+      [disabled]="!canPreviewPrev()"
+      aria-label="Ảnh trước"
+      title="Ảnh trước (←)"
+    >
+      <i class="pi pi-chevron-left"></i>
+    </button>
+    <button
+      type="button"
+      class="docs-preview__nav next"
+      *ngIf="previewTotal() > 1"
+      (click)="nextImage($event)"
+      [disabled]="!canPreviewNext()"
+      aria-label="Ảnh kế"
+      title="Ảnh kế (→)"
+    >
+      <i class="pi pi-chevron-right"></i>
+    </button>
 
     <!--
       Stage: bắt mọi gesture (wheel, pointer, dblclick). Image bên trong
@@ -711,4 +880,38 @@
       Cuộn hoặc bấm <i class="pi pi-plus"></i> để phóng to · Nháy đôi để zoom · Esc để đóng
     </div>
   </div>
+
+  <!--
+    ============ Status bar ============
+    Sticky chip ngay trên bottom-nav, hiển thị số folder + số ảnh ở
+    folder hiện tại. Không bị trượt theo scroll vì position: fixed.
+    Ẩn khi đang search (UI lúc đó tập trung cho list kết quả) và khi
+    đang preview ảnh (tránh đè lên overlay).
+  -->
+  <aside
+    class="docs-statusbar"
+    *ngIf="!loading() && !searchOpen() && !previewEntry()"
+    aria-label="Tổng quan thư mục hiện tại"
+  >
+    <span class="docs-stat">
+      <i class="pi pi-folder"></i>
+      <strong>{{ folderCount() }}</strong>
+      <span class="docs-stat__label">thư mục</span>
+    </span>
+    <span class="docs-statusbar__sep" aria-hidden="true">·</span>
+    <span class="docs-stat">
+      <i class="pi pi-image"></i>
+      <strong>{{ fileCount() }}</strong>
+      <span class="docs-stat__label">ảnh</span>
+    </span>
+
+    <span
+      class="docs-statusbar__folder"
+      *ngIf="currentFolder() && !isAtRoot()"
+      [title]="currentFolder()!.name"
+    >
+      <i class="pi pi-folder-open"></i>
+      <span>{{ currentFolder()!.name }}</span>
+    </span>
+  </aside>
 </div>

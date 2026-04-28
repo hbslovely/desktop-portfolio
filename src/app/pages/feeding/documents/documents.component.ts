@@ -18,11 +18,29 @@ interface Crumb {
   name: string;
 }
 
-interface FolderDraft {
+/**
+ * Draft cho modal Add / Rename.
+ *
+ * Dùng chung cho cả thư mục **và** file (rename). `entryType` xác định
+ * UI string + icon. Mode `add` hiện chỉ áp dụng cho folder (file thêm qua
+ * upload, không qua modal text).
+ */
+interface EntryDraft {
   mode: 'add' | 'rename';
-  /** id của folder đang rename. add → undefined */
+  /** Loại entry đang đổi: folder hoặc file. Mặc định 'folder'. */
+  entryType: 'folder' | 'file';
+  /** id entry đang rename. Khi `mode === 'add'` → undefined. */
   targetId?: number;
+  /**
+   * Phần tên USER nhìn thấy + chỉnh trong input. Với file đang rename,
+   * đây là **base name** (đã tách extension) — user khỏi phải gõ `.jpg`.
+   */
   name: string;
+  /**
+   * Phần extension (bao gồm dấu chấm, vd `.jpg`). Chỉ set khi rename file.
+   * Lúc submit sẽ được nối lại trừ khi user tự gõ extension khác.
+   */
+  extension?: string;
 }
 
 export type ViewMode = 'large' | 'icons' | 'detail';
@@ -55,8 +73,12 @@ export class DocumentsComponent {
   /** Folder hiện tại đang xem. Mặc định = root. */
   currentFolderId = signal<number>(this.ROOT_ID);
 
-  /** Folder draft (modal: add new folder hoặc rename folder hiện có) */
-  folderDraft = signal<FolderDraft | null>(null);
+  /**
+   * Draft cho modal: add folder, rename folder, hoặc rename file.
+   * Tên giữ là `folderDraft` để tránh churn template, nhưng kiểu giờ là
+   * `EntryDraft` chứa `entryType` để phân biệt.
+   */
+  folderDraft = signal<EntryDraft | null>(null);
 
   /** File preview fullscreen */
   previewEntry = signal<ExplorerEntry | null>(null);
@@ -72,6 +94,23 @@ export class DocumentsComponent {
    * Xoá vào 1 menu để bar đỡ rối khi nhiều nút.
    */
   selectActionsMenuOpen = signal<boolean>(false);
+
+  // ===== Search state =====
+  /**
+   * Toggle thanh search trong toolbar. Khi true, breadcrumb sẽ ẩn đi và
+   * input chiếm chỗ; phím tắt `/` (không trong input) cũng mở search.
+   */
+  searchOpen = signal<boolean>(false);
+
+  /** Query hiện tại — trim/lowercase được tính ở `searchResults` & highlight. */
+  searchQuery = signal<string>('');
+
+  /**
+   * id entry vừa được click trong search result — để pulse highlight ~1.5s
+   * sau khi navigate, giúp user tìm thấy item trong thư mục đông đúc.
+   */
+  highlightedEntryId = signal<number | null>(null);
+  private highlightTimer: ReturnType<typeof setTimeout> | null = null;
 
   // ===== Selection / clipboard state =====
   /** Khi true: click vào file = toggle chọn (không mở preview). */
@@ -145,6 +184,40 @@ export class DocumentsComponent {
   canZoomIn = computed(() => this.previewScale() < this.MAX_ZOOM - 0.001);
   canZoomOut = computed(() => this.previewScale() > this.MIN_ZOOM + 0.001);
 
+  /**
+   * Danh sách file ảnh ANH/EM trong cùng thư mục cha của entry đang preview.
+   * Dùng để chuyển ảnh trước/sau bằng nút mũi tên hoặc phím ←/→ mà không
+   * phải đóng preview rồi mở lại.
+   *
+   * Sort theo cùng thứ tự lưới hiển thị (alphabet vi locale) để index khớp.
+   * Folder bị loại — chỉ điều hướng giữa các file. Soft-deleted entries đã
+   * được service filter trước.
+   */
+  previewSiblings = computed<ExplorerEntry[]>(() => {
+    const cur = this.previewEntry();
+    if (!cur) return [];
+    const parentId = cur.parentId;
+    return this.entries()
+      .filter((e) => e.parentId === parentId && e.type === 'file')
+      .sort((a, b) => a.name.localeCompare(b.name, 'vi'));
+  });
+
+  previewIndex = computed<number>(() => {
+    const cur = this.previewEntry();
+    if (!cur) return -1;
+    return this.previewSiblings().findIndex((e) => e.id === cur.id);
+  });
+
+  /** Tổng số ảnh trong thư mục — dùng cho counter "3/12". */
+  previewTotal = computed<number>(() => this.previewSiblings().length);
+
+  canPreviewPrev = computed<boolean>(() => this.previewIndex() > 0);
+  canPreviewNext = computed<boolean>(() => {
+    const idx = this.previewIndex();
+    const total = this.previewSiblings().length;
+    return idx >= 0 && idx < total - 1;
+  });
+
   // ===== Derived =====
   entriesById = computed<Map<number, ExplorerEntry>>(() => {
     const m = new Map<number, ExplorerEntry>();
@@ -207,6 +280,25 @@ export class DocumentsComponent {
     return fileIds.every((id) => sel.has(id));
   });
 
+  /**
+   * Search result: filter mọi entry (folder + file) khắp cây theo
+   * `searchQuery`. Loại root và soft-deleted (đã filter ở service).
+   * Sort: folder trước, sau đó theo tên (vi locale).
+   *
+   * Empty query → mảng rỗng (UI sẽ hiện hint "Gõ để tìm…").
+   */
+  searchResults = computed<ExplorerEntry[]>(() => {
+    const q = this.searchQuery().trim().toLowerCase();
+    if (!q) return [];
+    return this.entries()
+      .filter((e) => e.id !== this.ROOT_ID && e.name.toLowerCase().includes(q))
+      .sort((a, b) => {
+        if (a.type !== b.type) return a.type === 'folder' ? -1 : 1;
+        return a.name.localeCompare(b.name, 'vi');
+      })
+      .slice(0, 200);
+  });
+
   constructor() {
     this.loadEntries();
   }
@@ -241,12 +333,6 @@ export class DocumentsComponent {
   // ===== Navigation =====
   openFolder(id: number) {
     this.currentFolderId.set(id);
-  }
-
-  goUp() {
-    const cur = this.currentFolder();
-    if (!cur || cur.parentId === null) return;
-    this.currentFolderId.set(cur.parentId);
   }
 
   goToCrumb(id: number) {
@@ -297,6 +383,122 @@ export class DocumentsComponent {
     this.selectActionsMenuOpen.set(false);
   }
 
+  // ===== Search =====
+  /**
+   * Mở thanh search (hoặc đóng nếu đang mở). Khi đóng → clear query.
+   * Khi mở → focus input ở chu kỳ tick kế tiếp (tránh template chưa render).
+   */
+  toggleSearch(ev?: Event) {
+    ev?.stopPropagation();
+    const next = !this.searchOpen();
+    this.searchOpen.set(next);
+    if (!next) {
+      this.searchQuery.set('');
+    } else {
+      // Đóng các overlay khác đang mở để tránh xung đột.
+      this.folderMenuOpen.set(false);
+      this.selectActionsMenuOpen.set(false);
+      // Focus input sau khi *ngIf render xong.
+      setTimeout(() => {
+        const el = document.querySelector(
+          '.docs-search-input'
+        ) as HTMLInputElement | null;
+        el?.focus();
+        el?.select();
+      }, 0);
+    }
+  }
+
+  closeSearch() {
+    this.searchOpen.set(false);
+    this.searchQuery.set('');
+  }
+
+  /** Hai-way binding cho input search (dùng `[ngModel]` + change). */
+  setSearchQuery(v: string) {
+    this.searchQuery.set(v);
+  }
+
+  /**
+   * Click 1 result trong list:
+   *  - Folder → navigate vào.
+   *  - File → set folder hiện tại = parent của file (để breadcrumb +
+   *    siblings preview đúng), sau đó mở preview.
+   * Đóng search và pulse highlight trên item ~1.5s.
+   */
+  clickSearchResult(entry: ExplorerEntry, ev?: Event) {
+    ev?.stopPropagation();
+    this.closeSearch();
+    if (entry.type === 'folder') {
+      this.openFolder(entry.id);
+    } else {
+      if (entry.parentId !== null) {
+        this.currentFolderId.set(entry.parentId);
+      }
+      this.openPreview(entry);
+    }
+    this.pulseHighlight(entry.id);
+  }
+
+  /**
+   * Bật highlight ngắn hạn cho 1 entry — UI bind class `is-flash` để pulse.
+   * Tự tắt sau 1.5s. Cancel timer cũ nếu user click liên tiếp nhiều result.
+   */
+  private pulseHighlight(id: number) {
+    if (this.highlightTimer) clearTimeout(this.highlightTimer);
+    this.highlightedEntryId.set(id);
+    this.highlightTimer = setTimeout(() => {
+      this.highlightedEntryId.set(null);
+      this.highlightTimer = null;
+    }, 1500);
+  }
+
+  /**
+   * Build path string của 1 entry (vd "docs / reports / 2026-04") — không
+   * gồm tên entry, chỉ ancestor chain (loại root). Dùng trong search result
+   * để user biết item nằm ở đâu.
+   */
+  getEntryPath(entry: ExplorerEntry): string {
+    const map = this.entriesById();
+    const parts: string[] = [];
+    let safety = 32;
+    let cur: ExplorerEntry | undefined =
+      entry.parentId !== null ? map.get(entry.parentId) : undefined;
+    while (cur && safety-- > 0) {
+      if (cur.id === this.ROOT_ID) break;
+      parts.unshift(cur.name);
+      cur = cur.parentId !== null ? map.get(cur.parentId) : undefined;
+    }
+    return parts.length ? parts.join(' / ') : 'Thư mục gốc';
+  }
+
+  /**
+   * Cắt 1 string thành các segment {text, match} để render <mark> highlight
+   * cho phần khớp query. Case-insensitive. Empty query → nguyên chuỗi.
+   *
+   * Vẫn giữ được chữ hoa/thường gốc (chỉ dùng lower để tìm vị trí). Không
+   * normalize accent — user gõ có dấu hay không thì cứ match nguyên dạng,
+   * giữ logic đơn giản và dự đoán được.
+   */
+  highlightSegments(name: string, query: string): { text: string; match: boolean }[] {
+    const q = query.trim().toLowerCase();
+    if (!q) return [{ text: name, match: false }];
+    const lower = name.toLowerCase();
+    const segments: { text: string; match: boolean }[] = [];
+    let i = 0;
+    while (i < name.length) {
+      const idx = lower.indexOf(q, i);
+      if (idx === -1) {
+        segments.push({ text: name.slice(i), match: false });
+        break;
+      }
+      if (idx > i) segments.push({ text: name.slice(i, idx), match: false });
+      segments.push({ text: name.slice(idx, idx + q.length), match: true });
+      i = idx + q.length;
+    }
+    return segments;
+  }
+
   /** Đóng tất cả popover khi click ra ngoài */
   @HostListener('document:click')
   onDocumentClick() {
@@ -304,10 +506,10 @@ export class DocumentsComponent {
     if (this.selectActionsMenuOpen()) this.selectActionsMenuOpen.set(false);
   }
 
-  // ===== Folder add / rename =====
+  // ===== Folder + File add / rename =====
   openAddFolder() {
     this.folderMenuOpen.set(false);
-    this.folderDraft.set({ mode: 'add', name: '' });
+    this.folderDraft.set({ mode: 'add', entryType: 'folder', name: '' });
     this.errorMsg.set('');
   }
 
@@ -318,6 +520,7 @@ export class DocumentsComponent {
     if (!cur || cur.id === this.ROOT_ID) return;
     this.folderDraft.set({
       mode: 'rename',
+      entryType: 'folder',
       targetId: cur.id,
       name: cur.name,
     });
@@ -326,8 +529,43 @@ export class DocumentsComponent {
 
   openRenameFolder(entry: ExplorerEntry) {
     if (entry.type !== 'folder') return;
-    this.folderDraft.set({ mode: 'rename', targetId: entry.id, name: entry.name });
+    this.folderDraft.set({
+      mode: 'rename',
+      entryType: 'folder',
+      targetId: entry.id,
+      name: entry.name,
+    });
     this.errorMsg.set('');
+  }
+
+  /**
+   * Đổi tên 1 file. Tách base name khỏi extension trước khi đặt vào input
+   * — user không phải lo chuyện gõ `.jpg`. Lúc submit sẽ tự ghép lại trừ
+   * khi user gõ extension khác (ví dụ chuyển `.png`).
+   */
+  openRenameFile(entry: ExplorerEntry, ev?: Event) {
+    ev?.stopPropagation();
+    if (entry.type !== 'file') return;
+    const ext = this.extractExtension(entry.name);
+    const base = ext ? entry.name.slice(0, -ext.length) : entry.name;
+    this.folderDraft.set({
+      mode: 'rename',
+      entryType: 'file',
+      targetId: entry.id,
+      name: base,
+      extension: ext || '.jpg',
+    });
+    this.errorMsg.set('');
+  }
+
+  /**
+   * Trích phần extension cuối tên file (bao gồm dấu chấm). Chấp nhận
+   * 2-5 ký tự alphanum sau dấu chấm cuối cùng để tránh nhầm với tên có
+   * dấu chấm ở giữa (vd `2026.04.29-cat.jpg` → `.jpg`).
+   */
+  private extractExtension(filename: string): string {
+    const m = filename.match(/(\.[a-z0-9]{2,5})$/i);
+    return m ? m[1] : '';
   }
 
   closeFolderDraft() {
@@ -341,10 +579,21 @@ export class DocumentsComponent {
   submitFolderDraft() {
     const d = this.folderDraft();
     if (!d) return;
-    const name = d.name.trim();
+    let name = d.name.trim();
     if (!name) {
-      this.errorMsg.set('Vui lòng nhập tên thư mục.');
+      this.errorMsg.set(
+        d.entryType === 'file' ? 'Vui lòng nhập tên file.' : 'Vui lòng nhập tên thư mục.'
+      );
       return;
+    }
+
+    // Đảm bảo file luôn có extension:
+    //  - Nếu user gõ tay extension khác (vd `.png`) → tôn trọng.
+    //  - Nếu không có extension → ghép lại extension gốc đã tách lúc mở
+    //    modal (`d.extension`). Fallback `.jpg` cho trường hợp file legacy
+    //    không có extension và đang được rename lần đầu.
+    if (d.entryType === 'file' && !/\.[a-z0-9]{2,5}$/i.test(name)) {
+      name = `${ name }${ d.extension || '.jpg' }`;
     }
 
     if (d.mode === 'add') {
@@ -371,12 +620,18 @@ export class DocumentsComponent {
     } else if (d.mode === 'rename' && d.targetId) {
       this.saving.set(true);
       this.errorMsg.set('');
+      const targetId = d.targetId;
       this.explorerService
-        .updateEntry(d.targetId, { name })
+        .updateEntry(targetId, { name })
         .subscribe({
           next: () => {
             this.saving.set(false);
             this.folderDraft.set(null);
+            // Cập nhật cục bộ entry trong preview nếu user vừa đổi tên ảnh
+            // đang xem — tránh phải đợi reload mới thấy tên mới.
+            this.previewEntry.update((p) =>
+              p && p.id === targetId ? { ...p, name } : p
+            );
             this.flashSuccess(`Đã đổi tên thành "${name}"`);
             setTimeout(() => this.loadEntries(), 800);
           },
@@ -570,6 +825,26 @@ export class DocumentsComponent {
     this.didPan = false;
   }
 
+  /**
+   * Chuyển sang ảnh trước trong cùng thư mục. Reset zoom/pan trước khi
+   * đổi để ảnh mới luôn fit tự nhiên. No-op khi đã ở ảnh đầu.
+   */
+  prevImage(ev?: Event) {
+    ev?.stopPropagation();
+    if (!this.canPreviewPrev()) return;
+    const siblings = this.previewSiblings();
+    const idx = this.previewIndex();
+    this.openPreview(siblings[idx - 1]);
+  }
+
+  nextImage(ev?: Event) {
+    ev?.stopPropagation();
+    if (!this.canPreviewNext()) return;
+    const siblings = this.previewSiblings();
+    const idx = this.previewIndex();
+    this.openPreview(siblings[idx + 1]);
+  }
+
   // ===== Preview zoom + pan handlers =====
   /**
    * Đặt lại scale=1, tx=ty=0 và bỏ "interacting". Gọi khi mở/đóng preview
@@ -759,12 +1034,51 @@ export class DocumentsComponent {
   }
 
   /**
-   * Esc đóng preview. +/- zoom in/out. 0 reset zoom. Chỉ active khi đang
-   * mở preview.
+   * Phím tắt:
+   *   Khi search đang mở:
+   *     Esc → đóng search
+   *   Khi đang xem preview:
+   *     Esc       → đóng
+   *     +/-       → zoom in / out
+   *     0         → reset zoom
+   *     ← / →     → ảnh trước / sau trong cùng thư mục
+   *   Khi không có overlay nào:
+   *     /         → mở search (focus input)
+   *
+   * Bỏ qua nếu user đang gõ trong input/textarea/contenteditable — TRỪ khi
+   * input đó là search box (Esc vẫn phải đóng được search).
    */
   @HostListener('document:keydown', ['$event'])
   onDocumentKeydown(ev: KeyboardEvent) {
+    const target = ev.target as HTMLElement | null;
+    const tag = target?.tagName;
+    const inSearchInput = !!target?.classList?.contains('docs-search-input');
+    const typing = tag === 'INPUT' || tag === 'TEXTAREA' || target?.isContentEditable;
+
+    // Esc đóng search ngay cả khi đang focus search-input.
+    if (this.searchOpen() && ev.key === 'Escape') {
+      ev.preventDefault();
+      this.closeSearch();
+      return;
+    }
+
+    // Còn lại: nếu đang gõ trong field thường → bỏ qua (trừ search input đã xử trên).
+    if (typing && !inSearchInput) return;
+
+    // Phím `/` mở search khi không có overlay nào (modal/preview/search).
+    if (
+      !this.previewEntry() &&
+      !this.searchOpen() &&
+      !this.folderDraft() &&
+      ev.key === '/'
+    ) {
+      ev.preventDefault();
+      this.toggleSearch();
+      return;
+    }
+
     if (!this.previewEntry()) return;
+
     if (ev.key === 'Escape') {
       ev.preventDefault();
       this.closePreview();
@@ -777,6 +1091,12 @@ export class DocumentsComponent {
     } else if (ev.key === '0') {
       ev.preventDefault();
       this.resetPreviewZoom();
+    } else if (ev.key === 'ArrowLeft') {
+      ev.preventDefault();
+      this.prevImage();
+    } else if (ev.key === 'ArrowRight') {
+      ev.preventDefault();
+      this.nextImage();
     }
   }
 
