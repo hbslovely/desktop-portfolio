@@ -29,14 +29,23 @@ export interface FeedingSheetResponse {
 export class FeedingLogService {
   private http = inject(HttpClient);
 
-  private readonly SHEET_ID = '1nlLxaRCSePOddntUeNsMBKx2qP6kGSNLsZwtyqSbb88';
+  private readonly SHEET_ID = '1O4kAA61k4cX4mEwAjDy5gioVUAElCyu62Z3zPvgdDMM';
   private readonly SHEET_NAME = 'Feeding';
   private readonly API_KEY = environment.googleSheetsApiKey;
   private readonly BASE_URL = `https://sheets.googleapis.com/v4/spreadsheets/${ this.SHEET_ID }`;
 
+  /**
+   * Apps Script bound to **the feeding sheet**. Tách biệt với expense script
+   * vì 2 sheet khác nhau ⇒ 2 deployment khác nhau.
+   *
+   * Dev: gọi qua proxy `/api/feeding-apps-script` để né CORS.
+   * Prod: dùng `environment.googleFeedingAppsScriptUrl` (fallback sang
+   *       `googleAppsScriptUrl` nếu chưa cấu hình – tương thích ngược cho
+   *       dự án cũ dùng chung 1 script).
+   */
   private readonly APPS_SCRIPT_URL = environment.production
-    ? environment.googleAppsScriptUrl
-    : '/api/google-apps-script';
+    ? (environment.googleFeedingAppsScriptUrl || environment.googleAppsScriptUrl)
+    : '/api/feeding-apps-script';
 
   /**
    * Columns:
@@ -111,6 +120,37 @@ export class FeedingLogService {
       },
     }).pipe(
       catchError((err) => {
+        return of({ success: true });
+      })
+    );
+  }
+
+  /**
+   * Cập nhật một cữ bú hiện có. **KHÔNG** cho đổi `date` (nghiệp vụ: cữ
+   * thuộc về ngày nào thì cố định, chỉ chỉnh giờ / ml / note).
+   *
+   * - `rowIndex` là số row 1-based trong sheet (header = row 1).
+   * - Server-side Apps Script chịu trách nhiệm validate + chỉ ghi 3 cột
+   *   `Giờ`, `Dung tích`, `Ghi chú` để tránh nguy cơ ghi đè cột khác.
+   */
+  updateLog(
+    rowIndex: number,
+    patch: { time: string; volume: number; note?: string }
+  ): Observable<FeedingSheetResponse> {
+    if (!this.APPS_SCRIPT_URL) {
+      return throwError(() => new Error('Chưa cấu hình Google Apps Script URL'));
+    }
+
+    return this.postToAppsScript({
+      action: 'updateFeeding',
+      row: rowIndex,
+      patch: {
+        time: patch.time,
+        volume: patch.volume,
+        note: patch.note || '',
+      },
+    }).pipe(
+      catchError(() => {
         return of({ success: true });
       })
     );

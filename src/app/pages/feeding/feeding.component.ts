@@ -100,6 +100,21 @@ export class FeedingComponent {
   });
 
   logDialogOpen = signal<boolean>(false);
+
+  // ===== Edit log dialog state =====
+  /** Cữ bú đang được edit (giữ reference tới row trong sheet) */
+  editingLog = signal<FeedingLog | null>(null);
+  /**
+   * Draft cho edit dialog. **KHÔNG có `date`** vì nghiệp vụ yêu cầu
+   * không cho phép đổi ngày của cữ bú đã ghi (chỉ chỉnh giờ / ml / note).
+   */
+  editLogDraft = signal<{ time: string; volume: number | null; note: string }>({
+    time: '',
+    volume: null,
+    note: '',
+  });
+  editSaving = signal<boolean>(false);
+
   historyDialogOpen = signal<boolean>(false);
   historyFilter = signal<'all' | 'today' | 'yesterday'>('all');
   chartTab = signal<'volume' | 'count' | 'timeline'>('volume');
@@ -1348,6 +1363,98 @@ export class FeedingComponent {
 
   refreshLogs() {
     this.loadLogs();
+  }
+
+  // ===== Edit log =====
+  /**
+   * Mở dialog chỉnh sửa cho 1 cữ bú đã có trên sheet.
+   * - Date được giữ readonly (chỉ hiển thị, không edit).
+   * - `editingLog` giữ reference để biết row nào đang sửa khi submit.
+   */
+  openEditDialog(log: FeedingLog) {
+    if (!log.rowIndex) return;
+    this.editingLog.set(log);
+    this.editLogDraft.set({
+      time: log.time,
+      volume: log.volume,
+      note: log.note || '',
+    });
+    this.syncError.set('');
+    this.syncMessage.set('');
+  }
+
+  closeEditDialog() {
+    this.editingLog.set(null);
+    this.editLogDraft.set({ time: '', volume: null, note: '' });
+  }
+
+  updateEditTime(v: string) {
+    this.editLogDraft.update((d) => ({ ...d, time: v }));
+  }
+
+  updateEditVolume(v: string) {
+    const num = parseInt(v, 10);
+    this.editLogDraft.update((d) => ({
+      ...d,
+      volume: isNaN(num) ? null : num,
+    }));
+  }
+
+  updateEditNote(v: string) {
+    this.editLogDraft.update((d) => ({ ...d, note: v }));
+  }
+
+  quickEditVolume(v: number) {
+    this.editLogDraft.update((d) => ({ ...d, volume: v }));
+  }
+
+  quickEditNote(tag: string) {
+    this.editLogDraft.update((d) => ({
+      ...d,
+      note: d.note === tag ? '' : tag,
+    }));
+  }
+
+  hasEditNote(tag: string): boolean {
+    return this.editLogDraft().note === tag;
+  }
+
+  submitEditLog() {
+    const original = this.editingLog();
+    const d = this.editLogDraft();
+    if (!original || !original.rowIndex) return;
+    if (!d.time || !d.volume || d.volume <= 0) {
+      this.syncError.set('Vui lòng nhập đủ giờ và dung tích sữa.');
+      return;
+    }
+
+    this.editSaving.set(true);
+    this.syncError.set('');
+    this.syncMessage.set('');
+
+    this.feedingLogService
+      .updateLog(original.rowIndex, {
+        time: d.time,
+        volume: d.volume,
+        note: d.note?.trim() || '',
+      })
+      .subscribe({
+        next: () => {
+          this.editSaving.set(false);
+          this.syncMessage.set(
+            `Đã cập nhật cữ ${d.volume}ml lúc ${d.time} ngày ${this.formatDateDisplay(original.date)}`
+          );
+          setTimeout(() => this.syncMessage.set(''), 4000);
+          this.closeEditDialog();
+          setTimeout(() => this.loadLogs(), 900);
+        },
+        error: (err) => {
+          this.editSaving.set(false);
+          this.syncError.set(
+            err?.message || 'Cập nhật thất bại. Vui lòng kiểm tra cấu hình Apps Script.'
+          );
+        },
+      });
   }
 
   // ===== Helpers =====
