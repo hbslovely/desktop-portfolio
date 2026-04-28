@@ -76,6 +76,10 @@
       "destination": "https://script.google.com/macros/s/AKfycbyWFdurzG4dxdIgQi3F8LDsgHJ2-k5d8_tM5tU7B0ArjOPURF1ykkqd-rg1AL9LyJp0Nw/exec"
     },
     {
+      "source": "/api/feeding-apps-script",
+      "destination": "https://script.google.com/macros/s/AKfycbzlbMMhPm6S-Dm8XgqJgZqRm8vJSgLwJM19LUFxg_X9_Lorw0n_AUELNTpiH-8ULQyBRg/exec"
+    },
+    {
       "source": "/api/dnse-api/:path*",
       "destination": "https://api.dnse.com.vn/:path*"
     },
