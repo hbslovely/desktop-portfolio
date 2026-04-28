@@ -92,7 +92,9 @@ Trong Sheet → **Extensions → Apps Script** → xoá toàn bộ code mặc đ
  *   updateExplorer → đổi name hoặc content (KHÔNG đổi type / parent_id)
  *   deleteExplorer → SOFT delete: set cột G `isDeleted=TRUE`. Folder cascade
  *                    luôn các con cháu. KHÔNG xoá row vật lý → có thể khôi phục.
- *   moveExplorer   → cut & paste 1 mảng file ids sang folder mới (chỉ file)
+ *   moveExplorer   → cut & paste 1 mảng ids (file lẫn folder) sang folder mới
+ *                    Folder check chu kỳ: không cho move folder vào chính nó
+ *                    hoặc descendant của nó (tránh tạo loop vô hạn).
  *   getExplorer    → trả về toàn bộ entries (đã filter isDeleted=TRUE)
  */
 
@@ -423,18 +425,31 @@ function handleMoveExplorer(body) {
   }
 
   let moved = 0;
-  let skippedFolder = 0;
+  let skippedRoot = 0;
+  let skippedCycle = 0;
   let skippedSame = 0;
   let skippedMissing = 0;
 
   for (let i = 0; i < ids.length; i++) {
-    const found = _findExplorerRowById(sheet, ids[i]);
+    const id = ids[i];
+
+    // Không cho move root (id=1) — root phải đứng yên.
+    if (id === 1) { skippedRoot++; continue; }
+
+    const found = _findExplorerRowById(sheet, id);
     if (!found) { skippedMissing++; continue; }
     const t = String(found.row[E_TYPE - 1]).toLowerCase();
-    if (t !== 'file') { skippedFolder++; continue; }
+    if (t !== 'file' && t !== 'folder') { skippedMissing++; continue; }
 
     const curParent = _toIntOrNull(found.row[E_PARENT - 1]);
     if (curParent === newParentId) { skippedSame++; continue; }
+
+    // Cycle check cho folder: target không được là chính nó hoặc descendant.
+    // Walk lên ancestry của newParentId — nếu gặp `id` thì refuse.
+    if (t === 'folder' && _isFolderAncestorOrSelf(sheet, newParentId, id)) {
+      skippedCycle++;
+      continue;
+    }
 
     sheet.getRange(found.rowIndex, E_PARENT).setValue(newParentId);
     moved++;
@@ -442,12 +457,30 @@ function handleMoveExplorer(body) {
 
   return {
     success: true,
-    message: 'Đã chuyển ' + moved + ' file',
+    message: 'Đã chuyển ' + moved + ' mục',
     movedCount: moved,
-    skippedFolder: skippedFolder,
+    skippedRoot: skippedRoot,
+    skippedCycle: skippedCycle,
     skippedSame: skippedSame,
     skippedMissing: skippedMissing
   };
+}
+
+/**
+ * Trả về true nếu `nodeId` là `ancestorId` hoặc nằm trong cây con của
+ * `ancestorId` (đi lên qua parentId chain). Dùng cho cycle check khi move
+ * folder. Có safety bound để tránh loop vô hạn nếu sheet bị hỏng.
+ */
+function _isFolderAncestorOrSelf(sheet, nodeId, ancestorId) {
+  let cur = nodeId;
+  let safety = 64;
+  while (cur !== null && safety-- > 0) {
+    if (cur === ancestorId) return true;
+    const found = _findExplorerRowById(sheet, cur);
+    if (!found) return false;
+    cur = _toIntOrNull(found.row[E_PARENT - 1]);
+  }
+  return false;
 }
 
 function handleGetExplorer(_body) {

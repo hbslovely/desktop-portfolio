@@ -113,13 +113,14 @@ export class DocumentsComponent {
   private highlightTimer: ReturnType<typeof setTimeout> | null = null;
 
   // ===== Selection / clipboard state =====
-  /** Khi true: click vào file = toggle chọn (không mở preview). */
+  /** Khi true: click vào file/folder = toggle chọn (không mở preview/navigate). */
   selectMode = signal<boolean>(false);
-  /** Tập id file đang được tích chọn. Folder không thể chọn. */
+  /** Tập id (file HOẶC folder) đang được tích chọn. Root không bao giờ vào. */
   selectedIds = signal<Set<number>>(new Set());
   /**
-   * Clipboard cho cut & paste. Chỉ chứa file ids — folder bị filter ra
-   * client-side khi cut, server cũng chặn ở `moveExplorer`.
+   * Clipboard cho cut & paste. Chứa cả file lẫn folder ids. Server kiểm
+   * tra chu kỳ (folder không paste được vào chính nó hoặc descendant)
+   * — client cũng check sớm để báo lỗi rõ ràng trước khi gọi API.
    */
   clipboard = signal<{ ids: number[] } | null>(null);
 
@@ -131,9 +132,12 @@ export class DocumentsComponent {
   // ===== Image preview zoom & pan =====
   /**
    * Trạng thái zoom/pan của ảnh preview:
-   *  - `previewScale = 1`: ảnh fit, không cho pan, click backdrop sẽ đóng preview.
+   *  - `previewScale = 1`: ảnh fit, không cho pan.
    *  - `> 1`: ảnh phóng to, có thể kéo (1 ngón / chuột) hoặc zoom toàn cục
-   *    (wheel / pinch / nút). Click backdrop **không** đóng để tránh đóng nhầm.
+   *    (wheel / pinch / nút).
+   *
+   * Click vào nền KHÔNG đóng preview — user phải bấm nút × hoặc Esc. Tránh
+   * tình trạng vô tình tap ra ngoài (nhất là trên mobile) làm mất ảnh.
    *
    * Transform áp dụng lên `<img>`: `translate(tx, ty) scale(s)`. Reference
    * point = tâm của stage (DIV chứa ảnh, không bị transform). Khi zoom vào
@@ -270,14 +274,27 @@ export class DocumentsComponent {
 
   selectedCount = computed<number>(() => this.selectedIds().size);
 
-  /** True khi tất cả file ở folder hiện tại đều được chọn. */
+  /**
+   * True khi mọi entry CON ở folder hiện tại đều đang được chọn (cả folder
+   * lẫn file, trừ root). Dùng cho nút "Chọn tất cả".
+   */
   allFilesSelected = computed<boolean>(() => {
-    const fileIds = this.currentChildren()
-      .filter((e) => e.type === 'file')
+    const ids = this.currentChildren()
+      .filter((e) => e.id !== this.ROOT_ID)
       .map((e) => e.id);
-    if (fileIds.length === 0) return false;
+    if (ids.length === 0) return false;
     const sel = this.selectedIds();
-    return fileIds.every((id) => sel.has(id));
+    return ids.every((id) => sel.has(id));
+  });
+
+  /** True nếu trong selection có ít nhất 1 file — dùng enable nút Download. */
+  selectionHasFile = computed<boolean>(() => {
+    const map = this.entriesById();
+    for (const id of this.selectedIds()) {
+      const e = map.get(id);
+      if (e?.type === 'file') return true;
+    }
+    return false;
   });
 
   /**
@@ -785,28 +802,38 @@ export class DocumentsComponent {
 
   // ===== File preview =====
   /**
-   * Click vào file:
+   * Click vào file (file card riêng — không phải detail row):
    *  - Nếu đang `selectMode` → toggle chọn.
-   *  - Nếu đang có clipboard (paste mode) → vẫn cho chọn để có thể bỏ thêm.
    *  - Bình thường → mở preview.
    */
   onFileClick(entry: ExplorerEntry) {
     if (entry.type !== 'file') return;
     if (this.selectMode()) {
-      this.toggleSelectFile(entry.id);
+      this.toggleSelectEntry(entry.id);
       return;
     }
     this.openPreview(entry);
   }
 
-  /** Riêng cho detail-row + grid: gộp click cho cả folder + file. */
+  /**
+   * Click cho cả folder + file (detail row + grid):
+   *  - Trong `selectMode`: toggle chọn entry (folder + file đều được).
+   *  - Bình thường: folder → navigate, file → preview.
+   *
+   * Lưu ý: vì selectMode hijack click trên folder để toggle, user muốn
+   * chuyển sang folder khác trong lúc đang chọn thì phải dùng breadcrumb.
+   */
   onEntryClick(entry: ExplorerEntry) {
+    if (this.selectMode()) {
+      if (entry.id === this.ROOT_ID) return;
+      this.toggleSelectEntry(entry.id);
+      return;
+    }
     if (entry.type === 'folder') {
-      // Trong selectMode vẫn cho navigate vào folder để chọn xuyên thư mục.
       this.openFolder(entry.id);
       return;
     }
-    this.onFileClick(entry);
+    this.openPreview(entry);
   }
 
   private openPreview(entry: ExplorerEntry) {
@@ -1014,26 +1041,6 @@ export class DocumentsComponent {
   }
 
   /**
-   * Click vào nền (backdrop). KHÔNG đóng nếu:
-   *  - Người dùng vừa kéo/pinch (`didPan`) → click chỉ là đuôi của drag.
-   *  - Đang zoom (>1) → tránh đóng nhầm khi đang xem chi tiết.
-   * Nếu thoả mãn 1 trong 2 thì swallow click; bấm nút × để đóng tường minh.
-   */
-  onPreviewBackdropClick(ev: MouseEvent) {
-    if (this.didPan) {
-      this.didPan = false;
-      ev.stopPropagation();
-      return;
-    }
-    if (this.previewScale() > 1.001) {
-      // Đang zoom — yêu cầu user bấm × để đóng (an toàn hơn).
-      ev.stopPropagation();
-      return;
-    }
-    this.closePreview();
-  }
-
-  /**
    * Phím tắt:
    *   Khi search đang mở:
    *     Esc → đóng search
@@ -1151,38 +1158,46 @@ export class DocumentsComponent {
     }
   }
 
-  /** Bật select mode rồi tích sẵn 1 file (long-press / nút trên card). */
+  /** Bật select mode rồi tích sẵn 1 entry (long-press / nút trên card). */
   startSelectionWith(id: number) {
+    if (id === this.ROOT_ID) return;
     const s = new Set(this.selectedIds());
     s.add(id);
     this.selectedIds.set(s);
     this.selectMode.set(true);
   }
 
-  toggleSelectFile(id: number) {
+  /** Toggle 1 entry (file hoặc folder). Không cho thêm root. */
+  toggleSelectEntry(id: number) {
+    if (id === this.ROOT_ID) return;
     const s = new Set(this.selectedIds());
     if (s.has(id)) s.delete(id);
     else s.add(id);
     this.selectedIds.set(s);
   }
 
+  /** @deprecated dùng `toggleSelectEntry` thay thế. Giữ alias cho code cũ. */
+  toggleSelectFile(id: number) {
+    this.toggleSelectEntry(id);
+  }
+
   isSelected(id: number): boolean {
     return this.selectedIds().has(id);
   }
 
-  /** Chọn / bỏ chọn tất cả file ở folder hiện tại. */
+  /** Chọn / bỏ chọn tất cả entry ở folder hiện tại (cả folder + file, trừ root). */
   toggleSelectAllInCurrent() {
-    const fileIds = this.currentChildren()
-      .filter((e) => e.type === 'file')
+    const ids = this.currentChildren()
+      .filter((e) => e.id !== this.ROOT_ID)
       .map((e) => e.id);
-    if (fileIds.length === 0) return;
+    if (ids.length === 0) return;
 
     const sel = new Set(this.selectedIds());
-    const allHere = fileIds.every((id) => sel.has(id));
+    const allHere = ids.every((id) => sel.has(id));
     if (allHere) {
-      fileIds.forEach((id) => sel.delete(id));
+      ids.forEach((id) => sel.delete(id));
     } else {
-      fileIds.forEach((id) => sel.add(id));
+      ids.forEach((id) => sel.add(id));
     }
     this.selectedIds.set(sel);
   }
@@ -1196,26 +1211,34 @@ export class DocumentsComponent {
     this.selectMode.set(false);
   }
 
-  // ===== Clipboard (cut & paste files) =====
+  // ===== Clipboard (cut & paste files + folders) =====
+  /**
+   * Cắt các entry đang được tích chọn (file + folder) vào clipboard. Loại
+   * root nếu lỡ lọt. Server sẽ check chu kỳ ở paste, client cũng check
+   * trước để có UX tốt hơn.
+   */
   cutSelection() {
     this.closeSelectActionsMenu();
-    const ids = Array.from(this.selectedIds());
-    if (ids.length === 0) return;
-
-    // An toàn: filter chỉ giữ ids của file (loại folder nếu có lọt).
-    const fileIds = ids.filter((id) => {
-      const e = this.entriesById().get(id);
-      return e?.type === 'file';
-    });
-    if (fileIds.length === 0) {
-      this.errorMsg.set('Chỉ cắt được file ảnh, không cắt được thư mục.');
+    const ids = Array.from(this.selectedIds()).filter(
+      (id) => id !== this.ROOT_ID && this.entriesById().has(id)
+    );
+    if (ids.length === 0) {
+      this.errorMsg.set('Không có mục nào để cắt.');
       return;
     }
 
-    this.clipboard.set({ ids: fileIds });
+    this.clipboard.set({ ids });
     this.exitSelectMode();
+
+    const folderCount = ids.filter(
+      (id) => this.entriesById().get(id)?.type === 'folder'
+    ).length;
+    const fileCount = ids.length - folderCount;
+    const parts: string[] = [];
+    if (folderCount > 0) parts.push(`${folderCount} thư mục`);
+    if (fileCount > 0) parts.push(`${fileCount} ảnh`);
     this.flashSuccess(
-      `Đã cắt ${fileIds.length} ảnh — vào thư mục đích rồi bấm "Dán vào đây"`
+      `Đã cắt ${parts.join(' + ')} — vào thư mục đích rồi bấm "Dán vào đây"`
     );
   }
 
@@ -1223,40 +1246,80 @@ export class DocumentsComponent {
     this.clipboard.set(null);
   }
 
+  /**
+   * Paste tại folder hiện tại. Trước khi gọi server, validate:
+   *  1. Bỏ các entry đã ở target.
+   *  2. Nếu trong clipboard có folder F, target không được là F hoặc bất
+   *     kỳ descendant nào của F (sẽ tạo chu kỳ vô hạn).
+   * Server cũng check lần nữa để đảm bảo dữ liệu nhất quán.
+   */
   pasteHere() {
     const cb = this.clipboard();
     if (!cb || cb.ids.length === 0) return;
 
     const target = this.currentFolderId();
-
-    // Nếu tất cả file đều đã ở folder đích → không cần gọi server.
     const map = this.entriesById();
-    const needsMove = cb.ids.filter((id) => {
+
+    // [1] Bỏ entry đã ở target — không cần move.
+    const candidates = cb.ids.filter((id) => {
       const e = map.get(id);
       return e && e.parentId !== target;
     });
-    if (needsMove.length === 0) {
+    if (candidates.length === 0) {
       this.clipboard.set(null);
-      this.flashSuccess('Các ảnh đã ở đúng thư mục này.');
+      this.flashSuccess('Các mục đã ở đúng thư mục này.');
+      return;
+    }
+
+    // [2] Cycle check: target không được là chính folder cắt hoặc descendant.
+    const targetAncestors = this.getAncestorIds(target);
+    targetAncestors.add(target);
+    const cycle = candidates.find((id) => {
+      const e = map.get(id);
+      return e?.type === 'folder' && targetAncestors.has(id);
+    });
+    if (cycle !== undefined) {
+      const cycleEntry = map.get(cycle);
+      this.errorMsg.set(
+        `Không thể dán "${cycleEntry?.name || cycle}" vào chính nó hoặc thư mục con của nó.`
+      );
       return;
     }
 
     this.saving.set(true);
     this.errorMsg.set('');
-    this.explorerService.moveEntries(needsMove, target).subscribe({
+    this.explorerService.moveEntries(candidates, target).subscribe({
       next: () => {
         this.saving.set(false);
-        const count = needsMove.length;
+        const count = candidates.length;
         const targetName = this.currentFolder()?.name || 'thư mục này';
         this.clipboard.set(null);
-        this.flashSuccess(`Đã chuyển ${count} ảnh vào "${targetName}"`);
+        this.flashSuccess(`Đã chuyển ${count} mục vào "${targetName}"`);
         setTimeout(() => this.loadEntries(), 800);
       },
       error: (err) => {
         this.saving.set(false);
-        this.errorMsg.set(err?.message || 'Chuyển file thất bại.');
+        this.errorMsg.set(err?.message || 'Chuyển mục thất bại.');
       },
     });
+  }
+
+  /**
+   * Trả về Set chứa id của tất cả ancestor (loại trừ chính nó). Dùng cho
+   * cycle check khi paste folder.
+   */
+  private getAncestorIds(id: number): Set<number> {
+    const ancestors = new Set<number>();
+    const map = this.entriesById();
+    let cur: ExplorerEntry | undefined = map.get(id);
+    let safety = 64;
+    while (cur && safety-- > 0) {
+      const pid = cur.parentId;
+      if (pid === null) break;
+      ancestors.add(pid);
+      cur = map.get(pid);
+    }
+    return ancestors;
   }
 
   // ===== Download =====
@@ -1391,14 +1454,29 @@ export class DocumentsComponent {
   }
 
   // ===== Bulk delete =====
+  /**
+   * Xoá hàng loạt: cả folder lẫn file. Server soft-delete folder cascading
+   * sang descendant. Confirm message phân biệt số lượng folder/file để
+   * user nhận thức được phạm vi.
+   */
   bulkDeleteSelection() {
     this.closeSelectActionsMenu();
-    const ids = Array.from(this.selectedIds()).filter((id) => {
-      const e = this.entriesById().get(id);
-      return e?.type === 'file';
-    });
+    const ids = Array.from(this.selectedIds()).filter(
+      (id) => id !== this.ROOT_ID && this.entriesById().has(id)
+    );
     if (ids.length === 0) return;
-    if (!confirm(`Xoá ${ids.length} ảnh đã chọn?`)) return;
+
+    const map = this.entriesById();
+    const folderCount = ids.filter((id) => map.get(id)?.type === 'folder').length;
+    const fileCount = ids.length - folderCount;
+    const parts: string[] = [];
+    if (folderCount > 0) parts.push(`${folderCount} thư mục`);
+    if (fileCount > 0) parts.push(`${fileCount} ảnh`);
+    const summary = parts.join(' + ');
+    const warn = folderCount > 0
+      ? '\n\nTẤT CẢ ảnh con & thư mục con bên trong cũng sẽ bị xoá.'
+      : '';
+    if (!confirm(`Xoá ${summary} đã chọn?${warn}`)) return;
 
     this.deleteSequentially(ids);
   }
@@ -1424,7 +1502,7 @@ export class DocumentsComponent {
     this.saving.set(false);
     this.exitSelectMode();
     if (failed === 0) {
-      this.flashSuccess(`Đã xoá ${done} ảnh`);
+      this.flashSuccess(`Đã xoá ${done} mục`);
     } else {
       this.errorMsg.set(`Xoá xong ${done}/${ids.length}, ${failed} lỗi.`);
     }
