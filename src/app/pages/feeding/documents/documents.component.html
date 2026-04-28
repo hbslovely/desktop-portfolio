@@ -184,6 +184,16 @@
       </button>
       <button
         type="button"
+        class="docs-btn ghost small"
+        (click)="bulkDownloadSelection()"
+        [disabled]="selectedCount() === 0 || saving()"
+        title="Tải toàn bộ ảnh đã chọn về máy"
+      >
+        <i class="pi pi-download"></i>
+        <span>Tải xuống</span>
+      </button>
+      <button
+        type="button"
         class="docs-btn primary small"
         (click)="cutSelection()"
         [disabled]="selectedCount() === 0 || saving()"
@@ -344,6 +354,17 @@
             <i class="pi pi-pencil"></i>
           </button>
           <button
+            *ngIf="entry.type === 'file'"
+            type="button"
+            class="docs-icon-btn"
+            (click)="downloadEntry(entry, $event)"
+            [disabled]="!entry.content"
+            title="Tải xuống"
+            aria-label="Tải ảnh xuống máy"
+          >
+            <i class="pi pi-download"></i>
+          </button>
+          <button
             type="button"
             class="docs-icon-btn danger"
             (click)="deleteEntry(entry)"
@@ -461,6 +482,16 @@
           </button>
           <button
             type="button"
+            class="docs-icon-btn"
+            (click)="downloadEntry(entry, $event)"
+            [disabled]="!entry.content"
+            title="Tải ảnh xuống"
+            aria-label="Tải ảnh xuống máy"
+          >
+            <i class="pi pi-download"></i>
+          </button>
+          <button
+            type="button"
             class="docs-icon-btn danger"
             (click)="deleteEntry(entry)"
             title="Xoá ảnh"
@@ -558,6 +589,16 @@
     class="docs-preview"
     *ngIf="previewEntry() as p"
   >
+    <button
+      type="button"
+      class="docs-preview__download"
+      (click)="downloadEntry(p, $event)"
+      [disabled]="!p.content"
+      aria-label="Tải ảnh xuống máy"
+      title="Tải xuống"
+    >
+      <i class="pi pi-download"></i>
+    </button>
     <button
       type="button"
       class="docs-preview__close"

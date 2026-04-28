@@ -921,6 +921,136 @@ export class DocumentsComponent {
     });
   }
 
+  // ===== Download =====
+  /**
+   * Tải 1 ảnh về máy. Dùng cho cả trường hợp click nút download trên card,
+   * trong detail row, và trong preview. Convert `data:image/...;base64,...`
+   * → Blob → ObjectURL → trigger anchor click.
+   *
+   * Lý do dùng Blob thay vì set thẳng `<a href="data:...">`: Safari + một
+   * số mobile browser từ chối download data URL dài (>~2MB). Blob ổn hơn.
+   */
+  downloadEntry(entry: ExplorerEntry, ev?: Event) {
+    ev?.stopPropagation();
+    if (entry.type !== 'file') return;
+    if (!entry.content) {
+      this.errorMsg.set('Ảnh chưa có nội dung để tải xuống.');
+      return;
+    }
+    try {
+      this.triggerDownload(entry.content, entry.name);
+      this.flashSuccess(`Đã tải "${ entry.name }"`);
+    } catch (e) {
+      console.error('downloadEntry failed', e);
+      this.errorMsg.set('Tải xuống thất bại.');
+    }
+  }
+
+  /**
+   * Tải nhiều ảnh đã chọn (multi-select). Trigger lần lượt với một
+   * khoảng delay nhỏ giữa các lần để tránh browser chặn pop-up "site này
+   * muốn tải nhiều file" — đa số trình duyệt cho phép sau khi user accept
+   * 1 lần đầu trong session.
+   */
+  async bulkDownloadSelection() {
+    const ids = Array.from(this.selectedIds()).filter((id) => {
+      const e = this.entriesById().get(id);
+      return e?.type === 'file' && !!e.content;
+    });
+    if (ids.length === 0) {
+      this.errorMsg.set('Không có ảnh nào để tải xuống.');
+      return;
+    }
+
+    this.errorMsg.set('');
+    this.uploadProgress.set({ done: 0, total: ids.length, failed: 0 });
+
+    const map = this.entriesById();
+    let done = 0;
+    let failed = 0;
+    for (let i = 0; i < ids.length; i++) {
+      const e = map.get(ids[i]);
+      if (!e || !e.content) {
+        failed++;
+        continue;
+      }
+      try {
+        this.triggerDownload(e.content, e.name);
+        done++;
+      } catch (err) {
+        console.warn('triggerDownload failed', e.name, err);
+        failed++;
+      }
+      this.uploadProgress.update((p) =>
+        p ? { ...p, done, failed } : p
+      );
+      // Delay nhỏ giữa các download để browser không nuốt request.
+      if (i < ids.length - 1) {
+        await new Promise((r) => setTimeout(r, 180));
+      }
+    }
+    this.uploadProgress.set(null);
+
+    if (failed === 0) {
+      this.flashSuccess(`Đã tải ${ done } ảnh`);
+    } else {
+      this.flashSuccess(`Đã tải ${ done }/${ ids.length } ảnh`);
+      if (failed > 0) {
+        this.errorMsg.set(`${ failed } ảnh không tải được (thiếu nội dung).`);
+      }
+    }
+  }
+
+  /** Trigger tải xuống 1 file qua anchor + Blob URL. */
+  private triggerDownload(dataUrl: string, rawName: string) {
+    const blob = this.dataUrlToBlob(dataUrl);
+    const objectUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = objectUrl;
+    a.download = this.sanitizeFilename(rawName);
+    a.rel = 'noopener';
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    // Revoke sau 1s để chắc chắn browser đã start download.
+    setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+  }
+
+  /**
+   * Convert `data:<mime>;base64,<payload>` → Blob. Nếu không phải base64
+   * data URL thì throw → caller hiển thị error.
+   */
+  private dataUrlToBlob(dataUrl: string): Blob {
+    const commaIdx = dataUrl.indexOf(',');
+    if (commaIdx < 0) throw new Error('Data URL không hợp lệ');
+    const header = dataUrl.slice(0, commaIdx);
+    const payload = dataUrl.slice(commaIdx + 1);
+    const mimeMatch = header.match(/data:([^;]+)/);
+    const mime = mimeMatch ? mimeMatch[1] : 'application/octet-stream';
+    const isBase64 = /;base64/i.test(header);
+    if (!isBase64) {
+      // Plain text data URL — fall back to UTF-8 bytes.
+      const bytes = new TextEncoder().encode(decodeURIComponent(payload));
+      return new Blob([bytes], { type: mime });
+    }
+    const bin = atob(payload);
+    const arr = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+    return new Blob([arr], { type: mime });
+  }
+
+  /**
+   * Lọc bỏ ký tự không hợp lệ trong filename trên các OS chính (Windows
+   * khắt khe nhất). Đảm bảo có extension; nếu thiếu thì append `.jpg`
+   * vì uploads của app đều convert sang JPEG.
+   */
+  private sanitizeFilename(name: string): string {
+    const cleaned = (name || 'image').replace(/[\\/:*?"<>|\x00-\x1f]+/g, '_').trim();
+    const safe = cleaned.length > 0 ? cleaned : 'image';
+    return /\.[a-z0-9]{2,5}$/i.test(safe) ? safe.slice(0, 200) : `${ safe }.jpg`.slice(0, 200);
+  }
+
   // ===== Bulk delete =====
   bulkDeleteSelection() {
     const ids = Array.from(this.selectedIds()).filter((id) => {
