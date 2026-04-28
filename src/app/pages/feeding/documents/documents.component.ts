@@ -45,8 +45,14 @@ interface EntryDraft {
 
 export type ViewMode = 'large' | 'icons' | 'detail';
 
-/** Tối đa ký tự cho 1 cell Google Sheets (an toàn): 49000 < 50000. */
-const MAX_CELL_CHARS = 49000;
+/**
+ * Tối đa ký tự cho content base64 sau khi nén.
+ *
+ * Server hỗ trợ chia content ra **6 cells** (E + H..L) × ~49.000 ký tự / cell
+ * = ~294.000 ký tự ≈ 215KB binary JPEG. Đủ cho ảnh chụp 1080p chất lượng cao
+ * mà không phải nén quá tay làm mờ ảnh.
+ */
+const MAX_CELL_CHARS = 49000 * 6;
 
 const VIEW_MODE_KEY = 'documents:viewMode';
 
@@ -782,13 +788,20 @@ export class DocumentsComponent {
 
   /**
    * Resize-compress ảnh thử nhiều bậc tới khi <= MAX_CELL_CHARS hoặc fail.
-   * Bậc giảm dần: 720/0.7 → 560/0.6 → 400/0.5.
+   *
+   * Server cho phép tổng ~294K ký tự (chia 6 cells), nên các bậc đầu giữ
+   * chất lượng cao (1280/0.85). Chỉ rớt xuống bậc thấp khi ảnh quá khổ
+   * (chụp DSLR / panorama). Bậc thấp cuối cùng (480/0.55) thường ~30-40KB
+   * — gần như chắc chắn fit dù ảnh ban đầu là gì.
    */
   private async compressUntilFits(file: File): Promise<string> {
     const tries: Array<[number, number]> = [
-      [720, 0.7],
-      [560, 0.6],
-      [400, 0.5],
+      [1600, 0.85],
+      [1280, 0.82],
+      [1024, 0.78],
+      [820, 0.72],
+      [640, 0.65],
+      [480, 0.55],
     ];
     let last = '';
     for (const [size, q] of tries) {
@@ -796,7 +809,7 @@ export class DocumentsComponent {
       if (last.length <= MAX_CELL_CHARS) return last;
     }
     throw new Error(
-      `Ảnh quá lớn (${Math.round(last.length / 1024)}KB sau khi nén). Thử ảnh nhỏ hơn.`
+      `Ảnh quá lớn (${Math.round(last.length / 1024)}KB sau khi nén tối đa). Thử ảnh nhỏ hơn.`
     );
   }
 
