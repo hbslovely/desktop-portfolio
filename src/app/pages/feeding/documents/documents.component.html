@@ -254,22 +254,23 @@
     <div class="docs-bar__lead">
       <i class="pi pi-check-square"></i>
       <strong>{{ selectedCount() }}</strong>
-      <span class="docs-bar__sub">ảnh đã chọn</span>
+      <span class="docs-bar__sub">mục đã chọn</span>
     </div>
     <div class="docs-bar__actions">
       <button
         type="button"
         class="docs-btn ghost small"
         (click)="toggleSelectAllInCurrent()"
-        [disabled]="fileCount() === 0"
-        [title]="allFilesSelected() ? 'Bỏ chọn tất cả ở thư mục này' : 'Chọn tất cả ảnh ở thư mục này'"
+        [disabled]="folderCount() + fileCount() === 0"
+        [title]="allFilesSelected() ? 'Bỏ chọn tất cả ở thư mục này' : 'Chọn tất cả mục ở thư mục này'"
       >
         <i class="pi" [class.pi-times-circle]="allFilesSelected()" [class.pi-check-circle]="!allFilesSelected()"></i>
         <span>{{ allFilesSelected() ? 'Bỏ chọn tất cả' : 'Chọn tất cả' }}</span>
       </button>
       <!--
         Gom Tải xuống / Cắt / Xoá vào dropdown 3-chấm để bar gọn gàng,
-        đặc biệt trên mobile. Disabled trigger khi chưa chọn ảnh nào.
+        đặc biệt trên mobile. Disabled trigger khi chưa chọn mục nào.
+        Tải xuống disabled riêng nếu selection chỉ toàn folder.
       -->
       <div class="docs-menu select-actions" (click)="$event.stopPropagation()">
         <button
@@ -280,7 +281,7 @@
           [disabled]="selectedCount() === 0 || saving()"
           aria-haspopup="menu"
           [attr.aria-expanded]="selectActionsMenuOpen()"
-          [title]="selectedCount() === 0 ? 'Chọn ảnh để xem thao tác' : 'Thao tác với ảnh đã chọn'"
+          [title]="selectedCount() === 0 ? 'Chọn mục để xem thao tác' : 'Thao tác với các mục đã chọn'"
         >
           <i class="pi pi-ellipsis-v"></i>
         </button>
@@ -295,7 +296,8 @@
             class="docs-menu-item"
             role="menuitem"
             (click)="bulkDownloadSelection()"
-            [disabled]="saving()"
+            [disabled]="saving() || !selectionHasFile()"
+            [title]="!selectionHasFile() ? 'Không có ảnh nào trong selection để tải' : ''"
           >
             <i class="pi pi-download"></i>
             <span>Tải xuống</span>
@@ -339,7 +341,7 @@
     <div class="docs-bar__lead">
       <i class="pi pi-clone"></i>
       <strong>{{ cb.ids.length }}</strong>
-      <span class="docs-bar__sub">ảnh đang cắt — chọn thư mục đích rồi dán</span>
+      <span class="docs-bar__sub">mục đang cắt — chọn thư mục đích rồi dán</span>
     </div>
     <div class="docs-bar__actions">
       <button
@@ -416,14 +418,14 @@
         class="docs-row"
         [class.folder]="entry.type === 'folder'"
         [class.file]="entry.type === 'file'"
-        [class.selected]="entry.type === 'file' && isSelected(entry.id)"
+        [class.selected]="isSelected(entry.id)"
         [class.is-flash]="highlightedEntryId() === entry.id"
         (click)="onEntryClick(entry)"
       >
         <div class="dr-name">
           <span
             class="dr-checkbox"
-            *ngIf="selectMode() && entry.type === 'file'"
+            *ngIf="selectMode() && entry.id !== 1"
             [class.checked]="isSelected(entry.id)"
             aria-hidden="true"
           >
@@ -513,13 +515,22 @@
       <article
         class="docs-card folder"
         *ngIf="entry.type === 'folder'"
+        [class.selected]="isSelected(entry.id)"
         [class.is-flash]="highlightedEntryId() === entry.id"
-        (click)="openFolder(entry.id)"
-        (keydown.enter)="openFolder(entry.id)"
+        (click)="onEntryClick(entry)"
+        (keydown.enter)="onEntryClick(entry)"
         tabindex="0"
         role="button"
-        [attr.aria-label]="'Mở thư mục ' + entry.name"
+        [attr.aria-label]="(selectMode() ? 'Chọn thư mục ' : 'Mở thư mục ') + entry.name"
       >
+        <span
+          class="docs-card__check"
+          *ngIf="selectMode()"
+          [class.checked]="isSelected(entry.id)"
+          aria-hidden="true"
+        >
+          <i class="pi pi-check" *ngIf="isSelected(entry.id)"></i>
+        </span>
         <div class="docs-card__icon">
           <i class="pi pi-folder-open"></i>
         </div>
@@ -533,7 +544,16 @@
             </span>
           </div>
         </div>
-        <div class="docs-card__actions" (click)="$event.stopPropagation()">
+        <div class="docs-card__actions" *ngIf="!selectMode()" (click)="$event.stopPropagation()">
+          <button
+            type="button"
+            class="docs-icon-btn"
+            (click)="startSelectionWith(entry.id)"
+            title="Chọn thư mục này"
+            aria-label="Chọn thư mục"
+          >
+            <i class="pi pi-check-square"></i>
+          </button>
           <button
             type="button"
             class="docs-icon-btn"
@@ -816,14 +836,14 @@
 
     <!--
       Stage: bắt mọi gesture (wheel, pointer, dblclick). Image bên trong
-      nhận transform translate+scale. Backdrop click đóng preview, nhưng
-      chỉ khi không zoom & không vừa drag (xem onPreviewBackdropClick).
+      nhận transform translate+scale. KHÔNG đóng preview khi click nền —
+      user phải bấm nút × hoặc nhấn Esc, tránh tình trạng vô tình tap ra
+      ngoài (đặc biệt trên mobile khi đang vuốt) làm mất ảnh đang xem.
     -->
     <div
       class="docs-preview__stage"
       [class.zoomed]="previewScale() > 1.001"
       [class.interacting]="previewInteracting()"
-      (click)="onPreviewBackdropClick($event)"
       (wheel)="onPreviewWheel($event)"
       (pointerdown)="onPreviewPointerDown($event)"
       (pointermove)="onPreviewPointerMove($event)"

@@ -1216,15 +1216,22 @@
     }
   }
 
-  /* ===== Selected file card ===== */
-  &.file.selected {
+  /* ===== Selected card (file hoặc folder) ===== */
+  &.selected {
     border-color: var(--docs-primary);
     box-shadow: 0 0 0 2px var(--docs-primary), 0 8px 22px -10px rgba(91, 108, 255, 0.45);
     transform: translateY(-2px);
+  }
 
-    .docs-card__thumb img {
-      opacity: 0.78;
-    }
+  /* File card khi selected: làm mờ ảnh nhẹ để check icon nổi bật */
+  &.file.selected .docs-card__thumb img {
+    opacity: 0.78;
+  }
+
+  /* Folder card khi selected: tô đậm icon block để báo hiệu rõ */
+  &.folder.selected .docs-card__icon {
+    background: linear-gradient(135deg, #e0e7ff 0%, #ede9fe 100%);
+    color: var(--docs-primary-dark);
   }
 
   /* ===== Floating selection check (top-left) ===== */
