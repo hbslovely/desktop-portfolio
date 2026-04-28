@@ -1,4 +1,4 @@
-import { Component, HostListener, computed, inject, signal } from '@angular/core';
+import { Component, HostListener, ViewChild, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
@@ -1375,6 +1375,31 @@ export class FeedingComponent {
   refreshLogs() {
     this.loadLogs();
   }
+
+  /**
+   * Tham chiếu tới `<app-documents>` đang render trong tab Documents.
+   * `*ngIf` của template khiến component có thể không tồn tại (khi đang ở
+   * tab Cữ bú) → ViewChild sẽ trả `undefined`. Với `static: false` (mặc
+   * định), Angular sẽ resolve lại sau mỗi change detection nên ViewChild
+   * tự cập nhật khi user chuyển tab.
+   */
+  @ViewChild(DocumentsComponent) private documentsCmp?: DocumentsComponent;
+
+  /**
+   * Reload đồng thời nhật ký bú **và** danh sách documents. Được gọi từ
+   * nút refresh duy nhất ở header trang. Nếu user đang ở tab Cữ bú,
+   * `documentsCmp` sẽ là undefined — bỏ qua, vì lần sau switch sang
+   * Documents component được tạo mới và tự `loadEntries()` trong constructor.
+   */
+  refreshAll() {
+    this.loadLogs();
+    this.documentsCmp?.refresh();
+  }
+
+  /** True khi 1 trong 2 nguồn dữ liệu đang load — dùng cho icon spin. */
+  isAnyLoading = computed<boolean>(
+    () => this.loadingLogs() || (this.documentsCmp?.loading() ?? false)
+  );
 
   // ===== Edit log =====
   /**

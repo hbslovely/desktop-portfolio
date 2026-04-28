@@ -25,10 +25,10 @@
         <button
           class="btn icon-btn"
           type="button"
-          (click)="loadLogs()"
+          (click)="refreshAll()"
           [disabled]="loadingLogs()"
-          [title]="loadingLogs() ? 'Đang tải…' : 'Tải lại dữ liệu'"
-          aria-label="Tải lại dữ liệu"
+          [title]="loadingLogs() ? 'Đang tải…' : 'Tải lại Cữ bú + Tài liệu'"
+          aria-label="Tải lại Cữ bú và Tài liệu"
         >
           <i class="pi pi-refresh" [class.spin]="loadingLogs()"></i>
         </button>
@@ -37,13 +37,27 @@
   </header>
 
   <main class="content" [class.is-documents]="bottomTab() === 'documents'">
+    <!--
+      ============ TAB PANES ============
+      Dùng `[hidden]` thay vì `*ngIf` để cả 2 tab cùng giữ trạng thái khi
+      user qua lại: scroll position, search query đang gõ, viewMode, folder
+      đang đứng, file đang chọn, draft đang nhập… đều không bị reset. Hệ
+      quả: `<app-documents>` được mount 1 lần ở app load — `loadEntries()`
+      chạy 1 lần, các lần switch tab kế tiếp không gọi API thêm.
+    -->
     <!-- ============ TAB: DOCUMENTS ============ -->
-    <ng-container *ngIf="bottomTab() === 'documents'">
+    <div
+      class="tab-pane tab-pane--documents"
+      [hidden]="bottomTab() !== 'documents'"
+    >
       <app-documents></app-documents>
-    </ng-container>
+    </div>
 
     <!-- ============ TAB: FEEDING ============ -->
-    <ng-container *ngIf="bottomTab() === 'feeding'">
+    <div
+      class="tab-pane tab-pane--feeding"
+      [hidden]="bottomTab() !== 'feeding'"
+    >
 
     <!-- Profile form -->
     <section class="card profile-card" *ngIf="editing()">
@@ -1329,7 +1343,7 @@
       </footer>
     </ng-container>
 
-    </ng-container>
+    </div><!-- /.tab-pane--feeding -->
   </main>
 
   <!-- ============ BOTTOM NAVIGATION ============ -->

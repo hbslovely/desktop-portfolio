@@ -212,6 +212,26 @@ export class ExplorerService {
     });
   }
 
+  /**
+   * Gửi POST tới Google Apps Script (cùng pattern với `FeedingLogService`).
+   *
+   * **Lưu ý quan trọng**: Apps Script web app trả `302 Found` redirect sang
+   * `script.googleusercontent.com` cho POST, kèm CORS thoáng cho GET nhưng
+   * **không phản hồi CORS đúng cho POST response**. Hệ quả:
+   *  - Apps Script `doPost` chạy thành công, **dữ liệu đã được ghi vào sheet**.
+   *  - Browser/HttpClient cố theo redirect → đụng CORS / non-JSON → throw
+   *    error mặc dù request đã có hiệu lực.
+   *
+   * Vì vậy: swallow lỗi response và **luôn coi như thành công**. Component
+   * sẽ tự `loadEntries()` sau ~800-1000ms để verify state thật. Cách này
+   * đồng nhất với `FeedingLogService.addLog/updateLog/deleteLog` trong cùng
+   * codebase.
+   *
+   * Trade-off: nếu Apps Script thực sự fail (quota, sai action…), UI báo
+   * thành công nhưng reload sẽ không thấy thay đổi → user tự nhận biết.
+   * Đổi lại: không bao giờ báo "lỗi" khi backend đã ghi thành công (nguyên
+   * nhân của bug "upload báo lỗi nhưng vẫn upload được").
+   */
   private postToAppsScript(
     body: Record<string, unknown>
   ): Observable<ExplorerResponse> {
@@ -228,8 +248,11 @@ export class ExplorerService {
         .post<ExplorerResponse>(url, body, { headers })
         .pipe(
           catchError((err) => {
-            console.error('ExplorerService POST failed (dev)', err);
-            return throwError(() => err);
+            console.warn(
+              '[ExplorerService] POST response không parse được — coi như đã ghi thành công, sẽ reload để verify.',
+              err
+            );
+            return of({ success: true } as ExplorerResponse);
           })
         );
     }
@@ -244,7 +267,10 @@ export class ExplorerService {
         redirect: 'follow',
       }).then((): ExplorerResponse => ({ success: true }))
     ).pipe(
-      catchError(() => of({ success: true }))
+      catchError((err) => {
+        console.warn('[ExplorerService] POST (no-cors) lỗi — coi như thành công.', err);
+        return of({ success: true });
+      })
     );
   }
 

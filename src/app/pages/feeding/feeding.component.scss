@@ -155,15 +155,31 @@
 }
 
 /* ========== MAIN ========== */
+/*
+  `.content` giờ chỉ là wrapper "trong suốt" — layout (max-width, padding)
+  được đẩy xuống từng `.tab-pane` để cả 2 tab có thể cùng tồn tại trong
+  DOM (ẩn hiện qua `[hidden]`) mà không xung đột về kích thước.
+*/
 .content {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 0 20px;
+  width: 100%;
 
-  /* Khi đang ở tab Documents, để DocumentsComponent tự kiểm soát layout */
-  &.is-documents {
-    max-width: none;
-    padding: 0;
+  /*
+    Tab pane: ẩn hoàn toàn khi `[hidden]` để giữ nguyên trạng thái
+    component (scroll, signal, focus…) và bật lại khi user quay về.
+  */
+  .tab-pane {
+    &[hidden] { display: none !important; }
+
+    &--feeding {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+
+    &--documents {
+      max-width: none;
+      padding: 0;
+    }
   }
 }
 

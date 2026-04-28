@@ -22,55 +22,38 @@
   flex-direction: column;
   gap: 14px;
   padding: 16px;
-  /* Padding-bottom = bottom-nav (~70px) + FAB clearance + safe-area */
-  padding-bottom: calc(140px + env(safe-area-inset-bottom, 0px));
+  /* Padding-bottom = bottom-nav (~60px) + statusbar (~36px) + FAB clearance + safe-area */
+  padding-bottom: calc(168px + env(safe-area-inset-bottom, 0px));
   max-width: 1100px;
   margin: 0 auto;
   width: 100%;
 }
 
-/* ============ Toolbar ============ */
+/*
+  Toolbar đơn giản hoá: chỉ còn 1 hàng breadcrumb (Home + path). Đã bỏ
+  các nút Home/Up/Refresh ở 2 đầu vì:
+   - Refresh thống nhất ở header trang (`feeding.component`).
+   - Up arrow lặp chức năng với click vào crumb cha.
+   - Home đã được nhúng vào đầu breadcrumb.
+*/
 .docs-toolbar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px 10px;
-  padding: 10px 12px;
+  padding: 8px 12px;
   background: #ffffff;
   border: 1px solid var(--docs-border);
   border-radius: 14px;
   box-shadow: 0 2px 8px -4px rgba(0, 0, 0, 0.06);
-
-  &__left,
-  &__right {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    flex-shrink: 0;
-  }
-
-  &__right {
-    margin-left: auto;
-  }
 }
 
-/*
-  Breadcrumb được tách xuống **dòng mới** ngay dưới các nút điều hướng để
-  không phải scroll ngang khi path dài. Dùng `flex-basis: 100%` + `order: 2`
-  thay vì cấu trúc lại HTML, kết hợp `flex-wrap: wrap` ở cả toolbar lẫn
-  crumbs để path nhiều cấp tự xuống nhiều dòng theo độ dài thực tế.
-*/
 .docs-crumbs {
-  flex: 1 1 100%;
-  order: 2;
+  flex: 1;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 4px 2px;
   min-width: 0;
-  margin-top: 2px;
-  padding-top: 8px;
-  border-top: 1px dashed var(--docs-border);
 }
 
 .docs-crumb {
@@ -109,12 +92,341 @@
   &:disabled {
     cursor: default;
   }
+
+  /*
+    Home variant: icon đầu breadcrumb đại diện root. Khi đang ở root
+    (`.last`) chỉ hiện icon, hơi đậm để rõ vị trí. Khi vào sub-folder
+    đổi thành nút bấm được, hover sáng lên như crumb thường.
+  */
+  &.home {
+    padding: 6px 9px;
+
+    i {
+      font-size: 13px;
+    }
+
+    &.last {
+      color: var(--docs-primary);
+      background: var(--docs-primary-soft);
+    }
+  }
 }
 
 .docs-crumb-sep {
   color: var(--docs-muted-2);
   font-size: 10px;
   flex-shrink: 0;
+}
+
+/* ============ Search ============ */
+/*
+  Khi bật search, breadcrumb biến mất và `.docs-search-bar` chiếm chỗ trên
+  cùng 1 toolbar. Style được mô phỏng input pill: nền soft, focus glow
+  primary; icon search bên trái, nút clear `×` xuất hiện khi có nội dung.
+*/
+.docs-search-bar {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--docs-bg-soft);
+  border: 1px solid var(--docs-border);
+  border-radius: 10px;
+  padding: 0 10px;
+  min-width: 0;
+  height: 36px;
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+
+  &:focus-within {
+    background: #ffffff;
+    border-color: var(--docs-primary);
+    box-shadow: 0 0 0 3px var(--docs-primary-soft);
+  }
+
+  &__icon {
+    color: var(--docs-muted);
+    font-size: 13px;
+    flex-shrink: 0;
+  }
+
+  &__clear {
+    appearance: none;
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+    color: var(--docs-muted);
+    font-size: 14px;
+    padding: 4px;
+    border-radius: 6px;
+    line-height: 0;
+    flex-shrink: 0;
+
+    &:hover {
+      color: var(--docs-text);
+      background: var(--docs-primary-soft);
+    }
+  }
+}
+
+.docs-search-input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+  color: var(--docs-text);
+  padding: 4px 0;
+
+  &::placeholder {
+    color: var(--docs-muted-2);
+  }
+}
+
+/*
+  Toggle button trong toolbar: icon-only tròn, sáng lên khi search active
+  (đổi sang dấu × — đồng bộ icon trong markup). Đặt cạnh phải.
+*/
+.docs-icon-btn.search-toggle {
+  margin-left: 6px;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  &.active {
+    color: var(--docs-primary);
+    background: var(--docs-primary-soft);
+  }
+}
+
+/*
+  Results list: thay thế nội dung view chính khi search bật. Card kiểu list
+  với thumbnail (ảnh hoặc icon folder), tên có <mark> highlight, đường dẫn
+  cha bên dưới. Mũi tên phải gợi ý "click để đi tới".
+*/
+.docs-search-results {
+  background: #ffffff;
+  border: 1px solid var(--docs-border);
+  border-radius: 14px;
+  box-shadow: 0 2px 12px -4px rgba(0, 0, 0, 0.06);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  &__hint,
+  &__empty {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--docs-muted);
+    font-size: 13px;
+    padding: 10px 4px;
+
+    i {
+      font-size: 14px;
+    }
+
+    kbd {
+      font-family: inherit;
+      font-size: 11px;
+      padding: 1px 6px;
+      border: 1px solid var(--docs-border);
+      border-bottom-width: 2px;
+      border-radius: 4px;
+      background: var(--docs-bg-soft);
+      color: var(--docs-text);
+    }
+  }
+
+  &__empty strong {
+    color: var(--docs-text);
+    margin: 0 2px;
+  }
+
+  &__count {
+    font-size: 11.5px;
+    color: var(--docs-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0 4px;
+  }
+}
+
+.docs-search-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.docs-search-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  color: var(--docs-text);
+  transition: background 0.15s, border-color 0.15s;
+
+  &:hover {
+    background: var(--docs-bg-soft);
+    border-color: var(--docs-border);
+  }
+
+  &__thumb {
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+    border-radius: 8px;
+    background: var(--docs-bg-soft);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    color: var(--docs-muted);
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    i {
+      font-size: 18px;
+    }
+  }
+
+  &[data-type='folder'] .docs-search-row__thumb {
+    background: var(--docs-primary-soft);
+    color: var(--docs-primary);
+  }
+
+  &__body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  &__name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--docs-text);
+    word-break: break-word;
+
+    mark {
+      background: rgba(250, 204, 21, 0.45);
+      color: inherit;
+      padding: 0 1px;
+      border-radius: 3px;
+    }
+  }
+
+  &__path {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11.5px;
+    color: var(--docs-muted);
+
+    i {
+      font-size: 11px;
+    }
+  }
+
+  &__go {
+    color: var(--docs-muted-2);
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+
+  &:hover &__go {
+    color: var(--docs-primary);
+  }
+}
+
+/*
+  Khi search mở, ẩn các phần view chính để dồn focus cho danh sách kết
+  quả. Vẫn giữ toast (success/error) và progress upload — chúng nằm sticky
+  và vẫn cần thấy được dù đang search.
+*/
+.docs.is-search {
+  .docs-actions,
+  .docs-detail,
+  .docs-grid,
+  .docs-empty,
+  .docs-loading,
+  .docs-fab,
+  .docs-bar.selection,
+  .docs-bar.paste {
+    display: none !important;
+  }
+}
+
+/*
+  Pulse highlight cho item user vừa click trong search result. ~1.5s rồi
+  fade. Áp dụng được cho cả grid card và detail row qua class chung.
+*/
+@keyframes docsFlashPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(250, 204, 21, 0.55);
+    background-color: rgba(250, 204, 21, 0.18);
+  }
+  60% {
+    box-shadow: 0 0 0 8px rgba(250, 204, 21, 0);
+    background-color: rgba(250, 204, 21, 0.08);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(250, 204, 21, 0);
+    background-color: transparent;
+  }
+}
+
+.docs-card.is-flash,
+.docs-row.is-flash {
+  animation: docsFlashPulse 1.5s ease-out 1;
+  position: relative;
+  z-index: 1;
+}
+
+@media (max-width: 540px) {
+  .docs-search-bar {
+    height: 34px;
+    padding: 0 8px;
+  }
+  .docs-icon-btn.search-toggle {
+    width: 34px;
+    height: 34px;
+  }
+  .docs-search-row {
+    gap: 10px;
+    padding: 8px;
+
+    &__thumb {
+      width: 36px;
+      height: 36px;
+    }
+
+    &__name {
+      font-size: 13.5px;
+    }
+  }
 }
 
 /* ============ Action bar ============ */
@@ -367,22 +679,112 @@
   }
 }
 
-.docs-stats {
-  margin-left: auto;
-  display: inline-flex;
+/* ============ Status bar (fixed above bottom-nav) ============ */
+/*
+  Thanh thống kê dính ngay phía trên bottom-nav (z-index 90 trong feeding
+  page) và DƯỚI overlay/preview/modal (1200/1300). Không trượt theo scroll
+  để user luôn thấy tổng quan thư mục đang đứng. Trên iOS PWA, env(safe-area)
+  đảm bảo không lẫn vào home indicator.
+
+  Bottom offset ~ 60px ≈ chiều cao bottom-nav (padding 6 + nội dung 48 +
+  padding 6). FAB (z-index ~80, bottom 80px) vẫn nổi rõ phía trên thanh này.
+*/
+.docs-statusbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+  z-index: 70;
+
+  display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
+  padding: 7px 16px;
   font-size: 12.5px;
   color: var(--docs-muted);
+
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid var(--docs-border);
+  box-shadow: 0 -6px 18px -12px rgba(15, 23, 42, 0.18);
+
+  pointer-events: none; /* purely informational; click-through xuống nội dung */
 
   .docs-stat {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
-    padding: 4px 10px;
-    background: var(--docs-bg-soft);
-    border-radius: 999px;
+    gap: 5px;
     font-variant-numeric: tabular-nums;
+
+    i {
+      font-size: 12px;
+      color: var(--docs-muted-2);
+    }
+
+    strong {
+      color: var(--docs-text);
+      font-weight: 700;
+      font-size: 13px;
+    }
+
+    &__label {
+      color: var(--docs-muted);
+    }
+  }
+
+  &__sep {
+    color: var(--docs-muted-2);
+  }
+
+  /*
+    Tên folder hiện tại bám phải, ellipsis khi quá dài. Pointer-events
+    cho phép user hover xem title (full name). Dùng chip nền soft để
+    phân tách trực quan với phần count.
+  */
+  &__folder {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    max-width: min(48vw, 280px);
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: var(--docs-bg-soft);
+    color: var(--docs-text);
+    font-size: 11.5px;
+    font-weight: 600;
+    pointer-events: auto;
+
+    i {
+      font-size: 11px;
+      color: var(--docs-primary);
+      flex-shrink: 0;
+    }
+
+    span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      min-width: 0;
+    }
+  }
+}
+
+@media (max-width: 540px) {
+  .docs-statusbar {
+    padding: 6px 12px;
+    gap: 8px;
+    font-size: 12px;
+
+    .docs-stat__label {
+      display: none; /* chỉ giữ icon + số trên mobile cho gọn */
+    }
+
+    &__folder {
+      max-width: 50vw;
+      padding: 3px 8px;
+    }
   }
 }
 
@@ -467,8 +869,61 @@
     }
   }
 
+  /*
+    Variant `progress` (upload bar). Mặc định `.docs-bar` cao ~52-60px do
+    padding 10px + font 13px + lead. Lúc upload không cần nổi bật thế →
+    trim padding, font, track + ép single-row cả trên mobile để giảm bớt
+    chiều cao xuống ~32px.
+  */
   &.progress {
     background: #ffffff;
+    padding: 6px 12px;
+    gap: 10px;
+    font-size: 12px;
+    flex-wrap: nowrap;
+
+    .docs-bar__lead {
+      gap: 6px;
+      font-weight: 500;
+      flex-shrink: 0;
+
+      i {
+        font-size: 12px;
+      }
+
+      strong {
+        font-size: 12.5px;
+        font-weight: 700;
+      }
+    }
+
+    .docs-bar__sub {
+      font-size: 11.5px;
+    }
+
+    .docs-bar__progress-track {
+      flex: 1 1 120px;
+      height: 3px;
+      min-width: 60px;
+    }
+
+    /*
+      Trên mobile, parent `.docs-bar` chuyển sang `flex-direction: column`.
+      Riêng progress override về `row` để vẫn nằm gọn 1 dòng, hiding "đang
+      tải lên…" nếu chật.
+    */
+    @media (max-width: 560px) {
+      flex-direction: row;
+      align-items: center;
+
+      .docs-bar__sub {
+        display: none;
+      }
+
+      .docs-bar__progress-track {
+        flex: 1 1 60px;
+      }
+    }
   }
 
   @media (max-width: 560px) {
@@ -579,11 +1034,41 @@
     .docs-card__meta {
       font-size: 10.5px;
     }
+    /*
+      Card quá nhỏ ở icons view → chỉ hiện size, ẩn date để khỏi rối.
+      Trên mobile sẽ override (hidden size, hiện date — xem media query
+      bên dưới).
+    */
+    .docs-card__date {
+      display: none;
+    }
     .docs-card.folder .docs-card__icon {
       font-size: 32px;
     }
     .docs-card.file .docs-card__thumb {
       aspect-ratio: 1 / 1;
+    }
+  }
+}
+
+/*
+  Mobile: đảo ưu tiên meta — ẩn size (ít ý nghĩa với ảnh đã được app
+  compress về cùng tầm 30-40 KB) và luôn hiển thị ngày tạo. Áp dụng cho
+  cả 2 chế độ xem grid để hành vi nhất quán. Detail view có rule riêng
+  ở phần `.docs-detail` bên dưới.
+*/
+@media (max-width: 540px) {
+  .docs-card {
+    &__size {
+      display: none;
+    }
+
+    &__date {
+      display: inline-flex;
+    }
+
+    &__sep {
+      display: none;
     }
   }
 }
@@ -665,6 +1150,14 @@
     line-height: 1.3;
   }
 
+  /*
+    Meta line trong card. Có 2 phần riêng — `__size` (kích thước file
+    hoặc số mục con của folder) và `__date` (ngày tạo). Hiển thị mặc định:
+      - large view  : show cả 2
+      - icons view  : ẩn date (cards quá nhỏ → chỉ size)
+      - mobile      : đảo ngược → ẩn size, ưu tiên hiện date (xem nhiều
+                      ảnh thì ngày quan trọng hơn dung lượng).
+  */
   &__meta {
     font-size: 11.5px;
     color: var(--docs-muted);
@@ -674,10 +1167,22 @@
     flex-wrap: wrap;
   }
 
+  &__size {
+    font-variant-numeric: tabular-nums;
+  }
+
   &__date {
     color: var(--docs-muted-2);
     font-size: 11px;
     font-variant-numeric: tabular-nums;
+    display: inline-flex;
+    align-items: baseline;
+    gap: 4px;
+  }
+
+  &__sep {
+    color: var(--docs-muted-2);
+    opacity: 0.7;
   }
 
   &__actions {
@@ -798,17 +1303,24 @@
       text-align: right;
     }
 
+    /*
+      Mobile prioritization: trên màn hình hẹp ưu tiên cột "Ngày tạo" hơn
+      "Kích thước" — ngày là context người dùng quan tâm khi duyệt ảnh,
+      kích thước thì ít ý nghĩa với ảnh đã compress về cùng tầm.
+        ≤ 640px : ẩn size, giữ date
+        ≤ 420px : ẩn cả size + actions, giữ date
+    */
     @media (max-width: 640px) {
-      grid-template-columns: minmax(0, 2fr) 80px 60px;
-      .dh-date {
+      grid-template-columns: minmax(0, 2fr) 110px 60px;
+      .dh-size {
         display: none;
       }
     }
 
     @media (max-width: 420px) {
-      grid-template-columns: minmax(0, 2fr) 60px;
+      grid-template-columns: minmax(0, 2fr) 80px;
       .dh-size,
-      .dh-date {
+      .dh-actions {
         display: none;
       }
     }
@@ -931,16 +1443,18 @@
     gap: 2px;
   }
 
+  /* Khớp với rule ở `.docs-detail__head`: ưu tiên date, ẩn size khi hẹp. */
   @media (max-width: 640px) {
-    grid-template-columns: minmax(0, 2fr) 80px 60px;
-    .dr-date {
+    grid-template-columns: minmax(0, 2fr) 110px 60px;
+    .dr-size {
       display: none;
     }
   }
 
   @media (max-width: 420px) {
-    grid-template-columns: minmax(0, 2fr) 60px;
-    .dr-size {
+    grid-template-columns: minmax(0, 2fr) 80px;
+    .dr-size,
+    .dr-actions {
       display: none;
     }
   }
@@ -1008,16 +1522,21 @@
 }
 
 /* ============ Modal (add/rename) ============ */
+/*
+  Modal overlay phải nằm TRÊN preview overlay (z-index 1200) — vì user có
+  thể bấm "Đổi tên" ngay trong preview và modal cần đè lên ảnh để thao tác.
+  Backdrop cũng đậm hơn 1 chút (0.6) để phân biệt rõ với preview phía dưới.
+*/
 .docs-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.5);
-  backdrop-filter: blur(3px);
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 16px;
-  z-index: 1100;
+  z-index: 1300;
   animation: docsFade 0.18s ease;
 }
 
@@ -1100,6 +1619,20 @@
     font-weight: 600;
     color: var(--docs-muted);
   }
+
+  &__hint {
+    font-size: 11.5px;
+    color: var(--docs-muted);
+
+    code {
+      font-family: 'SFMono-Regular', Menlo, monospace;
+      font-size: 11px;
+      padding: 1px 5px;
+      border-radius: 4px;
+      background: rgba(99, 102, 241, 0.08);
+      color: var(--docs-primary);
+    }
+  }
 }
 
 .docs-input {
@@ -1112,11 +1645,43 @@
   background: #ffffff;
   outline: none;
   transition: border-color 0.15s, box-shadow 0.15s;
+  width: 100%;
 
   &:focus {
     border-color: var(--docs-primary);
     box-shadow: 0 0 0 3px var(--docs-primary-soft);
   }
+}
+
+/*
+  Group input + suffix (vd `.jpg`) cho rename file: trông như 1 ô input
+  duy nhất, suffix nằm bên phải padding để user thấy phần extension được
+  giữ tự động mà không gõ tay.
+*/
+.docs-input-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+
+  &.has-suffix .docs-input {
+    padding-right: 64px;
+  }
+}
+
+.docs-input-suffix {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--docs-muted);
+  background: rgba(99, 102, 241, 0.08);
+  border: 1px solid rgba(99, 102, 241, 0.18);
+  padding: 2px 8px;
+  border-radius: 6px;
+  pointer-events: none;
+  letter-spacing: 0.02em;
 }
 
 /* ============ Image preview (zoom + pan) ============ */
@@ -1132,8 +1697,14 @@
   animation: docsFade 0.2s ease;
   /* Stage chiếm toàn bộ phần còn lại; close/name/zoom đè lên bằng absolute. */
 
+  /*
+    Cluster nút top-right: rename → download → close (ngược thứ tự CSS để
+    nút close ở ngoài cùng bên phải). Tất cả share cùng style nền/hover/disabled
+    → gom selector vào để dễ duy trì.
+  */
   &__close,
-  &__download {
+  &__download,
+  &__rename {
     position: absolute;
     top: max(16px, env(safe-area-inset-top, 0px));
     background: rgba(255, 255, 255, 0.12);
@@ -1165,8 +1736,13 @@
   }
 
   &__download {
-    /* Cạnh trái nút close (16px + 40px close + 8px gap = 64px) */
+    /* Cạnh trái nút close (16px + 40px + 8px gap = 64px) */
     right: 64px;
+  }
+
+  &__rename {
+    /* Cạnh trái nút download (64px + 40px + 8px gap = 112px) */
+    right: 112px;
   }
 
   &__name {
@@ -1176,7 +1752,9 @@
     color: rgba(255, 255, 255, 0.86);
     font-size: 13.5px;
     font-weight: 500;
-    max-width: calc(100% - 80px);
+    /* Chừa chỗ cho cluster 3 nút (rename + download + close) ở góc phải:
+       16 (margin) + 40*3 + 8*2 (gap) = 152px. Round lên 168px cho an toàn. */
+    max-width: calc(100% - 168px);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -1268,6 +1846,61 @@
       vertical-align: -1px;
     }
   }
+
+  /*
+    Counter "3/12" prefix trong tiêu đề tên file. Hiện hơi mờ và bold để
+    nhận diện nhanh vị trí nhưng không lấn át tên ảnh.
+  */
+  &__counter {
+    color: rgba(255, 255, 255, 0.7);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    margin-right: 4px;
+  }
+
+  /*
+    Nav prev/next: nút tròn nổi, vertically centered ở 2 cạnh stage.
+    z-index thấp hơn close/download cluster để cluster luôn click được.
+  */
+  &__nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    transition: background 0.15s, opacity 0.15s, transform 0.1s;
+    z-index: 2;
+
+    &:hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.24);
+    }
+
+    &:active:not(:disabled) {
+      transform: translateY(-50%) scale(0.94);
+    }
+
+    &:disabled {
+      opacity: 0.25;
+      cursor: not-allowed;
+    }
+
+    &.prev {
+      left: 16px;
+    }
+
+    &.next {
+      right: 16px;
+    }
+  }
 }
 
 .docs-zoom-btn {
@@ -1312,9 +1945,47 @@
       display: none;
     }
 
+    /* Nén cluster top-right xuống còn 36px / nút + 6px gap để tiết kiệm
+       không gian trên màn hình hẹp. Dịch toạ độ tương ứng. */
+    &__close,
+    &__download,
+    &__rename {
+      width: 36px;
+      height: 36px;
+      font-size: 14px;
+      top: max(12px, env(safe-area-inset-top, 0px));
+    }
+
+    &__close {
+      right: 12px;
+    }
+
+    &__download {
+      right: 54px;
+    }
+
+    &__rename {
+      right: 96px;
+    }
+
     &__name {
       font-size: 12.5px;
-      max-width: calc(100% - 70px);
+      top: max(60px, calc(env(safe-area-inset-top, 0px) + 56px));
+      max-width: calc(100% - 24px);
+    }
+
+    &__nav {
+      width: 40px;
+      height: 40px;
+      font-size: 16px;
+
+      &.prev {
+        left: 8px;
+      }
+
+      &.next {
+        right: 8px;
+      }
     }
   }
 
