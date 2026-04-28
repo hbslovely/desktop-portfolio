@@ -48,7 +48,8 @@
   position: relative;
   min-height: 100%;
   color: var(--text);
-  padding-bottom: 180px; /* space for FAB + breathing room */
+  /* Chừa chỗ cho FAB + bottom navigation phía dưới */
+  padding-bottom: calc(170px + env(safe-area-inset-bottom, 0px));
 }
 
 .backdrop {
@@ -158,6 +159,76 @@
   max-width: 1100px;
   margin: 0 auto;
   padding: 0 20px;
+
+  /* Khi đang ở tab Documents, để DocumentsComponent tự kiểm soát layout */
+  &.is-documents {
+    max-width: none;
+    padding: 0;
+  }
+}
+
+/* ========== BOTTOM NAVIGATION ========== */
+.bottom-nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 90;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 4px;
+  padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px));
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-top: 1px solid var(--border, #e5e7eb);
+  box-shadow: 0 -8px 22px -16px rgba(15, 23, 42, 0.18);
+
+  .bn-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    padding: 8px 6px;
+    background: transparent;
+    border: none;
+    border-radius: 12px;
+    color: var(--muted-2, #9ca3af);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    transition: color 0.15s, background 0.15s;
+    -webkit-tap-highlight-color: transparent;
+
+    .bn-icon {
+      font-size: 19px;
+      transition: transform 0.18s;
+    }
+
+    .bn-label {
+      font-size: 11.5px;
+    }
+
+    &:hover {
+      color: var(--primary, #5b6cff);
+    }
+
+    &.active {
+      color: var(--primary, #5b6cff);
+      background: rgba(91, 108, 255, 0.10);
+
+      .bn-icon {
+        transform: translateY(-1px) scale(1.06);
+      }
+    }
+
+    &:active {
+      transform: scale(0.97);
+    }
+  }
 }
 
 /* ========== CARD ========== */
@@ -3225,8 +3296,8 @@
 /* ========== FAB ========== */
 .fab {
   position: fixed;
-  bottom: 28px;
-  right: 28px;
+  bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+  right: 20px;
   z-index: 80;
   display: inline-flex;
   align-items: center;

@@ -29,6 +29,7 @@ import {
   getCurrentMilestone,
   getMilestoneState,
 } from './baby-timeline.data';
+import { DocumentsComponent } from './documents/documents.component';
 
 interface Profile {
   babyName: string;
@@ -61,7 +62,7 @@ const STORAGE_PREFIX = 'feeding-profile::';
 @Component({
   selector: 'app-feeding',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, DocumentsComponent],
   templateUrl: './feeding.component.html',
   styleUrls: ['./feeding.component.scss'],
 })
@@ -70,6 +71,16 @@ export class FeedingComponent {
   private feedingLogService = inject(FeedingLogService);
 
   Math = Math;
+
+  /** Tab nav phía dưới: 'feeding' = nhật ký bú | 'documents' = thư mục ảnh. */
+  bottomTab = signal<'feeding' | 'documents'>('feeding');
+
+  setBottomTab(tab: 'feeding' | 'documents') {
+    this.bottomTab.set(tab);
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }
 
   user = signal<string>('guest');
   profile = signal<Profile | null>(null);

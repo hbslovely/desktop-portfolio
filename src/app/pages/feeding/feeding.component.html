@@ -36,7 +36,15 @@
     </div>
   </header>
 
-  <main class="content">
+  <main class="content" [class.is-documents]="bottomTab() === 'documents'">
+    <!-- ============ TAB: DOCUMENTS ============ -->
+    <ng-container *ngIf="bottomTab() === 'documents'">
+      <app-documents></app-documents>
+    </ng-container>
+
+    <!-- ============ TAB: FEEDING ============ -->
+    <ng-container *ngIf="bottomTab() === 'feeding'">
+
     <!-- Profile form -->
     <section class="card profile-card" *ngIf="editing()">
       <div class="card-header">
@@ -1320,13 +1328,41 @@
         của bác sĩ. Nếu bé có bất kỳ dấu hiệu bất thường nào, hãy đi khám ngay.
       </footer>
     </ng-container>
+
+    </ng-container>
   </main>
+
+  <!-- ============ BOTTOM NAVIGATION ============ -->
+  <nav class="bottom-nav" role="tablist" aria-label="Điều hướng chính">
+    <button
+      type="button"
+      class="bn-item"
+      role="tab"
+      [attr.aria-selected]="bottomTab() === 'feeding'"
+      [class.active]="bottomTab() === 'feeding'"
+      (click)="setBottomTab('feeding')"
+    >
+      <i class="pi pi-heart-fill bn-icon"></i>
+      <span class="bn-label">Cữ bú</span>
+    </button>
+    <button
+      type="button"
+      class="bn-item"
+      role="tab"
+      [attr.aria-selected]="bottomTab() === 'documents'"
+      [class.active]="bottomTab() === 'documents'"
+      (click)="setBottomTab('documents')"
+    >
+      <i class="pi pi-folder bn-icon"></i>
+      <span class="bn-label">Tài liệu</span>
+    </button>
+  </nav>
 
   <!-- ============ FAB (add feeding log) ============ -->
   <button
     type="button"
     class="fab"
-    *ngIf="profile() && !editing()"
+    *ngIf="profile() && !editing() && bottomTab() === 'feeding'"
     (click)="openLogDialog()"
     aria-label="Ghi nhận cữ bú"
     title="Ghi nhận cữ bú mới"

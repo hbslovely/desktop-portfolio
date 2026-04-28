@@ -1,0 +1,645 @@
+<div class="docs" [attr.data-view]="viewMode()">
+  <!-- ============ Toolbar ============ -->
+  <header class="docs-toolbar">
+    <div class="docs-toolbar__left">
+      <button
+        type="button"
+        class="docs-btn ghost"
+        (click)="goRoot()"
+        [disabled]="isAtRoot()"
+        title="Về thư mục gốc"
+        aria-label="Về thư mục gốc"
+      >
+        <i class="pi pi-home"></i>
+      </button>
+      <button
+        type="button"
+        class="docs-btn ghost"
+        (click)="goUp()"
+        [disabled]="isAtRoot()"
+        title="Lên thư mục trên"
+        aria-label="Lên thư mục trên"
+      >
+        <i class="pi pi-arrow-up"></i>
+      </button>
+    </div>
+
+    <!-- Breadcrumb (KHÔNG hiện root) -->
+    <nav class="docs-crumbs" aria-label="Đường dẫn thư mục">
+      <ng-container *ngIf="breadcrumbs().length === 0">
+        <span class="docs-crumb at-root">
+          <i class="pi pi-folder-open"></i>
+          Thư mục
+        </span>
+      </ng-container>
+
+      <ng-container *ngFor="let c of breadcrumbs(); let last = last">
+        <button
+          type="button"
+          class="docs-crumb"
+          [class.last]="last"
+          (click)="goToCrumb(c.id)"
+          [disabled]="last"
+        >
+          <i class="pi" [class.pi-folder-open]="last" [class.pi-folder]="!last"></i>
+          {{ c.name }}
+        </button>
+        <i *ngIf="!last" class="pi pi-chevron-right docs-crumb-sep"></i>
+      </ng-container>
+    </nav>
+
+    <div class="docs-toolbar__right">
+      <button
+        type="button"
+        class="docs-btn ghost"
+        (click)="refresh()"
+        [disabled]="loading()"
+        title="Tải lại"
+        aria-label="Tải lại"
+      >
+        <i class="pi pi-refresh" [class.spin]="loading()"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- ============ Action bar (folder menu + view modes) ============ -->
+  <div class="docs-actions">
+    <!-- Folder dropdown menu -->
+    <div class="docs-menu" (click)="$event.stopPropagation()">
+      <button
+        type="button"
+        class="docs-btn primary"
+        (click)="toggleFolderMenu($event)"
+        [class.open]="folderMenuOpen()"
+        aria-haspopup="menu"
+        [attr.aria-expanded]="folderMenuOpen()"
+      >
+        <i class="pi pi-folder"></i>
+        <span>Thư mục</span>
+        <i class="pi pi-chevron-down docs-menu-caret"></i>
+      </button>
+
+      <div
+        class="docs-menu-pop"
+        *ngIf="folderMenuOpen()"
+        role="menu"
+      >
+        <button
+          type="button"
+          class="docs-menu-item"
+          role="menuitem"
+          (click)="openAddFolder()"
+        >
+          <i class="pi pi-plus"></i>
+          <span>Thêm thư mục</span>
+        </button>
+        <button
+          type="button"
+          class="docs-menu-item"
+          role="menuitem"
+          (click)="openRenameCurrentFolder()"
+          [disabled]="isAtRoot()"
+          [title]="isAtRoot() ? 'Không đổi tên được thư mục gốc' : 'Đổi tên thư mục hiện tại'"
+        >
+          <i class="pi pi-pencil"></i>
+          <span>Đổi tên thư mục hiện tại</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Select-mode toggle -->
+    <button
+      type="button"
+      class="docs-btn ghost"
+      [class.active]="selectMode()"
+      (click)="toggleSelectMode()"
+      [title]="selectMode() ? 'Thoát chế độ chọn' : 'Chọn nhiều ảnh'"
+      [attr.aria-pressed]="selectMode()"
+    >
+      <i class="pi" [class.pi-check-square]="selectMode()" [class.pi-check]="!selectMode()"></i>
+      <span>{{ selectMode() ? 'Đang chọn' : 'Chọn' }}</span>
+    </button>
+
+    <!-- View mode toggle -->
+    <div class="docs-views" role="group" aria-label="Chế độ xem">
+      <button
+        type="button"
+        class="docs-view-btn"
+        [class.active]="viewMode() === 'large'"
+        (click)="setViewMode('large')"
+        [attr.aria-pressed]="viewMode() === 'large'"
+        title="Biểu tượng lớn"
+      >
+        <i class="pi pi-th-large"></i>
+      </button>
+      <button
+        type="button"
+        class="docs-view-btn"
+        [class.active]="viewMode() === 'icons'"
+        (click)="setViewMode('icons')"
+        [attr.aria-pressed]="viewMode() === 'icons'"
+        title="Biểu tượng nhỏ"
+      >
+        <i class="pi pi-table"></i>
+      </button>
+      <button
+        type="button"
+        class="docs-view-btn"
+        [class.active]="viewMode() === 'detail'"
+        (click)="setViewMode('detail')"
+        [attr.aria-pressed]="viewMode() === 'detail'"
+        title="Chi tiết"
+      >
+        <i class="pi pi-list"></i>
+      </button>
+    </div>
+
+    <div class="docs-stats" *ngIf="!loading()">
+      <span class="docs-stat">
+        <i class="pi pi-folder"></i> {{ folderCount() }}
+      </span>
+      <span class="docs-stat">
+        <i class="pi pi-image"></i> {{ fileCount() }}
+      </span>
+    </div>
+  </div>
+
+  <!-- ============ Selection action bar ============ -->
+  <div class="docs-bar selection" *ngIf="selectMode()">
+    <div class="docs-bar__lead">
+      <i class="pi pi-check-square"></i>
+      <strong>{{ selectedCount() }}</strong>
+      <span class="docs-bar__sub">ảnh đã chọn</span>
+    </div>
+    <div class="docs-bar__actions">
+      <button
+        type="button"
+        class="docs-btn ghost small"
+        (click)="toggleSelectAllInCurrent()"
+        [disabled]="fileCount() === 0"
+        [title]="allFilesSelected() ? 'Bỏ chọn tất cả ở thư mục này' : 'Chọn tất cả ảnh ở thư mục này'"
+      >
+        <i class="pi" [class.pi-times-circle]="allFilesSelected()" [class.pi-check-circle]="!allFilesSelected()"></i>
+        <span>{{ allFilesSelected() ? 'Bỏ chọn tất cả' : 'Chọn tất cả' }}</span>
+      </button>
+      <button
+        type="button"
+        class="docs-btn primary small"
+        (click)="cutSelection()"
+        [disabled]="selectedCount() === 0 || saving()"
+      >
+        <i class="pi pi-clone"></i>
+        <span>Cắt</span>
+      </button>
+      <button
+        type="button"
+        class="docs-btn danger small"
+        (click)="bulkDeleteSelection()"
+        [disabled]="selectedCount() === 0 || saving()"
+      >
+        <i class="pi pi-trash"></i>
+        <span>Xoá</span>
+      </button>
+      <button
+        type="button"
+        class="docs-btn ghost small"
+        (click)="exitSelectMode()"
+      >
+        <i class="pi pi-times"></i>
+        <span>Huỷ</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ============ Paste bar (clipboard active) ============ -->
+  <div class="docs-bar paste" *ngIf="clipboard() as cb">
+    <div class="docs-bar__lead">
+      <i class="pi pi-clone"></i>
+      <strong>{{ cb.ids.length }}</strong>
+      <span class="docs-bar__sub">ảnh đang cắt — chọn thư mục đích rồi dán</span>
+    </div>
+    <div class="docs-bar__actions">
+      <button
+        type="button"
+        class="docs-btn primary small"
+        (click)="pasteHere()"
+        [disabled]="saving()"
+      >
+        <i class="pi" [class.pi-arrow-down]="!saving()" [class.pi-spinner]="saving()" [class.pi-spin]="saving()"></i>
+        <span>{{ saving() ? 'Đang dán…' : 'Dán vào đây' }}</span>
+      </button>
+      <button
+        type="button"
+        class="docs-btn ghost small"
+        (click)="cancelClipboard()"
+      >
+        <i class="pi pi-times"></i>
+        <span>Huỷ cắt</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ============ Upload progress ============ -->
+  <div class="docs-bar progress" *ngIf="uploadProgress() as up">
+    <div class="docs-bar__lead">
+      <i class="pi pi-spin pi-spinner"></i>
+      <strong>{{ up.done }}/{{ up.total }}</strong>
+      <span class="docs-bar__sub">đang tải lên…</span>
+    </div>
+    <div class="docs-bar__progress-track">
+      <div
+        class="docs-bar__progress-fill"
+        [style.width.%]="up.total > 0 ? (up.done * 100) / up.total : 0"
+      ></div>
+    </div>
+  </div>
+
+  <!-- ============ Toasts ============ -->
+  <div class="docs-toast success" *ngIf="successMsg()">
+    <i class="pi pi-check-circle"></i> {{ successMsg() }}
+  </div>
+  <div class="docs-toast error" *ngIf="errorMsg()">
+    <i class="pi pi-exclamation-triangle"></i> {{ errorMsg() }}
+  </div>
+
+  <!-- ============ Loading ============ -->
+  <div class="docs-loading" *ngIf="loading() && entries().length === 0">
+    <i class="pi pi-spin pi-spinner"></i>
+    Đang tải dữ liệu…
+  </div>
+
+  <!-- ============ Empty ============ -->
+  <div class="docs-empty" *ngIf="isEmpty()">
+    <div class="docs-empty__icon">📁</div>
+    <h3>Thư mục trống</h3>
+    <p>Tạo thư mục con từ menu <strong>Thư mục</strong>, hoặc nhấn nút <strong>+</strong> ở góc dưới để tải ảnh lên.</p>
+  </div>
+
+  <!-- ============ Detail view (table) ============ -->
+  <div
+    class="docs-detail"
+    *ngIf="viewMode() === 'detail' && currentChildren().length > 0"
+  >
+    <div class="docs-detail__head">
+      <div class="dh-name">Tên</div>
+      <div class="dh-size">Kích thước</div>
+      <div class="dh-date">Ngày tạo</div>
+      <div class="dh-actions" aria-label="Thao tác"></div>
+    </div>
+
+    <ng-container *ngFor="let entry of currentChildren()">
+      <button
+        type="button"
+        class="docs-row"
+        [class.folder]="entry.type === 'folder'"
+        [class.file]="entry.type === 'file'"
+        [class.selected]="entry.type === 'file' && isSelected(entry.id)"
+        (click)="onEntryClick(entry)"
+      >
+        <div class="dr-name">
+          <span
+            class="dr-checkbox"
+            *ngIf="selectMode() && entry.type === 'file'"
+            [class.checked]="isSelected(entry.id)"
+            aria-hidden="true"
+          >
+            <i class="pi pi-check" *ngIf="isSelected(entry.id)"></i>
+          </span>
+          <span class="dr-thumb">
+            <ng-container *ngIf="entry.type === 'folder'">
+              <i class="pi pi-folder-open"></i>
+            </ng-container>
+            <ng-container *ngIf="entry.type === 'file'">
+              <img
+                *ngIf="entry.content; else fileNoImg"
+                [src]="entry.content"
+                [alt]="entry.name"
+                loading="lazy"
+              />
+              <ng-template #fileNoImg>
+                <i class="pi pi-image"></i>
+              </ng-template>
+            </ng-container>
+          </span>
+          <span class="dr-name-text" [title]="entry.name">{{ entry.name }}</span>
+        </div>
+        <div class="dr-size">
+          <ng-container *ngIf="entry.type === 'folder'; else fileSize">
+            {{ describeFolderContent(entry.id) }}
+          </ng-container>
+          <ng-template #fileSize>
+            {{ formatSize(entry.sizeBytes) }}
+          </ng-template>
+        </div>
+        <div class="dr-date">{{ formatDate(entry.createdAt) }}</div>
+        <div class="dr-actions" (click)="$event.stopPropagation()">
+          <button
+            *ngIf="entry.type === 'folder'"
+            type="button"
+            class="docs-icon-btn"
+            (click)="openRenameFolder(entry)"
+            title="Đổi tên"
+            aria-label="Đổi tên thư mục"
+          >
+            <i class="pi pi-pencil"></i>
+          </button>
+          <button
+            type="button"
+            class="docs-icon-btn danger"
+            (click)="deleteEntry(entry)"
+            title="Xoá"
+            aria-label="Xoá"
+          >
+            <i class="pi pi-trash"></i>
+          </button>
+        </div>
+      </button>
+    </ng-container>
+  </div>
+
+  <!-- ============ Grid view (large / icons) ============ -->
+  <div
+    class="docs-grid"
+    *ngIf="viewMode() !== 'detail' && currentChildren().length > 0"
+    [attr.data-mode]="viewMode()"
+  >
+    <ng-container *ngFor="let entry of currentChildren()">
+      <!-- Folder card -->
+      <article
+        class="docs-card folder"
+        *ngIf="entry.type === 'folder'"
+        (click)="openFolder(entry.id)"
+        (keydown.enter)="openFolder(entry.id)"
+        tabindex="0"
+        role="button"
+        [attr.aria-label]="'Mở thư mục ' + entry.name"
+      >
+        <div class="docs-card__icon">
+          <i class="pi pi-folder-open"></i>
+        </div>
+        <div class="docs-card__body">
+          <div class="docs-card__name" [title]="entry.name">{{ entry.name }}</div>
+          <div class="docs-card__meta">
+            <span>{{ describeFolderContent(entry.id) }}</span>
+            <span class="docs-card__date" *ngIf="entry.createdAt && viewMode() === 'large'">
+              · {{ formatDate(entry.createdAt) }}
+            </span>
+          </div>
+        </div>
+        <div class="docs-card__actions" (click)="$event.stopPropagation()">
+          <button
+            type="button"
+            class="docs-icon-btn"
+            (click)="openRenameFolder(entry)"
+            title="Đổi tên"
+            aria-label="Đổi tên thư mục"
+          >
+            <i class="pi pi-pencil"></i>
+          </button>
+          <button
+            type="button"
+            class="docs-icon-btn danger"
+            (click)="deleteEntry(entry)"
+            title="Xoá thư mục"
+            aria-label="Xoá thư mục"
+          >
+            <i class="pi pi-trash"></i>
+          </button>
+        </div>
+      </article>
+
+      <!-- File card -->
+      <article
+        class="docs-card file"
+        *ngIf="entry.type === 'file'"
+        [class.selected]="isSelected(entry.id)"
+        (click)="onFileClick(entry)"
+        (keydown.enter)="onFileClick(entry)"
+        tabindex="0"
+        role="button"
+        [attr.aria-label]="(selectMode() ? 'Chọn ảnh ' : 'Xem ảnh ') + entry.name"
+      >
+        <span
+          class="docs-card__check"
+          *ngIf="selectMode()"
+          [class.checked]="isSelected(entry.id)"
+          aria-hidden="true"
+        >
+          <i class="pi pi-check" *ngIf="isSelected(entry.id)"></i>
+        </span>
+        <div class="docs-card__thumb">
+          <img
+            *ngIf="entry.content; else noImage"
+            [src]="entry.content"
+            [alt]="entry.name"
+            loading="lazy"
+          />
+          <ng-template #noImage>
+            <div class="docs-card__thumb-empty">
+              <i class="pi pi-image"></i>
+            </div>
+          </ng-template>
+        </div>
+        <div class="docs-card__body">
+          <div class="docs-card__name" [title]="entry.name">{{ entry.name }}</div>
+          <div class="docs-card__meta">
+            <span>{{ formatSize(entry.sizeBytes) }}</span>
+            <span class="docs-card__date" *ngIf="entry.createdAt && viewMode() === 'large'">
+              · {{ formatDate(entry.createdAt) }}
+            </span>
+          </div>
+        </div>
+        <div class="docs-card__actions" *ngIf="!selectMode()" (click)="$event.stopPropagation()">
+          <button
+            type="button"
+            class="docs-icon-btn"
+            (click)="startSelectionWith(entry.id)"
+            title="Chọn ảnh này"
+            aria-label="Chọn ảnh"
+          >
+            <i class="pi pi-check-square"></i>
+          </button>
+          <button
+            type="button"
+            class="docs-icon-btn danger"
+            (click)="deleteEntry(entry)"
+            title="Xoá ảnh"
+            aria-label="Xoá ảnh"
+          >
+            <i class="pi pi-trash"></i>
+          </button>
+        </div>
+      </article>
+    </ng-container>
+  </div>
+
+  <!-- ============ FAB: tải ảnh lên (multi) ============ -->
+  <label
+    class="docs-fab"
+    [class.disabled]="saving()"
+    [attr.aria-disabled]="saving()"
+    title="Tải lên một hoặc nhiều ảnh vào thư mục hiện tại"
+  >
+    <i class="pi" [class.pi-plus]="!saving()" [class.pi-spinner]="saving()" [class.pi-spin]="saving()"></i>
+    <span class="docs-fab__label">{{ saving() ? 'Đang tải…' : 'Thêm ảnh' }}</span>
+    <input
+      #fileInput
+      type="file"
+      accept="image/*"
+      multiple
+      (change)="onFileSelected(fileInput)"
+      hidden
+      [disabled]="saving()"
+    />
+  </label>
+
+  <!-- ============ Folder modal (add/rename) ============ -->
+  <div
+    class="docs-overlay"
+    *ngIf="folderDraft() as draft"
+    (click)="closeFolderDraft()"
+  >
+    <div class="docs-modal" (click)="$event.stopPropagation()" role="dialog">
+      <div class="docs-modal__head">
+        <h3>
+          <i class="pi" [class.pi-folder]="draft.mode === 'add'" [class.pi-pencil]="draft.mode === 'rename'"></i>
+          {{ draft.mode === 'add' ? 'Thêm thư mục' : 'Đổi tên thư mục' }}
+        </h3>
+        <button
+          type="button"
+          class="docs-icon-btn"
+          (click)="closeFolderDraft()"
+          aria-label="Đóng"
+        >
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+
+      <form (ngSubmit)="submitFolderDraft()" class="docs-modal__body">
+        <label class="docs-field">
+          <span class="docs-field__label">Tên thư mục</span>
+          <input
+            type="text"
+            class="docs-input"
+            [ngModel]="draft.name"
+            (ngModelChange)="updateFolderDraftName($event)"
+            name="folderName"
+            placeholder="VD: docs, img, hợp đồng…"
+            autocomplete="off"
+            autofocus
+            required
+            maxlength="80"
+          />
+        </label>
+
+        <div class="docs-modal__error" *ngIf="errorMsg()">
+          <i class="pi pi-exclamation-triangle"></i> {{ errorMsg() }}
+        </div>
+
+        <div class="docs-modal__actions">
+          <button type="button" class="docs-btn ghost" (click)="closeFolderDraft()">
+            Huỷ
+          </button>
+          <button
+            type="submit"
+            class="docs-btn primary"
+            [disabled]="saving() || !draft.name.trim()"
+          >
+            <i class="pi" [class.pi-check]="!saving()" [class.pi-spinner]="saving()" [class.pi-spin]="saving()"></i>
+            {{ saving() ? 'Đang lưu…' : (draft.mode === 'add' ? 'Tạo' : 'Lưu') }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============ Image preview (zoom + pan) ============ -->
+  <div
+    class="docs-preview"
+    *ngIf="previewEntry() as p"
+  >
+    <button
+      type="button"
+      class="docs-preview__close"
+      (click)="closePreview(); $event.stopPropagation()"
+      aria-label="Đóng (Esc)"
+      title="Đóng (Esc)"
+    >
+      <i class="pi pi-times"></i>
+    </button>
+
+    <div class="docs-preview__name">
+      {{ p.name }}
+      <span class="docs-preview__meta" *ngIf="p.sizeBytes || p.createdAt">
+        · {{ formatSize(p.sizeBytes) }}
+        <ng-container *ngIf="p.createdAt"> · {{ formatDate(p.createdAt) }}</ng-container>
+      </span>
+    </div>
+
+    <!--
+      Stage: bắt mọi gesture (wheel, pointer, dblclick). Image bên trong
+      nhận transform translate+scale. Backdrop click đóng preview, nhưng
+      chỉ khi không zoom & không vừa drag (xem onPreviewBackdropClick).
+    -->
+    <div
+      class="docs-preview__stage"
+      [class.zoomed]="previewScale() > 1.001"
+      [class.interacting]="previewInteracting()"
+      (click)="onPreviewBackdropClick($event)"
+      (wheel)="onPreviewWheel($event)"
+      (pointerdown)="onPreviewPointerDown($event)"
+      (pointermove)="onPreviewPointerMove($event)"
+      (pointerup)="onPreviewPointerUp($event)"
+      (pointercancel)="onPreviewPointerUp($event)"
+      (pointerleave)="onPreviewPointerUp($event)"
+      (dblclick)="onPreviewDblClick($event)"
+    >
+      <img
+        *ngIf="p.content"
+        class="docs-preview__img"
+        [src]="p.content"
+        [alt]="p.name"
+        [style.transform]="previewTransform()"
+        draggable="false"
+        (dragstart)="$event.preventDefault()"
+      />
+    </div>
+
+    <!-- Zoom toolbar: hover ở dưới, hiện luôn trên touch -->
+    <div class="docs-preview__zoom" (click)="$event.stopPropagation()">
+      <button
+        type="button"
+        class="docs-zoom-btn"
+        (click)="zoomOutPreview($event)"
+        [disabled]="!canZoomOut()"
+        title="Thu nhỏ (-)"
+        aria-label="Thu nhỏ"
+      >
+        <i class="pi pi-minus"></i>
+      </button>
+      <button
+        type="button"
+        class="docs-zoom-btn percent"
+        (click)="resetPreviewZoom(); $event.stopPropagation()"
+        title="Đặt lại 100% (0)"
+        aria-label="Đặt lại zoom"
+      >
+        {{ previewZoomPercent() }}%
+      </button>
+      <button
+        type="button"
+        class="docs-zoom-btn"
+        (click)="zoomInPreview($event)"
+        [disabled]="!canZoomIn()"
+        title="Phóng to (+)"
+        aria-label="Phóng to"
+      >
+        <i class="pi pi-plus"></i>
+      </button>
+    </div>
+
+    <div class="docs-preview__hint" *ngIf="previewScale() <= 1.001">
+      Cuộn hoặc bấm <i class="pi pi-plus"></i> để phóng to · Nháy đôi để zoom · Esc để đóng
+    </div>
+  </div>
+</div>
