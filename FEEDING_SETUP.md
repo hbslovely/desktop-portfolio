@@ -34,14 +34,14 @@ Quy ước:
 ## 2. Chuẩn bị tab `Explorer`
 
 1. Tạo tab mới tên **chính xác** `Explorer`.
-2. Dòng 1 là **header** với **12 cột**. Cột E là content chính, H..L là 5 cột overflow để chứa file lớn (ảnh tới ~290KB).
+2. Dòng 1 là **header** với **106 cột**. Cột E là content chính, H..DB là 99 cột overflow để chứa file lớn (ảnh tới ~3.6MB).
 
-| A      | B        | C        | D             | E           | F                        | G               | H            | I            | J            | K            | L            |
-| ------ | -------- | -------- | ------------- | ----------- | ------------------------ | --------------- | ------------ | ------------ | ------------ | ------------ | ------------ |
-| **id** | **name** | **type** | **parent_id** | **Content** | **created_at**           | **isDeleted**   | **content2** | **content3** | **content4** | **content5** | **content6** |
-| 1      | root     | folder   |               |             | 2026-04-29T00:00:00.000Z | FALSE           |              |              |              |              |              |
-| 2      | docs     | folder   | 1             |             | 2026-04-29T00:00:00.000Z | FALSE           |              |              |              |              |              |
-| 3      | img      | folder   | 1             |             | 2026-04-29T00:00:00.000Z | FALSE           |              |              |              |              |              |
+| A      | B        | C        | D             | E           | F                        | G             | H..DB             |
+| ------ | -------- | -------- | ------------- | ----------- | ------------------------ | ------------- | ----------------- |
+| **id** | **name** | **type** | **parent_id** | **Content** | **created_at**           | **isDeleted** | **content2..100** |
+| 1      | root     | folder   |               |             | 2026-04-29T00:00:00.000Z | FALSE         |                   |
+| 2      | docs     | folder   | 1             |             | 2026-04-29T00:00:00.000Z | FALSE         |                   |
+| 3      | img      | folder   | 1             |             | 2026-04-29T00:00:00.000Z | FALSE         |                   |
 
 Quy ước:
 
@@ -52,7 +52,7 @@ Quy ước:
 - **Content** (E): phần đầu của data URL base64 (`data:image/jpeg;base64,...`). Folder để trống.
 - **created_at**: ISO timestamp (`2026-04-29T16:20:30.123Z`). **Apps Script sẽ tự stamp** khi gọi `addExplorer` → bạn không phải gõ tay. Cho 3 row seed root/docs/img có thể để trống hoặc gõ thời điểm hiện tại.
 - **isDeleted**: `TRUE` nếu file đã bị xoá mềm, ngược lại để trống hoặc `FALSE`. App + Apps Script tự lọc các row có `isDeleted=TRUE`, nên người dùng cuối không thấy chúng. **Folder vẫn bị soft-delete** giống file (cùng cascade) để có thể restore sau.
-- **content2..content6** (H..L): phần overflow cho file lớn. Mỗi cell tối đa ~49.000 ký tự (giới hạn cứng 50.000 của Google Sheets). Server tự cắt khi ghi và tự nối khi đọc — bạn không cần can thiệp tay.
+- **content2..content100** (H..DB): phần overflow cho file lớn. Mỗi cell tối đa ~49.000 ký tự (giới hạn cứng 50.000 của Google Sheets). Server tự cắt khi ghi và tự nối khi đọc — bạn không cần can thiệp tay.
 
 > 💡 Để tránh Google Sheets format số serial / chuyển ISO thành Date object lệch timezone:
 > - Chọn cột **A** → Format → Number → **Plain text**.
@@ -61,7 +61,7 @@ Quy ước:
 > 🔄 **Nếu sheet `Explorer` của bạn đã có sẵn (≤ 7 cột)**:
 > - Chưa có cột `created_at`: thêm cell `created_at` vào ô `F1`.
 > - Chưa có cột `isDeleted`: thêm cell `isDeleted` vào ô `G1`. Các row cũ để trống cột G được hiểu là chưa xoá.
-> - Chưa có overflow content (H..L): thêm các cell `content2`, `content3`, `content4`, `content5`, `content6` vào ô `H1..L1`. Các row cũ để trống → server đọc thành chuỗi rỗng → ảnh cũ vẫn hiển thị bình thường (chỉ có ảnh mới upload với chất lượng cao hơn mới dùng tới các cell này).
+> - Chưa có overflow content (H..DB): thêm các header `content2` ... `content100` từ ô `H1` đến `DB1`. Các row cũ để trống → server đọc thành chuỗi rỗng → ảnh cũ vẫn hiển thị bình thường.
 
 ---
 
@@ -107,16 +107,22 @@ const EXPL_SHEET = 'Explorer';
 const F_USER = 1, F_DATE = 2, F_TIME = 3, F_VOLUME = 4, F_NOTE = 5;
 
 // Explorer columns (1-based).
-// Cột content gốc (E) + 5 cột overflow (H..L) cho phép ảnh tới ~290KB
-// thay vì giới hạn ~37KB của 1 cell. Khi đọc, server nối E + H..L lại.
+// Cột content gốc (E) + 99 cột overflow (H..DB) cho phép ảnh tới ~3.6MB
+// thay vì giới hạn ~37KB của 1 cell. Khi đọc, server nối E + H..DB lại.
 const E_ID = 1, E_NAME = 2, E_TYPE = 3, E_PARENT = 4, E_CONTENT = 5,
       E_CREATED = 6, E_DELETED = 7,
-      E_CONTENT2 = 8, E_CONTENT3 = 9, E_CONTENT4 = 10,
-      E_CONTENT5 = 11, E_CONTENT6 = 12;
-const E_OVERFLOW_COLS = [E_CONTENT2, E_CONTENT3, E_CONTENT4, E_CONTENT5, E_CONTENT6];
-const E_COLS = 12;
+      E_CONTENT2 = 8; // H
+const E_LAST_CONTENT_COL = 106; // DB = content100
+const E_OVERFLOW_COLS = _buildOverflowCols();
+const E_COLS = E_LAST_CONTENT_COL;
 const E_CHUNK_SIZE = 49000;        // ký tự / cell, < 50K hard cap của Sheets
-const E_MAX_CHUNKS = 1 + E_OVERFLOW_COLS.length; // 6 chunks → ~294K chars
+const E_MAX_CHUNKS = 1 + E_OVERFLOW_COLS.length; // 100 chunks → ~4.9M chars
+
+function _buildOverflowCols() {
+  const cols = [];
+  for (let c = E_CONTENT2; c <= E_LAST_CONTENT_COL; c++) cols.push(c);
+  return cols;
+}
 
 function doPost(e) {
   try {
@@ -255,7 +261,7 @@ function handleGetFeedings(body) {
 
 /**
  * Cắt 1 chuỗi `content` thành tối đa `E_MAX_CHUNKS` chunks ≤ `E_CHUNK_SIZE`
- * ký tự. Dùng để ghi vào E + H..L. Trả về mảng (rỗng nếu content rỗng).
+ * ký tự. Dùng để ghi vào E + H..DB. Trả về mảng (rỗng nếu content rỗng).
  * Throw nếu vượt quá tổng dung lượng cho phép.
  */
 function _splitContent(content) {
@@ -276,7 +282,7 @@ function _splitContent(content) {
 }
 
 /**
- * Nối content từ row (0-indexed) — gộp E + H + I + J + K + L. Mọi row cũ
+ * Nối content từ row (0-indexed) — gộp E + H..DB. Mọi row cũ
  * (chỉ có E) vẫn hoạt động vì các cột overflow trả về undefined → '' .
  */
 function _joinContent(row) {
@@ -294,7 +300,7 @@ function _joinContent(row) {
 function _writeContentChunks(sheet, rowIndex, chunks) {
   // Cell chính E
   sheet.getRange(rowIndex, E_CONTENT).setValue(chunks[0] || '');
-  // Cells overflow H..L — luôn ghi đủ 5 cell (rỗng nếu không có chunk)
+  // Cells overflow H..DB — luôn ghi đủ số cell (rỗng nếu không có chunk)
   for (let i = 0; i < E_OVERFLOW_COLS.length; i++) {
     sheet.getRange(rowIndex, E_OVERFLOW_COLS[i]).setValue(chunks[i + 1] || '');
   }
@@ -327,14 +333,14 @@ function handleAddExplorer(body) {
     }
   }
 
-  // Split content thành chunks (sẽ throw nếu vượt giới hạn ~290KB)
+  // Split content thành chunks (sẽ throw nếu vượt giới hạn ~3.6MB)
   const chunks = _splitContent(content);
 
   const id = _nextExplorerId(sheet);
   const parentValue = parentId === null ? '' : parentId;
   const createdAt = new Date().toISOString();
 
-  // Build full row 12 cột: A..G (core) + H..L (5 overflow chunks).
+  // Build full row A..DB: A..G (core) + H..DB (overflow chunks).
   // Cột G `isDeleted` mặc định FALSE cho mọi entry mới.
   const rowVals = [
     id, name, type, parentValue,
@@ -342,7 +348,7 @@ function handleAddExplorer(body) {
     createdAt, false,         // F, G
   ];
   for (let i = 0; i < E_OVERFLOW_COLS.length; i++) {
-    rowVals.push(chunks[i + 1] || ''); // H, I, J, K, L
+    rowVals.push(chunks[i + 1] || ''); // H..DB
   }
   sheet.appendRow(rowVals);
 
@@ -385,7 +391,7 @@ function handleUpdateExplorer(body) {
     if (String(found.row[E_TYPE - 1]).toLowerCase() !== 'file') {
       throw new Error('Chỉ file mới có content');
     }
-    // Split + ghi đủ E + H..L (xoá overflow cũ nếu user shrink ảnh).
+    // Split + ghi đủ E + H..DB (xoá overflow cũ nếu user shrink ảnh).
     const chunks = _splitContent(patch.content);
     _writeContentChunks(sheet, found.rowIndex, chunks);
   }
@@ -562,7 +568,7 @@ function handleGetExplorer(_body) {
       const name = String(r[E_NAME - 1] || '').trim();
       const type = String(r[E_TYPE - 1] || '').toLowerCase();
       const parentId = _toIntOrNull(r[E_PARENT - 1]);
-      // Nối content từ E + H + I + J + K + L (file lớn lưu chia nhiều cell)
+      // Nối content từ E + H..DB (file lớn lưu chia nhiều cell)
       const content = type === 'file' ? _joinContent(r) : '';
       const createdRaw = r[E_CREATED - 1];
       if (!id || !name) return null;
@@ -842,7 +848,7 @@ Phải trả về JSON `{ success: true, ... }`. Nếu thấy `Script function n
 | `Không tải được dữ liệu`                         | Tab tương ứng (`Feeding` / `Explorer`) chưa tồn tại, hoặc sheet chưa share "Anyone with the link (Viewer)", hoặc API key sai/quota.                                              |
 | `Lưu thất bại` khi POST                          | `googleFeedingAppsScriptUrl` chưa set, hoặc proxy `/api/feeding-apps-script` còn placeholder, hoặc deployment đã bị disable.                                                    |
 | `403 Forbidden` khi POST                         | Deploy settings → **Who has access** phải là **Anyone**.                                                                                                                          |
-| Ảnh upload thất bại với lỗi "quá lớn"            | App đã tự nén xuống 720→560→400px nhưng vẫn > 49.500 ký tự. Chọn ảnh nhỏ hơn hoặc đơn giản hơn (ít chi tiết, ít noise).                                                          |
+| Ảnh upload thất bại với lỗi "quá lớn"            | App đã tự nén nhiều bậc (đến 2048px/0.92) nhưng vẫn vượt ~4.900.000 ký tự (100 cells). Trường hợp này thường là ảnh cực lớn/panorama; hãy giảm kích thước trước khi upload. |
 | Không xoá được folder                            | Folder đó là root (`id=1`) → không cho xoá. Hoặc tab `Explorer` chưa đúng tên (phân biệt hoa thường).                                                                            |
 | Đã xoá rồi nhưng row vẫn còn trong sheet        | Bình thường — đây là **soft delete**. Cột G của row sẽ chuyển sang `TRUE`, app + Apps Script sẽ tự ẩn các row này. Muốn xoá vĩnh viễn / restore thì sửa cột G thủ công.        |
 | Mới upload xong mà refresh thấy biến mất         | Có thể row đó đang có cột G = `TRUE` (do bug data cũ). Vào sheet kiểm tra cột G, đặt lại `FALSE` hoặc xoá cell.                                                              |
@@ -858,7 +864,7 @@ Phải trả về JSON `{ success: true, ... }`. Nếu thấy `Script function n
         │  GET (read)
         ├──────► Google Sheets API v4 (API Key)
         │        ├─ Feeding!A2:E
-        │        └─ Explorer!A2:L   (E + H..L được nối lại thành content; G `isDeleted` filter ra)
+        │        └─ Explorer!A2:DB   (E + H..DB được nối lại thành content; G `isDeleted` filter ra)
         │
         │  POST {action, ...}
         └──────► Proxy /api/feeding-apps-script (dev)
