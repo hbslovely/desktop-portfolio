@@ -48,11 +48,11 @@ export type ViewMode = 'large' | 'icons' | 'detail';
 /**
  * Tối đa ký tự cho content base64 sau khi nén.
  *
- * Server hỗ trợ chia content ra **6 cells** (E + H..L) × ~49.000 ký tự / cell
- * = ~294.000 ký tự ≈ 215KB binary JPEG. Đủ cho ảnh chụp 1080p chất lượng cao
- * mà không phải nén quá tay làm mờ ảnh.
+ * Server hỗ trợ chia content ra **100 cells** (E + H..DB) × ~49.000 ký tự/cell
+ * = ~4.900.000 ký tự ≈ 3.6MB binary JPEG. Dung lượng này cho phép giữ chất
+ * lượng ảnh cao hơn rất nhiều so với cấu hình cũ.
  */
-const MAX_CELL_CHARS = 49000 * 6;
+const MAX_CELL_CHARS = 49000 * 100;
 
 const VIEW_MODE_KEY = 'documents:viewMode';
 
@@ -789,17 +789,19 @@ export class DocumentsComponent {
   /**
    * Resize-compress ảnh thử nhiều bậc tới khi <= MAX_CELL_CHARS hoặc fail.
    *
-   * Server cho phép tổng ~294K ký tự (chia 6 cells), nên các bậc đầu giữ
-   * chất lượng cao (1280/0.85). Chỉ rớt xuống bậc thấp khi ảnh quá khổ
+   * Server cho phép tổng ~4.9M ký tự (chia 100 cells), nên các bậc đầu giữ
+   * chất lượng rất cao (2048/0.92). Chỉ rớt xuống bậc thấp khi ảnh quá khổ
    * (chụp DSLR / panorama). Bậc thấp cuối cùng (480/0.55) thường ~30-40KB
    * — gần như chắc chắn fit dù ảnh ban đầu là gì.
    */
   private async compressUntilFits(file: File): Promise<string> {
     const tries: Array<[number, number]> = [
-      [1600, 0.85],
-      [1280, 0.82],
-      [1024, 0.78],
-      [820, 0.72],
+      [2048, 0.92],
+      [1920, 0.9],
+      [1600, 0.88],
+      [1280, 0.84],
+      [1024, 0.8],
+      [820, 0.74],
       [640, 0.65],
       [480, 0.55],
     ];

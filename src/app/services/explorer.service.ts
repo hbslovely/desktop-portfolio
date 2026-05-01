@@ -37,24 +37,26 @@ export interface ExplorerResponse {
 /**
  * Service quản lý cây thư mục/ảnh trên tab `Explorer` của sheet feeding.
  *
- * Layout cột (12 cột):
+ * Layout cột (106 cột):
  *   A=id  B=name  C=type  D=parent_id  E=Content(chunk1)
  *   F=created_at  G=isDeleted
- *   H..L = Content2..Content6 (overflow chunks cho ảnh lớn)
+ *   H..DB = Content2..Content100 (overflow chunks cho ảnh lớn)
  *
- * Cell Sheets giới hạn 50K ký tự nên ảnh > ~37KB phải split sang H..L. Khi
- * đọc, client nối lại 6 chunks → 1 base64 nguyên vẹn.
+ * Cell Sheets giới hạn 50K ký tự nên ảnh lớn được split sang H..DB. Khi đọc,
+ * client nối lại tối đa 100 chunks → 1 base64 nguyên vẹn.
  *
  * Read: dùng Sheets API v4 + API Key (nhanh, không CORS). Client tự filter
  * các row có `isDeleted=TRUE` (soft delete) để không hiển thị, đồng bộ với
  * `handleGetExplorer` ở Apps Script.
  *
  * Write: POST tới cùng Apps Script đã dùng cho feeding (action mới). Server
- * tự cắt content thành 6 chunks và phân vào E + H..L.
+ * tự cắt content thành 100 chunks và phân vào E + H..DB.
  */
 @Injectable({ providedIn: 'root' })
 export class ExplorerService {
   private http = inject(HttpClient);
+  private readonly CONTENT_OVERFLOW_START_COL_INDEX = 7; // H
+  private readonly CONTENT_OVERFLOW_END_COL_INDEX = 105; // DB
 
   private readonly SHEET_ID = '1O4kAA61k4cX4mEwAjDy5gioVUAElCyu62Z3zPvgdDMM';
   private readonly SHEET_NAME = 'Explorer';
@@ -66,13 +68,13 @@ export class ExplorerService {
     : '/api/feeding-apps-script';
 
   getEntries(): Observable<ExplorerEntry[]> {
-    // Range A2:L = 12 cột:
+    // Range A2:DB = 106 cột:
     //   row[0..6] = A..G (id, name, type, parent_id, content1, created_at, isDeleted)
-    //   row[7..11] = H..L (content2..content6 — overflow chunks)
+    //   row[7..105] = H..DB (content2..content100 — overflow chunks)
     // Sheets API trả về row có độ dài thực tế cell cuối có giá trị, nên các
-    // sheet cũ (7 cột, không có overflow) vẫn parse được — `row[7..11]` sẽ
+    // sheet cũ (7 cột, không có overflow) vẫn parse được — `row[7..105]` sẽ
     // là undefined và code xử lý như chuỗi rỗng.
-    const range = `${ this.SHEET_NAME }!A2:L`;
+    const range = `${ this.SHEET_NAME }!A2:DB`;
     const url = `${ this.BASE_URL }/values/${ range }?key=${ this.API_KEY }&valueRenderOption=FORMATTED_VALUE`;
 
     return this.http.get<{ values?: string[][] }>(url).pipe(
@@ -98,7 +100,7 @@ export class ExplorerService {
               ? null
               : parseInt(parentStr, 10) || null;
 
-            // Nối content từ E + H + I + J + K + L. Folder bỏ qua.
+            // Nối content từ E + H..DB. Folder bỏ qua.
             const contentStr = typeStr === 'file' ? this.joinContentChunks(row) : '';
             const sizeBytes = typeStr === 'file' ? this.estimateBase64Bytes(contentStr) : 0;
 
@@ -124,21 +126,22 @@ export class ExplorerService {
   }
 
   /**
-   * Nối content base64 đã được server cắt qua E + H..L (cell Sheets giới
+   * Nối content base64 đã được server cắt qua E + H..DB (cell Sheets giới
    * hạn 50K ký tự / cell). Indexes:
    *  - row[4] = E  (chunk 1)
-   *  - row[7] = H  (chunk 2)
-   *  - row[8] = I  (chunk 3)
-   *  - row[9] = J  (chunk 4)
-   *  - row[10] = K (chunk 5)
-   *  - row[11] = L (chunk 6)
+   *  - row[7..105] = H..DB (chunk 2..100)
    *
-   * Row ngắn (sheet legacy 7 cột) trả về index 7..11 = undefined → ''.
+   * Row ngắn (sheet legacy 7 cột) trả về index overflow = undefined → ''.
    */
   private joinContentChunks(row: string[]): string {
-    const overflowIdxs = [7, 8, 9, 10, 11];
     let s = String(row[4] || '');
-    for (const i of overflowIdxs) s += String(row[i] || '');
+    for (
+      let i = this.CONTENT_OVERFLOW_START_COL_INDEX;
+      i <= this.CONTENT_OVERFLOW_END_COL_INDEX;
+      i++
+    ) {
+      s += String(row[i] || '');
+    }
     return s;
   }
 
