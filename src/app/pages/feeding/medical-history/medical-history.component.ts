@@ -118,6 +118,56 @@ export class MedicalHistoryComponent {
   /** Khi sửa: gỡ ảnh đã lưu */
   stripExistingAttachment = signal<boolean>(false);
 
+  /** Xem ảnh toàn màn trên tab Y tế (đóng vẫn ở tab hiện tại). */
+  imagePreview = signal<{
+    src: string;
+    title: string;
+    explorerId?: number;
+  } | null>(null);
+
+  private readonly mhMinZoom = 1;
+  private readonly mhMaxZoom = 6;
+  private readonly mhZoomStep = 1.4;
+
+  mhPreviewScale = signal<number>(1);
+  mhPreviewTx = signal<number>(0);
+  mhPreviewTy = signal<number>(0);
+  mhPreviewInteracting = signal<boolean>(false);
+
+  mhPreviewTransform = computed(
+    () =>
+      `translate3d(${this.mhPreviewTx()}px, ${this.mhPreviewTy()}px, 0) scale(${this.mhPreviewScale()})`
+  );
+
+  mhPreviewZoomPercent = computed(() =>
+    Math.round(this.mhPreviewScale() * 100)
+  );
+
+  mhCanZoomIn = computed(
+    () => this.mhPreviewScale() < this.mhMaxZoom - 0.001
+  );
+  mhCanZoomOut = computed(
+    () => this.mhPreviewScale() > this.mhMinZoom + 0.001
+  );
+  private mhPointers = new Map<number, { x: number; y: number }>();
+  private mhPanStart: {
+    x: number;
+    y: number;
+    tx: number;
+    ty: number;
+  } | null = null;
+  private mhPinchStart: {
+    dist: number;
+    scale: number;
+    tx: number;
+    ty: number;
+    midX: number;
+    midY: number;
+    centerX: number;
+    centerY: number;
+  } | null = null;
+  private mhDidPan = false;
+
   readonly kindCatalog: readonly MedicalKindMeta[] = MEDICAL_KINDS;
   readonly defaultPlaces = DEFAULT_PLACES_VI;
 
@@ -253,6 +303,29 @@ export class MedicalHistoryComponent {
     }
   }
 
+  @HostListener('document:keydown', ['$event'])
+  onMhPreviewKeydown(ev: KeyboardEvent): void {
+    if (!this.imagePreview()) return;
+    const target = ev.target as HTMLElement | null;
+    const tag = target?.tagName;
+    const typing =
+      tag === 'INPUT' || tag === 'TEXTAREA' || target?.isContentEditable;
+    if (typing) return;
+    if (ev.key === 'Escape') {
+      ev.preventDefault();
+      this.closeImagePreview();
+    } else if (ev.key === '+' || ev.key === '=') {
+      ev.preventDefault();
+      this.zoomInMhPreview();
+    } else if (ev.key === '-' || ev.key === '_') {
+      ev.preventDefault();
+      this.zoomOutMhPreview();
+    } else if (ev.key === '0') {
+      ev.preventDefault();
+      this.resetMhPreviewZoom();
+    }
+  }
+
   refresh() {
     this.load();
   }
@@ -376,6 +449,218 @@ export class MedicalHistoryComponent {
     if (url) {
       window.open(url, '_blank', 'noopener,noreferrer');
     }
+  }
+
+  openImagePreview(entry: MedicalHistoryEntry): void {
+    const att = this.attachmentFor(entry);
+    const src = att?.content?.trim();
+    if (!src) return;
+    this.mhPointers.clear();
+    this.mhPanStart = null;
+    this.mhPinchStart = null;
+    this.mhDidPan = false;
+    this.resetMhPreviewZoom();
+    this.imagePreview.set({
+      src,
+      title: entry.title || 'Ảnh đính kèm',
+      explorerId: att?.id,
+    });
+  }
+
+  closeImagePreview(): void {
+    this.imagePreview.set(null);
+    this.resetMhPreviewZoom();
+    this.mhPointers.clear();
+    this.mhPanStart = null;
+    this.mhPinchStart = null;
+    this.mhPreviewInteracting.set(false);
+  }
+
+  openInDocumentsFromPreview(explorerId: number): void {
+    this.closeImagePreview();
+    this.openExplorerFile.emit(explorerId);
+  }
+
+  resetMhPreviewZoom(): void {
+    this.mhPreviewScale.set(1);
+    this.mhPreviewTx.set(0);
+    this.mhPreviewTy.set(0);
+  }
+
+  zoomInMhPreview(ev?: Event): void {
+    ev?.stopPropagation();
+    this.applyMhZoom(this.mhPreviewScale() * this.mhZoomStep);
+  }
+
+  zoomOutMhPreview(ev?: Event): void {
+    ev?.stopPropagation();
+    this.applyMhZoom(this.mhPreviewScale() / this.mhZoomStep);
+  }
+
+  onMhPreviewWheel(ev: WheelEvent): void {
+    if (!this.imagePreview()) return;
+    ev.preventDefault();
+    const stage = ev.currentTarget as HTMLElement;
+    const rect = stage.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    const factor = ev.deltaY < 0 ? 1.15 : 1 / 1.15;
+    this.applyMhZoom(this.mhPreviewScale() * factor, {
+      x: ev.clientX,
+      y: ev.clientY,
+      centerX,
+      centerY,
+    });
+  }
+
+  onMhPreviewPointerDown(ev: PointerEvent): void {
+    if (!this.imagePreview()) return;
+    const stage = ev.currentTarget as HTMLElement;
+    try {
+      stage.setPointerCapture(ev.pointerId);
+    } catch {
+      /* ignore */
+    }
+    this.mhPointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+    this.mhDidPan = false;
+    this.mhPreviewInteracting.set(true);
+
+    if (this.mhPointers.size >= 2) {
+      this.startMhPinch(stage);
+      this.mhPanStart = null;
+    } else if (this.mhPreviewScale() > 1.001) {
+      this.mhPanStart = {
+        x: ev.clientX,
+        y: ev.clientY,
+        tx: this.mhPreviewTx(),
+        ty: this.mhPreviewTy(),
+      };
+    } else {
+      this.mhPanStart = null;
+    }
+  }
+
+  onMhPreviewPointerMove(ev: PointerEvent): void {
+    if (!this.mhPointers.has(ev.pointerId)) return;
+    this.mhPointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+
+    if (this.mhPointers.size >= 2 && this.mhPinchStart) {
+      this.updateMhPinch();
+      return;
+    }
+
+    if (this.mhPanStart && this.mhPointers.size === 1) {
+      const dx = ev.clientX - this.mhPanStart.x;
+      const dy = ev.clientY - this.mhPanStart.y;
+      if (!this.mhDidPan && Math.hypot(dx, dy) > 4) this.mhDidPan = true;
+      this.mhPreviewTx.set(this.mhPanStart.tx + dx);
+      this.mhPreviewTy.set(this.mhPanStart.ty + dy);
+    }
+  }
+
+  onMhPreviewPointerUp(ev: PointerEvent): void {
+    this.mhPointers.delete(ev.pointerId);
+    if (this.mhPointers.size < 2) this.mhPinchStart = null;
+    if (this.mhPointers.size === 0) {
+      this.mhPanStart = null;
+      this.mhPreviewInteracting.set(false);
+    } else if (this.mhPointers.size === 1 && this.mhPreviewScale() > 1.001) {
+      const remaining = Array.from(this.mhPointers.values())[0];
+      this.mhPanStart = {
+        x: remaining.x,
+        y: remaining.y,
+        tx: this.mhPreviewTx(),
+        ty: this.mhPreviewTy(),
+      };
+    }
+  }
+
+  onMhPreviewDblClick(ev: MouseEvent): void {
+    if (!this.imagePreview()) return;
+    const stage = ev.currentTarget as HTMLElement;
+    const rect = stage.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    const target = this.mhPreviewScale() > 1.01 ? 1 : 2.5;
+    this.applyMhZoom(target, {
+      x: ev.clientX,
+      y: ev.clientY,
+      centerX,
+      centerY,
+    });
+    ev.preventDefault();
+  }
+
+  private applyMhZoom(
+    targetScale: number,
+    anchor?: { x: number; y: number; centerX: number; centerY: number }
+  ): void {
+    const oldScale = this.mhPreviewScale();
+    const clamped = Math.min(
+      this.mhMaxZoom,
+      Math.max(this.mhMinZoom, targetScale)
+    );
+    if (Math.abs(clamped - oldScale) < 0.001) return;
+
+    if (clamped <= this.mhMinZoom + 0.001) {
+      this.resetMhPreviewZoom();
+      return;
+    }
+
+    const ratio = clamped / oldScale;
+    const tx = this.mhPreviewTx();
+    const ty = this.mhPreviewTy();
+    if (anchor) {
+      const kx = anchor.x - anchor.centerX;
+      const ky = anchor.y - anchor.centerY;
+      this.mhPreviewTx.set(kx * (1 - ratio) + tx * ratio);
+      this.mhPreviewTy.set(ky * (1 - ratio) + ty * ratio);
+    } else {
+      this.mhPreviewTx.set(tx * ratio);
+      this.mhPreviewTy.set(ty * ratio);
+    }
+    this.mhPreviewScale.set(clamped);
+  }
+
+  private startMhPinch(stage: HTMLElement): void {
+    const pts = Array.from(this.mhPointers.values());
+    if (pts.length < 2) return;
+    const [a, b] = pts;
+    const dist = Math.hypot(a.x - b.x, a.y - b.y);
+    const midX = (a.x + b.x) / 2;
+    const midY = (a.y + b.y) / 2;
+    const rect = stage.getBoundingClientRect();
+    this.mhPinchStart = {
+      dist: dist || 1,
+      scale: this.mhPreviewScale(),
+      tx: this.mhPreviewTx(),
+      ty: this.mhPreviewTy(),
+      midX,
+      midY,
+      centerX: rect.left + rect.width / 2,
+      centerY: rect.top + rect.height / 2,
+    };
+  }
+
+  private updateMhPinch(): void {
+    const start = this.mhPinchStart;
+    if (!start) return;
+    const pts = Array.from(this.mhPointers.values());
+    if (pts.length < 2) return;
+    const [a, b] = pts;
+    const dist = Math.hypot(a.x - b.x, a.y - b.y);
+    const ratio = dist / start.dist;
+    const target = Math.min(
+      this.mhMaxZoom,
+      Math.max(this.mhMinZoom, start.scale * ratio)
+    );
+    const r = target / start.scale;
+    const kx = start.midX - start.centerX;
+    const ky = start.midY - start.centerY;
+    this.mhPreviewScale.set(target);
+    this.mhPreviewTx.set(kx * (1 - r) + start.tx * r);
+    this.mhPreviewTy.set(ky * (1 - r) + start.ty * r);
+    this.mhDidPan = true;
   }
 
   toggleFilterPanel(): void {

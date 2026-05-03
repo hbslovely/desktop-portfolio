@@ -240,10 +240,6 @@
       </header>
       <ul class="mh-month__entries">
         <li class="mh-card" *ngFor="let e of g.entries">
-          <div
-            class="mh-card__stripe"
-            [style.background]="metaFor(e.kind).color"
-          ></div>
           <div class="mh-card__body">
             <div class="mh-card__row mh-card__row--meta">
               <span
@@ -263,7 +259,7 @@
                 *ngIf="att.content"
                 type="button"
                 class="mh-card__photo-open"
-                (click)="openAttachmentInDocuments(e)"
+                (click)="openImagePreview(e)"
               >
                 <span class="mh-card__photo-frame">
                   <img
@@ -273,8 +269,16 @@
                   />
                 </span>
                 <span class="mh-card__photo-cap">
-                  <i class="pi pi-folder-open"></i> Mở trong Tài liệu
+                  <i class="pi pi-search-plus"></i> Xem ảnh
                 </span>
+              </button>
+              <button
+                *ngIf="att.id && att.content"
+                type="button"
+                class="mh-card__photo-docs btn ghost sm"
+                (click)="openAttachmentInDocuments(e)"
+              >
+                <i class="pi pi-folder-open"></i> Tài liệu
               </button>
             </div>
             <p class="mh-card__detail" *ngIf="e.detail">{{ e.detail }}</p>
@@ -532,5 +536,88 @@
         </div>
       </form>
     </div>
+  </div>
+
+  <!-- Xem ảnh fullscreen — đóng lại vẫn ở tab Y tế (giống preview Tài liệu) -->
+  <div
+    class="mh-preview"
+    *ngIf="imagePreview() as pv"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-label]="'Xem ảnh: ' + pv.title"
+  >
+    <button
+      type="button"
+      class="mh-preview__close"
+      (click)="closeImagePreview(); $event.stopPropagation()"
+      aria-label="Đóng (Esc)"
+      title="Đóng (Esc)"
+    >
+      <i class="pi pi-times"></i>
+    </button>
+    <div class="mh-preview__name">{{ pv.title }}</div>
+    <div
+      class="mh-preview__stage"
+      [class.zoomed]="mhPreviewScale() > 1.001"
+      [class.interacting]="mhPreviewInteracting()"
+      (wheel)="onMhPreviewWheel($event)"
+      (pointerdown)="onMhPreviewPointerDown($event)"
+      (pointermove)="onMhPreviewPointerMove($event)"
+      (pointerup)="onMhPreviewPointerUp($event)"
+      (pointercancel)="onMhPreviewPointerUp($event)"
+      (pointerleave)="onMhPreviewPointerUp($event)"
+      (dblclick)="onMhPreviewDblClick($event)"
+    >
+      <img
+        class="mh-preview__img"
+        [src]="pv.src"
+        [alt]="pv.title"
+        [style.transform]="mhPreviewTransform()"
+        draggable="false"
+        (dragstart)="$event.preventDefault()"
+      />
+    </div>
+    <div class="mh-preview__zoom" (click)="$event.stopPropagation()">
+      <button
+        type="button"
+        class="mh-zoom-btn"
+        (click)="zoomOutMhPreview($event)"
+        [disabled]="!mhCanZoomOut()"
+        title="Thu nhỏ (-)"
+        aria-label="Thu nhỏ"
+      >
+        <i class="pi pi-minus"></i>
+      </button>
+      <button
+        type="button"
+        class="mh-zoom-btn percent"
+        (click)="resetMhPreviewZoom(); $event.stopPropagation()"
+        title="Đặt lại 100% (0)"
+        aria-label="Đặt lại zoom"
+      >
+        {{ mhPreviewZoomPercent() }}%
+      </button>
+      <button
+        type="button"
+        class="mh-zoom-btn"
+        (click)="zoomInMhPreview($event)"
+        [disabled]="!mhCanZoomIn()"
+        title="Phóng to (+)"
+        aria-label="Phóng to"
+      >
+        <i class="pi pi-plus"></i>
+      </button>
+    </div>
+    <p class="mh-preview__hint" *ngIf="mhPreviewScale() <= 1.001">
+      Cuộn hoặc bấm <i class="pi pi-plus"></i> để phóng to · Nháy đôi để zoom · Esc đóng
+    </p>
+    <button
+      *ngIf="pv.explorerId"
+      type="button"
+      class="mh-preview__docs"
+      (click)="openInDocumentsFromPreview(pv.explorerId)"
+    >
+      <i class="pi pi-folder-open"></i> Mở trong Tài liệu
+    </button>
   </div>
 </div>
