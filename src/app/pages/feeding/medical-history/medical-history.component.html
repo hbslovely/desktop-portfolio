@@ -58,7 +58,18 @@
       *ngIf="filterPanelOpen()"
       (click)="$event.stopPropagation()"
     >
-      <div class="mh-filter-panel__title">Lọc &amp; sắp xếp</div>
+      <div class="mh-filter-panel__headrow">
+        <div class="mh-filter-panel__title">Lọc &amp; sắp xếp</div>
+        <button
+          type="button"
+          class="mh-filter-panel__reset btn ghost sm"
+          (click)="resetFilterPanel()"
+          title="Xóa lọc loại, đặt thời gian và thứ tự danh sách về mặc định"
+        >
+          <i class="pi pi-replay" aria-hidden="true"></i>
+          Đặt lại
+        </button>
+      </div>
 
       <div class="mh-filter-panel__field">
         <span class="mh-filter-panel__label">Thời gian hiển thị</span>
@@ -96,6 +107,10 @@
         />
       </div>
 
+      <p class="mh-filter-panel__hint">
+        Chọn <strong>nhiều loại</strong>: bấm để bật/tắt. « Tất cả » xóa lọc.
+      </p>
+
       <div class="mh-filter-panel__field">
         <span class="mh-filter-panel__label">Sắp danh sách loại</span>
         <div class="mh-filter-panel__seg" role="group" aria-label="Sắp loại">
@@ -120,13 +135,15 @@
         class="mh-filter-panel__kinds"
         role="listbox"
         aria-label="Chọn loại sự kiện"
+        aria-multiselectable="true"
       >
         <button
           type="button"
           class="kind-chip mh-filter-kind"
-          [class.active]="kindFilter() === 'all'"
-          (click)="selectKindFilter('all')"
+          [class.active]="kindFilterKinds().length === 0"
+          (click)="clearKindFilters()"
           role="option"
+          [attr.aria-selected]="kindFilterKinds().length === 0"
         >
           Tất cả
           <span class="kind-chip__count">{{ myEntries().length }}</span>
@@ -135,11 +152,12 @@
           type="button"
           class="kind-chip mh-filter-kind"
           *ngFor="let km of kindsInFilterPanel()"
-          [class.active]="kindFilter() === km.id"
+          [class.active]="kindFilterKindSet().has(km.id)"
           [style.--chip-color]="km.color"
-          (click)="selectKindFilter(km.id)"
+          (click)="toggleKindFilter(km.id)"
           [attr.title]="km.label"
           role="option"
+          [attr.aria-selected]="kindFilterKindSet().has(km.id)"
         >
           <i [class]="km.icon" aria-hidden="true"></i>
           <span class="mh-filter-kind__name">{{ km.shortLabel }}</span>
@@ -165,7 +183,10 @@
   </section>
 
   <section class="card medical-empty soft" *ngIf="!loading() && myEntries().length > 0 && filteredEntries().length === 0">
-    <p>Không có mục nào khớp bộ lọc. Chọn <strong>Tất cả</strong> hoặc loại khác.</p>
+    <p>
+      Không có mục nào khớp bộ lọc. Bấm <strong>Tất cả</strong> để xóa lọc, hoặc bật/tắt từng loại
+      trong panel.
+    </p>
   </section>
 
   <!-- Timeline V2 -->

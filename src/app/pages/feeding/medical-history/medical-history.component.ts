@@ -27,8 +27,6 @@ import {
 } from './medical-history-kinds.data';
 import { DEFAULT_PLACES_VI } from './medical-places.presets';
 
-type KindFilter = 'all' | MedicalEventKind;
-
 interface EntryDraft {
   date: string;
   kind: MedicalEventKind;
@@ -82,8 +80,10 @@ export class MedicalHistoryComponent {
   errorMsg = signal<string>('');
   successMsg = signal<string>('');
 
-  /** V2: lọc theo loại */
-  kindFilter = signal<KindFilter>('all');
+  /**
+   * Lọc theo một hoặc nhiều loại — rỗng = không giới hạn (tương đương « Tất cả »).
+   */
+  kindFilterKinds = signal<MedicalEventKind[]>([]);
 
   /** Panel lọc gọn (thay cho hàng chip đầy đủ) */
   filterPanelOpen = signal<boolean>(false);
@@ -149,10 +149,20 @@ export class MedicalHistoryComponent {
     return filtered;
   });
 
+  kindFilterKindSet = computed(
+    () => new Set(this.kindFilterKinds())
+  );
+
   kindFilterSummary = computed(() => {
-    const f = this.kindFilter();
-    if (f === 'all') return 'Tất cả loại';
-    return kindMeta(f).label;
+    const sel = this.kindFilterKinds();
+    if (sel.length === 0) return 'Tất cả loại';
+    if (sel.length === 1) return kindMeta(sel[0]).label;
+    if (sel.length <= 3) {
+      return sel
+        .map((id) => kindMeta(id).shortLabel)
+        .join(' · ');
+    }
+    return `${sel.length} loại`;
   });
 
   placesFromEntries = computed(() => {
@@ -256,10 +266,11 @@ export class MedicalHistoryComponent {
   });
 
   filteredEntries = computed(() => {
-    const f = this.kindFilter();
     const rows = this.myEntries();
-    if (f === 'all') return rows;
-    return rows.filter((e) => e.kind === f);
+    const sel = this.kindFilterKinds();
+    if (sel.length === 0) return rows;
+    const allow = new Set(sel);
+    return rows.filter((e) => allow.has(e.kind));
   });
 
   /** Nhóm timeline theo tháng (V2) */
@@ -336,17 +347,31 @@ export class MedicalHistoryComponent {
     return this.explorerById().get(id);
   }
 
-  setKindFilter(f: KindFilter) {
-    this.kindFilter.set(f);
-  }
-
   toggleFilterPanel(): void {
     this.filterPanelOpen.update((v) => !v);
   }
 
-  selectKindFilter(f: KindFilter): void {
-    this.kindFilter.set(f);
-    this.filterPanelOpen.set(false);
+  /** Xóa lọc — hiển thị mọi loại */
+  clearKindFilters(): void {
+    this.kindFilterKinds.set([]);
+  }
+
+  /** Đặt lại toàn bộ tùy chọn trong panel lọc */
+  resetFilterPanel(): void {
+    this.kindFilterKinds.set([]);
+    this.timelineSort.set('newest');
+    this.kindListSort.set('count');
+    this.filterPanelKindSearch.set('');
+  }
+
+  /** Bật/tắt một loại trong bộ lọc */
+  toggleKindFilter(kind: MedicalEventKind): void {
+    this.kindFilterKinds.update((arr) => {
+      const next = new Set(arr);
+      if (next.has(kind)) next.delete(kind);
+      else next.add(kind);
+      return [...next];
+    });
   }
 
   metaFor(kind: MedicalEventKind): MedicalKindMeta {
