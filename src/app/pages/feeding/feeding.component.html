@@ -4,35 +4,49 @@
 
   <header class="hero">
     <div class="hero-inner">
-      <div class="hero-title">
-        <div class="emoji">👶</div>
-        <div class="hero-text">
-          <h1>Nhật ký bú & tips</h1>
-          <p class="subtitle">
-            <span class="hero-user">
-              <i class="pi pi-user"></i> <strong>{{ user() }}</strong>
-            </span>
-            <span class="hero-date">
-              <i class="pi pi-calendar"></i> {{ todayStr }}
-            </span>
-            <span class="hero-clock">
-              <i class="pi pi-clock"></i> {{ currentTimeStr }}
-            </span>
-          </p>
+      <div class="hero-brand">
+        <div class="hero-title-row">
+          <div class="hero-title">
+            <div class="emoji" aria-hidden="true">👶</div>
+            <div class="hero-text">
+              <h1>Nhật ký bú & tips</h1>
+              <p class="hero-userline">
+                <i class="pi pi-user" aria-hidden="true"></i>
+                <strong>{{ user() }}</strong>
+              </p>
+            </div>
+          </div>
+          <div class="hero-actions" *ngIf="profile() && !editing()">
+            <button
+              class="btn icon-btn"
+              type="button"
+              (click)="refreshAll()"
+              [disabled]="isAnyLoading()"
+              [title]="isAnyLoading() ? 'Đang tải…' : 'Tải lại Cữ bú, Cân, Y tế, Tài liệu'"
+              aria-label="Tải lại Cữ bú, Cân nặng, Tiền sử y tế và Tài liệu"
+            >
+              <i class="pi pi-refresh" [class.spin]="isAnyLoading()"></i>
+            </button>
+          </div>
         </div>
       </div>
 
-      <div class="hero-actions" *ngIf="profile() && !editing()">
-        <button
-          class="btn icon-btn"
-          type="button"
-          (click)="refreshAll()"
-          [disabled]="isAnyLoading()"
-          [title]="isAnyLoading() ? 'Đang tải…' : 'Tải lại Cữ bú, Cân, Y tế, Tài liệu'"
-          aria-label="Tải lại Cữ bú, Cân nặng, Tiền sử y tế và Tài liệu"
-        >
-          <i class="pi pi-refresh" [class.spin]="isAnyLoading()"></i>
-        </button>
+      <div class="hero-datetime" aria-live="polite">
+        <time class="hero-date-card" [attr.datetime]="todayDateStr()">
+          <span class="hero-date-card__icon" aria-hidden="true">
+            <i class="pi pi-calendar"></i>
+          </span>
+          <span class="hero-date-card__text">
+            <span class="hero-date-wd">{{ heroWeekday }}</span>
+            <span class="hero-date-num">{{ heroDateNumeric }}</span>
+          </span>
+        </time>
+        <div class="hero-time-card">
+          <span class="hero-time-card__icon" aria-hidden="true">
+            <i class="pi pi-clock"></i>
+          </span>
+          <span class="hero-time-value">{{ currentTimeStr }}</span>
+        </div>
       </div>
     </div>
   </header>
@@ -306,23 +320,6 @@
         </label>
 
         <label class="field">
-          <span class="label">
-            Cân nặng hiện tại (kg)
-            <span class="label-hint">giúp đánh giá lượng sữa theo cân nặng</span>
-          </span>
-          <input
-            type="text"
-            inputmode="decimal"
-            maxlength="5"
-            [value]="weightInput()"
-            (input)="updateDraftWeight($any($event.target).value)"
-            name="babyWeight"
-            placeholder="VD: 4.2"
-            autocomplete="off"
-          />
-        </label>
-
-        <label class="field">
           <span class="label">Giới tính (tuỳ chọn)</span>
           <div class="radio-group">
             <button
@@ -389,9 +386,11 @@
             </div>
             <div class="summary-meta">
               <span><i class="pi pi-calendar"></i> {{ profile()?.birthDate | date: 'dd/MM/yyyy' }}</span>
+              <span class="sep" *ngIf="latestWeightKgFromSheet()">·</span>
+              <span *ngIf="latestWeightKgFromSheet() as lw">
+                <i class="pi pi-heart-fill"></i> {{ formatWeightKgFromSheet(lw) }} kg
+              </span>
               <span class="sep">·</span>
-              <span *ngIf="profile()?.weightKg"><i class="pi pi-heart-fill"></i> {{ profile()?.weightKg }}kg</span>
-              <span class="sep" *ngIf="profile()?.weightKg">·</span>
               <span>{{ age.days }} ngày tuổi</span>
             </div>
           </div>
@@ -1267,10 +1266,10 @@
             <div class="eyebrow">Dinh dưỡng hôm nay</div>
             <h2>{{ ev.target.ageLabel }}</h2>
             <div class="nutri-head__meta">
-              <span *ngIf="profile()?.weightKg as w">
-                <i class="pi pi-bookmark"></i> {{ w }} kg
+              <span *ngIf="latestWeightKgFromSheet() as w">
+                <i class="pi pi-bookmark"></i> {{ formatWeightKgFromSheet(w) }} kg
               </span>
-              <span class="sep" *ngIf="profile()?.weightKg">·</span>
+              <span class="sep" *ngIf="latestWeightKgFromSheet()">·</span>
               <span>
                 <i class="pi pi-chart-bar"></i>
                 KN {{ ev.target.dailyMlMin }}–{{ ev.target.dailyMlMax }} ml
@@ -1534,16 +1533,23 @@
         </div>
       </section>
 
-      <!-- Ask to fill weight if missing -->
-      <section class="card nutrition-empty" *ngIf="!profile()?.weightKg && !editing()">
+      <!-- Chưa có cân từ tab Weight → chưa đánh giá dinh dưỡng -->
+      <section
+        class="card nutrition-empty"
+        *ngIf="!latestWeightKgFromSheet() && !editing()"
+      >
         <div class="empty-head">
           <i class="pi pi-info-circle"></i>
           <div>
-            <h3>Thêm cân nặng của bé để đánh giá dinh dưỡng</h3>
-            <p>Biết cân nặng giúp tính khuyến nghị sữa/ngày chính xác theo công thức <strong>ml/kg/ngày</strong> chuẩn theo từng độ tuổi.</p>
+            <h3>Ghi cân ở tab Cân nặng để đánh giá dinh dưỡng</h3>
+            <p>
+              Khối lượng dùng cho mục dinh dưỡng lấy từ
+              <strong>lần cân mới nhất</strong> trên sheet Weight (theo ngày ghi). Cột user chỉ
+              để biết ai đã log. Công thức <strong>ml/kg/ngày</strong> theo tuổi và chuẩn tham khảo.
+            </p>
           </div>
-          <button class="btn primary" (click)="startEdit()">
-            <i class="pi pi-plus"></i> Thêm cân nặng
+          <button type="button" class="btn primary" (click)="setBottomTab('weight')">
+            <i class="pi pi-chart-line"></i> Mở tab Cân nặng
           </button>
         </div>
       </section>

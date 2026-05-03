@@ -13,6 +13,7 @@ import {
   FeedingLog,
   FeedingLogService,
 } from '../../services/feeding-log.service';
+import { WeightLogService } from '../../services/weight-log.service';
 import {
   DailySummary,
   getDailySummaries,
@@ -41,8 +42,6 @@ interface Profile {
   babyName: string;
   birthDate: string;
   gender?: 'boy' | 'girl' | '';
-  /** Cân nặng hiện tại của bé (kg) */
-  weightKg?: number;
 }
 
 interface LogDraft {
@@ -89,6 +88,7 @@ const STORAGE_PREFIX = 'feeding-profile::';
 export class FeedingComponent {
   private route = inject(ActivatedRoute);
   private feedingLogService = inject(FeedingLogService);
+  private weightLogService = inject(WeightLogService);
 
   /** Vùng cuộn thật của trang (`.feeding-page`), không phải `document`. */
   @ViewChild('feedingPage', { static: true })
@@ -106,6 +106,9 @@ export class FeedingComponent {
   ) {
     this.bottomTab.set(tab);
     this.scrollFeedingShellToTop();
+    if (tab === 'feeding') {
+      this.loadWeightLogs();
+    }
   }
 
   /** Đưa cuộn về đầu khi đổi tab (shell `.feeding-page` + window dự phòng). */
@@ -127,10 +130,13 @@ export class FeedingComponent {
     babyName: '',
     birthDate: '',
     gender: '',
-    weightKg: undefined,
   });
-  /** Raw text của input cân nặng — giữ nguyên để không bị mất số khi đang gõ "3." */
-  weightInput = signal<string>('');
+  /**
+   * Cân mới nhất từ sheet Weight (bản ghi ngày mới nhất toàn sheet).
+   * Cột user chỉ để biết ai log — không lọc theo user khi lấy giá trị này.
+   */
+  latestWeightKgFromSheet = signal<number | undefined>(undefined);
+
   editing = signal<boolean>(true);
 
   now = signal<Date>(new Date());
@@ -438,10 +444,10 @@ export class FeedingComponent {
 
   // ===== Nutrition target & evaluation (weight + age based) =====
   nutritionTarget = computed<NutritionTarget | null>(() => {
-    const p = this.profile();
+    const w = this.latestWeightKgFromSheet();
     const days = this.ageInDays();
-    if (!p?.weightKg || days === null) return null;
-    return getNutritionTarget(p.weightKg, days);
+    if (w === undefined || w <= 0 || days === null) return null;
+    return getNutritionTarget(w, days);
   });
 
   nutritionEval = computed<NutritionEvaluation | null>(() => {
@@ -1001,6 +1007,7 @@ export class FeedingComponent {
       this.user.set(user);
       this.loadProfile(user);
       this.loadLogs();
+      this.loadWeightLogs();
     });
 
     setInterval(() => this.now.set(new Date()), 20_000);
@@ -1013,10 +1020,18 @@ export class FeedingComponent {
     try {
       const raw = localStorage.getItem(STORAGE_PREFIX + user);
       if (raw) {
-        const parsed = JSON.parse(raw) as Profile;
-        this.profile.set(parsed);
-        this.draft.set({ ...parsed });
-        this.weightInput.set(parsed.weightKg ? String(parsed.weightKg) : '');
+        const parsed = JSON.parse(raw) as Record<string, unknown>;
+        const g = parsed['gender'];
+        const profile: Profile = {
+          babyName: String(parsed['babyName'] ?? '').trim(),
+          birthDate: String(parsed['birthDate'] ?? '').trim(),
+          gender:
+            g === 'boy' || g === 'girl' || g === ''
+              ? (g as Profile['gender'])
+              : '',
+        };
+        this.profile.set(profile);
+        this.draft.set({ ...profile });
         this.editing.set(false);
         return;
       }
@@ -1025,14 +1040,12 @@ export class FeedingComponent {
     }
     this.profile.set(null);
     this.draft.set({ babyName: '', birthDate: '', gender: '' });
-    this.weightInput.set('');
     this.editing.set(true);
   }
 
   startEdit() {
     const p = this.profile();
     this.draft.set(p ? { ...p } : { babyName: '', birthDate: '', gender: '' });
-    this.weightInput.set(p?.weightKg ? String(p.weightKg) : '');
     this.editing.set(true);
   }
 
@@ -1046,22 +1059,15 @@ export class FeedingComponent {
     const d = this.draft();
     if (!d.babyName?.trim() || !d.birthDate) return;
 
-    // Parse cân nặng từ raw text (cho phép "3", "3.", "3.8")
-    const raw = this.weightInput().trim().replace(',', '.');
-    const w = raw === '' ? NaN : parseFloat(raw);
-    const weightKg = !isNaN(w) && w > 0 ? Math.round(w * 10) / 10 : undefined;
-
     const clean: Profile = {
       babyName: d.babyName.trim(),
       birthDate: d.birthDate,
       gender: d.gender || '',
-      weightKg,
     };
 
     localStorage.setItem(STORAGE_PREFIX + this.user(), JSON.stringify(clean));
     this.profile.set(clean);
     this.draft.set({ ...clean });
-    this.weightInput.set(weightKg ? String(weightKg) : '');
     this.editing.set(false);
   }
 
@@ -1070,7 +1076,6 @@ export class FeedingComponent {
     localStorage.removeItem(STORAGE_PREFIX + this.user());
     this.profile.set(null);
     this.draft.set({ babyName: '', birthDate: '', gender: '' });
-    this.weightInput.set('');
     this.editing.set(true);
   }
 
@@ -1083,24 +1088,6 @@ export class FeedingComponent {
   setDraftGender(gender: Profile['gender']) {
     this.draft.update((d) => ({ ...d, gender }));
   }
-  updateDraftWeight(value: string) {
-    // Chỉ giữ chữ số, dấu chấm, và dấu phẩy (đổi sang chấm).
-    // Cho phép 1 dấu thập phân duy nhất. Giữ nguyên raw text để
-    // không phá trạng thái khi user đang gõ dở "3." hoặc "3,".
-    let s = String(value ?? '').replace(/[^\d.,]/g, '').replace(',', '.');
-    const firstDot = s.indexOf('.');
-    if (firstDot !== -1) {
-      s = s.slice(0, firstDot + 1) + s.slice(firstDot + 1).replace(/\./g, '');
-    }
-    this.weightInput.set(s);
-
-    const num = parseFloat(s);
-    this.draft.update((d) => ({
-      ...d,
-      weightKg: isNaN(num) || num <= 0 ? undefined : num,
-    }));
-  }
-
   // ===== Feeding log management =====
   loadLogs() {
     this.loadingLogs.set(true);
@@ -1119,6 +1106,29 @@ export class FeedingComponent {
         );
       },
     });
+  }
+
+  /** Tải cân mới nhất từ sheet Weight (cùng nguồn với tab Cân nặng). */
+  loadWeightLogs(): void {
+    this.weightLogService.getLogs().subscribe({
+      next: (rows) => {
+        const latest = rows[0];
+        this.latestWeightKgFromSheet.set(latest?.weightKg);
+      },
+      error: (err) => {
+        console.error(err);
+        this.latestWeightKgFromSheet.set(undefined);
+      },
+    });
+  }
+
+  /** Hiển thị kg (sheet Weight) trong UI tab Cữ bú. */
+  formatWeightKgFromSheet(kg: number | undefined): string {
+    if (kg === undefined || !Number.isFinite(kg) || kg <= 0) return '';
+    return new Intl.NumberFormat('vi-VN', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    }).format(kg);
   }
 
   updateLogDate(v: string) {
@@ -1384,6 +1394,7 @@ export class FeedingComponent {
    */
   refreshAll() {
     this.loadLogs();
+    this.loadWeightLogs();
     this.weightCmp?.refresh();
     this.medicalCmp?.refresh();
     this.documentsCmp?.refresh();
@@ -1715,6 +1726,20 @@ export class FeedingComponent {
       month: '2-digit',
       year: 'numeric',
     });
+  }
+
+  /** Thứ (tiếng Việt) — hero */
+  get heroWeekday(): string {
+    return this.now().toLocaleDateString('vi-VN', { weekday: 'long' });
+  }
+
+  /** Ngày dd/mm/yyyy — hero, dễ quét */
+  get heroDateNumeric(): string {
+    const d = this.now();
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    return `${dd}/${mm}/${yyyy}`;
   }
 
   /** Giờ hiện tại dạng HH:MM — dùng cho live clock ở hero */
