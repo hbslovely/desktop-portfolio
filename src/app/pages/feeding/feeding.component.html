@@ -1838,9 +1838,13 @@
           <i class="pi pi-calendar"></i>
           <span class="edb-label">Ngày</span>
           <strong class="edb-value">{{ formatDateDisplay(edit.date) }}</strong>
-          <span class="edb-hint">
-            <i class="pi pi-lock"></i>
-            Không đổi được ngày
+          <span
+            class="edb-lock"
+            title="Ngày của cữ này không đổi được khi sửa"
+            aria-label="Ngày không đổi được"
+            role="img"
+          >
+            <i class="pi pi-lock" aria-hidden="true"></i>
           </span>
         </div>
 

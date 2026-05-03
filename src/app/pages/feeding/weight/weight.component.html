@@ -49,7 +49,7 @@
         <h3>Đánh giá mới nhất</h3>
         <p class="muted" *ngIf="sortedLogsDesc()[0] as last">
           {{ formatDateDisplay(last.date) }} · {{ formatKg(last.weightKg) }} kg ·
-          {{ ev.weeksLabel }} (tại ngày cân)
+          {{ ev.weeksLabel }}
         </p>
       </div>
       <span class="weight-eval__badge" [attr.data-status]="growthStatusClass(ev.status)">
