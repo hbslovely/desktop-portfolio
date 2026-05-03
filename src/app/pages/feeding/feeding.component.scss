@@ -3348,12 +3348,16 @@
   }
 }
 
+/*
+  FAB phải cao hơn `.bottom-nav` (90) — nếu không, iOS Safari đôi khi không
+  nhận tap vào nút « Ghi cữ bú » (stacking / layer láng giềng vùng góc).
+*/
 /* ========== FAB ========== */
 .fab {
   position: fixed;
   bottom: calc(80px + env(safe-area-inset-bottom, 0px));
   right: 20px;
-  z-index: 80;
+  z-index: 96;
   display: inline-flex;
   align-items: center;
   gap: 10px;
@@ -3412,7 +3416,7 @@
   position: fixed;
   inset: 0;
   background: rgba(15, 23, 42, 0.55);
-  z-index: 100;
+  z-index: 110;
   display: flex;
   align-items: center;
   justify-content: center;
