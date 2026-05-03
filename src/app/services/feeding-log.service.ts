@@ -1,6 +1,6 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, from, throwError, of } from 'rxjs';
+import { Observable, from, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 
@@ -118,11 +118,7 @@ export class FeedingLogService {
         volume: log.volume,
         note: log.note || '',
       },
-    }).pipe(
-      catchError((err) => {
-        return of({ success: true });
-      })
-    );
+    });
   }
 
   /**
@@ -149,11 +145,7 @@ export class FeedingLogService {
         volume: patch.volume,
         note: patch.note || '',
       },
-    }).pipe(
-      catchError(() => {
-        return of({ success: true });
-      })
-    );
+    });
   }
 
   deleteLog(rowIndex: number): Observable<FeedingSheetResponse> {
@@ -164,11 +156,7 @@ export class FeedingLogService {
     return this.postToAppsScript({
       action: 'deleteFeeding',
       row: rowIndex,
-    }).pipe(
-      catchError((err) => {
-        return of({ success: true });
-      })
-    );
+    });
   }
 
   /**
@@ -205,6 +193,11 @@ export class FeedingLogService {
     }
 
     const payload = JSON.stringify(body);
+    /*
+     * no-cors: browser không cho đọc status/body → không biết GAS có {success:true}
+     * hay lỗi. `{ success: true }` chỉ nghĩa là request đã được **gửi đi**, không
+     * chứng minh đã ghi Sheet. Xác nhận thật: xem dòng mới sau `getLogs()` reload.
+     */
     return from(
       fetch(url, {
         method: 'POST',
