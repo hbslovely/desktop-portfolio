@@ -71,14 +71,183 @@
   }
 }
 
-.kind-chips {
+/* Bộ lọc gọn: nút mở + panel */
+.mh-filter {
+  position: relative;
+  z-index: 4;
+  margin-bottom: 16px;
+}
+
+.mh-filter-trigger {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 18px;
-  max-height: 168px;
-  overflow-y: auto;
-  padding-bottom: 2px;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 11px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--border, #e5e7eb);
+  background: var(--surface, #fff);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 2px 8px -4px rgba(15, 23, 42, 0.12);
+  transition: border-color 0.15s, background 0.15s;
+
+  i.pi-sliders-h {
+    color: var(--primary, #5b6cff);
+    font-size: 16px;
+  }
+
+  &__text {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  &__label {
+    display: block;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+
+  &__meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted, #64748b);
+  }
+
+  &__count {
+    display: inline-flex;
+    align-items: center;
+    padding: 1px 7px;
+    border-radius: 999px;
+    background: var(--primary-soft, #eef0ff);
+    color: var(--primary, #5b6cff);
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__hint {
+    font-weight: 500;
+    color: var(--muted-2, #94a3b8);
+  }
+
+  &__chev {
+    font-size: 12px;
+    color: var(--muted);
+    flex-shrink: 0;
+  }
+
+  &:hover {
+    border-color: #cbd5e1;
+  }
+}
+
+.mh-filter--open .mh-filter-trigger {
+  border-color: var(--primary, #5b6cff);
+  background: color-mix(in srgb, var(--primary, #5b6cff) 6%, white);
+}
+
+.mh-filter-panel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 8px);
+  z-index: 5;
+  padding: 12px 12px 10px;
+  border-radius: 14px;
+  border: 1px solid var(--border, #e5e7eb);
+  background: var(--surface, #fff);
+  box-shadow: 0 16px 40px -20px rgba(15, 23, 42, 0.28);
+
+  &__title {
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--muted, #64748b);
+    margin: 0 0 10px;
+  }
+
+  &__field {
+    margin-bottom: 10px;
+  }
+
+  &__label {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--muted, #64748b);
+    margin-bottom: 6px;
+  }
+
+  &__search {
+    width: 100%;
+    padding: 9px 11px;
+    border-radius: 10px;
+    border: 1px solid var(--border, #e5e7eb);
+    font-size: 14px;
+    font-family: inherit;
+    background: var(--surface, #fff);
+  }
+
+  &__seg {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+
+    button {
+      flex: 1;
+      min-width: 0;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid var(--border, #e5e7eb);
+      background: var(--surface-2, #f8fafc);
+      font-size: 12px;
+      font-weight: 700;
+      font-family: inherit;
+      color: var(--muted, #64748b);
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+
+      &.active {
+        border-color: var(--primary, #5b6cff);
+        background: color-mix(in srgb, var(--primary, #5b6cff) 14%, white);
+        color: var(--text);
+      }
+
+      &:hover:not(.active) {
+        border-color: #cbd5e1;
+      }
+    }
+  }
+
+  &__kinds {
+    margin-top: 4px;
+    max-height: min(52vh, 280px);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding-right: 2px;
+  }
+
+  &__empty {
+    margin: 0;
+    padding: 8px 4px 4px;
+    font-size: 12px;
+    line-height: 1.4;
+    color: var(--muted, #64748b);
+  }
 }
 
 .kind-chip {
@@ -102,6 +271,7 @@
   }
 
   &__count {
+    margin-left: auto;
     font-size: 11px;
     font-weight: 700;
     opacity: 0.75;
@@ -117,6 +287,21 @@
 
   &:hover:not(.active) {
     border-color: #cbd5e1;
+  }
+}
+
+.kind-chip.mh-filter-kind {
+  width: 100%;
+  justify-content: flex-start;
+  border-radius: 11px;
+  text-align: left;
+
+  .mh-filter-kind__name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }
 
