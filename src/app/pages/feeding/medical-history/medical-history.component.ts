@@ -93,6 +93,9 @@ export class MedicalHistoryComponent {
   /** Thứ tự danh sách loại trong panel */
   kindListSort = signal<'count' | 'alpha'>('count');
 
+  /** Tìm kiếm chữ tự do trên timeline (tiêu đề, chi tiết, nơi khám, loại…) */
+  textSearchQuery = signal<string>('');
+
   kindPickerOpen = signal<boolean>(false);
   kindSearch = signal<string>('');
 
@@ -273,9 +276,17 @@ export class MedicalHistoryComponent {
     return rows.filter((e) => allow.has(e.kind));
   });
 
+  /** Sau lọc loại + tìm free-text */
+  visibleEntries = computed(() => {
+    const rows = this.filteredEntries();
+    const q = this.textSearchQuery().trim();
+    if (!q) return rows;
+    return rows.filter((e) => this.entryMatchesFreeText(e, q));
+  });
+
   /** Nhóm timeline theo tháng (V2) */
   timelineGroups = computed(() => {
-    const list = this.filteredEntries();
+    const list = this.visibleEntries();
     const order = this.timelineSort();
     const map = new Map<string, MedicalHistoryEntry[]>();
     for (const e of list) {
@@ -362,6 +373,26 @@ export class MedicalHistoryComponent {
     this.timelineSort.set('newest');
     this.kindListSort.set('count');
     this.filterPanelKindSearch.set('');
+    this.textSearchQuery.set('');
+  }
+
+  clearTextSearch(): void {
+    this.textSearchQuery.set('');
+  }
+
+  private entryMatchesFreeText(
+    e: MedicalHistoryEntry,
+    query: string
+  ): boolean {
+    const m = kindMeta(e.kind);
+    return (
+      viFoldIncludes(e.title, query) ||
+      viFoldIncludes(e.detail, query) ||
+      viFoldIncludes(e.place || '', query) ||
+      viFoldIncludes(m.label, query) ||
+      viFoldIncludes(m.shortLabel, query) ||
+      viFoldIncludes(e.kind.replace(/_/g, ' '), query)
+    );
   }
 
   /** Bật/tắt một loại trong bộ lọc */

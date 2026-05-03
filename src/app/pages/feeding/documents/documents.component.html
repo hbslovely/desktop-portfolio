@@ -661,13 +661,13 @@
     </ng-container>
   </div>
 
-  <!-- ============ FAB: tải ảnh (thư viện + chụp máy sau — mobile) ============ -->
+  <!-- ============ FAB: thêm ảnh (picker hệ thống — mobile thường có Chụp ảnh / Thư viện) ============ -->
   <div class="docs-fab-group" [class.disabled]="saving()">
     <label
       class="docs-fab"
       [class.disabled]="saving()"
       [attr.aria-disabled]="saving()"
-      title="Chọn ảnh từ máy (nhiều file)"
+      title="Chọn ảnh — trên điện thoại thường có thêm Chụp ảnh hoặc Thư viện"
     >
       <i class="pi" [class.pi-plus]="!saving()" [class.pi-spinner]="saving()" [class.pi-spin]="saving()"></i>
       <span class="docs-fab__label">{{ saving() ? 'Đang tải…' : 'Thêm ảnh' }}</span>
@@ -677,23 +677,6 @@
         accept="image/*,.heic,.heif"
         multiple
         (change)="onFileSelected(fileInput)"
-        hidden
-        [disabled]="saving()"
-      />
-    </label>
-    <label
-      class="docs-fab docs-fab--camera"
-      [class.disabled]="saving()"
-      [attr.aria-disabled]="saving()"
-      title="Chụp ảnh bằng camera"
-    >
-      <i class="pi pi-camera"></i>
-      <input
-        #camInput
-        type="file"
-        accept="image/*,.heic,.heif"
-        capture="environment"
-        (change)="onFileSelected(camInput)"
         hidden
         [disabled]="saving()"
       />

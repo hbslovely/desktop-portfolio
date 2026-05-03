@@ -1467,7 +1467,7 @@
   }
 }
 
-/* ============ FAB: tải ảnh + chụp (mobile) ============ */
+/* ============ FAB: thêm ảnh ============ */
 .docs-fab-group {
   position: fixed;
   bottom: calc(108px + env(safe-area-inset-bottom, 0px));
@@ -1538,17 +1538,6 @@
     &__label {
       display: none;
     }
-  }
-}
-
-.docs-fab--camera {
-  padding: 14px 16px;
-
-  i {
-    width: auto;
-    height: auto;
-    background: transparent;
-    font-size: 22px;
   }
 }
 
