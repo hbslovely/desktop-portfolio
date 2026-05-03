@@ -1,9 +1,10 @@
 # Baby App – Hướng dẫn cấu hình Google Sheets
 
-Tài liệu hướng dẫn chuẩn bị **3 tab** trong Google Sheet và **Google Apps Script chung** để app `/feeding?user=<tên>` có thể đồng bộ:
+Tài liệu hướng dẫn chuẩn bị **các tab** trong Google Sheet và **Google Apps Script chung** để app `/feeding?user=<tên>` có thể đồng bộ:
 
 - Tab **`Feeding`**: nhật ký cữ bú (đọc / thêm / sửa / xoá).
 - Tab **`Weight`**: cân nặng bé (đọc / thêm / sửa / xoá).
+- Tab **`MedicalHistory`**: tiền sử y tế bé — Medical history V2 (đọc qua API; ghi / sửa / xoá qua Apps Script).
 - Tab **`Explorer`**: cây thư mục + ảnh base64 (đọc / thêm / sửa / xoá có cascade).
 
 > Sheet: <https://docs.google.com/spreadsheets/d/1O4kAA61k4cX4mEwAjDy5gioVUAElCyu62Z3zPvgdDMM/edit?gid=0#gid=0>
@@ -50,6 +51,27 @@ Quy ước:
 - **Ghi chú**: tuỳ chọn.
 
 Sau khi thêm tab, **cập nhật và redeploy** Google Apps Script (mục 4 bên dưới) để có các action `addWeight` / `updateWeight` / `deleteWeight`.
+
+---
+
+## 1c. Chuẩn bị tab `MedicalHistory` (tiền sử y tế V2)
+
+1. Tạo tab mới tên **chính xác** `MedicalHistory`.
+2. Dòng 1 là **header** theo đúng thứ tự sau:
+
+| A        | B          | C (slug)   | D           | E          | F              |
+| -------- | ---------- | ---------- | ----------- | ---------- | -------------- |
+| **User** | **Ngày**   | **Loại**   | **Tiêu đề** | **Chi tiết** | **Nơi khám** |
+| phat     | 03/05/2026 | vaccine    | Pentaxim mũi 2 | Không sốt | BV Nhi |
+
+Quy ước:
+
+- **User**: giống `Feeding` / `Weight`.
+- **Ngày**: `DD/MM/YYYY` — nên để cột B **Plain text**.
+- **Loại**: một trong `vaccine` | `checkup` | `medication` | `illness` | `lab` | `other` (app chuẩn hoá khi ghi).
+- **Tiêu đề**: bắt buộc; **Chi tiết** / **Nơi khám**: tuỳ chọn.
+
+Sau khi thêm tab, **cập nhật và redeploy** Apps Script (mục 4) để có `addMedicalHistory` / `updateMedicalHistory` / `deleteMedicalHistory`.
 
 ---
 
@@ -116,6 +138,11 @@ Trong Sheet → **Extensions → Apps Script** → xoá toàn bộ code mặc đ
  *   updateWeight   → sửa ngày / kg / ghi chú theo row
  *   deleteWeight   → xoá row vật lý
  *
+ * ===== Medical history V2 =====
+ *   addMedicalHistory    → append tiền sử y tế
+ *   updateMedicalHistory → sửa theo row
+ *   deleteMedicalHistory → xoá row vật lý
+ *
  * ===== Explorer actions =====
  *   addExplorer    → tạo folder hoặc file (auto-id, auto-stamp created_at, isDeleted=FALSE)
  *   updateExplorer → đổi name hoặc content (KHÔNG đổi type / parent_id)
@@ -130,9 +157,13 @@ Trong Sheet → **Extensions → Apps Script** → xoá toàn bộ code mặc đ
 const FEED_SHEET = 'Feeding';
 const EXPL_SHEET = 'Explorer';
 const WEIGHT_SHEET = 'Weight';
+const MEDICAL_SHEET = 'MedicalHistory';
 
 // Weight columns (1-based): User | Ngày DD/MM/YYYY | kg | Ghi chú
 const W_USER = 1, W_DATE = 2, W_WEIGHT = 3, W_NOTE = 4;
+
+// MedicalHistory columns (1-based): User | Ngày | Loại | Tiêu đề | Chi tiết | Nơi khám
+const M_USER = 1, M_DATE = 2, M_KIND = 3, M_TITLE = 4, M_DETAIL = 5, M_PLACE = 6;
 
 // Feeding columns (1-based)
 const F_USER = 1, F_DATE = 2, F_TIME = 3, F_VOLUME = 4, F_NOTE = 5;
@@ -170,6 +201,10 @@ function doPost(e) {
       case 'addWeight':      return _json(handleAddWeight(body));
       case 'updateWeight':   return _json(handleUpdateWeight(body));
       case 'deleteWeight':   return _json(handleDeleteWeight(body));
+      // Medical history V2
+      case 'addMedicalHistory':    return _json(handleAddMedicalHistory(body));
+      case 'updateMedicalHistory': return _json(handleUpdateMedicalHistory(body));
+      case 'deleteMedicalHistory': return _json(handleDeleteMedicalHistory(body));
       // Explorer
       case 'addExplorer':    return _json(handleAddExplorer(body));
       case 'updateExplorer': return _json(handleUpdateExplorer(body));
@@ -351,6 +386,74 @@ function handleUpdateWeight(body) {
 
 function handleDeleteWeight(body) {
   const sheet = _getSheet(WEIGHT_SHEET);
+  var row = parseInt(body.row, 10);
+  if (!row || row < 2) throw new Error('Thiếu row hợp lệ');
+  sheet.deleteRow(row);
+  return { success: true };
+}
+
+/* =========================
+ * Medical history V2 handlers
+ * ========================= */
+
+function _normalizeMedicalKind(k) {
+  var s = String(k || '').trim().toLowerCase();
+  var allowed = ['vaccine', 'checkup', 'medication', 'illness', 'lab', 'other'];
+  return allowed.indexOf(s) >= 0 ? s : 'other';
+}
+
+function handleAddMedicalHistory(body) {
+  const sheet = _getSheet(MEDICAL_SHEET);
+  const log = body.log || {};
+  const user = String(log.user || '').toLowerCase().trim();
+  const dateIso = String(log.date || '').trim();
+  const kind = _normalizeMedicalKind(log.kind);
+  const title = String(log.title || '').trim();
+  const detail = String(log.detail || '').trim();
+  const place = String(log.place || '').trim();
+
+  if (!user || !dateIso || !title) {
+    throw new Error('Thiếu trường bắt buộc (user, date, title).');
+  }
+
+  const dateStr = _isoToDdMmYyyy(dateIso);
+  if (!dateStr) throw new Error('Ngày không hợp lệ (YYYY-MM-DD).');
+
+  sheet.appendRow([user, dateStr, kind, title, detail, place]);
+
+  return { success: true, rowIndex: sheet.getLastRow() };
+}
+
+function handleUpdateMedicalHistory(body) {
+  const sheet = _getSheet(MEDICAL_SHEET);
+  var row = parseInt(body.row, 10);
+  if (!row || row < 2) throw new Error('Thiếu row hợp lệ');
+
+  const patch = body.patch || {};
+  if (patch.date != null) {
+    var iso = String(patch.date).trim();
+    var d = _isoToDdMmYyyy(iso);
+    if (!d) throw new Error('Ngày không hợp lệ');
+    sheet.getRange(row, M_DATE).setValue(d);
+  }
+  if (patch.kind != null) {
+    sheet.getRange(row, M_KIND).setValue(_normalizeMedicalKind(patch.kind));
+  }
+  if (patch.title != null) {
+    sheet.getRange(row, M_TITLE).setValue(String(patch.title).trim());
+  }
+  if (patch.detail != null) {
+    sheet.getRange(row, M_DETAIL).setValue(String(patch.detail));
+  }
+  if (patch.place != null) {
+    sheet.getRange(row, M_PLACE).setValue(String(patch.place));
+  }
+
+  return { success: true, rowIndex: row };
+}
+
+function handleDeleteMedicalHistory(body) {
+  const sheet = _getSheet(MEDICAL_SHEET);
   var row = parseInt(body.row, 10);
   if (!row || row < 2) throw new Error('Thiếu row hợp lệ');
   sheet.deleteRow(row);

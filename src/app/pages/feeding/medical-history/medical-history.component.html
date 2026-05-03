@@ -1,0 +1,231 @@
+<div class="medical-page">
+  <section class="card medical-intro">
+    <div class="medical-intro__badge">V2</div>
+    <div class="medical-intro__body">
+      <h2><i class="pi pi-heart-fill"></i> Tiền sử y tế của bé</h2>
+      <p>
+        Ghi vaccine, lần khám, thuốc, ốm hoặc xét nghiệm — xem theo dòng thời gian và lọc theo loại.
+        Ảnh toa / phiếu có thể lưu ở tab <strong>Tài liệu</strong>.
+      </p>
+    </div>
+  </section>
+
+  <div class="alert error" *ngIf="errorMsg()">
+    <i class="pi pi-exclamation-circle"></i>
+    {{ errorMsg() }}
+  </div>
+  <div class="alert ok" *ngIf="successMsg()">
+    <i class="pi pi-check-circle"></i>
+    {{ successMsg() }}
+  </div>
+
+  <!-- V2: chip lọc -->
+  <div class="kind-chips" role="tablist" aria-label="Lọc theo loại">
+    <button
+      type="button"
+      class="kind-chip"
+      [class.active]="kindFilter() === 'all'"
+      (click)="setKindFilter('all')"
+      role="tab"
+    >
+      Tất cả
+      <span class="kind-chip__count">{{ myEntries().length }}</span>
+    </button>
+    <button
+      type="button"
+      class="kind-chip"
+      *ngFor="let km of kindCatalog"
+      [class.active]="kindFilter() === km.id"
+      [style.--chip-color]="km.color"
+      (click)="setKindFilter(km.id)"
+      role="tab"
+    >
+      <i [class]="km.icon"></i>
+      {{ km.shortLabel }}
+      <span class="kind-chip__count">{{ kindCounts()[km.id] }}</span>
+    </button>
+  </div>
+
+  <section class="card medical-loading" *ngIf="loading()">
+    <i class="pi pi-spin pi-spinner"></i>
+    Đang tải tiền sử…
+  </section>
+
+  <section class="card medical-empty" *ngIf="!loading() && myEntries().length === 0">
+    <p>Chưa có sự kiện y tế nào. Bấm <strong>Ghi sự kiện</strong> để thêm (tiêm chủng, khám, thuốc…).</p>
+  </section>
+
+  <section class="card medical-empty soft" *ngIf="!loading() && myEntries().length > 0 && filteredEntries().length === 0">
+    <p>Không có mục nào khớp bộ lọc. Chọn <strong>Tất cả</strong> hoặc loại khác.</p>
+  </section>
+
+  <!-- Timeline V2 -->
+  <div class="medical-timeline" *ngIf="!loading() && filteredEntries().length > 0">
+    <section class="timeline-month" *ngFor="let g of timelineGroups()">
+      <h3 class="timeline-month__title">{{ g.monthLabel }}</h3>
+      <ul class="timeline-list">
+        <li class="timeline-item card" *ngFor="let e of g.entries">
+          <div
+            class="timeline-item__accent"
+            [style.background]="metaFor(e.kind).color"
+          ></div>
+          <div class="timeline-item__main">
+            <div class="timeline-item__head">
+              <span
+                class="kind-pill"
+                [style.--pill-color]="metaFor(e.kind).color"
+              >
+                <i [class]="metaFor(e.kind).icon"></i>
+                {{ metaFor(e.kind).shortLabel }}
+              </span>
+              <time [attr.datetime]="e.date">{{ formatDateDisplay(e.date) }}</time>
+            </div>
+            <h4 class="timeline-item__title">{{ e.title }}</h4>
+            <p class="timeline-item__detail" *ngIf="e.detail">{{ e.detail }}</p>
+            <p class="timeline-item__place" *ngIf="e.place">
+              <i class="pi pi-map-marker"></i> {{ e.place }}
+            </p>
+            <div class="timeline-item__actions">
+              <button
+                type="button"
+                class="btn ghost sm"
+                (click)="openEdit(e)"
+                [disabled]="!e.rowIndex"
+              >
+                <i class="pi pi-pencil"></i> Sửa
+              </button>
+              <button
+                type="button"
+                class="btn ghost sm danger"
+                (click)="deleteEntry(e)"
+                [disabled]="!e.rowIndex"
+              >
+                <i class="pi pi-trash"></i>
+              </button>
+            </div>
+          </div>
+        </li>
+      </ul>
+    </section>
+  </div>
+
+  <button
+    type="button"
+    class="fab medical-fab"
+    (click)="openAddDialog()"
+    aria-label="Ghi sự kiện y tế"
+    title="Ghi sự kiện y tế"
+  >
+    <i class="pi pi-plus"></i>
+    <span class="fab-label">Ghi sự kiện</span>
+  </button>
+
+  <!-- Dialog -->
+  <div
+    class="dialog-overlay"
+    *ngIf="dialogOpen()"
+    (click)="closeDialog()"
+  >
+    <div
+      class="dialog medical-dialog"
+      role="dialog"
+      aria-modal="true"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="dialog-head">
+        <div>
+          <div class="eyebrow">Tiền sử y tế · V2</div>
+          <h2>
+            <i class="pi pi-pencil"></i>
+            {{ editingEntry() ? 'Sửa sự kiện' : 'Thêm sự kiện' }}
+          </h2>
+        </div>
+        <button
+          type="button"
+          class="dialog-close"
+          (click)="closeDialog()"
+          aria-label="Đóng"
+        >
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+
+      <form class="medical-form" (ngSubmit)="submitDialog()">
+        <label class="field">
+          <span class="label">Ngày</span>
+          <input
+            type="date"
+            [ngModel]="draft().date"
+            (ngModelChange)="updateDraft({ date: $event })"
+            name="mhDate"
+            [max]="maxDateToday"
+            required
+          />
+        </label>
+
+        <label class="field">
+          <span class="label">Loại</span>
+          <select
+            [ngModel]="draft().kind"
+            (ngModelChange)="updateDraft({ kind: $event })"
+            name="mhKind"
+          >
+            <option *ngFor="let km of kindCatalog" [ngValue]="km.id">
+              {{ km.label }}
+            </option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span class="label">Tiêu đề</span>
+          <input
+            type="text"
+            [ngModel]="draft().title"
+            (ngModelChange)="updateDraft({ title: $event })"
+            name="mhTitle"
+            placeholder="VD: Mũi 2 Pentaxim — BV Nhi"
+            required
+          />
+        </label>
+
+        <label class="field">
+          <span class="label">Chi tiết</span>
+          <textarea
+            [ngModel]="draft().detail"
+            (ngModelChange)="updateDraft({ detail: $event })"
+            name="mhDetail"
+            rows="4"
+            placeholder="Phản ứng sau tiêm, chỉ định BS, liều dùng…"
+          ></textarea>
+        </label>
+
+        <label class="field">
+          <span class="label">Nơi khám / ghi chú ngắn</span>
+          <input
+            type="text"
+            [ngModel]="draft().place"
+            (ngModelChange)="updateDraft({ place: $event })"
+            name="mhPlace"
+            placeholder="Tuỳ chọn"
+          />
+        </label>
+
+        <div class="dialog-actions">
+          <button type="button" class="btn ghost" (click)="closeDialog()" [disabled]="saving()">
+            Huỷ
+          </button>
+          <button type="submit" class="btn primary" [disabled]="saving()">
+            <i class="pi pi-check" *ngIf="!saving()"></i>
+            <i class="pi pi-spin pi-spinner" *ngIf="saving()"></i>
+            {{ editingEntry() ? 'Cập nhật' : 'Lưu' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <footer class="medical-footnote">
+    <i class="pi pi-info-circle"></i>
+    Thông tin chỉ để ghi nhớ tại nhà; không thay cho hồ sơ bệnh án tại cơ sở khám chữa bệnh.
+  </footer>
+</div>

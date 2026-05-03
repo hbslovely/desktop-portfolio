@@ -1,4 +1,4 @@
-import { Component, HostListener, ViewChild, computed, inject, signal } from '@angular/core';
+import { Component, ViewChild, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
@@ -22,14 +22,10 @@ import {
   PostpartumStage,
   resolvePostpartumStage,
 } from './postpartum-food.data';
-import {
-  BABY_TIMELINE,
-  TimelineMilestone,
-  MoodType,
-  getCurrentMilestone,
-  getMilestoneState,
-} from './baby-timeline.data';
+import { resolveGuide } from './feeding-tips.data';
+import { MOM_WELLNESS_CARDS } from './mom-wellness.data';
 import { DocumentsComponent } from './documents/documents.component';
+import { MedicalHistoryComponent } from './medical-history/medical-history.component';
 import { WeightComponent } from './weight/weight.component';
 
 interface Profile {
@@ -63,7 +59,13 @@ const STORAGE_PREFIX = 'feeding-profile::';
 @Component({
   selector: 'app-feeding',
   standalone: true,
-  imports: [CommonModule, FormsModule, DocumentsComponent, WeightComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    DocumentsComponent,
+    MedicalHistoryComponent,
+    WeightComponent,
+  ],
   templateUrl: './feeding.component.html',
   styleUrls: ['./feeding.component.scss'],
 })
@@ -73,10 +75,14 @@ export class FeedingComponent {
 
   Math = Math;
 
-  /** Tab nav phía dưới: feeding | weight | documents. */
-  bottomTab = signal<'feeding' | 'weight' | 'documents'>('feeding');
+  /** Tab nav phía dưới: feeding | weight | mom | medical | documents. */
+  bottomTab = signal<
+    'feeding' | 'weight' | 'mom' | 'medical' | 'documents'
+  >('feeding');
 
-  setBottomTab(tab: 'feeding' | 'weight' | 'documents') {
+  setBottomTab(
+    tab: 'feeding' | 'weight' | 'mom' | 'medical' | 'documents'
+  ) {
     this.bottomTab.set(tab);
     if (typeof window !== 'undefined') {
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -132,9 +138,6 @@ export class FeedingComponent {
   chartTab = signal<'volume' | 'count' | 'timeline'>('volume');
   /** Số ngày hiển thị trong biểu đồ phân tích (7 / 14 / 30) */
   chartRange = signal<7 | 14 | 30>(7);
-  timelineDialogOpen = signal<boolean>(false);
-  timelineView = signal<'list' | 'chart'>('list');
-  selectedTimelineId = signal<string | null>(null);
 
   // ===== Bình sữa đã pha (persistent) =====
   bottlePrep = signal<{ volumeMl: number; at: string } | null>(null);
@@ -208,187 +211,6 @@ export class FeedingComponent {
     };
   });
 
-  // ===== Timeline phát triển =====
-  BABY_TIMELINE = BABY_TIMELINE;
-
-  currentTimelineMilestone = computed<TimelineMilestone | null>(() => {
-    const days = this.ageInDays();
-    if (days === null) return null;
-    return getCurrentMilestone(days);
-  });
-
-  timelineEntries = computed<
-    Array<{ milestone: TimelineMilestone; state: 'past' | 'current' | 'future' }>
-  >(() => {
-    const days = this.ageInDays();
-    return BABY_TIMELINE.map((m) => ({
-      milestone: m,
-      state: getMilestoneState(m, days),
-    }));
-  });
-
-  timelineStats = computed(() => {
-    const entries = this.timelineEntries();
-    return {
-      total: entries.length,
-      past: entries.filter((e) => e.state === 'past').length,
-      current: entries.filter((e) => e.state === 'current').length,
-    };
-  });
-
-  /**
-   * Dữ liệu cho biểu đồ đường tâm trạng:
-   *  - X: tiến trình theo thứ tự milestone
-   *  - Y: mood (happy cao nhất, leap thấp nhất - càng thấp càng "khó ở")
-   */
-  timelineChartData = computed(() => {
-    const entries = this.timelineEntries();
-    const n = entries.length;
-    const SPACING = 58;
-    const PAD_L = 36;
-    const PAD_R = 36;
-    const PAD_T = 40;
-    const PAD_B = 60;
-    const PLOT_H = 160;
-    const H = PAD_T + PLOT_H + PAD_B;
-    const W = PAD_L + PAD_R + (n - 1) * SPACING;
-
-    // Mood → Y ratio (0 = top/happy, 1 = bottom/fussy)
-    const moodRatio: Record<MoodType, number> = {
-      happy: 0.12,
-      milestone: 0.22,
-      calm: 0.45,
-      growth: 0.70,
-      leap: 0.88,
-    };
-
-    const points = entries.map((e, i) => {
-      const x = PAD_L + i * SPACING;
-      const y = PAD_T + moodRatio[e.milestone.mood] * PLOT_H;
-      return { x, y, entry: e, index: i };
-    });
-
-    // Smooth path (Catmull-Rom → cubic Bezier)
-    let linePath = '';
-    if (points.length > 0) {
-      linePath = `M ${points[0].x},${points[0].y}`;
-      const tension = 0.22;
-      for (let i = 0; i < points.length - 1; i++) {
-        const p0 = points[i - 1] || points[i];
-        const p1 = points[i];
-        const p2 = points[i + 1];
-        const p3 = points[i + 2] || p2;
-        const cp1x = p1.x + (p2.x - p0.x) * tension;
-        const cp1y = p1.y + (p2.y - p0.y) * tension;
-        const cp2x = p2.x - (p3.x - p1.x) * tension;
-        const cp2y = p2.y - (p3.y - p1.y) * tension;
-        linePath += ` C ${cp1x},${cp1y} ${cp2x},${cp2y} ${p2.x},${p2.y}`;
-      }
-    }
-
-    const areaPath =
-      linePath && points.length > 0
-        ? `${linePath} L ${points[points.length - 1].x},${PAD_T + PLOT_H} L ${points[0].x},${PAD_T + PLOT_H} Z`
-        : '';
-
-    // Mood reference lines (guides)
-    const moodGuides: Array<{ y: number; label: string; mood: MoodType }> = [
-      { mood: 'happy', label: 'Vui vẻ', y: PAD_T + moodRatio.happy * PLOT_H },
-      { mood: 'calm', label: 'Bình yên', y: PAD_T + moodRatio.calm * PLOT_H },
-      { mood: 'growth', label: 'Tăng trưởng', y: PAD_T + moodRatio.growth * PLOT_H },
-      { mood: 'leap', label: 'Leap / WW', y: PAD_T + moodRatio.leap * PLOT_H },
-    ];
-
-    return { W, H, PAD_L, PAD_R, PAD_T, PAD_B, PLOT_H, points, linePath, areaPath, moodGuides };
-  });
-
-  /** Entry đang được chọn (trong chart view) hoặc milestone hiện tại */
-  selectedTimelineEntry = computed(() => {
-    const id = this.selectedTimelineId();
-    const entries = this.timelineEntries();
-    if (id) {
-      const found = entries.find((e) => e.milestone.id === id);
-      if (found) return found;
-    }
-    return entries.find((e) => e.state === 'current') || entries[0] || null;
-  });
-
-  setTimelineView(view: 'list' | 'chart') {
-    this.timelineView.set(view);
-  }
-
-  selectTimelineNode(id: string) {
-    this.selectedTimelineId.set(id);
-  }
-
-  /** Index của milestone đang chọn (trong mảng BABY_TIMELINE) */
-  selectedTimelineIndex = computed<number>(() => {
-    const id = this.selectedTimelineId();
-    const entries = this.timelineEntries();
-    if (!id) {
-      const curIdx = entries.findIndex((e) => e.state === 'current');
-      return curIdx >= 0 ? curIdx : 0;
-    }
-    const idx = entries.findIndex((e) => e.milestone.id === id);
-    return idx >= 0 ? idx : 0;
-  });
-
-  prevTimeline() {
-    const entries = this.timelineEntries();
-    const idx = this.selectedTimelineIndex();
-    if (idx > 0) {
-      this.selectedTimelineId.set(entries[idx - 1].milestone.id);
-    }
-  }
-
-  nextTimeline() {
-    const entries = this.timelineEntries();
-    const idx = this.selectedTimelineIndex();
-    if (idx < entries.length - 1) {
-      this.selectedTimelineId.set(entries[idx + 1].milestone.id);
-    }
-  }
-
-  goToCurrentTimeline() {
-    const cur = this.currentTimelineMilestone();
-    if (cur) this.selectedTimelineId.set(cur.id);
-  }
-
-  @HostListener('document:keydown', ['$event'])
-  onTimelineKey(ev: KeyboardEvent) {
-    if (!this.timelineDialogOpen()) return;
-    if (ev.key === 'ArrowLeft') {
-      ev.preventDefault();
-      this.prevTimeline();
-    } else if (ev.key === 'ArrowRight') {
-      ev.preventDefault();
-      this.nextTimeline();
-    } else if (ev.key === 'Escape') {
-      this.closeTimelineDialog();
-    }
-  }
-
-  openTimelineDialog() {
-    this.timelineDialogOpen.set(true);
-    // Mặc định chọn milestone hiện tại khi mở
-    const cur = this.currentTimelineMilestone();
-    if (cur) this.selectedTimelineId.set(cur.id);
-    // Scroll tới milestone hiện tại sau khi dialog render (trong list view)
-    setTimeout(() => {
-      if (this.timelineView() === 'list') {
-        const el = document.getElementById('timeline-current');
-        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      } else {
-        const el = document.querySelector('.tl-chart-scroll [data-current="true"]');
-        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-      }
-    }, 150);
-  }
-
-  closeTimelineDialog() {
-    this.timelineDialogOpen.set(false);
-  }
-
   // ===== Postpartum food (món ăn cho mẹ) =====
   /** null = auto theo tuổi bé; number = override do user navigate */
   momFoodStageOverride = signal<number | null>(null);
@@ -434,6 +256,30 @@ export class FeedingComponent {
   resetMomStage() {
     this.momFoodStageOverride.set(null);
   }
+
+  /** Thẻ chăm sóc cố định — hiển thị tab Mẹ */
+  momWellnessCards = MOM_WELLNESS_CARDS;
+
+  /** Nhãn giai đoạn (tuần/tháng của bé) để đồng bộ gợi ý */
+  momPeriodContext = computed(() => {
+    const days = this.ageInDays();
+    if (days === null) return null;
+    const r = resolveGuide(days);
+    if (!r) return null;
+    return {
+      label: r.period.label,
+      summary: r.period.summary,
+    };
+  });
+
+  /** Tips trong WEEK/MONTH_GUIDES có category «mom», theo tuổi bé hiện tại */
+  momTipsThisPeriod = computed(() => {
+    const days = this.ageInDays();
+    if (days === null) return [];
+    const r = resolveGuide(days);
+    if (!r) return [];
+    return r.period.tips.filter((t) => t.category === 'mom');
+  });
 
   // ===== Stats =====
   todayStats = computed<DayStats>(() => this.computeDayStats(this.todayDateStr()));
@@ -1385,15 +1231,18 @@ export class FeedingComponent {
    * tự cập nhật khi user chuyển tab.
    */
   @ViewChild(DocumentsComponent) private documentsCmp?: DocumentsComponent;
+  @ViewChild(MedicalHistoryComponent) private medicalCmp?: MedicalHistoryComponent;
   @ViewChild(WeightComponent) private weightCmp?: WeightComponent;
 
   /**
-   * Reload đồng thời nhật ký bú, cân nặng **và** documents. Các child tab
-   * dùng `[hidden]` nên component có thể chưa mount — `?.refresh()` bỏ qua an toàn.
+   * Reload đồng thời nhật ký bú, cân nặng, tiền sử y tế **và** documents.
+   * Các child tab dùng `[hidden]` nên component có thể chưa mount —
+   * `?.refresh()` bỏ qua an toàn.
    */
   refreshAll() {
     this.loadLogs();
     this.weightCmp?.refresh();
+    this.medicalCmp?.refresh();
     this.documentsCmp?.refresh();
   }
 
@@ -1402,6 +1251,7 @@ export class FeedingComponent {
     () =>
       this.loadingLogs() ||
       (this.weightCmp?.loading() ?? false) ||
+      (this.medicalCmp?.loading() ?? false) ||
       (this.documentsCmp?.loading() ?? false)
   );
 
