@@ -226,10 +226,13 @@ export class MedicalHistoryComponent {
 
   constructor() {
     this.load();
-    effect(() => {
-      this.userNorm();
-      this.loadCustomPlacesFromStorage();
-    });
+    effect(
+      () => {
+        this.userNorm();
+        this.loadCustomPlacesFromStorage();
+      },
+      { allowSignalWrites: true }
+    );
   }
 
   @HostListener('document:click', ['$event'])
@@ -269,8 +272,7 @@ export class MedicalHistoryComponent {
   });
 
   myEntries = computed(() => {
-    const u = this.userNorm();
-    return this.entries().filter((e) => e.user === u);
+    return this.entries();
   });
 
   filteredEntries = computed(() => {
