@@ -19,6 +19,37 @@
     {{ successMsg() }}
   </div>
 
+  <!-- Tìm kiếm free-text trên tiêu đề, chi tiết, nơi khám, loại… -->
+  <div class="mh-text-search card" *ngIf="!loading() && myEntries().length > 0">
+    <label class="mh-text-search__label" for="mhFreeTextSearch">
+      <i class="pi pi-search" aria-hidden="true"></i>
+      Tìm trong tiền sử
+    </label>
+    <div class="mh-text-search__row">
+      <input
+        id="mhFreeTextSearch"
+        type="search"
+        class="mh-text-search__input"
+        placeholder="Tiêu đề, chi tiết, nơi khám, tên loại… (ô/o, a/ă đều được)"
+        [ngModel]="textSearchQuery()"
+        (ngModelChange)="textSearchQuery.set($event)"
+        name="mhFreeTextSearch"
+        autocomplete="off"
+        enterkeyhint="search"
+      />
+      <button
+        type="button"
+        class="mh-text-search__clear btn ghost sm"
+        *ngIf="textSearchQuery().trim()"
+        (click)="clearTextSearch()"
+        aria-label="Xoá ô tìm"
+        title="Xoá ô tìm"
+      >
+        <i class="pi pi-times" aria-hidden="true"></i>
+      </button>
+    </div>
+  </div>
+
   <!-- V2: bộ lọc dạng panel (search + sort) -->
   <div
     class="mh-filter"
@@ -36,7 +67,7 @@
       <span class="mh-filter-trigger__text">
         <span class="mh-filter-trigger__label">{{ kindFilterSummary() }}</span>
         <span class="mh-filter-trigger__meta">
-          <span class="mh-filter-trigger__count">{{ filteredEntries().length }}</span>
+          <span class="mh-filter-trigger__count">{{ visibleEntries().length }}</span>
           <span class="mh-filter-trigger__hint" *ngIf="timelineSort() === 'oldest'">
             · cũ → mới
           </span>
@@ -64,7 +95,7 @@
           type="button"
           class="mh-filter-panel__reset btn ghost sm"
           (click)="resetFilterPanel()"
-          title="Xóa lọc loại, đặt thời gian và thứ tự danh sách về mặc định"
+          title="Xóa lọc loại, ô tìm chữ, đặt thời gian và thứ tự danh sách về mặc định"
         >
           <i class="pi pi-replay" aria-hidden="true"></i>
           Đặt lại
@@ -189,8 +220,24 @@
     </p>
   </section>
 
+  <section
+    class="card medical-empty soft"
+    *ngIf="
+      !loading() &&
+      myEntries().length > 0 &&
+      filteredEntries().length > 0 &&
+      visibleEntries().length === 0 &&
+      textSearchQuery().trim()
+    "
+  >
+    <p>
+      Không có mục nào khớp từ khoá <strong>«{{ textSearchQuery().trim() }}»</strong>.
+      Thử từ khác hoặc <button type="button" class="mh-inline-link" (click)="clearTextSearch()">xoá ô tìm</button>.
+    </p>
+  </section>
+
   <!-- Timeline V2 -->
-  <div class="medical-timeline" *ngIf="!loading() && filteredEntries().length > 0">
+  <div class="medical-timeline" *ngIf="!loading() && visibleEntries().length > 0">
     <section class="timeline-month" *ngFor="let g of timelineGroups()">
       <h3 class="timeline-month__title">{{ g.monthLabel }}</h3>
       <ul class="timeline-list">
