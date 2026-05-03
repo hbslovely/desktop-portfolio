@@ -1467,16 +1467,25 @@
   }
 }
 
-/* ============ FAB: tải ảnh lên ============ */
-.docs-fab {
+/* ============ FAB: tải ảnh + chụp (mobile) ============ */
+.docs-fab-group {
   position: fixed;
-  /*
-    Bottom = bottom-nav (~60px) + statusbar (~36px) + 12px khoảng cách
-    để FAB không đè lên thanh số file/folder bên dưới. Cộng safe-area cho iOS.
-  */
   bottom: calc(108px + env(safe-area-inset-bottom, 0px));
   right: 20px;
   z-index: 80;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+
+  &.disabled {
+    pointer-events: none;
+    opacity: 0.65;
+  }
+}
+
+.docs-fab {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 10px;
@@ -1529,6 +1538,17 @@
     &__label {
       display: none;
     }
+  }
+}
+
+.docs-fab--camera {
+  padding: 14px 16px;
+
+  i {
+    width: auto;
+    height: auto;
+    background: transparent;
+    font-size: 22px;
   }
 }
 

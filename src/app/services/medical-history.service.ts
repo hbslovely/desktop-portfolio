@@ -69,9 +69,10 @@ export class MedicalHistoryService {
    *   D = Tiêu đề
    *   E = Chi tiết
    *   F = Nơi khám / ghi chú ngắn
+   *   G = id file đính kèm (Explorer), có thể để trống
    */
   getEntries(): Observable<MedicalHistoryEntry[]> {
-    const range = `${this.SHEET_NAME}!A2:F`;
+    const range = `${this.SHEET_NAME}!A2:G`;
     const url = `${this.BASE_URL}/values/${range}?key=${this.API_KEY}&valueRenderOption=FORMATTED_VALUE`;
 
     return this.http.get<{ values?: string[][] }>(url).pipe(
@@ -85,6 +86,12 @@ export class MedicalHistoryService {
             const title = (row[3] || '').trim();
             const detail = (row[4] || '').trim();
             const place = (row[5] || '').trim();
+            const attachRaw = (row[6] || '').toString().trim();
+            let attachmentExplorerId: number | undefined;
+            if (attachRaw !== '') {
+              const n = parseInt(attachRaw, 10);
+              if (Number.isFinite(n) && n > 0) attachmentExplorerId = n;
+            }
 
             if (!dateStr || !title) return null;
 
@@ -98,6 +105,7 @@ export class MedicalHistoryService {
               title,
               detail,
               place: place || undefined,
+              attachmentExplorerId,
               rowIndex: idx + 2,
             };
             return entry;
@@ -125,6 +133,10 @@ export class MedicalHistoryService {
         title: entry.title,
         detail: entry.detail || '',
         place: entry.place || '',
+        attachment_id:
+          entry.attachmentExplorerId != null
+            ? entry.attachmentExplorerId
+            : '',
       },
     }).pipe(catchError(() => of({ success: true })));
   }
@@ -137,15 +149,31 @@ export class MedicalHistoryService {
       title?: string;
       detail?: string;
       place?: string;
+      /** Gửi `null` hoặc `''` để xoá đính kèm */
+      attachmentExplorerId?: number | null | '';
     }
   ): Observable<MedicalSheetResponse> {
     if (!this.APPS_SCRIPT_URL) {
       return throwError(() => new Error('Chưa cấu hình Google Apps Script URL'));
     }
+    const bodyPatch: Record<string, unknown> = {};
+    if (patch.date !== undefined) bodyPatch['date'] = patch.date;
+    if (patch.kind !== undefined) bodyPatch['kind'] = patch.kind;
+    if (patch.title !== undefined) bodyPatch['title'] = patch.title;
+    if (patch.detail !== undefined) bodyPatch['detail'] = patch.detail;
+    if (patch.place !== undefined) bodyPatch['place'] = patch.place;
+    if (
+      Object.prototype.hasOwnProperty.call(patch, 'attachmentExplorerId')
+    ) {
+      const v = patch.attachmentExplorerId;
+      bodyPatch['attachment_id'] =
+        v === null || v === '' ? '' : v;
+    }
+
     return this.postToAppsScript({
       action: 'updateMedicalHistory',
       row: rowIndex,
-      patch,
+      patch: bodyPatch,
     }).pipe(catchError(() => of({ success: true })));
   }
 

@@ -59,10 +59,12 @@ Sau khi thêm tab, **cập nhật và redeploy** Google Apps Script (mục 4 bê
 1. Tạo tab mới tên **chính xác** `MedicalHistory`.
 2. Dòng 1 là **header** theo đúng thứ tự sau:
 
-| A        | B          | C (slug)   | D           | E          | F              |
-| -------- | ---------- | ---------- | ----------- | ---------- | -------------- |
-| **User** | **Ngày**   | **Loại**   | **Tiêu đề** | **Chi tiết** | **Nơi khám** |
-| phat     | 03/05/2026 | vaccine    | Pentaxim mũi 2 | Không sốt | BV Nhi |
+| A        | B          | C (slug)   | D           | E          | F              | G (tuỳ chọn)     |
+| -------- | ---------- | ---------- | ----------- | ---------- | -------------- | ---------------- |
+| **User** | **Ngày**   | **Loại**   | **Tiêu đề** | **Chi tiết** | **Nơi khám** | **id file Explorer** |
+| phat     | 03/05/2026 | vaccine    | Pentaxim mũi 2 | Không sốt | BV Nhi         |                  |
+
+Cột **G**: id file ảnh trên tab `Explorer` (thư mục con « Y tế »), để trống nếu không có đính kèm — app tự ghi khi bạn đính kèm ảnh trong màn hình tiền sử.
 
 Quy ước:
 
@@ -70,8 +72,9 @@ Quy ước:
 - **Ngày**: `DD/MM/YYYY` — nên để cột B **Plain text**.
 - **Loại**: một trong `vaccine` | `checkup` | `medication` | `illness` | `lab` | `other` (app chuẩn hoá khi ghi).
 - **Tiêu đề**: bắt buộc; **Chi tiết** / **Nơi khám**: tuỳ chọn.
+- **Cột G**: tuỳ chọn — id file ảnh trên `Explorer` (app điền khi có đính kèm trong màn tiền sử).
 
-Sau khi thêm tab, **cập nhật và redeploy** Apps Script (mục 4) để có `addMedicalHistory` / `updateMedicalHistory` / `deleteMedicalHistory`.
+Sau khi thêm tab, **cập nhật và redeploy** Apps Script (mục 4) để có `addMedicalHistory` / `updateMedicalHistory` / `deleteMedicalHistory` (phiên bản có cột `attachment_id`).
 
 ---
 
@@ -162,8 +165,9 @@ const MEDICAL_SHEET = 'MedicalHistory';
 // Weight columns (1-based): User | Ngày DD/MM/YYYY | kg | Ghi chú
 const W_USER = 1, W_DATE = 2, W_WEIGHT = 3, W_NOTE = 4;
 
-// MedicalHistory columns (1-based): User | Ngày | Loại | Tiêu đề | Chi tiết | Nơi khám
-const M_USER = 1, M_DATE = 2, M_KIND = 3, M_TITLE = 4, M_DETAIL = 5, M_PLACE = 6;
+// MedicalHistory columns (1-based): User | Ngày | Loại | Tiêu đề | Chi tiết | Nơi khám | id file Explorer
+const M_USER = 1, M_DATE = 2, M_KIND = 3, M_TITLE = 4, M_DETAIL = 5, M_PLACE = 6,
+      M_ATTACHMENT = 7;
 
 // Feeding columns (1-based)
 const F_USER = 1, F_DATE = 2, F_TIME = 3, F_VOLUME = 4, F_NOTE = 5;
@@ -419,7 +423,13 @@ function handleAddMedicalHistory(body) {
   const dateStr = _isoToDdMmYyyy(dateIso);
   if (!dateStr) throw new Error('Ngày không hợp lệ (YYYY-MM-DD).');
 
-  sheet.appendRow([user, dateStr, kind, title, detail, place]);
+  var attachRaw = log.attachment_id;
+  if (attachRaw === undefined || attachRaw === null) attachRaw = log.attachmentId;
+  var attachmentCell = attachRaw !== undefined && attachRaw !== null && String(attachRaw).trim() !== ''
+    ? String(attachRaw).trim()
+    : '';
+
+  sheet.appendRow([user, dateStr, kind, title, detail, place, attachmentCell]);
 
   return { success: true, rowIndex: sheet.getLastRow() };
 }
@@ -447,6 +457,11 @@ function handleUpdateMedicalHistory(body) {
   }
   if (patch.place != null) {
     sheet.getRange(row, M_PLACE).setValue(String(patch.place));
+  }
+  var pa = patch.attachment_id;
+  if (pa === undefined || pa === null) pa = patch.attachmentId;
+  if (pa !== undefined && pa !== null) {
+    sheet.getRange(row, M_ATTACHMENT).setValue(pa === '' ? '' : String(pa).trim());
   }
 
   return { success: true, rowIndex: row };
