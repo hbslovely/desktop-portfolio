@@ -607,30 +607,51 @@
   }
 }
 
+/*
+  Dialog không kéo sát đáy — tránh đè/lệch so với bottom-nav (~56px) + home indicator.
+  z-index > bottom-nav (90).
+*/
 .dialog-overlay {
   position: fixed;
   inset: 0;
-  z-index: 200;
+  z-index: 250;
   background: rgba(15, 23, 42, 0.45);
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
   padding: 16px;
+  padding-top: max(16px, env(safe-area-inset-top, 0px));
+  padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
+  box-sizing: border-box;
+}
+
+@media (max-width: 639px) {
+  .dialog-overlay {
+    /* Chừa chỗ thanh tab Feeding phía dưới (~52–60px) */
+    padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px) + 12px);
+    align-items: center;
+  }
 }
 
 .medical-dialog {
   width: 100%;
   max-width: 480px;
-  max-height: min(90vh, 720px);
+  max-height: min(
+    82dvh,
+    calc(
+      100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) -
+        96px
+    )
+  );
   overflow: auto;
   background: var(--surface, #fff);
-  border-radius: 18px 18px 0 0;
-  padding: 0 0 env(safe-area-inset-bottom, 12px);
+  border-radius: 18px;
+  padding: 0 0 12px;
+  box-shadow: 0 24px 48px -24px rgba(15, 23, 42, 0.35);
 
-  @media (min-width: 540px) {
-    align-self: center;
-    border-radius: 18px;
-    margin-bottom: 0;
+  @media (min-width: 640px) {
+    max-height: min(88dvh, 720px);
+    padding-bottom: env(safe-area-inset-bottom, 12px);
   }
 }
 
