@@ -169,13 +169,46 @@
   background: var(--surface, #fff);
   box-shadow: 0 16px 40px -20px rgba(15, 23, 42, 0.28);
 
+  &__headrow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
   &__title {
     font-size: 12px;
     font-weight: 800;
     letter-spacing: 0.04em;
     text-transform: uppercase;
     color: var(--muted, #64748b);
-    margin: 0 0 10px;
+    margin: 0;
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__reset {
+    flex-shrink: 0;
+    white-space: nowrap;
+    cursor: pointer;
+    font-weight: 700;
+
+    i {
+      margin-right: 4px;
+    }
+  }
+
+  &__hint {
+    margin: -4px 0 12px;
+    font-size: 12px;
+    line-height: 1.45;
+    color: var(--muted, #64748b);
+
+    strong {
+      color: var(--text);
+      font-weight: 700;
+    }
   }
 
   &__field {
