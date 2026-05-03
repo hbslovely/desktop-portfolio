@@ -77,7 +77,7 @@
     },
     {
       "source": "/api/feeding-apps-script",
-      "destination": "https://script.google.com/macros/s/AKfycbzlbMMhPm6S-Dm8XgqJgZqRm8vJSgLwJM19LUFxg_X9_Lorw0n_AUELNTpiH-8ULQyBRg/exec"
+      "destination": "https://script.google.com/macros/s/AKfycbzeEaz8xMniaEU8f-65tkER8OSCvBn1xGN0hH4GYLRAHVIlT4n6jdLHhPu-IcdCI3C05A/exec"
     },
     {
       "source": "/api/dnse-api/:path*",
