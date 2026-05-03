@@ -481,49 +481,6 @@
   hyphens: manual;
 }
 
-/* ========== Thống kê nhanh (TB / max / min) ========== */
-.weight-stats-strip {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-  margin-bottom: 12px;
-
-  @media (max-width: 520px) {
-    grid-template-columns: 1fr;
-  }
-}
-
-.w-stat {
-  padding: 10px 11px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  border: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.w-stat-label {
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--muted);
-}
-
-.w-stat-value {
-  font-size: 16px;
-  font-weight: 800;
-  color: var(--text);
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0.03em;
-}
-
-.w-stat-hint {
-  font-size: 12px;
-  color: var(--muted);
-}
-
 /* ========== Biểu đồ cân ========== */
 .weight-chart-card {
   .history-head {
@@ -648,7 +605,7 @@
   margin: 0;
 }
 
-/* ========== Biểu đồ phụ (Δkg, tốc độ) ========== */
+/* ========== Biểu đồ phụ (tốc độ) ========== */
 .weight-secondary-suite {
   .weight-secondary-suite__head {
     margin-bottom: 8px;
@@ -679,6 +636,10 @@
   }
 }
 
+.weight-subchart--full {
+  grid-column: 1 / -1;
+}
+
 .weight-subchart {
   min-width: 0;
 
@@ -705,22 +666,17 @@
     stroke-dasharray: 5 3;
   }
 
-  .w-bar {
-    &--pos {
-      fill: #22c55e;
-      fill-opacity: 0.88;
-    }
-
-    &--neg {
-      fill: #fb7185;
-      fill-opacity: 0.9;
-    }
+  .w-path--velocity {
+    fill: none;
+    stroke-width: 2.4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
   }
 
-  .w-bar-value {
-    font-size: 9px;
-    font-weight: 700;
-    fill: var(--text);
+  .w-dot--velocity {
+    fill: #fff;
+    stroke: #14b8a6;
+    stroke-width: 2;
   }
 }
 

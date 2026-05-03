@@ -465,7 +465,7 @@ export class WeightComponent {
 
     const gridLines = [0, 0.5, 1].map((t) => ({
       y: PAD_T + chartH - t * chartH,
-      label: `${Math.round(minV + (1 - t) * range)}`,
+      label: `${Math.round(minV + (1 - t) * range)} g/ngày`,
     }));
 
     return {
