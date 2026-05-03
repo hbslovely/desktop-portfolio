@@ -402,7 +402,12 @@ function handleDeleteWeight(body) {
 
 function _normalizeMedicalKind(k) {
   var s = String(k || '').trim().toLowerCase();
-  var allowed = ['vaccine', 'checkup', 'medication', 'illness', 'lab', 'other'];
+  var allowed = [
+    'vaccine', 'checkup', 'medication', 'illness', 'lab',
+    'allergy', 'dental', 'ent', 'dermatology', 'vision', 'hearing',
+    'emergency', 'surgery', 'therapy', 'nutrition', 'screening', 'mental',
+    'home_care', 'follow_up', 'other'
+  ];
   return allowed.indexOf(s) >= 0 ? s : 'other';
 }
 

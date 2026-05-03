@@ -1,6 +1,8 @@
 import {
   Component,
+  HostListener,
   computed,
+  effect,
   inject,
   input,
   signal,
@@ -23,6 +25,7 @@ import {
   MedicalKindMeta,
   kindMeta,
 } from './medical-history-kinds.data';
+import { DEFAULT_PLACES_VI } from './medical-places.presets';
 
 type KindFilter = 'all' | MedicalEventKind;
 
@@ -65,6 +68,13 @@ export class MedicalHistoryComponent {
   /** V2: lọc theo loại */
   kindFilter = signal<KindFilter>('all');
 
+  kindPickerOpen = signal<boolean>(false);
+  kindSearch = signal<string>('');
+
+  placePickerOpen = signal<boolean>(false);
+  /** Nơi khám do người dùng thêm — lưu theo user */
+  customPlaces = signal<string[]>([]);
+
   dialogOpen = signal<boolean>(false);
   draft = signal<EntryDraft>(this.emptyDraft());
   editingEntry = signal<MedicalHistoryEntry | null>(null);
@@ -76,9 +86,88 @@ export class MedicalHistoryComponent {
   stripExistingAttachment = signal<boolean>(false);
 
   readonly kindCatalog: readonly MedicalKindMeta[] = MEDICAL_KINDS;
+  readonly defaultPlaces = DEFAULT_PLACES_VI;
+
+  filteredKindCatalog = computed(() => {
+    const q = this.kindSearch().trim().toLowerCase();
+    if (!q) return this.kindCatalog;
+    return this.kindCatalog.filter(
+      (km) =>
+        km.label.toLowerCase().includes(q) ||
+        km.shortLabel.toLowerCase().includes(q) ||
+        km.id.toLowerCase().includes(q)
+    );
+  });
+
+  placesFromEntries = computed(() => {
+    const set = new Set<string>();
+    for (const e of this.myEntries()) {
+      const p = this.normalizePlace(e.place || '');
+      if (p) set.add(p);
+    }
+    return [...set];
+  });
+
+  filteredPlaceSuggestions = computed(() => {
+    const raw = [
+      ...this.defaultPlaces,
+      ...this.customPlaces(),
+      ...this.placesFromEntries(),
+    ];
+    const seen = new Set<string>();
+    const uniq: string[] = [];
+    for (const p of raw) {
+      const t = this.normalizePlace(p);
+      if (!t || seen.has(t)) continue;
+      seen.add(t);
+      uniq.push(t);
+    }
+    const q = this.normalizePlace(this.draft().place).toLowerCase();
+    const filtered = !q
+      ? uniq
+      : uniq.filter((p) => p.toLowerCase().includes(q));
+    filtered.sort((a, b) => a.localeCompare(b, 'vi'));
+    return filtered;
+  });
+
+  placeSuggestionsUnion = computed(() => {
+    const set = new Set<string>();
+    for (const p of this.defaultPlaces) {
+      set.add(this.normalizePlace(p));
+    }
+    for (const p of this.customPlaces()) {
+      set.add(this.normalizePlace(p));
+    }
+    for (const e of this.myEntries()) {
+      if (e.place) set.add(this.normalizePlace(e.place));
+    }
+    return set;
+  });
+
+  canAddCustomPlace = computed(() => {
+    const t = this.normalizePlace(this.draft().place);
+    if (!t) return false;
+    return !this.placeSuggestionsUnion().has(t);
+  });
 
   constructor() {
     this.load();
+    effect(() => {
+      this.userNorm();
+      this.loadCustomPlacesFromStorage();
+    });
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(ev: Event): void {
+    const path = ev.composedPath?.() ?? [];
+    const inCombo = path.some(
+      (n) => n instanceof HTMLElement && n.classList.contains('mh-combo')
+    );
+    if (!inCombo) {
+      this.kindPickerOpen.set(false);
+      this.placePickerOpen.set(false);
+    }
   }
 
   refresh() {
@@ -130,16 +219,13 @@ export class MedicalHistoryComponent {
 
   kindCounts = computed(() => {
     const rows = this.myEntries();
-    const counts: Record<MedicalEventKind, number> = {
-      vaccine: 0,
-      checkup: 0,
-      medication: 0,
-      illness: 0,
-      lab: 0,
-      other: 0,
-    };
+    const counts = {} as Record<MedicalEventKind, number>;
+    for (const km of MEDICAL_KINDS) {
+      counts[km.id] = 0;
+    }
     for (const e of rows) {
-      counts[e.kind]++;
+      const k = counts[e.kind] !== undefined ? e.kind : 'other';
+      counts[k]++;
     }
     return counts;
   });
@@ -187,6 +273,76 @@ export class MedicalHistoryComponent {
     return kindMeta(kind);
   }
 
+  toggleKindPicker(): void {
+    this.kindPickerOpen.update((o) => !o);
+    if (this.kindPickerOpen()) {
+      this.kindSearch.set('');
+    }
+  }
+
+  selectKind(kind: MedicalEventKind): void {
+    this.updateDraft({ kind });
+    this.kindPickerOpen.set(false);
+    this.kindSearch.set('');
+  }
+
+  selectPlace(place: string): void {
+    this.updateDraft({ place: this.normalizePlace(place) });
+    this.placePickerOpen.set(false);
+  }
+
+  addCustomPlaceFromDraft(): void {
+    const t = this.normalizePlace(this.draft().place);
+    if (!t) return;
+    if (this.placeSuggestionsUnion().has(t)) return;
+    this.customPlaces.update((arr) => {
+      if (arr.some((x) => this.normalizePlace(x) === t)) return arr;
+      return [...arr, t];
+    });
+    this.persistCustomPlaces();
+  }
+
+  private normalizePlace(s: string): string {
+    return String(s ?? '')
+      .trim()
+      .replace(/\s+/g, ' ');
+  }
+
+  private placesStorageKey(): string {
+    return `medicalCustomPlaces:${this.userNorm()}`;
+  }
+
+  private loadCustomPlacesFromStorage(): void {
+    try {
+      const raw = localStorage.getItem(this.placesStorageKey());
+      if (!raw) {
+        this.customPlaces.set([]);
+        return;
+      }
+      const arr = JSON.parse(raw) as unknown;
+      if (!Array.isArray(arr)) {
+        this.customPlaces.set([]);
+        return;
+      }
+      this.customPlaces.set(
+        arr.filter((x): x is string => typeof x === 'string').map((x) => this.normalizePlace(x))
+      );
+    } catch {
+      this.customPlaces.set([]);
+    }
+  }
+
+  private persistCustomPlaces(): void {
+    try {
+      localStorage.setItem(
+        this.placesStorageKey(),
+        JSON.stringify(this.customPlaces())
+      );
+    } catch {
+      /* ignore quota */
+    }
+  }
+
   private clearPendingOnly() {
     const url = this.pendingAttachmentPreviewUrl();
     if (url) {
@@ -207,11 +363,17 @@ export class MedicalHistoryComponent {
     this.resetAttachmentDraft();
     this.errorMsg.set('');
     this.successMsg.set('');
+    this.kindPickerOpen.set(false);
+    this.placePickerOpen.set(false);
+    this.kindSearch.set('');
     this.dialogOpen.set(true);
   }
 
   closeDialog() {
     this.dialogOpen.set(false);
+    this.kindPickerOpen.set(false);
+    this.placePickerOpen.set(false);
+    this.kindSearch.set('');
     this.resetAttachmentDraft();
   }
 
@@ -345,6 +507,9 @@ export class MedicalHistoryComponent {
     });
     this.resetAttachmentDraft();
     this.errorMsg.set('');
+    this.kindPickerOpen.set(false);
+    this.placePickerOpen.set(false);
+    this.kindSearch.set('');
     this.dialogOpen.set(true);
   }
 
