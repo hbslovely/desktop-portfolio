@@ -712,8 +712,8 @@ export class DocumentsComponent {
     const files = Array.from(input.files || []);
     if (files.length === 0) return;
 
-    // Lọc bỏ file không phải ảnh.
-    const imageFiles = files.filter((f) => f.type.startsWith('image/'));
+    // Ảnh từ máy ảnh điện thoại đôi khi có `type` rỗng — nhận diện theo đuôi tệp.
+    const imageFiles = files.filter((f) => this.isImageFile(f));
     const skipped = files.length - imageFiles.length;
     if (imageFiles.length === 0) {
       this.errorMsg.set('Chỉ hỗ trợ file ảnh (jpg, png, webp...).');
@@ -784,6 +784,19 @@ export class DocumentsComponent {
     if (success > 0) {
       setTimeout(() => this.loadEntries(), 1000);
     }
+  }
+
+  /** Safari/iOS: ảnh chụp có thể không có MIME hoặc là HEIC. */
+  private isImageFile(f: File): boolean {
+    const t = (f.type || '').toLowerCase();
+    if (t.startsWith('image/')) return true;
+    if (
+      !t &&
+      /\.(jpe?g|png|gif|webp|heic|heif|bmp|avif|dng)$/i.test(f.name)
+    ) {
+      return true;
+    }
+    return false;
   }
 
   /**

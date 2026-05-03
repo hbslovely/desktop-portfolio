@@ -5,7 +5,7 @@
       <h2><i class="pi pi-heart-fill"></i> Tiền sử y tế của bé</h2>
       <p>
         Ghi vaccine, lần khám, thuốc, ốm hoặc xét nghiệm — xem theo dòng thời gian và lọc theo loại.
-        Ảnh toa / phiếu có thể lưu ở tab <strong>Tài liệu</strong>.
+        Có thể <strong>đính kèm ảnh</strong> (toa, phiếu) — lưu trong thư mục « Y tế » ở tab Tài liệu.
       </p>
     </div>
   </section>
@@ -81,6 +81,22 @@
               <time [attr.datetime]="e.date">{{ formatDateDisplay(e.date) }}</time>
             </div>
             <h4 class="timeline-item__title">{{ e.title }}</h4>
+            <div class="timeline-attach" *ngIf="attachmentFor(e) as att">
+              <a
+                *ngIf="att.content"
+                class="timeline-attach__link"
+                [href]="att.content"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <img
+                  class="timeline-attach__thumb"
+                  [src]="att.content"
+                  alt="Đính kèm y tế"
+                />
+                <span><i class="pi pi-external-link"></i> Xem ảnh</span>
+              </a>
+            </div>
             <p class="timeline-item__detail" *ngIf="e.detail">{{ e.detail }}</p>
             <p class="timeline-item__place" *ngIf="e.place">
               <i class="pi pi-map-marker"></i> {{ e.place }}
@@ -209,6 +225,64 @@
             placeholder="Tuỳ chọn"
           />
         </label>
+
+        <div class="field med-attach-field">
+          <span class="label">Ảnh đính kèm (tuỳ chọn)</span>
+          <p class="field-hint">
+            Toa thuốc, phiếu tiêm… — lưu vào Tài liệu / thư mục « Y tế ».
+          </p>
+          <div
+            class="med-saved-thumb"
+            *ngIf="
+              editingEntry() &&
+              !pendingAttachmentPreviewUrl() &&
+              !stripExistingAttachment() &&
+              attachmentFor(editingEntry()!) as sav
+            "
+          >
+            <img *ngIf="sav.content" [src]="sav.content" alt="Đính kèm hiện tại" />
+            <button
+              type="button"
+              class="btn ghost sm"
+              (click)="removeSavedAttachment()"
+            >
+              <i class="pi pi-times"></i> Gỡ ảnh đã lưu
+            </button>
+          </div>
+          <div class="med-new-thumb" *ngIf="pendingAttachmentPreviewUrl() as prevUrl">
+            <img [src]="prevUrl" alt="Xem trước" />
+            <button
+              type="button"
+              class="btn ghost sm"
+              (click)="clearPendingAttachment()"
+            >
+              Huỷ ảnh mới
+            </button>
+          </div>
+          <div class="med-file-row">
+            <label class="med-file-btn btn ghost">
+              <i class="pi pi-upload"></i>
+              {{ pendingAttachment() ? 'Đổi ảnh' : 'Chọn ảnh' }}
+              <input
+                type="file"
+                accept="image/*,.heic,.heif"
+                class="sr-only"
+                (change)="onAttachmentInput($any($event.target))"
+              />
+            </label>
+            <label class="med-file-btn btn ghost">
+              <i class="pi pi-camera"></i>
+              Chụp ảnh
+              <input
+                type="file"
+                accept="image/*,.heic,.heif"
+                capture="environment"
+                class="sr-only"
+                (change)="onAttachmentInput($any($event.target))"
+              />
+            </label>
+          </div>
+        </div>
 
         <div class="dialog-actions">
           <button type="button" class="btn ghost" (click)="closeDialog()" [disabled]="saving()">
