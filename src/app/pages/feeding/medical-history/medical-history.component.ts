@@ -1,6 +1,8 @@
 import {
   Component,
+  EventEmitter,
   HostListener,
+  Output,
   computed,
   effect,
   inject,
@@ -69,6 +71,9 @@ export class MedicalHistoryComponent {
 
   /** Cùng `?user=` với trang feeding */
   user = input<string>('guest');
+
+  /** Cha (`feeding`) chuyển tab Tài liệu + `DocumentsComponent.revealFileEntry`. */
+  @Output() openExplorerFile = new EventEmitter<number>();
 
   entries = signal<MedicalHistoryEntry[]>([]);
   /** Explorer entries — dùng để resolve ảnh đính kèm + tạo thư mục « Y tế » */
@@ -358,6 +363,19 @@ export class MedicalHistoryComponent {
     return this.explorerById().get(id);
   }
 
+  /** Mở ảnh trong tab Tài liệu (Explorer); fallback URL nếu không có id. */
+  openAttachmentInDocuments(entry: MedicalHistoryEntry): void {
+    const att = this.attachmentFor(entry);
+    if (att?.id) {
+      this.openExplorerFile.emit(att.id);
+      return;
+    }
+    const url = att?.content?.trim();
+    if (url) {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+  }
+
   toggleFilterPanel(): void {
     this.filterPanelOpen.update((v) => !v);
   }
@@ -410,10 +428,17 @@ export class MedicalHistoryComponent {
   }
 
   toggleKindPicker(): void {
-    this.kindPickerOpen.update((o) => !o);
-    if (this.kindPickerOpen()) {
+    const next = !this.kindPickerOpen();
+    this.kindPickerOpen.set(next);
+    if (next) {
+      this.placePickerOpen.set(false);
       this.kindSearch.set('');
     }
+  }
+
+  onPlaceFieldFocus(): void {
+    this.kindPickerOpen.set(false);
+    this.placePickerOpen.set(true);
   }
 
   selectKind(kind: MedicalEventKind): void {
