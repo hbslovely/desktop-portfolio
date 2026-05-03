@@ -236,49 +236,59 @@
     </p>
   </section>
 
-  <!-- Timeline V2 -->
-  <div class="medical-timeline" *ngIf="!loading() && visibleEntries().length > 0">
-    <section class="timeline-month" *ngFor="let g of timelineGroups()">
-      <h3 class="timeline-month__title">{{ g.monthLabel }}</h3>
-      <ul class="timeline-list">
-        <li class="timeline-item card" *ngFor="let e of g.entries">
+  <!-- Nhật ký y tế — layout mới -->
+  <div class="mh-timeline" *ngIf="!loading() && visibleEntries().length > 0">
+    <section class="mh-month" *ngFor="let g of timelineGroups()">
+      <header class="mh-month__head">
+        <span class="mh-month__rail" aria-hidden="true"></span>
+        <div class="mh-month__label">
+          <h3 class="mh-month__title">{{ g.monthLabel }}</h3>
+          <span class="mh-month__count">{{ g.entries.length }} sự kiện</span>
+        </div>
+      </header>
+      <ul class="mh-month__entries">
+        <li class="mh-card" *ngFor="let e of g.entries">
           <div
-            class="timeline-item__accent"
+            class="mh-card__stripe"
             [style.background]="metaFor(e.kind).color"
           ></div>
-          <div class="timeline-item__main">
-            <div class="timeline-item__head">
+          <div class="mh-card__body">
+            <div class="mh-card__row mh-card__row--meta">
               <span
-                class="kind-pill"
-                [style.--pill-color]="metaFor(e.kind).color"
+                class="mh-kind-badge"
+                [style.--k]="metaFor(e.kind).color"
               >
-                <i [class]="metaFor(e.kind).icon"></i>
+                <i [class]="metaFor(e.kind).icon" aria-hidden="true"></i>
                 {{ metaFor(e.kind).shortLabel }}
               </span>
-              <time [attr.datetime]="e.date">{{ formatDateDisplay(e.date) }}</time>
+              <time class="mh-card__date" [attr.datetime]="e.date">{{
+                formatDateDisplay(e.date)
+              }}</time>
             </div>
-            <h4 class="timeline-item__title">{{ e.title }}</h4>
-            <div class="timeline-attach" *ngIf="attachmentFor(e) as att">
+            <h4 class="mh-card__title">{{ e.title }}</h4>
+            <div class="mh-card__photo" *ngIf="attachmentFor(e) as att">
               <a
                 *ngIf="att.content"
-                class="timeline-attach__link"
+                class="mh-card__photo-link"
                 [href]="att.content"
                 target="_blank"
                 rel="noopener noreferrer"
               >
                 <img
-                  class="timeline-attach__thumb"
+                  class="mh-card__photo-img"
                   [src]="att.content"
-                  alt="Đính kèm y tế"
+                  alt="Ảnh đính kèm"
                 />
-                <span><i class="pi pi-external-link"></i> Xem ảnh</span>
+                <span class="mh-card__photo-cap">
+                  <i class="pi pi-external-link"></i> Xem ảnh
+                </span>
               </a>
             </div>
-            <p class="timeline-item__detail" *ngIf="e.detail">{{ e.detail }}</p>
-            <p class="timeline-item__place" *ngIf="e.place">
-              <i class="pi pi-map-marker"></i> {{ e.place }}
+            <p class="mh-card__detail" *ngIf="e.detail">{{ e.detail }}</p>
+            <p class="mh-card__place" *ngIf="e.place">
+              <i class="pi pi-map-marker" aria-hidden="true"></i>{{ e.place }}
             </p>
-            <div class="timeline-item__actions">
+            <div class="mh-card__actions">
               <button
                 type="button"
                 class="btn ghost sm"
@@ -327,7 +337,6 @@
     >
       <div class="dialog-head">
         <div>
-          <div class="eyebrow">Tiền sử y tế · V2</div>
           <h2>
             <i class="pi pi-pencil"></i>
             {{ editingEntry() ? 'Sửa sự kiện' : 'Thêm sự kiện' }}
@@ -419,8 +428,8 @@
             [ngModel]="draft().detail"
             (ngModelChange)="updateDraft({ detail: $event })"
             name="mhDetail"
-            rows="4"
-            placeholder="Phản ứng sau tiêm, chỉ định BS, liều dùng…"
+            rows="3"
+            placeholder="Phản ứng, chỉ định BS, liều…"
           ></textarea>
         </label>
 
@@ -463,18 +472,13 @@
               </ul>
             </div>
           </div>
-          <p class="field-hint tight">
-            Gợi ý có sẵn + nơi đã ghi; có thể thêm mới (VD Bệnh viện Quốc tế City).
-          </p>
+          <p class="field-hint tight">Gợi ý theo lần trước; gõ để thêm mới.</p>
         </div>
 
         <div class="field med-attach-field">
-          <span class="label">Ảnh đính kèm (tuỳ chọn)</span>
-          <p class="field-hint">
-            Toa thuốc, phiếu tiêm… — lưu vào Tài liệu / thư mục « Y tế ».
-          </p>
+          <span class="label">Ảnh đính kèm</span>
           <div
-            class="med-saved-thumb"
+            class="med-preview med-preview--saved"
             *ngIf="
               editingEntry() &&
               !pendingAttachmentPreviewUrl() &&
@@ -491,7 +495,7 @@
               <i class="pi pi-times"></i> Gỡ ảnh đã lưu
             </button>
           </div>
-          <div class="med-new-thumb" *ngIf="pendingAttachmentPreviewUrl() as prevUrl">
+          <div class="med-preview med-preview--new" *ngIf="pendingAttachmentPreviewUrl() as prevUrl">
             <img [src]="prevUrl" alt="Xem trước" />
             <button
               type="button"
@@ -501,29 +505,26 @@
               Huỷ ảnh mới
             </button>
           </div>
-          <div class="med-file-row">
-            <label class="med-file-btn btn ghost">
-              <i class="pi pi-upload"></i>
-              {{ pendingAttachment() ? 'Đổi ảnh' : 'Chọn ảnh' }}
-              <input
-                type="file"
-                accept="image/*,.heic,.heif"
-                class="sr-only"
-                (change)="onAttachmentInput($any($event.target))"
-              />
-            </label>
-            <label class="med-file-btn btn ghost">
-              <i class="pi pi-camera"></i>
-              Chụp ảnh
-              <input
-                type="file"
-                accept="image/*,.heic,.heif"
-                capture="environment"
-                class="sr-only"
-                (change)="onAttachmentInput($any($event.target))"
-              />
-            </label>
-          </div>
+          <label class="med-upload-card">
+            <input
+              type="file"
+              accept="image/*,.heic,.heif"
+              class="sr-only"
+              (change)="onAttachmentInput($any($event.target))"
+            />
+            <span class="med-upload-card__icon" aria-hidden="true">
+              <i class="pi pi-images"></i>
+            </span>
+            <span class="med-upload-card__text">
+              <strong class="med-upload-card__title">{{
+                pendingAttachment() ? 'Đổi ảnh khác' : 'Chọn hoặc chụp ảnh'
+              }}</strong>
+              <span class="med-upload-card__sub">Thư viện hoặc camera</span>
+            </span>
+            <span class="med-upload-card__arrow" aria-hidden="true">
+              <i class="pi pi-angle-right"></i>
+            </span>
+          </label>
         </div>
 
         <div class="dialog-actions">
