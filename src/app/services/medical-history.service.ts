@@ -3,15 +3,12 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, from, throwError, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
+import {
+  MEDICAL_KINDS,
+  type MedicalEventKind,
+} from '../pages/feeding/medical-history/medical-history-kinds.data';
 
-/** Loại sự kiện y tế (V2 — có cấu trúc, lọc, màu) */
-export type MedicalEventKind =
-  | 'vaccine'
-  | 'checkup'
-  | 'medication'
-  | 'illness'
-  | 'lab'
-  | 'other';
+export type { MedicalEventKind };
 
 export interface MedicalHistoryEntry {
   user: string;
@@ -32,14 +29,9 @@ export interface MedicalSheetResponse {
   error?: string;
 }
 
-const KIND_SET = new Set<string>([
-  'vaccine',
-  'checkup',
-  'medication',
-  'illness',
-  'lab',
-  'other',
-]);
+const KIND_SET = new Set<string>(
+  MEDICAL_KINDS.map((k) => k.id as string)
+);
 
 function parseKind(raw: string): MedicalEventKind {
   const s = String(raw ?? '')

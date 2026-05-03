@@ -1,15 +1,5 @@
-import { MedicalEventKind } from '../../../services/medical-history.service';
-
-export interface MedicalKindMeta {
-  id: MedicalEventKind;
-  label: string;
-  shortLabel: string;
-  icon: string;
-  color: string;
-}
-
-/** Metadữ loại sự kiện — Medical history V2 */
-export const MEDICAL_KINDS: readonly MedicalKindMeta[] = [
+/** Metadữ loại sự kiện — nguồn duy nhất cho union `MedicalEventKind` */
+export const MEDICAL_KINDS = [
   {
     id: 'vaccine',
     label: 'Tiêm chủng / vaccine',
@@ -46,6 +36,104 @@ export const MEDICAL_KINDS: readonly MedicalKindMeta[] = [
     color: '#6366f1',
   },
   {
+    id: 'allergy',
+    label: 'Dị ứng / phản ứng thuốc',
+    shortLabel: 'Dị ứng',
+    icon: 'pi pi-ban',
+    color: '#dc2626',
+  },
+  {
+    id: 'dental',
+    label: 'Răng miệng / nha khoa',
+    shortLabel: 'Nha',
+    icon: 'pi pi-circle-fill',
+    color: '#14b8a6',
+  },
+  {
+    id: 'ent',
+    label: 'Tai — Mũi — Họng',
+    shortLabel: 'TMH',
+    icon: 'pi pi-volume-up',
+    color: '#0891b2',
+  },
+  {
+    id: 'dermatology',
+    label: 'Da liễu',
+    shortLabel: 'Da',
+    icon: 'pi pi-heart-fill',
+    color: '#db2777',
+  },
+  {
+    id: 'vision',
+    label: 'Mắt / nhãn khoa',
+    shortLabel: 'Mắt',
+    icon: 'pi pi-eye',
+    color: '#2563eb',
+  },
+  {
+    id: 'hearing',
+    label: 'Thính lực',
+    shortLabel: 'Thính',
+    icon: 'pi pi-volume-down',
+    color: '#7c3aed',
+  },
+  {
+    id: 'emergency',
+    label: 'Cấp cứu / ER',
+    shortLabel: 'Cấp cứu',
+    icon: 'pi pi-bolt',
+    color: '#b91c1c',
+  },
+  {
+    id: 'surgery',
+    label: 'Phẫu thuật / tiểu phẫu',
+    shortLabel: 'PT',
+    icon: 'pi pi-cog',
+    color: '#475569',
+  },
+  {
+    id: 'therapy',
+    label: 'Vật lý trị liệu / PHCN',
+    shortLabel: 'VLTL',
+    icon: 'pi pi-replay',
+    color: '#059669',
+  },
+  {
+    id: 'nutrition',
+    label: 'Dinh dưỡng / tư vấn sữa',
+    shortLabel: 'Dinh dưỡng',
+    icon: 'pi pi-apple',
+    color: '#65a30d',
+  },
+  {
+    id: 'screening',
+    label: 'Sàng lọc / khám lưới',
+    shortLabel: 'Sàng lọc',
+    icon: 'pi pi-list-check',
+    color: '#0284c7',
+  },
+  {
+    id: 'mental',
+    label: 'Tâm lý / thần kinh',
+    shortLabel: 'Tâm lý',
+    icon: 'pi pi-comments',
+    color: '#8b5cf6',
+  },
+  {
+    id: 'home_care',
+    label: 'Chăm sóc tại nhà / điều dưỡng',
+    shortLabel: 'Tại nhà',
+    icon: 'pi pi-home',
+    color: '#ca8a04',
+  },
+  {
+    id: 'follow_up',
+    label: 'Tái khám / theo dõi',
+    shortLabel: 'Tái khám',
+    icon: 'pi pi-calendar-plus',
+    color: '#ea580c',
+  },
+  {
     id: 'other',
     label: 'Khác',
     shortLabel: 'Khác',
@@ -54,8 +142,10 @@ export const MEDICAL_KINDS: readonly MedicalKindMeta[] = [
   },
 ] as const;
 
-export function kindMeta(
-  kind: MedicalEventKind
-): MedicalKindMeta {
-  return MEDICAL_KINDS.find((k) => k.id === kind) ?? MEDICAL_KINDS[MEDICAL_KINDS.length - 1];
+export type MedicalEventKind = (typeof MEDICAL_KINDS)[number]['id'];
+export type MedicalKindMeta = (typeof MEDICAL_KINDS)[number];
+
+export function kindMeta(kind: MedicalEventKind): MedicalKindMeta {
+  const found = MEDICAL_KINDS.find((k) => k.id === kind);
+  return found ?? MEDICAL_KINDS[MEDICAL_KINDS.length - 1];
 }

@@ -15,12 +15,11 @@
  * ========================================================= */
 
 :host {
-  display: block;
+  display: flex;
+  flex-direction: column;
   position: absolute;
   inset: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
+  overflow: hidden;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
     "Helvetica Neue", Arial, sans-serif;
 
@@ -44,9 +43,27 @@
   --muted-2: #94a3b8;
 }
 
+/*
+  Trên iOS Safari: `position:fixed` bottom-nav nếu nằm trong ancestor có
+  overflow scroll có thể lệch khỏi đáy màn — chỉ cuộn `.feeding-page`,
+  giữ nav/fab/dialog là con của `.feeding-root` (ngoài vùng overflow).
+*/
+.feeding-root {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
 .feeding-page {
   position: relative;
-  min-height: 100%;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
   color: var(--text);
   /* Chừa chỗ cho FAB + bottom navigation phía dưới */
   padding-bottom: calc(170px + env(safe-area-inset-bottom, 0px));
@@ -209,7 +226,9 @@
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 4px;
-  padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px));
+  padding: 6px 8px;
+  padding-bottom: calc(6px + constant(safe-area-inset-bottom));
+  padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
   background: rgba(255, 255, 255, 0.96);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
