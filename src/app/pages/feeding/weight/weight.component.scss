@@ -27,20 +27,18 @@
   margin-bottom: 4px;
 }
 
-.weight-profile-hint {
+.weight-inline-hint {
   display: flex;
-  gap: 10px;
   align-items: flex-start;
-  padding: 12px 14px;
-  border-radius: 12px;
-  background: #f0f9ff;
-  border: 1px solid #bae6fd;
-  font-size: 13px;
-  color: var(--text);
+  gap: 8px;
+  margin: 0 0 8px;
+  padding: 0;
+  font-size: 12px;
   line-height: 1.45;
+  color: var(--muted);
 
-  > i {
-    color: #0284c7;
+  i {
+    color: var(--primary);
     margin-top: 2px;
     flex-shrink: 0;
   }
@@ -433,8 +431,11 @@
 .weight-eval__detail {
   margin: 0;
   font-size: 13.5px;
-  line-height: 1.55;
+  line-height: 1.65;
   color: var(--text);
+  text-align: justify;
+  text-justify: inter-word;
+  hyphens: manual;
 }
 
 /* ========== Thống kê nhanh (TB / max / min) ========== */
@@ -472,6 +473,7 @@
   font-weight: 800;
   color: var(--text);
   font-variant-numeric: tabular-nums;
+  letter-spacing: 0.03em;
 }
 
 .w-stat-hint {
@@ -575,11 +577,130 @@
       }
     }
 
-    .chart-footnote {
-      margin: 12px 0 0;
-      font-size: 11px;
-      line-height: 1.45;
-      color: var(--muted);
+    .chart-meta--tight {
+      margin-top: 6px;
+      gap: 6px;
+    }
+
+    .chart-meta__pill--birth {
+      flex: 1 1 180px;
+      min-width: 0;
+
+      strong {
+        font-weight: 700;
+        word-break: break-word;
+      }
+    }
+  }
+}
+
+.chart-meta--tight {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+}
+
+/* ========== Biểu đồ phụ (Δkg, tốc độ, Z) ========== */
+.weight-secondary-suite {
+  .weight-secondary-suite__head {
+    margin-bottom: 10px;
+
+    h3 {
+      margin: 0;
+      font-size: 15px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text);
+
+      i {
+        color: var(--primary);
+      }
+    }
+  }
+}
+
+.weight-insights-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+
+  @media (max-width: 720px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.weight-subchart {
+  min-width: 0;
+
+  h4 {
+    margin: 0 0 6px;
+    font-size: 12.5px;
+    font-weight: 800;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    i {
+      color: var(--primary);
+      font-size: 13px;
+    }
+  }
+
+  &--wide {
+    grid-column: 1 / -1;
+  }
+}
+
+.weight-subchart-svg {
+  .w-zero-line {
+    stroke: #94a3b8;
+    stroke-width: 1.1;
+    stroke-dasharray: 5 3;
+  }
+
+  .w-bar {
+    &--pos {
+      fill: #22c55e;
+      fill-opacity: 0.88;
+    }
+
+    &--neg {
+      fill: #fb7185;
+      fill-opacity: 0.9;
+    }
+  }
+
+  .w-bar-value {
+    font-size: 9px;
+    font-weight: 700;
+    fill: var(--text);
+  }
+
+  &--z {
+    .w-path--z {
+      stroke: #6366f1;
+      stroke-width: 2.25;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .w-ref-z {
+      stroke: #cbd5e1;
+      stroke-width: 1;
+      fill: none;
+    }
+
+    .z-ref-label {
+      font-size: 9px;
+      fill: var(--muted);
+    }
+
+    .w-dot--z {
+      fill: #6366f1;
     }
   }
 }
@@ -610,7 +731,8 @@
   }
 
   .grid-label {
-    font-size: 10px;
+    font-size: 11px;
+    letter-spacing: 0.02em;
     fill: var(--muted);
   }
 
@@ -640,6 +762,7 @@
   .x-label {
     font-size: 9px;
     fill: var(--muted);
+    letter-spacing: 0.04em;
   }
 
   &.weight-svg-chart--compare {
