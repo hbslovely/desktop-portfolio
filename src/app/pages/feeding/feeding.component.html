@@ -1,5 +1,5 @@
 <div class="feeding-root">
-<div class="feeding-page">
+<div class="feeding-page" #feedingPage>
   <div class="backdrop"></div>
 
   <header class="hero">
@@ -89,26 +89,29 @@
       class="tab-pane tab-pane--mom"
       [hidden]="bottomTab() !== 'mom'"
     >
-      <ng-container *ngIf="profile() && !editing(); else momNeedProfile">
-        <section class="mom-hero card">
-          <div class="mom-hero__icon" aria-hidden="true">🌷</div>
+      <div class="mom-tab" *ngIf="profile() && !editing(); else momNeedProfile">
+        <section class="mom-hero card mom-hero--compact">
+          <span class="mom-hero__icon" aria-hidden="true">🌷</span>
           <div class="mom-hero__text">
-            <h2>Chăm Mẹ</h2>
+            <div class="mom-hero__title-row">
+              <h2>Chăm Mẹ</h2>
+              <span class="mom-hero__baby" *ngIf="profile()?.babyName">{{
+                profile()?.babyName
+              }}</span>
+            </div>
             <p *ngIf="momPeriodContext() as ctx" class="mom-hero__sub">
-              <i class="pi pi-compass"></i> {{ ctx.label }} — bé
-              <strong>{{ profile()?.babyName }}</strong> ·
+              <i class="pi pi-compass"></i> {{ ctx.label }} ·
               <span class="muted-inline">{{ ctx.summary }}</span>
             </p>
             <p *ngIf="!momPeriodContext()" class="mom-hero__sub">
-              Theo dõi sức khỏe & dinh dưỡng mẹ theo từng giai đoạn sau sinh.
+              Gợi ý dinh dưỡng &amp; chăm sóc mẹ theo giai đoạn sau sinh.
             </p>
           </div>
         </section>
 
         <section class="card mom-wellness-section">
-          <div class="section-head">
+          <div class="section-head section-head--tight">
             <h3><i class="pi pi-shield"></i> Chăm sóc hằng ngày</h3>
-            <p class="section-sub">Gợi ý thực tế — điều chỉnh theo bác sĩ nếu mẹ có bệnh nền.</p>
           </div>
           <div class="mom-wellness-grid">
             <article
@@ -128,9 +131,8 @@
           class="card mom-tips-week"
           *ngIf="momTipsThisPeriod().length > 0"
         >
-          <div class="section-head">
+          <div class="section-head section-head--tight">
             <h3><i class="pi pi-star-fill"></i> Lưu ý theo giai đoạn bé</h3>
-            <p class="section-sub">Trích từ cẩm nang tuần/tháng — góc nhìn dành cho mẹ.</p>
           </div>
           <ul class="mom-tips-list">
             <li *ngFor="let t of momTipsThisPeriod()">
@@ -237,13 +239,12 @@
           </div>
         </section>
 
-        <footer class="disclaimer mom-disclaimer">
+        <footer class="disclaimer mom-disclaimer mom-disclaimer--compact">
           <i class="pi pi-info-circle"></i>
-          Thông tin chỉ mang tính tham khảo cho mẹ và gia đình; không thay thế khám
-          phụ khoa / tâm lý / dinh dưỡng. Gặp đau bất thường, sốt, ý nghĩ tự hại —
-          liên hệ cơ sở y tế ngay.
+          Tham khảo — không thay khám. Đau bất thường, sốt, ý nghĩ tự hại: liên hệ y tế
+          ngay.
         </footer>
-      </ng-container>
+      </div>
 
       <ng-template #momNeedProfile>
         <section class="card mom-empty-profile">
@@ -641,7 +642,14 @@
             </div>
           </div>
 
-          <div class="compare-banner" *ngIf="todayStats().count > 0 || yesterdayUpToNowStats().total > 0">
+          <div
+            class="compare-banner"
+            *ngIf="
+              todayStats().count > 0 ||
+              yesterdayUpToNowStats().total > 0 ||
+              priorThreeDaysUpToNowAvg().avgTotal > 0
+            "
+          >
             <div class="compare-line">
               <span class="compare-label">Cùng giờ hôm qua:</span>
               <strong>{{ yesterdayUpToNowStats().total }}ml</strong>
@@ -651,13 +659,38 @@
             <div class="compare-diff" *ngIf="yesterdayUpToNowStats().total > 0 && todayStats().count > 0">
               <ng-container *ngIf="comparison().totalDiff >= 0; else lessThanYd">
                 <i class="pi pi-arrow-up-right up"></i>
-                Nhiều hơn <strong>{{ comparison().totalDiff }}ml</strong>
+                So hôm qua: nhiều hơn <strong>{{ comparison().totalDiff }}ml</strong>
                 <span *ngIf="comparison().pct !== null"> ({{ comparison().pct }}%)</span>
               </ng-container>
               <ng-template #lessThanYd>
                 <i class="pi pi-arrow-down-right down"></i>
-                Ít hơn <strong>{{ -comparison().totalDiff }}ml</strong>
+                So hôm qua: ít hơn <strong>{{ -comparison().totalDiff }}ml</strong>
                 <span *ngIf="comparison().pct !== null"> ({{ comparison().pct }}%)</span>
+              </ng-template>
+            </div>
+            <div class="compare-line compare-line--sub">
+              <span class="compare-label">TB 3 ngày trước:</span>
+              <strong>{{ priorThreeDaysUpToNowAvg().avgTotal }}ml</strong>
+              <span class="sep">·</span>
+              <span>~{{ priorThreeDaysUpToNowAvg().avgCount }} cữ/ngày</span>
+            </div>
+            <div
+              class="compare-diff"
+              *ngIf="priorThreeDaysUpToNowAvg().avgTotal > 0 && todayStats().count > 0"
+            >
+              <ng-container *ngIf="comparisonVsPrior3Avg().totalDiff >= 0; else lessThanP3">
+                <i class="pi pi-arrow-up-right up"></i>
+                So TB 3 ngày: nhiều hơn <strong>{{ comparisonVsPrior3Avg().totalDiff }}ml</strong>
+                <span *ngIf="comparisonVsPrior3Avg().pct !== null">
+                  ({{ comparisonVsPrior3Avg().pct }}%)
+                </span>
+              </ng-container>
+              <ng-template #lessThanP3>
+                <i class="pi pi-arrow-down-right down"></i>
+                So TB 3 ngày: ít hơn <strong>{{ -comparisonVsPrior3Avg().totalDiff }}ml</strong>
+                <span *ngIf="comparisonVsPrior3Avg().pct !== null">
+                  ({{ comparisonVsPrior3Avg().pct }}%)
+                </span>
               </ng-template>
             </div>
           </div>
@@ -1261,52 +1294,106 @@
                 <small>· {{ ev.actualCount }} cữ</small>
               </div>
             </div>
-            <div class="nutri-hero__pct" [attr.data-status]="ev.status">
-              {{ ev.percentOfTarget }}%
-              <span>so với KN</span>
+            <div class="nutri-hero__stats" *ngIf="nutritionPace() as p">
+              <div class="nutri-hero__pct" [attr.data-status]="ev.status">
+                {{ ev.percentOfTarget }}%
+                <span>so với KN cả ngày</span>
+              </div>
+              <div
+                class="nutri-hero__pct nutri-hero__pct--pace"
+                [attr.data-pace]="p.paceStatus"
+                [title]="nutritionPaceLabel(p.paceStatus)"
+              >
+                {{ p.percentOfPaceMid }}%
+                <span>tiến độ hiện tại</span>
+              </div>
             </div>
           </div>
+          <p class="nutri-hero__pace-note" *ngIf="nutritionPace() as pn">
+            <i class="pi pi-clock"></i>
+            Đã qua khoảng <strong>{{ (pn.dayFraction * 100) | number : '1.0-0' }}%</strong> ngày (0h–24h).
+            Nếu bú đều theo mức giữa KN, đến lúc này khoảng
+            <strong>{{ pn.expectedMidMl }}ml</strong> (khoảng {{ pn.expectedMinMl }}–{{ pn.expectedMaxMl }}ml).
+            <em>{{ nutritionPaceLabel(pn.paceStatus) }}.</em>
+          </p>
 
-          <div class="nutri-bar" [attr.data-status]="ev.status">
-            <div class="nb-track">
-              <!-- Recommended band (min → max) -->
-              <div
-                class="nb-range"
-                [style.left.%]="(z.minLabel / z.scaleMax) * 100"
-                [style.width.%]="((z.maxLabel - z.minLabel) / z.scaleMax) * 100"
-              ></div>
-              <!-- Fill up to actualMl -->
-              <div
-                class="nb-fill"
-                [attr.data-status]="ev.status"
-                [style.width.%]="z.pointerPct"
-              ></div>
-              <!-- Pointer with current value -->
-              <div class="nb-pointer" [style.left.%]="z.pointerPct">
-                <span class="nb-pointer__pill">{{ ev.actualMl }}ml</span>
-                <span class="nb-pointer__stem"></span>
+          <div class="nutri-bar-stack">
+            <div class="nutri-bar nutri-bar--daily" [attr.data-status]="ev.status">
+              <p class="nutri-bar__title">Khuyến nghị cả ngày</p>
+              <div class="nutri-bar__track-area">
+                <div class="nb-track">
+                  <div
+                    class="nb-range"
+                    [style.left.%]="(z.minLabel / z.scaleMax) * 100"
+                    [style.width.%]="((z.maxLabel - z.minLabel) / z.scaleMax) * 100"
+                  ></div>
+                  <div
+                    class="nb-fill"
+                    [attr.data-status]="ev.status"
+                    [style.width.%]="z.pointerVisPct"
+                  ></div>
+                  <div
+                    class="nb-tick nb-tick--min"
+                    [style.left.%]="(z.minLabel / z.scaleMax) * 100"
+                  ></div>
+                  <div
+                    class="nb-tick nb-tick--max"
+                    [style.left.%]="(z.maxLabel / z.scaleMax) * 100"
+                  ></div>
+                  <div class="nb-pointer" [style.left.%]="z.pointerVisPct">
+                    <span class="nb-pointer__pill">{{ ev.actualMl }}ml</span>
+                    <span class="nb-pointer__stem"></span>
+                  </div>
+                </div>
+                <div class="nb-legend">
+                  <span class="nb-legend__edge">0</span>
+                  <span class="nb-legend__kn">
+                    KN <strong>{{ z.minLabel }}–{{ z.maxLabel }}</strong> ml
+                  </span>
+                  <span class="nb-legend__edge">{{ z.scaleMax }} ml</span>
+                </div>
               </div>
-              <!-- Min / max tick marks -->
-              <div
-                class="nb-tick nb-tick--min"
-                [style.left.%]="(z.minLabel / z.scaleMax) * 100"
-              ></div>
-              <div
-                class="nb-tick nb-tick--max"
-                [style.left.%]="(z.maxLabel / z.scaleMax) * 100"
-              ></div>
             </div>
-            <div class="nb-axis">
-              <span class="nb-ax nb-ax--start">0</span>
-              <span
-                class="nb-ax nb-ax--min"
-                [style.left.%]="(z.minLabel / z.scaleMax) * 100"
-              >min <b>{{ z.minLabel }}</b></span>
-              <span
-                class="nb-ax nb-ax--max"
-                [style.left.%]="(z.maxLabel / z.scaleMax) * 100"
-              >max <b>{{ z.maxLabel }}</b></span>
-              <span class="nb-ax nb-ax--end">{{ z.scaleMax }}</span>
+
+            <div
+              class="nutri-bar nutri-bar--pace"
+              *ngIf="nutritionPaceZones() as zp"
+              [attr.data-pace]="zp.paceStatus"
+            >
+              <p class="nutri-bar__title">Tiến độ hiện tại (theo phần ngày đã qua)</p>
+              <div class="nutri-bar__track-area">
+                <div class="nb-track nb-track--pace">
+                  <div
+                    class="nb-range"
+                    [style.left.%]="zp.bandLeftPct"
+                    [style.width.%]="zp.bandWidthPct"
+                  ></div>
+                  <div
+                    class="nb-fill nb-fill--pace"
+                    [attr.data-pace]="zp.paceStatus"
+                    [style.width.%]="zp.pointerVisPct"
+                  ></div>
+                  <div
+                    class="nb-tick nb-tick--min"
+                    [style.left.%]="zp.minTickPct"
+                  ></div>
+                  <div
+                    class="nb-tick nb-tick--max"
+                    [style.left.%]="zp.maxTickPct"
+                  ></div>
+                  <div class="nb-pointer nb-pointer--pace" [style.left.%]="zp.pointerVisPct">
+                    <span class="nb-pointer__pill">{{ ev.actualMl }}ml</span>
+                    <span class="nb-pointer__stem"></span>
+                  </div>
+                </div>
+                <div class="nb-legend">
+                  <span class="nb-legend__edge">0</span>
+                  <span class="nb-legend__kn">
+                    Kỳ vọng <strong>{{ zp.minLabel }}–{{ zp.maxLabel }}</strong> ml
+                  </span>
+                  <span class="nb-legend__edge">{{ zp.scaleMax }} ml</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -1364,34 +1451,66 @@
 
         <!-- Metric chips -->
         <ul class="nutri-metrics" *ngIf="nutritionMetricsStatus() as ms">
-          <li [attr.data-met]="ms.perFeed">
-            <span class="m-icon mint"><i class="pi pi-prime"></i></span>
+          <li [attr.data-met]="ms.avgPerFeed">
+            <span class="m-icon mint" aria-hidden="true"><i class="pi pi-prime"></i></span>
             <div class="m-body">
-              <strong>{{ ev.target.perFeedMin }}–{{ ev.target.perFeedMax }} ml</strong>
-              <span>gợi ý mỗi cữ</span>
+              <strong *ngIf="todayStats().count > 0; else nutriAvgEmpty">
+                <ng-container *ngIf="todayStats().count >= 3; else nutriTbMl">
+                  Trung vị {{ todayStats().typicalFeedMl }}ml/cữ
+                </ng-container>
+                <ng-template #nutriTbMl>
+                  TB {{ todayStats().typicalFeedMl }}ml/cữ
+                </ng-template>
+              </strong>
+              <ng-template #nutriAvgEmpty><strong>Chưa có cữ</strong></ng-template>
+              <span>so với ~{{ ms.modelAvgMl }}ml/cữ (mức TB hiện tại)</span>
+              <span
+                class="m-skew-hint"
+                *ngIf="
+                  todayStats().count >= 3 &&
+                  Math.abs(todayStats().avg - todayStats().medianMl) >= 15
+                "
+              >
+                TB cữ {{ todayStats().avg }}ml — cữ rất nhỏ kéo TB xuống so với cữ điển hình.
+              </span>
             </div>
-            <span class="m-status" [attr.data-met]="ms.perFeed" [title]="metricStatusLabel(ms.perFeed)">
-              <i class="pi" [ngClass]="metricStatusIcon(ms.perFeed)"></i>
+            <span
+              class="m-status"
+              [attr.data-met]="ms.avgPerFeed"
+              [title]="metricStatusLabel(ms.avgPerFeed)"
+            >
+              <i class="pi" [ngClass]="metricStatusIcon(ms.avgPerFeed)"></i>
             </span>
           </li>
-          <li [attr.data-met]="ms.feedsDay">
-            <span class="m-icon lavender"><i class="pi pi-replay"></i></span>
+          <li [attr.data-met]="ms.feedsByNow">
+            <span class="m-icon lavender" aria-hidden="true"><i class="pi pi-replay"></i></span>
             <div class="m-body">
-              <strong>{{ ev.target.feedsPerDayMin }}–{{ ev.target.feedsPerDayMax }}</strong>
-              <span>cữ/ngày</span>
+              <strong>{{ todayStats().count }} cữ</strong>
+              <span>
+                dự kiến lúc này ~{{ ms.feedsLow }}–{{ ms.feedsHigh }} cữ (KN
+                {{ ev.target.feedsPerDayMin }}–{{ ev.target.feedsPerDayMax }}/ngày)
+              </span>
             </div>
-            <span class="m-status" [attr.data-met]="ms.feedsDay" [title]="metricStatusLabel(ms.feedsDay)">
-              <i class="pi" [ngClass]="metricStatusIcon(ms.feedsDay)"></i>
+            <span
+              class="m-status"
+              [attr.data-met]="ms.feedsByNow"
+              [title]="metricStatusLabel(ms.feedsByNow)"
+            >
+              <i class="pi" [ngClass]="metricStatusIcon(ms.feedsByNow)"></i>
             </span>
           </li>
-          <li [attr.data-met]="ms.pctMin">
-            <span class="m-icon peach"><i class="pi pi-chart-line"></i></span>
+          <li [attr.data-met]="ms.volumeByNow">
+            <span class="m-icon peach" aria-hidden="true"><i class="pi pi-chart-line"></i></span>
             <div class="m-body">
-              <strong>{{ ev.percentOfMin }}%</strong>
-              <span>so với mức tối thiểu</span>
+              <strong>{{ ms.pctPaceMid }}%</strong>
+              <span>tổng ml so với mức trung bình hiện tại</span>
             </div>
-            <span class="m-status" [attr.data-met]="ms.pctMin" [title]="metricStatusLabel(ms.pctMin)">
-              <i class="pi" [ngClass]="metricStatusIcon(ms.pctMin)"></i>
+            <span
+              class="m-status"
+              [attr.data-met]="ms.volumeByNow"
+              [title]="metricStatusLabel(ms.volumeByNow)"
+            >
+              <i class="pi" [ngClass]="metricStatusIcon(ms.volumeByNow)"></i>
             </span>
           </li>
         </ul>

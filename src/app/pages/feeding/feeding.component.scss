@@ -892,6 +892,12 @@
       color: var(--muted);
       font-size: 12px;
     }
+
+    &--sub {
+      margin-top: 4px;
+      padding-top: 8px;
+      border-top: 1px dashed rgba(15, 23, 42, 0.12);
+    }
   }
 
   .compare-diff {
@@ -1671,10 +1677,41 @@
 
   &__top {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
     gap: 12px;
-    margin-bottom: 18px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+
+  &__stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: flex-end;
+    flex-shrink: 0;
+  }
+
+  &__pace-note {
+    margin: 0 0 14px;
+    padding: 10px 12px;
+    font-size: 12.5px;
+    line-height: 1.45;
+    color: var(--muted);
+    background: rgba(var(--accent-rgb), 0.06);
+    border-radius: 10px;
+    border: 1px solid rgba(var(--accent-rgb), 0.12);
+
+    i {
+      margin-right: 6px;
+      color: var(--tone-strong);
+    }
+
+    em {
+      font-style: normal;
+      font-weight: 700;
+      color: var(--text);
+    }
   }
 
   &__lead {
@@ -1719,32 +1756,78 @@
   &__pct {
     flex-shrink: 0;
     text-align: center;
-    padding: 8px 14px;
+    padding: 8px 12px;
     border-radius: 14px;
     background: var(--tone-soft);
     color: var(--tone-strong);
     font-weight: 800;
-    font-size: 20px;
+    font-size: 18px;
     line-height: 1;
     box-shadow: inset 0 0 0 1px rgba(var(--accent-rgb), 0.25);
     font-variant-numeric: tabular-nums;
+    min-width: 88px;
 
     span {
       display: block;
       margin-top: 3px;
-      font-size: 10px;
+      font-size: 9px;
       font-weight: 700;
       opacity: 0.75;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.04em;
       text-transform: uppercase;
+    }
+
+    &--pace[data-pace='ahead'] {
+      background: color-mix(in srgb, #38bdf8 18%, white);
+      color: #0369a1;
+      box-shadow: inset 0 0 0 1px rgba(3, 105, 161, 0.22);
+    }
+
+    &--pace[data-pace='on-track'] {
+      background: color-mix(in srgb, #34d399 18%, white);
+      color: #047857;
+      box-shadow: inset 0 0 0 1px rgba(4, 120, 87, 0.2);
+    }
+
+    &--pace[data-pace='behind'] {
+      background: color-mix(in srgb, #fbbf24 22%, white);
+      color: #b45309;
+      box-shadow: inset 0 0 0 1px rgba(180, 83, 9, 0.22);
     }
   }
 }
 
-/* ====== Main progress bar ====== */
+/* ====== Nutrition progress bars (cả ngày + tiến độ hiện tại) ====== */
+.nutri-bar-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  margin-top: 10px;
+}
+
 .nutri-bar {
   position: relative;
-  padding-top: 28px; /* chừa chỗ cho pointer pill phía trên track */
+  padding-top: 0;
+
+  &__title {
+    margin: 0 0 10px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--muted);
+    line-height: 1.35;
+  }
+
+  &--pace &__title {
+    color: #475569;
+  }
+
+  /* Chừa chỗ pill pointer phía trên track — tránh đè lên tiêu đề */
+  &__track-area {
+    position: relative;
+    padding-top: 34px;
+  }
 }
 
 .nb-track {
@@ -1753,6 +1836,10 @@
   border-radius: 3px;
   background: #eef1f5;
   overflow: visible;
+
+  &--pace {
+    background: #e8eef9;
+  }
 }
 
 /* Band highlight vùng khuyến nghị */
@@ -1776,6 +1863,34 @@
   box-shadow: 0 1px 3px rgba(var(--accent-rgb), 0.25);
   transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1), background 0.35s ease;
   max-width: 100%;
+
+  &--pace[data-pace='ahead'] {
+    background: #0284c7;
+    box-shadow: 0 1px 3px rgba(2, 132, 199, 0.35);
+  }
+
+  &--pace[data-pace='on-track'] {
+    background: #059669;
+    box-shadow: 0 1px 3px rgba(5, 150, 105, 0.35);
+  }
+
+  &--pace[data-pace='behind'] {
+    background: #d97706;
+    box-shadow: 0 1px 3px rgba(217, 119, 6, 0.35);
+  }
+}
+
+.nutri-bar--pace .nb-range {
+  background: rgba(59, 130, 246, 0.14);
+  box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.28);
+}
+
+.nutri-bar--pace .nb-pointer__pill {
+  background: #334155;
+}
+
+.nutri-bar--pace .nb-pointer__stem {
+  background: #334155;
 }
 
 /* Ticks min/max */
@@ -1810,16 +1925,19 @@
   z-index: 3;
 
   &__pill {
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 800;
     background: var(--tone-strong);
     color: #ffffff;
-    padding: 3px 10px;
+    padding: 3px 8px;
     border-radius: 999px;
     white-space: nowrap;
     font-variant-numeric: tabular-nums;
     box-shadow: 0 2px 6px rgba(var(--accent-rgb), 0.35);
     letter-spacing: 0.02em;
+    max-width: min(120px, 42vw);
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   &__stem {
@@ -1830,42 +1948,38 @@
   }
 }
 
-/* Axis labels */
-.nb-axis {
-  position: relative;
-  height: 26px;
-  margin-top: 8px;
-  font-size: 10.5px;
+/* Chú thích dưới track — flex để chữ không đè nhau */
+.nb-legend {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 0 2px;
+  font-size: 11px;
+  line-height: 1.4;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
 
-  .nb-ax {
-    position: absolute;
-    top: 0;
-    white-space: nowrap;
-    font-weight: 600;
+  &__edge {
+    flex: 0 0 auto;
+    max-width: 38%;
+    font-weight: 700;
+    color: var(--text);
+    word-break: break-all;
+  }
 
-    b {
+  &__kn {
+    flex: 1 1 auto;
+    min-width: 0;
+    text-align: center;
+    font-weight: 600;
+    padding: 0 4px;
+
+    strong {
       font-weight: 800;
       color: var(--text);
-      margin-left: 2px;
-    }
-
-    &--start {
-      left: 0;
-    }
-    &--end {
-      right: 0;
-    }
-    &--min {
-      transform: translateX(-50%);
-      color: #047857;
-      b { color: #047857; }
-    }
-    &--max {
-      transform: translateX(-50%);
-      color: #b45309;
-      b { color: #b45309; }
     }
   }
 }
@@ -1951,9 +2065,10 @@
   }
 
   li {
-    display: flex;
+    display: grid;
+    grid-template-columns: 36px minmax(0, 1fr) 22px;
     align-items: center;
-    gap: 10px;
+    gap: 10px 12px;
     padding: 10px 12px;
     background: #ffffff;
     border: 1px solid #eef0f3;
@@ -1974,7 +2089,6 @@
     }
 
     .m-body {
-      flex: 1;
       min-width: 0;
     }
 
@@ -1989,8 +2103,17 @@
     span {
       display: flex;
       font-size: 11px;
+      line-height: 1.35;
       color: var(--muted);
       margin-top: 2px;
+    }
+
+    .m-skew-hint {
+      margin-top: 4px;
+      font-size: 10px;
+      line-height: 1.35;
+      color: var(--muted-2, #94a3b8);
+      font-style: italic;
     }
   }
 
@@ -1998,17 +2121,25 @@
     width: 36px;
     height: 36px;
     border-radius: 10px;
-    display: inline-flex;
+    display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    /* reset line-height để glyph PrimeIcons không bị đẩy lệch xuống */
     line-height: 0;
 
     i {
       font-size: 16px;
-      line-height: 1;
-      display: block;
+      line-height: 0;
+      display: flex;
+      width: 1em;
+      height: 1em;
+      align-items: center;
+      justify-content: center;
+
+      &::before {
+        line-height: 1;
+        display: block;
+      }
     }
 
     &.mint     { background: #ecfdf5; i { color: #10b981; } }
@@ -2017,19 +2148,27 @@
   }
 
   .m-status {
-    flex-shrink: 0;
     width: 22px;
     height: 22px;
-    display: inline-flex;
+    display: flex;
     align-items: center;
     justify-content: center;
     line-height: 0;
-    margin-left: 2px;
+    justify-self: end;
 
     i {
       font-size: 20px;
-      line-height: 1;
-      display: block;
+      line-height: 0;
+      display: flex;
+      width: 1em;
+      height: 1em;
+      align-items: center;
+      justify-content: center;
+
+      &::before {
+        line-height: 1;
+        display: block;
+      }
     }
 
     &[data-met="met"]     i { color: #10b981; }
@@ -4403,7 +4542,65 @@
   }
 }
 
-/* ========== TAB MẸ ========== */
+/* ========== TAB MẸ (gọn) ========== */
+.mom-tab {
+  .card {
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    border-radius: 14px;
+  }
+
+  .mom-wellness-section,
+  .mom-tips-week {
+    margin-bottom: 10px;
+  }
+
+  .mom-food-card {
+    padding: 12px 14px;
+    margin-top: 10px;
+  }
+
+  .mf-head {
+    margin-bottom: 8px;
+
+    h2 {
+      font-size: 16px;
+    }
+  }
+
+  .mf-desc {
+    margin-bottom: 10px;
+    font-size: 12px;
+    line-height: 1.45;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .mf-columns {
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .mf-col {
+    padding: 8px 10px;
+  }
+
+  .mf-list {
+    gap: 6px;
+  }
+
+  .mf-item {
+    padding: 6px 8px;
+  }
+
+  .mf-tip {
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+}
+
 .mom-hero {
   display: flex;
   align-items: flex-start;
@@ -4445,6 +4642,73 @@
       opacity: 0.92;
     }
   }
+
+  &--compact {
+    align-items: center;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+    border-radius: 14px;
+    gap: 10px;
+
+    .mom-hero__icon {
+      font-size: 26px;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 16px;
+      letter-spacing: -0.01em;
+    }
+
+    .mom-hero__title-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 6px 10px;
+    }
+
+    .mom-hero__baby {
+      font-size: 12px;
+      font-weight: 700;
+      color: #be185d;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.75);
+      border: 1px solid rgba(244, 114, 182, 0.35);
+    }
+
+    .mom-hero__sub {
+      margin: 4px 0 0;
+      font-size: 11.5px;
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+
+      .muted-inline {
+        display: inline;
+        margin-top: 0;
+        font-size: 11.5px;
+      }
+    }
+  }
+}
+
+.section-head--tight {
+  margin-bottom: 8px;
+
+  h3 {
+    margin: 0;
+  }
+}
+
+.mom-disclaimer--compact {
+  font-size: 11px;
+  line-height: 1.4;
+  padding: 8px 10px;
+  margin-top: 4px;
+  margin-bottom: 6px;
 }
 
 .section-head {
@@ -4475,6 +4739,11 @@
 
 .mom-wellness-section {
   margin-bottom: 16px;
+}
+
+.mom-tab .mom-wellness-grid {
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 8px;
 }
 
 .mom-wellness-grid {
@@ -4529,6 +4798,25 @@
 
 .mom-tips-week {
   margin-bottom: 16px;
+}
+
+.mom-tab .mom-tips-list {
+  gap: 6px;
+
+  li {
+    padding: 8px 10px;
+    border-radius: 10px;
+
+    strong {
+      margin-bottom: 2px;
+      font-size: 12px;
+    }
+
+    span {
+      font-size: 11.5px;
+      line-height: 1.4;
+    }
+  }
 }
 
 .mom-tips-list {

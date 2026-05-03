@@ -55,6 +55,69 @@ export interface NutritionEvaluation {
 }
 
 /**
+ * So sánh lượng đã bú với tiến độ đều trong ngày (theo thời điểm hiện tại).
+ * Giả định phân bổ đều từ 0h → 24h local; KN cả ngày = min–max ml.
+ */
+export interface NutritionPaceInfo {
+  /** Phần ngày đã trôi qua (0–1], từ 0h local đến `now` */
+  dayFraction: number;
+  /** Nếu bú đều theo mức giữa KN cả ngày, đến lúc này kỳ vọng ~bao nhiêu ml */
+  expectedMidMl: number;
+  expectedMinMl: number;
+  expectedMaxMl: number;
+  /** 100% ≈ đúng mức trung bình tại thời điểm hiện tại */
+  percentOfPaceMid: number;
+  paceStatus: 'ahead' | 'on-track' | 'behind';
+}
+
+export function computeNutritionPace(
+  target: NutritionTarget,
+  actualMl: number,
+  now: Date
+): NutritionPaceInfo {
+  const dayStart = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+    0,
+    0,
+    0,
+    0
+  );
+  const elapsedMin = (now.getTime() - dayStart.getTime()) / 60000;
+  const dayFraction = Math.min(
+    1,
+    Math.max(elapsedMin / 1440, 1 / 1440)
+  );
+
+  const mid = (target.dailyMlMin + target.dailyMlMax) / 2;
+  const expectedMidMl = Math.round(mid * dayFraction);
+  const expectedMinMl = Math.round(target.dailyMlMin * dayFraction);
+  const expectedMaxMl = Math.round(target.dailyMlMax * dayFraction);
+
+  const percentOfPaceMid =
+    expectedMidMl > 0 ? Math.round((actualMl / expectedMidMl) * 100) : 0;
+
+  let paceStatus: NutritionPaceInfo['paceStatus'];
+  if (actualMl >= expectedMidMl * 1.12 && dayFraction >= 0.04) {
+    paceStatus = 'ahead';
+  } else if (actualMl <= expectedMidMl * 0.88) {
+    paceStatus = 'behind';
+  } else {
+    paceStatus = 'on-track';
+  }
+
+  return {
+    dayFraction,
+    expectedMidMl,
+    expectedMinMl,
+    expectedMaxMl,
+    percentOfPaceMid,
+    paceStatus,
+  };
+}
+
+/**
  * Compute recommended daily milk intake based on weight (kg) and age (days).
  *
  * Week 1: linearly ramps up from day 1 (very small) to day 7 (~150ml/kg)

@@ -1,4 +1,11 @@
-import { Component, ViewChild, computed, inject, signal } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  ViewChild,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
@@ -12,9 +19,11 @@ import {
   predictNextFeeding,
 } from './feeding-prediction';
 import {
+  computeNutritionPace,
   evaluateNutrition,
   getNutritionTarget,
   NutritionEvaluation,
+  NutritionPaceInfo,
   NutritionTarget,
 } from './feeding-nutrition';
 import {
@@ -47,7 +56,15 @@ interface DayStats {
   date: string;
   total: number;
   count: number;
+  /** Trung bình số học (ml/cữ). */
   avg: number;
+  /** Trung vị thể tích một cữ (ml) — ổn định hơn khi có cữ rất nhỏ. */
+  medianMl: number;
+  /**
+   * Giá trị dùng khi so khuyến nghị: trung vị nếu ≥3 cữ (ít nhạy cữ “lắt nhắt”),
+   * ngược lại trùng TB.
+   */
+  typicalFeedMl: number;
   max: number;
   min: number;
   firstTime: string;
@@ -73,6 +90,10 @@ export class FeedingComponent {
   private route = inject(ActivatedRoute);
   private feedingLogService = inject(FeedingLogService);
 
+  /** Vùng cuộn thật của trang (`.feeding-page`), không phải `document`. */
+  @ViewChild('feedingPage', { static: true })
+  private feedingPageRef?: ElementRef<HTMLElement>;
+
   Math = Math;
 
   /** Tab nav phía dưới: feeding | weight | mom | medical | documents. */
@@ -84,9 +105,20 @@ export class FeedingComponent {
     tab: 'feeding' | 'weight' | 'mom' | 'medical' | 'documents'
   ) {
     this.bottomTab.set(tab);
-    if (typeof window !== 'undefined') {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+    this.scrollFeedingShellToTop();
+  }
+
+  /** Đưa cuộn về đầu khi đổi tab (shell `.feeding-page` + window dự phòng). */
+  private scrollFeedingShellToTop(): void {
+    if (typeof window === 'undefined') return;
+    const el = this.feedingPageRef?.nativeElement;
+    if (el) {
+      el.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+      el.scrollTop = 0;
     }
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   }
 
   user = signal<string>('guest');
@@ -356,6 +388,19 @@ export class FeedingComponent {
     return this.statsFromList(yDate, list);
   });
 
+  /**
+   * Trung bình tổng ml (và cữ) tới cùng giờ hiện tại của 3 ngày liền trước
+   * (hôm qua, hôm kia, 3 ngày trước) — song song với so sánh chỉ hôm qua.
+   */
+  priorThreeDaysUpToNowAvg = computed(() => {
+    const s1 = this.statsUpToNowForDate(this.dateStrDaysAgo(1));
+    const s2 = this.statsUpToNowForDate(this.dateStrDaysAgo(2));
+    const s3 = this.statsUpToNowForDate(this.dateStrDaysAgo(3));
+    const avgTotal = Math.round((s1.total + s2.total + s3.total) / 3);
+    const avgCount = Math.round((s1.count + s2.count + s3.count) / 3);
+    return { avgTotal, avgCount, s1, s2, s3 };
+  });
+
   comparison = computed(() => {
     const t = this.todayStats();
     const y = this.yesterdayUpToNowStats();
@@ -363,6 +408,16 @@ export class FeedingComponent {
     const countDiff = t.count - y.count;
     const pct = y.total > 0 ? Math.round((totalDiff / y.total) * 100) : null;
     return { totalDiff, countDiff, pct };
+  });
+
+  /** So hôm nay vs TB 3 ngày trước (cùng mốc giờ trong ngày). */
+  comparisonVsPrior3Avg = computed(() => {
+    const t = this.todayStats();
+    const p = this.priorThreeDaysUpToNowAvg();
+    const totalDiff = t.total - p.avgTotal;
+    const pct =
+      p.avgTotal > 0 ? Math.round((totalDiff / p.avgTotal) * 100) : null;
+    return { totalDiff, pct, avgTotal: p.avgTotal };
   });
 
   // ===== ML prediction =====
@@ -396,52 +451,89 @@ export class FeedingComponent {
     return evaluateNutrition(target, today.total, today.count);
   });
 
+  /** Tiến độ hiện tại: so với phân bổ đều theo KN cả ngày (theo thời điểm trong ngày). */
+  nutritionPace = computed<NutritionPaceInfo | null>(() => {
+    const target = this.nutritionTarget();
+    if (!target) return null;
+    return computeNutritionPace(target, this.todayStats().total, this.now());
+  });
+
   /**
-   * Trạng thái đáp ứng của từng chỉ số dinh dưỡng hôm nay.
-   * - 'met' (xanh): đáp ứng đủ khuyến nghị
-   * - 'partial' (vàng): đáp ứng 1 phần / gần đạt
-   * - 'unmet' (đỏ): chưa đáp ứng
+   * Ba chỉ số theo **tiến độ hiện tại** (phân bổ đều trong ngày),
+   * không so cả ngày KN.
    */
   nutritionMetricsStatus = computed<{
-    perFeed: 'met' | 'partial' | 'unmet';
-    feedsDay: 'met' | 'partial' | 'unmet';
-    pctMin: 'met' | 'partial' | 'unmet';
+    avgPerFeed: 'met' | 'partial' | 'unmet';
+    feedsByNow: 'met' | 'partial' | 'unmet';
+    volumeByNow: 'met' | 'partial' | 'unmet';
+    modelAvgMl: number;
+    feedsLow: number;
+    feedsHigh: number;
+    pctPaceMid: number;
   } | null>(() => {
     const ev = this.nutritionEval();
-    if (!ev) return null;
+    const pace = this.nutritionPace();
+    if (!ev || !pace) return null;
     const today = this.todayStats();
     const t = ev.target;
-    const avg = today.avg || 0;
+    /** So khuyến nghị: trung vị cữ (≥3 cữ) thay vì TB — bớt lệch khi có cữ rất nhỏ. */
+    const typicalMl = today.typicalFeedMl || 0;
     const count = today.count || 0;
+    const frac = pace.dayFraction;
 
-    // 1. Gợi ý mỗi cữ (ml trung bình mỗi cữ so với range)
-    let perFeed: 'met' | 'partial' | 'unmet' = 'unmet';
+    const feedsMidDaily = (t.feedsPerDayMin + t.feedsPerDayMax) / 2;
+    const expFeedsMid = Math.max(0.35, feedsMidDaily * frac);
+    const modelAvgMl = pace.expectedMidMl / expFeedsMid;
+
+    // 1. ml/cữ điển hình (trung vị hoặc TB) so với mức «vừa vặn» nếu bú đều đến lúc này
+    let avgPerFeed: 'met' | 'partial' | 'unmet' = 'unmet';
     if (count === 0) {
-      perFeed = 'unmet';
-    } else if (avg >= t.perFeedMin && avg <= t.perFeedMax) {
-      perFeed = 'met';
-    } else if (
-      avg >= t.perFeedMin * 0.7 ||
-      (avg > t.perFeedMax && avg <= t.perFeedMax * 1.3)
-    ) {
-      perFeed = 'partial';
+      avgPerFeed = frac < 0.05 ? 'partial' : 'unmet';
+    } else if (typicalMl >= modelAvgMl * 0.88 && typicalMl <= modelAvgMl * 1.14) {
+      avgPerFeed = 'met';
+    } else if (typicalMl >= modelAvgMl * 0.75 && typicalMl <= modelAvgMl * 1.28) {
+      avgPerFeed = 'partial';
+    } else if (typicalMl >= t.perFeedMin * 0.72 && typicalMl <= t.perFeedMax * 1.32) {
+      avgPerFeed = 'partial';
     }
 
-    // 2. Số cữ/ngày
-    let feedsDay: 'met' | 'partial' | 'unmet' = 'unmet';
-    if (count >= t.feedsPerDayMin) {
-      feedsDay = 'met';
-    } else if (count >= Math.max(1, t.feedsPerDayMin - 1) || count >= t.feedsPerDayMin * 0.6) {
-      feedsDay = 'partial';
+    const effMinF = t.feedsPerDayMin * frac;
+    const effMaxF = t.feedsPerDayMax * frac;
+    const feedsLow = Math.max(0, Math.floor(effMinF));
+    const feedsHigh = Math.max(feedsLow, Math.ceil(effMaxF));
+
+    let feedsByNow: 'met' | 'partial' | 'unmet' = 'unmet';
+    if (count === 0) {
+      feedsByNow = frac < 0.05 ? 'partial' : 'unmet';
+    } else if (count >= feedsLow && count <= feedsHigh + 1) {
+      feedsByNow = 'met';
+    } else if (count >= feedsLow - 1 && count <= feedsHigh + 2) {
+      feedsByNow = 'partial';
+    } else if (count < feedsLow - 1) {
+      feedsByNow = 'unmet';
+    } else {
+      feedsByNow = 'partial';
     }
 
-    // 3. % so với mức tối thiểu dung tích/ngày
-    let pctMin: 'met' | 'partial' | 'unmet' = 'unmet';
-    const pct = ev.percentOfMin || 0;
-    if (pct >= 100) pctMin = 'met';
-    else if (pct >= 60) pctMin = 'partial';
+    const pct = pace.percentOfPaceMid;
+    let volumeByNow: 'met' | 'partial' | 'unmet' = 'unmet';
+    if (pace.paceStatus === 'on-track') {
+      volumeByNow = 'met';
+    } else if (pace.paceStatus === 'ahead') {
+      volumeByNow = pct > 125 ? 'partial' : 'met';
+    } else {
+      volumeByNow = pct >= 72 ? 'partial' : 'unmet';
+    }
 
-    return { perFeed, feedsDay, pctMin };
+    return {
+      avgPerFeed,
+      feedsByNow,
+      volumeByNow,
+      modelAvgMl: Math.round(modelAvgMl),
+      feedsLow,
+      feedsHigh,
+      pctPaceMid: pct,
+    };
   });
 
   /**
@@ -455,14 +547,53 @@ export class FeedingComponent {
     const min = ev.target.dailyMlMin;
     const max = ev.target.dailyMlMax;
     const scaleMax = Math.max(max * 1.2, ev.actualMl + 10);
+    const roundedMax = Math.round(scaleMax);
+    const pointerPct = Math.max(
+      0,
+      Math.min(100, (ev.actualMl / roundedMax) * 100)
+    );
+    const pointerVisPct =
+      pointerPct < 5 ? 5 : pointerPct > 95 ? 95 : pointerPct;
     return {
       minLabel: min,
       maxLabel: max,
-      scaleMax: Math.round(scaleMax),
-      lowPct: Math.max(0, (min / scaleMax) * 100),
-      okPct: Math.max(0, ((max - min) / scaleMax) * 100),
-      overPct: Math.max(0, ((scaleMax - max) / scaleMax) * 100),
-      pointerPct: Math.max(0, Math.min(100, (ev.actualMl / scaleMax) * 100)),
+      scaleMax: roundedMax,
+      pointerPct,
+      pointerVisPct,
+    };
+  });
+
+  /** Thanh tiến độ hiện tại: thang ml 0 → scaleMax, dải kỳ vọng min–max theo % ngày. */
+  nutritionPaceZones = computed(() => {
+    const ev = this.nutritionEval();
+    const pace = this.nutritionPace();
+    if (!ev || !pace) return null;
+    const min = pace.expectedMinMl;
+    const max = pace.expectedMaxMl;
+    const actual = ev.actualMl;
+    const scaleMax = Math.max(
+      Math.round(max * 1.2),
+      actual + 20,
+      Math.max(min + 30, 50)
+    );
+    const pointerPct = Math.max(0, Math.min(100, (actual / scaleMax) * 100));
+    const pointerVisPct =
+      pointerPct < 5 ? 5 : pointerPct > 95 ? 95 : pointerPct;
+    const bandLeft = (min / scaleMax) * 100;
+    const bandW = ((max - min) / scaleMax) * 100;
+    const minTickPct = Math.max(0, Math.min(100, (min / scaleMax) * 100));
+    const maxTickPct = Math.max(0, Math.min(100, (max / scaleMax) * 100));
+    return {
+      minLabel: min,
+      maxLabel: max,
+      scaleMax,
+      bandLeftPct: Math.max(0, Math.min(100, bandLeft)),
+      bandWidthPct: Math.max(0, Math.min(100 - bandLeft, bandW)),
+      minTickPct,
+      maxTickPct,
+      pointerPct,
+      pointerVisPct,
+      paceStatus: pace.paceStatus,
     };
   });
 
@@ -1046,6 +1177,18 @@ export class FeedingComponent {
     }
   }
 
+  nutritionPaceLabel(status: NutritionPaceInfo['paceStatus']): string {
+    switch (status) {
+      case 'ahead':
+        return 'Nhanh hơn mức trung bình hiện tại';
+      case 'on-track':
+        return 'Đúng mức trung bình hiện tại';
+      case 'behind':
+      default:
+        return 'Chậm hơn mức trung bình hiện tại';
+    }
+  }
+
   /** Toggle ghi chú preset (VD: "Sữa công thức"). Bấm lần 2 để bỏ. */
   quickNote(tag: string) {
     this.logDraft.update((d) => ({
@@ -1360,6 +1503,22 @@ export class FeedingComponent {
     return this.statsFromList(date, this.logs().filter((l) => l.date === date));
   }
 
+  /** ISO yyyy-mm-dd, `daysBefore` ngày so với «hôm nay» theo đồng hồ app. */
+  dateStrDaysAgo(daysBefore: number): string {
+    const d = new Date(this.now());
+    d.setDate(d.getDate() - daysBefore);
+    return this.toDateStr(d);
+  }
+
+  /** Tổng/cữ của 1 ngày chỉ tính tới cùng giờ hiện tại (so «ngang giờ»). */
+  private statsUpToNowForDate(dateStr: string): DayStats {
+    const nowTime = this.toTimeStr(this.now());
+    const list = this.logs().filter(
+      (l) => l.date === dateStr && l.time <= nowTime
+    );
+    return this.statsFromList(dateStr, list);
+  }
+
   private statsFromList(date: string, list: FeedingLog[]): DayStats {
     if (list.length === 0) {
       return {
@@ -1367,6 +1526,8 @@ export class FeedingComponent {
         total: 0,
         count: 0,
         avg: 0,
+        medianMl: 0,
+        typicalFeedMl: 0,
         max: 0,
         min: 0,
         firstTime: '',
@@ -1376,11 +1537,21 @@ export class FeedingComponent {
     const total = list.reduce((s, l) => s + l.volume, 0);
     const volumes = list.map((l) => l.volume);
     const times = list.map((l) => l.time).sort();
+    const sortedVol = [...volumes].sort((a, b) => a - b);
+    const mid = Math.floor(sortedVol.length / 2);
+    const medianMl =
+      sortedVol.length % 2 === 1
+        ? sortedVol[mid]
+        : Math.round((sortedVol[mid - 1] + sortedVol[mid]) / 2);
+    const avg = Math.round(total / list.length);
+    const typicalFeedMl = list.length >= 3 ? medianMl : avg;
     return {
       date,
       total,
       count: list.length,
-      avg: Math.round(total / list.length),
+      avg,
+      medianMl,
+      typicalFeedMl,
       max: Math.max(...volumes),
       min: Math.min(...volumes),
       firstTime: times[0],

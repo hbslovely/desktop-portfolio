@@ -9,10 +9,10 @@
       {{ successMsg() }}
     </div>
 
-    <div class="weight-profile-hint" *ngIf="!birthDate()">
-      <i class="pi pi-info-circle"></i>
-      <span>Thêm <strong>ngày sinh</strong> trong profile (tab Cữ bú) để xem đánh giá theo tuần tuổi và timeline phát triển.</span>
-    </div>
+    <p class="weight-inline-hint" *ngIf="!birthDate()">
+      <i class="pi pi-calendar"></i>
+      Thêm <strong>ngày sinh</strong> (tab Cữ bú) để có chuẩn WHO, Z-score và timeline.
+    </p>
   </div>
 
   <button
@@ -67,14 +67,13 @@
     <div class="history-head history-head--chart">
       <div>
         <h3><i class="pi pi-chart-line"></i> Cân nặng so với chuẩn</h3>
-        <p class="chart-sub">{{ cmp.referenceCaption }}. Giới tính: {{ cmp.sexLabelVi }}.</p>
-        <p class="chart-meta">
+        <p class="chart-meta chart-meta--tight">
           <span class="chart-meta__pill">
-            <i class="pi pi-globe"></i> {{ cmp.regionCode }} — WHO
+            <i class="pi pi-globe"></i> {{ cmp.regionCode }} · WHO · {{ cmp.sexLabelVi }}
           </span>
-          <span class="chart-meta__pill chart-meta__pill--birth">
+          <span class="chart-meta__pill chart-meta__pill--birth" [title]="cmp.referenceCaption">
             <i class="pi pi-database"></i>
-            Cân ghi nhận đầu (coi như lúc sinh): <strong>{{ cmp.birthRecordLine }}</strong>
+            <strong>{{ cmp.birthRecordLine }}</strong>
           </span>
         </p>
       </div>
@@ -197,10 +196,6 @@
         </g>
       </svg>
     </div>
-    <p class="chart-footnote">
-      Trục ngang: tuổi từ ngày sinh. Đường trung vị / vùng ±2SD là ước lượng từ chuẩn WHO;
-      không thay cho khám dinh dưỡng. Nếu chưa có ngày sinh, xem biểu đồ theo thứ tự lần đo bên dưới.
-    </p>
   </section>
 
   <section
@@ -209,9 +204,6 @@
   >
     <div class="history-head">
       <h3><i class="pi pi-chart-line"></i> Xu hướng cân nặng</h3>
-      <p class="chart-sub" *ngIf="!birthDate()">
-        Chưa có ngày sinh — trục ngang là thứ tự các lần đo. Thêm ngày sinh để so với chuẩn WHO (VN).
-      </p>
     </div>
 
     <div class="weight-stats-strip" *ngIf="weightSeriesStats() as st">
@@ -294,6 +286,218 @@
           </text>
         </g>
       </svg>
+    </div>
+  </section>
+
+  <section
+    class="card weight-secondary-suite"
+    *ngIf="
+      weightGainBarsChart() || weightVelocityBarsChart() || weightZScoreChart()
+    "
+  >
+    <div class="weight-secondary-suite__head">
+      <h3><i class="pi pi-chart-bar"></i> Phân tích thêm</h3>
+    </div>
+    <div class="weight-insights-grid">
+      <article class="weight-subchart" *ngIf="weightGainBarsChart() as g">
+        <h4><i class="pi pi-arrows-v"></i> Δ kg giữa hai lần cân</h4>
+        <div class="chart-scroll-x">
+          <svg
+            class="weight-svg-chart weight-subchart-svg"
+            [attr.viewBox]="'0 0 ' + g.W + ' ' + g.H"
+            preserveAspectRatio="xMinYMid meet"
+          >
+            <g class="grid">
+              <line
+                *ngFor="let gl of g.gridLines"
+                [attr.x1]="g.PAD_L"
+                [attr.x2]="g.PAD_L + g.innerW + 4"
+                [attr.y1]="gl.y"
+                [attr.y2]="gl.y"
+              />
+              <text
+                *ngFor="let gl of g.gridLines"
+                [attr.x]="g.PAD_L - 6"
+                [attr.y]="gl.y + 4"
+                text-anchor="end"
+                class="grid-label"
+              >
+                {{ gl.label }}
+              </text>
+            </g>
+            <line
+              class="w-zero-line"
+              [attr.x1]="g.PAD_L"
+              [attr.x2]="g.PAD_L + g.innerW"
+              [attr.y1]="g.zeroY"
+              [attr.y2]="g.zeroY"
+            />
+            <g *ngFor="let b of g.bars">
+              <rect
+                [attr.class]="b.pos ? 'w-bar w-bar--pos' : 'w-bar w-bar--neg'"
+                [attr.x]="b.x"
+                [attr.y]="b.y"
+                [attr.width]="b.w"
+                [attr.height]="b.h"
+                rx="3"
+              />
+              <text
+                [attr.x]="b.x + b.w / 2"
+                [attr.y]="b.pos ? b.y - 4 : b.y + b.h + 11"
+                text-anchor="middle"
+                class="w-bar-value"
+              >
+                {{ b.deltaKg > 0 ? '+' : '' }}{{ formatKg(b.deltaKg) }}
+              </text>
+              <text
+                [attr.x]="b.x + b.w / 2"
+                [attr.y]="g.H - 6"
+                text-anchor="middle"
+                class="x-label"
+              >
+                {{ b.label }}
+              </text>
+            </g>
+          </svg>
+        </div>
+      </article>
+
+      <article class="weight-subchart" *ngIf="weightVelocityBarsChart() as v">
+        <h4><i class="pi pi-bolt"></i> Tốc độ (g/ngày)</h4>
+        <div class="chart-scroll-x">
+          <svg
+            class="weight-svg-chart weight-subchart-svg"
+            [attr.viewBox]="'0 0 ' + v.W + ' ' + v.H"
+            preserveAspectRatio="xMinYMid meet"
+          >
+            <g class="grid">
+              <line
+                *ngFor="let gl of v.gridLines"
+                [attr.x1]="v.PAD_L"
+                [attr.x2]="v.PAD_L + v.innerW + 4"
+                [attr.y1]="gl.y"
+                [attr.y2]="gl.y"
+              />
+              <text
+                *ngFor="let gl of v.gridLines"
+                [attr.x]="v.PAD_L - 6"
+                [attr.y]="gl.y + 4"
+                text-anchor="end"
+                class="grid-label"
+              >
+                {{ gl.label }}
+              </text>
+            </g>
+            <line
+              class="w-zero-line"
+              [attr.x1]="v.PAD_L"
+              [attr.x2]="v.PAD_L + v.innerW"
+              [attr.y1]="v.zeroY"
+              [attr.y2]="v.zeroY"
+            />
+            <g *ngFor="let b of v.bars">
+              <rect
+                [attr.class]="b.pos ? 'w-bar w-bar--pos' : 'w-bar w-bar--neg'"
+                [attr.x]="b.x"
+                [attr.y]="b.y"
+                [attr.width]="b.w"
+                [attr.height]="b.h"
+                rx="3"
+              />
+              <text
+                [attr.x]="b.x + b.w / 2"
+                [attr.y]="b.pos ? b.y - 4 : b.y + b.h + 11"
+                text-anchor="middle"
+                class="w-bar-value"
+              >
+                {{ formatGPerDay(b.gPerDay) }}
+              </text>
+              <text
+                [attr.x]="b.x + b.w / 2"
+                [attr.y]="v.H - 6"
+                text-anchor="middle"
+                class="x-label"
+              >
+                {{ b.label }}
+              </text>
+            </g>
+          </svg>
+        </div>
+      </article>
+
+      <article
+        class="weight-subchart weight-subchart--wide"
+        *ngIf="weightZScoreChart() as zc"
+      >
+        <h4><i class="pi pi-percentage"></i> Điểm Z (WHO) theo tuổi</h4>
+        <div class="chart-scroll-x">
+          <svg
+            class="weight-svg-chart weight-subchart-svg weight-subchart-svg--z"
+            [attr.viewBox]="'0 0 ' + zc.W + ' ' + zc.H"
+            preserveAspectRatio="xMinYMid meet"
+          >
+            <g class="grid">
+              <line
+                *ngFor="let gl of zc.gridLines"
+                [attr.x1]="zc.PAD_L"
+                [attr.x2]="zc.PAD_L + zc.innerW + 4"
+                [attr.y1]="gl.y"
+                [attr.y2]="gl.y"
+              />
+              <text
+                *ngFor="let gl of zc.gridLines"
+                [attr.x]="zc.PAD_L - 6"
+                [attr.y]="gl.y + 4"
+                text-anchor="end"
+                class="grid-label"
+              >
+                z {{ gl.label }}
+              </text>
+            </g>
+            <g *ngFor="let rl of zc.refLines">
+              <line
+                class="w-ref-z"
+                [attr.x1]="zc.PAD_L"
+                [attr.x2]="zc.PAD_L + zc.innerW"
+                [attr.y1]="rl.y"
+                [attr.y2]="rl.y"
+                [attr.stroke-dasharray]="rl.dash"
+              />
+              <text
+                [attr.x]="zc.PAD_L + zc.innerW + 6"
+                [attr.y]="rl.y + 3"
+                class="z-ref-label"
+              >
+                {{ rl.z === 0 ? 'z=0' : rl.z }}
+              </text>
+            </g>
+            <path class="w-path w-path--z" [attr.d]="zc.pathLine" fill="none" />
+            <g *ngFor="let p of zc.pts">
+              <circle [attr.cx]="p.x" [attr.cy]="p.y" r="5" class="w-dot w-dot--z" />
+              <text
+                *ngIf="p.showLabel"
+                [attr.x]="p.x"
+                [attr.y]="p.y - 10"
+                text-anchor="middle"
+                class="w-bar-value"
+              >
+                {{ p.z > 0 ? '+' : '' }}{{ p.z }}
+              </text>
+            </g>
+            <g class="x-axis-ticks">
+              <text
+                *ngFor="let t of zc.xTicks"
+                [attr.x]="t.x"
+                [attr.y]="zc.H - 8"
+                text-anchor="middle"
+                class="x-label"
+              >
+                {{ t.label }}
+              </text>
+            </g>
+          </svg>
+        </div>
+      </article>
     </div>
   </section>
 
@@ -762,7 +966,9 @@
                   <i class="pi pi-bookmark-fill"></i> Ba mẹ lưu ý
                 </div>
                 <ul class="tl-list">
-                  <li *ngFor="let n of sel.milestone.parentNotes">{{ n }}</li>
+                  <li *ngFor="let n of sel.milestone.parentNotes | slice : 0 : 2">
+                    {{ n }}
+                  </li>
                 </ul>
               </div>
             </div>
@@ -906,7 +1112,9 @@
                   <i class="pi pi-bookmark-fill"></i> Ba mẹ lưu ý
                 </div>
                 <ul class="tl-list">
-                  <li *ngFor="let n of sel.milestone.parentNotes">{{ n }}</li>
+                  <li *ngFor="let n of sel.milestone.parentNotes | slice : 0 : 2">
+                    {{ n }}
+                  </li>
                 </ul>
               </div>
             </div>
