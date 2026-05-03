@@ -11,7 +11,7 @@
 
     <p class="weight-inline-hint" *ngIf="!birthDate()">
       <i class="pi pi-calendar"></i>
-      Thêm <strong>ngày sinh</strong> (tab Cữ bú) để có chuẩn WHO, Z-score và timeline.
+      Thêm <strong>ngày sinh</strong> (tab Cữ bú) để có chuẩn WHO và timeline.
     </p>
   </div>
 
@@ -291,9 +291,7 @@
 
   <section
     class="card weight-secondary-suite"
-    *ngIf="
-      weightGainBarsChart() || weightVelocityBarsChart() || weightZScoreChart()
-    "
+    *ngIf="weightGainBarsChart() || weightVelocityBarsChart()"
   >
     <div class="weight-secondary-suite__head">
       <h3><i class="pi pi-chart-bar"></i> Phân tích thêm</h3>
@@ -419,80 +417,6 @@
                 class="x-label"
               >
                 {{ b.label }}
-              </text>
-            </g>
-          </svg>
-        </div>
-      </article>
-
-      <article
-        class="weight-subchart weight-subchart--wide"
-        *ngIf="weightZScoreChart() as zc"
-      >
-        <h4><i class="pi pi-percentage"></i> Điểm Z (WHO) theo tuổi</h4>
-        <div class="chart-scroll-x">
-          <svg
-            class="weight-svg-chart weight-subchart-svg weight-subchart-svg--z"
-            [attr.viewBox]="'0 0 ' + zc.W + ' ' + zc.H"
-            preserveAspectRatio="xMinYMid meet"
-          >
-            <g class="grid">
-              <line
-                *ngFor="let gl of zc.gridLines"
-                [attr.x1]="zc.PAD_L"
-                [attr.x2]="zc.PAD_L + zc.innerW + 4"
-                [attr.y1]="gl.y"
-                [attr.y2]="gl.y"
-              />
-              <text
-                *ngFor="let gl of zc.gridLines"
-                [attr.x]="zc.PAD_L - 6"
-                [attr.y]="gl.y + 4"
-                text-anchor="end"
-                class="grid-label"
-              >
-                z {{ gl.label }}
-              </text>
-            </g>
-            <g *ngFor="let rl of zc.refLines">
-              <line
-                class="w-ref-z"
-                [attr.x1]="zc.PAD_L"
-                [attr.x2]="zc.PAD_L + zc.innerW"
-                [attr.y1]="rl.y"
-                [attr.y2]="rl.y"
-                [attr.stroke-dasharray]="rl.dash"
-              />
-              <text
-                [attr.x]="zc.PAD_L + zc.innerW + 6"
-                [attr.y]="rl.y + 3"
-                class="z-ref-label"
-              >
-                {{ rl.z === 0 ? 'z=0' : rl.z }}
-              </text>
-            </g>
-            <path class="w-path w-path--z" [attr.d]="zc.pathLine" fill="none" />
-            <g *ngFor="let p of zc.pts">
-              <circle [attr.cx]="p.x" [attr.cy]="p.y" r="5" class="w-dot w-dot--z" />
-              <text
-                *ngIf="p.showLabel"
-                [attr.x]="p.x"
-                [attr.y]="p.y - 10"
-                text-anchor="middle"
-                class="w-bar-value"
-              >
-                {{ p.z > 0 ? '+' : '' }}{{ p.z }}
-              </text>
-            </g>
-            <g class="x-axis-ticks">
-              <text
-                *ngFor="let t of zc.xTicks"
-                [attr.x]="t.x"
-                [attr.y]="zc.H - 8"
-                text-anchor="middle"
-                class="x-label"
-              >
-                {{ t.label }}
               </text>
             </g>
           </svg>

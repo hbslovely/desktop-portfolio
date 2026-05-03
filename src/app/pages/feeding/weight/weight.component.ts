@@ -156,31 +156,6 @@ export class WeightComponent {
     return evaluateWeightForAge(w, latest.weightKg, this.growthSex());
   });
 
-  /** Thống kê thực tế từ các lần đo đã ghi */
-  weightSeriesStats = computed(() => {
-    const logs = this.sortedLogsAsc();
-    if (logs.length === 0) return null;
-    const kg = logs.map((l) => l.weightKg);
-    const sum = kg.reduce((a, b) => a + b, 0);
-    const avgKg = Math.round((sum / kg.length) * 100) / 100;
-    let maxKg = kg[0];
-    let minKg = kg[0];
-    let maxDate = logs[0].date;
-    let minDate = logs[0].date;
-    for (let i = 0; i < logs.length; i++) {
-      const k = logs[i].weightKg;
-      if (k > maxKg) {
-        maxKg = k;
-        maxDate = logs[i].date;
-      }
-      if (k < minKg) {
-        minKg = k;
-        minDate = logs[i].date;
-      }
-    }
-    return { avgKg, maxKg, minKg, maxDate, minDate, count: logs.length };
-  });
-
   readonly noteQuickTags = [
     'Có tã',
     'Không tã',
@@ -436,121 +411,61 @@ export class WeightComponent {
     };
   });
 
-  /** Cột: Δkg giữa hai lần cân liên tiếp. */
-  weightGainBarsChart = computed(() => {
-    const intervals = this.weightLogIntervals();
-    if (intervals.length === 0) return null;
-
-    const deltas = intervals.map((s) => s.deltaKg);
-    let minV = Math.min(0, ...deltas);
-    let maxV = Math.max(0, ...deltas);
-    const span = maxV - minV;
-    const pad = span < 0.001 ? 0.05 : Math.max(0.01, span * 0.18);
-    minV -= pad;
-    maxV += pad;
-    const range = Math.max(0.04, maxV - minV);
-
-    const PAD_L = 44;
-    const PAD_R = 10;
-    const PAD_T = 12;
-    const PAD_B = 40;
-    const H = 188;
-    const n = intervals.length;
-    const innerW = Math.max(240, n * 52);
-    const W = PAD_L + innerW + PAD_R;
-    const chartH = H - PAD_T - PAD_B;
-    const yOf = (v: number) => PAD_T + chartH - ((v - minV) / range) * chartH;
-    const zeroY = yOf(0);
-
-    const barW = Math.min(30, Math.max(12, innerW / n - 6));
-    const bars = intervals.map((seg, i) => {
-      const cx = PAD_L + ((i + 0.5) / n) * innerW;
-      const x = cx - barW / 2;
-      const y0 = yOf(0);
-      const y1 = yOf(seg.deltaKg);
-      const y = Math.min(y0, y1);
-      const h = Math.max(1.5, Math.abs(y1 - y0));
-      return {
-        x,
-        y,
-        w: barW,
-        h,
-        deltaKg: seg.deltaKg,
-        label: seg.labelShort,
-        days: seg.days,
-        pos: seg.deltaKg >= 0,
-      };
-    });
-
-    const gridLines = [0, 0.5, 1].map((t) => ({
-      y: PAD_T + chartH - t * chartH,
-      label: (minV + (1 - t) * range).toFixed(2).replace('.', ','),
-    }));
-
-    return {
-      W,
-      H,
-      PAD_L,
-      innerW,
-      PAD_T,
-      PAD_B,
-      chartH,
-      zeroY,
-      bars,
-      gridLines,
-    };
-  });
-
-  /** Cột: tốc độ tăng g/ngày (chỉ đoạn có ít nhất 1 ngày). */
-  weightVelocityBarsChart = computed(() => {
+  /**
+   * Đường tốc độ tăng (g/ngày) giữa các cặp lần cân liên tiếp (chỉ khoảng ≥1 ngày).
+   */
+  weightVelocityLineChart = computed(() => {
     const intervals = this.weightLogIntervals().filter((s) => s.gPerDay !== null);
     if (intervals.length === 0) return null;
 
     const vals = intervals.map((s) => s.gPerDay as number);
-    let minV = Math.min(0, ...vals);
-    let maxV = Math.max(0, ...vals);
+    let minV = Math.min(...vals);
+    let maxV = Math.max(...vals);
+    minV = Math.min(minV, 0);
+    maxV = Math.max(maxV, 0);
     const span = maxV - minV;
-    const pad = span < 1 ? 8 : Math.max(4, span * 0.15);
+    const pad = span < 1 ? 8 : Math.max(4, span * 0.14);
     minV -= pad;
     maxV += pad;
-    const range = Math.max(20, maxV - minV);
+    const range = Math.max(12, maxV - minV);
 
-    const PAD_L = 44;
-    const PAD_R = 10;
-    const PAD_T = 12;
-    const PAD_B = 40;
-    const H = 188;
+    const PAD_L = 46;
+    const PAD_R = 12;
+    const PAD_T = 14;
+    const PAD_B = 44;
+    const H = 204;
     const n = intervals.length;
-    const innerW = Math.max(240, n * 52);
+    const innerW = Math.max(280, Math.max(n - 1, 1) * 58);
     const W = PAD_L + innerW + PAD_R;
     const chartH = H - PAD_T - PAD_B;
-    const yOf = (v: number) => PAD_T + chartH - ((v - minV) / range) * chartH;
+    const yOf = (v: number) =>
+      PAD_T + chartH - ((v - minV) / range) * chartH;
+    const xOf = (i: number) =>
+      PAD_L + (n === 1 ? innerW / 2 : (i / Math.max(1, n - 1)) * innerW);
     const zeroY = yOf(0);
+    const bottomY = PAD_T + chartH;
+    const showZeroLine = zeroY >= PAD_T - 0.5 && zeroY <= bottomY + 0.5;
 
-    const barW = Math.min(30, Math.max(12, innerW / n - 6));
-    const bars = intervals.map((seg, i) => {
+    let pathLine = '';
+    const pts = intervals.map((seg, i) => {
       const g = seg.gPerDay as number;
-      const cx = PAD_L + ((i + 0.5) / n) * innerW;
-      const x = cx - barW / 2;
-      const y0 = yOf(0);
-      const y1 = yOf(g);
-      const y = Math.min(y0, y1);
-      const h = Math.max(1.5, Math.abs(y1 - y0));
+      const x = xOf(i);
+      const y = yOf(g);
+      pathLine += i === 0 ? `M ${x},${y}` : ` L ${x},${y}`;
+      const labelStep = n <= 8 ? 1 : Math.max(1, Math.ceil(n / 6));
       return {
         x,
         y,
-        w: barW,
-        h,
         gPerDay: g,
         label: seg.labelShort,
-        days: seg.days,
-        pos: g >= 0,
+        showValue: true,
+        showXLabel: i === 0 || i === n - 1 || i % labelStep === 0,
       };
     });
 
     const gridLines = [0, 0.5, 1].map((t) => ({
       y: PAD_T + chartH - t * chartH,
-      label: `${Math.round(minV + (1 - t) * range)} g/ngày`,
+      label: `${Math.round(minV + (1 - t) * range)}`,
     }));
 
     return {
@@ -560,96 +475,11 @@ export class WeightComponent {
       innerW,
       PAD_T,
       PAD_B,
-      chartH,
-      zeroY,
-      bars,
-      gridLines,
-    };
-  });
-
-  /** Đường Z-score WHO theo từng lần đo (cần ngày sinh). */
-  weightZScoreChart = computed(() => {
-    const birthIso = this.birthDate();
-    const logs = this.sortedLogsAsc();
-    const sex = this.growthSex();
-    if (!birthIso || logs.length < 2) return null;
-
-    type Raw = { days: number; z: number; date: string };
-    const raw: Raw[] = [];
-    for (const log of logs) {
-      const days = ageDaysAtDate(birthIso, log.date);
-      if (days === null) continue;
-      const w = weeksFromDays(days);
-      const ev = evaluateWeightForAge(w, log.weightKg, sex);
-      if (!ev || ev.status === 'unknown') continue;
-      raw.push({ days, z: ev.zScore, date: log.date });
-    }
-    if (raw.length < 2) return null;
-
-    let minZ = Math.min(-2, ...raw.map((p) => p.z));
-    let maxZ = Math.max(2, ...raw.map((p) => p.z));
-    const zSpan = maxZ - minZ;
-    const zPad = zSpan < 0.5 ? 0.4 : Math.max(0.15, zSpan * 0.12);
-    minZ -= zPad;
-    maxZ += zPad;
-    const zRange = Math.max(0.8, maxZ - minZ);
-
-    const maxDays = Math.max(1, ...raw.map((p) => p.days));
-
-    const PAD_L = 48;
-    const PAD_R = 14;
-    const PAD_T = 18;
-    const PAD_B = 36;
-    const H = 200;
-    const innerW = Math.max(280, Math.min(720, 120 + maxDays * 1.1));
-    const W = PAD_L + innerW + PAD_R;
-    const chartH = H - PAD_T - PAD_B;
-    const xOf = (d: number) => PAD_L + (d / maxDays) * innerW;
-    const yOf = (z: number) =>
-      PAD_T + chartH - ((z - minZ) / zRange) * chartH;
-
-    let pathLine = '';
-    const pts = raw.map((p, i) => {
-      const x = xOf(p.days);
-      const y = yOf(p.z);
-      pathLine += i === 0 ? `M ${x},${y}` : ` L ${x},${y}`;
-      return { ...p, x, y, showLabel: i === 0 || i === raw.length - 1 };
-    });
-
-    const refLines = [-2, 0, 2].map((z) => ({
-      z,
-      y: yOf(z),
-      dash: z === 0 ? '0' : '4 3',
-    }));
-
-    const gridLines = [0, 0.5, 1].map((t) => ({
-      y: PAD_T + chartH - t * chartH,
-      label: (minZ + (1 - t) * zRange).toFixed(1).replace('.', ','),
-    }));
-
-    const xTicks: Array<{ x: number; label: string }> = [];
-    const step = maxDays > 400 ? 120 : maxDays > 120 ? 56 : 28;
-    for (let d = 0; d <= maxDays; d += step) {
-      xTicks.push({
-        x: xOf(d),
-        label: d === 0 ? 'Sinh' : `${Math.round(d / 7)}t`,
-      });
-    }
-
-    return {
-      W,
-      H,
-      PAD_L,
-      PAD_T,
-      PAD_B,
-      chartH,
-      innerW,
       pathLine,
       pts,
-      refLines,
       gridLines,
-      xTicks,
-      maxDays,
+      zeroY,
+      showZeroLine,
     };
   });
 
