@@ -79,24 +79,6 @@
       </div>
     </div>
 
-    <div class="weight-stats-strip" *ngIf="weightSeriesStats() as st">
-      <div class="w-stat">
-        <span class="w-stat-label">Trung bình</span>
-        <strong class="w-stat-value">{{ formatKg(st.avgKg) }} kg</strong>
-        <span class="w-stat-hint">{{ st.count }} lần đo</span>
-      </div>
-      <div class="w-stat">
-        <span class="w-stat-label">Cao nhất</span>
-        <strong class="w-stat-value">{{ formatKg(st.maxKg) }} kg</strong>
-        <span class="w-stat-hint">{{ formatDateDisplay(st.maxDate) }}</span>
-      </div>
-      <div class="w-stat">
-        <span class="w-stat-label">Thấp nhất</span>
-        <strong class="w-stat-value">{{ formatKg(st.minKg) }} kg</strong>
-        <span class="w-stat-hint">{{ formatDateDisplay(st.minDate) }}</span>
-      </div>
-    </div>
-
     <div class="compare-legend" aria-hidden="false">
       <span class="cl-item"><i class="cl-dot cl-dot--actual"></i> Bé (đo thực tế)</span>
       <span class="cl-item"><i class="cl-line cl-line--median"></i> Trung vị (P50)</span>
@@ -206,24 +188,6 @@
       <h3><i class="pi pi-chart-line"></i> Xu hướng cân nặng</h3>
     </div>
 
-    <div class="weight-stats-strip" *ngIf="weightSeriesStats() as st">
-      <div class="w-stat">
-        <span class="w-stat-label">Trung bình</span>
-        <strong class="w-stat-value">{{ formatKg(st.avgKg) }} kg</strong>
-        <span class="w-stat-hint">{{ st.count }} lần đo</span>
-      </div>
-      <div class="w-stat">
-        <span class="w-stat-label">Cao nhất</span>
-        <strong class="w-stat-value">{{ formatKg(st.maxKg) }} kg</strong>
-        <span class="w-stat-hint">{{ formatDateDisplay(st.maxDate) }}</span>
-      </div>
-      <div class="w-stat">
-        <span class="w-stat-label">Thấp nhất</span>
-        <strong class="w-stat-value">{{ formatKg(st.minKg) }} kg</strong>
-        <span class="w-stat-hint">{{ formatDateDisplay(st.minDate) }}</span>
-      </div>
-    </div>
-
     <div class="chart-scroll-x">
       <svg
         class="weight-svg-chart"
@@ -291,94 +255,37 @@
 
   <section
     class="card weight-secondary-suite"
-    *ngIf="weightGainBarsChart() || weightVelocityBarsChart()"
+    *ngIf="weightVelocityLineChart() as ln"
   >
     <div class="weight-secondary-suite__head">
-      <h3><i class="pi pi-chart-bar"></i> Phân tích thêm</h3>
+      <h3><i class="pi pi-chart-line"></i> Phân tích thêm</h3>
     </div>
     <div class="weight-insights-grid">
-      <article class="weight-subchart" *ngIf="weightGainBarsChart() as g">
-        <h4><i class="pi pi-arrows-v"></i> Δ kg giữa hai lần cân</h4>
-        <div class="chart-scroll-x">
-          <svg
-            class="weight-svg-chart weight-subchart-svg"
-            [attr.viewBox]="'0 0 ' + g.W + ' ' + g.H"
-            preserveAspectRatio="xMinYMid meet"
-          >
-            <g class="grid">
-              <line
-                *ngFor="let gl of g.gridLines"
-                [attr.x1]="g.PAD_L"
-                [attr.x2]="g.PAD_L + g.innerW + 4"
-                [attr.y1]="gl.y"
-                [attr.y2]="gl.y"
-              />
-              <text
-                *ngFor="let gl of g.gridLines"
-                [attr.x]="g.PAD_L - 6"
-                [attr.y]="gl.y + 4"
-                text-anchor="end"
-                class="grid-label"
-              >
-                {{ gl.label }}
-              </text>
-            </g>
-            <line
-              class="w-zero-line"
-              [attr.x1]="g.PAD_L"
-              [attr.x2]="g.PAD_L + g.innerW"
-              [attr.y1]="g.zeroY"
-              [attr.y2]="g.zeroY"
-            />
-            <g *ngFor="let b of g.bars">
-              <rect
-                [attr.class]="b.pos ? 'w-bar w-bar--pos' : 'w-bar w-bar--neg'"
-                [attr.x]="b.x"
-                [attr.y]="b.y"
-                [attr.width]="b.w"
-                [attr.height]="b.h"
-                rx="3"
-              />
-              <text
-                [attr.x]="b.x + b.w / 2"
-                [attr.y]="b.pos ? b.y - 4 : b.y + b.h + 11"
-                text-anchor="middle"
-                class="w-bar-value"
-              >
-                {{ b.deltaKg > 0 ? '+' : '' }}{{ formatKg(b.deltaKg) }}
-              </text>
-              <text
-                [attr.x]="b.x + b.w / 2"
-                [attr.y]="g.H - 6"
-                text-anchor="middle"
-                class="x-label"
-              >
-                {{ b.label }}
-              </text>
-            </g>
-          </svg>
-        </div>
-      </article>
-
-      <article class="weight-subchart" *ngIf="weightVelocityBarsChart() as v">
+      <article class="weight-subchart weight-subchart--full">
         <h4><i class="pi pi-bolt"></i> Tốc độ (g/ngày)</h4>
         <div class="chart-scroll-x">
           <svg
             class="weight-svg-chart weight-subchart-svg"
-            [attr.viewBox]="'0 0 ' + v.W + ' ' + v.H"
+            [attr.viewBox]="'0 0 ' + ln.W + ' ' + ln.H"
             preserveAspectRatio="xMinYMid meet"
           >
+            <defs>
+              <linearGradient id="wVelLineGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#34d399" />
+                <stop offset="100%" stop-color="#14b8a6" />
+              </linearGradient>
+            </defs>
             <g class="grid">
               <line
-                *ngFor="let gl of v.gridLines"
-                [attr.x1]="v.PAD_L"
-                [attr.x2]="v.PAD_L + v.innerW + 4"
+                *ngFor="let gl of ln.gridLines"
+                [attr.x1]="ln.PAD_L"
+                [attr.x2]="ln.PAD_L + ln.innerW + 4"
                 [attr.y1]="gl.y"
                 [attr.y2]="gl.y"
               />
               <text
-                *ngFor="let gl of v.gridLines"
-                [attr.x]="v.PAD_L - 6"
+                *ngFor="let gl of ln.gridLines"
+                [attr.x]="ln.PAD_L - 6"
                 [attr.y]="gl.y + 4"
                 text-anchor="end"
                 class="grid-label"
@@ -387,36 +294,38 @@
               </text>
             </g>
             <line
+              *ngIf="ln.showZeroLine"
               class="w-zero-line"
-              [attr.x1]="v.PAD_L"
-              [attr.x2]="v.PAD_L + v.innerW"
-              [attr.y1]="v.zeroY"
-              [attr.y2]="v.zeroY"
+              [attr.x1]="ln.PAD_L"
+              [attr.x2]="ln.PAD_L + ln.innerW"
+              [attr.y1]="ln.zeroY"
+              [attr.y2]="ln.zeroY"
             />
-            <g *ngFor="let b of v.bars">
-              <rect
-                [attr.class]="b.pos ? 'w-bar w-bar--pos' : 'w-bar w-bar--neg'"
-                [attr.x]="b.x"
-                [attr.y]="b.y"
-                [attr.width]="b.w"
-                [attr.height]="b.h"
-                rx="3"
-              />
+            <path
+              class="w-path w-path--velocity"
+              [attr.d]="ln.pathLine"
+              fill="none"
+              stroke="url(#wVelLineGrad)"
+            />
+            <g *ngFor="let p of ln.pts">
+              <circle [attr.cx]="p.x" [attr.cy]="p.y" r="5" class="w-dot w-dot--velocity" />
               <text
-                [attr.x]="b.x + b.w / 2"
-                [attr.y]="b.pos ? b.y - 4 : b.y + b.h + 11"
+                *ngIf="p.showValue"
+                [attr.x]="p.x"
+                [attr.y]="p.y - 10"
                 text-anchor="middle"
-                class="w-bar-value"
+                class="w-dot-label"
               >
-                {{ formatGPerDay(b.gPerDay) }}
+                {{ formatGPerDay(p.gPerDay) }}
               </text>
               <text
-                [attr.x]="b.x + b.w / 2"
-                [attr.y]="v.H - 6"
+                *ngIf="p.showXLabel"
+                [attr.x]="p.x"
+                [attr.y]="ln.H - 8"
                 text-anchor="middle"
                 class="x-label"
               >
-                {{ b.label }}
+                {{ p.label }}
               </text>
             </g>
           </svg>
