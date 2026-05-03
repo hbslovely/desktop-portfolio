@@ -1,8 +1,9 @@
 # Baby App – Hướng dẫn cấu hình Google Sheets
 
-Tài liệu hướng dẫn chuẩn bị **2 tab** trong Google Sheet và **Google Apps Script chung** để app `/feeding?user=<tên>` có thể đồng bộ:
+Tài liệu hướng dẫn chuẩn bị **3 tab** trong Google Sheet và **Google Apps Script chung** để app `/feeding?user=<tên>` có thể đồng bộ:
 
 - Tab **`Feeding`**: nhật ký cữ bú (đọc / thêm / sửa / xoá).
+- Tab **`Weight`**: cân nặng bé (đọc / thêm / sửa / xoá).
 - Tab **`Explorer`**: cây thư mục + ảnh base64 (đọc / thêm / sửa / xoá có cascade).
 
 > Sheet: <https://docs.google.com/spreadsheets/d/1O4kAA61k4cX4mEwAjDy5gioVUAElCyu62Z3zPvgdDMM/edit?gid=0#gid=0>
@@ -28,6 +29,27 @@ Quy ước:
 - **Giờ**: `HH:mm` 24h.
 - **Dung tích**: số nguyên (`50` hoặc `50ml` đều đọc được).
 - **Ghi chú**: tuỳ chọn.
+
+---
+
+## 1b. Chuẩn bị tab `Weight`
+
+1. Tạo tab mới tên **chính xác** `Weight`.
+2. Dòng 1 là **header** theo đúng thứ tự sau:
+
+| A        | B          | C             | D           |
+| -------- | ---------- | ------------- | ----------- |
+| **User** | **Ngày**   | **Cân (kg)**  | **Ghi chú** |
+| phat     | 03/05/2026 | 4,25          |             |
+
+Quy ước:
+
+- **User**: giống `Feeding` — ghi nhận ai đang log (query `?user=`).
+- **Ngày**: `DD/MM/YYYY`. Nên để cột B là **Plain text**.
+- **Cân (kg)**: số thập phân (`4,25` hoặc `4.25`).
+- **Ghi chú**: tuỳ chọn.
+
+Sau khi thêm tab, **cập nhật và redeploy** Google Apps Script (mục 4 bên dưới) để có các action `addWeight` / `updateWeight` / `deleteWeight`.
 
 ---
 
@@ -89,6 +111,11 @@ Trong Sheet → **Extensions → Apps Script** → xoá toàn bộ code mặc đ
  *   deleteFeeding  → xoá row
  *   getFeedings    → trả về toàn bộ logs (tuỳ chọn)
  *
+ * ===== Weight actions =====
+ *   addWeight      → append dòng cân nặng
+ *   updateWeight   → sửa ngày / kg / ghi chú theo row
+ *   deleteWeight   → xoá row vật lý
+ *
  * ===== Explorer actions =====
  *   addExplorer    → tạo folder hoặc file (auto-id, auto-stamp created_at, isDeleted=FALSE)
  *   updateExplorer → đổi name hoặc content (KHÔNG đổi type / parent_id)
@@ -102,6 +129,10 @@ Trong Sheet → **Extensions → Apps Script** → xoá toàn bộ code mặc đ
 
 const FEED_SHEET = 'Feeding';
 const EXPL_SHEET = 'Explorer';
+const WEIGHT_SHEET = 'Weight';
+
+// Weight columns (1-based): User | Ngày DD/MM/YYYY | kg | Ghi chú
+const W_USER = 1, W_DATE = 2, W_WEIGHT = 3, W_NOTE = 4;
 
 // Feeding columns (1-based)
 const F_USER = 1, F_DATE = 2, F_TIME = 3, F_VOLUME = 4, F_NOTE = 5;
@@ -135,6 +166,10 @@ function doPost(e) {
       case 'updateFeeding':  return _json(handleUpdateFeeding(body));
       case 'deleteFeeding':  return _json(handleDeleteFeeding(body));
       case 'getFeedings':    return _json(handleGetFeedings(body));
+      // Weight
+      case 'addWeight':      return _json(handleAddWeight(body));
+      case 'updateWeight':   return _json(handleUpdateWeight(body));
+      case 'deleteWeight':   return _json(handleDeleteWeight(body));
       // Explorer
       case 'addExplorer':    return _json(handleAddExplorer(body));
       case 'updateExplorer': return _json(handleUpdateExplorer(body));
@@ -153,6 +188,7 @@ function doPost(e) {
  * GET endpoint phụ — debug nhanh qua trình duyệt:
  *   ?action=getFeedings
  *   ?action=getExplorer
+ * (Đọc Weight qua Google Sheets API trực tiếp trong app — không bắt buộc GET.)
  */
 function doGet(e) {
   try {
@@ -253,6 +289,72 @@ function handleGetFeedings(body) {
     .filter(function (l) { return !userFilter || l.user === userFilter; });
 
   return { success: true, logs: logs };
+}
+
+/* =========================
+ * Weight handlers
+ * ========================= */
+
+function _parseWeightKg(val) {
+  if (val === null || val === undefined || val === '') return null;
+  const n = typeof val === 'number' ? val : parseFloat(String(val).replace(',', '.'));
+  return isNaN(n) || n <= 0 ? null : n;
+}
+
+function handleAddWeight(body) {
+  const sheet = _getSheet(WEIGHT_SHEET);
+  const log = body.log || {};
+  const user = String(log.user || '').toLowerCase().trim();
+  const dateIso = String(log.date || '').trim();
+  var wRaw = log.weight_kg;
+  if (wRaw === undefined || wRaw === null) wRaw = log.weightKg;
+  const w = _parseWeightKg(wRaw);
+  const note = String(log.note || '').trim();
+
+  if (!user || !dateIso || w === null) {
+    throw new Error('Thiếu trường bắt buộc (user, date, weight_kg).');
+  }
+
+  const dateStr = _isoToDdMmYyyy(dateIso);
+  if (!dateStr) throw new Error('Ngày không hợp lệ (YYYY-MM-DD).');
+
+  sheet.appendRow([user, dateStr, w, note]);
+
+  return { success: true, rowIndex: sheet.getLastRow() };
+}
+
+function handleUpdateWeight(body) {
+  const sheet = _getSheet(WEIGHT_SHEET);
+  var row = parseInt(body.row, 10);
+  if (!row || row < 2) throw new Error('Thiếu row hợp lệ');
+
+  const patch = body.patch || {};
+  if (patch.date != null) {
+    var iso = String(patch.date).trim();
+    var d = _isoToDdMmYyyy(iso);
+    if (!d) throw new Error('Ngày không hợp lệ');
+    sheet.getRange(row, W_DATE).setValue(d);
+  }
+  var pk = patch.weight_kg;
+  if (pk === undefined || pk === null) pk = patch.weightKg;
+  if (pk !== undefined && pk !== null) {
+    var wn = _parseWeightKg(pk);
+    if (wn === null) throw new Error('Cân nặng không hợp lệ');
+    sheet.getRange(row, W_WEIGHT).setValue(wn);
+  }
+  if (patch.note != null) {
+    sheet.getRange(row, W_NOTE).setValue(String(patch.note));
+  }
+
+  return { success: true, rowIndex: row };
+}
+
+function handleDeleteWeight(body) {
+  const sheet = _getSheet(WEIGHT_SHEET);
+  var row = parseInt(body.row, 10);
+  if (!row || row < 2) throw new Error('Thiếu row hợp lệ');
+  sheet.deleteRow(row);
+  return { success: true };
 }
 
 /* =========================

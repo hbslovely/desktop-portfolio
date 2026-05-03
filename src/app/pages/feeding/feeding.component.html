@@ -26,20 +26,24 @@
           class="btn icon-btn"
           type="button"
           (click)="refreshAll()"
-          [disabled]="loadingLogs()"
-          [title]="loadingLogs() ? 'Đang tải…' : 'Tải lại Cữ bú + Tài liệu'"
-          aria-label="Tải lại Cữ bú và Tài liệu"
+          [disabled]="isAnyLoading()"
+          [title]="isAnyLoading() ? 'Đang tải…' : 'Tải lại Cữ bú + Cân nặng + Tài liệu'"
+          aria-label="Tải lại Cữ bú, Cân nặng và Tài liệu"
         >
-          <i class="pi pi-refresh" [class.spin]="loadingLogs()"></i>
+          <i class="pi pi-refresh" [class.spin]="isAnyLoading()"></i>
         </button>
       </div>
     </div>
   </header>
 
-  <main class="content" [class.is-documents]="bottomTab() === 'documents'">
+  <main
+    class="content"
+    [class.is-documents]="bottomTab() === 'documents'"
+    [class.is-weight]="bottomTab() === 'weight'"
+  >
     <!--
       ============ TAB PANES ============
-      Dùng `[hidden]` thay vì `*ngIf` để cả 2 tab cùng giữ trạng thái khi
+      Dùng `[hidden]` thay vì `*ngIf` để các tab cùng giữ trạng thái khi
       user qua lại: scroll position, search query đang gõ, viewMode, folder
       đang đứng, file đang chọn, draft đang nhập… đều không bị reset. Hệ
       quả: `<app-documents>` được mount 1 lần ở app load — `loadEntries()`
@@ -51,6 +55,14 @@
       [hidden]="bottomTab() !== 'documents'"
     >
       <app-documents></app-documents>
+    </div>
+
+    <!-- ============ TAB: WEIGHT ============ -->
+    <div
+      class="tab-pane tab-pane--weight"
+      [hidden]="bottomTab() !== 'weight'"
+    >
+      <app-weight [user]="user()"></app-weight>
     </div>
 
     <!-- ============ TAB: FEEDING ============ -->
@@ -1358,6 +1370,17 @@
     >
       <i class="pi pi-heart-fill bn-icon"></i>
       <span class="bn-label">Cữ bú</span>
+    </button>
+    <button
+      type="button"
+      class="bn-item"
+      role="tab"
+      [attr.aria-selected]="bottomTab() === 'weight'"
+      [class.active]="bottomTab() === 'weight'"
+      (click)="setBottomTab('weight')"
+    >
+      <i class="pi pi-chart-line bn-icon"></i>
+      <span class="bn-label">Cân nặng</span>
     </button>
     <button
       type="button"
