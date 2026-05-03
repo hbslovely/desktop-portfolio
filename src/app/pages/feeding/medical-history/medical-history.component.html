@@ -19,31 +19,140 @@
     {{ successMsg() }}
   </div>
 
-  <!-- V2: chip lọc -->
-  <div class="kind-chips" role="tablist" aria-label="Lọc theo loại">
+  <!-- V2: bộ lọc dạng panel (search + sort) -->
+  <div
+    class="mh-filter"
+    [class.mh-filter--open]="filterPanelOpen()"
+  >
     <button
       type="button"
-      class="kind-chip"
-      [class.active]="kindFilter() === 'all'"
-      (click)="setKindFilter('all')"
-      role="tab"
+      class="mh-filter-trigger"
+      (click)="toggleFilterPanel(); $event.stopPropagation()"
+      [attr.aria-expanded]="filterPanelOpen()"
+      aria-controls="medical-filter-panel"
+      id="medical-filter-trigger"
     >
-      Tất cả
-      <span class="kind-chip__count">{{ myEntries().length }}</span>
+      <i class="pi pi-sliders-h" aria-hidden="true"></i>
+      <span class="mh-filter-trigger__text">
+        <span class="mh-filter-trigger__label">{{ kindFilterSummary() }}</span>
+        <span class="mh-filter-trigger__meta">
+          <span class="mh-filter-trigger__count">{{ filteredEntries().length }}</span>
+          <span class="mh-filter-trigger__hint" *ngIf="timelineSort() === 'oldest'">
+            · cũ → mới
+          </span>
+        </span>
+      </span>
+      <i
+        class="pi mh-filter-trigger__chev"
+        [class.pi-chevron-up]="filterPanelOpen()"
+        [class.pi-chevron-down]="!filterPanelOpen()"
+        aria-hidden="true"
+      ></i>
     </button>
-    <button
-      type="button"
-      class="kind-chip"
-      *ngFor="let km of kindCatalog"
-      [class.active]="kindFilter() === km.id"
-      [style.--chip-color]="km.color"
-      (click)="setKindFilter(km.id)"
-      role="tab"
+
+    <div
+      class="mh-filter-panel"
+      id="medical-filter-panel"
+      role="region"
+      aria-labelledby="medical-filter-trigger"
+      *ngIf="filterPanelOpen()"
+      (click)="$event.stopPropagation()"
     >
-      <i [class]="km.icon"></i>
-      {{ km.shortLabel }}
-      <span class="kind-chip__count">{{ kindCounts()[km.id] }}</span>
-    </button>
+      <div class="mh-filter-panel__title">Lọc &amp; sắp xếp</div>
+
+      <div class="mh-filter-panel__field">
+        <span class="mh-filter-panel__label">Thời gian hiển thị</span>
+        <div class="mh-filter-panel__seg" role="group" aria-label="Sắp xếp timeline">
+          <button
+            type="button"
+            [class.active]="timelineSort() === 'newest'"
+            (click)="timelineSort.set('newest')"
+          >
+            Mới nhất trước
+          </button>
+          <button
+            type="button"
+            [class.active]="timelineSort() === 'oldest'"
+            (click)="timelineSort.set('oldest')"
+          >
+            Cũ nhất trước
+          </button>
+        </div>
+      </div>
+
+      <div class="mh-filter-panel__field">
+        <label class="mh-filter-panel__label" for="mhFilterKindSearch"
+          >Tìm loại (gõ o hoặc ô đều khớp)</label
+        >
+        <input
+          id="mhFilterKindSearch"
+          type="search"
+          class="mh-filter-panel__search"
+          placeholder="VD: tiem, xet nghiem, kham, o / ô…"
+          [ngModel]="filterPanelKindSearch()"
+          (ngModelChange)="filterPanelKindSearch.set($event)"
+          name="mhFilterKindSearch"
+          autocomplete="off"
+        />
+      </div>
+
+      <div class="mh-filter-panel__field">
+        <span class="mh-filter-panel__label">Sắp danh sách loại</span>
+        <div class="mh-filter-panel__seg" role="group" aria-label="Sắp loại">
+          <button
+            type="button"
+            [class.active]="kindListSort() === 'count'"
+            (click)="kindListSort.set('count')"
+          >
+            Nhiều sự kiện trước
+          </button>
+          <button
+            type="button"
+            [class.active]="kindListSort() === 'alpha'"
+            (click)="kindListSort.set('alpha')"
+          >
+            A → Z
+          </button>
+        </div>
+      </div>
+
+      <div
+        class="mh-filter-panel__kinds"
+        role="listbox"
+        aria-label="Chọn loại sự kiện"
+      >
+        <button
+          type="button"
+          class="kind-chip mh-filter-kind"
+          [class.active]="kindFilter() === 'all'"
+          (click)="selectKindFilter('all')"
+          role="option"
+        >
+          Tất cả
+          <span class="kind-chip__count">{{ myEntries().length }}</span>
+        </button>
+        <button
+          type="button"
+          class="kind-chip mh-filter-kind"
+          *ngFor="let km of kindsInFilterPanel()"
+          [class.active]="kindFilter() === km.id"
+          [style.--chip-color]="km.color"
+          (click)="selectKindFilter(km.id)"
+          [attr.title]="km.label"
+          role="option"
+        >
+          <i [class]="km.icon" aria-hidden="true"></i>
+          <span class="mh-filter-kind__name">{{ km.shortLabel }}</span>
+          <span class="kind-chip__count">{{ kindCounts()[km.id] }}</span>
+        </button>
+        <p
+          class="mh-filter-panel__empty"
+          *ngIf="filterPanelKindSearch().trim() && kindsInFilterPanel().length === 0"
+        >
+          Không thấy loại nào — thử từ ngắn hơn (o/ô, a/ă tương đương).
+        </p>
+      </div>
+    </div>
   </div>
 
   <section class="card medical-loading" *ngIf="loading()">

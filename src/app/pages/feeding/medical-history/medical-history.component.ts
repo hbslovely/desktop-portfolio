@@ -41,6 +41,23 @@ const EXPLORER_ROOT_ID = 1;
 const MEDICAL_FOLDER_NAME = 'Y tế';
 const MAX_ATTACH_CHARS = 49000 * 100;
 
+/** Bỏ dấu + đ → d để so khớp tiếng Việt (ô≈o, ă≈a…) */
+function foldViKey(s: string): string {
+  return String(s ?? '')
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
+    .replace(/\u0111/g, 'd')
+    .replace(/\u0110/g, 'd')
+    .toLowerCase();
+}
+
+/** So khớp chuỗi con sau khi gộp dấu — gõ "o" hay "ô" đều được */
+function viFoldIncludes(haystack: string, needle: string): boolean {
+  const n = foldViKey(needle);
+  if (!n) return true;
+  return foldViKey(haystack).includes(n);
+}
+
 @Component({
   selector: 'app-medical-history',
   standalone: true,
@@ -68,6 +85,14 @@ export class MedicalHistoryComponent {
   /** V2: lọc theo loại */
   kindFilter = signal<KindFilter>('all');
 
+  /** Panel lọc gọn (thay cho hàng chip đầy đủ) */
+  filterPanelOpen = signal<boolean>(false);
+  filterPanelKindSearch = signal<string>('');
+  /** Thứ tự tháng / mục trong timeline */
+  timelineSort = signal<'newest' | 'oldest'>('newest');
+  /** Thứ tự danh sách loại trong panel */
+  kindListSort = signal<'count' | 'alpha'>('count');
+
   kindPickerOpen = signal<boolean>(false);
   kindSearch = signal<string>('');
 
@@ -89,14 +114,45 @@ export class MedicalHistoryComponent {
   readonly defaultPlaces = DEFAULT_PLACES_VI;
 
   filteredKindCatalog = computed(() => {
-    const q = this.kindSearch().trim().toLowerCase();
+    const q = this.kindSearch().trim();
     if (!q) return this.kindCatalog;
     return this.kindCatalog.filter(
       (km) =>
-        km.label.toLowerCase().includes(q) ||
-        km.shortLabel.toLowerCase().includes(q) ||
-        km.id.toLowerCase().includes(q)
+        viFoldIncludes(km.label, q) ||
+        viFoldIncludes(km.shortLabel, q) ||
+        viFoldIncludes(km.id, q)
     );
+  });
+
+  /** Loại hiển thị trong panel (search + sort) */
+  kindsInFilterPanel = computed(() => {
+    const q = this.filterPanelKindSearch().trim();
+    const filtered = !q
+      ? [...this.kindCatalog]
+      : this.kindCatalog.filter(
+          (km) =>
+            viFoldIncludes(km.label, q) ||
+            viFoldIncludes(km.shortLabel, q) ||
+            viFoldIncludes(km.id.replace(/_/g, ' '), q)
+        );
+    const counts = this.kindCounts();
+    const mode = this.kindListSort();
+    if (mode === 'alpha') {
+      filtered.sort((a, b) => a.label.localeCompare(b.label, 'vi'));
+    } else {
+      filtered.sort((a, b) => {
+        const d = (counts[b.id] ?? 0) - (counts[a.id] ?? 0);
+        if (d !== 0) return d;
+        return a.label.localeCompare(b.label, 'vi');
+      });
+    }
+    return filtered;
+  });
+
+  kindFilterSummary = computed(() => {
+    const f = this.kindFilter();
+    if (f === 'all') return 'Tất cả loại';
+    return kindMeta(f).label;
   });
 
   placesFromEntries = computed(() => {
@@ -164,9 +220,15 @@ export class MedicalHistoryComponent {
     const inCombo = path.some(
       (n) => n instanceof HTMLElement && n.classList.contains('mh-combo')
     );
+    const inFilter = path.some(
+      (n) => n instanceof HTMLElement && n.classList.contains('mh-filter')
+    );
     if (!inCombo) {
       this.kindPickerOpen.set(false);
       this.placePickerOpen.set(false);
+    }
+    if (!inFilter) {
+      this.filterPanelOpen.set(false);
     }
   }
 
@@ -203,13 +265,22 @@ export class MedicalHistoryComponent {
   /** Nhóm timeline theo tháng (V2) */
   timelineGroups = computed(() => {
     const list = this.filteredEntries();
+    const order = this.timelineSort();
     const map = new Map<string, MedicalHistoryEntry[]>();
     for (const e of list) {
       const ym = e.date.slice(0, 7);
       if (!map.has(ym)) map.set(ym, []);
       map.get(ym)!.push(e);
     }
-    const keys = [...map.keys()].sort((a, b) => b.localeCompare(a));
+    for (const arr of map.values()) {
+      arr.sort((a, b) => {
+        const cmp = a.date.localeCompare(b.date);
+        return order === 'newest' ? -cmp : cmp;
+      });
+    }
+    const keys = [...map.keys()].sort((a, b) =>
+      order === 'newest' ? b.localeCompare(a) : a.localeCompare(b)
+    );
     return keys.map((key) => ({
       key,
       monthLabel: this.formatMonthHeading(key),
@@ -267,6 +338,15 @@ export class MedicalHistoryComponent {
 
   setKindFilter(f: KindFilter) {
     this.kindFilter.set(f);
+  }
+
+  toggleFilterPanel(): void {
+    this.filterPanelOpen.update((v) => !v);
+  }
+
+  selectKindFilter(f: KindFilter): void {
+    this.kindFilter.set(f);
+    this.filterPanelOpen.set(false);
   }
 
   metaFor(kind: MedicalEventKind): MedicalKindMeta {
