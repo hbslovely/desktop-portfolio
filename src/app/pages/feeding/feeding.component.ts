@@ -1246,6 +1246,14 @@ export class FeedingComponent {
     this.documentsCmp?.refresh();
   }
 
+  /** Ảnh đính kèm trên timeline Y tế → tab Tài liệu + preview file Explorer. */
+  openMedicalAttachmentInDocuments(explorerEntryId: number): void {
+    this.setBottomTab('documents');
+    setTimeout(() => {
+      this.documentsCmp?.revealFileEntry(explorerEntryId);
+    }, 0);
+  }
+
   /** True khi một nguồn dữ liệu đang load — dùng cho icon spin. */
   isAnyLoading = computed<boolean>(
     () =>

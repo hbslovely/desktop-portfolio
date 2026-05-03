@@ -358,6 +358,20 @@ export class DocumentsComponent {
     this.currentFolderId.set(id);
   }
 
+  /**
+   * Gọi từ tab khác (vd Y tế): chuyển sang thư mục chứa file và mở preview.
+   */
+  revealFileEntry(entryId: number): void {
+    const entry = this.entriesById().get(entryId);
+    if (!entry || entry.type !== 'file') return;
+    if (entry.parentId !== null) {
+      this.currentFolderId.set(entry.parentId);
+    }
+    this.closeSearch();
+    this.openPreview(entry);
+    this.pulseHighlight(entry.id);
+  }
+
   goToCrumb(id: number) {
     this.currentFolderId.set(id);
   }

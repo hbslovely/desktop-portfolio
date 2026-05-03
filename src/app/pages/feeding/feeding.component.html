@@ -78,7 +78,10 @@
       class="tab-pane tab-pane--medical"
       [hidden]="bottomTab() !== 'medical'"
     >
-      <app-medical-history [user]="user()"></app-medical-history>
+      <app-medical-history
+        [user]="user()"
+        (openExplorerFile)="openMedicalAttachmentInDocuments($event)"
+      ></app-medical-history>
     </div>
 
     <!-- ============ TAB: MẸ — chăm sóc mẹ, dinh dưỡng, gợi ý theo tuổi bé ============ -->

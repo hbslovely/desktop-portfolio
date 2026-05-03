@@ -3,10 +3,6 @@
     <div class="medical-intro__badge">V2</div>
     <div class="medical-intro__body">
       <h2><i class="pi pi-heart-fill"></i> Tiền sử y tế của bé</h2>
-      <p>
-        Ghi vaccine, lần khám, thuốc, ốm hoặc xét nghiệm — xem theo dòng thời gian và lọc theo loại.
-        Có thể <strong>đính kèm ảnh</strong> (toa, phiếu) — lưu trong thư mục « Y tế » ở tab Tài liệu.
-      </p>
     </div>
   </section>
 
@@ -30,7 +26,7 @@
         id="mhFreeTextSearch"
         type="search"
         class="mh-text-search__input"
-        placeholder="Tiêu đề, chi tiết, nơi khám, tên loại… (ô/o, a/ă đều được)"
+        placeholder="Tìm trong tiêu đề, chi tiết, nơi khám…"
         [ngModel]="textSearchQuery()"
         (ngModelChange)="textSearchQuery.set($event)"
         name="mhFreeTextSearch"
@@ -137,10 +133,6 @@
           autocomplete="off"
         />
       </div>
-
-      <p class="mh-filter-panel__hint">
-        Chọn <strong>nhiều loại</strong>: bấm để bật/tắt. « Tất cả » xóa lọc.
-      </p>
 
       <div class="mh-filter-panel__field">
         <span class="mh-filter-panel__label">Sắp danh sách loại</span>
@@ -267,22 +259,23 @@
             </div>
             <h4 class="mh-card__title">{{ e.title }}</h4>
             <div class="mh-card__photo" *ngIf="attachmentFor(e) as att">
-              <a
+              <button
                 *ngIf="att.content"
-                class="mh-card__photo-link"
-                [href]="att.content"
-                target="_blank"
-                rel="noopener noreferrer"
+                type="button"
+                class="mh-card__photo-open"
+                (click)="openAttachmentInDocuments(e)"
               >
-                <img
-                  class="mh-card__photo-img"
-                  [src]="att.content"
-                  alt="Ảnh đính kèm"
-                />
-                <span class="mh-card__photo-cap">
-                  <i class="pi pi-external-link"></i> Xem ảnh
+                <span class="mh-card__photo-frame">
+                  <img
+                    class="mh-card__photo-img"
+                    [src]="att.content"
+                    alt="Ảnh đính kèm"
+                  />
                 </span>
-              </a>
+                <span class="mh-card__photo-cap">
+                  <i class="pi pi-folder-open"></i> Mở trong Tài liệu
+                </span>
+              </button>
             </div>
             <p class="mh-card__detail" *ngIf="e.detail">{{ e.detail }}</p>
             <p class="mh-card__place" *ngIf="e.place">
@@ -441,9 +434,11 @@
               class="mh-combo-input"
               [ngModel]="draft().place"
               (ngModelChange)="
-                updateDraft({ place: $event }); placePickerOpen.set(true)
+                updateDraft({ place: $event });
+                kindPickerOpen.set(false);
+                placePickerOpen.set(true)
               "
-              (focus)="placePickerOpen.set(true)"
+              (focus)="onPlaceFieldFocus()"
               name="mhPlace"
               placeholder="Chọn hoặc gõ tên cơ sở…"
               autocomplete="off"
@@ -472,7 +467,6 @@
               </ul>
             </div>
           </div>
-          <p class="field-hint tight">Gợi ý theo lần trước; gõ để thêm mới.</p>
         </div>
 
         <div class="field med-attach-field">
@@ -517,9 +511,8 @@
             </span>
             <span class="med-upload-card__text">
               <strong class="med-upload-card__title">{{
-                pendingAttachment() ? 'Đổi ảnh khác' : 'Chọn hoặc chụp ảnh'
+                pendingAttachment() ? 'Đổi ảnh' : 'Chọn ảnh'
               }}</strong>
-              <span class="med-upload-card__sub">Thư viện hoặc camera</span>
             </span>
             <span class="med-upload-card__arrow" aria-hidden="true">
               <i class="pi pi-angle-right"></i>
@@ -540,9 +533,4 @@
       </form>
     </div>
   </div>
-
-  <footer class="medical-footnote">
-    <i class="pi pi-info-circle"></i>
-    Thông tin chỉ để ghi nhớ tại nhà; không thay cho hồ sơ bệnh án tại cơ sở khám chữa bệnh.
-  </footer>
 </div>
