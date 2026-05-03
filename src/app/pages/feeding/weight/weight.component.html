@@ -1,0 +1,149 @@
+<div class="weight-page">
+  <section class="card weight-intro">
+    <div class="card-header">
+      <h2>
+        <i class="pi pi-chart-line"></i>
+        Cân nặng Bối
+      </h2>
+      <p>Ghi nhận theo tab Google Sheet <strong>Weight</strong> (cột: User, Ngày, kg, Ghi chú).</p>
+    </div>
+
+    <div class="alert error" *ngIf="errorMsg()">
+      <i class="pi pi-exclamation-circle"></i>
+      {{ errorMsg() }}
+    </div>
+    <div class="alert ok" *ngIf="successMsg()">
+      <i class="pi pi-check-circle"></i>
+      {{ successMsg() }}
+    </div>
+
+    <form class="form weight-form" (ngSubmit)="submitAdd()">
+      <label class="field">
+        <span class="label">Ngày cân</span>
+        <input
+          type="date"
+          class="input"
+          [value]="draft().date"
+          (input)="updateDraftDate($any($event.target).value)"
+        />
+      </label>
+      <label class="field">
+        <span class="label">Cân nặng (kg)</span>
+        <input
+          type="text"
+          class="input"
+          inputmode="decimal"
+          placeholder="VD: 4,25"
+          [value]="draft().weightInput"
+          (input)="updateDraftWeight($any($event.target).value)"
+          autocomplete="off"
+        />
+      </label>
+      <label class="field field--grow">
+        <span class="label">Ghi chú</span>
+        <input
+          type="text"
+          class="input"
+          placeholder="Tuỳ chọn"
+          [value]="draft().note"
+          (input)="updateDraftNote($any($event.target).value)"
+        />
+      </label>
+      <button type="submit" class="btn btn-primary" [disabled]="saving() || loading()">
+        <i class="pi" [ngClass]="saving() ? 'pi-spin pi-spinner' : 'pi-save'"></i>
+        Lưu
+      </button>
+    </form>
+  </section>
+
+  <section class="card weight-history">
+    <div class="history-head">
+      <h3>Lịch sử</h3>
+      <span class="muted" *ngIf="loading()">
+        <i class="pi pi-spin pi-spinner"></i> Đang tải…
+      </span>
+    </div>
+
+    <div class="empty-mini" *ngIf="!loading() && logs().length === 0">
+      Chưa có dòng nào trên sheet Weight.
+    </div>
+
+    <ul class="weight-list" *ngIf="logs().length > 0">
+      <li *ngFor="let log of logs()" class="weight-row">
+        <div class="weight-row-main">
+          <span class="w-date">{{ formatDateDisplay(log.date) }}</span>
+          <span class="w-kg">{{ formatKg(log.weightKg) }} kg</span>
+          <span class="w-note" *ngIf="log.note">{{ log.note }}</span>
+        </div>
+        <div class="weight-row-actions">
+          <button
+            type="button"
+            class="btn ghost sm"
+            (click)="openEdit(log)"
+            [disabled]="!log.rowIndex"
+            title="Sửa"
+          >
+            <i class="pi pi-pencil"></i>
+          </button>
+          <button
+            type="button"
+            class="btn ghost sm danger"
+            (click)="deleteLog(log)"
+            [disabled]="!log.rowIndex"
+            title="Xoá"
+          >
+            <i class="pi pi-trash"></i>
+          </button>
+        </div>
+      </li>
+    </ul>
+  </section>
+
+  <!-- Dialog sửa -->
+  <div class="edit-overlay" *ngIf="editingLog()" (click)="cancelEdit()"></div>
+  <aside class="edit-sheet" *ngIf="editingLog()" role="dialog" aria-modal="true">
+    <header class="edit-sheet-head">
+      <h3>Sửa ghi nhận</h3>
+      <button type="button" class="btn icon ghost" (click)="cancelEdit()" aria-label="Đóng">
+        <i class="pi pi-times"></i>
+      </button>
+    </header>
+    <form class="form" (ngSubmit)="submitEdit()">
+      <label class="field">
+        <span class="label">Ngày</span>
+        <input
+          type="date"
+          class="input"
+          [value]="editDraft().date"
+          (input)="updateEditDate($any($event.target).value)"
+        />
+      </label>
+      <label class="field">
+        <span class="label">Cân (kg)</span>
+        <input
+          type="text"
+          class="input"
+          inputmode="decimal"
+          [value]="editDraft().weightInput"
+          (input)="updateEditWeight($any($event.target).value)"
+        />
+      </label>
+      <label class="field">
+        <span class="label">Ghi chú</span>
+        <input
+          type="text"
+          class="input"
+          [value]="editDraft().note"
+          (input)="updateEditNote($any($event.target).value)"
+        />
+      </label>
+      <div class="edit-actions">
+        <button type="button" class="btn ghost" (click)="cancelEdit()">Huỷ</button>
+        <button type="submit" class="btn btn-primary" [disabled]="saving()">
+          <i class="pi" [ngClass]="saving() ? 'pi-spin pi-spinner' : 'pi-check'"></i>
+          Cập nhật
+        </button>
+      </div>
+    </form>
+  </aside>
+</div>

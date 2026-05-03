@@ -180,6 +180,11 @@
       max-width: none;
       padding: 0;
     }
+
+    &--weight {
+      max-width: none;
+      padding: 0;
+    }
   }
 }
 
@@ -191,7 +196,7 @@
   bottom: 0;
   z-index: 90;
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 4px;
   padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px));
   background: rgba(255, 255, 255, 0.96);

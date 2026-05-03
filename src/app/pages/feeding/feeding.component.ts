@@ -30,6 +30,7 @@ import {
   getMilestoneState,
 } from './baby-timeline.data';
 import { DocumentsComponent } from './documents/documents.component';
+import { WeightComponent } from './weight/weight.component';
 
 interface Profile {
   babyName: string;
@@ -62,7 +63,7 @@ const STORAGE_PREFIX = 'feeding-profile::';
 @Component({
   selector: 'app-feeding',
   standalone: true,
-  imports: [CommonModule, FormsModule, DocumentsComponent],
+  imports: [CommonModule, FormsModule, DocumentsComponent, WeightComponent],
   templateUrl: './feeding.component.html',
   styleUrls: ['./feeding.component.scss'],
 })
@@ -72,10 +73,10 @@ export class FeedingComponent {
 
   Math = Math;
 
-  /** Tab nav phía dưới: 'feeding' = nhật ký bú | 'documents' = thư mục ảnh. */
-  bottomTab = signal<'feeding' | 'documents'>('feeding');
+  /** Tab nav phía dưới: feeding | weight | documents. */
+  bottomTab = signal<'feeding' | 'weight' | 'documents'>('feeding');
 
-  setBottomTab(tab: 'feeding' | 'documents') {
+  setBottomTab(tab: 'feeding' | 'weight' | 'documents') {
     this.bottomTab.set(tab);
     if (typeof window !== 'undefined') {
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1384,21 +1385,24 @@ export class FeedingComponent {
    * tự cập nhật khi user chuyển tab.
    */
   @ViewChild(DocumentsComponent) private documentsCmp?: DocumentsComponent;
+  @ViewChild(WeightComponent) private weightCmp?: WeightComponent;
 
   /**
-   * Reload đồng thời nhật ký bú **và** danh sách documents. Được gọi từ
-   * nút refresh duy nhất ở header trang. Nếu user đang ở tab Cữ bú,
-   * `documentsCmp` sẽ là undefined — bỏ qua, vì lần sau switch sang
-   * Documents component được tạo mới và tự `loadEntries()` trong constructor.
+   * Reload đồng thời nhật ký bú, cân nặng **và** documents. Các child tab
+   * dùng `[hidden]` nên component có thể chưa mount — `?.refresh()` bỏ qua an toàn.
    */
   refreshAll() {
     this.loadLogs();
+    this.weightCmp?.refresh();
     this.documentsCmp?.refresh();
   }
 
-  /** True khi 1 trong 2 nguồn dữ liệu đang load — dùng cho icon spin. */
+  /** True khi một nguồn dữ liệu đang load — dùng cho icon spin. */
   isAnyLoading = computed<boolean>(
-    () => this.loadingLogs() || (this.documentsCmp?.loading() ?? false)
+    () =>
+      this.loadingLogs() ||
+      (this.weightCmp?.loading() ?? false) ||
+      (this.documentsCmp?.loading() ?? false)
   );
 
   // ===== Edit log =====

@@ -139,7 +139,7 @@
     "changeOrigin": true,
     "logLevel": "debug",
     "pathRewrite": {
-      "^/api/feeding-apps-script": "/macros/s/AKfycbzlbMMhPm6S-Dm8XgqJgZqRm8vJSgLwJM19LUFxg_X9_Lorw0n_AUELNTpiH-8ULQyBRg/exec"
+      "^/api/feeding-apps-script": "/macros/s/AKfycbzeEaz8xMniaEU8f-65tkER8OSCvBn1xGN0hH4GYLRAHVIlT4n6jdLHhPu-IcdCI3C05A/exec"
     },
     "headers": {
       "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
