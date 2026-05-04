@@ -556,7 +556,7 @@
                   </span>
                 </ng-container>
               </div>
-              <div class="countdown-value">{{ getTimeUntilNext() || '—' }}</div>
+              <div class="countdown-value">{{ timeUntilNext() || '—' }}</div>
             </div>
             <div class="countdown-next">
               <div class="next-item">
@@ -586,7 +586,7 @@
                 <span class="muted">({{ lastFeedingAgo() }})</span>
               </span>
               <span class="cp-right">
-                TB {{ minutesToHuman(prediction().medianIntervalMinutes || 0) }}
+                TB {{ predictionMedianIntervalHuman() }}
               </span>
             </div>
           </div>
@@ -1301,7 +1301,7 @@
               <div
                 class="nutri-hero__pct nutri-hero__pct--pace"
                 [attr.data-pace]="p.paceStatus"
-                [title]="nutritionPaceLabel(p.paceStatus)"
+                [title]="p.paceLabelVi"
               >
                 {{ p.percentOfPaceMid }}%
                 <span>tiến độ hiện tại</span>
@@ -1313,7 +1313,7 @@
             Đã qua khoảng <strong>{{ (pn.dayFraction * 100) | number : '1.0-0' }}%</strong> ngày (0h–24h).
             Nếu bú đều theo mức giữa KN, đến lúc này khoảng
             <strong>{{ pn.expectedMidMl }}ml</strong> (khoảng {{ pn.expectedMinMl }}–{{ pn.expectedMaxMl }}ml).
-            <em>{{ nutritionPaceLabel(pn.paceStatus) }}.</em>
+            <em>{{ pn.paceLabelVi }}.</em>
           </p>
 
           <div class="nutri-bar-stack">
@@ -1476,9 +1476,9 @@
             <span
               class="m-status"
               [attr.data-met]="ms.avgPerFeed"
-              [title]="metricStatusLabel(ms.avgPerFeed)"
+              [title]="ms.avgPerFeedTitle"
             >
-              <i class="pi" [ngClass]="metricStatusIcon(ms.avgPerFeed)"></i>
+              <i class="pi" [ngClass]="ms.avgPerFeedIcon"></i>
             </span>
           </li>
           <li [attr.data-met]="ms.feedsByNow">
@@ -1493,9 +1493,9 @@
             <span
               class="m-status"
               [attr.data-met]="ms.feedsByNow"
-              [title]="metricStatusLabel(ms.feedsByNow)"
+              [title]="ms.feedsByNowTitle"
             >
-              <i class="pi" [ngClass]="metricStatusIcon(ms.feedsByNow)"></i>
+              <i class="pi" [ngClass]="ms.feedsByNowIcon"></i>
             </span>
           </li>
           <li [attr.data-met]="ms.volumeByNow">
@@ -1507,9 +1507,9 @@
             <span
               class="m-status"
               [attr.data-met]="ms.volumeByNow"
-              [title]="metricStatusLabel(ms.volumeByNow)"
+              [title]="ms.volumeByNowTitle"
             >
-              <i class="pi" [ngClass]="metricStatusIcon(ms.volumeByNow)"></i>
+              <i class="pi" [ngClass]="ms.volumeByNowIcon"></i>
             </span>
           </li>
         </ul>

@@ -1,11 +1,14 @@
 import {
+  ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   ElementRef,
   ViewChild,
   computed,
   inject,
   signal,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
@@ -72,6 +75,44 @@ interface DayStats {
 
 const STORAGE_PREFIX = 'feeding-profile::';
 
+function minutesToHumanShort(minutes: number): string {
+  if (!minutes || minutes <= 0) return '';
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (h === 0) return `${m}p`;
+  if (m === 0) return `${h}h`;
+  return `${h}h${m}p`;
+}
+
+function nutritionPaceLabelFromStatus(
+  status: NutritionPaceInfo['paceStatus']
+): string {
+  switch (status) {
+    case 'ahead':
+      return 'Nhanh hơn mức trung bình hiện tại';
+    case 'on-track':
+      return 'Đúng mức trung bình hiện tại';
+    case 'behind':
+    default:
+      return 'Chậm hơn mức trung bình hiện tại';
+  }
+}
+
+function metricMetUi(s: 'met' | 'partial' | 'unmet'): {
+  title: string;
+  icon: string;
+} {
+  switch (s) {
+    case 'met':
+      return { title: 'Đã đáp ứng', icon: 'pi-check-circle' };
+    case 'partial':
+      return { title: 'Gần đạt', icon: 'pi-check-circle' };
+    case 'unmet':
+    default:
+      return { title: 'Chưa đáp ứng', icon: 'pi-times-circle' };
+  }
+}
+
 @Component({
   selector: 'app-feeding',
   standalone: true,
@@ -84,9 +125,11 @@ const STORAGE_PREFIX = 'feeding-profile::';
   ],
   templateUrl: './feeding.component.html',
   styleUrls: ['./feeding.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FeedingComponent {
   private route = inject(ActivatedRoute);
+  private destroyRef = inject(DestroyRef);
   private feedingLogService = inject(FeedingLogService);
   private weightLogService = inject(WeightLogService);
 
@@ -457,11 +500,21 @@ export class FeedingComponent {
     return evaluateNutrition(target, today.total, today.count);
   });
 
-  /** Tiến độ hiện tại: so với phân bổ đều theo KN cả ngày (theo thời điểm trong ngày). */
-  nutritionPace = computed<NutritionPaceInfo | null>(() => {
+  /**
+   * Tiến độ hiện tại: so với phân bổ đều theo KN cả ngày (theo thời điểm trong ngày).
+   * `paceLabelVi` dùng trong template để tránh gọi hàm mỗi chu kỳ change detection.
+   */
+  nutritionPace = computed<
+    (NutritionPaceInfo & { paceLabelVi: string }) | null
+  >(() => {
     const target = this.nutritionTarget();
     if (!target) return null;
-    return computeNutritionPace(target, this.todayStats().total, this.now());
+    const p = computeNutritionPace(
+      target,
+      this.todayStats().total,
+      this.now()
+    );
+    return { ...p, paceLabelVi: nutritionPaceLabelFromStatus(p.paceStatus) };
   });
 
   /**
@@ -472,6 +525,12 @@ export class FeedingComponent {
     avgPerFeed: 'met' | 'partial' | 'unmet';
     feedsByNow: 'met' | 'partial' | 'unmet';
     volumeByNow: 'met' | 'partial' | 'unmet';
+    avgPerFeedTitle: string;
+    avgPerFeedIcon: string;
+    feedsByNowTitle: string;
+    feedsByNowIcon: string;
+    volumeByNowTitle: string;
+    volumeByNowIcon: string;
     modelAvgMl: number;
     feedsLow: number;
     feedsHigh: number;
@@ -531,10 +590,19 @@ export class FeedingComponent {
       volumeByNow = pct >= 72 ? 'partial' : 'unmet';
     }
 
+    const avgUi = metricMetUi(avgPerFeed);
+    const feedsUi = metricMetUi(feedsByNow);
+    const volUi = metricMetUi(volumeByNow);
     return {
       avgPerFeed,
       feedsByNow,
       volumeByNow,
+      avgPerFeedTitle: avgUi.title,
+      avgPerFeedIcon: avgUi.icon,
+      feedsByNowTitle: feedsUi.title,
+      feedsByNowIcon: feedsUi.icon,
+      volumeByNowTitle: volUi.title,
+      volumeByNowIcon: volUi.icon,
       modelAvgMl: Math.round(modelAvgMl),
       feedsLow,
       feedsHigh,
@@ -618,6 +686,23 @@ export class FeedingComponent {
     const days = Math.floor(hrs / 24);
     return `${days} ngày trước`;
   });
+
+  /** Chuỗi countdown cữ tiếp theo — computed thay cho gọi hàm trong template. */
+  timeUntilNext = computed<string>(() => {
+    const p = this.prediction();
+    if (!p?.nextAt) return '';
+    const diffMin = Math.round(
+      (p.nextAt.getTime() - this.now().getTime()) / 60000
+    );
+    if (diffMin < -5) return `Đã trễ ${minutesToHumanShort(-diffMin)}`;
+    if (diffMin <= 5) return 'Sắp tới giờ bú';
+    return `Còn ${minutesToHumanShort(diffMin)}`;
+  });
+
+  /** TB khoảng cách cữ (dạng ngắn) cho UI dự đoán. */
+  predictionMedianIntervalHuman = computed(() =>
+    minutesToHumanShort(this.prediction().medianIntervalMinutes || 0)
+  );
 
   // ===== History (range selectable: 7 / 14 / 30 days) =====
   weeklySummary = computed<DailySummary[]>(() =>
@@ -1002,15 +1087,21 @@ export class FeedingComponent {
   });
 
   constructor() {
-    this.route.queryParamMap.subscribe((qp) => {
-      const user = (qp.get('user') || 'guest').toLowerCase().trim() || 'guest';
-      this.user.set(user);
-      this.loadProfile(user);
-      this.loadLogs();
-      this.loadWeightLogs();
-    });
+    this.route.queryParamMap
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((qp) => {
+        const user = (qp.get('user') || 'guest').toLowerCase().trim() || 'guest';
+        this.user.set(user);
+        this.loadProfile(user);
+        this.loadLogs();
+        this.loadWeightLogs();
+      });
 
-    setInterval(() => this.now.set(new Date()), 20_000);
+    const clockId = window.setInterval(
+      () => this.now.set(new Date()),
+      20_000
+    );
+    this.destroyRef.onDestroy(() => window.clearInterval(clockId));
 
     this.loadBottlePrep();
   }
@@ -1160,43 +1251,6 @@ export class FeedingComponent {
 
   quickVolume(v: number) {
     this.logDraft.update((d) => ({ ...d, volume: v }));
-  }
-
-  /** Icon PrimeIcon class cho từng trạng thái met/partial/unmet */
-  metricStatusIcon(s: 'met' | 'partial' | 'unmet'): string {
-    switch (s) {
-      case 'met':
-        return 'pi-check-circle';
-      case 'partial':
-        return 'pi-check-circle';
-      case 'unmet':
-      default:
-        return 'pi-times-circle';
-    }
-  }
-
-  metricStatusLabel(s: 'met' | 'partial' | 'unmet'): string {
-    switch (s) {
-      case 'met':
-        return 'Đã đáp ứng';
-      case 'partial':
-        return 'Gần đạt';
-      case 'unmet':
-      default:
-        return 'Chưa đáp ứng';
-    }
-  }
-
-  nutritionPaceLabel(status: NutritionPaceInfo['paceStatus']): string {
-    switch (status) {
-      case 'ahead':
-        return 'Nhanh hơn mức trung bình hiện tại';
-      case 'on-track':
-        return 'Đúng mức trung bình hiện tại';
-      case 'behind':
-      default:
-        return 'Chậm hơn mức trung bình hiện tại';
-    }
   }
 
   /** Toggle ghi chú preset (VD: "Sữa công thức"). Bấm lần 2 để bỏ. */
@@ -1370,10 +1424,6 @@ export class FeedingComponent {
         this.syncError.set(err?.message || 'Xoá thất bại.');
       },
     });
-  }
-
-  refreshLogs() {
-    this.loadLogs();
   }
 
   /**
@@ -1629,14 +1679,6 @@ export class FeedingComponent {
     this.chartRange.set(r);
   }
 
-  formatMinuteAsTime(m: number): string {
-    const hh = Math.floor(m / 60)
-      .toString()
-      .padStart(2, '0');
-    const mm = (m % 60).toString().padStart(2, '0');
-    return `${hh}:${mm}`;
-  }
-
   openHistoryDialog(filter: 'all' | 'today' | 'yesterday' = 'all') {
     this.historyFilter.set(filter);
     this.historyDialogOpen.set(true);
@@ -1644,10 +1686,6 @@ export class FeedingComponent {
 
   closeHistoryDialog() {
     this.historyDialogOpen.set(false);
-  }
-
-  formatHourLabel(h: number): string {
-    return `${h.toString().padStart(2, '0')}h`;
   }
 
   openLogDialog(resetTime = true) {
@@ -1669,24 +1707,6 @@ export class FeedingComponent {
   closeLogDialog() {
     this.logDialogOpen.set(false);
     this.resetRemaining();
-  }
-
-  minutesToHuman(minutes: number): string {
-    if (!minutes || minutes <= 0) return '';
-    const h = Math.floor(minutes / 60);
-    const m = minutes % 60;
-    if (h === 0) return `${m}p`;
-    if (m === 0) return `${h}h`;
-    return `${h}h${m}p`;
-  }
-
-  getTimeUntilNext(): string {
-    const p = this.prediction();
-    if (!p?.nextAt) return '';
-    const diffMin = Math.round((p.nextAt.getTime() - this.now().getTime()) / 60000);
-    if (diffMin < -5) return `Đã trễ ${this.minutesToHuman(-diffMin)}`;
-    if (diffMin <= 5) return 'Sắp tới giờ bú';
-    return `Còn ${this.minutesToHuman(diffMin)}`;
   }
 
   /** Trạng thái countdown: 'now' (sắp/đã tới), 'late', hoặc 'waiting' */
@@ -1717,16 +1737,6 @@ export class FeedingComponent {
   /** 2 cữ bú hôm nay mới nhất (cho summary) */
   todayLogsPreview = computed<FeedingLog[]>(() => this.todayLogs().slice(0, 2));
   yesterdayLogsPreview = computed<FeedingLog[]>(() => this.yesterdayLogs().slice(0, 2));
-
-  get todayStr(): string {
-    const d = this.now();
-    return d.toLocaleDateString('vi-VN', {
-      weekday: 'long',
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    });
-  }
 
   /** Thứ (tiếng Việt) — hero */
   get heroWeekday(): string {
