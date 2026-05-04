@@ -1,5 +1,7 @@
 import {
+  ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   EventEmitter,
   HostListener,
   Output,
@@ -9,6 +11,7 @@ import {
   input,
   signal,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
@@ -64,10 +67,12 @@ function viFoldIncludes(haystack: string, needle: string): boolean {
   imports: [CommonModule, FormsModule],
   templateUrl: './medical-history.component.html',
   styleUrls: ['./medical-history.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MedicalHistoryComponent {
   private medicalService = inject(MedicalHistoryService);
   private explorerService = inject(ExplorerService);
+  private destroyRef = inject(DestroyRef);
 
   /** Cùng `?user=` với trang feeding */
   user = input<string>('guest');
@@ -409,7 +414,9 @@ export class MedicalHistoryComponent {
     forkJoin({
       medical: this.medicalService.getEntries(),
       explorer: this.explorerService.getEntries(),
-    }).subscribe({
+    })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
       next: ({ medical, explorer }) => {
         this.entries.set(medical);
         this.explorerEntries.set(explorer);

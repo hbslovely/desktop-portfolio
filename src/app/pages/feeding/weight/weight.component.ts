@@ -1,4 +1,5 @@
 import {
+  ChangeDetectionStrategy,
   Component,
   DestroyRef,
   HostListener,
@@ -44,6 +45,7 @@ interface WeightDraft {
   imports: [CommonModule, FormsModule],
   templateUrl: './weight.component.html',
   styleUrls: ['./weight.component.scss', '../development-timeline.dialog.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class WeightComponent {
   private weightLogService = inject(WeightLogService);

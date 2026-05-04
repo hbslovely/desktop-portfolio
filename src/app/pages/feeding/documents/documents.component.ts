@@ -1,7 +1,9 @@
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
+  ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   HostListener,
   computed,
   inject,
@@ -62,9 +64,11 @@ const VIEW_MODE_KEY = 'documents:viewMode';
   imports: [CommonModule, FormsModule],
   templateUrl: './documents.component.html',
   styleUrls: ['./documents.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DocumentsComponent {
   private explorerService = inject(ExplorerService);
+  private destroyRef = inject(DestroyRef);
 
   /** id của root folder. App giả định row đầu tiên (id=1) là root. */
   private readonly ROOT_ID = 1;
@@ -324,6 +328,12 @@ export class DocumentsComponent {
 
   constructor() {
     this.loadEntries();
+    this.destroyRef.onDestroy(() => {
+      if (this.highlightTimer) {
+        clearTimeout(this.highlightTimer);
+        this.highlightTimer = null;
+      }
+    });
   }
 
   // ===== Loading =====
@@ -1216,11 +1226,6 @@ export class DocumentsComponent {
     if (s.has(id)) s.delete(id);
     else s.add(id);
     this.selectedIds.set(s);
-  }
-
-  /** @deprecated dùng `toggleSelectEntry` thay thế. Giữ alias cho code cũ. */
-  toggleSelectFile(id: number) {
-    this.toggleSelectEntry(id);
   }
 
   isSelected(id: number): boolean {
