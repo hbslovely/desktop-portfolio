@@ -1090,6 +1090,43 @@
             </span>
           </div>
 
+          <ng-container *ngIf="hasTimelineChartData(); else noTimeline">
+          <div class="timeline-zoom-bar">
+            <span class="timeline-zoom-hint">
+              <i class="pi pi-search-plus"></i>
+              Thu phóng trục thời gian (cuộn ngang khi &gt; 1×)
+            </span>
+            <div class="timeline-zoom-controls">
+              <button
+                type="button"
+                class="tz-btn"
+                (click)="timelineZoomOut()"
+                [disabled]="timelineChartZoomIndex() === 0"
+                aria-label="Thu nhỏ biểu đồ"
+              >
+                −
+              </button>
+              <span class="tz-value">{{ timelineChartZoom() }}×</span>
+              <button
+                type="button"
+                class="tz-btn"
+                (click)="timelineZoomIn()"
+                [disabled]="timelineChartZoomIndex() === 3"
+                aria-label="Phóng to biểu đồ"
+              >
+                +
+              </button>
+              <button
+                type="button"
+                class="btn ghost sm tz-reset"
+                (click)="timelineZoomReset()"
+                *ngIf="timelineChartZoomIndex() > 0"
+              >
+                Mặc định
+              </button>
+            </div>
+          </div>
+
           <!-- Legend + totals -->
           <div class="timeline-legend">
             <div class="tl-item today">
@@ -1112,13 +1149,22 @@
               </span>
               <strong class="tl-value">{{ timelineChart().avg3Total }}ml</strong>
             </div>
+            <div class="tl-item rec" *ngIf="timelineChart().hasRecommendation">
+              <span class="tl-swatch tl-swatch--rec"></span>
+              <span class="tl-label">
+                Khuyến nghị (phân bổ đều)
+                <span class="muted-small">{{ timelineChart().recRangeLabel }}</span>
+              </span>
+              <strong class="tl-value">~{{ timelineChart().recMidDailyRounded }}ml</strong>
+            </div>
           </div>
 
+          <div class="chart-scroll timeline-chart-scroll scrollable">
           <svg
             class="line-chart tall timeline-svg"
             [attr.viewBox]="'0 0 ' + timelineChart().W + ' ' + timelineChart().H"
-            preserveAspectRatio="xMidYMid meet"
-            *ngIf="timelineChart().yesterdayTotal > 0 || timelineChart().avg3Total > 0 || timelineChart().todayTotal > 0; else noTimeline"
+            [style.min-width.px]="timelineChart().W"
+            preserveAspectRatio="xMinYMid meet"
           >
             <g class="grid">
               <line
@@ -1137,6 +1183,24 @@
               >{{ g.label }}</text>
             </g>
 
+            <!-- Dải KN min–max (phân bổ đều trong ngày) -->
+            <path
+              *ngIf="timelineChart().hasRecommendation && timelineChart().recBandPath"
+              class="tl-rec-band"
+              [attr.d]="timelineChart().recBandPath"
+            />
+
+            <!-- Lines (avg first so it sits behind) -->
+            <path class="tl-path avg3" [attr.d]="timelineChart().avg3Path" />
+            <path class="tl-path yesterday" [attr.d]="timelineChart().yesterdayPath" />
+            <!-- Đường KN trung điểm (ml/ngày tuyến tính theo giờ) -->
+            <path
+              *ngIf="timelineChart().hasRecommendation && timelineChart().recMidPath"
+              class="tl-path rec-mid"
+              [attr.d]="timelineChart().recMidPath"
+            />
+            <path class="tl-path today" [attr.d]="timelineChart().todayPath" />
+
             <!-- "Now" vertical line -->
             <g class="now-marker">
               <line
@@ -1153,11 +1217,6 @@
                 class="now-label"
               >bây giờ</text>
             </g>
-
-            <!-- Lines (avg first so it sits behind) -->
-            <path class="tl-path avg3" [attr.d]="timelineChart().avg3Path" />
-            <path class="tl-path yesterday" [attr.d]="timelineChart().yesterdayPath" />
-            <path class="tl-path today" [attr.d]="timelineChart().todayPath" />
 
             <!-- Today end marker -->
             <g *ngIf="timelineChart().todayEndPoint as pt">
@@ -1182,6 +1241,8 @@
               >{{ t.hour }}h</text>
             </g>
           </svg>
+          </div>
+          </ng-container>
           <ng-template #noTimeline>
             <div class="empty-mini">
               Chưa đủ dữ liệu. Cần ít nhất vài cữ bú trong 3 ngày gần đây.

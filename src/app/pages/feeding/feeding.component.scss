@@ -2866,6 +2866,76 @@
 }
 
 /* ========== TIMELINE CHART ========== */
+.timeline-zoom-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 4px 0 10px;
+  padding: 8px 10px;
+  background: #f8fafc;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.timeline-zoom-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+
+  i {
+    color: var(--primary);
+    font-size: 13px;
+  }
+}
+
+.timeline-zoom-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tz-btn {
+  min-width: 36px;
+  height: 34px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: #ffffff;
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--text);
+  cursor: pointer;
+  font-family: inherit;
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  &:not(:disabled):active {
+    transform: scale(0.96);
+  }
+}
+
+.tz-value {
+  min-width: 40px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+.timeline-chart-scroll.scrollable svg {
+  display: block;
+}
+
 .timeline-legend {
   display: flex;
   flex-wrap: wrap;
@@ -2932,6 +3002,20 @@
       }
       .tl-value { color: #64748b; }
     }
+
+    &.rec {
+      background: #ecfdf5;
+      border-color: #a7f3d0;
+
+      .tl-swatch--rec {
+        background: linear-gradient(180deg, #6ee7b7 0%, #10b981 100%);
+        border: 1px solid #059669;
+      }
+
+      .tl-value {
+        color: #047857;
+      }
+    }
   }
 
   .muted-small {
@@ -2942,6 +3026,12 @@
 }
 
 .timeline-svg {
+  .tl-rec-band {
+    fill: rgba(16, 185, 129, 0.12);
+    stroke: none;
+    pointer-events: none;
+  }
+
   .tl-path {
     fill: none;
     stroke-linejoin: round;
@@ -2964,6 +3054,13 @@
       stroke-width: 1.8;
       stroke-dasharray: 5 4;
       opacity: 0.85;
+    }
+
+    &.rec-mid {
+      stroke: #059669;
+      stroke-width: 2.2;
+      stroke-dasharray: 8 5;
+      opacity: 0.95;
     }
   }
 

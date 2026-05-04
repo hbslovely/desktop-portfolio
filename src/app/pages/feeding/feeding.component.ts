@@ -220,6 +220,27 @@ export class FeedingComponent {
   /** Số ngày hiển thị trong biểu đồ phân tích (7 / 14 / 30) */
   chartRange = signal<7 | 14 | 30>(7);
 
+  /** Thu phóng trục thời gian — tab "Trong ngày" (cuộn ngang khi > 1×). */
+  private static readonly TIMELINE_ZOOM_LEVELS = [1, 1.5, 2, 2.5] as const;
+  timelineChartZoomIndex = signal(0);
+  timelineChartZoom = computed(
+    () => FeedingComponent.TIMELINE_ZOOM_LEVELS[this.timelineChartZoomIndex()]
+  );
+
+  timelineZoomIn(): void {
+    this.timelineChartZoomIndex.update((i) =>
+      Math.min(FeedingComponent.TIMELINE_ZOOM_LEVELS.length - 1, i + 1)
+    );
+  }
+
+  timelineZoomOut(): void {
+    this.timelineChartZoomIndex.update((i) => Math.max(0, i - 1));
+  }
+
+  timelineZoomReset(): void {
+    this.timelineChartZoomIndex.set(0);
+  }
+
   // ===== Bình sữa đã pha (persistent) =====
   bottlePrep = signal<{ volumeMl: number; at: string } | null>(null);
   bottlePrepDraft = signal<string>('');
@@ -856,9 +877,18 @@ export class FeedingComponent {
    *  - Hôm nay (dừng ở giờ hiện tại)
    *  - Hôm qua (cả ngày)
    *  - Trung bình 3 ngày trước (2 ngày + hôm qua)
+   * + Dải & đường KN (phân bổ đều) khi có `nutritionTarget` (cân từ tab Cân nặng).
+   * Chiều ngang scale theo `timelineChartZoom` để cuộn xem chi tiết.
    */
   timelineChart = computed(() => {
-    const W = 700, H = 300, PAD_L = 44, PAD_R = 16, PAD_T = 24, PAD_B = 44;
+    const zoom = this.timelineChartZoom();
+    const BASE_W = 700;
+    const W = Math.round(BASE_W * zoom);
+    const H = 300,
+      PAD_L = 44,
+      PAD_R = 16,
+      PAD_T = 24,
+      PAD_B = 44;
     const chartW = W - PAD_L - PAD_R;
     const chartH = H - PAD_T - PAD_B;
 
@@ -918,15 +948,61 @@ export class FeedingComponent {
       return { m, v: sum / prev3WithData.length };
     });
 
+    const target = this.nutritionTarget();
+    const recPtsMin: { m: number; v: number }[] = [];
+    const recPtsMax: { m: number; v: number }[] = [];
+    const recPtsMid: { m: number; v: number }[] = [];
+    let hasRecommendation = false;
+    let recRangeLabel = '';
+    let recMidDailyRounded = 0;
+    if (target) {
+      hasRecommendation = true;
+      const midDaily = (target.dailyMlMin + target.dailyMlMax) / 2;
+      recMidDailyRounded = Math.round(midDaily);
+      recRangeLabel = `${target.dailyMlMin}–${target.dailyMlMax} ml/ngày`;
+      for (const m of samples) {
+        const frac = m / 1440;
+        recPtsMin.push({ m, v: target.dailyMlMin * frac });
+        recPtsMax.push({ m, v: target.dailyMlMax * frac });
+        recPtsMid.push({ m, v: midDaily * frac });
+      }
+    }
+
     const allVals = [
       ...todayData.map((p) => p.v),
       ...yesterdayData.map((p) => p.v),
       ...avg3Data.map((p) => p.v),
     ];
+    if (recPtsMax.length > 0) {
+      for (const p of recPtsMax) allVals.push(p.v);
+      for (const p of recPtsMin) allVals.push(p.v);
+    }
     const max = Math.max(...allVals, 100);
 
     const xOf = (m: number) => PAD_L + (m / 1440) * chartW;
     const yOf = (v: number) => PAD_T + chartH - (v / max) * chartH;
+
+    const toLinearPath = (pts: { m: number; v: number }[]) => {
+      if (pts.length === 0) return '';
+      let d = `M ${xOf(pts[0].m)},${yOf(pts[0].v)}`;
+      for (let i = 1; i < pts.length; i++) {
+        d += ` L ${xOf(pts[i].m)},${yOf(pts[i].v)}`;
+      }
+      return d;
+    };
+
+    const buildRecBand = () => {
+      if (recPtsMin.length === 0) return '';
+      let d = `M ${xOf(recPtsMin[0].m)},${yOf(recPtsMin[0].v)}`;
+      for (let i = 1; i < recPtsMin.length; i++) {
+        d += ` L ${xOf(recPtsMin[i].m)},${yOf(recPtsMin[i].v)}`;
+      }
+      for (let i = recPtsMax.length - 1; i >= 0; i--) {
+        d += ` L ${xOf(recPtsMax[i].m)},${yOf(recPtsMax[i].v)}`;
+      }
+      d += ' Z';
+      return d;
+    };
 
     /**
      * Mượt hoá đường cong bằng monotone cubic (Fritsch–Carlson):
@@ -1036,6 +1112,11 @@ export class FeedingComponent {
       todayPath: toPath(todayData),
       yesterdayPath: toPath(yesterdayData),
       avg3Path: toPath(avg3Data),
+      hasRecommendation,
+      recBandPath: hasRecommendation ? buildRecBand() : '',
+      recMidPath: hasRecommendation ? toLinearPath(recPtsMid) : '',
+      recRangeLabel,
+      recMidDailyRounded,
       todayEndPoint,
       todayTotal,
       yesterdayTotal,
@@ -1046,6 +1127,12 @@ export class FeedingComponent {
       chartTop: PAD_T,
       chartBottom: PAD_T + chartH,
     };
+  });
+
+  /** Tab timeline có đủ dữ liệu để vẽ đường (tránh hiện zoom/legend rỗng). */
+  hasTimelineChartData = computed(() => {
+    const t = this.timelineChart();
+    return t.yesterdayTotal > 0 || t.avg3Total > 0 || t.todayTotal > 0;
   });
 
   /** Tất cả cữ bú gom theo ngày (cho dialog) */
@@ -1673,6 +1760,9 @@ export class FeedingComponent {
 
   setChartTab(tab: 'volume' | 'count' | 'timeline') {
     this.chartTab.set(tab);
+    if (tab !== 'timeline') {
+      this.timelineChartZoomIndex.set(0);
+    }
   }
 
   setChartRange(r: 7 | 14 | 30) {
