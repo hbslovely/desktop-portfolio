@@ -772,13 +772,7 @@
   width: 100%;
   max-width: 480px;
   /* Tránh trừ quá đậm + overlay đã chừa bottom-nav → giảm scrollbar */
-  max-height: min(
-    88dvh,
-    calc(
-      100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) -
-        64px
-    )
-  );
+  max-height: 90vh;
   overflow: auto;
   background: var(--surface, #fff);
   border-radius: 0;
