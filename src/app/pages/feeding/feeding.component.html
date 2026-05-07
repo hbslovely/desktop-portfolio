@@ -733,7 +733,11 @@
               </button>
             </div>
             <div class="log-list">
-              <div class="log-row" *ngFor="let l of todayLogsPreview()">
+              <div class="log-row" *ngFor="let l of todayLogsPreview()" 
+                   [class.long-gap]="isLongGap(l, todayLogs())"
+                   [class.very-long-gap]="isVeryLongGap(l, todayLogs())"
+                   [class.low-volume]="isLowVolume(l.volume)"
+                   [class.high-volume]="isHighVolume(l.volume)">
                 <span class="log-time">{{ l.time }}</span>
                 <span class="log-volume">{{ l.volume }}ml</span>
                 <span class="log-gap" *ngIf="formatIntervalFromPrev(l, todayLogs()) as iv">
@@ -806,7 +810,11 @@
               </button>
             </div>
             <div class="log-list">
-              <div class="log-row" *ngFor="let l of yesterdayLogsPreview()">
+              <div class="log-row" *ngFor="let l of yesterdayLogsPreview()"
+                   [class.long-gap]="isLongGap(l, yesterdayLogs())"
+                   [class.very-long-gap]="isVeryLongGap(l, yesterdayLogs())"
+                   [class.low-volume]="isLowVolume(l.volume)"
+                   [class.high-volume]="isHighVolume(l.volume)">
                 <span class="log-time">{{ l.time }}</span>
                 <span class="log-volume">{{ l.volume }}ml</span>
                 <span class="log-gap" *ngIf="formatIntervalFromPrev(l, yesterdayLogs()) as iv">
@@ -2088,7 +2096,11 @@
             </div>
           </div>
           <div class="history-group-rows">
-            <div class="feed-row" *ngFor="let l of g.logs">
+            <div class="feed-row" *ngFor="let l of g.logs"
+                 [class.long-gap]="isLongGap(l, g.logs)"
+                 [class.very-long-gap]="isVeryLongGap(l, g.logs)"
+                 [class.low-volume]="isLowVolume(l.volume)"
+                 [class.high-volume]="isHighVolume(l.volume)">
               <div class="feed-row-time">
                 <div class="time">{{ l.time }}</div>
                 <div class="feed-row-gap" *ngIf="formatIntervalFromPrev(l, g.logs) as iv">
