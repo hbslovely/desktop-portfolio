@@ -25,6 +25,13 @@ export interface FeedingSheetResponse {
   error?: string;
 }
 
+/** Pha sữa đọc từ `Feeding!G1:K1` (K = ISO lúc pha, do app ghi). */
+export interface BottlePrepFromSheet {
+  volumeMl: number;
+  /** ISO 8601 — dùng cho giờ hiển thị & hạn dùng +1h */
+  at: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class FeedingLogService {
   private http = inject(HttpClient);
@@ -104,6 +111,26 @@ export class FeedingLogService {
     );
   }
 
+  /**
+   * Đọc pha sữa từ dòng 1: G nhãn | H user | I ml | J giờ | K ISO (app).
+   * Chỉ trả dữ liệu khi **H** khớp `currentUser` (`?user=`).
+   * Nếu K trống (script cũ): suy ra `at` từ J + ngày gần nhất với giờ đó.
+   */
+  getBottlePrep(currentUser: string): Observable<BottlePrepFromSheet | null> {
+    const range = `${ this.SHEET_NAME }!G1:K1`;
+    const url = `${ this.BASE_URL }/values/${ range }?key=${ this.API_KEY }&valueRenderOption=FORMATTED_VALUE`;
+
+    const u = currentUser.toLowerCase().trim();
+
+    return this.http.get<{ values?: string[][] }>(url).pipe(
+      map((resp) => this.parseBottlePrepRow(resp.values?.[0], u)),
+      catchError((err) => {
+        console.error('FeedingLogService.getBottlePrep failed', err);
+        return of(null);
+      })
+    );
+  }
+
   addLog(log: FeedingLog): Observable<FeedingSheetResponse> {
     if (!this.APPS_SCRIPT_URL) {
       return throwError(() => new Error('Chưa cấu hình Google Apps Script URL'));
@@ -164,6 +191,50 @@ export class FeedingLogService {
     return this.postToAppsScript({
       action: 'deleteFeeding',
       row: rowIndex,
+    }).pipe(
+      catchError((err) => {
+        return of({ success: true });
+      })
+    );
+  }
+
+  /**
+   * Ghi dòng 1 cột G–K tab Feeding: … | giờ pha | **K = ISO** (để load chính xác).
+   * Apps Script: action `setBottlePrep`.
+   */
+  setBottlePrepOnSheet(payload: {
+    user: string;
+    volumeMl: number;
+    time: string;
+    atIso: string;
+  }): Observable<FeedingSheetResponse> {
+    if (!this.APPS_SCRIPT_URL) {
+      return throwError(() => new Error('Chưa cấu hình Google Apps Script URL'));
+    }
+
+    return this.postToAppsScript({
+      action: 'setBottlePrep',
+      user: payload.user,
+      volumeMl: payload.volumeMl,
+      time: payload.time,
+      atIso: payload.atIso,
+    }).pipe(
+      catchError((err) => {
+        return of({ success: true });
+      })
+    );
+  }
+
+  /**
+   * Xoá H1:K1 trên tab Feeding. Apps Script: `clearBottlePrep`.
+   */
+  clearBottlePrepOnSheet(): Observable<FeedingSheetResponse> {
+    if (!this.APPS_SCRIPT_URL) {
+      return throwError(() => new Error('Chưa cấu hình Google Apps Script URL'));
+    }
+
+    return this.postToAppsScript({
+      action: 'clearBottlePrep',
     }).pipe(
       catchError((err) => {
         return of({ success: true });
@@ -248,5 +319,70 @@ export class FeedingLogService {
       return `${ m[1].padStart(2, '0') }:${ m[2].padStart(2, '0') }`;
     }
     return raw;
+  }
+
+  private parseBottlePrepRow(
+    row: string[] | undefined,
+    currentUser: string
+  ): BottlePrepFromSheet | null {
+    if (!row?.length) return null;
+    const sheetUser = String(row[1] ?? '')
+      .toLowerCase()
+      .trim();
+    const volRaw = String(row[2] ?? '').trim();
+    const timeRaw = String(row[3] ?? '').trim();
+    const isoRaw = String(row[4] ?? '').trim();
+
+    if (!sheetUser || sheetUser !== currentUser) return null;
+
+    const volumeMl = parseInt(volRaw.replace(/[^\d]/g, ''), 10) || 0;
+    if (volumeMl <= 0 || !timeRaw) return null;
+
+    const fromK = isoRaw ? new Date(isoRaw) : null;
+    const at =
+      fromK && !isNaN(fromK.getTime())
+        ? fromK.toISOString()
+        : this.guessIsoFromClockTime(this.normalizeTime(timeRaw));
+
+    return { volumeMl, at };
+  }
+
+  /** Khi sheet chưa có cột K: chọn ngày (hôm qua / hôm nay / mai) sao cho giờ J gần `now` nhất. */
+  private guessIsoFromClockTime(hm: string): string {
+    const parts = hm.split(':').map((x) => parseInt(x, 10));
+    const hh = parts[0];
+    const mm = parts[1];
+    if (isNaN(hh) || isNaN(mm)) return new Date().toISOString();
+
+    const now = new Date();
+    let best = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+      hh,
+      mm,
+      0,
+      0
+    );
+    let bestDiff = Math.abs(now.getTime() - best.getTime());
+
+    for (const delta of [ -1, 1 ]) {
+      const d = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate() + delta,
+        hh,
+        mm,
+        0,
+        0
+      );
+      const diff = Math.abs(now.getTime() - d.getTime());
+      if (diff < bestDiff) {
+        best = d;
+        bestDiff = diff;
+      }
+    }
+
+    return best.toISOString();
   }
 }

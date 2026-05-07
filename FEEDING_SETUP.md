@@ -23,6 +23,18 @@ Tài liệu hướng dẫn chuẩn bị **các tab** trong Google Sheet và **Go
 | **User** | **Ngày**   | **Giờ** | **Dung tích (ml)** | **Ghi chú** |
 | quyen    | 07/04/2026 | 16:20   | 50                 | bú mẹ       |
 
+Trên **cùng dòng 1**, thêm cột **G → K** cho widget «Pha sữa» — app **chỉ đọc/ghi Sheet** (không dùng localStorage):
+
+| G                   | H (`?user=`) | I       | J (giờ pha) | K (ISO lúc pha — app ghi) |
+| ------------------- | ------------ | ------- | ----------- | ------------------------- |
+| Thông tin pha sữa  | phat         | 100ml   | 08:43       | 2026-05-07T08:43:00.000Z  |
+
+- **Có** pha sữa: **G1** nhãn, **H1** user, **I1** dung tích (VD `100ml`), **J1** `HH:mm`, **K1** ISO (để load đúng ngày / hạn dùng).
+- **Xoá**: app xoá **H1:K1** (G có thể giữ tay).
+- Script **cũ** không ghi K: app vẫn đọc được H–J và **ước lượng** ngày từ giờ J.
+
+Cần **Apps Script** có action `setBottlePrep` / `clearBottlePrep` (xem khối script mục 4).
+
 Quy ước:
 
 - **User**: cùng giá trị với query param `?user=...` (VD: `quyen`, `phat`).
@@ -135,6 +147,8 @@ Trong Sheet → **Extensions → Apps Script** → xoá toàn bộ code mặc đ
  *   updateFeeding  → cập nhật giờ / dung tích / note (KHÔNG đổi date)
  *   deleteFeeding  → xoá row
  *   getFeedings    → trả về toàn bộ logs (tuỳ chọn)
+ *   setBottlePrep  → G1:K1 — pha sữa (+ ISO cột K)
+ *   clearBottlePrep→ xoá H1:K1
  *
  * ===== Weight actions =====
  *   addWeight      → append dòng cân nặng
@@ -171,6 +185,10 @@ const M_USER = 1, M_DATE = 2, M_KIND = 3, M_TITLE = 4, M_DETAIL = 5, M_PLACE = 6
 
 // Feeding columns (1-based)
 const F_USER = 1, F_DATE = 2, F_TIME = 3, F_VOLUME = 4, F_NOTE = 5;
+// Dòng 1 — pha sữa: G | H | I | J | K (ISO)
+const F_BOTTLE_LABEL_COL = 7, F_BOTTLE_USER_COL = 8, F_BOTTLE_VOL_COL = 9,
+      F_BOTTLE_TIME_COL = 10, F_BOTTLE_AT_ISO_COL = 11;
+const F_BOTTLE_LABEL_TEXT = 'Thông tin pha sữa';
 
 // Explorer columns (1-based).
 // Cột content gốc (E) + 99 cột overflow (H..DB) cho phép ảnh tới ~3.6MB
@@ -201,6 +219,8 @@ function doPost(e) {
       case 'updateFeeding':  return _json(handleUpdateFeeding(body));
       case 'deleteFeeding':  return _json(handleDeleteFeeding(body));
       case 'getFeedings':    return _json(handleGetFeedings(body));
+      case 'setBottlePrep':  return _json(handleSetBottlePrep(body));
+      case 'clearBottlePrep':return _json(handleClearBottlePrep(body));
       // Weight
       case 'addWeight':      return _json(handleAddWeight(body));
       case 'updateWeight':   return _json(handleUpdateWeight(body));
@@ -328,6 +348,33 @@ function handleGetFeedings(body) {
     .filter(function (l) { return !userFilter || l.user === userFilter; });
 
   return { success: true, logs: logs };
+}
+
+/**
+ * Ghi ô G1:K1 — thông tin pha sữa (K = ISO để app đọc lại chính xác).
+ */
+function handleSetBottlePrep(body) {
+  var sheet = _getSheet(FEED_SHEET);
+  var user = String(body.user || '').toLowerCase().trim();
+  var volume = parseInt(body.volumeMl, 10) || 0;
+  var time = _normalizeTime(String(body.time || '').trim());
+  var atIso = String(body.atIso || '').trim();
+  if (!user || volume <= 0 || !time || !atIso) {
+    throw new Error('Thiếu user, volumeMl, time hoặc atIso (pha sữa).');
+  }
+  sheet.getRange(1, F_BOTTLE_LABEL_COL).setValue(F_BOTTLE_LABEL_TEXT);
+  sheet.getRange(1, F_BOTTLE_USER_COL).setValue(user);
+  sheet.getRange(1, F_BOTTLE_VOL_COL).setValue(volume + 'ml');
+  sheet.getRange(1, F_BOTTLE_TIME_COL).setValue(time);
+  sheet.getRange(1, F_BOTTLE_AT_ISO_COL).setValue(atIso);
+  return { success: true, message: 'Đã cập nhật thông tin pha sữa (G1:K1)' };
+}
+
+/** Xoá H1:K1 khi user xoá pha sữa trong app. */
+function handleClearBottlePrep(body) {
+  var sheet = _getSheet(FEED_SHEET);
+  sheet.getRange(1, F_BOTTLE_USER_COL, 1, F_BOTTLE_AT_ISO_COL).clearContent();
+  return { success: true, message: 'Đã xoá H1:K1 (pha sữa)' };
 }
 
 /* =========================
