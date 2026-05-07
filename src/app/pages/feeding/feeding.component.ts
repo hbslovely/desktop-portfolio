@@ -451,6 +451,66 @@ export class FeedingComponent {
     return new Date(y, m - 1, d, hh, mm, 0, 0).getTime();
   }
 
+  /**
+   * Kiểm tra khoảng cách từ cữ trước có dài không (4-6 giờ = cảnh báo)
+   */
+  isLongGap(current: FeedingLog, listDesc: FeedingLog[]): boolean {
+    const diffMs = this.getTimeDiffFromPrev(current, listDesc);
+    const hours = diffMs / (1000 * 60 * 60);
+    return hours >= 4 && hours < 6;
+  }
+
+  /**
+   * Kiểm tra khoảng cách từ cữ trước có rất dài không (>6 giờ = báo động)
+   */
+  isVeryLongGap(current: FeedingLog, listDesc: FeedingLog[]): boolean {
+    const diffMs = this.getTimeDiffFromPrev(current, listDesc);
+    const hours = diffMs / (1000 * 60 * 60);
+    return hours >= 6;
+  }
+
+  /**
+   * Kiểm tra volume có thấp không (<50ml)
+   */
+  isLowVolume(volume: number): boolean {
+    return volume > 0 && volume < 50;
+  }
+
+  /**
+   * Kiểm tra volume có cao bất thường không (>200ml)
+   */
+  isHighVolume(volume: number): boolean {
+    return volume > 200;
+  }
+
+  /**
+   * Tính khoảng cách thời gian (ms) từ cữ trước đến cữ hiện tại
+   */
+  private getTimeDiffFromPrev(current: FeedingLog, listDesc: FeedingLog[]): number {
+    let prev: FeedingLog | undefined;
+    const idx = listDesc.findIndex(
+      (l) => l.time === current.time && l.rowIndex === current.rowIndex
+    );
+    if (idx >= 0 && idx < listDesc.length - 1) {
+      prev = listDesc[idx + 1];
+    } else {
+      // Fallback: tìm cữ gần nhất trước thời gian hiện tại
+      const all = this.logs();
+      const curTs = this.logTimestamp(current);
+      let bestTs = -Infinity;
+      for (const l of all) {
+        if (l.rowIndex === current.rowIndex) continue;
+        const t = this.logTimestamp(l);
+        if (t < curTs && t > bestTs) {
+          bestTs = t;
+          prev = l;
+        }
+      }
+    }
+    if (!prev) return 0;
+    return this.logTimestamp(current) - this.logTimestamp(prev);
+  }
+
   /** Tổng hôm qua nhưng chỉ tính các cữ có giờ ≤ giờ hiện tại — để so sánh ngang giờ */
   yesterdayUpToNowStats = computed<DayStats>(() => {
     const nowTime = this.toTimeStr(this.now());
