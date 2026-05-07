@@ -433,8 +433,13 @@
             <div class="bp-info">
               <i class="pi pi-inbox"></i>
               <span class="bp-text">
-                Đã pha <strong>{{ prep.volumeMl }}ml</strong>
-                <span class="muted">· lúc {{ formatBottleAt(prep.at) }}</span>
+                <span class="bp-prep-user">{{ user() }}</span> đã pha
+                <strong>{{ prep.volumeMl }}ml</strong> lúc
+                <span class="bp-prep-time">{{ formatBottleAt(prep.at) }}</span>
+                <br />
+                <span class="muted bp-useby"
+                  >Thời hạn sử dụng tối đa {{ bottlePrepUseByMax(prep.at) }}</span
+                >
               </span>
             </div>
             <div class="bp-actions">
@@ -465,6 +470,7 @@
               <button
                 type="button"
                 class="bp-step"
+                [disabled]="bottlePrepSaving()"
                 (click)="adjustBottlePrepDraft(-5)"
                 title="Giảm 5ml"
                 aria-label="Giảm 5ml"
@@ -477,6 +483,7 @@
                 maxlength="4"
                 class="bp-input"
                 [value]="bottlePrepDraft()"
+                [disabled]="bottlePrepSaving()"
                 (input)="updateBottlePrepDraft($any($event.target).value)"
                 placeholder="100"
                 autocomplete="off"
@@ -486,6 +493,7 @@
               <button
                 type="button"
                 class="bp-step"
+                [disabled]="bottlePrepSaving()"
                 (click)="adjustBottlePrepDraft(5)"
                 title="Tăng 5ml"
                 aria-label="Tăng 5ml"
@@ -496,18 +504,34 @@
 
             <div class="bp-quick">
               <span class="bp-quick-label">Nhanh:</span>
-              <button type="button" class="bp-quick-chip" (click)="setBottlePrepDraft(60)">60</button>
-              <button type="button" class="bp-quick-chip" (click)="setBottlePrepDraft(80)">80</button>
-              <button type="button" class="bp-quick-chip" (click)="setBottlePrepDraft(100)">100</button>
-              <button type="button" class="bp-quick-chip" (click)="setBottlePrepDraft(120)">120</button>
-              <button type="button" class="bp-quick-chip" (click)="setBottlePrepDraft(150)">150</button>
+              <button type="button" class="bp-quick-chip" [disabled]="bottlePrepSaving()" (click)="setBottlePrepDraft(60)">60</button>
+              <button type="button" class="bp-quick-chip" [disabled]="bottlePrepSaving()" (click)="setBottlePrepDraft(80)">80</button>
+              <button type="button" class="bp-quick-chip" [disabled]="bottlePrepSaving()" (click)="setBottlePrepDraft(100)">100</button>
+              <button type="button" class="bp-quick-chip" [disabled]="bottlePrepSaving()" (click)="setBottlePrepDraft(120)">120</button>
+              <button type="button" class="bp-quick-chip" [disabled]="bottlePrepSaving()" (click)="setBottlePrepDraft(150)">150</button>
             </div>
 
             <div class="bp-form-actions">
-              <button type="submit" class="bp-btn primary" [disabled]="!bottlePrepDraft()" title="Lưu">
-                <i class="pi pi-check"></i>
+              <button
+                type="submit"
+                class="bp-btn primary"
+                [disabled]="bottlePrepSaving() || !bottlePrepDraft()"
+                [title]="bottlePrepSaving() ? 'Đang lưu...' : 'Lưu'"
+              >
+                <i
+                  class="pi"
+                  [class.pi-check]="!bottlePrepSaving()"
+                  [class.pi-spin]="bottlePrepSaving()"
+                  [class.pi-spinner]="bottlePrepSaving()"
+                ></i>
               </button>
-              <button type="button" class="bp-btn" (click)="cancelBottlePrep()" title="Huỷ">
+              <button
+                type="button"
+                class="bp-btn"
+                [disabled]="bottlePrepSaving()"
+                (click)="cancelBottlePrep()"
+                title="Huỷ"
+              >
                 <i class="pi pi-times"></i>
               </button>
             </div>
@@ -1804,8 +1828,15 @@
           <div class="calc-head">
             <div class="prep-info">
               <i class="pi pi-inbox"></i>
-              Bình đã pha <strong>{{ prep.volumeMl }}ml</strong>
-              <span class="muted">· {{ formatBottleAt(prep.at) }}</span>
+              <span class="prep-info-text">
+                <span class="bp-prep-user">{{ user() }}</span> đã pha
+                <strong>{{ prep.volumeMl }}ml</strong> lúc
+                <span class="bp-prep-time">{{ formatBottleAt(prep.at) }}</span>
+                <br />
+                <span class="muted"
+                  >Thời hạn sử dụng tối đa {{ bottlePrepUseByMax(prep.at) }}</span
+                >
+              </span>
             </div>
           </div>
           <div class="calc-body">

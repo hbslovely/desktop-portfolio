@@ -12,6 +12,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
+import { finalize } from 'rxjs/operators';
 import {
   FeedingLog,
   FeedingLogService,
@@ -245,6 +246,8 @@ export class FeedingComponent {
   bottlePrep = signal<{ volumeMl: number; at: string } | null>(null);
   bottlePrepDraft = signal<string>('');
   bottlePrepEditing = signal<boolean>(false);
+  /** Đang POST setBottlePrep — chặn double-submit + khóa form */
+  bottlePrepSaving = signal<boolean>(false);
 
   /** Trong log dialog: chỉ 1 input cho "sữa còn lại" */
   remainingInput = signal<string>('');
@@ -1174,6 +1177,12 @@ export class FeedingComponent {
   });
 
   constructor() {
+    try {
+      localStorage.removeItem('feeding:bottle-prep');
+    } catch {
+      /* ignore */
+    }
+
     this.route.queryParamMap
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((qp) => {
@@ -1182,6 +1191,7 @@ export class FeedingComponent {
         this.loadProfile(user);
         this.loadLogs();
         this.loadWeightLogs();
+        this.loadBottlePrepFromSheet();
       });
 
     const clockId = window.setInterval(
@@ -1189,8 +1199,6 @@ export class FeedingComponent {
       20_000
     );
     this.destroyRef.onDestroy(() => window.clearInterval(clockId));
-
-    this.loadBottlePrep();
   }
 
   // ===== Profile management =====
@@ -1352,18 +1360,11 @@ export class FeedingComponent {
     return this.logDraft().note === tag;
   }
 
-  // ===== Bottle prep (persistent) =====
-  private readonly BOTTLE_PREP_KEY = 'feeding:bottle-prep';
-
-  private loadBottlePrep() {
-    try {
-      const raw = localStorage.getItem(this.BOTTLE_PREP_KEY);
-      if (!raw) return;
-      const parsed = JSON.parse(raw) as { volumeMl: number; at: string };
-      if (parsed?.volumeMl > 0) this.bottlePrep.set(parsed);
-    } catch (e) {
-      console.warn('Could not load bottle prep', e);
-    }
+  // ===== Bottle prep (Google Sheet G1:K1, không localStorage) =====
+  private loadBottlePrepFromSheet() {
+    this.feedingLogService.getBottlePrep(this.user()).subscribe({
+      next: (prep) => this.bottlePrep.set(prep),
+    });
   }
 
   editBottlePrep() {
@@ -1380,6 +1381,7 @@ export class FeedingComponent {
   }
 
   cancelBottlePrep() {
+    if (this.bottlePrepSaving()) return;
     this.bottlePrepEditing.set(false);
     this.bottlePrepDraft.set('');
   }
@@ -1402,20 +1404,44 @@ export class FeedingComponent {
   }
 
   saveBottlePrep() {
+    if (this.bottlePrepSaving()) return;
     const n = parseInt(this.bottlePrepDraft(), 10);
     if (isNaN(n) || n <= 0) return;
-    const entry = { volumeMl: n, at: new Date().toISOString() };
-    localStorage.setItem(this.BOTTLE_PREP_KEY, JSON.stringify(entry));
-    this.bottlePrep.set(entry);
-    this.bottlePrepEditing.set(false);
-    this.bottlePrepDraft.set('');
+    const atIso = new Date().toISOString();
+    const t = this.toTimeStr(new Date(atIso));
+
+    this.bottlePrepSaving.set(true);
+    this.feedingLogService
+      .setBottlePrepOnSheet({
+        user: this.user(),
+        volumeMl: n,
+        time: t,
+        atIso,
+      })
+      .pipe(finalize(() => this.bottlePrepSaving.set(false)))
+      .subscribe({
+        next: () => {
+          this.bottlePrepEditing.set(false);
+          this.bottlePrepDraft.set('');
+          setTimeout(() => this.loadBottlePrepFromSheet(), 450);
+        },
+        error: (err) =>
+          console.warn('Đồng bộ thông tin pha sữa lên Google Sheet thất bại', err),
+      });
   }
 
   clearBottlePrep() {
-    localStorage.removeItem(this.BOTTLE_PREP_KEY);
     this.bottlePrep.set(null);
     this.bottlePrepEditing.set(false);
     this.bottlePrepDraft.set('');
+
+    this.feedingLogService.clearBottlePrepOnSheet().subscribe({
+      next: () => setTimeout(() => this.loadBottlePrepFromSheet(), 450),
+      error: (err) => {
+        console.warn('Xoá thông tin pha sữa trên Google Sheet thất bại', err);
+        setTimeout(() => this.loadBottlePrepFromSheet(), 450);
+      },
+    });
   }
 
   /** "14:30" từ ISO timestamp */
@@ -1423,6 +1449,14 @@ export class FeedingComponent {
     const d = new Date(iso);
     if (isNaN(d.getTime())) return '';
     return this.toTimeStr(d);
+  }
+
+  /** Giờ HH:mm — hạn dùng tối đa = lúc pha + 1 giờ */
+  bottlePrepUseByMax(iso: string): string {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    const plus = new Date(d.getTime() + 60 * 60 * 1000);
+    return this.toTimeStr(plus);
   }
 
   // ===== Log dialog: input "còn lại" =====
@@ -1531,6 +1565,7 @@ export class FeedingComponent {
    */
   refreshAll() {
     this.loadLogs();
+    this.loadBottlePrepFromSheet();
     this.loadWeightLogs();
     this.weightCmp?.refresh();
     this.medicalCmp?.refresh();

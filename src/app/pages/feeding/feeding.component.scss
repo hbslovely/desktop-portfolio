@@ -55,6 +55,30 @@
   display: flex;
   flex-direction: column;
   position: relative;
+
+  /** Tên người pha + giờ pha — widget bình & khối tính trong dialog */
+  .bp-prep-user {
+    font-weight: 800;
+    color: #92400e;
+    background: rgba(251, 191, 36, 0.42);
+    padding: 0 5px;
+    margin-right: 2px;
+    border-radius: 5px;
+    white-space: nowrap;
+  }
+
+  .bp-prep-time {
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    color: #c2410c;
+    background: linear-gradient(180deg, #fff7ed 0%, #ffedd5 100%);
+    border: 1px solid rgba(251, 146, 60, 0.45);
+    padding: 1px 7px;
+    margin-left: 2px;
+    border-radius: 6px;
+    white-space: nowrap;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.65) inset;
+  }
 }
 
 .feeding-page {
@@ -4034,7 +4058,7 @@
 
   .bp-info {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 8px;
     font-size: 14px;
     color: var(--text);
@@ -4044,6 +4068,19 @@
     > i {
       color: #f59e0b;
       font-size: 16px;
+      margin-top: 2px;
+      flex-shrink: 0;
+    }
+
+    .bp-text {
+      line-height: 1.45;
+      min-width: 0;
+    }
+
+    .bp-useby {
+      display: inline-block;
+      margin-top: 2px;
+      font-size: 13px;
     }
 
     strong {
@@ -4149,6 +4186,12 @@
       &:active {
         transform: scale(0.94);
       }
+
+      &:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+        pointer-events: none;
+      }
     }
 
     .bp-input {
@@ -4166,6 +4209,11 @@
       letter-spacing: -0.01em;
 
       &:focus { outline: none; }
+
+      &:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+      }
     }
 
     .bp-unit {
@@ -4209,6 +4257,11 @@
       }
 
       &:active { transform: scale(0.95); }
+
+      &:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+      }
     }
   }
 
@@ -4238,16 +4291,16 @@
       color: #d97706;
     }
 
+    &:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
     &.primary {
       background: #f59e0b;
       color: #ffffff;
 
       &:hover:not(:disabled) { background: #d97706; }
-
-      &:disabled {
-        opacity: 0.4;
-        cursor: not-allowed;
-      }
     }
 
     &.danger:hover {
@@ -4270,7 +4323,7 @@
 
   .prep-info {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 6px;
     font-size: 13px;
     color: var(--text);
@@ -4278,6 +4331,13 @@
     > i {
       color: #f59e0b;
       font-size: 14px;
+      margin-top: 2px;
+      flex-shrink: 0;
+    }
+
+    .prep-info-text {
+      line-height: 1.45;
+      min-width: 0;
     }
 
     strong {
@@ -4289,6 +4349,8 @@
     .muted {
       color: var(--muted-2);
       font-size: 12px;
+      display: inline-block;
+      margin-top: 2px;
     }
   }
 
