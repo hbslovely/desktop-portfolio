@@ -22,6 +22,7 @@ import {
   MoodType,
   getCurrentMilestone,
   getMilestoneState,
+  getTimelineCareGuide,
 } from '../baby-timeline.data';
 import {
   GROWTH_REFERENCE_CAPTION_VI,
@@ -594,6 +595,11 @@ export class WeightComponent {
     return (
       entries.find((e) => e.state === 'current') || entries[0] || null
     );
+  });
+
+  selectedTimelineCareGuide = computed(() => {
+    const entry = this.selectedTimelineEntry();
+    return entry ? getTimelineCareGuide(entry.milestone.id) : null;
   });
 
   selectedTimelineIndex = computed(() => {
