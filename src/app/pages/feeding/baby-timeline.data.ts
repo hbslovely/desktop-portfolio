@@ -54,6 +54,15 @@ export interface TimelineMilestone {
   accent: 'rose' | 'peach' | 'mint' | 'lavender' | 'amber' | 'sky' | 'coral' | 'plum';
 }
 
+export interface TimelineCareGuide {
+  /** Checklist ngắn cho giai đoạn này — ưu tiên việc có thể làm ngay. */
+  todos: string[];
+  /** Những việc nên tránh ở đúng độ tuổi này. */
+  notToDo: string[];
+  /** Dấu hiệu nên hỏi bác sĩ / chuyên viên y tế, không dùng để tự chẩn đoán. */
+  watchFor: string[];
+}
+
 export const BABY_TIMELINE: TimelineMilestone[] = [
   {
     id: 'w1',
@@ -560,6 +569,357 @@ export const BABY_TIMELINE: TimelineMilestone[] = [
     accent: 'plum',
   },
 ];
+
+/**
+ * Checklist chăm sóc theo từng mốc.
+ *
+ * Tóm tắt thực hành từ AAP/HealthyChildren, CDC "Learn the Signs. Act Early",
+ * WHO/CDC complementary feeding và khuyến nghị an toàn ngủ AAP 2022.
+ * Nội dung là nhắc việc trong app, không thay thế tư vấn y khoa cá nhân.
+ */
+export const BABY_TIMELINE_CARE_GUIDES: Record<string, TimelineCareGuide> = {
+  w1: {
+    todos: [
+      'Ghi lại số cữ bú, tã ướt/bẩn và cân nặng sau xuất viện.',
+      'Cho bé nằm ngửa khi ngủ, mặt phẳng cứng, không gối/chăn/thú bông.',
+      'Đặt lịch/nhớ lịch tái khám sơ sinh và kiểm tra vàng da nếu bé vàng tăng.',
+    ],
+    notToDo: [
+      'Không cho uống nước, mật ong, trà, nước lá hoặc tự ý pha loãng sữa.',
+      'Không để bé ngủ trên ghế rung, sofa, gối chống trào ngược hoặc bề mặt nghiêng.',
+      'Không lắc bé khi khóc; nếu quá mệt, đặt bé an toàn vào nôi và gọi người hỗ trợ.',
+    ],
+    watchFor: [
+      'Sốt từ 38°C, bú kém, li bì, thở rút lõm hoặc tím tái.',
+      'Ít tã ướt, nước tiểu sẫm, vàng da lan xuống bụng/chân hoặc khó đánh thức.',
+    ],
+  },
+  w2: {
+    todos: [
+      'Tiếp tục theo dõi bé lấy lại cân nặng sinh trong khoảng 10–14 ngày.',
+      'Giữ cuống rốn khô thoáng, gấp mép tã xuống dưới rốn.',
+      'Mỗi ngày vài phút tummy time khi bé thức và có người quan sát.',
+    ],
+    notToDo: [
+      'Không bôi thuốc, cồn, lá hoặc phấn lên rốn nếu bác sĩ không dặn.',
+      'Không ép bé theo lịch bú cứng khi bé đang có dấu hiệu đói.',
+      'Không để người đang bệnh hôn mặt/tay bé.',
+    ],
+    watchFor: [
+      'Rốn đỏ lan, sưng, mủ, hôi hoặc bé sốt.',
+      'Không tăng cân, bú rất yếu hoặc nôn xanh/nôn vọt nhiều lần.',
+    ],
+  },
+  w3: {
+    todos: [
+      'Chuẩn bị kế hoạch chống quá tải: thay phiên bế, địu, white noise, phòng tối.',
+      'Kiểm tra khớp ngậm hoặc bình sữa nếu bé bú lâu nhưng vẫn đói.',
+      'Tăng tummy time ngắn nhiều lần trong ngày thay vì một lần dài.',
+    ],
+    notToDo: [
+      'Không kết luận thiếu sữa chỉ vì cluster feeding vài ngày.',
+      'Không tự dùng thuốc trị colic, men, lá tắm/uống nếu chưa hỏi bác sĩ.',
+      'Không cho bé ngủ sấp để đỡ đầy hơi.',
+    ],
+    watchFor: [
+      'Khóc thét kèm sốt, bụng chướng, nôn xanh, phân máu hoặc bỏ bú.',
+      'Ba mẹ kiệt sức, buồn bã kéo dài, có ý nghĩ làm hại bản thân hoặc bé.',
+    ],
+  },
+  w4: {
+    todos: [
+      'Nói chuyện mặt đối mặt, chờ bé ê a rồi đáp lại như một cuộc hội thoại.',
+      'Bắt đầu routine ngủ rất ngắn: ánh sáng dịu, bú, vỗ ợ, đặt ngủ.',
+      'Rà lịch tiêm 2 tháng và chuẩn bị câu hỏi cho lần khám tới.',
+    ],
+    notToDo: [
+      'Không để TV/điện thoại chạy nền gần bé; bé học tốt nhất từ người thật.',
+      'Không dùng gối/chăn chèn quanh người để giữ tư thế.',
+      'Không để bé một mình trên giường, sofa hoặc bàn thay tã.',
+    ],
+    watchFor: [
+      'Không nhìn mặt người chăm sóc hoặc không phản ứng với âm thanh lớn.',
+      'Cử động tay/chân rất ít, mềm nhũn hoặc gồng cứng bất thường.',
+    ],
+  },
+  w5: {
+    todos: [
+      'Giảm kích thích: ánh sáng dịu, ít khách, ôm/địu nhiều hơn nếu bé cần.',
+      'Dùng checklist đói-buồn ngủ-tã-ợ hơi trước khi kết luận bé khó.',
+      'Ghi lại thời điểm quấy để nhận diện pattern buổi chiều/tối.',
+    ],
+    notToDo: [
+      'Không sleep-train khắc nghiệt ở giai đoạn còn quá nhỏ.',
+      'Không cố kéo dài cữ bú/ngủ bằng nước, núm vú tẩm mật ong hoặc cereal trong bình.',
+      'Không so sánh leap theo ngày tuyệt đối; bé sinh non cần tính tuổi hiệu chỉnh.',
+    ],
+    watchFor: [
+      'Quấy không dỗ được kèm sốt, bỏ bú hoặc khó thở.',
+      'Bé không nhìn theo mặt/đồ vật gần hoặc không có khoảnh khắc tỉnh táo tương tác.',
+    ],
+  },
+  w6: {
+    todos: [
+      'Tummy time 2–3 lần/ngày, tăng dần theo sức bé.',
+      'Cho bé nhìn tranh tương phản, lục lạc mềm, nghe giọng ba mẹ.',
+      'Đi khám hậu sản cho mẹ và trao đổi nếu có triệu chứng trầm cảm sau sinh.',
+    ],
+    notToDo: [
+      'Không để bé nằm lâu một tư thế; đổi hướng đầu khi ngủ để giảm bẹt đầu.',
+      'Không cho bé ngủ trong địu/car seat khi không được theo dõi.',
+      'Không tự tăng nồng độ sữa công thức để bé no lâu.',
+    ],
+    watchFor: [
+      'Không bắt đầu cười xã giao hoặc không dịu khi được nói chuyện/ôm ấp.',
+      'Đầu luôn nghiêng một bên, cổ cứng hoặc bú khó do quay cổ kém.',
+    ],
+  },
+  w8: {
+    todos: [
+      'Hoàn tất mũi tiêm 2 tháng theo lịch địa phương và ghi phản ứng sau tiêm.',
+      'Đọc sách tương phản 5–10 phút/ngày, gọi tên vật bé đang nhìn.',
+      'Tập đặt bé xuống khi buồn ngủ nhưng còn tỉnh nếu bé hợp tác.',
+    ],
+    notToDo: [
+      'Không trì hoãn vaccine chỉ vì bé hơi sổ mũi nhẹ nếu bác sĩ vẫn cho tiêm.',
+      'Không dùng thuốc hạ sốt dự phòng trước tiêm nếu chưa được hướng dẫn.',
+      'Không để bé ngủ với bình sữa trong miệng.',
+    ],
+    watchFor: [
+      'Không cười, không nhìn mặt, không phản ứng với tiếng động lớn.',
+      'Sau tiêm: sốt cao, khó thở, phát ban lan nhanh hoặc li bì.',
+    ],
+  },
+  w10: {
+    todos: [
+      'Cho bé chạm chất liệu an toàn: khăn mềm, vòng silicon, đồ chơi nhẹ.',
+      'Duy trì lịch ngày-đêm: sáng có ánh sáng, tối giảm kích thích.',
+      'Bắt đầu nói “đến lượt mẹ/ba” khi bé ê a để luyện turn-taking.',
+    ],
+    notToDo: [
+      'Không đưa đồ nhỏ, dây dài, túi nylon hoặc hạt/nút gần bé.',
+      'Không bật màn hình để giữ bé yên; dưới 18 tháng nên tránh màn hình trừ video call.',
+      'Không để bé tự bú bình không có người quan sát.',
+    ],
+    watchFor: [
+      'Không đưa tay lên miệng, không nhìn theo vật hoặc không tạo âm ngoài tiếng khóc.',
+    ],
+  },
+  w12: {
+    todos: [
+      'Chơi ú òa, hát lặp lại, đổi nhịp nhanh/chậm để bé nhận ra chuyển động mượt.',
+      'Tăng tummy time và đặt đồ chơi lệch bên để khuyến khích xoay đầu/với tay.',
+      'Chuẩn bị kiến thức 4-month regression: thức đêm tăng không đồng nghĩa bé đói mãi.',
+    ],
+    notToDo: [
+      'Không bắt đầu ăn dặm chỉ vì bé nhìn miệng người lớn ăn.',
+      'Không dùng gối định vị, chăn quấn khi bé bắt đầu có dấu hiệu lẫy.',
+      'Không ép bé tập ngồi lâu nếu cổ/lưng chưa vững.',
+    ],
+    watchFor: [
+      'Không giữ đầu tốt hơn, không cười thành tiếng hoặc không quay về phía âm thanh.',
+      'Mất kỹ năng đã có như không còn nhìn theo/cười/ê a.',
+    ],
+  },
+  m4: {
+    todos: [
+      'Dọn mặt phẳng thấp để bé lẫy an toàn; luôn đặt một tay khi thay tã.',
+      'Duy trì routine ngủ, phân biệt bú để ngủ và bú vì đói khi có thể.',
+      'Hoàn tất mũi tiêm 4 tháng và hỏi bác sĩ về tăng trưởng/giấc ngủ.',
+    ],
+    notToDo: [
+      'Không để bé trên giường/sofa không có người sát bên dù chưa biết lẫy nhiều.',
+      'Không cho ăn dặm trước 4 tháng; thường nên đợi khoảng 6 tháng và đủ dấu hiệu sẵn sàng.',
+      'Không dùng vòng hổ phách, gel mọc răng gây tê hoặc đồ ngậm nhỏ.',
+    ],
+    watchFor: [
+      'Không giữ đầu vững, không đưa tay vào miệng, không phát âm đáp lại.',
+      'Ngủ xấu kèm bú kém, sụt cân, nôn nhiều hoặc khó thở.',
+    ],
+  },
+  m5: {
+    todos: [
+      'Cho bé ngồi có đỡ ngắn, chơi với đồ hai tay và gọi tên bé thường xuyên.',
+      'Chuẩn bị ghế ăn, yếm, thìa mềm; học dấu hiệu sẵn sàng ăn dặm.',
+      'Baby-proof sớm: ổ điện, dây kéo rèm, cạnh bàn, đồ nhỏ dưới sàn.',
+    ],
+    notToDo: [
+      'Không cho mật ong, nước trái cây, muối/đường hoặc thức ăn nguyên miếng cứng.',
+      'Không dùng xe tập đi có bánh; tăng nguy cơ tai nạn cầu thang.',
+      'Không so ép cân nặng từng ngày; nhìn xu hướng theo biểu đồ.',
+    ],
+    watchFor: [
+      'Không lẫy/hầu như không với đồ, không đáp lại âm thanh hoặc không nhận ra người quen.',
+      'Nuốt nghẹn, ho tím khi bú/ăn thử hoặc chậm tăng cân.',
+    ],
+  },
+  m6: {
+    todos: [
+      'Bắt đầu ăn dặm khi bé ngồi có đỡ, kiểm soát đầu cổ và hết phản xạ đẩy lưỡi.',
+      'Ưu tiên thực phẩm giàu sắt: thịt nghiền, cá phù hợp, trứng chín, đậu, ngũ cốc tăng cường sắt.',
+      'Tập uống nước ít bằng cốc mở/cốc tập uống trong bữa ăn dặm.',
+    ],
+    notToDo: [
+      'Không thay sữa mẹ/sữa công thức bằng bữa ăn dặm quá nhanh.',
+      'Không cho mật ong, sữa bò tươi làm đồ uống chính, muối/đường thêm vào món.',
+      'Không để bé ăn một mình; luôn ngồi thẳng và có người quan sát.',
+    ],
+    watchFor: [
+      'Không thể ngồi có đỡ, không đưa đồ vào miệng hoặc không quan tâm tương tác.',
+      'Dị ứng: nổi mề đay, sưng môi/mặt, khò khè, nôn nhiều sau món mới.',
+    ],
+  },
+  m7: {
+    todos: [
+      'Tăng texture từ mịn sang nghiền lợn cợn/mềm, cho bé tự bốc món dễ tan.',
+      'Vệ sinh răng/nướu 2 lần/ngày bằng gạc/khăn mềm hoặc bàn chải phù hợp.',
+      'Dạy ký hiệu đơn giản như “thêm”, “xong” nếu gia đình thích.',
+    ],
+    notToDo: [
+      'Không cho nho nguyên quả, hạt, bỏng ngô, xúc xích khoanh tròn, miếng táo/cà rốt sống cứng.',
+      'Không lau sạch tay/mặt quá mức trong bữa; bừa bộn là một phần học ăn.',
+      'Không ép ăn hết chén; tôn trọng dấu hiệu no.',
+    ],
+    watchFor: [
+      'Thường xuyên sặc, không chịu texture mới kéo dài hoặc nôn ói nhiều khi ăn.',
+      'Không bập bẹ, không cười/không tương tác hai chiều.',
+    ],
+  },
+  m8: {
+    todos: [
+      'Chơi giấu đồ dưới khăn, ú òa, gọi tên đồ vật để luyện object permanence.',
+      'Tạo góc bò an toàn mỗi ngày, bỏ đồ nhỏ khỏi sàn.',
+      'Cho bé gặp người mới từ từ, để bé quan sát trong vòng tay người quen.',
+    ],
+    notToDo: [
+      'Không ép bé chuyền tay/ôm người lạ khi bé sợ.',
+      'Không để cửa cầu thang, nhà tắm, bếp mở khi bé bắt đầu di chuyển nhanh.',
+      'Không cho ăn khi bé đang bò/chơi; ăn phải ngồi yên.',
+    ],
+    watchFor: [
+      'Không ngồi dù có hỗ trợ, không chuyển đồ giữa hai tay hoặc không phản ứng với tên.',
+      'Mất kỹ năng bò/trườn/với tay đã có.',
+    ],
+  },
+  m9: {
+    todos: [
+      'Rà soát an toàn nhà ở tầm đứng vịn: dây điện, khăn trải bàn, ngăn kéo, cạnh sắc.',
+      'Tăng bữa ăn 3 bữa chính nhỏ + 1–2 bữa phụ tùy nhu cầu sữa.',
+      'Dạy “không” bằng giọng bình tĩnh, chuyển hướng sang lựa chọn an toàn.',
+    ],
+    notToDo: [
+      'Không dùng xe tập đi có bánh hoặc để bé đứng vịn gần cầu thang.',
+      'Không cho thức ăn tròn/cứng/nguyên hạt; cắt dọc và nấu mềm.',
+      'Không phạt khi bé ném đồ; đó là khám phá nhân-quả.',
+    ],
+    watchFor: [
+      'Không ngồi vững, không bập bẹ phụ âm, không đáp lại tên hoặc không nhìn theo hướng chỉ.',
+      'Ăn rất ít kèm sụt cân, táo bón nặng hoặc tiêu chảy kéo dài.',
+    ],
+  },
+  m10: {
+    todos: [
+      'Khuyến khích chỉ trỏ: “Con muốn cái nào?” rồi gọi tên đồ vật.',
+      'Cho bé tự xúc bằng thìa dày, cốc tập uống, finger food mềm cắt nhỏ.',
+      'Tập chuỗi hành động vui: bỏ đồ vào hộp, lấy ra, vẫy tay chào.',
+    ],
+    notToDo: [
+      'Không dùng màn hình làm phần thưởng/đổi lấy ăn; dưới 18 tháng nên tránh trừ video call.',
+      'Không để bé cầm túi đồ ăn bóp khi nằm/ngồi xe không quan sát.',
+      'Không la mắng khi bé thử ném/đổ; đặt giới hạn ngắn và lặp lại.',
+    ],
+    watchFor: [
+      'Không chỉ trỏ/không dùng cử chỉ, không bắt chước vẫy tay/vỗ tay.',
+      'Không chịu lực chân hoặc lệch rõ một bên cơ thể.',
+    ],
+  },
+  m11: {
+    todos: [
+      'Cho bé đi chân đất trên bề mặt an toàn để cảm nhận thăng bằng.',
+      'Luyện pincer grasp bằng đồ ăn mềm cỡ nhỏ phù hợp và đồ chơi nhặt-thả.',
+      'Chuẩn bị chuyển dần từ bình sang cốc sau 12 tháng.',
+    ],
+    notToDo: [
+      'Không mua giày cứng để tập đi; giày chỉ cần khi ra ngoài.',
+      'Không cho bé vừa đi vừa cầm đồ ăn nguy cơ hóc.',
+      'Không tự ý giảm mạnh sữa nếu bữa ăn chưa ổn định.',
+    ],
+    watchFor: [
+      'Không bò/trườn/di chuyển bằng cách nào, không đứng có đỡ hoặc không tìm đồ bị giấu.',
+      'Không có âm bập bẹ đa dạng hoặc không giao tiếp bằng mắt/cử chỉ.',
+    ],
+  },
+  m12: {
+    todos: [
+      'Khám 12 tháng, tiêm theo lịch; hỏi về xét nghiệm thiếu máu/chì nếu thuộc nhóm nguy cơ.',
+      'Chuyển dần từ bình sang cốc, ăn cùng gia đình với món cắt nhỏ, ít muối.',
+      'Đọc sách hằng ngày, chỉ hình và chờ bé phản ứng/chỉ lại.',
+    ],
+    notToDo: [
+      'Không cho mật ong trước sinh nhật 1 tuổi; sau 12 tháng vẫn hạn chế đồ ngọt.',
+      'Không để bé ngủ với bình sữa; tăng nguy cơ sâu răng.',
+      'Không để TV nền trong bữa ăn/chơi.',
+    ],
+    watchFor: [
+      'Không đứng có đỡ, không chỉ trỏ, không tìm đồ bạn giấu trước mặt bé.',
+      'Không nói mama/dada hoặc âm tương tự có ý nghĩa/cử chỉ giao tiếp.',
+    ],
+  },
+  m15: {
+    todos: [
+      'Cho bé chọn giữa 2 lựa chọn an toàn: áo xanh/đỏ, chuối/sữa chua.',
+      'Dạy từ qua hoạt động thật: rửa tay, cất giày, bỏ đồ vào hộp.',
+      'Duy trì lịch ăn-ngủ ổn định để giảm tantrum vì quá đói/quá mệt.',
+    ],
+    notToDo: [
+      'Không dùng điện thoại để dập mọi tantrum; giúp bé gọi tên cảm xúc trước.',
+      'Không cho đồ ăn nguy cơ hóc như hạt, kẹo cứng, nho nguyên, xúc xích khoanh.',
+      'Không ép chia sẻ đồ chơi; kỹ năng này còn đang phát triển.',
+    ],
+    watchFor: [
+      'Không đi vài bước độc lập hoặc không dùng ít nhất vài từ/cử chỉ để giao tiếp.',
+      'Không bắt chước hành động đơn giản hoặc mất kỹ năng đã có.',
+    ],
+  },
+  m18: {
+    todos: [
+      'Hoàn tất khám 18 tháng và tầm soát tự kỷ M-CHAT nếu bác sĩ áp dụng.',
+      'Cho bé giúp việc nhỏ: bỏ tã vào thùng, lau bàn, cất sách.',
+      'Đặt giới hạn ngắn gọn: “Không đánh. Tay dùng để vuốt nhẹ.”',
+    ],
+    notToDo: [
+      'Không kỳ vọng bé tự điều tiết như người lớn; tantrum cần bình tĩnh và nhất quán.',
+      'Không để màn hình quá 1 giờ/ngày; nếu xem, chọn nội dung chất lượng và xem cùng.',
+      'Không dùng đồ uống ngọt/nước trái cây như thức uống thường ngày.',
+    ],
+    watchFor: [
+      'Không đi độc lập, không nói ít nhất 3 từ ngoài ba/mẹ, không chỉ để cho bạn xem.',
+      'Không hiểu lệnh 1 bước như “đưa mẹ bóng”.',
+    ],
+  },
+  m24: {
+    todos: [
+      'Khám 24 tháng, đánh giá ngôn ngữ, hành vi và tầm soát tự kỷ lần 2 nếu theo lịch.',
+      'Đọc sách có cốt truyện ngắn, hỏi “ai/cái gì/ở đâu” và chờ bé trả lời.',
+      'Tập bô nếu bé có dấu hiệu sẵn sàng: báo ướt/bẩn, ngồi được, tò mò toilet.',
+    ],
+    notToDo: [
+      'Không ép tập bô bằng phạt/xấu hổ; lùi lại nếu bé chống đối mạnh.',
+      'Không dùng màn hình trong phòng ngủ hoặc trước giờ ngủ.',
+      'Không cho chạy/đùa khi đang ăn; vẫn cần ngồi yên để tránh hóc.',
+    ],
+    watchFor: [
+      'Không dùng cụm 2 từ, không bắt chước hành động/từ, không chạy hoặc đi không vững.',
+      'Mất kỹ năng ngôn ngữ/xã hội, ít giao tiếp mắt hoặc không chơi giả vờ.',
+    ],
+  },
+};
+
+export function getTimelineCareGuide(
+  milestoneId: string
+): TimelineCareGuide | null {
+  return BABY_TIMELINE_CARE_GUIDES[milestoneId] || null;
+}
 
 /** Trả về milestone hiện tại dựa theo ngày tuổi */
 export function getCurrentMilestone(

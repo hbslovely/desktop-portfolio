@@ -804,6 +804,37 @@
                   </li>
                 </ul>
               </div>
+
+              <ng-container *ngIf="selectedTimelineCareGuide() as care">
+                <div class="tl-care-grid">
+                  <div class="tl-section tl-section-care tl-section-care--todo">
+                    <div class="tl-section-label">
+                      <i class="pi pi-check-circle"></i> Todo list
+                    </div>
+                    <ul class="tl-list">
+                      <li *ngFor="let item of care.todos">{{ item }}</li>
+                    </ul>
+                  </div>
+
+                  <div class="tl-section tl-section-care tl-section-care--avoid">
+                    <div class="tl-section-label">
+                      <i class="pi pi-ban"></i> Not-to-do list
+                    </div>
+                    <ul class="tl-list">
+                      <li *ngFor="let item of care.notToDo">{{ item }}</li>
+                    </ul>
+                  </div>
+
+                  <div class="tl-section tl-section-care tl-section-care--watch">
+                    <div class="tl-section-label">
+                      <i class="pi pi-exclamation-triangle"></i> Hỏi bác sĩ nếu
+                    </div>
+                    <ul class="tl-list">
+                      <li *ngFor="let item of care.watchFor">{{ item }}</li>
+                    </ul>
+                  </div>
+                </div>
+              </ng-container>
             </div>
           </article>
         </div>
@@ -950,6 +981,37 @@
                   </li>
                 </ul>
               </div>
+
+              <ng-container *ngIf="selectedTimelineCareGuide() as care">
+                <div class="tl-care-grid">
+                  <div class="tl-section tl-section-care tl-section-care--todo">
+                    <div class="tl-section-label">
+                      <i class="pi pi-check-circle"></i> Todo list
+                    </div>
+                    <ul class="tl-list">
+                      <li *ngFor="let item of care.todos">{{ item }}</li>
+                    </ul>
+                  </div>
+
+                  <div class="tl-section tl-section-care tl-section-care--avoid">
+                    <div class="tl-section-label">
+                      <i class="pi pi-ban"></i> Not-to-do list
+                    </div>
+                    <ul class="tl-list">
+                      <li *ngFor="let item of care.notToDo">{{ item }}</li>
+                    </ul>
+                  </div>
+
+                  <div class="tl-section tl-section-care tl-section-care--watch">
+                    <div class="tl-section-label">
+                      <i class="pi pi-exclamation-triangle"></i> Hỏi bác sĩ nếu
+                    </div>
+                    <ul class="tl-list">
+                      <li *ngFor="let item of care.watchFor">{{ item }}</li>
+                    </ul>
+                  </div>
+                </div>
+              </ng-container>
             </div>
           </article>
         </div>
