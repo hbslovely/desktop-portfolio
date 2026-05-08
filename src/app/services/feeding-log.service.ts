@@ -116,14 +116,12 @@ export class FeedingLogService {
    * Chỉ trả dữ liệu khi **H** khớp `currentUser` (`?user=`).
    * Nếu K trống (script cũ): suy ra `at` từ J + ngày gần nhất với giờ đó.
    */
-  getBottlePrep(currentUser: string): Observable<BottlePrepFromSheet | null> {
+  getBottlePrep(): Observable<BottlePrepFromSheet | null> {
     const range = `${ this.SHEET_NAME }!G1:K1`;
     const url = `${ this.BASE_URL }/values/${ range }?key=${ this.API_KEY }&valueRenderOption=FORMATTED_VALUE`;
 
-    const u = currentUser.toLowerCase().trim();
-
     return this.http.get<{ values?: string[][] }>(url).pipe(
-      map((resp) => this.parseBottlePrepRow(resp.values?.[0], u)),
+      map((resp) => this.parseBottlePrepRow(resp.values?.[0])),
       catchError((err) => {
         console.error('FeedingLogService.getBottlePrep failed', err);
         return of(null);
@@ -323,17 +321,11 @@ export class FeedingLogService {
 
   private parseBottlePrepRow(
     row: string[] | undefined,
-    currentUser: string
   ): BottlePrepFromSheet | null {
     if (!row?.length) return null;
-    const sheetUser = String(row[1] ?? '')
-      .toLowerCase()
-      .trim();
     const volRaw = String(row[2] ?? '').trim();
     const timeRaw = String(row[3] ?? '').trim();
     const isoRaw = String(row[4] ?? '').trim();
-
-    if (!sheetUser || sheetUser !== currentUser) return null;
 
     const volumeMl = parseInt(volRaw.replace(/[^\d]/g, ''), 10) || 0;
     if (volumeMl <= 0 || !timeRaw) return null;

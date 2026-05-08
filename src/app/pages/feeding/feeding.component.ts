@@ -1422,7 +1422,7 @@ export class FeedingComponent {
 
   // ===== Bottle prep (Google Sheet G1:K1, không localStorage) =====
   private loadBottlePrepFromSheet() {
-    this.feedingLogService.getBottlePrep(this.user()).subscribe({
+    this.feedingLogService.getBottlePrep().subscribe({
       next: (prep) => this.bottlePrep.set(prep),
     });
   }
