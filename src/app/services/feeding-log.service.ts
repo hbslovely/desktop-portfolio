@@ -28,8 +28,8 @@ export interface FeedingSheetResponse {
 /** Pha sữa đọc từ `Feeding!G1:K1` (K = ISO lúc pha, do app ghi). */
 export interface BottlePrepFromSheet {
   volumeMl: number;
-  /** ISO 8601 — dùng cho giờ hiển thị & hạn dùng +1h */
   at: string;
+  user: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -323,6 +323,9 @@ export class FeedingLogService {
     row: string[] | undefined,
   ): BottlePrepFromSheet | null {
     if (!row?.length) return null;
+    const sheetUser = String(row[1] ?? '')
+      .toLowerCase()
+      .trim();
     const volRaw = String(row[2] ?? '').trim();
     const timeRaw = String(row[3] ?? '').trim();
     const isoRaw = String(row[4] ?? '').trim();
@@ -336,7 +339,7 @@ export class FeedingLogService {
         ? fromK.toISOString()
         : this.guessIsoFromClockTime(this.normalizeTime(timeRaw));
 
-    return { volumeMl, at };
+    return { volumeMl, at, user: sheetUser };
   }
 
   /** Khi sheet chưa có cột K: chọn ngày (hôm qua / hôm nay / mai) sao cho giờ J gần `now` nhất. */
