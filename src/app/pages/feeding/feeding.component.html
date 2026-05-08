@@ -433,7 +433,7 @@
             <div class="bp-info">
               <i class="pi pi-inbox"></i>
               <span class="bp-text">
-                <span class="bp-prep-user">{{ user() }}</span> đã pha
+                <span class="bp-prep-user">{{ prep.user }}</span> đã pha
                 <strong>{{ prep.volumeMl }}ml</strong> lúc
                 <span class="bp-prep-time">{{ formatBottleAt(prep.at) }}</span>
                 <br />
@@ -733,7 +733,7 @@
               </button>
             </div>
             <div class="log-list">
-              <div class="log-row" *ngFor="let l of todayLogsPreview()" 
+              <div class="log-row" *ngFor="let l of todayLogsPreview()"
                    [class.long-gap]="isLongGap(l, todayLogs())"
                    [class.very-long-gap]="isVeryLongGap(l, todayLogs())"
                    [class.low-volume]="isLowVolume(l.volume)"
@@ -1837,7 +1837,7 @@
             <div class="prep-info">
               <i class="pi pi-inbox"></i>
               <span class="prep-info-text">
-                <span class="bp-prep-user">{{ user() }}</span> đã pha
+                <span class="bp-prep-user">{{ prep.user }}</span> đã pha
                 <strong>{{ prep.volumeMl }}ml</strong> lúc
                 <span class="bp-prep-time">{{ formatBottleAt(prep.at) }}</span>
                 <br />

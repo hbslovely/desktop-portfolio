@@ -14,6 +14,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { finalize } from 'rxjs/operators';
 import {
+  BottlePrepFromSheet,
   FeedingLog,
   FeedingLogService,
 } from '../../services/feeding-log.service';
@@ -243,7 +244,7 @@ export class FeedingComponent {
   }
 
   // ===== Bình sữa đã pha (persistent) =====
-  bottlePrep = signal<{ volumeMl: number; at: string } | null>(null);
+  bottlePrep = signal<BottlePrepFromSheet | null>(null);
   bottlePrepDraft = signal<string>('');
   bottlePrepEditing = signal<boolean>(false);
   /** Đang POST setBottlePrep — chặn double-submit + khóa form */
