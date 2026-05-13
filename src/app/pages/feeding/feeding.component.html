@@ -742,23 +742,39 @@
               </button>
             </div>
             <div class="log-list">
-              <div class="log-row" *ngFor="let l of todayLogsPreview()"
-                   [class.low-volume]="isLowVolume(l.volume)"
-                   [class.high-volume]="isHighVolume(l.volume)">
-                <span class="log-time">{{ l.time }}</span>
-                <span class="log-volume">{{ l.volume }}ml</span>
+              <div
+                class="log-row"
+                *ngFor="let g of todayLogsPreview(); trackBy: trackFeedingViewGroup"
+                [class.low-volume]="isLowVolumeViewGroup(g)"
+                [class.high-volume]="isHighVolumeViewGroup(g)"
+              >
+                <span class="log-time log-time--with-badge">
+                  {{ viewGroupDisplayTime(g) }}
+                  <button
+                    *ngIf="g.members.length > 1"
+                    type="button"
+                    class="log-merge-badge"
+                    (click)="openFeedGroupDetail(g); $event.stopPropagation()"
+                    title="Xem các cữ đã gom"
+                  >
+                    {{ g.members.length }} cữ
+                  </button>
+                </span>
+                <span class="log-volume">{{ viewGroupDisplayVolume(g) }}ml</span>
                 <span
                   class="log-gap"
-                  *ngIf="formatIntervalFromPrev(l, todayLogs()) as iv"
-                  [class.feed-gap-warn]="isFeedTimeGapWarning(l, todayLogs())"
+                  *ngIf="formatIntervalFromPrevViewGroup(g, todayLogViewGroups()) as iv"
+                  [class.feed-gap-warn]="
+                    isFeedTimeGapWarningViewGroup(g, todayLogViewGroups())
+                  "
                 >
                   <i class="pi pi-clock"></i> {{ iv }}
                 </span>
-                <span class="log-note" *ngIf="l.note">· {{ l.note }}</span>
-                <div class="log-actions" *ngIf="l.rowIndex">
+                <span class="log-note" *ngIf="viewGroupNote(g) as vn">· {{ vn }}</span>
+                <div class="log-actions" *ngIf="g.members.length === 1 && g.members[0].rowIndex">
                   <button
                     class="log-edit"
-                    (click)="openEditDialog(l)"
+                    (click)="openEditDialog(g.members[0])"
                     title="Sửa cữ bú này"
                     aria-label="Sửa cữ bú"
                   >
@@ -766,11 +782,21 @@
                   </button>
                   <button
                     class="log-del"
-                    (click)="deleteLog(l)"
+                    (click)="deleteLog(g.members[0])"
                     title="Xoá cữ bú này"
                     aria-label="Xoá cữ bú"
                   >
                     <i class="pi pi-trash"></i>
+                  </button>
+                </div>
+                <div class="log-actions" *ngIf="g.members.length > 1">
+                  <button
+                    class="log-edit"
+                    (click)="openFeedGroupDetail(g)"
+                    title="Chi tiết các cữ đã gom"
+                    aria-label="Chi tiết gom nhóm"
+                  >
+                    <i class="pi pi-list"></i>
                   </button>
                 </div>
               </div>
@@ -821,23 +847,39 @@
               </button>
             </div>
             <div class="log-list">
-              <div class="log-row" *ngFor="let l of yesterdayLogsPreview()"
-                   [class.low-volume]="isLowVolume(l.volume)"
-                   [class.high-volume]="isHighVolume(l.volume)">
-                <span class="log-time">{{ l.time }}</span>
-                <span class="log-volume">{{ l.volume }}ml</span>
+              <div
+                class="log-row"
+                *ngFor="let g of yesterdayLogsPreview(); trackBy: trackFeedingViewGroup"
+                [class.low-volume]="isLowVolumeViewGroup(g)"
+                [class.high-volume]="isHighVolumeViewGroup(g)"
+              >
+                <span class="log-time log-time--with-badge">
+                  {{ viewGroupDisplayTime(g) }}
+                  <button
+                    *ngIf="g.members.length > 1"
+                    type="button"
+                    class="log-merge-badge"
+                    (click)="openFeedGroupDetail(g); $event.stopPropagation()"
+                    title="Xem các cữ đã gom"
+                  >
+                    {{ g.members.length }} cữ
+                  </button>
+                </span>
+                <span class="log-volume">{{ viewGroupDisplayVolume(g) }}ml</span>
                 <span
                   class="log-gap"
-                  *ngIf="formatIntervalFromPrev(l, yesterdayLogs()) as iv"
-                  [class.feed-gap-warn]="isFeedTimeGapWarning(l, yesterdayLogs())"
+                  *ngIf="formatIntervalFromPrevViewGroup(g, yesterdayLogViewGroups()) as iv"
+                  [class.feed-gap-warn]="
+                    isFeedTimeGapWarningViewGroup(g, yesterdayLogViewGroups())
+                  "
                 >
                   <i class="pi pi-clock"></i> {{ iv }}
                 </span>
-                <span class="log-note" *ngIf="l.note">· {{ l.note }}</span>
-                <div class="log-actions" *ngIf="l.rowIndex">
+                <span class="log-note" *ngIf="viewGroupNote(g) as vn">· {{ vn }}</span>
+                <div class="log-actions" *ngIf="g.members.length === 1 && g.members[0].rowIndex">
                   <button
                     class="log-edit"
-                    (click)="openEditDialog(l)"
+                    (click)="openEditDialog(g.members[0])"
                     title="Sửa cữ bú này"
                     aria-label="Sửa cữ bú"
                   >
@@ -845,11 +887,21 @@
                   </button>
                   <button
                     class="log-del"
-                    (click)="deleteLog(l)"
+                    (click)="deleteLog(g.members[0])"
                     title="Xoá cữ bú này"
                     aria-label="Xoá cữ bú"
                   >
                     <i class="pi pi-trash"></i>
+                  </button>
+                </div>
+                <div class="log-actions" *ngIf="g.members.length > 1">
+                  <button
+                    class="log-edit"
+                    (click)="openFeedGroupDetail(g)"
+                    title="Chi tiết các cữ đã gom"
+                    aria-label="Chi tiết gom nhóm"
+                  >
+                    <i class="pi pi-list"></i>
                   </button>
                 </div>
               </div>
@@ -1320,33 +1372,48 @@
         <div class="feed-list-compact">
           <div
             class="feed-row"
-            *ngFor="let l of recentFeedings()"
+            *ngFor="let g of recentFeedViewGroups(); trackBy: trackFeedingViewGroup"
           >
             <div class="feed-row-time">
-              <div class="time">{{ l.time }}</div>
-              <div class="date">{{ formatDateShort(l.date) }}</div>
+              <div class="time time--with-badge">
+                {{ viewGroupDisplayTime(g) }}
+                <button
+                  *ngIf="g.members.length > 1"
+                  type="button"
+                  class="feed-merge-badge"
+                  (click)="openFeedGroupDetail(g); $event.stopPropagation()"
+                  title="Xem các cữ đã gom"
+                >
+                  {{ g.members.length }} cữ
+                </button>
+              </div>
+              <div class="date">
+                {{ formatDateShort(g.members[g.members.length - 1].date) }}
+              </div>
               <div
                 class="feed-row-gap"
-                *ngIf="formatIntervalFromPrev(l, recentFeedings()) as ivR"
-                [class.feed-gap-warn]="isFeedTimeGapWarning(l, recentFeedings())"
+                *ngIf="formatIntervalFromPrevViewGroup(g, recentFeedViewGroups()) as ivR"
+                [class.feed-gap-warn]="
+                  isFeedTimeGapWarningViewGroup(g, recentFeedViewGroups())
+                "
               >
                 <i class="pi pi-clock"></i> {{ ivR }}
               </div>
             </div>
             <div class="feed-row-volume">
-              <strong>{{ l.volume }}</strong>
+              <strong>{{ viewGroupDisplayVolume(g) }}</strong>
               <span class="u">ml</span>
             </div>
-            <div class="feed-row-note" *ngIf="l.note; else noNote">
-              {{ l.note }}
+            <div class="feed-row-note" *ngIf="viewGroupNote(g); else noNote">
+              {{ viewGroupNote(g) }}
             </div>
             <ng-template #noNote>
               <div class="feed-row-note muted">—</div>
             </ng-template>
-            <div class="feed-row-actions" *ngIf="l.rowIndex">
+            <div class="feed-row-actions" *ngIf="g.members.length === 1 && g.members[0].rowIndex">
               <button
                 class="feed-row-edit"
-                (click)="openEditDialog(l)"
+                (click)="openEditDialog(g.members[0])"
                 title="Sửa cữ này"
                 aria-label="Sửa cữ bú"
               >
@@ -1354,11 +1421,21 @@
               </button>
               <button
                 class="feed-row-del"
-                (click)="deleteLog(l)"
+                (click)="deleteLog(g.members[0])"
                 title="Xoá cữ này"
                 aria-label="Xoá cữ bú"
               >
                 <i class="pi pi-trash"></i>
+              </button>
+            </div>
+            <div class="feed-row-actions" *ngIf="g.members.length > 1">
+              <button
+                class="feed-row-edit"
+                (click)="openFeedGroupDetail(g)"
+                title="Chi tiết các cữ đã gom"
+                aria-label="Chi tiết gom nhóm"
+              >
+                <i class="pi pi-list"></i>
               </button>
             </div>
           </div>
@@ -2122,33 +2199,47 @@
             </div>
           </div>
           <div class="history-group-rows">
-            <div class="feed-row" *ngFor="let l of g.logs; trackBy: trackFeedingLogRow"
-                 [class.low-volume]="isLowVolume(l.volume)"
-                 [class.high-volume]="isHighVolume(l.volume)">
+            <div
+              class="feed-row"
+              *ngFor="let vg of g.viewRows; trackBy: trackFeedingViewGroup"
+              [class.low-volume]="isLowVolumeViewGroup(vg)"
+              [class.high-volume]="isHighVolumeViewGroup(vg)"
+            >
               <div class="feed-row-time">
-                <div class="time">{{ l.time }}</div>
+                <div class="time time--with-badge">
+                  {{ viewGroupDisplayTime(vg) }}
+                  <button
+                    *ngIf="vg.members.length > 1"
+                    type="button"
+                    class="feed-merge-badge"
+                    (click)="openFeedGroupDetail(vg); $event.stopPropagation()"
+                    title="Xem các cữ đã gom"
+                  >
+                    {{ vg.members.length }} cữ
+                  </button>
+                </div>
                 <div
                   class="feed-row-gap"
-                  *ngIf="formatIntervalFromPrev(l, g.logs) as iv"
-                  [class.feed-gap-warn]="isFeedTimeGapWarning(l, g.logs)"
+                  *ngIf="formatIntervalFromPrevViewGroup(vg, g.viewRows) as iv"
+                  [class.feed-gap-warn]="isFeedTimeGapWarningViewGroup(vg, g.viewRows)"
                 >
                   <i class="pi pi-clock"></i> {{ iv }}
                 </div>
               </div>
               <div class="feed-row-volume">
-                <strong>{{ l.volume }}</strong>
+                <strong>{{ viewGroupDisplayVolume(vg) }}</strong>
                 <span class="u">ml</span>
               </div>
-              <div class="feed-row-note" *ngIf="l.note; else noNote2">
-                {{ l.note }}
+              <div class="feed-row-note" *ngIf="viewGroupNote(vg); else noNote2">
+                {{ viewGroupNote(vg) }}
               </div>
               <ng-template #noNote2>
                 <div class="feed-row-note muted">—</div>
               </ng-template>
-              <div class="feed-row-actions" *ngIf="l.rowIndex">
+              <div class="feed-row-actions" *ngIf="vg.members.length === 1 && vg.members[0].rowIndex">
                 <button
                   class="feed-row-edit"
-                  (click)="openEditDialog(l)"
+                  (click)="openEditDialog(vg.members[0])"
                   title="Sửa cữ này"
                   aria-label="Sửa cữ bú"
                 >
@@ -2156,11 +2247,21 @@
                 </button>
                 <button
                   class="feed-row-del"
-                  (click)="deleteLog(l)"
+                  (click)="deleteLog(vg.members[0])"
                   title="Xoá cữ này"
                   aria-label="Xoá cữ bú"
                 >
                   <i class="pi pi-trash"></i>
+                </button>
+              </div>
+              <div class="feed-row-actions" *ngIf="vg.members.length > 1">
+                <button
+                  class="feed-row-edit"
+                  (click)="openFeedGroupDetail(vg)"
+                  title="Chi tiết các cữ đã gom"
+                  aria-label="Chi tiết gom nhóm"
+                >
+                  <i class="pi pi-list"></i>
                 </button>
               </div>
             </div>
@@ -2211,7 +2312,8 @@
       <ng-container *ngIf="settingsDraft() as sd">
         <p class="feeding-settings-hint muted">
           Lưu theo <strong>ID</strong> trên sheet (<code>FEED_TIME_WARNING</code>,
-          <code>FEED_WARNING_AMOUNT</code>), không phụ thuộc cột tên hiển thị.
+          <code>FEED_WARNING_AMOUNT</code>, <code>FEED_GROUP_GAP_MINUTES</code>), không phụ thuộc cột tên hiển thị.
+          Nếu sheet chưa có dòng ID, Apps Script sẽ <strong>thêm dòng</strong> (cần deploy script mới).
         </p>
 
         <div class="log-grid feeding-settings-grid">
@@ -2254,6 +2356,26 @@
               thấp.</span
             >
           </label>
+
+          <label class="field full">
+            <span class="label"
+              ><code>FEED_GROUP_GAP_MINUTES</code> — Gom cữ gần nhau (phút)</span
+            >
+            <input
+              type="number"
+              inputmode="numeric"
+              min="0"
+              max="180"
+              step="1"
+              [ngModel]="sd.groupGapMinutes"
+              (ngModelChange)="updateSettingsDraftGroupGap($event)"
+              name="setFeedGroupGapMinutes"
+            />
+            <span class="field-hint muted"
+              ><strong>0</strong> = không gom. Nếu &gt; 0: các cữ liên tiếp ≤ phút này hiển thị một dòng (giờ TB, ml tổng); bấm
+              <strong>N cữ</strong> hoặc <strong>chi tiết</strong> để xem từng cữ trên sheet.</span
+            >
+          </label>
         </div>
 
         <div class="sync-error" *ngIf="settingsFormError()">
@@ -2280,6 +2402,94 @@
           </button>
         </div>
       </ng-container>
+    </div>
+  </div>
+
+  <!-- Chi tiết các cữ đã gom (chỉ hiển thị) -->
+  <div
+    class="dialog-overlay dialog-overlay--front"
+    *ngIf="feedGroupDetail() as grp"
+    (click)="closeFeedGroupDetail()"
+  >
+    <div
+      class="dialog dialog-wide feed-group-detail-dialog"
+      role="dialog"
+      aria-modal="true"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="dialog-head">
+        <div>
+          <div class="eyebrow">Gom nhóm hiển thị</div>
+          <h2><i class="pi pi-layer-group"></i> {{ grp.members.length }} cữ trên sheet</h2>
+        </div>
+        <button
+          type="button"
+          class="dialog-close"
+          (click)="closeFeedGroupDetail()"
+          aria-label="Đóng"
+        >
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+      <p class="muted feed-group-detail-summary">
+        Giờ hiển thị (trung bình): <strong>{{ viewGroupDisplayTime(grp) }}</strong>
+        <span class="sep">·</span>
+        Tổng: <strong>{{ viewGroupDisplayVolume(grp) }}ml</strong>
+      </p>
+      <div class="history-group feed-group-detail-history">
+        <div class="history-group-rows feed-group-detail-rows">
+          <div
+            class="feed-row"
+            *ngFor="let m of feedGroupDetailMembersDesc(); trackBy: trackFeedingLogRow"
+            [class.low-volume]="isLowVolume(m.volume)"
+            [class.high-volume]="isHighVolume(m.volume)"
+          >
+            <div class="feed-row-time">
+              <div class="time">{{ m.time }}</div>
+              <div
+                class="feed-row-gap"
+                *ngIf="formatIntervalFromPrev(m, feedGroupDetailMembersDesc()) as ivd"
+                [class.feed-gap-warn]="
+                  isFeedTimeGapWarning(m, feedGroupDetailMembersDesc())
+                "
+              >
+                <i class="pi pi-clock"></i> {{ ivd }}
+              </div>
+            </div>
+            <div class="feed-row-volume">
+              <strong>{{ m.volume }}</strong>
+              <span class="u">ml</span>
+            </div>
+            <div class="feed-row-note" *ngIf="m.note; else noNoteDetail">
+              {{ m.note }}
+            </div>
+            <ng-template #noNoteDetail>
+              <div class="feed-row-note muted">—</div>
+            </ng-template>
+            <div class="feed-row-actions" *ngIf="m.rowIndex">
+              <button
+                class="feed-row-edit"
+                (click)="openEditDialog(m); closeFeedGroupDetail()"
+                title="Sửa cữ này"
+                aria-label="Sửa cữ bú"
+              >
+                <i class="pi pi-pencil"></i>
+              </button>
+              <button
+                class="feed-row-del"
+                (click)="deleteLog(m)"
+                title="Xoá cữ này"
+                aria-label="Xoá cữ bú"
+              >
+                <i class="pi pi-trash"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="dialog-actions">
+        <button type="button" class="btn primary" (click)="closeFeedGroupDetail()">Đóng</button>
+      </div>
     </div>
   </div>
 

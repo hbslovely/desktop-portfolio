@@ -45,6 +45,10 @@ import { MOM_WELLNESS_CARDS } from './mom-wellness.data';
 import { DocumentsComponent } from './documents/documents.component';
 import { MedicalHistoryComponent } from './medical-history/medical-history.component';
 import { WeightComponent } from './weight/weight.component';
+import {
+  FeedingViewGroup,
+  groupLogsByProximity,
+} from './feeding-view-group';
 
 interface Profile {
   babyName: string;
@@ -224,13 +228,28 @@ export class FeedingComponent {
     parseFeedingSettingsFromRows([])
   );
   feedingSettingsDialogOpen = signal(false);
-  settingsDraft = signal<{ timeWarningHours: number; warningMl: number } | null>(
-    null
-  );
+  settingsDraft = signal<{
+    timeWarningHours: number;
+    warningMl: number;
+    groupGapMinutes: number;
+  } | null>(null);
   settingsSaving = signal(false);
   settingsFormError = signal('');
 
   historyDialogOpen = signal<boolean>(false);
+  /** Dialog liệt kê các cữ sheet trong một nhóm hiển thị đã gom. */
+  feedGroupDetail = signal<FeedingViewGroup | null>(null);
+  /** Dialog chi tiết gom: các cữ sheet — mới → cũ (cùng thứ tự như trong lịch sử). */
+  feedGroupDetailMembersDesc = computed<FeedingLog[]>(() => {
+    const g = this.feedGroupDetail();
+    if (!g?.members?.length) return [];
+    return [...g.members].sort((a, b) => {
+      const ka = `${a.date}T${a.time}`;
+      const kb = `${b.date}T${b.time}`;
+      return kb.localeCompare(ka);
+    });
+  });
+
   historyFilter = signal<'all' | 'today' | 'yesterday'>('all');
   /** Dialog lịch sử: số cữ tối đa render mỗi lần (tăng dần khi load more / cuộn). */
   historyFeedDisplayLimit = signal(100);
@@ -422,6 +441,23 @@ export class FeedingComponent {
       .sort((a, b) => b.time.localeCompare(a.time))
   );
 
+  /** Các cữ hôm nay sau gom nhóm (mới → cũ). */
+  todayLogViewGroups = computed<FeedingViewGroup[]>(() =>
+    groupLogsByProximity(
+      this.todayLogs(),
+      this.feedingSettings().feedGroupGapMinutes,
+      (l) => this.logTimestamp(l)
+    )
+  );
+
+  yesterdayLogViewGroups = computed<FeedingViewGroup[]>(() =>
+    groupLogsByProximity(
+      this.yesterdayLogs(),
+      this.feedingSettings().feedGroupGapMinutes,
+      (l) => this.logTimestamp(l)
+    )
+  );
+
   /**
    * Khoảng cách giữa cữ `current` và cữ ngay TRƯỚC nó (trong cùng ngày).
    *
@@ -478,6 +514,114 @@ export class FeedingComponent {
     const hours = diffMs / (1000 * 60 * 60);
     const h = this.feedingSettings().feedTimeWarningHours;
     return hours >= h;
+  }
+
+  viewGroupKey(g: FeedingViewGroup): string {
+    return g.members.map((m) => this.logRowKey(m)).join('>');
+  }
+
+  logRowKey(l: FeedingLog): string {
+    return l.rowIndex != null ? `r${l.rowIndex}` : `${l.date}|${l.time}`;
+  }
+
+  private globalPrevLogBefore(group: FeedingViewGroup): FeedingLog | undefined {
+    const curTs = this.logTimestamp(group.members[0]);
+    const memberKey = new Set(group.members.map((m) => this.logRowKey(m)));
+    const all = this.logs();
+    let best: FeedingLog | undefined;
+    let bestTs = -Infinity;
+    for (const l of all) {
+      if (memberKey.has(this.logRowKey(l))) continue;
+      const t = this.logTimestamp(l);
+      if (t < curTs && t > bestTs) {
+        bestTs = t;
+        best = l;
+      }
+    }
+    return best;
+  }
+
+  /**
+   * Khoảng cách từ **cụm** cũ hơn (liền kề trên list) tới đầu cụm hiện tại
+   * (thời điểm sớm nhất trong nhóm) — `listDesc` là các nhóm mới → cũ.
+   */
+  formatIntervalFromPrevViewGroup(
+    g: FeedingViewGroup,
+    listDesc: FeedingViewGroup[]
+  ): string {
+    const idx = listDesc.findIndex((x) => this.viewGroupKey(x) === this.viewGroupKey(g));
+    let prev: FeedingLog | undefined;
+    if (idx >= 0 && idx < listDesc.length - 1) {
+      const older = listDesc[idx + 1];
+      prev = older.members[older.members.length - 1];
+    } else {
+      prev = this.globalPrevLogBefore(g);
+    }
+    if (!prev) return '';
+    const diffMs =
+      this.logTimestamp(g.members[0]) - this.logTimestamp(prev);
+    const diff = Math.round(diffMs / 60000);
+    if (diff <= 0) return '';
+    const hh = Math.floor(diff / 60);
+    const mm = diff % 60;
+    if (hh === 0) return `${mm}p`;
+    if (mm === 0) return `${hh}h`;
+    return `${hh}h${mm.toString().padStart(2, '0')}p`;
+  }
+
+  isFeedTimeGapWarningViewGroup(
+    g: FeedingViewGroup,
+    listDesc: FeedingViewGroup[]
+  ): boolean {
+    const idx = listDesc.findIndex((x) => this.viewGroupKey(x) === this.viewGroupKey(g));
+    let prev: FeedingLog | undefined;
+    if (idx >= 0 && idx < listDesc.length - 1) {
+      const older = listDesc[idx + 1];
+      prev = older.members[older.members.length - 1];
+    } else {
+      prev = this.globalPrevLogBefore(g);
+    }
+    if (!prev) return false;
+    const diffMs =
+      this.logTimestamp(g.members[0]) - this.logTimestamp(prev);
+    const hours = diffMs / (1000 * 60 * 60);
+    return hours >= this.feedingSettings().feedTimeWarningHours;
+  }
+
+  /** Giờ hiển thị = trung bình thời điểm các cữ trong nhóm (làm tròn phút). */
+  viewGroupDisplayTime(g: FeedingViewGroup): string {
+    const sum = g.members.reduce((s, m) => s + this.logTimestamp(m), 0);
+    const avg = Math.round(sum / g.members.length);
+    return this.toTimeStr(new Date(avg));
+  }
+
+  viewGroupDisplayVolume(g: FeedingViewGroup): number {
+    return g.members.reduce((s, m) => s + (m.volume || 0), 0);
+  }
+
+  viewGroupNote(g: FeedingViewGroup): string {
+    const parts = g.members
+      .map((m) => (m.note || '').trim())
+      .filter(Boolean);
+    return parts.length ? parts.join(' · ') : '';
+  }
+
+  isLowVolumeViewGroup(g: FeedingViewGroup): boolean {
+    return g.members.some((m) => this.isLowVolume(m.volume));
+  }
+
+  isHighVolumeViewGroup(g: FeedingViewGroup): boolean {
+    const sum = this.viewGroupDisplayVolume(g);
+    return sum > 200 || g.members.some((m) => this.isHighVolume(m.volume));
+  }
+
+  openFeedGroupDetail(g: FeedingViewGroup): void {
+    if (g.members.length < 2) return;
+    this.feedGroupDetail.set(g);
+  }
+
+  closeFeedGroupDetail(): void {
+    this.feedGroupDetail.set(null);
   }
 
   /**
@@ -1248,6 +1392,7 @@ export class FeedingComponent {
     const flat = this.historyLogsFilteredSorted();
     const limit = this.historyFeedDisplayLimit();
     const sliced = flat.slice(0, limit);
+    const gap = this.feedingSettings().feedGroupGapMinutes;
     const groups = new Map<string, FeedingLog[]>();
     for (const log of sliced) {
       if (!groups.has(log.date)) groups.set(log.date, []);
@@ -1257,9 +1402,13 @@ export class FeedingComponent {
       .map(([date, logs]) => {
         const total = logs.reduce((s, l) => s + l.volume, 0);
         const count = logs.length;
+        const viewRows = groupLogsByProximity(logs, gap, (l) =>
+          this.logTimestamp(l)
+        );
         return {
           date,
           logs: logs.sort((a, b) => b.time.localeCompare(a.time)),
+          viewRows,
           total,
           count,
           avg: count > 0 ? Math.round(total / count) : 0,
@@ -1268,15 +1417,13 @@ export class FeedingComponent {
       .sort((a, b) => b.date.localeCompare(a.date));
   });
 
-  /** 5 cữ bú gần nhất (cho compact list) */
-  recentFeedings = computed<FeedingLog[]>(() => {
-    return [...this.logs()]
-      .sort((a, b) => {
-        const ka = `${a.date}T${a.time}`;
-        const kb = `${b.date}T${b.time}`;
-        return kb.localeCompare(ka);
-      })
-      .slice(0, 5);
+  /** 5 nhóm cữ gần nhất (gom theo setting) — compact list. */
+  recentFeedViewGroups = computed<FeedingViewGroup[]>(() => {
+    const gap = this.feedingSettings().feedGroupGapMinutes;
+    const all = groupLogsByProximity(this.logs(), gap, (l) =>
+      this.logTimestamp(l)
+    );
+    return all.slice(0, 5);
   });
 
   constructor() {
@@ -1416,6 +1563,7 @@ export class FeedingComponent {
     this.settingsDraft.set({
       timeWarningHours: s.feedTimeWarningHours,
       warningMl: s.feedWarningMl,
+      groupGapMinutes: s.feedGroupGapMinutes,
     });
     this.feedingSettingsDialogOpen.set(true);
   }
@@ -1440,11 +1588,19 @@ export class FeedingComponent {
     );
   }
 
+  updateSettingsDraftGroupGap(v: string): void {
+    const n = parseInt(String(v).replace(/[^\d]/g, ''), 10);
+    this.settingsDraft.update((d) =>
+      d && !isNaN(n) ? { ...d, groupGapMinutes: n } : d
+    );
+  }
+
   submitFeedingSettings(): void {
     const d = this.settingsDraft();
     if (!d) return;
     const th = d.timeWarningHours;
     const wm = d.warningMl;
+    const gap = d.groupGapMinutes;
     if (!Number.isFinite(th) || th < 0.25 || th > 48) {
       this.settingsFormError.set('Ngưỡng giờ (FEED_TIME_WARNING): từ 0,25 đến 48.');
       return;
@@ -1453,12 +1609,37 @@ export class FeedingComponent {
       this.settingsFormError.set('Ngưỡng ml (FEED_WARNING_AMOUNT): từ 1 đến 500.');
       return;
     }
+    if (!Number.isFinite(gap) || gap < 0 || gap > 180) {
+      this.settingsFormError.set(
+        'Gom nhóm (FEED_GROUP_GAP_MINUTES): từ 0 (tắt) đến 180 phút.'
+      );
+      return;
+    }
     this.settingsSaving.set(true);
     this.settingsFormError.set('');
     this.feedingLogService
       .saveFeedingSettings([
-        { id: FEEDING_SETTING_ID.FEED_TIME_WARNING, value: th },
-        { id: FEEDING_SETTING_ID.FEED_WARNING_AMOUNT, value: wm },
+        {
+          id: FEEDING_SETTING_ID.FEED_TIME_WARNING,
+          value: th,
+          name: 'Ngưỡng cảnh báo khoảng cách cữ (giờ)',
+          unit: 'giờ',
+          dataType: 'Số',
+        },
+        {
+          id: FEEDING_SETTING_ID.FEED_WARNING_AMOUNT,
+          value: wm,
+          name: 'Ngưỡng ml cữ thấp (FEED_WARNING_AMOUNT)',
+          unit: 'ml',
+          dataType: 'Số',
+        },
+        {
+          id: FEEDING_SETTING_ID.FEED_GROUP_GAP_MINUTES,
+          value: gap,
+          name: 'Thời gian tối đa gom nhóm cữ (phút)',
+          unit: 'phút',
+          dataType: 'Số',
+        },
       ])
       .pipe(finalize(() => this.settingsSaving.set(false)))
       .subscribe({
@@ -1724,6 +1905,7 @@ export class FeedingComponent {
 
     this.feedingLogService.deleteLog(log.rowIndex).subscribe({
       next: () => {
+        this.closeFeedGroupDetail();
         this.syncMessage.set('Đã xoá cữ bú.');
         setTimeout(() => this.syncMessage.set(''), 3000);
         setTimeout(() => this.loadLogs(), 900);
@@ -2023,6 +2205,10 @@ export class FeedingComponent {
     return g.date;
   }
 
+  /** Arrow: `*ngFor` trackBy gọi hàm không bind `this` — method thường sẽ lỗi. */
+  trackFeedingViewGroup = (_index: number, g: FeedingViewGroup): string =>
+    this.viewGroupKey(g);
+
   trackFeedingLogRow(_index: number, l: FeedingLog): string {
     return l.rowIndex != null ? `r${l.rowIndex}` : `${l.date}|${l.time}`;
   }
@@ -2073,9 +2259,13 @@ export class FeedingComponent {
     return Math.max(0, Math.min(100, Math.round(((now - lastAt) / total) * 100)));
   });
 
-  /** 2 cữ bú hôm nay mới nhất (cho summary) */
-  todayLogsPreview = computed<FeedingLog[]>(() => this.todayLogs().slice(0, 2));
-  yesterdayLogsPreview = computed<FeedingLog[]>(() => this.yesterdayLogs().slice(0, 2));
+  /** 2 nhóm cữ hôm nay mới nhất (gom theo setting) */
+  todayLogsPreview = computed<FeedingViewGroup[]>(() =>
+    this.todayLogViewGroups().slice(0, 2)
+  );
+  yesterdayLogsPreview = computed<FeedingViewGroup[]>(() =>
+    this.yesterdayLogViewGroups().slice(0, 2)
+  );
 
   /** Thứ (tiếng Việt) — hero */
   get heroWeekday(): string {
