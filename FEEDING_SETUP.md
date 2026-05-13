@@ -3,6 +3,7 @@
 Tài liệu hướng dẫn chuẩn bị **các tab** trong Google Sheet và **Google Apps Script chung** để app `/feeding?user=<tên>` có thể đồng bộ:
 
 - Tab **`Feeding`**: nhật ký cữ bú (đọc / thêm / sửa / xoá).
+- Tab **`Settings`**: tham số cữ bú (đọc API; ghi qua Apps Script theo **ID**).
 - Tab **`Weight`**: cân nặng bé (đọc / thêm / sửa / xoá).
 - Tab **`MedicalHistory`**: tiền sử y tế bé — Medical history V2 (đọc qua API; ghi / sửa / xoá qua Apps Script).
 - Tab **`Explorer`**: cây thư mục + ảnh base64 (đọc / thêm / sửa / xoá có cascade).
@@ -90,6 +91,31 @@ Sau khi thêm tab, **cập nhật và redeploy** Apps Script (mục 4) để có
 
 ---
 
+## 1d. Tab `Settings` (cấu hình cữ bú — theo **ID**)
+
+1. Tạo tab tên **`Settings`** (đúng chữ hoa thường).
+2. Dòng 1: **ID** | **Tên chỉ tiêu** | **Giá trị** | **Đơn vị** | **Kiểu dữ liệu**
+3. Từ dòng 2, mỗi chỉ số một dòng. App **chỉ** khớp cột **A (ID)** khi đọc/ghi; cột B chỉ để người đọc sheet — đổi tên B không làm hỏng app.
+
+Ví dụ hai dòng bắt buộc cho tính năng hiện tại:
+
+| ID | Tên chỉ tiêu | Giá trị | Đơn vị | Kiểu dữ liệu |
+| --- | --- | --- | --- | --- |
+| `FEED_TIME_WARNING` | Đánh dấu cữ bú khi lâu hơn | `3` | Giờ | Số |
+| `FEED_WARNING_AMOUNT` | Đánh dấu cữ bú khi nhỏ hơn | `40` | ml | Số |
+
+- **`FEED_TIME_WARNING`** (giờ, số thập phân được): gọi **H**. UI tô cảnh báo **chỉ nhãn khoảng cách** (pill) khi hai cữ liên tiếp cách nhau **≥ H** giờ.
+- **`FEED_WARNING_AMOUNT`** (ml, số nguyên): cữ có `volume` **nhỏ hơn** giá trị này được CSS class `low-volume`.
+
+> **Tương thích:** nếu sheet cũ vẫn có ID `GROUP_FEEDING_TIME`, app vẫn **đọc** được làm H; khi **Lưu** từ dialog app ghi ID `FEED_TIME_WARNING` — nên đổi dòng trên sheet cho thống nhất.
+
+Đọc: Google Sheets API `Settings!A2:E` (cùng sheet ID với Feeding).  
+Ghi: Apps Script action **`updateFeedingSettings`** — body `{ "action": "updateFeedingSettings", "updates": [ { "id": "FEED_TIME_WARNING", "value": 3 }, { "id": "FEED_WARNING_AMOUNT", "value": 40 } ] }` (chỉ gửi **id**, không gửi tên cột B).
+
+Sau khi thêm tab, **deploy lại** script trong mục 4 nếu bản cũ chưa có `handleUpdateFeedingSettings`.
+
+---
+
 ## 2. Chuẩn bị tab `Explorer`
 
 1. Tạo tab mới tên **chính xác** `Explorer`.
@@ -149,6 +175,7 @@ Trong Sheet → **Extensions → Apps Script** → xoá toàn bộ code mặc đ
  *   getFeedings    → trả về toàn bộ logs (tuỳ chọn)
  *   setBottlePrep  → G1:K1 — pha sữa (+ ISO cột K)
  *   clearBottlePrep→ xoá H1:K1
+ *   updateFeedingSettings → cập nhật cột **Giá trị** tab `Settings` theo **ID** (cột A)
  *
  * ===== Weight actions =====
  *   addWeight      → append dòng cân nặng
@@ -172,6 +199,7 @@ Trong Sheet → **Extensions → Apps Script** → xoá toàn bộ code mặc đ
  */
 
 const FEED_SHEET = 'Feeding';
+const SETTINGS_SHEET = 'Settings';
 const EXPL_SHEET = 'Explorer';
 const WEIGHT_SHEET = 'Weight';
 const MEDICAL_SHEET = 'MedicalHistory';
@@ -221,6 +249,7 @@ function doPost(e) {
       case 'getFeedings':    return _json(handleGetFeedings(body));
       case 'setBottlePrep':  return _json(handleSetBottlePrep(body));
       case 'clearBottlePrep':return _json(handleClearBottlePrep(body));
+      case 'updateFeedingSettings': return _json(handleUpdateFeedingSettings(body));
       // Weight
       case 'addWeight':      return _json(handleAddWeight(body));
       case 'updateWeight':   return _json(handleUpdateWeight(body));
@@ -375,6 +404,49 @@ function handleClearBottlePrep(body) {
   var sheet = _getSheet(FEED_SHEET);
   sheet.getRange(1, F_BOTTLE_USER_COL, 1, F_BOTTLE_AT_ISO_COL).clearContent();
   return { success: true, message: 'Đã xoá H1:K1 (pha sữa)' };
+}
+
+/**
+ * Tab `Settings`: hàng 1 = header. Cột A = **ID**, C = **Giá trị** (số).
+ * Body: `{ updates: [{ id: 'FEED_TIME_WARNING', value: 3 }, ...] }`
+ * — chỉ so khớp `id` với cột A, ghi `value` vào cột C.
+ */
+function handleUpdateFeedingSettings(body) {
+  var sheet = _getSheet(SETTINGS_SHEET);
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) throw new Error('Tab Settings chưa có dữ liệu (cần ít nhất 1 dòng sau header).');
+
+  var updates = body.updates || [];
+  if (!updates.length) throw new Error('Thiếu mảng updates.');
+
+  var colA = sheet.getRange(2, 1, lastRow, 1).getValues();
+  var touched = 0;
+
+  for (var i = 0; i < updates.length; i++) {
+    var u = updates[i];
+    var id = String(u.id || '').trim();
+    if (!id) continue;
+    var row = -1;
+    for (var r = 0; r < colA.length; r++) {
+      if (String(colA[r][0] || '').trim() === id) {
+        row = r + 2;
+        break;
+      }
+    }
+    if (row < 2) continue;
+    var val = u.value;
+    if (typeof val === 'number' && isFinite(val)) {
+      sheet.getRange(row, 3).setValue(val);
+    } else {
+      sheet.getRange(row, 3).setValue(String(val != null ? val : ''));
+    }
+    touched++;
+  }
+
+  if (!touched) {
+    throw new Error('Không tìm thấy ID nào khớp cột A (kiểm tra FEED_TIME_WARNING / FEED_WARNING_AMOUNT).');
+  }
+  return { success: true, message: 'Đã cập nhật ' + touched + ' dòng Settings' };
 }
 
 /* =========================

@@ -1144,31 +1144,6 @@
   transition: all 0.2s ease;
   position: relative;
 
-  // Highlight khi khoảng cách thời gian dài (warning = 4-6h, alert = >6h)
-  &.long-gap {
-    background: #fef3cd;
-    border-left: 3px solid #f59e0b;
-
-    .log-gap {
-      background: #f59e0b;
-      color: white;
-      font-weight: 700;
-      animation: pulse 2s infinite;
-    }
-  }
-
-  &.very-long-gap {
-    background: #fecaca;
-    border-left: 3px solid #ef4444;
-
-    .log-gap {
-      background: #ef4444;
-      color: white;
-      font-weight: 700;
-      animation: pulse 2s infinite;
-    }
-  }
-
   // Highlight volume thấp hoặc cao bất thường
   &.low-volume .log-volume {
     color: #f59e0b;
@@ -1229,6 +1204,21 @@
   i {
     font-size: 9px;
     opacity: 0.7;
+  }
+
+  &.feed-gap-warn {
+    background: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%);
+    color: #ffffff;
+    font-weight: 700;
+    border: 1px solid rgba(234, 88, 12, 0.45);
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.2) inset,
+      0 2px 8px rgba(234, 88, 12, 0.35);
+
+    i {
+      opacity: 0.95;
+      color: inherit;
+    }
   }
 }
 
@@ -3369,35 +3359,6 @@
   transition: all 0.2s ease;
   position: relative;
 
-  // Highlight khi khoảng cách thời gian dài (warning = 4-6h, alert = >6h)
-  &.long-gap {
-    background: #fef3cd;
-    border-left: 3px solid #f59e0b;
-
-    .feed-row-gap {
-      background: #f59e0b;
-      color: white;
-      padding: 2px 6px;
-      border-radius: 12px;
-      font-weight: 700;
-      animation: pulse 2s infinite;
-    }
-  }
-
-  &.very-long-gap {
-    background: #fecaca;
-    border-left: 3px solid #ef4444;
-
-    .feed-row-gap {
-      background: #ef4444;
-      color: white;
-      padding: 2px 6px;
-      border-radius: 12px;
-      font-weight: 700;
-      animation: pulse 2s infinite;
-    }
-  }
-
   // Highlight volume thấp hoặc cao bất thường
   &.low-volume .feed-row-volume strong {
     color: #f59e0b;
@@ -3448,6 +3409,21 @@
       i {
         font-size: 8px;
         opacity: 0.7;
+      }
+
+      &.feed-gap-warn {
+        background: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%);
+        color: #ffffff;
+        font-weight: 700;
+        border: 1px solid rgba(234, 88, 12, 0.45);
+        box-shadow:
+          0 0 0 1px rgba(255, 255, 255, 0.2) inset,
+          0 2px 8px rgba(234, 88, 12, 0.35);
+
+        i {
+          opacity: 0.95;
+          color: inherit;
+        }
       }
     }
   }
@@ -3587,6 +3563,28 @@
   display: flex;
   flex-direction: column;
   gap: 18px;
+}
+
+.history-paging-hint {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.history-load-more {
+  display: grid;
+  justify-items: center;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 0 12px;
+
+  .btn {
+    width: auto;
+    max-width: min(320px, 100%);
+    min-width: 0;
+    margin-inline: auto;
+    justify-content: center;
+  }
 }
 
 /* ========== TIPS DIALOG ========== */
@@ -4053,6 +4051,11 @@
   padding: 20px;
   animation: overlayIn 0.2s ease-out;
 
+  /* Đè lên dialog khác (vd: sửa cữ từ dialog lịch sử) */
+  &.dialog-overlay--front {
+    z-index: 120;
+  }
+
   /* Trên mobile: thêm safe-area để dialog không bị thanh địa chỉ/notch đè lên header */
   @media (max-width: 640px) {
     padding: calc(env(safe-area-inset-top, 0px) + 16px) 12px calc(env(safe-area-inset-bottom, 0px) + 16px);
@@ -4147,6 +4150,39 @@
   gap: 14px;
 }
 
+.log-volume-ai-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+
+  .log-volume-field {
+    flex: 0 1 160px;
+    min-width: 120px;
+    margin: 0;
+  }
+
+  .predict-hint--beside-volume {
+    flex: 1 1 220px;
+    min-width: min(100%, 200px);
+    margin: 0;
+  }
+
+  @media (max-width: 480px) {
+    flex-direction: column;
+    align-items: stretch;
+
+    .log-volume-field {
+      flex: 1 1 auto;
+      max-width: none;
+    }
+
+    .predict-hint--beside-volume {
+      min-width: 0;
+    }
+  }
+}
+
 /* ===== Edit dialog: locked-date banner ===== */
 .edit-date-banner {
   display: flex;
@@ -4204,6 +4240,10 @@
 
   .field.full {
     grid-column: 1 / -1;
+  }
+
+  &.log-grid--date-time {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   @media (max-width: 560px) {
@@ -4756,6 +4796,38 @@
   justify-content: flex-end;
   gap: 8px;
   margin-top: 4px;
+}
+
+.feeding-settings-dialog {
+  .feeding-settings-hint {
+    margin: 0 0 14px;
+    font-size: 13px;
+    line-height: 1.45;
+
+    code {
+      font-size: 11px;
+      padding: 1px 5px;
+      border-radius: 4px;
+      background: #f1f5f9;
+    }
+  }
+
+  .feeding-settings-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .field-hint {
+    display: block;
+    margin-top: 6px;
+    font-size: 12px;
+    line-height: 1.35;
+  }
+
+  .label code {
+    font-size: 11px;
+    font-weight: 600;
+  }
 }
 
 /* ========== MOM FOOD CARD ========== */

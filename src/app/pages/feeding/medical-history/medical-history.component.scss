@@ -1260,10 +1260,11 @@
   &__zoom {
     position: absolute;
     left: 50%;
-    bottom: max(20px, calc(env(safe-area-inset-bottom, 0px) + 16px));
+    bottom: max(36px, calc(env(safe-area-inset-bottom, 0px) + 28px));
     transform: translateX(-50%);
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 4px;
     padding: 6px;
     background: rgba(20, 20, 20, 0.78);
@@ -1276,7 +1277,7 @@
   &__hint {
     position: absolute;
     left: 50%;
-    bottom: max(72px, calc(env(safe-area-inset-bottom, 0px) + 68px));
+    bottom: max(88px, calc(env(safe-area-inset-bottom, 0px) + 80px));
     transform: translateX(-50%);
     margin: 0;
     color: rgba(255, 255, 255, 0.55);
