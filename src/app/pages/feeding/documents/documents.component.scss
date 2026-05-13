@@ -647,7 +647,11 @@
   border-radius: 20px;
   box-shadow: var(--docs-shadow-lg);
   position: relative;
-  overflow: hidden;
+  /* `overflow: hidden` từng dùng cho góc bo — nhưng cắt mất `.docs-menu-pop`
+     (dropdown Thư mục) vì pop nằm absolute bên dưới nút. */
+  overflow: visible;
+  /* Nổi trên .docs-grid / .docs-detail (cùng cây DOM, vẽ sau) để menu không bị che. */
+  z-index: 15;
 
   &::before {
     content: '';
@@ -2205,6 +2209,18 @@
   }
 }
 
+/** Toolbar zoom dưới cùng: luôn gộp translateX(-50%) để không lệch khi animate. */
+@keyframes previewZoomBarIn {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(14px) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+}
+
 .docs-preview {
   position: fixed;
   inset: 0;
@@ -2376,14 +2392,15 @@
     transition: none;
   }
 
-  /* Zoom toolbar: nổi ở giữa cạnh dưới */
+  /* Zoom toolbar: giữa màn hình, hơi cao hơn đáy để dễ nhìn */
   &__zoom {
     position: absolute;
     left: 50%;
-    bottom: max(24px, calc(env(safe-area-inset-bottom, 0px) + 20px));
+    bottom: max(40px, calc(env(safe-area-inset-bottom, 0px) + 32px));
     transform: translateX(-50%);
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 6px;
     padding: 8px;
     background: rgba(0, 0, 0, 0.8);
@@ -2395,13 +2412,13 @@
       0 8px 32px rgba(0, 0, 0, 0.6),
       inset 0 1px 0 rgba(255, 255, 255, 0.1);
     z-index: 3;
-    animation: previewSlide 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.2s both;
+    animation: previewZoomBarIn 0.45s cubic-bezier(0.4, 0, 0.2, 1) 0.12s both;
   }
 
   &__hint {
     position: absolute;
     left: 50%;
-    bottom: max(72px, calc(env(safe-area-inset-bottom, 0px) + 68px));
+    bottom: max(96px, calc(env(safe-area-inset-bottom, 0px) + 88px));
     transform: translateX(-50%);
     color: rgba(255, 255, 255, 0.55);
     font-size: 12px;

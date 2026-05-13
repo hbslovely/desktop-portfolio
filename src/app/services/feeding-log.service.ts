@@ -32,12 +32,73 @@ export interface BottlePrepFromSheet {
   user: string;
 }
 
+/** Cột tab Google Sheet `Settings`: ID | Tên chỉ tiêu | Giá trị | Đơn vị | Kiểu dữ liệu */
+export interface FeedingSettingRow {
+  id: string;
+  name: string;
+  value: string;
+  unit: string;
+  dataType: string;
+}
+
+/** Giá trị đã parse — app chỉ bind theo `FEEDING_SETTING_ID`, không theo tên hiển thị. */
+export interface FeedingSettingsResolved {
+  /**
+   * Ngưỡng **H** (giờ) giữa hai cữ: cảnh báo khi khoảng cách **≥ H** — ID `FEED_TIME_WARNING`.
+   */
+  feedTimeWarningHours: number;
+  /** Cữ có dung tích < giá trị này (ml) — `FEED_WARNING_AMOUNT`. */
+  feedWarningMl: number;
+}
+
+/** ID cố định trên sheet — khi lưu chỉ gửi các key này. */
+export const FEEDING_SETTING_ID = {
+  FEED_TIME_WARNING: 'FEED_TIME_WARNING',
+  FEED_WARNING_AMOUNT: 'FEED_WARNING_AMOUNT',
+} as const;
+
+const DEFAULT_FEEDING_SETTINGS: FeedingSettingsResolved = {
+  feedTimeWarningHours: 3,
+  feedWarningMl: 40,
+};
+
+export function parseFeedingSettingsFromRows(
+  rows: FeedingSettingRow[]
+): FeedingSettingsResolved {
+  const byId = new Map(rows.map((r) => [r.id.trim(), r]));
+  const timeRow =
+    byId.get(FEEDING_SETTING_ID.FEED_TIME_WARNING) ??
+    byId.get('GROUP_FEEDING_TIME');
+  const wRow = byId.get(FEEDING_SETTING_ID.FEED_WARNING_AMOUNT);
+
+  let feedTimeWarningHours = parseFloat(
+    String(timeRow?.value ?? '').replace(',', '.').trim()
+  );
+  let feedWarningMl = parseInt(
+    String(wRow?.value ?? '').replace(/[^\d]/g, ''),
+    10
+  );
+
+  if (!Number.isFinite(feedTimeWarningHours) || feedTimeWarningHours <= 0) {
+    feedTimeWarningHours = DEFAULT_FEEDING_SETTINGS.feedTimeWarningHours;
+  }
+  if (!Number.isFinite(feedWarningMl) || feedWarningMl <= 0) {
+    feedWarningMl = DEFAULT_FEEDING_SETTINGS.feedWarningMl;
+  }
+
+  feedTimeWarningHours = Math.min(48, Math.max(0.25, feedTimeWarningHours));
+  feedWarningMl = Math.min(500, Math.max(1, feedWarningMl));
+
+  return { feedTimeWarningHours, feedWarningMl };
+}
+
 @Injectable({ providedIn: 'root' })
 export class FeedingLogService {
   private http = inject(HttpClient);
 
   private readonly SHEET_ID = '1O4kAA61k4cX4mEwAjDy5gioVUAElCyu62Z3zPvgdDMM';
   private readonly SHEET_NAME = 'Feeding';
+  private readonly SETTINGS_SHEET_NAME = 'Settings';
   private readonly API_KEY = environment.googleSheetsApiKey;
   private readonly BASE_URL = `https://sheets.googleapis.com/v4/spreadsheets/${ this.SHEET_ID }`;
 
@@ -125,6 +186,58 @@ export class FeedingLogService {
       catchError((err) => {
         console.error('FeedingLogService.getBottlePrep failed', err);
         return of(null);
+      })
+    );
+  }
+
+  /**
+   * Đọc tab `Settings` (A:E từ dòng 2). Cột A = **ID** (khóa ổn định), C = giá trị.
+   * Sheet cần public read như tab Feeding.
+   */
+  getFeedingSettings(): Observable<FeedingSettingRow[]> {
+    const range = `${this.SETTINGS_SHEET_NAME}!A2:E`;
+    const url = `${this.BASE_URL}/values/${encodeURIComponent(range)}?key=${this.API_KEY}&valueRenderOption=FORMATTED_VALUE`;
+
+    return this.http.get<{ values?: string[][] }>(url).pipe(
+      map((resp) => {
+        const rows = resp.values || [];
+        return rows
+          .map((row) => ({
+            id: String(row[0] ?? '').trim(),
+            name: String(row[1] ?? '').trim(),
+            value: String(row[2] ?? '').trim(),
+            unit: String(row[3] ?? '').trim(),
+            dataType: String(row[4] ?? '').trim(),
+          }))
+          .filter((r) => r.id.length > 0);
+      }),
+      catchError((err) => {
+        console.error('FeedingLogService.getFeedingSettings failed', err);
+        return of([]);
+      })
+    );
+  }
+
+  /**
+   * Cập nhật **cột Giá trị** theo **ID** (cột A). POST qua Apps Script
+   * `action: 'updateFeedingSettings'`, body: `{ updates: [{ id, value }] }`.
+   */
+  saveFeedingSettings(
+    updates: { id: string; value: number }[]
+  ): Observable<FeedingSheetResponse> {
+    if (!this.APPS_SCRIPT_URL) {
+      return throwError(() => new Error('Chưa cấu hình Google Apps Script URL'));
+    }
+    return this.postToAppsScript({
+      action: 'updateFeedingSettings',
+      updates: updates.map((u) => ({
+        id: String(u.id || '').trim(),
+        value: u.value,
+      })),
+    }).pipe(
+      catchError((err) => {
+        console.error('saveFeedingSettings', err);
+        return of({ success: false, error: String(err?.message || err) });
       })
     );
   }

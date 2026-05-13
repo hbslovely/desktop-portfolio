@@ -20,6 +20,15 @@
             <button
               class="btn icon-btn"
               type="button"
+              (click)="openFeedingSettingsDialog()"
+              title="Cài đặt cữ bú (đọc/ghi tab Settings theo ID)"
+              aria-label="Cài đặt cữ bú"
+            >
+              <i class="pi pi-sliders-h"></i>
+            </button>
+            <button
+              class="btn icon-btn"
+              type="button"
               (click)="refreshAll()"
               [disabled]="isAnyLoading()"
               [title]="isAnyLoading() ? 'Đang tải…' : 'Tải lại Cữ bú, Cân, Y tế, Tài liệu'"
@@ -734,13 +743,15 @@
             </div>
             <div class="log-list">
               <div class="log-row" *ngFor="let l of todayLogsPreview()"
-                   [class.long-gap]="isLongGap(l, todayLogs())"
-                   [class.very-long-gap]="isVeryLongGap(l, todayLogs())"
                    [class.low-volume]="isLowVolume(l.volume)"
                    [class.high-volume]="isHighVolume(l.volume)">
                 <span class="log-time">{{ l.time }}</span>
                 <span class="log-volume">{{ l.volume }}ml</span>
-                <span class="log-gap" *ngIf="formatIntervalFromPrev(l, todayLogs()) as iv">
+                <span
+                  class="log-gap"
+                  *ngIf="formatIntervalFromPrev(l, todayLogs()) as iv"
+                  [class.feed-gap-warn]="isFeedTimeGapWarning(l, todayLogs())"
+                >
                   <i class="pi pi-clock"></i> {{ iv }}
                 </span>
                 <span class="log-note" *ngIf="l.note">· {{ l.note }}</span>
@@ -811,13 +822,15 @@
             </div>
             <div class="log-list">
               <div class="log-row" *ngFor="let l of yesterdayLogsPreview()"
-                   [class.long-gap]="isLongGap(l, yesterdayLogs())"
-                   [class.very-long-gap]="isVeryLongGap(l, yesterdayLogs())"
                    [class.low-volume]="isLowVolume(l.volume)"
                    [class.high-volume]="isHighVolume(l.volume)">
                 <span class="log-time">{{ l.time }}</span>
                 <span class="log-volume">{{ l.volume }}ml</span>
-                <span class="log-gap" *ngIf="formatIntervalFromPrev(l, yesterdayLogs()) as iv">
+                <span
+                  class="log-gap"
+                  *ngIf="formatIntervalFromPrev(l, yesterdayLogs()) as iv"
+                  [class.feed-gap-warn]="isFeedTimeGapWarning(l, yesterdayLogs())"
+                >
                   <i class="pi pi-clock"></i> {{ iv }}
                 </span>
                 <span class="log-note" *ngIf="l.note">· {{ l.note }}</span>
@@ -1312,6 +1325,13 @@
             <div class="feed-row-time">
               <div class="time">{{ l.time }}</div>
               <div class="date">{{ formatDateShort(l.date) }}</div>
+              <div
+                class="feed-row-gap"
+                *ngIf="formatIntervalFromPrev(l, recentFeedings()) as ivR"
+                [class.feed-gap-warn]="isFeedTimeGapWarning(l, recentFeedings())"
+              >
+                <i class="pi pi-clock"></i> {{ ivR }}
+              </div>
             </div>
             <div class="feed-row-volume">
               <strong>{{ l.volume }}</strong>
@@ -1755,7 +1775,7 @@
       </div>
 
       <form class="log-form" (ngSubmit)="submitLog()">
-        <div class="log-grid">
+        <div class="log-grid log-grid--date-time">
           <label class="field">
             <span class="label">Ngày</span>
             <input
@@ -1778,8 +1798,10 @@
               required
             />
           </label>
+        </div>
 
-          <label class="field">
+        <div class="log-volume-ai-row">
+          <label class="field log-volume-field">
             <span class="label">Dung tích (ml)</span>
             <input
               type="number"
@@ -1794,19 +1816,32 @@
               required
             />
           </label>
-
-          <label class="field full">
-            <span class="label">Ghi chú (tuỳ chọn)</span>
-            <input
-              type="text"
-              [ngModel]="logDraft().note"
-              (ngModelChange)="updateLogNote($event)"
-              name="logNote"
-              placeholder="VD: bú mẹ, vắt sữa, sữa công thức..."
-              autocomplete="off"
-            />
-          </label>
+          <div
+            class="predict-hint predict-hint--beside-volume"
+            *ngIf="prediction().hasData && prediction().nextTime"
+          >
+            <i class="pi pi-bolt"></i>
+            <div class="hint-text">
+              Gợi ý ML: <strong>{{ prediction().nextTime }}</strong> ·
+              <strong>{{ prediction().nextVolume }}ml</strong>
+            </div>
+            <button type="button" class="btn ghost small" (click)="usePredictionValues()">
+              Dùng
+            </button>
+          </div>
         </div>
+
+        <label class="field full">
+          <span class="label">Ghi chú (tuỳ chọn)</span>
+          <input
+            type="text"
+            [ngModel]="logDraft().note"
+            (ngModelChange)="updateLogNote($event)"
+            name="logNote"
+            placeholder="VD: bú mẹ, vắt sữa, sữa công thức..."
+            autocomplete="off"
+          />
+        </label>
 
         <div class="quick-volumes">
           <span class="quick-label">Nhanh:</span>
@@ -1882,19 +1917,6 @@
           </div>
         </div>
 
-        <!-- Prediction hint in dialog -->
-        <div class="predict-hint" *ngIf="prediction().hasData && prediction().nextTime">
-          <i class="pi pi-bolt"></i>
-          <div class="hint-text">
-            Gợi ý ML: <strong>{{ prediction().nextTime }}</strong> · <strong>{{ prediction().nextVolume }}ml</strong>
-          </div>
-          <button
-            type="button"
-            class="btn ghost small"
-            (click)="usePredictionValues()"
-          >Dùng</button>
-        </div>
-
         <div class="sync-error" *ngIf="syncError()">
           <i class="pi pi-exclamation-triangle"></i> {{ syncError() }}
         </div>
@@ -1918,7 +1940,7 @@
 
   <!-- ============ EDIT LOG DIALOG ============ -->
   <div
-    class="dialog-overlay"
+    class="dialog-overlay dialog-overlay--front"
     *ngIf="editingLog() as edit"
     (click)="closeEditDialog()"
   >
@@ -2082,8 +2104,12 @@
         </button>
       </div>
 
-      <div class="history-body">
-        <div class="history-group" *ngFor="let g of feedingsByDate()">
+      <div class="history-body" (scroll)="onHistoryBodyScroll($event)">
+        <p class="history-paging-hint muted" *ngIf="historyHasMoreFeeds()">
+          Hiển thị {{ historyDisplayedFeedCount() }} / {{ historyFilteredFeedTotal() }} cữ
+          (cuộn gần cuối hoặc bấm nút bên dưới để tải thêm).
+        </p>
+        <div class="history-group" *ngFor="let g of feedingsByDate(); trackBy: trackHistoryGroup">
           <div class="history-group-head">
             <div>
               <div class="h-date">{{ formatDateDisplay(g.date) }}</div>
@@ -2096,14 +2122,16 @@
             </div>
           </div>
           <div class="history-group-rows">
-            <div class="feed-row" *ngFor="let l of g.logs"
-                 [class.long-gap]="isLongGap(l, g.logs)"
-                 [class.very-long-gap]="isVeryLongGap(l, g.logs)"
+            <div class="feed-row" *ngFor="let l of g.logs; trackBy: trackFeedingLogRow"
                  [class.low-volume]="isLowVolume(l.volume)"
                  [class.high-volume]="isHighVolume(l.volume)">
               <div class="feed-row-time">
                 <div class="time">{{ l.time }}</div>
-                <div class="feed-row-gap" *ngIf="formatIntervalFromPrev(l, g.logs) as iv">
+                <div
+                  class="feed-row-gap"
+                  *ngIf="formatIntervalFromPrev(l, g.logs) as iv"
+                  [class.feed-gap-warn]="isFeedTimeGapWarning(l, g.logs)"
+                >
                   <i class="pi pi-clock"></i> {{ iv }}
                 </div>
               </div>
@@ -2139,10 +2167,119 @@
           </div>
         </div>
 
-        <div class="empty-mini" *ngIf="feedingsByDate().length === 0">
+        <div class="history-load-more" *ngIf="historyHasMoreFeeds()">
+          <button type="button" class="btn ghost" (click)="loadMoreHistoryFeeds()">
+            <i class="pi pi-angle-double-down"></i>
+            Tải thêm 100 cữ
+          </button>
+        </div>
+
+        <div class="empty-mini" *ngIf="historyFilteredFeedTotal() === 0">
           {{ historyFilter() === 'today' ? 'Chưa có cữ bú nào trong hôm nay.' : 'Chưa có cữ bú nào được ghi nhận.' }}
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- ============ FEEDING SETTINGS (tab Sheet Settings, key = ID) ============ -->
+  <div
+    class="dialog-overlay dialog-overlay--front"
+    *ngIf="feedingSettingsDialogOpen()"
+    (click)="closeFeedingSettingsDialog()"
+  >
+    <div
+      class="dialog feeding-settings-dialog"
+      role="dialog"
+      aria-modal="true"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="dialog-head">
+        <div>
+          <div class="eyebrow">Google Sheet · tab Settings</div>
+          <h2><i class="pi pi-sliders-h"></i> Cài đặt cữ bú</h2>
+        </div>
+        <button
+          type="button"
+          class="dialog-close"
+          (click)="closeFeedingSettingsDialog()"
+          aria-label="Đóng"
+        >
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+
+      <ng-container *ngIf="settingsDraft() as sd">
+        <p class="feeding-settings-hint muted">
+          Lưu theo <strong>ID</strong> trên sheet (<code>FEED_TIME_WARNING</code>,
+          <code>FEED_WARNING_AMOUNT</code>), không phụ thuộc cột tên hiển thị.
+        </p>
+
+        <div class="log-grid feeding-settings-grid">
+          <label class="field full">
+            <span class="label"
+              ><code>FEED_TIME_WARNING</code> — Ngưỡng H (giờ)</span
+            >
+            <input
+              type="number"
+              inputmode="decimal"
+              min="0.25"
+              max="48"
+              step="0.25"
+              [ngModel]="sd.timeWarningHours"
+              (ngModelChange)="updateSettingsDraftTimeWarning($event)"
+              name="setFeedTimeWarningHours"
+            />
+            <span class="field-hint muted"
+              >Highlight nhãn khoảng cách khi từ cữ trước tới cữ này
+              <strong>≥ H</strong> giờ (H = giá trị sheet).</span
+            >
+          </label>
+
+          <label class="field full">
+            <span class="label"
+              ><code>FEED_WARNING_AMOUNT</code> — Ngưỡng ml</span
+            >
+            <input
+              type="number"
+              inputmode="numeric"
+              min="1"
+              max="500"
+              step="1"
+              [ngModel]="sd.warningMl"
+              (ngModelChange)="updateSettingsDraftWarning($event)"
+              name="setWarningMl"
+            />
+            <span class="field-hint muted"
+              >Cữ có dung tích <strong>nhỏ hơn</strong> giá trị này được đánh dấu
+              thấp.</span
+            >
+          </label>
+        </div>
+
+        <div class="sync-error" *ngIf="settingsFormError()">
+          <i class="pi pi-exclamation-triangle"></i> {{ settingsFormError() }}
+        </div>
+
+        <div class="dialog-actions">
+          <button type="button" class="btn ghost" (click)="closeFeedingSettingsDialog()">
+            Huỷ
+          </button>
+          <button
+            type="button"
+            class="btn primary"
+            [disabled]="settingsSaving()"
+            (click)="submitFeedingSettings()"
+          >
+            <i
+              class="pi"
+              [class.pi-save]="!settingsSaving()"
+              [class.pi-spin]="settingsSaving()"
+              [class.pi-spinner]="settingsSaving()"
+            ></i>
+            {{ settingsSaving() ? 'Đang lưu…' : 'Lưu lên sheet' }}
+          </button>
+        </div>
+      </ng-container>
     </div>
   </div>
 

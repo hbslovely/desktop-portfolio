@@ -15,8 +15,11 @@ import { ActivatedRoute } from '@angular/router';
 import { finalize } from 'rxjs/operators';
 import {
   BottlePrepFromSheet,
+  FEEDING_SETTING_ID,
   FeedingLog,
   FeedingLogService,
+  FeedingSettingsResolved,
+  parseFeedingSettingsFromRows,
 } from '../../services/feeding-log.service';
 import { WeightLogService } from '../../services/weight-log.service';
 import {
@@ -216,8 +219,22 @@ export class FeedingComponent {
   });
   editSaving = signal<boolean>(false);
 
+  /** Đọc từ tab Sheet `Settings` — key theo `FEEDING_SETTING_ID`. */
+  feedingSettings = signal<FeedingSettingsResolved>(
+    parseFeedingSettingsFromRows([])
+  );
+  feedingSettingsDialogOpen = signal(false);
+  settingsDraft = signal<{ timeWarningHours: number; warningMl: number } | null>(
+    null
+  );
+  settingsSaving = signal(false);
+  settingsFormError = signal('');
+
   historyDialogOpen = signal<boolean>(false);
   historyFilter = signal<'all' | 'today' | 'yesterday'>('all');
+  /** Dialog lịch sử: số cữ tối đa render mỗi lần (tăng dần khi load more / cuộn). */
+  historyFeedDisplayLimit = signal(100);
+  private lastHistoryInfiniteScrollAt = 0;
   chartTab = signal<'volume' | 'count' | 'timeline'>('volume');
   /** Số ngày hiển thị trong biểu đồ phân tích (7 / 14 / 30) */
   chartRange = signal<7 | 14 | 30>(7);
@@ -453,28 +470,22 @@ export class FeedingComponent {
   }
 
   /**
-   * Kiểm tra khoảng cách từ cữ trước có dài không (4-6 giờ = cảnh báo)
+   * Khoảng cách tới cữ trước ≥ ngưỡng `FEED_TIME_WARNING` (giờ) — chỉ dùng để
+   * highlight nhãn khoảng thời gian, không tô cả dòng.
    */
-  isLongGap(current: FeedingLog, listDesc: FeedingLog[]): boolean {
+  isFeedTimeGapWarning(current: FeedingLog, listDesc: FeedingLog[]): boolean {
     const diffMs = this.getTimeDiffFromPrev(current, listDesc);
     const hours = diffMs / (1000 * 60 * 60);
-    return hours >= 4 && hours < 6;
+    const h = this.feedingSettings().feedTimeWarningHours;
+    return hours >= h;
   }
 
   /**
-   * Kiểm tra khoảng cách từ cữ trước có rất dài không (>6 giờ = báo động)
-   */
-  isVeryLongGap(current: FeedingLog, listDesc: FeedingLog[]): boolean {
-    const diffMs = this.getTimeDiffFromPrev(current, listDesc);
-    const hours = diffMs / (1000 * 60 * 60);
-    return hours >= 6;
-  }
-
-  /**
-   * Kiểm tra volume có thấp không (<50ml)
+   * Cữ có ml thấp hơn ngưỡng `FEED_WARNING_AMOUNT` trên sheet.
    */
   isLowVolume(volume: number): boolean {
-    return volume > 0 && volume < 50;
+    const max = this.feedingSettings().feedWarningMl;
+    return volume > 0 && volume < max;
   }
 
   /**
@@ -1199,15 +1210,46 @@ export class FeedingComponent {
     return t.yesterdayTotal > 0 || t.avg3Total > 0 || t.todayTotal > 0;
   });
 
-  /** Tất cả cữ bú gom theo ngày (cho dialog) */
-  feedingsByDate = computed(() => {
+  /**
+   * Cữ bú sau khi lọc theo tab lịch sử, sort mới → cũ (dùng cho phân trang).
+   */
+  historyLogsFilteredSorted = computed(() => {
     const filter = this.historyFilter();
     const todayStr = this.todayDateStr();
     const yesterdayStr = this.yesterdayDateStr();
-    const groups = new Map<string, FeedingLog[]>();
+    const out: FeedingLog[] = [];
     for (const log of this.logs()) {
       if (filter === 'today' && log.date !== todayStr) continue;
       if (filter === 'yesterday' && log.date !== yesterdayStr) continue;
+      out.push(log);
+    }
+    out.sort((a, b) => {
+      const ka = `${a.date}T${a.time}`;
+      const kb = `${b.date}T${b.time}`;
+      return kb.localeCompare(ka);
+    });
+    return out;
+  });
+
+  historyFilteredFeedTotal = computed(
+    () => this.historyLogsFilteredSorted().length
+  );
+
+  historyDisplayedFeedCount = computed(() =>
+    Math.min(this.historyFeedDisplayLimit(), this.historyFilteredFeedTotal())
+  );
+
+  historyHasMoreFeeds = computed(
+    () => this.historyFilteredFeedTotal() > this.historyFeedDisplayLimit()
+  );
+
+  /** Tất cả cữ bú gom theo ngày (cho dialog) — chỉ render tới `historyFeedDisplayLimit` cữ. */
+  feedingsByDate = computed(() => {
+    const flat = this.historyLogsFilteredSorted();
+    const limit = this.historyFeedDisplayLimit();
+    const sliced = flat.slice(0, limit);
+    const groups = new Map<string, FeedingLog[]>();
+    for (const log of sliced) {
       if (!groups.has(log.date)) groups.set(log.date, []);
       groups.get(log.date)!.push(log);
     }
@@ -1251,6 +1293,7 @@ export class FeedingComponent {
         this.user.set(user);
         this.loadProfile(user);
         this.loadLogs();
+        this.loadFeedingSettings();
         this.loadWeightLogs();
         this.loadBottlePrepFromSheet();
       });
@@ -1353,6 +1396,89 @@ export class FeedingComponent {
         );
       },
     });
+  }
+
+  /** Đọc tab Google Sheet `Settings` (cột A = ID) và áp dụng vào UI. */
+  loadFeedingSettings(): void {
+    this.feedingLogService.getFeedingSettings().subscribe({
+      next: (rows) => {
+        this.feedingSettings.set(parseFeedingSettingsFromRows(rows));
+      },
+      error: (err) => {
+        console.error(err);
+      },
+    });
+  }
+
+  openFeedingSettingsDialog(): void {
+    const s = this.feedingSettings();
+    this.settingsFormError.set('');
+    this.settingsDraft.set({
+      timeWarningHours: s.feedTimeWarningHours,
+      warningMl: s.feedWarningMl,
+    });
+    this.feedingSettingsDialogOpen.set(true);
+  }
+
+  closeFeedingSettingsDialog(): void {
+    this.feedingSettingsDialogOpen.set(false);
+    this.settingsDraft.set(null);
+    this.settingsFormError.set('');
+  }
+
+  updateSettingsDraftTimeWarning(v: string): void {
+    const n = parseFloat(String(v).replace(',', '.'));
+    this.settingsDraft.update((d) =>
+      d && Number.isFinite(n) ? { ...d, timeWarningHours: n } : d
+    );
+  }
+
+  updateSettingsDraftWarning(v: string): void {
+    const n = parseInt(String(v).replace(/[^\d]/g, ''), 10);
+    this.settingsDraft.update((d) =>
+      d && !isNaN(n) ? { ...d, warningMl: n } : d
+    );
+  }
+
+  submitFeedingSettings(): void {
+    const d = this.settingsDraft();
+    if (!d) return;
+    const th = d.timeWarningHours;
+    const wm = d.warningMl;
+    if (!Number.isFinite(th) || th < 0.25 || th > 48) {
+      this.settingsFormError.set('Ngưỡng giờ (FEED_TIME_WARNING): từ 0,25 đến 48.');
+      return;
+    }
+    if (!Number.isFinite(wm) || wm < 1 || wm > 500) {
+      this.settingsFormError.set('Ngưỡng ml (FEED_WARNING_AMOUNT): từ 1 đến 500.');
+      return;
+    }
+    this.settingsSaving.set(true);
+    this.settingsFormError.set('');
+    this.feedingLogService
+      .saveFeedingSettings([
+        { id: FEEDING_SETTING_ID.FEED_TIME_WARNING, value: th },
+        { id: FEEDING_SETTING_ID.FEED_WARNING_AMOUNT, value: wm },
+      ])
+      .pipe(finalize(() => this.settingsSaving.set(false)))
+      .subscribe({
+        next: (resp) => {
+          if (resp && resp.success === false) {
+            this.settingsFormError.set(
+              resp.error ||
+                'Lưu thất bại. Cập nhật Apps Script (action updateFeedingSettings) theo FEEDING_SETUP.md.'
+            );
+            return;
+          }
+          this.closeFeedingSettingsDialog();
+          setTimeout(() => this.loadFeedingSettings(), 600);
+        },
+        error: (err) => {
+          this.settingsFormError.set(
+            err?.message || 'Lưu thất bại. Kiểm tra cấu hình Apps Script.'
+          );
+        },
+      });
   }
 
   /** Tải cân mới nhất từ sheet Weight (cùng nguồn với tab Cân nặng). */
@@ -1626,6 +1752,7 @@ export class FeedingComponent {
    */
   refreshAll() {
     this.loadLogs();
+    this.loadFeedingSettings();
     this.loadBottlePrepFromSheet();
     this.loadWeightLogs();
     this.weightCmp?.refresh();
@@ -1867,11 +1994,37 @@ export class FeedingComponent {
 
   openHistoryDialog(filter: 'all' | 'today' | 'yesterday' = 'all') {
     this.historyFilter.set(filter);
+    this.historyFeedDisplayLimit.set(100);
     this.historyDialogOpen.set(true);
   }
 
   closeHistoryDialog() {
     this.historyDialogOpen.set(false);
+  }
+
+  loadMoreHistoryFeeds(): void {
+    this.historyFeedDisplayLimit.update((n) => n + 100);
+  }
+
+  onHistoryBodyScroll(event: Event): void {
+    if (!this.historyHasMoreFeeds()) return;
+    const el = event.target as HTMLElement;
+    if (!el) return;
+    const nearBottom =
+      el.scrollHeight - el.scrollTop - el.clientHeight < 180;
+    if (!nearBottom) return;
+    const now = Date.now();
+    if (now - this.lastHistoryInfiniteScrollAt < 450) return;
+    this.lastHistoryInfiniteScrollAt = now;
+    this.loadMoreHistoryFeeds();
+  }
+
+  trackHistoryGroup(_index: number, g: { date: string }): string {
+    return g.date;
+  }
+
+  trackFeedingLogRow(_index: number, l: FeedingLog): string {
+    return l.rowIndex != null ? `r${l.rowIndex}` : `${l.date}|${l.time}`;
   }
 
   openLogDialog(resetTime = true) {

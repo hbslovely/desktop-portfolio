@@ -546,9 +546,11 @@ export class DocumentsComponent {
     return segments;
   }
 
-  /** Đóng tất cả popover khi click ra ngoài */
-  @HostListener('document:click')
-  onDocumentClick() {
+  /** Đóng tất cả popover khi click ra ngoài (bỏ qua click trong `.docs-menu`). */
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(ev: Event) {
+    const t = ev.target;
+    if (t instanceof Element && t.closest('.docs-menu')) return;
     if (this.folderMenuOpen()) this.folderMenuOpen.set(false);
     if (this.selectActionsMenuOpen()) this.selectActionsMenuOpen.set(false);
   }
