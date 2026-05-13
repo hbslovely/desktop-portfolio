@@ -97,20 +97,22 @@ Sau khi thêm tab, **cập nhật và redeploy** Apps Script (mục 4) để có
 2. Dòng 1: **ID** | **Tên chỉ tiêu** | **Giá trị** | **Đơn vị** | **Kiểu dữ liệu**
 3. Từ dòng 2, mỗi chỉ số một dòng. App **chỉ** khớp cột **A (ID)** khi đọc/ghi; cột B chỉ để người đọc sheet — đổi tên B không làm hỏng app.
 
-Ví dụ hai dòng bắt buộc cho tính năng hiện tại:
+Ví dụ các dòng Settings (app đọc theo cột A); có thể thêm ID mới — lần đầu **Lưu** từ app sẽ append nếu script đã cập nhật:
 
 | ID | Tên chỉ tiêu | Giá trị | Đơn vị | Kiểu dữ liệu |
 | --- | --- | --- | --- | --- |
 | `FEED_TIME_WARNING` | Đánh dấu cữ bú khi lâu hơn | `3` | Giờ | Số |
 | `FEED_WARNING_AMOUNT` | Đánh dấu cữ bú khi nhỏ hơn | `40` | ml | Số |
+| `FEED_GROUP_GAP_MINUTES` | Gom cữ hiển thị khi gần nhau | `0` | phút | Số |
 
 - **`FEED_TIME_WARNING`** (giờ, số thập phân được): gọi **H**. UI tô cảnh báo **chỉ nhãn khoảng cách** (pill) khi hai cữ liên tiếp cách nhau **≥ H** giờ.
 - **`FEED_WARNING_AMOUNT`** (ml, số nguyên): cữ có `volume` **nhỏ hơn** giá trị này được CSS class `low-volume`.
+- **`FEED_GROUP_GAP_MINUTES`** (phút, số nguyên **0–180**): nếu **> 0**, các cữ liên tiếp cách nhau ≤ phút này được **gom một dòng** hiển thị (giờ = trung bình, ml = tổng); **0** = tắt gom.
 
 > **Tương thích:** nếu sheet cũ vẫn có ID `GROUP_FEEDING_TIME`, app vẫn **đọc** được làm H; khi **Lưu** từ dialog app ghi ID `FEED_TIME_WARNING` — nên đổi dòng trên sheet cho thống nhất.
 
 Đọc: Google Sheets API `Settings!A2:E` (cùng sheet ID với Feeding).  
-Ghi: Apps Script action **`updateFeedingSettings`** — body `{ "action": "updateFeedingSettings", "updates": [ { "id": "FEED_TIME_WARNING", "value": 3 }, { "id": "FEED_WARNING_AMOUNT", "value": 40 } ] }` (chỉ gửi **id**, không gửi tên cột B).
+Ghi: Apps Script action **`updateFeedingSettings`** — body `{ "action": "updateFeedingSettings", "updates": [ { "id": "FEED_TIME_WARNING", "value": 3, "name": "…", "unit": "giờ", "dataType": "Số" }, … ] }`. Mỗi phần tử **bắt buộc** có `id` và `value`; `name` / `unit` / `dataType` **khuyến nghị** khi ID chưa có trên sheet (script sẽ **append** một dòng mới A:E). Nếu thiếu, script dùng `name = id`, `unit` rỗng, `dataType = "Số"`.
 
 Sau khi thêm tab, **deploy lại** script trong mục 4 nếu bản cũ chưa có `handleUpdateFeedingSettings`.
 
@@ -407,25 +409,33 @@ function handleClearBottlePrep(body) {
 }
 
 /**
- * Tab `Settings`: hàng 1 = header. Cột A = **ID**, C = **Giá trị** (số).
- * Body: `{ updates: [{ id: 'FEED_TIME_WARNING', value: 3 }, ...] }`
- * — chỉ so khớp `id` với cột A, ghi `value` vào cột C.
+ * Tab `Settings`: hàng 1 = header. Cột A = **ID**, B = tên, C = **Giá trị**, D = đơn vị, E = kiểu.
+ * Body: `{ updates: [{ id, value, name?, unit?, dataType? }, ...] }`
+ * — so khớp `id` với cột A: có thì ghi cột C; **không có thì append** một dòng A:E
+ * (dùng `name`/`unit`/`dataType` từ client nếu có, mặc định name = id, dataType = "Số").
  */
 function handleUpdateFeedingSettings(body) {
   var sheet = _getSheet(SETTINGS_SHEET);
   var lastRow = sheet.getLastRow();
-  if (lastRow < 2) throw new Error('Tab Settings chưa có dữ liệu (cần ít nhất 1 dòng sau header).');
+  if (lastRow < 1) throw new Error('Tab Settings trống (cần hàng header A:E).');
 
   var updates = body.updates || [];
   if (!updates.length) throw new Error('Thiếu mảng updates.');
 
-  var colA = sheet.getRange(2, 1, lastRow, 1).getValues();
+  function readColA() {
+    var lr = sheet.getLastRow();
+    if (lr < 2) return [];
+    return sheet.getRange(2, 1, lr, 1).getValues();
+  }
+
   var touched = 0;
 
   for (var i = 0; i < updates.length; i++) {
     var u = updates[i];
     var id = String(u.id || '').trim();
     if (!id) continue;
+
+    var colA = readColA();
     var row = -1;
     for (var r = 0; r < colA.length; r++) {
       if (String(colA[r][0] || '').trim() === id) {
@@ -433,8 +443,22 @@ function handleUpdateFeedingSettings(body) {
         break;
       }
     }
-    if (row < 2) continue;
+
     var val = u.value;
+    var cellVal =
+      typeof val === 'number' && isFinite(val)
+        ? val
+        : String(val != null ? val : '');
+
+    if (row < 2) {
+      var nm = String(u.name != null ? u.name : '').trim() || id;
+      var unit = String(u.unit != null ? u.unit : '').trim();
+      var dt = String(u.dataType != null ? u.dataType : '').trim() || 'Số';
+      sheet.appendRow([id, nm, cellVal, unit, dt]);
+      touched++;
+      continue;
+    }
+
     if (typeof val === 'number' && isFinite(val)) {
       sheet.getRange(row, 3).setValue(val);
     } else {
@@ -444,9 +468,9 @@ function handleUpdateFeedingSettings(body) {
   }
 
   if (!touched) {
-    throw new Error('Không tìm thấy ID nào khớp cột A (kiểm tra FEED_TIME_WARNING / FEED_WARNING_AMOUNT).');
+    throw new Error('Không có bản ghi hợp lệ (updates rỗng hoặc id trống).');
   }
-  return { success: true, message: 'Đã cập nhật ' + touched + ' dòng Settings' };
+  return { success: true, message: 'Đã cập nhật / thêm ' + touched + ' dòng Settings' };
 }
 
 /* =========================

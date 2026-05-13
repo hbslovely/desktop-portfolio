@@ -49,17 +49,24 @@ export interface FeedingSettingsResolved {
   feedTimeWarningHours: number;
   /** Cữ có dung tích < giá trị này (ml) — `FEED_WARNING_AMOUNT`. */
   feedWarningMl: number;
+  /**
+   * Nếu hai cữ liên tiếp cách nhau ≤ giá trị này (phút) thì gom hiển thị
+   * thành một dòng (0 = tắt) — ID `FEED_GROUP_GAP_MINUTES`.
+   */
+  feedGroupGapMinutes: number;
 }
 
 /** ID cố định trên sheet — khi lưu chỉ gửi các key này. */
 export const FEEDING_SETTING_ID = {
   FEED_TIME_WARNING: 'FEED_TIME_WARNING',
   FEED_WARNING_AMOUNT: 'FEED_WARNING_AMOUNT',
+  FEED_GROUP_GAP_MINUTES: 'FEED_GROUP_GAP_MINUTES',
 } as const;
 
 const DEFAULT_FEEDING_SETTINGS: FeedingSettingsResolved = {
   feedTimeWarningHours: 3,
   feedWarningMl: 40,
+  feedGroupGapMinutes: 0,
 };
 
 export function parseFeedingSettingsFromRows(
@@ -70,12 +77,17 @@ export function parseFeedingSettingsFromRows(
     byId.get(FEEDING_SETTING_ID.FEED_TIME_WARNING) ??
     byId.get('GROUP_FEEDING_TIME');
   const wRow = byId.get(FEEDING_SETTING_ID.FEED_WARNING_AMOUNT);
+  const gapRow = byId.get(FEEDING_SETTING_ID.FEED_GROUP_GAP_MINUTES);
 
   let feedTimeWarningHours = parseFloat(
     String(timeRow?.value ?? '').replace(',', '.').trim()
   );
   let feedWarningMl = parseInt(
     String(wRow?.value ?? '').replace(/[^\d]/g, ''),
+    10
+  );
+  let feedGroupGapMinutes = parseInt(
+    String(gapRow?.value ?? '0').replace(/[^\d]/g, ''),
     10
   );
 
@@ -85,11 +97,15 @@ export function parseFeedingSettingsFromRows(
   if (!Number.isFinite(feedWarningMl) || feedWarningMl <= 0) {
     feedWarningMl = DEFAULT_FEEDING_SETTINGS.feedWarningMl;
   }
+  if (!Number.isFinite(feedGroupGapMinutes) || feedGroupGapMinutes < 0) {
+    feedGroupGapMinutes = DEFAULT_FEEDING_SETTINGS.feedGroupGapMinutes;
+  }
 
   feedTimeWarningHours = Math.min(48, Math.max(0.25, feedTimeWarningHours));
   feedWarningMl = Math.min(500, Math.max(1, feedWarningMl));
+  feedGroupGapMinutes = Math.min(180, Math.max(0, feedGroupGapMinutes));
 
-  return { feedTimeWarningHours, feedWarningMl };
+  return { feedTimeWarningHours, feedWarningMl, feedGroupGapMinutes };
 }
 
 @Injectable({ providedIn: 'root' })
@@ -223,7 +239,14 @@ export class FeedingLogService {
    * `action: 'updateFeedingSettings'`, body: `{ updates: [{ id, value }] }`.
    */
   saveFeedingSettings(
-    updates: { id: string; value: number }[]
+    updates: {
+      id: string;
+      value: number;
+      /** Khi sheet chưa có dòng ID này — Apps Script sẽ append (cột B/D/E). */
+      name?: string;
+      unit?: string;
+      dataType?: string;
+    }[]
   ): Observable<FeedingSheetResponse> {
     if (!this.APPS_SCRIPT_URL) {
       return throwError(() => new Error('Chưa cấu hình Google Apps Script URL'));
@@ -233,6 +256,15 @@ export class FeedingLogService {
       updates: updates.map((u) => ({
         id: String(u.id || '').trim(),
         value: u.value,
+        ...(u.name != null && String(u.name).trim()
+          ? { name: String(u.name).trim() }
+          : {}),
+        ...(u.unit != null && String(u.unit).trim()
+          ? { unit: String(u.unit).trim() }
+          : {}),
+        ...(u.dataType != null && String(u.dataType).trim()
+          ? { dataType: String(u.dataType).trim() }
+          : {}),
       })),
     }).pipe(
       catchError((err) => {

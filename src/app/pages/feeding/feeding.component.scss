@@ -4830,6 +4830,54 @@
   }
 }
 
+.log-time--with-badge,
+.feed-row-time .time--with-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.log-merge-badge,
+.feed-merge-badge {
+  font: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 999px;
+  border: 1px solid rgba(99, 102, 241, 0.35);
+  background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+  color: #312e81;
+  cursor: pointer;
+  line-height: 1.2;
+  white-space: nowrap;
+
+  &:hover {
+    filter: brightness(1.03);
+  }
+}
+
+.feed-group-detail-dialog {
+  /* Cùng `dialog-wide` với dialog lịch sử — không giới hạn 440px */
+
+  .feed-group-detail-summary {
+    margin: 0 0 12px;
+    padding: 0 2px;
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  .feed-group-detail-history {
+    margin-bottom: 4px;
+  }
+
+  .feed-group-detail-rows {
+    max-height: min(58vh, 420px);
+    overflow-y: auto;
+    padding-right: 2px;
+  }
+}
+
 /* ========== MOM FOOD CARD ========== */
 .mom-food-card {
   --mf-tone: 244, 114, 182;
