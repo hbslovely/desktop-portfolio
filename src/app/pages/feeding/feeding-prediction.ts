@@ -70,6 +70,62 @@ function circularDiff(a: number, b: number): number {
 }
 
 /**
+ * Dự đoán thông minh dung tích dựa vào các cữ tương tự trong tuần qua
+ */
+function predictVolumeBasedOnSimilarTime(
+  sample: { log: FeedingLog; at: Date }[],
+  currentMinute: number
+): number | null {
+  const oneWeekAgo = Date.now() - 7 * MS_PER_DAY;
+  
+  // Lọc các cữ trong tuần qua
+  const weekSamples = sample.filter(x => x.at.getTime() >= oneWeekAgo);
+  
+  if (weekSamples.length < 2) {
+    return null; // Không đủ dữ liệu
+  }
+  
+  // Tìm các cữ có thời gian tương tự (sai lệch <= 60 phút)
+  const similarFeedings: number[] = [];
+  
+  for (const feed of weekSamples) {
+    const feedMinute = minuteOfDay(feed.at);
+    const timeDiff = circularDiff(feedMinute, currentMinute);
+    
+    // Nếu thời gian tương tự (trong vòng 1 giờ)
+    if (timeDiff <= 60) {
+      similarFeedings.push(feed.log.volume);
+    }
+  }
+  
+  if (similarFeedings.length === 0) {
+    return null;
+  }
+  
+  // Loại bỏ các giá trị ngoại lệ (quá nhỏ hoặc quá lớn)
+  const sorted = [...similarFeedings].sort((a, b) => a - b);
+  const q1Index = Math.floor(sorted.length * 0.25);
+  const q3Index = Math.floor(sorted.length * 0.75);
+  const q1 = sorted[q1Index];
+  const q3 = sorted[q3Index];
+  const iqr = q3 - q1;
+  
+  // Loại bỏ outliers theo quy tắc IQR
+  const lowerBound = q1 - 1.5 * iqr;
+  const upperBound = q3 + 1.5 * iqr;
+  
+  const filtered = similarFeedings.filter(vol => vol >= lowerBound && vol <= upperBound);
+  
+  if (filtered.length === 0) {
+    // Nếu tất cả đều bị loại, dùng lại toàn bộ
+    return mean(similarFeedings);
+  }
+  
+  // Trả về trung bình của các giá trị hợp lệ
+  return mean(filtered);
+}
+
+/**
  * Predict next feeding time & volume bằng **pattern-matching theo giờ trong ngày**.
  *
  * Ý tưởng: cữ cuối xảy ra lúc T (vd: hôm nay 3:00). Đi tìm các cặp
@@ -194,8 +250,17 @@ export function predictNextFeeding(
   const predictedAt =
     medIv > 0 ? new Date(lastFeed.at.getTime() + medIv * MS_PER_MIN) : undefined;
 
-  // Volume: trộn 70% pattern + 30% EMA (để không quá bám sample hẹp)
-  const predictedVolumeRaw = 0.7 * medVolMatched + 0.3 * ema;
+  // Smart volume prediction: tìm các cữ tương tự trong tuần qua
+  const smartVolume = predictVolumeBasedOnSimilarTime(sample, lastMinute);
+  
+  // Nếu có smart prediction, dùng nó; không thì fallback về logic cũ
+  let predictedVolumeRaw: number;
+  if (smartVolume !== null) {
+    predictedVolumeRaw = smartVolume;
+  } else {
+    // Volume: trộn 70% pattern + 30% EMA (để không quá bám sample hẹp)
+    predictedVolumeRaw = 0.7 * medVolMatched + 0.3 * ema;
+  }
   const predictedVolume = Math.max(10, Math.round(predictedVolumeRaw / 5) * 5);
 
   const stdVol = stddev(vols.length >= 2 ? vols : allVolumes);
@@ -231,9 +296,15 @@ export function predictNextFeeding(
       `Cữ kế tiếp thường cách khoảng ${h > 0 ? `${h}h ` : ''}${m}p.`
     );
   }
-  reasoning.push(
-    `Dung tích trong pattern: ${Math.round(medVolMatched)}ml · EMA toàn cục: ${Math.round(ema)}ml.`
-  );
+  if (smartVolume !== null) {
+    reasoning.push(
+      `Dung tích dự kiến: ${Math.round(smartVolume)}ml (TB các cữ tương tự trong tuần qua, đã loại ngoại lệ).`
+    );
+  } else {
+    reasoning.push(
+      `Dung tích trong pattern: ${Math.round(medVolMatched)}ml · EMA toàn cục: ${Math.round(ema)}ml.`
+    );
+  }
   if (confidence === 'low') {
     reasoning.push('Dữ liệu còn ít/biến động, hãy coi đây là tham khảo.');
   }

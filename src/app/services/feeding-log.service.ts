@@ -54,6 +54,10 @@ export interface FeedingSettingsResolved {
    * thành một dòng (0 = tắt) — ID `FEED_GROUP_GAP_MINUTES`.
    */
   feedGroupGapMinutes: number;
+  /**
+   * Thông báo "sắp tới cữ bú" khi còn ≤ N phút — ID `FEEDING_NOTIFICATION_MINUTES`.
+   */
+  feedingNotificationMinutes: number;
 }
 
 /** ID cố định trên sheet — khi lưu chỉ gửi các key này. */
@@ -61,12 +65,14 @@ export const FEEDING_SETTING_ID = {
   FEED_TIME_WARNING: 'FEED_TIME_WARNING',
   FEED_WARNING_AMOUNT: 'FEED_WARNING_AMOUNT',
   FEED_GROUP_GAP_MINUTES: 'FEED_GROUP_GAP_MINUTES',
+  FEEDING_NOTIFICATION_MINUTES: 'FEEDING_NOTIFICATION_MINUTES',
 } as const;
 
 const DEFAULT_FEEDING_SETTINGS: FeedingSettingsResolved = {
   feedTimeWarningHours: 3,
   feedWarningMl: 40,
   feedGroupGapMinutes: 0,
+  feedingNotificationMinutes: 5,
 };
 
 export function parseFeedingSettingsFromRows(
@@ -78,6 +84,7 @@ export function parseFeedingSettingsFromRows(
     byId.get('GROUP_FEEDING_TIME');
   const wRow = byId.get(FEEDING_SETTING_ID.FEED_WARNING_AMOUNT);
   const gapRow = byId.get(FEEDING_SETTING_ID.FEED_GROUP_GAP_MINUTES);
+  const notifyRow = byId.get(FEEDING_SETTING_ID.FEEDING_NOTIFICATION_MINUTES);
 
   let feedTimeWarningHours = parseFloat(
     String(timeRow?.value ?? '').replace(',', '.').trim()
@@ -90,6 +97,10 @@ export function parseFeedingSettingsFromRows(
     String(gapRow?.value ?? '0').replace(/[^\d]/g, ''),
     10
   );
+  let feedingNotificationMinutes = parseInt(
+    String(notifyRow?.value ?? '5').replace(/[^\d]/g, ''),
+    10
+  );
 
   if (!Number.isFinite(feedTimeWarningHours) || feedTimeWarningHours <= 0) {
     feedTimeWarningHours = DEFAULT_FEEDING_SETTINGS.feedTimeWarningHours;
@@ -100,12 +111,16 @@ export function parseFeedingSettingsFromRows(
   if (!Number.isFinite(feedGroupGapMinutes) || feedGroupGapMinutes < 0) {
     feedGroupGapMinutes = DEFAULT_FEEDING_SETTINGS.feedGroupGapMinutes;
   }
+  if (!Number.isFinite(feedingNotificationMinutes) || feedingNotificationMinutes <= 0) {
+    feedingNotificationMinutes = DEFAULT_FEEDING_SETTINGS.feedingNotificationMinutes;
+  }
 
   feedTimeWarningHours = Math.min(48, Math.max(0.25, feedTimeWarningHours));
   feedWarningMl = Math.min(500, Math.max(1, feedWarningMl));
   feedGroupGapMinutes = Math.min(180, Math.max(0, feedGroupGapMinutes));
+  feedingNotificationMinutes = Math.min(180, Math.max(1, feedingNotificationMinutes));
 
-  return { feedTimeWarningHours, feedWarningMl, feedGroupGapMinutes };
+  return { feedTimeWarningHours, feedWarningMl, feedGroupGapMinutes, feedingNotificationMinutes };
 }
 
 @Injectable({ providedIn: 'root' })
