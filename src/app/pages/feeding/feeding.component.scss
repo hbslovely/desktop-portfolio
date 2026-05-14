@@ -4150,34 +4150,72 @@
   gap: 14px;
 }
 
-.log-volume-ai-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: 12px;
+/* Dialog log: dung tích + gợi ý ML cùng hàng với ô nhập */
+.log-volume-field {
+  margin: 0;
 
-  .log-volume-field {
-    flex: 0 1 160px;
-    min-width: 120px;
-    margin: 0;
+  .log-volume-input-row {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 10px;
+    min-width: 0;
   }
 
-  .predict-hint--beside-volume {
-    min-width: min(100%, 200px);
-    margin: 0;
+  .log-volume-input-row > input[type="number"] {
+    flex: 0 0 118px;
+    width: 118px;
+    max-width: min(118px, 100%);
+    min-width: 0;
   }
 
-  @media (max-width: 480px) {
-    flex-direction: column;
-    align-items: stretch;
+  .predict-hint--inline {
+    flex: 1 1 auto;
+    min-width: 0;
+    margin: 0;
+    padding: 6px 10px;
+    gap: 6px;
+    font-size: 12px;
+    border-radius: 8px;
 
-    .log-volume-field {
+    > i {
+      font-size: 13px;
+      flex-shrink: 0;
+    }
+
+    .hint-text {
       flex: 1 1 auto;
+      min-width: 0;
+      line-height: 1.25;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .btn.small {
+      flex-shrink: 0;
+      padding: 4px 8px;
+      font-size: 11px;
+    }
+  }
+
+  @media (max-width: 400px) {
+    .log-volume-input-row > input[type="number"] {
+      flex: 1 1 100px;
+      width: 100%;
       max-width: none;
     }
 
-    .predict-hint--beside-volume {
-      min-width: 0;
+    .predict-hint--inline {
+      flex: 1 1 100%;
+      white-space: normal;
+
+      .hint-text {
+        white-space: normal;
+        overflow: visible;
+        text-overflow: unset;
+      }
     }
   }
 }
@@ -4776,6 +4814,11 @@
       color: var(--primary);
       font-weight: 700;
     }
+  }
+
+  &.predict-hint--inline .hint-text strong {
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
   }
 }
 
