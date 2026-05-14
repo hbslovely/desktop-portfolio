@@ -1877,9 +1877,9 @@
           </label>
         </div>
 
-        <div class="log-volume-ai-row">
-          <label class="field log-volume-field">
-            <span class="label">Dung tích (ml)</span>
+        <label class="field log-volume-field">
+          <span class="label">Dung tích (ml)</span>
+          <div class="log-volume-input-row">
             <input
               type="number"
               inputmode="numeric"
@@ -1892,58 +1892,23 @@
               placeholder="50"
               required
             />
-          </label>
-          <div
-            class="predict-hint predict-hint--beside-volume"
-            *ngIf="prediction().hasData && prediction().nextTime"
-          >
-            <i class="pi pi-bolt"></i>
-            <div class="hint-text">
-              Gợi ý ML: <strong>{{ prediction().nextTime }}</strong> ·
-              <strong>{{ prediction().nextVolume }}ml</strong>
+            <div
+              class="predict-hint predict-hint--inline"
+              *ngIf="prediction().hasData && prediction().nextTime"
+            >
+              <i class="pi pi-bolt" title="Gợi ý từ lịch sử cữ bú"></i>
+              <span class="hint-text">
+                <strong>{{ prediction().nextTime }}</strong> ·
+                <strong>{{ prediction().nextVolume }}</strong> ml
+              </span>
+              <button type="button" class="btn ghost small" (click)="usePredictionValues()">
+                Dùng
+              </button>
             </div>
-            <button type="button" class="btn ghost small" (click)="usePredictionValues()">
-              Dùng
-            </button>
           </div>
-        </div>
-
-        <label class="field full">
-          <span class="label">Ghi chú (tuỳ chọn)</span>
-          <input
-            type="text"
-            [ngModel]="logDraft().note"
-            (ngModelChange)="updateLogNote($event)"
-            name="logNote"
-            placeholder="VD: bú mẹ, vắt sữa, sữa công thức..."
-            autocomplete="off"
-          />
         </label>
 
-        <div class="quick-volumes">
-          <span class="quick-label">Nhanh:</span>
-          <button type="button" class="quick-chip" (click)="quickVolume(30)">30ml</button>
-          <button type="button" class="quick-chip" (click)="quickVolume(50)">50ml</button>
-          <button type="button" class="quick-chip" (click)="quickVolume(60)">60ml</button>
-          <button type="button" class="quick-chip" (click)="quickVolume(70)">70ml</button>
-          <button type="button" class="quick-chip" (click)="quickVolume(80)">80ml</button>
-          <button type="button" class="quick-chip" (click)="quickVolume(90)">90ml</button>
-          <button type="button" class="quick-chip" (click)="quickVolume(120)">120ml</button>
-          <button
-            type="button"
-            class="quick-chip formula-chip"
-            [class.active]="hasQuickNote('Sữa công thức')"
-            (click)="quickNote('Sữa công thức')"
-            title="Gắn nhãn 'Sữa công thức' cho cữ này"
-          >
-            <i class="pi pi-prime"></i> Sữa công thức
-          </button>
-          <button type="button" class="quick-chip now-chip" (click)="setLogNow()">
-            <i class="pi pi-history"></i> Bây giờ
-          </button>
-        </div>
-
-        <!-- Tính từ sữa còn lại (dùng bình đã lưu) -->
+        <!-- Tính từ sữa còn lại (dùng bình đã lưu) — đặt trên ghi chú -->
         <div class="calc-block" *ngIf="bottlePrep() as prep">
           <div class="calc-head">
             <div class="prep-info">
@@ -1992,6 +1957,41 @@
               </button>
             </div>
           </div>
+        </div>
+
+        <label class="field full">
+          <span class="label">Ghi chú (tuỳ chọn)</span>
+          <input
+            type="text"
+            [ngModel]="logDraft().note"
+            (ngModelChange)="updateLogNote($event)"
+            name="logNote"
+            placeholder="VD: bú mẹ, vắt sữa, sữa công thức..."
+            autocomplete="off"
+          />
+        </label>
+
+        <div class="quick-volumes">
+          <span class="quick-label">Nhanh:</span>
+          <button type="button" class="quick-chip" (click)="quickVolume(30)">30ml</button>
+          <button type="button" class="quick-chip" (click)="quickVolume(50)">50ml</button>
+          <button type="button" class="quick-chip" (click)="quickVolume(60)">60ml</button>
+          <button type="button" class="quick-chip" (click)="quickVolume(70)">70ml</button>
+          <button type="button" class="quick-chip" (click)="quickVolume(80)">80ml</button>
+          <button type="button" class="quick-chip" (click)="quickVolume(90)">90ml</button>
+          <button type="button" class="quick-chip" (click)="quickVolume(120)">120ml</button>
+          <button
+            type="button"
+            class="quick-chip formula-chip"
+            [class.active]="hasQuickNote('Sữa công thức')"
+            (click)="quickNote('Sữa công thức')"
+            title="Gắn nhãn 'Sữa công thức' cho cữ này"
+          >
+            <i class="pi pi-prime"></i> Sữa công thức
+          </button>
+          <button type="button" class="quick-chip now-chip" (click)="setLogNow()">
+            <i class="pi pi-history"></i> Bây giờ
+          </button>
         </div>
 
         <div class="sync-error" *ngIf="syncError()">
