@@ -93,6 +93,15 @@ function minutesToHumanShort(minutes: number): string {
   return `${h}h${m}p`;
 }
 
+function minutesToVietnamese(minutes: number): string {
+  if (!minutes || minutes <= 0) return '';
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (h === 0) return `${m} phút`;
+  if (m === 0) return `${h} giờ`;
+  return `${h} giờ ${m} phút`;
+}
+
 function nutritionPaceLabelFromStatus(
   status: NutritionPaceInfo['paceStatus']
 ): string {
@@ -225,13 +234,14 @@ export class FeedingComponent {
 
   /** Đọc từ tab Sheet `Settings` — key theo `FEEDING_SETTING_ID`. */
   feedingSettings = signal<FeedingSettingsResolved>(
-    parseFeedingSettingsFromRows([])
+    parseFeedingSettingsFromRows([]) // This will use DEFAULT_FEEDING_SETTINGS as fallback
   );
   feedingSettingsDialogOpen = signal(false);
   settingsDraft = signal<{
     timeWarningHours: number;
     warningMl: number;
     groupGapMinutes: number;
+    notificationMinutes: number;
   } | null>(null);
   settingsSaving = signal(false);
   settingsFormError = signal('');
@@ -934,9 +944,97 @@ export class FeedingComponent {
     const diffMin = Math.round(
       (p.nextAt.getTime() - this.now().getTime()) / 60000
     );
-    if (diffMin < -5) return `Đã trễ ${minutesToHumanShort(-diffMin)}`;
-    if (diffMin <= 5) return 'Sắp tới giờ bú';
-    return `Còn ${minutesToHumanShort(diffMin)}`;
+    const notifyMinutes = this.feedingSettings().feedingNotificationMinutes;
+    if (diffMin < -5) return `đã trễ ${minutesToVietnamese(-diffMin)}`;
+    if (diffMin < 0) return `đã trễ ${minutesToVietnamese(-diffMin)}`;
+    if (diffMin <= notifyMinutes) return `trong ${minutesToVietnamese(diffMin)} nữa`;
+    return `trong ${minutesToVietnamese(diffMin)} nữa`;
+  });
+
+  /** Text cho status badge khi sắp tới giờ bú */
+  getTimeToFeedingText(): string {
+    return 'Sắp tới giờ bú';
+  }
+
+  /**
+   * Số ml khuyến nghị cho cữ bú tiếp theo dựa trên:
+   * - Lượng sữa khuyến nghị hàng ngày (từ cân nặng và tuổi)
+   * - Số cữ khuyến nghị trong ngày
+   * - Lượng cữ đã bú hôm nay
+   * Làm tròn theo qui tắc: 0-5 (99→100, 94→95, 91→90)
+   */
+  nextFeedingRecommendedMl = computed<number | null>(() => {
+    const target = this.nutritionTarget();
+    if (!target) return null;
+
+    // Tính ml khuyến nghị cho 1 cữ dựa trên mục tiêu hàng ngày
+    const avgMlPerFeed = Math.round((target.dailyMlMin + target.dailyMlMax) / 2 /
+                                   ((target.feedsPerDayMin + target.feedsPerDayMax) / 2));
+
+    // Đảm bảo không vượt quá giới hạn hợp lý (10-300ml)
+    const clampedValue = Math.max(10, Math.min(300, avgMlPerFeed));
+
+    // Làm tròn theo qui tắc: 0-5 (99→100, 94→95, 91→90)
+    const remainder = clampedValue % 10;
+    if (remainder === 0) return clampedValue; // Đã là bội số của 10
+    if (remainder <= 5) {
+      // 91→90, 94→95
+      return clampedValue - remainder + (remainder >= 1 ? 5 : 0);
+    } else {
+      // 96→100, 99→100
+      return clampedValue + (10 - remainder);
+    }
+  });
+
+  /**
+   * Thông tin chi tiết về khuyến nghị cữ tiếp theo
+   */
+  nextFeedingRecommendation = computed<{
+    recommendedMl: number;
+    predictedMl: number | null;
+    remainingDaily: number;
+    remainingFeeds: number;
+    hasNutritionData: boolean;
+    statusMessage: string;
+  } | null>(() => {
+    const target = this.nutritionTarget();
+    const prediction = this.prediction();
+
+    if (!target) {
+      return {
+        recommendedMl: 0,
+        predictedMl: prediction?.nextVolume ?? null,
+        remainingDaily: 0,
+        remainingFeeds: 0,
+        hasNutritionData: false,
+        statusMessage: 'Cần thông tin cân nặng để tính khuyến nghị',
+      };
+    }
+
+    const todayTotal = this.todayStats().total;
+    const todayCount = this.todayStats().count;
+
+    const remainingDaily = Math.max(0, target.dailyMlMin - todayTotal);
+    const remainingFeeds = Math.max(1, target.feedsPerDayMin - todayCount);
+    const recommendedMl = this.nextFeedingRecommendedMl() ?? 0;
+
+    let statusMessage = '';
+    if (remainingDaily <= 0) {
+      statusMessage = 'Đã đạt lượng sữa tối thiểu trong ngày';
+    } else if (todayCount >= target.feedsPerDayMax) {
+      statusMessage = 'Đã đạt số cữ tối đa khuyến nghị';
+    } else {
+      statusMessage = `Còn ${remainingDaily}ml trong ${remainingFeeds} cữ`;
+    }
+
+    return {
+      recommendedMl,
+      predictedMl: prediction?.nextVolume ?? null,
+      remainingDaily,
+      remainingFeeds,
+      hasNutritionData: true,
+      statusMessage,
+    };
   });
 
   /** TB khoảng cách cữ (dạng ngắn) cho UI dự đoán. */
@@ -1433,6 +1531,9 @@ export class FeedingComponent {
       /* ignore */
     }
 
+    // Load settings immediately with default values
+    this.loadFeedingSettings();
+
     this.route.queryParamMap
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((qp) => {
@@ -1440,7 +1541,7 @@ export class FeedingComponent {
         this.user.set(user);
         this.loadProfile(user);
         this.loadLogs();
-        this.loadFeedingSettings();
+        this.loadFeedingSettings(); // Load again with user context
         this.loadWeightLogs();
         this.loadBottlePrepFromSheet();
       });
@@ -1564,6 +1665,7 @@ export class FeedingComponent {
       timeWarningHours: s.feedTimeWarningHours,
       warningMl: s.feedWarningMl,
       groupGapMinutes: s.feedGroupGapMinutes,
+      notificationMinutes: s.feedingNotificationMinutes,
     });
     this.feedingSettingsDialogOpen.set(true);
   }
@@ -1595,12 +1697,20 @@ export class FeedingComponent {
     );
   }
 
+  updateSettingsDraftNotification(v: string): void {
+    const n = parseInt(String(v).replace(/[^\d]/g, ''), 10);
+    this.settingsDraft.update((d) =>
+      d && !isNaN(n) ? { ...d, notificationMinutes: n } : d
+    );
+  }
+
   submitFeedingSettings(): void {
     const d = this.settingsDraft();
     if (!d) return;
     const th = d.timeWarningHours;
     const wm = d.warningMl;
     const gap = d.groupGapMinutes;
+    const notify = d.notificationMinutes;
     if (!Number.isFinite(th) || th < 0.25 || th > 48) {
       this.settingsFormError.set('Ngưỡng giờ (FEED_TIME_WARNING): từ 0,25 đến 48.');
       return;
@@ -1612,6 +1722,12 @@ export class FeedingComponent {
     if (!Number.isFinite(gap) || gap < 0 || gap > 180) {
       this.settingsFormError.set(
         'Gom nhóm (FEED_GROUP_GAP_MINUTES): từ 0 (tắt) đến 180 phút.'
+      );
+      return;
+    }
+    if (!Number.isFinite(notify) || notify < 1 || notify > 180) {
+      this.settingsFormError.set(
+        'Thông báo sắp bú (FEEDING_NOTIFICATION_MINUTES): từ 1 đến 180 phút.'
       );
       return;
     }
@@ -1637,6 +1753,13 @@ export class FeedingComponent {
           id: FEEDING_SETTING_ID.FEED_GROUP_GAP_MINUTES,
           value: gap,
           name: 'Thời gian tối đa gom nhóm cữ (phút)',
+          unit: 'phút',
+          dataType: 'Số',
+        },
+        {
+          id: FEEDING_SETTING_ID.FEEDING_NOTIFICATION_MINUTES,
+          value: notify,
+          name: 'Thông báo sắp bú trước (phút)',
           unit: 'phút',
           dataType: 'Số',
         },
@@ -2239,8 +2362,9 @@ export class FeedingComponent {
     const p = this.prediction();
     if (!p?.nextAt) return 'waiting';
     const diffMin = Math.round((p.nextAt.getTime() - this.now().getTime()) / 60000);
+    const notifyMinutes = this.feedingSettings().feedingNotificationMinutes;
     if (diffMin < -5) return 'late';
-    if (diffMin <= 5) return 'now';
+    if (diffMin <= notifyMinutes) return 'now';
     return 'waiting';
   });
 

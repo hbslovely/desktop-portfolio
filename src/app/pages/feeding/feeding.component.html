@@ -548,79 +548,73 @@
         </ng-template>
       </section>
 
-      <!-- ============ ML PREDICTION (compact hero) ============ -->
-      <section
-        class="card predict-card compact"
-        *ngIf="logs().length > 0"
-        [attr.data-status]="countdownStatus()"
-      >
-        <div class="predict-top">
-          <div class="predict-title">
-            <i class="pi pi-bolt sparkle"></i>
-            <span>Cữ bú tiếp theo</span>
-          </div>
-          <div
-            class="confidence-pill"
-            *ngIf="prediction().hasData"
-            [attr.data-level]="prediction().confidence"
-          >
-            {{
-              prediction().confidence === 'high' ? 'Tin cậy cao'
-              : prediction().confidence === 'medium' ? 'Tin cậy khá'
-              : 'Tin cậy thấp'
-            }}
-          </div>
-        </div>
-
+      <!-- ============ ML PREDICTION (simplified) ============ -->
+      <ng-container *ngIf="logs().length > 0">
         <ng-container *ngIf="prediction().hasData && prediction().nextTime; else notEnough">
           <!-- Hero countdown -->
           <div class="countdown-hero" [attr.data-status]="countdownStatus()">
-            <div class="countdown-main">
-              <div class="countdown-label">
+            <div class="hero-main">
+              <div class="feeding-time-card" [attr.data-status]="countdownStatus()">
+              <div class="time-header">
                 <ng-container [ngSwitch]="countdownStatus()">
-                  <span *ngSwitchCase="'late'">
-                    <i class="pi pi-exclamation-circle"></i> Đã qua giờ bú
+                  <span *ngSwitchCase="'late'" class="status-badge status-late">
+                    <i class="pi pi-exclamation-circle"></i> Đã quá giờ bú lúc
                   </span>
-                  <span *ngSwitchCase="'now'">
-                    <i class="pi pi-bell"></i> Sắp đến giờ bú
+                  <span *ngSwitchCase="'now'" class="status-badge status-now">
+                    <i class="pi pi-exclamation-triangle"></i> Sắp tới giờ bú lúc
                   </span>
-                  <span *ngSwitchDefault>
-                    <i class="pi pi-hourglass"></i> Còn đến cữ tiếp theo
+                  <span *ngSwitchDefault class="status-badge status-waiting">
+                    <i class="pi pi-clock"></i> Cữ bú tiếp theo lúc
                   </span>
                 </ng-container>
               </div>
-              <div class="countdown-value">{{ timeUntilNext() || '—' }}</div>
-            </div>
-            <div class="countdown-next">
-              <div class="next-item">
-                <i class="pi pi-clock"></i>
-                <strong>{{ prediction().nextTime }}</strong>
-              </div>
-              <div class="next-item">
-                <i class="pi pi-apple"></i>
-                <strong>{{ prediction().nextVolume }}ml</strong>
+              
+              <div class="time-display">
+                <div class="predicted-time">{{ prediction().nextTime }}</div>
+                <div class="time-remaining">{{ timeUntilNext() || '—' }}</div>
               </div>
             </div>
-          </div>
-
-          <!-- Progress bar: last feed → predicted next feed -->
-          <div class="countdown-progress" *ngIf="lastFeeding() as last">
-            <div class="cp-track">
-              <div
-                class="cp-fill"
-                [attr.data-status]="countdownStatus()"
-                [style.width.%]="countdownProgress()"
-              ></div>
+            
+            <!-- Layout mới: Cột 2 với 2 dòng dự kiến và khuyến nghị -->
+            <div class="volume-info" [attr.data-status]="countdownStatus()" *ngIf="nextFeedingRecommendation() as rec">
+              <div class="volume-row predicted-row">
+                <span class="volume-prefix">Dự kiến</span>
+                <span class="volume-amount">{{ prediction().nextVolume }}ml</span>
+              </div>
+              <div class="volume-row recommended-row" *ngIf="rec.hasNutritionData">
+                <span class="volume-prefix">Khuyến nghị</span>
+                <span class="volume-amount">{{ rec.recommendedMl }}ml</span>
+              </div>
             </div>
-            <div class="cp-labels">
-              <span class="cp-left">
-                <i class="pi pi-history"></i>
-                {{ last.time }} · {{ last.volume }}ml
-                <span class="muted">({{ lastFeedingAgo() }})</span>
-              </span>
-              <span class="cp-right">
-                TB {{ predictionMedianIntervalHuman() }}
-              </span>
+            
+            <!-- Fallback khi không có khuyến nghị -->
+            <div class="volume-info" [attr.data-status]="countdownStatus()" *ngIf="!nextFeedingRecommendation()?.hasNutritionData">
+              <div class="volume-row predicted-row">
+                <span class="volume-prefix">Dự kiến</span>
+                <span class="volume-amount">{{ prediction().nextVolume }}ml</span>
+              </div>
+            </div>
+            </div>
+            
+            <!-- Progress bar: last feed → predicted next feed -->
+            <div class="countdown-progress" *ngIf="lastFeeding() as last">
+              <div class="cp-track">
+                <div
+                  class="cp-fill"
+                  [attr.data-status]="countdownStatus()"
+                  [style.width.%]="countdownProgress()"
+                ></div>
+              </div>
+              <div class="cp-labels">
+                <span class="cp-left">
+                  <i class="pi pi-history"></i>
+                  {{ last.time }} · {{ last.volume }}ml
+                  <span class="muted">({{ lastFeedingAgo() }})</span>
+                </span>
+                <span class="cp-right">
+                  TB {{ predictionMedianIntervalHuman() }}
+                </span>
+              </div>
             </div>
           </div>
         </ng-container>
@@ -644,7 +638,7 @@
             Cần thêm vài cữ bú nữa để dự đoán giờ/dung tích tiếp theo.
           </div>
         </ng-template>
-      </section>
+      </ng-container>
 
 
       <!-- ============ COMPARISON ============ -->
@@ -676,54 +670,39 @@
 
           <div
             class="compare-banner"
-            *ngIf="
-              todayStats().count > 0 ||
-              yesterdayUpToNowStats().total > 0 ||
-              priorThreeDaysUpToNowAvg().avgTotal > 0
-            "
+            *ngIf="todayStats().count > 0 && (yesterdayUpToNowStats().total > 0 || priorThreeDaysUpToNowAvg().avgTotal > 0)"
           >
-            <div class="compare-line">
-              <span class="compare-label">Cùng giờ hôm qua:</span>
-              <strong>{{ yesterdayUpToNowStats().total }}ml</strong>
-              <span class="sep">·</span>
-              <span>{{ yesterdayUpToNowStats().count }} cữ</span>
+            <!-- So sánh với hôm qua -->
+            <div class="compare-row" *ngIf="yesterdayUpToNowStats().total > 0">
+              <div class="compare-stats">
+                <span class="label">Hôm qua:</span>
+                <strong>{{ yesterdayUpToNowStats().total }}ml</strong>
+                <span class="count">({{ yesterdayUpToNowStats().count }} cữ)</span>
+              </div>
+              <div class="compare-change" *ngIf="comparison().totalDiff !== 0">
+                <i class="pi" [class.pi-arrow-up]="comparison().totalDiff > 0" 
+                   [class.pi-arrow-down]="comparison().totalDiff < 0"
+                   [class.up]="comparison().totalDiff > 0" 
+                   [class.down]="comparison().totalDiff < 0"></i>
+                <strong>{{ Math.abs(comparison().totalDiff) }}ml</strong>
+                <span *ngIf="comparison().pct !== null">({{ Math.abs(comparison().pct!) }}%)</span>
+              </div>
             </div>
-            <div class="compare-diff" *ngIf="yesterdayUpToNowStats().total > 0 && todayStats().count > 0">
-              <ng-container *ngIf="comparison().totalDiff >= 0; else lessThanYd">
-                <i class="pi pi-arrow-up-right up"></i>
-                So hôm qua: nhiều hơn <strong>{{ comparison().totalDiff }}ml</strong>
-                <span *ngIf="comparison().pct !== null"> ({{ comparison().pct }}%)</span>
-              </ng-container>
-              <ng-template #lessThanYd>
-                <i class="pi pi-arrow-down-right down"></i>
-                So hôm qua: ít hơn <strong>{{ -comparison().totalDiff }}ml</strong>
-                <span *ngIf="comparison().pct !== null"> ({{ comparison().pct }}%)</span>
-              </ng-template>
-            </div>
-            <div class="compare-line compare-line--sub">
-              <span class="compare-label">TB 3 ngày trước:</span>
-              <strong>{{ priorThreeDaysUpToNowAvg().avgTotal }}ml</strong>
-              <span class="sep">·</span>
-              <span>~{{ priorThreeDaysUpToNowAvg().avgCount }} cữ/ngày</span>
-            </div>
-            <div
-              class="compare-diff"
-              *ngIf="priorThreeDaysUpToNowAvg().avgTotal > 0 && todayStats().count > 0"
-            >
-              <ng-container *ngIf="comparisonVsPrior3Avg().totalDiff >= 0; else lessThanP3">
-                <i class="pi pi-arrow-up-right up"></i>
-                So TB 3 ngày: nhiều hơn <strong>{{ comparisonVsPrior3Avg().totalDiff }}ml</strong>
-                <span *ngIf="comparisonVsPrior3Avg().pct !== null">
-                  ({{ comparisonVsPrior3Avg().pct }}%)
-                </span>
-              </ng-container>
-              <ng-template #lessThanP3>
-                <i class="pi pi-arrow-down-right down"></i>
-                So TB 3 ngày: ít hơn <strong>{{ -comparisonVsPrior3Avg().totalDiff }}ml</strong>
-                <span *ngIf="comparisonVsPrior3Avg().pct !== null">
-                  ({{ comparisonVsPrior3Avg().pct }}%)
-                </span>
-              </ng-template>
+            <!-- So sánh với TB 3 ngày -->
+            <div class="compare-row" *ngIf="priorThreeDaysUpToNowAvg().avgTotal > 0">
+              <div class="compare-stats">
+                <span class="label">TB 3 ngày:</span>
+                <strong>{{ priorThreeDaysUpToNowAvg().avgTotal }}ml</strong>
+                <span class="count">({{ priorThreeDaysUpToNowAvg().avgCount }} cữ)</span>
+              </div>
+              <div class="compare-change" *ngIf="comparisonVsPrior3Avg().totalDiff !== 0">
+                <i class="pi" [class.pi-arrow-up]="comparisonVsPrior3Avg().totalDiff > 0" 
+                   [class.pi-arrow-down]="comparisonVsPrior3Avg().totalDiff < 0"
+                   [class.up]="comparisonVsPrior3Avg().totalDiff > 0" 
+                   [class.down]="comparisonVsPrior3Avg().totalDiff < 0"></i>
+                <strong>{{ Math.abs(comparisonVsPrior3Avg().totalDiff) }}ml</strong>
+                <span *ngIf="comparisonVsPrior3Avg().pct !== null">({{ Math.abs(comparisonVsPrior3Avg().pct!) }}%)</span>
+              </div>
             </div>
           </div>
 
@@ -1457,11 +1436,10 @@
             <h2>{{ ev.target.ageLabel }}</h2>
             <div class="nutri-head__meta">
               <span *ngIf="latestWeightKgFromSheet() as w">
-                <i class="pi pi-bookmark"></i> {{ formatWeightKgFromSheet(w) }} kg
+                {{ formatWeightKgFromSheet(w) }} kg
               </span>
               <span class="sep" *ngIf="latestWeightKgFromSheet()">·</span>
               <span>
-                <i class="pi pi-chart-bar"></i>
                 KN {{ ev.target.dailyMlMin }}–{{ ev.target.dailyMlMax }} ml
               </span>
             </div>
@@ -1500,15 +1478,14 @@
           </div>
           <p class="nutri-hero__pace-note" *ngIf="nutritionPace() as pn">
             <i class="pi pi-clock"></i>
-            Đã qua khoảng <strong>{{ (pn.dayFraction * 100) | number : '1.0-0' }}%</strong> ngày (0h–24h).
-            Nếu bú đều theo mức giữa KN, đến lúc này khoảng
-            <strong>{{ pn.expectedMidMl }}ml</strong> (khoảng {{ pn.expectedMinMl }}–{{ pn.expectedMaxMl }}ml).
-            <em>{{ pn.paceLabelVi }}.</em>
+            Đã qua {{ (pn.dayFraction * 100) | number : '1.0-0' }}% ngày • 
+            Dự kiến: <strong>{{ pn.expectedMidMl }}ml</strong> • 
+            <em>{{ pn.paceLabelVi }}</em>
           </p>
 
           <div class="nutri-bar-stack">
             <div class="nutri-bar nutri-bar--daily" [attr.data-status]="ev.status">
-              <p class="nutri-bar__title">Khuyến nghị cả ngày</p>
+              <p class="nutri-bar__title">KN cả ngày</p>
               <div class="nutri-bar__track-area">
                 <div class="nb-track">
                   <div
@@ -1549,7 +1526,7 @@
               *ngIf="nutritionPaceZones() as zp"
               [attr.data-pace]="zp.paceStatus"
             >
-              <p class="nutri-bar__title">Tiến độ hiện tại (theo phần ngày đã qua)</p>
+              <p class="nutri-bar__title">Tiến độ hiện tại</p>
               <div class="nutri-bar__track-area">
                 <div class="nb-track nb-track--pace">
                   <div
@@ -1578,7 +1555,7 @@
                 <div class="nb-legend">
                   <span class="nb-legend__edge">0</span>
                   <span class="nb-legend__kn">
-                    Kỳ vọng <strong>{{ zp.minLabel }}–{{ zp.maxLabel }}</strong> ml
+                    KV <strong>{{ zp.minLabel }}–{{ zp.maxLabel }}</strong> ml
                   </span>
                   <span class="nb-legend__edge">{{ zp.scaleMax }} ml</span>
                 </div>
@@ -1652,16 +1629,7 @@
                 </ng-template>
               </strong>
               <ng-template #nutriAvgEmpty><strong>Chưa có cữ</strong></ng-template>
-              <span>so với ~{{ ms.modelAvgMl }}ml/cữ (mức TB hiện tại)</span>
-              <span
-                class="m-skew-hint"
-                *ngIf="
-                  todayStats().count >= 3 &&
-                  Math.abs(todayStats().avg - todayStats().medianMl) >= 15
-                "
-              >
-                TB cữ {{ todayStats().avg }}ml — cữ rất nhỏ kéo TB xuống so với cữ điển hình.
-              </span>
+              <span>so với ~{{ ms.modelAvgMl }}ml/cữ TB</span>
             </div>
             <span
               class="m-status"
@@ -1676,8 +1644,7 @@
             <div class="m-body">
               <strong>{{ todayStats().count }} cữ</strong>
               <span>
-                dự kiến lúc này ~{{ ms.feedsLow }}–{{ ms.feedsHigh }} cữ (KN
-                {{ ev.target.feedsPerDayMin }}–{{ ev.target.feedsPerDayMax }}/ngày)
+                DK ~{{ ms.feedsLow }}–{{ ms.feedsHigh }} cữ (KN {{ ev.target.feedsPerDayMin }}–{{ ev.target.feedsPerDayMax }}/ngày)
               </span>
             </div>
             <span
@@ -2312,7 +2279,8 @@
       <ng-container *ngIf="settingsDraft() as sd">
         <p class="feeding-settings-hint muted">
           Lưu theo <strong>ID</strong> trên sheet (<code>FEED_TIME_WARNING</code>,
-          <code>FEED_WARNING_AMOUNT</code>, <code>FEED_GROUP_GAP_MINUTES</code>), không phụ thuộc cột tên hiển thị.
+          <code>FEED_WARNING_AMOUNT</code>, <code>FEED_GROUP_GAP_MINUTES</code>, 
+          <code>FEEDING_NOTIFICATION_MINUTES</code>), không phụ thuộc cột tên hiển thị.
           Nếu sheet chưa có dòng ID, Apps Script sẽ <strong>thêm dòng</strong> (cần deploy script mới).
         </p>
 
@@ -2377,6 +2345,29 @@
             >
           </label>
         </div>
+
+          <label class="field full notification-setting-field">
+            <span class="label">
+              <code>FEEDING_NOTIFICATION_MINUTES</code> — Thông báo sắp bú (phút)
+              <span class="notification-badge">Mới</span>
+            </span>
+            <input
+              type="number"
+              inputmode="numeric"
+              min="1"
+              max="30"
+              step="1"
+              [ngModel]="sd.notificationMinutes"
+              (ngModelChange)="updateSettingsDraftNotification($event)"
+              name="setFeedingNotificationMinutes"
+              placeholder="5"
+            />
+            <span class="field-hint muted">
+              Hiển thị trạng thái <strong>"Sắp tới"</strong> khi còn ≤ N phút đến giờ dự đoán. 
+              Giá trị khuyến nghị: <strong>3-10 phút</strong>. 
+              Thay đổi này giúp tùy chỉnh thời điểm chuẩn bị cho cữ bú.
+            </span>
+          </label>
 
         <div class="sync-error" *ngIf="settingsFormError()">
           <i class="pi pi-exclamation-triangle"></i> {{ settingsFormError() }}
