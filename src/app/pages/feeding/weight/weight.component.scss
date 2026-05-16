@@ -68,6 +68,33 @@
   }
 }
 
+.who-ref-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 10px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+
+  i {
+    color: var(--primary);
+  }
+
+  &:hover {
+    border-color: var(--primary);
+    background: var(--primary-soft);
+    color: var(--primary);
+  }
+}
+
 .card {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -740,6 +767,22 @@
     letter-spacing: 0.04em;
   }
 
+  .axis-x-baseline {
+    stroke: var(--border-strong);
+    stroke-width: 1.25;
+  }
+
+  .x-label--rot {
+    font-size: 10.5px;
+    font-weight: 600;
+    fill: #475569;
+  }
+
+  .x-label--tick {
+    font-size: 10px;
+    font-weight: 600;
+  }
+
   &.weight-svg-chart--compare {
     .w-band-fill {
       stroke: none;
@@ -1065,5 +1108,75 @@
   .tl-head-stat {
     color: #7c3aed;
     font-weight: 600;
+  }
+}
+
+/* WHO bé gái — dialog bảng tham chiếu */
+.who-ref-dialog {
+  max-width: min(520px, 100vw - 32px);
+  padding: 20px 20px 16px;
+}
+
+.who-ref-lead {
+  margin: 8px 0 0;
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.who-ref-scroll {
+  max-height: min(52vh, 420px);
+  overflow: auto;
+  margin: 0 -4px;
+  padding: 0 4px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.who-ref-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+
+  th,
+  td {
+    padding: 8px 10px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+
+  th {
+    position: sticky;
+    top: 0;
+    background: #f8fafc;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--muted);
+    z-index: 1;
+  }
+
+  tbody tr:nth-child(even) td {
+    background: #fafbfc;
+  }
+
+  td:nth-child(2),
+  td:nth-child(3) {
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    color: var(--text);
+  }
+}
+
+.who-ref-foot {
+  margin: 12px 0 0;
+  font-size: 11.5px;
+  line-height: 1.45;
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+
+  i {
+    margin-top: 2px;
+    flex-shrink: 0;
   }
 }

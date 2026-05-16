@@ -13,6 +13,16 @@
       <i class="pi pi-calendar"></i>
       Thêm <strong>ngày sinh</strong> (tab Cữ bú) để có chuẩn WHO và timeline.
     </p>
+
+    <button
+      type="button"
+      class="who-ref-cta"
+      (click)="openWhoGirlReferenceDialog()"
+      title="Tham chiếu trung vị cân nặng & chiều cao (WHO, bé gái)"
+    >
+      <i class="pi pi-table"></i>
+      Bảng chuẩn WHO — bé gái (VN)
+    </button>
   </div>
 
   <button
@@ -119,13 +129,21 @@
             {{ g.label }}
           </text>
         </g>
+        <line
+          class="axis-x-baseline"
+          [attr.x1]="cmp.PAD_L - 2"
+          [attr.y1]="cmp.bottomY"
+          [attr.x2]="cmp.W - cmp.PAD_R + 6"
+          [attr.y2]="cmp.bottomY"
+        />
         <g class="x-axis-ticks">
           <text
             *ngFor="let t of cmp.xTicks"
             [attr.x]="t.x"
-            [attr.y]="cmp.H - 12"
-            text-anchor="middle"
-            class="x-label x-label--age"
+            [attr.y]="t.tickY"
+            [attr.transform]="'rotate(-34 ' + t.x + ',' + t.tickY + ')'"
+            text-anchor="end"
+            class="x-label x-label--rot x-label--tick"
           >
             {{ t.label }}
           </text>
@@ -169,9 +187,10 @@
           <text
             *ngIf="p.showXLabel"
             [attr.x]="p.x"
-            [attr.y]="cmp.H - 28"
-            text-anchor="middle"
-            class="x-label x-label--small"
+            [attr.y]="cmp.H - 48"
+            [attr.transform]="'rotate(-36 ' + p.x + ',' + (cmp.H - 48) + ')'"
+            text-anchor="end"
+            class="x-label x-label--rot x-label--small"
           >
             {{ p.ageLabel }}
           </text>
@@ -222,6 +241,13 @@
             {{ g.label }}
           </text>
         </g>
+        <line
+          class="axis-x-baseline"
+          [attr.x1]="ch.PAD_L - 2"
+          [attr.y1]="ch.bottomY"
+          [attr.x2]="ch.W - ch.PAD_R + 6"
+          [attr.y2]="ch.bottomY"
+        />
         <path class="w-area" [attr.d]="ch.areaPath" fill="url(#wAreaGrad)" />
         <path
           class="w-path w-path--actual"
@@ -242,9 +268,10 @@
           <text
             *ngIf="p.showXLabel"
             [attr.x]="p.x"
-            [attr.y]="ch.H - 14"
-            text-anchor="middle"
-            class="x-label"
+            [attr.y]="ch.H - 40"
+            [attr.transform]="'rotate(-38 ' + p.x + ',' + (ch.H - 40) + ')'"
+            text-anchor="end"
+            class="x-label x-label--rot"
           >
             {{ formatDateShort(p.log.date) }}
           </text>
@@ -294,6 +321,13 @@
               </text>
             </g>
             <line
+              class="axis-x-baseline"
+              [attr.x1]="ln.PAD_L - 2"
+              [attr.y1]="ln.PAD_T + ln.H - ln.PAD_B"
+              [attr.x2]="ln.PAD_L + ln.innerW + 4"
+              [attr.y2]="ln.PAD_T + ln.H - ln.PAD_B"
+            />
+            <line
               *ngIf="ln.showZeroLine"
               class="w-zero-line"
               [attr.x1]="ln.PAD_L"
@@ -321,9 +355,10 @@
               <text
                 *ngIf="p.showXLabel"
                 [attr.x]="p.x"
-                [attr.y]="ln.H - 8"
-                text-anchor="middle"
-                class="x-label"
+                [attr.y]="ln.H - 36"
+                [attr.transform]="'rotate(-38 ' + p.x + ',' + (ln.H - 36) + ')'"
+                text-anchor="end"
+                class="x-label x-label--rot"
               >
                 {{ p.label }}
               </text>
@@ -1021,6 +1056,60 @@
         <i class="pi pi-info-circle"></i>
         Tổng hợp từ: AAP HealthyChildren, CDC Milestones, WHO, The Wonder Weeks (Plooij), Vinmec.
       </div>
+    </div>
+  </div>
+
+  <!-- Bảng tham chiếu WHO — bé gái (VN) -->
+  <div
+    class="dialog-overlay"
+    *ngIf="whoGirlReferenceDialogOpen()"
+    (click)="closeWhoGirlReferenceDialog()"
+  >
+    <div
+      class="dialog who-ref-dialog"
+      role="dialog"
+      aria-modal="true"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="dialog-head">
+        <div>
+          <div class="eyebrow"><i class="pi pi-globe"></i> WHO · Việt Nam khuyến nghị</div>
+          <h2><i class="pi pi-table"></i> Cân nặng & chiều cao chuẩn (bé gái)</h2>
+          <p class="muted who-ref-lead">
+            Trung vị (P50) theo tuổi tháng — tham khảo lâm sàng, không thay cho đo đạc tại cơ sở y tế.
+          </p>
+        </div>
+        <button
+          type="button"
+          class="dialog-close"
+          (click)="closeWhoGirlReferenceDialog()"
+          aria-label="Đóng"
+        >
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+      <div class="who-ref-scroll">
+        <table class="who-ref-table">
+          <thead>
+            <tr>
+              <th>Tuổi</th>
+              <th>Cân trung vị (kg)</th>
+              <th>Cao trung vị (cm)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of whoGirlReferenceRows">
+              <td>{{ row.monthLabelVi }}</td>
+              <td>{{ formatKg(row.weightMedianKg) }}</td>
+              <td>{{ formatKg(row.heightMedianCm) }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="who-ref-foot muted">
+        <i class="pi pi-info-circle"></i>
+        Cân: nội suy từ bảng tuần tuổi trong app. Cao: WHO Child Growth Standards (nữ).
+      </p>
     </div>
   </div>
 </div>

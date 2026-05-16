@@ -32,6 +32,7 @@ import {
   evaluateWeightForAge,
   sampleWhoWeightBandByDay,
   weeksFromDays,
+  whoGirlVnReferenceTable,
 } from '../baby-weight-growth';
 
 interface WeightDraft {
@@ -51,6 +52,9 @@ interface WeightDraft {
 export class WeightComponent {
   private weightLogService = inject(WeightLogService);
   private destroyRef = inject(DestroyRef);
+
+  /** Bảng tham chiếu WHO (bé gái) — tính một lần / instance */
+  readonly whoGirlReferenceRows = whoGirlVnReferenceTable();
 
   /** Cùng user với trang feeding (`?user=`) */
   user = input<string>('guest');
@@ -78,6 +82,9 @@ export class WeightComponent {
   timelineDialogOpen = signal<boolean>(false);
   timelineView = signal<'list' | 'chart'>('list');
   selectedTimelineId = signal<string | null>(null);
+
+  /** Bảng tham chiếu WHO bé gái (VN) — dialog thông tin */
+  whoGirlReferenceDialogOpen = signal<boolean>(false);
 
   constructor() {
     this.load();
@@ -175,8 +182,8 @@ export class WeightComponent {
     const PAD_L = 48;
     const PAD_R = 20;
     const PAD_T = 20;
-    const PAD_B = 52;
-    const H = 268;
+    const PAD_B = 72;
+    const H = 288;
     const n = logs.length;
 
     const kgVals = logs.map((l) => l.weightKg);
@@ -188,7 +195,7 @@ export class WeightComponent {
     maxKg = maxKg + pad;
     const range = Math.max(0.2, maxKg - minKg);
 
-    const innerW = Math.max(320, Math.max(n - 1, 1) * 72);
+    const innerW = Math.max(340, Math.max(n - 1, 1) * 80);
     const W = PAD_L + innerW + PAD_R;
     const chartH = H - PAD_T - PAD_B;
     const bottomY = PAD_T + chartH;
@@ -291,8 +298,8 @@ export class WeightComponent {
     const PAD_L = 52;
     const PAD_R = 18;
     const PAD_T = 20;
-    const PAD_B = 50;
-    const H = 292;
+    const PAD_B = 92;
+    const H = 318;
     const innerW = Math.max(360, Math.min(780, 320 + maxDays * 0.85));
     const W = PAD_L + innerW + PAD_R;
     const chartH = H - PAD_T - PAD_B;
@@ -372,12 +379,13 @@ export class WeightComponent {
     }));
 
     const weekStep = maxDays > 180 ? 8 : maxDays > 90 ? 4 : 2;
-    const xTicks: Array<{ x: number; label: string }> = [];
+    const xTicks: Array<{ x: number; label: string; tickY: number }> = [];
     for (let w = 0; w * 7 <= maxD; w += weekStep) {
       const d = w * 7;
       xTicks.push({
         x: xOfDays(d),
         label: w === 0 ? 'Sinh' : `${w} tuần`,
+        tickY: H - 22,
       });
     }
 
@@ -435,10 +443,10 @@ export class WeightComponent {
     const PAD_L = 46;
     const PAD_R = 12;
     const PAD_T = 14;
-    const PAD_B = 44;
-    const H = 204;
+    const PAD_B = 58;
+    const H = 220;
     const n = intervals.length;
-    const innerW = Math.max(280, Math.max(n - 1, 1) * 58);
+    const innerW = Math.max(300, Math.max(n - 1, 1) * 64);
     const W = PAD_L + innerW + PAD_R;
     const chartH = H - PAD_T - PAD_B;
     const yOf = (v: number) =>
@@ -674,6 +682,14 @@ export class WeightComponent {
 
   closeTimelineDialog() {
     this.timelineDialogOpen.set(false);
+  }
+
+  openWhoGirlReferenceDialog() {
+    this.whoGirlReferenceDialogOpen.set(true);
+  }
+
+  closeWhoGirlReferenceDialog() {
+    this.whoGirlReferenceDialogOpen.set(false);
   }
 
   get maxBirthDate(): string {

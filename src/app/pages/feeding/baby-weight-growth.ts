@@ -382,3 +382,37 @@ export function medianCurvePoints(
   }
   return out;
 }
+
+/**
+ * Chiều cao (cm) trung vị WHO — bé gái, theo tháng đầy đủ (0–24).
+ * Nguồn: WHO Child Growth Standards (length/height for age, female P50).
+ */
+const GIRL_LENGTH_MEDIAN_CM_BY_MONTH: readonly number[] = [
+  49.1, 53.7, 57.1, 59.8, 62.1, 64.0, 65.7, 67.3, 68.7, 70.1, 71.5, 72.8, 74.0,
+  75.2, 76.3, 77.5, 78.6, 79.7, 80.7, 81.7, 82.7, 83.7, 84.6, 85.5, 86.4,
+];
+
+export interface WhoGirlVnReferenceRow {
+  /** 0 = sơ sinh, 1…24 = tháng đầy đủ */
+  monthIndex: number;
+  monthLabelVi: string;
+  weightMedianKg: number;
+  heightMedianCm: number;
+}
+
+/**
+ * Bảng tham chiếu cân nặng + chiều cao (trung vị) cho bé gái — chuẩn WHO,
+ * cột cân nội suy từ bảng tuần tuổi trong app (cùng nguồn với biểu đồ).
+ */
+export function whoGirlVnReferenceTable(): WhoGirlVnReferenceRow[] {
+  return GIRL_LENGTH_MEDIAN_CM_BY_MONTH.map((heightCm, monthIndex) => {
+    const weeksApprox = monthIndex * (52 / 12);
+    const wKg = medianWeightKgAtWeeks(weeksApprox, 'female');
+    return {
+      monthIndex,
+      monthLabelVi: monthIndex === 0 ? 'Sơ sinh' : `${monthIndex} tháng`,
+      weightMedianKg: Math.round(wKg * 100) / 100,
+      heightMedianCm: Math.round(heightCm * 10) / 10,
+    };
+  });
+}

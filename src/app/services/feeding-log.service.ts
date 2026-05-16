@@ -58,6 +58,14 @@ export interface FeedingSettingsResolved {
    * Thông báo "sắp tới cữ bú" khi còn ≤ N phút — ID `FEEDING_NOTIFICATION_MINUTES`.
    */
   feedingNotificationMinutes: number;
+  /**
+   * Bắt đầu nhắc sự kiện lịch trước N ngày — ID `EVENT_REMINDER_DAYS`.
+   */
+  eventReminderDays: number;
+  /**
+   * Cộng thêm giờ vào cửa sổ nhắc lịch — ID `EVENT_REMINDER_HOURS`.
+   */
+  eventReminderHours: number;
 }
 
 /** ID cố định trên sheet — khi lưu chỉ gửi các key này. */
@@ -66,6 +74,8 @@ export const FEEDING_SETTING_ID = {
   FEED_WARNING_AMOUNT: 'FEED_WARNING_AMOUNT',
   FEED_GROUP_GAP_MINUTES: 'FEED_GROUP_GAP_MINUTES',
   FEEDING_NOTIFICATION_MINUTES: 'FEEDING_NOTIFICATION_MINUTES',
+  EVENT_REMINDER_DAYS: 'EVENT_REMINDER_DAYS',
+  EVENT_REMINDER_HOURS: 'EVENT_REMINDER_HOURS',
 } as const;
 
 const DEFAULT_FEEDING_SETTINGS: FeedingSettingsResolved = {
@@ -73,6 +83,8 @@ const DEFAULT_FEEDING_SETTINGS: FeedingSettingsResolved = {
   feedWarningMl: 40,
   feedGroupGapMinutes: 0,
   feedingNotificationMinutes: 5,
+  eventReminderDays: 3,
+  eventReminderHours: 0,
 };
 
 export function parseFeedingSettingsFromRows(
@@ -85,6 +97,8 @@ export function parseFeedingSettingsFromRows(
   const wRow = byId.get(FEEDING_SETTING_ID.FEED_WARNING_AMOUNT);
   const gapRow = byId.get(FEEDING_SETTING_ID.FEED_GROUP_GAP_MINUTES);
   const notifyRow = byId.get(FEEDING_SETTING_ID.FEEDING_NOTIFICATION_MINUTES);
+  const evDaysRow = byId.get(FEEDING_SETTING_ID.EVENT_REMINDER_DAYS);
+  const evHoursRow = byId.get(FEEDING_SETTING_ID.EVENT_REMINDER_HOURS);
 
   let feedTimeWarningHours = parseFloat(
     String(timeRow?.value ?? '').replace(',', '.').trim()
@@ -101,6 +115,14 @@ export function parseFeedingSettingsFromRows(
     String(notifyRow?.value ?? '5').replace(/[^\d]/g, ''),
     10
   );
+  let eventReminderDays = parseInt(
+    String(evDaysRow?.value ?? '3').replace(/[^\d]/g, ''),
+    10
+  );
+  let eventReminderHours = parseInt(
+    String(evHoursRow?.value ?? '0').replace(/[^\d]/g, ''),
+    10
+  );
 
   if (!Number.isFinite(feedTimeWarningHours) || feedTimeWarningHours <= 0) {
     feedTimeWarningHours = DEFAULT_FEEDING_SETTINGS.feedTimeWarningHours;
@@ -114,13 +136,28 @@ export function parseFeedingSettingsFromRows(
   if (!Number.isFinite(feedingNotificationMinutes) || feedingNotificationMinutes <= 0) {
     feedingNotificationMinutes = DEFAULT_FEEDING_SETTINGS.feedingNotificationMinutes;
   }
+  if (!Number.isFinite(eventReminderDays) || eventReminderDays < 0) {
+    eventReminderDays = DEFAULT_FEEDING_SETTINGS.eventReminderDays;
+  }
+  if (!Number.isFinite(eventReminderHours) || eventReminderHours < 0) {
+    eventReminderHours = DEFAULT_FEEDING_SETTINGS.eventReminderHours;
+  }
 
   feedTimeWarningHours = Math.min(48, Math.max(0.25, feedTimeWarningHours));
   feedWarningMl = Math.min(500, Math.max(1, feedWarningMl));
   feedGroupGapMinutes = Math.min(180, Math.max(0, feedGroupGapMinutes));
   feedingNotificationMinutes = Math.min(180, Math.max(1, feedingNotificationMinutes));
+  eventReminderDays = Math.min(30, Math.max(0, eventReminderDays));
+  eventReminderHours = Math.min(168, Math.max(0, eventReminderHours));
 
-  return { feedTimeWarningHours, feedWarningMl, feedGroupGapMinutes, feedingNotificationMinutes };
+  return {
+    feedTimeWarningHours,
+    feedWarningMl,
+    feedGroupGapMinutes,
+    feedingNotificationMinutes,
+    eventReminderDays,
+    eventReminderHours,
+  };
 }
 
 @Injectable({ providedIn: 'root' })

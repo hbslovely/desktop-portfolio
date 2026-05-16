@@ -1,0 +1,344 @@
+<div class="schedule-page">
+  <div class="alert error" *ngIf="errorMsg()">
+    <i class="pi pi-exclamation-circle"></i>
+    {{ errorMsg() }}
+  </div>
+  <div class="alert ok" *ngIf="successMsg()">
+    <i class="pi pi-check-circle"></i>
+    {{ successMsg() }}
+  </div>
+
+  <ng-container *ngIf="!loading() || hasFutureEvents()">
+    <section
+      class="schedule-section"
+      *ngFor="let section of futureSections(); trackBy: trackSection"
+      [attr.data-section]="section.id"
+      [hidden]="section.eventCount === 0"
+    >
+      <div class="schedule-section__head">
+        <span class="schedule-section__icon" aria-hidden="true">
+          <i class="pi" [ngClass]="section.icon"></i>
+        </span>
+        <div class="schedule-section__titles">
+          <h2>{{ section.title }}</h2>
+          <p class="schedule-section__sub">{{ section.subtitle }}</p>
+        </div>
+        <span class="schedule-section__count" *ngIf="section.eventCount as n">
+          {{ formatEventCount(n) }}
+        </span>
+      </div>
+
+      <div class="schedule-section__body">
+        <div class="schedule-days">
+          <article
+            class="schedule-day schedule-day--relative"
+            *ngFor="let day of visibleDayGroups(section); trackBy: trackDay"
+          >
+            <header class="schedule-day__date">
+              <span class="schedule-day__label schedule-day__label--relative">
+                {{ day.dateLabel }}
+              </span>
+              <span class="schedule-day__sub" *ngIf="day.dateSubLabel">
+                {{ day.dateSubLabel }}
+              </span>
+            </header>
+
+            <div class="schedule-day__cards">
+              <ng-container
+                *ngFor="let ev of day.events; trackBy: trackEvent"
+                [ngTemplateOutlet]="eventCardTpl"
+                [ngTemplateOutletContext]="{ $implicit: ev, isPast: false }"
+              ></ng-container>
+            </div>
+          </article>
+        </div>
+
+        <button
+          type="button"
+          class="schedule-view-more"
+          *ngIf="hasMoreEvents(section)"
+          (click)="toggleSectionExpand(section.id)"
+        >
+          <ng-container *ngIf="!isSectionExpanded(section.id)">
+            Xem thêm {{ hiddenEventCount(section) }} sự kiện
+            <i class="pi pi-chevron-down" aria-hidden="true"></i>
+          </ng-container>
+          <ng-container *ngIf="isSectionExpanded(section.id)">
+            Thu gọn
+            <i class="pi pi-chevron-up" aria-hidden="true"></i>
+          </ng-container>
+        </button>
+      </div>
+    </section>
+  </ng-container>
+
+  <section class="schedule-empty" *ngIf="!loading() && !hasFutureEvents()">
+    <i class="pi pi-calendar-plus"></i>
+    <p>Chưa có sự kiện sắp tới.</p>
+    <button type="button" class="btn btn-primary" (click)="openAdd()">
+      <i class="pi pi-plus"></i> Thêm sự kiện
+    </button>
+  </section>
+
+  <section
+    class="schedule-section schedule-section--past"
+    *ngIf="pastSection() as past"
+  >
+    <div class="schedule-section__head">
+      <span class="schedule-section__icon" aria-hidden="true">
+        <i class="pi" [ngClass]="past.icon"></i>
+      </span>
+      <div class="schedule-section__titles">
+        <h2>{{ past.title }}</h2>
+        <p class="schedule-section__sub" *ngIf="past.subtitle">{{ past.subtitle }}</p>
+      </div>
+      <span class="schedule-section__count" *ngIf="past.eventCount as n">
+        {{ formatEventCount(n) }}
+      </span>
+    </div>
+
+    <div class="schedule-section__body">
+      <div class="schedule-days">
+        <article
+          class="schedule-day schedule-day--relative"
+          *ngFor="let day of visibleDayGroups(past); trackBy: trackDay"
+        >
+          <header class="schedule-day__date">
+            <span class="schedule-day__label schedule-day__label--relative">
+              {{ day.dateLabel }}
+            </span>
+            <span class="schedule-day__sub" *ngIf="day.dateSubLabel">
+              {{ day.dateSubLabel }}
+            </span>
+          </header>
+          <div class="schedule-day__cards">
+            <ng-container
+              *ngFor="let ev of day.events; trackBy: trackEvent"
+              [ngTemplateOutlet]="eventCardTpl"
+              [ngTemplateOutletContext]="{ $implicit: ev, isPast: true }"
+            ></ng-container>
+          </div>
+        </article>
+      </div>
+
+      <button
+        type="button"
+        class="schedule-view-more"
+        *ngIf="hasMoreEvents(past)"
+        (click)="toggleSectionExpand(past.id)"
+      >
+        <ng-container *ngIf="!isSectionExpanded(past.id)">
+          Xem thêm {{ hiddenEventCount(past) }} sự kiện
+          <i class="pi pi-chevron-down" aria-hidden="true"></i>
+        </ng-container>
+        <ng-container *ngIf="isSectionExpanded(past.id)">
+          Thu gọn
+          <i class="pi pi-chevron-up" aria-hidden="true"></i>
+        </ng-container>
+      </button>
+    </div>
+  </section>
+
+  <ng-template #eventCardTpl let-ev let-isPast="isPast">
+    <article class="ev-card" [class.ev-card--past]="isPast">
+      <h3 class="ev-card__title">{{ ev.title }}</h3>
+      <p class="ev-card__datetime">
+        <span class="ev-card__date">{{ formatEventDate(ev.date) }}</span>
+        <span class="ev-card__datetime-sep" aria-hidden="true"> – </span>
+        <span class="ev-card__hour">{{ formatTime(ev.time) }}</span>
+      </p>
+      <p class="ev-card__place" *ngIf="ev.place">
+        <i class="pi pi-map-marker" aria-hidden="true"></i>
+        <span>{{ ev.place }}</span>
+      </p>
+      <div class="ev-card__content-wrap" *ngIf="ev.note">
+        <span class="ev-card__content-label">Nội dung</span>
+        <p class="ev-card__content">{{ ev.note }}</p>
+      </div>
+      <div class="ev-card__actions" *ngIf="!isPast && ev.rowIndex">
+        <button
+          type="button"
+          class="btn ghost sm icon-only"
+          (click)="openEdit(ev)"
+          [disabled]="!isFuture(ev)"
+          title="Sửa"
+          aria-label="Sửa"
+        >
+          <i class="pi pi-pencil"></i>
+        </button>
+        <button
+          type="button"
+          class="btn ghost sm icon-only danger"
+          (click)="deleteEv(ev)"
+          [disabled]="!isFuture(ev)"
+          title="Xoá"
+          aria-label="Xoá"
+        >
+          <i class="pi pi-trash"></i>
+        </button>
+      </div>
+    </article>
+  </ng-template>
+
+  <button
+    type="button"
+    class="fab"
+    (click)="openAdd()"
+    aria-label="Thêm sự kiện"
+    title="Thêm sự kiện"
+  >
+    <i class="pi pi-plus" aria-hidden="true"></i>
+    <span class="fab-label">Thêm sự kiện</span>
+  </button>
+
+  <div class="dialog-overlay dialog-overlay--top" *ngIf="addOpen()" (click)="closeAdd()">
+    <div class="dialog" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+      <div class="dialog-head">
+        <div>
+          <h2><i class="pi pi-plus-circle"></i> Thêm sự kiện</h2>
+        </div>
+        <button type="button" class="dialog-close" (click)="closeAdd()" aria-label="Đóng">
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+      <div class="form-grid" *ngIf="draft() as dr">
+        <label class="field">
+          <span class="label">Ngày *</span>
+          <input type="date" class="input" [ngModel]="dr.date" (ngModelChange)="updateDraft({ date: $event })" name="evd" />
+        </label>
+        <label class="field">
+          <span class="label">Giờ *</span>
+          <input type="time" class="input" [ngModel]="dr.time" (ngModelChange)="updateDraft({ time: $event })" name="evt" />
+        </label>
+        <label class="field full">
+          <span class="label">Tên sự kiện *</span>
+          <input
+            type="text"
+            class="input"
+            placeholder="VD: Tiêm chủng 6in1"
+            [ngModel]="dr.title"
+            (ngModelChange)="updateDraft({ title: $event })"
+            name="evti"
+          />
+        </label>
+        <label class="field full">
+          <span class="label">Ghi chú</span>
+          <textarea
+            class="input input--textarea"
+            rows="3"
+            placeholder="Ghi chú thêm…"
+            [ngModel]="dr.note"
+            (ngModelChange)="updateDraft({ note: $event })"
+            name="evn"
+          ></textarea>
+        </label>
+        <label class="field full field--place">
+          <span class="label">Vị trí</span>
+          <div class="place-combobox">
+            <input
+              #placeInputAdd
+              type="text"
+              class="input"
+              placeholder="Chọn hoặc nhập vị trí mới…"
+              [ngModel]="dr.place"
+              (ngModelChange)="onPlaceInput($event, 'add', placeInputAdd)"
+              (focus)="openPlacePicker('add', placeInputAdd)"
+              (blur)="onPlaceBlur('add')"
+              name="evp"
+              autocomplete="off"
+            />
+          </div>
+        </label>
+      </div>
+      <div class="dialog-actions">
+        <button type="button" class="btn ghost" (click)="closeAdd()">Huỷ</button>
+        <button type="button" class="btn btn-primary" [disabled]="saving()" (click)="submitAdd()">
+          <i class="pi" [ngClass]="saving() ? 'pi-spin pi-spinner' : 'pi-save'"></i>
+          {{ saving() ? 'Đang lưu…' : 'Lưu' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="dialog-overlay dialog-overlay--top" *ngIf="editing() as ed" (click)="cancelEdit()">
+    <div class="dialog" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+      <div class="dialog-head">
+        <div>
+          <h2><i class="pi pi-pencil"></i> Sửa sự kiện</h2>
+        </div>
+        <button type="button" class="dialog-close" (click)="cancelEdit()" aria-label="Đóng">
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+      <div class="form-grid" *ngIf="editDraft() as dr">
+        <label class="field">
+          <span class="label">Ngày *</span>
+          <input type="date" class="input" [ngModel]="dr.date" (ngModelChange)="updateEditDraft({ date: $event })" name="eed" />
+        </label>
+        <label class="field">
+          <span class="label">Giờ *</span>
+          <input type="time" class="input" [ngModel]="dr.time" (ngModelChange)="updateEditDraft({ time: $event })" name="eet" />
+        </label>
+        <label class="field full">
+          <span class="label">Tên *</span>
+          <input type="text" class="input" [ngModel]="dr.title" (ngModelChange)="updateEditDraft({ title: $event })" name="eeti" />
+        </label>
+        <label class="field full">
+          <span class="label">Ghi chú</span>
+          <textarea
+            class="input input--textarea"
+            rows="3"
+            placeholder="Ghi chú thêm…"
+            [ngModel]="dr.note"
+            (ngModelChange)="updateEditDraft({ note: $event })"
+            name="een"
+          ></textarea>
+        </label>
+        <label class="field full field--place">
+          <span class="label">Vị trí</span>
+          <div class="place-combobox">
+            <input
+              #placeInputEdit
+              type="text"
+              class="input"
+              placeholder="Chọn hoặc nhập vị trí mới…"
+              [ngModel]="dr.place"
+              (ngModelChange)="onPlaceInput($event, 'edit', placeInputEdit)"
+              (focus)="openPlacePicker('edit', placeInputEdit)"
+              (blur)="onPlaceBlur('edit')"
+              name="eep"
+              autocomplete="off"
+            />
+          </div>
+        </label>
+      </div>
+      <div class="dialog-actions">
+        <button type="button" class="btn ghost" (click)="cancelEdit()">Huỷ</button>
+        <button type="button" class="btn btn-primary" [disabled]="saving()" (click)="submitEdit()">
+          <i class="pi" [ngClass]="saving() ? 'pi-spin pi-spinner' : 'pi-check'"></i>
+          Cập nhật
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<ul
+  class="place-combobox__menu place-combobox__menu--portal"
+  role="listbox"
+  *ngIf="placeMenuView() as vm"
+  [style.top.px]="vm.pos.top"
+  [style.left.px]="vm.pos.left"
+  [style.width.px]="vm.pos.width"
+  (mousedown)="$event.preventDefault()"
+>
+  <li *ngFor="let place of vm.places">
+    <button
+      type="button"
+      class="place-combobox__option"
+      (mousedown)="selectPlace(place, vm.ctx)"
+    >
+      {{ place }}
+    </button>
+  </li>
+</ul>

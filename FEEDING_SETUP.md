@@ -5,6 +5,7 @@ Tài liệu hướng dẫn chuẩn bị **các tab** trong Google Sheet và **Go
 - Tab **`Feeding`**: nhật ký cữ bú (đọc / thêm / sửa / xoá).
 - Tab **`Settings`**: tham số cữ bú (đọc API; ghi qua Apps Script theo **ID**).
 - Tab **`Weight`**: cân nặng bé (đọc / thêm / sửa / xoá).
+- Tab **`Event`**: lịch sự kiện (đọc API; thêm / sửa / xoá / acknowledge qua Apps Script) — trong app hiển thị tab **Lịch**.
 - Tab **`MedicalHistory`**: tiền sử y tế bé — Medical history V2 (đọc qua API; ghi / sửa / xoá qua Apps Script).
 - Tab **`Explorer`**: cây thư mục + ảnh base64 (đọc / thêm / sửa / xoá có cascade).
 
@@ -67,6 +68,24 @@ Sau khi thêm tab, **cập nhật và redeploy** Google Apps Script (mục 4 bê
 
 ---
 
+## 1b-Event. Chuẩn bị tab `Event` (tab **Lịch** trong app)
+
+1. Tạo tab mới tên **chính xác** `Event`.
+2. Dòng 1 là **header** theo đúng thứ tự sau:
+
+| A        | B          | C       | D               | E           | F        | G              |
+| -------- | ---------- | ------- | --------------- | ----------- | -------- | -------------- |
+| **User** | **Ngày**   | **Giờ** | **Tên sự kiện** | **Ghi chú** | **Vị trí** | **Acknowledge** |
+| phat     | 20/05/2026 | 09:00   | Tiêm 6in1       | mang thẻ    | BV Nhi   | FALSE          |
+
+- **Ngày / Giờ / Tên**: bắt buộc khi thêm từ app. **Ghi chú / Vị trí**: tuỳ chọn.
+- **Acknowledge**: `TRUE` / `FALSE` (hoặc để trống = chưa ẩn nhắc). App ghi `TRUE` khi bạn bấm «Ẩn nhắc» trên dialog nhắc lịch.
+- Cửa sổ nhắc: tab `Settings` — ID **`EVENT_REMINDER_DAYS`** và **`EVENT_REMINDER_HOURS`**.
+
+Sau khi thêm tab, **cập nhật và redeploy** Apps Script (mục 4) để có `addEvent` / `updateEvent` / `deleteEvent` / `acknowledgeEvent`.
+
+---
+
 ## 1c. Chuẩn bị tab `MedicalHistory` (tiền sử y tế V2)
 
 1. Tạo tab mới tên **chính xác** `MedicalHistory`.
@@ -104,10 +123,15 @@ Ví dụ các dòng Settings (app đọc theo cột A); có thể thêm ID mới
 | `FEED_TIME_WARNING` | Đánh dấu cữ bú khi lâu hơn | `3` | Giờ | Số |
 | `FEED_WARNING_AMOUNT` | Đánh dấu cữ bú khi nhỏ hơn | `40` | ml | Số |
 | `FEED_GROUP_GAP_MINUTES` | Gom cữ hiển thị khi gần nhau | `0` | phút | Số |
+| `FEEDING_NOTIFICATION_MINUTES` | Thông báo sắp bú trước | `5` | phút | Số |
+| `EVENT_REMINDER_DAYS` | Nhắc sự kiện lịch trước | `3` | ngày | Số |
+| `EVENT_REMINDER_HOURS` | Nhắc sự kiện lịch thêm | `0` | giờ | Số |
 
 - **`FEED_TIME_WARNING`** (giờ, số thập phân được): gọi **H**. UI tô cảnh báo **chỉ nhãn khoảng cách** (pill) khi hai cữ liên tiếp cách nhau **≥ H** giờ.
 - **`FEED_WARNING_AMOUNT`** (ml, số nguyên): cữ có `volume` **nhỏ hơn** giá trị này được CSS class `low-volume`.
 - **`FEED_GROUP_GAP_MINUTES`** (phút, số nguyên **0–180**): nếu **> 0**, các cữ liên tiếp cách nhau ≤ phút này được **gom một dòng** hiển thị (giờ = trung bình, ml = tổng); **0** = tắt gom.
+- **`FEEDING_NOTIFICATION_MINUTES`**: khi còn ≤ N phút đến cữ dự đoán, UI hiển thị trạng thái «Sắp tới» (tab Cữ bú).
+- **`EVENT_REMINDER_DAYS`** / **`EVENT_REMINDER_HOURS`**: cửa sổ nhắc lịch — khi thời điểm sự kiện (tab `Event`) nằm trong khoảng **≤ (ngày×24 + giờ)** từ hiện tại và chưa Acknowledge, app mở dialog nhắc (có thể bỏ qua theo phiên hoặc ẩn nhắc ghi `TRUE` cột G).
 
 > **Tương thích:** nếu sheet cũ vẫn có ID `GROUP_FEEDING_TIME`, app vẫn **đọc** được làm H; khi **Lưu** từ dialog app ghi ID `FEED_TIME_WARNING` — nên đổi dòng trên sheet cho thống nhất.
 
@@ -184,7 +208,11 @@ Trong Sheet → **Extensions → Apps Script** → xoá toàn bộ code mặc đ
  *   updateWeight   → sửa ngày / kg / ghi chú theo row
  *   deleteWeight   → xoá row vật lý
  *
- * ===== Medical history V2 =====
+ * ===== Event / Lịch (tab Google Sheet `Event`) =====
+ *   addEvent           → append sự kiện
+ *   updateEvent        → sửa ngày/giờ/tên/ghi chú/vị trí (row)
+ *   deleteEvent        → xoá row
+ *   acknowledgeEvent   → cột G = TRUE (ẩn nhắc)
  *   addMedicalHistory    → append tiền sử y tế
  *   updateMedicalHistory → sửa theo row
  *   deleteMedicalHistory → xoá row vật lý
@@ -204,7 +232,12 @@ const FEED_SHEET = 'Feeding';
 const SETTINGS_SHEET = 'Settings';
 const EXPL_SHEET = 'Explorer';
 const WEIGHT_SHEET = 'Weight';
+const EVENT_SHEET = 'Event';
 const MEDICAL_SHEET = 'MedicalHistory';
+
+// Event columns (1-based): User | Ngày | Giờ | Tên | Ghi chú | Vị trí | Acknowledge
+const EV_USER = 1, EV_DATE = 2, EV_TIME = 3, EV_TITLE = 4, EV_NOTE = 5, EV_PLACE = 6,
+      EV_ACK = 7;
 
 // Weight columns (1-based): User | Ngày DD/MM/YYYY | kg | Ghi chú
 const W_USER = 1, W_DATE = 2, W_WEIGHT = 3, W_NOTE = 4;
@@ -256,6 +289,11 @@ function doPost(e) {
       case 'addWeight':      return _json(handleAddWeight(body));
       case 'updateWeight':   return _json(handleUpdateWeight(body));
       case 'deleteWeight':   return _json(handleDeleteWeight(body));
+      // Event / Lịch
+      case 'addEvent':         return _json(handleAddEvent(body));
+      case 'updateEvent':      return _json(handleUpdateEvent(body));
+      case 'deleteEvent':      return _json(handleDeleteEvent(body));
+      case 'acknowledgeEvent': return _json(handleAcknowledgeEvent(body));
       // Medical history V2
       case 'addMedicalHistory':    return _json(handleAddMedicalHistory(body));
       case 'updateMedicalHistory': return _json(handleUpdateMedicalHistory(body));
@@ -537,6 +575,70 @@ function handleDeleteWeight(body) {
   if (!row || row < 2) throw new Error('Thiếu row hợp lệ');
   sheet.deleteRow(row);
   return { success: true };
+}
+
+/* =========================
+ * Event / Lịch handlers (tab `Event`)
+ * ========================= */
+
+function handleAddEvent(body) {
+  const sheet = _getSheet(EVENT_SHEET);
+  const log = body.log || {};
+  const user = String(log.user || '').toLowerCase().trim();
+  const dateIso = String(log.date || '').trim();
+  const time = _normalizeTime(String(log.time || '').trim());
+  const title = String(log.title || '').trim();
+  const note = String(log.note != null ? log.note : '').trim();
+  const place = String(log.place != null ? log.place : '').trim();
+
+  if (!user || !dateIso || !time || !title) {
+    throw new Error('Thiếu trường bắt buộc (user, date, time, title).');
+  }
+  const dateStr = _isoToDdMmYyyy(dateIso);
+  if (!dateStr) throw new Error('Ngày không hợp lệ (YYYY-MM-DD).');
+
+  sheet.appendRow([user, dateStr, time, title, note, place, false]);
+  return { success: true, rowIndex: sheet.getLastRow() };
+}
+
+function handleUpdateEvent(body) {
+  const sheet = _getSheet(EVENT_SHEET);
+  var row = parseInt(body.row, 10);
+  if (!row || row < 2) throw new Error('Thiếu row hợp lệ');
+  const patch = body.patch || {};
+  if (patch.date != null) {
+    var iso = String(patch.date).trim();
+    var d = _isoToDdMmYyyy(iso);
+    if (!d) throw new Error('Ngày không hợp lệ');
+    sheet.getRange(row, EV_DATE).setValue(d);
+  }
+  if (patch.time != null) {
+    sheet.getRange(row, EV_TIME).setValue(_normalizeTime(String(patch.time).trim()));
+  }
+  if (patch.title != null) {
+    var t = String(patch.title).trim();
+    if (!t) throw new Error('Tên sự kiện không được để trống');
+    sheet.getRange(row, EV_TITLE).setValue(t);
+  }
+  if (patch.note != null) sheet.getRange(row, EV_NOTE).setValue(String(patch.note));
+  if (patch.place != null) sheet.getRange(row, EV_PLACE).setValue(String(patch.place));
+  return { success: true, rowIndex: row };
+}
+
+function handleDeleteEvent(body) {
+  const sheet = _getSheet(EVENT_SHEET);
+  var row = parseInt(body.row, 10);
+  if (!row || row < 2) throw new Error('Thiếu row hợp lệ');
+  sheet.deleteRow(row);
+  return { success: true };
+}
+
+function handleAcknowledgeEvent(body) {
+  const sheet = _getSheet(EVENT_SHEET);
+  var row = parseInt(body.row, 10);
+  if (!row || row < 2) throw new Error('Thiếu row hợp lệ');
+  sheet.getRange(row, EV_ACK).setValue(true);
+  return { success: true, rowIndex: row };
 }
 
 /* =========================

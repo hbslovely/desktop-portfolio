@@ -21,7 +21,7 @@
               class="btn icon-btn"
               type="button"
               (click)="openFeedingSettingsDialog()"
-              title="Cài đặt cữ bú (đọc/ghi tab Settings theo ID)"
+              title="Cài đặt"
               aria-label="Cài đặt cữ bú"
             >
               <i class="pi pi-sliders-h"></i>
@@ -31,8 +31,8 @@
               type="button"
               (click)="refreshAll()"
               [disabled]="isAnyLoading()"
-              [title]="isAnyLoading() ? 'Đang tải…' : 'Tải lại Cữ bú, Cân, Y tế, Tài liệu'"
-              aria-label="Tải lại Cữ bú, Cân nặng, Tiền sử y tế và Tài liệu"
+              [title]="isAnyLoading() ? 'Đang tải…' : 'Tải lại Cữ bú, Cân, Lịch, Y tế, Tài liệu'"
+              aria-label="Tải lại Cữ bú, Cân nặng, Lịch, Tiền sử y tế và Tài liệu"
             >
               <i class="pi pi-refresh" [class.spin]="isAnyLoading()"></i>
             </button>
@@ -64,6 +64,7 @@
     class="content"
     [class.is-documents]="bottomTab() === 'documents'"
     [class.is-weight]="bottomTab() === 'weight'"
+    [class.is-schedule]="bottomTab() === 'schedule'"
     [class.is-mom]="bottomTab() === 'mom'"
     [class.is-medical]="bottomTab() === 'medical'"
   >
@@ -94,6 +95,14 @@
         [gender]="profile()?.gender"
         [babyName]="profile()?.babyName"
       ></app-weight>
+    </div>
+
+    <!-- ============ TAB: LỊCH — Google Sheet tab "Event" ============ -->
+    <div
+      class="tab-pane tab-pane--schedule"
+      [hidden]="bottomTab() !== 'schedule'"
+    >
+      <app-feeding-schedule [user]="user()"></app-feeding-schedule>
     </div>
 
     <!-- ============ TAB: TIỀN SỬ Y TẾ — Medical history V2 ============ -->
@@ -1751,6 +1760,18 @@
       type="button"
       class="bn-item"
       role="tab"
+      [attr.aria-selected]="bottomTab() === 'schedule'"
+      [class.active]="bottomTab() === 'schedule'"
+      (click)="setBottomTab('schedule')"
+      title="Lịch — sự kiện từ sheet Event"
+    >
+      <i class="pi pi-calendar bn-icon"></i>
+      <span class="bn-label">Lịch</span>
+    </button>
+    <button
+      type="button"
+      class="bn-item"
+      role="tab"
       [attr.aria-selected]="bottomTab() === 'mom'"
       [class.active]="bottomTab() === 'mom'"
       (click)="setBottomTab('mom')"
@@ -1782,6 +1803,71 @@
       <span class="bn-label">Tài liệu</span>
     </button>
   </nav>
+
+  <!-- Nhắc sự kiện lịch (sheet Event + Settings) -->
+  <div
+    class="dialog-overlay dialog-overlay--front dialog-overlay--event-reminder"
+    *ngIf="eventReminderDialogOpen() && scheduleReminderEvents().length > 0"
+    (click)="closeEventReminderDialog()"
+  >
+    <div
+      class="dialog event-reminder-dialog"
+      role="dialog"
+      aria-modal="true"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="dialog-head event-reminder-dialog__head">
+        <h2 class="event-reminder-dialog__title">
+          <i class="pi pi-bell" aria-hidden="true"></i>
+          Bạn có lịch sắp tới
+        </h2>
+        <button
+          type="button"
+          class="dialog-close"
+          (click)="closeEventReminderDialog()"
+          aria-label="Đóng"
+        >
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+      <ul class="event-reminder-list">
+        <li *ngFor="let ev of scheduleReminderEvents()">
+          <article class="event-reminder-card">
+            <h3 class="event-reminder-card__title">{{ ev.title }}</h3>
+            <p class="event-reminder-card__datetime">
+              <span class="event-reminder-card__date">{{ formatReminderEventWhen(ev) }}</span>
+              <span class="event-reminder-card__sep" aria-hidden="true"> – </span>
+              <span class="event-reminder-card__hour">{{ formatReminderEventTime(ev.time) }}</span>
+            </p>
+            <p class="event-reminder-card__place" *ngIf="ev.place">
+              <i class="pi pi-map-marker" aria-hidden="true"></i>
+              <span>{{ ev.place }}</span>
+            </p>
+            <div class="event-reminder-card__content-wrap" *ngIf="ev.note">
+              <span class="event-reminder-card__content-label">Nội dung</span>
+              <p class="event-reminder-card__content">{{ ev.note }}</p>
+            </div>
+          </article>
+        </li>
+      </ul>
+      <div class="dialog-actions event-reminder-actions">
+        <button
+          type="button"
+          class="event-reminder-actions__link"
+          (click)="acknowledgeAllEventReminders()"
+        >
+          Không nhắc lại
+        </button>
+        <button
+          type="button"
+          class="btn primary event-reminder-actions__primary"
+          (click)="skipEventReminderSession()"
+        >
+          Đã hiểu
+        </button>
+      </div>
+    </div>
+  </div>
 
   <!-- ============ FAB (add feeding log) ============ -->
   <button
@@ -2263,8 +2349,7 @@
     >
       <div class="dialog-head">
         <div>
-          <div class="eyebrow">Google Sheet · tab Settings</div>
-          <h2><i class="pi pi-sliders-h"></i> Cài đặt cữ bú</h2>
+          <h2><i class="pi pi-sliders-h"></i> Cài đặt</h2>
         </div>
         <button
           type="button"
@@ -2277,18 +2362,9 @@
       </div>
 
       <ng-container *ngIf="settingsDraft() as sd">
-        <p class="feeding-settings-hint muted">
-          Lưu theo <strong>ID</strong> trên sheet (<code>FEED_TIME_WARNING</code>,
-          <code>FEED_WARNING_AMOUNT</code>, <code>FEED_GROUP_GAP_MINUTES</code>, 
-          <code>FEEDING_NOTIFICATION_MINUTES</code>), không phụ thuộc cột tên hiển thị.
-          Nếu sheet chưa có dòng ID, Apps Script sẽ <strong>thêm dòng</strong> (cần deploy script mới).
-        </p>
-
         <div class="log-grid feeding-settings-grid">
           <label class="field full">
-            <span class="label"
-              ><code>FEED_TIME_WARNING</code> — Ngưỡng H (giờ)</span
-            >
+            <span class="label">Cảnh báo khoảng cách cữ (giờ)</span>
             <input
               type="number"
               inputmode="decimal"
@@ -2299,16 +2375,10 @@
               (ngModelChange)="updateSettingsDraftTimeWarning($event)"
               name="setFeedTimeWarningHours"
             />
-            <span class="field-hint muted"
-              >Highlight nhãn khoảng cách khi từ cữ trước tới cữ này
-              <strong>≥ H</strong> giờ (H = giá trị sheet).</span
-            >
           </label>
 
           <label class="field full">
-            <span class="label"
-              ><code>FEED_WARNING_AMOUNT</code> — Ngưỡng ml</span
-            >
+            <span class="label">Ngưỡng cữ thấp (ml)</span>
             <input
               type="number"
               inputmode="numeric"
@@ -2319,16 +2389,10 @@
               (ngModelChange)="updateSettingsDraftWarning($event)"
               name="setWarningMl"
             />
-            <span class="field-hint muted"
-              >Cữ có dung tích <strong>nhỏ hơn</strong> giá trị này được đánh dấu
-              thấp.</span
-            >
           </label>
 
           <label class="field full">
-            <span class="label"
-              ><code>FEED_GROUP_GAP_MINUTES</code> — Gom cữ gần nhau (phút)</span
-            >
+            <span class="label">Gom cữ gần nhau (phút, 0 = tắt)</span>
             <input
               type="number"
               inputmode="numeric"
@@ -2339,35 +2403,51 @@
               (ngModelChange)="updateSettingsDraftGroupGap($event)"
               name="setFeedGroupGapMinutes"
             />
-            <span class="field-hint muted"
-              ><strong>0</strong> = không gom. Nếu &gt; 0: các cữ liên tiếp ≤ phút này hiển thị một dòng (giờ TB, ml tổng); bấm
-              <strong>N cữ</strong> hoặc <strong>chi tiết</strong> để xem từng cữ trên sheet.</span
-            >
           </label>
-        </div>
 
-          <label class="field full notification-setting-field">
-            <span class="label">
-              <code>FEEDING_NOTIFICATION_MINUTES</code> — Thông báo sắp bú (phút)
-              <span class="notification-badge">Mới</span>
-            </span>
+          <label class="field full">
+            <span class="label">Thông báo sắp bú (phút)</span>
             <input
               type="number"
               inputmode="numeric"
               min="1"
-              max="30"
+              max="180"
               step="1"
               [ngModel]="sd.notificationMinutes"
               (ngModelChange)="updateSettingsDraftNotification($event)"
               name="setFeedingNotificationMinutes"
               placeholder="5"
             />
-            <span class="field-hint muted">
-              Hiển thị trạng thái <strong>"Sắp tới"</strong> khi còn ≤ N phút đến giờ dự đoán. 
-              Giá trị khuyến nghị: <strong>3-10 phút</strong>. 
-              Thay đổi này giúp tùy chỉnh thời điểm chuẩn bị cho cữ bú.
-            </span>
           </label>
+
+          <label class="field full">
+            <span class="label">Nhắc lịch trước (ngày)</span>
+            <input
+              type="number"
+              inputmode="numeric"
+              min="0"
+              max="30"
+              step="1"
+              [ngModel]="sd.eventReminderDays"
+              (ngModelChange)="updateSettingsDraftEventReminderDays($event)"
+              name="eventRemDays"
+            />
+          </label>
+
+          <label class="field full">
+            <span class="label">Nhắc lịch thêm (giờ)</span>
+            <input
+              type="number"
+              inputmode="numeric"
+              min="0"
+              max="168"
+              step="1"
+              [ngModel]="sd.eventReminderHours"
+              (ngModelChange)="updateSettingsDraftEventReminderHours($event)"
+              name="eventRemHours"
+            />
+          </label>
+        </div>
 
         <div class="sync-error" *ngIf="settingsFormError()">
           <i class="pi pi-exclamation-triangle"></i> {{ settingsFormError() }}
@@ -2389,7 +2469,7 @@
               [class.pi-spin]="settingsSaving()"
               [class.pi-spinner]="settingsSaving()"
             ></i>
-            {{ settingsSaving() ? 'Đang lưu…' : 'Lưu lên sheet' }}
+            {{ settingsSaving() ? 'Đang lưu…' : 'Lưu' }}
           </button>
         </div>
       </ng-container>
