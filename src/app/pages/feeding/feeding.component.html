@@ -2446,13 +2446,6 @@
       </div>
 
       <ng-container *ngIf="settingsDraft() as sd">
-        <p class="feeding-settings-hint muted">
-          Lưu theo <strong>ID</strong> trên sheet (<code>FEED_TIME_WARNING</code>,
-          <code>FEED_WARNING_AMOUNT</code>, <code>FEED_GROUP_GAP_MINUTES</code>, 
-          <code>FEEDING_NOTIFICATION_MINUTES</code>, <code>BURP_DURATION_MINUTES</code>), không phụ thuộc cột tên hiển thị.
-          Nếu sheet chưa có dòng ID, Apps Script sẽ <strong>thêm dòng</strong> (cần deploy script mới).
-        </p>
-
         <div class="log-grid feeding-settings-grid">
           <label class="field full">
             <span class="label">Cảnh báo khoảng cách cữ (giờ)</span>
@@ -2564,6 +2557,23 @@
               (ngModelChange)="updateSettingsDraftEventReminderHours($event)"
               name="eventRemHours"
             />
+          </label>
+
+          <label class="field full">
+            <span class="label">Tự động làm mới nhật ký (phút)</span>
+            <input
+              type="number"
+              inputmode="numeric"
+              min="1"
+              max="60"
+              step="1"
+              [ngModel]="sd.activityLogRefreshMinutes"
+              (ngModelChange)="updateSettingsDraftActivityLogRefresh($event)"
+              name="activityLogRefresh"
+            />
+            <span class="field-hint muted">
+              Tự động tải lại nhật ký hoạt động mỗi N phút. Mặc định: <strong>5 phút</strong>.
+            </span>
           </label>
         </div>
 

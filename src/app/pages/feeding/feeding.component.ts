@@ -256,6 +256,7 @@ export class FeedingComponent {
     burpDurationMinutes: number;
     eventReminderDays: number;
     eventReminderHours: number;
+    activityLogRefreshMinutes: number;
   } | null>(null);
   settingsSaving = signal(false);
   settingsFormError = signal('');
@@ -1670,7 +1671,7 @@ export class FeedingComponent {
 
     const clockId = window.setInterval(
       () => this.now.set(new Date()),
-      20_000
+      60_000
     );
     this.destroyRef.onDestroy(() => window.clearInterval(clockId));
 
@@ -1783,7 +1784,10 @@ export class FeedingComponent {
   loadFeedingSettings(): void {
     this.feedingLogService.getFeedingSettings().subscribe({
       next: (rows) => {
-        this.feedingSettings.set(parseFeedingSettingsFromRows(rows));
+        const settings = parseFeedingSettingsFromRows(rows);
+        this.feedingSettings.set(settings);
+        // Update activity log refresh interval
+        this.activityLogService.setRefreshInterval(settings.activityLogRefreshMinutes);
       },
       error: (err) => {
         console.error(err);
@@ -1802,6 +1806,7 @@ export class FeedingComponent {
       burpDurationMinutes: s.burpDurationMinutes,
       eventReminderDays: s.eventReminderDays,
       eventReminderHours: s.eventReminderHours,
+      activityLogRefreshMinutes: s.activityLogRefreshMinutes,
     });
     this.feedingSettingsDialogOpen.set(true);
   }
@@ -1861,6 +1866,13 @@ export class FeedingComponent {
     );
   }
 
+  updateSettingsDraftActivityLogRefresh(v: string): void {
+    const n = parseInt(String(v).replace(/[^\d]/g, ''), 10);
+    this.settingsDraft.update((d) =>
+      d && !isNaN(n) ? { ...d, activityLogRefreshMinutes: n } : d
+    );
+  }
+
   submitFeedingSettings(): void {
     const d = this.settingsDraft();
     if (!d) return;
@@ -1871,6 +1883,7 @@ export class FeedingComponent {
     const burp = d.burpDurationMinutes;
     const evDays = d.eventReminderDays;
     const evHours = d.eventReminderHours;
+    const actLog = d.activityLogRefreshMinutes;
     if (!Number.isFinite(th) || th < 0.25 || th > 48) {
       this.settingsFormError.set('Ngưỡng giờ (FEED_TIME_WARNING): từ 0,25 đến 48.');
       return;
@@ -1906,6 +1919,12 @@ export class FeedingComponent {
     if (!Number.isFinite(evHours) || evHours < 0 || evHours > 168) {
       this.settingsFormError.set(
         'Nhắc lịch — giờ (EVENT_REMINDER_HOURS): từ 0 đến 168.'
+      );
+      return;
+    }
+    if (!Number.isFinite(actLog) || actLog < 1 || actLog > 60) {
+      this.settingsFormError.set(
+        'Tự động làm mới nhật ký: từ 1 đến 60 phút.'
       );
       return;
     }
@@ -1960,6 +1979,13 @@ export class FeedingComponent {
           value: evHours,
           name: 'Nhắc sự kiện lịch thêm (giờ)',
           unit: 'giờ',
+          dataType: 'Số',
+        },
+        {
+          id: FEEDING_SETTING_ID.ACTIVITY_LOG_REFRESH_MINUTES,
+          value: actLog,
+          name: 'Tự động làm mới nhật ký (phút)',
+          unit: 'phút',
           dataType: 'Số',
         },
       ])
