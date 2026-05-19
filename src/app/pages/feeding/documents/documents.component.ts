@@ -14,6 +14,7 @@ import {
   ExplorerEntry,
   ExplorerService,
 } from '../../../services/explorer.service';
+import { ActivityLogService } from '../../../services/activity-log.service';
 
 interface Crumb {
   id: number;
@@ -68,6 +69,7 @@ const VIEW_MODE_KEY = 'documents:viewMode';
 })
 export class DocumentsComponent {
   private explorerService = inject(ExplorerService);
+  private activityLogService = inject(ActivityLogService);
   private destroyRef = inject(DestroyRef);
 
   /** id của root folder. App giả định row đầu tiên (id=1) là root. */
@@ -659,6 +661,11 @@ export class DocumentsComponent {
             this.saving.set(false);
             this.folderDraft.set(null);
             this.flashSuccess(`Đã tạo thư mục "${name}"`);
+            // Log activity (non-blocking)
+            const folderName = this.currentFolder()?.name || 'Gốc';
+            this.activityLogService
+              .logDocument('System', 'FOLDER_ADDED', { name, folder: folderName })
+              .subscribe();
             setTimeout(() => this.loadEntries(), 800);
           },
           error: (err) => {
@@ -670,6 +677,8 @@ export class DocumentsComponent {
       this.saving.set(true);
       this.errorMsg.set('');
       const targetId = d.targetId;
+      const oldEntry = this.entriesById().get(targetId);
+      const oldName = oldEntry?.name || '';
       this.explorerService
         .updateEntry(targetId, { name })
         .subscribe({
@@ -682,6 +691,11 @@ export class DocumentsComponent {
               p && p.id === targetId ? { ...p, name } : p
             );
             this.flashSuccess(`Đã đổi tên thành "${name}"`);
+            // Log activity (non-blocking)
+            const eventType = d.entryType === 'folder' ? 'FOLDER_RENAMED' : 'FILE_RENAMED';
+            this.activityLogService
+              .logDocument('System', eventType, { oldName, newName: name })
+              .subscribe();
             setTimeout(() => this.loadEntries(), 800);
           },
           error: (err) => {
@@ -717,6 +731,11 @@ export class DocumentsComponent {
             ? `Đã xoá thư mục "${entry.name}"`
             : `Đã xoá ảnh "${entry.name}"`
         );
+        // Log activity (non-blocking)
+        const eventType = isFolder ? 'FOLDER_DELETED' : 'FILE_DELETED';
+        this.activityLogService
+          .logDocument('System', eventType, { name: entry.name })
+          .subscribe();
         setTimeout(() => this.loadEntries(), 800);
       },
       error: (err) => {
@@ -772,6 +791,11 @@ export class DocumentsComponent {
           })
         );
         success++;
+        // Log activity (non-blocking)
+        const folderName = this.currentFolder()?.name || 'Gốc';
+        this.activityLogService
+          .logDocument('System', 'FILE_ADDED', { name: safeName, folder: folderName })
+          .subscribe();
       } catch (e: unknown) {
         failed++;
         failedNames.push(
@@ -1337,13 +1361,22 @@ export class DocumentsComponent {
 
     this.saving.set(true);
     this.errorMsg.set('');
+    const targetName = this.currentFolder()?.name || 'thư mục gốc';
     this.explorerService.moveEntries(candidates, target).subscribe({
       next: () => {
         this.saving.set(false);
         const count = candidates.length;
-        const targetName = this.currentFolder()?.name || 'thư mục này';
         this.clipboard.set(null);
         this.flashSuccess(`Đã chuyển ${count} mục vào "${targetName}"`);
+        // Log activity for each moved item (non-blocking)
+        for (const id of candidates) {
+          const entry = map.get(id);
+          if (entry) {
+            this.activityLogService
+              .logDocument('System', 'FILE_MOVED', { name: entry.name, toFolder: targetName })
+              .subscribe();
+          }
+        }
         setTimeout(() => this.loadEntries(), 800);
       },
       error: (err) => {

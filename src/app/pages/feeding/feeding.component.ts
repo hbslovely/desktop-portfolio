@@ -1951,6 +1951,8 @@ export class FeedingComponent {
             return;
           }
           this.closeFeedingSettingsDialog();
+          // Log activity (non-blocking)
+          this.activityLogService.logSettings(this.user(), 'Cài đặt ứng dụng').subscribe();
           setTimeout(() => this.loadFeedingSettings(), 600);
         },
         error: (err) => {
