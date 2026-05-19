@@ -70,6 +70,10 @@ export interface FeedingSettingsResolved {
    * Cộng thêm giờ vào cửa sổ nhắc lịch — ID `EVENT_REMINDER_HOURS`.
    */
   eventReminderHours: number;
+  /**
+   * Tự động làm mới nhật ký hoạt động mỗi N phút — ID `ACTIVITY_LOG_REFRESH_MINUTES`.
+   */
+  activityLogRefreshMinutes: number;
 }
 
 /** ID cố định trên sheet — khi lưu chỉ gửi các key này. */
@@ -81,6 +85,7 @@ export const FEEDING_SETTING_ID = {
   BURP_DURATION_MINUTES: 'BURP_DURATION_MINUTES',
   EVENT_REMINDER_DAYS: 'EVENT_REMINDER_DAYS',
   EVENT_REMINDER_HOURS: 'EVENT_REMINDER_HOURS',
+  ACTIVITY_LOG_REFRESH_MINUTES: 'ACTIVITY_LOG_REFRESH_MINUTES',
 } as const;
 
 const DEFAULT_FEEDING_SETTINGS: FeedingSettingsResolved = {
@@ -91,6 +96,7 @@ const DEFAULT_FEEDING_SETTINGS: FeedingSettingsResolved = {
   burpDurationMinutes: 10,
   eventReminderDays: 3,
   eventReminderHours: 0,
+  activityLogRefreshMinutes: 5,
 };
 
 export function parseFeedingSettingsFromRows(
@@ -106,6 +112,7 @@ export function parseFeedingSettingsFromRows(
   const burpRow = byId.get(FEEDING_SETTING_ID.BURP_DURATION_MINUTES);
   const evDaysRow = byId.get(FEEDING_SETTING_ID.EVENT_REMINDER_DAYS);
   const evHoursRow = byId.get(FEEDING_SETTING_ID.EVENT_REMINDER_HOURS);
+  const activityLogRow = byId.get(FEEDING_SETTING_ID.ACTIVITY_LOG_REFRESH_MINUTES);
 
   let feedTimeWarningHours = parseFloat(
     String(timeRow?.value ?? '').replace(',', '.').trim()
@@ -134,6 +141,10 @@ export function parseFeedingSettingsFromRows(
     String(evHoursRow?.value ?? '0').replace(/[^\d]/g, ''),
     10
   );
+  let activityLogRefreshMinutes = parseInt(
+    String(activityLogRow?.value ?? '5').replace(/[^\d]/g, ''),
+    10
+  );
 
   if (!Number.isFinite(feedTimeWarningHours) || feedTimeWarningHours <= 0) {
     feedTimeWarningHours = DEFAULT_FEEDING_SETTINGS.feedTimeWarningHours;
@@ -156,6 +167,9 @@ export function parseFeedingSettingsFromRows(
   if (!Number.isFinite(eventReminderHours) || eventReminderHours < 0) {
     eventReminderHours = DEFAULT_FEEDING_SETTINGS.eventReminderHours;
   }
+  if (!Number.isFinite(activityLogRefreshMinutes) || activityLogRefreshMinutes <= 0) {
+    activityLogRefreshMinutes = DEFAULT_FEEDING_SETTINGS.activityLogRefreshMinutes;
+  }
 
   feedTimeWarningHours = Math.min(48, Math.max(0.25, feedTimeWarningHours));
   feedWarningMl = Math.min(500, Math.max(1, feedWarningMl));
@@ -164,6 +178,7 @@ export function parseFeedingSettingsFromRows(
   burpDurationMinutes = Math.min(30, Math.max(1, burpDurationMinutes));
   eventReminderDays = Math.min(30, Math.max(0, eventReminderDays));
   eventReminderHours = Math.min(168, Math.max(0, eventReminderHours));
+  activityLogRefreshMinutes = Math.min(60, Math.max(1, activityLogRefreshMinutes));
 
   return {
     feedTimeWarningHours,
@@ -173,6 +188,7 @@ export function parseFeedingSettingsFromRows(
     burpDurationMinutes,
     eventReminderDays,
     eventReminderHours,
+    activityLogRefreshMinutes,
   };
 }
 

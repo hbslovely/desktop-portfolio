@@ -223,19 +223,14 @@ type FilterCategory = 'all' | 'feeding' | 'weight' | 'medical' | 'schedule' | 'd
       inset: 0;
       z-index: 1000;
       display: flex;
-      align-items: flex-start;
+      align-items: center;
       justify-content: center;
-      padding: 60px 16px 40px;
+      padding: 16px;
       background: rgba(15, 23, 42, 0.5);
       backdrop-filter: blur(4px);
       animation: fadeIn 0.15s ease;
       overflow: hidden;
       touch-action: none;
-
-      @media (max-width: 640px) {
-        padding: 40px 12px 24px;
-        align-items: flex-start;
-      }
     }
 
     @keyframes fadeIn {
@@ -248,17 +243,12 @@ type FilterCategory = 'all' | 'feeding' | 'weight' | 'medical' | 'schedule' | 'd
       flex-direction: column;
       width: 100%;
       max-width: 480px;
-      max-height: calc(100vh - 120px);
+      height: 75vh;
       background: #fff;
       border-radius: 16px;
       box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
       animation: slideUp 0.2s ease;
       overflow: hidden;
-
-      @media (max-width: 640px) {
-        max-height: calc(100vh - 80px);
-        border-radius: 16px;
-      }
     }
 
     @keyframes slideUp {
@@ -387,14 +377,8 @@ type FilterCategory = 'all' | 'feeding' | 'weight' | 'medical' | 'schedule' | 'd
       flex: 1;
       overflow-y: auto;
       padding: 0;
-      min-height: 300px;
-      max-height: 520px;
       overscroll-behavior: contain;
       -webkit-overflow-scrolling: touch;
-
-      @media (max-width: 640px) {
-        max-height: calc(100vh - 220px);
-      }
     }
 
     .activity-loading,

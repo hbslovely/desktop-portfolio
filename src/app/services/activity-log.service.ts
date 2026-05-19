@@ -1,6 +1,6 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable, of, interval, Subject, from, throwError } from 'rxjs';
+import { Observable, of, interval, Subject, from, throwError, Subscription } from 'rxjs';
 import { map, catchError, tap, switchMap, startWith } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 
@@ -231,7 +231,9 @@ export class ActivityLogService {
     ? (environment.googleFeedingAppsScriptUrl || environment.googleAppsScriptUrl)
     : '/api/feeding-apps-script';
 
-  private readonly REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutes
+  /** Refresh interval in minutes (configurable from settings) */
+  refreshIntervalMinutes = signal<number>(5);
+  private autoRefreshSub?: Subscription;
 
   private logs = signal<ActivityLogRow[]>([]);
   private lastLogId = signal<string | null>(null);
@@ -251,8 +253,22 @@ export class ActivityLogService {
     this.startAutoRefresh();
   }
 
+  /** Update refresh interval and restart auto-refresh */
+  setRefreshInterval(minutes: number): void {
+    if (minutes > 0 && minutes !== this.refreshIntervalMinutes()) {
+      this.refreshIntervalMinutes.set(minutes);
+      this.restartAutoRefresh();
+    }
+  }
+
+  private restartAutoRefresh(): void {
+    this.autoRefreshSub?.unsubscribe();
+    this.startAutoRefresh();
+  }
+
   private startAutoRefresh(): void {
-    interval(this.REFRESH_INTERVAL)
+    const intervalMs = this.refreshIntervalMinutes() * 60 * 1000;
+    this.autoRefreshSub = interval(intervalMs)
       .pipe(
         startWith(0),
         switchMap(() => this.fetchLogs())
