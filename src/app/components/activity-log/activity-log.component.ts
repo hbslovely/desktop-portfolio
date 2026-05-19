@@ -36,7 +36,7 @@ type FilterCategory = 'all' | 'feeding' | 'weight' | 'medical' | 'schedule' | 'd
       (click)="openDialog()"
       title="Lịch sử hoạt động"
     >
-      <i class="pi pi-history"></i>
+      <i class="pi pi-bell"></i>
       <span class="activity-badge" *ngIf="unreadCount() > 0">
         {{ unreadCount() > 9 ? '9+' : unreadCount() }}
       </span>
@@ -122,15 +122,16 @@ type FilterCategory = 'all' | 'feeding' | 'weight' | 'medical' | 'schedule' | 'd
               <div class="activity-item__body">
                 <div class="activity-item__meta">
                   <span class="activity-item__type">{{ getEventLabel(log.eventType) }}</span>
-                  <span class="activity-item__user">{{ log.user }}</span>
+                  <time class="activity-item__time">{{ formatTime(log.timestamp) }}</time>
                 </div>
                 <p class="activity-item__content">
-                  <ng-container *ngFor="let part of parseContent(log.content)">
+                  <strong class="activity-item__author">{{ log.user }}</strong>
+                  <span> đã </span>
+                  <ng-container *ngFor="let part of parseContent(lowercaseFirst(log.content))">
                     <strong *ngIf="part.bold">{{ part.text }}</strong>
                     <span *ngIf="!part.bold">{{ part.text }}</span>
                   </ng-container>
                 </p>
-                <time class="activity-item__time">{{ formatTime(log.timestamp) }}</time>
               </div>
             </li>
           </ul>
@@ -146,8 +147,8 @@ type FilterCategory = 'all' | 'feeding' | 'weight' | 'medical' | 'schedule' | 'd
 
         <footer class="activity-dialog__footer">
           <span class="activity-footer__info">
-            <i class="pi pi-sync"></i>
-            Tự động cập nhật mỗi 5 phút
+            <i class="pi pi-clock"></i>
+            Cập nhật: {{ lastRefreshText() }}
           </span>
           <button
             type="button"
@@ -477,6 +478,7 @@ type FilterCategory = 'all' | 'feeding' | 'weight' | 'medical' | 'schedule' | 'd
     .activity-item__meta {
       display: flex;
       align-items: center;
+      justify-content: space-between;
       gap: 8px;
       margin-bottom: 4px;
     }
@@ -489,18 +491,14 @@ type FilterCategory = 'all' | 'feeding' | 'weight' | 'medical' | 'schedule' | 'd
       color: #64748b;
     }
 
-    .activity-item__user {
-      font-size: 11px;
+    .activity-item__time {
+      font-size: 10px;
       color: #94a3b8;
-
-      &::before {
-        content: '·';
-        margin-right: 8px;
-      }
+      white-space: nowrap;
     }
 
     .activity-item__content {
-      margin: 0 0 6px;
+      margin: 0;
       font-size: 13px;
       line-height: 1.5;
       color: #334155;
@@ -509,11 +507,10 @@ type FilterCategory = 'all' | 'feeding' | 'weight' | 'medical' | 'schedule' | 'd
         color: #0f172a;
         font-weight: 600;
       }
-    }
 
-    .activity-item__time {
-      font-size: 11px;
-      color: #94a3b8;
+      .activity-item__author {
+        color: #5b6cff;
+      }
     }
 
     .activity-load-more {
@@ -607,6 +604,8 @@ export class ActivityLogComponent implements OnInit, OnDestroy {
   activityChanged = output<void>();
 
   dialogOpen = signal(false);
+  lastRefreshTime = signal<Date>(new Date());
+  private nowTick = signal<number>(Date.now());
 
   private rawLogs = this.activityLogService.logs$;
   loading = this.activityLogService.loading$;
@@ -671,6 +670,23 @@ export class ActivityLogComponent implements OnInit, OnDestroy {
     return Math.max(0, this.filteredLogs().length - this.displayCount());
   });
 
+  /** Last refresh relative text */
+  lastRefreshText = computed(() => {
+    const date = this.lastRefreshTime();
+    const nowMs = this.nowTick();
+    const diffMs = nowMs - date.getTime();
+    const diffSec = Math.floor(diffMs / 1000);
+    const diffMin = Math.floor(diffMs / 60000);
+    
+    if (diffSec < 10) return 'vừa xong';
+    if (diffSec < 60) return `${diffSec} giây trước`;
+    if (diffMin < 60) return `${diffMin} phút trước`;
+    
+    const h = String(date.getHours()).padStart(2, '0');
+    const m = String(date.getMinutes()).padStart(2, '0');
+    return `lúc ${h}:${m}`;
+  });
+
   private lastCheckHasNew = false;
 
   ngOnInit(): void {
@@ -680,6 +696,8 @@ export class ActivityLogComponent implements OnInit, OnDestroy {
         this.activityChanged.emit();
       }
       this.lastCheckHasNew = hasNew;
+      // Update nowTick to refresh relative time display
+      this.nowTick.set(Date.now());
     });
   }
 
@@ -699,6 +717,7 @@ export class ActivityLogComponent implements OnInit, OnDestroy {
     this.displayCount.set(this.PAGE_SIZE);
     this.filterCategory = 'all';
     this.filterCategorySignal.set('all');
+    this.lastRefreshTime.set(new Date());
     this.activityLogService.markAsRead();
     // Lock body scroll on mobile
     document.body.style.overflow = 'hidden';
@@ -721,6 +740,7 @@ export class ActivityLogComponent implements OnInit, OnDestroy {
   refreshLogs(): void {
     this.displayCount.set(this.PAGE_SIZE);
     this.activityLogService.refresh();
+    this.lastRefreshTime.set(new Date());
   }
 
   loadMore(): void {
@@ -743,6 +763,12 @@ export class ActivityLogComponent implements OnInit, OnDestroy {
 
   parseContent(content: string) {
     return parseContentWithBold(content);
+  }
+
+  /** Lowercase first character of string */
+  lowercaseFirst(str: string): string {
+    if (!str) return str;
+    return str.charAt(0).toLowerCase() + str.slice(1);
   }
 
   getEventLabel(eventType: string) {
