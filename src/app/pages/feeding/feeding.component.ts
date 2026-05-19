@@ -2244,6 +2244,12 @@ export class FeedingComponent {
         next: () => {
           this.bottlePrepEditing.set(false);
           this.bottlePrepDraft.set('');
+          // Log activity (non-blocking)
+          this.activityLogService.addLog({
+            user: this.user(),
+            eventType: ACTIVITY_EVENT.BOTTLE_PREP_ADDED,
+            content: formatLogContent(ACTIVITY_EVENT.BOTTLE_PREP_ADDED, { volume: n, time: t }),
+          }).subscribe();
           setTimeout(() => this.loadBottlePrepFromSheet(), 450);
         },
         error: (err) =>

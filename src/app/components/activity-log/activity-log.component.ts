@@ -21,6 +21,7 @@ import {
 } from '../../services/activity-log.service';
 
 type SortOrder = 'desc' | 'asc';
+type FilterCategory = 'all' | 'feeding' | 'weight' | 'medical' | 'schedule' | 'document' | 'settings';
 
 @Component({
   selector: 'app-activity-log',
@@ -46,6 +47,7 @@ type SortOrder = 'desc' | 'asc';
       class="activity-dialog-overlay"
       *ngIf="dialogOpen()"
       (click)="closeDialog()"
+      (touchmove)="$event.preventDefault()"
     >
       <div
         class="activity-dialog"
@@ -68,29 +70,44 @@ type SortOrder = 'desc' | 'asc';
           </button>
         </header>
 
-        <!-- Sort Controls -->
+        <!-- Filter & Sort Controls -->
         <div class="activity-dialog__toolbar">
-          <label class="activity-sort">
-            <i class="pi pi-sort-alt"></i>
-            <select [(ngModel)]="sortOrder" (ngModelChange)="onSortChange()">
-              <option value="desc">Mới nhất trước</option>
-              <option value="asc">Cũ nhất trước</option>
-            </select>
-          </label>
-          <span class="activity-count" *ngIf="allLogs().length > 0">
-            {{ displayedLogs().length }} / {{ allLogs().length }}
+          <div class="activity-toolbar__filters">
+            <label class="activity-filter">
+              <i class="pi pi-filter"></i>
+              <select [(ngModel)]="filterCategory" (ngModelChange)="onFilterChange()">
+                <option value="all">Tất cả</option>
+                <option value="feeding">Cữ bú</option>
+                <option value="weight">Cân nặng</option>
+                <option value="medical">Y tế</option>
+                <option value="schedule">Lịch hẹn</option>
+                <option value="document">Tài liệu</option>
+                <option value="settings">Cài đặt</option>
+              </select>
+            </label>
+            <label class="activity-sort">
+              <i class="pi pi-sort-alt"></i>
+              <select [(ngModel)]="sortOrder" (ngModelChange)="onSortChange()">
+                <option value="desc">Mới nhất</option>
+                <option value="asc">Cũ nhất</option>
+              </select>
+            </label>
+          </div>
+          <span class="activity-count" *ngIf="filteredLogs().length > 0">
+            {{ displayedLogs().length }} / {{ filteredLogs().length }}
           </span>
         </div>
 
-        <div class="activity-dialog__content">
+        <div class="activity-dialog__content" (touchmove)="$event.stopPropagation()">
           <div class="activity-loading" *ngIf="loading()">
             <i class="pi pi-spin pi-spinner"></i>
             <span>Đang tải...</span>
           </div>
 
-          <div class="activity-empty" *ngIf="!loading() && allLogs().length === 0">
+          <div class="activity-empty" *ngIf="!loading() && filteredLogs().length === 0">
             <i class="pi pi-inbox"></i>
-            <p>Chưa có hoạt động nào được ghi nhận</p>
+            <p *ngIf="filterCategory === 'all'">Chưa có hoạt động nào được ghi nhận</p>
+            <p *ngIf="filterCategory !== 'all'">Không có hoạt động nào trong danh mục này</p>
           </div>
 
           <ul class="activity-list" *ngIf="!loading() && displayedLogs().length > 0">
@@ -207,14 +224,16 @@ type SortOrder = 'desc' | 'asc';
       display: flex;
       align-items: flex-start;
       justify-content: center;
-      padding: 40px 16px;
+      padding: 60px 16px 40px;
       background: rgba(15, 23, 42, 0.5);
       backdrop-filter: blur(4px);
       animation: fadeIn 0.15s ease;
+      overflow: hidden;
+      touch-action: none;
 
       @media (max-width: 640px) {
-        padding: 16px;
-        align-items: flex-end;
+        padding: 40px 12px 24px;
+        align-items: flex-start;
       }
     }
 
@@ -228,7 +247,7 @@ type SortOrder = 'desc' | 'asc';
       flex-direction: column;
       width: 100%;
       max-width: 480px;
-      max-height: calc(100vh - 80px);
+      max-height: calc(100vh - 120px);
       background: #fff;
       border-radius: 16px;
       box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
@@ -236,8 +255,8 @@ type SortOrder = 'desc' | 'asc';
       overflow: hidden;
 
       @media (max-width: 640px) {
-        max-height: calc(100vh - 32px);
-        border-radius: 16px 16px 0 0;
+        max-height: calc(100vh - 80px);
+        border-radius: 16px;
       }
     }
 
@@ -302,28 +321,38 @@ type SortOrder = 'desc' | 'asc';
       display: flex;
       align-items: center;
       justify-content: space-between;
+      gap: 8px;
       padding: 10px 20px;
       border-bottom: 1px solid #f1f5f9;
       background: #fff;
+      flex-wrap: wrap;
     }
 
-    .activity-sort {
+    .activity-toolbar__filters {
       display: flex;
       align-items: center;
       gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .activity-filter,
+    .activity-sort {
+      display: flex;
+      align-items: center;
+      gap: 6px;
       font-size: 12px;
       color: #64748b;
 
       i {
-        font-size: 14px;
+        font-size: 13px;
       }
 
       select {
-        padding: 6px 28px 6px 10px;
-        font-size: 12px;
+        padding: 6px 24px 6px 8px;
+        font-size: 11px;
         font-weight: 500;
         color: #334155;
-        background: #f8fafc url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 8px center;
+        background: #f8fafc url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 6px center;
         border: 1px solid #e2e8f0;
         border-radius: 6px;
         cursor: pointer;
@@ -342,10 +371,15 @@ type SortOrder = 'desc' | 'asc';
       }
     }
 
+    .activity-filter select {
+      min-width: 90px;
+    }
+
     .activity-count {
       font-size: 11px;
       color: #94a3b8;
       font-weight: 500;
+      white-space: nowrap;
     }
 
     .activity-dialog__content {
@@ -354,9 +388,11 @@ type SortOrder = 'desc' | 'asc';
       padding: 0;
       min-height: 300px;
       max-height: 520px;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
 
       @media (max-width: 640px) {
-        max-height: 400px;
+        max-height: calc(100vh - 220px);
       }
     }
 
@@ -585,7 +621,22 @@ export class ActivityLogComponent implements OnInit, OnDestroy {
   sortOrder: SortOrder = 'desc';
   private sortOrderSignal = signal<SortOrder>('desc');
 
-  /** Sorted logs */
+  /** Filter category */
+  filterCategory: FilterCategory = 'all';
+  private filterCategorySignal = signal<FilterCategory>('all');
+
+  /** Category mapping for filter */
+  private readonly categoryPrefixes: Record<FilterCategory, string[]> = {
+    all: [],
+    feeding: ['FEEDING_', 'BOTTLE_PREP_'],
+    weight: ['WEIGHT_'],
+    medical: ['MEDICAL_'],
+    schedule: ['SCHEDULE_'],
+    document: ['FILE_', 'FOLDER_'],
+    settings: ['SETTINGS_', 'PROFILE_'],
+  };
+
+  /** All logs (sorted) */
   allLogs = computed(() => {
     const logs = [...this.rawLogs()];
     const order = this.sortOrderSignal();
@@ -596,19 +647,28 @@ export class ActivityLogComponent implements OnInit, OnDestroy {
     });
   });
 
+  /** Filtered logs */
+  filteredLogs = computed(() => {
+    const logs = this.allLogs();
+    const category = this.filterCategorySignal();
+    if (category === 'all') return logs;
+    const prefixes = this.categoryPrefixes[category];
+    return logs.filter(log => prefixes.some(p => log.eventType.startsWith(p)));
+  });
+
   /** Displayed logs (limited by displayCount) */
   displayedLogs = computed(() => {
-    return this.allLogs().slice(0, this.displayCount());
+    return this.filteredLogs().slice(0, this.displayCount());
   });
 
   /** Has more logs to load? */
   hasMore = computed(() => {
-    return this.displayCount() < this.allLogs().length;
+    return this.displayCount() < this.filteredLogs().length;
   });
 
   /** Remaining count */
   remainingCount = computed(() => {
-    return Math.max(0, this.allLogs().length - this.displayCount());
+    return Math.max(0, this.filteredLogs().length - this.displayCount());
   });
 
   private lastCheckHasNew = false;
@@ -625,15 +685,36 @@ export class ActivityLogComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.checkSub?.unsubscribe();
+    // Restore body scroll if dialog was open
+    if (this.dialogOpen()) {
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+      document.body.style.top = '';
+    }
   }
 
   openDialog(): void {
     this.dialogOpen.set(true);
     this.displayCount.set(this.PAGE_SIZE);
+    this.filterCategory = 'all';
+    this.filterCategorySignal.set('all');
     this.activityLogService.markAsRead();
+    // Lock body scroll on mobile
+    document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.width = '100%';
+    document.body.style.top = `-${window.scrollY}px`;
   }
 
   closeDialog(): void {
+    // Restore body scroll
+    const scrollY = document.body.style.top;
+    document.body.style.overflow = '';
+    document.body.style.position = '';
+    document.body.style.width = '';
+    document.body.style.top = '';
+    window.scrollTo(0, parseInt(scrollY || '0', 10) * -1);
     this.dialogOpen.set(false);
   }
 
@@ -648,6 +729,11 @@ export class ActivityLogComponent implements OnInit, OnDestroy {
 
   onSortChange(): void {
     this.sortOrderSignal.set(this.sortOrder);
+    this.displayCount.set(this.PAGE_SIZE);
+  }
+
+  onFilterChange(): void {
+    this.filterCategorySignal.set(this.filterCategory);
     this.displayCount.set(this.PAGE_SIZE);
   }
 
