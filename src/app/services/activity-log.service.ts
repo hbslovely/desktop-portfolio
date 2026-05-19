@@ -29,6 +29,15 @@ export const ACTIVITY_EVENT = {
   // Settings events
   SETTINGS_UPDATED: 'SETTINGS_UPDATED',
   PROFILE_UPDATED: 'PROFILE_UPDATED',
+
+  // Document/Explorer events
+  FILE_ADDED: 'FILE_ADDED',
+  FILE_DELETED: 'FILE_DELETED',
+  FILE_MOVED: 'FILE_MOVED',
+  FILE_RENAMED: 'FILE_RENAMED',
+  FOLDER_ADDED: 'FOLDER_ADDED',
+  FOLDER_DELETED: 'FOLDER_DELETED',
+  FOLDER_RENAMED: 'FOLDER_RENAMED',
 } as const;
 
 export type ActivityEventType = (typeof ACTIVITY_EVENT)[keyof typeof ACTIVITY_EVENT];
@@ -102,6 +111,22 @@ export function formatLogContent(
     case ACTIVITY_EVENT.PROFILE_UPDATED:
       return `Cập nhật thông tin '${details['field']}'`;
 
+    // Documents
+    case ACTIVITY_EVENT.FILE_ADDED:
+      return `Tải lên file '${details['name']}' vào thư mục '${details['folder']}'`;
+    case ACTIVITY_EVENT.FILE_DELETED:
+      return `Xóa file '${details['name']}'`;
+    case ACTIVITY_EVENT.FILE_MOVED:
+      return `Di chuyển file '${details['name']}' sang '${details['toFolder']}'`;
+    case ACTIVITY_EVENT.FILE_RENAMED:
+      return `Đổi tên file từ '${details['oldName']}' thành '${details['newName']}'`;
+    case ACTIVITY_EVENT.FOLDER_ADDED:
+      return `Tạo thư mục '${details['name']}'`;
+    case ACTIVITY_EVENT.FOLDER_DELETED:
+      return `Xóa thư mục '${details['name']}'`;
+    case ACTIVITY_EVENT.FOLDER_RENAMED:
+      return `Đổi tên thư mục từ '${details['oldName']}' thành '${details['newName']}'`;
+
     default:
       return `Hoạt động: ${eventType}`;
   }
@@ -146,6 +171,13 @@ export function getEventTypeLabel(eventType: ActivityEventType): string {
     [ACTIVITY_EVENT.SCHEDULE_DELETED]: 'Xóa lịch',
     [ACTIVITY_EVENT.SETTINGS_UPDATED]: 'Cài đặt',
     [ACTIVITY_EVENT.PROFILE_UPDATED]: 'Hồ sơ',
+    [ACTIVITY_EVENT.FILE_ADDED]: 'Tải file',
+    [ACTIVITY_EVENT.FILE_DELETED]: 'Xóa file',
+    [ACTIVITY_EVENT.FILE_MOVED]: 'Di chuyển file',
+    [ACTIVITY_EVENT.FILE_RENAMED]: 'Đổi tên file',
+    [ACTIVITY_EVENT.FOLDER_ADDED]: 'Tạo thư mục',
+    [ACTIVITY_EVENT.FOLDER_DELETED]: 'Xóa thư mục',
+    [ACTIVITY_EVENT.FOLDER_RENAMED]: 'Đổi tên thư mục',
   };
   return labels[eventType] || eventType;
 }
@@ -158,6 +190,8 @@ export function getEventTypeIcon(eventType: ActivityEventType): string {
   if (eventType.startsWith('SCHEDULE_')) return 'pi-calendar';
   if (eventType.startsWith('SETTINGS_')) return 'pi-cog';
   if (eventType.startsWith('PROFILE_')) return 'pi-user';
+  if (eventType.startsWith('FILE_')) return 'pi-file';
+  if (eventType.startsWith('FOLDER_')) return 'pi-folder';
   return 'pi-info-circle';
 }
 
@@ -438,5 +472,21 @@ export class ActivityLogService {
   logSettings(user: string, settingName: string): Observable<boolean> {
     const content = formatLogContent(ACTIVITY_EVENT.SETTINGS_UPDATED, { setting: settingName });
     return this.addLog({ user, eventType: ACTIVITY_EVENT.SETTINGS_UPDATED, content });
+  }
+
+  /** Helper: Log a document/file event */
+  logDocument(
+    user: string,
+    eventType: 'FILE_ADDED' | 'FILE_DELETED' | 'FILE_MOVED' | 'FILE_RENAMED' | 'FOLDER_ADDED' | 'FOLDER_DELETED' | 'FOLDER_RENAMED',
+    details: { name?: string; folder?: string; toFolder?: string; oldName?: string; newName?: string }
+  ): Observable<boolean> {
+    const content = formatLogContent(ACTIVITY_EVENT[eventType], {
+      name: details.name,
+      folder: details.folder,
+      toFolder: details.toFolder,
+      oldName: details.oldName,
+      newName: details.newName,
+    });
+    return this.addLog({ user, eventType: ACTIVITY_EVENT[eventType], content });
   }
 }

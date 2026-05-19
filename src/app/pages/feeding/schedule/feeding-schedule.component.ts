@@ -97,6 +97,12 @@ export class FeedingScheduleComponent {
     interval(30_000)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.now.set(new Date()));
+
+    // Listen to visual viewport changes (keyboard show/hide on mobile)
+    if (typeof window !== 'undefined' && window.visualViewport) {
+      window.visualViewport.addEventListener('resize', () => this.syncPlaceMenuPosition());
+      window.visualViewport.addEventListener('scroll', () => this.syncPlaceMenuPosition());
+    }
   }
 
   @HostListener('window:scroll')
@@ -278,9 +284,29 @@ export class FeedingScheduleComponent {
     width: number;
   } {
     const rect = origin.getBoundingClientRect();
+    let top = rect.bottom + 4;
+    let left = rect.left;
+
+    // On mobile, when keyboard is shown, adjust for visual viewport offset
+    if (typeof window !== 'undefined' && window.visualViewport) {
+      const vv = window.visualViewport;
+      // Check if dropdown would go below visible area
+      const dropdownHeight = 200; // max-height of dropdown
+      const visibleBottom = vv.height;
+      
+      if (top + dropdownHeight > visibleBottom) {
+        // Position above the input instead
+        top = rect.top - dropdownHeight - 4;
+        if (top < 0) {
+          // If still doesn't fit, just position at top of visible area
+          top = Math.max(4, rect.bottom + 4 - (rect.bottom + dropdownHeight - visibleBottom));
+        }
+      }
+    }
+
     return {
-      top: rect.bottom + 4,
-      left: rect.left,
+      top,
+      left,
       width: Math.max(rect.width, 200),
     };
   }
