@@ -5,6 +5,7 @@ import {
   ElementRef,
   ViewChild,
   computed,
+  effect,
   inject,
   signal,
 } from '@angular/core';
@@ -12,7 +13,8 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
-import { finalize } from 'rxjs/operators';
+import { finalize, catchError } from 'rxjs/operators';
+import { forkJoin, of } from 'rxjs';
 import {
   BottlePrepFromSheet,
   FEEDING_SETTING_ID,
@@ -22,6 +24,7 @@ import {
   parseFeedingSettingsFromRows,
 } from '../../services/feeding-log.service';
 import { WeightLogService } from '../../services/weight-log.service';
+import { EventLogService } from '../../services/event-log.service';
 import {
   DailySummary,
   getDailySummaries,
@@ -45,6 +48,7 @@ import { MOM_WELLNESS_CARDS } from './mom-wellness.data';
 import { DocumentsComponent } from './documents/documents.component';
 import { MedicalHistoryComponent } from './medical-history/medical-history.component';
 import { WeightComponent } from './weight/weight.component';
+import { FeedingScheduleComponent } from './schedule/feeding-schedule.component';
 import {
   FeedingViewGroup,
   groupLogsByProximity,
@@ -143,6 +147,7 @@ function metricMetUi(s: 'met' | 'partial' | 'unmet'): {
     MedicalHistoryComponent,
     WeightComponent,
     ActivityLogComponent,
+    FeedingScheduleComponent,
   ],
   templateUrl: './feeding.component.html',
   styleUrls: ['./feeding.component.scss'],
@@ -154,6 +159,7 @@ export class FeedingComponent {
   private feedingLogService = inject(FeedingLogService);
   private weightLogService = inject(WeightLogService);
   private activityLogService = inject(ActivityLogService);
+  private eventLogService = inject(EventLogService);
 
   /** Vùng cuộn thật của trang (`.feeding-page`), không phải `document`. */
   @ViewChild('feedingPage', { static: true })
@@ -161,13 +167,13 @@ export class FeedingComponent {
 
   Math = Math;
 
-  /** Tab nav phía dưới: feeding | weight | mom | medical | documents. */
+  /** Tab nav phía dưới: feeding | weight | schedule | mom | medical | documents. */
   bottomTab = signal<
-    'feeding' | 'weight' | 'mom' | 'medical' | 'documents'
+    'feeding' | 'weight' | 'schedule' | 'mom' | 'medical' | 'documents'
   >('feeding');
 
   setBottomTab(
-    tab: 'feeding' | 'weight' | 'mom' | 'medical' | 'documents'
+    tab: 'feeding' | 'weight' | 'schedule' | 'mom' | 'medical' | 'documents'
   ) {
     this.bottomTab.set(tab);
     this.scrollFeedingShellToTop();
@@ -247,9 +253,19 @@ export class FeedingComponent {
     groupGapMinutes: number;
     notificationMinutes: number;
     burpDurationMinutes: number;
+    eventReminderDays: number;
+    eventReminderHours: number;
   } | null>(null);
   settingsSaving = signal(false);
   settingsFormError = signal('');
+
+  /** Nhắc sự kiện lịch (toàn cục) — trong cửa sổ Settings + sheet Event */
+  eventReminderDialogOpen = signal(false);
+  eventReminderAckSaving = signal(false);
+  /** Đã bấm «Đã hiểu» — chỉ ẩn đến khi tải lại trang (F5 mở lại dialog). */
+  private eventReminderSessionDismissed = signal(false);
+  /** Đã hiện/đóng dialog trong phiên tải trang — tránh mở lại khi `now` tick. */
+  private eventReminderHandledThisLoad = signal(false);
 
   historyDialogOpen = signal<boolean>(false);
   /** Dialog liệt kê các cữ sheet trong một nhóm hiển thị đã gom. */
@@ -320,6 +336,24 @@ export class FeedingComponent {
     if (isNaN(birth.getTime())) return null;
     const diffMs = this.now().getTime() - birth.getTime();
     return Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+  });
+
+  /**
+   * Sự kiện trong cửa sổ nhắc: từ (now) đã vào khoảng [T - lead, T), chưa Acknowledge, T > now.
+   */
+  scheduleReminderEvents = computed(() => {
+    const s = this.feedingSettings();
+    const leadMs =
+      (s.eventReminderDays * 24 + s.eventReminderHours) * 3600 * 1000;
+    const nowMs = this.now().getTime();
+    return this.eventLogService.events().filter((e) => {
+      if (e.acknowledged) return false;
+      const dt = EventLogService.eventDateTime(e)?.getTime();
+      if (dt === undefined || dt === null || Number.isNaN(dt)) return false;
+      if (dt <= nowMs) return false;
+      const windowStart = dt - leadMs;
+      return nowMs >= windowStart;
+    });
   });
 
   ageBreakdown = computed(() => {
@@ -1609,6 +1643,7 @@ export class FeedingComponent {
         this.loadFeedingSettings(); // Load again with user context
         this.loadWeightLogs();
         this.loadBottlePrepFromSheet();
+        this.loadScheduleEvents();
       });
 
     const clockId = window.setInterval(
@@ -1616,6 +1651,16 @@ export class FeedingComponent {
       20_000
     );
     this.destroyRef.onDestroy(() => window.clearInterval(clockId));
+
+    effect(
+      () => {
+        this.eventLogService.events();
+        this.eventLogService.loading();
+        this.feedingSettings();
+        this.tryOpenEventReminderAfterLoad();
+      },
+      { allowSignalWrites: true }
+    );
   }
 
   // ===== Profile management =====
@@ -1732,6 +1777,8 @@ export class FeedingComponent {
       groupGapMinutes: s.feedGroupGapMinutes,
       notificationMinutes: s.feedingNotificationMinutes,
       burpDurationMinutes: s.burpDurationMinutes,
+      eventReminderDays: s.eventReminderDays,
+      eventReminderHours: s.eventReminderHours,
     });
     this.feedingSettingsDialogOpen.set(true);
   }
@@ -1777,6 +1824,20 @@ export class FeedingComponent {
     );
   }
 
+  updateSettingsDraftEventReminderDays(v: string): void {
+    const n = parseInt(String(v).replace(/[^\d]/g, ''), 10);
+    this.settingsDraft.update((d) =>
+      d && !isNaN(n) ? { ...d, eventReminderDays: n } : d
+    );
+  }
+
+  updateSettingsDraftEventReminderHours(v: string): void {
+    const n = parseInt(String(v).replace(/[^\d]/g, ''), 10);
+    this.settingsDraft.update((d) =>
+      d && !isNaN(n) ? { ...d, eventReminderHours: n } : d
+    );
+  }
+
   submitFeedingSettings(): void {
     const d = this.settingsDraft();
     if (!d) return;
@@ -1785,6 +1846,8 @@ export class FeedingComponent {
     const gap = d.groupGapMinutes;
     const notify = d.notificationMinutes;
     const burp = d.burpDurationMinutes;
+    const evDays = d.eventReminderDays;
+    const evHours = d.eventReminderHours;
     if (!Number.isFinite(th) || th < 0.25 || th > 48) {
       this.settingsFormError.set('Ngưỡng giờ (FEED_TIME_WARNING): từ 0,25 đến 48.');
       return;
@@ -1808,6 +1871,18 @@ export class FeedingComponent {
     if (!Number.isFinite(burp) || burp < 1 || burp > 30) {
       this.settingsFormError.set(
         'Thời gian vỗ ợ (BURP_DURATION_MINUTES): từ 1 đến 30 phút.'
+      );
+      return;
+    }
+    if (!Number.isFinite(evDays) || evDays < 0 || evDays > 30) {
+      this.settingsFormError.set(
+        'Nhắc lịch — ngày (EVENT_REMINDER_DAYS): từ 0 đến 30.'
+      );
+      return;
+    }
+    if (!Number.isFinite(evHours) || evHours < 0 || evHours > 168) {
+      this.settingsFormError.set(
+        'Nhắc lịch — giờ (EVENT_REMINDER_HOURS): từ 0 đến 168.'
       );
       return;
     }
@@ -1848,6 +1923,20 @@ export class FeedingComponent {
           value: burp,
           name: 'Thời gian vỗ ợ sau cữ bú (phút)',
           unit: 'phút',
+          dataType: 'Số',
+        },
+        {
+          id: FEEDING_SETTING_ID.EVENT_REMINDER_DAYS,
+          value: evDays,
+          name: 'Nhắc sự kiện lịch trước (ngày)',
+          unit: 'ngày',
+          dataType: 'Số',
+        },
+        {
+          id: FEEDING_SETTING_ID.EVENT_REMINDER_HOURS,
+          value: evHours,
+          name: 'Nhắc sự kiện lịch thêm (giờ)',
+          unit: 'giờ',
           dataType: 'Số',
         },
       ])
@@ -1893,6 +1982,158 @@ export class FeedingComponent {
       minimumFractionDigits: 0,
       maximumFractionDigits: 2,
     }).format(kg);
+  }
+
+  loadScheduleEvents(options?: { checkReminder?: boolean }): void {
+    const checkReminder = options?.checkReminder ?? true;
+    this.eventLogService.loadEvents().subscribe({
+      next: () => {
+        if (checkReminder) {
+          this.tryOpenEventReminderAfterLoad({ markHandledIfEmpty: true });
+        }
+      },
+      error: () => {
+        /* Sheet/Event có thể chưa tồn tại — không chặn app */
+      },
+    });
+  }
+
+  /** Giống F5 — cho phép kiểm tra và mở lại dialog nhắc sự kiện. */
+  private resetEventReminderSessionForReload(): void {
+    this.eventReminderHandledThisLoad.set(false);
+    this.eventReminderSessionDismissed.set(false);
+    this.eventReminderDialogOpen.set(false);
+  }
+
+  private tryOpenEventReminderAfterLoad(options?: {
+    markHandledIfEmpty?: boolean;
+  }): void {
+    if (this.eventReminderHandledThisLoad()) return;
+    if (this.eventReminderSessionDismissed()) return;
+    if (this.eventLogService.loading()) return;
+
+    const pending = this.scheduleReminderEvents();
+    if (pending.length > 0) {
+      this.eventReminderHandledThisLoad.set(true);
+      this.eventReminderDialogOpen.set(true);
+      return;
+    }
+
+    if (options?.markHandledIfEmpty) {
+      this.eventReminderHandledThisLoad.set(true);
+    }
+  }
+
+  closeEventReminderDialog(): void {
+    this.eventReminderDialogOpen.set(false);
+    this.eventReminderHandledThisLoad.set(true);
+  }
+
+  skipEventReminderSession(): void {
+    this.eventReminderSessionDismissed.set(true);
+    this.eventReminderHandledThisLoad.set(true);
+    this.closeEventReminderDialog();
+  }
+
+  acknowledgeEventReminderRow(rowIndex: number): void {
+    if (!rowIndex) return;
+    this.eventReminderAckSaving.set(true);
+    this.eventLogService
+      .acknowledgeEvent(rowIndex)
+      .pipe(
+        catchError(() => of({ success: false })),
+        finalize(() => this.eventReminderAckSaving.set(false))
+      )
+      .subscribe(() => {
+        this.eventLogService.loadEvents().subscribe({
+          next: () => {
+            if (this.scheduleReminderEvents().length === 0) {
+              this.closeEventReminderDialog();
+            }
+          },
+        });
+      });
+  }
+
+  acknowledgeAllEventReminders(): void {
+    const rows = this.scheduleReminderEvents()
+      .map((e) => e.rowIndex)
+      .filter((r): r is number => typeof r === 'number' && r >= 2);
+
+    this.eventReminderHandledThisLoad.set(true);
+    this.closeEventReminderDialog();
+
+    if (rows.length === 0) return;
+
+    forkJoin(rows.map((row) => this.eventLogService.acknowledgeEvent(row)))
+      .pipe(catchError(() => of([])))
+      .subscribe(() => {
+        this.eventLogService.loadEvents().subscribe();
+      });
+  }
+
+  formatReminderEventWhen(ev: { date: string; time: string }): string {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(ev.date);
+    if (!m) return ev.date;
+
+    const y = +m[1];
+    const mo = +m[2];
+    const d = +m[3];
+    const hour = this.parseReminderHour(ev.time);
+    const period = this.reminderTimePeriod(hour);
+
+    const now = new Date();
+    const startNow = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startEv = new Date(y, mo - 1, d);
+    const diff = Math.round((startEv.getTime() - startNow.getTime()) / 86_400_000);
+
+    if (diff === 0) {
+      if (period === 'sáng') return 'Sáng nay';
+      if (period === 'trưa') return 'Trưa nay';
+      if (period === 'chiều') return 'Chiều nay';
+      if (period === 'tối') return 'Tối nay';
+      return 'Hôm nay';
+    }
+
+    if (diff === 1) {
+      if (period === 'sáng') return 'Sáng mai';
+      if (period === 'trưa') return 'Trưa mai';
+      if (period === 'chiều') return 'Chiều mai';
+      if (period === 'tối') return 'Tối mai';
+      return 'Ngày mai';
+    }
+
+    if (diff === 2) {
+      if (period === 'sáng') return 'Sáng mốt';
+      if (period === 'trưa') return 'Trưa mốt';
+      if (period === 'chiều') return 'Chiều mốt';
+      if (period === 'tối') return 'Tối mốt';
+      return 'Ngày mốt';
+    }
+
+    if (diff > 2) return `${diff} ngày nữa`;
+
+    return `ngày ${d} tháng ${mo} năm ${y}`;
+  }
+
+  formatReminderEventTime(time: string): string {
+    return time;
+  }
+
+  private parseReminderHour(time: string): number {
+    const m = /^(\d{1,2}):(\d{2})/.exec(String(time || '').trim());
+    if (!m) return 12;
+    return Math.min(23, Math.max(0, parseInt(m[1], 10)));
+  }
+
+  private reminderTimePeriod(
+    hour: number
+  ): 'sáng' | 'trưa' | 'chiều' | 'tối' | null {
+    if (hour >= 5 && hour < 12) return 'sáng';
+    if (hour >= 12 && hour < 13) return 'trưa';
+    if (hour >= 13 && hour < 18) return 'chiều';
+    if (hour >= 18 && hour < 23) return 'tối';
+    return null;
   }
 
   updateLogDate(v: string) {
@@ -2163,6 +2404,8 @@ export class FeedingComponent {
     this.weightCmp?.refresh();
     this.medicalCmp?.refresh();
     this.documentsCmp?.refresh();
+    this.resetEventReminderSessionForReload();
+    this.loadScheduleEvents({ checkReminder: true });
   }
 
   /** Khi có activity mới từ user khác — reload toàn bộ dữ liệu */
@@ -2184,7 +2427,8 @@ export class FeedingComponent {
       this.loadingLogs() ||
       (this.weightCmp?.loading() ?? false) ||
       (this.medicalCmp?.loading() ?? false) ||
-      (this.documentsCmp?.loading() ?? false)
+      (this.documentsCmp?.loading() ?? false) ||
+      (this.eventLogService.loading() ?? false)
   );
 
   // ===== Edit log =====

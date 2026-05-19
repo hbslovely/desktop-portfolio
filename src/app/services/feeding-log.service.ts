@@ -62,6 +62,14 @@ export interface FeedingSettingsResolved {
    * Thời gian cần bế bé vỗ ợ sau mỗi cữ bú (phút) — ID `BURP_DURATION_MINUTES`.
    */
   burpDurationMinutes: number;
+  /**
+   * Bắt đầu nhắc sự kiện lịch trước N ngày — ID `EVENT_REMINDER_DAYS`.
+   */
+  eventReminderDays: number;
+  /**
+   * Cộng thêm giờ vào cửa sổ nhắc lịch — ID `EVENT_REMINDER_HOURS`.
+   */
+  eventReminderHours: number;
 }
 
 /** ID cố định trên sheet — khi lưu chỉ gửi các key này. */
@@ -71,6 +79,8 @@ export const FEEDING_SETTING_ID = {
   FEED_GROUP_GAP_MINUTES: 'FEED_GROUP_GAP_MINUTES',
   FEEDING_NOTIFICATION_MINUTES: 'FEEDING_NOTIFICATION_MINUTES',
   BURP_DURATION_MINUTES: 'BURP_DURATION_MINUTES',
+  EVENT_REMINDER_DAYS: 'EVENT_REMINDER_DAYS',
+  EVENT_REMINDER_HOURS: 'EVENT_REMINDER_HOURS',
 } as const;
 
 const DEFAULT_FEEDING_SETTINGS: FeedingSettingsResolved = {
@@ -79,6 +89,8 @@ const DEFAULT_FEEDING_SETTINGS: FeedingSettingsResolved = {
   feedGroupGapMinutes: 0,
   feedingNotificationMinutes: 5,
   burpDurationMinutes: 10,
+  eventReminderDays: 3,
+  eventReminderHours: 0,
 };
 
 export function parseFeedingSettingsFromRows(
@@ -92,6 +104,8 @@ export function parseFeedingSettingsFromRows(
   const gapRow = byId.get(FEEDING_SETTING_ID.FEED_GROUP_GAP_MINUTES);
   const notifyRow = byId.get(FEEDING_SETTING_ID.FEEDING_NOTIFICATION_MINUTES);
   const burpRow = byId.get(FEEDING_SETTING_ID.BURP_DURATION_MINUTES);
+  const evDaysRow = byId.get(FEEDING_SETTING_ID.EVENT_REMINDER_DAYS);
+  const evHoursRow = byId.get(FEEDING_SETTING_ID.EVENT_REMINDER_HOURS);
 
   let feedTimeWarningHours = parseFloat(
     String(timeRow?.value ?? '').replace(',', '.').trim()
@@ -112,6 +126,14 @@ export function parseFeedingSettingsFromRows(
     String(burpRow?.value ?? '10').replace(/[^\d]/g, ''),
     10
   );
+  let eventReminderDays = parseInt(
+    String(evDaysRow?.value ?? '3').replace(/[^\d]/g, ''),
+    10
+  );
+  let eventReminderHours = parseInt(
+    String(evHoursRow?.value ?? '0').replace(/[^\d]/g, ''),
+    10
+  );
 
   if (!Number.isFinite(feedTimeWarningHours) || feedTimeWarningHours <= 0) {
     feedTimeWarningHours = DEFAULT_FEEDING_SETTINGS.feedTimeWarningHours;
@@ -128,14 +150,30 @@ export function parseFeedingSettingsFromRows(
   if (!Number.isFinite(burpDurationMinutes) || burpDurationMinutes <= 0) {
     burpDurationMinutes = DEFAULT_FEEDING_SETTINGS.burpDurationMinutes;
   }
+  if (!Number.isFinite(eventReminderDays) || eventReminderDays < 0) {
+    eventReminderDays = DEFAULT_FEEDING_SETTINGS.eventReminderDays;
+  }
+  if (!Number.isFinite(eventReminderHours) || eventReminderHours < 0) {
+    eventReminderHours = DEFAULT_FEEDING_SETTINGS.eventReminderHours;
+  }
 
   feedTimeWarningHours = Math.min(48, Math.max(0.25, feedTimeWarningHours));
   feedWarningMl = Math.min(500, Math.max(1, feedWarningMl));
   feedGroupGapMinutes = Math.min(180, Math.max(0, feedGroupGapMinutes));
   feedingNotificationMinutes = Math.min(180, Math.max(1, feedingNotificationMinutes));
   burpDurationMinutes = Math.min(30, Math.max(1, burpDurationMinutes));
+  eventReminderDays = Math.min(30, Math.max(0, eventReminderDays));
+  eventReminderHours = Math.min(168, Math.max(0, eventReminderHours));
 
-  return { feedTimeWarningHours, feedWarningMl, feedGroupGapMinutes, feedingNotificationMinutes, burpDurationMinutes };
+  return {
+    feedTimeWarningHours,
+    feedWarningMl,
+    feedGroupGapMinutes,
+    feedingNotificationMinutes,
+    burpDurationMinutes,
+    eventReminderDays,
+    eventReminderHours,
+  };
 }
 
 @Injectable({ providedIn: 'root' })
