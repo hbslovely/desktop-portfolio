@@ -982,6 +982,35 @@ export class FeedingComponent {
   burpDurationMinutes = computed(() => this.feedingSettings().burpDurationMinutes);
 
   /**
+   * Thời gian cập nhật mới nhất (dựa trên log gần nhất từ ActivityLogService).
+   */
+  lastActivityTime = computed(() => {
+    const logs = this.activityLogService.logs$();
+    if (!logs || logs.length === 0) return 'chưa có';
+    
+    const latestTimestamp = logs[0]?.timestamp;
+    if (!latestTimestamp) return 'chưa có';
+    
+    const date = new Date(latestTimestamp);
+    if (isNaN(date.getTime())) return latestTimestamp;
+    
+    const now = this.now();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMin = Math.floor(diffMs / 60000);
+    const diffHr = Math.floor(diffMs / 3600000);
+    const diffDay = Math.floor(diffMs / 86400000);
+    
+    if (diffMin < 1) return 'vừa xong';
+    if (diffMin < 60) return `${diffMin} phút trước`;
+    if (diffHr < 24) return `${diffHr} giờ trước`;
+    if (diffDay < 7) return `${diffDay} ngày trước`;
+    
+    const d = String(date.getDate()).padStart(2, '0');
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    return `${d}/${m}`;
+  });
+
+  /**
    * Thông tin warning nhắc vỗ ợ sau cữ bú.
    * Trả về null nếu không cần hiện warning (chưa có cữ hoặc đã hết thời gian).
    */
