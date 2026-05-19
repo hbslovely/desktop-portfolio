@@ -31,6 +31,7 @@ import {
   kindMeta,
 } from './medical-history-kinds.data';
 import { DEFAULT_PLACES_VI } from './medical-places.presets';
+import { ActivityLogService } from '../../../services/activity-log.service';
 
 interface EntryDraft {
   date: string;
@@ -73,6 +74,7 @@ export class MedicalHistoryComponent {
   private medicalService = inject(MedicalHistoryService);
   private explorerService = inject(ExplorerService);
   private destroyRef = inject(DestroyRef);
+  private activityLogService = inject(ActivityLogService);
 
   /** Cùng `?user=` với trang feeding */
   user = input<string>('guest');
@@ -933,9 +935,21 @@ export class MedicalHistoryComponent {
           this.medicalService.updateEntry(edit.rowIndex, patch)
         );
         this.successMsg.set('Đã cập nhật.');
+
+        // Log activity
+        this.activityLogService.logMedical(this.userNorm(), 'MEDICAL_UPDATED', {
+          title: base.title,
+          location: base.place,
+        }).subscribe();
       } else {
         await firstValueFrom(this.medicalService.addEntry(base));
         this.successMsg.set('Đã lưu sự kiện.');
+
+        // Log activity
+        this.activityLogService.logMedical(this.userNorm(), 'MEDICAL_ADDED', {
+          title: base.title,
+          location: base.place,
+        }).subscribe();
       }
 
       setTimeout(() => this.successMsg.set(''), 3000);
@@ -980,6 +994,12 @@ export class MedicalHistoryComponent {
     this.medicalService.deleteEntry(entry.rowIndex).subscribe({
       next: () => {
         this.successMsg.set('Đã xoá.');
+
+        // Log activity
+        this.activityLogService.logMedical(this.userNorm(), 'MEDICAL_DELETED', {
+          title: entry.title,
+        }).subscribe();
+
         setTimeout(() => this.successMsg.set(''), 3000);
         setTimeout(() => this.load(), 600);
       },

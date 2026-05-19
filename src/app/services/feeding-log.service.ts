@@ -58,6 +58,10 @@ export interface FeedingSettingsResolved {
    * Thông báo "sắp tới cữ bú" khi còn ≤ N phút — ID `FEEDING_NOTIFICATION_MINUTES`.
    */
   feedingNotificationMinutes: number;
+  /**
+   * Thời gian cần bế bé vỗ ợ sau mỗi cữ bú (phút) — ID `BURP_DURATION_MINUTES`.
+   */
+  burpDurationMinutes: number;
 }
 
 /** ID cố định trên sheet — khi lưu chỉ gửi các key này. */
@@ -66,6 +70,7 @@ export const FEEDING_SETTING_ID = {
   FEED_WARNING_AMOUNT: 'FEED_WARNING_AMOUNT',
   FEED_GROUP_GAP_MINUTES: 'FEED_GROUP_GAP_MINUTES',
   FEEDING_NOTIFICATION_MINUTES: 'FEEDING_NOTIFICATION_MINUTES',
+  BURP_DURATION_MINUTES: 'BURP_DURATION_MINUTES',
 } as const;
 
 const DEFAULT_FEEDING_SETTINGS: FeedingSettingsResolved = {
@@ -73,6 +78,7 @@ const DEFAULT_FEEDING_SETTINGS: FeedingSettingsResolved = {
   feedWarningMl: 40,
   feedGroupGapMinutes: 0,
   feedingNotificationMinutes: 5,
+  burpDurationMinutes: 10,
 };
 
 export function parseFeedingSettingsFromRows(
@@ -85,6 +91,7 @@ export function parseFeedingSettingsFromRows(
   const wRow = byId.get(FEEDING_SETTING_ID.FEED_WARNING_AMOUNT);
   const gapRow = byId.get(FEEDING_SETTING_ID.FEED_GROUP_GAP_MINUTES);
   const notifyRow = byId.get(FEEDING_SETTING_ID.FEEDING_NOTIFICATION_MINUTES);
+  const burpRow = byId.get(FEEDING_SETTING_ID.BURP_DURATION_MINUTES);
 
   let feedTimeWarningHours = parseFloat(
     String(timeRow?.value ?? '').replace(',', '.').trim()
@@ -101,6 +108,10 @@ export function parseFeedingSettingsFromRows(
     String(notifyRow?.value ?? '5').replace(/[^\d]/g, ''),
     10
   );
+  let burpDurationMinutes = parseInt(
+    String(burpRow?.value ?? '10').replace(/[^\d]/g, ''),
+    10
+  );
 
   if (!Number.isFinite(feedTimeWarningHours) || feedTimeWarningHours <= 0) {
     feedTimeWarningHours = DEFAULT_FEEDING_SETTINGS.feedTimeWarningHours;
@@ -114,13 +125,17 @@ export function parseFeedingSettingsFromRows(
   if (!Number.isFinite(feedingNotificationMinutes) || feedingNotificationMinutes <= 0) {
     feedingNotificationMinutes = DEFAULT_FEEDING_SETTINGS.feedingNotificationMinutes;
   }
+  if (!Number.isFinite(burpDurationMinutes) || burpDurationMinutes <= 0) {
+    burpDurationMinutes = DEFAULT_FEEDING_SETTINGS.burpDurationMinutes;
+  }
 
   feedTimeWarningHours = Math.min(48, Math.max(0.25, feedTimeWarningHours));
   feedWarningMl = Math.min(500, Math.max(1, feedWarningMl));
   feedGroupGapMinutes = Math.min(180, Math.max(0, feedGroupGapMinutes));
   feedingNotificationMinutes = Math.min(180, Math.max(1, feedingNotificationMinutes));
+  burpDurationMinutes = Math.min(30, Math.max(1, burpDurationMinutes));
 
-  return { feedTimeWarningHours, feedWarningMl, feedGroupGapMinutes, feedingNotificationMinutes };
+  return { feedTimeWarningHours, feedWarningMl, feedGroupGapMinutes, feedingNotificationMinutes, burpDurationMinutes };
 }
 
 @Injectable({ providedIn: 'root' })

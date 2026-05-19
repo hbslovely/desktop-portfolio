@@ -7,6 +7,7 @@ Tài liệu hướng dẫn chuẩn bị **các tab** trong Google Sheet và **Go
 - Tab **`Weight`**: cân nặng bé (đọc / thêm / sửa / xoá).
 - Tab **`MedicalHistory`**: tiền sử y tế bé — Medical history V2 (đọc qua API; ghi / sửa / xoá qua Apps Script).
 - Tab **`Explorer`**: cây thư mục + ảnh base64 (đọc / thêm / sửa / xoá có cascade).
+- Tab **`Log`**: lịch sử hoạt động (đọc API; ghi qua Apps Script).
 
 > Sheet: <https://docs.google.com/spreadsheets/d/1O4kAA61k4cX4mEwAjDy5gioVUAElCyu62Z3zPvgdDMM/edit?gid=0#gid=0>
 >
@@ -118,6 +119,41 @@ Sau khi thêm tab, **deploy lại** script trong mục 4 nếu bản cũ chưa c
 
 ---
 
+## 1e. Chuẩn bị tab `Log` (lịch sử hoạt động)
+
+Tab này ghi nhận mọi thao tác trên app (thêm/sửa/xóa cữ bú, cân nặng, y tế...) để các user khác nhau có thể theo dõi hoạt động.
+
+1. Tạo tab mới tên **chính xác** `Log`.
+2. Dòng 1 là **header** theo đúng thứ tự sau:
+
+| A      | B        | C        | D           | E             |
+| ------ | -------- | -------- | ----------- | ------------- |
+| **id** | **user** | **type** | **content** | **timestamp** |
+| log-1  | phat     | FEEDING_ADDED | Thêm cữ bú '100ml' vào lúc '08:30' | 2026-05-19T10:30:00.000Z |
+
+Quy ước:
+
+- **id**: unique ID do app tự sinh (VD: `log-1716093600000-abc123`).
+- **user**: user thực hiện thao tác (query `?user=`).
+- **type**: loại event — một trong các giá trị:
+  - `FEEDING_ADDED`, `FEEDING_UPDATED`, `FEEDING_DELETED`
+  - `WEIGHT_ADDED`, `WEIGHT_UPDATED`, `WEIGHT_DELETED`
+  - `MEDICAL_ADDED`, `MEDICAL_UPDATED`, `MEDICAL_DELETED`
+  - `SCHEDULE_ADDED`, `SCHEDULE_UPDATED`, `SCHEDULE_DELETED`
+  - `SETTINGS_UPDATED`, `PROFILE_UPDATED`
+- **content**: nội dung user-friendly. Phần trong dấu `''` sẽ được in đậm trong UI.
+  - VD: `Thêm cữ bú '100ml' vào lúc '09:00'`
+  - VD: `Thay đổi cữ bú lúc '09:00' từ '100ml' thành '110ml'`
+  - VD: `Thêm ghi nhận cân nặng '4.8kg' ngày '19/05/2026'`
+  - VD: `Chỉnh sửa sự kiện y tế 'Khám cho Bối' tại 'BV Quốc tế City'`
+- **timestamp**: ISO timestamp khi ghi log.
+
+> 💡 Để cột A và E là **Plain text** để tránh Sheets tự format.
+
+Sau khi thêm tab, **deploy lại** Apps Script (mục 4) để có action `addLog`.
+
+---
+
 ## 2. Chuẩn bị tab `Explorer`
 
 1. Tạo tab mới tên **chính xác** `Explorer`.
@@ -198,6 +234,9 @@ Trong Sheet → **Extensions → Apps Script** → xoá toàn bộ code mặc đ
  *                    Folder check chu kỳ: không cho move folder vào chính nó
  *                    hoặc descendant của nó (tránh tạo loop vô hạn).
  *   getExplorer    → trả về toàn bộ entries (đã filter isDeleted=TRUE)
+ *
+ * ===== Log (activity history) =====
+ *   addLog         → append log entry (id, user, type, content, timestamp)
  */
 
 const FEED_SHEET = 'Feeding';
@@ -205,6 +244,10 @@ const SETTINGS_SHEET = 'Settings';
 const EXPL_SHEET = 'Explorer';
 const WEIGHT_SHEET = 'Weight';
 const MEDICAL_SHEET = 'MedicalHistory';
+const LOG_SHEET = 'Log';
+
+// Log columns (1-based): id | user | type | content | timestamp
+const L_ID = 1, L_USER = 2, L_TYPE = 3, L_CONTENT = 4, L_TIMESTAMP = 5;
 
 // Weight columns (1-based): User | Ngày DD/MM/YYYY | kg | Ghi chú
 const W_USER = 1, W_DATE = 2, W_WEIGHT = 3, W_NOTE = 4;
@@ -266,6 +309,8 @@ function doPost(e) {
       case 'deleteExplorer': return _json(handleDeleteExplorer(body));
       case 'moveExplorer':   return _json(handleMoveExplorer(body));
       case 'getExplorer':    return _json(handleGetExplorer(body));
+      // Log (activity history)
+      case 'addLog':         return _json(handleAddLog(body));
       default:
         throw new Error('Action không được hỗ trợ: ' + action);
     }
@@ -957,6 +1002,44 @@ function handleGetExplorer(_body) {
 }
 
 /* =========================
+ * Log (activity history) handlers
+ * ========================= */
+
+/**
+ * Thêm log entry mới vào tab `Log`.
+ * Body: { log: { id, user, type, content, timestamp } }
+ * - id: unique ID (client tự sinh)
+ * - user: ai thực hiện thao tác
+ * - type: loại event (FEEDING_ADDED, WEIGHT_UPDATED, etc.)
+ * - content: nội dung user-friendly
+ * - timestamp: ISO string (client truyền hoặc server auto)
+ */
+function handleAddLog(body) {
+  const sheet = _getSheet(LOG_SHEET);
+  const log = body.log || {};
+  const id = String(log.id || '').trim();
+  const user = String(log.user || '').toLowerCase().trim();
+  const type = String(log.type || '').trim().toUpperCase();
+  const content = String(log.content || '').trim();
+  const timestamp = String(log.timestamp || '').trim() || new Date().toISOString();
+
+  if (!id || !user || !type || !content) {
+    throw new Error('Thiếu trường bắt buộc (id, user, type, content).');
+  }
+
+  sheet.appendRow([id, user, type, content, timestamp]);
+
+  // Đảm bảo timestamp là plain text
+  try {
+    sheet.getRange(sheet.getLastRow(), L_TIMESTAMP).setNumberFormat('@');
+  } catch (e) {
+    // Bỏ qua nếu không có quyền
+  }
+
+  return { success: true, message: 'Đã ghi log', rowIndex: sheet.getLastRow() };
+}
+
+/* =========================
  * Helpers
  * ========================= */
 
@@ -1116,6 +1199,19 @@ function testExplorerMove() {
   const result = handleMoveExplorer({ ids: [4, 5], parentId: 2 });
   Logger.log(JSON.stringify(result));
 }
+
+function testAddLog() {
+  const result = handleAddLog({
+    log: {
+      id: 'log-' + Date.now() + '-test',
+      user: 'phat',
+      type: 'FEEDING_ADDED',
+      content: "Thêm cữ bú '100ml' vào lúc '08:30'",
+      timestamp: new Date().toISOString()
+    }
+  });
+  Logger.log(JSON.stringify(result));
+}
 ```
 
 > **Quan trọng**: bấm **Save (Cmd/Ctrl+S)** trước khi deploy. Nếu chưa save mà deploy thì deployment sẽ chạy version cũ (rỗng) → trả về `Script function not found: doPost`.
@@ -1221,6 +1317,7 @@ Phải trả về JSON `{ success: true, ... }`. Nếu thấy `Script function n
 | Đã xoá rồi nhưng row vẫn còn trong sheet        | Bình thường — đây là **soft delete**. Cột G của row sẽ chuyển sang `TRUE`, app + Apps Script sẽ tự ẩn các row này. Muốn xoá vĩnh viễn / restore thì sửa cột G thủ công.        |
 | Mới upload xong mà refresh thấy biến mất         | Có thể row đó đang có cột G = `TRUE` (do bug data cũ). Vào sheet kiểm tra cột G, đặt lại `FALSE` hoặc xoá cell.                                                              |
 | Ngày trong Feeding bị format số/lệch              | Cột B của Feeding đang là Number/Date. Chọn cột B → Format → Number → **Plain text**.                                                                                              |
+| Log không ghi / không đọc được                   | Tab `Log` chưa tồn tại hoặc tên sai chữ hoa/thường. Kiểm tra lại header (A:E) và cột A, E nên là **Plain text**.                                                                     |
 
 ---
 
@@ -1232,12 +1329,14 @@ Phải trả về JSON `{ success: true, ... }`. Nếu thấy `Script function n
         │  GET (read)
         ├──────► Google Sheets API v4 (API Key)
         │        ├─ Feeding!A2:E
-        │        └─ Explorer!A2:DB   (E + H..DB được nối lại thành content; G `isDeleted` filter ra)
+        │        ├─ Explorer!A2:DB   (E + H..DB được nối lại thành content; G `isDeleted` filter ra)
+        │        └─ Log!A2:E         (lịch sử hoạt động — reload every 5 mins)
         │
         │  POST {action, ...}
         └──────► Proxy /api/feeding-apps-script (dev)
                  hoặc googleFeedingAppsScriptUrl (prod)
                  → doPost
                    ├─ Feeding:  add / update / delete (hard) / get
-                   └─ Explorer: add / update / delete (SOFT, cascade) / move (file-only) / get
+                   ├─ Explorer: add / update / delete (SOFT, cascade) / move (file-only) / get
+                   └─ Log:      addLog (ghi activity event)
 ```

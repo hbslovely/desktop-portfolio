@@ -17,6 +17,7 @@
             </div>
           </div>
           <div class="hero-actions" *ngIf="profile() && !editing()">
+            <app-activity-log (activityChanged)="onActivityChanged()"></app-activity-log>
             <button
               class="btn icon-btn"
               type="button"
@@ -548,6 +549,26 @@
         </ng-template>
       </section>
 
+      <!-- ============ BURP WARNING ============ -->
+      <div class="burp-warning" *ngIf="burpWarning() as bw">
+        <div class="burp-warning__icon">
+          <i class="pi pi-exclamation-triangle"></i>
+        </div>
+        <div class="burp-warning__content">
+          <div class="burp-warning__title">
+            Nhớ bế bé và vỗ ợ!
+          </div>
+          <div class="burp-warning__text">
+            Bé vừa bú <strong>{{ bw.lastFeedVolume }}ml</strong> lúc <strong>{{ bw.lastFeedTime }}</strong>.
+            Hãy bế bé và vỗ ợ ít nhất <strong>{{ bw.burpDuration }} phút</strong>.
+          </div>
+          <div class="burp-warning__countdown">
+            <i class="pi pi-clock"></i>
+            Còn <strong>{{ bw.remainingMinutes }}</strong> phút nữa
+          </div>
+        </div>
+      </div>
+
       <!-- ============ ML PREDICTION (simplified) ============ -->
       <ng-container *ngIf="logs().length > 0">
         <ng-container *ngIf="prediction().hasData && prediction().nextTime; else notEnough">
@@ -639,7 +660,6 @@
           </div>
         </ng-template>
       </ng-container>
-
 
       <!-- ============ COMPARISON ============ -->
       <section class="compare-grid">
@@ -965,6 +985,7 @@
           <div class="chart-scroll" [class.scrollable]="chartRange() === 30">
             <svg
               class="bar-chart volume tall"
+              [class.line-mode]="weeklyLineChart().isLineChart"
               [attr.viewBox]="'0 0 ' + weeklyLineChart().W + ' ' + weeklyLineChart().H"
               preserveAspectRatio="xMidYMid meet"
             >
@@ -976,6 +997,14 @@
                 <linearGradient id="volBarGradToday" x1="0%" y1="0%" x2="0%" y2="100%">
                   <stop offset="0%" stop-color="#34d399" />
                   <stop offset="100%" stop-color="#10b981" />
+                </linearGradient>
+                <linearGradient id="volLineAreaGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stop-color="#5b6cff" stop-opacity="0.25" />
+                  <stop offset="100%" stop-color="#5b6cff" stop-opacity="0.02" />
+                </linearGradient>
+                <linearGradient id="volLineGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stop-color="#818cf8" />
+                  <stop offset="100%" stop-color="#5b6cff" />
                 </linearGradient>
               </defs>
 
@@ -996,48 +1025,102 @@
                 >{{ g.label }}</text>
               </g>
 
-              <g class="bars">
-                <g *ngFor="let b of weeklyLineChart().bars">
-                  <rect
-                    [attr.x]="b.x"
-                    [attr.y]="b.y"
-                    [attr.width]="b.barW"
-                    [attr.height]="b.h"
-                    rx="6"
-                    class="bar"
-                    [class.today]="b.d.date === todayDateStr()"
-                    [class.empty]="b.d.total === 0"
-                  />
-                  <text
-                    *ngIf="b.d.total > 0 && b.showValue"
-                    [attr.x]="b.cx"
-                    [attr.y]="b.y - 8"
-                    text-anchor="middle"
-                    class="bar-text bar-text-lg"
-                    [class.today]="b.d.date === todayDateStr()"
-                  >{{ b.d.total }}</text>
+              <!-- Bar Chart Mode (7 ngày) -->
+              <ng-container *ngIf="!weeklyLineChart().isLineChart">
+                <g class="bars">
+                  <g *ngFor="let b of weeklyLineChart().bars">
+                    <rect
+                      [attr.x]="b.x"
+                      [attr.y]="b.y"
+                      [attr.width]="b.barW"
+                      [attr.height]="b.h"
+                      rx="6"
+                      class="bar"
+                      [class.today]="b.d.date === todayDateStr()"
+                      [class.empty]="b.d.total === 0"
+                    />
+                    <text
+                      *ngIf="b.d.total > 0 && b.showValue"
+                      [attr.x]="b.cx"
+                      [attr.y]="b.y - 8"
+                      text-anchor="middle"
+                      class="bar-text bar-text-lg"
+                      [class.today]="b.d.date === todayDateStr()"
+                    >{{ b.d.total }}</text>
+                  </g>
                 </g>
-              </g>
 
-              <g class="x-labels">
-                <ng-container *ngFor="let b of weeklyLineChart().bars">
-                  <text
-                    *ngIf="b.showLabel"
-                    [attr.x]="b.cx"
-                    [attr.y]="weeklyLineChart().H - 22"
-                    text-anchor="middle"
-                    class="x-label"
-                    [class.today]="b.d.date === todayDateStr()"
-                  >{{ formatDayLabel(b.d.date) }}</text>
-                  <text
-                    *ngIf="b.showLabel"
-                    [attr.x]="b.cx"
-                    [attr.y]="weeklyLineChart().H - 6"
-                    text-anchor="middle"
-                    class="x-sublabel"
-                  >{{ formatDateShort(b.d.date) }}</text>
-                </ng-container>
-              </g>
+                <g class="x-labels">
+                  <ng-container *ngFor="let b of weeklyLineChart().bars">
+                    <text
+                      *ngIf="b.showLabel"
+                      [attr.x]="b.cx"
+                      [attr.y]="weeklyLineChart().H - 22"
+                      text-anchor="middle"
+                      class="x-label"
+                      [class.today]="b.d.date === todayDateStr()"
+                    >{{ formatDayLabel(b.d.date) }}</text>
+                    <text
+                      *ngIf="b.showLabel"
+                      [attr.x]="b.cx"
+                      [attr.y]="weeklyLineChart().H - 6"
+                      text-anchor="middle"
+                      class="x-sublabel"
+                    >{{ formatDateShort(b.d.date) }}</text>
+                  </ng-container>
+                </g>
+              </ng-container>
+
+              <!-- Line Chart Mode (30 ngày) -->
+              <ng-container *ngIf="weeklyLineChart().isLineChart">
+                <path
+                  class="vol-line-area"
+                  [attr.d]="weeklyLineChart().areaPath"
+                  fill="url(#volLineAreaGrad)"
+                />
+                <path
+                  class="vol-line-path"
+                  [attr.d]="weeklyLineChart().linePath"
+                  fill="none"
+                  stroke="url(#volLineGrad)"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+                <g class="vol-line-dots">
+                  <g *ngFor="let p of weeklyLineChart().points">
+                    <circle
+                      [attr.cx]="p.x"
+                      [attr.cy]="p.y"
+                      [attr.r]="p.d.date === todayDateStr() ? 5 : 3.5"
+                      class="vol-dot"
+                      [class.today]="p.d.date === todayDateStr()"
+                      [class.empty]="p.d.total === 0"
+                    />
+                    <text
+                      *ngIf="p.showValue"
+                      [attr.x]="p.x"
+                      [attr.y]="p.y - 10"
+                      text-anchor="middle"
+                      class="bar-text bar-text-sm"
+                      [class.today]="p.d.date === todayDateStr()"
+                    >{{ p.d.total }}</text>
+                  </g>
+                </g>
+
+                <g class="x-labels">
+                  <ng-container *ngFor="let p of weeklyLineChart().points">
+                    <text
+                      *ngIf="p.showLabel"
+                      [attr.x]="p.x"
+                      [attr.y]="weeklyLineChart().H - 6"
+                      text-anchor="middle"
+                      class="x-label x-label--compact"
+                      [class.today]="p.d.date === todayDateStr()"
+                    >{{ formatDateShort(p.d.date) }}</text>
+                  </ng-container>
+                </g>
+              </ng-container>
             </svg>
           </div>
 
@@ -2280,7 +2363,7 @@
         <p class="feeding-settings-hint muted">
           Lưu theo <strong>ID</strong> trên sheet (<code>FEED_TIME_WARNING</code>,
           <code>FEED_WARNING_AMOUNT</code>, <code>FEED_GROUP_GAP_MINUTES</code>, 
-          <code>FEEDING_NOTIFICATION_MINUTES</code>), không phụ thuộc cột tên hiển thị.
+          <code>FEEDING_NOTIFICATION_MINUTES</code>, <code>BURP_DURATION_MINUTES</code>), không phụ thuộc cột tên hiển thị.
           Nếu sheet chưa có dòng ID, Apps Script sẽ <strong>thêm dòng</strong> (cần deploy script mới).
         </p>
 
@@ -2349,7 +2432,6 @@
           <label class="field full notification-setting-field">
             <span class="label">
               <code>FEEDING_NOTIFICATION_MINUTES</code> — Thông báo sắp bú (phút)
-              <span class="notification-badge">Mới</span>
             </span>
             <input
               type="number"
@@ -2365,7 +2447,27 @@
             <span class="field-hint muted">
               Hiển thị trạng thái <strong>"Sắp tới"</strong> khi còn ≤ N phút đến giờ dự đoán. 
               Giá trị khuyến nghị: <strong>3-10 phút</strong>. 
-              Thay đổi này giúp tùy chỉnh thời điểm chuẩn bị cho cữ bú.
+            </span>
+          </label>
+
+          <label class="field full burp-setting-field">
+            <span class="label">
+              <code>BURP_DURATION_MINUTES</code> — Thời gian vỗ ợ (phút)
+            </span>
+            <input
+              type="number"
+              inputmode="numeric"
+              min="1"
+              max="30"
+              step="1"
+              [ngModel]="sd.burpDurationMinutes"
+              (ngModelChange)="updateSettingsDraftBurpDuration($event)"
+              name="setBurpDurationMinutes"
+              placeholder="10"
+            />
+            <span class="field-hint muted">
+              Hiển thị nhắc nhở <strong>bế bé vỗ ợ</strong> trong N phút sau khi bú. 
+              Giá trị khuyến nghị: <strong>10-15 phút</strong>.
             </span>
           </label>
 

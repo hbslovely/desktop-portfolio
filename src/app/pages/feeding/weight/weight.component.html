@@ -57,6 +57,15 @@
       </span>
     </div>
     <p class="weight-eval__detail">{{ ev.detail }}</p>
+    <button
+      type="button"
+      class="btn btn-ghost btn-sm who-table-btn"
+      (click)="openWhoTableDialog()"
+      title="Xem bảng chuẩn WHO đầy đủ"
+    >
+      <i class="pi pi-table"></i>
+      Xem bảng chuẩn WHO
+    </button>
   </section>
 
   <!-- So sánh với chuẩn WHO (VN): trục X = tuổi từ ngày sinh -->
@@ -120,15 +129,28 @@
           </text>
         </g>
         <g class="x-axis-ticks">
-          <text
-            *ngFor="let t of cmp.xTicks"
-            [attr.x]="t.x"
-            [attr.y]="cmp.H - 12"
-            text-anchor="middle"
-            class="x-label x-label--age"
-          >
-            {{ t.label }}
-          </text>
+          <g *ngFor="let t of cmp.xTicks">
+            <line
+              [attr.x1]="t.x"
+              [attr.x2]="t.x"
+              [attr.y1]="cmp.H - cmp.PAD_B"
+              [attr.y2]="cmp.H - cmp.PAD_B + 5"
+              class="x-tick-line"
+            />
+            <text
+              [attr.x]="t.x"
+              [attr.y]="cmp.H - 22"
+              text-anchor="middle"
+              class="x-label x-label--age"
+            >{{ t.label }}</text>
+            <text
+              *ngIf="t.subLabel"
+              [attr.x]="t.x"
+              [attr.y]="cmp.H - 8"
+              text-anchor="middle"
+              class="x-label x-label--sub"
+            >{{ t.subLabel }}</text>
+          </g>
         </g>
         <path
           class="w-band-fill"
@@ -1020,6 +1042,95 @@
       <div class="tl-sources">
         <i class="pi pi-info-circle"></i>
         Tổng hợp từ: AAP HealthyChildren, CDC Milestones, WHO, The Wonder Weeks (Plooij), Vinmec.
+      </div>
+    </div>
+  </div>
+
+  <!-- WHO Standards Table Dialog -->
+  <div
+    class="dialog-overlay"
+    *ngIf="whoTableDialogOpen()"
+    (click)="closeWhoTableDialog()"
+  >
+    <div
+      class="dialog dialog-wide who-table-dialog"
+      role="dialog"
+      aria-modal="true"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="dialog-head">
+        <div>
+          <div class="eyebrow">
+            <i class="pi pi-globe"></i>
+            Chuẩn tăng trưởng WHO (VN khuyến nghị)
+          </div>
+          <h2>Bảng cân nặng theo tuổi</h2>
+          <p class="dialog-lead">
+            {{ gender() === 'girl' ? 'Bé gái' : 'Bé trai' }} · 0-24 tháng
+          </p>
+        </div>
+        <button
+          type="button"
+          class="dialog-close"
+          (click)="closeWhoTableDialog()"
+          aria-label="Đóng"
+        >
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+
+      <div class="who-table-legend">
+        <span class="who-legend-item who-legend-item--min">
+          <i class="pi pi-arrow-down"></i> Min (−2SD)
+        </span>
+        <span class="who-legend-item who-legend-item--median">
+          <i class="pi pi-minus"></i> Trung vị (P50)
+        </span>
+        <span class="who-legend-item who-legend-item--max">
+          <i class="pi pi-arrow-up"></i> Max (+2SD)
+        </span>
+      </div>
+
+      <div class="who-table-scroll">
+        <table class="who-table">
+          <thead>
+            <tr>
+              <th class="who-th-age">Tuổi</th>
+              <th class="who-th-value">Min</th>
+              <th class="who-th-value who-th-median">Trung vị</th>
+              <th class="who-th-value">Max</th>
+              <th class="who-th-current" *ngIf="sortedLogsDesc().length > 0">Bé</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              *ngFor="let row of whoStandardTable()"
+              [class.who-row-current]="row.isCurrent"
+            >
+              <td class="who-td-age">
+                <span class="who-age-label">{{ row.label }}</span>
+                <span class="who-age-weeks" *ngIf="row.weeks > 0">{{ row.weeks }} tuần</span>
+              </td>
+              <td class="who-td-value who-td-min">{{ formatKg(row.minKg) }}</td>
+              <td class="who-td-value who-td-median">{{ formatKg(row.medianKg) }}</td>
+              <td class="who-td-value who-td-max">{{ formatKg(row.maxKg) }}</td>
+              <td class="who-td-current" *ngIf="sortedLogsDesc().length > 0">
+                <ng-container *ngIf="row.currentWeight !== null">
+                  <strong>{{ formatKg(row.currentWeight) }}</strong>
+                  <span class="who-current-unit">kg</span>
+                </ng-container>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="who-table-footer">
+        <p class="who-footer-note">
+          <i class="pi pi-info-circle"></i>
+          Số liệu theo Chuẩn tăng trưởng trẻ em WHO 2024 (áp dụng tại Việt Nam).
+          Chỉ mang tính tham khảo, không thay cho đo đạc và tư vấn tại cơ sở y tế.
+        </p>
       </div>
     </div>
   </div>

@@ -49,6 +49,8 @@ import {
   FeedingViewGroup,
   groupLogsByProximity,
 } from './feeding-view-group';
+import { ActivityLogComponent } from '../../components/activity-log/activity-log.component';
+import { ActivityLogService, formatLogContent, ACTIVITY_EVENT } from '../../services/activity-log.service';
 
 interface Profile {
   babyName: string;
@@ -140,6 +142,7 @@ function metricMetUi(s: 'met' | 'partial' | 'unmet'): {
     DocumentsComponent,
     MedicalHistoryComponent,
     WeightComponent,
+    ActivityLogComponent,
   ],
   templateUrl: './feeding.component.html',
   styleUrls: ['./feeding.component.scss'],
@@ -150,6 +153,7 @@ export class FeedingComponent {
   private destroyRef = inject(DestroyRef);
   private feedingLogService = inject(FeedingLogService);
   private weightLogService = inject(WeightLogService);
+  private activityLogService = inject(ActivityLogService);
 
   /** Vùng cuộn thật của trang (`.feeding-page`), không phải `document`. */
   @ViewChild('feedingPage', { static: true })
@@ -242,6 +246,7 @@ export class FeedingComponent {
     warningMl: number;
     groupGapMinutes: number;
     notificationMinutes: number;
+    burpDurationMinutes: number;
   } | null>(null);
   settingsSaving = signal(false);
   settingsFormError = signal('');
@@ -937,6 +942,44 @@ export class FeedingComponent {
     return `${days} ngày trước`;
   });
 
+  /**
+   * Thời gian cần bế bé vỗ ợ sau mỗi cữ bú (phút) — từ settings.
+   */
+  burpDurationMinutes = computed(() => this.feedingSettings().burpDurationMinutes);
+
+  /**
+   * Thông tin warning nhắc vỗ ợ sau cữ bú.
+   * Trả về null nếu không cần hiện warning (chưa có cữ hoặc đã hết thời gian).
+   */
+  burpWarning = computed<{
+    remainingMinutes: number;
+    lastFeedTime: string;
+    lastFeedVolume: number;
+    burpDuration: number;
+  } | null>(() => {
+    const last = this.lastFeeding();
+    if (!last) return null;
+
+    const burpDuration = this.burpDurationMinutes();
+    const [y, mo, d] = last.date.split('-').map((n) => parseInt(n, 10));
+    const [h, mi] = last.time.split(':').map((n) => parseInt(n, 10));
+    const feedAt = new Date(y, (mo || 1) - 1, d || 1, h || 0, mi || 0);
+    const burpEndAt = new Date(feedAt.getTime() + burpDuration * 60 * 1000);
+    
+    const nowMs = this.now().getTime();
+    const remainingMs = burpEndAt.getTime() - nowMs;
+    
+    if (remainingMs <= 0) return null;
+
+    const remainingMinutes = Math.ceil(remainingMs / 60000);
+    return {
+      remainingMinutes,
+      lastFeedTime: last.time,
+      lastFeedVolume: last.volume,
+      burpDuration,
+    };
+  });
+
   /** Chuỗi countdown cữ tiếp theo — computed thay cho gọi hàm trong template. */
   timeUntilNext = computed<string>(() => {
     const p = this.prediction();
@@ -1128,7 +1171,7 @@ export class FeedingComponent {
     return { W, H, PAD_L, PAD_R, PAD_T, PAD_B, labelStep, showBarValueOnAll };
   }
 
-  /** Bar chart: tổng sữa theo ngày (theo chartRange) */
+  /** Bar/Line chart: tổng sữa theo ngày (theo chartRange) — 30 ngày dùng line chart */
   weeklyLineChart = computed(() => {
     const data = this.weeklySummary();
     const max = Math.max(...data.map((d) => d.total), 1);
@@ -1139,6 +1182,7 @@ export class FeedingComponent {
     const barCount = data.length;
     const slot = chartW / barCount;
     const barW = Math.max(8, slot * (this.chartRange() === 30 ? 0.7 : 0.62));
+    const isLineChart = this.chartRange() === 30;
 
     const bars = data.map((d, i) => {
       const x = PAD_L + i * slot + (slot - barW) / 2;
@@ -1155,7 +1199,28 @@ export class FeedingComponent {
       label: Math.round(max * r),
     }));
 
-    return { bars, gridLines, W, H, PAD_L, PAD_B, max };
+    let linePath = '';
+    let areaPath = '';
+    const points: Array<{ x: number; y: number; d: typeof data[0]; showLabel: boolean; showValue: boolean }> = [];
+
+    if (isLineChart && data.length > 0) {
+      const bottomY = PAD_T + chartH;
+      data.forEach((d, i) => {
+        const cx = PAD_L + i * slot + slot / 2;
+        const y = d.total > 0 ? PAD_T + chartH - (d.total / max) * chartH : bottomY;
+        const showLabel = i % labelStep === 0 || i === barCount - 1;
+        const showValue = d.total > 0 && (i % 3 === 0 || i === barCount - 1);
+        points.push({ x: cx, y, d, showLabel, showValue });
+        linePath += i === 0 ? `M ${cx},${y}` : ` L ${cx},${y}`;
+      });
+      if (points.length > 0) {
+        const first = points[0];
+        const last = points[points.length - 1];
+        areaPath = `${linePath} L ${last.x},${bottomY} L ${first.x},${bottomY} Z`;
+      }
+    }
+
+    return { bars, gridLines, W, H, PAD_L, PAD_B, PAD_T, max, isLineChart, linePath, areaPath, points };
   });
 
   /** Bar chart: số cữ bú/ngày */
@@ -1666,6 +1731,7 @@ export class FeedingComponent {
       warningMl: s.feedWarningMl,
       groupGapMinutes: s.feedGroupGapMinutes,
       notificationMinutes: s.feedingNotificationMinutes,
+      burpDurationMinutes: s.burpDurationMinutes,
     });
     this.feedingSettingsDialogOpen.set(true);
   }
@@ -1704,6 +1770,13 @@ export class FeedingComponent {
     );
   }
 
+  updateSettingsDraftBurpDuration(v: string): void {
+    const n = parseInt(String(v).replace(/[^\d]/g, ''), 10);
+    this.settingsDraft.update((d) =>
+      d && !isNaN(n) ? { ...d, burpDurationMinutes: n } : d
+    );
+  }
+
   submitFeedingSettings(): void {
     const d = this.settingsDraft();
     if (!d) return;
@@ -1711,6 +1784,7 @@ export class FeedingComponent {
     const wm = d.warningMl;
     const gap = d.groupGapMinutes;
     const notify = d.notificationMinutes;
+    const burp = d.burpDurationMinutes;
     if (!Number.isFinite(th) || th < 0.25 || th > 48) {
       this.settingsFormError.set('Ngưỡng giờ (FEED_TIME_WARNING): từ 0,25 đến 48.');
       return;
@@ -1728,6 +1802,12 @@ export class FeedingComponent {
     if (!Number.isFinite(notify) || notify < 1 || notify > 180) {
       this.settingsFormError.set(
         'Thông báo sắp bú (FEEDING_NOTIFICATION_MINUTES): từ 1 đến 180 phút.'
+      );
+      return;
+    }
+    if (!Number.isFinite(burp) || burp < 1 || burp > 30) {
+      this.settingsFormError.set(
+        'Thời gian vỗ ợ (BURP_DURATION_MINUTES): từ 1 đến 30 phút.'
       );
       return;
     }
@@ -1760,6 +1840,13 @@ export class FeedingComponent {
           id: FEEDING_SETTING_ID.FEEDING_NOTIFICATION_MINUTES,
           value: notify,
           name: 'Thông báo sắp bú trước (phút)',
+          unit: 'phút',
+          dataType: 'Số',
+        },
+        {
+          id: FEEDING_SETTING_ID.BURP_DURATION_MINUTES,
+          value: burp,
+          name: 'Thời gian vỗ ợ sau cữ bú (phút)',
           unit: 'phút',
           dataType: 'Số',
         },
@@ -1994,6 +2081,12 @@ export class FeedingComponent {
           `Đã lưu cữ ${log.volume}ml lúc ${log.time} ngày ${this.formatDateDisplay(log.date)}`
         );
 
+        // Log activity
+        this.activityLogService.logFeeding(this.user(), 'FEEDING_ADDED', {
+          time: log.time,
+          volume: log.volume,
+        }).subscribe();
+
         // Reset time/volume/note (keep date), then reload logs
         const nowT = this.toTimeStr(new Date());
         this.logDraft.set({
@@ -2030,6 +2123,13 @@ export class FeedingComponent {
       next: () => {
         this.closeFeedGroupDetail();
         this.syncMessage.set('Đã xoá cữ bú.');
+
+        // Log activity
+        this.activityLogService.logFeeding(this.user(), 'FEEDING_DELETED', {
+          time: log.time,
+          volume: log.volume,
+        }).subscribe();
+
         setTimeout(() => this.syncMessage.set(''), 3000);
         setTimeout(() => this.loadLogs(), 900);
       },
@@ -2063,6 +2163,11 @@ export class FeedingComponent {
     this.weightCmp?.refresh();
     this.medicalCmp?.refresh();
     this.documentsCmp?.refresh();
+  }
+
+  /** Khi có activity mới từ user khác — reload toàn bộ dữ liệu */
+  onActivityChanged() {
+    this.refreshAll();
   }
 
   /** Ảnh đính kèm trên timeline Y tế → tab Tài liệu + preview file Explorer. */
@@ -2161,6 +2266,14 @@ export class FeedingComponent {
           this.syncMessage.set(
             `Đã cập nhật cữ ${d.volume}ml lúc ${d.time} ngày ${this.formatDateDisplay(original.date)}`
           );
+
+          // Log activity
+          this.activityLogService.logFeeding(this.user(), 'FEEDING_UPDATED', {
+            time: d.time,
+            oldVolume: original.volume,
+            newVolume: d.volume ?? undefined,
+          }).subscribe();
+
           setTimeout(() => this.syncMessage.set(''), 4000);
           this.closeEditDialog();
           setTimeout(() => this.loadLogs(), 900);
