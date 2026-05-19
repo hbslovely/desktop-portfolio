@@ -29,10 +29,13 @@ import {
   GROWTH_REFERENCE_REGION_VN,
   WeightGrowthSex,
   ageDaysAtDate,
+  approxSdKgAtWeeks,
   evaluateWeightForAge,
+  medianWeightKgAtWeeks,
   sampleWhoWeightBandByDay,
   weeksFromDays,
 } from '../baby-weight-growth';
+import { ActivityLogService } from '../../../services/activity-log.service';
 
 interface WeightDraft {
   date: string;
@@ -51,6 +54,7 @@ interface WeightDraft {
 export class WeightComponent {
   private weightLogService = inject(WeightLogService);
   private destroyRef = inject(DestroyRef);
+  private activityLogService = inject(ActivityLogService);
 
   /** Cùng user với trang feeding (`?user=`) */
   user = input<string>('guest');
@@ -78,6 +82,8 @@ export class WeightComponent {
   timelineDialogOpen = signal<boolean>(false);
   timelineView = signal<'list' | 'chart'>('list');
   selectedTimelineId = signal<string | null>(null);
+
+  whoTableDialogOpen = signal<boolean>(false);
 
   constructor() {
     this.load();
@@ -158,6 +164,60 @@ export class WeightComponent {
     const w = weeksFromDays(days);
     return evaluateWeightForAge(w, latest.weightKg, this.growthSex());
   });
+
+  /**
+   * Bảng chuẩn WHO với min/max/median theo tuần tuổi.
+   * Highlight dòng tuần hiện tại của bé.
+   */
+  whoStandardTable = computed(() => {
+    const sex = this.growthSex();
+    const currentWeeks = this.ageInDays() !== null ? Math.floor(this.ageInDays()! / 7) : null;
+    const latestWeight = this.sortedLogsDesc()[0]?.weightKg ?? null;
+
+    const milestones = [
+      { weeks: 0, label: 'Sơ sinh' },
+      { weeks: 4, label: '1 tháng' },
+      { weeks: 8, label: '2 tháng' },
+      { weeks: 12, label: '3 tháng' },
+      { weeks: 16, label: '4 tháng' },
+      { weeks: 20, label: '5 tháng' },
+      { weeks: 24, label: '6 tháng' },
+      { weeks: 32, label: '8 tháng' },
+      { weeks: 40, label: '10 tháng' },
+      { weeks: 48, label: '12 tháng' },
+      { weeks: 60, label: '15 tháng' },
+      { weeks: 72, label: '18 tháng' },
+      { weeks: 84, label: '21 tháng' },
+      { weeks: 96, label: '24 tháng' },
+    ];
+
+    return milestones.map((m) => {
+      const median = medianWeightKgAtWeeks(m.weeks, sex);
+      const sd = approxSdKgAtWeeks(m.weeks, sex);
+      const isCurrent = currentWeeks !== null && 
+        currentWeeks >= m.weeks && 
+        (milestones.findIndex((x) => x.weeks === m.weeks) === milestones.length - 1 ||
+         currentWeeks < milestones[milestones.findIndex((x) => x.weeks === m.weeks) + 1].weeks);
+      
+      return {
+        weeks: m.weeks,
+        label: m.label,
+        minKg: Math.round((median - 2 * sd) * 100) / 100,
+        medianKg: Math.round(median * 100) / 100,
+        maxKg: Math.round((median + 2 * sd) * 100) / 100,
+        isCurrent,
+        currentWeight: isCurrent ? latestWeight : null,
+      };
+    });
+  });
+
+  openWhoTableDialog() {
+    this.whoTableDialogOpen.set(true);
+  }
+
+  closeWhoTableDialog() {
+    this.whoTableDialogOpen.set(false);
+  }
 
   readonly noteQuickTags = [
     'Có tã',
@@ -372,13 +432,28 @@ export class WeightComponent {
     }));
 
     const weekStep = maxDays > 180 ? 8 : maxDays > 90 ? 4 : 2;
-    const xTicks: Array<{ x: number; label: string }> = [];
+    const xTicks: Array<{ x: number; label: string; subLabel?: string }> = [];
     for (let w = 0; w * 7 <= maxD; w += weekStep) {
       const d = w * 7;
-      xTicks.push({
-        x: xOfDays(d),
-        label: w === 0 ? 'Sinh' : `${w} tuần`,
-      });
+      let label: string;
+      let subLabel: string | undefined;
+      if (w === 0) {
+        label = 'Sinh';
+      } else if (w >= 52) {
+        const years = Math.floor(w / 52);
+        const remainWeeks = w % 52;
+        label = `${years} năm`;
+        if (remainWeeks > 0) subLabel = `+${remainWeeks}t`;
+      } else if (w >= 12) {
+        const months = Math.floor(w / 4);
+        const remainWeeks = w % 4;
+        label = `${months} tháng`;
+        if (remainWeeks > 0) subLabel = `+${remainWeeks}t`;
+      } else {
+        label = `${w}t`;
+        subLabel = `${d} ngày`;
+      }
+      xTicks.push({ x: xOfDays(d), label, subLabel });
     }
 
     const firstLog = logs[0];
@@ -755,6 +830,13 @@ export class WeightComponent {
         this.successMsg.set(
           `Đã lưu ${this.formatKg(kg)} kg ngày ${this.formatDateDisplay(log.date)}`
         );
+
+        // Log activity
+        this.activityLogService.logWeight(this.user(), 'WEIGHT_ADDED', {
+          date: this.formatDateDisplay(log.date),
+          weight: kg,
+        }).subscribe();
+
         setTimeout(() => this.successMsg.set(''), 4000);
         this.closeAddDialog();
         setTimeout(() => this.load(), 900);
@@ -856,6 +938,14 @@ export class WeightComponent {
         next: () => {
           this.saving.set(false);
           this.successMsg.set('Đã cập nhật.');
+
+          // Log activity
+          this.activityLogService.logWeight(this.user(), 'WEIGHT_UPDATED', {
+            date: this.formatDateDisplay(d.date),
+            oldWeight: orig.weightKg,
+            newWeight: kg,
+          }).subscribe();
+
           setTimeout(() => this.successMsg.set(''), 3000);
           this.cancelEdit();
           setTimeout(() => this.load(), 900);
@@ -883,6 +973,13 @@ export class WeightComponent {
     this.weightLogService.deleteLog(log.rowIndex).subscribe({
       next: () => {
         this.successMsg.set('Đã xoá.');
+
+        // Log activity
+        this.activityLogService.logWeight(this.user(), 'WEIGHT_DELETED', {
+          date: this.formatDateDisplay(log.date),
+          weight: log.weightKg,
+        }).subscribe();
+
         setTimeout(() => this.successMsg.set(''), 3000);
         if (this.editingLog()?.rowIndex === log.rowIndex) this.cancelEdit();
         setTimeout(() => this.load(), 900);

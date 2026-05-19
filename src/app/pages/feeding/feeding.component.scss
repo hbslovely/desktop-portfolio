@@ -1674,6 +1674,99 @@
   }
 }
 
+// ============ BURP WARNING ============
+.burp-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px 18px;
+  margin: 0 0 16px;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 1px solid #f59e0b;
+  border-radius: 14px;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.2);
+  animation: burp-pulse 2s ease-in-out infinite;
+
+  &__icon {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: #f59e0b;
+    border-radius: 50%;
+    color: #fff;
+    font-size: 18px;
+    animation: burp-icon-bounce 1.5s ease-in-out infinite;
+  }
+
+  &__content {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #92400e;
+    margin-bottom: 4px;
+  }
+
+  &__text {
+    font-size: 13px;
+    color: #78350f;
+    line-height: 1.5;
+    margin-bottom: 8px;
+
+    strong {
+      font-weight: 600;
+      color: #92400e;
+    }
+  }
+
+  &__countdown {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: rgba(255, 255, 255, 0.7);
+    border-radius: 8px;
+    font-size: 13px;
+    color: #92400e;
+    font-weight: 500;
+
+    i {
+      font-size: 14px;
+      color: #f59e0b;
+    }
+
+    strong {
+      font-size: 16px;
+      font-weight: 700;
+      color: #d97706;
+    }
+  }
+}
+
+@keyframes burp-pulse {
+  0%, 100% {
+    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.2);
+  }
+  50% {
+    box-shadow: 0 4px 16px rgba(245, 158, 11, 0.35);
+  }
+}
+
+@keyframes burp-icon-bounce {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
 .countdown-progress {
   margin-top: 10px;
 
@@ -3278,6 +3371,50 @@
     fill: var(--muted-2);
     font-size: 10px;
     font-family: inherit;
+  }
+
+  /* Line Chart Mode (30 ngày) */
+  &.line-mode {
+    .vol-line-area {
+      opacity: 1;
+    }
+
+    .vol-line-path {
+      filter: drop-shadow(0 2px 4px rgba(91, 108, 255, 0.25));
+    }
+
+    .vol-dot {
+      fill: #5b6cff;
+      stroke: #fff;
+      stroke-width: 2;
+      transition: r 0.15s ease;
+
+      &.today {
+        fill: #10b981;
+        stroke: #fff;
+        stroke-width: 2.5;
+      }
+
+      &.empty {
+        fill: #cbd5e1;
+        stroke: #fff;
+      }
+    }
+
+    .bar-text-sm {
+      font-size: 10px;
+      font-weight: 700;
+      fill: var(--text);
+
+      &.today {
+        fill: #047857;
+      }
+    }
+
+    .x-label--compact {
+      font-size: 9px;
+      font-weight: 600;
+    }
   }
 }
 
