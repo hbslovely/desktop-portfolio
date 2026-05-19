@@ -13,6 +13,16 @@
       <i class="pi pi-calendar"></i>
       Thêm <strong>ngày sinh</strong> (tab Cữ bú) để có chuẩn WHO và timeline.
     </p>
+
+    <button
+      type="button"
+      class="who-ref-cta"
+      (click)="openWhoGirlReferenceDialog()"
+      title="Tham chiếu trung vị cân nặng & chiều cao (WHO, bé gái)"
+    >
+      <i class="pi pi-table"></i>
+      Bảng chuẩn WHO — bé gái (VN)
+    </button>
   </div>
 
   <button
@@ -128,6 +138,13 @@
             {{ g.label }}
           </text>
         </g>
+        <line
+          class="axis-x-baseline"
+          [attr.x1]="cmp.PAD_L - 2"
+          [attr.y1]="cmp.bottomY"
+          [attr.x2]="cmp.W - cmp.PAD_R + 6"
+          [attr.y2]="cmp.bottomY"
+        />
         <g class="x-axis-ticks">
           <g *ngFor="let t of cmp.xTicks">
             <line
@@ -191,9 +208,10 @@
           <text
             *ngIf="p.showXLabel"
             [attr.x]="p.x"
-            [attr.y]="cmp.H - 28"
-            text-anchor="middle"
-            class="x-label x-label--small"
+            [attr.y]="cmp.H - 48"
+            [attr.transform]="'rotate(-36 ' + p.x + ',' + (cmp.H - 48) + ')'"
+            text-anchor="end"
+            class="x-label x-label--rot x-label--small"
           >
             {{ p.ageLabel }}
           </text>
@@ -244,6 +262,13 @@
             {{ g.label }}
           </text>
         </g>
+        <line
+          class="axis-x-baseline"
+          [attr.x1]="ch.PAD_L - 2"
+          [attr.y1]="ch.bottomY"
+          [attr.x2]="ch.W - ch.PAD_R + 6"
+          [attr.y2]="ch.bottomY"
+        />
         <path class="w-area" [attr.d]="ch.areaPath" fill="url(#wAreaGrad)" />
         <path
           class="w-path w-path--actual"
@@ -264,9 +289,10 @@
           <text
             *ngIf="p.showXLabel"
             [attr.x]="p.x"
-            [attr.y]="ch.H - 14"
-            text-anchor="middle"
-            class="x-label"
+            [attr.y]="ch.H - 40"
+            [attr.transform]="'rotate(-38 ' + p.x + ',' + (ch.H - 40) + ')'"
+            text-anchor="end"
+            class="x-label x-label--rot"
           >
             {{ formatDateShort(p.log.date) }}
           </text>
@@ -316,6 +342,13 @@
               </text>
             </g>
             <line
+              class="axis-x-baseline"
+              [attr.x1]="ln.PAD_L - 2"
+              [attr.y1]="ln.PAD_T + ln.H - ln.PAD_B"
+              [attr.x2]="ln.PAD_L + ln.innerW + 4"
+              [attr.y2]="ln.PAD_T + ln.H - ln.PAD_B"
+            />
+            <line
               *ngIf="ln.showZeroLine"
               class="w-zero-line"
               [attr.x1]="ln.PAD_L"
@@ -343,9 +376,10 @@
               <text
                 *ngIf="p.showXLabel"
                 [attr.x]="p.x"
-                [attr.y]="ln.H - 8"
-                text-anchor="middle"
-                class="x-label"
+                [attr.y]="ln.H - 36"
+                [attr.transform]="'rotate(-38 ' + p.x + ',' + (ln.H - 36) + ')'"
+                text-anchor="end"
+                class="x-label x-label--rot"
               >
                 {{ p.label }}
               </text>
