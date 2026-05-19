@@ -10,6 +10,7 @@ export const ACTIVITY_EVENT = {
   FEEDING_ADDED: 'FEEDING_ADDED',
   FEEDING_UPDATED: 'FEEDING_UPDATED',
   FEEDING_DELETED: 'FEEDING_DELETED',
+  BOTTLE_PREP_ADDED: 'BOTTLE_PREP_ADDED',
   
   // Weight events
   WEIGHT_ADDED: 'WEIGHT_ADDED',
@@ -74,6 +75,8 @@ export function formatLogContent(
         : `Cập nhật cữ bú lúc '${details['time']}'`;
     case ACTIVITY_EVENT.FEEDING_DELETED:
       return `Xóa cữ bú '${details['volume']}ml' lúc '${details['time']}'`;
+    case ACTIVITY_EVENT.BOTTLE_PREP_ADDED:
+      return `Pha sữa '${details['volume']}ml' lúc '${details['time']}'`;
 
     // Weight
     case ACTIVITY_EVENT.WEIGHT_ADDED:
@@ -160,6 +163,7 @@ export function getEventTypeLabel(eventType: ActivityEventType): string {
     [ACTIVITY_EVENT.FEEDING_ADDED]: 'Thêm cữ bú',
     [ACTIVITY_EVENT.FEEDING_UPDATED]: 'Sửa cữ bú',
     [ACTIVITY_EVENT.FEEDING_DELETED]: 'Xóa cữ bú',
+    [ACTIVITY_EVENT.BOTTLE_PREP_ADDED]: 'Pha sữa',
     [ACTIVITY_EVENT.WEIGHT_ADDED]: 'Thêm cân nặng',
     [ACTIVITY_EVENT.WEIGHT_UPDATED]: 'Sửa cân nặng',
     [ACTIVITY_EVENT.WEIGHT_DELETED]: 'Xóa cân nặng',
