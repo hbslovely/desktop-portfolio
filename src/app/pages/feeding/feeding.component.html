@@ -448,31 +448,74 @@
 
       <!-- ============ BOTTLE PREP (quick save) ============ -->
       <section class="bottle-prep">
+        <!-- Warning khi bình sữa sắp hết hạn, đã hết hạn, hoặc chưa pha sữa khi cữ sắp tới -->
+        <div class="bp-warning" *ngIf="bottlePrepWarning() as warning">
+          <!-- Chưa pha sữa nhưng đã trễ cữ -->
+          <ng-container *ngIf="warning.type === 'no-prep-late'">
+            <div class="bp-warning__content bp-warning--expired">
+              <i class="pi pi-exclamation-circle"></i>
+              <span>Đã <strong>trễ giờ bú</strong> nhưng chưa có sữa đã pha! Hãy pha sữa ngay.</span>
+            </div>
+          </ng-container>
+          <!-- Chưa pha sữa nhưng cữ sắp tới -->
+          <ng-container *ngIf="warning.type === 'no-prep-soon'">
+            <div class="bp-warning__content bp-warning--soon">
+              <i class="pi pi-clock"></i>
+              <span>Còn <strong>{{ warning.minutes }} phút</strong> nữa tới giờ bú nhưng chưa có sữa đã pha. Nhớ chuẩn bị sữa nhé!</span>
+            </div>
+          </ng-container>
+          <!-- Bình sữa đã hết hạn -->
+          <ng-container *ngIf="warning.type === 'expired'">
+            <div class="bp-warning__content bp-warning--expired">
+              <i class="pi pi-exclamation-circle"></i>
+              <span>Bình sữa đã <strong>hết hạn sử dụng</strong>! Vui lòng pha sữa mới.</span>
+            </div>
+          </ng-container>
+          <!-- Bình sữa sắp hết hạn -->
+          <ng-container *ngIf="warning.type === 'expiring-soon'">
+            <div class="bp-warning__content bp-warning--soon">
+              <i class="pi pi-clock"></i>
+              <span>Bình sữa còn <strong>{{ warning.minutes }} phút</strong> nữa sẽ hết hạn. Nhớ pha sữa mới nhé!</span>
+            </div>
+          </ng-container>
+          <button type="button" class="bp-warning__btn" (click)="editBottlePrep()" title="Pha sữa mới">
+            <i class="pi pi-plus"></i> Pha sữa mới
+          </button>
+        </div>
+
         <ng-container *ngIf="!bottlePrepEditing(); else bottlePrepEdit">
           <ng-container *ngIf="bottlePrep() as prep; else noBottlePrep">
-            <div class="bp-info">
-              <i class="pi pi-inbox"></i>
-              <span class="bp-text">
-                <span class="bp-prep-user">{{ prep.user }}</span> đã pha
-                <strong>{{ prep.volumeMl }}ml</strong> lúc
-                <span class="bp-prep-time">{{ formatBottleAt(prep.at) }}</span>
-                <br />
-                <span class="muted bp-useby"
-                  >Thời hạn sử dụng tối đa {{ bottlePrepUseByMax(prep.at) }}</span
-                >
-              </span>
-            </div>
-            <div class="bp-actions">
-              <button type="button" class="bp-btn" (click)="editBottlePrep()" title="Sửa">
-                <i class="pi pi-pencil"></i>
-              </button>
-              <button type="button" class="bp-btn danger" (click)="clearBottlePrep()" title="Xoá bình">
-                <i class="pi pi-times"></i>
-              </button>
+            <div class="bp-info-row">
+              <div class="bp-info">
+                <i class="pi pi-inbox"></i>
+                <span class="bp-text">
+                  <span class="bp-prep-user">{{ prep.user }}</span> đã pha
+                  <strong>{{ prep.volumeMl }}ml</strong> lúc
+                  <span class="bp-prep-time">{{ formatBottleAt(prep.at) }}</span>
+                  <br />
+                  <span class="muted bp-useby"
+                    >Thời hạn sử dụng tối đa {{ bottlePrepUseByMax(prep.at) }}</span
+                  >
+                </span>
+              </div>
+              <div class="bp-actions">
+                <button type="button" class="bp-btn" (click)="editBottlePrep()" title="Sửa">
+                  <i class="pi pi-pencil"></i>
+                </button>
+                <button type="button" class="bp-btn danger" (click)="clearBottlePrep()" title="Xoá bình">
+                  <i class="pi pi-times"></i>
+                </button>
+              </div>
             </div>
           </ng-container>
           <ng-template #noBottlePrep>
-            <button type="button" class="bp-add" (click)="editBottlePrep()">
+            <!-- Ẩn nút này khi có warning (vì warning đã có nút "Pha sữa mới") -->
+            <button 
+              type="button" 
+              class="bp-add" 
+              (click)="editBottlePrep()"
+              *ngIf="!bottlePrepWarning()"
+            >
               <i class="pi pi-inbox"></i>
               Lưu lượng sữa đã pha vào bình
             </button>
@@ -2579,6 +2622,10 @@
 
         <div class="sync-error" *ngIf="settingsFormError()">
           <i class="pi pi-exclamation-triangle"></i> {{ settingsFormError() }}
+        </div>
+
+        <div class="sync-success" *ngIf="settingsSuccess()">
+          <i class="pi pi-check-circle"></i> {{ settingsSuccess() }}
         </div>
 
         <div class="dialog-actions">
