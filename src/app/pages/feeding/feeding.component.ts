@@ -260,6 +260,7 @@ export class FeedingComponent {
   } | null>(null);
   settingsSaving = signal(false);
   settingsFormError = signal('');
+  settingsSuccess = signal('');
 
   /** Nhắc sự kiện lịch (toàn cục) — trong cửa sổ Settings + sheet Event */
   eventReminderDialogOpen = signal(false);
@@ -318,6 +319,50 @@ export class FeedingComponent {
   bottlePrepEditing = signal<boolean>(false);
   /** Đang POST setBottlePrep — chặn double-submit + khóa form */
   bottlePrepSaving = signal<boolean>(false);
+
+  /** Warning khi bình sữa còn ~30 phút hoặc ít hơn, hoặc cữ sắp tới nhưng chưa pha sữa */
+  bottlePrepWarning = computed(() => {
+    const prep = this.bottlePrep();
+
+    // Case 1: Chưa có bình sữa - kiểm tra cữ sắp tới (thêm 20p so với notification)
+    if (!prep) {
+      const p = this.prediction();
+      if (!p?.nextAt) return null;
+      
+      const diffMin = Math.round((p.nextAt.getTime() - this.now().getTime()) / 60000);
+      const notifyMinutes = this.feedingSettings().feedingNotificationMinutes;
+      // Thêm 20 phút để nhắc chuẩn bị sữa sớm hơn
+      const bottlePrepNotifyMinutes = notifyMinutes + 20;
+      
+      if (diffMin < -5) {
+        return { type: 'no-prep-late' as const, minutes: 0 };
+      }
+      if (diffMin <= bottlePrepNotifyMinutes) {
+        return { type: 'no-prep-soon' as const, minutes: diffMin };
+      }
+      return null;
+    }
+
+    // Case 2: Có bình sữa - kiểm tra thời hạn
+    const prepTime = new Date(prep.at);
+    if (isNaN(prepTime.getTime())) return null;
+
+    // Thời hạn sử dụng tối đa = lúc pha + 1 giờ
+    const expiryTime = new Date(prepTime.getTime() + 60 * 60 * 1000);
+    const nowTime = this.now().getTime();
+    const remainingMs = expiryTime.getTime() - nowTime;
+    const remainingMinutes = Math.floor(remainingMs / (60 * 1000));
+
+    // Đã hết hạn
+    if (remainingMinutes <= 0) {
+      return { type: 'expired' as const, minutes: 0 };
+    }
+    // Còn 30 phút hoặc ít hơn
+    if (remainingMinutes <= 30) {
+      return { type: 'expiring-soon' as const, minutes: remainingMinutes };
+    }
+    return null;
+  });
 
   /** Trong log dialog: chỉ 1 input cho "sữa còn lại" */
   remainingInput = signal<string>('');
@@ -1798,6 +1843,7 @@ export class FeedingComponent {
   openFeedingSettingsDialog(): void {
     const s = this.feedingSettings();
     this.settingsFormError.set('');
+    this.settingsSuccess.set('');
     this.settingsDraft.set({
       timeWarningHours: s.feedTimeWarningHours,
       warningMl: s.feedWarningMl,
@@ -1999,12 +2045,22 @@ export class FeedingComponent {
             );
             return;
           }
-          this.closeFeedingSettingsDialog();
-          // Log activity (non-blocking)
-          this.activityLogService.logSettings(this.user(), 'Cài đặt ứng dụng').subscribe();
+          // Clear any error and show success message
+          this.settingsFormError.set('');
+          this.settingsSuccess.set('Đã lưu cài đặt thành công!');
+          // Log activity (non-blocking, ignore errors)
+          this.activityLogService.logSettings(this.user(), 'Cài đặt ứng dụng').subscribe({
+            error: () => {} // Silently ignore logging errors
+          });
+          // Close dialog after a short delay to show success message
+          setTimeout(() => {
+            this.closeFeedingSettingsDialog();
+            this.settingsSuccess.set('');
+          }, 1500);
           setTimeout(() => this.loadFeedingSettings(), 600);
         },
         error: (err) => {
+          console.error('Settings save error:', err);
           this.settingsFormError.set(
             err?.message || 'Lưu thất bại. Kiểm tra cấu hình Apps Script.'
           );

@@ -221,6 +221,7 @@ export class ActivityLogService {
   private readonly SHEET_NAME = 'Log';
   private readonly API_KEY = environment.googleSheetsApiKey;
   private readonly BASE_URL = `https://sheets.googleapis.com/v4/spreadsheets/${this.SHEET_ID}`;
+  private readonly STORAGE_KEY = 'activity-log-last-read-id';
 
   /**
    * Apps Script bound to the feeding sheet.
@@ -237,6 +238,7 @@ export class ActivityLogService {
 
   private logs = signal<ActivityLogRow[]>([]);
   private lastLogId = signal<string | null>(null);
+  private lastReadLogId = signal<string | null>(null);
   private loading = signal<boolean>(false);
   private hasNewActivity = signal<boolean>(false);
 
@@ -245,12 +247,52 @@ export class ActivityLogService {
   readonly logs$ = this.logs.asReadonly();
   readonly loading$ = this.loading.asReadonly();
   readonly hasNewActivity$ = this.hasNewActivity.asReadonly();
+  readonly lastReadLogId$ = this.lastReadLogId.asReadonly();
 
   /** Số lượng log chưa xem (mới) */
   unreadCount = signal<number>(0);
 
   constructor() {
+    this.loadLastReadLogId();
     this.startAutoRefresh();
+  }
+
+  /** Load last read log ID from localStorage */
+  private loadLastReadLogId(): void {
+    try {
+      const stored = localStorage.getItem(this.STORAGE_KEY);
+      if (stored) {
+        this.lastReadLogId.set(stored);
+      }
+    } catch (e) {
+      console.warn('Could not load last read log ID from localStorage', e);
+    }
+  }
+
+  /** Save last read log ID to localStorage */
+  private saveLastReadLogId(logId: string | null): void {
+    try {
+      if (logId) {
+        localStorage.setItem(this.STORAGE_KEY, logId);
+        this.lastReadLogId.set(logId);
+      }
+    } catch (e) {
+      console.warn('Could not save last read log ID to localStorage', e);
+    }
+  }
+
+  /** Calculate unread count based on last read log ID */
+  private calculateUnreadCount(logs: ActivityLogRow[]): number {
+    const lastReadId = this.lastReadLogId();
+    if (!lastReadId || logs.length === 0) {
+      return 0;
+    }
+    const lastReadIndex = logs.findIndex((l) => l.id === lastReadId);
+    if (lastReadIndex === -1) {
+      // Last read log not found, all logs are considered new
+      return logs.length;
+    }
+    return lastReadIndex;
   }
 
   /** Update refresh interval and restart auto-refresh */
@@ -278,11 +320,14 @@ export class ActivityLogService {
           const prevLastId = this.lastLogId();
           const newLastId = logs.length > 0 ? logs[0].id : null;
 
+          // Check if there are new activities since last fetch
           if (prevLastId && newLastId && prevLastId !== newLastId) {
             this.hasNewActivity.set(true);
-            const newCount = logs.findIndex((l) => l.id === prevLastId);
-            this.unreadCount.update((c) => c + (newCount > 0 ? newCount : 1));
           }
+
+          // Calculate unread count based on last READ log ID (from storage)
+          const unread = this.calculateUnreadCount(logs);
+          this.unreadCount.set(unread);
 
           this.logs.set(logs);
           this.lastLogId.set(newLastId);
@@ -299,15 +344,36 @@ export class ActivityLogService {
         this.logs.set(logs);
         if (logs.length > 0) {
           this.lastLogId.set(logs[0].id);
+          // Recalculate unread count (keep last read ID unchanged)
+          const unread = this.calculateUnreadCount(logs);
+          this.unreadCount.set(unread);
         }
       },
     });
   }
 
-  /** Mark all as read */
+  /** Mark all as read - save last read ID to localStorage */
   markAsRead(): void {
+    const logs = this.logs();
+    if (logs.length > 0) {
+      // Save the most recent log ID as last read
+      this.saveLastReadLogId(logs[0].id);
+    }
     this.unreadCount.set(0);
     this.hasNewActivity.set(false);
+  }
+
+  /** Check if a specific log is unread */
+  isLogUnread(logId: string): boolean {
+    const logs = this.logs();
+    const lastReadId = this.lastReadLogId();
+    if (!lastReadId) return false;
+
+    const logIndex = logs.findIndex((l) => l.id === logId);
+    const lastReadIndex = logs.findIndex((l) => l.id === lastReadId);
+
+    if (logIndex === -1 || lastReadIndex === -1) return false;
+    return logIndex < lastReadIndex;
   }
 
   /** Fetch logs from sheet */

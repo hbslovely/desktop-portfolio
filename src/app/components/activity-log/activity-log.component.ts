@@ -114,8 +114,10 @@ type FilterCategory = 'all' | 'feeding' | 'weight' | 'medical' | 'schedule' | 'd
             <li
               *ngFor="let log of displayedLogs(); trackBy: trackByLogId"
               class="activity-item"
+              [class.unread]="isUnread(log.id)"
               [attr.data-color]="getEventColor(log.eventType)"
             >
+              <div class="activity-item__unread-indicator" *ngIf="isUnread(log.id)"></div>
               <div class="activity-item__icon">
                 <i class="pi" [ngClass]="getEventIcon(log.eventType)"></i>
               </div>
@@ -221,7 +223,7 @@ type FilterCategory = 'all' | 'feeding' | 'weight' | 'medical' | 'schedule' | 'd
     .activity-dialog-overlay {
       position: fixed;
       inset: 0;
-      z-index: 9999;
+      z-index: 10000;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -231,6 +233,7 @@ type FilterCategory = 'all' | 'feeding' | 'weight' | 'medical' | 'schedule' | 'd
       animation: fadeIn 0.15s ease;
       overflow: hidden;
       touch-action: none;
+      isolation: isolate;
     }
 
     @keyframes fadeIn {
@@ -413,6 +416,7 @@ type FilterCategory = 'all' | 'feeding' | 'weight' | 'medical' | 'schedule' | 'd
       padding: 14px 20px;
       border-bottom: 1px solid #f1f5f9;
       transition: background 0.15s ease;
+      position: relative;
 
       &:hover {
         background: #f8fafc;
@@ -420,6 +424,16 @@ type FilterCategory = 'all' | 'feeding' | 'weight' | 'medical' | 'schedule' | 'd
 
       &:last-child {
         border-bottom: none;
+      }
+
+      &.unread {
+        background: #fefce8;
+        border-left: 3px solid #eab308;
+        padding-left: 17px;
+
+        &:hover {
+          background: #fef9c3;
+        }
       }
 
       &[data-color="green"] .activity-item__icon {
@@ -441,6 +455,18 @@ type FilterCategory = 'all' | 'feeding' | 'weight' | 'medical' | 'schedule' | 'd
         background: #f1f5f9;
         color: #64748b;
       }
+    }
+
+    .activity-item__unread-indicator {
+      position: absolute;
+      top: 50%;
+      left: 6px;
+      transform: translateY(-50%);
+      width: 6px;
+      height: 6px;
+      background: #eab308;
+      border-radius: 50%;
+      box-shadow: 0 0 4px rgba(234, 179, 8, 0.5);
     }
 
     .activity-item__icon {
@@ -595,6 +621,7 @@ export class ActivityLogComponent implements OnInit, OnDestroy {
   loading = this.activityLogService.loading$;
   unreadCount = this.activityLogService.unreadCount;
   hasNewActivity = this.activityLogService.hasNewActivity$;
+  lastReadLogId = this.activityLogService.lastReadLogId$;
 
   /** Pagination */
   private readonly PAGE_SIZE = 20;
@@ -765,6 +792,11 @@ export class ActivityLogComponent implements OnInit, OnDestroy {
 
   getEventColor(eventType: string) {
     return getEventTypeColor(eventType as any);
+  }
+
+  /** Check if a log entry is unread */
+  isUnread(logId: string): boolean {
+    return this.activityLogService.isLogUnread(logId);
   }
 
   formatTime(timestamp: string): string {
