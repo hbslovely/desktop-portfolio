@@ -1854,6 +1854,19 @@
       </footer>
     </ng-container>
 
+    <!-- ============ FAB (add feeding log) ============ -->
+    <button
+      type="button"
+      class="fab"
+      *ngIf="profile() && !editing()"
+      (click)="openLogDialog()"
+      aria-label="Ghi nhận cữ bú"
+      title="Ghi nhận cữ bú mới"
+    >
+      <i class="pi pi-plus"></i>
+      <span class="fab-label">Ghi cữ bú</span>
+    </button>
+
     </div><!-- /.tab-pane--feeding -->
   </main>
 
@@ -1995,19 +2008,6 @@
       </div>
     </div>
   </div>
-
-  <!-- ============ FAB (add feeding log) ============ -->
-  <button
-    type="button"
-    class="fab"
-    *ngIf="profile() && !editing() && bottomTab() === 'feeding'"
-    (click)="openLogDialog()"
-    aria-label="Ghi nhận cữ bú"
-    title="Ghi nhận cữ bú mới"
-  >
-    <i class="pi pi-plus"></i>
-    <span class="fab-label">Ghi cữ bú</span>
-  </button>
 
   <!-- ============ DIALOG (log form) ============ -->
   <div
