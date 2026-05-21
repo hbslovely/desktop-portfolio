@@ -69,10 +69,19 @@ export function formatLogContent(
     // Feeding
     case ACTIVITY_EVENT.FEEDING_ADDED:
       return `Thêm cữ bú '${details['volume']}ml' vào lúc '${details['time']}'`;
-    case ACTIVITY_EVENT.FEEDING_UPDATED:
-      return details['oldVolume'] && details['newVolume']
-        ? `Thay đổi cữ bú lúc '${details['time']}' từ '${details['oldVolume']}ml' thành '${details['newVolume']}ml'`
-        : `Cập nhật cữ bú lúc '${details['time']}'`;
+    case ACTIVITY_EVENT.FEEDING_UPDATED: {
+      const oldVol = details['oldVolume'];
+      const newVol = details['newVolume'];
+      const time = details['time'];
+      if (
+        oldVol != null &&
+        newVol != null &&
+        Number(oldVol) !== Number(newVol)
+      ) {
+        return `Thay đổi cữ bú lúc '${time}' từ '${oldVol}ml' thành '${newVol}ml'`;
+      }
+      return `cập nhật nội dung cữ bú lúc '${time}'`;
+    }
     case ACTIVITY_EVENT.FEEDING_DELETED:
       return `Xóa cữ bú '${details['volume']}ml' lúc '${details['time']}'`;
     case ACTIVITY_EVENT.BOTTLE_PREP_ADDED:
@@ -188,6 +197,8 @@ export function getEventTypeLabel(eventType: ActivityEventType): string {
 
 /** Map event type sang icon class */
 export function getEventTypeIcon(eventType: ActivityEventType): string {
+  if (eventType === ACTIVITY_EVENT.FEEDING_ADDED) return 'pi-heart';
+  if (eventType === ACTIVITY_EVENT.BOTTLE_PREP_ADDED) return 'pi-inbox';
   if (eventType.startsWith('FEEDING_')) return 'pi-heart';
   if (eventType.startsWith('WEIGHT_')) return 'pi-chart-line';
   if (eventType.startsWith('MEDICAL_')) return 'pi-briefcase';
