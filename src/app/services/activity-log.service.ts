@@ -73,14 +73,26 @@ export function formatLogContent(
       const oldVol = details['oldVolume'];
       const newVol = details['newVolume'];
       const time = details['time'];
-      if (
-        oldVol != null &&
-        newVol != null &&
-        Number(oldVol) !== Number(newVol)
-      ) {
+      const oldTime = details['oldTime'];
+      const newTime = details['newTime'];
+      const timeChanged =
+        oldTime != null && newTime != null && String(oldTime) !== String(newTime);
+      const volumeChanged =
+        oldVol != null && newVol != null && Number(oldVol) !== Number(newVol);
+
+      if (timeChanged && volumeChanged) {
+        return `Thay đổi cữ bú từ '${oldTime}' thành '${newTime}', dung tích từ '${oldVol}ml' thành '${newVol}ml'`;
+      }
+      if (timeChanged) {
+        return `Thay đổi cữ bú từ '${oldTime}' thành '${newTime}'`;
+      }
+      if (volumeChanged) {
         return `Thay đổi cữ bú lúc '${time}' từ '${oldVol}ml' thành '${newVol}ml'`;
       }
-      return `cập nhật nội dung cữ bú lúc '${time}'`;
+      const vol = newVol ?? oldVol ?? details['volume'];
+      return vol != null
+        ? `cập nhật nội dung cữ bú (${vol}ml) lúc '${time}'`
+        : `cập nhật nội dung cữ bú lúc '${time}'`;
     }
     case ACTIVITY_EVENT.FEEDING_DELETED:
       return `Xóa cữ bú '${details['volume']}ml' lúc '${details['time']}'`;
@@ -513,10 +525,19 @@ export class ActivityLogService {
   logFeeding(
     user: string,
     eventType: 'FEEDING_ADDED' | 'FEEDING_UPDATED' | 'FEEDING_DELETED',
-    details: { time?: string; volume?: number; oldVolume?: number; newVolume?: number }
+    details: {
+      time?: string;
+      oldTime?: string;
+      newTime?: string;
+      volume?: number;
+      oldVolume?: number;
+      newVolume?: number;
+    }
   ): Observable<boolean> {
     const content = formatLogContent(ACTIVITY_EVENT[eventType], {
       time: details.time,
+      oldTime: details.oldTime,
+      newTime: details.newTime,
       volume: details.volume,
       oldVolume: details.oldVolume,
       newVolume: details.newVolume,
