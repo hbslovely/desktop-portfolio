@@ -216,8 +216,8 @@ Use Cache   Fetch New URL
 
 ### Related Documentation
 
-- Full technical docs: `/ANGULAR_LOVE_DYNAMIC_API.md`
-- Angular Love App: `/ANGULAR_LOVE_APP.md`
+- Full technical docs: [ANGULAR_LOVE_DYNAMIC_API.md](./ANGULAR_LOVE_DYNAMIC_API.md)
+- Angular Love App: [ANGULAR_LOVE_APP.md](./ANGULAR_LOVE_APP.md)
 - Service implementation: `/src/app/services/angular-love.service.ts`
 
 ### Current Status

@@ -223,7 +223,7 @@ vercel logs --follow
 
 ## 📞 Need More Help?
 
-See `FIREANT_PROXY_SETUP.md` for detailed documentation.
+See [FIREANT_PROXY_SETUP.md](./FIREANT_PROXY_SETUP.md) for detailed documentation.
 
 ---
 
