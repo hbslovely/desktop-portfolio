@@ -2717,6 +2717,8 @@ export class FeedingComponent implements AfterViewInit {
           // Log activity
           this.activityLogService.logFeeding(this.user(), 'FEEDING_UPDATED', {
             time: d.time,
+            oldTime: original.time,
+            newTime: d.time,
             oldVolume: original.volume,
             newVolume: d.volume ?? undefined,
           }).subscribe();
