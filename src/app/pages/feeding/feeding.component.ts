@@ -1,4 +1,5 @@
 import {
+  AfterViewInit,
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
@@ -153,7 +154,7 @@ function metricMetUi(s: 'met' | 'partial' | 'unmet'): {
   styleUrls: ['./feeding.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class FeedingComponent {
+export class FeedingComponent implements AfterViewInit {
   private route = inject(ActivatedRoute);
   private destroyRef = inject(DestroyRef);
   private feedingLogService = inject(FeedingLogService);
@@ -284,7 +285,13 @@ export class FeedingComponent {
     });
   });
 
-  historyFilter = signal<'all' | 'today' | 'yesterday'>('all');
+  historyFilter = signal<'all' | 'today' | 'yesterday' | 'date'>('all');
+  /** Ngày cụ thể khi `historyFilter === 'date'` (dialog lịch sử). */
+  historyFilterDate = signal<string>('');
+  /** Ngày đang xem trên card lịch sử (mặc định: hôm qua). */
+  pastDayViewDate = signal('');
+  private static readonly PAST_DAY_STRIP_MIN_DAYS = 30;
+  private static readonly PAST_DAY_STRIP_MAX_DAYS = 120;
   /** Dialog lịch sử: số cữ tối đa render mỗi lần (tăng dần khi load more / cuộn). */
   historyFeedDisplayLimit = signal(100);
   private lastHistoryInfiniteScrollAt = 0;
@@ -553,6 +560,79 @@ export class FeedingComponent {
       (l) => this.logTimestamp(l)
     )
   );
+
+  /** Index cữ bú theo ngày — tránh lọc lại toàn bộ logs mỗi lần đổi ngày. */
+  private logsByDateMap = computed(() => {
+    const map = new Map<string, FeedingLog[]>();
+    for (const log of this.logs()) {
+      let bucket = map.get(log.date);
+      if (!bucket) {
+        bucket = [];
+        map.set(log.date, bucket);
+      }
+      bucket.push(log);
+    }
+    for (const bucket of map.values()) {
+      if (bucket.length > 1) {
+        bucket.sort((a, b) => b.time.localeCompare(a.time));
+      }
+    }
+    return map;
+  });
+
+  pastDayViewLogs = computed<FeedingLog[]>(
+    () => this.logsByDateMap().get(this.pastDayViewDate()) ?? []
+  );
+
+  pastDayViewStats = computed<DayStats>(() => {
+    const date = this.pastDayViewDate();
+    return this.statsFromList(date, this.pastDayViewLogs());
+  });
+
+  pastDayViewLogViewGroups = computed<FeedingViewGroup[]>(() =>
+    groupLogsByProximity(
+      this.pastDayViewLogs(),
+      this.feedingSettings().feedGroupGapMinutes,
+      (l) => this.logTimestamp(l)
+    )
+  );
+
+  /** Dải ngày cuộn ngang (cũ → mới, tối đa hôm qua). */
+  pastDayStripItems = computed(() => {
+    const map = this.logsByDateMap();
+    const yesterday = this.yesterdayDateStr();
+    const today = this.todayDateStr();
+    const minStart = this.dateStrDaysAgo(FeedingComponent.PAST_DAY_STRIP_MIN_DAYS);
+    const maxStart = this.dateStrDaysAgo(FeedingComponent.PAST_DAY_STRIP_MAX_DAYS);
+
+    let earliest = minStart;
+    for (const date of map.keys()) {
+      if (date < today && date < earliest) {
+        earliest = date;
+      }
+    }
+    if (earliest < maxStart) {
+      earliest = maxStart;
+    }
+
+    const items: Array<{ date: string; dateLabel: string; mlLabel: string; total: number }> =
+      [];
+    const cursor = new Date(earliest + 'T00:00:00');
+    const end = new Date(yesterday + 'T00:00:00');
+    while (cursor <= end) {
+      const date = this.toDateStr(cursor);
+      const logs = map.get(date) ?? [];
+      const total = logs.reduce((sum, log) => sum + log.volume, 0);
+      items.push({
+        date,
+        dateLabel: this.formatDateStrip(date),
+        mlLabel: total > 0 ? `${total}ml` : '—',
+        total,
+      });
+      cursor.setDate(cursor.getDate() + 1);
+    }
+    return items;
+  });
 
   /**
    * Khoảng cách giữa cữ `current` và cữ ngay TRƯỚC nó (trong cùng ngày).
@@ -1626,10 +1706,12 @@ export class FeedingComponent {
     const filter = this.historyFilter();
     const todayStr = this.todayDateStr();
     const yesterdayStr = this.yesterdayDateStr();
+    const dateStr = this.historyFilterDate();
     const out: FeedingLog[] = [];
     for (const log of this.logs()) {
       if (filter === 'today' && log.date !== todayStr) continue;
       if (filter === 'yesterday' && log.date !== yesterdayStr) continue;
+      if (filter === 'date' && dateStr && log.date !== dateStr) continue;
       out.push(log);
     }
     out.sort((a, b) => {
@@ -1700,6 +1782,7 @@ export class FeedingComponent {
 
     // Load settings immediately with default values
     this.loadFeedingSettings();
+    this.pastDayViewDate.set(this.yesterdayDateStr());
 
     this.route.queryParamMap
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -1728,6 +1811,12 @@ export class FeedingComponent {
         this.tryOpenEventReminderAfterLoad();
       },
       { allowSignalWrites: true }
+    );
+  }
+
+  ngAfterViewInit(): void {
+    queueMicrotask(() =>
+      this.scrollPastDayStripIntoView(this.pastDayViewDate(), 'instant')
     );
   }
 
@@ -2503,6 +2592,7 @@ export class FeedingComponent {
   @ViewChild(DocumentsComponent) private documentsCmp?: DocumentsComponent;
   @ViewChild(MedicalHistoryComponent) private medicalCmp?: MedicalHistoryComponent;
   @ViewChild(WeightComponent) private weightCmp?: WeightComponent;
+  @ViewChild('pastDayStripScroller') private pastDayStripScroller?: ElementRef<HTMLElement>;
 
   /**
    * Reload đồng thời nhật ký bú, cân nặng, tiền sử y tế **và** documents.
@@ -2738,10 +2828,92 @@ export class FeedingComponent {
     return `${d}/${m}`;
   }
 
+  /** Nhãn ngắn cho dải ngày — vd. 26/5 */
+  formatDateStrip(iso: string): string {
+    const [, m, d] = iso.split('-').map(Number);
+    return `${d}/${m}`;
+  }
+
   formatDayLabel(iso: string): string {
     const d = new Date(iso + 'T00:00:00');
     const dayNames = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
     return dayNames[d.getDay()];
+  }
+
+  pastDayRelativeLabel(dateStr = this.pastDayViewDate()): string {
+    if (dateStr === this.yesterdayDateStr()) return 'Hôm qua';
+    const d = new Date(this.todayDateStr() + 'T00:00:00');
+    d.setDate(d.getDate() - 2);
+    if (dateStr === this.toDateStr(d)) return 'Hôm kia';
+    return `${this.formatDayLabel(dateStr)} · ${this.formatDateDisplay(dateStr)}`;
+  }
+
+  pastDayViewShowReset(): boolean {
+    return this.pastDayViewDate() !== this.yesterdayDateStr();
+  }
+
+  selectPastDayView(date: string): void {
+    this.pastDayViewDate.set(date);
+  }
+
+  pastDayViewCanSelectPrev(): boolean {
+    const items = this.pastDayStripItems();
+    const current = this.pastDayViewDate();
+    return items.length > 0 && !!current && current > items[0].date;
+  }
+
+  pastDayViewCanSelectNext(): boolean {
+    const current = this.pastDayViewDate();
+    return !!current && current < this.yesterdayDateStr();
+  }
+
+  pastDayViewSelectPrev(): void {
+    const current = this.pastDayViewDate();
+    if (!current) return;
+    const d = new Date(current + 'T00:00:00');
+    d.setDate(d.getDate() - 1);
+    const prev = this.toDateStr(d);
+    const items = this.pastDayStripItems();
+    if (!items.length || prev < items[0].date) return;
+    this.pastDayViewDate.set(prev);
+    this.scrollPastDayStripIntoView(prev);
+  }
+
+  pastDayViewSelectNext(): void {
+    const current = this.pastDayViewDate();
+    const yesterday = this.yesterdayDateStr();
+    if (!current || current >= yesterday) return;
+    const d = new Date(current + 'T00:00:00');
+    d.setDate(d.getDate() + 1);
+    const next = this.toDateStr(d);
+    if (next > yesterday) return;
+    this.pastDayViewDate.set(next);
+    this.scrollPastDayStripIntoView(next);
+  }
+
+  pastDayViewReset(): void {
+    const yesterday = this.yesterdayDateStr();
+    this.pastDayViewDate.set(yesterday);
+    this.scrollPastDayStripIntoView(yesterday);
+  }
+
+  private scrollPastDayStripIntoView(
+    date: string,
+    behavior: ScrollBehavior = 'smooth'
+  ): void {
+    if (!date) return;
+    queueMicrotask(() => {
+      const scroller = this.pastDayStripScroller?.nativeElement;
+      if (!scroller) return;
+      const el = scroller.querySelector(
+        `[data-past-day="${date}"]`
+      ) as HTMLElement | null;
+      el?.scrollIntoView({ inline: 'center', block: 'nearest', behavior });
+    });
+  }
+
+  trackPastDayStripItem(_index: number, item: { date: string }): string {
+    return item.date;
   }
 
   usePredictionValues() {
@@ -2767,8 +2939,12 @@ export class FeedingComponent {
     this.chartRange.set(r);
   }
 
-  openHistoryDialog(filter: 'all' | 'today' | 'yesterday' = 'all') {
+  openHistoryDialog(
+    filter: 'all' | 'today' | 'yesterday' | 'date' = 'all',
+    dateStr?: string
+  ) {
     this.historyFilter.set(filter);
+    this.historyFilterDate.set(filter === 'date' && dateStr ? dateStr : '');
     this.historyFeedDisplayLimit.set(100);
     this.historyDialogOpen.set(true);
   }
@@ -2859,6 +3035,10 @@ export class FeedingComponent {
   );
   yesterdayLogsPreview = computed<FeedingViewGroup[]>(() =>
     this.yesterdayLogViewGroups().slice(0, 2)
+  );
+
+  pastDayViewLogsPreview = computed<FeedingViewGroup[]>(() =>
+    this.pastDayViewLogViewGroups().slice(0, 2)
   );
 
   /** Thứ (tiếng Việt) — hero */

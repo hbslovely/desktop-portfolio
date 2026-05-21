@@ -860,108 +860,158 @@
         </div>
 
         <div class="card day-card yesterday">
+          <div class="day-date-nav-wrap">
+            <button
+              *ngIf="pastDayViewShowReset()"
+              type="button"
+              class="day-date-nav-reset"
+              (click)="pastDayViewReset()"
+              aria-label="Về hôm qua"
+              title="Về hôm qua"
+            >
+              <i class="pi pi-times"></i>
+            </button>
+            <nav class="day-date-strip" aria-label="Chọn ngày xem lịch sử">
+              <button
+                type="button"
+                class="day-date-strip-arrow"
+                (click)="pastDayViewSelectPrev()"
+                [disabled]="!pastDayViewCanSelectPrev()"
+                aria-label="Chọn ngày trước"
+              >
+                <i class="pi pi-chevron-left"></i>
+              </button>
+              <div class="day-date-strip-scroller" #pastDayStripScroller>
+                <button
+                  type="button"
+                  class="day-date-strip-day"
+                  *ngFor="let d of pastDayStripItems(); trackBy: trackPastDayStripItem"
+                  [class.active]="d.date === pastDayViewDate()"
+                  [attr.data-past-day]="d.date"
+                  (click)="selectPastDayView(d.date)"
+                  [attr.aria-label]="'Ngày ' + d.dateLabel + ', ' + d.mlLabel"
+                  [attr.aria-current]="d.date === pastDayViewDate() ? 'date' : null"
+                >
+                  <span class="day-date-strip-date">{{ d.dateLabel }}</span>
+                  <span class="day-date-strip-ml" [class.empty]="d.total === 0">{{ d.mlLabel }}</span>
+                </button>
+              </div>
+              <button
+                type="button"
+                class="day-date-strip-arrow"
+                (click)="pastDayViewSelectNext()"
+                [disabled]="!pastDayViewCanSelectNext()"
+                aria-label="Chọn ngày sau"
+              >
+                <i class="pi pi-chevron-right"></i>
+              </button>
+            </nav>
+          </div>
+
           <div class="day-head">
             <div>
-              <div class="eyebrow">Hôm qua</div>
-              <h3>{{ formatDateDisplay(yesterdayDateStr()) }}</h3>
+              <div class="eyebrow">{{ pastDayRelativeLabel() }}</div>
+              <h3>{{ formatDayLabel(pastDayViewDate()) }} · {{ formatDateDisplay(pastDayViewDate()) }}</h3>
             </div>
             <div class="big-total">
-              <span class="num">{{ yesterdayStats().total }}</span>
+              <span class="num">{{ pastDayViewStats().total }}</span>
               <span class="unit">ml</span>
             </div>
           </div>
 
           <div class="day-stats">
-            <div><i class="pi pi-th-list"></i> {{ yesterdayStats().count }} cữ</div>
-            <div *ngIf="yesterdayStats().count > 0">
-              <i class="pi pi-chart-bar"></i> TB {{ yesterdayStats().avg }}ml
+            <div><i class="pi pi-th-list"></i> {{ pastDayViewStats().count }} cữ</div>
+            <div *ngIf="pastDayViewStats().count > 0">
+              <i class="pi pi-chart-bar"></i> TB {{ pastDayViewStats().avg }}ml
             </div>
-            <div *ngIf="yesterdayStats().count > 0">
-              <i class="pi pi-arrow-up"></i> Cao nhất {{ yesterdayStats().max }}ml
+            <div *ngIf="pastDayViewStats().count > 0">
+              <i class="pi pi-arrow-up"></i> Cao nhất {{ pastDayViewStats().max }}ml
             </div>
-            <div *ngIf="yesterdayStats().firstTime">
-              <i class="pi pi-clock"></i> {{ yesterdayStats().firstTime }} → {{ yesterdayStats().lastTime }}
+            <div *ngIf="pastDayViewStats().firstTime">
+              <i class="pi pi-clock"></i> {{ pastDayViewStats().firstTime }} → {{ pastDayViewStats().lastTime }}
             </div>
           </div>
 
-          <!-- Yesterday's logs (collapsed) -->
-          <div class="today-logs" *ngIf="yesterdayLogs().length > 0">
+          <!-- Past day logs (collapsed) -->
+          <div class="today-logs" *ngIf="pastDayViewLogs().length > 0">
             <div class="logs-header">
-              <span>Các cữ bú hôm qua</span>
+              <span>Các cữ bú {{ formatDateDisplay(pastDayViewDate()) }}</span>
               <button
-                *ngIf="yesterdayLogs().length > 2"
+                *ngIf="pastDayViewLogs().length > 2"
                 type="button"
                 class="logs-more"
-                (click)="openHistoryDialog('yesterday')"
+                (click)="openHistoryDialog('date', pastDayViewDate())"
               >
-                Xem tất cả {{ yesterdayLogs().length }}
+                Xem tất cả {{ pastDayViewLogs().length }}
                 <i class="pi pi-chevron-right"></i>
               </button>
             </div>
-            <div class="log-list">
-              <div
-                class="log-row"
-                *ngFor="let g of yesterdayLogsPreview(); trackBy: trackFeedingViewGroup"
-                [class.low-volume]="isLowVolumeViewGroup(g)"
-                [class.high-volume]="isHighVolumeViewGroup(g)"
-              >
-                <span class="log-time log-time--with-badge">
-                  {{ viewGroupDisplayTime(g) }}
-                  <button
-                    *ngIf="g.members.length > 1"
-                    type="button"
-                    class="log-merge-badge"
-                    (click)="openFeedGroupDetail(g); $event.stopPropagation()"
-                    title="Xem các cữ đã gom"
-                  >
-                    {{ g.members.length }} cữ
-                  </button>
-                </span>
-                <span class="log-volume">{{ viewGroupDisplayVolume(g) }}ml</span>
-                <span
-                  class="log-gap"
-                  *ngIf="formatIntervalFromPrevViewGroup(g, yesterdayLogViewGroups()) as iv"
-                  [class.feed-gap-warn]="
-                    isFeedTimeGapWarningViewGroup(g, yesterdayLogViewGroups())
-                  "
+            <ng-container *ngIf="pastDayViewLogViewGroups() as pastDayGroups">
+              <div class="log-list">
+                <div
+                  class="log-row"
+                  *ngFor="let g of pastDayViewLogsPreview(); trackBy: trackFeedingViewGroup"
+                  [class.low-volume]="isLowVolumeViewGroup(g)"
+                  [class.high-volume]="isHighVolumeViewGroup(g)"
                 >
-                  <i class="pi pi-clock"></i> {{ iv }}
-                </span>
-                <span class="log-note" *ngIf="viewGroupNote(g) as vn">· {{ vn }}</span>
-                <div class="log-actions" *ngIf="g.members.length === 1 && g.members[0].rowIndex">
-                  <button
-                    class="log-edit"
-                    (click)="openEditDialog(g.members[0])"
-                    title="Sửa cữ bú này"
-                    aria-label="Sửa cữ bú"
+                  <span class="log-time log-time--with-badge">
+                    {{ viewGroupDisplayTime(g) }}
+                    <button
+                      *ngIf="g.members.length > 1"
+                      type="button"
+                      class="log-merge-badge"
+                      (click)="openFeedGroupDetail(g); $event.stopPropagation()"
+                      title="Xem các cữ đã gom"
+                    >
+                      {{ g.members.length }} cữ
+                    </button>
+                  </span>
+                  <span class="log-volume">{{ viewGroupDisplayVolume(g) }}ml</span>
+                  <span
+                    class="log-gap"
+                    *ngIf="formatIntervalFromPrevViewGroup(g, pastDayGroups) as iv"
+                    [class.feed-gap-warn]="
+                      isFeedTimeGapWarningViewGroup(g, pastDayGroups)
+                    "
                   >
-                    <i class="pi pi-pencil"></i>
-                  </button>
-                  <button
-                    class="log-del"
-                    (click)="deleteLog(g.members[0])"
-                    title="Xoá cữ bú này"
-                    aria-label="Xoá cữ bú"
-                  >
-                    <i class="pi pi-trash"></i>
-                  </button>
-                </div>
-                <div class="log-actions" *ngIf="g.members.length > 1">
-                  <button
-                    class="log-edit"
-                    (click)="openFeedGroupDetail(g)"
-                    title="Chi tiết các cữ đã gom"
-                    aria-label="Chi tiết gom nhóm"
-                  >
-                    <i class="pi pi-list"></i>
-                  </button>
+                    <i class="pi pi-clock"></i> {{ iv }}
+                  </span>
+                  <span class="log-note" *ngIf="viewGroupNote(g) as vn">· {{ vn }}</span>
+                  <div class="log-actions" *ngIf="g.members.length === 1 && g.members[0].rowIndex">
+                    <button
+                      class="log-edit"
+                      (click)="openEditDialog(g.members[0])"
+                      title="Sửa cữ bú này"
+                      aria-label="Sửa cữ bú"
+                    >
+                      <i class="pi pi-pencil"></i>
+                    </button>
+                    <button
+                      class="log-del"
+                      (click)="deleteLog(g.members[0])"
+                      title="Xoá cữ bú này"
+                      aria-label="Xoá cữ bú"
+                    >
+                      <i class="pi pi-trash"></i>
+                    </button>
+                  </div>
+                  <div class="log-actions" *ngIf="g.members.length > 1">
+                    <button
+                      class="log-edit"
+                      (click)="openFeedGroupDetail(g)"
+                      title="Chi tiết các cữ đã gom"
+                      aria-label="Chi tiết gom nhóm"
+                    >
+                      <i class="pi pi-list"></i>
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
+            </ng-container>
           </div>
 
-          <div class="empty-mini" *ngIf="yesterdayStats().count === 0">
-            Chưa có dữ liệu hôm qua để so sánh.
+          <div class="empty-mini" *ngIf="pastDayViewStats().count === 0">
+            Chưa có dữ liệu cho ngày này.
           </div>
         </div>
       </section>
@@ -2333,6 +2383,7 @@
             <ng-container [ngSwitch]="historyFilter()">
               <ng-container *ngSwitchCase="'today'">Cữ bú hôm nay</ng-container>
               <ng-container *ngSwitchCase="'yesterday'">Cữ bú hôm qua</ng-container>
+              <ng-container *ngSwitchCase="'date'">Cữ bú theo ngày</ng-container>
               <ng-container *ngSwitchDefault>Lịch sử đầy đủ</ng-container>
             </ng-container>
           </div>
@@ -2344,6 +2395,10 @@
               </ng-container>
               <ng-container *ngSwitchCase="'yesterday'">
                 Hôm qua ({{ yesterdayLogs().length }} cữ · {{ yesterdayStats().total }}ml)
+              </ng-container>
+              <ng-container *ngSwitchCase="'date'">
+                {{ formatDateDisplay(historyFilterDate()) }}
+                ({{ historyFilteredFeedTotal() }} cữ)
               </ng-container>
               <ng-container *ngSwitchDefault>
                 Tất cả cữ bú ({{ logs().length }})
@@ -2456,7 +2511,13 @@
         </div>
 
         <div class="empty-mini" *ngIf="historyFilteredFeedTotal() === 0">
-          {{ historyFilter() === 'today' ? 'Chưa có cữ bú nào trong hôm nay.' : 'Chưa có cữ bú nào được ghi nhận.' }}
+          <ng-container [ngSwitch]="historyFilter()">
+            <ng-container *ngSwitchCase="'today'">Chưa có cữ bú nào trong hôm nay.</ng-container>
+            <ng-container *ngSwitchCase="'date'">
+              Chưa có cữ bú nào trong ngày {{ formatDateDisplay(historyFilterDate()) }}.
+            </ng-container>
+            <ng-container *ngSwitchDefault>Chưa có cữ bú nào được ghi nhận.</ng-container>
+          </ng-container>
         </div>
       </div>
     </div>
