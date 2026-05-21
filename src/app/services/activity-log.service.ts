@@ -91,7 +91,7 @@ export function formatLogContent(
       }
       const vol = newVol ?? oldVol ?? details['volume'];
       return vol != null
-        ? `cập nhật nội dung cữ bú (${vol}ml) lúc '${time}'`
+        ? `cập nhật nội dung cữ bú ${vol}ml lúc '${time}'`
         : `cập nhật nội dung cữ bú lúc '${time}'`;
     }
     case ACTIVITY_EVENT.FEEDING_DELETED:
