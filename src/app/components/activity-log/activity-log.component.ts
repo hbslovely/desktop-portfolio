@@ -728,7 +728,7 @@ export class ActivityLogComponent implements OnInit, OnDestroy {
     this.displayCount.set(this.PAGE_SIZE);
     this.filterCategory = 'all';
     this.filterCategorySignal.set('all');
-    this.lastRefreshTime.set(new Date());
+    this.refreshLogs();
     this.activityLogService.markAsRead();
     // Lock body scroll on mobile
     document.body.style.overflow = 'hidden';

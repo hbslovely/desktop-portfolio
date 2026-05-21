@@ -67,7 +67,7 @@ class ExpenseService {
 
   // Alternative: Use Google Apps Script Web App
   // You can create a Google Apps Script that exposes GET and POST endpoints
-  // See GOOGLE_APPS_SCRIPT_SETUP.md for instructions
+  // See docs/integrations/google-apps-script/GOOGLE_APPS_SCRIPT_SETUP.md for instructions
   // IMPORTANT: API Key cannot write to Google Sheets. You MUST use Google Apps Script for write operations.
   // Use proxy in development to avoid CORS issues
   private readonly APPS_SCRIPT_URL = environment.production
@@ -236,7 +236,7 @@ class ExpenseService {
    * Add a new expense to Google Sheets
    * NOTE: Google Sheets API v4 does not support write operations with API Key.
    * You MUST use Google Apps Script for write operations.
-   * See GOOGLE_APPS_SCRIPT_SETUP.md for setup instructions.
+   * See docs/integrations/google-apps-script/GOOGLE_APPS_SCRIPT_SETUP.md for setup instructions.
    */
   addExpense(expense: Expense): Observable<any> {
     // If using Google Apps Script (RECOMMENDED)
@@ -251,7 +251,7 @@ class ExpenseService {
       }).pipe(
         catchError((error) => {
           console.error('Failed to add expense via Apps Script:', error);
-          return throwError(() => new Error('Không thể thêm chi tiêu. Vui lòng kiểm tra cấu hình Google Apps Script. Xem GOOGLE_APPS_SCRIPT_SETUP.md để biết cách thiết lập.'));
+          return throwError(() => new Error('Không thể thêm chi tiêu. Vui lòng kiểm tra cấu hình Google Apps Script. Xem docs/integrations/google-apps-script/GOOGLE_APPS_SCRIPT_SETUP.md để biết cách thiết lập.'));
         })
       );
     }
@@ -278,7 +278,7 @@ class ExpenseService {
         console.error('Failed to add expense to Google Sheets:', error);
         // Provide helpful error message
         if (error.status === 401 || error.status === 403) {
-          return throwError(() => new Error('API Key không thể ghi dữ liệu. Vui lòng thiết lập Google Apps Script. Xem GOOGLE_APPS_SCRIPT_SETUP.md để biết cách thiết lập.'));
+          return throwError(() => new Error('API Key không thể ghi dữ liệu. Vui lòng thiết lập Google Apps Script. Xem docs/integrations/google-apps-script/GOOGLE_APPS_SCRIPT_SETUP.md để biết cách thiết lập.'));
         }
         return throwError(() => error);
       })

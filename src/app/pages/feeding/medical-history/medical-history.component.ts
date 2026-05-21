@@ -435,7 +435,7 @@ export class MedicalHistoryComponent {
         console.error(err);
         this.loading.set(false);
         this.errorMsg.set(
-          'Không tải được tiền sử. Thêm tab "MedicalHistory" trong Sheet và redeploy Apps Script (xem FEEDING_SETUP).'
+          'Không tải được tiền sử. Thêm tab "MedicalHistory" trong Sheet và redeploy Apps Script (xem docs/feeding/FEEDING_SETUP.md).'
         );
       },
     });

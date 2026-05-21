@@ -450,18 +450,28 @@
       <section class="bottle-prep">
         <!-- Warning khi bình sữa sắp hết hạn, đã hết hạn, hoặc chưa pha sữa khi cữ sắp tới -->
         <div class="bp-warning" *ngIf="bottlePrepWarning() as warning">
-          <!-- Chưa pha sữa nhưng đã trễ cữ -->
+          <!-- Chưa pha sữa nhưng đã trễ / quá giờ bú -->
           <ng-container *ngIf="warning.type === 'no-prep-late'">
             <div class="bp-warning__content bp-warning--expired">
               <i class="pi pi-exclamation-circle"></i>
-              <span>Đã <strong>trễ giờ bú</strong> nhưng chưa có sữa đã pha! Hãy pha sữa ngay.</span>
+              <span *ngIf="warning.minutes > 0">
+                Đã <strong>quá {{ warning.minutes }} phút</strong> tới giờ bú nhưng chưa có sữa đã pha! Hãy pha sữa ngay.
+              </span>
+              <span *ngIf="warning.minutes === 0">
+                Đã <strong>trễ giờ bú</strong> nhưng chưa có sữa đã pha! Hãy pha sữa ngay.
+              </span>
             </div>
           </ng-container>
           <!-- Chưa pha sữa nhưng cữ sắp tới -->
           <ng-container *ngIf="warning.type === 'no-prep-soon'">
             <div class="bp-warning__content bp-warning--soon">
               <i class="pi pi-clock"></i>
-              <span>Còn <strong>{{ warning.minutes }} phút</strong> nữa tới giờ bú nhưng chưa có sữa đã pha. Nhớ chuẩn bị sữa nhé!</span>
+              <span *ngIf="warning.minutes > 0">
+                Còn <strong>{{ warning.minutes }} phút</strong> nữa tới giờ bú nhưng chưa có sữa đã pha. Nhớ chuẩn bị sữa nhé!
+              </span>
+              <span *ngIf="warning.minutes === 0">
+                <strong>Đến giờ bú rồi</strong> nhưng chưa có sữa đã pha. Nhớ pha sữa ngay nhé!
+              </span>
             </div>
           </ng-container>
           <!-- Bình sữa đã hết hạn -->

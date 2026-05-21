@@ -341,8 +341,8 @@ export class FeedingComponent implements AfterViewInit {
       // Thêm 20 phút để nhắc chuẩn bị sữa sớm hơn
       const bottlePrepNotifyMinutes = notifyMinutes + 20;
       
-      if (diffMin < -5) {
-        return { type: 'no-prep-late' as const, minutes: 0 };
+      if (diffMin < 0) {
+        return { type: 'no-prep-late' as const, minutes: Math.abs(diffMin) };
       }
       if (diffMin <= bottlePrepNotifyMinutes) {
         return { type: 'no-prep-soon' as const, minutes: diffMin };
@@ -2130,7 +2130,7 @@ export class FeedingComponent implements AfterViewInit {
           if (resp && resp.success === false) {
             this.settingsFormError.set(
               resp.error ||
-                'Lưu thất bại. Cập nhật Apps Script (action updateFeedingSettings) theo FEEDING_SETUP.md.'
+                'Lưu thất bại. Cập nhật Apps Script (action updateFeedingSettings) theo docs/feeding/FEEDING_SETUP.md.'
             );
             return;
           }
