@@ -51,6 +51,20 @@ interface WeightDraft {
   note: string;
 }
 
+interface WhoStandardRow {
+  weeks: number;
+  label: string;
+  minKg: number;
+  medianKg: number;
+  maxKg: number;
+  minCm: number;
+  medianCm: number;
+  maxCm: number;
+  isCurrent: boolean;
+  currentWeight: number | null;
+  currentHeight: number | null;
+}
+
 @Component({
   selector: 'app-weight',
   standalone: true,
@@ -198,7 +212,7 @@ export class WeightComponent {
    * Bảng chuẩn WHO với min/max/median theo tuần tuổi.
    * Highlight dòng tuần hiện tại của bé.
    */
-  whoStandardTable = computed(() => {
+  whoStandardTable = computed<WhoStandardRow[]>(() => {
     const sex = this.growthSex();
     const currentWeeks = this.ageInDays() !== null ? Math.floor(this.ageInDays()! / 7) : null;
     const latestWeight = this.sortedLogsDesc()[0]?.weightKg ?? null;
@@ -272,6 +286,24 @@ export class WeightComponent {
       };
     });
   });
+
+  whoCurrentWeightLevel(row: WhoStandardRow): 'ok' | 'mid' | 'warn' {
+    return this.whoMetricLevel(
+      row.currentWeight,
+      row.minKg,
+      row.medianKg,
+      row.maxKg
+    );
+  }
+
+  whoCurrentHeightLevel(row: WhoStandardRow): 'ok' | 'mid' | 'warn' {
+    return this.whoMetricLevel(
+      row.currentHeight,
+      row.minCm,
+      row.medianCm,
+      row.maxCm
+    );
+  }
 
   openWhoTableDialog() {
     this.whoTableDialogOpen.set(true);
@@ -1293,6 +1325,44 @@ export class WeightComponent {
       default:
         return 'neutral';
     }
+  }
+
+  private whoMetricLevel(
+    value: number | null,
+    min: number,
+    median: number,
+    max: number
+  ): 'ok' | 'mid' | 'warn' {
+    if (value === null || !Number.isFinite(value)) return 'mid';
+    const p = this.estimatePercentileFromBand(value, min, median, max);
+    if (p >= 40 && p <= 60) return 'ok';
+    if (p < 3 || p > 97) return 'warn';
+    return 'mid';
+  }
+
+  /**
+   * Nội suy percentile xấp xỉ từ 3 mốc WHO:
+   * -2SD ~ P3, median ~ P50, +2SD ~ P97.
+   */
+  private estimatePercentileFromBand(
+    value: number,
+    min: number,
+    median: number,
+    max: number
+  ): number {
+    if (max <= min) return 50;
+    if (value <= median) {
+      const span = Math.max(0.001, median - min);
+      const ratio = (value - min) / span;
+      return this.clamp(3 + ratio * (50 - 3), 0, 100);
+    }
+    const span = Math.max(0.001, max - median);
+    const ratio = (value - median) / span;
+    return this.clamp(50 + ratio * (97 - 50), 0, 100);
+  }
+
+  private clamp(n: number, min: number, max: number): number {
+    return Math.max(min, Math.min(max, n));
   }
 
   private defaultDraft(): WeightDraft {
