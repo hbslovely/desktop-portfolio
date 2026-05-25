@@ -124,7 +124,15 @@ type FilterCategory = 'all' | 'feeding' | 'weight' | 'medical' | 'schedule' | 'd
               <div class="activity-item__body">
                 <div class="activity-item__meta">
                   <span class="activity-item__type">{{ getEventLabel(log.eventType) }}</span>
-                  <time class="activity-item__time">{{ formatTime(log.timestamp) }}</time>
+                  <button
+                    type="button"
+                    class="activity-item__time activity-item__time-toggle"
+                    (click)="toggleActivityTimeDisplay($event)"
+                    [title]="activityTimeToggleTitle()"
+                    [attr.aria-label]="activityTimeToggleAriaLabel()"
+                  >
+                    {{ activityTimeText(log.timestamp) }}
+                  </button>
                 </div>
                 <p class="activity-item__content">
                   <strong class="activity-item__author">{{ log.user }}</strong>
@@ -507,6 +515,28 @@ type FilterCategory = 'all' | 'feeding' | 'weight' | 'medical' | 'schedule' | 'd
       white-space: nowrap;
     }
 
+    .activity-item__time-toggle {
+      font: inherit;
+      color: inherit;
+      padding: 0;
+      margin: 0;
+      border: 0;
+      border-radius: 4px;
+      background: transparent;
+      cursor: pointer;
+      text-align: right;
+
+      &:hover {
+        text-decoration: underline;
+        text-decoration-style: dotted;
+      }
+
+      &:focus-visible {
+        outline: 2px solid rgba(91, 108, 255, 0.35);
+        outline-offset: 2px;
+      }
+    }
+
     .activity-item__content {
       margin: 0;
       font-size: 13px;
@@ -634,6 +664,8 @@ export class ActivityLogComponent implements OnInit, OnDestroy {
   /** Filter category */
   filterCategory: FilterCategory = 'all';
   private filterCategorySignal = signal<FilterCategory>('all');
+  /** Dialog activity: hiển thị giờ chính xác cho toàn bộ list. */
+  private activityShowExactTime = signal(false);
 
   /** Category mapping for filter */
   private readonly categoryPrefixes: Record<FilterCategory, string[]> = {
@@ -728,6 +760,7 @@ export class ActivityLogComponent implements OnInit, OnDestroy {
     this.displayCount.set(this.PAGE_SIZE);
     this.filterCategory = 'all';
     this.filterCategorySignal.set('all');
+    this.activityShowExactTime.set(false);
     this.refreshLogs();
     this.activityLogService.markAsRead();
     // Lock body scroll on mobile
@@ -745,6 +778,7 @@ export class ActivityLogComponent implements OnInit, OnDestroy {
     document.body.style.width = '';
     document.body.style.top = '';
     window.scrollTo(0, parseInt(scrollY || '0', 10) * -1);
+    this.activityShowExactTime.set(false);
     this.dialogOpen.set(false);
   }
 
@@ -799,13 +833,39 @@ export class ActivityLogComponent implements OnInit, OnDestroy {
     return this.activityLogService.isLogUnread(logId);
   }
 
-  formatTime(timestamp: string): string {
+  activityTimeText(timestamp: string): string {
+    return this.isActivityTimeExact()
+      ? this.formatExactTime(timestamp)
+      : this.formatRelativeTime(timestamp);
+  }
+
+  activityTimeToggleTitle(): string {
+    return this.isActivityTimeExact()
+      ? 'Bấm để xem thời gian tương đối'
+      : 'Bấm để xem giờ chính xác';
+  }
+
+  activityTimeToggleAriaLabel(): string {
+    return this.isActivityTimeExact()
+      ? 'Đang hiển thị giờ chính xác. Bấm để đổi sang thời gian tương đối.'
+      : 'Đang hiển thị thời gian tương đối. Bấm để đổi sang giờ chính xác.';
+  }
+
+  toggleActivityTimeDisplay(event?: Event): void {
+    event?.stopPropagation();
+    this.activityShowExactTime.update((v) => !v);
+  }
+
+  private isActivityTimeExact(): boolean {
+    return this.activityShowExactTime();
+  }
+
+  private formatRelativeTime(timestamp: string): string {
     if (!timestamp) return '';
     const date = new Date(timestamp);
     if (isNaN(date.getTime())) return timestamp;
 
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
+    const diffMs = this.nowTick() - date.getTime();
     const diffMin = Math.floor(diffMs / 60000);
     const diffHr = Math.floor(diffMs / 3600000);
     const diffDay = Math.floor(diffMs / 86400000);
@@ -813,8 +873,13 @@ export class ActivityLogComponent implements OnInit, OnDestroy {
     if (diffMin < 1) return 'Vừa xong';
     if (diffMin < 60) return `${diffMin} phút trước`;
     if (diffHr < 24) return `${diffHr} giờ trước`;
-    if (diffDay < 7) return `${diffDay} ngày trước`;
+    return `${diffDay} ngày trước`;
+  }
 
+  private formatExactTime(timestamp: string): string {
+    if (!timestamp) return '';
+    const date = new Date(timestamp);
+    if (isNaN(date.getTime())) return timestamp;
     const d = String(date.getDate()).padStart(2, '0');
     const m = String(date.getMonth() + 1).padStart(2, '0');
     const y = date.getFullYear();

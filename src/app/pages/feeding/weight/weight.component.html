@@ -68,15 +68,6 @@
       </span>
     </div>
     <p class="weight-eval__detail">{{ ev.detail }}</p>
-    <button
-      type="button"
-      class="btn btn-ghost btn-sm who-table-btn"
-      (click)="openWhoTableDialog()"
-      title="Xem bảng chuẩn WHO đầy đủ"
-    >
-      <i class="pi pi-table"></i>
-      Xem bảng chuẩn WHO
-    </button>
   </section>
 
   <section
@@ -1289,8 +1280,14 @@
           <thead>
             <tr>
               <th class="who-th-age">Tuổi</th>
-              <th class="who-th-value who-th-merged">Cân WHO (kg)</th>
-              <th class="who-th-value who-th-merged">Cao WHO (cm)</th>
+              <th class="who-th-value who-th-merged">
+                <span class="who-th-title">Cân nặng</span>
+                <span class="who-th-unit">kg</span>
+              </th>
+              <th class="who-th-value who-th-merged">
+                <span class="who-th-title">Chiều cao</span>
+                <span class="who-th-unit">cm</span>
+              </th>
               <th
                 class="who-th-current"
                 *ngIf="sortedLogsDesc().length > 0 || latestHeightLog()"
@@ -1309,30 +1306,24 @@
                 <span class="who-age-weeks" *ngIf="row.weeks > 0">{{ row.weeks }} tuần</span>
               </td>
               <td class="who-td-value who-td-merged">
-                <div class="who-range-line">
-                  <span class="who-range-k who-range-k--min">Min</span>
+                <div class="who-range-line who-range-line--min">
                   <strong>{{ formatKg(row.minKg) }}</strong>
                 </div>
                 <div class="who-range-line who-range-line--median">
-                  <span class="who-range-k who-range-k--median">P50</span>
                   <strong>{{ formatKg(row.medianKg) }}</strong>
                 </div>
-                <div class="who-range-line">
-                  <span class="who-range-k who-range-k--max">Max</span>
+                <div class="who-range-line who-range-line--max">
                   <strong>{{ formatKg(row.maxKg) }}</strong>
                 </div>
               </td>
               <td class="who-td-value who-td-merged">
-                <div class="who-range-line">
-                  <span class="who-range-k who-range-k--min">Min</span>
+                <div class="who-range-line who-range-line--min">
                   <strong>{{ formatCm(row.minCm) }}</strong>
                 </div>
                 <div class="who-range-line who-range-line--median">
-                  <span class="who-range-k who-range-k--median">P50</span>
                   <strong>{{ formatCm(row.medianCm) }}</strong>
                 </div>
-                <div class="who-range-line">
-                  <span class="who-range-k who-range-k--max">Max</span>
+                <div class="who-range-line who-range-line--max">
                   <strong>{{ formatCm(row.maxCm) }}</strong>
                 </div>
               </td>
@@ -1341,11 +1332,19 @@
                 *ngIf="sortedLogsDesc().length > 0 || latestHeightLog()"
               >
                 <div class="who-current-stack">
-                  <div class="who-current-row" *ngIf="row.currentWeight !== null">
+                  <div
+                    class="who-current-row"
+                    *ngIf="row.currentWeight !== null"
+                    [attr.data-level]="whoCurrentWeightLevel(row)"
+                  >
                     <strong>{{ formatKg(row.currentWeight) }}</strong>
                     <span class="who-current-unit">kg</span>
                   </div>
-                  <div class="who-current-row" *ngIf="row.currentHeight !== null">
+                  <div
+                    class="who-current-row"
+                    *ngIf="row.currentHeight !== null"
+                    [attr.data-level]="whoCurrentHeightLevel(row)"
+                  >
                     <strong>{{ formatCm(row.currentHeight) }}</strong>
                     <span class="who-current-unit">cm</span>
                   </div>
@@ -1359,8 +1358,11 @@
       <div class="who-table-footer">
         <p class="who-footer-note">
           <i class="pi pi-info-circle"></i>
-          Số liệu theo Chuẩn tăng trưởng trẻ em WHO 2024 (áp dụng tại Việt Nam).
-          Chỉ mang tính tham khảo, không thay cho đo đạc và tư vấn tại cơ sở y tế.
+          Mốc <strong>-2SD</strong>: có thể gợi ý suy dinh dưỡng, thiếu chất hoặc thấp còi.
+          Mốc <strong>+2SD</strong>: có thể gợi ý thừa cân, béo phì hoặc rất cao.
+        </p>
+        <p class="who-footer-note who-footer-note--muted">
+          Số liệu theo Chuẩn tăng trưởng trẻ em WHO 2024 (áp dụng tại Việt Nam), chỉ mang tính tham khảo và không thay cho tư vấn y tế.
         </p>
         <p class="who-footer-note who-footer-note--muted" *ngIf="whoReferenceRows()[0] as r0">
           P50 tham khảo: sơ sinh ~{{ formatKg(r0.weightMedianKg) }} kg, {{ formatCm(r0.heightMedianCm) }} cm.

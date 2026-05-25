@@ -1309,6 +1309,19 @@
   font-size: 13px;
 }
 
+.who-th-title {
+  display: block;
+}
+
+.who-th-unit {
+  display: block;
+  margin-top: 2px;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--muted);
+  line-height: 1.15;
+}
+
 .who-age-weeks {
   display: block;
   font-size: 11px;
@@ -1329,9 +1342,11 @@
 .who-range-line {
   display: flex;
   align-items: baseline;
-  justify-content: space-between;
+  justify-content: center;
   gap: 8px;
   line-height: 1.3;
+  border-radius: 8px;
+  padding: 3px 8px;
 
   strong {
     font-weight: 700;
@@ -1343,30 +1358,20 @@
   margin-top: 2px;
 }
 
+.who-range-line--min {
+  background: rgba(245, 158, 11, 0.14);
+}
+
 .who-range-line--median {
+  background: rgba(34, 197, 94, 0.14);
+
   strong {
     color: #16a34a;
   }
 }
 
-.who-range-k {
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-
-.who-range-k--min {
-  color: #f59e0b;
-}
-
-.who-range-k--median {
-  color: #16a34a;
-}
-
-.who-range-k--max {
-  color: #3b82f6;
+.who-range-line--max {
+  background: rgba(59, 130, 246, 0.14);
 }
 
 .who-td-min {
@@ -1414,6 +1419,36 @@
   align-items: baseline;
   justify-content: center;
   gap: 2px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  padding: 2px 8px;
+
+  &[data-level='ok'] {
+    background: rgba(34, 197, 94, 0.18);
+    border-color: rgba(22, 163, 74, 0.38);
+
+    strong {
+      color: #166534;
+    }
+  }
+
+  &[data-level='mid'] {
+    background: rgba(245, 158, 11, 0.2);
+    border-color: rgba(180, 83, 9, 0.35);
+
+    strong {
+      color: #9a3412;
+    }
+  }
+
+  &[data-level='warn'] {
+    background: rgba(239, 68, 68, 0.18);
+    border-color: rgba(220, 38, 38, 0.35);
+
+    strong {
+      color: #b91c1c;
+    }
+  }
 }
 
 .who-row-current {
