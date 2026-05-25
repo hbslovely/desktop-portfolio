@@ -34,7 +34,7 @@
               (click)="refreshAll()"
               [disabled]="isAnyLoading()"
               [title]="isAnyLoading() ? 'Đang tải…' : 'Tải lại Cữ bú, Cân, Lịch, Y tế, Tài liệu'"
-              aria-label="Tải lại Cữ bú, Cân nặng, Lịch, Tiền sử y tế và Tài liệu"
+              aria-label="Tải lại Cữ bú, Thể trạng, Lịch, Tiền sử y tế và Tài liệu"
             >
               <i class="pi pi-refresh" [class.spin]="isAnyLoading()"></i>
             </button>
@@ -1909,7 +1909,7 @@
         <div class="empty-head">
           <i class="pi pi-info-circle"></i>
           <div>
-            <h3>Ghi cân ở tab Cân nặng để đánh giá dinh dưỡng</h3>
+            <h3>Ghi cân ở tab Thể trạng để đánh giá dinh dưỡng</h3>
             <p>
               Khối lượng dùng cho mục dinh dưỡng lấy từ
               <strong>lần cân mới nhất</strong> trên sheet Weight (theo ngày ghi). Cột user chỉ
@@ -1917,7 +1917,7 @@
             </p>
           </div>
           <button type="button" class="btn primary" (click)="setBottomTab('weight')">
-            <i class="pi pi-chart-line"></i> Mở tab Cân nặng
+            <i class="pi pi-chart-line"></i> Mở tab Thể trạng
           </button>
         </div>
       </section>
@@ -1969,7 +1969,7 @@
       (click)="setBottomTab('weight')"
     >
       <i class="pi pi-chart-line bn-icon"></i>
-      <span class="bn-label">Cân nặng</span>
+      <span class="bn-label">Thể trạng</span>
     </button>
     <button
       type="button"

@@ -27,20 +27,27 @@ import {
 import {
   GROWTH_REFERENCE_CAPTION_VI,
   GROWTH_REFERENCE_REGION_VN,
+  HeightGrowthEvaluation,
   WeightGrowthSex,
   ageDaysAtDate,
   approxSdKgAtWeeks,
+  evaluateHeightForAge,
   evaluateWeightForAge,
+  medianHeightCmAtMonths,
   medianWeightKgAtWeeks,
+  approxSdHeightCmAtMonths,
+  sampleWhoHeightBandByDay,
   sampleWhoWeightBandByDay,
   weeksFromDays,
-  whoGirlVnReferenceTable,
+  whoGirlRangeReferenceTable,
+  whoVnReferenceTable,
 } from '../baby-weight-growth';
 import { ActivityLogService } from '../../../services/activity-log.service';
 
 interface WeightDraft {
   date: string;
   weightInput: string;
+  heightInput: string;
   note: string;
 }
 
@@ -57,8 +64,8 @@ export class WeightComponent {
   private destroyRef = inject(DestroyRef);
   private activityLogService = inject(ActivityLogService);
 
-  /** Bảng tham chiếu WHO (bé gái) — tính một lần / instance */
-  readonly whoGirlReferenceRows = whoGirlVnReferenceTable();
+  /** Bảng tham chiếu WHO (cân + chiều cao) theo giới tính profile */
+  readonly whoReferenceRows = computed(() => whoVnReferenceTable(this.growthSex()));
 
   /** Cùng user với trang feeding (`?user=`) */
   user = input<string>('guest');
@@ -123,6 +130,13 @@ export class WeightComponent {
     [...this.logs()].sort((a, b) => b.date.localeCompare(a.date))
   );
 
+  latestHeightLog(): WeightLog | null {
+    for (const l of this.sortedLogsDesc()) {
+      if (l.heightCm !== undefined && l.heightCm > 0) return l;
+    }
+    return null;
+  }
+
   /** Khoảng cách ngày giữa hai mốc ISO (YYYY-MM-DD), làm tròn theo ngày. */
   private diffDaysIso(earlierIso: string, laterIso: string): number {
     const a = new Date(`${earlierIso}T12:00:00`);
@@ -171,6 +185,15 @@ export class WeightComponent {
     return evaluateWeightForAge(w, latest.weightKg, this.growthSex());
   });
 
+  latestHeightEval = computed<HeightGrowthEvaluation | null>(() => {
+    const birth = this.birthDate();
+    const latest = this.latestHeightLog();
+    if (!birth || !latest || latest.heightCm === undefined) return null;
+    const days = ageDaysAtDate(birth, latest.date);
+    if (days === null) return null;
+    return evaluateHeightForAge(days, latest.heightCm, this.growthSex());
+  });
+
   /**
    * Bảng chuẩn WHO với min/max/median theo tuần tuổi.
    * Highlight dòng tuần hiện tại của bé.
@@ -179,6 +202,35 @@ export class WeightComponent {
     const sex = this.growthSex();
     const currentWeeks = this.ageInDays() !== null ? Math.floor(this.ageInDays()! / 7) : null;
     const latestWeight = this.sortedLogsDesc()[0]?.weightKg ?? null;
+    const latestHeight = this.latestHeightLog()?.heightCm ?? null;
+
+    if (sex === 'female') {
+      const rows = whoGirlRangeReferenceTable();
+      return rows.map((r, idx) => {
+        const weeks = Math.round((r.monthsAge * 30.4375) / 7);
+        const next = rows[idx + 1];
+        const nextWeeks = next
+          ? Math.round((next.monthsAge * 30.4375) / 7)
+          : Number.MAX_SAFE_INTEGER;
+        const isCurrent =
+          currentWeeks !== null &&
+          currentWeeks >= weeks &&
+          currentWeeks < nextWeeks;
+        return {
+          weeks,
+          label: r.ageLabelVi,
+          minKg: r.weightMinus2SdKg,
+          medianKg: r.weightMedianKg,
+          maxKg: r.weightPlus2SdKg,
+          minCm: r.heightMinus2SdCm,
+          medianCm: r.heightMedianCm,
+          maxCm: r.heightPlus2SdCm,
+          isCurrent,
+          currentWeight: isCurrent ? latestWeight : null,
+          currentHeight: isCurrent ? latestHeight : null,
+        };
+      });
+    }
 
     const milestones = [
       { weeks: 0, label: 'Sơ sinh' },
@@ -211,8 +263,12 @@ export class WeightComponent {
         minKg: Math.round((median - 2 * sd) * 100) / 100,
         medianKg: Math.round(median * 100) / 100,
         maxKg: Math.round((median + 2 * sd) * 100) / 100,
+        minCm: Math.round((this.medianHeightByWeeks(m.weeks, sex) - 2 * this.sdHeightByWeeks(m.weeks, sex)) * 10) / 10,
+        medianCm: Math.round(this.medianHeightByWeeks(m.weeks, sex) * 10) / 10,
+        maxCm: Math.round((this.medianHeightByWeeks(m.weeks, sex) + 2 * this.sdHeightByWeeks(m.weeks, sex)) * 10) / 10,
         isCurrent,
         currentWeight: isCurrent ? latestWeight : null,
+        currentHeight: isCurrent ? latestHeight : null,
       };
     });
   });
@@ -486,6 +542,144 @@ export class WeightComponent {
       minKg,
       maxKg,
       birthRecordLine,
+      sexLabelVi:
+        this.gender() === 'girl'
+          ? 'Nữ (theo profile)'
+          : this.gender() === 'boy'
+            ? 'Nam (theo profile)'
+            : 'Nam (mặc định khi chưa chọn)',
+    };
+  });
+
+  heightVsStandardChart = computed(() => {
+    const birthIso = this.birthDate();
+    const logs = this.sortedLogsAsc().filter(
+      (l) => l.heightCm !== undefined && l.heightCm > 0
+    );
+    if (!birthIso || logs.length === 0) return null;
+
+    const sex = this.growthSex();
+    type DayPt = { log: WeightLog; days: number; heightCm: number };
+    const raw: DayPt[] = [];
+    for (const log of logs) {
+      const days = ageDaysAtDate(birthIso, log.date);
+      if (days === null || log.heightCm === undefined) continue;
+      raw.push({ log, days, heightCm: log.heightCm });
+    }
+    if (raw.length === 0) return null;
+
+    const maxDaysData = Math.max(...raw.map((p) => p.days));
+    const maxDays = Math.min(731, Math.max(7, maxDaysData));
+    const ref = sampleWhoHeightBandByDay(maxDays, sex, 120);
+
+    const cmFromLogs = raw.map((p) => p.heightCm);
+    const cmFromRef = ref.flatMap((r) => [
+      r.medianCm,
+      r.minus2SdCm,
+      r.plus2SdCm,
+    ]);
+    let minCm = Math.min(...cmFromLogs, ...cmFromRef);
+    let maxCm = Math.max(...cmFromLogs, ...cmFromRef);
+    const span = maxCm - minCm;
+    const pad = span < 0.5 ? 1.5 : Math.max(0.8, span * 0.12);
+    minCm = Math.max(30, minCm - pad);
+    maxCm = maxCm + pad;
+    const range = Math.max(5, maxCm - minCm);
+
+    const PAD_L = 52;
+    const PAD_R = 18;
+    const PAD_T = 20;
+    const PAD_B = 92;
+    const H = 318;
+    const innerW = Math.max(360, Math.min(780, 320 + maxDays * 0.85));
+    const W = PAD_L + innerW + PAD_R;
+    const chartH = H - PAD_T - PAD_B;
+    const bottomY = PAD_T + chartH;
+    const spanD = Math.max(1, maxDays);
+    const xOfDays = (d: number) => PAD_L + (d / spanD) * innerW;
+    const yOfCm = (cm: number) =>
+      PAD_T + chartH - ((cm - minCm) / range) * chartH;
+
+    let pathMedian = '';
+    let pathLow = '';
+    let pathHigh = '';
+    ref.forEach((r, i) => {
+      const x = xOfDays(r.daysSinceBirth);
+      const ym = yOfCm(r.medianCm);
+      const yl = yOfCm(r.minus2SdCm);
+      const yh = yOfCm(r.plus2SdCm);
+      pathMedian += i === 0 ? `M ${x},${ym}` : ` L ${x},${ym}`;
+      pathLow += i === 0 ? `M ${x},${yl}` : ` L ${x},${yl}`;
+      pathHigh += i === 0 ? `M ${x},${yh}` : ` L ${x},${yh}`;
+    });
+
+    let bandPath = '';
+    if (ref.length > 0) {
+      let d = `M ${xOfDays(ref[0].daysSinceBirth)},${yOfCm(ref[0].plus2SdCm)}`;
+      for (let i = 1; i < ref.length; i++) {
+        const r = ref[i];
+        d += ` L ${xOfDays(r.daysSinceBirth)},${yOfCm(r.plus2SdCm)}`;
+      }
+      for (let i = ref.length - 1; i >= 0; i--) {
+        const r = ref[i];
+        d += ` L ${xOfDays(r.daysSinceBirth)},${yOfCm(r.minus2SdCm)}`;
+      }
+      d += ' Z';
+      bandPath = d;
+    }
+
+    let pathActual = '';
+    const n = raw.length;
+    const labelStep = n <= 8 ? 1 : Math.max(1, Math.ceil(n / 6));
+    const pts = [...raw]
+      .sort((a, b) => a.days - b.days)
+      .map((p, i) => {
+        const x = xOfDays(p.days);
+        const y = yOfCm(p.heightCm);
+        pathActual += i === 0 ? `M ${x},${y}` : ` L ${x},${y}`;
+        return {
+          ...p,
+          x,
+          y,
+          showLabel: true,
+          showXLabel: i === 0 || i === n - 1 || i % labelStep === 0,
+          ageLabel: this.formatAgeShortVi(p.days),
+        };
+      });
+
+    const gridLines = [0, 1 / 3, 2 / 3, 1].map((r) => ({
+      y: PAD_T + chartH - r * chartH,
+      label: (minCm + r * range).toFixed(1).replace('.', ','),
+    }));
+
+    const monthStep = maxDays > 365 ? 3 : 2;
+    const xTicks: Array<{ x: number; label: string; subLabel?: string }> = [];
+    for (let month = 0; month * 30.4375 <= maxDays; month += monthStep) {
+      const days = Math.round(month * 30.4375);
+      xTicks.push({
+        x: xOfDays(days),
+        label: month === 0 ? 'Sinh' : `${month} tháng`,
+      });
+    }
+
+    return {
+      regionCode: GROWTH_REFERENCE_REGION_VN,
+      referenceCaption: GROWTH_REFERENCE_CAPTION_VI,
+      W,
+      H,
+      PAD_L,
+      PAD_R,
+      PAD_T,
+      PAD_B,
+      bottomY,
+      pathMedian,
+      pathLow,
+      pathHigh,
+      bandPath,
+      pathActual,
+      pts,
+      gridLines,
+      xTicks,
       sexLabelVi:
         this.gender() === 'girl'
           ? 'Nữ (theo profile)'
@@ -808,6 +1002,11 @@ export class WeightComponent {
     this.draft.update((d) => ({ ...d, weightInput: cleaned }));
   }
 
+  updateDraftHeight(v: string) {
+    const cleaned = String(v ?? '').replace(/,/g, '.');
+    this.draft.update((d) => ({ ...d, heightInput: cleaned }));
+  }
+
   updateDraftNote(v: string) {
     this.draft.update((d) => ({ ...d, note: v }));
   }
@@ -819,11 +1018,25 @@ export class WeightComponent {
     return Number.isFinite(n) && n > 0 ? n : null;
   }
 
+  private parseDraftHeightCm(raw: string): number | null {
+    const s = raw.trim().replace(/,/g, '.');
+    if (!s) return null;
+    const n = parseFloat(s);
+    if (!Number.isFinite(n)) return null;
+    if (n < 30 || n > 130) return Number.NaN;
+    return n;
+  }
+
   submitAdd() {
     const d = this.draft();
     const kg = this.parseDraftKg(d.weightInput);
+    const h = this.parseDraftHeightCm(d.heightInput);
     if (!d.date || kg === null) {
       this.errorMsg.set('Vui lòng nhập ngày và cân nặng (kg) hợp lệ.');
+      return;
+    }
+    if (Number.isNaN(h)) {
+      this.errorMsg.set('Chiều cao hợp lệ trong khoảng 30–130 cm (hoặc để trống).');
       return;
     }
 
@@ -831,6 +1044,7 @@ export class WeightComponent {
       user: String(this.user() || 'guest').toLowerCase().trim() || 'guest',
       date: d.date,
       weightKg: kg,
+      ...(h !== null ? { heightCm: Math.round(h * 10) / 10 } : {}),
       note: d.note.trim() || undefined,
     };
 
@@ -842,7 +1056,7 @@ export class WeightComponent {
       next: () => {
         this.saving.set(false);
         this.successMsg.set(
-          `Đã lưu ${this.formatKg(kg)} kg ngày ${this.formatDateDisplay(log.date)}`
+          `Đã lưu ${this.formatKg(kg)} kg${log.heightCm ? ` · ${this.formatCm(log.heightCm)} cm` : ''} ngày ${this.formatDateDisplay(log.date)}`
         );
 
         // Log activity
@@ -870,6 +1084,7 @@ export class WeightComponent {
     this.editDraft.set({
       date: log.date,
       weightInput: this.formatKg(log.weightKg),
+      heightInput: log.heightCm ? this.formatCm(log.heightCm) : '',
       note: log.note || '',
     });
     this.errorMsg.set('');
@@ -887,6 +1102,11 @@ export class WeightComponent {
   updateEditWeight(v: string) {
     const cleaned = String(v ?? '').replace(/,/g, '.');
     this.editDraft.update((d) => ({ ...d, weightInput: cleaned }));
+  }
+
+  updateEditHeight(v: string) {
+    const cleaned = String(v ?? '').replace(/,/g, '.');
+    this.editDraft.update((d) => ({ ...d, heightInput: cleaned }));
   }
 
   updateEditNote(v: string) {
@@ -934,8 +1154,13 @@ export class WeightComponent {
 
     const d = this.editDraft();
     const kg = this.parseDraftKg(d.weightInput);
+    const h = this.parseDraftHeightCm(d.heightInput);
     if (!d.date || kg === null) {
       this.errorMsg.set('Vui lòng nhập ngày và cân nặng hợp lệ.');
+      return;
+    }
+    if (Number.isNaN(h)) {
+      this.errorMsg.set('Chiều cao hợp lệ trong khoảng 30–130 cm (hoặc để trống).');
       return;
     }
 
@@ -946,6 +1171,7 @@ export class WeightComponent {
       .updateLog(orig.rowIndex, {
         date: d.date,
         weightKg: kg,
+        heightCm: h !== null ? Math.round(h * 10) / 10 : null,
         note: d.note.trim(),
       })
       .subscribe({
@@ -1029,6 +1255,21 @@ export class WeightComponent {
     return `${n > 0 ? '+' : ''}${s}`;
   }
 
+  formatCm(n: number): string {
+    return new Intl.NumberFormat('vi-VN', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 1,
+    }).format(n);
+  }
+
+  private medianHeightByWeeks(weeks: number, sex: WeightGrowthSex): number {
+    return medianHeightCmAtMonths((weeks * 7) / 30.4375, sex);
+  }
+
+  private sdHeightByWeeks(weeks: number, sex: WeightGrowthSex): number {
+    return approxSdHeightCmAtMonths((weeks * 7) / 30.4375, sex);
+  }
+
   /** Nhãn tuổi trên trục ngang biểu đồ so sánh */
   formatAgeShortVi(days: number): string {
     const w = Math.floor(days / 7);
@@ -1062,6 +1303,7 @@ export class WeightComponent {
     return {
       date: `${y}-${m}-${d}`,
       weightInput: '',
+      heightInput: '',
       note: '',
     };
   }

@@ -10,6 +10,8 @@ export interface WeightLog {
   date: string;
   /** kg — có thể lẻ (vd 4.25) */
   weightKg: number;
+  /** cm — tuỳ chọn, thường chỉ đo khi khám định kỳ */
+  heightCm?: number;
   note?: string;
   rowIndex?: number;
 }
@@ -38,10 +40,11 @@ export class WeightLogService {
    *   A = User
    *   B = Ngày (DD/MM/YYYY)
    *   C = Cân nặng (kg)
-   *   D = Ghi chú
+   *   D = Chiều cao (cm, tuỳ chọn)
+   *   E = Ghi chú
    */
   getLogs(): Observable<WeightLog[]> {
-    const range = `${ this.SHEET_NAME }!A2:D`;
+    const range = `${ this.SHEET_NAME }!A2:E`;
     const url = `${ this.BASE_URL }/values/${ range }?key=${ this.API_KEY }&valueRenderOption=FORMATTED_VALUE`;
 
     return this.http.get<{ values?: string[][] }>(url).pipe(
@@ -52,18 +55,21 @@ export class WeightLogService {
             const rowUser = (row[0] || '').trim();
             const dateStr = (row[1] || '').trim();
             const weightRaw = (row[2] ?? '').toString().trim();
-            const note = (row[3] || '').trim();
+            const colD = (row[3] ?? '').toString().trim();
+            const colE = (row[4] ?? '').toString().trim();
 
             if (!dateStr || weightRaw === '') return null;
 
             const date = this.parseSheetDate(dateStr);
             const weightKg = this.parseWeightKg(weightRaw);
             if (!date || weightKg === null || weightKg <= 0) return null;
+            const { heightCm, note } = this.resolveHeightAndNote(colD, colE);
 
             const log: WeightLog = {
               user: rowUser.toLowerCase(),
               date,
               weightKg,
+              ...(heightCm !== null ? { heightCm } : {}),
               note: note || undefined,
               rowIndex: idx + 2,
             };
@@ -93,6 +99,7 @@ export class WeightLogService {
         user: log.user,
         date: log.date,
         weight_kg: log.weightKg,
+        ...(log.heightCm !== undefined ? { height_cm: log.heightCm } : {}),
         note: log.note || '',
       },
     }).pipe(catchError(() => of({ success: true })));
@@ -100,7 +107,7 @@ export class WeightLogService {
 
   updateLog(
     rowIndex: number,
-    patch: { date: string; weightKg: number; note?: string }
+    patch: { date: string; weightKg: number; heightCm?: number | null; note?: string }
   ): Observable<WeightSheetResponse> {
     if (!this.APPS_SCRIPT_URL) {
       return throwError(() => new Error('Chưa cấu hình Google Apps Script URL'));
@@ -111,6 +118,7 @@ export class WeightLogService {
       patch: {
         date: patch.date,
         weight_kg: patch.weightKg,
+        ...(patch.heightCm !== undefined ? { height_cm: patch.heightCm ?? '' } : {}),
         note: patch.note ?? '',
       },
     }).pipe(catchError(() => of({ success: true })));
@@ -170,5 +178,42 @@ export class WeightLogService {
     if (!s) return null;
     const n = parseFloat(s);
     return Number.isFinite(n) ? n : null;
+  }
+
+  /** Chuỗi "63,5" hoặc "63.5cm" → số cm */
+  private parseHeightCm(raw: string): number | null {
+    const s = raw.replace(/,/g, '.').replace(/[^\d.]/g, '');
+    if (!s) return null;
+    const n = parseFloat(s);
+    if (!Number.isFinite(n) || n <= 0) return null;
+    if (n < 30 || n > 130) return null;
+    return n;
+  }
+
+  /**
+   * Ưu tiên format mới: D=height, E=note.
+   * Fallback để đọc dữ liệu cũ: D=note, E=height.
+   */
+  private resolveHeightAndNote(
+    colD: string,
+    colE: string
+  ): { heightCm: number | null; note: string } {
+    const dHeight = this.parseHeightCm(colD);
+    const eHeight = this.parseHeightCm(colE);
+
+    // Format mới (ưu tiên): D là chiều cao, E là ghi chú.
+    if (dHeight !== null) {
+      return { heightCm: dHeight, note: colE };
+    }
+
+    // Format cũ: D là ghi chú, E là chiều cao.
+    if (eHeight !== null) {
+      return { heightCm: eHeight, note: colD };
+    }
+
+    // Không có chiều cao: ưu tiên ghi chú ở E (format mới),
+    // fallback về D nếu E trống (format cũ).
+    if (colE) return { heightCm: null, note: colE };
+    return { heightCm: null, note: colD };
   }
 }
