@@ -59,6 +59,7 @@
         <h3>Đánh giá mới nhất</h3>
         <p class="muted" *ngIf="sortedLogsDesc()[0] as last">
           {{ formatDateDisplay(last.date) }} · {{ formatKg(last.weightKg) }} kg ·
+          <ng-container *ngIf="last.heightCm"> {{ formatCm(last.heightCm) }} cm · </ng-container>
           {{ ev.weeksLabel }}
         </p>
       </div>
@@ -76,6 +77,29 @@
       <i class="pi pi-table"></i>
       Xem bảng chuẩn WHO
     </button>
+  </section>
+
+  <section
+    class="card weight-eval weight-eval--height"
+    *ngIf="latestHeightEval() as hv"
+    [attr.data-status]="growthStatusClass(hv.status)"
+  >
+    <div class="weight-eval__head">
+      <div>
+        <div class="eyebrow">
+          <i class="pi pi-arrows-v"></i> Chiều cao theo tuổi — chuẩn WHO
+        </div>
+        <h3>Đánh giá chiều cao mới nhất</h3>
+        <p class="muted" *ngIf="latestHeightLog() as last">
+          {{ formatDateDisplay(last.date) }} · {{ formatCm(last.heightCm || 0) }} cm ·
+          {{ hv.monthsLabel }} · P{{ hv.percentile }}
+        </p>
+      </div>
+      <span class="weight-eval__badge" [attr.data-status]="growthStatusClass(hv.status)">
+        {{ hv.statusLabel }}
+      </span>
+    </div>
+    <p class="weight-eval__detail">{{ hv.detail }}</p>
   </section>
 
   <!-- So sánh với chuẩn WHO (VN): trục X = tuổi từ ngày sinh -->
@@ -210,6 +234,116 @@
             [attr.x]="p.x"
             [attr.y]="cmp.H - 48"
             [attr.transform]="'rotate(-36 ' + p.x + ',' + (cmp.H - 48) + ')'"
+            text-anchor="end"
+            class="x-label x-label--rot x-label--small"
+          >
+            {{ p.ageLabel }}
+          </text>
+        </g>
+      </svg>
+    </div>
+  </section>
+
+  <section
+    class="card weight-chart-card weight-chart-card--compare"
+    *ngIf="heightVsStandardChart() as hCmp"
+  >
+    <div class="history-head history-head--chart">
+      <div>
+        <h3><i class="pi pi-arrows-v"></i> Chiều cao so với chuẩn</h3>
+        <p class="chart-meta chart-meta--tight">
+          <span class="chart-meta__pill">
+            <i class="pi pi-globe"></i> {{ hCmp.regionCode }} · WHO · {{ hCmp.sexLabelVi }}
+          </span>
+        </p>
+      </div>
+    </div>
+
+    <div class="compare-legend" aria-hidden="false">
+      <span class="cl-item"><i class="cl-dot cl-dot--actual cl-dot--height"></i> Bé (đo thực tế)</span>
+      <span class="cl-item"><i class="cl-line cl-line--median"></i> Trung vị (P50)</span>
+      <span class="cl-item"><i class="cl-band"></i> Khoảng tham chiếu (~±2SD)</span>
+    </div>
+
+    <div class="chart-scroll-x">
+      <svg
+        class="weight-svg-chart weight-svg-chart--compare"
+        [attr.viewBox]="'0 0 ' + hCmp.W + ' ' + hCmp.H"
+        preserveAspectRatio="xMinYMid meet"
+      >
+        <defs>
+          <linearGradient id="hCmpBandGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#06b6d4" stop-opacity="0.16" />
+            <stop offset="100%" stop-color="#06b6d4" stop-opacity="0.05" />
+          </linearGradient>
+          <linearGradient id="hCmpActualGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#22d3ee" />
+            <stop offset="100%" stop-color="#0ea5e9" />
+          </linearGradient>
+        </defs>
+        <g class="grid">
+          <line
+            *ngFor="let g of hCmp.gridLines"
+            [attr.x1]="hCmp.PAD_L"
+            [attr.x2]="hCmp.W - hCmp.PAD_R + 4"
+            [attr.y1]="g.y"
+            [attr.y2]="g.y"
+          />
+          <text
+            *ngFor="let g of hCmp.gridLines"
+            [attr.x]="hCmp.PAD_L - 8"
+            [attr.y]="g.y + 4"
+            text-anchor="end"
+            class="grid-label"
+          >
+            {{ g.label }}
+          </text>
+        </g>
+        <line
+          class="axis-x-baseline"
+          [attr.x1]="hCmp.PAD_L - 2"
+          [attr.y1]="hCmp.bottomY"
+          [attr.x2]="hCmp.W - hCmp.PAD_R + 6"
+          [attr.y2]="hCmp.bottomY"
+        />
+        <g class="x-axis-ticks">
+          <g *ngFor="let t of hCmp.xTicks">
+            <line
+              [attr.x1]="t.x"
+              [attr.x2]="t.x"
+              [attr.y1]="hCmp.H - hCmp.PAD_B"
+              [attr.y2]="hCmp.H - hCmp.PAD_B + 5"
+              class="x-tick-line"
+            />
+            <text
+              [attr.x]="t.x"
+              [attr.y]="hCmp.H - 20"
+              text-anchor="middle"
+              class="x-label x-label--age"
+            >{{ t.label }}</text>
+          </g>
+        </g>
+        <path class="w-band-fill" [attr.d]="hCmp.bandPath" fill="url(#hCmpBandGrad)" />
+        <path class="w-path w-path--ref-edge" [attr.d]="hCmp.pathLow" fill="none" />
+        <path class="w-path w-path--ref-edge" [attr.d]="hCmp.pathHigh" fill="none" />
+        <path class="w-path w-path--median" [attr.d]="hCmp.pathMedian" fill="none" />
+        <path class="w-path w-path--actual w-path--height" [attr.d]="hCmp.pathActual" stroke="url(#hCmpActualGrad)" />
+        <g *ngFor="let p of hCmp.pts">
+          <circle [attr.cx]="p.x" [attr.cy]="p.y" r="6" class="w-dot w-dot--height" />
+          <text
+            *ngIf="p.showLabel"
+            [attr.x]="p.x"
+            [attr.y]="p.y - 12"
+            text-anchor="middle"
+            class="w-dot-label"
+          >
+            {{ formatCm(p.heightCm) }}
+          </text>
+          <text
+            *ngIf="p.showXLabel"
+            [attr.x]="p.x"
+            [attr.y]="hCmp.H - 48"
+            [attr.transform]="'rotate(-36 ' + p.x + ',' + (hCmp.H - 48) + ')'"
             text-anchor="end"
             class="x-label x-label--rot x-label--small"
           >
@@ -407,6 +541,9 @@
         <div class="weight-row-main">
           <span class="w-date">{{ formatDateDisplay(log.date) }}</span>
           <span class="w-kg">{{ formatKg(log.weightKg) }} kg</span>
+          <span class="w-height" *ngIf="log.heightCm !== undefined">
+            {{ formatCm(log.heightCm) }} cm
+          </span>
           <span class="w-note" *ngIf="log.note">{{ log.note }}</span>
         </div>
         <div class="weight-row-actions">
@@ -481,6 +618,18 @@
               autocomplete="off"
             />
           </label>
+          <label class="field">
+            <span class="label">Chiều cao (cm) · tuỳ chọn</span>
+            <input
+              type="text"
+              class="input"
+              inputmode="decimal"
+              placeholder="VD: 63,5"
+              [value]="draft().heightInput"
+              (input)="updateDraftHeight($any($event.target).value)"
+              autocomplete="off"
+            />
+          </label>
           <label class="field full">
             <span class="label">Ghi chú cân nặng</span>
             <input
@@ -544,6 +693,16 @@
           inputmode="decimal"
           [value]="editDraft().weightInput"
           (input)="updateEditWeight($any($event.target).value)"
+        />
+      </label>
+      <label class="field">
+        <span class="label">Chiều cao (cm) · tuỳ chọn</span>
+        <input
+          type="text"
+          class="input"
+          inputmode="decimal"
+          [value]="editDraft().heightInput"
+          (input)="updateEditHeight($any($event.target).value)"
         />
       </label>
       <label class="field">
@@ -1098,7 +1257,7 @@
             <i class="pi pi-globe"></i>
             Chuẩn tăng trưởng WHO (VN khuyến nghị)
           </div>
-          <h2>Bảng cân nặng theo tuổi</h2>
+          <h2>Bảng cân nặng & chiều cao theo tuổi</h2>
           <p class="dialog-lead">
             {{ gender() === 'girl' ? 'Bé gái' : 'Bé trai' }} · 0-24 tháng
           </p>
@@ -1130,10 +1289,14 @@
           <thead>
             <tr>
               <th class="who-th-age">Tuổi</th>
-              <th class="who-th-value">Min</th>
-              <th class="who-th-value who-th-median">Trung vị</th>
-              <th class="who-th-value">Max</th>
-              <th class="who-th-current" *ngIf="sortedLogsDesc().length > 0">Bé</th>
+              <th class="who-th-value who-th-merged">Cân WHO (kg)</th>
+              <th class="who-th-value who-th-merged">Cao WHO (cm)</th>
+              <th
+                class="who-th-current"
+                *ngIf="sortedLogsDesc().length > 0 || latestHeightLog()"
+              >
+                Bé
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -1145,14 +1308,48 @@
                 <span class="who-age-label">{{ row.label }}</span>
                 <span class="who-age-weeks" *ngIf="row.weeks > 0">{{ row.weeks }} tuần</span>
               </td>
-              <td class="who-td-value who-td-min">{{ formatKg(row.minKg) }}</td>
-              <td class="who-td-value who-td-median">{{ formatKg(row.medianKg) }}</td>
-              <td class="who-td-value who-td-max">{{ formatKg(row.maxKg) }}</td>
-              <td class="who-td-current" *ngIf="sortedLogsDesc().length > 0">
-                <ng-container *ngIf="row.currentWeight !== null">
-                  <strong>{{ formatKg(row.currentWeight) }}</strong>
-                  <span class="who-current-unit">kg</span>
-                </ng-container>
+              <td class="who-td-value who-td-merged">
+                <div class="who-range-line">
+                  <span class="who-range-k who-range-k--min">Min</span>
+                  <strong>{{ formatKg(row.minKg) }}</strong>
+                </div>
+                <div class="who-range-line who-range-line--median">
+                  <span class="who-range-k who-range-k--median">P50</span>
+                  <strong>{{ formatKg(row.medianKg) }}</strong>
+                </div>
+                <div class="who-range-line">
+                  <span class="who-range-k who-range-k--max">Max</span>
+                  <strong>{{ formatKg(row.maxKg) }}</strong>
+                </div>
+              </td>
+              <td class="who-td-value who-td-merged">
+                <div class="who-range-line">
+                  <span class="who-range-k who-range-k--min">Min</span>
+                  <strong>{{ formatCm(row.minCm) }}</strong>
+                </div>
+                <div class="who-range-line who-range-line--median">
+                  <span class="who-range-k who-range-k--median">P50</span>
+                  <strong>{{ formatCm(row.medianCm) }}</strong>
+                </div>
+                <div class="who-range-line">
+                  <span class="who-range-k who-range-k--max">Max</span>
+                  <strong>{{ formatCm(row.maxCm) }}</strong>
+                </div>
+              </td>
+              <td
+                class="who-td-current who-td-current--stack"
+                *ngIf="sortedLogsDesc().length > 0 || latestHeightLog()"
+              >
+                <div class="who-current-stack">
+                  <div class="who-current-row" *ngIf="row.currentWeight !== null">
+                    <strong>{{ formatKg(row.currentWeight) }}</strong>
+                    <span class="who-current-unit">kg</span>
+                  </div>
+                  <div class="who-current-row" *ngIf="row.currentHeight !== null">
+                    <strong>{{ formatCm(row.currentHeight) }}</strong>
+                    <span class="who-current-unit">cm</span>
+                  </div>
+                </div>
               </td>
             </tr>
           </tbody>
@@ -1164,6 +1361,9 @@
           <i class="pi pi-info-circle"></i>
           Số liệu theo Chuẩn tăng trưởng trẻ em WHO 2024 (áp dụng tại Việt Nam).
           Chỉ mang tính tham khảo, không thay cho đo đạc và tư vấn tại cơ sở y tế.
+        </p>
+        <p class="who-footer-note who-footer-note--muted" *ngIf="whoReferenceRows()[0] as r0">
+          P50 tham khảo: sơ sinh ~{{ formatKg(r0.weightMedianKg) }} kg, {{ formatCm(r0.heightMedianCm) }} cm.
         </p>
       </div>
     </div>

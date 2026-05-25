@@ -53,16 +53,17 @@ Quy ước:
 1. Tạo tab mới tên **chính xác** `Weight`.
 2. Dòng 1 là **header** theo đúng thứ tự sau:
 
-| A        | B          | C             | D           |
-| -------- | ---------- | ------------- | ----------- |
-| **User** | **Ngày**   | **Cân (kg)**  | **Ghi chú** |
-| phat     | 03/05/2026 | 4,25          |             |
+| A        | B          | C             | D                 | E           |
+| -------- | ---------- | ------------- | ----------------- | ----------- |
+| **User** | **Ngày**   | **Cân (kg)**  | **Chiều cao (cm)** | **Ghi chú** |
+| phat     | 03/05/2026 | 4,25          | 63,5              |             |
 
 Quy ước:
 
 - **User**: giống `Feeding` — ghi nhận ai đang log (query `?user=`).
 - **Ngày**: `DD/MM/YYYY`. Nên để cột B là **Plain text**.
 - **Cân (kg)**: số thập phân (`4,25` hoặc `4.25`).
+- **Chiều cao (cm)**: tuỳ chọn (có thể bỏ trống nếu chưa đo).
 - **Ghi chú**: tuỳ chọn.
 
 Sau khi thêm tab, **cập nhật và redeploy** Google Apps Script (mục 4 bên dưới) để có các action `addWeight` / `updateWeight` / `deleteWeight`.
@@ -241,7 +242,7 @@ Trong Sheet → **Extensions → Apps Script** → xoá toàn bộ code mặc đ
  *
  * ===== Weight actions =====
  *   addWeight      → append dòng cân nặng
- *   updateWeight   → sửa ngày / kg / ghi chú theo row
+ *   updateWeight   → sửa ngày / kg / ghi chú / chiều cao theo row
  *   deleteWeight   → xoá row vật lý
  *
  * ===== Event / Lịch (tab Google Sheet `Event`) =====
@@ -282,8 +283,8 @@ const L_ID = 1, L_USER = 2, L_TYPE = 3, L_CONTENT = 4, L_TIMESTAMP = 5;
 const EV_USER = 1, EV_DATE = 2, EV_TIME = 3, EV_TITLE = 4, EV_NOTE = 5, EV_PLACE = 6,
       EV_ACK = 7;
 
-// Weight columns (1-based): User | Ngày DD/MM/YYYY | kg | Ghi chú
-const W_USER = 1, W_DATE = 2, W_WEIGHT = 3, W_NOTE = 4;
+// Weight columns (1-based): User | Ngày DD/MM/YYYY | kg | Chiều cao(cm, optional) | Ghi chú
+const W_USER = 1, W_DATE = 2, W_WEIGHT = 3, W_HEIGHT = 4, W_NOTE = 5;
 
 // MedicalHistory columns (1-based): User | Ngày | Loại | Tiêu đề | Chi tiết | Nơi khám | id file Explorer
 const M_USER = 1, M_DATE = 2, M_KIND = 3, M_TITLE = 4, M_DETAIL = 5, M_PLACE = 6,
@@ -566,6 +567,14 @@ function _parseWeightKg(val) {
   return isNaN(n) || n <= 0 ? null : n;
 }
 
+function _parseHeightCm(val) {
+  if (val === null || val === undefined || val === '') return null;
+  const n = typeof val === 'number' ? val : parseFloat(String(val).replace(',', '.'));
+  if (isNaN(n) || n <= 0) return null;
+  if (n < 30 || n > 130) return null;
+  return n;
+}
+
 function handleAddWeight(body) {
   const sheet = _getSheet(WEIGHT_SHEET);
   const log = body.log || {};
@@ -575,6 +584,9 @@ function handleAddWeight(body) {
   if (wRaw === undefined || wRaw === null) wRaw = log.weightKg;
   const w = _parseWeightKg(wRaw);
   const note = String(log.note || '').trim();
+  var hRaw = log.height_cm;
+  if (hRaw === undefined || hRaw === null) hRaw = log.heightCm;
+  const h = _parseHeightCm(hRaw);
 
   if (!user || !dateIso || w === null) {
     throw new Error('Thiếu trường bắt buộc (user, date, weight_kg).');
@@ -583,7 +595,7 @@ function handleAddWeight(body) {
   const dateStr = _isoToDdMmYyyy(dateIso);
   if (!dateStr) throw new Error('Ngày không hợp lệ (YYYY-MM-DD).');
 
-  sheet.appendRow([user, dateStr, w, note]);
+  sheet.appendRow([user, dateStr, w, h === null ? '' : h, note]);
 
   return { success: true, rowIndex: sheet.getLastRow() };
 }
@@ -609,6 +621,17 @@ function handleUpdateWeight(body) {
   }
   if (patch.note != null) {
     sheet.getRange(row, W_NOTE).setValue(String(patch.note));
+  }
+  var ph = patch.height_cm;
+  if (ph === undefined || ph === null) ph = patch.heightCm;
+  if (ph !== undefined) {
+    if (ph === '' || ph === null) {
+      sheet.getRange(row, W_HEIGHT).setValue('');
+    } else {
+      var hn = _parseHeightCm(ph);
+      if (hn === null) throw new Error('Chiều cao không hợp lệ');
+      sheet.getRange(row, W_HEIGHT).setValue(hn);
+    }
   }
 
   return { success: true, rowIndex: row };
