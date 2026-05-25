@@ -89,6 +89,50 @@ interface DayStats {
   lastTime: string;
 }
 
+type FeedDetailCompareKind = 'gap' | 'position' | 'average' | 'next';
+
+interface FeedDetailCompareRow {
+  label: string;
+  text: string;
+  warn?: boolean;
+  icon: string;
+  kind: FeedDetailCompareKind;
+  position?: {
+    index: number;
+    total: number;
+    totalMl: number;
+    dayTotalMl: number;
+    dayLabel: string;
+  };
+  average?: {
+    refMl: number;
+    diffMl: number;
+    refLabel: string;
+    feedCount: number;
+  };
+  next?: {
+    time: string;
+    volume: number;
+    gapLabel: string;
+  };
+  gapPrev?: {
+    prevTime: string;
+    prevVolume: number;
+    prevDateIso?: string;
+    gapLabel: string;
+    volDiffMl: number;
+  };
+}
+
+/** Snapshot tính một lần khi mở — tránh nhiều computed quét lại `logs()` mỗi CD. */
+interface FeedDetailView {
+  log: FeedingLog;
+  ageLabel: string;
+  volumeStatus: 'low' | 'high' | 'ok';
+  compares: FeedDetailCompareRow[];
+  note: string;
+}
+
 const STORAGE_PREFIX = 'feeding-profile::';
 
 function minutesToHumanShort(minutes: number): string {
@@ -272,6 +316,9 @@ export class FeedingComponent implements AfterViewInit {
   private eventReminderHandledThisLoad = signal(false);
 
   historyDialogOpen = signal<boolean>(false);
+  /** Dialog xem chi tiết một cữ bú (snapshot, không phụ thuộc `now` tick). */
+  feedDetailView = signal<FeedDetailView | null>(null);
+
   /** Dialog liệt kê các cữ sheet trong một nhóm hiển thị đã gom. */
   feedGroupDetail = signal<FeedingViewGroup | null>(null);
   /** Dialog chi tiết gom: các cữ sheet — mới → cũ (cùng thứ tự như trong lịch sử). */
@@ -775,6 +822,46 @@ export class FeedingComponent implements AfterViewInit {
     return g.members.reduce((s, m) => s + (m.volume || 0), 0);
   }
 
+  private viewGroupEndTs(g: FeedingViewGroup): number {
+    return Math.max(...g.members.map((m) => this.logTimestamp(m)));
+  }
+
+  private viewGroupStartTs(g: FeedingViewGroup): number {
+    return Math.min(...g.members.map((m) => this.logTimestamp(m)));
+  }
+
+  private findViewGroupForLog(
+    log: FeedingLog,
+    groups: FeedingViewGroup[]
+  ): FeedingViewGroup | undefined {
+    const key = this.logRowKey(log);
+    return groups.find((g) =>
+      g.members.some((m) => this.logRowKey(m) === key)
+    );
+  }
+
+  private pseudoLogsFromViewGroups(groups: FeedingViewGroup[]): FeedingLog[] {
+    return groups.map((g) => {
+      const anchor = g.members.reduce((a, b) =>
+        this.logTimestamp(a) >= this.logTimestamp(b) ? a : b
+      );
+      return { ...anchor, volume: this.viewGroupDisplayVolume(g) };
+    });
+  }
+
+  private statsFromViewGroups(
+    date: string,
+    groups: FeedingViewGroup[]
+  ): DayStats {
+    return this.statsFromList(date, this.pseudoLogsFromViewGroups(groups));
+  }
+
+  private dayLogsGroupedStats(date: string, logs: FeedingLog[]): DayStats {
+    const gap = this.feedingSettings().feedGroupGapMinutes;
+    const groups = groupLogsByProximity(logs, gap, (l) => this.logTimestamp(l));
+    return this.statsFromViewGroups(date, groups);
+  }
+
   viewGroupNote(g: FeedingViewGroup): string {
     const parts = g.members
       .map((m) => (m.note || '').trim())
@@ -793,11 +880,235 @@ export class FeedingComponent implements AfterViewInit {
 
   openFeedGroupDetail(g: FeedingViewGroup): void {
     if (g.members.length < 2) return;
+    this.closeFeedDetail();
     this.feedGroupDetail.set(g);
   }
 
   closeFeedGroupDetail(): void {
+    this.feedDetailView.set(null);
     this.feedGroupDetail.set(null);
+  }
+
+  openFeedDetail(log: FeedingLog): void {
+    this.closeFeedGroupDetail();
+    this.feedDetailView.set(this.buildFeedDetailView(log));
+  }
+
+  /** Mở chi tiết một cữ trong dialog gom — giữ dialog gom phía dưới. */
+  openFeedDetailFromGroupMember(log: FeedingLog): void {
+    this.feedDetailView.set(this.buildFeedDetailView(log));
+  }
+
+  closeFeedDetail(): void {
+    this.feedDetailView.set(null);
+  }
+
+  onFeedRowClick(g: FeedingViewGroup): void {
+    if (g.members.length > 1) {
+      this.openFeedGroupDetail(g);
+      return;
+    }
+    const log = g.members[0];
+    if (log) this.openFeedDetail(log);
+  }
+
+  openEditFromFeedDetail(): void {
+    const log = this.feedDetailView()?.log;
+    if (!log?.rowIndex) return;
+    this.closeFeedDetail();
+    this.openEditDialog(log);
+  }
+
+  private buildFeedDetailView(log: FeedingLog): FeedDetailView {
+    const curTs = this.logTimestamp(log);
+    const warnHours = this.feedingSettings().feedTimeWarningHours;
+    const gap = this.feedingSettings().feedGroupGapMinutes;
+    const all = this.logs();
+    const dayLogs: FeedingLog[] = [];
+    for (const l of all) {
+      if (l.date === log.date) dayLogs.push(l);
+    }
+    dayLogs.sort((a, b) => a.time.localeCompare(b.time));
+
+    const allGroups = groupLogsByProximity(all, gap, (l) => this.logTimestamp(l));
+    const dayGroups = groupLogsByProximity(dayLogs, gap, (l) => this.logTimestamp(l));
+    const currentGroup = this.findViewGroupForLog(log, allGroups);
+    const currentDayGroup = this.findViewGroupForLog(log, dayGroups);
+
+    const effectiveTs = currentGroup
+      ? this.viewGroupEndTs(currentGroup)
+      : curTs;
+    const currentVol = currentGroup
+      ? this.viewGroupDisplayVolume(currentGroup)
+      : log.volume;
+
+    const upToDayGroupsDesc = dayGroups.filter(
+      (g) => this.viewGroupEndTs(g) <= effectiveTs
+    );
+    const upToDayGroupsAsc = [...upToDayGroupsDesc].reverse();
+    const dayToPoint = this.statsFromViewGroups(log.date, upToDayGroupsAsc);
+    const dayFull =
+      log.date === this.todayDateStr()
+        ? dayToPoint
+        : this.statsFromViewGroups(log.date, [...dayGroups].reverse());
+
+    const compares: FeedDetailCompareRow[] = [];
+
+    if (currentGroup) {
+      const gi = allGroups.findIndex((g) => g === currentGroup);
+      const prevGroup = gi >= 0 ? allGroups[gi + 1] : undefined;
+      if (prevGroup) {
+        const prevTs = this.viewGroupEndTs(prevGroup);
+        const diffMs = effectiveTs - prevTs;
+        const gapMin = Math.round(diffMs / 60000);
+        const gapWarn = diffMs / (1000 * 60 * 60) >= warnHours;
+        const gapText = this.formatGapMinutes(gapMin);
+        const prevVol = this.viewGroupDisplayVolume(prevGroup);
+        const volDiff = currentVol - prevVol;
+        const prevAnchor = prevGroup.members.reduce((a, b) =>
+          this.logTimestamp(a) >= this.logTimestamp(b) ? a : b
+        );
+        compares.push({
+          label: 'So với cữ trước',
+          text: `${this.viewGroupDisplayTime(prevGroup)} · ${prevVol}ml — cách ${gapText}`,
+          warn: gapWarn,
+          icon: 'pi-history',
+          kind: 'gap',
+          gapPrev: {
+            prevTime: this.viewGroupDisplayTime(prevGroup),
+            prevVolume: prevVol,
+            ...(prevAnchor.date !== log.date ? { prevDateIso: prevAnchor.date } : {}),
+            gapLabel: gapText,
+            volDiffMl: volDiff,
+          },
+        });
+      }
+    }
+
+    if (currentDayGroup && upToDayGroupsAsc.length > 0) {
+      const idx =
+        upToDayGroupsAsc.findIndex((g) => g === currentDayGroup) + 1;
+      const totalSoFar = upToDayGroupsAsc.reduce(
+        (s, g) => s + this.viewGroupDisplayVolume(g),
+        0
+      );
+      const dayLabel =
+        log.date === this.todayDateStr() ? 'hôm nay (tới lúc này)' : 'trong ngày';
+      const dayTotal = dayFull.total || totalSoFar;
+      compares.push({
+        label: 'Vị trí trong ngày',
+        text: `Cữ thứ ${idx}/${dayFull.count || upToDayGroupsAsc.length} ${dayLabel} · đã ${totalSoFar}ml`,
+        icon: 'pi-th-large',
+        kind: 'position',
+        position: {
+          index: idx,
+          total: dayFull.count || upToDayGroupsAsc.length,
+          totalMl: totalSoFar,
+          dayTotalMl: dayTotal,
+          dayLabel,
+        },
+      });
+    }
+
+    if (dayToPoint.count >= 1 && dayToPoint.avg > 0) {
+      const ref = dayToPoint.count >= 3 ? dayToPoint.typicalFeedMl : dayToPoint.avg;
+      const diffRef = currentVol - ref;
+      const refLabel = dayToPoint.count >= 3 ? 'TB điển hình' : 'TB';
+      const diffPart =
+        diffRef === 0
+          ? `bằng ${ref}ml/cữ`
+          : `${diffRef > 0 ? '+' : ''}${diffRef}ml so với ${ref}ml/cữ`;
+      compares.push({
+        label: `So với ${refLabel} ngày`,
+        text: `${diffPart} (${refLabel} ${dayToPoint.count} cữ)`,
+        icon: 'pi-chart-line',
+        kind: 'average',
+        average: {
+          refMl: ref,
+          diffMl: diffRef,
+          refLabel,
+          feedCount: dayToPoint.count,
+        },
+      });
+    }
+
+    let nextDayGroup: FeedingViewGroup | undefined;
+    let nextStart = Infinity;
+    for (const g of dayGroups) {
+      if (g === currentDayGroup) continue;
+      const st = this.viewGroupStartTs(g);
+      if (st > effectiveTs && st < nextStart) {
+        nextStart = st;
+        nextDayGroup = g;
+      }
+    }
+    if (nextDayGroup) {
+      const untilNext = Math.round((nextStart - effectiveTs) / 60000);
+      const nextVol = this.viewGroupDisplayVolume(nextDayGroup);
+      compares.push({
+        label: 'Cữ tiếp theo trong ngày',
+        text: `${this.viewGroupDisplayTime(nextDayGroup)} · ${nextVol}ml (sau ${this.formatGapMinutes(untilNext)})`,
+        icon: 'pi-arrow-right',
+        kind: 'next',
+        next: {
+          time: this.viewGroupDisplayTime(nextDayGroup),
+          volume: nextVol,
+          gapLabel: this.formatGapMinutes(untilNext),
+        },
+      });
+    }
+
+    const diffMsAge = this.now().getTime() - curTs;
+    let ageLabel = '';
+    if (diffMsAge < 0) {
+      ageLabel = 'Sắp tới';
+    } else {
+      const diff = Math.round(diffMsAge / 60000);
+      if (diff < 60) ageLabel = `Cách đây ${diff} phút`;
+      else {
+        const hh = Math.floor(diff / 60);
+        const mm = diff % 60;
+        ageLabel =
+          mm === 0 ? `Cách đây ${hh} giờ` : `Cách đây ${hh} giờ ${mm} phút`;
+      }
+    }
+
+    const volumeStatus: FeedDetailView['volumeStatus'] = this.isLowVolume(
+      log.volume
+    )
+      ? 'low'
+      : this.isHighVolume(log.volume)
+        ? 'high'
+        : 'ok';
+
+    return {
+      log,
+      ageLabel,
+      volumeStatus,
+      compares,
+      note: log.note?.trim() || '',
+    };
+  }
+
+  feedDetailStatusLabel(status: FeedDetailView['volumeStatus']): string {
+    if (status === 'low') return 'Dung tích thấp';
+    if (status === 'high') return 'Dung tích cao';
+    return 'Trong ngưỡng';
+  }
+
+  feedDetailStatusIcon(status: FeedDetailView['volumeStatus']): string {
+    if (status === 'low') return 'pi-exclamation-triangle';
+    if (status === 'high') return 'pi-arrow-up';
+    return 'pi-check-circle';
+  }
+
+  private formatGapMinutes(diffMin: number): string {
+    if (diffMin <= 0) return '0 phút';
+    const hh = Math.floor(diffMin / 60);
+    const mm = diffMin % 60;
+    if (hh === 0) return `${mm} phút`;
+    if (mm === 0) return `${hh} giờ`;
+    return `${hh} giờ ${mm} phút`;
   }
 
   /**
@@ -1747,10 +2058,13 @@ export class FeedingComponent implements AfterViewInit {
     }
     return Array.from(groups.entries())
       .map(([date, logs]) => {
-        const total = logs.reduce((s, l) => s + l.volume, 0);
-        const count = logs.length;
         const viewRows = groupLogsByProximity(logs, gap, (l) =>
           this.logTimestamp(l)
+        );
+        const count = viewRows.length;
+        const total = viewRows.reduce(
+          (s, g) => s + this.viewGroupDisplayVolume(g),
+          0
         );
         return {
           date,
@@ -2065,8 +2379,10 @@ export class FeedingComponent implements AfterViewInit {
     }
     this.settingsSaving.set(true);
     this.settingsFormError.set('');
+    this.syncError.set('');
     this.feedingLogService
-      .saveFeedingSettings([
+      .saveFeedingSettings(
+        [
         {
           id: FEEDING_SETTING_ID.FEED_TIME_WARNING,
           value: th,
@@ -2123,7 +2439,9 @@ export class FeedingComponent implements AfterViewInit {
           unit: 'phút',
           dataType: 'Số',
         },
-      ])
+      ],
+        { user: this.user() }
+      )
       .pipe(finalize(() => this.settingsSaving.set(false)))
       .subscribe({
         next: (resp) => {
@@ -2134,14 +2452,22 @@ export class FeedingComponent implements AfterViewInit {
             );
             return;
           }
-          // Clear any error and show success message
           this.settingsFormError.set('');
-          this.settingsSuccess.set('Đã lưu cài đặt thành công!');
-          // Log activity (non-blocking, ignore errors)
-          this.activityLogService.logSettings(this.user(), 'Cài đặt ứng dụng').subscribe({
-            error: () => {} // Silently ignore logging errors
+          this.feedingSettings.set({
+            feedTimeWarningHours: th,
+            feedWarningMl: wm,
+            feedGroupGapMinutes: gap,
+            feedingNotificationMinutes: notify,
+            burpDurationMinutes: burp,
+            eventReminderDays: evDays,
+            eventReminderHours: evHours,
+            activityLogRefreshMinutes: actLog,
           });
-          // Close dialog after a short delay to show success message
+          this.activityLogService.setRefreshInterval(actLog);
+          this.settingsSuccess.set('Đã lưu cài đặt thành công!');
+          this.activityLogService.logSettings(this.user(), 'Cài đặt ứng dụng').subscribe({
+            error: () => {},
+          });
           setTimeout(() => {
             this.closeFeedingSettingsDialog();
             this.settingsSuccess.set('');
@@ -2738,7 +3064,8 @@ export class FeedingComponent implements AfterViewInit {
 
   // ===== Helpers =====
   private computeDayStats(date: string): DayStats {
-    return this.statsFromList(date, this.logs().filter((l) => l.date === date));
+    const logs = this.logs().filter((l) => l.date === date);
+    return this.dayLogsGroupedStats(date, logs);
   }
 
   /** ISO yyyy-mm-dd, `daysBefore` ngày so với «hôm nay» theo đồng hồ app. */
@@ -2754,7 +3081,7 @@ export class FeedingComponent implements AfterViewInit {
     const list = this.logs().filter(
       (l) => l.date === dateStr && l.time <= nowTime
     );
-    return this.statsFromList(dateStr, list);
+    return this.dayLogsGroupedStats(dateStr, list);
   }
 
   private statsFromList(date: string, list: FeedingLog[]): DayStats {
