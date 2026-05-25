@@ -805,10 +805,15 @@
             </div>
             <div class="log-list">
               <div
-                class="log-row"
+                class="log-row log-row--clickable"
                 *ngFor="let g of todayLogsPreview(); trackBy: trackFeedingViewGroup"
                 [class.low-volume]="isLowVolumeViewGroup(g)"
                 [class.high-volume]="isHighVolumeViewGroup(g)"
+                role="button"
+                tabindex="0"
+                (click)="onFeedRowClick(g)"
+                (keydown.enter)="onFeedRowClick(g)"
+                (keydown.space)="$event.preventDefault(); onFeedRowClick(g)"
               >
                 <span class="log-time log-time--with-badge">
                   {{ viewGroupDisplayTime(g) }}
@@ -836,7 +841,7 @@
                 <div class="log-actions" *ngIf="g.members.length === 1 && g.members[0].rowIndex">
                   <button
                     class="log-edit"
-                    (click)="openEditDialog(g.members[0])"
+                    (click)="openEditDialog(g.members[0]); $event.stopPropagation()"
                     title="Sửa cữ bú này"
                     aria-label="Sửa cữ bú"
                   >
@@ -844,7 +849,7 @@
                   </button>
                   <button
                     class="log-del"
-                    (click)="deleteLog(g.members[0])"
+                    (click)="deleteLog(g.members[0]); $event.stopPropagation()"
                     title="Xoá cữ bú này"
                     aria-label="Xoá cữ bú"
                   >
@@ -854,7 +859,7 @@
                 <div class="log-actions" *ngIf="g.members.length > 1">
                   <button
                     class="log-edit"
-                    (click)="openFeedGroupDetail(g)"
+                    (click)="openFeedGroupDetail(g); $event.stopPropagation()"
                     title="Chi tiết các cữ đã gom"
                     aria-label="Chi tiết gom nhóm"
                   >
@@ -959,10 +964,15 @@
             <ng-container *ngIf="pastDayViewLogViewGroups() as pastDayGroups">
               <div class="log-list">
                 <div
-                  class="log-row"
+                  class="log-row log-row--clickable"
                   *ngFor="let g of pastDayViewLogsPreview(); trackBy: trackFeedingViewGroup"
                   [class.low-volume]="isLowVolumeViewGroup(g)"
                   [class.high-volume]="isHighVolumeViewGroup(g)"
+                  role="button"
+                  tabindex="0"
+                  (click)="onFeedRowClick(g)"
+                  (keydown.enter)="onFeedRowClick(g)"
+                  (keydown.space)="$event.preventDefault(); onFeedRowClick(g)"
                 >
                   <span class="log-time log-time--with-badge">
                     {{ viewGroupDisplayTime(g) }}
@@ -990,7 +1000,7 @@
                   <div class="log-actions" *ngIf="g.members.length === 1 && g.members[0].rowIndex">
                     <button
                       class="log-edit"
-                      (click)="openEditDialog(g.members[0])"
+                      (click)="openEditDialog(g.members[0]); $event.stopPropagation()"
                       title="Sửa cữ bú này"
                       aria-label="Sửa cữ bú"
                     >
@@ -998,7 +1008,7 @@
                     </button>
                     <button
                       class="log-del"
-                      (click)="deleteLog(g.members[0])"
+                      (click)="deleteLog(g.members[0]); $event.stopPropagation()"
                       title="Xoá cữ bú này"
                       aria-label="Xoá cữ bú"
                     >
@@ -1008,7 +1018,7 @@
                   <div class="log-actions" *ngIf="g.members.length > 1">
                     <button
                       class="log-edit"
-                      (click)="openFeedGroupDetail(g)"
+                      (click)="openFeedGroupDetail(g); $event.stopPropagation()"
                       title="Chi tiết các cữ đã gom"
                       aria-label="Chi tiết gom nhóm"
                     >
@@ -1546,8 +1556,13 @@
 
         <div class="feed-list-compact">
           <div
-            class="feed-row"
+            class="feed-row feed-row--clickable"
             *ngFor="let g of recentFeedViewGroups(); trackBy: trackFeedingViewGroup"
+            role="button"
+            tabindex="0"
+            (click)="onFeedRowClick(g)"
+            (keydown.enter)="onFeedRowClick(g)"
+            (keydown.space)="$event.preventDefault(); onFeedRowClick(g)"
           >
             <div class="feed-row-time">
               <div class="time time--with-badge">
@@ -1588,7 +1603,7 @@
             <div class="feed-row-actions" *ngIf="g.members.length === 1 && g.members[0].rowIndex">
               <button
                 class="feed-row-edit"
-                (click)="openEditDialog(g.members[0])"
+                (click)="openEditDialog(g.members[0]); $event.stopPropagation()"
                 title="Sửa cữ này"
                 aria-label="Sửa cữ bú"
               >
@@ -1596,7 +1611,7 @@
               </button>
               <button
                 class="feed-row-del"
-                (click)="deleteLog(g.members[0])"
+                (click)="deleteLog(g.members[0]); $event.stopPropagation()"
                 title="Xoá cữ này"
                 aria-label="Xoá cữ bú"
               >
@@ -1606,7 +1621,7 @@
             <div class="feed-row-actions" *ngIf="g.members.length > 1">
               <button
                 class="feed-row-edit"
-                (click)="openFeedGroupDetail(g)"
+                (click)="openFeedGroupDetail(g); $event.stopPropagation()"
                 title="Chi tiết các cữ đã gom"
                 aria-label="Chi tiết gom nhóm"
               >
@@ -2445,10 +2460,15 @@
           </div>
           <div class="history-group-rows">
             <div
-              class="feed-row"
+              class="feed-row feed-row--clickable"
               *ngFor="let vg of g.viewRows; trackBy: trackFeedingViewGroup"
               [class.low-volume]="isLowVolumeViewGroup(vg)"
               [class.high-volume]="isHighVolumeViewGroup(vg)"
+              role="button"
+              tabindex="0"
+              (click)="onFeedRowClick(vg)"
+              (keydown.enter)="onFeedRowClick(vg)"
+              (keydown.space)="$event.preventDefault(); onFeedRowClick(vg)"
             >
               <div class="feed-row-time">
                 <div class="time time--with-badge">
@@ -2484,7 +2504,7 @@
               <div class="feed-row-actions" *ngIf="vg.members.length === 1 && vg.members[0].rowIndex">
                 <button
                   class="feed-row-edit"
-                  (click)="openEditDialog(vg.members[0])"
+                  (click)="openEditDialog(vg.members[0]); $event.stopPropagation()"
                   title="Sửa cữ này"
                   aria-label="Sửa cữ bú"
                 >
@@ -2492,7 +2512,7 @@
                 </button>
                 <button
                   class="feed-row-del"
-                  (click)="deleteLog(vg.members[0])"
+                  (click)="deleteLog(vg.members[0]); $event.stopPropagation()"
                   title="Xoá cữ này"
                   aria-label="Xoá cữ bú"
                 >
@@ -2502,7 +2522,7 @@
               <div class="feed-row-actions" *ngIf="vg.members.length > 1">
                 <button
                   class="feed-row-edit"
-                  (click)="openFeedGroupDetail(vg)"
+                  (click)="openFeedGroupDetail(vg); $event.stopPropagation()"
                   title="Chi tiết các cữ đã gom"
                   aria-label="Chi tiết gom nhóm"
                 >
@@ -2722,9 +2742,9 @@
     </div>
   </div>
 
-  <!-- Chi tiết các cữ đã gom (chỉ hiển thị) -->
+  <!-- Chi tiết các cữ đã gom — z-index thấp hơn chi tiết 1 cữ -->
   <div
-    class="dialog-overlay dialog-overlay--front"
+    class="dialog-overlay dialog-overlay--front feed-group-detail-overlay"
     *ngIf="feedGroupDetail() as grp"
     (click)="closeFeedGroupDetail()"
   >
@@ -2753,13 +2773,21 @@
         <span class="sep">·</span>
         Tổng: <strong>{{ viewGroupDisplayVolume(grp) }}ml</strong>
       </p>
+      <p class="muted feed-group-detail-hint">
+        <i class="pi pi-info-circle"></i> Chạm một cữ để xem chi tiết &amp; so sánh
+      </p>
       <div class="history-group feed-group-detail-history">
         <div class="history-group-rows feed-group-detail-rows">
           <div
-            class="feed-row"
+            class="feed-row feed-row--clickable"
             *ngFor="let m of feedGroupDetailMembersDesc(); trackBy: trackFeedingLogRow"
             [class.low-volume]="isLowVolume(m.volume)"
             [class.high-volume]="isHighVolume(m.volume)"
+            role="button"
+            tabindex="0"
+            (click)="openFeedDetailFromGroupMember(m)"
+            (keydown.enter)="openFeedDetailFromGroupMember(m)"
+            (keydown.space)="$event.preventDefault(); openFeedDetailFromGroupMember(m)"
           >
             <div class="feed-row-time">
               <div class="time">{{ m.time }}</div>
@@ -2786,7 +2814,7 @@
             <div class="feed-row-actions" *ngIf="m.rowIndex">
               <button
                 class="feed-row-edit"
-                (click)="openEditDialog(m); closeFeedGroupDetail()"
+                (click)="openEditDialog(m); closeFeedGroupDetail(); closeFeedDetail(); $event.stopPropagation()"
                 title="Sửa cữ này"
                 aria-label="Sửa cữ bú"
               >
@@ -2794,11 +2822,20 @@
               </button>
               <button
                 class="feed-row-del"
-                (click)="deleteLog(m)"
+                (click)="deleteLog(m); $event.stopPropagation()"
                 title="Xoá cữ này"
                 aria-label="Xoá cữ bú"
               >
                 <i class="pi pi-trash"></i>
+              </button>
+              <button
+                type="button"
+                class="feed-row-edit"
+                (click)="openFeedDetailFromGroupMember(m); $event.stopPropagation()"
+                title="Chi tiết cữ này"
+                aria-label="Chi tiết cữ bú"
+              >
+                <i class="pi pi-eye"></i>
               </button>
             </div>
           </div>
@@ -2807,6 +2844,218 @@
       <div class="dialog-actions">
         <button type="button" class="btn primary" (click)="closeFeedGroupDetail()">Đóng</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Chi tiết một cữ bú — render sau dialog gom, z-index cao hơn -->
+  <div
+    class="dialog-overlay dialog-overlay--front feed-detail-overlay"
+    *ngIf="feedDetailView() as view"
+    (click)="closeFeedDetail()"
+  >
+    <div
+      class="dialog feed-detail-dialog"
+      role="dialog"
+      aria-modal="true"
+      [attr.data-status]="view.volumeStatus"
+      (click)="$event.stopPropagation()"
+    >
+      <header class="feed-detail-top">
+        <button
+          type="button"
+          class="feed-detail-close"
+          (click)="closeFeedDetail()"
+          aria-label="Đóng"
+        >
+          <i class="pi pi-times"></i>
+        </button>
+
+        <p class="feed-detail-eyebrow">Chi tiết cữ bú</p>
+
+        <div class="feed-detail-metric" aria-label="Dung tích">
+          <span class="feed-detail-metric__value">{{ view.log.volume }}</span>
+          <span class="feed-detail-metric__unit">ml</span>
+        </div>
+
+        <span class="feed-detail-status" [attr.data-kind]="view.volumeStatus">
+          <i class="pi" [ngClass]="feedDetailStatusIcon(view.volumeStatus)"></i>
+          {{ feedDetailStatusLabel(view.volumeStatus) }}
+        </span>
+
+        <div class="feed-detail-chips">
+          <span class="feed-detail-chip">
+            <i class="pi pi-calendar"></i>
+            <span>
+              {{ formatDateDisplay(view.log.date) }}
+              <em>{{ formatDayLabel(view.log.date) }}</em>
+            </span>
+          </span>
+          <span class="feed-detail-chip feed-detail-chip--time">
+            <i class="pi pi-clock"></i>
+            <span>{{ view.log.time }}</span>
+          </span>
+          <span class="feed-detail-chip feed-detail-chip--muted" *ngIf="view.ageLabel">
+            <i class="pi pi-history"></i>
+            <span>{{ view.ageLabel }}</span>
+          </span>
+        </div>
+      </header>
+
+      <div class="feed-detail-body">
+        <section class="feed-detail-section" *ngIf="view.compares.length > 0">
+          <h3 class="feed-detail-section__title">
+            <i class="pi pi-chart-bar"></i> So sánh
+          </h3>
+          <ul class="feed-detail-cards">
+            <li
+              class="feed-detail-card"
+              *ngFor="let row of view.compares"
+              [class.feed-detail-card--warn]="row.warn"
+              [class.feed-detail-card--position]="row.kind === 'position'"
+              [class.feed-detail-card--average]="row.kind === 'average'"
+              [class.feed-detail-card--next]="row.kind === 'next'"
+              [class.feed-detail-card--gap]="row.kind === 'gap'"
+            >
+              <span
+                class="feed-detail-card__icon"
+                [attr.data-kind]="row.kind"
+                aria-hidden="true"
+              >
+                <i class="pi" [ngClass]="row.icon"></i>
+              </span>
+              <div class="feed-detail-card__body">
+                <span class="feed-detail-card__label">{{ row.label }}</span>
+
+                <div
+                  class="fdc-position"
+                  *ngIf="row.kind === 'position' && row.position as pos"
+                >
+                  <div class="fdc-position__head">
+                    <span class="fdc-position__idx">Cữ {{ pos.index }}</span>
+                    <span class="fdc-position__of">/ {{ pos.total }}</span>
+                    <span class="fdc-position__tag">{{ pos.dayLabel }}</span>
+                  </div>
+                  <div
+                    class="fdc-progress"
+                    role="progressbar"
+                    [attr.aria-valuenow]="pos.index"
+                    [attr.aria-valuemax]="pos.total"
+                  >
+                    <div
+                      class="fdc-progress__fill"
+                      [style.width.%]="(pos.index / pos.total) * 100"
+                    ></div>
+                  </div>
+                  <div class="fdc-position__stats">
+                    <span class="fdc-stat fdc-stat--violet">
+                      <strong>{{ pos.totalMl }}</strong>
+                      <small>ml đến cữ này</small>
+                    </span>
+                    <span
+                      class="fdc-stat fdc-stat--indigo"
+                      *ngIf="pos.dayTotalMl > pos.totalMl"
+                    >
+                      <strong>{{ pos.dayTotalMl }}</strong>
+                      <small>ml cả ngày</small>
+                    </span>
+                  </div>
+                </div>
+
+                <div
+                  class="fdc-avg"
+                  *ngIf="row.kind === 'average' && row.average as avg"
+                >
+                  <span
+                    class="fdc-pill"
+                    [class.fdc-pill--neutral]="avg.diffMl === 0"
+                    [class.fdc-pill--up]="avg.diffMl > 0"
+                    [class.fdc-pill--down]="avg.diffMl < 0"
+                  >
+                    {{
+                      avg.diffMl === 0
+                        ? 'Bằng TB'
+                        : (avg.diffMl > 0 ? '+' : '') + avg.diffMl + 'ml'
+                    }}
+                  </span>
+                  <span class="fdc-avg__meta">
+                    <strong>{{ avg.refMl }}ml</strong>/cữ · {{ avg.refLabel }} ·
+                    {{ avg.feedCount }} cữ
+                  </span>
+                </div>
+
+                <div
+                  class="fdc-next"
+                  *ngIf="row.kind === 'next' && row.next as nx"
+                >
+                  <span class="fdc-next__time">{{ nx.time }}</span>
+                  <span class="fdc-next__vol">{{ nx.volume }}ml</span>
+                  <span class="fdc-next__gap">
+                    <i class="pi pi-clock"></i> sau {{ nx.gapLabel }}
+                  </span>
+                </div>
+
+                <div
+                  class="fdc-gap"
+                  *ngIf="row.kind === 'gap' && row.gapPrev as gp"
+                >
+                  <div class="fdc-gap__prev">
+                    <span class="fdc-gap__prev-label">Cữ trước</span>
+                    <span class="fdc-gap__prev-time">{{ gp.prevTime }}</span>
+                    <span class="fdc-gap__prev-vol">{{ gp.prevVolume }}ml</span>
+                    <span class="fdc-gap__prev-date" *ngIf="gp.prevDateIso">
+                      {{ formatDateShort(gp.prevDateIso) }}
+                    </span>
+                  </div>
+                  <div class="fdc-gap__row">
+                    <div
+                      class="fdc-gap__interval"
+                      [class.fdc-gap__interval--warn]="row.warn"
+                    >
+                      <i class="pi pi-clock"></i>
+                      <span>{{ gp.gapLabel }}</span>
+                    </div>
+                    <span
+                      class="fdc-pill fdc-gap__vol-diff"
+                      [class.fdc-pill--neutral]="gp.volDiffMl === 0"
+                      [class.fdc-pill--up]="gp.volDiffMl > 0"
+                      [class.fdc-pill--down]="gp.volDiffMl < 0"
+                    >
+                      {{
+                        gp.volDiffMl === 0
+                          ? 'Bằng cữ trước'
+                          : (gp.volDiffMl > 0 ? '+' : '') + gp.volDiffMl + 'ml'
+                      }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </li>
+          </ul>
+        </section>
+
+        <section class="feed-detail-section" *ngIf="view.note">
+          <h3 class="feed-detail-section__title">
+            <i class="pi pi-comment"></i> Ghi chú
+          </h3>
+          <blockquote class="feed-detail-quote">{{ view.note }}</blockquote>
+        </section>
+      </div>
+
+      <footer class="feed-detail-footer">
+        <div class="feed-detail-cta">
+          <button type="button" class="btn ghost" (click)="closeFeedDetail()">
+            Đóng
+          </button>
+          <button
+            type="button"
+            class="btn primary"
+            *ngIf="view.log.rowIndex"
+            (click)="openEditFromFeedDetail()"
+          >
+            <i class="pi pi-pencil"></i> Sửa cữ
+          </button>
+        </div>
+      </footer>
     </div>
   </div>
 
