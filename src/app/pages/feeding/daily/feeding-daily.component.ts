@@ -235,20 +235,22 @@ export class FeedingDailyComponent implements AfterViewInit {
     return '';
   });
 
-  /** Prep quá hạn 1h: cùng nội dung countdown nhưng tách «trễ X phút» căn phải. */
-  bottlePrepExpiredCountdownSplit = computed((): { main: string; lateMin: number } | null => {
+  /** Dòng trái dưới progress (khi có sữa trong bình): cảnh báo / còn bao lâu hết hạn. */
+  bottlePrepFooterLeft = computed((): string => {
+    if (!this.bottlePrep()) return '';
+    return this.bottlePrepCountdownLine();
+  });
+
+  /** Khoảng thời gian đã trôi kể từ lúc pha — căn phải dưới progress. */
+  bottlePrepSincePrepLabel = computed((): string => {
     const prep = this.bottlePrep();
-    if (!prep) return null;
+    if (!prep) return '';
     const t = new Date(prep.at);
-    if (isNaN(t.getTime())) return null;
-    const expiryMs = t.getTime() + 60 * 60 * 1000;
-    const pastMs = this.now().getTime() - expiryMs;
-    if (pastMs <= 0) return null;
-    const lateMin = Math.max(1, Math.floor(pastMs / 60000));
-    return {
-      main: 'Đã quá hạn 1 giờ — nên pha sữa mới.',
-      lateMin,
-    };
+    if (isNaN(t.getTime())) return '';
+    const diffMs = this.now().getTime() - t.getTime();
+    const diffMin = Math.max(0, Math.floor(diffMs / 60000));
+    if (diffMin <= 0) return 'Cách đây dưới 1 phút';
+    return `Cách đây ${minutesToVietnamese(diffMin)}`;
   });
 
   todayStats = computed<DayStats>(() =>
