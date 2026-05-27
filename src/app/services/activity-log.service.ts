@@ -129,7 +129,7 @@ export function formatLogContent(
         : `Đổi sữa đã pha từ '${oldV}ml' thành '${newV}ml' lúc '${time}'`;
     }
     case ACTIVITY_EVENT.BOTTLE_PREP_CLEARED_FEEDING:
-      return `Tự động xóa '${details['volume']}ml' sữa đã pha. Lý do: 'bé ti sữa'`;
+      return `xóa '${details['volume']}ml' sữa đã pha. Lý do: 'bé ti sữa'`;
     case ACTIVITY_EVENT.BOTTLE_PREP_MANUAL_CLEARED: {
       const vol = details['volume'];
       const reason = details['reason'];
@@ -283,7 +283,7 @@ export function getEventTypeLabel(eventType: ActivityEventType): string {
     [ACTIVITY_EVENT.FEEDING_DELETED]: 'Xóa cữ bú',
     [ACTIVITY_EVENT.BOTTLE_PREP_ADDED]: 'Pha sữa',
     [ACTIVITY_EVENT.BOTTLE_PREP_UPDATED]: 'Sửa sữa pha',
-    [ACTIVITY_EVENT.BOTTLE_PREP_CLEARED_FEEDING]: 'Sữa pha (đã dùng)',
+    [ACTIVITY_EVENT.BOTTLE_PREP_CLEARED_FEEDING]: 'Xóa sữa pha (tự động)',
     [ACTIVITY_EVENT.BOTTLE_PREP_MANUAL_CLEARED]: 'Xóa sữa pha',
     [ACTIVITY_EVENT.BOTTLE_PREP_CLEARED_EXPIRY]: 'Sữa pha (hết hạn)',
     [ACTIVITY_EVENT.WEIGHT_ADDED]: 'Thêm cân nặng',
