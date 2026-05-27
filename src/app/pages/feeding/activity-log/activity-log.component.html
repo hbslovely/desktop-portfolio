@@ -113,6 +113,7 @@
           *ngFor="let row of parsedDisplayRows(); trackBy: trackByParsedRow"
           class="activity-item"
           [class.activity-item--unread]="isUnread(row.log.id)"
+          [class.activity-item--delete]="isDeleteActivity(row.log.eventType)"
           [attr.data-color]="getEventColor(row.log.eventType)"
         >
           <div class="activity-item__rail" aria-hidden="true"></div>
@@ -134,7 +135,11 @@
             </div>
             <p class="activity-item__content">
               <span class="activity-item__actor">
-                <strong class="activity-item__author">{{ row.log.user }}</strong>
+                <strong
+                  class="activity-item__author"
+                  [class.activity-item__author--system]="isSystemActor(row.log.user)"
+                  >{{ displayActivityUser(row.log.user) }}</strong
+                >
                 <span class="activity-item__verb">đã</span>
               </span>
               <span class="activity-item__html" [innerHTML]="row.contentHtml"></span>

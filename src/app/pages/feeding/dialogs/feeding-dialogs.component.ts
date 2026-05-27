@@ -176,7 +176,7 @@ export class FeedingDialogsComponent {
   private lastHistoryInfiniteScrollAt = 0;
 
   remainingInput = signal('');
-  /** Đã dùng tính từ sữa đã pha; khi lưu cữ bú thành công sẽ ghi log “Hệ thống đã xóa …”. */
+  /** Đã dùng tính từ sữa đã pha; khi lưu cữ bú thành công sẽ ghi log «System đã …» (activity log). */
   bottlePrepClearPendingLog = signal(false);
   pendingClearedPrepVolumeMl = signal<number | null>(null);
 
