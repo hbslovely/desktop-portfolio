@@ -15,10 +15,14 @@ import { Subscription, interval } from 'rxjs';
 import {
   ActivityLogService,
   ActivityLogRow,
+  ActivityEventType,
   buildActivityLogMessageHtml,
   getEventTypeLabel,
   getEventTypeIcon,
   getEventTypeColor,
+  isActivityDeleteEvent,
+  displayActivityLogActor,
+  ACTIVITY_SYSTEM_USER,
 } from '../../../services/activity-log.service';
 
 type SortOrder = 'desc' | 'asc';
@@ -107,7 +111,12 @@ export class ActivityLogComponent implements OnInit, OnDestroy {
     return list.filter((log) => {
       const label = getEventTypeLabel(log.eventType as any);
       const haystack = this.normalizeSearchText(
-        [log.user, log.content, String(log.eventType), label].join(' ')
+        [
+          displayActivityLogActor(log.user),
+          log.content,
+          String(log.eventType),
+          label,
+        ].join(' ')
       );
       return haystack.includes(q);
     });
@@ -252,6 +261,19 @@ export class ActivityLogComponent implements OnInit, OnDestroy {
 
   getEventColor(eventType: string) {
     return getEventTypeColor(eventType as any);
+  }
+
+  /** Sheet cũ có thể còn chữ «Hệ thống» — hiển thị thống nhất «System». */
+  displayActivityUser(user: string): string {
+    return displayActivityLogActor(user);
+  }
+
+  isDeleteActivity(eventType: string): boolean {
+    return isActivityDeleteEvent(eventType as ActivityEventType);
+  }
+
+  isSystemActor(user: string): boolean {
+    return displayActivityLogActor(user) === ACTIVITY_SYSTEM_USER;
   }
 
   /** Check if a log entry is unread */

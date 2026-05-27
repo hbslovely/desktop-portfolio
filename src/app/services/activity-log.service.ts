@@ -51,6 +51,16 @@ export const ACTIVITY_EVENT = {
 
 export type ActivityEventType = (typeof ACTIVITY_EVENT)[keyof typeof ACTIVITY_EVENT];
 
+/** User ghi trên sheet cho thao tác tự động (trước đây là «Hệ thống»). */
+export const ACTIVITY_SYSTEM_USER = 'System';
+
+/** Hiển thị tên actor; log cũ trên sheet có thể vẫn là «Hệ thống». */
+export function displayActivityLogActor(user: string): string {
+  const u = String(user || '').trim();
+  if (/^hệ thống$/iu.test(u)) return ACTIVITY_SYSTEM_USER;
+  return user;
+}
+
 /** Row data từ sheet Log */
 export interface ActivityLogRow {
   id: string;
@@ -315,13 +325,19 @@ export function getEventTypeIcon(eventType: ActivityEventType): string {
 
 /** Map event type sang màu */
 export function getEventTypeColor(eventType: ActivityEventType): string {
-  if (eventType === ACTIVITY_EVENT.BOTTLE_PREP_MANUAL_CLEARED) return 'red';
-  if (eventType === ACTIVITY_EVENT.BOTTLE_PREP_CLEARED_EXPIRY) return 'blue';
-  if (eventType === ACTIVITY_EVENT.BOTTLE_PREP_CLEARED_FEEDING) return 'blue';
+    if (isActivityDeleteEvent(eventType)) return 'red';
   if (eventType.includes('_ADDED')) return 'green';
   if (eventType.includes('_UPDATED')) return 'blue';
-  if (eventType.includes('_DELETED')) return 'red';
   return 'gray';
+}
+
+/** Sự kiện xóa / gỡ sữa pha / xóa tự động — UI ưu tiên tông đỏ. */
+export function isActivityDeleteEvent(eventType: ActivityEventType): boolean {
+  if (eventType.includes('_DELETED')) return true;
+  if (eventType === ACTIVITY_EVENT.BOTTLE_PREP_MANUAL_CLEARED) return true;
+  if (eventType === ACTIVITY_EVENT.BOTTLE_PREP_CLEARED_FEEDING) return true;
+  if (eventType === ACTIVITY_EVENT.BOTTLE_PREP_CLEARED_EXPIRY) return true;
+  return false;
 }
 
 interface LogSheetResponse {
@@ -708,7 +724,7 @@ export class ActivityLogService {
       volume: volumeMl,
     });
     return this.addLog({
-      user: 'Hệ thống',
+      user: ACTIVITY_SYSTEM_USER,
       eventType: ACTIVITY_EVENT.BOTTLE_PREP_CLEARED_FEEDING,
       content,
     });
@@ -746,7 +762,7 @@ export class ActivityLogService {
       variant,
     });
     return this.addLog({
-      user: 'Hệ thống',
+      user: ACTIVITY_SYSTEM_USER,
       eventType: ACTIVITY_EVENT.BOTTLE_PREP_CLEARED_EXPIRY,
       content,
     });
