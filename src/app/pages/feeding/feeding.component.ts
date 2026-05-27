@@ -203,6 +203,12 @@ export class FeedingComponent {
     });
   });
 
+  /** Hero gộp tóm tắt profile (bỏ card overview riêng). */
+  profileHeroWeightLabel = computed(() => {
+    const s = this.formatSheetWeightKg(this.latestWeightKgFromSheet());
+    return s ? `${s} kg` : null;
+  });
+
   ageBreakdown = computed(() => {
     const days = this.ageInDays();
     if (days === null) return null;
@@ -395,6 +401,11 @@ export class FeedingComponent {
     this.profile.set(null);
     this.draft.set({ babyName: '', birthDate: '', gender: '' });
     this.editing.set(true);
+  }
+
+  /** Đóng menu bánh răng trên hero merged (dùng sau khi chọn mục). */
+  closeProfileActionsMenu(menu: HTMLDetailsElement): void {
+    menu.removeAttribute('open');
   }
 
   updateDraftName(value: string) {
@@ -803,5 +814,14 @@ export class FeedingComponent {
 
   get maxBirthDate(): string {
     return new Date().toISOString().split('T')[0];
+  }
+
+  /** Cân sheet Weight — hiển thị trong hero (cùng logic feeding-profile). */
+  formatSheetWeightKg(kg: number | undefined): string {
+    if (kg === undefined || !Number.isFinite(kg) || kg <= 0) return '';
+    return new Intl.NumberFormat('vi-VN', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    }).format(kg);
   }
 }

@@ -114,6 +114,18 @@ export class FeedingDailyComponent implements AfterViewInit {
   private static readonly PAST_DAY_STRIP_MIN_DAYS = 30;
   private static readonly PAST_DAY_STRIP_MAX_DAYS = 120;
 
+  /** Gợi ý lý do khi xóa / đổi sữa đã pha (dialog). */
+  readonly bottlePrepReasonQuickTags = [
+    'Sữa hỏng',
+    'Bé ói',
+    'Pha lại',
+    'Đổ đi',
+    'Hết hạn',
+    'Bé uống ít',
+    'Đổi loại sữa',
+    'Đo lại ml',
+  ] as const;
+
   bottlePrep = signal<BottlePrepFromSheet | null>(null);
   bottlePrepDraft = signal('');
   bottlePrepEditing = signal(false);
@@ -162,6 +174,81 @@ export class FeedingDailyComponent implements AfterViewInit {
       return { type: 'expiring-soon' as const, minutes: remainingMinutes };
     }
     return null;
+  });
+
+  /** % thời gian đã trôi trong cửa sổ 1h sau khi pha (0% = mới pha, 100% = hết/ quá hạn). */
+  bottlePrepBarPct = computed(() => {
+    const prep = this.bottlePrep();
+    if (prep) {
+      const prepTime = new Date(prep.at);
+      if (isNaN(prepTime.getTime())) return 0;
+      const windowMs = 60 * 60 * 1000;
+      const elapsed = this.now().getTime() - prepTime.getTime();
+      const pct = Math.round((elapsed / windowMs) * 100);
+      return Math.min(100, Math.max(0, pct));
+    }
+    const w = this.bottlePrepWarning();
+    if (!w) return 0;
+    const notifyMinutes =
+      this.feedingSettings().feedingNotificationMinutes + 20;
+    if (w.type === 'no-prep-late') return 100;
+    if (w.type === 'no-prep-soon') {
+      if (w.minutes <= 0) return 100;
+      return Math.min(
+        100,
+        Math.round((1 - w.minutes / notifyMinutes) * 100)
+      );
+    }
+    return 0;
+  });
+
+  bottlePrepBarTone = computed((): 'calm' | 'soon' | 'danger' => {
+    const w = this.bottlePrepWarning();
+    if (!w) return 'calm';
+    if (w.type === 'expired' || w.type === 'no-prep-late') return 'danger';
+    if (w.type === 'expiring-soon' || w.type === 'no-prep-soon')
+      return 'soon';
+    return 'calm';
+  });
+
+  bottlePrepCountdownLine = computed((): string => {
+    const prep = this.bottlePrep();
+    const w = this.bottlePrepWarning();
+    if (prep) {
+      const t = new Date(prep.at);
+      if (isNaN(t.getTime())) return '';
+      const remMs = t.getTime() + 60 * 60 * 1000 - this.now().getTime();
+      if (remMs <= 0) return 'Đã quá hạn 1 giờ — nên pha sữa mới.';
+      const m = Math.max(1, Math.floor(remMs / 60000));
+      return `Còn ${m} phút nữa là sữa hết hạn.`;
+    }
+    if (w?.type === 'no-prep-soon') {
+      if (w.minutes <= 0)
+        return 'Đến giờ bú — chưa có sữa đã pha trong bình.';
+      return `Còn ${minutesToVietnamese(w.minutes)} tới cữ bú — chưa có sữa đã pha.`;
+    }
+    if (w?.type === 'no-prep-late') {
+      if (w.minutes > 0)
+        return `Đã trễ ${minutesToVietnamese(w.minutes)} so với giờ bú — chưa có sữa đã pha.`;
+      return 'Đã trễ giờ bú — chưa có sữa đã pha.';
+    }
+    return '';
+  });
+
+  /** Prep quá hạn 1h: cùng nội dung countdown nhưng tách «trễ X phút» căn phải. */
+  bottlePrepExpiredCountdownSplit = computed((): { main: string; lateMin: number } | null => {
+    const prep = this.bottlePrep();
+    if (!prep) return null;
+    const t = new Date(prep.at);
+    if (isNaN(t.getTime())) return null;
+    const expiryMs = t.getTime() + 60 * 60 * 1000;
+    const pastMs = this.now().getTime() - expiryMs;
+    if (pastMs <= 0) return null;
+    const lateMin = Math.max(1, Math.floor(pastMs / 60000));
+    return {
+      main: 'Đã quá hạn 1 giờ — nên pha sữa mới.',
+      lateMin,
+    };
   });
 
   todayStats = computed<DayStats>(() =>
@@ -778,6 +865,29 @@ export class FeedingDailyComponent implements AfterViewInit {
     this.bottlePrepClearReasonDraft.set(v);
   }
 
+  appendBottlePrepClearReasonTag(tag: string): void {
+    this.bottlePrepClearReasonDraft.update((cur) =>
+      this.mergeReasonSnippet(cur, tag)
+    );
+  }
+
+  appendBottlePrepEditReasonTag(tag: string): void {
+    this.bottlePrepEditReasonDraft.update((cur) =>
+      this.mergeReasonSnippet(cur, tag)
+    );
+  }
+
+  /** Nối thêm cụm lý do; tránh trùng nếu đã có cùng cụm. */
+  private mergeReasonSnippet(current: string, phrase: string): string {
+    const t = phrase.trim();
+    if (!t) return current;
+    const c = current.trim();
+    if (!c) return t;
+    const parts = c.split(/[;,]/).map((s) => s.trim().toLowerCase());
+    if (parts.includes(t.toLowerCase())) return c;
+    return `${c}; ${t}`;
+  }
+
   confirmClearBottlePrep(): void {
     const prep = this.bottlePrep();
     if (!prep) {
@@ -808,7 +918,8 @@ export class FeedingDailyComponent implements AfterViewInit {
     return this.toTimeStr(d);
   }
 
-  bottlePrepUseByMax(iso: string): string {
+  /** Giờ:phút mốc hết hạn 1h sau khi pha — dùng cho tag. */
+  formatBottlePrepExpiryClock(iso: string): string {
     const d = new Date(iso);
     if (isNaN(d.getTime())) return '';
     return this.toTimeStr(new Date(d.getTime() + 60 * 60 * 1000));

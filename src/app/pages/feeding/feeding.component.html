@@ -2,61 +2,170 @@
 <div class="feeding-page" #feedingPage>
   <div class="backdrop"></div>
 
-  <header class="hero">
+  <header
+    class="hero"
+    [class.hero--profile-merged]="profile() && !editing() && ageBreakdown()"
+  >
     <div class="hero-inner">
       <div class="hero-brand">
         <div class="hero-title-row">
-          <div class="hero-title">
-            <div class="emoji" aria-hidden="true">👶</div>
-            <div class="hero-text">
-              <h1>Bé yêu của bạn</h1>
-              <p class="hero-userline">
-                <i class="pi pi-user" aria-hidden="true"></i>
-                <strong>{{ user() }}</strong>
-                <span class="hero-last-update">· Cập nhật {{ lastActivityTime() }}</span>
-              </p>
+          <ng-container
+            *ngIf="profile() && !editing() && ageBreakdown() as age; else heroBrandDefault"
+          >
+            <div class="hero-title hero-title--merged">
+              <div class="emoji" aria-hidden="true">
+                {{
+                  profile()!.gender === 'boy'
+                    ? '👦'
+                    : profile()!.gender === 'girl'
+                      ? '👧'
+                      : '🍼'
+                }}
+              </div>
+              <div class="hero-text">
+                <div class="hero-merged-head">
+                  <h1>{{ profile()!.babyName }}</h1>
+                  <span class="hero-age-chip">
+                    <ng-container *ngIf="age.years > 0">{{ age.years }}y </ng-container>
+                    {{ age.years > 0 ? age.remainingMonths : age.months }}m<ng-container
+                      *ngIf="age.weeksInMonth > 0"
+                      >{{ age.weeksInMonth }}w</ng-container>
+                    <ng-container
+                      *ngIf="
+                        age.remainingDays > 0 ||
+                        (age.weeksInMonth === 0 && age.months === 0 && age.years === 0)
+                      "
+                      >{{ age.remainingDays }}d</ng-container>
+                  </span>
+                  <span class="hero-merged-stat">
+                    <i class="pi pi-calendar" aria-hidden="true"></i>
+                    {{ profile()!.birthDate | date: 'dd/MM/yyyy' }}
+                  </span>
+                  <ng-container *ngIf="profileHeroWeightLabel() as wLabel">
+                    <span class="hero-merged-stat hero-merged-stat--weight">
+                      <i class="pi pi-heart-fill" aria-hidden="true"></i>
+                      {{ wLabel }}
+                    </span>
+                  </ng-container>
+                </div>
+                <p class="hero-merged-meta">
+                  <span>{{ age.days }} ngày</span>
+                  <span class="dot">·</span>
+                  <span class="hero-merged-user"
+                    ><i class="pi pi-user" aria-hidden="true"></i>
+                    <strong>{{ user() }}</strong></span>
+                  <span class="dot">·</span>
+                  <span class="hero-merged-sync">Cập nhật {{ lastActivityTime() }}</span>
+                </p>
+              </div>
             </div>
-          </div>
-          <div class="hero-actions" *ngIf="profile() && !editing()">
-            <app-activity-log (activityChanged)="onActivityChanged()"></app-activity-log>
-            <button
-              class="btn icon-btn"
-              type="button"
-              (click)="feedingDialogs.openFeedingSettingsDialog()"
-              title="Cài đặt"
-              aria-label="Cài đặt cữ bú"
-            >
-              <i class="pi pi-sliders-h"></i>
-            </button>
-            <button
-              class="btn icon-btn"
-              type="button"
-              (click)="refreshAll()"
-              [disabled]="isAnyLoading()"
-              [title]="isAnyLoading() ? 'Đang tải…' : 'Tải lại Cữ bú, Cân, Lịch, Y tế, Tài liệu'"
-              aria-label="Tải lại Cữ bú, Thể trạng, Lịch, Tiền sử y tế và Tài liệu"
-            >
-              <i class="pi pi-refresh" [class.spin]="isAnyLoading()"></i>
-            </button>
-          </div>
+            <div class="hero-actions hero-actions--merged">
+              <app-activity-log (activityChanged)="onActivityChanged()"></app-activity-log>
+              <button
+                class="btn icon-btn"
+                type="button"
+                (click)="refreshAll()"
+                [disabled]="isAnyLoading()"
+                [title]="isAnyLoading() ? 'Đang tải…' : 'Tải lại Cữ bú, Cân, Lịch, Y tế, Tài liệu'"
+                aria-label="Tải lại Cữ bú, Thể trạng, Lịch, Tiền sử y tế và Tài liệu"
+              >
+                <i class="pi pi-refresh" [class.spin]="isAnyLoading()"></i>
+              </button>
+              <details class="hero-profile-menu" #profileActionsMenu>
+                <summary
+                  class="btn icon-btn hero-profile-menu__trigger"
+                  title="Thao tác profile"
+                  aria-label="Menu thao tác profile"
+                >
+                  <i class="pi pi-cog" aria-hidden="true"></i>
+                </summary>
+                <div class="hero-profile-menu__panel" role="menu">
+                  <button
+                    type="button"
+                    class="hero-profile-menu__item"
+                    role="menuitem"
+                    (click)="closeProfileActionsMenu(profileActionsMenu); startEdit()"
+                  >
+                    <i class="pi pi-pencil" aria-hidden="true"></i>
+                    <span>Sửa profile</span>
+                  </button>
+                  <button
+                    type="button"
+                    class="hero-profile-menu__item hero-profile-menu__item--danger"
+                    role="menuitem"
+                    (click)="closeProfileActionsMenu(profileActionsMenu); clearProfile()"
+                  >
+                    <i class="pi pi-trash" aria-hidden="true"></i>
+                    <span>Xoá profile</span>
+                  </button>
+                  <button
+                    type="button"
+                    class="hero-profile-menu__item"
+                    role="menuitem"
+                    (click)="
+                      closeProfileActionsMenu(profileActionsMenu);
+                      feedingDialogs.openFeedingSettingsDialog()
+                    "
+                  >
+                    <i class="pi pi-sliders-h" aria-hidden="true"></i>
+                    <span>Cài đặt</span>
+                  </button>
+                </div>
+              </details>
+            </div>
+          </ng-container>
+          <ng-template #heroBrandDefault>
+            <div class="hero-title">
+              <div class="emoji" aria-hidden="true">👶</div>
+              <div class="hero-text">
+                <h1>Bé yêu của bạn</h1>
+                <p class="hero-userline">
+                  <i class="pi pi-user" aria-hidden="true"></i>
+                  <strong>{{ user() }}</strong>
+                  <span class="hero-last-update">· Cập nhật {{ lastActivityTime() }}</span>
+                </p>
+              </div>
+            </div>
+            <div class="hero-actions" *ngIf="profile() && !editing()">
+              <app-activity-log (activityChanged)="onActivityChanged()"></app-activity-log>
+              <button
+                class="btn icon-btn"
+                type="button"
+                (click)="feedingDialogs.openFeedingSettingsDialog()"
+                title="Cài đặt"
+                aria-label="Cài đặt cữ bú"
+              >
+                <i class="pi pi-sliders-h"></i>
+              </button>
+              <button
+                class="btn icon-btn"
+                type="button"
+                (click)="refreshAll()"
+                [disabled]="isAnyLoading()"
+                [title]="isAnyLoading() ? 'Đang tải…' : 'Tải lại Cữ bú, Cân, Lịch, Y tế, Tài liệu'"
+                aria-label="Tải lại Cữ bú, Thể trạng, Lịch, Tiền sử y tế và Tài liệu"
+              >
+                <i class="pi pi-refresh" [class.spin]="isAnyLoading()"></i>
+              </button>
+            </div>
+          </ng-template>
         </div>
       </div>
 
       <div class="hero-datetime" aria-live="polite">
-        <time class="hero-date-card" [attr.datetime]="todayDateStr()">
-          <span class="hero-date-card__icon" aria-hidden="true">
-            <i class="pi pi-calendar"></i>
-          </span>
-          <span class="hero-date-card__text">
-            <span class="hero-date-wd">{{ heroWeekday }}</span>
-            <span class="hero-date-num">{{ heroDateNumeric }}</span>
-          </span>
-        </time>
-        <div class="hero-time-card">
-          <span class="hero-time-card__icon" aria-hidden="true">
-            <i class="pi pi-clock"></i>
-          </span>
-          <span class="hero-time-value">{{ currentTimeStr }}</span>
+        <div class="hero-datetime-strip">
+          <div class="hero-datetime-strip__block hero-datetime-strip__block--date">
+            <i class="pi pi-calendar" aria-hidden="true"></i>
+            <span class="hero-datetime-strip__wd">{{ heroWeekday }}</span>
+            <time class="hero-datetime-strip__date" [attr.datetime]="todayDateStr()">{{
+              heroDateNumeric
+            }}</time>
+          </div>
+          <span class="hero-datetime-strip__divider" aria-hidden="true"></span>
+          <div class="hero-datetime-strip__block hero-datetime-strip__block--time">
+            <i class="pi pi-clock" aria-hidden="true"></i>
+            <span class="hero-datetime-strip__clock">{{ currentTimeStr }}</span>
+          </div>
         </div>
       </div>
     </div>
@@ -141,8 +250,6 @@
       [profile]="profile()"
       [draft]="draft()"
       [editing]="editing()"
-      [ageBreakdown]="ageBreakdown()"
-      [latestWeightKg]="latestWeightKgFromSheet()"
       [maxBirthDate]="maxBirthDate"
       (save)="save()"
       (cancelEdit)="cancelEdit()"

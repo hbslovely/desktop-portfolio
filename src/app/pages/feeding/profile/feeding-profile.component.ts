@@ -19,16 +19,6 @@ export interface FeedingProfileDraft {
   gender?: 'boy' | 'girl' | '';
 }
 
-export interface FeedingAgeBreakdown {
-  days: number;
-  weeks: number;
-  months: number;
-  remainingMonths: number;
-  years: number;
-  weeksInMonth: number;
-  remainingDays: number;
-}
-
 @Component({
   selector: 'app-feeding-profile',
   standalone: true,
@@ -42,8 +32,6 @@ export class FeedingProfileComponent {
   profile = input<FeedingProfile | null>(null);
   draft = input.required<FeedingProfileDraft>();
   editing = input(false);
-  ageBreakdown = input<FeedingAgeBreakdown | null>(null);
-  latestWeightKg = input<number | undefined>(undefined);
   maxBirthDate = input.required<string>();
 
   save = output<void>();
@@ -53,15 +41,6 @@ export class FeedingProfileComponent {
   draftNameChange = output<string>();
   draftBirthChange = output<string>();
   draftGenderChange = output<'boy' | 'girl' | ''>();
-
-  /** Hiển thị kg (sheet Weight) trong summary profile. */
-  formatWeightKgFromSheet(kg: number | undefined): string {
-    if (kg === undefined || !Number.isFinite(kg) || kg <= 0) return '';
-    return new Intl.NumberFormat('vi-VN', {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2,
-    }).format(kg);
-  }
 
   onDraftGender(gender: 'boy' | 'girl' | ''): void {
     this.draftGenderChange.emit(gender);
