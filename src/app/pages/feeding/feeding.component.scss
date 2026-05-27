@@ -352,6 +352,12 @@
     &--weight {
       max-width: none;
       padding: 0;
+      background: linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--primary, #5b6cff) 5%, var(--surface, #fff)) 0%,
+        var(--surface, #fff) min(36vh, 280px),
+        var(--surface, #fff) 100%
+      );
     }
 
     &--mom {
@@ -363,6 +369,13 @@
     &--medical {
       max-width: none;
       padding: 0;
+      /* Nền nhẹ riêng tab Y tế — tách khỏi Cữ bú / Tài liệu */
+      background: linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--primary, #5b6cff) 7%, var(--surface, #fff)) 0%,
+        var(--surface, #fff) min(42vh, 320px),
+        var(--surface, #fff) 100%
+      );
     }
   }
 }

@@ -1,13 +1,13 @@
 /* Ô tìm kiếm free-text (tab Y tế) */
 .mh-text-search {
   margin-bottom: 14px;
-  padding: 14px 16px;
+  padding: 16px 18px;
 
   &.card {
-    border-radius: 0;
-    border: 1px solid var(--border, #e5e7eb);
+    border-radius: 16px;
+    border: 1px solid color-mix(in srgb, var(--border, #e5e7eb) 88%, var(--primary, #5b6cff));
     background: var(--surface, #fff);
-    box-shadow: 0 2px 10px -6px rgba(15, 23, 42, 0.1);
+    box-shadow: 0 2px 12px -8px rgba(15, 23, 42, 0.12);
   }
 
   &__label {
@@ -37,7 +37,7 @@
     flex: 1;
     min-width: 0;
     padding: 11px 14px;
-    border-radius: 0;
+    border-radius: 12px;
     border: 1px solid var(--border, #e5e7eb);
     font-size: 15px;
     font-family: inherit;
@@ -74,8 +74,8 @@
   align-items: center;
   gap: 10px;
   width: 100%;
-  padding: 11px 14px;
-  border-radius: 0;
+  padding: 12px 16px;
+  border-radius: 14px;
   border: 1px solid var(--border, #e5e7eb);
   background: var(--surface, #fff);
   font-family: inherit;
@@ -154,11 +154,11 @@
   right: 0;
   top: calc(100% + 8px);
   z-index: 5;
-  padding: 12px 12px 10px;
-  border-radius: 0;
-  border: 1px solid var(--border, #e5e7eb);
+  padding: 14px 14px 12px;
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--border, #e5e7eb) 80%, var(--primary, #5b6cff));
   background: var(--surface, #fff);
-  box-shadow: 0 16px 40px -20px rgba(15, 23, 42, 0.28);
+  box-shadow: 0 20px 48px -24px rgba(15, 23, 42, 0.28);
 
   &__headrow {
     display: flex;
@@ -204,8 +204,8 @@
 
   &__search {
     width: 100%;
-    padding: 9px 11px;
-    border-radius: 0;
+    padding: 9px 12px;
+    border-radius: 10px;
     border: 1px solid var(--border, #e5e7eb);
     font-size: 14px;
     font-family: inherit;
@@ -221,7 +221,7 @@
       flex: 1;
       min-width: 0;
       padding: 8px 10px;
-      border-radius: 0;
+      border-radius: 10px;
       border: 1px solid var(--border, #e5e7eb);
       background: var(--surface-2, #f8fafc);
       font-size: 12px;
@@ -305,7 +305,7 @@
 .kind-chip.mh-filter-kind {
   width: 100%;
   justify-content: flex-start;
-  border-radius: 0;
+  border-radius: 12px;
   text-align: left;
 
   .mh-filter-kind__name {

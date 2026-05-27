@@ -1,0 +1,49 @@
+<section class="whl-card">
+  <div class="whl-head">
+    <h3>Lịch sử cân</h3>
+    <span class="whl-loading" *ngIf="loading()">
+      <i class="pi pi-spin pi-spinner"></i> Đang tải…
+    </span>
+  </div>
+
+  <p class="whl-empty" *ngIf="!loading() && logs().length === 0">
+    Chưa có dòng nào trên sheet Weight. Nhấn <strong>Ghi cân</strong> để thêm.
+  </p>
+
+  <ul class="whl-list" *ngIf="logs().length > 0">
+    <li class="whl-row" *ngFor="let log of logs()">
+      <div class="whl-main">
+        <div class="whl-line">
+          <span class="whl-date">{{ formatDate(log.date) }}</span>
+          <span class="whl-sep" aria-hidden="true">·</span>
+          <span class="whl-kg">{{ formatKg(log.weightKg) }} kg</span>
+          <ng-container *ngIf="log.heightCm !== undefined">
+            <span class="whl-sep" aria-hidden="true">·</span>
+            <span class="whl-height">{{ formatCm(log.heightCm) }} cm</span>
+          </ng-container>
+        </div>
+        <span class="whl-note" *ngIf="log.note">{{ log.note }}</span>
+      </div>
+      <div class="whl-actions">
+        <button
+          type="button"
+          class="whl-btn"
+          (click)="edit.emit(log)"
+          [disabled]="!log.rowIndex"
+          title="Sửa"
+        >
+          <i class="pi pi-pencil"></i>
+        </button>
+        <button
+          type="button"
+          class="whl-btn whl-btn--danger"
+          (click)="remove.emit(log)"
+          [disabled]="!log.rowIndex"
+          title="Xoá"
+        >
+          <i class="pi pi-trash"></i>
+        </button>
+      </div>
+    </li>
+  </ul>
+</section>

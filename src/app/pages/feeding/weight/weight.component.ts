@@ -43,6 +43,18 @@ import {
   whoVnReferenceTable,
 } from '../baby-weight-growth';
 import { ActivityLogService } from '../../../services/activity-log.service';
+import {
+  formatAgeShortVi,
+  formatWeightCm,
+  formatWeightDateDisplay,
+  formatWeightDateShort,
+  formatWeightGPerDay,
+  formatWeightKg,
+  growthStatusClass as growthStatusClassUtil,
+} from './weight-display.utils';
+import { WeightChartsComponent } from './weight-charts/weight-charts.component';
+import { WeightHeaderComponent } from './weight-header/weight-header.component';
+import { WeightHistoryListComponent } from './weight-history-list/weight-history-list.component';
 
 interface WeightDraft {
   date: string;
@@ -68,7 +80,13 @@ interface WhoStandardRow {
 @Component({
   selector: 'app-weight',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    WeightHeaderComponent,
+    WeightChartsComponent,
+    WeightHistoryListComponent,
+  ],
   templateUrl: './weight.component.html',
   styleUrls: ['./weight.component.scss', '../development-timeline.dialog.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -111,6 +129,9 @@ export class WeightComponent {
   whoTableDialogOpen = signal<boolean>(false);
   /** Bảng tham chiếu WHO bé gái (VN) — dialog thông tin */
   whoGirlReferenceDialogOpen = signal<boolean>(false);
+
+  /** Alias cho template (WHO dialog + đánh giá). */
+  readonly growthStatusClass = growthStatusClassUtil;
 
   constructor() {
     this.load();
@@ -322,6 +343,11 @@ export class WeightComponent {
     'Buổi tối',
   ] as const;
 
+  /** Xu hướng đơn khi không có biểu đồ so sánh WHO (thiếu ngày sinh hoặc tương đương). */
+  simpleTrendForCharts = computed(
+    () => !this.weightVsStandardChart() && !!this.weightTrendChart()
+  );
+
   weightTrendChart = computed(() => {
     const logs = this.sortedLogsAsc();
     if (logs.length === 0) return null;
@@ -516,7 +542,7 @@ export class WeightComponent {
         y,
         showKgLabel: true,
         showXLabel: i === 0 || i === n - 1 || i % labelStep === 0,
-        ageLabel: this.formatAgeShortVi(p.days),
+        ageLabel: formatAgeShortVi(p.days),
       });
     });
 
@@ -675,7 +701,7 @@ export class WeightComponent {
           y,
           showLabel: true,
           showXLabel: i === 0 || i === n - 1 || i % labelStep === 0,
-          ageLabel: this.formatAgeShortVi(p.days),
+          ageLabel: formatAgeShortVi(p.days),
         };
       });
 
@@ -1263,35 +1289,23 @@ export class WeightComponent {
   }
 
   formatDateDisplay(iso: string): string {
-    const [y, m, d] = iso.split('-');
-    return `${d}/${m}/${y}`;
+    return formatWeightDateDisplay(iso);
   }
 
   formatDateShort(iso: string): string {
-    const [y, m, d] = iso.split('-');
-    return `${d}/${m}`;
+    return formatWeightDateShort(iso);
   }
 
   formatKg(n: number): string {
-    return new Intl.NumberFormat('vi-VN', {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2,
-    }).format(n);
+    return formatWeightKg(n);
   }
 
   formatGPerDay(n: number): string {
-    const s = new Intl.NumberFormat('vi-VN', {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 1,
-    }).format(n);
-    return `${n > 0 ? '+' : ''}${s}`;
+    return formatWeightGPerDay(n);
   }
 
   formatCm(n: number): string {
-    return new Intl.NumberFormat('vi-VN', {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 1,
-    }).format(n);
+    return formatWeightCm(n);
   }
 
   private medianHeightByWeeks(weeks: number, sex: WeightGrowthSex): number {
@@ -1300,31 +1314,6 @@ export class WeightComponent {
 
   private sdHeightByWeeks(weeks: number, sex: WeightGrowthSex): number {
     return approxSdHeightCmAtMonths((weeks * 7) / 30.4375, sex);
-  }
-
-  /** Nhãn tuổi trên trục ngang biểu đồ so sánh */
-  formatAgeShortVi(days: number): string {
-    const w = Math.floor(days / 7);
-    const d = days % 7;
-    if (w === 0) {
-      return `${days} ngày`;
-    }
-    return d === 0 ? `${w} tuần` : `${w}t${d}n`;
-  }
-
-  growthStatusClass(status: string): string {
-    switch (status) {
-      case 'very_low':
-      case 'very_high':
-        return 'warn';
-      case 'low':
-      case 'high':
-        return 'mid';
-      case 'normal':
-        return 'ok';
-      default:
-        return 'neutral';
-    }
   }
 
   private whoMetricLevel(

@@ -12,7 +12,8 @@ import {
   signal,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { finalize } from 'rxjs/operators';
+import { of } from 'rxjs';
+import { finalize, concatMap } from 'rxjs/operators';
 import {
   ACTIVITY_EVENT,
   ActivityLogService,
@@ -118,6 +119,18 @@ export class FeedingDailyComponent implements AfterViewInit {
   bottlePrepEditing = signal(false);
   bottlePrepSaving = signal(false);
   pastDayViewDate = signal('');
+
+  bottlePrepClearConfirmOpen = signal(false);
+  bottlePrepClearReasonDraft = signal('');
+
+  bottlePrepEditConfirmOpen = signal(false);
+  bottlePrepEditReasonDraft = signal('');
+  bottlePrepEditPending = signal<{
+    newVolume: number;
+    time: string;
+    atIso: string;
+    oldVolume: number;
+  } | null>(null);
 
   bottlePrepWarning = computed(() => {
     const prep = this.bottlePrep();
@@ -592,8 +605,46 @@ export class FeedingDailyComponent implements AfterViewInit {
     if (this.bottlePrepSaving()) return;
     const n = parseInt(this.bottlePrepDraft(), 10);
     if (isNaN(n) || n <= 0) return;
+    const oldPrep = this.bottlePrep();
+    const warn = this.bottlePrepWarning();
     const atIso = new Date().toISOString();
     const t = this.toTimeStr(new Date(atIso));
+
+    const isExpiryReplace =
+      !!oldPrep &&
+      !!warn &&
+      (warn.type === 'expired' || warn.type === 'expiring-soon');
+
+    if (oldPrep && n === oldPrep.volumeMl && !isExpiryReplace) {
+      return;
+    }
+
+    const isEditVolumeOnly =
+      !!oldPrep && n !== oldPrep.volumeMl && !isExpiryReplace;
+
+    if (isEditVolumeOnly) {
+      this.bottlePrepEditPending.set({
+        newVolume: n,
+        time: t,
+        atIso,
+        oldVolume: oldPrep.volumeMl,
+      });
+      this.bottlePrepEditReasonDraft.set('');
+      this.bottlePrepEditConfirmOpen.set(true);
+      return;
+    }
+
+    this.commitBottlePrepSheetSave(n, t, atIso, oldPrep, warn);
+  }
+
+  /** Lưu sheet + log pha mới / hết hạn (không qua dialog sửa ml). */
+  private commitBottlePrepSheetSave(
+    n: number,
+    t: string,
+    atIso: string,
+    oldPrep: BottlePrepFromSheet | null,
+    warn: { type: string; minutes: number } | null
+  ): void {
     this.bottlePrepSaving.set(true);
     this.feedingLogService
       .setBottlePrepOnSheet({
@@ -607,13 +658,101 @@ export class FeedingDailyComponent implements AfterViewInit {
         next: () => {
           this.bottlePrepEditing.set(false);
           this.bottlePrepDraft.set('');
+
+          let expiryLog$ = of(true);
+          if (
+            oldPrep &&
+            warn &&
+            (warn.type === 'expired' || warn.type === 'expiring-soon')
+          ) {
+            if (warn.type === 'expired') {
+              const prepTime = new Date(oldPrep.at);
+              const expiryTime = new Date(prepTime.getTime() + 60 * 60 * 1000);
+              const overdueMin = Math.max(
+                1,
+                Math.round((this.now().getTime() - expiryTime.getTime()) / 60000)
+              );
+              expiryLog$ = this.activityLogService.logBottlePrepClearedForExpiry(
+                oldPrep.volumeMl,
+                overdueMin,
+                'expired'
+              );
+            } else {
+              const remain = Math.max(0, warn.minutes);
+              expiryLog$ = this.activityLogService.logBottlePrepClearedForExpiry(
+                oldPrep.volumeMl,
+                remain,
+                'expiring'
+              );
+            }
+          }
+
+          expiryLog$
+            .pipe(
+              concatMap(() =>
+                this.activityLogService.addLog({
+                  user: this.user(),
+                  eventType: ACTIVITY_EVENT.BOTTLE_PREP_ADDED,
+                  content: formatLogContent(ACTIVITY_EVENT.BOTTLE_PREP_ADDED, {
+                    volume: n,
+                    time: t,
+                  }),
+                })
+              )
+            )
+            .subscribe();
+
+          setTimeout(() => this.loadBottlePrepFromSheet(), 450);
+        },
+        error: (err) =>
+          console.warn('Đồng bộ thông tin pha sữa lên Google Sheet thất bại', err),
+      });
+  }
+
+  closeBottlePrepEditConfirm(): void {
+    this.bottlePrepEditConfirmOpen.set(false);
+    this.bottlePrepEditReasonDraft.set('');
+    this.bottlePrepEditPending.set(null);
+  }
+
+  updateBottlePrepEditReason(v: string): void {
+    this.bottlePrepEditReasonDraft.set(v);
+  }
+
+  confirmBottlePrepEditSave(): void {
+    const p = this.bottlePrepEditPending();
+    if (!p) {
+      this.closeBottlePrepEditConfirm();
+      return;
+    }
+    const reason = this.bottlePrepEditReasonDraft().trim();
+    // Đóng dialog ngay — không giữ overlay chặn UI trong lúc API + log chạy.
+    this.bottlePrepEditConfirmOpen.set(false);
+    this.bottlePrepEditReasonDraft.set('');
+    this.bottlePrepEditPending.set(null);
+
+    this.bottlePrepSaving.set(true);
+    this.feedingLogService
+      .setBottlePrepOnSheet({
+        user: this.user(),
+        volumeMl: p.newVolume,
+        time: p.time,
+        atIso: p.atIso,
+      })
+      .pipe(finalize(() => this.bottlePrepSaving.set(false)))
+      .subscribe({
+        next: () => {
+          this.bottlePrepEditing.set(false);
+          this.bottlePrepDraft.set('');
           this.activityLogService
             .addLog({
               user: this.user(),
-              eventType: ACTIVITY_EVENT.BOTTLE_PREP_ADDED,
-              content: formatLogContent(ACTIVITY_EVENT.BOTTLE_PREP_ADDED, {
-                volume: n,
-                time: t,
+              eventType: ACTIVITY_EVENT.BOTTLE_PREP_UPDATED,
+              content: formatLogContent(ACTIVITY_EVENT.BOTTLE_PREP_UPDATED, {
+                oldVolume: p.oldVolume,
+                newVolume: p.newVolume,
+                time: p.time,
+                reason: reason || undefined,
               }),
             })
             .subscribe();
@@ -624,13 +763,41 @@ export class FeedingDailyComponent implements AfterViewInit {
       });
   }
 
-  clearBottlePrep(): void {
+  openBottlePrepClearConfirm(): void {
+    if (!this.bottlePrep()) return;
+    this.bottlePrepClearReasonDraft.set('');
+    this.bottlePrepClearConfirmOpen.set(true);
+  }
+
+  closeBottlePrepClearConfirm(): void {
+    this.bottlePrepClearConfirmOpen.set(false);
+    this.bottlePrepClearReasonDraft.set('');
+  }
+
+  updateBottlePrepClearReason(v: string): void {
+    this.bottlePrepClearReasonDraft.set(v);
+  }
+
+  confirmClearBottlePrep(): void {
+    const prep = this.bottlePrep();
+    if (!prep) {
+      this.closeBottlePrepClearConfirm();
+      return;
+    }
+    const ml = prep.volumeMl;
+    const reason = this.bottlePrepClearReasonDraft().trim();
+    this.closeBottlePrepClearConfirm();
     this.bottlePrep.set(null);
     this.bottlePrepChange.emit(null);
     this.bottlePrepEditing.set(false);
     this.bottlePrepDraft.set('');
     this.feedingLogService.clearBottlePrepOnSheet().subscribe({
-      next: () => setTimeout(() => this.loadBottlePrepFromSheet(), 450),
+      next: () => {
+        this.activityLogService
+          .logBottlePrepManualClear(this.user(), ml, reason || undefined)
+          .subscribe();
+        setTimeout(() => this.loadBottlePrepFromSheet(), 450);
+      },
       error: () => setTimeout(() => this.loadBottlePrepFromSheet(), 450),
     });
   }

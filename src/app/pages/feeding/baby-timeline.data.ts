@@ -1,11 +1,13 @@
 /**
  * Dòng thời gian phát triển của trẻ — tổng hợp từ các nguồn y khoa:
  *  - AAP HealthyChildren.org (developmental milestones)
- *  - CDC "Learn the Signs. Act Early." milestones
+ *  - CDC "Learn the Signs. Act Early." milestones (gồm mốc ~30 tháng và ~36 tháng)
  *  - WHO Child Growth Standards
  *  - The Wonder Weeks (Dr. Hetty van de Rijt & Dr. Frans Plooij)
  *  - La Leche League / AAP (stomach size by age)
  *  - Vinmec Vietnam (bài tuần tuổi)
+ *
+ * Khoảng ngày tuổi (ageFromDays/ageToDays) là xấp xỉ; bé sinh non nên dùng tuổi hiệu chỉnh theo BS.
  */
 
 export type MoodType =
@@ -549,14 +551,14 @@ export const BABY_TIMELINE: TimelineMilestone[] = [
     periodLabel: 'Tháng 24',
     tagline: 'Leap 10 + Câu đơn',
     ageFromDays: 654,
-    ageToDays: 900,
+    ageToDays: 730,
     heroEmoji: '🌟',
     stomach: { compareTo: 'bưởi lớn', volumeMl: '~500ml', emoji: '🍈', scale: 1.45 },
     mood: 'milestone',
     moodLabel: 'Cột mốc • 2 tuổi',
     funFacts: [
-      'Leap 10 "World of Systems" (tuần 75) — leap cuối của The Wonder Weeks.',
-      'Vốn từ 50–100+, nói câu 2–3 từ.',
+      'Leap 10 "World of Systems" (tuần 75) — leap cuối trong The Wonder Weeks.',
+      'Vốn từ 50–100+, nói câu 2–3 từ; CDC 24 tháng: chạy, lên cầu thang có đỡ, xếp cọc 6 khối.',
       'Chạy, nhảy 2 chân, đạp xe 3 bánh (một số bé).',
       'Giai đoạn "terrible twos" — tantrum là cách bé xử lý cảm xúc.',
     ],
@@ -567,6 +569,52 @@ export const BABY_TIMELINE: TimelineMilestone[] = [
       'Có thể bắt đầu tập bô — không ép nếu bé chưa sẵn sàng.',
     ],
     accent: 'plum',
+  },
+  {
+    id: 'm30',
+    periodLabel: 'Tháng 30',
+    tagline: 'Ngôn hội thoại + giả vờ',
+    ageFromDays: 731,
+    ageToDays: 912,
+    heroEmoji: '🧸',
+    stomach: { compareTo: 'cốc nhỏ / bát', volumeMl: '180–240ml sữa hoặc bữa', emoji: '🥛', scale: 1.35 },
+    mood: 'happy',
+    moodLabel: 'Happy • 2.5 tuổi',
+    funFacts: [
+      'CDC ~30 tháng: dùng cụm 2–3 từ; chơi giả vừa đơn giản; làm theo chỉ dẫn 2 bước; xếp ~6 khối.',
+      'Đi lên cầu thang có người đỡ từng bậc; nhảy chỗ tại chỗ.',
+      'Bắt đầu hiểu “của em / của bạn”, thích lặp lại câu chuyện quen.',
+    ],
+    skills: ['Cụm 2–3 từ', 'Giả vờ ăn/uống', 'Chỉ dẫn 2 bước'],
+    parentNotes: [
+      'Đặt giới hạn rõ, lặp lại ngắn gọn; khen hành vi mong muốn cụ thể.',
+      'Tiếp tục hạn chế màn hình; đọc sách, hát, chơi ngoài trời.',
+      'Khám định kỳ + tiêm nhắc theo lịch địa phương.',
+    ],
+    accent: 'sky',
+  },
+  {
+    id: 'm36',
+    periodLabel: 'Tháng 36',
+    tagline: '3 tuổi — giao tiếp 2 chiều',
+    ageFromDays: 913,
+    ageToDays: 1200,
+    heroEmoji: '🎈',
+    stomach: { compareTo: 'bữa + sữa', volumeMl: '~200–300ml sữa/ngày (tùy bé)', emoji: '🍼', scale: 1.4 },
+    mood: 'milestone',
+    moodLabel: 'Cột mốc • 3 tuổi',
+    funFacts: [
+      'CDC ~36 tháng: trò chuyện 2–3 lượt đổi thoại; nói tên khi được hỏi; làm dịu trong ~10 phút ở chỗ quen.',
+      'Đi cầu thang xen kẽ chân, đạp xe 3 bánh tốt hơn, vẽ nét xiên.',
+      'Chơi gần bạn; chia sẻ vẫn đang học — bình thường ở lứa này.',
+    ],
+    skills: ['Hội thoại ngắn', 'Tên bản thân', 'Vẽ / xếp hình'],
+    parentNotes: [
+      'Chuẩn bị môi trường mẫu giáo: giao tiếp xã hội, vệ sinh, ngủ trưa.',
+      'Kiểm tra thị lực/nha khoa theo khuyến cáo địa phương.',
+      'Duy trì ngủ đủ; màn hình trước ngủ làm khó vào giấc.',
+    ],
+    accent: 'mint',
   },
 ];
 
@@ -911,6 +959,38 @@ export const BABY_TIMELINE_CARE_GUIDES: Record<string, TimelineCareGuide> = {
     watchFor: [
       'Không dùng cụm 2 từ, không bắt chước hành động/từ, không chạy hoặc đi không vững.',
       'Mất kỹ năng ngôn ngữ/xã hội, ít giao tiếp mắt hoặc không chơi giả vờ.',
+    ],
+  },
+  m30: {
+    todos: [
+      'Luyện chỉ dẫn 2 bước (“lấy giày rồi đưa mẹ”), khen cụ thể khi bé làm đúng.',
+      'Khuyến khích chơi giả đơn giản (búp bê, xe, nấu ăn) và mở rộng từ vựng khi chơi.',
+      'An toàn cầu thang/kệ: khóa cửa, neo tủ, đồ nhỏ và pin cất xa tầm tay.',
+    ],
+    notToDo: [
+      'Không trông bé một mình gần bể bơi/hồ nước dù nông — nguy cơ đuối nước rất nhanh.',
+      'Không dùng màn hình thay cho tương tác khi bé cáu; giúp bé đặt tên cảm xúc trước.',
+      'Không ép chia sẻ đồ chơi; kỹ năng này phát triển dần tới 3–4 tuổi.',
+    ],
+    watchFor: [
+      'Không làm theo chỉ 2 bước đơn giản, không chơi giả vờ, không cụm 2–3 từ.',
+      'Không xếp được vài khối, không chạy/chỉ dùng một tay kéo lê chân rõ rệt.',
+    ],
+  },
+  m36: {
+    todos: [
+      'Khám 3 tuổi theo lịch; nhắc tiêm/nha khoa/thị lực theo hướng dẫn địa phương.',
+      'Tập hội thoại 2–3 lượt: hỏi → chờ bé → đáp lại → hỏi tiếp.',
+      'Chuẩn bị giấc ngủ ổn định trước khi vào môi trường nhóm đông trẻ.',
+    ],
+    notToDo: [
+      'Không bỏ qua dấu hiệu nghe/khó hiểu lời — cần sàng lọc thính lực/ngôn ngữ nếu lo ngại.',
+      'Không để bé không có người lớn khi ở gần đường, bãi đỗ xe, cửa ra vào.',
+      'Không dùng điện thoại làm “dụng cụ dỗ” cho mọi tantrum.',
+    ],
+    watchFor: [
+      'Không trò chuyện qua lại ngắn, không nói tên khi được hỏi, không chơi gần bạn.',
+      'Hồi quy rõ kỹ năng đã có, mất ngôn ngữ/cử chỉ, giao tiếp mắt giảm mạnh.',
     ],
   },
 };

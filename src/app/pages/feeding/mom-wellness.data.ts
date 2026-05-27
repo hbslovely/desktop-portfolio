@@ -1,6 +1,9 @@
 /**
  * Thẻ tham khảo nhanh cho mẹ — bổ sung nội dung động (tips tuần, món ăn).
  * Mang tính giáo dục sức khỏe, không thay cho bác sĩ.
+ *
+ * Tham chiếu tổng quát: AAP/HealthyChildren (cho con bú, an toàn ngủ, sàng lọc),
+ * WHO (dinh dưỡng cho bà mẹ cho con bú), CDC (sức khỏe tinh thần sau sinh).
  */
 
 export interface MomWellnessCard {
@@ -66,5 +69,47 @@ export const MOM_WELLNESS_CARDS: MomWellnessCard[] = [
     title: 'Tránh thai sau sinh',
     body:
       'Rụng trứng có thể xảy ra trước khi có kinh lại — trao đổi với BS về thuốc tương thích cho con bú, màng ngăn, hoặc vòng nội tiết khi phù hợp.',
+  },
+  {
+    id: 'caffeine',
+    icon: 'pi pi-coffee',
+    title: 'Caffeine khi cho con bú',
+    body:
+      'Nhiều hướng dẫn (gồm AAP) cho phép caffeine vừa phải khoảng ~200–300 mg/ngày; quan sát bé có khó ngủ/quấy hơn bình thường không. Tránh năng lượng tổng hợp, trà lá không rõ nguồn.',
+  },
+  {
+    id: 'iron-folate',
+    icon: 'pi pi-tablet',
+    title: 'Sắt / acid folic sau sinh',
+    body:
+      'Nếu bác sĩ kê tiếp sắt/acid folic sau đẻ — uống đúng liều, xa giờ sắt với canxi/sữa 2–4 giờ để hấp thu tốt hơn. Ăn thịt nạc, cá, đậu, rau xanh đậm bổ sung thực phẩm.',
+  },
+  {
+    id: 'walk-recovery',
+    icon: 'pi pi-compass',
+    title: 'Vận động nhẹ sau khi BS cho phép',
+    body:
+      'Đi bộ ngắn trong nhà rồi tăng dần giúp tuần hoàn và tâm trạng. Sau mổ: chỉ tăng gắng sức theo lịch tái khám; đau bất thường, sốt, ra máu nhiều — liên hệ y tế.',
+  },
+  {
+    id: 'pump-hygiene',
+    icon: 'pi pi-sync',
+    title: 'Vệ sinh máy hút / bình sữa',
+    body:
+      'Rửa tay trước khi hút; phụ kiện tiếp xúc sữa rửa nóng hoặc theo hướng dẫn nhà sản xuất; sữa để phòng tủ lạnh đúng thời gian an toàn địa phương khuyến cáo.',
+  },
+  {
+    id: 'dental-mom',
+    icon: 'pi pi-sun',
+    title: 'Răng miệng mẹ',
+    body:
+      'Viêm nướu / sâu răng tăng nguy cơ vi khuẩn truyền sang bé. Đánh răng fluoride 2 lần/ngày, khám nha định kỳ; tránh dùng chung thìa khi mẹ đang viêm họng.',
+  },
+  {
+    id: 'screening',
+    icon: 'pi pi-heart',
+    title: 'Không bỏ qua tái khám',
+    body:
+      'Khám hậu sản và các mốc sàng lọc theo lịch địa phương (huyết áp, tiểu đường thai kỳ, tuyến giáp nếu có chỉ định). Kể cho BS về đau ngực, khó thở, nhức đầu dữ dội.',
   },
 ];

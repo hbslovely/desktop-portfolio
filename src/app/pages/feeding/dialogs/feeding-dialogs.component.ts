@@ -176,6 +176,10 @@ export class FeedingDialogsComponent {
   private lastHistoryInfiniteScrollAt = 0;
 
   remainingInput = signal('');
+  /** Đã dùng tính từ sữa đã pha; khi lưu cữ bú thành công sẽ ghi log “Hệ thống đã xóa …”. */
+  bottlePrepClearPendingLog = signal(false);
+  pendingClearedPrepVolumeMl = signal<number | null>(null);
+
   calcResult = computed<number | null>(() => {
     const prep = this.bottlePrep();
     if (!prep) return null;
@@ -265,6 +269,8 @@ export class FeedingDialogsComponent {
 
   openLogDialog(resetTime = true): void {
     if (resetTime) {
+      this.bottlePrepClearPendingLog.set(false);
+      this.pendingClearedPrepVolumeMl.set(null);
       const nowD = new Date();
       this.logDraft.set({
         date: this.toDateStr(nowD),
@@ -470,6 +476,11 @@ export class FeedingDialogsComponent {
   applyCalcVolume(): void {
     const r = this.calcResult();
     if (r === null) return;
+    const prep = this.bottlePrep();
+    if (prep && prep.volumeMl > 0) {
+      this.bottlePrepClearPendingLog.set(true);
+      this.pendingClearedPrepVolumeMl.set(prep.volumeMl);
+    }
     this.logDraft.update((d) => ({ ...d, volume: r }));
     this.bottlePrepClearRequested.emit();
     this.remainingInput.set('');
@@ -506,6 +517,14 @@ export class FeedingDialogsComponent {
             volume: log.volume,
           })
           .subscribe();
+        if (this.bottlePrepClearPendingLog()) {
+          const prepVol = this.pendingClearedPrepVolumeMl();
+          if (prepVol != null && prepVol > 0) {
+            this.activityLogService.logBottlePrepClearedAfterFeed(prepVol).subscribe();
+          }
+          this.bottlePrepClearPendingLog.set(false);
+          this.pendingClearedPrepVolumeMl.set(null);
+        }
         const nowT = this.toTimeStr(new Date());
         this.logDraft.set({
           date: d.date,
