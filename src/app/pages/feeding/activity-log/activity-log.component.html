@@ -26,9 +26,11 @@
     (click)="$event.stopPropagation()"
   >
     <header class="activity-dialog__header">
-      <div class="activity-dialog__title">
-        <i class="pi pi-history"></i>
-        <h2>Lịch sử hoạt động</h2>
+      <div class="activity-dialog__header-main">
+        <div class="activity-dialog__title-mark" aria-hidden="true">
+          <i class="pi pi-history"></i>
+        </div>
+        <h2 class="activity-dialog__heading">Lịch sử hoạt động</h2>
       </div>
       <button
         type="button"
@@ -40,11 +42,33 @@
       </button>
     </header>
 
-    <!-- Filter & Sort Controls -->
     <div class="activity-dialog__toolbar">
-      <div class="activity-toolbar__filters">
-        <label class="activity-filter">
-          <i class="pi pi-filter"></i>
+      <button
+        type="button"
+        class="activity-toolbar__reload"
+        (click)="refreshLogs()"
+        [disabled]="loading()"
+        title="Làm mới"
+        aria-label="Làm mới danh sách"
+      >
+        <i class="pi" [ngClass]="loading() ? 'pi-spin pi-spinner' : 'pi-refresh'"></i>
+      </button>
+
+      <label class="activity-toolbar__search">
+        <i class="pi pi-search" aria-hidden="true"></i>
+        <input
+          type="search"
+          name="activityLogSearch"
+          autocomplete="off"
+          placeholder="Tìm theo người, nội dung, loại…"
+          [ngModel]="textSearchQuery()"
+          (ngModelChange)="onTextSearchChange($event)"
+        />
+      </label>
+
+      <div class="activity-toolbar__filters" role="group" aria-label="Lọc và sắp xếp">
+        <label class="activity-field__control" aria-label="Danh mục">
+          <i class="pi pi-filter" aria-hidden="true"></i>
           <select [(ngModel)]="filterCategory" (ngModelChange)="onFilterChange()">
             <option value="all">Tất cả</option>
             <option value="feeding">Cữ bú</option>
@@ -55,16 +79,19 @@
             <option value="settings">Cài đặt</option>
           </select>
         </label>
-        <label class="activity-sort">
-          <i class="pi pi-sort-alt"></i>
+        <label class="activity-field__control" aria-label="Thứ tự">
+          <i class="pi pi-sort-alt" aria-hidden="true"></i>
           <select [(ngModel)]="sortOrder" (ngModelChange)="onSortChange()">
             <option value="desc">Mới nhất</option>
             <option value="asc">Cũ nhất</option>
           </select>
         </label>
       </div>
-      <span class="activity-count" *ngIf="filteredLogs().length > 0">
-        {{ displayedLogs().length }} / {{ filteredLogs().length }}
+
+      <span class="activity-count-pill" *ngIf="filteredLogs().length > 0">
+        <span class="activity-count-pill__num">{{ displayedLogs().length }}</span>
+        <span class="activity-count-pill__sep">/</span>
+        <span class="activity-count-pill__total">{{ filteredLogs().length }}</span>
       </span>
     </div>
 
@@ -76,18 +103,19 @@
 
       <div class="activity-empty" *ngIf="!loading() && filteredLogs().length === 0">
         <i class="pi pi-inbox"></i>
-        <p *ngIf="filterCategory === 'all'">Chưa có hoạt động nào được ghi nhận</p>
-        <p *ngIf="filterCategory !== 'all'">Không có hoạt động nào trong danh mục này</p>
+        <p *ngIf="hasTextFilter()">Không có mục nào khớp tìm kiếm.</p>
+        <p *ngIf="!hasTextFilter() && filterCategory === 'all'">Chưa có hoạt động nào được ghi nhận</p>
+        <p *ngIf="!hasTextFilter() && filterCategory !== 'all'">Không có hoạt động nào trong danh mục này</p>
       </div>
 
       <ul class="activity-list" *ngIf="!loading() && displayedLogs().length > 0">
         <li
           *ngFor="let row of parsedDisplayRows(); trackBy: trackByParsedRow"
           class="activity-item"
-          [class.unread]="isUnread(row.log.id)"
+          [class.activity-item--unread]="isUnread(row.log.id)"
           [attr.data-color]="getEventColor(row.log.eventType)"
         >
-          <div class="activity-item__unread-indicator" *ngIf="isUnread(row.log.id)"></div>
+          <div class="activity-item__rail" aria-hidden="true"></div>
           <div class="activity-item__icon">
             <i class="pi" [ngClass]="getEventIcon(row.log.eventType)"></i>
           </div>
@@ -105,15 +133,16 @@
               </button>
             </div>
             <p class="activity-item__content">
-              <strong class="activity-item__author">{{ row.log.user }}</strong>
-              <span> đã </span>
+              <span class="activity-item__actor">
+                <strong class="activity-item__author">{{ row.log.user }}</strong>
+                <span class="activity-item__verb">đã</span>
+              </span>
               <span class="activity-item__html" [innerHTML]="row.contentHtml"></span>
             </p>
           </div>
         </li>
       </ul>
 
-      <!-- Load More Button -->
       <div class="activity-load-more" *ngIf="hasMore()">
         <button type="button" class="load-more-btn" (click)="loadMore()">
           <i class="pi pi-angle-down"></i>
@@ -121,19 +150,5 @@
         </button>
       </div>
     </div>
-
-    <footer class="activity-dialog__footer">
-      <span class="activity-footer__info">
-      </span>
-      <button
-        type="button"
-        class="activity-footer__refresh"
-        (click)="refreshLogs()"
-        [disabled]="loading()"
-      >
-        <i class="pi" [ngClass]="loading() ? 'pi-spin pi-spinner' : 'pi-refresh'"></i>
-        Làm mới
-      </button>
-    </footer>
   </div>
 </div>

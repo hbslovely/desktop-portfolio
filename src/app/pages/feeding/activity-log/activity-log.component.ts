@@ -61,6 +61,8 @@ export class ActivityLogComponent implements OnInit, OnDestroy {
   /** Filter category */
   filterCategory: FilterCategory = 'all';
   private filterCategorySignal = signal<FilterCategory>('all');
+  /** Tìm kiếm tự do (user, nội dung, loại sự kiện). */
+  textSearchQuery = signal('');
   /** Dialog activity: hiển thị giờ chính xác cho toàn bộ list. */
   private activityShowExactTime = signal(false);
 
@@ -86,13 +88,29 @@ export class ActivityLogComponent implements OnInit, OnDestroy {
     });
   });
 
-  /** Filtered logs */
+  /** Filtered logs (danh mục + text). */
   filteredLogs = computed(() => {
     const logs = this.allLogs();
     const category = this.filterCategorySignal();
-    if (category === 'all') return logs;
-    const prefixes = this.categoryPrefixes[category];
-    return logs.filter(log => prefixes.some(p => log.eventType.startsWith(p)));
+    let list =
+      category === 'all'
+        ? logs
+        : logs.filter((log) =>
+            this.categoryPrefixes[category].some((p) =>
+              log.eventType.startsWith(p)
+            )
+          );
+
+    const q = this.normalizeSearchText(this.textSearchQuery());
+    if (!q) return list;
+
+    return list.filter((log) => {
+      const label = getEventTypeLabel(log.eventType as any);
+      const haystack = this.normalizeSearchText(
+        [log.user, log.content, String(log.eventType), label].join(' ')
+      );
+      return haystack.includes(q);
+    });
   });
 
   /** Displayed logs (limited by displayCount) */
@@ -122,6 +140,9 @@ export class ActivityLogComponent implements OnInit, OnDestroy {
   remainingCount = computed(() => {
     return Math.max(0, this.filteredLogs().length - this.displayCount());
   });
+
+  /** Có chuỗi tìm kiếm (sau trim) — dùng cho empty state. */
+  hasTextFilter = computed(() => this.textSearchQuery().trim().length > 0);
 
   private lastCheckHasNew = false;
 
@@ -156,6 +177,7 @@ export class ActivityLogComponent implements OnInit, OnDestroy {
     this.displayCount.set(this.PAGE_SIZE);
     this.filterCategory = 'all';
     this.filterCategorySignal.set('all');
+    this.textSearchQuery.set('');
     this.activityShowExactTime.set(false);
     this.refreshLogs();
     this.activityLogService.markAsRead();
@@ -196,6 +218,24 @@ export class ActivityLogComponent implements OnInit, OnDestroy {
   onFilterChange(): void {
     this.filterCategorySignal.set(this.filterCategory);
     this.displayCount.set(this.PAGE_SIZE);
+  }
+
+  onTextSearchChange(value: string): void {
+    this.textSearchQuery.set(value);
+    this.displayCount.set(this.PAGE_SIZE);
+  }
+
+  /** So khớp tìm kiếm: bỏ dấu + lowercase để dễ gõ tiếng Việt. */
+  private normalizeSearchText(s: string): string {
+    const t = String(s || '')
+      .trim()
+      .toLowerCase();
+    if (!t) return '';
+    try {
+      return t.normalize('NFD').replace(/\p{M}/gu, '');
+    } catch {
+      return t;
+    }
   }
 
   trackByParsedRow(_: number, row: { log: ActivityLogRow }): string {
