@@ -865,27 +865,23 @@ export class FeedingDailyComponent implements AfterViewInit {
     this.bottlePrepClearReasonDraft.set(v);
   }
 
-  appendBottlePrepClearReasonTag(tag: string): void {
-    this.bottlePrepClearReasonDraft.update((cur) =>
-      this.mergeReasonSnippet(cur, tag)
-    );
+  /** Gợi ý nhanh: chỉ 1 lý do; bấm lại cùng tag thì xóa; tag khác thì thay hết nội dung. */
+  toggleBottlePrepClearReasonQuickTag(tag: string): void {
+    const cur = this.bottlePrepClearReasonDraft().trim();
+    if (cur === tag) {
+      this.bottlePrepClearReasonDraft.set('');
+    } else {
+      this.bottlePrepClearReasonDraft.set(tag);
+    }
   }
 
-  appendBottlePrepEditReasonTag(tag: string): void {
-    this.bottlePrepEditReasonDraft.update((cur) =>
-      this.mergeReasonSnippet(cur, tag)
-    );
-  }
-
-  /** Nối thêm cụm lý do; tránh trùng nếu đã có cùng cụm. */
-  private mergeReasonSnippet(current: string, phrase: string): string {
-    const t = phrase.trim();
-    if (!t) return current;
-    const c = current.trim();
-    if (!c) return t;
-    const parts = c.split(/[;,]/).map((s) => s.trim().toLowerCase());
-    if (parts.includes(t.toLowerCase())) return c;
-    return `${c}; ${t}`;
+  toggleBottlePrepEditReasonQuickTag(tag: string): void {
+    const cur = this.bottlePrepEditReasonDraft().trim();
+    if (cur === tag) {
+      this.bottlePrepEditReasonDraft.set('');
+    } else {
+      this.bottlePrepEditReasonDraft.set(tag);
+    }
   }
 
   confirmClearBottlePrep(): void {
