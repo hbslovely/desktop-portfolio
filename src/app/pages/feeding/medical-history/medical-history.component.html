@@ -15,186 +15,30 @@
     {{ successMsg() }}
   </div>
 
-  <!-- Tìm kiếm free-text trên tiêu đề, chi tiết, nơi khám, loại… -->
-  <div class="mh-text-search card" *ngIf="!loading() && myEntries().length > 0">
-    <label class="mh-text-search__label" for="mhFreeTextSearch">
-      <i class="pi pi-search" aria-hidden="true"></i>
-      Tìm trong tiền sử
-    </label>
-    <div class="mh-text-search__row">
-      <input
-        id="mhFreeTextSearch"
-        type="search"
-        class="mh-text-search__input"
-        placeholder="Tìm trong tiêu đề, chi tiết, nơi khám…"
-        [ngModel]="textSearchQuery()"
-        (ngModelChange)="textSearchQuery.set($event)"
-        name="mhFreeTextSearch"
-        autocomplete="off"
-        enterkeyhint="search"
-      />
-      <button
-        type="button"
-        class="mh-text-search__clear btn ghost sm"
-        *ngIf="textSearchQuery().trim()"
-        (click)="clearTextSearch()"
-        aria-label="Xoá ô tìm"
-        title="Xoá ô tìm"
-      >
-        <i class="pi pi-times" aria-hidden="true"></i>
-      </button>
-    </div>
-  </div>
-
-  <!-- V2: bộ lọc dạng panel (search + sort) -->
-  <div
-    class="mh-filter"
-    [class.mh-filter--open]="filterPanelOpen()"
-  >
-    <button
-      type="button"
-      class="mh-filter-trigger"
-      (click)="toggleFilterPanel(); $event.stopPropagation()"
-      [attr.aria-expanded]="filterPanelOpen()"
-      aria-controls="medical-filter-panel"
-      id="medical-filter-trigger"
-    >
-      <i class="pi pi-sliders-h" aria-hidden="true"></i>
-      <span class="mh-filter-trigger__text">
-        <span class="mh-filter-trigger__label">{{ kindFilterSummary() }}</span>
-        <span class="mh-filter-trigger__meta">
-          <span class="mh-filter-trigger__count">{{ visibleEntries().length }}</span>
-          <span class="mh-filter-trigger__hint" *ngIf="timelineSort() === 'oldest'">
-            · cũ → mới
-          </span>
-        </span>
-      </span>
-      <i
-        class="pi mh-filter-trigger__chev"
-        [class.pi-chevron-up]="filterPanelOpen()"
-        [class.pi-chevron-down]="!filterPanelOpen()"
-        aria-hidden="true"
-      ></i>
-    </button>
-
-    <div
-      class="mh-filter-panel"
-      id="medical-filter-panel"
-      role="region"
-      aria-labelledby="medical-filter-trigger"
-      *ngIf="filterPanelOpen()"
-      (click)="$event.stopPropagation()"
-    >
-      <div class="mh-filter-panel__headrow">
-        <div class="mh-filter-panel__title">Lọc &amp; sắp xếp</div>
-        <button
-          type="button"
-          class="mh-filter-panel__reset btn ghost sm"
-          (click)="resetFilterPanel()"
-          title="Xóa lọc loại, ô tìm chữ, đặt thời gian và thứ tự danh sách về mặc định"
-        >
-          <i class="pi pi-replay" aria-hidden="true"></i>
-          Đặt lại
-        </button>
-      </div>
-
-      <div class="mh-filter-panel__field">
-        <span class="mh-filter-panel__label">Thời gian hiển thị</span>
-        <div class="mh-filter-panel__seg" role="group" aria-label="Sắp xếp timeline">
-          <button
-            type="button"
-            [class.active]="timelineSort() === 'newest'"
-            (click)="timelineSort.set('newest')"
-          >
-            Mới nhất trước
-          </button>
-          <button
-            type="button"
-            [class.active]="timelineSort() === 'oldest'"
-            (click)="timelineSort.set('oldest')"
-          >
-            Cũ nhất trước
-          </button>
-        </div>
-      </div>
-
-      <div class="mh-filter-panel__field">
-        <label class="mh-filter-panel__label" for="mhFilterKindSearch"
-          >Tìm loại (gõ o hoặc ô đều khớp)</label
-        >
-        <input
-          id="mhFilterKindSearch"
-          type="search"
-          class="mh-filter-panel__search"
-          placeholder="VD: tiem, xet nghiem, kham, o / ô…"
-          [ngModel]="filterPanelKindSearch()"
-          (ngModelChange)="filterPanelKindSearch.set($event)"
-          name="mhFilterKindSearch"
-          autocomplete="off"
-        />
-      </div>
-
-      <div class="mh-filter-panel__field">
-        <span class="mh-filter-panel__label">Sắp danh sách loại</span>
-        <div class="mh-filter-panel__seg" role="group" aria-label="Sắp loại">
-          <button
-            type="button"
-            [class.active]="kindListSort() === 'count'"
-            (click)="kindListSort.set('count')"
-          >
-            Nhiều sự kiện trước
-          </button>
-          <button
-            type="button"
-            [class.active]="kindListSort() === 'alpha'"
-            (click)="kindListSort.set('alpha')"
-          >
-            A → Z
-          </button>
-        </div>
-      </div>
-
-      <div
-        class="mh-filter-panel__kinds"
-        role="listbox"
-        aria-label="Chọn loại sự kiện"
-        aria-multiselectable="true"
-      >
-        <button
-          type="button"
-          class="kind-chip mh-filter-kind"
-          [class.active]="kindFilterKinds().length === 0"
-          (click)="clearKindFilters()"
-          role="option"
-          [attr.aria-selected]="kindFilterKinds().length === 0"
-        >
-          Tất cả
-          <span class="kind-chip__count">{{ myEntries().length }}</span>
-        </button>
-        <button
-          type="button"
-          class="kind-chip mh-filter-kind"
-          *ngFor="let km of kindsInFilterPanel()"
-          [class.active]="kindFilterKindSet().has(km.id)"
-          [style.--chip-color]="km.color"
-          (click)="toggleKindFilter(km.id)"
-          [attr.title]="km.label"
-          role="option"
-          [attr.aria-selected]="kindFilterKindSet().has(km.id)"
-        >
-          <i [class]="km.icon" aria-hidden="true"></i>
-          <span class="mh-filter-kind__name">{{ km.shortLabel }}</span>
-          <span class="kind-chip__count">{{ kindCounts()[km.id] }}</span>
-        </button>
-        <p
-          class="mh-filter-panel__empty"
-          *ngIf="filterPanelKindSearch().trim() && kindsInFilterPanel().length === 0"
-        >
-          Không thấy loại nào — thử từ ngắn hơn (o/ô, a/ă tương đương).
-        </p>
-      </div>
-    </div>
-  </div>
+  <app-medical-history-filter
+    [loading]="loading()"
+    [myEntriesCount]="myEntries().length"
+    [visibleCount]="visibleEntries().length"
+    [textSearchQuery]="textSearchQuery()"
+    [filterPanelOpen]="filterPanelOpen()"
+    [filterPanelKindSearch]="filterPanelKindSearch()"
+    [timelineSort]="timelineSort()"
+    [kindListSort]="kindListSort()"
+    [kindFilterKinds]="kindFilterKinds()"
+    [kindFilterSummary]="kindFilterSummary()"
+    [kindsInFilterPanel]="kindsInFilterPanel()"
+    [kindCounts]="kindCounts()"
+    [kindFilterKindSet]="kindFilterKindSet()"
+    (textSearchQueryChange)="textSearchQuery.set($event)"
+    (filterPanelKindSearchChange)="filterPanelKindSearch.set($event)"
+    (timelineSortChange)="timelineSort.set($event)"
+    (kindListSortChange)="kindListSort.set($event)"
+    (toggleFilterPanel)="toggleFilterPanel()"
+    (resetFilterPanel)="resetFilterPanel()"
+    (clearTextSearch)="clearTextSearch()"
+    (clearKindFilters)="clearKindFilters()"
+    (toggleKindFilter)="toggleKindFilter($event)"
+  />
 
   <section class="card medical-loading" *ngIf="loading()">
     <i class="pi pi-spin pi-spinner"></i>
@@ -228,91 +72,20 @@
     </p>
   </section>
 
-  <!-- Nhật ký y tế — layout mới -->
-  <div class="mh-timeline" *ngIf="!loading() && visibleEntries().length > 0">
-    <section class="mh-month" *ngFor="let g of timelineGroups()">
-      <header class="mh-month__head">
-        <span class="mh-month__rail" aria-hidden="true"></span>
-        <div class="mh-month__label">
-          <h3 class="mh-month__title">{{ g.monthLabel }}</h3>
-          <span class="mh-month__count">{{ g.entries.length }} sự kiện</span>
-        </div>
-      </header>
-      <ul class="mh-month__entries">
-        <li class="mh-card" *ngFor="let e of g.entries">
-          <div class="mh-card__body">
-            <div class="mh-card__row mh-card__row--meta">
-              <span
-                class="mh-kind-badge"
-                [style.--k]="metaFor(e.kind).color"
-              >
-                <i [class]="metaFor(e.kind).icon" aria-hidden="true"></i>
-                {{ metaFor(e.kind).shortLabel }}
-              </span>
-              <time class="mh-card__date" [attr.datetime]="e.date">{{
-                formatDateDisplay(e.date)
-              }}</time>
-            </div>
-            <h4 class="mh-card__title">{{ e.title }}</h4>
-            <div class="mh-card__photo" *ngIf="attachmentFor(e) as att">
-              <button
-                *ngIf="att.content"
-                type="button"
-                class="mh-card__photo-open"
-                (click)="openImagePreview(e)"
-              >
-                <span class="mh-card__photo-frame">
-                  <img
-                    class="mh-card__photo-img"
-                    [src]="att.content"
-                    alt="Ảnh đính kèm"
-                  />
-                </span>
-                <span class="mh-card__photo-cap">
-                  <i class="pi pi-search-plus"></i> Xem ảnh
-                </span>
-              </button>
-              <button
-                *ngIf="att.id && att.content"
-                type="button"
-                class="mh-card__photo-docs btn ghost sm"
-                (click)="openAttachmentInDocuments(e)"
-              >
-                <i class="pi pi-folder-open"></i> Tài liệu
-              </button>
-            </div>
-            <p class="mh-card__detail" *ngIf="e.detail">{{ e.detail }}</p>
-            <p class="mh-card__place" *ngIf="e.place">
-              <i class="pi pi-map-marker" aria-hidden="true"></i>{{ e.place }}
-            </p>
-            <div class="mh-card__actions">
-              <button
-                type="button"
-                class="btn ghost sm"
-                (click)="openEdit(e)"
-                [disabled]="!e.rowIndex"
-              >
-                <i class="pi pi-pencil"></i> Sửa
-              </button>
-              <button
-                type="button"
-                class="btn ghost sm danger"
-                (click)="deleteEntry(e)"
-                [disabled]="!e.rowIndex"
-              >
-                <i class="pi pi-trash"></i>
-              </button>
-            </div>
-          </div>
-        </li>
-      </ul>
-    </section>
-  </div>
+  <app-medical-history-timeline
+    *ngIf="!loading() && visibleEntries().length > 0"
+    [timelineGroups]="timelineGroups()"
+    [resolveAttachment]="resolveAttachment"
+    (editEntry)="medicalDialog.openEdit($event)"
+    (deleteEntry)="deleteEntry($event)"
+    (openPreview)="openImagePreview($event)"
+    (openInDocuments)="openAttachmentInDocuments($event)"
+  />
 
   <button
     type="button"
     class="fab medical-fab"
-    (click)="openAddDialog()"
+    (click)="medicalDialog.openAdd()"
     aria-label="Ghi sự kiện y tế"
     title="Ghi sự kiện y tế"
   >
@@ -320,304 +93,18 @@
     <span class="fab-label">Ghi sự kiện</span>
   </button>
 
-  <!-- Dialog -->
-  <div
-    class="dialog-overlay"
-    *ngIf="dialogOpen()"
-    (click)="closeDialog()"
-  >
-    <div
-      class="dialog medical-dialog"
-      role="dialog"
-      aria-modal="true"
-      (click)="$event.stopPropagation()"
-    >
-      <div class="dialog-head">
-        <div>
-          <h2>
-            <i class="pi pi-pencil"></i>
-            {{ editingEntry() ? 'Sửa sự kiện' : 'Thêm sự kiện' }}
-          </h2>
-        </div>
-        <button
-          type="button"
-          class="dialog-close"
-          (click)="closeDialog()"
-          aria-label="Đóng"
-        >
-          <i class="pi pi-times"></i>
-        </button>
-      </div>
+  <app-medical-history-dialog
+    #medicalDialog
+    [user]="user()"
+    [entries]="entries()"
+    [explorerEntries]="explorerEntries()"
+    [medicalFolderId]="medicalFolderId()"
+    (saved)="onDialogSaved()"
+  />
 
-      <form class="medical-form" (ngSubmit)="submitDialog()">
-        <label class="field">
-          <span class="label">Ngày</span>
-          <input
-            type="date"
-            [ngModel]="draft().date"
-            (ngModelChange)="updateDraft({ date: $event })"
-            name="mhDate"
-            [max]="maxDateToday"
-            required
-          />
-        </label>
-
-        <div class="field mh-combo-field">
-          <span class="label">Loại</span>
-          <div class="mh-combo" [class.open]="kindPickerOpen()">
-            <button
-              type="button"
-              class="mh-combo-trigger"
-              (click)="toggleKindPicker(); $event.stopPropagation()"
-            >
-              <span class="mh-combo-trigger__icon"
-                ><i [class]="metaFor(draft().kind).icon"></i
-              ></span>
-              <span class="mh-combo-trigger__text">{{
-                metaFor(draft().kind).label
-              }}</span>
-              <i class="pi pi-chevron-down mh-combo-chev"></i>
-            </button>
-            <div
-              class="mh-combo-panel"
-              *ngIf="kindPickerOpen()"
-              (click)="$event.stopPropagation()"
-            >
-              <input
-                type="search"
-                class="mh-combo-search"
-                placeholder="Tìm loại…"
-                [ngModel]="kindSearch()"
-                (ngModelChange)="kindSearch.set($event)"
-                name="mhKindSearch"
-                autocomplete="off"
-                (click)="$event.stopPropagation()"
-              />
-              <ul class="mh-combo-list" role="listbox">
-                <li
-                  *ngFor="let km of filteredKindCatalog()"
-                  role="option"
-                  [class.active]="draft().kind === km.id"
-                  (click)="selectKind(km.id)"
-                >
-                  <i [class]="km.icon"></i> {{ km.label }}
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
-
-        <label class="field">
-          <span class="label">Tiêu đề</span>
-          <input
-            type="text"
-            [ngModel]="draft().title"
-            (ngModelChange)="updateDraft({ title: $event })"
-            name="mhTitle"
-            placeholder="VD: Mũi 2 Pentaxim — BV Nhi"
-            required
-          />
-        </label>
-
-        <label class="field">
-          <span class="label">Chi tiết</span>
-          <textarea
-            [ngModel]="draft().detail"
-            (ngModelChange)="updateDraft({ detail: $event })"
-            name="mhDetail"
-            rows="3"
-            placeholder="Phản ứng, chỉ định BS, liều…"
-          ></textarea>
-        </label>
-
-        <div class="field mh-combo-field">
-          <span class="label">Nơi khám</span>
-          <div class="mh-combo mh-place-combo" [class.open]="placePickerOpen()">
-            <input
-              type="text"
-              class="mh-combo-input"
-              [ngModel]="draft().place"
-              (ngModelChange)="
-                updateDraft({ place: $event });
-                kindPickerOpen.set(false);
-                placePickerOpen.set(true)
-              "
-              (focus)="onPlaceFieldFocus()"
-              name="mhPlace"
-              placeholder="Chọn hoặc gõ tên cơ sở…"
-              autocomplete="off"
-            />
-            <div
-              class="mh-combo-panel"
-              *ngIf="placePickerOpen()"
-              (click)="$event.stopPropagation()"
-            >
-              <button
-                type="button"
-                class="mh-combo-add"
-                *ngIf="canAddCustomPlace()"
-                (click)="addCustomPlaceFromDraft()"
-              >
-                <i class="pi pi-plus"></i> Thêm «{{ draft().place.trim() }}» vào
-                danh sách
-              </button>
-              <ul class="mh-combo-list mh-combo-list--places">
-                <li
-                  *ngFor="let p of filteredPlaceSuggestions()"
-                  (click)="selectPlace(p)"
-                >
-                  {{ p }}
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
-
-        <div class="field med-attach-field">
-          <span class="label">Ảnh đính kèm</span>
-          <div
-            class="med-preview med-preview--saved"
-            *ngIf="
-              editingEntry() &&
-              !pendingAttachmentPreviewUrl() &&
-              !stripExistingAttachment() &&
-              attachmentFor(editingEntry()!) as sav
-            "
-          >
-            <img *ngIf="sav.content" [src]="sav.content" alt="Đính kèm hiện tại" />
-            <button
-              type="button"
-              class="btn ghost sm"
-              (click)="removeSavedAttachment()"
-            >
-              <i class="pi pi-times"></i> Gỡ ảnh đã lưu
-            </button>
-          </div>
-          <div class="med-preview med-preview--new" *ngIf="pendingAttachmentPreviewUrl() as prevUrl">
-            <img [src]="prevUrl" alt="Xem trước" />
-            <button
-              type="button"
-              class="btn ghost sm"
-              (click)="clearPendingAttachment()"
-            >
-              Huỷ ảnh mới
-            </button>
-          </div>
-          <label class="med-upload-card">
-            <input
-              type="file"
-              accept="image/*,.heic,.heif"
-              class="sr-only"
-              (change)="onAttachmentInput($any($event.target))"
-            />
-            <span class="med-upload-card__icon" aria-hidden="true">
-              <i class="pi pi-images"></i>
-            </span>
-            <span class="med-upload-card__text">
-              <strong class="med-upload-card__title">{{
-                pendingAttachment() ? 'Đổi ảnh' : 'Chọn ảnh'
-              }}</strong>
-            </span>
-            <span class="med-upload-card__arrow" aria-hidden="true">
-              <i class="pi pi-angle-right"></i>
-            </span>
-          </label>
-        </div>
-
-        <div class="dialog-actions">
-          <button type="button" class="btn ghost" (click)="closeDialog()" [disabled]="saving()">
-            Huỷ
-          </button>
-          <button type="submit" class="btn primary" [disabled]="saving()">
-            <i class="pi pi-check" *ngIf="!saving()"></i>
-            <i class="pi pi-spin pi-spinner" *ngIf="saving()"></i>
-            {{ editingEntry() ? 'Cập nhật' : 'Lưu' }}
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Xem ảnh fullscreen — đóng lại vẫn ở tab Y tế (giống preview Tài liệu) -->
-  <div
-    class="mh-preview"
-    *ngIf="imagePreview() as pv"
-    role="dialog"
-    aria-modal="true"
-    [attr.aria-label]="'Xem ảnh: ' + pv.title"
-  >
-    <button
-      type="button"
-      class="mh-preview__close"
-      (click)="closeImagePreview(); $event.stopPropagation()"
-      aria-label="Đóng (Esc)"
-      title="Đóng (Esc)"
-    >
-      <i class="pi pi-times"></i>
-    </button>
-    <div class="mh-preview__name">{{ pv.title }}</div>
-    <div
-      class="mh-preview__stage"
-      [class.zoomed]="mhPreviewScale() > 1.001"
-      [class.interacting]="mhPreviewInteracting()"
-      (wheel)="onMhPreviewWheel($event)"
-      (pointerdown)="onMhPreviewPointerDown($event)"
-      (pointermove)="onMhPreviewPointerMove($event)"
-      (pointerup)="onMhPreviewPointerUp($event)"
-      (pointercancel)="onMhPreviewPointerUp($event)"
-      (pointerleave)="onMhPreviewPointerUp($event)"
-      (dblclick)="onMhPreviewDblClick($event)"
-    >
-      <img
-        class="mh-preview__img"
-        [src]="pv.src"
-        [alt]="pv.title"
-        [style.transform]="mhPreviewTransform()"
-        draggable="false"
-        (dragstart)="$event.preventDefault()"
-      />
-    </div>
-    <div class="mh-preview__zoom" (click)="$event.stopPropagation()">
-      <button
-        type="button"
-        class="mh-zoom-btn"
-        (click)="zoomOutMhPreview($event)"
-        [disabled]="!mhCanZoomOut()"
-        title="Thu nhỏ (-)"
-        aria-label="Thu nhỏ"
-      >
-        <i class="pi pi-minus"></i>
-      </button>
-      <button
-        type="button"
-        class="mh-zoom-btn percent"
-        (click)="resetMhPreviewZoom(); $event.stopPropagation()"
-        title="Đặt lại 100% (0)"
-        aria-label="Đặt lại zoom"
-      >
-        {{ mhPreviewZoomPercent() }}%
-      </button>
-      <button
-        type="button"
-        class="mh-zoom-btn"
-        (click)="zoomInMhPreview($event)"
-        [disabled]="!mhCanZoomIn()"
-        title="Phóng to (+)"
-        aria-label="Phóng to"
-      >
-        <i class="pi pi-plus"></i>
-      </button>
-    </div>
-    <p class="mh-preview__hint" *ngIf="mhPreviewScale() <= 1.001">
-      Cuộn hoặc bấm <i class="pi pi-plus"></i> để phóng to · Nháy đôi để zoom · Esc đóng
-    </p>
-    <button
-      *ngIf="pv.explorerId"
-      type="button"
-      class="mh-preview__docs"
-      (click)="openInDocumentsFromPreview(pv.explorerId)"
-    >
-      <i class="pi pi-folder-open"></i> Mở trong Tài liệu
-    </button>
-  </div>
+  <app-medical-history-preview
+    [preview]="imagePreview()"
+    (closed)="closeImagePreview()"
+    (openInDocuments)="openInDocumentsFromPreview($event)"
+  />
 </div>

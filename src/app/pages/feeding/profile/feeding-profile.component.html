@@ -1,0 +1,134 @@
+<!-- Profile form -->
+<section class="card profile-card" *ngIf="editing()">
+  <div class="card-header">
+    <h2>
+      <i class="pi pi-user"></i>
+      {{ profile() ? 'Cập nhật profile của bé' : 'Thêm profile của bé' }}
+    </h2>
+    <p>Thông tin được lưu cục bộ trên trình duyệt này cho user "{{ user() }}".</p>
+  </div>
+
+  <form class="form" (ngSubmit)="save.emit()">
+    <label class="field">
+      <span class="label">Tên của bé</span>
+      <input
+        type="text"
+        [ngModel]="draft().babyName"
+        (ngModelChange)="draftNameChange.emit($event)"
+        name="babyName"
+        placeholder="VD: Bin, Bông, Minh Anh..."
+        required
+        autocomplete="off"
+      />
+    </label>
+
+    <label class="field">
+      <span class="label">Ngày sinh của bé</span>
+      <input
+        type="date"
+        [ngModel]="draft().birthDate"
+        (ngModelChange)="draftBirthChange.emit($event)"
+        name="birthDate"
+        [max]="maxBirthDate()"
+        required
+      />
+    </label>
+
+    <label class="field">
+      <span class="label">Giới tính (tuỳ chọn)</span>
+      <div class="radio-group">
+        <button
+          type="button"
+          class="chip"
+          [class.active]="draft().gender === 'boy'"
+          (click)="onDraftGender('boy')"
+        >
+          👦 Bé trai
+        </button>
+        <button
+          type="button"
+          class="chip"
+          [class.active]="draft().gender === 'girl'"
+          (click)="onDraftGender('girl')"
+        >
+          👧 Bé gái
+        </button>
+        <button
+          type="button"
+          class="chip"
+          [class.active]="!draft().gender"
+          (click)="onDraftGender('')"
+        >
+          Bỏ qua
+        </button>
+      </div>
+    </label>
+
+    <div class="form-actions">
+      <button
+        type="submit"
+        class="btn primary"
+        [disabled]="!draft().babyName.trim() || !draft().birthDate"
+      >
+        <i class="pi pi-check"></i> Lưu profile
+      </button>
+      <button
+        type="button"
+        class="btn ghost"
+        *ngIf="profile()"
+        (click)="cancelEdit.emit()"
+      >
+        Huỷ
+      </button>
+    </div>
+  </form>
+</section>
+
+<!-- Overview -->
+<ng-container *ngIf="profile() && !editing() && ageBreakdown() as age">
+  <section class="overview">
+    <div class="card summary-card compact">
+      <span class="avatar-sm">
+        {{ profile()?.gender === 'boy' ? '👦' : profile()?.gender === 'girl' ? '👧' : '🍼' }}
+      </span>
+      <div class="summary-info">
+        <div class="summary-top">
+          <h2>{{ profile()?.babyName }}</h2>
+          <span class="age-chip">
+            <ng-container *ngIf="age.years > 0">{{ age.years }}y </ng-container>
+            {{ age.years > 0 ? age.remainingMonths : age.months }}m<ng-container *ngIf="age.weeksInMonth > 0"> {{ age.weeksInMonth }}w</ng-container><ng-container *ngIf="age.remainingDays > 0 || (age.weeksInMonth === 0 && age.months === 0 && age.years === 0)"> {{ age.remainingDays }}d</ng-container>
+          </span>
+        </div>
+        <div class="summary-meta">
+          <span><i class="pi pi-calendar"></i> {{ profile()?.birthDate | date: 'dd/MM/yyyy' }}</span>
+          <span class="sep" *ngIf="latestWeightKg()">·</span>
+          <span *ngIf="latestWeightKg() as lw">
+            <i class="pi pi-heart-fill"></i> {{ formatWeightKgFromSheet(lw) }} kg
+          </span>
+          <span class="sep">·</span>
+          <span>{{ age.days }} ngày tuổi</span>
+        </div>
+      </div>
+      <div class="summary-actions">
+        <button
+          type="button"
+          class="icon-action"
+          (click)="startEdit.emit()"
+          title="Sửa profile"
+          aria-label="Sửa profile"
+        >
+          <i class="pi pi-pencil"></i>
+        </button>
+        <button
+          type="button"
+          class="icon-action danger"
+          (click)="clearProfile.emit()"
+          title="Xoá profile"
+          aria-label="Xoá profile"
+        >
+          <i class="pi pi-trash"></i>
+        </button>
+      </div>
+    </div>
+  </section>
+</ng-container>

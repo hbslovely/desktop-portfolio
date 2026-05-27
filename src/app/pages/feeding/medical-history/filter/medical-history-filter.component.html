@@ -1,0 +1,180 @@
+<!-- Tìm kiếm free-text trên tiêu đề, chi tiết, nơi khám, loại… -->
+<div class="mh-text-search card" *ngIf="!loading() && myEntriesCount() > 0">
+  <label class="mh-text-search__label" for="mhFreeTextSearch">
+    <i class="pi pi-search" aria-hidden="true"></i>
+    Tìm trong tiền sử
+  </label>
+  <div class="mh-text-search__row">
+    <input
+      id="mhFreeTextSearch"
+      type="search"
+      class="mh-text-search__input"
+      placeholder="Tìm trong tiêu đề, chi tiết, nơi khám…"
+      [ngModel]="textSearchQuery()"
+      (ngModelChange)="onTextSearchChange($event)"
+      name="mhFreeTextSearch"
+      autocomplete="off"
+      enterkeyhint="search"
+    />
+    <button
+      type="button"
+      class="mh-text-search__clear btn ghost sm"
+      *ngIf="textSearchQuery().trim()"
+      (click)="clearTextSearch.emit()"
+      aria-label="Xoá ô tìm"
+      title="Xoá ô tìm"
+    >
+      <i class="pi pi-times" aria-hidden="true"></i>
+    </button>
+  </div>
+</div>
+
+<!-- V2: bộ lọc dạng panel (search + sort) -->
+<div
+  class="mh-filter"
+  [class.mh-filter--open]="filterPanelOpen()"
+>
+  <button
+    type="button"
+    class="mh-filter-trigger"
+    (click)="toggleFilterPanel.emit(); $event.stopPropagation()"
+    [attr.aria-expanded]="filterPanelOpen()"
+    aria-controls="medical-filter-panel"
+    id="medical-filter-trigger"
+  >
+    <i class="pi pi-sliders-h" aria-hidden="true"></i>
+    <span class="mh-filter-trigger__text">
+      <span class="mh-filter-trigger__label">{{ kindFilterSummary() }}</span>
+      <span class="mh-filter-trigger__meta">
+        <span class="mh-filter-trigger__count">{{ visibleCount() }}</span>
+        <span class="mh-filter-trigger__hint" *ngIf="timelineSort() === 'oldest'">
+          · cũ → mới
+        </span>
+      </span>
+    </span>
+    <i
+      class="pi mh-filter-trigger__chev"
+      [class.pi-chevron-up]="filterPanelOpen()"
+      [class.pi-chevron-down]="!filterPanelOpen()"
+      aria-hidden="true"
+    ></i>
+  </button>
+
+  <div
+    class="mh-filter-panel"
+    id="medical-filter-panel"
+    role="region"
+    aria-labelledby="medical-filter-trigger"
+    *ngIf="filterPanelOpen()"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="mh-filter-panel__headrow">
+      <div class="mh-filter-panel__title">Lọc &amp; sắp xếp</div>
+      <button
+        type="button"
+        class="mh-filter-panel__reset btn ghost sm"
+        (click)="resetFilterPanel.emit()"
+        title="Xóa lọc loại, ô tìm chữ, đặt thời gian và thứ tự danh sách về mặc định"
+      >
+        <i class="pi pi-replay" aria-hidden="true"></i>
+        Đặt lại
+      </button>
+    </div>
+
+    <div class="mh-filter-panel__field">
+      <span class="mh-filter-panel__label">Thời gian hiển thị</span>
+      <div class="mh-filter-panel__seg" role="group" aria-label="Sắp xếp timeline">
+        <button
+          type="button"
+          [class.active]="timelineSort() === 'newest'"
+          (click)="onTimelineSort('newest')"
+        >
+          Mới nhất trước
+        </button>
+        <button
+          type="button"
+          [class.active]="timelineSort() === 'oldest'"
+          (click)="onTimelineSort('oldest')"
+        >
+          Cũ nhất trước
+        </button>
+      </div>
+    </div>
+
+    <div class="mh-filter-panel__field">
+      <label class="mh-filter-panel__label" for="mhFilterKindSearch"
+        >Tìm loại (gõ o hoặc ô đều khớp)</label
+      >
+      <input
+        id="mhFilterKindSearch"
+        type="search"
+        class="mh-filter-panel__search"
+        placeholder="VD: tiem, xet nghiem, kham, o / ô…"
+        [ngModel]="filterPanelKindSearch()"
+        (ngModelChange)="onFilterPanelKindSearchChange($event)"
+        name="mhFilterKindSearch"
+        autocomplete="off"
+      />
+    </div>
+
+    <div class="mh-filter-panel__field">
+      <span class="mh-filter-panel__label">Sắp danh sách loại</span>
+      <div class="mh-filter-panel__seg" role="group" aria-label="Sắp loại">
+        <button
+          type="button"
+          [class.active]="kindListSort() === 'count'"
+          (click)="onKindListSort('count')"
+        >
+          Nhiều sự kiện trước
+        </button>
+        <button
+          type="button"
+          [class.active]="kindListSort() === 'alpha'"
+          (click)="onKindListSort('alpha')"
+        >
+          A → Z
+        </button>
+      </div>
+    </div>
+
+    <div
+      class="mh-filter-panel__kinds"
+      role="listbox"
+      aria-label="Chọn loại sự kiện"
+      aria-multiselectable="true"
+    >
+      <button
+        type="button"
+        class="kind-chip mh-filter-kind"
+        [class.active]="kindFilterKinds().length === 0"
+        (click)="clearKindFilters.emit()"
+        role="option"
+        [attr.aria-selected]="kindFilterKinds().length === 0"
+      >
+        Tất cả
+        <span class="kind-chip__count">{{ myEntriesCount() }}</span>
+      </button>
+      <button
+        type="button"
+        class="kind-chip mh-filter-kind"
+        *ngFor="let km of kindsInFilterPanel()"
+        [class.active]="kindFilterKindSet().has(km.id)"
+        [style.--chip-color]="km.color"
+        (click)="toggleKindFilter.emit(km.id)"
+        [attr.title]="km.label"
+        role="option"
+        [attr.aria-selected]="kindFilterKindSet().has(km.id)"
+      >
+        <i [class]="km.icon" aria-hidden="true"></i>
+        <span class="mh-filter-kind__name">{{ km.shortLabel }}</span>
+        <span class="kind-chip__count">{{ kindCounts()[km.id] }}</span>
+      </button>
+      <p
+        class="mh-filter-panel__empty"
+        *ngIf="filterPanelKindSearch().trim() && kindsInFilterPanel().length === 0"
+      >
+        Không thấy loại nào — thử từ ngắn hơn (o/ô, a/ă tương đương).
+      </p>
+    </div>
+  </div>
+</div>
