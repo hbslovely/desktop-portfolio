@@ -14,57 +14,22 @@
             *ngIf="bottlePrep() || bottlePrepWarning(); else bpIdleAdd"
             [ngClass]="'bp-card--tone-' + bottlePrepBarTone()"
           >
-            <div class="bp-card__top">
-              <div class="bp-card__lead">
-                <ng-container *ngIf="bottlePrep() as prep; else bpNoPrepLead">
-                  <div class="bp-card__kpi">
-                    <span class="bp-card__amount">{{ prep.volumeMl }}</span>
-                    <span class="bp-card__unit">ml</span>
-                    <span class="bp-card__kpi-label">trong bình</span>
-                  </div>
-                  <div class="bp-card__meta">
-                    <strong>{{ prep.user }}</strong> đã pha lúc <strong>{{ formatBottleAt(prep.at) }}</strong>
-                  </div>
-                </ng-container>
-                <ng-template #bpNoPrepLead>
-                  <div class="bp-card__kpi bp-card__kpi--empty">
-                    <i class="pi pi-inbox" aria-hidden="true"></i>
-                    <span class="bp-card__kpi-label">Chưa ghi nhận sữa trong bình</span>
-                  </div>
-                </ng-template>
-              </div>
-              <div class="bp-card__toolbar">
-                <button
-                  *ngIf="bottlePrepWarning()"
-                  type="button"
-                  class="bp-card__btn bp-card__btn--primary"
-                  (click)="editBottlePrep()"
-                  [title]="bottlePrep() ? 'Cập nhật ml hoặc pha sữa mới' : 'Ghi nhận sữa đã pha'"
-                >
-                  <i class="pi pi-plus" aria-hidden="true"></i>
-                  <span>{{ bottlePrep() ? 'Cập nhật bình' : 'Pha mới' }}</span>
-                </button>
-                <button
-                  *ngIf="bottlePrep() && !bottlePrepWarning()"
-                  type="button"
-                  class="bp-card__icon"
-                  (click)="editBottlePrep()"
-                  title="Sửa ml"
-                  aria-label="Sửa ml"
-                >
-                  <i class="pi pi-pencil" aria-hidden="true"></i>
-                </button>
-                <button
-                  *ngIf="bottlePrep()"
-                  type="button"
-                  class="bp-card__icon bp-card__icon--danger"
-                  (click)="openBottlePrepClearConfirm()"
-                  title="Xóa bình"
-                  aria-label="Xóa bình"
-                >
-                  <i class="pi pi-trash" aria-hidden="true"></i>
-                </button>
-              </div>
+            <div class="bp-card__headline">
+              <ng-container *ngIf="bottlePrep() as prep; else bpNoPrepLead">
+                <div class="bp-card__line">
+                  <strong class="bp-card__name">{{ prep.user }}</strong>
+                  <span class="bp-card__muted"> đã pha </span>
+                  <span class="bp-card__ml">{{ prep.volumeMl }} ml</span>
+                  <span class="bp-card__muted"> lúc </span>
+                  <strong class="bp-card__time">{{ formatBottleAt(prep.at) }}</strong>
+                </div>
+              </ng-container>
+              <ng-template #bpNoPrepLead>
+                <div class="bp-card__empty-lead">
+                  <i class="pi pi-inbox" aria-hidden="true"></i>
+                  <span>Chưa ghi nhận sữa trong bình</span>
+                </div>
+              </ng-template>
             </div>
 
             <div class="bp-card__tags" *ngIf="bottlePrepWarning() as bw">
@@ -107,6 +72,41 @@
                 {{ bottlePrepCountdownLine() }}
               </p>
             </ng-template>
+
+            <div class="bp-card__actions">
+              <div class="bp-card__toolbar">
+                <button
+                  *ngIf="bottlePrepWarning()"
+                  type="button"
+                  class="bp-card__btn bp-card__btn--primary"
+                  (click)="editBottlePrep()"
+                  [title]="bottlePrep() ? 'Cập nhật ml hoặc pha sữa mới' : 'Ghi nhận sữa đã pha'"
+                >
+                  <i class="pi pi-plus" aria-hidden="true"></i>
+                  <span>{{ bottlePrep() ? 'Cập nhật bình' : 'Pha mới' }}</span>
+                </button>
+                <button
+                  *ngIf="bottlePrep() && !bottlePrepWarning()"
+                  type="button"
+                  class="bp-card__icon"
+                  (click)="editBottlePrep()"
+                  title="Sửa ml"
+                  aria-label="Sửa ml"
+                >
+                  <i class="pi pi-pencil" aria-hidden="true"></i>
+                </button>
+                <button
+                  *ngIf="bottlePrep()"
+                  type="button"
+                  class="bp-card__icon bp-card__icon--danger"
+                  (click)="openBottlePrepClearConfirm()"
+                  title="Xóa bình"
+                  aria-label="Xóa bình"
+                >
+                  <i class="pi pi-trash" aria-hidden="true"></i>
+                </button>
+              </div>
+            </div>
           </div>
 
           <ng-template #bpIdleAdd>
@@ -221,7 +221,9 @@
                 type="button"
                 class="bp-reason-chip"
                 *ngFor="let tag of bottlePrepReasonQuickTags"
-                (click)="appendBottlePrepClearReasonTag(tag)"
+                [class.bp-reason-chip--active]="bottlePrepClearReasonDraft().trim() === tag"
+                [attr.aria-pressed]="bottlePrepClearReasonDraft().trim() === tag"
+                (click)="toggleBottlePrepClearReasonQuickTag(tag)"
               >
                 {{ tag }}
               </button>
@@ -266,7 +268,9 @@
                 type="button"
                 class="bp-reason-chip"
                 *ngFor="let tag of bottlePrepReasonQuickTags"
-                (click)="appendBottlePrepEditReasonTag(tag)"
+                [class.bp-reason-chip--active]="bottlePrepEditReasonDraft().trim() === tag"
+                [attr.aria-pressed]="bottlePrepEditReasonDraft().trim() === tag"
+                (click)="toggleBottlePrepEditReasonQuickTag(tag)"
               >
                 {{ tag }}
               </button>
