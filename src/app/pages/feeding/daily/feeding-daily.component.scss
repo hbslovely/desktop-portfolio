@@ -1793,6 +1793,20 @@
 
     &__headline {
       min-width: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px 12px;
+    }
+
+    &__headline-main {
+      min-width: 0;
+      flex: 1 1 auto;
+    }
+
+    &__headline-tag {
+      flex: 0 0 auto;
+      align-self: center;
     }
 
     &__line {
@@ -1928,6 +1942,60 @@
       margin-top: 8px;
     }
 
+    &__timeline {
+      display: flex;
+      align-items: stretch;
+      gap: 10px;
+      width: 100%;
+      min-width: 0;
+      margin-top: 2px;
+    }
+
+    &__timeline-side {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+      flex-shrink: 0;
+
+      &--start {
+        flex: 0 1 auto;
+        text-align: left;
+      }
+
+      &--end {
+        flex: 0 1 auto;
+        text-align: right;
+        align-items: flex-end;
+      }
+    }
+
+    &__timeline-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--muted);
+      line-height: 1.2;
+    }
+
+    &__timeline-value {
+      font-size: 14px;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      color: var(--text);
+      line-height: 1.2;
+    }
+
+    &__timeline-line {
+      flex: 1 1 auto;
+      min-width: 12px;
+      align-self: center;
+      height: 0;
+      border-bottom: 1px dotted #cbd5e1;
+      margin: 0 2px 10px;
+    }
+
     .bp-tag {
       display: inline-flex;
       align-items: center;
@@ -1985,26 +2053,35 @@
       font-weight: 500;
     }
 
-    &__countdown--split {
+    &__countdown-row {
       display: flex;
-      align-items: baseline;
+      align-items: flex-start;
       justify-content: space-between;
       gap: 10px 16px;
       flex-wrap: wrap;
-    }
-
-    &__countdown-main {
-      flex: 1 1 auto;
+      width: 100%;
       min-width: 0;
     }
 
-    &__countdown-late {
+    &__countdown--row-main {
+      flex: 1 1 auto;
+      min-width: 0;
+      margin: 0;
+    }
+
+    &__countdown--row-since {
       flex: 0 0 auto;
+      margin: 0;
       margin-left: auto;
       font-size: 12px;
       font-weight: 700;
-      color: var(--rose, #e11d48);
+      color: #64748b;
       white-space: nowrap;
+      text-align: right;
+    }
+
+    &--tone-danger .bp-card__countdown--row-since {
+      color: var(--muted);
     }
   }
 

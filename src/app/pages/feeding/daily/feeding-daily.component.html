@@ -15,36 +15,52 @@
             [ngClass]="'bp-card--tone-' + bottlePrepBarTone()"
           >
             <div class="bp-card__headline">
-              <ng-container *ngIf="bottlePrep() as prep; else bpNoPrepLead">
-                <div class="bp-card__line">
-                  <strong class="bp-card__name">{{ prep.user }}</strong>
-                  <span class="bp-card__muted"> đã pha </span>
-                  <span class="bp-card__ml">{{ prep.volumeMl }} ml</span>
-                  <span class="bp-card__muted"> lúc </span>
-                  <strong class="bp-card__time">{{ formatBottleAt(prep.at) }}</strong>
-                </div>
-              </ng-container>
-              <ng-template #bpNoPrepLead>
-                <div class="bp-card__empty-lead">
-                  <i class="pi pi-inbox" aria-hidden="true"></i>
-                  <span>Chưa ghi nhận sữa trong bình</span>
-                </div>
-              </ng-template>
+              <div class="bp-card__headline-main">
+                <ng-container *ngIf="bottlePrep() as prep; else bpNoPrepLead">
+                  <div class="bp-card__line">
+                    <strong class="bp-card__name">{{ prep.user }}</strong>
+                    <span class="bp-card__muted"> đã pha </span>
+                    <span class="bp-card__ml">{{ prep.volumeMl }} ml</span>
+                  </div>
+                </ng-container>
+                <ng-template #bpNoPrepLead>
+                  <div class="bp-card__empty-lead">
+                    <i class="pi pi-inbox" aria-hidden="true"></i>
+                    <span>Chưa ghi nhận sữa trong bình</span>
+                  </div>
+                </ng-template>
+              </div>
+              <span
+                *ngIf="bottlePrep() && bottlePrepWarning()?.type === 'expired'"
+                class="bp-tag bp-tag--danger bp-card__headline-tag"
+                >Hết hạn</span
+              >
             </div>
 
-            <div class="bp-card__tags" *ngIf="bottlePrepWarning() as bw">
-              <ng-container [ngSwitch]="bw.type">
-                <ng-container *ngSwitchCase="'expired'">
-                  <span class="bp-tag bp-tag--danger" *ngIf="bottlePrep() as p">
-                    Hết hạn lúc {{ formatBottlePrepExpiryClock(p.at) }}
-                  </span>
+            <ng-container *ngIf="bottlePrepWarning() as bw">
+              <div class="bp-card__tags" *ngIf="bw.type !== 'expired'">
+                <ng-container [ngSwitch]="bw.type">
+                  <span *ngSwitchCase="'expiring-soon'" class="bp-tag bp-tag--soon"
+                    >Sắp hết hạn · còn {{ bw.minutes }} phút</span
+                  >
+                  <span *ngSwitchCase="'no-prep-late'" class="bp-tag bp-tag--danger">Trễ cữ bú</span>
+                  <span *ngSwitchCase="'no-prep-soon'" class="bp-tag bp-tag--soon">Sắp tới cữ bú</span>
                 </ng-container>
-                <span *ngSwitchCase="'expiring-soon'" class="bp-tag bp-tag--soon"
-                  >Sắp hết hạn · còn {{ bw.minutes }} phút</span
-                >
-                <span *ngSwitchCase="'no-prep-late'" class="bp-tag bp-tag--danger">Trễ cữ bú</span>
-                <span *ngSwitchCase="'no-prep-soon'" class="bp-tag bp-tag--soon">Sắp tới cữ bú</span>
-              </ng-container>
+              </div>
+            </ng-container>
+
+            <div class="bp-card__timeline" *ngIf="bottlePrep() as prep">
+              <div class="bp-card__timeline-side bp-card__timeline-side--start">
+                <span class="bp-card__timeline-label">Thời gian pha</span>
+                <strong class="bp-card__timeline-value">{{ formatBottleAt(prep.at) }}</strong>
+              </div>
+              <div class="bp-card__timeline-line" aria-hidden="true"></div>
+              <div class="bp-card__timeline-side bp-card__timeline-side--end">
+                <span class="bp-card__timeline-label">Thời gian đến hạn</span>
+                <strong class="bp-card__timeline-value">{{
+                  formatBottlePrepExpiryClock(prep.at)
+                }}</strong>
+              </div>
             </div>
 
             <div
@@ -61,13 +77,18 @@
             >
               <div class="bp-card__bar-fill" [style.width.%]="bottlePrepBarPct()"></div>
             </div>
-            <ng-container *ngIf="bottlePrepExpiredCountdownSplit() as ex; else bpCountdownDefault">
-              <p class="bp-card__countdown bp-card__countdown--split">
-                <span class="bp-card__countdown-main">{{ ex.main }}</span>
-                <span class="bp-card__countdown-late">trễ {{ ex.lateMin }} phút</span>
-              </p>
+
+            <ng-container *ngIf="bottlePrep(); else bpCountdownNoPrep">
+              <div class="bp-card__countdown-row">
+                <p class="bp-card__countdown bp-card__countdown--row-main" *ngIf="bottlePrepFooterLeft()">
+                  {{ bottlePrepFooterLeft() }}
+                </p>
+                <p class="bp-card__countdown bp-card__countdown--row-since">
+                  {{ bottlePrepSincePrepLabel() }}
+                </p>
+              </div>
             </ng-container>
-            <ng-template #bpCountdownDefault>
+            <ng-template #bpCountdownNoPrep>
               <p class="bp-card__countdown" *ngIf="bottlePrepCountdownLine()">
                 {{ bottlePrepCountdownLine() }}
               </p>
