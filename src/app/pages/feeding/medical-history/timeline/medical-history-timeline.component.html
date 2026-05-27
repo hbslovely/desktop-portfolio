@@ -1,0 +1,79 @@
+<div class="mh-timeline">
+  <section class="mh-month" *ngFor="let g of timelineGroups()">
+    <header class="mh-month__head">
+      <span class="mh-month__rail" aria-hidden="true"></span>
+      <div class="mh-month__label">
+        <h3 class="mh-month__title">{{ g.monthLabel }}</h3>
+        <span class="mh-month__count">{{ g.entries.length }} sự kiện</span>
+      </div>
+    </header>
+    <ul class="mh-month__entries">
+      <li class="mh-card" *ngFor="let e of g.entries">
+        <div class="mh-card__body">
+          <div class="mh-card__row mh-card__row--meta">
+            <span
+              class="mh-kind-badge"
+              [style.--k]="metaFor(e.kind).color"
+            >
+              <i [class]="metaFor(e.kind).icon" aria-hidden="true"></i>
+              {{ metaFor(e.kind).shortLabel }}
+            </span>
+            <time class="mh-card__date" [attr.datetime]="e.date">{{
+              formatDateDisplay(e.date)
+            }}</time>
+          </div>
+          <h4 class="mh-card__title">{{ e.title }}</h4>
+          <div class="mh-card__photo" *ngIf="attachmentFor(e) as att">
+            <button
+              *ngIf="att.content"
+              type="button"
+              class="mh-card__photo-open"
+              (click)="onOpenPreview(e)"
+            >
+              <span class="mh-card__photo-frame">
+                <img
+                  class="mh-card__photo-img"
+                  [src]="att.content"
+                  alt="Ảnh đính kèm"
+                />
+              </span>
+              <span class="mh-card__photo-cap">
+                <i class="pi pi-search-plus"></i> Xem ảnh
+              </span>
+            </button>
+            <button
+              *ngIf="att.id && att.content"
+              type="button"
+              class="mh-card__photo-docs btn ghost sm"
+              (click)="onOpenInDocuments(e)"
+            >
+              <i class="pi pi-folder-open"></i> Tài liệu
+            </button>
+          </div>
+          <p class="mh-card__detail" *ngIf="e.detail">{{ e.detail }}</p>
+          <p class="mh-card__place" *ngIf="e.place">
+            <i class="pi pi-map-marker" aria-hidden="true"></i>{{ e.place }}
+          </p>
+          <div class="mh-card__actions">
+            <button
+              type="button"
+              class="btn ghost sm"
+              (click)="editEntry.emit(e)"
+              [disabled]="!e.rowIndex"
+            >
+              <i class="pi pi-pencil"></i> Sửa
+            </button>
+            <button
+              type="button"
+              class="btn ghost sm danger"
+              (click)="deleteEntry.emit(e)"
+              [disabled]="!e.rowIndex"
+            >
+              <i class="pi pi-trash"></i>
+            </button>
+          </div>
+        </div>
+      </li>
+    </ul>
+  </section>
+</div>

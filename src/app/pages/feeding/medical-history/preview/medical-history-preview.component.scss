@@ -1,0 +1,171 @@
+.mh-preview {
+  position: fixed;
+  inset: 0;
+  z-index: 260;
+  background: rgba(0, 0, 0, 0.92);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: stretch;
+  animation: mhPreviewFade 0.2s ease;
+
+  &__close {
+    position: absolute;
+    top: max(16px, env(safe-area-inset-top, 0px));
+    right: 16px;
+    z-index: 3;
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    transition: background 0.15s;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.22);
+    }
+  }
+
+  &__name {
+    position: absolute;
+    top: max(20px, env(safe-area-inset-top, 0px));
+    left: 16px;
+    right: 72px;
+    color: rgba(255, 255, 255, 0.88);
+    font-size: 13.5px;
+    font-weight: 600;
+    z-index: 3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+
+  &__stage {
+    flex: 1;
+    width: 100%;
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: zoom-in;
+    touch-action: none;
+    user-select: none;
+    padding: 56px 16px;
+
+    &.zoomed {
+      cursor: grab;
+    }
+
+    &.zoomed.interacting {
+      cursor: grabbing;
+    }
+  }
+
+  &__img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    box-shadow: 0 20px 60px -10px rgba(0, 0, 0, 0.6);
+    transform-origin: center center;
+    transition: transform 0.16s ease-out;
+    will-change: transform;
+    pointer-events: none;
+  }
+
+  &__stage.interacting &__img {
+    transition: none;
+  }
+
+  &__zoom {
+    position: absolute;
+    left: 50%;
+    bottom: max(36px, calc(env(safe-area-inset-bottom, 0px) + 28px));
+    transform: translateX(-50%);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px;
+    background: rgba(20, 20, 20, 0.78);
+    backdrop-filter: blur(8px);
+    border-radius: 999px;
+    z-index: 3;
+  }
+
+  &__hint {
+    position: absolute;
+    left: 50%;
+    bottom: max(88px, calc(env(safe-area-inset-bottom, 0px) + 80px));
+    transform: translateX(-50%);
+    margin: 0;
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 12px;
+    text-align: center;
+    max-width: 92vw;
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  &__docs {
+    position: absolute;
+    top: max(48px, calc(env(safe-area-inset-top, 0px) + 40px));
+    left: 16px;
+    z-index: 3;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    background: rgba(40, 40, 40, 0.85);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+
+    &:hover {
+      background: rgba(60, 60, 60, 0.95);
+    }
+  }
+}
+
+.mh-zoom-btn {
+  height: 36px;
+  min-width: 36px;
+  padding: 0 10px;
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-size: 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  &.percent {
+    min-width: 56px;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@keyframes mhPreviewFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

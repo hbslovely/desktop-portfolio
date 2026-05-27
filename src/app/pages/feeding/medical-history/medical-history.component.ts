@@ -13,9 +13,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
-import { firstValueFrom } from 'rxjs';
 import {
   ExplorerEntry,
   ExplorerService,
@@ -30,42 +28,29 @@ import {
   MedicalKindMeta,
   kindMeta,
 } from './medical-history-kinds.data';
-import { DEFAULT_PLACES_VI } from './medical-places.presets';
 import { ActivityLogService } from '../../../services/activity-log.service';
-
-interface EntryDraft {
-  date: string;
-  kind: MedicalEventKind;
-  title: string;
-  detail: string;
-  place: string;
-}
+import { viFoldIncludes } from './medical-history-vi.utils';
+import { MedicalHistoryDialogComponent } from './dialog/medical-history-dialog.component';
+import { MedicalHistoryFilterComponent } from './filter/medical-history-filter.component';
+import { MedicalHistoryTimelineComponent } from './timeline/medical-history-timeline.component';
+import {
+  MedicalHistoryPreviewComponent,
+  MedicalImagePreviewState,
+} from './preview/medical-history-preview.component';
 
 const EXPLORER_ROOT_ID = 1;
 const MEDICAL_FOLDER_NAME = 'Y tế';
-const MAX_ATTACH_CHARS = 49000 * 100;
-
-/** Bỏ dấu + đ → d để so khớp tiếng Việt (ô≈o, ă≈a…) */
-function foldViKey(s: string): string {
-  return String(s ?? '')
-    .normalize('NFD')
-    .replace(/\p{M}/gu, '')
-    .replace(/\u0111/g, 'd')
-    .replace(/\u0110/g, 'd')
-    .toLowerCase();
-}
-
-/** So khớp chuỗi con sau khi gộp dấu — gõ "o" hay "ô" đều được */
-function viFoldIncludes(haystack: string, needle: string): boolean {
-  const n = foldViKey(needle);
-  if (!n) return true;
-  return foldViKey(haystack).includes(n);
-}
 
 @Component({
   selector: 'app-medical-history',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [
+    CommonModule,
+    MedicalHistoryDialogComponent,
+    MedicalHistoryFilterComponent,
+    MedicalHistoryTimelineComponent,
+    MedicalHistoryPreviewComponent,
+  ],
   templateUrl: './medical-history.component.html',
   styleUrls: ['./medical-history.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -83,113 +68,24 @@ export class MedicalHistoryComponent {
   @Output() openExplorerFile = new EventEmitter<number>();
 
   entries = signal<MedicalHistoryEntry[]>([]);
-  /** Explorer entries — dùng để resolve ảnh đính kèm + tạo thư mục « Y tế » */
   explorerEntries = signal<ExplorerEntry[]>([]);
   medicalFolderId = signal<number | null>(null);
 
   loading = signal<boolean>(false);
-  saving = signal<boolean>(false);
   errorMsg = signal<string>('');
   successMsg = signal<string>('');
 
-  /**
-   * Lọc theo một hoặc nhiều loại — rỗng = không giới hạn (tương đương « Tất cả »).
-   */
   kindFilterKinds = signal<MedicalEventKind[]>([]);
-
-  /** Panel lọc gọn (thay cho hàng chip đầy đủ) */
   filterPanelOpen = signal<boolean>(false);
   filterPanelKindSearch = signal<string>('');
-  /** Thứ tự tháng / mục trong timeline */
   timelineSort = signal<'newest' | 'oldest'>('newest');
-  /** Thứ tự danh sách loại trong panel */
   kindListSort = signal<'count' | 'alpha'>('count');
-
-  /** Tìm kiếm chữ tự do trên timeline (tiêu đề, chi tiết, nơi khám, loại…) */
   textSearchQuery = signal<string>('');
 
-  kindPickerOpen = signal<boolean>(false);
-  kindSearch = signal<string>('');
-
-  placePickerOpen = signal<boolean>(false);
-  /** Nơi khám do người dùng thêm — lưu theo user */
-  customPlaces = signal<string[]>([]);
-
-  dialogOpen = signal<boolean>(false);
-  draft = signal<EntryDraft>(this.emptyDraft());
-  editingEntry = signal<MedicalHistoryEntry | null>(null);
-
-  /** Ảnh chọn tạm (chưa lên Explorer cho đến khi Lưu) */
-  pendingAttachment = signal<File | null>(null);
-  pendingAttachmentPreviewUrl = signal<string | null>(null);
-  /** Khi sửa: gỡ ảnh đã lưu */
-  stripExistingAttachment = signal<boolean>(false);
-
-  /** Xem ảnh toàn màn trên tab Y tế (đóng vẫn ở tab hiện tại). */
-  imagePreview = signal<{
-    src: string;
-    title: string;
-    explorerId?: number;
-  } | null>(null);
-
-  private readonly mhMinZoom = 1;
-  private readonly mhMaxZoom = 6;
-  private readonly mhZoomStep = 1.4;
-
-  mhPreviewScale = signal<number>(1);
-  mhPreviewTx = signal<number>(0);
-  mhPreviewTy = signal<number>(0);
-  mhPreviewInteracting = signal<boolean>(false);
-
-  mhPreviewTransform = computed(
-    () =>
-      `translate3d(${this.mhPreviewTx()}px, ${this.mhPreviewTy()}px, 0) scale(${this.mhPreviewScale()})`
-  );
-
-  mhPreviewZoomPercent = computed(() =>
-    Math.round(this.mhPreviewScale() * 100)
-  );
-
-  mhCanZoomIn = computed(
-    () => this.mhPreviewScale() < this.mhMaxZoom - 0.001
-  );
-  mhCanZoomOut = computed(
-    () => this.mhPreviewScale() > this.mhMinZoom + 0.001
-  );
-  private mhPointers = new Map<number, { x: number; y: number }>();
-  private mhPanStart: {
-    x: number;
-    y: number;
-    tx: number;
-    ty: number;
-  } | null = null;
-  private mhPinchStart: {
-    dist: number;
-    scale: number;
-    tx: number;
-    ty: number;
-    midX: number;
-    midY: number;
-    centerX: number;
-    centerY: number;
-  } | null = null;
-  private mhDidPan = false;
+  imagePreview = signal<MedicalImagePreviewState | null>(null);
 
   readonly kindCatalog: readonly MedicalKindMeta[] = MEDICAL_KINDS;
-  readonly defaultPlaces = DEFAULT_PLACES_VI;
 
-  filteredKindCatalog = computed(() => {
-    const q = this.kindSearch().trim();
-    if (!q) return this.kindCatalog;
-    return this.kindCatalog.filter(
-      (km) =>
-        viFoldIncludes(km.label, q) ||
-        viFoldIncludes(km.shortLabel, q) ||
-        viFoldIncludes(km.id, q)
-    );
-  });
-
-  /** Loại hiển thị trong panel (search + sort) */
   kindsInFilterPanel = computed(() => {
     const q = this.filterPanelKindSearch().trim();
     const filtered = !q
@@ -230,63 +126,11 @@ export class MedicalHistoryComponent {
     return `${sel.length} loại`;
   });
 
-  placesFromEntries = computed(() => {
-    const set = new Set<string>();
-    for (const e of this.myEntries()) {
-      const p = this.normalizePlace(e.place || '');
-      if (p) set.add(p);
-    }
-    return [...set];
-  });
-
-  filteredPlaceSuggestions = computed(() => {
-    const raw = [
-      ...this.defaultPlaces,
-      ...this.customPlaces(),
-      ...this.placesFromEntries(),
-    ];
-    const seen = new Set<string>();
-    const uniq: string[] = [];
-    for (const p of raw) {
-      const t = this.normalizePlace(p);
-      if (!t || seen.has(t)) continue;
-      seen.add(t);
-      uniq.push(t);
-    }
-    const q = this.normalizePlace(this.draft().place).toLowerCase();
-    const filtered = !q
-      ? uniq
-      : uniq.filter((p) => p.toLowerCase().includes(q));
-    filtered.sort((a, b) => a.localeCompare(b, 'vi'));
-    return filtered;
-  });
-
-  placeSuggestionsUnion = computed(() => {
-    const set = new Set<string>();
-    for (const p of this.defaultPlaces) {
-      set.add(this.normalizePlace(p));
-    }
-    for (const p of this.customPlaces()) {
-      set.add(this.normalizePlace(p));
-    }
-    for (const e of this.myEntries()) {
-      if (e.place) set.add(this.normalizePlace(e.place));
-    }
-    return set;
-  });
-
-  canAddCustomPlace = computed(() => {
-    const t = this.normalizePlace(this.draft().place);
-    if (!t) return false;
-    return !this.placeSuggestionsUnion().has(t);
-  });
-
   constructor() {
     this.load();
     effect(
       () => {
         this.userNorm();
-        this.loadCustomPlacesFromStorage();
       },
       { allowSignalWrites: true }
     );
@@ -295,41 +139,11 @@ export class MedicalHistoryComponent {
   @HostListener('document:click', ['$event'])
   onDocumentClick(ev: Event): void {
     const path = ev.composedPath?.() ?? [];
-    const inCombo = path.some(
-      (n) => n instanceof HTMLElement && n.classList.contains('mh-combo')
-    );
     const inFilter = path.some(
       (n) => n instanceof HTMLElement && n.classList.contains('mh-filter')
     );
-    if (!inCombo) {
-      this.kindPickerOpen.set(false);
-      this.placePickerOpen.set(false);
-    }
     if (!inFilter) {
       this.filterPanelOpen.set(false);
-    }
-  }
-
-  @HostListener('document:keydown', ['$event'])
-  onMhPreviewKeydown(ev: KeyboardEvent): void {
-    if (!this.imagePreview()) return;
-    const target = ev.target as HTMLElement | null;
-    const tag = target?.tagName;
-    const typing =
-      tag === 'INPUT' || tag === 'TEXTAREA' || target?.isContentEditable;
-    if (typing) return;
-    if (ev.key === 'Escape') {
-      ev.preventDefault();
-      this.closeImagePreview();
-    } else if (ev.key === '+' || ev.key === '=') {
-      ev.preventDefault();
-      this.zoomInMhPreview();
-    } else if (ev.key === '-' || ev.key === '_') {
-      ev.preventDefault();
-      this.zoomOutMhPreview();
-    } else if (ev.key === '0') {
-      ev.preventDefault();
-      this.resetMhPreviewZoom();
     }
   }
 
@@ -363,7 +177,6 @@ export class MedicalHistoryComponent {
     return rows.filter((e) => allow.has(e.kind));
   });
 
-  /** Sau lọc loại + tìm free-text */
   visibleEntries = computed(() => {
     const rows = this.filteredEntries();
     const q = this.textSearchQuery().trim();
@@ -371,7 +184,6 @@ export class MedicalHistoryComponent {
     return rows.filter((e) => this.entryMatchesFreeText(e, q));
   });
 
-  /** Nhóm timeline theo tháng (V2) */
   timelineGroups = computed(() => {
     const list = this.visibleEntries();
     const order = this.timelineSort();
@@ -419,26 +231,32 @@ export class MedicalHistoryComponent {
     })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-      next: ({ medical, explorer }) => {
-        this.entries.set(medical);
-        this.explorerEntries.set(explorer);
-        const folder = explorer.find(
-          (e) =>
-            e.type === 'folder' &&
-            e.parentId === EXPLORER_ROOT_ID &&
-            e.name === MEDICAL_FOLDER_NAME
-        );
-        this.medicalFolderId.set(folder?.id ?? null);
-        this.loading.set(false);
-      },
-      error: (err) => {
-        console.error(err);
-        this.loading.set(false);
-        this.errorMsg.set(
-          'Không tải được tiền sử. Thêm tab "MedicalHistory" trong Sheet và redeploy Apps Script (xem docs/feeding/FEEDING_SETUP.md).'
-        );
-      },
-    });
+        next: ({ medical, explorer }) => {
+          this.entries.set(medical);
+          this.explorerEntries.set(explorer);
+          const folder = explorer.find(
+            (e) =>
+              e.type === 'folder' &&
+              e.parentId === EXPLORER_ROOT_ID &&
+              e.name === MEDICAL_FOLDER_NAME
+          );
+          this.medicalFolderId.set(folder?.id ?? null);
+          this.loading.set(false);
+        },
+        error: (err) => {
+          console.error(err);
+          this.loading.set(false);
+          this.errorMsg.set(
+            'Không tải được tiền sử. Thêm tab "MedicalHistory" trong Sheet và redeploy Apps Script (xem docs/feeding/FEEDING_SETUP.md).'
+          );
+        },
+      });
+  }
+
+  onDialogSaved(): void {
+    this.successMsg.set('Đã lưu.');
+    setTimeout(() => this.successMsg.set(''), 3000);
+    setTimeout(() => this.load(), 600);
   }
 
   attachmentFor(entry: MedicalHistoryEntry): ExplorerEntry | undefined {
@@ -447,7 +265,9 @@ export class MedicalHistoryComponent {
     return this.explorerById().get(id);
   }
 
-  /** Mở ảnh trong tab Tài liệu (Explorer); fallback URL nếu không có id. */
+  readonly resolveAttachment = (entry: MedicalHistoryEntry) =>
+    this.attachmentFor(entry);
+
   openAttachmentInDocuments(entry: MedicalHistoryEntry): void {
     const att = this.attachmentFor(entry);
     if (att?.id) {
@@ -464,11 +284,6 @@ export class MedicalHistoryComponent {
     const att = this.attachmentFor(entry);
     const src = att?.content?.trim();
     if (!src) return;
-    this.mhPointers.clear();
-    this.mhPanStart = null;
-    this.mhPinchStart = null;
-    this.mhDidPan = false;
-    this.resetMhPreviewZoom();
     this.imagePreview.set({
       src,
       title: entry.title || 'Ảnh đính kèm',
@@ -478,11 +293,6 @@ export class MedicalHistoryComponent {
 
   closeImagePreview(): void {
     this.imagePreview.set(null);
-    this.resetMhPreviewZoom();
-    this.mhPointers.clear();
-    this.mhPanStart = null;
-    this.mhPinchStart = null;
-    this.mhPreviewInteracting.set(false);
   }
 
   openInDocumentsFromPreview(explorerId: number): void {
@@ -490,198 +300,14 @@ export class MedicalHistoryComponent {
     this.openExplorerFile.emit(explorerId);
   }
 
-  resetMhPreviewZoom(): void {
-    this.mhPreviewScale.set(1);
-    this.mhPreviewTx.set(0);
-    this.mhPreviewTy.set(0);
-  }
-
-  zoomInMhPreview(ev?: Event): void {
-    ev?.stopPropagation();
-    this.applyMhZoom(this.mhPreviewScale() * this.mhZoomStep);
-  }
-
-  zoomOutMhPreview(ev?: Event): void {
-    ev?.stopPropagation();
-    this.applyMhZoom(this.mhPreviewScale() / this.mhZoomStep);
-  }
-
-  onMhPreviewWheel(ev: WheelEvent): void {
-    if (!this.imagePreview()) return;
-    ev.preventDefault();
-    const stage = ev.currentTarget as HTMLElement;
-    const rect = stage.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-    const factor = ev.deltaY < 0 ? 1.15 : 1 / 1.15;
-    this.applyMhZoom(this.mhPreviewScale() * factor, {
-      x: ev.clientX,
-      y: ev.clientY,
-      centerX,
-      centerY,
-    });
-  }
-
-  onMhPreviewPointerDown(ev: PointerEvent): void {
-    if (!this.imagePreview()) return;
-    const stage = ev.currentTarget as HTMLElement;
-    try {
-      stage.setPointerCapture(ev.pointerId);
-    } catch {
-      /* ignore */
-    }
-    this.mhPointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
-    this.mhDidPan = false;
-    this.mhPreviewInteracting.set(true);
-
-    if (this.mhPointers.size >= 2) {
-      this.startMhPinch(stage);
-      this.mhPanStart = null;
-    } else if (this.mhPreviewScale() > 1.001) {
-      this.mhPanStart = {
-        x: ev.clientX,
-        y: ev.clientY,
-        tx: this.mhPreviewTx(),
-        ty: this.mhPreviewTy(),
-      };
-    } else {
-      this.mhPanStart = null;
-    }
-  }
-
-  onMhPreviewPointerMove(ev: PointerEvent): void {
-    if (!this.mhPointers.has(ev.pointerId)) return;
-    this.mhPointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
-
-    if (this.mhPointers.size >= 2 && this.mhPinchStart) {
-      this.updateMhPinch();
-      return;
-    }
-
-    if (this.mhPanStart && this.mhPointers.size === 1) {
-      const dx = ev.clientX - this.mhPanStart.x;
-      const dy = ev.clientY - this.mhPanStart.y;
-      if (!this.mhDidPan && Math.hypot(dx, dy) > 4) this.mhDidPan = true;
-      this.mhPreviewTx.set(this.mhPanStart.tx + dx);
-      this.mhPreviewTy.set(this.mhPanStart.ty + dy);
-    }
-  }
-
-  onMhPreviewPointerUp(ev: PointerEvent): void {
-    this.mhPointers.delete(ev.pointerId);
-    if (this.mhPointers.size < 2) this.mhPinchStart = null;
-    if (this.mhPointers.size === 0) {
-      this.mhPanStart = null;
-      this.mhPreviewInteracting.set(false);
-    } else if (this.mhPointers.size === 1 && this.mhPreviewScale() > 1.001) {
-      const remaining = Array.from(this.mhPointers.values())[0];
-      this.mhPanStart = {
-        x: remaining.x,
-        y: remaining.y,
-        tx: this.mhPreviewTx(),
-        ty: this.mhPreviewTy(),
-      };
-    }
-  }
-
-  onMhPreviewDblClick(ev: MouseEvent): void {
-    if (!this.imagePreview()) return;
-    const stage = ev.currentTarget as HTMLElement;
-    const rect = stage.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-    const target = this.mhPreviewScale() > 1.01 ? 1 : 2.5;
-    this.applyMhZoom(target, {
-      x: ev.clientX,
-      y: ev.clientY,
-      centerX,
-      centerY,
-    });
-    ev.preventDefault();
-  }
-
-  private applyMhZoom(
-    targetScale: number,
-    anchor?: { x: number; y: number; centerX: number; centerY: number }
-  ): void {
-    const oldScale = this.mhPreviewScale();
-    const clamped = Math.min(
-      this.mhMaxZoom,
-      Math.max(this.mhMinZoom, targetScale)
-    );
-    if (Math.abs(clamped - oldScale) < 0.001) return;
-
-    if (clamped <= this.mhMinZoom + 0.001) {
-      this.resetMhPreviewZoom();
-      return;
-    }
-
-    const ratio = clamped / oldScale;
-    const tx = this.mhPreviewTx();
-    const ty = this.mhPreviewTy();
-    if (anchor) {
-      const kx = anchor.x - anchor.centerX;
-      const ky = anchor.y - anchor.centerY;
-      this.mhPreviewTx.set(kx * (1 - ratio) + tx * ratio);
-      this.mhPreviewTy.set(ky * (1 - ratio) + ty * ratio);
-    } else {
-      this.mhPreviewTx.set(tx * ratio);
-      this.mhPreviewTy.set(ty * ratio);
-    }
-    this.mhPreviewScale.set(clamped);
-  }
-
-  private startMhPinch(stage: HTMLElement): void {
-    const pts = Array.from(this.mhPointers.values());
-    if (pts.length < 2) return;
-    const [a, b] = pts;
-    const dist = Math.hypot(a.x - b.x, a.y - b.y);
-    const midX = (a.x + b.x) / 2;
-    const midY = (a.y + b.y) / 2;
-    const rect = stage.getBoundingClientRect();
-    this.mhPinchStart = {
-      dist: dist || 1,
-      scale: this.mhPreviewScale(),
-      tx: this.mhPreviewTx(),
-      ty: this.mhPreviewTy(),
-      midX,
-      midY,
-      centerX: rect.left + rect.width / 2,
-      centerY: rect.top + rect.height / 2,
-    };
-  }
-
-  private updateMhPinch(): void {
-    const start = this.mhPinchStart;
-    if (!start) return;
-    const pts = Array.from(this.mhPointers.values());
-    if (pts.length < 2) return;
-    const [a, b] = pts;
-    const dist = Math.hypot(a.x - b.x, a.y - b.y);
-    const ratio = dist / start.dist;
-    const target = Math.min(
-      this.mhMaxZoom,
-      Math.max(this.mhMinZoom, start.scale * ratio)
-    );
-    const r = target / start.scale;
-    const kx = start.midX - start.centerX;
-    const ky = start.midY - start.centerY;
-    this.mhPreviewScale.set(target);
-    this.mhPreviewTx.set(kx * (1 - r) + start.tx * r);
-    this.mhPreviewTy.set(ky * (1 - r) + start.ty * r);
-    this.mhDidPan = true;
-  }
-
   toggleFilterPanel(): void {
     this.filterPanelOpen.update((v) => !v);
   }
 
-  /** Xóa lọc — hiển thị mọi loại */
   clearKindFilters(): void {
     this.kindFilterKinds.set([]);
   }
 
-  /** Đặt lại toàn bộ tùy chọn trong panel lọc */
   resetFilterPanel(): void {
     this.kindFilterKinds.set([]);
     this.timelineSort.set('newest');
@@ -709,7 +335,6 @@ export class MedicalHistoryComponent {
     );
   }
 
-  /** Bật/tắt một loại trong bộ lọc */
   toggleKindFilter(kind: MedicalEventKind): void {
     this.kindFilterKinds.update((arr) => {
       const next = new Set(arr);
@@ -721,265 +346,6 @@ export class MedicalHistoryComponent {
 
   metaFor(kind: MedicalEventKind): MedicalKindMeta {
     return kindMeta(kind);
-  }
-
-  toggleKindPicker(): void {
-    const next = !this.kindPickerOpen();
-    this.kindPickerOpen.set(next);
-    if (next) {
-      this.placePickerOpen.set(false);
-      this.kindSearch.set('');
-    }
-  }
-
-  onPlaceFieldFocus(): void {
-    this.kindPickerOpen.set(false);
-    this.placePickerOpen.set(true);
-  }
-
-  selectKind(kind: MedicalEventKind): void {
-    this.updateDraft({ kind });
-    this.kindPickerOpen.set(false);
-    this.kindSearch.set('');
-  }
-
-  selectPlace(place: string): void {
-    this.updateDraft({ place: this.normalizePlace(place) });
-    this.placePickerOpen.set(false);
-  }
-
-  addCustomPlaceFromDraft(): void {
-    const t = this.normalizePlace(this.draft().place);
-    if (!t) return;
-    if (this.placeSuggestionsUnion().has(t)) return;
-    this.customPlaces.update((arr) => {
-      if (arr.some((x) => this.normalizePlace(x) === t)) return arr;
-      return [...arr, t];
-    });
-    this.persistCustomPlaces();
-  }
-
-  private normalizePlace(s: string): string {
-    return String(s ?? '')
-      .trim()
-      .replace(/\s+/g, ' ');
-  }
-
-  private placesStorageKey(): string {
-    return `medicalCustomPlaces:${this.userNorm()}`;
-  }
-
-  private loadCustomPlacesFromStorage(): void {
-    try {
-      const raw = localStorage.getItem(this.placesStorageKey());
-      if (!raw) {
-        this.customPlaces.set([]);
-        return;
-      }
-      const arr = JSON.parse(raw) as unknown;
-      if (!Array.isArray(arr)) {
-        this.customPlaces.set([]);
-        return;
-      }
-      this.customPlaces.set(
-        arr.filter((x): x is string => typeof x === 'string').map((x) => this.normalizePlace(x))
-      );
-    } catch {
-      this.customPlaces.set([]);
-    }
-  }
-
-  private persistCustomPlaces(): void {
-    try {
-      localStorage.setItem(
-        this.placesStorageKey(),
-        JSON.stringify(this.customPlaces())
-      );
-    } catch {
-      /* ignore quota */
-    }
-  }
-
-  private clearPendingOnly() {
-    const url = this.pendingAttachmentPreviewUrl();
-    if (url) {
-      URL.revokeObjectURL(url);
-    }
-    this.pendingAttachment.set(null);
-    this.pendingAttachmentPreviewUrl.set(null);
-  }
-
-  private resetAttachmentDraft() {
-    this.clearPendingOnly();
-    this.stripExistingAttachment.set(false);
-  }
-
-  openAddDialog() {
-    this.editingEntry.set(null);
-    this.draft.set(this.emptyDraft());
-    this.resetAttachmentDraft();
-    this.errorMsg.set('');
-    this.successMsg.set('');
-    this.kindPickerOpen.set(false);
-    this.placePickerOpen.set(false);
-    this.kindSearch.set('');
-    this.dialogOpen.set(true);
-  }
-
-  closeDialog() {
-    this.dialogOpen.set(false);
-    this.kindPickerOpen.set(false);
-    this.placePickerOpen.set(false);
-    this.kindSearch.set('');
-    this.resetAttachmentDraft();
-  }
-
-  updateDraft(partial: Partial<EntryDraft>) {
-    this.draft.update((d) => ({ ...d, ...partial }));
-  }
-
-  onAttachmentInput(input: HTMLInputElement) {
-    const files = Array.from(input.files || []);
-    input.value = '';
-    if (files.length === 0) return;
-    const file = files[0];
-    if (!this.isImageFile(file)) {
-      this.errorMsg.set(
-        'Chỉ hỗ trợ ảnh (jpg, png, heic…). Thử chụp lại hoặc chọn từ thư viện.'
-      );
-      return;
-    }
-    this.errorMsg.set('');
-    this.stripExistingAttachment.set(false);
-    this.clearPendingOnly();
-    this.pendingAttachment.set(file);
-    this.pendingAttachmentPreviewUrl.set(URL.createObjectURL(file));
-  }
-
-  clearPendingAttachment() {
-    this.clearPendingOnly();
-  }
-
-  removeSavedAttachment() {
-    this.clearPendingOnly();
-    this.stripExistingAttachment.set(true);
-  }
-
-  private isImageFile(f: File): boolean {
-    const t = (f.type || '').toLowerCase();
-    if (t.startsWith('image/')) return true;
-    if (
-      !t &&
-      /\.(jpe?g|png|gif|webp|heic|heif|bmp|avif)$/i.test(f.name)
-    ) {
-      return true;
-    }
-    return false;
-  }
-
-  async submitDialog() {
-    const d = this.draft();
-    const title = d.title.trim();
-    if (!d.date || !title) {
-      this.errorMsg.set('Vui lòng nhập ngày và tiêu đề.');
-      return;
-    }
-
-    const edit = this.editingEntry();
-    const pending = this.pendingAttachment();
-
-    this.saving.set(true);
-    this.errorMsg.set('');
-    this.successMsg.set('');
-
-    try {
-      let attachmentExplorerId: number | undefined = edit?.attachmentExplorerId;
-
-      if (this.stripExistingAttachment()) {
-        attachmentExplorerId = undefined;
-      }
-      if (pending) {
-        attachmentExplorerId = await this.uploadAttachmentToExplorer(pending);
-      }
-
-      const base: MedicalHistoryEntry = {
-        user: this.userNorm(),
-        date: d.date,
-        kind: d.kind,
-        title,
-        detail: d.detail.trim(),
-        place: d.place.trim() || undefined,
-        attachmentExplorerId,
-      };
-
-      if (edit?.rowIndex) {
-        const patch: {
-          date: string;
-          kind: MedicalEventKind;
-          title: string;
-          detail: string;
-          place: string;
-          attachmentExplorerId?: number | null;
-        } = {
-          date: base.date,
-          kind: base.kind,
-          title: base.title,
-          detail: base.detail,
-          place: base.place ?? '',
-        };
-        if (pending || this.stripExistingAttachment()) {
-          patch.attachmentExplorerId =
-            attachmentExplorerId ?? null;
-        }
-        await firstValueFrom(
-          this.medicalService.updateEntry(edit.rowIndex, patch)
-        );
-        this.successMsg.set('Đã cập nhật.');
-
-        // Log activity
-        this.activityLogService.logMedical(this.userNorm(), 'MEDICAL_UPDATED', {
-          title: base.title,
-          location: base.place,
-        }).subscribe();
-      } else {
-        await firstValueFrom(this.medicalService.addEntry(base));
-        this.successMsg.set('Đã lưu sự kiện.');
-
-        // Log activity
-        this.activityLogService.logMedical(this.userNorm(), 'MEDICAL_ADDED', {
-          title: base.title,
-          location: base.place,
-        }).subscribe();
-      }
-
-      setTimeout(() => this.successMsg.set(''), 3000);
-      this.closeDialog();
-      setTimeout(() => this.load(), 600);
-    } catch (err: unknown) {
-      this.errorMsg.set(
-        err instanceof Error ? err.message : 'Thao tác thất bại.'
-      );
-    } finally {
-      this.saving.set(false);
-    }
-  }
-
-  openEdit(entry: MedicalHistoryEntry) {
-    if (!entry.rowIndex) return;
-    this.editingEntry.set(entry);
-    this.draft.set({
-      date: entry.date,
-      kind: entry.kind,
-      title: entry.title,
-      detail: entry.detail,
-      place: entry.place || '',
-    });
-    this.resetAttachmentDraft();
-    this.errorMsg.set('');
-    this.kindPickerOpen.set(false);
-    this.placePickerOpen.set(false);
-    this.kindSearch.set('');
-    this.dialogOpen.set(true);
   }
 
   deleteEntry(entry: MedicalHistoryEntry) {
@@ -995,7 +361,6 @@ export class MedicalHistoryComponent {
       next: () => {
         this.successMsg.set('Đã xoá.');
 
-        // Log activity
         this.activityLogService.logMedical(this.userNorm(), 'MEDICAL_DELETED', {
           title: entry.title,
         }).subscribe();
@@ -1018,125 +383,5 @@ export class MedicalHistoryComponent {
     const [y, m] = ym.split('-');
     const mi = parseInt(m, 10);
     return `Tháng ${mi}/${y}`;
-  }
-
-  private emptyDraft(): EntryDraft {
-    const t = new Date();
-    const y = t.getFullYear();
-    const mo = String(t.getMonth() + 1).padStart(2, '0');
-    const d = String(t.getDate()).padStart(2, '0');
-    return {
-      date: `${y}-${mo}-${d}`,
-      kind: 'checkup',
-      title: '',
-      detail: '',
-      place: '',
-    };
-  }
-
-  get maxDateToday(): string {
-    return new Date().toISOString().split('T')[0];
-  }
-
-  private async ensureMedicalFolderId(): Promise<number> {
-    let cached = this.medicalFolderId();
-    if (cached != null) return cached;
-
-    let all =
-      this.explorerEntries().length > 0
-        ? this.explorerEntries()
-        : await firstValueFrom(this.explorerService.getEntries());
-    this.explorerEntries.set(all);
-
-    let folder = all.find(
-      (e) =>
-        e.type === 'folder' &&
-        e.parentId === EXPLORER_ROOT_ID &&
-        e.name === MEDICAL_FOLDER_NAME
-    );
-    if (folder?.id) {
-      this.medicalFolderId.set(folder.id);
-      return folder.id;
-    }
-
-    await firstValueFrom(
-      this.explorerService.addEntry({
-        name: MEDICAL_FOLDER_NAME,
-        type: 'folder',
-        parentId: EXPLORER_ROOT_ID,
-      })
-    );
-
-    all = await firstValueFrom(this.explorerService.getEntries());
-    this.explorerEntries.set(all);
-    folder = all.find(
-      (e) =>
-        e.type === 'folder' &&
-        e.parentId === EXPLORER_ROOT_ID &&
-        e.name === MEDICAL_FOLDER_NAME
-    );
-    if (!folder?.id) {
-      throw new Error(
-        'Không tạo được thư mục « Y tế » trong tab Tài liệu.'
-      );
-    }
-    this.medicalFolderId.set(folder.id);
-    return folder.id;
-  }
-
-  private async compressMedicalImage(file: File): Promise<string> {
-    const tries: Array<[number, number]> = [
-      [2048, 0.92],
-      [1920, 0.9],
-      [1600, 0.88],
-      [1280, 0.84],
-      [1024, 0.8],
-      [820, 0.74],
-      [640, 0.65],
-      [480, 0.55],
-    ];
-    let last = '';
-    for (const [size, q] of tries) {
-      last = await this.explorerService.fileToCompressedBase64(
-        file,
-        size,
-        q
-      );
-      if (last.length <= MAX_ATTACH_CHARS) return last;
-    }
-    throw new Error(
-      `Ảnh quá lớn sau khi nén (~${Math.round(last.length / 1024)}KB). Chọn ảnh nhỏ hơn.`
-    );
-  }
-
-  private async uploadAttachmentToExplorer(file: File): Promise<number> {
-    const parentId = await this.ensureMedicalFolderId();
-    const dataUrl = await this.compressMedicalImage(file);
-    const safeName = `med-${Date.now()}-${Math.random().toString(36).slice(2, 9)}.jpg`;
-
-    await firstValueFrom(
-      this.explorerService.addEntry({
-        name: safeName,
-        type: 'file',
-        parentId,
-        content: dataUrl,
-      })
-    );
-
-    const all = await firstValueFrom(this.explorerService.getEntries());
-    this.explorerEntries.set(all);
-
-    const found = all.find(
-      (e) =>
-        e.type === 'file' &&
-        e.parentId === parentId &&
-        e.name === safeName
-    );
-    if (!found?.id) {
-      throw new Error(
-        'Đã gửi ảnh nhưng chưa thấy file trên Explorer — bấm Tải lại trên trang chủ.'
-      );
-    }
-    return found.id;
   }
 }

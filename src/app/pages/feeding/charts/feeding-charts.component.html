@@ -1,0 +1,500 @@
+      <!-- ============ HISTORY: charts with tabs ============ -->
+      <section class="card history-card">
+        <div class="history-head">
+          <div>
+            <div class="eyebrow"><i class="pi pi-chart-line"></i> Phân tích 7–30 ngày</div>
+            <h2>Biểu đồ dinh dưỡng</h2>
+          </div>
+          <div class="week-avg" *ngIf="weeklyAverage() > 0">
+            TB/ngày: <strong>{{ weeklyAverage() }}ml</strong>
+          </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="chart-tabs" role="tablist">
+          <button
+            type="button"
+            class="chart-tab"
+            [class.active]="chartTab() === 'volume'"
+            (click)="setChartTab('volume')"
+          >
+            <i class="pi pi-chart-line"></i>
+            Xu hướng sữa
+          </button>
+          <button
+            type="button"
+            class="chart-tab"
+            [class.active]="chartTab() === 'count'"
+            (click)="setChartTab('count')"
+          >
+            <i class="pi pi-chart-bar"></i>
+            Số cữ/ngày
+          </button>
+          <button
+            type="button"
+            class="chart-tab"
+            [class.active]="chartTab() === 'timeline'"
+            (click)="setChartTab('timeline')"
+          >
+            <i class="pi pi-stopwatch"></i>
+            Trong ngày
+          </button>
+        </div>
+
+        <!-- Range filter (chỉ áp dụng cho volume + count) -->
+        <div class="chart-range" *ngIf="chartTab() !== 'timeline'">
+          <span class="range-label">Khoảng:</span>
+          <button
+            type="button"
+            class="range-chip"
+            [class.active]="chartRange() === 7"
+            (click)="setChartRange(7)"
+          >7 ngày</button>
+          <button
+            type="button"
+            class="range-chip"
+            [class.active]="chartRange() === 14"
+            (click)="setChartRange(14)"
+          >14 ngày</button>
+          <button
+            type="button"
+            class="range-chip"
+            [class.active]="chartRange() === 30"
+            (click)="setChartRange(30)"
+          >30 ngày</button>
+        </div>
+
+        <!-- TAB: Xu hướng sữa -->
+        <div class="chart-wrapper tall" *ngIf="chartTab() === 'volume' && weeklyAverage() > 0">
+          <div class="chart-title">Xu hướng sữa theo ngày ({{ chartRange() }} ngày)</div>
+          <div class="chart-scroll" [class.scrollable]="chartRange() === 30">
+            <svg
+              class="bar-chart volume tall"
+              [class.line-mode]="weeklyLineChart().isLineChart"
+              [attr.viewBox]="'0 0 ' + weeklyLineChart().W + ' ' + weeklyLineChart().H"
+              preserveAspectRatio="xMidYMid meet"
+            >
+              <defs>
+                <linearGradient id="volBarGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stop-color="#7c8aff" />
+                  <stop offset="100%" stop-color="#5b6cff" />
+                </linearGradient>
+                <linearGradient id="volBarGradToday" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stop-color="#34d399" />
+                  <stop offset="100%" stop-color="#10b981" />
+                </linearGradient>
+                <linearGradient id="volLineAreaGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stop-color="#5b6cff" stop-opacity="0.25" />
+                  <stop offset="100%" stop-color="#5b6cff" stop-opacity="0.02" />
+                </linearGradient>
+                <linearGradient id="volLineGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stop-color="#818cf8" />
+                  <stop offset="100%" stop-color="#5b6cff" />
+                </linearGradient>
+              </defs>
+
+              <g class="grid">
+                <line
+                  *ngFor="let g of weeklyLineChart().gridLines"
+                  [attr.x1]="weeklyLineChart().PAD_L"
+                  [attr.x2]="weeklyLineChart().W - 16"
+                  [attr.y1]="g.y"
+                  [attr.y2]="g.y"
+                />
+                <text
+                  *ngFor="let g of weeklyLineChart().gridLines"
+                  [attr.x]="weeklyLineChart().PAD_L - 6"
+                  [attr.y]="g.y + 4"
+                  text-anchor="end"
+                  class="grid-label"
+                >{{ g.label }}</text>
+              </g>
+
+              <!-- Bar Chart Mode (7 ngày) -->
+              <ng-container *ngIf="!weeklyLineChart().isLineChart">
+                <g class="bars">
+                  <g *ngFor="let b of weeklyLineChart().bars">
+                    <rect
+                      [attr.x]="b.x"
+                      [attr.y]="b.y"
+                      [attr.width]="b.barW"
+                      [attr.height]="b.h"
+                      rx="6"
+                      class="bar"
+                      [class.today]="b.d.date === todayDateStr()"
+                      [class.empty]="b.d.total === 0"
+                    />
+                    <text
+                      *ngIf="b.d.total > 0 && b.showValue"
+                      [attr.x]="b.cx"
+                      [attr.y]="b.y - 8"
+                      text-anchor="middle"
+                      class="bar-text bar-text-lg"
+                      [class.today]="b.d.date === todayDateStr()"
+                    >{{ b.d.total }}</text>
+                  </g>
+                </g>
+
+                <g class="x-labels">
+                  <ng-container *ngFor="let b of weeklyLineChart().bars">
+                    <text
+                      *ngIf="b.showLabel"
+                      [attr.x]="b.cx"
+                      [attr.y]="weeklyLineChart().H - 22"
+                      text-anchor="middle"
+                      class="x-label"
+                      [class.today]="b.d.date === todayDateStr()"
+                    >{{ formatDayLabel(b.d.date) }}</text>
+                    <text
+                      *ngIf="b.showLabel"
+                      [attr.x]="b.cx"
+                      [attr.y]="weeklyLineChart().H - 6"
+                      text-anchor="middle"
+                      class="x-sublabel"
+                    >{{ formatDateShort(b.d.date) }}</text>
+                  </ng-container>
+                </g>
+              </ng-container>
+
+              <!-- Line Chart Mode (30 ngày) -->
+              <ng-container *ngIf="weeklyLineChart().isLineChart">
+                <path
+                  class="vol-line-area"
+                  [attr.d]="weeklyLineChart().areaPath"
+                  fill="url(#volLineAreaGrad)"
+                />
+                <path
+                  class="vol-line-path"
+                  [attr.d]="weeklyLineChart().linePath"
+                  fill="none"
+                  stroke="url(#volLineGrad)"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+                <g class="vol-line-dots">
+                  <g *ngFor="let p of weeklyLineChart().points">
+                    <circle
+                      [attr.cx]="p.x"
+                      [attr.cy]="p.y"
+                      [attr.r]="p.d.date === todayDateStr() ? 5 : 3.5"
+                      class="vol-dot"
+                      [class.today]="p.d.date === todayDateStr()"
+                      [class.empty]="p.d.total === 0"
+                    />
+                    <text
+                      *ngIf="p.showValue"
+                      [attr.x]="p.x"
+                      [attr.y]="p.y - 10"
+                      text-anchor="middle"
+                      class="bar-text bar-text-sm"
+                      [class.today]="p.d.date === todayDateStr()"
+                    >{{ p.d.total }}</text>
+                  </g>
+                </g>
+
+                <g class="x-labels">
+                  <ng-container *ngFor="let p of weeklyLineChart().points">
+                    <text
+                      *ngIf="p.showLabel"
+                      [attr.x]="p.x"
+                      [attr.y]="weeklyLineChart().H - 6"
+                      text-anchor="middle"
+                      class="x-label x-label--compact"
+                      [class.today]="p.d.date === todayDateStr()"
+                    >{{ formatDateShort(p.d.date) }}</text>
+                  </ng-container>
+                </g>
+              </ng-container>
+            </svg>
+          </div>
+
+          <!-- Stats footer -->
+          <div class="chart-stats" *ngIf="chartStats() as cs">
+            <div class="cs-item">
+              <div class="cs-label"><i class="pi pi-arrow-up"></i> Cao nhất</div>
+              <div class="cs-value">{{ cs.maxMl }}<span class="u">ml</span></div>
+              <div class="cs-sub" *ngIf="cs.maxDate">{{ formatDateShort(cs.maxDate) }}</div>
+            </div>
+            <div class="cs-item">
+              <div class="cs-label"><i class="pi pi-arrow-down"></i> Thấp nhất</div>
+              <div class="cs-value">{{ cs.minMl }}<span class="u">ml</span></div>
+              <div class="cs-sub" *ngIf="cs.minDate">{{ formatDateShort(cs.minDate) }}</div>
+            </div>
+            <div class="cs-item">
+              <div class="cs-label"><i class="pi pi-chart-bar"></i> Trung bình</div>
+              <div class="cs-value">{{ cs.avgMl }}<span class="u">ml</span></div>
+              <div class="cs-sub">trên {{ cs.daysWithData }} ngày có cữ</div>
+            </div>
+            <div class="cs-item">
+              <div class="cs-label"><i class="pi pi-bookmark"></i> Tổng</div>
+              <div class="cs-value">{{ cs.totalMl }}<span class="u">ml</span></div>
+              <div class="cs-sub">{{ cs.rangeDays }} ngày gần nhất</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB: Số cữ/ngày -->
+        <div class="chart-wrapper tall" *ngIf="chartTab() === 'count' && weeklyAverage() > 0">
+          <div class="chart-title">Số cữ bú mỗi ngày ({{ chartRange() }} ngày)</div>
+          <div class="chart-scroll" [class.scrollable]="chartRange() === 30">
+            <svg
+              class="bar-chart tall"
+              [attr.viewBox]="'0 0 ' + weeklyCountChart().W + ' ' + weeklyCountChart().H"
+              preserveAspectRatio="xMidYMid meet"
+            >
+              <g class="grid">
+                <line
+                  *ngFor="let g of weeklyCountChart().gridLines"
+                  [attr.x1]="weeklyCountChart().PAD_L"
+                  [attr.x2]="weeklyCountChart().W - 16"
+                  [attr.y1]="g.y"
+                  [attr.y2]="g.y"
+                />
+                <text
+                  *ngFor="let g of weeklyCountChart().gridLines"
+                  [attr.x]="weeklyCountChart().PAD_L - 6"
+                  [attr.y]="g.y + 4"
+                  text-anchor="end"
+                  class="grid-label"
+                >{{ g.label }}</text>
+              </g>
+
+              <g class="bars">
+                <g *ngFor="let b of weeklyCountChart().bars">
+                  <rect
+                    [attr.x]="b.x"
+                    [attr.y]="b.y"
+                    [attr.width]="b.barW"
+                    [attr.height]="b.h"
+                    rx="6"
+                    class="bar"
+                    [class.today]="b.d.date === todayDateStr()"
+                    [class.empty]="b.d.count === 0"
+                  />
+                  <text
+                    *ngIf="b.d.count > 0 && b.showValue"
+                    [attr.x]="b.cx"
+                    [attr.y]="b.y - 6"
+                    text-anchor="middle"
+                    class="bar-text bar-text-lg"
+                    [class.today]="b.d.date === todayDateStr()"
+                  >{{ b.d.count }}</text>
+                </g>
+              </g>
+
+              <g class="x-labels">
+                <ng-container *ngFor="let b of weeklyCountChart().bars">
+                  <text
+                    *ngIf="b.showLabel"
+                    [attr.x]="b.cx"
+                    [attr.y]="weeklyCountChart().H - 22"
+                    text-anchor="middle"
+                    class="x-label"
+                    [class.today]="b.d.date === todayDateStr()"
+                  >{{ formatDayLabel(b.d.date) }}</text>
+                  <text
+                    *ngIf="b.showLabel"
+                    [attr.x]="b.cx"
+                    [attr.y]="weeklyCountChart().H - 6"
+                    text-anchor="middle"
+                    class="x-sublabel"
+                  >{{ formatDateShort(b.d.date) }}</text>
+                </ng-container>
+              </g>
+            </svg>
+          </div>
+
+          <!-- Stats footer -->
+          <div class="chart-stats" *ngIf="chartStats() as cs">
+            <div class="cs-item">
+              <div class="cs-label"><i class="pi pi-arrow-up"></i> Cao nhất</div>
+              <div class="cs-value">{{ cs.maxCount }}<span class="u">cữ</span></div>
+              <div class="cs-sub">trong {{ cs.rangeDays }} ngày</div>
+            </div>
+            <div class="cs-item">
+              <div class="cs-label"><i class="pi pi-chart-bar"></i> Trung bình</div>
+              <div class="cs-value">{{ cs.avgCount }}<span class="u">cữ</span></div>
+              <div class="cs-sub">mỗi ngày có cữ</div>
+            </div>
+            <div class="cs-item">
+              <div class="cs-label"><i class="pi pi-calendar"></i> Có cữ</div>
+              <div class="cs-value">{{ cs.daysWithData }}<span class="u">ngày</span></div>
+              <div class="cs-sub">trên {{ cs.rangeDays }} ngày</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB: Timeline trong ngày -->
+        <div class="chart-wrapper tall" *ngIf="chartTab() === 'timeline'">
+          <div class="chart-title">
+            Tiến độ bú trong ngày
+            <span class="muted-small">
+              · tích luỹ ml từ 00h → 24h
+            </span>
+          </div>
+
+          <ng-container *ngIf="hasTimelineChartData(); else noTimeline">
+          <div class="timeline-zoom-bar">
+            <span class="timeline-zoom-hint">
+              <i class="pi pi-search-plus"></i>
+              Thu phóng trục thời gian (cuộn ngang khi &gt; 1×)
+            </span>
+            <div class="timeline-zoom-controls">
+              <button
+                type="button"
+                class="tz-btn"
+                (click)="timelineZoomOut()"
+                [disabled]="timelineChartZoomIndex() === 0"
+                aria-label="Thu nhỏ biểu đồ"
+              >
+                −
+              </button>
+              <span class="tz-value">{{ timelineChartZoom() }}×</span>
+              <button
+                type="button"
+                class="tz-btn"
+                (click)="timelineZoomIn()"
+                [disabled]="timelineChartZoomIndex() === 3"
+                aria-label="Phóng to biểu đồ"
+              >
+                +
+              </button>
+              <button
+                type="button"
+                class="btn ghost sm tz-reset"
+                (click)="timelineZoomReset()"
+                *ngIf="timelineChartZoomIndex() > 0"
+              >
+                Mặc định
+              </button>
+            </div>
+          </div>
+
+          <!-- Legend + totals -->
+          <div class="timeline-legend">
+            <div class="tl-item today">
+              <span class="tl-swatch"></span>
+              <span class="tl-label">Hôm nay</span>
+              <strong class="tl-value">{{ timelineChart().todayTotal }}ml</strong>
+            </div>
+            <div class="tl-item yesterday">
+              <span class="tl-swatch"></span>
+              <span class="tl-label">Hôm qua</span>
+              <strong class="tl-value">{{ timelineChart().yesterdayTotal }}ml</strong>
+            </div>
+            <div class="tl-item avg3">
+              <span class="tl-swatch"></span>
+              <span class="tl-label">
+                TB 3 ngày trước
+                <span class="muted-small" *ngIf="timelineChart().prev3DaysCount < 3">
+                  (có {{ timelineChart().prev3DaysCount }} ngày dữ liệu)
+                </span>
+              </span>
+              <strong class="tl-value">{{ timelineChart().avg3Total }}ml</strong>
+            </div>
+            <div class="tl-item rec" *ngIf="timelineChart().hasRecommendation">
+              <span class="tl-swatch tl-swatch--rec"></span>
+              <span class="tl-label">
+                Khuyến nghị (phân bổ đều)
+                <span class="muted-small">{{ timelineChart().recRangeLabel }}</span>
+              </span>
+              <strong class="tl-value">~{{ timelineChart().recMidDailyRounded }}ml</strong>
+            </div>
+          </div>
+
+          <div class="chart-scroll timeline-chart-scroll scrollable">
+          <svg
+            class="line-chart tall timeline-svg"
+            [attr.viewBox]="'0 0 ' + timelineChart().W + ' ' + timelineChart().H"
+            [style.min-width.px]="timelineChart().W"
+            preserveAspectRatio="xMinYMid meet"
+          >
+            <g class="grid">
+              <line
+                *ngFor="let g of timelineChart().yGrid"
+                [attr.x1]="timelineChart().PAD_L"
+                [attr.x2]="timelineChart().W - 16"
+                [attr.y1]="g.y"
+                [attr.y2]="g.y"
+              />
+              <text
+                *ngFor="let g of timelineChart().yGrid"
+                [attr.x]="timelineChart().PAD_L - 6"
+                [attr.y]="g.y + 4"
+                text-anchor="end"
+                class="grid-label"
+              >{{ g.label }}</text>
+            </g>
+
+            <!-- Dải KN min–max (phân bổ đều trong ngày) -->
+            <path
+              *ngIf="timelineChart().hasRecommendation && timelineChart().recBandPath"
+              class="tl-rec-band"
+              [attr.d]="timelineChart().recBandPath"
+            />
+
+            <!-- Lines (avg first so it sits behind) -->
+            <path class="tl-path avg3" [attr.d]="timelineChart().avg3Path" />
+            <path class="tl-path yesterday" [attr.d]="timelineChart().yesterdayPath" />
+            <!-- Đường KN trung điểm (ml/ngày tuyến tính theo giờ) -->
+            <path
+              *ngIf="timelineChart().hasRecommendation && timelineChart().recMidPath"
+              class="tl-path rec-mid"
+              [attr.d]="timelineChart().recMidPath"
+            />
+            <path class="tl-path today" [attr.d]="timelineChart().todayPath" />
+
+            <!-- "Now" vertical line -->
+            <g class="now-marker">
+              <line
+                [attr.x1]="timelineChart().nowX"
+                [attr.x2]="timelineChart().nowX"
+                [attr.y1]="timelineChart().chartTop"
+                [attr.y2]="timelineChart().chartBottom"
+                class="now-line"
+              />
+              <text
+                [attr.x]="timelineChart().nowX"
+                [attr.y]="timelineChart().chartTop - 6"
+                text-anchor="middle"
+                class="now-label"
+              >bây giờ</text>
+            </g>
+
+            <!-- Today end marker -->
+            <g *ngIf="timelineChart().todayEndPoint as pt">
+              <circle [attr.cx]="pt.x" [attr.cy]="pt.y" r="6" class="tl-end-outer" />
+              <circle [attr.cx]="pt.x" [attr.cy]="pt.y" r="3" class="tl-end-inner" />
+              <text
+                [attr.x]="pt.x"
+                [attr.y]="pt.y - 12"
+                text-anchor="middle"
+                class="tl-end-label"
+              >{{ pt.v }}ml</text>
+            </g>
+
+            <!-- X tick labels -->
+            <g class="x-labels">
+              <text
+                *ngFor="let t of timelineChart().xTicks"
+                [attr.x]="t.x"
+                [attr.y]="timelineChart().H - 14"
+                text-anchor="middle"
+                class="x-label"
+              >{{ t.hour }}h</text>
+            </g>
+          </svg>
+          </div>
+          </ng-container>
+          <ng-template #noTimeline>
+            <div class="empty-mini">
+              Chưa đủ dữ liệu. Cần ít nhất vài cữ bú trong 3 ngày gần đây.
+            </div>
+          </ng-template>
+        </div>
+
+        <div class="empty-mini" *ngIf="chartTab() !== 'timeline' && weeklyAverage() === 0">
+          Chưa có dữ liệu nào trong 7 ngày qua.
+        </div>
+      </section>

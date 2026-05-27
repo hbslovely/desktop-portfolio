@@ -1,0 +1,974 @@
+  <!-- ============ DIALOG (log form) ============ -->
+  <div
+    class="dialog-overlay"
+    *ngIf="logDialogOpen()"
+    (click)="closeLogDialog()"
+  >
+    <div class="dialog" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+      <div class="dialog-head">
+        <div>
+          <div class="eyebrow">Nhật ký cữ bú</div>
+          <h2><i class="pi pi-clock"></i> Ghi nhận lượng sữa</h2>
+        </div>
+        <button
+          type="button"
+          class="dialog-close"
+          (click)="closeLogDialog()"
+          aria-label="Đóng"
+        >
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+
+      <form class="log-form" (ngSubmit)="submitLog()">
+        <div class="log-grid log-grid--date-time">
+          <label class="field">
+            <span class="label">Ngày</span>
+            <input
+              type="date"
+              [ngModel]="logDraft().date"
+              (ngModelChange)="updateLogDate($event)"
+              name="logDate"
+              [max]="maxBirthDate()"
+              required
+            />
+          </label>
+
+          <label class="field">
+            <span class="label">Giờ</span>
+            <input
+              type="time"
+              [ngModel]="logDraft().time"
+              (ngModelChange)="updateLogTime($event)"
+              name="logTime"
+              required
+            />
+          </label>
+        </div>
+
+        <label class="field log-volume-field">
+          <span class="label">Dung tích (ml)</span>
+          <div class="log-volume-input-row">
+            <input
+              type="number"
+              inputmode="numeric"
+              min="1"
+              max="500"
+              step="5"
+              [ngModel]="logDraft().volume"
+              (ngModelChange)="updateLogVolume($any($event))"
+              name="logVolume"
+              placeholder="50"
+              required
+            />
+            <div
+              class="predict-hint predict-hint--inline"
+              *ngIf="prediction().hasData && prediction().nextTime"
+            >
+              <i class="pi pi-bolt" title="Gợi ý từ lịch sử cữ bú"></i>
+              <span class="hint-text">
+                <strong>{{ prediction().nextTime }}</strong> ·
+                <strong>{{ prediction().nextVolume }}</strong> ml
+              </span>
+              <button type="button" class="btn ghost small" (click)="usePredictionValues()">
+                Dùng
+              </button>
+            </div>
+          </div>
+        </label>
+
+        <!-- Tính từ sữa còn lại (dùng bình đã lưu) — đặt trên ghi chú -->
+        <div class="calc-block" *ngIf="bottlePrep() as prep">
+          <div class="calc-head">
+            <div class="prep-info">
+              <i class="pi pi-inbox"></i>
+              <span class="prep-info-text">
+                <span class="bp-prep-user">{{ prep.user }}</span> đã pha
+                <strong>{{ prep.volumeMl }}ml</strong> lúc
+                <span class="bp-prep-time">{{ formatBottleAt(prep.at) }}</span>
+                <br />
+                <span class="muted"
+                  >Thời hạn sử dụng tối đa {{ bottlePrepUseByMax(prep.at) }}</span
+                >
+              </span>
+            </div>
+          </div>
+          <div class="calc-body">
+            <label class="field mini remaining-input">
+              <span class="label">Sữa còn lại trong bình</span>
+              <input
+                type="text"
+                inputmode="numeric"
+                maxlength="4"
+                [value]="remainingInput()"
+                (input)="updateRemaining($any($event.target).value)"
+                placeholder="VD: 25"
+                autocomplete="off"
+              />
+              <span class="suffix">ml</span>
+            </label>
+            <div class="calc-result-row">
+              <div class="calc-result">
+                <span class="calc-label">Đã bú:</span>
+                <ng-container *ngIf="calcResult() !== null; else calcEmpty">
+                  <strong>{{ calcResult() }}</strong><span class="u">ml</span>
+                </ng-container>
+                <ng-template #calcEmpty><span class="muted">—</span></ng-template>
+              </div>
+              <button
+                type="button"
+                class="btn primary small calc-apply"
+                [disabled]="calcResult() === null"
+                (click)="applyCalcVolume()"
+              >
+                <i class="pi pi-check"></i>
+                Áp dụng
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <label class="field full">
+          <span class="label">Ghi chú (tuỳ chọn)</span>
+          <input
+            type="text"
+            [ngModel]="logDraft().note"
+            (ngModelChange)="updateLogNote($event)"
+            name="logNote"
+            placeholder="VD: bú mẹ, vắt sữa, sữa công thức..."
+            autocomplete="off"
+          />
+        </label>
+
+        <div class="quick-volumes">
+          <span class="quick-label">Nhanh:</span>
+          <button type="button" class="quick-chip" (click)="quickVolume(30)">30ml</button>
+          <button type="button" class="quick-chip" (click)="quickVolume(50)">50ml</button>
+          <button type="button" class="quick-chip" (click)="quickVolume(60)">60ml</button>
+          <button type="button" class="quick-chip" (click)="quickVolume(70)">70ml</button>
+          <button type="button" class="quick-chip" (click)="quickVolume(80)">80ml</button>
+          <button type="button" class="quick-chip" (click)="quickVolume(90)">90ml</button>
+          <button type="button" class="quick-chip" (click)="quickVolume(120)">120ml</button>
+          <button
+            type="button"
+            class="quick-chip formula-chip"
+            [class.active]="hasQuickNote('Sữa công thức')"
+            (click)="quickNote('Sữa công thức')"
+            title="Gắn nhãn 'Sữa công thức' cho cữ này"
+          >
+            <i class="pi pi-prime"></i> Sữa công thức
+          </button>
+          <button type="button" class="quick-chip now-chip" (click)="setLogNow()">
+            <i class="pi pi-history"></i> Bây giờ
+          </button>
+        </div>
+
+        <div class="sync-error" *ngIf="syncError()">
+          <i class="pi pi-exclamation-triangle"></i> {{ syncError() }}
+        </div>
+
+        <div class="dialog-actions">
+          <button type="button" class="btn ghost" (click)="closeLogDialog()">
+            Huỷ
+          </button>
+          <button
+            type="submit"
+            class="btn primary"
+            [disabled]="saving() || !logDraft().volume || !logDraft().date || !logDraft().time"
+          >
+            <i class="pi" [class.pi-save]="!saving()" [class.pi-spin]="saving()" [class.pi-spinner]="saving()"></i>
+            {{ saving() ? 'Đang lưu...' : 'Lưu cữ bú' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============ EDIT LOG DIALOG ============ -->
+  <div
+    class="dialog-overlay dialog-overlay--front"
+    *ngIf="editingLog() as edit"
+    (click)="closeEditDialog()"
+  >
+    <div class="dialog" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+      <div class="dialog-head">
+        <div>
+          <div class="eyebrow">Chỉnh sửa cữ bú</div>
+          <h2><i class="pi pi-pencil"></i> Cập nhật thông tin</h2>
+        </div>
+        <button
+          type="button"
+          class="dialog-close"
+          (click)="closeEditDialog()"
+          aria-label="Đóng"
+        >
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+
+      <form class="log-form" (ngSubmit)="submitEditLog()">
+        <!-- Date hiển thị nhưng KHÔNG cho edit -->
+        <div class="edit-date-banner">
+          <i class="pi pi-calendar"></i>
+          <span class="edb-label">Ngày</span>
+          <strong class="edb-value">{{ formatDateDisplay(edit.date) }}</strong>
+          <span
+            class="edb-lock"
+            title="Ngày của cữ này không đổi được khi sửa"
+            aria-label="Ngày không đổi được"
+            role="img"
+          >
+            <i class="pi pi-lock" aria-hidden="true"></i>
+          </span>
+        </div>
+
+        <div class="log-grid">
+          <label class="field">
+            <span class="label">Giờ</span>
+            <input
+              type="time"
+              [ngModel]="editLogDraft().time"
+              (ngModelChange)="updateEditTime($event)"
+              name="editLogTime"
+              required
+            />
+          </label>
+
+          <label class="field">
+            <span class="label">Dung tích (ml)</span>
+            <input
+              type="number"
+              inputmode="numeric"
+              min="1"
+              max="500"
+              step="5"
+              [ngModel]="editLogDraft().volume"
+              (ngModelChange)="updateEditVolume($any($event))"
+              name="editLogVolume"
+              placeholder="50"
+              required
+            />
+          </label>
+
+          <label class="field full">
+            <span class="label">Ghi chú (tuỳ chọn)</span>
+            <input
+              type="text"
+              [ngModel]="editLogDraft().note"
+              (ngModelChange)="updateEditNote($event)"
+              name="editLogNote"
+              placeholder="VD: bú mẹ, vắt sữa, sữa công thức..."
+              autocomplete="off"
+            />
+          </label>
+        </div>
+
+        <div class="quick-volumes">
+          <span class="quick-label">Nhanh:</span>
+          <button type="button" class="quick-chip" (click)="quickEditVolume(30)">30ml</button>
+          <button type="button" class="quick-chip" (click)="quickEditVolume(50)">50ml</button>
+          <button type="button" class="quick-chip" (click)="quickEditVolume(60)">60ml</button>
+          <button type="button" class="quick-chip" (click)="quickEditVolume(70)">70ml</button>
+          <button type="button" class="quick-chip" (click)="quickEditVolume(80)">80ml</button>
+          <button type="button" class="quick-chip" (click)="quickEditVolume(90)">90ml</button>
+          <button type="button" class="quick-chip" (click)="quickEditVolume(120)">120ml</button>
+          <button
+            type="button"
+            class="quick-chip formula-chip"
+            [class.active]="hasEditNote('Sữa công thức')"
+            (click)="quickEditNote('Sữa công thức')"
+            title="Gắn nhãn 'Sữa công thức' cho cữ này"
+          >
+            <i class="pi pi-prime"></i> Sữa công thức
+          </button>
+        </div>
+
+        <div class="sync-error" *ngIf="syncError()">
+          <i class="pi pi-exclamation-triangle"></i> {{ syncError() }}
+        </div>
+
+        <div class="dialog-actions">
+          <button type="button" class="btn ghost" (click)="closeEditDialog()">
+            Huỷ
+          </button>
+          <button
+            type="submit"
+            class="btn primary"
+            [disabled]="editSaving() || !editLogDraft().volume || !editLogDraft().time"
+          >
+            <i class="pi" [class.pi-save]="!editSaving()" [class.pi-spin]="editSaving()" [class.pi-spinner]="editSaving()"></i>
+            {{ editSaving() ? 'Đang lưu...' : 'Lưu thay đổi' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============ HISTORY DIALOG (all` feeds) ============ -->
+  <div
+    class="dialog-overlay"
+    *ngIf="historyDialogOpen()"
+    (click)="closeHistoryDialog()"
+  >
+    <div
+      class="dialog dialog-wide"
+      role="dialog"
+      aria-modal="true"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="dialog-head">
+        <div>
+          <div class="eyebrow">
+            <ng-container [ngSwitch]="historyFilter()">
+              <ng-container *ngSwitchCase="'today'">Cữ bú hôm nay</ng-container>
+              <ng-container *ngSwitchCase="'yesterday'">Cữ bú hôm qua</ng-container>
+              <ng-container *ngSwitchCase="'date'">Cữ bú theo ngày</ng-container>
+              <ng-container *ngSwitchDefault>Lịch sử đầy đủ</ng-container>
+            </ng-container>
+          </div>
+          <h2>
+            <i class="pi pi-list"></i>
+            <ng-container [ngSwitch]="historyFilter()">
+              <ng-container *ngSwitchCase="'today'">
+                Hôm nay ({{ todayLogs().length }} cữ · {{ todayStats().total }}ml)
+              </ng-container>
+              <ng-container *ngSwitchCase="'yesterday'">
+                Hôm qua ({{ yesterdayLogs().length }} cữ · {{ yesterdayStats().total }}ml)
+              </ng-container>
+              <ng-container *ngSwitchCase="'date'">
+                {{ formatDateDisplay(historyFilterDate()) }}
+                ({{ historyFilteredFeedTotal() }} cữ)
+              </ng-container>
+              <ng-container *ngSwitchDefault>
+                Tất cả cữ bú ({{ logs().length }})
+              </ng-container>
+            </ng-container>
+          </h2>
+        </div>
+        <button
+          type="button"
+          class="dialog-close"
+          (click)="closeHistoryDialog()"
+          aria-label="Đóng"
+        >
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+
+      <div class="history-body" (scroll)="onHistoryBodyScroll($event)">
+        <p class="history-paging-hint muted" *ngIf="historyHasMoreFeeds()">
+          Hiển thị {{ historyDisplayedFeedCount() }} / {{ historyFilteredFeedTotal() }} cữ
+          (cuộn gần cuối hoặc bấm nút bên dưới để tải thêm).
+        </p>
+        <div class="history-group" *ngFor="let g of feedingsByDate(); trackBy: trackHistoryGroup">
+          <div class="history-group-head">
+            <div>
+              <div class="h-date">{{ formatDateDisplay(g.date) }}</div>
+              <div class="h-day">{{ formatDayLabel(g.date) }}</div>
+            </div>
+            <div class="h-total">
+              <strong>{{ g.total }}</strong>ml
+              <span class="h-count">· {{ g.count }} cữ</span>
+              <span class="h-avg" *ngIf="g.avg > 0">· TB {{ g.avg }}ml</span>
+            </div>
+          </div>
+          <div class="history-group-rows">
+            <div
+              class="feed-row feed-row--clickable"
+              *ngFor="let vg of g.viewRows; trackBy: trackFeedingViewGroup"
+              [class.low-volume]="isLowVolumeViewGroup(vg)"
+              [class.high-volume]="isHighVolumeViewGroup(vg)"
+              role="button"
+              tabindex="0"
+              (click)="onFeedRowClick(vg)"
+              (keydown.enter)="onFeedRowClick(vg)"
+              (keydown.space)="$event.preventDefault(); onFeedRowClick(vg)"
+            >
+              <div class="feed-row-time">
+                <div class="time time--with-badge">
+                  {{ viewGroupDisplayTime(vg) }}
+                  <button
+                    *ngIf="vg.members.length > 1"
+                    type="button"
+                    class="feed-merge-badge"
+                    (click)="openFeedGroupDetail(vg); $event.stopPropagation()"
+                    title="Xem các cữ đã gom"
+                  >
+                    {{ vg.members.length }} cữ
+                  </button>
+                </div>
+                <div
+                  class="feed-row-gap"
+                  *ngIf="formatIntervalFromPrevViewGroup(vg, g.viewRows) as iv"
+                  [class.feed-gap-warn]="isFeedTimeGapWarningViewGroup(vg, g.viewRows)"
+                >
+                  <i class="pi pi-clock"></i> {{ iv }}
+                </div>
+              </div>
+              <div class="feed-row-volume">
+                <strong>{{ viewGroupDisplayVolume(vg) }}</strong>
+                <span class="u">ml</span>
+              </div>
+              <div class="feed-row-note" *ngIf="viewGroupNote(vg); else noNote2">
+                {{ viewGroupNote(vg) }}
+              </div>
+              <ng-template #noNote2>
+                <div class="feed-row-note muted">—</div>
+              </ng-template>
+              <div class="feed-row-actions" *ngIf="vg.members.length === 1 && vg.members[0].rowIndex">
+                <button
+                  class="feed-row-edit"
+                  (click)="openEditDialog(vg.members[0]); $event.stopPropagation()"
+                  title="Sửa cữ này"
+                  aria-label="Sửa cữ bú"
+                >
+                  <i class="pi pi-pencil"></i>
+                </button>
+                <button
+                  class="feed-row-del"
+                  (click)="deleteLog(vg.members[0]); $event.stopPropagation()"
+                  title="Xoá cữ này"
+                  aria-label="Xoá cữ bú"
+                >
+                  <i class="pi pi-trash"></i>
+                </button>
+              </div>
+              <div class="feed-row-actions" *ngIf="vg.members.length > 1">
+                <button
+                  class="feed-row-edit"
+                  (click)="openFeedGroupDetail(vg); $event.stopPropagation()"
+                  title="Chi tiết các cữ đã gom"
+                  aria-label="Chi tiết gom nhóm"
+                >
+                  <i class="pi pi-list"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="history-load-more" *ngIf="historyHasMoreFeeds()">
+          <button type="button" class="btn ghost" (click)="loadMoreHistoryFeeds()">
+            <i class="pi pi-angle-double-down"></i>
+            Tải thêm 100 cữ
+          </button>
+        </div>
+
+        <div class="empty-mini" *ngIf="historyFilteredFeedTotal() === 0">
+          <ng-container [ngSwitch]="historyFilter()">
+            <ng-container *ngSwitchCase="'today'">Chưa có cữ bú nào trong hôm nay.</ng-container>
+            <ng-container *ngSwitchCase="'date'">
+              Chưa có cữ bú nào trong ngày {{ formatDateDisplay(historyFilterDate()) }}.
+            </ng-container>
+            <ng-container *ngSwitchDefault>Chưa có cữ bú nào được ghi nhận.</ng-container>
+          </ng-container>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ FEEDING SETTINGS (tab Sheet Settings, key = ID) ============ -->
+  <div
+    class="dialog-overlay dialog-overlay--front"
+    *ngIf="feedingSettingsDialogOpen()"
+    (click)="closeFeedingSettingsDialog()"
+  >
+    <div
+      class="dialog feeding-settings-dialog"
+      role="dialog"
+      aria-modal="true"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="dialog-head">
+        <div>
+          <h2><i class="pi pi-sliders-h"></i> Cài đặt</h2>
+        </div>
+        <button
+          type="button"
+          class="dialog-close"
+          (click)="closeFeedingSettingsDialog()"
+          aria-label="Đóng"
+        >
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+
+      <ng-container *ngIf="settingsDraft() as sd">
+        <div class="log-grid feeding-settings-grid">
+          <label class="field full">
+            <span class="label">Cảnh báo khoảng cách cữ (giờ)</span>
+            <input
+              type="number"
+              inputmode="decimal"
+              min="0.25"
+              max="48"
+              step="0.25"
+              [ngModel]="sd.timeWarningHours"
+              (ngModelChange)="updateSettingsDraftTimeWarning($event)"
+              name="setFeedTimeWarningHours"
+            />
+          </label>
+
+          <label class="field full">
+            <span class="label">Ngưỡng cữ thấp (ml)</span>
+            <input
+              type="number"
+              inputmode="numeric"
+              min="1"
+              max="500"
+              step="1"
+              [ngModel]="sd.warningMl"
+              (ngModelChange)="updateSettingsDraftWarning($event)"
+              name="setWarningMl"
+            />
+          </label>
+
+          <label class="field full">
+            <span class="label">Gom cữ gần nhau (phút, 0 = tắt)</span>
+            <input
+              type="number"
+              inputmode="numeric"
+              min="0"
+              max="180"
+              step="1"
+              [ngModel]="sd.groupGapMinutes"
+              (ngModelChange)="updateSettingsDraftGroupGap($event)"
+              name="setFeedGroupGapMinutes"
+            />
+          </label>
+
+          <label class="field full notification-setting-field">
+            <span class="label">
+              <code>FEEDING_NOTIFICATION_MINUTES</code> — Thông báo sắp bú (phút)
+            </span>
+            <input
+              type="number"
+              inputmode="numeric"
+              min="1"
+              max="180"
+              step="1"
+              [ngModel]="sd.notificationMinutes"
+              (ngModelChange)="updateSettingsDraftNotification($event)"
+              name="setFeedingNotificationMinutes"
+              placeholder="5"
+            />
+            <span class="field-hint muted">
+              Hiển thị trạng thái <strong>"Sắp tới"</strong> khi còn ≤ N phút đến giờ dự đoán.
+              Giá trị khuyến nghị: <strong>3-10 phút</strong>.
+            </span>
+          </label>
+
+          <label class="field full burp-setting-field">
+            <span class="label">
+              <code>BURP_DURATION_MINUTES</code> — Thời gian vỗ ợ (phút)
+            </span>
+            <input
+              type="number"
+              inputmode="numeric"
+              min="1"
+              max="30"
+              step="1"
+              [ngModel]="sd.burpDurationMinutes"
+              (ngModelChange)="updateSettingsDraftBurpDuration($event)"
+              name="setBurpDurationMinutes"
+              placeholder="10"
+            />
+            <span class="field-hint muted">
+              Hiển thị nhắc nhở <strong>bế bé vỗ ợ</strong> trong N phút sau khi bú.
+              Giá trị khuyến nghị: <strong>10-15 phút</strong>.
+            </span>
+          </label>
+
+          <label class="field full">
+            <span class="label">Nhắc lịch trước (ngày)</span>
+            <input
+              type="number"
+              inputmode="numeric"
+              min="0"
+              max="30"
+              step="1"
+              [ngModel]="sd.eventReminderDays"
+              (ngModelChange)="updateSettingsDraftEventReminderDays($event)"
+              name="eventRemDays"
+            />
+          </label>
+
+          <label class="field full">
+            <span class="label">Nhắc lịch thêm (giờ)</span>
+            <input
+              type="number"
+              inputmode="numeric"
+              min="0"
+              max="168"
+              step="1"
+              [ngModel]="sd.eventReminderHours"
+              (ngModelChange)="updateSettingsDraftEventReminderHours($event)"
+              name="eventRemHours"
+            />
+          </label>
+
+          <label class="field full">
+            <span class="label">Tự động làm mới nhật ký (phút)</span>
+            <input
+              type="number"
+              inputmode="numeric"
+              min="1"
+              max="60"
+              step="1"
+              [ngModel]="sd.activityLogRefreshMinutes"
+              (ngModelChange)="updateSettingsDraftActivityLogRefresh($event)"
+              name="activityLogRefresh"
+            />
+            <span class="field-hint muted">
+              Tự động tải lại nhật ký hoạt động mỗi N phút. Mặc định: <strong>5 phút</strong>.
+            </span>
+          </label>
+        </div>
+
+        <div class="sync-error" *ngIf="settingsFormError()">
+          <i class="pi pi-exclamation-triangle"></i> {{ settingsFormError() }}
+        </div>
+
+        <div class="sync-success" *ngIf="settingsSuccess()">
+          <i class="pi pi-check-circle"></i> {{ settingsSuccess() }}
+        </div>
+
+        <div class="dialog-actions">
+          <button type="button" class="btn ghost" (click)="closeFeedingSettingsDialog()">
+            Huỷ
+          </button>
+          <button
+            type="button"
+            class="btn primary"
+            [disabled]="settingsSaving()"
+            (click)="submitFeedingSettings()"
+          >
+            <i
+              class="pi"
+              [class.pi-save]="!settingsSaving()"
+              [class.pi-spin]="settingsSaving()"
+              [class.pi-spinner]="settingsSaving()"
+            ></i>
+            {{ settingsSaving() ? 'Đang lưu…' : 'Lưu' }}
+          </button>
+        </div>
+      </ng-container>
+    </div>
+  </div>
+
+  <!-- Chi tiết các cữ đã gom — z-index thấp hơn chi tiết 1 cữ -->
+  <div
+    class="dialog-overlay dialog-overlay--front feed-group-detail-overlay"
+    *ngIf="feedGroupDetail() as grp"
+    (click)="closeFeedGroupDetail()"
+  >
+    <div
+      class="dialog dialog-wide feed-group-detail-dialog"
+      role="dialog"
+      aria-modal="true"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="dialog-head">
+        <div>
+          <div class="eyebrow">Gom nhóm hiển thị</div>
+          <h2><i class="pi pi-layer-group"></i> {{ grp.members.length }} cữ trên sheet</h2>
+        </div>
+        <button
+          type="button"
+          class="dialog-close"
+          (click)="closeFeedGroupDetail()"
+          aria-label="Đóng"
+        >
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+      <p class="muted feed-group-detail-summary">
+        Giờ hiển thị (trung bình): <strong>{{ viewGroupDisplayTime(grp) }}</strong>
+        <span class="sep">·</span>
+        Tổng: <strong>{{ viewGroupDisplayVolume(grp) }}ml</strong>
+      </p>
+      <p class="muted feed-group-detail-hint">
+        <i class="pi pi-info-circle"></i> Chạm một cữ để xem chi tiết &amp; so sánh
+      </p>
+      <div class="history-group feed-group-detail-history">
+        <div class="history-group-rows feed-group-detail-rows">
+          <div
+            class="feed-row feed-row--clickable"
+            *ngFor="let m of feedGroupDetailMembersDesc(); trackBy: trackFeedingLogRow"
+            [class.low-volume]="isLowVolume(m.volume)"
+            [class.high-volume]="isHighVolume(m.volume)"
+            role="button"
+            tabindex="0"
+            (click)="openFeedDetailFromGroupMember(m)"
+            (keydown.enter)="openFeedDetailFromGroupMember(m)"
+            (keydown.space)="$event.preventDefault(); openFeedDetailFromGroupMember(m)"
+          >
+            <div class="feed-row-time">
+              <div class="time">{{ m.time }}</div>
+              <div
+                class="feed-row-gap"
+                *ngIf="formatIntervalFromPrev(m, feedGroupDetailMembersDesc()) as ivd"
+                [class.feed-gap-warn]="
+                  isFeedTimeGapWarning(m, feedGroupDetailMembersDesc())
+                "
+              >
+                <i class="pi pi-clock"></i> {{ ivd }}
+              </div>
+            </div>
+            <div class="feed-row-volume">
+              <strong>{{ m.volume }}</strong>
+              <span class="u">ml</span>
+            </div>
+            <div class="feed-row-note" *ngIf="m.note; else noNoteDetail">
+              {{ m.note }}
+            </div>
+            <ng-template #noNoteDetail>
+              <div class="feed-row-note muted">—</div>
+            </ng-template>
+            <div class="feed-row-actions" *ngIf="m.rowIndex">
+              <button
+                class="feed-row-edit"
+                (click)="openEditDialog(m); closeFeedGroupDetail(); closeFeedDetail(); $event.stopPropagation()"
+                title="Sửa cữ này"
+                aria-label="Sửa cữ bú"
+              >
+                <i class="pi pi-pencil"></i>
+              </button>
+              <button
+                class="feed-row-del"
+                (click)="deleteLog(m); $event.stopPropagation()"
+                title="Xoá cữ này"
+                aria-label="Xoá cữ bú"
+              >
+                <i class="pi pi-trash"></i>
+              </button>
+              <button
+                type="button"
+                class="feed-row-edit"
+                (click)="openFeedDetailFromGroupMember(m); $event.stopPropagation()"
+                title="Chi tiết cữ này"
+                aria-label="Chi tiết cữ bú"
+              >
+                <i class="pi pi-eye"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="dialog-actions">
+        <button type="button" class="btn primary" (click)="closeFeedGroupDetail()">Đóng</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chi tiết một cữ bú — render sau dialog gom, z-index cao hơn -->
+  <div
+    class="dialog-overlay dialog-overlay--front feed-detail-overlay"
+    *ngIf="feedDetailView() as view"
+    (click)="closeFeedDetail()"
+  >
+    <div
+      class="dialog feed-detail-dialog"
+      role="dialog"
+      aria-modal="true"
+      [attr.data-status]="view.volumeStatus"
+      (click)="$event.stopPropagation()"
+    >
+      <header class="feed-detail-top">
+        <button
+          type="button"
+          class="feed-detail-close"
+          (click)="closeFeedDetail()"
+          aria-label="Đóng"
+        >
+          <i class="pi pi-times"></i>
+        </button>
+
+        <p class="feed-detail-eyebrow">Chi tiết cữ bú</p>
+
+        <div class="feed-detail-metric" aria-label="Dung tích">
+          <span class="feed-detail-metric__value">{{ view.log.volume }}</span>
+          <span class="feed-detail-metric__unit">ml</span>
+        </div>
+
+        <span class="feed-detail-status" [attr.data-kind]="view.volumeStatus">
+          <i class="pi" [ngClass]="feedDetailStatusIcon(view.volumeStatus)"></i>
+          {{ feedDetailStatusLabel(view.volumeStatus) }}
+        </span>
+
+        <div class="feed-detail-chips">
+          <span class="feed-detail-chip">
+            <i class="pi pi-calendar"></i>
+            <span>
+              {{ formatDateDisplay(view.log.date) }}
+              <em>{{ formatDayLabel(view.log.date) }}</em>
+            </span>
+          </span>
+          <span class="feed-detail-chip feed-detail-chip--time">
+            <i class="pi pi-clock"></i>
+            <span>{{ view.log.time }}</span>
+          </span>
+          <span class="feed-detail-chip feed-detail-chip--muted" *ngIf="view.ageLabel">
+            <i class="pi pi-history"></i>
+            <span>{{ view.ageLabel }}</span>
+          </span>
+        </div>
+      </header>
+
+      <div class="feed-detail-body">
+        <section class="feed-detail-section" *ngIf="view.compares.length > 0">
+          <h3 class="feed-detail-section__title">
+            <i class="pi pi-chart-bar"></i> So sánh
+          </h3>
+          <ul class="feed-detail-cards">
+            <li
+              class="feed-detail-card"
+              *ngFor="let row of view.compares"
+              [class.feed-detail-card--warn]="row.warn"
+              [class.feed-detail-card--position]="row.kind === 'position'"
+              [class.feed-detail-card--average]="row.kind === 'average'"
+              [class.feed-detail-card--next]="row.kind === 'next'"
+              [class.feed-detail-card--gap]="row.kind === 'gap'"
+            >
+              <span
+                class="feed-detail-card__icon"
+                [attr.data-kind]="row.kind"
+                aria-hidden="true"
+              >
+                <i class="pi" [ngClass]="row.icon"></i>
+              </span>
+              <div class="feed-detail-card__body">
+                <span class="feed-detail-card__label">{{ row.label }}</span>
+
+                <div
+                  class="fdc-position"
+                  *ngIf="row.kind === 'position' && row.position as pos"
+                >
+                  <div class="fdc-position__head">
+                    <span class="fdc-position__idx">Cữ {{ pos.index }}</span>
+                    <span class="fdc-position__of">/ {{ pos.total }}</span>
+                    <span class="fdc-position__tag">{{ pos.dayLabel }}</span>
+                  </div>
+                  <div
+                    class="fdc-progress"
+                    role="progressbar"
+                    [attr.aria-valuenow]="pos.index"
+                    [attr.aria-valuemax]="pos.total"
+                  >
+                    <div
+                      class="fdc-progress__fill"
+                      [style.width.%]="(pos.index / pos.total) * 100"
+                    ></div>
+                  </div>
+                  <div class="fdc-position__stats">
+                    <span class="fdc-stat fdc-stat--violet">
+                      <strong>{{ pos.totalMl }}</strong>
+                      <small>ml đến cữ này</small>
+                    </span>
+                    <span
+                      class="fdc-stat fdc-stat--indigo"
+                      *ngIf="pos.dayTotalMl > pos.totalMl"
+                    >
+                      <strong>{{ pos.dayTotalMl }}</strong>
+                      <small>ml cả ngày</small>
+                    </span>
+                  </div>
+                </div>
+
+                <div
+                  class="fdc-avg"
+                  *ngIf="row.kind === 'average' && row.average as avg"
+                >
+                  <span
+                    class="fdc-pill"
+                    [class.fdc-pill--neutral]="avg.diffMl === 0"
+                    [class.fdc-pill--up]="avg.diffMl > 0"
+                    [class.fdc-pill--down]="avg.diffMl < 0"
+                  >
+                    {{
+                      avg.diffMl === 0
+                        ? 'Bằng TB'
+                        : (avg.diffMl > 0 ? '+' : '') + avg.diffMl + 'ml'
+                    }}
+                  </span>
+                  <span class="fdc-avg__meta">
+                    <strong>{{ avg.refMl }}ml</strong>/cữ · {{ avg.refLabel }} ·
+                    {{ avg.feedCount }} cữ
+                  </span>
+                </div>
+
+                <div
+                  class="fdc-next"
+                  *ngIf="row.kind === 'next' && row.next as nx"
+                >
+                  <span class="fdc-next__time">{{ nx.time }}</span>
+                  <span class="fdc-next__vol">{{ nx.volume }}ml</span>
+                  <span class="fdc-next__gap">
+                    <i class="pi pi-clock"></i> sau {{ nx.gapLabel }}
+                  </span>
+                </div>
+
+                <div
+                  class="fdc-gap"
+                  *ngIf="row.kind === 'gap' && row.gapPrev as gp"
+                >
+                  <div class="fdc-gap__prev">
+                    <span class="fdc-gap__prev-label">Cữ trước</span>
+                    <span class="fdc-gap__prev-time">{{ gp.prevTime }}</span>
+                    <span class="fdc-gap__prev-vol">{{ gp.prevVolume }}ml</span>
+                    <span class="fdc-gap__prev-date" *ngIf="gp.prevDateIso">
+                      {{ formatDateShort(gp.prevDateIso) }}
+                    </span>
+                  </div>
+                  <div class="fdc-gap__row">
+                    <div
+                      class="fdc-gap__interval"
+                      [class.fdc-gap__interval--warn]="row.warn"
+                    >
+                      <i class="pi pi-clock"></i>
+                      <span>{{ gp.gapLabel }}</span>
+                    </div>
+                    <span
+                      class="fdc-pill fdc-gap__vol-diff"
+                      [class.fdc-pill--neutral]="gp.volDiffMl === 0"
+                      [class.fdc-pill--up]="gp.volDiffMl > 0"
+                      [class.fdc-pill--down]="gp.volDiffMl < 0"
+                    >
+                      {{
+                        gp.volDiffMl === 0
+                          ? 'Bằng cữ trước'
+                          : (gp.volDiffMl > 0 ? '+' : '') + gp.volDiffMl + 'ml'
+                      }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </li>
+          </ul>
+        </section>
+
+        <section class="feed-detail-section" *ngIf="view.note">
+          <h3 class="feed-detail-section__title">
+            <i class="pi pi-comment"></i> Ghi chú
+          </h3>
+          <blockquote class="feed-detail-quote">{{ view.note }}</blockquote>
+        </section>
+      </div>
+
+      <footer class="feed-detail-footer">
+        <div class="feed-detail-cta">
+          <button type="button" class="btn ghost" (click)="closeFeedDetail()">
+            Đóng
+          </button>
+          <button
+            type="button"
+            class="btn primary"
+            *ngIf="view.log.rowIndex"
+            (click)="openEditFromFeedDetail()"
+          >
+            <i class="pi pi-pencil"></i> Sửa cữ
+          </button>
+        </div>
+      </footer>
+    </div>
+  </div>
