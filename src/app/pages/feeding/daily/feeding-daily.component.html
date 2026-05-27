@@ -72,7 +72,12 @@
                 <button type="button" class="bp-btn" (click)="editBottlePrep()" title="Sửa">
                   <i class="pi pi-pencil"></i>
                 </button>
-                <button type="button" class="bp-btn danger" (click)="clearBottlePrep()" title="Xoá bình">
+                <button
+                  type="button"
+                  class="bp-btn danger"
+                  (click)="openBottlePrepClearConfirm()"
+                  title="Xoá bình"
+                >
                   <i class="pi pi-times"></i>
                 </button>
               </div>
@@ -93,7 +98,7 @@
         </ng-container>
 
         <ng-template #bottlePrepEdit>
-          <form class="bp-form" (ngSubmit)="saveBottlePrep()">
+          <form class="bp-form">
             <div class="bp-form-head">
               <i class="pi pi-inbox"></i>
               <label class="bp-label">Sữa pha vào bình</label>
@@ -118,6 +123,7 @@
                 [value]="bottlePrepDraft()"
                 [disabled]="bottlePrepSaving()"
                 (input)="updateBottlePrepDraft($any($event.target).value)"
+                (keydown.enter)="saveBottlePrep(); $event.preventDefault()"
                 placeholder="100"
                 autocomplete="off"
                 autofocus
@@ -146,10 +152,11 @@
 
             <div class="bp-form-actions">
               <button
-                type="submit"
+                type="button"
                 class="bp-btn primary"
                 [disabled]="bottlePrepSaving() || !bottlePrepDraft()"
                 [title]="bottlePrepSaving() ? 'Đang lưu...' : 'Lưu'"
+                (click)="saveBottlePrep()"
               >
                 <i
                   class="pi"
@@ -171,6 +178,67 @@
           </form>
         </ng-template>
       </section>
+
+      <!-- Xác nhận xóa sữa đã pha (thủ công) -->
+      <div
+        class="bp-clear-dialog-overlay"
+        *ngIf="bottlePrepClearConfirmOpen()"
+        (click)="closeBottlePrepClearConfirm()"
+        role="presentation"
+      >
+        <div class="bp-clear-dialog" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+          <h3 class="bp-clear-dialog__title">Xóa sữa đã pha?</h3>
+          <p class="bp-clear-dialog__desc" *ngIf="bottlePrep() as p">
+            Bạn sắp xóa <strong>{{ p.volumeMl }}ml</strong> đã pha trong bình (ghi nhận lúc {{ formatBottleAt(p.at) }}).
+          </p>
+          <label class="bp-clear-dialog__label" for="bp-clear-reason">Lý do (tuỳ chọn)</label>
+          <textarea
+            id="bp-clear-reason"
+            class="bp-clear-dialog__textarea"
+            rows="3"
+            maxlength="500"
+            [value]="bottlePrepClearReasonDraft()"
+            (input)="updateBottlePrepClearReason($any($event.target).value)"
+            placeholder="Ví dụ: đổ đi, pha lại, hết hạn…"
+          ></textarea>
+          <div class="bp-clear-dialog__actions">
+            <button type="button" class="btn ghost small" (click)="closeBottlePrepClearConfirm()">Huỷ</button>
+            <button type="button" class="btn small bp-clear-dialog__confirm" (click)="confirmClearBottlePrep()">
+              Xóa
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Xác nhận đổi dung tích sữa đã pha -->
+      <div
+        class="bp-clear-dialog-overlay"
+        *ngIf="bottlePrepEditConfirmOpen()"
+        (click)="closeBottlePrepEditConfirm()"
+        role="presentation"
+      >
+        <div class="bp-clear-dialog" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+          <h3 class="bp-clear-dialog__title">Đổi lượng sữa đã pha?</h3>
+          <p class="bp-clear-dialog__desc" *ngIf="bottlePrepEditPending() as ep">
+            Lưu <strong>{{ ep.oldVolume }}ml</strong> → <strong>{{ ep.newVolume }}ml</strong>
+            (ghi nhận lúc {{ ep.time }}).
+          </p>
+          <label class="bp-clear-dialog__label" for="bp-edit-reason">Lý do (tuỳ chọn)</label>
+          <textarea
+            id="bp-edit-reason"
+            class="bp-clear-dialog__textarea"
+            rows="3"
+            maxlength="500"
+            [value]="bottlePrepEditReasonDraft()"
+            (input)="updateBottlePrepEditReason($any($event.target).value)"
+            placeholder="Ví dụ: bé uống ít hơn dự kiến, đổi loại sữa…"
+          ></textarea>
+          <div class="bp-clear-dialog__actions">
+            <button type="button" class="btn ghost small" (click)="closeBottlePrepEditConfirm()">Huỷ</button>
+            <button type="button" class="btn primary small" (click)="confirmBottlePrepEditSave()">Lưu</button>
+          </div>
+        </div>
+      </div>
 
       <!-- ============ BURP WARNING ============ -->
       <div class="burp-warning" *ngIf="burpWarning() as bw">

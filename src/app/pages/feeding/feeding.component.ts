@@ -36,7 +36,7 @@ import { MedicalHistoryComponent } from './medical-history/medical-history.compo
 import { WeightComponent } from './weight/weight.component';
 import { FeedingScheduleComponent } from './schedule/feeding-schedule.component';
 import { groupLogsByProximity } from './feeding-view-group';
-import { ActivityLogComponent } from '../../components/activity-log/activity-log.component';
+import { ActivityLogComponent } from './activity-log/activity-log.component';
 import { ActivityLogService, formatLogContent, ACTIVITY_EVENT } from '../../services/activity-log.service';
 
 interface Profile {

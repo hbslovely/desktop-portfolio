@@ -1,0 +1,96 @@
+<div class="wh-root">
+  <div class="wh-alerts">
+    <div class="alert error" *ngIf="errorMsg()">
+      <i class="pi pi-exclamation-circle"></i>
+      {{ errorMsg() }}
+    </div>
+    <div class="alert ok" *ngIf="successMsg()">
+      <i class="pi pi-check-circle"></i>
+      {{ successMsg() }}
+    </div>
+  </div>
+
+  <div class="wh-toolbar">
+    <p class="wh-hint" *ngIf="!birthDate()">
+      <i class="pi pi-calendar"></i>
+      Thêm <strong>ngày sinh</strong> (tab Cữ bú) để có chuẩn WHO và timeline.
+    </p>
+    <button
+      type="button"
+      class="wh-pill-btn"
+      (click)="openWhoTable.emit()"
+      title="Bảng cân nặng chuẩn WHO theo tuổi"
+    >
+      <i class="pi pi-table"></i>
+      Bảng chuẩn WHO
+    </button>
+  </div>
+
+  <button
+    type="button"
+    class="wh-timeline-cta"
+    (click)="openTimeline.emit()"
+    *ngIf="birthDate() && currentTimelineMilestone() as cur"
+    [title]="'Xem dòng thời gian phát triển của bé'"
+  >
+    <span class="wh-timeline-cta__emoji">{{ cur.heroEmoji }}</span>
+    <span class="wh-timeline-cta__body">
+      <span class="wh-timeline-cta__label">
+        <i class="pi pi-chart-line"></i>
+        Timeline phát triển
+      </span>
+      <span class="wh-timeline-cta__sub">{{ cur.periodLabel }} · {{ cur.tagline }}</span>
+    </span>
+    <span class="wh-timeline-cta__stat">
+      {{ timelineStats().past }}/{{ timelineStats().total }}
+    </span>
+    <i class="pi pi-chevron-right"></i>
+  </button>
+
+  <section
+    class="wh-eval"
+    *ngIf="latestGrowthEval() as ev"
+    [attr.data-status]="statusClass(ev.status)"
+  >
+    <div class="wh-eval__row">
+      <div class="wh-eval__copy">
+        <div class="wh-eval__eyebrow">
+          <i class="pi pi-heart-fill"></i> Theo tuần tuổi — chuẩn WHO (VN khuyến nghị)
+        </div>
+        <h3 class="wh-eval__title">Đánh giá mới nhất</h3>
+        <p class="wh-eval__meta" *ngIf="sortedLogsDesc()[0] as last">
+          {{ formatDate(last.date) }} · {{ formatKg(last.weightKg) }} kg ·
+          <ng-container *ngIf="last.heightCm"> {{ formatCm(last.heightCm) }} cm · </ng-container>
+          {{ ev.weeksLabel }}
+        </p>
+      </div>
+      <span class="wh-eval__badge" [attr.data-status]="statusClass(ev.status)">
+        {{ ev.statusLabel }}
+      </span>
+    </div>
+    <p class="wh-eval__detail">{{ ev.detail }}</p>
+  </section>
+
+  <section
+    class="wh-eval wh-eval--height"
+    *ngIf="latestHeightEval() as hv"
+    [attr.data-status]="statusClass(hv.status)"
+  >
+    <div class="wh-eval__row">
+      <div class="wh-eval__copy">
+        <div class="wh-eval__eyebrow">
+          <i class="pi pi-arrows-v"></i> Chiều cao theo tuổi — chuẩn WHO
+        </div>
+        <h3 class="wh-eval__title">Đánh giá chiều cao mới nhất</h3>
+        <p class="wh-eval__meta" *ngIf="latestHeightLog() as last">
+          {{ formatDate(last.date) }} · {{ formatCm(last.heightCm || 0) }} cm ·
+          {{ hv.monthsLabel }} · P{{ hv.percentile }}
+        </p>
+      </div>
+      <span class="wh-eval__badge" [attr.data-status]="statusClass(hv.status)">
+        {{ hv.statusLabel }}
+      </span>
+    </div>
+    <p class="wh-eval__detail">{{ hv.detail }}</p>
+  </section>
+</div>

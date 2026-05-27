@@ -11,22 +11,30 @@ export const ACTIVITY_EVENT = {
   FEEDING_UPDATED: 'FEEDING_UPDATED',
   FEEDING_DELETED: 'FEEDING_DELETED',
   BOTTLE_PREP_ADDED: 'BOTTLE_PREP_ADDED',
-  
+  /** Đổi dung tích sữa đã pha (không phải pha mới). */
+  BOTTLE_PREP_UPDATED: 'BOTTLE_PREP_UPDATED',
+  /** Ghi nhận cữ bú từ sữa đã pha — sheet đã xóa bình (lý do cố định). */
+  BOTTLE_PREP_CLEARED_FEEDING: 'BOTTLE_PREP_CLEARED_FEEDING',
+  /** Người dùng xóa thủ công lượng sữa đã pha. */
+  BOTTLE_PREP_MANUAL_CLEARED: 'BOTTLE_PREP_MANUAL_CLEARED',
+  /** Thay bình khi cảnh báo hết hạn / sắp hết hạn (1 giờ) — ghi trước log pha mới. */
+  BOTTLE_PREP_CLEARED_EXPIRY: 'BOTTLE_PREP_CLEARED_EXPIRY',
+
   // Weight events
   WEIGHT_ADDED: 'WEIGHT_ADDED',
   WEIGHT_UPDATED: 'WEIGHT_UPDATED',
   WEIGHT_DELETED: 'WEIGHT_DELETED',
-  
+
   // Medical events
   MEDICAL_ADDED: 'MEDICAL_ADDED',
   MEDICAL_UPDATED: 'MEDICAL_UPDATED',
   MEDICAL_DELETED: 'MEDICAL_DELETED',
-  
+
   // Schedule events
   SCHEDULE_ADDED: 'SCHEDULE_ADDED',
   SCHEDULE_UPDATED: 'SCHEDULE_UPDATED',
   SCHEDULE_DELETED: 'SCHEDULE_DELETED',
-  
+
   // Settings events
   SETTINGS_UPDATED: 'SETTINGS_UPDATED',
   PROFILE_UPDATED: 'PROFILE_UPDATED',
@@ -98,6 +106,38 @@ export function formatLogContent(
       return `Xóa cữ bú '${details['volume']}ml' lúc '${details['time']}'`;
     case ACTIVITY_EVENT.BOTTLE_PREP_ADDED:
       return `Pha sữa '${details['volume']}ml' lúc '${details['time']}'`;
+    case ACTIVITY_EVENT.BOTTLE_PREP_UPDATED: {
+      const oldV = details['oldVolume'];
+      const newV = details['newVolume'];
+      const time = details['time'];
+      const reason = details['reason'];
+      const r =
+        reason != null && String(reason).trim() !== '' ? String(reason).trim() : '';
+      /** Không lặp tên user — template đã có `<user> đã`. */
+      return r
+        ? `Đổi sữa đã pha từ '${oldV}ml' thành '${newV}ml' lúc '${time}'. Lý do: '${r}'`
+        : `Đổi sữa đã pha từ '${oldV}ml' thành '${newV}ml' lúc '${time}'`;
+    }
+    case ACTIVITY_EVENT.BOTTLE_PREP_CLEARED_FEEDING:
+      return `Tự động xóa '${details['volume']}ml' sữa đã pha. Lý do: 'bé ti sữa'`;
+    case ACTIVITY_EVENT.BOTTLE_PREP_MANUAL_CLEARED: {
+      const vol = details['volume'];
+      const reason = details['reason'];
+      const r =
+        reason != null && String(reason).trim() !== '' ? String(reason).trim() : '';
+      return r
+        ? `Xóa '${vol}ml' sữa đã pha. Lý do: '${r}'`
+        : `Xóa '${vol}ml' sữa đã pha.`;
+    }
+    case ACTIVITY_EVENT.BOTTLE_PREP_CLEARED_EXPIRY: {
+      const vol = details['volume'];
+      const m = details['minutes'];
+      const variant = String(details['variant'] ?? 'expired');
+      if (variant === 'expiring') {
+        return `Tự động xóa '${vol}ml' sữa đã pha. Lý do: 'sữa sắp quá hạn (còn ${m} phút đến mức tối đa 1 giờ)'`;
+      }
+      return `Tự động xóa '${vol}ml' sữa đã pha. Lý do: 'sữa quá hạn ${m} phút'`;
+    }
 
     // Weight
     case ACTIVITY_EVENT.WEIGHT_ADDED:
@@ -172,10 +212,57 @@ export function parseContentWithBold(content: string): Array<{ text: string; bol
   }
 
   if (lastIndex < content.length) {
-    parts.push({ text: content.slice(lastIndex), bold: false });
+    let tail = content.slice(lastIndex);
+    // Bỏ dấu nháy đơn thừa ở cuối (log cũ / delimiter lặp → hiển thị orphan ')
+    tail = tail.replace(/'\s*$/g, '');
+    if (tail) {
+      parts.push({ text: tail, bold: false });
+    }
   }
 
   return parts.length > 0 ? parts : [{ text: content, bold: false }];
+}
+
+function escapeHtmlForActivityLog(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/** Giống UI activity log: viết thường ký tự đầu của chuỗi content. */
+export function lowercaseFirstActivityContent(str: string): string {
+  if (!str) return str;
+  return str.charAt(0).toLowerCase() + str.slice(1);
+}
+
+/**
+ * HTML (text đã escape) cho phần sau `<user> đã` — bind với DomSanitizer + [innerHTML].
+ * Phần trong cặp '...' (formatLogContent) được bọc &lt;strong class="activity-item__hl"&gt;.
+ */
+export function buildActivityLogMessageHtml(content: string): string {
+  const normalized = lowercaseFirstActivityContent(content);
+  const parts = parseContentWithBold(normalized);
+  let html = parts
+    .map((p) =>
+      p.bold
+        ? `<strong class="activity-item__hl">${escapeHtmlForActivityLog(p.text)}</strong>`
+        : escapeHtmlForActivityLog(p.text)
+    )
+    .join('');
+
+  const plain = parts
+    .map((p) => p.text)
+    .join('')
+    .trimEnd();
+  const hasClosingPunct = /[.!?…]\s*$/u.test(plain);
+  if (plain.length > 0 && !hasClosingPunct) {
+    html += '.';
+  }
+
+  return html;
 }
 
 /** Map event type sang label tiếng Việt */
@@ -185,6 +272,10 @@ export function getEventTypeLabel(eventType: ActivityEventType): string {
     [ACTIVITY_EVENT.FEEDING_UPDATED]: 'Sửa cữ bú',
     [ACTIVITY_EVENT.FEEDING_DELETED]: 'Xóa cữ bú',
     [ACTIVITY_EVENT.BOTTLE_PREP_ADDED]: 'Pha sữa',
+    [ACTIVITY_EVENT.BOTTLE_PREP_UPDATED]: 'Sửa sữa pha',
+    [ACTIVITY_EVENT.BOTTLE_PREP_CLEARED_FEEDING]: 'Sữa pha (đã dùng)',
+    [ACTIVITY_EVENT.BOTTLE_PREP_MANUAL_CLEARED]: 'Xóa sữa pha',
+    [ACTIVITY_EVENT.BOTTLE_PREP_CLEARED_EXPIRY]: 'Sữa pha (hết hạn)',
     [ACTIVITY_EVENT.WEIGHT_ADDED]: 'Thêm cân nặng',
     [ACTIVITY_EVENT.WEIGHT_UPDATED]: 'Sửa cân nặng',
     [ACTIVITY_EVENT.WEIGHT_DELETED]: 'Xóa cân nặng',
@@ -210,7 +301,7 @@ export function getEventTypeLabel(eventType: ActivityEventType): string {
 /** Map event type sang icon class */
 export function getEventTypeIcon(eventType: ActivityEventType): string {
   if (eventType === ACTIVITY_EVENT.FEEDING_ADDED) return 'pi-heart';
-  if (eventType === ACTIVITY_EVENT.BOTTLE_PREP_ADDED) return 'pi-inbox';
+  if (eventType.startsWith('BOTTLE_PREP_')) return 'pi-inbox';
   if (eventType.startsWith('FEEDING_')) return 'pi-heart';
   if (eventType.startsWith('WEIGHT_')) return 'pi-chart-line';
   if (eventType.startsWith('MEDICAL_')) return 'pi-briefcase';
@@ -224,6 +315,9 @@ export function getEventTypeIcon(eventType: ActivityEventType): string {
 
 /** Map event type sang màu */
 export function getEventTypeColor(eventType: ActivityEventType): string {
+  if (eventType === ACTIVITY_EVENT.BOTTLE_PREP_MANUAL_CLEARED) return 'red';
+  if (eventType === ACTIVITY_EVENT.BOTTLE_PREP_CLEARED_EXPIRY) return 'blue';
+  if (eventType === ACTIVITY_EVENT.BOTTLE_PREP_CLEARED_FEEDING) return 'blue';
   if (eventType.includes('_ADDED')) return 'green';
   if (eventType.includes('_UPDATED')) return 'blue';
   if (eventType.includes('_DELETED')) return 'red';
@@ -606,5 +700,55 @@ export class ActivityLogService {
       newName: details.newName,
     });
     return this.addLog({ user, eventType: ACTIVITY_EVENT[eventType], content });
+  }
+
+  /** Sau khi ghi cữ bú từ sữa đã pha (tính còn lại trong bình → lưu cữ). */
+  logBottlePrepClearedAfterFeed(volumeMl: number): Observable<boolean> {
+    const content = formatLogContent(ACTIVITY_EVENT.BOTTLE_PREP_CLEARED_FEEDING, {
+      volume: volumeMl,
+    });
+    return this.addLog({
+      user: 'Hệ thống',
+      eventType: ACTIVITY_EVENT.BOTTLE_PREP_CLEARED_FEEDING,
+      content,
+    });
+  }
+
+  /** Người dùng xóa thủ công lượng sữa đã pha trên sheet. */
+  logBottlePrepManualClear(
+    actor: string,
+    volumeMl: number,
+    reason?: string
+  ): Observable<boolean> {
+    const content = formatLogContent(ACTIVITY_EVENT.BOTTLE_PREP_MANUAL_CLEARED, {
+      volume: volumeMl,
+      reason: reason?.trim() || undefined,
+    });
+    return this.addLog({
+      user: actor,
+      eventType: ACTIVITY_EVENT.BOTTLE_PREP_MANUAL_CLEARED,
+      content,
+    });
+  }
+
+  /**
+   * Khi pha sữa mới từ cảnh báo hết hạn / sắp hết hạn (1 giờ): ghi xóa lô cũ trước log pha mới.
+   * @param variant `expired` = đã quá hạn `minutes` phút; `expiring` = còn `minutes` phút trong khung 1 giờ.
+   */
+  logBottlePrepClearedForExpiry(
+    volumeMl: number,
+    minutes: number,
+    variant: 'expired' | 'expiring'
+  ): Observable<boolean> {
+    const content = formatLogContent(ACTIVITY_EVENT.BOTTLE_PREP_CLEARED_EXPIRY, {
+      volume: volumeMl,
+      minutes,
+      variant,
+    });
+    return this.addLog({
+      user: 'Hệ thống',
+      eventType: ACTIVITY_EVENT.BOTTLE_PREP_CLEARED_EXPIRY,
+      content,
+    });
   }
 }

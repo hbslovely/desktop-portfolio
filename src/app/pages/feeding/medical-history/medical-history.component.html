@@ -1,18 +1,43 @@
 <div class="medical-page">
-  <section class="card medical-intro">
-    <div class="medical-intro__badge">V2</div>
-    <div class="medical-intro__body">
-      <h2><i class="pi pi-heart-fill"></i> Tiền sử y tế của bé</h2>
+  <header class="medical-hero">
+    <div class="medical-hero__glow" aria-hidden="true"></div>
+    <div class="medical-hero__row">
+      <div class="medical-hero__icon" aria-hidden="true">
+        <i class="pi pi-heart-fill"></i>
+      </div>
+      <div class="medical-hero__text">
+        <p class="medical-hero__eyebrow">Nhật ký sức khỏe · V2</p>
+        <h1 class="medical-hero__title">Tiền sử y tế</h1>
+        <p class="medical-hero__subtitle">
+          Tiêm chủng, khám, thuốc và ảnh đính kèm — lọc theo loại hoặc tìm nhanh trong nội dung.
+        </p>
+      </div>
     </div>
-  </section>
+    <div
+      class="medical-hero__stats"
+      *ngIf="!loading() && myEntries().length > 0"
+      role="status"
+    >
+      <span class="medical-stat">
+        <strong>{{ visibleEntries().length }}</strong>
+        <span class="medical-stat__label">mục hiển thị</span>
+      </span>
+      <span class="medical-stat medical-stat--dim" *ngIf="visibleEntries().length !== myEntries().length">
+        <span class="medical-stat__sep">·</span>
+        {{ myEntries().length }} trong sổ
+      </span>
+    </div>
+  </header>
 
-  <div class="alert error" *ngIf="errorMsg()">
-    <i class="pi pi-exclamation-circle"></i>
-    {{ errorMsg() }}
-  </div>
-  <div class="alert ok" *ngIf="successMsg()">
-    <i class="pi pi-check-circle"></i>
-    {{ successMsg() }}
+  <div class="medical-alerts" *ngIf="errorMsg() || successMsg()">
+    <div class="alert error" *ngIf="errorMsg()">
+      <i class="pi pi-exclamation-circle"></i>
+      {{ errorMsg() }}
+    </div>
+    <div class="alert ok" *ngIf="successMsg()">
+      <i class="pi pi-check-circle"></i>
+      {{ successMsg() }}
+    </div>
   </div>
 
   <app-medical-history-filter
@@ -40,24 +65,36 @@
     (toggleKindFilter)="toggleKindFilter($event)"
   />
 
-  <section class="card medical-loading" *ngIf="loading()">
-    <i class="pi pi-spin pi-spinner"></i>
-    Đang tải tiền sử…
+  <section class="card medical-state medical-state--loading" *ngIf="loading()">
+    <div class="medical-state__icon" aria-hidden="true">
+      <i class="pi pi-spin pi-spinner"></i>
+    </div>
+    <p class="medical-state__title">Đang tải tiền sử…</p>
+    <p class="medical-state__hint">Đồng bộ từ bảng tiền sử trên Google Sheet.</p>
   </section>
 
-  <section class="card medical-empty" *ngIf="!loading() && myEntries().length === 0">
-    <p>Chưa có sự kiện y tế nào. Bấm <strong>Ghi sự kiện</strong> để thêm (tiêm chủng, khám, thuốc…).</p>
+  <section class="card medical-state medical-state--empty" *ngIf="!loading() && myEntries().length === 0">
+    <div class="medical-state__icon medical-state__icon--heart" aria-hidden="true">
+      <i class="pi pi-heart"></i>
+    </div>
+    <p class="medical-state__title">Chưa có sự kiện nào</p>
+    <p class="medical-state__hint">
+      Bấm <strong>Ghi sự kiện</strong> để thêm tiêm chủng, khám, thuốc hoặc ghi chú khác.
+    </p>
   </section>
 
-  <section class="card medical-empty soft" *ngIf="!loading() && myEntries().length > 0 && filteredEntries().length === 0">
-    <p>
-      Không có mục nào khớp bộ lọc. Bấm <strong>Tất cả</strong> để xóa lọc, hoặc bật/tắt từng loại
-      trong panel.
+  <section class="card medical-state medical-state--soft" *ngIf="!loading() && myEntries().length > 0 && filteredEntries().length === 0">
+    <div class="medical-state__icon" aria-hidden="true">
+      <i class="pi pi-filter-slash"></i>
+    </div>
+    <p class="medical-state__title">Không khớp bộ lọc loại</p>
+    <p class="medical-state__hint">
+      Mở panel lọc và bấm <strong>Tất cả</strong>, hoặc bật lại từng loại bạn cần xem.
     </p>
   </section>
 
   <section
-    class="card medical-empty soft"
+    class="card medical-state medical-state--soft"
     *ngIf="
       !loading() &&
       myEntries().length > 0 &&
@@ -66,9 +103,13 @@
       textSearchQuery().trim()
     "
   >
-    <p>
-      Không có mục nào khớp từ khoá <strong>«{{ textSearchQuery().trim() }}»</strong>.
-      Thử từ khác hoặc <button type="button" class="mh-inline-link" (click)="clearTextSearch()">xoá ô tìm</button>.
+    <div class="medical-state__icon" aria-hidden="true">
+      <i class="pi pi-search"></i>
+    </div>
+    <p class="medical-state__title">Không tìm thấy «{{ textSearchQuery().trim() }}»</p>
+    <p class="medical-state__hint">
+      Thử từ khác hoặc
+      <button type="button" class="mh-inline-link" (click)="clearTextSearch()">xoá ô tìm</button>.
     </p>
   </section>
 
