@@ -69,6 +69,10 @@ export interface ProductiveCalendarEvent {
     end_date?: string;
     starts_at?: string;
     ends_at?: string;
+    start_time?: string;
+    end_time?: string;
+    started_at?: string;
+    ended_at?: string;
     title?: string;
     name?: string;
     summary?: string;
@@ -413,15 +417,26 @@ export class TimesheetService {
   }
 
   getCalendarEventTitle(event: ProductiveCalendarEvent): string {
-    return event.attributes?.title || event.attributes?.name || event.attributes?.summary || 'Calendar event';
+    return event.attributes?.title
+      || event.attributes?.name
+      || event.attributes?.summary
+      || (this.isVietnamHolidayEvent(event) ? 'Vietnam holiday' : 'Calendar event');
   }
 
   getCalendarEventDates(event: ProductiveCalendarEvent): string[] {
     const start = this.normalizeEventDate(
-      event.attributes?.date || event.attributes?.start_date || event.attributes?.starts_at
+      event.attributes?.date
+        || event.attributes?.start_date
+        || event.attributes?.starts_at
+        || event.attributes?.start_time
+        || event.attributes?.started_at
     );
     const end = this.normalizeEventDate(
-      event.attributes?.end_date || event.attributes?.ends_at || start
+      event.attributes?.end_date
+        || event.attributes?.ends_at
+        || event.attributes?.end_time
+        || event.attributes?.ended_at
+        || start
     );
 
     if (!start) {
