@@ -1,4 +1,4 @@
-import { Component, Inject, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, Inject, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { DOCUMENT } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -2071,6 +2071,7 @@ export class MyTimesheetComponent implements OnInit, OnDestroy {
   constructor(
     private timesheetService: TimesheetService,
     private messageService: MessageService,
+    private cdr: ChangeDetectorRef,
     @Inject(DOCUMENT) private document: Document
   ) {}
 
@@ -2387,20 +2388,35 @@ export class MyTimesheetComponent implements OnInit, OnDestroy {
     this.detailEntries = [];
     this.config.clientDate = this.clientDate || this.toDateInputValue(new Date());
     const { startDate, endDate } = this.getDetailMonthRange();
+    this.cdr.detectChanges();
 
     this.timesheetService.listTimeEntries(this.config, startDate, endDate).subscribe({
       next: (response) => {
-        this.detailEntries = response.data || [];
-        this.calendarDays = this.buildCalendarDays(this.detailEntries);
-        this.detailLoading = false;
+        try {
+          this.detailEntries = Array.isArray(response?.data) ? response.data : [];
+          this.calendarDays = this.buildCalendarDays(this.detailEntries);
+        } catch (error) {
+          this.detailEntries = [];
+          this.calendarDays = this.buildCalendarDays([]);
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Render Failed',
+            detail: error instanceof Error ? error.message : 'Unable to render timesheet calendar'
+          });
+        } finally {
+          this.detailLoading = false;
+          this.cdr.detectChanges();
+        }
       },
       error: (error) => {
         this.detailLoading = false;
+        this.calendarDays = this.buildCalendarDays([]);
         this.messageService.add({
           severity: 'error',
           summary: 'Load Failed',
           detail: error instanceof Error ? error.message : 'Unable to load timesheet detail'
         });
+        this.cdr.detectChanges();
       }
     });
   }
