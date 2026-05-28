@@ -3,6 +3,7 @@ import { CommonModule, DatePipe } from '@angular/common';
 import { DOCUMENT } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
+import { forkJoin } from 'rxjs';
 
 // PrimeNG imports
 import { ButtonModule } from 'primeng/button';
@@ -17,6 +18,7 @@ import { TagModule } from 'primeng/tag';
 import { MessageService } from 'primeng/api';
 
 import {
+  ProductiveCalendarEvent,
   ProductiveTimeEntry,
   TimesheetService,
   TimesheetEntry,
@@ -38,6 +40,8 @@ interface TimesheetCalendarDay {
   totalMinutes: number;
   billableMinutes: number;
   entries: ProductiveTimeEntry[];
+  events: ProductiveCalendarEvent[];
+  isHoliday: boolean;
 }
 
 @Component({
@@ -146,6 +150,21 @@ interface TimesheetCalendarDay {
                       pInputText
                       [(ngModel)]="config.serviceId"
                       placeholder="e.g., 14437926"
+                      class="styled-input"
+                    />
+                  </div>
+                </div>
+
+                <div class="input-group">
+                  <label class="input-label">
+                    <i class="pi pi-calendar-plus"></i>
+                    Calendar Integration ID
+                  </label>
+                  <div class="input-wrapper">
+                    <input
+                      pInputText
+                      [(ngModel)]="config.calendarIntegrationId"
+                      placeholder="e.g., 98330"
                       class="styled-input"
                     />
                   </div>
@@ -636,6 +655,7 @@ interface TimesheetCalendarDay {
                     [class.has-entry]="day.entries.length > 0"
                     [class.submitted]="day.isSubmitted"
                     [class.approved]="day.isApproved"
+                    [class.holiday]="day.isHoliday"
                     [style.grid-column-start]="day.gridColumnStart || null"
                   >
                     <div class="calendar-day-header">
@@ -650,6 +670,17 @@ interface TimesheetCalendarDay {
                     <div class="calendar-status-row" *ngIf="day.isSubmitted || day.isApproved">
                       <span class="calendar-status approved-status" *ngIf="day.isApproved">Approved</span>
                       <span class="calendar-status submitted-status" *ngIf="!day.isApproved && day.isSubmitted">Submitted</span>
+                    </div>
+
+                    <div class="calendar-event-list" *ngIf="day.events.length > 0">
+                      <div
+                        class="calendar-event"
+                        *ngFor="let event of day.events"
+                        [class.holiday-event]="isHolidayEvent(event)"
+                      >
+                        <i class="pi" [class.pi-flag]="isHolidayEvent(event)" [class.pi-calendar]="!isHolidayEvent(event)"></i>
+                        <span>{{ getCalendarEventTitle(event) }}</span>
+                      </div>
                     </div>
 
                     <div class="calendar-entry-list">
@@ -1619,6 +1650,11 @@ interface TimesheetCalendarDay {
       background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
     }
 
+    .calendar-day.holiday {
+      border-color: #fb7185;
+      background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%);
+    }
+
     .calendar-day-header {
       display: flex;
       align-items: center;
@@ -1673,6 +1709,30 @@ interface TimesheetCalendarDay {
       display: flex;
       flex-direction: column;
       gap: 6px;
+    }
+
+    .calendar-event-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    .calendar-event {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 8px;
+      border-radius: 10px;
+      color: #475569;
+      background: rgba(255, 255, 255, 0.75);
+      font-size: 0.72rem;
+      font-weight: 800;
+    }
+
+    .calendar-event.holiday-event {
+      color: #be123c;
+      background: #ffe4e6;
     }
 
     .calendar-entry {
@@ -2027,6 +2087,7 @@ export class MyTimesheetComponent implements OnInit, OnDestroy {
     organizationId: '',
     personId: '',
     serviceId: '',
+    calendarIntegrationId: '98330',
     clientDate: ''
   };
 
@@ -2059,6 +2120,8 @@ export class MyTimesheetComponent implements OnInit, OnDestroy {
   timesheetSubmitResult: TimesheetSubmissionResult | null = null;
   detailLoading: boolean = false;
   detailEntries: ProductiveTimeEntry[] = [];
+  calendarEvents: ProductiveCalendarEvent[] = [];
+  holidayDates = new Set<string>();
   calendarDays: TimesheetCalendarDay[] = [];
 
   private previousBodyOverflow = '';
@@ -2153,7 +2216,7 @@ export class MyTimesheetComponent implements OnInit, OnDestroy {
     }
   }
 
-  generateDateEntries() {
+  async generateDateEntries() {
     if (!this.startDate || !this.endDate) {
       this.messageService.add({
         severity: 'warn',
@@ -2178,8 +2241,10 @@ export class MyTimesheetComponent implements OnInit, OnDestroy {
     const dates = this.businessDaysOnly 
       ? this.timesheetService.getBusinessDays(startDate, endDate)
       : this.timesheetService.generateDateRange(startDate, endDate);
+    const holidayDates = await this.loadHolidayDatesForRange(this.startDate, this.endDate);
+    const workingDates = this.timesheetService.filterOutDates(dates, holidayDates);
 
-    this.dateEntries = dates.map(date => ({
+    this.dateEntries = workingDates.map(date => ({
       date,
       time: 480, // 8 hours in minutes
       billableTime: 480,
@@ -2191,7 +2256,7 @@ export class MyTimesheetComponent implements OnInit, OnDestroy {
     this.messageService.add({
       severity: 'info',
       summary: 'Entries Generated',
-      detail: `Generated ${dates.length} date entries`
+      detail: `Generated ${workingDates.length} entries${holidayDates.size ? `, skipped ${holidayDates.size} Vietnam holiday date(s)` : ''}`
     });
   }
 
@@ -2337,14 +2402,20 @@ export class MyTimesheetComponent implements OnInit, OnDestroy {
     });
   }
 
-  submitTimesheets() {
+  async submitTimesheets() {
     if (!this.canSubmitTimesheets()) {
       return;
     }
 
-    const dates = this.getSelectedDates();
+    this.timesheetSubmitting = true;
+    this.timesheetSubmitResult = null;
+
+    const selectedDates = this.getSelectedDates();
+    const holidayDates = await this.loadHolidayDatesForRange(this.startDate, this.endDate);
+    const dates = this.timesheetService.filterOutDates(selectedDates, holidayDates);
 
     if (dates.length === 0) {
+      this.timesheetSubmitting = false;
       this.messageService.add({
         severity: 'warn',
         summary: 'No Dates',
@@ -2353,8 +2424,6 @@ export class MyTimesheetComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.timesheetSubmitting = true;
-    this.timesheetSubmitResult = null;
     this.config.clientDate = this.clientDate || this.toDateInputValue(new Date());
 
     this.timesheetService.submitTimesheets(this.config, dates).subscribe({
@@ -2386,18 +2455,27 @@ export class MyTimesheetComponent implements OnInit, OnDestroy {
     this.detailLoading = true;
     this.calendarDays = [];
     this.detailEntries = [];
+    this.calendarEvents = [];
+    this.holidayDates = new Set<string>();
     this.config.clientDate = this.clientDate || this.toDateInputValue(new Date());
     const { startDate, endDate } = this.getDetailMonthRange();
     this.cdr.detectChanges();
 
-    this.timesheetService.listTimeEntries(this.config, startDate, endDate).subscribe({
-      next: (response) => {
+    forkJoin({
+      timeEntries: this.timesheetService.listTimeEntries(this.config, startDate, endDate),
+      calendarEvents: this.timesheetService.listCalendarEvents(this.config, startDate, endDate)
+    }).subscribe({
+      next: ({ timeEntries, calendarEvents }) => {
         try {
-          this.detailEntries = Array.isArray(response?.data) ? response.data : [];
-          this.calendarDays = this.buildCalendarDays(this.detailEntries);
+          this.detailEntries = Array.isArray(timeEntries?.data) ? timeEntries.data : [];
+          this.calendarEvents = Array.isArray(calendarEvents?.data) ? calendarEvents.data : [];
+          this.holidayDates = this.buildHolidayDates(this.calendarEvents);
+          this.calendarDays = this.buildCalendarDays(this.detailEntries, this.calendarEvents);
         } catch (error) {
           this.detailEntries = [];
-          this.calendarDays = this.buildCalendarDays([]);
+          this.calendarEvents = [];
+          this.holidayDates = new Set<string>();
+          this.calendarDays = this.buildCalendarDays([], []);
           this.messageService.add({
             severity: 'error',
             summary: 'Render Failed',
@@ -2410,7 +2488,7 @@ export class MyTimesheetComponent implements OnInit, OnDestroy {
       },
       error: (error) => {
         this.detailLoading = false;
-        this.calendarDays = this.buildCalendarDays([]);
+        this.calendarDays = this.buildCalendarDays([], []);
         this.messageService.add({
           severity: 'error',
           summary: 'Load Failed',
@@ -2439,6 +2517,14 @@ export class MyTimesheetComponent implements OnInit, OnDestroy {
       month: 'long',
       year: 'numeric'
     });
+  }
+
+  isHolidayEvent(event: ProductiveCalendarEvent): boolean {
+    return this.timesheetService.isVietnamHolidayEvent(event);
+  }
+
+  getCalendarEventTitle(event: ProductiveCalendarEvent): string {
+    return this.timesheetService.getCalendarEventTitle(event);
   }
 
   // Quick date selection methods
@@ -2510,13 +2596,54 @@ export class MyTimesheetComponent implements OnInit, OnDestroy {
       : this.timesheetService.generateDateRange(startDate, endDate);
   }
 
-  private buildCalendarDays(entries: ProductiveTimeEntry[]): TimesheetCalendarDay[] {
+  private async loadHolidayDatesForRange(startDate: string, endDate: string): Promise<Set<string>> {
+    if (!this.config.calendarIntegrationId) {
+      return new Set<string>();
+    }
+
+    this.config.clientDate = this.clientDate || this.toDateInputValue(new Date());
+
+    try {
+      return await this.timesheetService.getVietnamHolidayDates(this.config, startDate, endDate);
+    } catch (error) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Holiday Load Failed',
+        detail: error instanceof Error ? error.message : 'Unable to load Vietnam holidays'
+      });
+      return new Set<string>();
+    }
+  }
+
+  private buildHolidayDates(events: ProductiveCalendarEvent[]): Set<string> {
+    const holidayDates = new Set<string>();
+
+    events
+      .filter((event) => this.timesheetService.isVietnamHolidayEvent(event))
+      .forEach((event) => {
+        this.timesheetService.getCalendarEventDates(event).forEach((date) => holidayDates.add(date));
+      });
+
+    return holidayDates;
+  }
+
+  private buildCalendarDays(
+    entries: ProductiveTimeEntry[],
+    events: ProductiveCalendarEvent[]
+  ): TimesheetCalendarDay[] {
     const { start, end } = this.getDetailMonthDateRange();
 
     const entriesByDate = entries.reduce<Record<string, ProductiveTimeEntry[]>>((acc, entry) => {
       const date = entry.attributes.date;
       acc[date] = acc[date] || [];
       acc[date].push(entry);
+      return acc;
+    }, {});
+    const eventsByDate = events.reduce<Record<string, ProductiveCalendarEvent[]>>((acc, event) => {
+      this.timesheetService.getCalendarEventDates(event).forEach((date) => {
+        acc[date] = acc[date] || [];
+        acc[date].push(event);
+      });
       return acc;
     }, {});
 
@@ -2527,6 +2654,7 @@ export class MyTimesheetComponent implements OnInit, OnDestroy {
     while (current <= end) {
       const date = this.toDateInputValue(current);
       const dayEntries = entriesByDate[date] || [];
+      const dayEvents = eventsByDate[date] || [];
       const isApproved = dayEntries.some((entry) => !!entry.attributes.approved);
       const isSubmitted = dayEntries.some((entry) => !!entry.attributes.submitted);
 
@@ -2539,9 +2667,11 @@ export class MyTimesheetComponent implements OnInit, OnDestroy {
         isOutsideRange: false,
         isSubmitted,
         isApproved,
+        isHoliday: dayEvents.some((event) => this.timesheetService.isVietnamHolidayEvent(event)),
         totalMinutes: dayEntries.reduce((total, entry) => total + (entry.attributes.time || 0), 0),
         billableMinutes: dayEntries.reduce((total, entry) => total + (entry.attributes.billable_time || 0), 0),
-        entries: dayEntries
+        entries: dayEntries,
+        events: dayEvents
       });
 
       current.setDate(current.getDate() + 1);

@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { catchError, map, Observable, throwError, timeout } from 'rxjs';
+import { catchError, firstValueFrom, map, Observable, throwError, timeout } from 'rxjs';
 
 export interface TimesheetEntry {
   date: string;
@@ -14,6 +14,7 @@ export interface TimesheetConfig {
   organizationId: string;
   personId: string;
   serviceId: string;
+  calendarIntegrationId: string;
   clientDate: string;
 }
 
@@ -57,6 +58,22 @@ export interface ProductiveListResponse<T> {
   included?: any[];
   meta?: any;
   links?: any;
+}
+
+export interface ProductiveCalendarEvent {
+  id: string;
+  type: string;
+  attributes: {
+    date?: string;
+    start_date?: string;
+    end_date?: string;
+    starts_at?: string;
+    ends_at?: string;
+    title?: string;
+    name?: string;
+    summary?: string;
+    organizer_name?: string;
+  };
 }
 
 @Injectable({
@@ -116,13 +133,65 @@ export class TimesheetService {
       );
   }
 
+  listCalendarEvents(
+    config: TimesheetConfig,
+    startDate: string,
+    endDate: string
+  ): Observable<ProductiveListResponse<ProductiveCalendarEvent>> {
+    if (!config.calendarIntegrationId) {
+      return new Observable<ProductiveListResponse<ProductiveCalendarEvent>>((observer) => {
+        observer.next({ data: [] });
+        observer.complete();
+      });
+    }
+
+    const params = new URLSearchParams({
+      'filter[integration_ids][]': config.calendarIntegrationId,
+      'filter[end_date]': endDate,
+      'filter[start_date]': startDate,
+      page: '1',
+      per_page: '200'
+    });
+
+    return this.http
+      .get<ProductiveListResponse<ProductiveCalendarEvent>>(
+        `/api/productive/api/v2/calendar_events?${params.toString()}`,
+        { headers: this.createHeaders(config, 'timetracking-manager') }
+      )
+      .pipe(
+        timeout(30000),
+        map((response) => ({
+          ...response,
+          data: Array.isArray(response?.data) ? response.data : []
+        })),
+        catchError((error) => throwError(() => new Error(this.extractHttpErrorMessage(error))))
+      );
+  }
+
+  async getVietnamHolidayDates(config: TimesheetConfig, startDate: string, endDate: string): Promise<Set<string>> {
+    const response = await firstValueFrom(this.listCalendarEvents(config, startDate, endDate));
+    const holidayDates = new Set<string>();
+
+    response.data
+      .filter((event) => this.isVietnamHolidayEvent(event))
+      .forEach((event) => {
+        this.getCalendarEventDates(event).forEach((date) => holidayDates.add(date));
+      });
+
+    return holidayDates;
+  }
+
+  filterOutDates(dates: string[], excludedDates: Set<string>): string[] {
+    return dates.filter((date) => !excludedDates.has(date));
+  }
+
   private async submitTimesheetsBulk(
     config: TimesheetConfig,
     dates: string[]
   ): Promise<TimesheetSubmissionResult> {
     const response = await fetch('/api/productive/api/v2/timesheets', {
       method: 'POST',
-      headers: this.createHeaders(config, 'time-week-table', true),
+      headers: this.createHeaders(config, undefined, true),
       body: JSON.stringify({
         data: dates.map((date) => this.createTimesheetPayload(config, date))
       })
@@ -216,19 +285,24 @@ export class TimesheetService {
   }
 
   private createHeaders(config: TimesheetConfig, context = 'time-week-table', bulk = false): Record<string, string> {
-    return {
+    const headers: Record<string, string> = {
       'Accept': bulk ? 'application/vnd.api+json; ext=bulk' : 'application/vnd.api+json',
       'Accept-Language': 'en-US,en;q=0.9,vi;q=0.8',
       'Content-Type': bulk ? 'application/vnd.api+json; ext=bulk' : 'application/vnd.api+json',
       'X-Auth-Token': config.authToken,
       'X-Client-Branch': 'stable',
-      'X-Client-Context': context,
       'X-Client-Date': config.clientDate,
       'X-Client-Source': 'app',
       'X-Client-Version': '0.2.0+26-05-27|08:00+a182c1a663',
       'X-Feature-Flags': 'displayAICredits,automationNewJsonSchema,importFieldErrorCodes',
       'X-Organization-Id': config.organizationId
     };
+
+    if (context) {
+      headers['X-Client-Context'] = context;
+    }
+
+    return headers;
   }
 
   private createTimesheetPayload(config: TimesheetConfig, date: string) {
@@ -332,6 +406,42 @@ export class TimesheetService {
     }
 
     return error?.message || 'Unable to load timesheet detail';
+  }
+
+  isVietnamHolidayEvent(event: ProductiveCalendarEvent): boolean {
+    return event.attributes?.organizer_name === 'Holidays in Vietnam';
+  }
+
+  getCalendarEventTitle(event: ProductiveCalendarEvent): string {
+    return event.attributes?.title || event.attributes?.name || event.attributes?.summary || 'Calendar event';
+  }
+
+  getCalendarEventDates(event: ProductiveCalendarEvent): string[] {
+    const start = this.normalizeEventDate(
+      event.attributes?.date || event.attributes?.start_date || event.attributes?.starts_at
+    );
+    const end = this.normalizeEventDate(
+      event.attributes?.end_date || event.attributes?.ends_at || start
+    );
+
+    if (!start) {
+      return [];
+    }
+
+    return this.generateDateRange(this.parseDateInput(start), this.parseDateInput(end || start));
+  }
+
+  private normalizeEventDate(value?: string): string {
+    if (!value) {
+      return '';
+    }
+
+    return value.slice(0, 10);
+  }
+
+  private parseDateInput(value: string): Date {
+    const [year, month, day] = value.split('-').map(Number);
+    return new Date(year, month - 1, day);
   }
 
   // Utility function to generate date range
