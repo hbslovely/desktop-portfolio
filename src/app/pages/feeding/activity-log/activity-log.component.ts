@@ -153,6 +153,14 @@ export class ActivityLogComponent implements OnInit, OnDestroy {
   /** Có chuỗi tìm kiếm (sau trim) — dùng cho empty state. */
   hasTextFilter = computed(() => this.textSearchQuery().trim().length > 0);
 
+  /** Có bộ lọc / sắp xếp khác mặc định — bật nút reset. */
+  hasActiveFilters = computed(
+    () =>
+      this.filterCategorySignal() !== 'all' ||
+      this.sortOrderSignal() !== 'desc' ||
+      this.textSearchQuery().trim().length > 0
+  );
+
   private lastCheckHasNew = false;
 
   ngOnInit(): void {
@@ -183,10 +191,7 @@ export class ActivityLogComponent implements OnInit, OnDestroy {
   openDialog(): void {
     this.dialogOpen.set(true);
     this.nowTick.set(Date.now());
-    this.displayCount.set(this.PAGE_SIZE);
-    this.filterCategory = 'all';
-    this.filterCategorySignal.set('all');
-    this.textSearchQuery.set('');
+    this.resetFilters();
     this.activityShowExactTime.set(false);
     this.refreshLogs();
     this.activityLogService.markAsRead();
@@ -224,6 +229,17 @@ export class ActivityLogComponent implements OnInit, OnDestroy {
     this.displayCount.set(this.PAGE_SIZE);
   }
 
+  toggleSortOrder(): void {
+    this.sortOrder = this.sortOrder === 'desc' ? 'asc' : 'desc';
+    this.onSortChange();
+  }
+
+  sortOrderToggleTitle(): string {
+    return this.sortOrder === 'desc'
+      ? 'Đang xếp mới nhất — bấm để xem cũ nhất'
+      : 'Đang xếp cũ nhất — bấm để xem mới nhất';
+  }
+
   onFilterChange(): void {
     this.filterCategorySignal.set(this.filterCategory);
     this.displayCount.set(this.PAGE_SIZE);
@@ -231,6 +247,15 @@ export class ActivityLogComponent implements OnInit, OnDestroy {
 
   onTextSearchChange(value: string): void {
     this.textSearchQuery.set(value);
+    this.displayCount.set(this.PAGE_SIZE);
+  }
+
+  resetFilters(): void {
+    this.filterCategory = 'all';
+    this.filterCategorySignal.set('all');
+    this.sortOrder = 'desc';
+    this.sortOrderSignal.set('desc');
+    this.textSearchQuery.set('');
     this.displayCount.set(this.PAGE_SIZE);
   }
 

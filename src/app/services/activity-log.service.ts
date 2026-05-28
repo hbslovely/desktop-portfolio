@@ -310,11 +310,15 @@ export function getEventTypeLabel(eventType: ActivityEventType): string {
 
 /** Map event type sang icon class */
 export function getEventTypeIcon(eventType: ActivityEventType): string {
-  if (eventType === ACTIVITY_EVENT.FEEDING_ADDED) return 'pi-heart';
-  if (eventType.startsWith('BOTTLE_PREP_')) return 'pi-inbox';
+  if (isActivityDeleteEvent(eventType)) return 'pi-trash';
+  if (eventType.includes('_UPDATED') || eventType.includes('_RENAMED')) return 'pi-pencil';
+  if (eventType === ACTIVITY_EVENT.BOTTLE_PREP_ADDED) return 'pi-box';
+  if (eventType.includes('_ADDED')) return 'pi-plus-circle';
+  if (eventType === ACTIVITY_EVENT.FILE_MOVED) return 'pi-arrow-right';
+  if (eventType.startsWith('BOTTLE_PREP_')) return 'pi-box';
   if (eventType.startsWith('FEEDING_')) return 'pi-heart';
   if (eventType.startsWith('WEIGHT_')) return 'pi-chart-line';
-  if (eventType.startsWith('MEDICAL_')) return 'pi-briefcase';
+  if (eventType.startsWith('MEDICAL_')) return 'pi-shield';
   if (eventType.startsWith('SCHEDULE_')) return 'pi-calendar';
   if (eventType.startsWith('SETTINGS_')) return 'pi-cog';
   if (eventType.startsWith('PROFILE_')) return 'pi-user';
@@ -325,7 +329,7 @@ export function getEventTypeIcon(eventType: ActivityEventType): string {
 
 /** Map event type sang màu */
 export function getEventTypeColor(eventType: ActivityEventType): string {
-    if (isActivityDeleteEvent(eventType)) return 'red';
+  if (isActivityDeleteEvent(eventType)) return 'red';
   if (eventType.includes('_ADDED')) return 'green';
   if (eventType.includes('_UPDATED')) return 'blue';
   return 'gray';
