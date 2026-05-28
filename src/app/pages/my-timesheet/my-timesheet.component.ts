@@ -663,6 +663,14 @@ interface TimesheetCalendarDay {
                       <small>{{ day.weekday }}</small>
                     </div>
 
+                    <div class="holiday-banner" *ngIf="day.isHoliday">
+                      <i class="pi pi-flag"></i>
+                      <div>
+                        <strong>Vietnam holiday</strong>
+                        <span>{{ getHolidayTitles(day).join(', ') }}</span>
+                      </div>
+                    </div>
+
                     <div class="calendar-day-total" *ngIf="day.entries.length > 0">
                       {{ minutesToHours(day.totalMinutes) }}
                     </div>
@@ -1655,6 +1663,43 @@ interface TimesheetCalendarDay {
       background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%);
     }
 
+    .holiday-banner {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+      padding: 8px;
+      border: 1px solid #fb7185;
+      border-radius: 12px;
+      color: #9f1239;
+      background: rgba(255, 255, 255, 0.78);
+    }
+
+    .holiday-banner i {
+      margin-top: 2px;
+      color: #e11d48;
+    }
+
+    .holiday-banner div {
+      display: grid;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    .holiday-banner strong {
+      font-size: 0.72rem;
+      font-weight: 900;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .holiday-banner span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 0.76rem;
+      font-weight: 800;
+    }
+
     .calendar-day-header {
       display: flex;
       align-items: center;
@@ -2206,7 +2251,12 @@ export class MyTimesheetComponent implements OnInit, OnDestroy {
     const saved = localStorage.getItem('timesheet_config');
     if (saved) {
       try {
-        this.config = JSON.parse(saved);
+        const savedConfig = JSON.parse(saved);
+        this.config = {
+          ...this.config,
+          ...savedConfig,
+          calendarIntegrationId: savedConfig.calendarIntegrationId || this.config.calendarIntegrationId || '98330'
+        };
         if (this.config.clientDate) {
           this.clientDate = this.config.clientDate;
         }
@@ -2525,6 +2575,14 @@ export class MyTimesheetComponent implements OnInit, OnDestroy {
 
   getCalendarEventTitle(event: ProductiveCalendarEvent): string {
     return this.timesheetService.getCalendarEventTitle(event);
+  }
+
+  getHolidayTitles(day: TimesheetCalendarDay): string[] {
+    const titles = day.events
+      .filter((event) => this.isHolidayEvent(event))
+      .map((event) => this.getCalendarEventTitle(event));
+
+    return titles.length > 0 ? titles : ['Vietnam holiday'];
   }
 
   // Quick date selection methods
