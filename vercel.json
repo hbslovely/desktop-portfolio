@@ -2,7 +2,7 @@
   "version": 2,
   "framework": "angular",
   "buildCommand": "npm run build",
-  "outputDirectory": "dist",
+  "outputDirectory": "dist/desktop-portfolio",
   "installCommand": "npm install",
   "builds": [
     {
@@ -90,6 +90,10 @@
     {
       "source": "/api/huggingface/:path*",
       "destination": "https://router.huggingface.co/:path*"
+    },
+    {
+      "source": "/api/productive/:path*",
+      "destination": "https://api.productive.io/:path*"
     },
     {
       "source": "/api/securities-apps-script/:scriptId/exec",
@@ -367,6 +371,23 @@
         {
           "key": "Access-Control-Allow-Headers",
           "value": "Content-Type, Authorization"
+        }
+      ]
+    },
+    {
+      "source": "/api/productive/:path*",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, POST, PUT, DELETE, OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "Content-Type, Authorization, Accept, Accept-Language, Origin, Referer, Sec-CH-UA, Sec-CH-UA-Mobile, Sec-CH-UA-Platform, Sec-Fetch-Dest, Sec-Fetch-Mode, Sec-Fetch-Site, User-Agent, X-Auth-Token, X-Client-Branch, X-Client-Context, X-Client-Date, X-Client-Source, X-Client-Version, X-Feature-flags, X-Organization-Id"
         }
       ]
     }
