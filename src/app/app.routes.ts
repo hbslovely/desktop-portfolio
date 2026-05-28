@@ -45,5 +45,10 @@ export const routes: Routes = [
     path: 'chi-tieu',
     loadComponent: () => import('./pages/chi-tieu/chi-tieu.component').then(m => m.ChiTieuPageComponent),
     title: 'Chi tiêu gia đình'
+  },
+  {
+    path: 'my-timesheet',
+    loadComponent: () => import('./pages/my-timesheet/my-timesheet.component').then(m => m.MyTimesheetComponent),
+    title: 'My Timesheet - Submit to Productive.io'
   }
 ];
