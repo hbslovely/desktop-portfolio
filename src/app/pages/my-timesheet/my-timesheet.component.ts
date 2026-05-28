@@ -2655,11 +2655,8 @@ export class MyTimesheetComponent implements OnInit, OnDestroy {
   }
 
   private async loadHolidayDatesForRange(startDate: string, endDate: string): Promise<Set<string>> {
-    if (!this.config.calendarIntegrationId) {
-      return new Set<string>();
-    }
-
     this.config.clientDate = this.clientDate || this.toDateInputValue(new Date());
+    this.config.calendarIntegrationId = (this.config.calendarIntegrationId || '98330').trim();
 
     try {
       return await this.timesheetService.getVietnamHolidayDates(this.config, startDate, endDate);

@@ -142,15 +142,10 @@ export class TimesheetService {
     startDate: string,
     endDate: string
   ): Observable<ProductiveListResponse<ProductiveCalendarEvent>> {
-    if (!config.calendarIntegrationId) {
-      return new Observable<ProductiveListResponse<ProductiveCalendarEvent>>((observer) => {
-        observer.next({ data: [] });
-        observer.complete();
-      });
-    }
+    const calendarIntegrationId = (config.calendarIntegrationId || '98330').trim();
 
     const params = new URLSearchParams({
-      'filter[integration_ids][]': config.calendarIntegrationId,
+      'filter[integration_ids][]': calendarIntegrationId,
       'filter[end_date]': endDate,
       'filter[start_date]': startDate,
       page: '1',
@@ -431,19 +426,25 @@ export class TimesheetService {
         || event.attributes?.start_time
         || event.attributes?.started_at
     );
-    const end = this.normalizeEventDate(
-      event.attributes?.end_date
-        || event.attributes?.ends_at
-        || event.attributes?.end_time
-        || event.attributes?.ended_at
-        || start
-    );
+    const rawEnd = event.attributes?.end_date
+      || event.attributes?.ends_at
+      || event.attributes?.end_time
+      || event.attributes?.ended_at;
+    const end = this.normalizeEventDate(rawEnd || start);
 
     if (!start) {
       return [];
     }
 
-    return this.generateDateRange(this.parseDateInput(start), this.parseDateInput(end || start));
+    const startDate = this.parseDateInput(start);
+    const endDate = this.parseDateInput(end || start);
+
+    // Productive calendar all-day events use an exclusive end date.
+    if (rawEnd && endDate > startDate) {
+      endDate.setDate(endDate.getDate() - 1);
+    }
+
+    return this.generateDateRange(startDate, endDate);
   }
 
   private normalizeEventDate(value?: string): string {
