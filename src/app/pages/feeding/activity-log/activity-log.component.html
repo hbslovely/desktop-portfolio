@@ -30,7 +30,10 @@
         <div class="activity-dialog__title-mark" aria-hidden="true">
           <i class="pi pi-history"></i>
         </div>
-        <h2 class="activity-dialog__heading">Lịch sử hoạt động</h2>
+        <div class="activity-dialog__title-copy">
+          <h2 class="activity-dialog__heading">Lịch sử hoạt động</h2>
+          <p class="activity-dialog__subtitle">Theo dõi mọi thay đổi quan trọng</p>
+        </div>
       </div>
       <button
         type="button"
@@ -42,10 +45,10 @@
       </button>
     </header>
 
-    <div class="activity-dialog__toolbar">
+    <div class="activity-dialog__toolbar" role="search">
       <button
         type="button"
-        class="activity-toolbar__reload"
+        class="activity-toolbar__icon-btn activity-toolbar__reload"
         (click)="refreshLogs()"
         [disabled]="loading()"
         title="Làm mới"
@@ -54,44 +57,58 @@
         <i class="pi" [ngClass]="loading() ? 'pi-spin pi-spinner' : 'pi-refresh'"></i>
       </button>
 
+      <button
+        type="button"
+        class="activity-toolbar__icon-btn activity-toolbar__reset"
+        (click)="resetFilters()"
+        [disabled]="!hasActiveFilters()"
+        title="Đặt lại bộ lọc"
+        aria-label="Đặt lại bộ lọc"
+      >
+        <i class="pi pi-filter-slash"></i>
+      </button>
+
       <label class="activity-toolbar__search">
         <i class="pi pi-search" aria-hidden="true"></i>
         <input
           type="search"
           name="activityLogSearch"
           autocomplete="off"
-          placeholder="Tìm theo người, nội dung, loại…"
+          placeholder="Tìm kiếm…"
           [ngModel]="textSearchQuery()"
           (ngModelChange)="onTextSearchChange($event)"
         />
       </label>
 
-      <div class="activity-toolbar__filters" role="group" aria-label="Lọc và sắp xếp">
-        <label class="activity-field__control" aria-label="Danh mục">
-          <i class="pi pi-filter" aria-hidden="true"></i>
-          <select [(ngModel)]="filterCategory" (ngModelChange)="onFilterChange()">
-            <option value="all">Tất cả</option>
-            <option value="feeding">Cữ bú</option>
-            <option value="weight">Cân nặng</option>
-            <option value="medical">Y tế</option>
-            <option value="schedule">Lịch hẹn</option>
-            <option value="document">Tài liệu</option>
-            <option value="settings">Cài đặt</option>
-          </select>
-        </label>
-        <label class="activity-field__control" aria-label="Thứ tự">
-          <i class="pi pi-sort-alt" aria-hidden="true"></i>
-          <select [(ngModel)]="sortOrder" (ngModelChange)="onSortChange()">
-            <option value="desc">Mới nhất</option>
-            <option value="asc">Cũ nhất</option>
-          </select>
-        </label>
-      </div>
+      <label class="activity-toolbar__select" aria-label="Danh mục">
+        <select [(ngModel)]="filterCategory" (ngModelChange)="onFilterChange()">
+          <option value="all">Tất cả</option>
+          <option value="feeding">Cữ bú</option>
+          <option value="weight">Cân nặng</option>
+          <option value="medical">Y tế</option>
+          <option value="schedule">Lịch hẹn</option>
+          <option value="document">Tài liệu</option>
+          <option value="settings">Cài đặt</option>
+        </select>
+      </label>
 
-      <span class="activity-count-pill" *ngIf="filteredLogs().length > 0">
-        <span class="activity-count-pill__num">{{ displayedLogs().length }}</span>
-        <span class="activity-count-pill__sep">/</span>
-        <span class="activity-count-pill__total">{{ filteredLogs().length }}</span>
+      <button
+        type="button"
+        class="activity-toolbar__icon-btn activity-toolbar__sort"
+        (click)="toggleSortOrder()"
+        [title]="sortOrderToggleTitle()"
+        [attr.aria-label]="sortOrderToggleTitle()"
+      >
+        <i
+          class="pi"
+          [ngClass]="sortOrder === 'desc' ? 'pi-sort-amount-down' : 'pi-sort-amount-up-alt'"
+        ></i>
+      </button>
+
+      <span class="activity-toolbar__count" *ngIf="filteredLogs().length > 0" aria-live="polite">
+        <span class="activity-toolbar__count-num">{{ displayedLogs().length }}</span>
+        <span class="activity-toolbar__count-sep">/</span>
+        <span class="activity-toolbar__count-total">{{ filteredLogs().length }}</span>
       </span>
     </div>
 
@@ -117,12 +134,16 @@
           [attr.data-color]="getEventColor(row.log.eventType)"
         >
           <div class="activity-item__rail" aria-hidden="true"></div>
-          <div class="activity-item__icon">
-            <i class="pi" [ngClass]="getEventIcon(row.log.eventType)"></i>
-          </div>
           <div class="activity-item__body">
             <div class="activity-item__meta">
-              <span class="activity-item__type">{{ getEventLabel(row.log.eventType) }}</span>
+              <span class="activity-item__type-group">
+                <i
+                  class="pi activity-item__icon"
+                  [ngClass]="getEventIcon(row.log.eventType)"
+                  aria-hidden="true"
+                ></i>
+                <span class="activity-item__type">{{ getEventLabel(row.log.eventType) }}</span>
+              </span>
               <button
                 type="button"
                 class="activity-item__time activity-item__time-toggle"
