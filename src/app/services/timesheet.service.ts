@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+import { catchError, map, Observable, throwError, timeout } from 'rxjs';
 
 export interface TimesheetEntry {
   date: string;
@@ -62,7 +63,7 @@ export interface ProductiveListResponse<T> {
   providedIn: 'root'
 })
 export class TimesheetService {
-  constructor() {}
+  constructor(private http: HttpClient) {}
 
   submitTimesheet(config: TimesheetConfig, dateEntries: TimesheetEntry[]): Observable<TimesheetSubmissionResult> {
     return new Observable<TimesheetSubmissionResult>((observer) => {
@@ -91,32 +92,28 @@ export class TimesheetService {
     startDate: string,
     endDate: string
   ): Observable<ProductiveListResponse<ProductiveTimeEntry>> {
-    return new Observable<ProductiveListResponse<ProductiveTimeEntry>>((observer) => {
-      const params = new URLSearchParams({
-        'filter[person_id]': config.personId,
-        'filter[after]': startDate,
-        'filter[before]': endDate,
-        include: 'person.manager,approver,rejecter,updater,service.deal.company,service.deal.responsible,service.deal.contract,service.deal.project,service.deal.time_approval_workflow.approvers,service.section,task.project,approval_statuses.approver,approval_statuses.actual_approver,approval_statuses.approval_workflow.approval_policy',
-        page: '1',
-        per_page: '200'
-      });
-
-      void fetch(`/api/productive/api/v2/time_entries?${params.toString()}`, {
-        method: 'GET',
-        headers: this.createHeaders(config, 'timetracking-manager')
-      })
-        .then(async (response) => {
-          const responseBody = await response.json().catch(() => null);
-
-          if (!response.ok) {
-            throw new Error(this.extractErrorMessage(responseBody));
-          }
-
-          observer.next(responseBody);
-          observer.complete();
-        })
-        .catch((error) => observer.error(error));
+    const params = new URLSearchParams({
+      'filter[person_id]': config.personId,
+      'filter[after]': startDate,
+      'filter[before]': endDate,
+      include: 'person.manager,approver,rejecter,updater,service.deal.company,service.deal.responsible,service.deal.contract,service.deal.project,service.deal.time_approval_workflow.approvers,service.section,task.project,approval_statuses.approver,approval_statuses.actual_approver,approval_statuses.approval_workflow.approval_policy',
+      page: '1',
+      per_page: '200'
     });
+
+    return this.http
+      .get<ProductiveListResponse<ProductiveTimeEntry>>(
+        `/api/productive/api/v2/time_entries?${params.toString()}`,
+        { headers: this.createHeaders(config, 'timetracking-manager') }
+      )
+      .pipe(
+        timeout(30000),
+        map((response) => ({
+          ...response,
+          data: Array.isArray(response?.data) ? response.data : []
+        })),
+        catchError((error) => throwError(() => new Error(this.extractHttpErrorMessage(error))))
+      );
   }
 
   private async submitTimesheetsBulk(
@@ -218,7 +215,7 @@ export class TimesheetService {
     };
   }
 
-  private createHeaders(config: TimesheetConfig, context = 'time-week-table', bulk = false): HeadersInit {
+  private createHeaders(config: TimesheetConfig, context = 'time-week-table', bulk = false): Record<string, string> {
     return {
       'Accept': bulk ? 'application/vnd.api+json; ext=bulk' : 'application/vnd.api+json',
       'Accept-Language': 'en-US,en;q=0.9,vi;q=0.8',
@@ -323,6 +320,18 @@ export class TimesheetService {
     }
 
     return responseBody.error || responseBody.message || JSON.stringify(responseBody);
+  }
+
+  private extractHttpErrorMessage(error: any): string {
+    if (error?.name === 'TimeoutError') {
+      return 'Loading timesheet detail timed out';
+    }
+
+    if (error?.error) {
+      return this.extractErrorMessage(error.error);
+    }
+
+    return error?.message || 'Unable to load timesheet detail';
   }
 
   // Utility function to generate date range
