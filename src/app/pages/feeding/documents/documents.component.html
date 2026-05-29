@@ -458,47 +458,74 @@
           </ng-template>
         </div>
         <div class="dr-date">{{ formatDate(entry.createdAt) }}</div>
-        <div class="dr-actions" (click)="$event.stopPropagation()">
-          <button
-            *ngIf="entry.type === 'folder'"
-            type="button"
-            class="docs-icon-btn"
-            (click)="openRenameFolder(entry)"
-            title="Đổi tên"
-            aria-label="Đổi tên thư mục"
-          >
-            <i class="pi pi-pencil"></i>
-          </button>
-          <button
-            *ngIf="entry.type === 'file'"
-            type="button"
-            class="docs-icon-btn"
-            (click)="openRenameFile(entry, $event)"
-            title="Đổi tên ảnh"
-            aria-label="Đổi tên ảnh"
-          >
-            <i class="pi pi-pencil"></i>
-          </button>
-          <button
-            *ngIf="entry.type === 'file'"
-            type="button"
-            class="docs-icon-btn"
-            (click)="downloadEntry(entry, $event)"
-            [disabled]="!entry.content"
-            title="Tải xuống"
-            aria-label="Tải ảnh xuống máy"
-          >
-            <i class="pi pi-download"></i>
-          </button>
+        <div class="dr-actions docs-menu item-actions" (click)="$event.stopPropagation()">
           <button
             type="button"
-            class="docs-icon-btn danger"
-            (click)="deleteEntry(entry)"
-            title="Xoá"
-            aria-label="Xoá"
+            class="docs-icon-btn item-action-trigger"
+            (click)="toggleItemActionsMenu(entry.id, $event)"
+            aria-haspopup="menu"
+            [attr.aria-expanded]="itemActionsMenuOpen() === entry.id"
+            [attr.aria-label]="'Mở menu thao tác cho ' + entry.name"
+            title="Thao tác"
           >
-            <i class="pi pi-trash"></i>
+            <i class="pi pi-ellipsis-v"></i>
           </button>
+
+          <div
+            class="docs-menu-pop docs-menu-pop--right docs-menu-pop--item"
+            *ngIf="itemActionsMenuOpen() === entry.id"
+            role="menu"
+          >
+            <button
+              type="button"
+              class="docs-menu-item"
+              role="menuitem"
+              (click)="startSelectionWith(entry.id)"
+            >
+              <i class="pi pi-check-square"></i>
+              <span>Chọn mục này</span>
+            </button>
+            <button
+              type="button"
+              class="docs-menu-item"
+              role="menuitem"
+              *ngIf="entry.type === 'folder'"
+              (click)="openRenameFolder(entry)"
+            >
+              <i class="pi pi-pencil"></i>
+              <span>Đổi tên thư mục</span>
+            </button>
+            <button
+              type="button"
+              class="docs-menu-item"
+              role="menuitem"
+              *ngIf="entry.type === 'file'"
+              (click)="openRenameFile(entry, $event)"
+            >
+              <i class="pi pi-pencil"></i>
+              <span>Đổi tên ảnh</span>
+            </button>
+            <button
+              type="button"
+              class="docs-menu-item"
+              role="menuitem"
+              *ngIf="entry.type === 'file'"
+              (click)="downloadEntry(entry, $event)"
+              [disabled]="!entry.content"
+            >
+              <i class="pi pi-download"></i>
+              <span>Tải xuống</span>
+            </button>
+            <button
+              type="button"
+              class="docs-menu-item danger"
+              role="menuitem"
+              (click)="deleteEntry(entry)"
+            >
+              <i class="pi pi-trash"></i>
+              <span>Xoá</span>
+            </button>
+          </div>
         </div>
       </button>
     </ng-container>
@@ -544,34 +571,52 @@
             </span>
           </div>
         </div>
-        <div class="docs-card__actions" *ngIf="!selectMode()" (click)="$event.stopPropagation()">
+        <div class="docs-card__actions docs-menu item-actions" *ngIf="!selectMode()" (click)="$event.stopPropagation()">
           <button
             type="button"
-            class="docs-icon-btn"
-            (click)="startSelectionWith(entry.id)"
-            title="Chọn thư mục này"
-            aria-label="Chọn thư mục"
+            class="docs-icon-btn item-action-trigger"
+            (click)="toggleItemActionsMenu(entry.id, $event)"
+            aria-haspopup="menu"
+            [attr.aria-expanded]="itemActionsMenuOpen() === entry.id"
+            [attr.aria-label]="'Mở menu thao tác cho ' + entry.name"
+            title="Thao tác"
           >
-            <i class="pi pi-check-square"></i>
+            <i class="pi pi-ellipsis-v"></i>
           </button>
-          <button
-            type="button"
-            class="docs-icon-btn"
-            (click)="openRenameFolder(entry)"
-            title="Đổi tên"
-            aria-label="Đổi tên thư mục"
+
+          <div
+            class="docs-menu-pop docs-menu-pop--right docs-menu-pop--item"
+            *ngIf="itemActionsMenuOpen() === entry.id"
+            role="menu"
           >
-            <i class="pi pi-pencil"></i>
-          </button>
-          <button
-            type="button"
-            class="docs-icon-btn danger"
-            (click)="deleteEntry(entry)"
-            title="Xoá thư mục"
-            aria-label="Xoá thư mục"
-          >
-            <i class="pi pi-trash"></i>
-          </button>
+            <button
+              type="button"
+              class="docs-menu-item"
+              role="menuitem"
+              (click)="startSelectionWith(entry.id)"
+            >
+              <i class="pi pi-check-square"></i>
+              <span>Chọn thư mục</span>
+            </button>
+            <button
+              type="button"
+              class="docs-menu-item"
+              role="menuitem"
+              (click)="openRenameFolder(entry)"
+            >
+              <i class="pi pi-pencil"></i>
+              <span>Đổi tên</span>
+            </button>
+            <button
+              type="button"
+              class="docs-menu-item danger"
+              role="menuitem"
+              (click)="deleteEntry(entry)"
+            >
+              <i class="pi pi-trash"></i>
+              <span>Xoá thư mục</span>
+            </button>
+          </div>
         </div>
       </article>
 
@@ -618,44 +663,62 @@
             </span>
           </div>
         </div>
-        <div class="docs-card__actions" *ngIf="!selectMode()" (click)="$event.stopPropagation()">
+        <div class="docs-card__actions docs-menu item-actions" *ngIf="!selectMode()" (click)="$event.stopPropagation()">
           <button
             type="button"
-            class="docs-icon-btn"
-            (click)="startSelectionWith(entry.id)"
-            title="Chọn ảnh này"
-            aria-label="Chọn ảnh"
+            class="docs-icon-btn item-action-trigger"
+            (click)="toggleItemActionsMenu(entry.id, $event)"
+            aria-haspopup="menu"
+            [attr.aria-expanded]="itemActionsMenuOpen() === entry.id"
+            [attr.aria-label]="'Mở menu thao tác cho ' + entry.name"
+            title="Thao tác"
           >
-            <i class="pi pi-check-square"></i>
+            <i class="pi pi-ellipsis-v"></i>
           </button>
-          <button
-            type="button"
-            class="docs-icon-btn"
-            (click)="openRenameFile(entry, $event)"
-            title="Đổi tên ảnh"
-            aria-label="Đổi tên ảnh"
+
+          <div
+            class="docs-menu-pop docs-menu-pop--right docs-menu-pop--item"
+            *ngIf="itemActionsMenuOpen() === entry.id"
+            role="menu"
           >
-            <i class="pi pi-pencil"></i>
-          </button>
-          <button
-            type="button"
-            class="docs-icon-btn"
-            (click)="downloadEntry(entry, $event)"
-            [disabled]="!entry.content"
-            title="Tải ảnh xuống"
-            aria-label="Tải ảnh xuống máy"
-          >
-            <i class="pi pi-download"></i>
-          </button>
-          <button
-            type="button"
-            class="docs-icon-btn danger"
-            (click)="deleteEntry(entry)"
-            title="Xoá ảnh"
-            aria-label="Xoá ảnh"
-          >
-            <i class="pi pi-trash"></i>
-          </button>
+            <button
+              type="button"
+              class="docs-menu-item"
+              role="menuitem"
+              (click)="startSelectionWith(entry.id)"
+            >
+              <i class="pi pi-check-square"></i>
+              <span>Chọn ảnh</span>
+            </button>
+            <button
+              type="button"
+              class="docs-menu-item"
+              role="menuitem"
+              (click)="openRenameFile(entry, $event)"
+            >
+              <i class="pi pi-pencil"></i>
+              <span>Đổi tên</span>
+            </button>
+            <button
+              type="button"
+              class="docs-menu-item"
+              role="menuitem"
+              (click)="downloadEntry(entry, $event)"
+              [disabled]="!entry.content"
+            >
+              <i class="pi pi-download"></i>
+              <span>Tải xuống</span>
+            </button>
+            <button
+              type="button"
+              class="docs-menu-item danger"
+              role="menuitem"
+              (click)="deleteEntry(entry)"
+            >
+              <i class="pi pi-trash"></i>
+              <span>Xoá ảnh</span>
+            </button>
+          </div>
         </div>
       </article>
     </ng-container>

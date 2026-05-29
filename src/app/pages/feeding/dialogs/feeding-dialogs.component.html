@@ -184,6 +184,86 @@
     </div>
   </div>
 
+  <!-- ============ DIALOG (delete feeding reason) ============ -->
+  <div
+    class="dialog-overlay dialog-overlay--front"
+    *ngIf="feedingDeleteConfirmLog() as deleteLog"
+    (click)="closeFeedingDeleteConfirm()"
+  >
+    <div class="dialog feed-delete-dialog" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+      <div class="dialog-head">
+        <div>
+          <div class="eyebrow">Xác nhận xóa</div>
+          <h2><i class="pi pi-trash"></i> Xóa cữ bú?</h2>
+        </div>
+        <button
+          type="button"
+          class="dialog-close"
+          [disabled]="feedingDeleteSaving()"
+          (click)="closeFeedingDeleteConfirm()"
+          aria-label="Đóng"
+        >
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+
+      <p class="feed-delete-dialog__desc">
+        Bạn sắp xóa <strong>{{ deleteLog.volume }}ml</strong> lúc
+        <strong>{{ deleteLog.time }}</strong> ngày
+        <strong>{{ formatDateDisplay(deleteLog.date) }}</strong>.
+      </p>
+
+      <label class="feed-delete-dialog__label" for="dialog-feeding-delete-reason">
+        Lý do (tuỳ chọn)
+      </label>
+      <div class="feed-delete-dialog__quick">
+        <span class="feed-delete-dialog__quick-label">Gợi ý nhanh</span>
+        <div class="feed-delete-dialog__quick-tags">
+          <button
+            type="button"
+            class="feed-delete-reason-chip"
+            *ngFor="let tag of feedingDeleteReasonQuickTags"
+            [class.feed-delete-reason-chip--active]="feedingDeleteReasonDraft().trim() === tag"
+            [attr.aria-pressed]="feedingDeleteReasonDraft().trim() === tag"
+            [disabled]="feedingDeleteSaving()"
+            (click)="toggleFeedingDeleteReasonQuickTag(tag)"
+          >
+            {{ tag }}
+          </button>
+        </div>
+      </div>
+      <textarea
+        id="dialog-feeding-delete-reason"
+        class="feed-delete-dialog__textarea"
+        rows="3"
+        maxlength="500"
+        [value]="feedingDeleteReasonDraft()"
+        [disabled]="feedingDeleteSaving()"
+        (input)="updateFeedingDeleteReason($any($event.target).value)"
+        placeholder="Ví dụ: nhập nhầm, trùng cữ, bé không bú…"
+      ></textarea>
+
+      <div class="dialog-actions">
+        <button
+          type="button"
+          class="btn ghost"
+          [disabled]="feedingDeleteSaving()"
+          (click)="closeFeedingDeleteConfirm()"
+        >
+          Huỷ
+        </button>
+        <button
+          type="button"
+          class="btn feed-delete-dialog__confirm"
+          [disabled]="feedingDeleteSaving()"
+          (click)="confirmDeleteFeedingLog()"
+        >
+          {{ feedingDeleteSaving() ? 'Đang xóa…' : 'Xóa' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- ============ EDIT LOG DIALOG ============ -->
   <div
     class="dialog-overlay dialog-overlay--front"

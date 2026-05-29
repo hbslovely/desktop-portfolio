@@ -313,6 +313,68 @@
         </div>
       </div>
 
+      <!-- Xác nhận xóa cữ bú -->
+      <div
+        class="bp-clear-dialog-overlay"
+        *ngIf="feedingDeleteConfirmLog() as deleteLog"
+        (click)="closeFeedingDeleteConfirm()"
+        role="presentation"
+      >
+        <div class="bp-clear-dialog" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+          <h3 class="bp-clear-dialog__title">Xóa cữ bú?</h3>
+          <p class="bp-clear-dialog__desc">
+            Bạn sắp xóa <strong>{{ deleteLog.volume }}ml</strong> lúc
+            <strong>{{ deleteLog.time }}</strong> ngày
+            <strong>{{ formatDateDisplay(deleteLog.date) }}</strong>.
+          </p>
+          <label class="bp-clear-dialog__label" for="feeding-delete-reason">Lý do (tuỳ chọn)</label>
+          <div class="bp-clear-dialog__quick">
+            <span class="bp-clear-dialog__quick-label">Gợi ý nhanh</span>
+            <div class="bp-clear-dialog__quick-tags">
+              <button
+                type="button"
+                class="bp-reason-chip"
+                *ngFor="let tag of feedingDeleteReasonQuickTags"
+                [class.bp-reason-chip--active]="feedingDeleteReasonDraft().trim() === tag"
+                [attr.aria-pressed]="feedingDeleteReasonDraft().trim() === tag"
+                [disabled]="feedingDeleteSaving()"
+                (click)="toggleFeedingDeleteReasonQuickTag(tag)"
+              >
+                {{ tag }}
+              </button>
+            </div>
+          </div>
+          <textarea
+            id="feeding-delete-reason"
+            class="bp-clear-dialog__textarea"
+            rows="3"
+            maxlength="500"
+            [value]="feedingDeleteReasonDraft()"
+            [disabled]="feedingDeleteSaving()"
+            (input)="updateFeedingDeleteReason($any($event.target).value)"
+            placeholder="Ví dụ: nhập nhầm, trùng cữ, bé không bú…"
+          ></textarea>
+          <div class="bp-clear-dialog__actions">
+            <button
+              type="button"
+              class="btn ghost small"
+              [disabled]="feedingDeleteSaving()"
+              (click)="closeFeedingDeleteConfirm()"
+            >
+              Huỷ
+            </button>
+            <button
+              type="button"
+              class="btn small bp-clear-dialog__confirm"
+              [disabled]="feedingDeleteSaving()"
+              (click)="confirmDeleteFeedingLog()"
+            >
+              {{ feedingDeleteSaving() ? 'Đang xóa…' : 'Xóa' }}
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- ============ BURP WARNING ============ -->
       <div class="burp-warning" *ngIf="burpWarning() as bw">
         <div class="burp-warning__icon">
@@ -373,7 +435,7 @@
             </div>
 
             <!-- Fallback khi không có khuyến nghị -->
-            <div class="volume-info" [attr.data-status]="countdownStatus()" *ngIf="!nextFeedingRecommendation()?.hasNutritionData">
+            <div class="volume-info" [attr.data-status]="countdownStatus()" *ngIf="!nextFeedingRecommendation().hasNutritionData">
               <div class="volume-row predicted-row">
                 <span class="volume-prefix">Dự kiến</span>
                 <span class="volume-amount">{{ prediction().nextVolume }}ml</span>

@@ -126,11 +126,25 @@ export class FeedingDailyComponent implements AfterViewInit {
     'Đo lại ml',
   ] as const;
 
+  /** Gợi ý lý do khi xóa cữ bú. */
+  readonly feedingDeleteReasonQuickTags = [
+    'Nhập nhầm',
+    'Trùng cữ',
+    'Sai giờ',
+    'Sai ml',
+    'Bé không bú',
+    'Log thử',
+  ] as const;
+
   bottlePrep = signal<BottlePrepFromSheet | null>(null);
   bottlePrepDraft = signal('');
   bottlePrepEditing = signal(false);
   bottlePrepSaving = signal(false);
   pastDayViewDate = signal('');
+
+  feedingDeleteConfirmLog = signal<FeedingLog | null>(null);
+  feedingDeleteReasonDraft = signal('');
+  feedingDeleteSaving = signal(false);
 
   bottlePrepClearConfirmOpen = signal(false);
   bottlePrepClearReasonDraft = signal('');
@@ -626,27 +640,51 @@ export class FeedingDailyComponent implements AfterViewInit {
 
   deleteLog(log: FeedingLog): void {
     if (!log.rowIndex) return;
-    if (
-      !confirm(
-        `Xoá cữ ${log.volume}ml lúc ${log.time} ngày ${this.formatDateDisplay(log.date)}?`
-      )
-    ) {
-      return;
-    }
-    this.feedingLogService.deleteLog(log.rowIndex).subscribe({
-      next: () => {
-        this.activityLogService
-          .logFeeding(this.user(), 'FEEDING_DELETED', {
-            time: log.time,
-            volume: log.volume,
-          })
-          .subscribe();
-        this.logsChanged.emit();
-      },
-      error: () => {
-        /* parent shows syncError via reload failure if needed */
-      },
-    });
+    this.feedingDeleteConfirmLog.set(log);
+    this.feedingDeleteReasonDraft.set('');
+  }
+
+  closeFeedingDeleteConfirm(): void {
+    if (this.feedingDeleteSaving()) return;
+    this.feedingDeleteConfirmLog.set(null);
+    this.feedingDeleteReasonDraft.set('');
+  }
+
+  updateFeedingDeleteReason(v: string): void {
+    this.feedingDeleteReasonDraft.set(v);
+  }
+
+  toggleFeedingDeleteReasonQuickTag(tag: string): void {
+    const cur = this.feedingDeleteReasonDraft().trim();
+    this.feedingDeleteReasonDraft.set(cur === tag ? '' : tag);
+  }
+
+  confirmDeleteFeedingLog(): void {
+    const log = this.feedingDeleteConfirmLog();
+    if (!log?.rowIndex || this.feedingDeleteSaving()) return;
+
+    const reason = this.feedingDeleteReasonDraft().trim();
+    this.feedingDeleteSaving.set(true);
+    this.feedingLogService
+      .deleteLog(log.rowIndex)
+      .pipe(finalize(() => this.feedingDeleteSaving.set(false)))
+      .subscribe({
+        next: () => {
+          this.feedingDeleteConfirmLog.set(null);
+          this.feedingDeleteReasonDraft.set('');
+          this.activityLogService
+            .logFeeding(this.user(), 'FEEDING_DELETED', {
+              time: log.time,
+              volume: log.volume,
+              reason: reason || undefined,
+            })
+            .subscribe();
+          this.logsChanged.emit();
+        },
+        error: () => {
+          /* parent shows syncError via reload failure if needed */
+        },
+      });
   }
 
   private loadBottlePrepFromSheet(): void {
