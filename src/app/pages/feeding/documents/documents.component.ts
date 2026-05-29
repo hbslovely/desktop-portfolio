@@ -107,6 +107,9 @@ export class DocumentsComponent {
    */
   selectActionsMenuOpen = signal<boolean>(false);
 
+  /** Entry id whose item action dropdown is open. */
+  itemActionsMenuOpen = signal<number | null>(null);
+
   // ===== Search state =====
   /**
    * Toggle thanh search trong toolbar. Khi true, breadcrumb sẽ ẩn đi và
@@ -415,6 +418,8 @@ export class DocumentsComponent {
   // ===== Folder dropdown menu =====
   toggleFolderMenu(ev?: Event) {
     ev?.stopPropagation();
+    this.selectActionsMenuOpen.set(false);
+    this.itemActionsMenuOpen.set(null);
     this.folderMenuOpen.update((v) => !v);
   }
 
@@ -425,11 +430,24 @@ export class DocumentsComponent {
   // ===== Selection actions ellipsis menu =====
   toggleSelectActionsMenu(ev?: Event) {
     ev?.stopPropagation();
+    this.itemActionsMenuOpen.set(null);
     this.selectActionsMenuOpen.update((v) => !v);
   }
 
   closeSelectActionsMenu() {
     this.selectActionsMenuOpen.set(false);
+  }
+
+  // ===== Per-entry actions dropdown =====
+  toggleItemActionsMenu(entryId: number, ev?: Event): void {
+    ev?.stopPropagation();
+    this.folderMenuOpen.set(false);
+    this.selectActionsMenuOpen.set(false);
+    this.itemActionsMenuOpen.update((id) => (id === entryId ? null : entryId));
+  }
+
+  closeItemActionsMenu(): void {
+    this.itemActionsMenuOpen.set(null);
   }
 
   // ===== Search =====
@@ -447,6 +465,7 @@ export class DocumentsComponent {
       // Đóng các overlay khác đang mở để tránh xung đột.
       this.folderMenuOpen.set(false);
       this.selectActionsMenuOpen.set(false);
+      this.itemActionsMenuOpen.set(null);
       // Focus input sau khi *ngIf render xong.
       setTimeout(() => {
         const el = document.querySelector(
@@ -555,11 +574,13 @@ export class DocumentsComponent {
     if (t instanceof Element && t.closest('.docs-menu')) return;
     if (this.folderMenuOpen()) this.folderMenuOpen.set(false);
     if (this.selectActionsMenuOpen()) this.selectActionsMenuOpen.set(false);
+    if (this.itemActionsMenuOpen() !== null) this.itemActionsMenuOpen.set(null);
   }
 
   // ===== Folder + File add / rename =====
   openAddFolder() {
     this.folderMenuOpen.set(false);
+    this.itemActionsMenuOpen.set(null);
     this.folderDraft.set({ mode: 'add', entryType: 'folder', name: '' });
     this.errorMsg.set('');
   }
@@ -567,6 +588,7 @@ export class DocumentsComponent {
   /** Đổi tên folder HIỆN TẠI (folder đang đứng trong). Disabled ở root. */
   openRenameCurrentFolder() {
     this.folderMenuOpen.set(false);
+    this.itemActionsMenuOpen.set(null);
     const cur = this.currentFolder();
     if (!cur || cur.id === this.ROOT_ID) return;
     this.folderDraft.set({
@@ -580,6 +602,7 @@ export class DocumentsComponent {
 
   openRenameFolder(entry: ExplorerEntry) {
     if (entry.type !== 'folder') return;
+    this.closeItemActionsMenu();
     this.folderDraft.set({
       mode: 'rename',
       entryType: 'folder',
@@ -597,6 +620,7 @@ export class DocumentsComponent {
   openRenameFile(entry: ExplorerEntry, ev?: Event) {
     ev?.stopPropagation();
     if (entry.type !== 'file') return;
+    this.closeItemActionsMenu();
     const ext = this.extractExtension(entry.name);
     const base = ext ? entry.name.slice(0, -ext.length) : entry.name;
     this.folderDraft.set({
@@ -709,6 +733,7 @@ export class DocumentsComponent {
   // ===== Delete =====
   deleteEntry(entry: ExplorerEntry) {
     if (entry.id === this.ROOT_ID) return;
+    this.closeItemActionsMenu();
     const isFolder = entry.type === 'folder';
     const childCount = this.entries().filter((e) => e.parentId === entry.id)
       .length;
@@ -1239,6 +1264,7 @@ export class DocumentsComponent {
   /** Bật select mode rồi tích sẵn 1 entry (long-press / nút trên card). */
   startSelectionWith(id: number) {
     if (id === this.ROOT_ID) return;
+    this.closeItemActionsMenu();
     const s = new Set(this.selectedIds());
     s.add(id);
     this.selectedIds.set(s);
@@ -1415,6 +1441,7 @@ export class DocumentsComponent {
    */
   downloadEntry(entry: ExplorerEntry, ev?: Event) {
     ev?.stopPropagation();
+    this.closeItemActionsMenu();
     if (entry.type !== 'file') return;
     if (!entry.content) {
       this.errorMsg.set('Ảnh chưa có nội dung để tải xuống.');

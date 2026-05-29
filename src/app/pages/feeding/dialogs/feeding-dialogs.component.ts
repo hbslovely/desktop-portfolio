@@ -118,6 +118,15 @@ export class FeedingDialogsComponent {
   syncError = input('');
   syncMessage = input('');
 
+  readonly feedingDeleteReasonQuickTags = [
+    'Nhập nhầm',
+    'Trùng cữ',
+    'Sai giờ',
+    'Sai ml',
+    'Bé không bú',
+    'Log thử',
+  ] as const;
+
   logsChanged = output<void>();
   settingsChanged = output<FeedingSettingsResolved>();
   syncErrorChange = output<string>();
@@ -160,6 +169,9 @@ export class FeedingDialogsComponent {
   historyDialogOpen = signal(false);
   feedDetailView = signal<FeedDetailView | null>(null);
   feedGroupDetail = signal<FeedingViewGroup | null>(null);
+  feedingDeleteConfirmLog = signal<FeedingLog | null>(null);
+  feedingDeleteReasonDraft = signal('');
+  feedingDeleteSaving = signal(false);
   feedGroupDetailMembersDesc = computed<FeedingLog[]>(() => {
     const g = this.feedGroupDetail();
     if (!g?.members?.length) return [];
@@ -383,31 +395,56 @@ export class FeedingDialogsComponent {
 
   deleteLog(log: FeedingLog): void {
     if (!log.rowIndex) return;
-    if (
-      !confirm(
-        `Xoá cữ ${log.volume}ml lúc ${log.time} ngày ${this.formatDateDisplay(log.date)}?`
-      )
-    ) {
-      return;
-    }
+    this.feedingDeleteConfirmLog.set(log);
+    this.feedingDeleteReasonDraft.set('');
+    this.syncErrorChange.emit('');
+    this.syncMessageChange.emit('');
+  }
 
-    this.feedingLogService.deleteLog(log.rowIndex).subscribe({
-      next: () => {
-        this.closeFeedGroupDetail();
-        this.syncMessageChange.emit('Đã xoá cữ bú.');
-        this.activityLogService
-          .logFeeding(this.user(), 'FEEDING_DELETED', {
-            time: log.time,
-            volume: log.volume,
-          })
-          .subscribe();
-        setTimeout(() => this.syncMessageChange.emit(''), 3000);
-        this.logsChanged.emit();
-      },
-      error: (err) => {
-        this.syncErrorChange.emit(err?.message || 'Xoá thất bại.');
-      },
-    });
+  closeFeedingDeleteConfirm(): void {
+    if (this.feedingDeleteSaving()) return;
+    this.feedingDeleteConfirmLog.set(null);
+    this.feedingDeleteReasonDraft.set('');
+  }
+
+  updateFeedingDeleteReason(v: string): void {
+    this.feedingDeleteReasonDraft.set(v);
+  }
+
+  toggleFeedingDeleteReasonQuickTag(tag: string): void {
+    const cur = this.feedingDeleteReasonDraft().trim();
+    this.feedingDeleteReasonDraft.set(cur === tag ? '' : tag);
+  }
+
+  confirmDeleteFeedingLog(): void {
+    const log = this.feedingDeleteConfirmLog();
+    if (!log?.rowIndex || this.feedingDeleteSaving()) return;
+
+    const reason = this.feedingDeleteReasonDraft().trim();
+    this.feedingDeleteSaving.set(true);
+    this.feedingLogService
+      .deleteLog(log.rowIndex)
+      .pipe(finalize(() => this.feedingDeleteSaving.set(false)))
+      .subscribe({
+        next: () => {
+          this.feedingDeleteConfirmLog.set(null);
+          this.feedingDeleteReasonDraft.set('');
+          this.closeFeedGroupDetail();
+          this.syncMessageChange.emit('Đã xoá cữ bú.');
+          this.activityLogService
+            .logFeeding(this.user(), 'FEEDING_DELETED', {
+              time: log.time,
+              volume: log.volume,
+              reason: reason || undefined,
+            })
+            .subscribe();
+          setTimeout(() => this.syncMessageChange.emit(''), 3000);
+          this.logsChanged.emit();
+        },
+        error: (err) => {
+          this.syncErrorChange.emit(err?.message || 'Xoá thất bại.');
+        },
+      });
   }
 
   usePredictionValues(): void {

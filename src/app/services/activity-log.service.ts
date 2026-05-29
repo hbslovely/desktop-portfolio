@@ -112,8 +112,14 @@ export function formatLogContent(
         ? `cập nhật nội dung cữ bú ${vol}ml lúc '${time}'`
         : `cập nhật nội dung cữ bú lúc '${time}'`;
     }
-    case ACTIVITY_EVENT.FEEDING_DELETED:
-      return `Xóa cữ bú '${details['volume']}ml' lúc '${details['time']}'`;
+    case ACTIVITY_EVENT.FEEDING_DELETED: {
+      const reason = details['reason'];
+      const r =
+        reason != null && String(reason).trim() !== '' ? String(reason).trim() : '';
+      return r
+        ? `Xóa cữ bú '${details['volume']}ml' lúc '${details['time']}'. Lý do: '${r}'`
+        : `Xóa cữ bú '${details['volume']}ml' lúc '${details['time']}'`;
+    }
     case ACTIVITY_EVENT.BOTTLE_PREP_ADDED:
       return `Pha sữa '${details['volume']}ml' lúc '${details['time']}'`;
     case ACTIVITY_EVENT.BOTTLE_PREP_UPDATED: {
@@ -646,6 +652,7 @@ export class ActivityLogService {
       volume?: number;
       oldVolume?: number;
       newVolume?: number;
+      reason?: string;
     }
   ): Observable<boolean> {
     const content = formatLogContent(ACTIVITY_EVENT[eventType], {
@@ -655,6 +662,7 @@ export class ActivityLogService {
       volume: details.volume,
       oldVolume: details.oldVolume,
       newVolume: details.newVolume,
+      reason: details.reason,
     });
     return this.addLog({ user, eventType: ACTIVITY_EVENT[eventType], content });
   }

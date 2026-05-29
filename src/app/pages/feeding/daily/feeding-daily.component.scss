@@ -2452,10 +2452,15 @@
     background 0.15s ease,
     color 0.15s ease;
 
-  &:hover {
+  &:hover:not(:disabled) {
     border-color: var(--primary);
     color: var(--primary);
     background: var(--primary-soft);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
   }
 
   &:active {
