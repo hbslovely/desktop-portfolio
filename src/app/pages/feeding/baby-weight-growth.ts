@@ -42,6 +42,20 @@ export interface WeightGrowthEvaluation {
   status: WeightGrowthStatus;
   statusLabel: string;
   detail: string;
+  estimate: WeightWeekEstimate;
+}
+
+export interface WeightWeekEstimate {
+  weekAge: number;
+  currentWeightKg: number;
+  medianKg: number;
+  severeUnderweightMaxKg: number; // < -2SD
+  underweightMaxKg: number; // < -1SD
+  standardMinKg: number; // >= -1SD
+  standardMaxKg: number; // <= +1SD
+  overweightMinKg: number; // > +1SD
+  highWeightMinKg: number; // > +2SD
+  deltaFromMedianKg: number;
 }
 
 /** 
@@ -291,6 +305,58 @@ export function weeksFromDays(days: number): number {
   return Math.floor(days / 7);
 }
 
+export function weeksFromDaysPrecise(days: number): number {
+  return Math.max(0, days / 7);
+}
+
+function round2(n: number): number {
+  return Math.round(n * 100) / 100;
+}
+
+function formatWeeksLabel(weeks: number): string {
+  if (weeks > 104) {
+    return `${Math.floor(weeks / 52.1775)} tuổi`;
+  }
+  const rounded = Math.round(weeks * 10) / 10;
+  return Number.isInteger(rounded) ? `${rounded} tuần` : `${rounded} tuần`;
+}
+
+export function estimateWeightByWeek(
+  weeks: number,
+  currentWeightKg: number,
+  sex: WeightGrowthSex
+): WeightWeekEstimate | null {
+  if (
+    !Number.isFinite(weeks) ||
+    weeks < 0 ||
+    !Number.isFinite(currentWeightKg) ||
+    currentWeightKg <= 0
+  ) {
+    return null;
+  }
+
+  const median = medianWeightKgAtWeeks(weeks, sex);
+  const sd = approxSdKgAtWeeks(weeks, sex);
+
+  const minus2 = median - 2 * sd;
+  const minus1 = median - sd;
+  const plus1 = median + sd;
+  const plus2 = median + 2 * sd;
+
+  return {
+    weekAge: round2(weeks),
+    currentWeightKg: round2(currentWeightKg),
+    medianKg: round2(median),
+    severeUnderweightMaxKg: round2(minus2),
+    underweightMaxKg: round2(minus1),
+    standardMinKg: round2(minus1),
+    standardMaxKg: round2(plus1),
+    overweightMinKg: round2(plus1),
+    highWeightMinKg: round2(plus2),
+    deltaFromMedianKg: round2(currentWeightKg - median),
+  };
+}
+
 function parseIsoLocal(iso: string): Date | null {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso).trim());
   if (!m) return null;
@@ -314,11 +380,14 @@ export function evaluateWeightForAge(
     return null;
   }
 
+  const estimate = estimateWeightByWeek(weeks, weightKg, sex);
+  if (!estimate) return null;
+
   // Mở rộng hỗ trợ tới 10 tuổi (khoảng 520 tuần)
   if (weeks > 520) {
     return {
       weeks,
-      weeksLabel: `${Math.floor(weeks / 52.1775)} tuổi`,
+      weeksLabel: formatWeeksLabel(weeks),
       medianKg: medianWeightKgAtWeeks(520, sex),
       sdKg: approxSdKgAtWeeks(520, sex),
       zScore: 0,
@@ -326,6 +395,7 @@ export function evaluateWeightForAge(
       statusLabel: 'Ngoài độ tuổi hỗ trợ',
       detail:
         'App hỗ trợ đánh giá tới 10 tuổi. Với trẻ lớn hơn, hãy tham khảo bác sĩ nhi khoa để có biểu đồ tăng trưởng phù hợp.',
+      estimate,
     };
   }
 
@@ -364,9 +434,7 @@ export function evaluateWeightForAge(
       'Cân nặng cao hơn rõ so với trung vị cùng tuần. Trao đổi khi khám để loại trừ bệnh lý hoặc điều chỉnh dinh dưỡng.';
   }
 
-  const weeksLabel = weeks > 104 
-    ? `${Math.floor(weeks / 52.1775)} tuổi`
-    : `${weeks} tuần`;
+  const weeksLabel = formatWeeksLabel(weeks);
 
   return {
     weeks,
@@ -377,6 +445,7 @@ export function evaluateWeightForAge(
     status,
     statusLabel,
     detail,
+    estimate,
   };
 }
 

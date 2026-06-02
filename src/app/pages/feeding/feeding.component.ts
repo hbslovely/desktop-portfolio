@@ -658,6 +658,7 @@ export class FeedingComponent {
     this.loadLogs();
     this.loadFeedingSettings();
     this.loadWeightLogs();
+    this.dailyRefreshToken.update((n) => n + 1);
     this.weightCmp?.refresh();
     this.medicalCmp?.refresh();
     this.documentsCmp?.refresh();

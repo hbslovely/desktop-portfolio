@@ -1,3 +1,17 @@
+<section class="wg-controls">
+  <div class="wg-controls__group">
+    <span class="wg-controls__label">Span</span>
+    <button type="button" class="wg-chip" [class.active]="spanPreset() === '30d'" (click)="setSpanPreset('30d')">30 ngày</button>
+    <button type="button" class="wg-chip" [class.active]="spanPreset() === '90d'" (click)="setSpanPreset('90d')">90 ngày</button>
+    <button type="button" class="wg-chip" [class.active]="spanPreset() === '180d'" (click)="setSpanPreset('180d')">180 ngày</button>
+    <button type="button" class="wg-chip" [class.active]="spanPreset() === 'all'" (click)="setSpanPreset('all')">Toàn bộ</button>
+  </div>
+  <button type="button" class="wg-pin" [class.active]="pinLatestPoint()" (click)="togglePinLatest()">
+    <i class="pi pi-map-marker"></i>
+    {{ pinLatestPoint() ? 'Pin điểm mới nhất' : 'Hiện nhiều nhãn' }}
+  </button>
+</section>
+
 <!-- Cân nặng vs WHO -->
 <section class="wg-card wg-card--compare" *ngIf="weightVsStandardChart() as cmp">
   <header class="wg-card__head">
@@ -28,9 +42,9 @@
       <defs>
         <clipPath id="wgWClip">
           <rect
-            [attr.x]="cmp.PAD_L - 8"
+            [attr.x]="weightSpanStartX(cmp)"
             [attr.y]="cmp.PAD_T - 4"
-            [attr.width]="cmp.W - cmp.PAD_L - cmp.PAD_R + 20"
+            [attr.width]="cmp.W - weightSpanStartX(cmp) - cmp.PAD_R + 20"
             [attr.height]="cmp.bottomY - cmp.PAD_T + 8"
             rx="12"
             ry="12"
@@ -55,9 +69,9 @@
       <g clip-path="url(#wgWClip)">
         <rect
           class="wg-plot-fill"
-          [attr.x]="cmp.PAD_L - 8"
+          [attr.x]="weightSpanStartX(cmp)"
           [attr.y]="cmp.PAD_T - 4"
-          [attr.width]="cmp.W - cmp.PAD_L - cmp.PAD_R + 20"
+          [attr.width]="cmp.W - weightSpanStartX(cmp) - cmp.PAD_R + 20"
           [attr.height]="cmp.bottomY - cmp.PAD_T + 8"
           rx="12"
           ry="12"
@@ -125,7 +139,7 @@
         <circle [attr.cx]="p.x" [attr.cy]="p.y" r="7" class="wg-node" />
         <circle [attr.cx]="p.x" [attr.cy]="p.y" r="3.5" class="wg-node-core" />
         <text
-          *ngIf="p.showKgLabel"
+          *ngIf="showWeightPointLabel(p, cmp.pts)"
           [attr.x]="p.x"
           [attr.y]="p.y - 14"
           text-anchor="middle"
@@ -174,9 +188,9 @@
       <defs>
         <clipPath id="wgHClip">
           <rect
-            [attr.x]="hCmp.PAD_L - 8"
+            [attr.x]="heightSpanStartX(hCmp)"
             [attr.y]="hCmp.PAD_T - 4"
-            [attr.width]="hCmp.W - hCmp.PAD_L - hCmp.PAD_R + 20"
+            [attr.width]="hCmp.W - heightSpanStartX(hCmp) - hCmp.PAD_R + 20"
             [attr.height]="hCmp.bottomY - hCmp.PAD_T + 8"
             rx="12"
             ry="12"
@@ -201,9 +215,9 @@
       <g clip-path="url(#wgHClip)">
         <rect
           class="wg-plot-fill wg-plot-fill--cyan"
-          [attr.x]="hCmp.PAD_L - 8"
+          [attr.x]="heightSpanStartX(hCmp)"
           [attr.y]="hCmp.PAD_T - 4"
-          [attr.width]="hCmp.W - hCmp.PAD_L - hCmp.PAD_R + 20"
+          [attr.width]="hCmp.W - heightSpanStartX(hCmp) - hCmp.PAD_R + 20"
           [attr.height]="hCmp.bottomY - hCmp.PAD_T + 8"
           rx="12"
           ry="12"
@@ -262,7 +276,7 @@
         <circle [attr.cx]="p.x" [attr.cy]="p.y" r="7" class="wg-node wg-node--cyan" />
         <circle [attr.cx]="p.x" [attr.cy]="p.y" r="3.5" class="wg-node-core wg-node-core--cyan" />
         <text
-          *ngIf="p.showLabel"
+          *ngIf="showHeightPointLabel(p, hCmp.pts)"
           [attr.x]="p.x"
           [attr.y]="p.y - 14"
           text-anchor="middle"

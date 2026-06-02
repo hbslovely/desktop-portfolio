@@ -191,6 +191,8 @@ export class FeedingDialogsComponent {
   /** Đã dùng tính từ sữa đã pha; khi lưu cữ bú thành công sẽ ghi log «System đã …» (activity log). */
   bottlePrepClearPendingLog = signal(false);
   pendingClearedPrepVolumeMl = signal<number | null>(null);
+  pendingBottlePrepConsumedMl = signal<number | null>(null);
+  pendingBottlePrepRemainingMl = signal<number | null>(null);
 
   calcResult = computed<number | null>(() => {
     const prep = this.bottlePrep();
@@ -283,6 +285,8 @@ export class FeedingDialogsComponent {
     if (resetTime) {
       this.bottlePrepClearPendingLog.set(false);
       this.pendingClearedPrepVolumeMl.set(null);
+      this.pendingBottlePrepConsumedMl.set(null);
+      this.pendingBottlePrepRemainingMl.set(null);
       const nowD = new Date();
       this.logDraft.set({
         date: this.toDateStr(nowD),
@@ -515,8 +519,11 @@ export class FeedingDialogsComponent {
     if (r === null) return;
     const prep = this.bottlePrep();
     if (prep && prep.volumeMl > 0) {
+      const remainingMl = parseFloat(this.remainingInput()) || 0;
       this.bottlePrepClearPendingLog.set(true);
       this.pendingClearedPrepVolumeMl.set(prep.volumeMl);
+      this.pendingBottlePrepConsumedMl.set(r);
+      this.pendingBottlePrepRemainingMl.set(Math.max(0, Math.round(remainingMl)));
     }
     this.logDraft.update((d) => ({ ...d, volume: r }));
     this.bottlePrepClearRequested.emit();
@@ -556,11 +563,21 @@ export class FeedingDialogsComponent {
           .subscribe();
         if (this.bottlePrepClearPendingLog()) {
           const prepVol = this.pendingClearedPrepVolumeMl();
+          const consumed = this.pendingBottlePrepConsumedMl();
+          const remaining = this.pendingBottlePrepRemainingMl();
           if (prepVol != null && prepVol > 0) {
-            this.activityLogService.logBottlePrepClearedAfterFeed(prepVol).subscribe();
+            this.activityLogService
+              .logBottlePrepClearedAfterFeed(
+                prepVol,
+                consumed ?? log.volume,
+                remaining ?? Math.max(0, prepVol - log.volume)
+              )
+              .subscribe();
           }
           this.bottlePrepClearPendingLog.set(false);
           this.pendingClearedPrepVolumeMl.set(null);
+          this.pendingBottlePrepConsumedMl.set(null);
+          this.pendingBottlePrepRemainingMl.set(null);
         }
         const nowT = this.toTimeStr(new Date());
         this.logDraft.set({

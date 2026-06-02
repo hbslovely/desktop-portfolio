@@ -75,6 +75,11 @@ export class FeedingScheduleComponent {
   editDraft = signal<EventDraft>(this.emptyDraft());
 
   now = signal<Date>(new Date());
+  calendarDialogOpen = signal(false);
+  calendarCursor = signal<Date>(
+    new Date(new Date().getFullYear(), new Date().getMonth(), 1)
+  );
+  selectedCalendarDate = signal<string>('');
 
   placePickerOpen = signal<'add' | 'edit' | null>(null);
   placeMenuRect = signal<{ top: number; left: number; width: number } | null>(null);
@@ -90,6 +95,72 @@ export class FeedingScheduleComponent {
       return null;
     }
     return { ctx, pos, places };
+  });
+
+  readonly calendarWeekdays = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+
+  monthCalendarCells = computed(() => {
+    const cursor = this.calendarCursor();
+    const year = cursor.getFullYear();
+    const month = cursor.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const startOffset = (firstDay.getDay() + 6) % 7;
+    const gridStart = new Date(year, month, 1 - startOffset);
+
+    const eventsByDate = new Map<string, FeedingEventLog[]>();
+    for (const ev of this.events()) {
+      const bucket = eventsByDate.get(ev.date) ?? [];
+      bucket.push(ev);
+      eventsByDate.set(ev.date, bucket);
+    }
+
+    const cells: Array<{
+      dateIso: string;
+      day: number;
+      inMonth: boolean;
+      isToday: boolean;
+      eventCount: number;
+      hasFutureEvent: boolean;
+    }> = [];
+
+    const todayIso = this.toDateStr(this.now());
+    for (let i = 0; i < 42; i++) {
+      const d = new Date(
+        gridStart.getFullYear(),
+        gridStart.getMonth(),
+        gridStart.getDate() + i
+      );
+      const dateIso = this.toDateStr(d);
+      const dayEvents = eventsByDate.get(dateIso) ?? [];
+      const hasFutureEvent = dayEvents.some((ev) => this.isFuture(ev));
+      cells.push({
+        dateIso,
+        day: d.getDate(),
+        inMonth: d.getMonth() === month,
+        isToday: dateIso === todayIso,
+        eventCount: dayEvents.length,
+        hasFutureEvent,
+      });
+    }
+
+    return cells;
+  });
+
+  selectedCalendarEvents = computed(() => {
+    const date = this.selectedCalendarDate();
+    if (!date) return [] as FeedingEventLog[];
+    return this.events()
+      .filter((ev) => ev.date === date)
+      .sort(
+        (a, b) =>
+          (EventLogService.eventDateTime(a)?.getTime() ?? 0) -
+          (EventLogService.eventDateTime(b)?.getTime() ?? 0)
+      );
+  });
+
+  calendarMonthLabel = computed(() => {
+    const d = this.calendarCursor();
+    return `Tháng ${d.getMonth() + 1}/${d.getFullYear()}`;
   });
 
   constructor() {
@@ -229,6 +300,31 @@ export class FeedingScheduleComponent {
         this.errorMsg.set('Không tải được lịch. Vui lòng thử lại sau.');
       },
     });
+  }
+
+  openCalendarDialog(): void {
+    const today = new Date(this.now());
+    this.calendarCursor.set(new Date(today.getFullYear(), today.getMonth(), 1));
+    this.selectedCalendarDate.set(this.toDateStr(today));
+    this.calendarDialogOpen.set(true);
+  }
+
+  closeCalendarDialog(): void {
+    this.calendarDialogOpen.set(false);
+  }
+
+  calendarPrevMonth(): void {
+    const d = this.calendarCursor();
+    this.calendarCursor.set(new Date(d.getFullYear(), d.getMonth() - 1, 1));
+  }
+
+  calendarNextMonth(): void {
+    const d = this.calendarCursor();
+    this.calendarCursor.set(new Date(d.getFullYear(), d.getMonth() + 1, 1));
+  }
+
+  selectCalendarDate(dateIso: string): void {
+    this.selectedCalendarDate.set(dateIso);
   }
 
   isFuture(ev: FeedingEventLog): boolean {

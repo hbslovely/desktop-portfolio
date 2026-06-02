@@ -426,7 +426,7 @@ export class FeedingDailyComponent implements AfterViewInit {
     return `${days} ngày trước`;
   });
 
-  burpWarning = computed(() => {
+  burpInsight = computed(() => {
     const last = this.lastFeeding();
     if (!last) return null;
     const burpDuration = this.feedingSettings().burpDurationMinutes;
@@ -434,14 +434,43 @@ export class FeedingDailyComponent implements AfterViewInit {
     const [h, mi] = last.time.split(':').map((n) => parseInt(n, 10));
     const feedAt = new Date(y, (mo || 1) - 1, d || 1, h || 0, mi || 0);
     const burpEndAt = new Date(feedAt.getTime() + burpDuration * 60 * 1000);
-    const remainingMs = burpEndAt.getTime() - this.now().getTime();
-    if (remainingMs <= 0) return null;
+    const nowMs = this.now().getTime();
+    const remainingMs = burpEndAt.getTime() - nowMs;
+    if (remainingMs > 0) {
+      return {
+        state: 'active' as const,
+        remainingMinutes: Math.ceil(remainingMs / 60000),
+        elapsedMinutes: Math.max(
+          0,
+          Math.floor((nowMs - feedAt.getTime()) / 60000)
+        ),
+        lastFeedTime: last.time,
+        lastFeedVolume: last.volume,
+        burpDuration,
+      };
+    }
+
+    const minutesSinceBurp = Math.floor((nowMs - burpEndAt.getTime()) / 60000);
+    const followupWindowMinutes = 90;
+    if (minutesSinceBurp > followupWindowMinutes) return null;
     return {
-      remainingMinutes: Math.ceil(remainingMs / 60000),
+      state: 'done' as const,
+      minutesSinceBurp,
       lastFeedTime: last.time,
       lastFeedVolume: last.volume,
       burpDuration,
     };
+  });
+
+  burpProgressPct = computed(() => {
+    const info = this.burpInsight();
+    if (!info) return 0;
+    if (info.state === 'done') return 100;
+    if (info.burpDuration <= 0) return 0;
+    return Math.max(
+      0,
+      Math.min(100, Math.round((info.elapsedMinutes / info.burpDuration) * 100))
+    );
   });
 
   timeUntilNext = computed(() => {

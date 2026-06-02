@@ -11,7 +11,7 @@
   </p>
 
   <ul class="whl-list" *ngIf="logs().length > 0">
-    <li class="whl-row" *ngFor="let log of logs()">
+    <li class="whl-row" *ngFor="let log of previewLogs()">
       <div class="whl-main">
         <div class="whl-line">
           <span class="whl-date">{{ formatDate(log.date) }}</span>
@@ -46,4 +46,59 @@
       </div>
     </li>
   </ul>
+
+  <div class="whl-more" *ngIf="hasMoreLogs()">
+    <button type="button" class="whl-more__btn" (click)="openFullHistory()">
+      Xem thêm {{ hiddenLogsCount() }} bản ghi
+      <i class="pi pi-chevron-right"></i>
+    </button>
+  </div>
 </section>
+
+<div class="whl-dialog-overlay" *ngIf="fullHistoryOpen()" (click)="closeFullHistory()">
+  <section class="whl-dialog" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+    <header class="whl-dialog__head">
+      <h3>Toàn bộ lịch sử cân ({{ logs().length }})</h3>
+      <button type="button" class="whl-btn whl-btn--icon" (click)="closeFullHistory()" aria-label="Đóng">
+        <i class="pi pi-times"></i>
+      </button>
+    </header>
+
+    <ul class="whl-list whl-list--dialog">
+      <li class="whl-row" *ngFor="let log of logs()">
+        <div class="whl-main">
+          <div class="whl-line">
+            <span class="whl-date">{{ formatDate(log.date) }}</span>
+            <span class="whl-sep" aria-hidden="true">·</span>
+            <span class="whl-kg">{{ formatKg(log.weightKg) }} kg</span>
+            <ng-container *ngIf="log.heightCm !== undefined">
+              <span class="whl-sep" aria-hidden="true">·</span>
+              <span class="whl-height">{{ formatCm(log.heightCm) }} cm</span>
+            </ng-container>
+          </div>
+          <span class="whl-note" *ngIf="log.note">{{ log.note }}</span>
+        </div>
+        <div class="whl-actions">
+          <button
+            type="button"
+            class="whl-btn"
+            (click)="edit.emit(log)"
+            [disabled]="!log.rowIndex"
+            title="Sửa"
+          >
+            <i class="pi pi-pencil"></i>
+          </button>
+          <button
+            type="button"
+            class="whl-btn whl-btn--danger"
+            (click)="remove.emit(log)"
+            [disabled]="!log.rowIndex"
+            title="Xoá"
+          >
+            <i class="pi pi-trash"></i>
+          </button>
+        </div>
+      </li>
+    </ul>
+  </section>
+</div>

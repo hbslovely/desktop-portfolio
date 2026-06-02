@@ -39,6 +39,7 @@ import {
   sampleWhoHeightBandByDay,
   sampleWhoWeightBandByDay,
   weeksFromDays,
+  weeksFromDaysPrecise,
   whoGirlRangeReferenceTable,
   whoVnReferenceTable,
 } from '../baby-weight-growth';
@@ -216,7 +217,7 @@ export class WeightComponent {
     if (!birth || !latest) return null;
     const days = ageDaysAtDate(birth, latest.date);
     if (days === null) return null;
-    const w = weeksFromDays(days);
+    const w = weeksFromDaysPrecise(days);
     return evaluateWeightForAge(w, latest.weightKg, this.growthSex());
   });
 

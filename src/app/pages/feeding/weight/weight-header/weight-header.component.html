@@ -47,50 +47,96 @@
     <i class="pi pi-chevron-right"></i>
   </button>
 
-  <section
-    class="wh-eval"
-    *ngIf="latestGrowthEval() as ev"
-    [attr.data-status]="statusClass(ev.status)"
-  >
-    <div class="wh-eval__row">
-      <div class="wh-eval__copy">
-        <div class="wh-eval__eyebrow">
-          <i class="pi pi-heart-fill"></i> Theo tuần tuổi — chuẩn WHO (VN khuyến nghị)
-        </div>
-        <h3 class="wh-eval__title">Đánh giá mới nhất</h3>
-        <p class="wh-eval__meta" *ngIf="sortedLogsDesc()[0] as last">
-          {{ formatDate(last.date) }} · {{ formatKg(last.weightKg) }} kg ·
-          <ng-container *ngIf="last.heightCm"> {{ formatCm(last.heightCm) }} cm · </ng-container>
-          {{ ev.weeksLabel }}
-        </p>
+  <section class="wh-assessment" *ngIf="latestGrowthEval() || latestHeightEval()">
+    <header class="wh-assessment__head">
+      <div class="wh-assessment__eyebrow">
+        <i class="pi pi-heart"></i>
+        Đánh giá tăng trưởng gần nhất
       </div>
-      <span class="wh-eval__badge" [attr.data-status]="statusClass(ev.status)">
-        {{ ev.statusLabel }}
-      </span>
-    </div>
-    <p class="wh-eval__detail">{{ ev.detail }}</p>
-  </section>
+      <p class="wh-assessment__sub">Theo chuẩn WHO (0-24 tháng) · dùng để tham khảo</p>
+    </header>
 
-  <section
-    class="wh-eval wh-eval--height"
-    *ngIf="latestHeightEval() as hv"
-    [attr.data-status]="statusClass(hv.status)"
-  >
-    <div class="wh-eval__row">
-      <div class="wh-eval__copy">
-        <div class="wh-eval__eyebrow">
-          <i class="pi pi-arrows-v"></i> Chiều cao theo tuổi — chuẩn WHO
+    <div class="wh-assessment__grid">
+      <article
+        class="wh-eval-card"
+        *ngIf="latestGrowthEval() as ev"
+        [attr.data-status]="statusClass(ev.status)"
+      >
+        <div class="wh-eval-card__head">
+          <h3 class="wh-eval-card__title">
+            <i class="pi pi-heart-fill"></i>
+            Cân nặng theo tuổi
+          </h3>
+          <span class="wh-eval-card__badge" [attr.data-status]="statusClass(ev.status)">
+            {{ ev.statusLabel }}
+          </span>
         </div>
-        <h3 class="wh-eval__title">Đánh giá chiều cao mới nhất</h3>
-        <p class="wh-eval__meta" *ngIf="latestHeightLog() as last">
-          {{ formatDate(last.date) }} · {{ formatCm(last.heightCm || 0) }} cm ·
-          {{ hv.monthsLabel }} · P{{ hv.percentile }}
+        <p class="wh-eval-card__meta" *ngIf="sortedLogsDesc()[0] as last">
+          {{ formatDate(last.date) }} · {{ formatKg(last.weightKg) }} kg · {{ ev.weeksLabel }}
         </p>
-      </div>
-      <span class="wh-eval__badge" [attr.data-status]="statusClass(hv.status)">
-        {{ hv.statusLabel }}
-      </span>
+        <div class="wh-score-grid">
+          <div class="wh-score">
+            <span class="wh-score__label">Hiện tại</span>
+            <strong class="wh-score__value">{{ formatKg(ev.estimate.currentWeightKg) }} kg</strong>
+          </div>
+          <div class="wh-score">
+            <span class="wh-score__label">Chuẩn</span>
+            <strong class="wh-score__value"
+              >{{ formatKg(ev.estimate.standardMinKg) }}-{{ formatKg(ev.estimate.standardMaxKg) }} kg</strong
+            >
+          </div>
+          <div class="wh-score">
+            <span class="wh-score__label">Lệch</span>
+            <strong class="wh-score__value">{{ weightDeltaLabel(ev) }}</strong>
+          </div>
+        </div>
+        <p class="wh-eval-card__detail wh-eval-card__detail--muted">
+          Thiếu cân &lt; {{ formatKg(ev.estimate.underweightMaxKg) }} kg · Thừa cân &gt;
+          {{ formatKg(ev.estimate.overweightMinKg) }} kg
+        </p>
+      </article>
+
+      <article
+        class="wh-eval-card wh-eval-card--height"
+        *ngIf="latestHeightEval() as hv"
+        [attr.data-status]="statusClass(hv.status)"
+      >
+        <div class="wh-eval-card__head">
+          <h3 class="wh-eval-card__title">
+            <i class="pi pi-arrows-v"></i>
+            Chiều cao theo tuổi
+          </h3>
+          <span class="wh-eval-card__badge" [attr.data-status]="statusClass(hv.status)">
+            {{ hv.statusLabel }}
+          </span>
+        </div>
+        <p class="wh-eval-card__meta" *ngIf="latestHeightLog() as last">
+          {{ formatDate(last.date) }} · {{ formatCm(last.heightCm || 0) }} cm · {{ hv.monthsLabel }}
+        </p>
+        <div class="wh-score-grid" *ngIf="latestHeightLog() as last">
+          <div class="wh-score">
+            <span class="wh-score__label">Hiện tại</span>
+            <strong class="wh-score__value">{{ formatCm(last.heightCm || 0) }} cm</strong>
+          </div>
+          <div class="wh-score">
+            <span class="wh-score__label">Mốc tham chiếu</span>
+            <strong class="wh-score__value">{{ formatCm(hv.medianCm) }} cm</strong>
+          </div>
+          <div class="wh-score">
+            <span class="wh-score__label">Lệch</span>
+            <strong class="wh-score__value">{{ heightDeltaLabel(hv, last.heightCm || 0) }}</strong>
+          </div>
+        </div>
+        <div class="wh-eval-card__scale" aria-hidden="true">
+          <span class="wh-eval-card__scale-zone">Thấp</span>
+          <span class="wh-eval-card__scale-zone wh-eval-card__scale-zone--mid">Phù hợp</span>
+          <span class="wh-eval-card__scale-zone">Cao</span>
+          <span class="wh-eval-card__scale-marker" [style.left.%]="heightMarkerPosition(hv)"></span>
+        </div>
+        <p class="wh-eval-card__detail" *ngIf="latestHeightLog() as last">
+          {{ friendlyHeightDetail(hv, last.heightCm || 0) }}
+        </p>
+      </article>
     </div>
-    <p class="wh-eval__detail">{{ hv.detail }}</p>
   </section>
 </div>

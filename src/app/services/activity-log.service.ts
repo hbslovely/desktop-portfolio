@@ -134,8 +134,12 @@ export function formatLogContent(
         ? `Đổi sữa đã pha từ '${oldV}ml' thành '${newV}ml' lúc '${time}'. Lý do: '${r}'`
         : `Đổi sữa đã pha từ '${oldV}ml' thành '${newV}ml' lúc '${time}'`;
     }
-    case ACTIVITY_EVENT.BOTTLE_PREP_CLEARED_FEEDING:
-      return `xóa '${details['volume']}ml' sữa đã pha. Lý do: 'bé ti sữa'`;
+    case ACTIVITY_EVENT.BOTTLE_PREP_CLEARED_FEEDING: {
+      const vol = details['volume'];
+      const consumed = details['consumed'] ?? '?';
+      const remaining = details['remaining'] ?? '?';
+      return `xóa '${vol}ml' sữa đã pha. Bé đã ti '${consumed}ml', còn '${remaining}ml'. Lý do: 'bé ti sữa'`;
+    }
     case ACTIVITY_EVENT.BOTTLE_PREP_MANUAL_CLEARED: {
       const vol = details['volume'];
       const reason = details['reason'];
@@ -731,9 +735,15 @@ export class ActivityLogService {
   }
 
   /** Sau khi ghi cữ bú từ sữa đã pha (tính còn lại trong bình → lưu cữ). */
-  logBottlePrepClearedAfterFeed(volumeMl: number): Observable<boolean> {
+  logBottlePrepClearedAfterFeed(
+    volumeMl: number,
+    consumedMl: number,
+    remainingMl: number
+  ): Observable<boolean> {
     const content = formatLogContent(ACTIVITY_EVENT.BOTTLE_PREP_CLEARED_FEEDING, {
       volume: volumeMl,
+      consumed: consumedMl,
+      remaining: remainingMl,
     });
     return this.addLog({
       user: ACTIVITY_SYSTEM_USER,

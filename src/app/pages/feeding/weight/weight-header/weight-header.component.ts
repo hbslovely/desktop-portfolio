@@ -52,4 +52,36 @@ export class WeightHeaderComponent {
   formatCm(n: number): string {
     return formatWeightCm(n);
   }
+
+  formatSigned(n: number, digits = 1): string {
+    const abs = Math.abs(n).toFixed(digits);
+    return `${n >= 0 ? '+' : '-'}${abs}`;
+  }
+
+  weightDeltaLabel(ev: WeightGrowthEvaluation): string {
+    const e = ev.estimate;
+    return `${this.formatSigned(e.deltaFromMedianKg, 2)} kg`;
+  }
+
+  heightDeltaLabel(ev: HeightGrowthEvaluation, currentHeightCm: number): string {
+    const diff = Math.round((currentHeightCm - ev.medianCm) * 10) / 10;
+    return `${this.formatSigned(diff, 1)} cm`;
+  }
+
+  heightMarkerPosition(ev: HeightGrowthEvaluation): number {
+    const z = Math.max(-2, Math.min(2, ev.zScore));
+    return ((z + 2) / 4) * 100;
+  }
+
+  friendlyHeightDetail(ev: HeightGrowthEvaluation, currentHeightCm: number): string {
+    const diff = Math.round((currentHeightCm - ev.medianCm) * 10) / 10;
+    const absDiff = this.formatCm(Math.abs(diff));
+    if (Math.abs(diff) < 0.5) {
+      return 'Chiều cao hiện tại gần mốc tham chiếu theo tuổi, tiếp tục theo dõi đều mỗi lần khám.';
+    }
+    if (diff < 0) {
+      return `Hiện tại bé thấp hơn mốc tham chiếu khoảng ${absDiff} cm. Theo dõi thêm qua các lần đo tiếp theo.`;
+    }
+    return `Hiện tại bé cao hơn mốc tham chiếu khoảng ${absDiff} cm. Thường là khác biệt cá thể, tiếp tục theo dõi xu hướng.`;
+  }
 }

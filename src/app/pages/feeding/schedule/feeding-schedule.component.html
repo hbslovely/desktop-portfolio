@@ -8,6 +8,17 @@
     {{ successMsg() }}
   </div>
 
+  <div class="schedule-topbar">
+    <button type="button" class="btn ghost sm" (click)="refresh()">
+      <i class="pi pi-refresh"></i>
+      Làm mới
+    </button>
+    <button type="button" class="btn btn-primary sm" (click)="openCalendarDialog()">
+      <i class="pi pi-calendar"></i>
+      Lịch tháng
+    </button>
+  </div>
+
   <ng-container *ngIf="!loading() || hasFutureEvents()">
     <section
       class="schedule-section"
@@ -190,6 +201,66 @@
     <i class="pi pi-plus" aria-hidden="true"></i>
     <span class="fab-label">Thêm sự kiện</span>
   </button>
+
+  <div class="dialog-overlay dialog-overlay--top" *ngIf="calendarDialogOpen()" (click)="closeCalendarDialog()">
+    <div class="dialog dialog--calendar" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+      <div class="dialog-head">
+        <div>
+          <h2><i class="pi pi-calendar"></i> {{ calendarMonthLabel() }}</h2>
+        </div>
+        <button type="button" class="dialog-close" (click)="closeCalendarDialog()" aria-label="Đóng">
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+
+      <div class="calendar-nav">
+        <button type="button" class="btn ghost sm icon-only" (click)="calendarPrevMonth()" aria-label="Tháng trước">
+          <i class="pi pi-chevron-left"></i>
+        </button>
+        <strong>{{ calendarMonthLabel() }}</strong>
+        <button type="button" class="btn ghost sm icon-only" (click)="calendarNextMonth()" aria-label="Tháng sau">
+          <i class="pi pi-chevron-right"></i>
+        </button>
+      </div>
+
+      <div class="calendar-weekdays">
+        <span *ngFor="let wd of calendarWeekdays">{{ wd }}</span>
+      </div>
+      <div class="calendar-grid">
+        <button
+          type="button"
+          class="calendar-cell"
+          *ngFor="let c of monthCalendarCells()"
+          [class.is-out-month]="!c.inMonth"
+          [class.is-today]="c.isToday"
+          [class.is-selected]="selectedCalendarDate() === c.dateIso"
+          [class.has-event]="c.eventCount > 0"
+          [class.has-future-event]="c.hasFutureEvent"
+          (click)="selectCalendarDate(c.dateIso)"
+        >
+          <span class="calendar-cell__day">{{ c.day }}</span>
+          <span class="calendar-cell__dot" *ngIf="c.eventCount > 0">{{ c.eventCount }}</span>
+        </button>
+      </div>
+
+      <div class="calendar-events">
+        <h3>
+          Sự kiện ngày {{ selectedCalendarDate() || '—' }}
+          <span *ngIf="selectedCalendarEvents().length > 0">({{ selectedCalendarEvents().length }})</span>
+        </h3>
+        <p class="calendar-events__empty" *ngIf="selectedCalendarEvents().length === 0">
+          Không có sự kiện trong ngày này.
+        </p>
+        <div class="calendar-events__list" *ngIf="selectedCalendarEvents().length > 0">
+          <ng-container
+            *ngFor="let ev of selectedCalendarEvents(); trackBy: trackEvent"
+            [ngTemplateOutlet]="eventCardTpl"
+            [ngTemplateOutletContext]="{ $implicit: ev, isPast: !isFuture(ev) }"
+          ></ng-container>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <div class="dialog-overlay dialog-overlay--top" *ngIf="addOpen()" (click)="closeAdd()">
     <div class="dialog" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">

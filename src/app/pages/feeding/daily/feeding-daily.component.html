@@ -376,21 +376,35 @@
       </div>
 
       <!-- ============ BURP WARNING ============ -->
-      <div class="burp-warning" *ngIf="burpWarning() as bw">
+      <div class="burp-warning" *ngIf="burpInsight() as bw" [attr.data-state]="bw.state">
         <div class="burp-warning__icon">
-          <i class="pi pi-exclamation-triangle"></i>
+          <i class="pi" [class.pi-heart-fill]="bw.state === 'active'" [class.pi-moon]="bw.state === 'done'"></i>
         </div>
         <div class="burp-warning__content">
-          <div class="burp-warning__title">
-            Nhớ bế bé và vỗ ợ!
-          </div>
+          <div class="burp-warning__title" *ngIf="bw.state === 'active'">Đang trong thời gian vỗ ợ</div>
+          <div class="burp-warning__title" *ngIf="bw.state === 'done'">Hoàn tất vỗ ợ</div>
+
           <div class="burp-warning__text">
-            Bé vừa bú <strong>{{ bw.lastFeedVolume }}ml</strong> lúc <strong>{{ bw.lastFeedTime }}</strong>.
-            Hãy bế bé và vỗ ợ ít nhất <strong>{{ bw.burpDuration }} phút</strong>.
+            Bé bú <strong>{{ bw.lastFeedVolume }}ml</strong> lúc <strong>{{ bw.lastFeedTime }}</strong>.
+            <ng-container *ngIf="bw.state === 'active'">
+              Tiếp tục bế bé thêm <strong>{{ bw.remainingMinutes }} phút</strong>.
+            </ng-container>
+            <ng-container *ngIf="bw.state === 'done'">
+              Đã qua mốc vỗ ợ {{ bw.burpDuration }} phút.
+            </ng-container>
           </div>
-          <div class="burp-warning__countdown">
+
+          <div class="burp-warning__progress" role="progressbar" [attr.aria-valuenow]="burpProgressPct()" aria-valuemin="0" aria-valuemax="100">
+            <div class="burp-warning__progress-fill" [style.width.%]="burpProgressPct()"></div>
+          </div>
+
+          <div class="burp-warning__footer" *ngIf="bw.state === 'active'">
             <i class="pi pi-clock"></i>
-            Còn <strong>{{ bw.remainingMinutes }}</strong> phút nữa
+            Còn <strong>{{ bw.remainingMinutes }}</strong> phút là đủ thời gian vỗ ợ.
+          </div>
+          <div class="burp-warning__footer burp-warning__footer--done" *ngIf="bw.state === 'done'">
+            <i class="pi pi-star-fill"></i>
+            Chúc bé ngủ ngon sau cữ bú này nhé.
           </div>
         </div>
       </div>

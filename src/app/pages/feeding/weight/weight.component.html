@@ -23,7 +23,7 @@
 
   <app-weight-history-list
     [loading]="loading()"
-    [logs]="logs()"
+    [logs]="sortedLogsDesc()"
     (edit)="openEdit($event)"
     (remove)="deleteLog($event)"
   />
@@ -713,7 +713,7 @@
         <div>
           <div class="eyebrow">
             <i class="pi pi-globe"></i>
-            Chuẩn tăng trưởng WHO (VN khuyến nghị)
+            WHO 0-24 tháng
           </div>
           <h2>Bảng cân nặng & chiều cao theo tuổi</h2>
           <p class="dialog-lead">
