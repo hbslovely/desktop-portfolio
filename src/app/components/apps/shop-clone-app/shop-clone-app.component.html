@@ -1,0 +1,219 @@
+<div class="shopee-clone">
+  <header class="top-shell">
+    <div class="utility-bar">
+      <div class="utility-left">
+        <span>Kênh Người Bán</span>
+        <span>Trở thành Người bán</span>
+        <span>Tải ứng dụng</span>
+        <span>Kết nối <i class="pi pi-facebook"></i> <i class="pi pi-instagram"></i></span>
+      </div>
+      <div class="utility-right">
+        <span><i class="pi pi-bell"></i> Thông Báo</span>
+        <span><i class="pi pi-question-circle"></i> Hỗ Trợ</span>
+        <span>Tiếng Việt</span>
+        <strong>Đăng Ký</strong>
+        <strong>Đăng Nhập</strong>
+      </div>
+    </div>
+
+    <div class="main-header">
+      <div class="brand">
+        <div class="bag-logo">
+          <i class="pi pi-shopping-bag"></i>
+        </div>
+        <div class="brand-word">Shopee</div>
+      </div>
+
+      <div class="search-area">
+        <div class="search-box">
+          <input
+            type="text"
+            placeholder="Tìm sản phẩm, thương hiệu và tên shop"
+            [ngModel]="searchTerm()"
+            (ngModelChange)="searchTerm.set($event)">
+          <button class="clear-btn" *ngIf="searchTerm()" (click)="searchTerm.set('')" title="Xóa tìm kiếm">
+            <i class="pi pi-times"></i>
+          </button>
+          <button class="search-btn">
+            <i class="pi pi-search"></i>
+          </button>
+        </div>
+        <div class="keyword-row">
+          <button *ngFor="let keyword of hotKeywords" (click)="setKeyword(keyword)">{{ keyword }}</button>
+        </div>
+      </div>
+
+      <button class="header-cart" title="Giỏ hàng">
+        <i class="pi pi-shopping-cart"></i>
+        <span>{{ cartCount() }}</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="page-scroll">
+    <section class="hero-shell">
+      <div class="hero-slider">
+        <span class="campaign-label">5.5 Brand Festival</span>
+        <h2>Sale giữa tháng, giá giảm chạm đáy</h2>
+        <p>Voucher 50%, freeship 0đ, sản phẩm gợi ý và giỏ hàng demo trong một homepage clone.</p>
+        <div class="hero-actions">
+          <button>Săn sale ngay</button>
+          <span>02:18:45</span>
+        </div>
+      </div>
+      <div class="stacked-banner banner-orange">
+        <strong>Voucher Xtra</strong>
+        <span>Giảm đến 500K</span>
+      </div>
+      <div class="stacked-banner banner-dark">
+        <strong>Freeship</strong>
+        <span>0Đ cho đơn từ 0Đ</span>
+      </div>
+    </section>
+
+    <section class="quick-service-grid">
+      <button *ngFor="let service of quickServices" class="quick-service" [attr.data-tone]="service.tone">
+        <i [class]="service.icon"></i>
+        <span>{{ service.label }}</span>
+      </button>
+    </section>
+
+    <section class="panel categories-panel">
+      <div class="panel-title">Danh Mục</div>
+      <div class="category-grid">
+        <button
+          *ngFor="let category of categories"
+          class="category-tile"
+          [class.active]="selectedCategory() === category.id"
+          (click)="setCategory(category.id)">
+          <div class="category-icon"><i [class]="category.icon"></i></div>
+          <span>{{ category.name }}</span>
+        </button>
+      </div>
+    </section>
+
+    <section class="panel flash-sale-panel">
+      <div class="panel-heading">
+        <div class="flash-title">
+          <span>FLASH SALE</span>
+          <div class="countdown"><b>02</b><b>18</b><b>45</b></div>
+        </div>
+        <button>Xem tất cả <i class="pi pi-chevron-right"></i></button>
+      </div>
+
+      <div class="flash-row">
+        <button class="flash-item" *ngFor="let product of featuredDeals()" (click)="addToCart(product)">
+          <div class="flash-image">
+            <span>{{ product.image }}</span>
+            <small>-{{ discountPercent(product) }}%</small>
+          </div>
+          <strong>{{ formatPrice(product.price) }}</strong>
+          <div class="sold-pill">Đã bán {{ formatSold(product.sold) }}</div>
+        </button>
+      </div>
+    </section>
+
+    <section class="panel mall-panel">
+      <div class="panel-heading mall-heading">
+        <div>
+          <span class="mall-logo">SHOPEE MALL</span>
+          <span>7 ngày miễn phí trả hàng</span>
+          <span>Hàng chính hãng 100%</span>
+          <span>Miễn phí vận chuyển</span>
+        </div>
+        <button>Xem tất cả <i class="pi pi-chevron-right"></i></button>
+      </div>
+
+      <div class="mall-content">
+        <div class="mall-banner">
+          <span>Ưu đãi chính hãng</span>
+          <strong>Deal thương hiệu đến 50%</strong>
+        </div>
+        <div class="mall-grid">
+          <button class="mall-card" *ngFor="let item of mallItems">
+            <div>{{ item.image }}</div>
+            <strong>{{ item.title }}</strong>
+            <span>{{ item.subtitle }}</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel recommendation-panel">
+      <div class="sticky-reco-title">
+        <span>Gợi Ý Hôm Nay</span>
+        <div class="sort-tabs">
+          <button [class.active]="selectedSort() === 'popular'" (click)="setSort('popular')">Liên quan</button>
+          <button [class.active]="selectedSort() === 'sold'" (click)="setSort('sold')">Bán chạy</button>
+          <button [class.active]="selectedSort() === 'price-asc'" (click)="setSort('price-asc')">Giá thấp</button>
+          <button [class.active]="selectedSort() === 'price-desc'" (click)="setSort('price-desc')">Giá cao</button>
+        </div>
+      </div>
+
+      <div class="result-line">
+        <span>{{ filteredProducts().length }} sản phẩm</span>
+        <small *ngIf="searchTerm()">Kết quả cho "{{ searchTerm() }}"</small>
+      </div>
+
+      <div class="product-grid" *ngIf="filteredProducts().length > 0; else emptyState">
+        <article class="product-card" *ngFor="let product of filteredProducts()">
+          <div class="product-media">
+            <span class="preferred-badge">{{ product.badge }}</span>
+            <strong>{{ product.image }}</strong>
+            <span class="discount-flag">{{ discountPercent(product) }}%<br>GIẢM</span>
+          </div>
+          <div class="product-info">
+            <h4>{{ product.name }}</h4>
+            <div class="voucher-row">
+              <span>{{ product.shipping }}</span>
+              <span>Rẻ vô địch</span>
+            </div>
+            <div class="price-row">
+              <strong>{{ formatPrice(product.price) }}</strong>
+              <small>{{ formatPrice(product.originalPrice) }}</small>
+            </div>
+            <div class="product-meta">
+              <span><i class="pi pi-star-fill"></i> {{ product.rating }}</span>
+              <span>Đã bán {{ formatSold(product.sold) }}</span>
+            </div>
+            <div class="location-row">{{ product.location }}</div>
+            <button class="add-cart" (click)="addToCart(product)">
+              Thêm vào giỏ
+            </button>
+          </div>
+        </article>
+      </div>
+
+      <ng-template #emptyState>
+        <div class="empty-state">
+          <i class="pi pi-search"></i>
+          <h4>Không tìm thấy sản phẩm</h4>
+          <p>Thử đổi từ khóa hoặc chọn danh mục khác.</p>
+        </div>
+      </ng-template>
+    </section>
+  </main>
+
+  <aside class="cart-panel" *ngIf="cart().length > 0">
+    <div class="cart-header">
+      <strong>Giỏ hàng</strong>
+      <button (click)="clearCart()">Xóa tất cả</button>
+    </div>
+    <div class="cart-list">
+      <div class="cart-item" *ngFor="let item of cart()">
+        <div class="mini-image">{{ item.image }}</div>
+        <div class="cart-item-info">
+          <span>{{ item.name }}</span>
+          <small>{{ item.quantity }} x {{ formatPrice(item.price) }}</small>
+        </div>
+        <button (click)="removeFromCart(item.id)" title="Xóa">
+          <i class="pi pi-trash"></i>
+        </button>
+      </div>
+    </div>
+    <div class="cart-footer">
+      <span>Tạm tính</span>
+      <strong>{{ formatPrice(cartTotal()) }}</strong>
+    </div>
+  </aside>
+</div>

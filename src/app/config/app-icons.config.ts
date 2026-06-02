@@ -179,6 +179,13 @@ export const APP_ICONS: DesktopIconData[] = [
     icon: 'pi pi-images',
     type: 'application',
     position: { x: 520, y: 20 }
+  },
+  {
+    id: 'shop-clone',
+    name: 'Shopee Clone',
+    icon: 'pi pi-shopping-bag',
+    type: 'application',
+    position: { x: 520, y: 120 }
   }
 ];
 
@@ -220,7 +227,8 @@ function getAppDescription(appId: string): string {
     'graph-visualizer': 'Tạo và phân tích đồ thị, tìm đường đi ngắn nhất với các thuật toán Dijkstra, Bellman-Ford, Floyd-Warshall, A*',
     'stock': 'Quản lý và fetch dữ liệu cổ phiếu từ DNSE, lưu vào Google Sheets. Hỗ trợ HOSE, HNX, UPCOM, VN30',
     'sieu-co': 'Siêu Cờ - Chơi Cờ Tướng, Cờ Úp, giải Cờ Thế với AI thông minh. Ghi chép kỳ phổ, nhiều theme đẹp mắt',
-    'image-search': 'Tìm kiếm hình ảnh tương tự sử dụng thuật toán Computer Vision: pHash, dHash, Color Histogram, Edge Detection'
+    'image-search': 'Tìm kiếm hình ảnh tương tự sử dụng thuật toán Computer Vision: pHash, dHash, Color Histogram, Edge Detection',
+    'shop-clone': 'Bản clone UI homepage Shopee với tìm kiếm, danh mục, flash sale, Shopee Mall, sản phẩm và giỏ hàng'
   };
   return descriptions[appId] || 'Application';
 }
@@ -251,7 +259,8 @@ function getAppKeywords(appId: string): string[] {
     'graph-visualizer': ['graph', 'đồ thị', 'do thi', 'graph visualization', 'shortest path', 'đường đi ngắn nhất', 'duong di ngan nhat', 'dijkstra', 'bellman-ford', 'floyd-warshall', 'a-star', 'algorithm', 'thuật toán', 'thuat toan', 'node', 'edge', 'weighted graph', 'directed graph', 'undirected graph'],
     'stock': ['stock', 'chứng khoán', 'chung khoan', 'cổ phiếu', 'co phieu', 'dnse', 'hose', 'hnx', 'upcom', 'vn30', 'stock market', 'securities', 'trading', 'symbol', 'mã cổ phiếu', 'ma co phieu'],
     'sieu-co': ['siêu cờ', 'sieu co', 'cờ tướng', 'co tuong', 'xiangqi', 'cờ úp', 'co up', 'cờ thế', 'co the', 'puzzle chess', 'chinese chess', 'AI chess', 'game', 'kỳ phổ', 'ky pho', 'minimax', 'alpha-beta'],
-    'image-search': ['image search', 'tìm kiếm ảnh', 'tim kiem anh', 'hình ảnh tương tự', 'hinh anh tuong tu', 'similar image', 'reverse image search', 'phash', 'dhash', 'color histogram', 'edge detection', 'computer vision', 'image matching', 'so sánh ảnh', 'so sanh anh', 'thuật toán', 'thuat toan', 'perceptual hash']
+    'image-search': ['image search', 'tìm kiếm ảnh', 'tim kiem anh', 'hình ảnh tương tự', 'hinh anh tuong tu', 'similar image', 'reverse image search', 'phash', 'dhash', 'color histogram', 'edge detection', 'computer vision', 'image matching', 'so sánh ảnh', 'so sanh anh', 'thuật toán', 'thuat toan', 'perceptual hash'],
+    'shop-clone': ['shop', 'shopping', 'marketplace', 'ecommerce', 'e-commerce', 'shopee', 'clone', 'mua sắm', 'mua sam', 'giỏ hàng', 'gio hang', 'sản phẩm', 'san pham', 'flash sale', 'shopee mall']
   };
   return keywords[appId] || [];
 }

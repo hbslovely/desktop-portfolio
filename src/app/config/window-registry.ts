@@ -383,6 +383,18 @@ export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
     defaultY: 60,
     maximizable: true,
     statusText: 'Tìm kiếm hình ảnh tương tự bằng thuật toán CV'
+  },
+  'shop-clone': {
+    id: 'shop-clone',
+    title: 'Shopee Clone',
+    icon: 'pi pi-shopping-bag',
+    component: 'shop-clone',
+    defaultWidth: 1300,
+    defaultHeight: 860,
+    defaultX: 90,
+    defaultY: 45,
+    maximizable: true,
+    statusText: 'Shopee homepage clone demo'
   }
 };
 
