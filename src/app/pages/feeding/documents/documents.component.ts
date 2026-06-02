@@ -127,6 +127,8 @@ export class DocumentsComponent {
    */
   highlightedEntryId = signal<number | null>(null);
   private highlightTimer: ReturnType<typeof setTimeout> | null = null;
+  /** Token để hủy preload cũ khi có lần loadEntries mới hơn. */
+  private preloadRunId = 0;
 
   // ===== Selection / clipboard state =====
   /** Khi true: click vào file/folder = toggle chọn (không mở preview/navigate). */
@@ -356,6 +358,8 @@ export class DocumentsComponent {
         if (!this.entriesById().has(this.currentFolderId())) {
           this.currentFolderId.set(this.ROOT_ID);
         }
+        // Preload nội dung file previewable để thumbnail/preview có sẵn ngay.
+        void this.preloadFileContents(entries);
       },
       error: (err) => {
         console.error(err);
@@ -365,6 +369,49 @@ export class DocumentsComponent {
         );
       },
     });
+  }
+
+  /**
+   * Sau khi có metadata entry, preload dataUrl cho các file previewable
+   * chưa có `content/previewUrl` để UI hiển thị ảnh ngay, không cần click từng file.
+   *
+   * Chạy nền tuần tự để giảm burst request lên Apps Script.
+   */
+  private async preloadFileContents(entries: ExplorerEntry[]): Promise<void> {
+    const runId = ++this.preloadRunId;
+    const candidates = entries.filter(
+      (e) =>
+        e.type === 'file' &&
+        this.isPreviewableFile(e) &&
+        !e.previewUrl &&
+        !e.content
+    );
+
+    for (const entry of candidates) {
+      if (runId !== this.preloadRunId) return;
+      try {
+        const resp = await firstValueFrom(
+          this.explorerService.getFileDataUrl(entry.id)
+        );
+        const content = resp.dataUrl || '';
+        if (!content) continue;
+        this.entries.update((arr) =>
+          arr.map((e) =>
+            e.id === entry.id
+              ? {
+                  ...e,
+                  content,
+                  previewUrl: content,
+                  mimeType: e.mimeType || resp.mimeType || undefined,
+                  sizeBytes: e.sizeBytes || resp.sizeBytes || undefined,
+                }
+              : e
+          )
+        );
+      } catch (err) {
+        console.warn('preloadFileContents failed', entry.id, err);
+      }
+    }
   }
 
   refresh() {

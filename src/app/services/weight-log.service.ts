@@ -31,9 +31,7 @@ export class WeightLogService {
   private readonly API_KEY = environment.googleSheetsApiKey;
   private readonly BASE_URL = `https://sheets.googleapis.com/v4/spreadsheets/${ this.SHEET_ID }`;
 
-  private readonly APPS_SCRIPT_URL = environment.production
-    ? (environment.googleFeedingAppsScriptUrl || environment.googleAppsScriptUrl)
-    : '/api/feeding-apps-script';
+  private readonly APPS_SCRIPT_URL = '/api/feeding-apps-script';
 
   /**
    * Cột:

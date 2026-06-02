@@ -405,6 +405,15 @@
           <div class="burp-warning__footer burp-warning__footer--done" *ngIf="bw.state === 'done'">
             <i class="pi pi-star-fill"></i>
             Chúc bé ngủ ngon sau cữ bú này nhé.
+            <button
+              type="button"
+              class="burp-warning__dismiss"
+              (click)="closeBurpDoneBanner()"
+              aria-label="Đóng thông báo hoàn tất vỗ ợ"
+              title="Đóng"
+            >
+              <i class="pi pi-times"></i>
+            </button>
           </div>
         </div>
       </div>

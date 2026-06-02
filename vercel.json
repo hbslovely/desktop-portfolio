@@ -28,6 +28,10 @@
     {
       "src": "api/stocks/[symbol].js",
       "use": "@vercel/node"
+    },
+    {
+      "src": "api/feeding-apps-script.js",
+      "use": "@vercel/node"
     }
   ],
   "rewrites": [
@@ -74,10 +78,6 @@
     {
       "source": "/api/business-apps-script",
       "destination": "https://script.google.com/macros/s/AKfycbyWFdurzG4dxdIgQi3F8LDsgHJ2-k5d8_tM5tU7B0ArjOPURF1ykkqd-rg1AL9LyJp0Nw/exec"
-    },
-    {
-      "source": "/api/feeding-apps-script",
-      "destination": "https://script.google.com/macros/s/AKfycbzeEaz8xMniaEU8f-65tkER8OSCvBn1xGN0hH4GYLRAHVIlT4n6jdLHhPu-IcdCI3C05A/exec"
     },
     {
       "source": "/api/dnse-api/:path*",

@@ -145,6 +145,8 @@ export class FeedingDailyComponent implements AfterViewInit {
   feedingDeleteConfirmLog = signal<FeedingLog | null>(null);
   feedingDeleteReasonDraft = signal('');
   feedingDeleteSaving = signal(false);
+  /** Ẩn banner "hoàn tất vỗ ợ" cho cữ bú hiện tại đến khi có cữ mới. */
+  private dismissedBurpDoneFeedKey = signal<string | null>(null);
 
   bottlePrepClearConfirmOpen = signal(false);
   bottlePrepClearReasonDraft = signal('');
@@ -429,6 +431,7 @@ export class FeedingDailyComponent implements AfterViewInit {
   burpInsight = computed(() => {
     const last = this.lastFeeding();
     if (!last) return null;
+    const feedKey = this.burpFeedKey(last);
     const burpDuration = this.feedingSettings().burpDurationMinutes;
     const [y, mo, d] = last.date.split('-').map((n) => parseInt(n, 10));
     const [h, mi] = last.time.split(':').map((n) => parseInt(n, 10));
@@ -453,6 +456,7 @@ export class FeedingDailyComponent implements AfterViewInit {
     const minutesSinceBurp = Math.floor((nowMs - burpEndAt.getTime()) / 60000);
     const followupWindowMinutes = 90;
     if (minutesSinceBurp > followupWindowMinutes) return null;
+    if (this.dismissedBurpDoneFeedKey() === feedKey) return null;
     return {
       state: 'done' as const,
       minutesSinceBurp,
@@ -472,6 +476,16 @@ export class FeedingDailyComponent implements AfterViewInit {
       Math.min(100, Math.round((info.elapsedMinutes / info.burpDuration) * 100))
     );
   });
+
+  closeBurpDoneBanner(): void {
+    const last = this.lastFeeding();
+    if (!last) return;
+    this.dismissedBurpDoneFeedKey.set(this.burpFeedKey(last));
+  }
+
+  private burpFeedKey(log: FeedingLog): string {
+    return `${log.date}|${log.time}|${log.volume}`;
+  }
 
   timeUntilNext = computed(() => {
     const p = this.prediction();

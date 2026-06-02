@@ -370,14 +370,8 @@ export class ActivityLogService {
   private readonly BASE_URL = `https://sheets.googleapis.com/v4/spreadsheets/${this.SHEET_ID}`;
   private readonly STORAGE_KEY = 'activity-log-last-read-id';
 
-  /**
-   * Apps Script bound to the feeding sheet.
-   * Dev: gọi qua proxy `/api/feeding-apps-script` để né CORS.
-   * Prod: dùng `environment.googleFeedingAppsScriptUrl`.
-   */
-  private readonly APPS_SCRIPT_URL = environment.production
-    ? (environment.googleFeedingAppsScriptUrl || environment.googleAppsScriptUrl)
-    : '/api/feeding-apps-script';
+  /** Luôn dùng proxy nội bộ để ổn định trên Safari/iOS. */
+  private readonly APPS_SCRIPT_URL = '/api/feeding-apps-script';
 
   /** Refresh interval in minutes (configurable from settings) */
   refreshIntervalMinutes = signal<number>(5);

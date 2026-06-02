@@ -203,17 +203,10 @@ export class FeedingLogService {
   private readonly BASE_URL = `https://sheets.googleapis.com/v4/spreadsheets/${ this.SHEET_ID }`;
 
   /**
-   * Apps Script bound to **the feeding sheet**. Tách biệt với expense script
-   * vì 2 sheet khác nhau ⇒ 2 deployment khác nhau.
-   *
-   * Dev: gọi qua proxy `/api/feeding-apps-script` để né CORS.
-   * Prod: dùng `environment.googleFeedingAppsScriptUrl` (fallback sang
-   *       `googleAppsScriptUrl` nếu chưa cấu hình – tương thích ngược cho
-   *       dự án cũ dùng chung 1 script).
+   * Luôn đi qua same-origin proxy trên Vercel để tránh redirect CORS của
+   * Apps Script (đặc biệt Safari/iOS).
    */
-  private readonly APPS_SCRIPT_URL = environment.production
-    ? (environment.googleFeedingAppsScriptUrl || environment.googleAppsScriptUrl)
-    : '/api/feeding-apps-script';
+  private readonly APPS_SCRIPT_URL = '/api/feeding-apps-script';
 
   /**
    * Columns:

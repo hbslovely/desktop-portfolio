@@ -2,7 +2,6 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, from, of, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
-import { environment } from '../../environments/environment';
 
 export type ExplorerType = 'folder' | 'file';
 
@@ -71,9 +70,7 @@ export interface ExplorerMigrationResponse {
 export class ExplorerService {
   private http = inject(HttpClient);
 
-  private readonly APPS_SCRIPT_URL = environment.production
-    ? (environment.googleFeedingAppsScriptUrl || environment.googleAppsScriptUrl)
-    : '/api/feeding-apps-script';
+  private readonly APPS_SCRIPT_URL = '/api/feeding-apps-script';
 
   getEntries(): Observable<ExplorerEntry[]> {
     return this.postToAppsScriptExpectResponse<ExplorerResponse>({
