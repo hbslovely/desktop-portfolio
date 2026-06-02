@@ -59,6 +59,7 @@ export class FeedingScheduleComponent {
   private destroyRef = inject(DestroyRef);
 
   private placePickerOrigin: HTMLInputElement | null = null;
+  private reopenCalendarAfterAdd = false;
 
   user = input<string>('guest');
 
@@ -302,10 +303,10 @@ export class FeedingScheduleComponent {
     });
   }
 
-  openCalendarDialog(): void {
-    const today = new Date(this.now());
-    this.calendarCursor.set(new Date(today.getFullYear(), today.getMonth(), 1));
-    this.selectedCalendarDate.set(this.toDateStr(today));
+  openCalendarDialog(targetDateIso?: string): void {
+    const targetDate = this.parseIsoDate(targetDateIso) ?? new Date(this.now());
+    this.calendarCursor.set(new Date(targetDate.getFullYear(), targetDate.getMonth(), 1));
+    this.selectedCalendarDate.set(this.toDateStr(targetDate));
     this.calendarDialogOpen.set(true);
   }
 
@@ -327,6 +328,16 @@ export class FeedingScheduleComponent {
     this.selectedCalendarDate.set(dateIso);
   }
 
+  openAddFromCalendar(): void {
+    const selectedDate = this.selectedCalendarDate();
+    this.reopenCalendarAfterAdd = true;
+    this.closeCalendarDialog();
+    this.openAdd();
+    if (selectedDate) {
+      this.updateDraft({ date: selectedDate });
+    }
+  }
+
   isFuture(ev: FeedingEventLog): boolean {
     const dt = EventLogService.eventDateTime(ev);
     return dt !== null && dt.getTime() > this.now().getTime();
@@ -338,9 +349,12 @@ export class FeedingScheduleComponent {
     this.addOpen.set(true);
   }
 
-  closeAdd() {
+  closeAdd(keepCalendarReturn = false) {
     this.addOpen.set(false);
     this.closePlacePicker();
+    if (!keepCalendarReturn) {
+      this.reopenCalendarAfterAdd = false;
+    }
   }
 
   openEdit(ev: FeedingEventLog) {
@@ -488,7 +502,11 @@ export class FeedingScheduleComponent {
           { title: ev.title, date: this.formatEventDate(ev.date) }
         ).subscribe();
         setTimeout(() => this.successMsg.set(''), 3000);
-        this.closeAdd();
+        this.closeAdd(true);
+        if (this.reopenCalendarAfterAdd) {
+          this.openCalendarDialog(ev.date);
+          this.reopenCalendarAfterAdd = false;
+        }
         setTimeout(() => this.refresh(), 700);
       },
       error: (err) => {
@@ -815,6 +833,19 @@ export class FeedingScheduleComponent {
     const hh = Math.min(23, Math.max(0, parseInt(m[1], 10)));
     const mm = Math.min(59, Math.max(0, parseInt(m[2], 10)));
     return `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
+  }
+
+  private parseIsoDate(dateIso?: string): Date | null {
+    if (!dateIso) return null;
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateIso);
+    if (!m) return null;
+    const y = Number(m[1]);
+    const mo = Number(m[2]);
+    const d = Number(m[3]);
+    if (!Number.isFinite(y) || !Number.isFinite(mo) || !Number.isFinite(d)) {
+      return null;
+    }
+    return new Date(y, mo - 1, d, 12, 0, 0, 0);
   }
 
   updateDraft(partial: Partial<EventDraft>) {

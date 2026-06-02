@@ -240,10 +240,21 @@
       </div>
 
       <div class="calendar-events">
-        <h3>
-          Sự kiện ngày {{ selectedCalendarDate() || '—' }}
-          <span *ngIf="selectedCalendarEvents().length > 0">({{ selectedCalendarEvents().length }})</span>
-        </h3>
+        <div class="calendar-events__head">
+          <h3>
+            Sự kiện ngày {{ selectedCalendarDate() || '—' }}
+            <span *ngIf="selectedCalendarEvents().length > 0">({{ selectedCalendarEvents().length }})</span>
+          </h3>
+          <button
+            type="button"
+            class="btn btn-primary sm"
+            (click)="openAddFromCalendar()"
+            [disabled]="!selectedCalendarDate()"
+          >
+            <i class="pi pi-plus" aria-hidden="true"></i>
+            Thêm sự kiện
+          </button>
+        </div>
         <p class="calendar-events__empty" *ngIf="selectedCalendarEvents().length === 0">
           Không có sự kiện trong ngày này.
         </p>
