@@ -437,13 +437,13 @@
             </ng-container>
             <ng-container *ngIf="entry.type === 'file'">
               <img
-                *ngIf="entry.content; else fileNoImg"
-                [src]="entry.content"
+                *ngIf="entry.previewUrl || entry.content; else fileNoImg"
+                [src]="entry.previewUrl || entry.content"
                 [alt]="entry.name"
                 loading="lazy"
               />
               <ng-template #fileNoImg>
-                <i class="pi pi-image"></i>
+                <i class="pi pi-file"></i>
               </ng-template>
             </ng-container>
           </span>
@@ -511,7 +511,6 @@
               role="menuitem"
               *ngIf="entry.type === 'file'"
               (click)="downloadEntry(entry, $event)"
-              [disabled]="!entry.content"
             >
               <i class="pi pi-download"></i>
               <span>Tải xuống</span>
@@ -630,7 +629,7 @@
         (keydown.enter)="onFileClick(entry)"
         tabindex="0"
         role="button"
-        [attr.aria-label]="(selectMode() ? 'Chọn ảnh ' : 'Xem ảnh ') + entry.name"
+        [attr.aria-label]="(selectMode() ? 'Chọn file ' : 'Xem file ') + entry.name"
       >
         <span
           class="docs-card__check"
@@ -642,14 +641,14 @@
         </span>
         <div class="docs-card__thumb">
           <img
-            *ngIf="entry.content; else noImage"
-            [src]="entry.content"
+            *ngIf="entry.previewUrl || entry.content; else noImage"
+            [src]="entry.previewUrl || entry.content"
             [alt]="entry.name"
             loading="lazy"
           />
           <ng-template #noImage>
             <div class="docs-card__thumb-empty">
-              <i class="pi pi-image"></i>
+              <i class="pi pi-file"></i>
             </div>
           </ng-template>
         </div>
@@ -704,7 +703,6 @@
               class="docs-menu-item"
               role="menuitem"
               (click)="downloadEntry(entry, $event)"
-              [disabled]="!entry.content"
             >
               <i class="pi pi-download"></i>
               <span>Tải xuống</span>
@@ -724,20 +722,20 @@
     </ng-container>
   </div>
 
-  <!-- ============ FAB: thêm ảnh (picker hệ thống — mobile thường có Chụp ảnh / Thư viện) ============ -->
+  <!-- ============ FAB: thêm file (ảnh + tài liệu) ============ -->
   <div class="docs-fab-group" [class.disabled]="saving()">
     <label
       class="docs-fab"
       [class.disabled]="saving()"
       [attr.aria-disabled]="saving()"
-      title="Chọn ảnh — trên điện thoại thường có thêm Chụp ảnh hoặc Thư viện"
+      title="Chọn file để tải lên"
     >
       <i class="pi" [class.pi-plus]="!saving()" [class.pi-spinner]="saving()" [class.pi-spin]="saving()"></i>
-      <span class="docs-fab__label">{{ saving() ? 'Đang tải…' : 'Thêm ảnh' }}</span>
+      <span class="docs-fab__label">{{ saving() ? 'Đang tải…' : 'Thêm file' }}</span>
       <input
         #fileInput
         type="file"
-        accept="image/*,.heic,.heif"
+        accept="image/*,.heic,.heif,.pdf,.txt,.doc,.docx,.xls,.xlsx,.csv"
         multiple
         (change)="onFileSelected(fileInput)"
         hidden
@@ -838,8 +836,8 @@
       type="button"
       class="docs-preview__rename"
       (click)="openRenameFile(p, $event)"
-      aria-label="Đổi tên ảnh"
-      title="Đổi tên ảnh"
+      aria-label="Đổi tên file"
+      title="Đổi tên file"
     >
       <i class="pi pi-pencil"></i>
     </button>
@@ -847,8 +845,7 @@
       type="button"
       class="docs-preview__download"
       (click)="downloadEntry(p, $event)"
-      [disabled]="!p.content"
-      aria-label="Tải ảnh xuống máy"
+      aria-label="Tải file xuống máy"
       title="Tải xuống"
     >
       <i class="pi pi-download"></i>
@@ -918,9 +915,9 @@
       (dblclick)="onPreviewDblClick($event)"
     >
       <img
-        *ngIf="p.content"
+        *ngIf="p.previewUrl || p.content"
         class="docs-preview__img"
-        [src]="p.content"
+        [src]="p.previewUrl || p.content"
         [alt]="p.name"
         [style.transform]="previewTransform()"
         draggable="false"

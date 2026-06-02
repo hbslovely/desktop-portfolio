@@ -14,6 +14,14 @@ export interface ExplorerEntry {
   parentId: number | null;
   /** base64 data URL cho file. Folder thì để trống. */
   content?: string;
+  /** Google Drive file id (nếu đã migrate/saved qua Drive). */
+  driveFileId?: string;
+  /** MIME type gốc (image/jpeg, application/pdf...). */
+  mimeType?: string;
+  /** Trạng thái lưu trữ: sheet (legacy) | drive | migrated | migration_failed. */
+  storageStatus?: string;
+  /** Ảnh preview đã fetch lazy qua Apps Script, ưu tiên hiển thị hơn content legacy. */
+  previewUrl?: string;
   /** ISO timestamp khi entry được tạo trong sheet (server-side stamp). */
   createdAt?: string;
   /**
@@ -34,144 +42,107 @@ export interface ExplorerResponse {
   error?: string;
 }
 
+export interface ExplorerFileResponse {
+  success: boolean;
+  name?: string;
+  mimeType?: string;
+  sizeBytes?: number;
+  dataUrl?: string;
+  error?: string;
+}
+
+export interface ExplorerMigrationResponse {
+  success: boolean;
+  migratedCount?: number;
+  migratedFolders?: number;
+  migratedFiles?: number;
+  failedCount?: number;
+  hasMore?: boolean;
+  error?: string;
+}
+
 /**
- * Service quản lý cây thư mục/ảnh trên tab `Explorer` của sheet feeding.
- *
- * Layout cột (106 cột):
- *   A=id  B=name  C=type  D=parent_id  E=Content(chunk1)
- *   F=created_at  G=isDeleted
- *   H..DB = Content2..Content100 (overflow chunks cho ảnh lớn)
- *
- * Cell Sheets giới hạn 50K ký tự nên ảnh lớn được split sang H..DB. Khi đọc,
- * client nối lại tối đa 100 chunks → 1 base64 nguyên vẹn.
- *
- * Read: dùng Sheets API v4 + API Key (nhanh, không CORS). Client tự filter
- * các row có `isDeleted=TRUE` (soft delete) để không hiển thị, đồng bộ với
- * `handleGetExplorer` ở Apps Script.
- *
- * Write: POST tới cùng Apps Script đã dùng cho feeding (action mới). Server
- * tự cắt content thành 100 chunks và phân vào E + H..DB.
+ * ExplorerService (Drive-first):
+ * - Cây thư mục và file metadata đọc qua Apps Script action `getExplorer`.
+ * - Binary file lưu private trong Google Drive (account B), Apps Script account A làm proxy.
+ * - Không phụ thuộc tab `Explorer` trong Google Sheet sau khi finalize migration.
  */
 @Injectable({ providedIn: 'root' })
 export class ExplorerService {
   private http = inject(HttpClient);
-  private readonly CONTENT_OVERFLOW_START_COL_INDEX = 7; // H
-  private readonly CONTENT_OVERFLOW_END_COL_INDEX = 105; // DB
-
-  private readonly SHEET_ID = '1O4kAA61k4cX4mEwAjDy5gioVUAElCyu62Z3zPvgdDMM';
-  private readonly SHEET_NAME = 'Explorer';
-  private readonly API_KEY = environment.googleSheetsApiKey;
-  private readonly BASE_URL = `https://sheets.googleapis.com/v4/spreadsheets/${ this.SHEET_ID }`;
 
   private readonly APPS_SCRIPT_URL = environment.production
     ? (environment.googleFeedingAppsScriptUrl || environment.googleAppsScriptUrl)
     : '/api/feeding-apps-script';
 
   getEntries(): Observable<ExplorerEntry[]> {
-    // Range A2:DB = 106 cột:
-    //   row[0..6] = A..G (id, name, type, parent_id, content1, created_at, isDeleted)
-    //   row[7..105] = H..DB (content2..content100 — overflow chunks)
-    // Sheets API trả về row có độ dài thực tế cell cuối có giá trị, nên các
-    // sheet cũ (7 cột, không có overflow) vẫn parse được — `row[7..105]` sẽ
-    // là undefined và code xử lý như chuỗi rỗng.
-    const range = `${ this.SHEET_NAME }!A2:DB`;
-    const url = `${ this.BASE_URL }/values/${ range }?key=${ this.API_KEY }&valueRenderOption=FORMATTED_VALUE`;
-
-    return this.http.get<{ values?: string[][] }>(url).pipe(
+    return this.postToAppsScriptExpectResponse<ExplorerResponse>({
+      action: 'getExplorer',
+    }).pipe(
       map((resp) => {
-        const rows = resp.values || [];
-        return rows
-          .map((row, idx) => {
-            // Soft-delete filter: skip row có cột G truthy. Đặt trước cùng
-            // cho gọn — nếu đã xoá thì khỏi cần parse các cột khác.
-            if (this.parseBool(row[6])) return null;
-
-            const idStr = (row[0] || '').toString().trim();
-            const name = (row[1] || '').toString().trim();
-            const typeStr = (row[2] || '').toString().trim().toLowerCase();
-            const parentStr = (row[3] || '').toString().trim();
-            const createdRaw = (row[5] || '').toString().trim();
-
-            const id = parseInt(idStr, 10);
-            if (!id || !name) return null;
-            if (typeStr !== 'folder' && typeStr !== 'file') return null;
-
-            const parentId = parentStr === '' || parentStr.toLowerCase() === 'null'
-              ? null
-              : parseInt(parentStr, 10) || null;
-
-            // Nối content từ E + H..DB. Folder bỏ qua.
-            const contentStr = typeStr === 'file' ? this.joinContentChunks(row) : '';
-            const sizeBytes = typeStr === 'file' ? this.estimateBase64Bytes(contentStr) : 0;
-
-            const entry: ExplorerEntry = {
-              id,
-              name,
-              type: typeStr as ExplorerType,
-              parentId,
-              content: typeStr === 'file' ? contentStr : undefined,
-              createdAt: createdRaw || undefined,
-              sizeBytes,
-              rowIndex: idx + 2,
-            };
-            return entry;
-          })
-          .filter((e): e is ExplorerEntry => !!e);
-      }),
-      catchError((err) => {
-        console.error('ExplorerService.getEntries failed', err);
-        return throwError(() => err);
+        if (!resp?.success) {
+          throw new Error(resp?.error || 'Không tải được danh sách Explorer');
+        }
+        return (resp.entries || [])
+          .map((entry) => this.normalizeEntry(entry))
+          .filter((entry): entry is ExplorerEntry => !!entry);
       })
     );
   }
 
-  /**
-   * Nối content base64 đã được server cắt qua E + H..DB (cell Sheets giới
-   * hạn 50K ký tự / cell). Indexes:
-   *  - row[4] = E  (chunk 1)
-   *  - row[7..105] = H..DB (chunk 2..100)
-   *
-   * Row ngắn (sheet legacy 7 cột) trả về index overflow = undefined → ''.
-   */
-  private joinContentChunks(row: string[]): string {
-    let s = String(row[4] || '');
-    for (
-      let i = this.CONTENT_OVERFLOW_START_COL_INDEX;
-      i <= this.CONTENT_OVERFLOW_END_COL_INDEX;
-      i++
-    ) {
-      s += String(row[i] || '');
-    }
+  private parseDriveFileId(raw: unknown): string {
+    const s = String(raw || '').trim();
+    if (!s) return '';
+    // Drive file id thường >= 20 ký tự gồm chữ/số/_/-
+    if (!/^[A-Za-z0-9_-]{20,}$/.test(s)) return '';
     return s;
   }
 
-  /**
-   * Parse value của cột isDeleted. Sheets API (FORMATTED_VALUE) thường trả
-   * về `TRUE` / `FALSE` cho boolean cell, nhưng cũng có thể là `1` / `0`
-   * nếu user nhập tay. Trống = false.
-   */
-  private parseBool(raw: unknown): boolean {
-    if (raw === undefined || raw === null) return false;
-    const s = String(raw).trim().toLowerCase();
-    return s === 'true' || s === '1' || s === 'yes' || s === 'y';
+  private parseMimeType(raw: unknown): string {
+    const s = String(raw || '').trim().toLowerCase();
+    if (!s || !s.includes('/')) return '';
+    return s;
   }
 
-  /**
-   * Ước lượng số byte gốc từ độ dài chuỗi base64. Cần loại header
-   * `data:...;base64,` trước khi tính vì header không phải payload.
-   *  - Mỗi 4 ký tự base64 = 3 byte.
-   *  - Padding `=` cuối chuỗi giảm bớt 1-2 byte → trừ đi cho chính xác.
-   */
-  private estimateBase64Bytes(dataUrl: string): number {
-    if (!dataUrl) return 0;
-    const commaIdx = dataUrl.indexOf(',');
-    const payload = commaIdx >= 0 ? dataUrl.slice(commaIdx + 1) : dataUrl;
-    const len = payload.length;
-    if (len === 0) return 0;
-    let padding = 0;
-    if (payload.endsWith('==')) padding = 2;
-    else if (payload.endsWith('=')) padding = 1;
-    return Math.max(0, Math.floor((len * 3) / 4) - padding);
+  private parseSize(raw: unknown): number {
+    if (raw === undefined || raw === null || raw === '') return 0;
+    const n = Number(raw);
+    if (!Number.isFinite(n) || n <= 0) return 0;
+    return Math.round(n);
+  }
+
+  private parseStorageStatus(raw: unknown): string {
+    const s = String(raw || '').trim().toLowerCase();
+    if (!s) return '';
+    return s;
+  }
+
+  private normalizeEntry(entry: ExplorerEntry): ExplorerEntry | null {
+    const id = Number(entry?.id);
+    const type = String(entry?.type || '').toLowerCase();
+    const name = String(entry?.name || '').trim();
+    if (!id || !name) return null;
+    if (type !== 'folder' && type !== 'file') return null;
+    const content = type === 'file' ? String(entry?.content || '') : undefined;
+    return {
+      id,
+      name,
+      type: type as ExplorerType,
+      parentId: this.toParentId(entry?.parentId),
+      content: content || undefined,
+      driveFileId: this.parseDriveFileId(entry?.driveFileId),
+      mimeType: this.parseMimeType(entry?.mimeType),
+      storageStatus: this.parseStorageStatus(entry?.storageStatus),
+      createdAt: entry?.createdAt ? String(entry.createdAt) : undefined,
+      sizeBytes: this.parseSize(entry?.sizeBytes),
+      rowIndex: this.parseSize(entry?.rowIndex) || undefined,
+    };
+  }
+
+  private toParentId(raw: unknown): number | null {
+    if (raw === null || raw === undefined || raw === '') return null;
+    const n = Number(raw);
+    return Number.isFinite(n) && n > 0 ? Math.round(n) : null;
   }
 
   addEntry(payload: {
@@ -179,6 +150,8 @@ export class ExplorerService {
     type: ExplorerType;
     parentId: number;
     content?: string;
+    mimeType?: string;
+    sizeBytes?: number;
   }): Observable<ExplorerResponse> {
     return this.postToAppsScript({
       action: 'addExplorer',
@@ -187,6 +160,8 @@ export class ExplorerService {
         type: payload.type,
         parent_id: payload.parentId,
         content: payload.type === 'file' ? (payload.content || '') : '',
+        mimeType: payload.mimeType || '',
+        sizeBytes: payload.sizeBytes || 0,
       },
     });
   }
@@ -197,7 +172,7 @@ export class ExplorerService {
    */
   updateEntry(
     id: number,
-    patch: { name?: string; content?: string }
+    patch: { name?: string; content?: string; mimeType?: string; sizeBytes?: number }
   ): Observable<ExplorerResponse> {
     return this.postToAppsScript({
       action: 'updateExplorer',
@@ -205,6 +180,8 @@ export class ExplorerService {
       patch: {
         name: patch.name,
         content: patch.content,
+        mimeType: patch.mimeType,
+        sizeBytes: patch.sizeBytes,
       },
     });
   }
@@ -243,6 +220,41 @@ export class ExplorerService {
   }
 
   /**
+   * Lấy nội dung file (data URL) qua Apps Script action `getExplorerFile`.
+   * Dùng cho preview/download khi file đã chuyển sang Drive private.
+   */
+  getFileDataUrl(id: number): Observable<ExplorerFileResponse> {
+    return this.postToAppsScriptExpectResponse<ExplorerFileResponse>({
+      action: 'getExplorerFile',
+      id,
+    }).pipe(
+      map((resp) => {
+        if (!resp?.success) {
+          throw new Error(resp?.error || 'Không lấy được nội dung file');
+        }
+        return resp;
+      })
+    );
+  }
+
+  migrateExplorerToDrive(payload?: {
+    destinationFolderId?: string;
+    limit?: number;
+    startAfterId?: number;
+  }): Observable<ExplorerMigrationResponse> {
+    return this.postToAppsScriptExpectResponse<ExplorerMigrationResponse>({
+      action: 'migrateExplorerToDrive',
+      ...payload,
+    });
+  }
+
+  deleteExplorerSheetAfterMigration(): Observable<ExplorerResponse> {
+    return this.postToAppsScriptExpectResponse<ExplorerResponse>({
+      action: 'deleteExplorerSheetAfterMigration',
+    });
+  }
+
+  /**
    * Gửi POST tới Google Apps Script (cùng pattern với `FeedingLogService`).
    *
    * **Lưu ý quan trọng**: Apps Script web app trả `302 Found` redirect sang
@@ -270,7 +282,7 @@ export class ExplorerService {
       return throwError(() => new Error('Chưa cấu hình Google Apps Script URL'));
     }
 
-    const isProxy = !environment.production;
+    const isProxy = this.shouldUseJsonProxy();
 
     if (isProxy) {
       const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
@@ -302,6 +314,35 @@ export class ExplorerService {
         return of({ success: true });
       })
     );
+  }
+
+  /**
+   * Dùng cho action bắt buộc cần đọc JSON response (vd getExplorerFile).
+   * Nếu không đi qua proxy tương thích CORS thì throw lỗi để user cấu hình lại.
+   */
+  private postToAppsScriptExpectResponse<T>(
+    body: Record<string, unknown>
+  ): Observable<T> {
+    const url = this.APPS_SCRIPT_URL;
+    if (!url) {
+      return throwError(() => new Error('Chưa cấu hình Google Apps Script URL'));
+    }
+
+    if (!this.shouldUseJsonProxy()) {
+      return throwError(
+        () =>
+          new Error(
+            'Endpoint hiện tại không đọc được response do CORS. Hãy dùng proxy /api/feeding-apps-script.'
+          )
+      );
+    }
+
+    const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+    return this.http.post<T>(url, body, { headers });
+  }
+
+  private shouldUseJsonProxy(): boolean {
+    return this.APPS_SCRIPT_URL.startsWith('/');
   }
 
   /**
@@ -344,6 +385,11 @@ export class ExplorerService {
     ctx.drawImage(img, 0, 0, width, height);
 
     return canvas.toDataURL('image/jpeg', quality);
+  }
+
+  /** Đọc file bất kỳ thành data URL (phục vụ upload file non-image). */
+  async fileToDataUrl(file: File): Promise<string> {
+    return this.readAsDataURL(file);
   }
 
   private readAsDataURL(file: File): Promise<string> {

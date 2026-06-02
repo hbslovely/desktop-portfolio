@@ -7,7 +7,7 @@ Tài liệu hướng dẫn chuẩn bị **các tab** trong Google Sheet và **Go
 - Tab **`Weight`**: cân nặng bé (đọc / thêm / sửa / xoá).
 - Tab **`Event`**: lịch sự kiện (đọc API; thêm / sửa / xoá / acknowledge qua Apps Script) — trong app hiển thị tab **Lịch**.
 - Tab **`MedicalHistory`**: tiền sử y tế bé — Medical history V2 (đọc qua API; ghi / sửa / xoá qua Apps Script).
-- Tab **`Explorer`**: cây thư mục + ảnh base64 (đọc / thêm / sửa / xoá có cascade).
+- Tab **`Explorer`**: chỉ dùng tạm khi migrate từ dữ liệu cũ base64 (sau migrate có thể xoá hẳn tab).
 - Tab **`Log`**: lịch sử hoạt động (đọc API; ghi qua Apps Script).
 
 > Sheet: <https://docs.google.com/spreadsheets/d/1O4kAA61k4cX4mEwAjDy5gioVUAElCyu62Z3zPvgdDMM/edit?gid=0#gid=0>
@@ -179,9 +179,9 @@ Sau khi thêm tab, **deploy lại** Apps Script (mục 4) để có action `addL
 
 ---
 
-## 2. Chuẩn bị tab `Explorer`
+## 2. Chuẩn bị tab `Explorer` (legacy, chỉ cần khi migrate)
 
-1. Tạo tab mới tên **chính xác** `Explorer`.
+1. Tạo tab mới tên **chính xác** `Explorer` nếu bạn đang có dữ liệu cũ cần migrate.
 2. Dòng 1 là **header** với **106 cột**. Cột E là content chính, H..DB là 99 cột overflow để chứa file lớn (ảnh tới ~3.6MB).
 
 | A      | B        | C        | D             | E           | F                        | G             | H..DB             |
@@ -263,6 +263,9 @@ Trong Sheet → **Extensions → Apps Script** → xoá toàn bộ code mặc đ
  *                    Folder check chu kỳ: không cho move folder vào chính nó
  *                    hoặc descendant của nó (tránh tạo loop vô hạn).
  *   getExplorer    → trả về toàn bộ entries (đã filter isDeleted=TRUE)
+ *   getExplorerFile → trả file dataUrl theo id (dùng cho private Drive preview/download)
+ *   migrateExplorerToDrive → migrate batch file legacy (base64 trong sheet) sang Drive
+ *   cleanupExplorerLegacyContent → dọn cột base64 sau khi migrate xong
  *
  * ===== Log (activity history) =====
  *   addLog         → append log entry (id, user, type, content, timestamp)
@@ -270,7 +273,6 @@ Trong Sheet → **Extensions → Apps Script** → xoá toàn bộ code mặc đ
 
 const FEED_SHEET = 'Feeding';
 const SETTINGS_SHEET = 'Settings';
-const EXPL_SHEET = 'Explorer';
 const WEIGHT_SHEET = 'Weight';
 const EVENT_SHEET = 'Event';
 const MEDICAL_SHEET = 'MedicalHistory';
@@ -281,28 +283,31 @@ const L_ID = 1, L_USER = 2, L_TYPE = 3, L_CONTENT = 4, L_TIMESTAMP = 5;
 
 // Event columns (1-based): User | Ngày | Giờ | Tên | Ghi chú | Vị trí | Acknowledge
 const EV_USER = 1, EV_DATE = 2, EV_TIME = 3, EV_TITLE = 4, EV_NOTE = 5, EV_PLACE = 6,
-      EV_ACK = 7;
+  EV_ACK = 7;
 
 // Weight columns (1-based): User | Ngày DD/MM/YYYY | kg | Chiều cao(cm, optional) | Ghi chú
 const W_USER = 1, W_DATE = 2, W_WEIGHT = 3, W_HEIGHT = 4, W_NOTE = 5;
 
 // MedicalHistory columns (1-based): User | Ngày | Loại | Tiêu đề | Chi tiết | Nơi khám | id file Explorer
 const M_USER = 1, M_DATE = 2, M_KIND = 3, M_TITLE = 4, M_DETAIL = 5, M_PLACE = 6,
-      M_ATTACHMENT = 7;
+  M_ATTACHMENT = 7;
 
 // Feeding columns (1-based)
 const F_USER = 1, F_DATE = 2, F_TIME = 3, F_VOLUME = 4, F_NOTE = 5;
 // Dòng 1 — pha sữa: G | H | I | J | K (ISO)
 const F_BOTTLE_LABEL_COL = 7, F_BOTTLE_USER_COL = 8, F_BOTTLE_VOL_COL = 9,
-      F_BOTTLE_TIME_COL = 10, F_BOTTLE_AT_ISO_COL = 11;
+  F_BOTTLE_TIME_COL = 10, F_BOTTLE_AT_ISO_COL = 11;
 const F_BOTTLE_LABEL_TEXT = 'Thông tin pha sữa';
 
 // Explorer columns (1-based).
 // Cột content gốc (E) + 99 cột overflow (H..DB) cho phép ảnh tới ~3.6MB
 // thay vì giới hạn ~37KB của 1 cell. Khi đọc, server nối E + H..DB lại.
 const E_ID = 1, E_NAME = 2, E_TYPE = 3, E_PARENT = 4, E_CONTENT = 5,
-      E_CREATED = 6, E_DELETED = 7,
-      E_CONTENT2 = 8; // H
+  E_CREATED = 6, E_DELETED = 7,
+  E_CONTENT2 = 8; // H
+// Nếu chạy Drive mode, tái sử dụng H..L làm metadata:
+// H=driveFileId, I=mimeType, J=sizeBytes, K=storageStatus, L=updated_at
+// (với row legacy chưa migrate, H..DB vẫn là overflow content như cũ).
 const E_LAST_CONTENT_COL = 106; // DB = content100
 const E_OVERFLOW_COLS = _buildOverflowCols();
 const E_COLS = E_LAST_CONTENT_COL;
@@ -343,11 +348,14 @@ function doPost(e) {
       case 'updateMedicalHistory': return _json(handleUpdateMedicalHistory(body));
       case 'deleteMedicalHistory': return _json(handleDeleteMedicalHistory(body));
       // Explorer
-      case 'addExplorer':    return _json(handleAddExplorer(body));
-      case 'updateExplorer': return _json(handleUpdateExplorer(body));
-      case 'deleteExplorer': return _json(handleDeleteExplorer(body));
-      case 'moveExplorer':   return _json(handleMoveExplorer(body));
-      case 'getExplorer':    return _json(handleGetExplorer(body));
+      case 'addExplorer':    return _json(handleAddExplorer(body)); // Drive-first
+      case 'updateExplorer': return _json(handleUpdateExplorer(body)); // Drive-first
+      case 'deleteExplorer': return _json(handleDeleteExplorer(body)); // Drive-first
+      case 'moveExplorer':   return _json(handleMoveExplorer(body)); // Drive-first
+      case 'getExplorer':    return _json(handleGetExplorer(body)); // Drive-first
+      case 'getExplorerFile': return _json(handleGetExplorerFile(body));
+      case 'migrateExplorerToDrive': return _json(handleMigrateExplorerToDrive(body));
+      case 'cleanupExplorerLegacyContent': return _json(handleCleanupExplorerLegacyContent(body));
       // Log (activity history)
       case 'addLog':         return _json(handleAddLog(body));
       default:
@@ -794,337 +802,618 @@ function handleDeleteMedicalHistory(body) {
 }
 
 /* =========================
- * Explorer handlers
+ * Explorer handlers (Drive-first, không dùng tab Explorer trong Sheet)
  * ========================= */
 
 /**
- * Cắt 1 chuỗi `content` thành tối đa `E_MAX_CHUNKS` chunks ≤ `E_CHUNK_SIZE`
- * ký tự. Dùng để ghi vào E + H..DB. Trả về mảng (rỗng nếu content rỗng).
- * Throw nếu vượt quá tổng dung lượng cho phép.
+ * NOTE:
+ * - Từ phiên bản này, Explorer tree + metadata được lưu trên Drive/App properties,
+ *   không đọc/ghi tab Explorer trong Google Sheet nữa.
+ * - Các action giữ nguyên tên để tương thích frontend hiện có.
+ *
+ * Bạn hãy dùng bộ implement Drive-first đã gửi ở chat:
+ *   handleAddExplorer
+ *   handleUpdateExplorer
+ *   handleDeleteExplorer
+ *   handleMoveExplorer
+ *   handleGetExplorer
+ *   handleGetExplorerFile
+ *   handleMigrateExplorerToDrive
+ *   handleCleanupExplorerLegacyContent
+ *   handleDeleteExplorerSheetAfterMigration
+ *
+ * Và bảo đảm KHÔNG có dòng nào gọi _getSheet('Explorer').
  */
-function _splitContent(content) {
-  const s = String(content || '');
-  if (s.length === 0) return [];
-  const chunks = [];
-  for (let i = 0; i < s.length; i += E_CHUNK_SIZE) {
-    chunks.push(s.slice(i, i + E_CHUNK_SIZE));
-  }
-  if (chunks.length > E_MAX_CHUNKS) {
-    throw new Error(
-      'Content quá lớn (' + s.length + ' ký tự). Giới hạn ~' +
-      (E_MAX_CHUNKS * E_CHUNK_SIZE) + ' ký tự (~' +
-      Math.round(E_MAX_CHUNKS * E_CHUNK_SIZE / 1024) + 'KB base64).'
-    );
-  }
-  return chunks;
+
+/***********************
+ * Explorer Drive-first
+ ***********************/
+const EXPL_DRIVE_FOLDER_ID = '13-JG78DpOegDQUiwK0Hu0Hg6vIYsfHxy';
+const EXPL_STORE_KEY = 'EXPLORER_V2_STORE';
+
+// Legacy sheet constants (chỉ dùng khi migrate/cleanup)
+const EXPL_SHEET_LEGACY = 'Explorer';
+
+/** Thêm trong doPost:
+ * case 'addExplorer': return _json(handleAddExplorer(body));
+ * case 'updateExplorer': return _json(handleUpdateExplorer(body));
+ * case 'deleteExplorer': return _json(handleDeleteExplorer(body));
+ * case 'moveExplorer': return _json(handleMoveExplorer(body));
+ * case 'getExplorer': return _json(handleGetExplorer(body));
+ * case 'getExplorerFile': return _json(handleGetExplorerFile(body));
+ * case 'migrateExplorerToDrive': return _json(handleMigrateExplorerToDrive(body));
+ * case 'cleanupExplorerLegacyContent': return _json(handleCleanupExplorerLegacyContent(body));
+ * case 'deleteExplorerSheetAfterMigration': return _json(handleDeleteExplorerSheetAfterMigration(body));
+ */
+
+function _explNowIso() {
+  return new Date().toISOString();
 }
 
-/**
- * Nối content từ row (0-indexed) — gộp E + H..DB. Mọi row cũ
- * (chỉ có E) vẫn hoạt động vì các cột overflow trả về undefined → '' .
- */
-function _joinContent(row) {
-  let s = String(row[E_CONTENT - 1] || '');
-  for (let i = 0; i < E_OVERFLOW_COLS.length; i++) {
-    s += String(row[E_OVERFLOW_COLS[i] - 1] || '');
-  }
-  return s;
+function _toIntOrNullLocal(v) {
+  if (v === '' || v === null || v === undefined) return null;
+  const n = parseInt(String(v), 10);
+  return isNaN(n) ? null : n;
 }
 
-/**
- * Ghi content (đã split sẵn) vào row tại `rowIndex`. Lấp đầy phần thiếu
- * bằng chuỗi rỗng để xoá data overflow cũ khi user shrink ảnh.
- */
-function _writeContentChunks(sheet, rowIndex, chunks) {
-  // Cell chính E
-  sheet.getRange(rowIndex, E_CONTENT).setValue(chunks[0] || '');
-  // Cells overflow H..DB — luôn ghi đủ số cell (rỗng nếu không có chunk)
-  for (let i = 0; i < E_OVERFLOW_COLS.length; i++) {
-    sheet.getRange(rowIndex, E_OVERFLOW_COLS[i]).setValue(chunks[i + 1] || '');
-  }
+function _safeName(name, fallback) {
+  const s = String(name || '').trim();
+  return s || (fallback || 'untitled');
 }
 
-function handleAddExplorer(body) {
-  const sheet = _getSheet(EXPL_SHEET);
-  const entry = body.entry || {};
-  const name = String(entry.name || '').trim();
-  const type = String(entry.type || '').trim().toLowerCase();
-  const parentRaw = entry.parent_id;
-  const content = String(entry.content || '');
+function _normalizeType(type) {
+  const t = String(type || '').trim().toLowerCase();
+  if (t !== 'folder' && t !== 'file') throw new Error('type phải là "folder" hoặc "file"');
+  return t;
+}
 
-  if (!name) throw new Error('Thiếu name');
-  if (type !== 'folder' && type !== 'file') {
-    throw new Error('type phải là "folder" hoặc "file"');
-  }
+function _getDriveRootFolder() {
+  if (!EXPL_DRIVE_FOLDER_ID) throw new Error('Thiếu EXPL_DRIVE_FOLDER_ID');
+  return DriveApp.getFolderById(EXPL_DRIVE_FOLDER_ID);
+}
 
-  const parentId = _toIntOrNull(parentRaw);
-  if (parentId === null && type !== 'folder') {
-    throw new Error('File phải có parent_id (folder cha)');
-  }
+function _blobFromDataUrl(dataUrl, fileName, mimeOverride) {
+  const s = String(dataUrl || '');
+  const i = s.indexOf(',');
+  if (i < 0) throw new Error('Data URL không hợp lệ');
+  const header = s.slice(0, i);
+  const payload = s.slice(i + 1);
+  if (!/;base64/i.test(header)) throw new Error('Chỉ hỗ trợ data URL base64');
+  const m = header.match(/^data:([^;]+)/i);
+  const mime = String(mimeOverride || (m ? m[1] : 'application/octet-stream'));
+  const bytes = Utilities.base64Decode(payload);
+  return Utilities.newBlob(bytes, mime, fileName || 'file.bin');
+}
 
-  // Validate parent tồn tại (trừ root)
-  if (parentId !== null) {
-    const exists = _findExplorerRowById(sheet, parentId);
-    if (!exists) throw new Error('Folder cha (id=' + parentId + ') không tồn tại');
-    if (String(exists.row[E_TYPE - 1]).toLowerCase() !== 'folder') {
-      throw new Error('parent_id không phải folder');
-    }
-  }
-
-  // Split content thành chunks (sẽ throw nếu vượt giới hạn ~3.6MB)
-  const chunks = _splitContent(content);
-
-  const id = _nextExplorerId(sheet);
-  const parentValue = parentId === null ? '' : parentId;
-  const createdAt = new Date().toISOString();
-
-  // Build full row A..DB: A..G (core) + H..DB (overflow chunks).
-  // Cột G `isDeleted` mặc định FALSE cho mọi entry mới.
-  const rowVals = [
-    id, name, type, parentValue,
-    chunks[0] || '',          // E (content chính)
-    createdAt, false,         // F, G
-  ];
-  for (let i = 0; i < E_OVERFLOW_COLS.length; i++) {
-    rowVals.push(chunks[i + 1] || ''); // H..DB
-  }
-  sheet.appendRow(rowVals);
-
-  // Đảm bảo cell created_at là plain text (tránh Sheets parse thành Date lệch tz)
+function _readExplorerStore() {
+  const raw = PropertiesService.getScriptProperties().getProperty(EXPL_STORE_KEY);
+  if (!raw) return _createDefaultStore();
   try {
-    sheet.getRange(sheet.getLastRow(), E_CREATED).setNumberFormat('@');
+    const parsed = JSON.parse(raw);
+    if (!parsed || !Array.isArray(parsed.entries)) return _createDefaultStore();
+    const store = {
+      version: 2,
+      nextId: Math.max(2, parseInt(parsed.nextId, 10) || 2),
+      entries: parsed.entries
+    };
+    _ensureRootEntry(store);
+    return store;
   } catch (e) {
-    // Một số tài khoản không có quyền setNumberFormat → bỏ qua, giá trị vẫn ghi đúng.
+    return _createDefaultStore();
   }
+}
 
+function _writeExplorerStore(store) {
+  _ensureRootEntry(store);
+  const maxId = store.entries.reduce(function (m, e) { return Math.max(m, e.id || 0); }, 1);
+  store.nextId = Math.max(store.nextId || 2, maxId + 1);
+  PropertiesService.getScriptProperties().setProperty(EXPL_STORE_KEY, JSON.stringify(store));
+}
+
+function _createDefaultStore() {
   return {
-    success: true,
-    message: 'Đã thêm ' + (type === 'folder' ? 'thư mục' : 'file'),
-    id: id,
-    rowIndex: sheet.getLastRow(),
-    createdAt: createdAt,
-    chunkCount: chunks.length
+    version: 2,
+    nextId: 2,
+    entries: [{
+      id: 1,
+      name: 'root',
+      type: 'folder',
+      parentId: null,
+      createdAt: _explNowIso(),
+      driveFileId: EXPL_DRIVE_FOLDER_ID,
+      mimeType: 'application/vnd.google-apps.folder',
+      sizeBytes: 0,
+      storageStatus: 'drive',
+      deleted: false
+    }]
   };
 }
 
-/**
- * Update entry. CHỈ cho đổi `name` và `content`. Không cho đổi type
- * hoặc parent_id để tránh phải re-validate cây.
- */
-function handleUpdateExplorer(body) {
-  const sheet = _getSheet(EXPL_SHEET);
-  const id = _toIntOrNull(body.id);
-  if (id === null) throw new Error('Thiếu id');
-
-  const found = _findExplorerRowById(sheet, id);
-  if (!found) throw new Error('Không tìm thấy entry id=' + id);
-
-  const patch = body.patch || {};
-  if (patch.name != null) {
-    const name = String(patch.name).trim();
-    if (!name) throw new Error('Tên không được để trống');
-    sheet.getRange(found.rowIndex, E_NAME).setValue(name);
+function _ensureRootEntry(store) {
+  let root = store.entries.find(function (e) { return e.id === 1; });
+  if (!root) {
+    root = {
+      id: 1,
+      name: 'root',
+      type: 'folder',
+      parentId: null,
+      createdAt: _explNowIso(),
+      driveFileId: EXPL_DRIVE_FOLDER_ID,
+      mimeType: 'application/vnd.google-apps.folder',
+      sizeBytes: 0,
+      storageStatus: 'drive',
+      deleted: false
+    };
+    store.entries.unshift(root);
   }
-  if (patch.content != null) {
-    if (String(found.row[E_TYPE - 1]).toLowerCase() !== 'file') {
-      throw new Error('Chỉ file mới có content');
-    }
-    // Split + ghi đủ E + H..DB (xoá overflow cũ nếu user shrink ảnh).
-    const chunks = _splitContent(patch.content);
-    _writeContentChunks(sheet, found.rowIndex, chunks);
-  }
-
-  return { success: true, message: 'Đã cập nhật', id: id, rowIndex: found.rowIndex };
+  root.type = 'folder';
+  root.parentId = null;
+  root.deleted = false;
+  if (!root.driveFileId) root.driveFileId = EXPL_DRIVE_FOLDER_ID;
 }
 
-/**
- * SOFT delete entry: set cột G `isDeleted=TRUE` thay vì xoá row vật lý.
- * Nếu là folder → cascade soft-delete toàn bộ con cháu (BFS).
- *
- * Ưu điểm so với hard delete:
- *  - Có thể khôi phục bằng cách đặt lại `isDeleted=FALSE` thủ công trong Sheet.
- *  - Không làm shift rowIndex → các thao tác đang chạy song song không bị lệch.
- *  - Idempotent: gọi lại trên id đã xoá là no-op.
- */
-function handleDeleteExplorer(body) {
-  const sheet = _getSheet(EXPL_SHEET);
-  const id = _toIntOrNull(body.id);
-  if (id === null) throw new Error('Thiếu id');
-  if (id === 1) throw new Error('Không được xoá root folder');
+function _activeEntries(store) {
+  return store.entries.filter(function (e) { return !e.deleted; });
+}
 
-  const lastRow = sheet.getLastRow();
-  if (lastRow < 2) throw new Error('Sheet trống');
+function _entryById(store, id, includeDeleted) {
+  return store.entries.find(function (e) {
+    if (e.id !== id) return false;
+    if (!includeDeleted && e.deleted) return false;
+    return true;
+  }) || null;
+}
 
-  const data = sheet.getRange(2, 1, lastRow - 1, E_COLS).getValues();
-
-  // Build map: id -> { rowIndex, parentId, type, name, isDeleted }
-  const byId = {};
-  data.forEach(function (r, idx) {
-    const rid = parseInt(r[E_ID - 1], 10);
-    if (!rid) return;
-    byId[rid] = {
-      rowIndex: idx + 2,
-      parentId: _toIntOrNull(r[E_PARENT - 1]),
-      type: String(r[E_TYPE - 1]).toLowerCase(),
-      name: String(r[E_NAME - 1]),
-      isDeleted: _toBool(r[E_DELETED - 1])
-    };
+function _childrenOf(store, parentId, includeDeleted) {
+  return store.entries.filter(function (e) {
+    if (e.parentId !== parentId) return false;
+    if (!includeDeleted && e.deleted) return false;
+    return true;
   });
+}
 
-  if (!byId[id]) throw new Error('Không tìm thấy entry id=' + id);
+function _requireParentFolder(store, parentId) {
+  const parent = _entryById(store, parentId, false);
+  if (!parent) throw new Error('Folder cha không tồn tại: ' + parentId);
+  if (parent.type !== 'folder') throw new Error('parentId không phải folder');
+  if (!parent.driveFileId) throw new Error('Folder cha thiếu driveFileId');
+  return parent;
+}
 
-  // BFS gom toàn bộ id sẽ bị soft-delete (root + descendants).
-  const toDelete = {};
-  toDelete[id] = true;
-  let added = true;
-  while (added) {
-    added = false;
-    Object.keys(byId).forEach(function (key) {
-      const rid = parseInt(key, 10);
-      const item = byId[rid];
-      if (!toDelete[rid] && item.parentId !== null && toDelete[item.parentId]) {
-        toDelete[rid] = true;
-        added = true;
-      }
+function _folderObjByEntry(entry) {
+  return DriveApp.getFolderById(entry.driveFileId);
+}
+
+function _fileObjByEntry(entry) {
+  return DriveApp.getFileById(entry.driveFileId);
+}
+
+function _collectDescendants(store, rootId) {
+  const out = [];
+  const queue = [rootId];
+  while (queue.length) {
+    const cur = queue.shift();
+    const kids = _childrenOf(store, cur, true);
+    kids.forEach(function (k) {
+      out.push(k);
+      if (k.type === 'folder') queue.push(k.id);
     });
   }
-
-  // Set cột G `isDeleted=TRUE` cho từng row còn FALSE. Đếm số row thực sự đổi.
-  let count = 0;
-  Object.keys(toDelete).forEach(function (k) {
-    const rid = parseInt(k, 10);
-    const item = byId[rid];
-    if (!item || item.isDeleted) return;
-    sheet.getRange(item.rowIndex, E_DELETED).setValue(true);
-    count++;
-  });
-
-  return {
-    success: true,
-    message: 'Đã đánh dấu xoá ' + count + ' entry',
-    deletedCount: count,
-    softDelete: true
-  };
+  return out;
 }
 
-/**
- * Cut & paste nhiều file ids sang folder mới (parent_id mới).
- *
- * Chính sách:
- *  - **CHỈ áp dụng cho `type=file`**. Folder bị bỏ qua silent (movedCount
- *    sẽ phản ánh số thực sự được move).
- *  - Folder đích phải tồn tại và là `type=folder`.
- *  - Bỏ qua những file vốn đã ở folder đích (no-op).
- */
-function handleMoveExplorer(body) {
-  const sheet = _getSheet(EXPL_SHEET);
-  const ids = (body.ids || [])
-    .map(function (x) { return parseInt(x, 10); })
-    .filter(function (n) { return !!n; });
-  const newParentId = _toIntOrNull(body.parentId);
-
-  if (newParentId === null) throw new Error('Thiếu parentId đích');
-  if (ids.length === 0) throw new Error('Không có id nào để move');
-
-  // Validate target folder
-  const parentFound = _findExplorerRowById(sheet, newParentId);
-  if (!parentFound) throw new Error('Folder đích id=' + newParentId + ' không tồn tại');
-  if (String(parentFound.row[E_TYPE - 1]).toLowerCase() !== 'folder') {
-    throw new Error('Đích không phải folder');
-  }
-
-  let moved = 0;
-  let skippedRoot = 0;
-  let skippedCycle = 0;
-  let skippedSame = 0;
-  let skippedMissing = 0;
-
-  for (let i = 0; i < ids.length; i++) {
-    const id = ids[i];
-
-    // Không cho move root (id=1) — root phải đứng yên.
-    if (id === 1) { skippedRoot++; continue; }
-
-    const found = _findExplorerRowById(sheet, id);
-    if (!found) { skippedMissing++; continue; }
-    const t = String(found.row[E_TYPE - 1]).toLowerCase();
-    if (t !== 'file' && t !== 'folder') { skippedMissing++; continue; }
-
-    const curParent = _toIntOrNull(found.row[E_PARENT - 1]);
-    if (curParent === newParentId) { skippedSame++; continue; }
-
-    // Cycle check cho folder: target không được là chính nó hoặc descendant.
-    // Walk lên ancestry của newParentId — nếu gặp `id` thì refuse.
-    if (t === 'folder' && _isFolderAncestorOrSelf(sheet, newParentId, id)) {
-      skippedCycle++;
-      continue;
-    }
-
-    sheet.getRange(found.rowIndex, E_PARENT).setValue(newParentId);
-    moved++;
-  }
-
-  return {
-    success: true,
-    message: 'Đã chuyển ' + moved + ' mục',
-    movedCount: moved,
-    skippedRoot: skippedRoot,
-    skippedCycle: skippedCycle,
-    skippedSame: skippedSame,
-    skippedMissing: skippedMissing
-  };
-}
-
-/**
- * Trả về true nếu `nodeId` là `ancestorId` hoặc nằm trong cây con của
- * `ancestorId` (đi lên qua parentId chain). Dùng cho cycle check khi move
- * folder. Có safety bound để tránh loop vô hạn nếu sheet bị hỏng.
- */
-function _isFolderAncestorOrSelf(sheet, nodeId, ancestorId) {
-  let cur = nodeId;
-  let safety = 64;
-  while (cur !== null && safety-- > 0) {
-    if (cur === ancestorId) return true;
-    const found = _findExplorerRowById(sheet, cur);
-    if (!found) return false;
-    cur = _toIntOrNull(found.row[E_PARENT - 1]);
+function _isAncestor(store, maybeAncestorId, nodeId) {
+  let cur = _entryById(store, nodeId, true);
+  let safety = 128;
+  while (cur && safety-- > 0) {
+    if (cur.parentId === null) return false;
+    if (cur.parentId === maybeAncestorId) return true;
+    cur = _entryById(store, cur.parentId, true);
   }
   return false;
 }
 
+/** addExplorer */
+function handleAddExplorer(body) {
+  const store = _readExplorerStore();
+  const entry = (body && body.entry) || {};
+  const name = _safeName(entry.name, '');
+  const type = _normalizeType(entry.type);
+  if (!name) throw new Error('Thiếu name');
+
+  const parentId = _toIntOrNullLocal(entry.parent_id);
+  if (type === 'file' && parentId === null) throw new Error('File phải có parent_id');
+
+  let parentEntry = null;
+  let parentFolder = _getDriveRootFolder();
+  if (parentId !== null) {
+    parentEntry = _requireParentFolder(store, parentId);
+    parentFolder = _folderObjByEntry(parentEntry);
+  }
+
+  const createdAt = _explNowIso();
+  const id = store.nextId++;
+
+  let driveFileId = '';
+  let mimeType = '';
+  let sizeBytes = 0;
+
+  if (type === 'folder') {
+    const f = parentFolder.createFolder(name);
+    driveFileId = f.getId();
+    mimeType = 'application/vnd.google-apps.folder';
+  } else {
+    const content = String(entry.content || '');
+    if (!content) throw new Error('Thiếu content cho file');
+    const blob = _blobFromDataUrl(content, name, entry.mimeType || '');
+    const file = parentFolder.createFile(blob);
+    driveFileId = file.getId();
+    mimeType = blob.getContentType() || 'application/octet-stream';
+    sizeBytes = Number(entry.sizeBytes || blob.getBytes().length || 0);
+  }
+
+  store.entries.push({
+    id: id,
+    name: name,
+    type: type,
+    parentId: parentId,
+    createdAt: createdAt,
+    driveFileId: driveFileId,
+    mimeType: mimeType,
+    sizeBytes: sizeBytes,
+    storageStatus: 'drive',
+    deleted: false
+  });
+
+  _writeExplorerStore(store);
+  return { success: true, id: id, createdAt: createdAt };
+}
+
+/** updateExplorer */
+function handleUpdateExplorer(body) {
+  const store = _readExplorerStore();
+  const id = _toIntOrNullLocal(body && body.id);
+  if (id === null) throw new Error('Thiếu id');
+  const e = _entryById(store, id, false);
+  if (!e) throw new Error('Không tìm thấy entry id=' + id);
+
+  const patch = (body && body.patch) || {};
+
+  if (patch.name != null) {
+    const newName = _safeName(patch.name, '');
+    if (!newName) throw new Error('Tên không hợp lệ');
+    if (e.type === 'folder') _folderObjByEntry(e).setName(newName);
+    else _fileObjByEntry(e).setName(newName);
+    e.name = newName;
+  }
+
+  if (patch.content != null) {
+    if (e.type !== 'file') throw new Error('Chỉ file mới có content');
+    const parent = e.parentId === null ? null : _entryById(store, e.parentId, false);
+    const parentFolder = parent ? _folderObjByEntry(parent) : _getDriveRootFolder();
+    const blob = _blobFromDataUrl(String(patch.content), e.name, patch.mimeType || e.mimeType || '');
+    const newFile = parentFolder.createFile(blob);
+
+    try { _fileObjByEntry(e).setTrashed(true); } catch (ex) {}
+    e.driveFileId = newFile.getId();
+    e.mimeType = blob.getContentType() || 'application/octet-stream';
+    e.sizeBytes = Number(patch.sizeBytes || blob.getBytes().length || 0);
+    e.storageStatus = 'drive';
+  }
+
+  _writeExplorerStore(store);
+  return { success: true, id: id };
+}
+
+/** deleteExplorer (soft delete + trash Drive objects) */
+function handleDeleteExplorer(body) {
+  const store = _readExplorerStore();
+  const id = _toIntOrNullLocal(body && body.id);
+  if (id === null) throw new Error('Thiếu id');
+  if (id === 1) throw new Error('Không được xoá root');
+
+  const root = _entryById(store, id, false);
+  if (!root) throw new Error('Không tìm thấy entry id=' + id);
+
+  const targets = [root].concat(_collectDescendants(store, id));
+  let deletedCount = 0;
+
+  targets.forEach(function (x) {
+    if (x.deleted) return;
+    x.deleted = true;
+    deletedCount++;
+    try {
+      if (x.driveFileId) {
+        if (x.type === 'folder') DriveApp.getFolderById(x.driveFileId).setTrashed(true);
+        else DriveApp.getFileById(x.driveFileId).setTrashed(true);
+      }
+    } catch (e) {}
+  });
+
+  _writeExplorerStore(store);
+  return { success: true, deletedCount: deletedCount, softDelete: true };
+}
+
+/** moveExplorer */
+function handleMoveExplorer(body) {
+  const store = _readExplorerStore();
+  const ids = ((body && body.ids) || []).map(function (x) { return parseInt(x, 10); }).filter(Boolean);
+  const newParentId = _toIntOrNullLocal(body && body.parentId);
+  if (newParentId === null) throw new Error('Thiếu parentId');
+  if (ids.length === 0) throw new Error('Không có id để move');
+
+  const parent = _requireParentFolder(store, newParentId);
+  const parentFolder = _folderObjByEntry(parent);
+
+  let moved = 0, skipped = 0;
+  ids.forEach(function (id) {
+    if (id === 1) { skipped++; return; }
+    const e = _entryById(store, id, false);
+    if (!e) { skipped++; return; }
+    if (e.parentId === newParentId) { skipped++; return; }
+    if (e.type === 'folder' && (newParentId === e.id || _isAncestor(store, e.id, newParentId))) {
+      skipped++;
+      return;
+    }
+
+    try {
+      if (e.type === 'folder') _folderObjByEntry(e).moveTo(parentFolder);
+      else _fileObjByEntry(e).moveTo(parentFolder);
+      e.parentId = newParentId;
+      moved++;
+    } catch (err) {
+      skipped++;
+    }
+  });
+
+  _writeExplorerStore(store);
+  return { success: true, movedCount: moved, skippedCount: skipped };
+}
+
+/** getExplorer */
 function handleGetExplorer(_body) {
-  const sheet = _getSheet(EXPL_SHEET);
-  const lastRow = sheet.getLastRow();
-  if (lastRow < 2) return { success: true, entries: [] };
-
-  const values = sheet.getRange(2, 1, lastRow - 1, E_COLS).getValues();
-  const entries = values
-    .map(function (r, idx) {
-      // Bỏ qua row đã soft-delete — coi như không tồn tại.
-      if (_toBool(r[E_DELETED - 1])) return null;
-      const id = parseInt(r[E_ID - 1], 10);
-      const name = String(r[E_NAME - 1] || '').trim();
-      const type = String(r[E_TYPE - 1] || '').toLowerCase();
-      const parentId = _toIntOrNull(r[E_PARENT - 1]);
-      // Nối content từ E + H..DB (file lớn lưu chia nhiều cell)
-      const content = type === 'file' ? _joinContent(r) : '';
-      const createdRaw = r[E_CREATED - 1];
-      if (!id || !name) return null;
-      if (type !== 'folder' && type !== 'file') return null;
-      return {
-        id: id,
-        name: name,
-        type: type,
-        parentId: parentId,
-        content: type === 'file' ? content : '',
-        createdAt: _fmtIso(createdRaw),
-        rowIndex: idx + 2
-      };
-    })
-    .filter(function (e) { return e !== null; });
-
+  const store = _readExplorerStore();
+  const entries = _activeEntries(store).map(function (e) {
+    return {
+      id: e.id,
+      name: e.name,
+      type: e.type,
+      parentId: e.parentId,
+      createdAt: e.createdAt,
+      driveFileId: e.driveFileId || '',
+      mimeType: e.mimeType || '',
+      sizeBytes: Number(e.sizeBytes || 0),
+      storageStatus: e.storageStatus || 'drive',
+      content: '' // lazy load qua getExplorerFile
+    };
+  });
   return { success: true, entries: entries };
 }
+
+/** getExplorerFile */
+function handleGetExplorerFile(body) {
+  const store = _readExplorerStore();
+  const id = _toIntOrNullLocal(body && body.id);
+  let driveFileId = String((body && body.driveFileId) || '').trim();
+
+  let e = null;
+  if (!driveFileId) {
+    if (id === null) throw new Error('Thiếu id hoặc driveFileId');
+    e = _entryById(store, id, false);
+    if (!e) throw new Error('Không tìm thấy entry');
+    if (e.type !== 'file') throw new Error('Entry không phải file');
+    driveFileId = String(e.driveFileId || '').trim();
+  }
+
+  if (!driveFileId) throw new Error('Thiếu driveFileId');
+
+  const f = DriveApp.getFileById(driveFileId);
+  const blob = f.getBlob();
+  const bytes = blob.getBytes();
+  const mimeType = blob.getContentType() || 'application/octet-stream';
+  const dataUrl = 'data:' + mimeType + ';base64,' + Utilities.base64Encode(bytes);
+
+  return {
+    success: true,
+    name: f.getName(),
+    mimeType: mimeType,
+    sizeBytes: bytes.length,
+    dataUrl: dataUrl
+  };
+}
+
+/** migrateExplorerToDrive: copy full folder tree + files từ tab Explorer legacy */
+function handleMigrateExplorerToDrive(body) {
+  const limit = Math.max(1, Math.min(200, parseInt((body && body.limit) || 20, 10)));
+  const legacy = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(EXPL_SHEET_LEGACY);
+  if (!legacy) return { success: true, migratedCount: 0, hasMore: false, message: 'Không có tab Explorer legacy' };
+
+  const store = _readExplorerStore();
+  const rootFolder = _getDriveRootFolder();
+
+  const lastRow = legacy.getLastRow();
+  if (lastRow < 2) return { success: true, migratedCount: 0, hasMore: false, message: 'Explorer legacy rỗng' };
+
+  const rows = legacy.getRange(2, 1, lastRow - 1, E_LAST_CONTENT_COL).getValues();
+  const legacyEntries = rows.map(function (r, idx) {
+    return {
+      rowIndex: idx + 2,
+      id: parseInt(r[E_ID - 1], 10) || 0,
+      name: String(r[E_NAME - 1] || '').trim(),
+      type: String(r[E_TYPE - 1] || '').toLowerCase(),
+      parentId: _toIntOrNullLocal(r[E_PARENT - 1]),
+      createdAt: String(r[E_CREATED - 1] || _explNowIso()),
+      deleted: _toBool(r[E_DELETED - 1]),
+      content: (function () {
+        let s = String(r[E_CONTENT - 1] || '');
+        for (let c = E_LEGACY_OVERFLOW_START; c <= E_LAST_CONTENT_COL; c++) s += String(r[c - 1] || '');
+        return s;
+      })()
+    };
+  }).filter(function (e) {
+    return e.id > 0 && e.name && (e.type === 'folder' || e.type === 'file') && !e.deleted;
+  }).sort(function (a, b) { return a.id - b.id; });
+
+  const byLegacyId = {};
+  legacyEntries.forEach(function (e) { byLegacyId[e.id] = e; });
+
+  // map legacyId -> store entry (same id ưu tiên để tương thích medical attachment)
+  const storeById = {};
+  store.entries.forEach(function (e) { storeById[e.id] = e; });
+
+  function ensureFolder(legacyEntry) {
+    if (!legacyEntry || legacyEntry.type !== 'folder') throw new Error('Folder không hợp lệ');
+    if (storeById[legacyEntry.id] && !storeById[legacyEntry.id].deleted) return storeById[legacyEntry.id];
+
+    let parentStore = null;
+    if (legacyEntry.id === 1 || legacyEntry.parentId === null) {
+      parentStore = _entryById(store, 1, false);
+    } else {
+      const parentLegacy = byLegacyId[legacyEntry.parentId];
+      parentStore = parentLegacy ? ensureFolder(parentLegacy) : _entryById(store, 1, false);
+    }
+
+    const parentFolder = parentStore && parentStore.driveFileId
+      ? DriveApp.getFolderById(parentStore.driveFileId)
+      : rootFolder;
+    const newFolder = parentFolder.createFolder(legacyEntry.name);
+
+    const nextId = Math.max(store.nextId, legacyEntry.id + 1);
+    store.nextId = nextId;
+    const entry = {
+      id: legacyEntry.id,
+      name: legacyEntry.name,
+      type: 'folder',
+      parentId: parentStore ? parentStore.id : null,
+      createdAt: legacyEntry.createdAt || _explNowIso(),
+      driveFileId: newFolder.getId(),
+      mimeType: 'application/vnd.google-apps.folder',
+      sizeBytes: 0,
+      storageStatus: 'migrated',
+      deleted: false
+    };
+
+    // replace nếu id đã tồn tại (trường hợp deleted)
+    const idx = store.entries.findIndex(function (x) { return x.id === entry.id; });
+    if (idx >= 0) store.entries[idx] = entry;
+    else store.entries.push(entry);
+
+    storeById[entry.id] = entry;
+    return entry;
+  }
+
+  let migrated = 0;
+  let failed = 0;
+  let lastProcessedId = 0;
+
+  for (let i = 0; i < legacyEntries.length; i++) {
+    if (migrated >= limit) break;
+    const le = legacyEntries[i];
+    lastProcessedId = le.id;
+
+    if (storeById[le.id] && !storeById[le.id].deleted) {
+      continue; // đã migrate trước đó
+    }
+
+    try {
+      if (le.type === 'folder') {
+        ensureFolder(le);
+        migrated++;
+      } else {
+        const parentLegacy = le.parentId ? byLegacyId[le.parentId] : null;
+        const parentStore = parentLegacy ? ensureFolder(parentLegacy) : _entryById(store, 1, false);
+        const parentFolder = parentStore && parentStore.driveFileId
+          ? DriveApp.getFolderById(parentStore.driveFileId)
+          : rootFolder;
+
+        if (!le.content) throw new Error('File legacy không có content');
+        const blob = _blobFromDataUrl(le.content, le.name, '');
+        const f = parentFolder.createFile(blob);
+
+        const entry = {
+          id: le.id,
+          name: le.name,
+          type: 'file',
+          parentId: parentStore ? parentStore.id : null,
+          createdAt: le.createdAt || _explNowIso(),
+          driveFileId: f.getId(),
+          mimeType: blob.getContentType() || 'application/octet-stream',
+          sizeBytes: blob.getBytes().length,
+          storageStatus: 'migrated',
+          deleted: false
+        };
+
+        const idx = store.entries.findIndex(function (x) { return x.id === entry.id; });
+        if (idx >= 0) store.entries[idx] = entry;
+        else store.entries.push(entry);
+        storeById[entry.id] = entry;
+        migrated++;
+      }
+    } catch (e) {
+      failed++;
+    }
+  }
+
+  _writeExplorerStore(store);
+
+  const hasMore = legacyEntries.some(function (x) {
+    return !storeById[x.id] || storeById[x.id].deleted;
+  });
+
+  return {
+    success: true,
+    migratedCount: migrated,
+    failedCount: failed,
+    hasMore: hasMore,
+    lastProcessedId: lastProcessedId
+  };
+}
+
+/** cleanup legacy content in Explorer sheet */
+function handleCleanupExplorerLegacyContent(body) {
+  const limit = Math.max(1, Math.min(1000, parseInt((body && body.limit) || 300, 10)));
+  const legacy = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(EXPL_SHEET_LEGACY);
+  if (!legacy) return { success: true, cleanedCount: 0, hasMore: false };
+
+  const lastRow = legacy.getLastRow();
+  if (lastRow < 2) return { success: true, cleanedCount: 0, hasMore: false };
+
+  const rows = legacy.getRange(2, 1, lastRow - 1, E_LAST_CONTENT_COL).getValues();
+  let cleaned = 0;
+
+  for (let i = 0; i < rows.length && cleaned < limit; i++) {
+    const r = rows[i];
+    const id = parseInt(r[E_ID - 1], 10) || 0;
+    const type = String(r[E_TYPE - 1] || '').toLowerCase();
+    const deleted = _toBool(r[E_DELETED - 1]);
+    if (!id || type !== 'file' || deleted) continue;
+
+    // clear E..DB
+    legacy.getRange(i + 2, E_CONTENT, 1, E_LAST_CONTENT_COL - E_CONTENT + 1).clearContent();
+    cleaned++;
+  }
+
+  const hasMore = cleaned === limit;
+  return { success: true, cleanedCount: cleaned, hasMore: hasMore };
+}
+
+/** delete Explorer sheet permanently after migration */
+function handleDeleteExplorerSheetAfterMigration(_body) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const legacy = ss.getSheetByName(EXPL_SHEET_LEGACY);
+  if (!legacy) return { success: true, message: 'Explorer sheet đã không tồn tại' };
+
+  // safety: chỉ xoá khi store có dữ liệu > root
+  const store = _readExplorerStore();
+  const activeCount = _activeEntries(store).length;
+  if (activeCount <= 1) {
+    throw new Error('Chưa thể xoá tab Explorer: chưa thấy dữ liệu đã migrate');
+  }
+
+  ss.deleteSheet(legacy);
+  return { success: true, message: 'Đã xoá tab Explorer legacy' };
+}
+
 
 /* =========================
  * Log (activity history) handlers
@@ -1391,6 +1680,62 @@ Restart `npm run dev` sau khi sửa.
 
 ---
 
+## 6.5 Drive private mode (2 account)
+
+Mô hình áp dụng:
+
+- **Acc A**: owner Google Sheet + Apps Script.
+- **Acc B**: owner folder Google Drive lưu file thật.
+- Folder acc B phải share quyền **Editor** cho email acc A.
+
+Checklist cấu hình:
+
+1. Acc B tạo folder, copy folder ID.
+2. Dán ID vào `EXPL_DRIVE_FOLDER_ID`.
+3. Deploy lại Apps Script (new version).
+4. Từ app, upload thử 1 file và kiểm tra:
+   - Row mới ở tab `Explorer` có `driveFileId`.
+   - File xuất hiện trong folder Drive acc B.
+5. Chạy migrate xong thì xoá hoàn toàn tab `Explorer` bằng action finalize (không dùng sheet tree nữa).
+
+Các handler cần có trong Apps Script Explorer:
+
+- `handleGetExplorerFile(body)`:
+  - Input: `id` hoặc `driveFileId`.
+  - Output: `{ success, name, mimeType, sizeBytes, dataUrl }`.
+- `handleMigrateExplorerToDrive(body)`:
+  - Input gợi ý: `limit`, `startAfterId` (optional).
+  - Duyệt toàn bộ cây cũ trong sheet và **copy nguyên cấu trúc folder** sang Drive đích.
+  - Với mỗi folder: tạo folder Drive tương ứng dưới đúng parent mới.
+  - Với mỗi file: tạo file Drive tương ứng vào đúng folder Drive vừa map.
+  - Lưu mapping `oldExplorerId -> driveFileId/driveFolderId` để idempotent khi chạy nhiều batch.
+  - Trả count thành công/thất bại để chạy batch nhiều lần.
+- `handleCleanupExplorerLegacyContent(body)`:
+  - Xoá `E + H..DB` cho row đã có `driveFileId` và `storageStatus` hợp lệ.
+  - Chỉ chạy sau khi verify migrate.
+- `handleDeleteExplorerSheetAfterMigration(body)`:
+  - Chỉ cho phép khi đã verify migrate hoàn tất (`hasMore=false`, không còn orphan).
+  - Xoá hẳn tab `Explorer` khỏi Google Sheet.
+
+Gợi ý helper:
+
+- `_getExplorerDriveFolder()`:
+  - `DriveApp.getFolderById(EXPL_DRIVE_FOLDER_ID)` và throw lỗi rõ nếu không truy cập được.
+- `_dataUrlToBlob(dataUrl, filename, mimeTypeOverride)`:
+  - Parse header + payload base64, convert ra blob để `folder.createFile(blob)`.
+- `_isDriveMetaCell(value)`:
+  - Nhận diện row đã chuyển Drive để tránh nhầm với overflow chunk legacy.
+- `_ensureDriveFolderPath(...)`:
+  - Bảo đảm folder tree trên Drive tồn tại đúng cấu trúc cũ trước khi copy file.
+
+Lưu ý timeout:
+
+- Apps Script dễ timeout khi migrate nhiều file lớn; chạy batch nhỏ (`limit=5..20`) và gọi lặp lại tới khi hết.
+- Không xoá tab `Explorer` ngay ở batch đầu. Luôn test preview + download trên app trước.
+- Chỉ gọi `deleteExplorerSheetAfterMigration` sau khi migrate xong toàn bộ và verify dữ liệu.
+
+---
+
 ## 7. Smoke test
 
 ### 7.1 Test trong Apps Script editor (không dùng app)
@@ -1421,8 +1766,9 @@ Phải trả về JSON `{ success: true, ... }`. Nếu thấy `Script function n
    - Thấy 2 thư mục mặc định `docs` và `img` (con của root, không hiện root).
    - Bấm **+ Thêm thư mục** → tạo thư mục con.
    - Bấm vào thư mục → vào trong → breadcrumb hiện đường dẫn.
-   - Bấm **+ Tải ảnh lên** → chọn ảnh nhỏ (< 1MB lý tưởng) → app tự nén xuống ~720px JPEG q=0.7 và lưu base64 vào sheet.
-   - Bấm vào ảnh → xem preview fullscreen.
+  - Bấm **+ Thêm file** → chọn ảnh hoặc tài liệu.
+  - Ảnh sẽ được nén trước khi gửi; file thường giữ nguyên và lưu vào Drive private.
+  - Bấm vào file ảnh → xem preview fullscreen. File không phải ảnh sẽ tải xuống.
    - Bấm icon ✏️ trên folder → đổi tên.
    - Bấm icon 🗑 trên folder → cảnh báo cascade delete → xác nhận → folder + toàn bộ con cháu chuyển sang `isDeleted=TRUE` (vẫn còn trong sheet, có thể restore thủ công bằng cách đổi cột G về `FALSE`).
 
@@ -1437,9 +1783,10 @@ Phải trả về JSON `{ success: true, ... }`. Nếu thấy `Script function n
 | `Không tải được dữ liệu`                         | Tab tương ứng (`Feeding` / `Explorer`) chưa tồn tại, hoặc sheet chưa share "Anyone with the link (Viewer)", hoặc API key sai/quota.                                              |
 | `Lưu thất bại` khi POST                          | `googleFeedingAppsScriptUrl` chưa set, hoặc proxy `/api/feeding-apps-script` còn placeholder, hoặc deployment đã bị disable.                                                    |
 | `403 Forbidden` khi POST                         | Deploy settings → **Who has access** phải là **Anyone**.                                                                                                                          |
-| Ảnh upload thất bại với lỗi "quá lớn"            | App đã tự nén nhiều bậc (đến 2048px/0.92) nhưng vẫn vượt ~4.900.000 ký tự (100 cells). Trường hợp này thường là ảnh cực lớn/panorama; hãy giảm kích thước trước khi upload. |
-| Không xoá được folder                            | Folder đó là root (`id=1`) → không cho xoá. Hoặc tab `Explorer` chưa đúng tên (phân biệt hoa thường).                                                                            |
-| Đã xoá rồi nhưng row vẫn còn trong sheet        | Bình thường — đây là **soft delete**. Cột G của row sẽ chuyển sang `TRUE`, app + Apps Script sẽ tự ẩn các row này. Muốn xoá vĩnh viễn / restore thì sửa cột G thủ công.        |
+| File upload thất bại với lỗi "quá lớn"           | App giới hạn upload để phù hợp free-tier và Apps Script runtime (mặc định 10MB/file). Hãy giảm kích thước file rồi thử lại. |
+| Không tải được preview/download từ Explorer      | Thường do Apps Script chưa có action `getExplorerFile`, hoặc endpoint prod không đi qua proxy `/api/feeding-apps-script` nên không đọc được JSON response. |
+| Không xoá được folder                            | Folder đó là root logic của Explorer (`id=1`) hoặc folder Drive tương ứng bị khoá quyền. Kiểm tra quyền của acc A trên folder Drive acc B.                                      |
+| Đã migrate xong nhưng chưa xoá được tab Explorer | Hãy chạy migrate đến khi `hasMore=false`, sau đó gọi action `deleteExplorerSheetAfterMigration`. Nếu còn file lỗi migrate, action sẽ từ chối xoá tab để tránh mất dữ liệu.     |
 | Mới upload xong mà refresh thấy biến mất         | Có thể row đó đang có cột G = `TRUE` (do bug data cũ). Vào sheet kiểm tra cột G, đặt lại `FALSE` hoặc xoá cell.                                                              |
 | Ngày trong Feeding bị format số/lệch              | Cột B của Feeding đang là Number/Date. Chọn cột B → Format → Number → **Plain text**.                                                                                              |
 | Log không ghi / không đọc được                   | Tab `Log` chưa tồn tại hoặc tên sai chữ hoa/thường. Kiểm tra lại header (A:E) và cột A, E nên là **Plain text**.                                                                     |
@@ -1454,7 +1801,7 @@ Phải trả về JSON `{ success: true, ... }`. Nếu thấy `Script function n
         │  GET (read)
         ├──────► Google Sheets API v4 (API Key)
         │        ├─ Feeding!A2:E
-        │        ├─ Explorer!A2:DB   (E + H..DB được nối lại thành content; G `isDeleted` filter ra)
+        │        ├─ (legacy) Explorer!A2:DB chỉ dùng trong giai đoạn migrate
         │        └─ Log!A2:E         (lịch sử hoạt động — reload every 5 mins)
         │
         │  POST {action, ...}
@@ -1462,6 +1809,8 @@ Phải trả về JSON `{ success: true, ... }`. Nếu thấy `Script function n
                  hoặc googleFeedingAppsScriptUrl (prod)
                  → doPost
                    ├─ Feeding:  add / update / delete (hard) / get
-                   ├─ Explorer: add / update / delete (SOFT, cascade) / move (file-only) / get
+                   ├─ Explorer: add / update / delete / move / get (Drive-first tree)
+                   │            getExplorerFile / migrateExplorerToDrive
+                   │            cleanupExplorerLegacyContent / deleteExplorerSheetAfterMigration
                    └─ Log:      addLog (ghi activity event)
 ```

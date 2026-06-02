@@ -555,6 +555,8 @@ export class MedicalHistoryDialogComponent {
         type: 'file',
         parentId,
         content: dataUrl,
+        mimeType: 'image/jpeg',
+        sizeBytes: this.estimateBase64Bytes(dataUrl),
       })
     );
 
@@ -572,5 +574,15 @@ export class MedicalHistoryDialogComponent {
       );
     }
     return found.id;
+  }
+
+  private estimateBase64Bytes(dataUrl: string): number {
+    const commaIdx = dataUrl.indexOf(',');
+    const payload = commaIdx >= 0 ? dataUrl.slice(commaIdx + 1) : dataUrl;
+    if (!payload) return 0;
+    let padding = 0;
+    if (payload.endsWith('==')) padding = 2;
+    else if (payload.endsWith('=')) padding = 1;
+    return Math.max(0, Math.floor((payload.length * 3) / 4) - padding);
   }
 }

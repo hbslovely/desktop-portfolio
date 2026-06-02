@@ -56,6 +56,7 @@ export type ViewMode = 'large' | 'icons' | 'detail';
  * lượng ảnh cao hơn rất nhiều so với cấu hình cũ.
  */
 const MAX_CELL_CHARS = 49000 * 100;
+const MAX_UPLOAD_BYTES = 10 * 1024 * 1024; // 10MB/file (free-tier friendly)
 
 const VIEW_MODE_KEY = 'documents:viewMode';
 
@@ -217,7 +218,9 @@ export class DocumentsComponent {
     if (!cur) return [];
     const parentId = cur.parentId;
     return this.entries()
-      .filter((e) => e.parentId === parentId && e.type === 'file')
+      .filter(
+        (e) => e.parentId === parentId && e.type === 'file' && this.isPreviewableFile(e)
+      )
       .sort((a, b) => a.name.localeCompare(b.name, 'vi'));
   });
 
@@ -358,7 +361,7 @@ export class DocumentsComponent {
         console.error(err);
         this.loading.set(false);
         this.errorMsg.set(
-          'Không tải được danh sách. Kiểm tra tab "Explorer" và quyền truy cập sheet.'
+          'Không tải được danh sách. Kiểm tra Apps Script và quyền truy cập Drive.'
         );
       },
     });
@@ -383,7 +386,9 @@ export class DocumentsComponent {
       this.currentFolderId.set(entry.parentId);
     }
     this.closeSearch();
-    this.openPreview(entry);
+    if (this.isPreviewableFile(entry)) {
+      void this.openPreview(entry);
+    }
     this.pulseHighlight(entry.id);
   }
 
@@ -503,7 +508,9 @@ export class DocumentsComponent {
       if (entry.parentId !== null) {
         this.currentFolderId.set(entry.parentId);
       }
-      this.openPreview(entry);
+      if (this.isPreviewableFile(entry)) {
+        void this.openPreview(entry);
+      }
     }
     this.pulseHighlight(entry.id);
   }
@@ -782,30 +789,44 @@ export class DocumentsComponent {
     const files = Array.from(input.files || []);
     if (files.length === 0) return;
 
-    // Ảnh từ máy ảnh điện thoại đôi khi có `type` rỗng — nhận diện theo đuôi tệp.
-    const imageFiles = files.filter((f) => this.isImageFile(f));
-    const skipped = files.length - imageFiles.length;
-    if (imageFiles.length === 0) {
-      this.errorMsg.set('Chỉ hỗ trợ file ảnh (jpg, png, webp...).');
+    const tooLargeFiles = files.filter((f) => f.size > MAX_UPLOAD_BYTES);
+    const acceptedFiles = files.filter((f) => f.size > 0 && f.size <= MAX_UPLOAD_BYTES);
+
+    if (acceptedFiles.length === 0) {
+      this.errorMsg.set(
+        tooLargeFiles.length > 0
+          ? 'Tất cả file vượt quá 10MB. Hãy chọn file nhỏ hơn.'
+          : 'Không có file hợp lệ để tải lên.'
+      );
       input.value = '';
       return;
     }
 
     this.saving.set(true);
     this.errorMsg.set('');
-    this.uploadProgress.set({ done: 0, total: imageFiles.length, failed: skipped });
+    this.uploadProgress.set({
+      done: 0,
+      total: acceptedFiles.length,
+      failed: tooLargeFiles.length,
+    });
 
     const targetParent = this.currentFolderId();
     let success = 0;
-    let failed = skipped;
+    let failed = tooLargeFiles.length;
     const failedNames: string[] = [];
+    for (const f of tooLargeFiles) {
+      failedNames.push(`${f.name}: vượt quá 10MB`);
+    }
 
-    for (let i = 0; i < imageFiles.length; i++) {
-      const file = imageFiles[i];
+    for (let i = 0; i < acceptedFiles.length; i++) {
+      const file = acceptedFiles[i];
       try {
-        const dataUrl = await this.compressUntilFits(file);
-        const baseName = file.name.replace(/\.[^.]+$/, '') || 'image';
-        const safeName = `${baseName}.jpg`;
+        const safeName = this.sanitizeFilename(file.name || `file-${Date.now()}`);
+        const dataUrl = this.isImageFile(file)
+          ? await this.compressUntilFits(file)
+          : await this.explorerService.fileToDataUrl(file);
+        const mimeType = this.resolveMimeType(file, dataUrl);
+        const sizeBytes = this.extractSizeFromDataUrl(dataUrl) || file.size || undefined;
 
         await firstValueFrom(
           this.explorerService.addEntry({
@@ -813,6 +834,8 @@ export class DocumentsComponent {
             type: 'file',
             parentId: targetParent,
             content: dataUrl,
+            mimeType,
+            sizeBytes,
           })
         );
         success++;
@@ -838,11 +861,9 @@ export class DocumentsComponent {
     input.value = '';
 
     if (success > 0 && failed === 0) {
-      this.flashSuccess(
-        success === 1 ? 'Đã tải lên 1 ảnh' : `Đã tải lên ${success} ảnh`
-      );
+      this.flashSuccess(success === 1 ? 'Đã tải lên 1 file' : `Đã tải lên ${success} file`);
     } else if (success > 0 && failed > 0) {
-      this.flashSuccess(`Đã tải lên ${success}/${success + failed} ảnh`);
+      this.flashSuccess(`Đã tải lên ${success}/${success + failed} file`);
       this.errorMsg.set(
         failedNames.length > 0
           ? `Lỗi: ${failedNames.slice(0, 3).join(' | ')}`
@@ -872,6 +893,25 @@ export class DocumentsComponent {
       return true;
     }
     return false;
+  }
+
+  private resolveMimeType(file: File, dataUrl: string): string {
+    const fromFile = (file.type || '').trim().toLowerCase();
+    if (fromFile) return fromFile;
+    const m = dataUrl.match(/^data:([^;]+);/i);
+    if (m?.[1]) return m[1].toLowerCase();
+    return 'application/octet-stream';
+  }
+
+  private extractSizeFromDataUrl(dataUrl: string): number {
+    const commaIdx = dataUrl.indexOf(',');
+    const payload = commaIdx >= 0 ? dataUrl.slice(commaIdx + 1) : dataUrl;
+    if (!payload) return 0;
+    const len = payload.length;
+    let padding = 0;
+    if (payload.endsWith('==')) padding = 2;
+    else if (payload.endsWith('=')) padding = 1;
+    return Math.max(0, Math.floor((len * 3) / 4) - padding);
   }
 
   /**
@@ -915,7 +955,11 @@ export class DocumentsComponent {
       this.toggleSelectEntry(entry.id);
       return;
     }
-    this.openPreview(entry);
+    if (!this.isPreviewableFile(entry)) {
+      void this.downloadEntry(entry);
+      return;
+    }
+    void this.openPreview(entry);
   }
 
   /**
@@ -936,13 +980,22 @@ export class DocumentsComponent {
       this.openFolder(entry.id);
       return;
     }
-    this.openPreview(entry);
+    if (!this.isPreviewableFile(entry)) {
+      void this.downloadEntry(entry);
+      return;
+    }
+    void this.openPreview(entry);
   }
 
-  private openPreview(entry: ExplorerEntry) {
+  private async openPreview(entry: ExplorerEntry) {
     // Mỗi lần mở 1 ảnh mới → reset zoom/pan để khỏi dính state ảnh trước.
     this.resetPreviewZoom();
-    this.previewEntry.set(entry);
+    const hydrated = await this.hydrateFileContent(entry);
+    if (!hydrated) {
+      this.errorMsg.set('Không tải được nội dung file để xem trước.');
+      return;
+    }
+    this.previewEntry.set(hydrated);
   }
 
   closePreview() {
@@ -959,20 +1012,20 @@ export class DocumentsComponent {
    * Chuyển sang ảnh trước trong cùng thư mục. Reset zoom/pan trước khi
    * đổi để ảnh mới luôn fit tự nhiên. No-op khi đã ở ảnh đầu.
    */
-  prevImage(ev?: Event) {
+  async prevImage(ev?: Event) {
     ev?.stopPropagation();
     if (!this.canPreviewPrev()) return;
     const siblings = this.previewSiblings();
     const idx = this.previewIndex();
-    this.openPreview(siblings[idx - 1]);
+    await this.openPreview(siblings[idx - 1]);
   }
 
-  nextImage(ev?: Event) {
+  async nextImage(ev?: Event) {
     ev?.stopPropagation();
     if (!this.canPreviewNext()) return;
     const siblings = this.previewSiblings();
     const idx = this.previewIndex();
-    this.openPreview(siblings[idx + 1]);
+    await this.openPreview(siblings[idx + 1]);
   }
 
   // ===== Preview zoom + pan handlers =====
@@ -1335,7 +1388,7 @@ export class DocumentsComponent {
     const fileCount = ids.length - folderCount;
     const parts: string[] = [];
     if (folderCount > 0) parts.push(`${folderCount} thư mục`);
-    if (fileCount > 0) parts.push(`${fileCount} ảnh`);
+    if (fileCount > 0) parts.push(`${fileCount} file`);
     this.flashSuccess(
       `Đã cắt ${parts.join(' + ')} — vào thư mục đích rồi bấm "Dán vào đây"`
     );
@@ -1439,16 +1492,17 @@ export class DocumentsComponent {
    * Lý do dùng Blob thay vì set thẳng `<a href="data:...">`: Safari + một
    * số mobile browser từ chối download data URL dài (>~2MB). Blob ổn hơn.
    */
-  downloadEntry(entry: ExplorerEntry, ev?: Event) {
+  async downloadEntry(entry: ExplorerEntry, ev?: Event) {
     ev?.stopPropagation();
     this.closeItemActionsMenu();
     if (entry.type !== 'file') return;
-    if (!entry.content) {
-      this.errorMsg.set('Ảnh chưa có nội dung để tải xuống.');
-      return;
-    }
     try {
-      this.triggerDownload(entry.content, entry.name);
+      const hydrated = await this.hydrateFileContent(entry);
+      if (!hydrated?.content) {
+        this.errorMsg.set('File chưa có nội dung để tải xuống.');
+        return;
+      }
+      this.triggerDownload(hydrated.content, hydrated.name);
       this.flashSuccess(`Đã tải "${ entry.name }"`);
     } catch (e) {
       console.error('downloadEntry failed', e);
@@ -1466,10 +1520,10 @@ export class DocumentsComponent {
     this.closeSelectActionsMenu();
     const ids = Array.from(this.selectedIds()).filter((id) => {
       const e = this.entriesById().get(id);
-      return e?.type === 'file' && !!e.content;
+      return e?.type === 'file';
     });
     if (ids.length === 0) {
-      this.errorMsg.set('Không có ảnh nào để tải xuống.');
+      this.errorMsg.set('Không có file nào để tải xuống.');
       return;
     }
 
@@ -1481,12 +1535,17 @@ export class DocumentsComponent {
     let failed = 0;
     for (let i = 0; i < ids.length; i++) {
       const e = map.get(ids[i]);
-      if (!e || !e.content) {
+      if (!e) {
         failed++;
         continue;
       }
       try {
-        this.triggerDownload(e.content, e.name);
+        const hydrated = await this.hydrateFileContent(e);
+        if (!hydrated?.content) {
+          failed++;
+          continue;
+        }
+        this.triggerDownload(hydrated.content, hydrated.name);
         done++;
       } catch (err) {
         console.warn('triggerDownload failed', e.name, err);
@@ -1503,11 +1562,11 @@ export class DocumentsComponent {
     this.uploadProgress.set(null);
 
     if (failed === 0) {
-      this.flashSuccess(`Đã tải ${ done } ảnh`);
+      this.flashSuccess(`Đã tải ${ done } file`);
     } else {
-      this.flashSuccess(`Đã tải ${ done }/${ ids.length } ảnh`);
+      this.flashSuccess(`Đã tải ${ done }/${ ids.length } file`);
       if (failed > 0) {
-        this.errorMsg.set(`${ failed } ảnh không tải được (thiếu nội dung).`);
+        this.errorMsg.set(`${ failed } file không tải được.`);
       }
     }
   }
@@ -1559,7 +1618,42 @@ export class DocumentsComponent {
   private sanitizeFilename(name: string): string {
     const cleaned = (name || 'image').replace(/[\\/:*?"<>|\x00-\x1f]+/g, '_').trim();
     const safe = cleaned.length > 0 ? cleaned : 'image';
-    return /\.[a-z0-9]{2,5}$/i.test(safe) ? safe.slice(0, 200) : `${ safe }.jpg`.slice(0, 200);
+    return safe.slice(0, 200);
+  }
+
+  isPreviewableFile(entry: ExplorerEntry): boolean {
+    if (entry.type !== 'file') return false;
+    const mime = (entry.mimeType || '').toLowerCase();
+    if (mime.startsWith('image/')) return true;
+    return /\.(jpe?g|png|gif|webp|heic|heif|bmp|avif|dng)$/i.test(entry.name);
+  }
+
+  private async hydrateFileContent(entry: ExplorerEntry): Promise<ExplorerEntry | null> {
+    if (entry.type !== 'file') return entry;
+    if (entry.previewUrl) {
+      return { ...entry, content: entry.previewUrl };
+    }
+    if (entry.content) return entry;
+
+    try {
+      const resp = await firstValueFrom(this.explorerService.getFileDataUrl(entry.id));
+      const content = resp.dataUrl || '';
+      if (!content) return null;
+      const patched: ExplorerEntry = {
+        ...entry,
+        content,
+        previewUrl: content,
+        mimeType: entry.mimeType || resp.mimeType || undefined,
+        sizeBytes: entry.sizeBytes || resp.sizeBytes || undefined,
+      };
+      this.entries.update((arr) =>
+        arr.map((e) => (e.id === patched.id ? { ...e, ...patched } : e))
+      );
+      return patched;
+    } catch (err) {
+      console.error('hydrateFileContent failed', err);
+      return null;
+    }
   }
 
   // ===== Bulk delete =====
@@ -1580,10 +1674,10 @@ export class DocumentsComponent {
     const fileCount = ids.length - folderCount;
     const parts: string[] = [];
     if (folderCount > 0) parts.push(`${folderCount} thư mục`);
-    if (fileCount > 0) parts.push(`${fileCount} ảnh`);
+    if (fileCount > 0) parts.push(`${fileCount} file`);
     const summary = parts.join(' + ');
     const warn = folderCount > 0
-      ? '\n\nTẤT CẢ ảnh con & thư mục con bên trong cũng sẽ bị xoá.'
+      ? '\n\nTẤT CẢ file con & thư mục con bên trong cũng sẽ bị xoá.'
       : '';
     if (!confirm(`Xoá ${summary} đã chọn?${warn}`)) return;
 
@@ -1687,7 +1781,7 @@ export class DocumentsComponent {
     if (folders === 0 && files === 0) return 'Trống';
     const parts: string[] = [];
     if (folders > 0) parts.push(`${folders} thư mục`);
-    if (files > 0) parts.push(`${files} ảnh`);
+    if (files > 0) parts.push(`${files} file`);
     return parts.join(' · ');
   }
 
