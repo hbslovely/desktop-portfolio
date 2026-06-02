@@ -50,5 +50,10 @@ export const routes: Routes = [
     path: 'my-timesheet',
     loadComponent: () => import('./pages/my-timesheet/my-timesheet.component').then(m => m.MyTimesheetComponent),
     title: 'My Timesheet - Submit to Productive.io'
+  },
+  {
+    path: 'shop-clone',
+    loadComponent: () => import('./components/apps/shop-clone-app/shop-clone-app.component').then(m => m.ShopCloneAppComponent),
+    title: 'Shopee Clone'
   }
 ];
