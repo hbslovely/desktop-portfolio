@@ -3,16 +3,17 @@ const fs = require('fs');
 const path = require('path');
 const glob = require('glob');
 
-const DIST_DIR = path.join(__dirname, '../dist/desktop-portfolio');
+const DIST_DIR = path.join(__dirname, '../dist');
 
-// Obfuscation options - High security settings
+const SKIP_PATTERNS = ['polyfills', 'runtime', 'vendor', 'scripts', 'worker'];
+
 const obfuscationOptions = {
   compact: true,
   controlFlowFlattening: true,
   controlFlowFlatteningThreshold: 0.75,
   deadCodeInjection: true,
   deadCodeInjectionThreshold: 0.4,
-  debugProtection: false, // Set to false to avoid breaking the app
+  debugProtection: false,
   debugProtectionInterval: 0,
   disableConsoleOutput: false,
   identifierNamesGenerator: 'hexadecimal',
@@ -35,57 +36,74 @@ const obfuscationOptions = {
   stringArrayWrappersType: 'function',
   stringArrayThreshold: 0.75,
   transformObjectKeys: true,
-  unicodeEscapeSequence: false
+  unicodeEscapeSequence: false,
 };
+
+function shouldSkip(filePath) {
+  const basename = path.basename(filePath);
+  return SKIP_PATTERNS.some((pattern) => basename.includes(pattern));
+}
+
+function removeSourceMaps() {
+  const mapFiles = glob.sync('**/*.js.map', {
+    cwd: DIST_DIR,
+    absolute: true,
+  });
+
+  mapFiles.forEach((mapFile) => {
+    fs.unlinkSync(mapFile);
+    console.log(`🗑️  Removed source map: ${path.basename(mapFile)}`);
+  });
+}
 
 function obfuscateFile(filePath) {
   try {
     const code = fs.readFileSync(filePath, 'utf8');
-    
-    // Skip if file is too small or contains specific patterns
-    if (code.length < 100 || 
-        filePath.includes('polyfills') || 
-        filePath.includes('runtime') ||
-        filePath.includes('vendor')) {
+
+    if (code.length < 100 || shouldSkip(filePath)) {
       console.log(`⏭️  Skipping: ${path.basename(filePath)}`);
       return;
     }
 
     console.log(`🔒 Obfuscating: ${path.basename(filePath)}`);
-    
+
     const obfuscationResult = JavaScriptObfuscator.obfuscate(code, obfuscationOptions);
-    const obfuscatedCode = obfuscationResult.getObfuscatedCode();
-    
-    fs.writeFileSync(filePath, obfuscatedCode, 'utf8');
+    fs.writeFileSync(filePath, obfuscationResult.getObfuscatedCode(), 'utf8');
+
     console.log(`✅ Obfuscated: ${path.basename(filePath)}`);
   } catch (error) {
     console.error(`❌ Error obfuscating ${filePath}:`, error.message);
+    process.exitCode = 1;
   }
 }
 
 function obfuscateBuild() {
-  console.log('🚀 Starting obfuscation process...');
-  
+  console.log('🚀 Starting post-build obfuscation...');
+
   if (!fs.existsSync(DIST_DIR)) {
     console.error(`❌ Dist directory not found: ${DIST_DIR}`);
+    console.error('   Run "npm run build:plain" first.');
     process.exit(1);
   }
 
-  // Find all JavaScript files in dist directory
+  removeSourceMaps();
+
   const jsFiles = glob.sync('**/*.js', {
     cwd: DIST_DIR,
     absolute: true,
-    ignore: ['**/node_modules/**', '**/*.spec.js']
+    ignore: ['**/node_modules/**', '**/*.spec.js'],
   });
 
-  console.log(`📦 Found ${jsFiles.length} JavaScript files to obfuscate`);
+  console.log(`📦 Found ${jsFiles.length} JavaScript files`);
 
   jsFiles.forEach(obfuscateFile);
+
+  if (process.exitCode) {
+    console.error('❌ Obfuscation finished with errors.');
+    process.exit(process.exitCode);
+  }
 
   console.log('✨ Obfuscation complete!');
 }
 
-// Run obfuscation
 obfuscateBuild();
-
-

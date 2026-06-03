@@ -2,7 +2,7 @@
   "version": 2,
   "framework": "angular",
   "buildCommand": "npm run build",
-  "outputDirectory": "dist/desktop-portfolio",
+  "outputDirectory": "dist",
   "installCommand": "npm install",
   "builds": [
     {
