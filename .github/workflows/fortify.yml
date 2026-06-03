@@ -37,6 +37,20 @@ jobs:
       # pull-requests: write     # Required if DO_PR_COMMENT is set to true
 
     steps:
+      # Fail fast with a clear message (fcli exit code 2 is opaque when credentials are missing).
+      - name: Verify Fortify on Demand secrets
+        run: |
+          missing=""
+          [ -z "${{ secrets.FOD_TENANT }}" ] && missing="$missing FOD_TENANT"
+          [ -z "${{ secrets.FOD_USER }}" ] && missing="$missing FOD_USER"
+          [ -z "${{ secrets.FOD_PAT }}" ] && missing="$missing FOD_PAT"
+          if [ -n "$missing" ]; then
+            echo "::error::Fortify FoD login requires GitHub Actions secrets:$missing"
+            echo "Repository → Settings → Secrets and variables → Actions → New repository secret"
+            echo "  FOD_TENANT, FOD_USER, FOD_PAT (Fortify Personal Access Token as password)"
+            exit 1
+          fi
+
       # Check out source code
       - name: Check Out Source Code
         uses: actions/checkout@v6
@@ -84,35 +98,9 @@ jobs:
           # SAST_EXPORT_EXTRA_OPTS: --on-unsigned=ignore   # Pass extra options to export action
           # TOOL_DEFINITIONS: <URL>                        # URL from where to retrieve Fortify tool definitions
 
-          #############################################################
-          ##### Fortify Hosted / Software Security Center & ScanCentral
-          ##### Remove this section if you're integrating with Fortify on Demand (see above)
-          ### Required configuration
-          SSC_URL: ${{vars.SSC_URL}}                       # Must be hardcoded or configured through GitHub variable, not secret
-          SSC_TOKEN: ${{secrets.SSC_TOKEN}}                # SSC CIToken; credentials should be configured through GitHub secrets
-          SC_SAST_TOKEN: ${{secrets.SC_CLIENT_AUTH_TOKEN}} # ScanCentral SAST client_auth_token, required if SAST scan is enabled
-          DEBRICKED_TOKEN: ${{secrets.DEBRICKED_TOKEN}}    # Debricked token, required if Debricked scan is enabled
-          SC_SAST_SENSOR_VERSION: 24.4.0                   # Sensor version to use for the scan, required if SAST scan is enabled
-          ### Optional configuration
-          # SSC_LOGIN_EXTRA_OPTS: --socket-timeout=60s     # Extra 'fcli ssc session login' options
-          # SC_SAST_LOGIN_EXTRA_OPTS: --socket-timeout=60s # Extra 'fcli sc-sast session login' options
-          # SSC_APPVERSION: MyApp:MyVersion                # SSC application version name, default: <org>/<repo>:<branch>
-          # DO_SETUP: true                                 # Set up SSC application & version
-          # SETUP_ACTION: <URL or file>                    # Customize setup action
-          # SETUP_EXTRA_OPTS: --on-unsigned=ignore         # Pass extra options to setup action
-          # PACKAGE_EXTRA_OPTS: -bt mvn                    # Extra 'scancentral package' options
-          # SAST_SCAN_EXTRA_OPTS:                           # Extra 'fcli sc-sast scan start' options (v3; was EXTRA_SC_SAST_SCAN_OPTS)
-          # DO_WAIT: true                                  # Wait for successful scan completion (implied if post-scan actions enabled)
-          # DO_POLICY_CHECK: true                          # Fail pipeline if security policy outcome is FAIL
-          # CHECK_POLICY_ACTION: <URL or file>             # Customize security policy checks
-          # CHECK_POLICY_EXTRA_OPTS: --on-unsigned=ignore  # Pass extra options to policy check action
-          # DO_RELEASE_SUMMARY: true
-          # RELEASE_SUMMARY_ACTION: <URL or file>
-          # RELEASE_SUMMARY_EXTRA_OPTS: --on-unsigned=ignore
-          # DO_PR_COMMENT: true
-          # PR_COMMENT_ACTION: <URL or file>
-          # PR_COMMENT_EXTRA_OPTS: --on-unsigned=ignore
-          # DO_SAST_EXPORT: true
-          # SAST_EXPORT_ACTION: <URL or file>
-          # SAST_EXPORT_EXTRA_OPTS: --on-unsigned=ignore
-          # TOOL_DEFINITIONS: <URL>
+          # Fortify SSC / ScanCentral: uncomment and configure if not using FoD.
+          # SSC_URL: ${{ vars.SSC_URL }}
+          # SSC_TOKEN: ${{ secrets.SSC_TOKEN }}
+          # SC_SAST_TOKEN: ${{ secrets.SC_CLIENT_AUTH_TOKEN }}
+          # DEBRICKED_TOKEN: ${{ secrets.DEBRICKED_TOKEN }}
+          # SC_SAST_SENSOR_VERSION: 24.4.0
