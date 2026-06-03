@@ -375,7 +375,7 @@ export class DocumentsComponent {
    * Sau khi có metadata entry, preload dataUrl cho các file previewable
    * chưa có `content/previewUrl` để UI hiển thị ảnh ngay, không cần click từng file.
    *
-   * Chạy nền tuần tự để giảm burst request lên Apps Script.
+   * Chạy song song để tăng tốc độ tải file.
    */
   private async preloadFileContents(entries: ExplorerEntry[]): Promise<void> {
     const runId = ++this.preloadRunId;
@@ -387,30 +387,37 @@ export class DocumentsComponent {
         !e.content
     );
 
-    for (const entry of candidates) {
+    if (candidates.length === 0) return;
+
+    try {
+      // Lấy tất cả IDs cần preload
+      const ids = candidates.map(entry => entry.id);
+      
+      // Gọi service để tải song song
+      const resultsMap = await firstValueFrom(
+        this.explorerService.getMultipleFileDataUrls(ids)
+      );
+
+      // Kiểm tra nếu component đã bị hủy trong lúc loading
       if (runId !== this.preloadRunId) return;
-      try {
-        const resp = await firstValueFrom(
-          this.explorerService.getFileDataUrl(entry.id)
-        );
-        const content = resp.dataUrl || '';
-        if (!content) continue;
-        this.entries.update((arr) =>
-          arr.map((e) =>
-            e.id === entry.id
-              ? {
-                  ...e,
-                  content,
-                  previewUrl: content,
-                  mimeType: e.mimeType || resp.mimeType || undefined,
-                  sizeBytes: e.sizeBytes || resp.sizeBytes || undefined,
-                }
-              : e
-          )
-        );
-      } catch (err) {
-        console.warn('preloadFileContents failed', entry.id, err);
-      }
+
+      // Update tất cả entries đã có data
+      this.entries.update((arr) =>
+        arr.map((e) => {
+          const result = resultsMap.get(e.id);
+          if (!result?.dataUrl) return e;
+
+          return {
+            ...e,
+            content: result.dataUrl,
+            previewUrl: result.dataUrl,
+            mimeType: e.mimeType || result.mimeType || undefined,
+            sizeBytes: e.sizeBytes || result.sizeBytes || undefined,
+          };
+        })
+      );
+    } catch (err) {
+      console.warn('preloadFileContents failed', err);
     }
   }
 

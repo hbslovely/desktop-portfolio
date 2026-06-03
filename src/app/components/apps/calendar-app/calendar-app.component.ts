@@ -656,4 +656,18 @@ export class CalendarAppComponent {
       rating: isGood ? 'Tốt' : isBad ? 'Xấu' : 'Trung bình'
     };
   }
+
+  // Generate year range for dropdown (from 1900 to current year + 50)
+  getYearRange(): number[] {
+    const currentYear = new Date().getFullYear();
+    const startYear = 1900;
+    const endYear = currentYear + 50;
+    const years: number[] = [];
+    
+    for (let year = startYear; year <= endYear; year++) {
+      years.push(year);
+    }
+    
+    return years;
+  }
 }

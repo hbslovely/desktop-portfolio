@@ -1,7 +1,7 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, from, of, throwError } from 'rxjs';
-import { catchError, map } from 'rxjs/operators';
+import { catchError, map, mergeMap, scan, takeLast } from 'rxjs/operators';
 
 export type ExplorerType = 'folder' | 'file';
 
@@ -231,6 +231,39 @@ export class ExplorerService {
         }
         return resp;
       })
+    );
+  }
+
+  /**
+   * Lấy nội dung nhiều file song song để tối ưu hiệu suất.
+   * Trả về Map<id, ExplorerFileResponse> để dễ dàng map với entry tương ứng.
+   */
+  getMultipleFileDataUrls(ids: number[]): Observable<Map<number, ExplorerFileResponse>> {
+    if (ids.length === 0) {
+      return of(new Map());
+    }
+
+    // Tạo observable cho từng file
+    const requests = ids.map(id => 
+      this.getFileDataUrl(id).pipe(
+        map(response => ({ id, response })),
+        catchError(error => {
+          console.warn(`Failed to load file ${id}:`, error);
+          return of({ id, response: null });
+        })
+      )
+    );
+
+    // Chạy song song và merge results
+    return from(requests).pipe(
+      mergeMap(request => request, 5), // Giới hạn 5 requests đồng thời để tránh quá tải
+      scan((acc, { id, response }) => {
+        if (response) {
+          acc.set(id, response);
+        }
+        return acc;
+      }, new Map<number, ExplorerFileResponse>()),
+      takeLast(1) // Chỉ lấy kết quả cuối cùng khi tất cả đã hoàn thành
     );
   }
 

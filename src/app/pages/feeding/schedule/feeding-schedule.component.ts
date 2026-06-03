@@ -147,6 +147,46 @@ export class FeedingScheduleComponent {
     return cells;
   });
 
+  /**
+   * Xác định màu sắc cho indicator số sự kiện dựa trên loại và trạng thái sự kiện
+   */
+  getEventIndicatorColor(dateIso: string): string {
+    const events = this.events().filter(ev => ev.date === dateIso);
+    if (events.length === 0) return '#4f46e5';
+
+    // Ưu tiên màu theo loại sự kiện
+    const hasFuture = events.some(ev => this.isFuture(ev));
+    const hasPast = events.some(ev => !this.isFuture(ev));
+    
+    // Phân loại theo nội dung sự kiện
+    const hasVaccine = events.some(ev => 
+      ev.title.toLowerCase().includes('tiêm') || 
+      ev.title.toLowerCase().includes('vaccine') ||
+      ev.title.toLowerCase().includes('chích')
+    );
+    
+    const hasCheckup = events.some(ev => 
+      ev.title.toLowerCase().includes('khám') ||
+      ev.title.toLowerCase().includes('check') ||
+      ev.title.toLowerCase().includes('xét nghiệm')
+    );
+
+    const hasImportant = events.some(ev =>
+      ev.title.toLowerCase().includes('quan trọng') ||
+      ev.title.toLowerCase().includes('emergency') ||
+      ev.title.toLowerCase().includes('khẩn')
+    );
+
+    // Màu sắc theo mức độ ưu tiên
+    if (hasImportant) return '#dc2626'; // Đỏ - quan trọng/khẩn cấp
+    if (hasVaccine) return '#7c3aed'; // Tím - tiêm chủng
+    if (hasCheckup) return '#2563eb'; // Xanh dương - khám bệnh
+    if (hasFuture) return '#059669'; // Xanh lá - sự kiện sắp tới
+    if (hasPast) return '#6b7280'; // Xám - sự kiện đã qua
+    
+    return '#4f46e5'; // Màu mặc định
+  }
+
   selectedCalendarEvents = computed(() => {
     const date = this.selectedCalendarDate();
     if (!date) return [] as FeedingEventLog[];
@@ -324,6 +364,35 @@ export class FeedingScheduleComponent {
     this.calendarCursor.set(new Date(d.getFullYear(), d.getMonth() + 1, 1));
   }
 
+  calendarGoToToday(): void {
+    const today = new Date();
+    this.calendarCursor.set(new Date(today.getFullYear(), today.getMonth(), 1));
+    this.selectedCalendarDate.set(this.toDateStr(today));
+  }
+
+  calendarChangeMonth(monthIndex: number): void {
+    const current = this.calendarCursor();
+    this.calendarCursor.set(new Date(current.getFullYear(), monthIndex, 1));
+  }
+
+  calendarChangeYear(year: number): void {
+    const current = this.calendarCursor();
+    this.calendarCursor.set(new Date(year, current.getMonth(), 1));
+  }
+
+  getCalendarYearRange(): number[] {
+    const currentYear = new Date().getFullYear();
+    const startYear = currentYear - 10;
+    const endYear = currentYear + 10;
+    const years: number[] = [];
+    
+    for (let year = startYear; year <= endYear; year++) {
+      years.push(year);
+    }
+    
+    return years;
+  }
+
   selectCalendarDate(dateIso: string): void {
     this.selectedCalendarDate.set(dateIso);
   }
@@ -352,7 +421,12 @@ export class FeedingScheduleComponent {
   closeAdd(keepCalendarReturn = false) {
     this.addOpen.set(false);
     this.closePlacePicker();
-    if (!keepCalendarReturn) {
+    
+    // Nếu được mở từ calendar và cần quay lại
+    if (this.reopenCalendarAfterAdd && !keepCalendarReturn) {
+      this.openCalendarDialog();
+      this.reopenCalendarAfterAdd = false;
+    } else if (!keepCalendarReturn) {
       this.reopenCalendarAfterAdd = false;
     }
   }

@@ -213,7 +213,33 @@
         <button type="button" class="btn ghost sm icon-only" (click)="calendarPrevMonth()" aria-label="Tháng trước">
           <i class="pi pi-chevron-left"></i>
         </button>
-        <strong>{{ calendarMonthLabel() }}</strong>
+        
+        <div class="calendar-nav-center">
+          <div class="calendar-nav-dropdowns">
+            <select class="calendar-month-select" [value]="calendarCursor().getMonth()" (change)="calendarChangeMonth(+$any($event.target).value)">
+              <option value="0">Tháng 1</option>
+              <option value="1">Tháng 2</option>
+              <option value="2">Tháng 3</option>
+              <option value="3">Tháng 4</option>
+              <option value="4">Tháng 5</option>
+              <option value="5">Tháng 6</option>
+              <option value="6">Tháng 7</option>
+              <option value="7">Tháng 8</option>
+              <option value="8">Tháng 9</option>
+              <option value="9">Tháng 10</option>
+              <option value="10">Tháng 11</option>
+              <option value="11">Tháng 12</option>
+            </select>
+            <select class="calendar-year-select" [value]="calendarCursor().getFullYear()" (change)="calendarChangeYear(+$any($event.target).value)">
+              <option *ngFor="let year of getCalendarYearRange()" [value]="year">{{ year }}</option>
+            </select>
+          </div>
+          <button type="button" class="btn ghost sm calendar-today-btn" (click)="calendarGoToToday()" title="Về hôm nay">
+            <i class="pi pi-home"></i>
+            <span>Hôm nay</span>
+          </button>
+        </div>
+        
         <button type="button" class="btn ghost sm icon-only" (click)="calendarNextMonth()" aria-label="Tháng sau">
           <i class="pi pi-chevron-right"></i>
         </button>
@@ -234,8 +260,16 @@
           [class.has-future-event]="c.hasFutureEvent"
           (click)="selectCalendarDate(c.dateIso)"
         >
-          <span class="calendar-cell__day">{{ c.day }}</span>
-          <span class="calendar-cell__dot" *ngIf="c.eventCount > 0">{{ c.eventCount }}</span>
+          <div class="calendar-cell__content">
+            <span class="calendar-cell__day">{{ c.day }}</span>
+            <span 
+              class="calendar-cell__event-indicator" 
+              *ngIf="c.eventCount > 0"
+              [style.background-color]="getEventIndicatorColor(c.dateIso)"
+            >
+              {{ c.eventCount }}
+            </span>
+          </div>
         </button>
       </div>
 

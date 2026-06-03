@@ -85,7 +85,7 @@
             <option [value]="11" [selected]="currentMonthIndex() === 11">Tháng 12</option>
           </select>
           <select class="year-select" [value]="currentYear()" (change)="changeYear(+$any($event.target).value)">
-            <option *ngFor="let year of [2020, 2021, 2022, 2023, 2024, 2025, 2026, 2027, 2028, 2029, 2030]" [value]="year" [selected]="currentYear() === year">{{ year }}</option>
+            <option *ngFor="let year of getYearRange()" [value]="year" [selected]="currentYear() === year">{{ year }}</option>
           </select>
         </div>
         
@@ -97,7 +97,10 @@
             <i class="pi pi-angle-double-right"></i>
           </button>
         </div>
-        <button class="today-btn" (click)="goToToday()" title="Về ngày hôm nay">Hôm nay</button>
+        <button class="today-btn" (click)="goToToday()" title="Về ngày hôm nay">
+          <i class="pi pi-home"></i>
+          Hôm nay
+        </button>
       </div>
 
       <!-- Calendar Grid -->

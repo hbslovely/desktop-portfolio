@@ -242,7 +242,7 @@
             <span>{{ getPrecipitationChance(hour) }}%</span>
           </div>
           <div class="hour-wind">
-            <i class="pi pi-send" [style.transform]="'rotate(' + (hour.wind?.angle || 0) + 'deg)'"></i>
+            <i class="pi pi-send" [style.transform]="'rotate(' + (hour.wind.angle || 0) + 'deg)'"></i>
             <span>{{ hour.wind.speed }}</span>
           </div>
         </div>
