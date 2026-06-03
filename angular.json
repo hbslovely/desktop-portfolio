@@ -19,7 +19,7 @@
       "prefix": "app",
       "architect": {
         "build": {
-          "builder": "@ngx-env/builder:browser",
+          "builder": "@angular-builders/custom-webpack:browser",
           "options": {
             "outputPath": "dist",
             "index": "src/index.html",
@@ -30,6 +30,9 @@
             "tsConfig": "tsconfig.app.json",
             "webWorkerTsConfig": "tsconfig.worker.json",
             "inlineStyleLanguage": "scss",
+            "customWebpackConfig": {
+              "path": "./webpack.config.js"
+            },
             "assets": [
               "src/favicon.ico",
               "src/assets"
@@ -46,8 +49,12 @@
           "configurations": {
             "production": {
               "optimization": true,
+              "buildOptimizer": true,
+              "aot": true,
               "sourceMap": false,
               "namedChunks": false,
+              "vendorChunk": true,
+              "commonChunk": true,
               "extractLicenses": true,
               "budgets": [
                 {
