@@ -1,6 +1,7 @@
 # Annotated tag per push to the default branch (one tag per commit SHA).
 # Tag format: build/YYYY-MM-DD-<short-sha>
 # Does not match v*.*.* — avoids triggering Docker publish on every commit.
+# Does not bump package.json — semver is updated by monthly-release.yml (vYYYY.MM.0).
 
 name: Tag each commit
 
