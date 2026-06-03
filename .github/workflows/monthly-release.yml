@@ -1,0 +1,102 @@
+# On the 1st of each month (UTC), create a GitHub Release if the default branch
+# has new commits since the previous monthly tag (vYYYY.MM).
+# Monthly tags match docker-publish pattern v*.*.* when using vYYYY.MM.0.
+
+name: Monthly release
+
+on:
+  schedule:
+    # 09:00 UTC on the 1st day of every month
+    - cron: "0 9 1 * *"
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Create release even if no new commits since last monthly tag"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Monthly release if changed
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check changes and prepare release
+        id: prep
+        run: |
+          set -euo pipefail
+
+          YEAR="$(date -u +%Y)"
+          MONTH="$(date -u +%m)"
+          # Strip leading zero for tag segment (06 -> 6 is ok; keep 06 for sort)
+          TAG="v${YEAR}.${MONTH}.0"
+
+          echo "monthly_tag=${TAG}" >> "${GITHUB_OUTPUT}"
+
+          if git rev-parse "refs/tags/${TAG}" >/dev/null 2>&1; then
+            echo "Release tag ${TAG} already exists."
+            echo "should_release=false" >> "${GITHUB_OUTPUT}"
+            exit 0
+          fi
+
+          # Previous monthly tags: vYYYY.MM.0
+          PREV_TAG="$(git tag -l 'v[0-9][0-9][0-9][0-9].[0-9][0-9].0' 2>/dev/null | sort -V | tail -1 || true)"
+
+          if [ -n "${PREV_TAG}" ]; then
+            COMMIT_COUNT="$(git rev-list --count "${PREV_TAG}..HEAD")"
+            echo "previous_tag=${PREV_TAG}" >> "${GITHUB_OUTPUT}"
+            NOTES_RANGE="${PREV_TAG}..HEAD"
+          else
+            COMMIT_COUNT="$(git rev-list --count HEAD)"
+            echo "previous_tag=" >> "${GITHUB_OUTPUT}"
+            NOTES_RANGE="HEAD"
+          fi
+
+          echo "commit_count=${COMMIT_COUNT}" >> "${GITHUB_OUTPUT}"
+
+          FORCE="${{ github.event.inputs.force || 'false' }}"
+          if [ "${COMMIT_COUNT}" -eq 0 ] && [ "${FORCE}" != "true" ]; then
+            echo "No commits since last monthly release — skipping."
+            echo "should_release=false" >> "${GITHUB_OUTPUT}"
+            exit 0
+          fi
+
+          echo "should_release=true" >> "${GITHUB_OUTPUT}"
+
+          {
+            echo "## Monthly release ${TAG}"
+            echo ""
+            if [ -n "${PREV_TAG}" ]; then
+              echo "Changes since \`${PREV_TAG}\` (${COMMIT_COUNT} commits):"
+            else
+              echo "Initial monthly release (${COMMIT_COUNT} commits on default branch):"
+            fi
+            echo ""
+            if [ -n "${PREV_TAG}" ]; then
+              git log --pretty=format:'- %s (`%h`)' "${PREV_TAG}..HEAD" || true
+            else
+              git log --pretty=format:'- %s (`%h`)' -n 50 HEAD || true
+            fi
+          } > release-notes.md
+
+      - name: Create GitHub Release
+        if: steps.prep.outputs.should_release == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.prep.outputs.monthly_tag }}
+          name: Release ${{ steps.prep.outputs.monthly_tag }}
+          body_path: release-notes.md
+          generate_release_notes: false
+          draft: false
+          prerelease: false

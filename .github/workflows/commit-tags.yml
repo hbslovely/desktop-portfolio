@@ -1,0 +1,54 @@
+# Annotated tag per push to the default branch (one tag per commit SHA).
+# Tag format: build/YYYY-MM-DD-<short-sha>
+# Does not match v*.*.* — avoids triggering Docker publish on every commit.
+
+name: Tag each commit
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: commit-tag-${{ github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  tag:
+    name: Create build tag
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create and push tag
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          SHORT_SHA="${GITHUB_SHA::7}"
+          DATE="$(date -u +%Y-%m-%d)"
+          TAG="build/${DATE}-${SHORT_SHA}"
+
+          if git rev-parse "refs/tags/${TAG}" >/dev/null 2>&1; then
+            echo "Tag ${TAG} already exists — skipping."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git tag -a "${TAG}" -m "Build tag for commit ${GITHUB_SHA}
+
+          Repository: ${GITHUB_REPOSITORY}
+          Workflow: ${GITHUB_WORKFLOW}
+          Run: ${GITHUB_RUN_ID}"
+
+          git push origin "refs/tags/${TAG}"
+          echo "Created tag: ${TAG}"
