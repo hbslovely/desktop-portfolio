@@ -23,7 +23,12 @@ $accent-purple: #8b5cf6;
   display: flex;
   flex-direction: column;
   background: $content-bg;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family:
+    'Inter',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
   overflow: hidden;
 }
 
@@ -161,11 +166,21 @@ $accent-purple: #8b5cf6;
     color: #fff;
     flex-shrink: 0;
 
-    &.blue { background: $accent-blue; }
-    &.green { background: $accent-green; }
-    &.orange { background: $accent-orange; }
-    &.purple { background: $accent-purple; }
-    &.red { background: $accent-red; }
+    &.blue {
+      background: $accent-blue;
+    }
+    &.green {
+      background: $accent-green;
+    }
+    &.orange {
+      background: $accent-orange;
+    }
+    &.purple {
+      background: $accent-purple;
+    }
+    &.red {
+      background: $accent-red;
+    }
   }
 
   .group-info {
@@ -389,7 +404,9 @@ $accent-purple: #8b5cf6;
 
   &.active {
     transform: scale(1.15);
-    box-shadow: 0 0 0 3px $card-bg, 0 0 0 5px currentColor;
+    box-shadow:
+      0 0 0 3px $card-bg,
+      0 0 0 5px currentColor;
 
     i {
       opacity: 1;
@@ -443,7 +460,13 @@ $accent-purple: #8b5cf6;
   }
 
   &::-webkit-slider-runnable-track {
-    background: linear-gradient(to right, $accent-blue 0%, $accent-blue var(--progress, 50%), #e5e7eb var(--progress, 50%), #e5e7eb 100%);
+    background: linear-gradient(
+      to right,
+      $accent-blue 0%,
+      $accent-blue var(--progress, 50%),
+      #e5e7eb var(--progress, 50%),
+      #e5e7eb 100%
+    );
     border-radius: 5px;
     height: 10px;
   }

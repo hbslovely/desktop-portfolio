@@ -32,7 +32,7 @@ export interface ExplorerEntry {
   sizeBytes?: number;
   /** Row trong sheet (1-based, header = row 1) — chỉ có khi load từ sheet */
   rowIndex?: number;
-  
+
   // Loading states for UI
   /** Đang loading preview/content từ Drive */
   isLoading?: boolean;
@@ -77,8 +77,8 @@ export interface ExplorerMigrationResponse {
 export class ExplorerService {
   private http = inject(HttpClient);
 
-  private readonly APPS_SCRIPT_URL = environment.production 
-    ? environment.googleFeedingAppsScriptUrl 
+  private readonly APPS_SCRIPT_URL = environment.production
+    ? environment.googleFeedingAppsScriptUrl
     : '/api/feeding-apps-script';
 
   getEntries(): Observable<ExplorerEntry[]> {
@@ -105,7 +105,9 @@ export class ExplorerService {
   }
 
   private parseMimeType(raw: unknown): string {
-    const s = String(raw || '').trim().toLowerCase();
+    const s = String(raw || '')
+      .trim()
+      .toLowerCase();
     if (!s || !s.includes('/')) return '';
     return s;
   }
@@ -118,7 +120,9 @@ export class ExplorerService {
   }
 
   private parseStorageStatus(raw: unknown): string {
-    const s = String(raw || '').trim().toLowerCase();
+    const s = String(raw || '')
+      .trim()
+      .toLowerCase();
     if (!s) return '';
     return s;
   }
@@ -165,7 +169,7 @@ export class ExplorerService {
         name: payload.name,
         type: payload.type,
         parent_id: payload.parentId,
-        content: payload.type === 'file' ? (payload.content || '') : '',
+        content: payload.type === 'file' ? payload.content || '' : '',
         mimeType: payload.mimeType || '',
         sizeBytes: payload.sizeBytes || 0,
       },
@@ -214,10 +218,7 @@ export class ExplorerService {
    *
    * `parentId` phải là folder đã tồn tại. Server validate.
    */
-  moveEntries(
-    ids: number[],
-    parentId: number
-  ): Observable<ExplorerResponse> {
+  moveEntries(ids: number[], parentId: number): Observable<ExplorerResponse> {
     return this.postToAppsScript({
       action: 'moveExplorer',
       ids,
@@ -235,7 +236,7 @@ export class ExplorerService {
     mimeType: string;
     sizeBytes: number;
     parentId: number;
-  }): Observable<ExplorerResponse & {driveFileId?: string}> {
+  }): Observable<ExplorerResponse & { driveFileId?: string }> {
     return this.addEntry({
       name: payload.fileName,
       type: 'file',
@@ -248,14 +249,14 @@ export class ExplorerService {
         if (!response.success || !response.id) {
           throw new Error('Upload thất bại');
         }
-        
+
         // Lấy thông tin entry vừa tạo để có driveFileId
         return this.getEntries().pipe(
           map((entries) => {
-            const createdEntry = entries.find(e => e.id === response.id);
+            const createdEntry = entries.find((e) => e.id === response.id);
             return {
               ...response,
-              driveFileId: createdEntry?.driveFileId
+              driveFileId: createdEntry?.driveFileId,
             };
           })
         );
@@ -269,10 +270,10 @@ export class ExplorerService {
    * Bây giờ có thể nhận cả Explorer ID hoặc Drive file ID.
    */
   getFileDataUrl(id: number | string): Observable<ExplorerFileResponse> {
-    const body: { action: string; driveFileId?: string; id?: number } = { 
-      action: 'getExplorerFile' 
+    const body: { action: string; driveFileId?: string; id?: number } = {
+      action: 'getExplorerFile',
     };
-    
+
     // Nếu là string và không phải số, coi như driveFileId
     if (typeof id === 'string' && !/^\d+$/.test(id)) {
       body.driveFileId = id;
@@ -300,10 +301,10 @@ export class ExplorerService {
     }
 
     // Tạo observable cho từng file
-    const requests = ids.map(id => 
+    const requests = ids.map((id) =>
       this.getFileDataUrl(id).pipe(
-        map(response => ({ id, response })),
-        catchError(error => {
+        map((response) => ({ id, response })),
+        catchError((error) => {
           console.warn(`Failed to load file ${id}:`, error);
           return of({ id, response: null });
         })
@@ -312,7 +313,7 @@ export class ExplorerService {
 
     // Chạy song song và merge results
     return from(requests).pipe(
-      mergeMap(request => request, 5), // Giới hạn 5 requests đồng thời để tránh quá tải
+      mergeMap((request) => request, 5), // Giới hạn 5 requests đồng thời để tránh quá tải
       scan((acc, { id, response }) => {
         if (response) {
           acc.set(id, response);
@@ -360,9 +361,7 @@ export class ExplorerService {
    * Đổi lại: không bao giờ báo "lỗi" khi backend đã ghi thành công (nguyên
    * nhân của bug "upload báo lỗi nhưng vẫn upload được").
    */
-  private postToAppsScript(
-    body: Record<string, unknown>
-  ): Observable<ExplorerResponse> {
+  private postToAppsScript(body: Record<string, unknown>): Observable<ExplorerResponse> {
     const url = this.APPS_SCRIPT_URL;
     if (!url) {
       return throwError(() => new Error('Chưa cấu hình Google Apps Script URL'));
@@ -372,17 +371,15 @@ export class ExplorerService {
 
     if (isProxy) {
       const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
-      return this.http
-        .post<ExplorerResponse>(url, body, { headers })
-        .pipe(
-          catchError((err) => {
-            console.warn(
-              '[ExplorerService] POST response không parse được — coi như đã ghi thành công, sẽ reload để verify.',
-              err
-            );
-            return of({ success: true } as ExplorerResponse);
-          })
-        );
+      return this.http.post<ExplorerResponse>(url, body, { headers }).pipe(
+        catchError((err) => {
+          console.warn(
+            '[ExplorerService] POST response không parse được — coi như đã ghi thành công, sẽ reload để verify.',
+            err
+          );
+          return of({ success: true } as ExplorerResponse);
+        })
+      );
     }
 
     const payload = JSON.stringify(body);
@@ -406,9 +403,7 @@ export class ExplorerService {
    * Dùng cho action bắt buộc cần đọc JSON response (vd getExplorerFile).
    * Nếu không đi qua proxy tương thích CORS thì throw lỗi để user cấu hình lại.
    */
-  private postToAppsScriptExpectResponse<T>(
-    body: Record<string, unknown>
-  ): Observable<T> {
+  private postToAppsScriptExpectResponse<T>(body: Record<string, unknown>): Observable<T> {
     const url = this.APPS_SCRIPT_URL;
     if (!url) {
       return throwError(() => new Error('Chưa cấu hình Google Apps Script URL'));
@@ -425,8 +420,8 @@ export class ExplorerService {
 
     // 🚀 Mobile CORS fix: Use simple content-type only for proxy (dev)
     const isProxy = this.shouldUseJsonProxy();
-    const headers = new HttpHeaders({ 
-      'Content-Type': isProxy ? 'text/plain;charset=UTF-8' : 'application/json'
+    const headers = new HttpHeaders({
+      'Content-Type': isProxy ? 'text/plain;charset=UTF-8' : 'application/json',
     });
     const requestBody = isProxy ? JSON.stringify(body) : body;
     return this.http.post<T>(url, requestBody, { headers });
@@ -443,11 +438,7 @@ export class ExplorerService {
    *
    * Khoảng an toàn để ảnh JPEG ~30–35 KB sau base64: maxSize 720, quality 0.7.
    */
-  async fileToCompressedBase64(
-    file: File,
-    maxSize = 720,
-    quality = 0.7
-  ): Promise<string> {
+  async fileToCompressedBase64(file: File, maxSize = 720, quality = 0.7): Promise<string> {
     const dataUrl = await this.readAsDataURL(file);
 
     const img = await new Promise<HTMLImageElement>((resolve, reject) => {

@@ -1,4 +1,16 @@
-import { Component, OnInit, OnDestroy, signal, computed, ViewChild, ElementRef, AfterViewInit, effect, HostListener, Input } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  OnDestroy,
+  signal,
+  computed,
+  ViewChild,
+  ElementRef,
+  AfterViewInit,
+  effect,
+  HostListener,
+  Input,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NgxMaskDirective, provideNgxMask } from 'ngx-mask';
@@ -15,7 +27,7 @@ Chart.register(...registerables);
   imports: [CommonModule, FormsModule, NgxMaskDirective],
   providers: [provideNgxMask()],
   templateUrl: './expense-app.component.html',
-  styleUrl: './expense-app.component.scss'
+  styleUrl: './expense-app.component.scss',
 })
 export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   @ViewChild('categoryChart') categoryChartRef!: ElementRef<HTMLCanvasElement>;
@@ -83,13 +95,19 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
   // Full AI Chat Panel
   showAIChatPanel = signal<boolean>(false);
-  aiChatMessages = signal<Array<{role: 'user' | 'assistant'; content: string; timestamp: Date}>>([]);
+  aiChatMessages = signal<Array<{ role: 'user' | 'assistant'; content: string; timestamp: Date }>>(
+    []
+  );
   aiChatInput = signal<string>('');
   aiChatProcessing = signal<boolean>(false);
 
   // Multiple expenses input
   multipleExpenses = signal<Expense[]>([]);
-  savingProgress = signal<{ current: number; total: number; saving: boolean }>({ current: 0, total: 0, saving: false });
+  savingProgress = signal<{ current: number; total: number; saving: boolean }>({
+    current: 0,
+    total: 0,
+    saving: false,
+  });
   savedRowIndices = signal<Set<number>>(new Set()); // Track which rows have been saved
   selectedGroupForAll = signal<string>(''); // Group selected for all rows
   expandedGroupId = signal<string | null>(null); // Currently expanded group in groups tab
@@ -146,7 +164,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     content: '',
     dateFrom: '',
     dateTo: '',
-    totalAmount: 0
+    totalAmount: 0,
   };
 
   // Computed: Group expenses by groupId
@@ -155,7 +173,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const groups = this.expenseGroups();
     const grouped: { [groupId: string]: Expense[] } = {};
 
-    expenses.forEach(expense => {
+    expenses.forEach((expense) => {
       if (expense.groupId) {
         if (!grouped[expense.groupId]) {
           grouped[expense.groupId] = [];
@@ -165,7 +183,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     });
 
     // Calculate total amount for each group
-    groups.forEach(group => {
+    groups.forEach((group) => {
       if (grouped[group.id]) {
         const total = grouped[group.id].reduce((sum, exp) => sum + exp.amount, 0);
         // Update group totalAmount if different
@@ -184,14 +202,16 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const expensesByGroup = this.expensesByGroup();
 
     const stats: {
-      totalAmounts: {[groupId: string]: number};
-      expensesCounts: {[groupId: string]: number};
-      firstExpenseDates: {[groupId: string]: string};
-      averageExpenses: {[groupId: string]: number};
-      maxExpenses: {[groupId: string]: Expense | null};
-      minExpenses: {[groupId: string]: Expense | null};
-      dateRanges: {[groupId: string]: {from: string, to: string} | null};
-      topCategories: {[groupId: string]: Array<{category: string, total: number, count: number}>};
+      totalAmounts: { [groupId: string]: number };
+      expensesCounts: { [groupId: string]: number };
+      firstExpenseDates: { [groupId: string]: string };
+      averageExpenses: { [groupId: string]: number };
+      maxExpenses: { [groupId: string]: Expense | null };
+      minExpenses: { [groupId: string]: Expense | null };
+      dateRanges: { [groupId: string]: { from: string; to: string } | null };
+      topCategories: {
+        [groupId: string]: Array<{ category: string; total: number; count: number }>;
+      };
     } = {
       totalAmounts: {},
       expensesCounts: {},
@@ -200,10 +220,10 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       maxExpenses: {},
       minExpenses: {},
       dateRanges: {},
-      topCategories: {}
+      topCategories: {},
     };
 
-    groups.forEach(group => {
+    groups.forEach((group) => {
       const groupExpenses = expensesByGroup[group.id] || [];
       const count = groupExpenses.length;
 
@@ -225,37 +245,44 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
       // Total amount
       const total = groupExpenses.reduce((sum, e) => sum + e.amount, 0);
-      stats.totalAmounts[group.id] = group.totalAmount && group.totalAmount > 0 ? group.totalAmount : total;
+      stats.totalAmounts[group.id] =
+        group.totalAmount && group.totalAmount > 0 ? group.totalAmount : total;
 
       // Average
       stats.averageExpenses[group.id] = stats.totalAmounts[group.id] / count;
 
       // Max and Min
-      stats.maxExpenses[group.id] = groupExpenses.reduce((max, e) => e.amount > max.amount ? e : max, groupExpenses[0]);
-      stats.minExpenses[group.id] = groupExpenses.reduce((min, e) => e.amount < min.amount ? e : min, groupExpenses[0]);
+      stats.maxExpenses[group.id] = groupExpenses.reduce(
+        (max, e) => (e.amount > max.amount ? e : max),
+        groupExpenses[0]
+      );
+      stats.minExpenses[group.id] = groupExpenses.reduce(
+        (min, e) => (e.amount < min.amount ? e : min),
+        groupExpenses[0]
+      );
 
       // Date range
-      const sortedExpenses = [...groupExpenses].sort((a, b) =>
-        new Date(a.date).getTime() - new Date(b.date).getTime()
+      const sortedExpenses = [...groupExpenses].sort(
+        (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
       );
       stats.dateRanges[group.id] = {
         from: sortedExpenses[0].date,
-        to: sortedExpenses[sortedExpenses.length - 1].date
+        to: sortedExpenses[sortedExpenses.length - 1].date,
       };
 
       // Top categories (limit 3 for display)
-      const categoryMap: {[key: string]: {total: number, count: number}} = {};
-      groupExpenses.forEach(expense => {
+      const categoryMap: { [key: string]: { total: number; count: number } } = {};
+      groupExpenses.forEach((expense) => {
         if (!expense.category) return;
         if (!categoryMap[expense.category]) {
-          categoryMap[expense.category] = {total: 0, count: 0};
+          categoryMap[expense.category] = { total: 0, count: 0 };
         }
         categoryMap[expense.category].total += expense.amount;
         categoryMap[expense.category].count += 1;
       });
 
       stats.topCategories[group.id] = Object.entries(categoryMap)
-        .map(([category, data]) => ({category, ...data}))
+        .map(([category, data]) => ({ category, ...data }))
         .sort((a, b) => b.total - a.total)
         .slice(0, 3);
     });
@@ -269,7 +296,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     amount: 0,
     category: '',
     note: '',
-    groupId: ''
+    groupId: '',
   };
 
   // Edit expense
@@ -282,7 +309,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     amount: 0,
     category: '',
     note: '',
-    groupId: ''
+    groupId: '',
   };
   editExpenseAmountDisplay = signal<string>(''); // String value for ngx-mask display
 
@@ -303,24 +330,32 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     'Điện - nước': { icon: 'fa-tint', color: '#CA8A04', bgColor: '#FEFCE8' },
     'Pet/Thú cưng/Vật nuôi khác': { icon: 'fa-paw', color: '#E11D48', bgColor: '#FFF1F2' },
     'Sức khỏe': { icon: 'fa-user-md', color: '#DC2626', bgColor: '#FEF2F2' },
-    'Thời trang / Mỹ Phẩm/ Làm đẹp': { icon: 'fa-wand-magic-sparkles', color: '#9333EA', bgColor: '#FAF5FF' },
+    'Thời trang / Mỹ Phẩm/ Làm đẹp': {
+      icon: 'fa-wand-magic-sparkles',
+      color: '#9333EA',
+      bgColor: '#FAF5FF',
+    },
     'Mua sắm / Mua sắm online': { icon: 'fa-shopping-cart', color: '#2563EB', bgColor: '#EFF6FF' },
     'Sữa/vitamin/chất bổ/Thuốc khác': { icon: 'fa-pills', color: '#16A34A', bgColor: '#F0FDF4' },
     'Từ thiện': { icon: 'fa-gift', color: '#EC4899', bgColor: '#FCE7F3' },
     'Điện thoại': { icon: 'fa-mobile-alt', color: '#475569', bgColor: '#F8FAFC' },
     'Sinh hoạt (Lee)': { icon: 'fa-home', color: '#0891B2', bgColor: '#ECFEFF' },
-    'Ăn vặt / Ăn uống ngoài bữa chính': { icon: 'fa-cookie-bite', color: '#F59E0B', bgColor: '#FFFBEB' },
+    'Ăn vặt / Ăn uống ngoài bữa chính': {
+      icon: 'fa-cookie-bite',
+      color: '#F59E0B',
+      bgColor: '#FFFBEB',
+    },
     'Du lịch – Nghỉ dưỡng': { icon: 'fa-plane', color: '#0D9488', bgColor: '#ECFDF5' },
     'Thiết bị làm việc': { icon: 'fa-laptop', color: '#2563EB', bgColor: '#EFF6FF' },
-    'Chi tiêu khác': { icon: 'fa-circle-question', color: '#6B7280', bgColor: '#F9FAFB' }
+    'Chi tiêu khác': { icon: 'fa-circle-question', color: '#6B7280', bgColor: '#F9FAFB' },
   };
 
   categories = computed(() => {
     const allCategories = Object.keys(this.categoryConfig);
     const settings = this.settingsService()?.settings();
     const excludeCategories = settings?.excludeCategories || [];
-    return allCategories.filter(cat => !excludeCategories.includes(cat));
-  })
+    return allCategories.filter((cat) => !excludeCategories.includes(cat));
+  });
 
   getCategoryIcon(category: string): string {
     return this.categoryConfig[category]?.icon || 'fa-tag';
@@ -415,7 +450,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const year = this.reportYear();
     const month = this.reportMonth();
 
-    return allExpenses.filter(expense => {
+    return allExpenses.filter((expense) => {
       const expenseDate = new Date(expense.date);
       const expenseYear = expenseDate.getFullYear();
       const expenseMonth = expenseDate.getMonth() + 1;
@@ -439,8 +474,21 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       return `Năm ${year}`;
     }
 
-    const monthNames = ['', 'Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6',
-                        'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'];
+    const monthNames = [
+      '',
+      'Tháng 1',
+      'Tháng 2',
+      'Tháng 3',
+      'Tháng 4',
+      'Tháng 5',
+      'Tháng 6',
+      'Tháng 7',
+      'Tháng 8',
+      'Tháng 9',
+      'Tháng 10',
+      'Tháng 11',
+      'Tháng 12',
+    ];
     return `${monthNames[month]} ${year}`;
   }
 
@@ -529,18 +577,23 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   // Check if report period is this month
   isThisMonthReport(): boolean {
     const now = new Date();
-    return this.reportYear() === now.getFullYear() && this.reportMonth() === (now.getMonth() + 1);
+    return this.reportYear() === now.getFullYear() && this.reportMonth() === now.getMonth() + 1;
   }
 
   // Check if report period is last month
   isLastMonthReport(): boolean {
     const now = new Date();
     const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    return this.reportYear() === lastMonth.getFullYear() && this.reportMonth() === (lastMonth.getMonth() + 1);
+    return (
+      this.reportYear() === lastMonth.getFullYear() &&
+      this.reportMonth() === lastMonth.getMonth() + 1
+    );
   }
 
   // Sorting for expenses list - dropdown options
-  sortOption = signal<'newest' | 'oldest' | 'amount_desc' | 'amount_asc' | 'most_frequent' | 'least_frequent'>('newest');
+  sortOption = signal<
+    'newest' | 'oldest' | 'amount_desc' | 'amount_asc' | 'most_frequent' | 'least_frequent'
+  >('newest');
 
   // Sort options for dropdown
   sortOptions = [
@@ -549,13 +602,13 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     { value: 'amount_desc', label: 'Số tiền giảm dần' },
     { value: 'amount_asc', label: 'Số tiền tăng dần' },
     { value: 'most_frequent', label: 'Thường xuyên nhất' },
-    { value: 'least_frequent', label: 'Ít thường xuyên nhất' }
+    { value: 'least_frequent', label: 'Ít thường xuyên nhất' },
   ];
 
   // Computed: frequency map for content (for frequency-based sorting)
   contentFrequencyMap = computed(() => {
     const frequencyMap = new Map<string, number>();
-    this.expenses().forEach(expense => {
+    this.expenses().forEach((expense) => {
       const key = expense.content.toLowerCase().trim();
       frequencyMap.set(key, (frequencyMap.get(key) || 0) + 1);
     });
@@ -580,10 +633,10 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     if (category.length > 0) {
       const categoryMode = this.filterCategoryMode();
       if (categoryMode === 'include') {
-        filtered = filtered.filter(expense => category.includes(expense.category));
+        filtered = filtered.filter((expense) => category.includes(expense.category));
       } else if (categoryMode === 'exclude') {
         // Exclude mode
-        filtered = filtered.filter(expense => !category.includes(expense.category));
+        filtered = filtered.filter((expense) => !category.includes(expense.category));
       } else {
         // Mixed mode - check per-category settings
         const mixedSettings = this.filterCategoryMixed();
@@ -595,11 +648,13 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
           .map(([cat, _]) => cat);
 
         if (includeCats.length > 0 || excludeCats.length > 0) {
-          filtered = filtered.filter(expense => {
+          filtered = filtered.filter((expense) => {
             // If there are include categories, expense must be in one of them
             // AND not be in exclude categories
             if (includeCats.length > 0) {
-              return includeCats.includes(expense.category) && !excludeCats.includes(expense.category);
+              return (
+                includeCats.includes(expense.category) && !excludeCats.includes(expense.category)
+              );
             }
             // If only exclude categories, just filter out excluded
             return !excludeCats.includes(expense.category);
@@ -614,14 +669,14 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     if (dateMode === 'multiple' && selectedDates.length > 0) {
       // Multi-date selection mode
-      filtered = filtered.filter(expense => selectedDates.includes(expense.date));
+      filtered = filtered.filter((expense) => selectedDates.includes(expense.date));
     } else {
       // Range mode
       if (dateFrom) {
-        filtered = filtered.filter(expense => expense.date >= dateFrom);
+        filtered = filtered.filter((expense) => expense.date >= dateFrom);
       }
       if (dateTo) {
-        filtered = filtered.filter(expense => expense.date <= dateTo);
+        filtered = filtered.filter((expense) => expense.date <= dateTo);
       }
     }
 
@@ -631,15 +686,28 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       const searchMode = this.searchMode();
       const keywords = this.searchKeywords();
 
-      filtered = filtered.filter(expense => {
+      filtered = filtered.filter((expense) => {
         // Multiple keywords search (AND logic)
         if (keywords.length > 0) {
-          return keywords.every(keyword => {
-            const contentMatch = this.matchSearch(expense.content.toLowerCase(), keyword.toLowerCase(), searchMode);
-            const categoryMatch = this.matchSearch(expense.category.toLowerCase(), keyword.toLowerCase(), searchMode);
-            const noteMatch = searchInNote && expense.note ? this.matchSearch(expense.note.toLowerCase(), keyword.toLowerCase(), searchMode) : false;
+          return keywords.every((keyword) => {
+            const contentMatch = this.matchSearch(
+              expense.content.toLowerCase(),
+              keyword.toLowerCase(),
+              searchMode
+            );
+            const categoryMatch = this.matchSearch(
+              expense.category.toLowerCase(),
+              keyword.toLowerCase(),
+              searchMode
+            );
+            const noteMatch =
+              searchInNote && expense.note
+                ? this.matchSearch(expense.note.toLowerCase(), keyword.toLowerCase(), searchMode)
+                : false;
             // Check if keyword is a number and match against amount
-            const amountMatch = this.isNumericString(keyword) ? this.matchAmount(expense.amount, keyword) : false;
+            const amountMatch = this.isNumericString(keyword)
+              ? this.matchAmount(expense.amount, keyword)
+              : false;
             return contentMatch || categoryMatch || noteMatch || amountMatch;
           });
         }
@@ -647,9 +715,14 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         // Single search
         const contentMatch = this.matchSearch(expense.content.toLowerCase(), search, searchMode);
         const categoryMatch = this.matchSearch(expense.category.toLowerCase(), search, searchMode);
-        const noteMatch = searchInNote && expense.note ? this.matchSearch(expense.note.toLowerCase(), search, searchMode) : false;
+        const noteMatch =
+          searchInNote && expense.note
+            ? this.matchSearch(expense.note.toLowerCase(), search, searchMode)
+            : false;
         // Check if search text is a number and match against amount
-        const amountMatch = this.isNumericString(search) ? this.matchAmount(expense.amount, search) : false;
+        const amountMatch = this.isNumericString(search)
+          ? this.matchAmount(expense.amount, search)
+          : false;
 
         return contentMatch || categoryMatch || noteMatch || amountMatch;
       });
@@ -657,10 +730,10 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     // Filter by amount range
     if (amountMin !== null) {
-      filtered = filtered.filter(expense => expense.amount >= amountMin);
+      filtered = filtered.filter((expense) => expense.amount >= amountMin);
     }
     if (amountMax !== null) {
-      filtered = filtered.filter(expense => expense.amount <= amountMax);
+      filtered = filtered.filter((expense) => expense.amount <= amountMax);
     }
 
     // Quick filters
@@ -669,7 +742,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       if (allExpenses.length > 0) {
         const total = allExpenses.reduce((sum, e) => sum + e.amount, 0);
         const avg = total / allExpenses.length;
-        filtered = filtered.filter(expense => expense.amount > avg);
+        filtered = filtered.filter((expense) => expense.amount > avg);
       }
     }
 
@@ -677,15 +750,15 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
       const sevenDaysAgoStr = sevenDaysAgo.toISOString().split('T')[0];
-      filtered = filtered.filter(expense => expense.date >= sevenDaysAgoStr);
+      filtered = filtered.filter((expense) => expense.date >= sevenDaysAgoStr);
     }
 
     if (this.showWithNoteOnly()) {
-      filtered = filtered.filter(expense => expense.note && expense.note.trim().length > 0);
+      filtered = filtered.filter((expense) => expense.note && expense.note.trim().length > 0);
     }
 
     if (this.showWithoutNoteOnly()) {
-      filtered = filtered.filter(expense => !expense.note || expense.note.trim().length === 0);
+      filtered = filtered.filter((expense) => !expense.note || expense.note.trim().length === 0);
     }
 
     if (this.showAboveAverageOnly()) {
@@ -693,7 +766,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       if (allExpenses.length > 0) {
         const total = allExpenses.reduce((sum, e) => sum + e.amount, 0);
         const avg = total / allExpenses.length;
-        filtered = filtered.filter(expense => expense.amount > avg);
+        filtered = filtered.filter((expense) => expense.amount > avg);
       }
     }
 
@@ -702,7 +775,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       if (allExpenses.length > 0) {
         const total = allExpenses.reduce((sum, e) => sum + e.amount, 0);
         const avg = total / allExpenses.length;
-        filtered = filtered.filter(expense => expense.amount < avg);
+        filtered = filtered.filter((expense) => expense.amount < avg);
       }
     }
 
@@ -821,10 +894,13 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const expensesInGroups = new Set<Expense>();
 
     // Find groups that have at least one expense in filtered list
-    groups.forEach(group => {
+    groups.forEach((group) => {
       const groupExpenses = expensesByGroup[group.id] || [];
-      const filteredGroupExpenses = groupExpenses.filter(exp =>
-        filtered.some(fExp => fExp.date === exp.date && fExp.content === exp.content && fExp.amount === exp.amount)
+      const filteredGroupExpenses = groupExpenses.filter((exp) =>
+        filtered.some(
+          (fExp) =>
+            fExp.date === exp.date && fExp.content === exp.content && fExp.amount === exp.amount
+        )
       );
 
       if (filteredGroupExpenses.length > 0 && !processedGroupIds.has(group.id)) {
@@ -875,12 +951,12 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         result.push({ ...group, date: groupDate, rowIndex: groupRowIndex } as any);
         processedGroupIds.add(group.id);
         // Mark all expenses in this group as processed
-        groupExpenses.forEach(exp => expensesInGroups.add(exp));
+        groupExpenses.forEach((exp) => expensesInGroups.add(exp));
       }
     });
 
     // Add filtered expenses that are not in any processed group
-    filtered.forEach(expense => {
+    filtered.forEach((expense) => {
       if (!expense.groupId || !processedGroupIds.has(expense.groupId)) {
         result.push(expense);
       }
@@ -896,8 +972,8 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
           const dateDiff = dateB.getTime() - dateA.getTime();
           // If same date, sort by rowIndex descending (newer index on top)
           if (dateDiff === 0) {
-            const rowIndexA = 'rowIndex' in a ? (a.rowIndex || 0) : 0;
-            const rowIndexB = 'rowIndex' in b ? (b.rowIndex || 0) : 0;
+            const rowIndexA = 'rowIndex' in a ? a.rowIndex || 0 : 0;
+            const rowIndexB = 'rowIndex' in b ? b.rowIndex || 0 : 0;
             return rowIndexB - rowIndexA;
           }
           return dateDiff;
@@ -910,8 +986,8 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
           const dateDiff = dateA.getTime() - dateB.getTime();
           // If same date, sort by rowIndex ascending (older index on top)
           if (dateDiff === 0) {
-            const rowIndexA = 'rowIndex' in a ? (a.rowIndex || 0) : 0;
-            const rowIndexB = 'rowIndex' in b ? (b.rowIndex || 0) : 0;
+            const rowIndexA = 'rowIndex' in a ? a.rowIndex || 0 : 0;
+            const rowIndexB = 'rowIndex' in b ? b.rowIndex || 0 : 0;
             return rowIndexA - rowIndexB;
           }
           return dateDiff;
@@ -928,8 +1004,8 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
             if (!dateA || !dateB) return 0;
             const dateDiff = dateB.getTime() - dateA.getTime();
             if (dateDiff === 0) {
-              const rowIndexA = 'rowIndex' in a ? (a.rowIndex || 0) : 0;
-              const rowIndexB = 'rowIndex' in b ? (b.rowIndex || 0) : 0;
+              const rowIndexA = 'rowIndex' in a ? a.rowIndex || 0 : 0;
+              const rowIndexB = 'rowIndex' in b ? b.rowIndex || 0 : 0;
               return rowIndexB - rowIndexA;
             }
             return dateDiff;
@@ -948,8 +1024,8 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
             if (!dateA || !dateB) return 0;
             const dateDiff = dateB.getTime() - dateA.getTime();
             if (dateDiff === 0) {
-              const rowIndexA = 'rowIndex' in a ? (a.rowIndex || 0) : 0;
-              const rowIndexB = 'rowIndex' in b ? (b.rowIndex || 0) : 0;
+              const rowIndexA = 'rowIndex' in a ? a.rowIndex || 0 : 0;
+              const rowIndexB = 'rowIndex' in b ? b.rowIndex || 0 : 0;
               return rowIndexB - rowIndexA;
             }
             return dateDiff;
@@ -969,8 +1045,8 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
           if (!dateA || !dateB) return 0;
           const dateDiff = dateB.getTime() - dateA.getTime();
           if (dateDiff === 0) {
-            const rowIndexA = 'rowIndex' in a ? (a.rowIndex || 0) : 0;
-            const rowIndexB = 'rowIndex' in b ? (b.rowIndex || 0) : 0;
+            const rowIndexA = 'rowIndex' in a ? a.rowIndex || 0 : 0;
+            const rowIndexB = 'rowIndex' in b ? b.rowIndex || 0 : 0;
             return rowIndexB - rowIndexA;
           }
           return dateDiff;
@@ -988,8 +1064,8 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
           if (!dateA || !dateB) return 0;
           const dateDiff = dateB.getTime() - dateA.getTime();
           if (dateDiff === 0) {
-            const rowIndexA = 'rowIndex' in a ? (a.rowIndex || 0) : 0;
-            const rowIndexB = 'rowIndex' in b ? (b.rowIndex || 0) : 0;
+            const rowIndexA = 'rowIndex' in a ? a.rowIndex || 0 : 0;
+            const rowIndexB = 'rowIndex' in b ? b.rowIndex || 0 : 0;
             return rowIndexB - rowIndexA;
           }
           return dateDiff;
@@ -1010,7 +1086,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   totalByCategory = computed(() => {
     const totals: { [key: string]: { total: number; count: number } } = {};
 
-    this.filteredExpenses().forEach(expense => {
+    this.filteredExpenses().forEach((expense) => {
       if (expense.category) {
         if (!totals[expense.category]) {
           totals[expense.category] = { total: 0, count: 0 };
@@ -1020,18 +1096,20 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       }
     });
 
-    return Object.keys(totals).map(category => ({
-      category,
-      total: totals[category].total,
-      count: totals[category].count
-    })).sort((a, b) => b.total - a.total);
+    return Object.keys(totals)
+      .map((category) => ({
+        category,
+        total: totals[category].total,
+        count: totals[category].count,
+      }))
+      .sort((a, b) => b.total - a.total);
   });
 
   // Category spending from ALL expenses (for filter panel)
   allCategorySpending = computed(() => {
     const totals: { [key: string]: { total: number; count: number } } = {};
 
-    this.expenses().forEach(expense => {
+    this.expenses().forEach((expense) => {
       if (expense.category) {
         if (!totals[expense.category]) {
           totals[expense.category] = { total: 0, count: 0 };
@@ -1074,9 +1152,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       return allCategories;
     }
 
-    return allCategories.filter(cat =>
-      cat.toLowerCase().includes(search)
-    );
+    return allCategories.filter((cat) => cat.toLowerCase().includes(search));
   });
 
   // Check if all filtered categories are selected
@@ -1086,7 +1162,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     if (filtered.length === 0) return false;
 
-    return filtered.every(cat => selected.includes(cat));
+    return filtered.every((cat) => selected.includes(cat));
   });
 
   // Check if some (but not all) filtered categories are selected (for indeterminate state)
@@ -1096,14 +1172,14 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     if (filtered.length === 0) return false;
 
-    const selectedCount = filtered.filter(cat => selected.includes(cat)).length;
+    const selectedCount = filtered.filter((cat) => selected.includes(cat)).length;
     return selectedCount > 0 && selectedCount < filtered.length;
   });
 
   // Get all unique dates
   uniqueDates = computed(() => {
     const dateSet = new Set<string>();
-    this.filteredExpenses().forEach(expense => {
+    this.filteredExpenses().forEach((expense) => {
       dateSet.add(expense.date);
     });
     return Array.from(dateSet).sort();
@@ -1113,7 +1189,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const expenses = this.filteredExpenses();
     const dailyMap: { [key: string]: number } = {};
 
-    expenses.forEach(expense => {
+    expenses.forEach((expense) => {
       const date = expense.date;
       if (dailyMap[date]) {
         dailyMap[date] += expense.amount;
@@ -1124,12 +1200,11 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     return Object.keys(dailyMap)
       .sort()
-      .map(date => ({
+      .map((date) => ({
         date: date, // Keep original date string (YYYY-MM-DD)
-        total: dailyMap[date]
+        total: dailyMap[date],
       }));
   });
-
 
   averageDailyExpense = computed(() => {
     const dailyTotals = this.dailyExpenses();
@@ -1148,10 +1223,10 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   });
 
   // Get top N expenses by amount
-  getTopExpenses(count: number = 5): { content: string; amount: number; category: string; date: string }[] {
-    return [...this.filteredExpenses()]
-      .sort((a, b) => b.amount - a.amount)
-      .slice(0, count);
+  getTopExpenses(
+    count: number = 5
+  ): { content: string; amount: number; category: string; date: string }[] {
+    return [...this.filteredExpenses()].sort((a, b) => b.amount - a.amount).slice(0, count);
   }
 
   // Advanced Statistics
@@ -1169,8 +1244,8 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const expenses = this.filteredExpenses();
     if (expenses.length < 2) return 'stable';
 
-    const sorted = [...expenses].sort((a, b) =>
-      new Date(a.date).getTime() - new Date(b.date).getTime()
+    const sorted = [...expenses].sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
     );
 
     const recent = sorted.slice(-7);
@@ -1208,7 +1283,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       prevTo.setDate(prevTo.getDate() - 1);
 
       const currentTotal = this.filteredExpenses().reduce((sum, e) => sum + e.amount, 0);
-      const previousExpenses = this.expenses().filter(e => {
+      const previousExpenses = this.expenses().filter((e) => {
         const eDate = new Date(e.date);
         return eDate >= prevFrom && eDate <= prevTo;
       });
@@ -1221,7 +1296,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         period: '7 ngày',
         change: Math.round(change),
         current: currentTotal,
-        previous: previousTotal
+        previous: previousTotal,
       };
     } else if (daysDiff === 30 || daysDiff === 29) {
       // Compare with previous 30 days
@@ -1231,7 +1306,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       prevTo.setDate(prevTo.getDate() - 1);
 
       const currentTotal = this.filteredExpenses().reduce((sum, e) => sum + e.amount, 0);
-      const previousExpenses = this.expenses().filter(e => {
+      const previousExpenses = this.expenses().filter((e) => {
         const eDate = new Date(e.date);
         return eDate >= prevFrom && eDate <= prevTo;
       });
@@ -1244,7 +1319,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         period: '30 ngày',
         change: Math.round(change),
         current: currentTotal,
-        previous: previousTotal
+        previous: previousTotal,
       };
     }
 
@@ -1253,30 +1328,22 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
   topSpendingDays = computed(() => {
     const dailyData = this.dailyExpenses();
-    return dailyData
-      .sort((a, b) => b.total - a.total)
-      .slice(0, 5);
+    return dailyData.sort((a, b) => b.total - a.total).slice(0, 5);
   });
 
   bottomSpendingDays = computed(() => {
     const dailyData = this.dailyExpenses();
-    return dailyData
-      .sort((a, b) => a.total - b.total)
-      .slice(0, 5);
+    return dailyData.sort((a, b) => a.total - b.total).slice(0, 5);
   });
 
   topExpenses = computed(() => {
     const expenses = this.filteredExpenses();
-    return [...expenses]
-      .sort((a, b) => b.amount - a.amount)
-      .slice(0, 5);
+    return [...expenses].sort((a, b) => b.amount - a.amount).slice(0, 5);
   });
 
   bottomExpenses = computed(() => {
     const expenses = this.filteredExpenses();
-    return [...expenses]
-      .sort((a, b) => a.amount - b.amount)
-      .slice(0, 5);
+    return [...expenses].sort((a, b) => a.amount - b.amount).slice(0, 5);
   });
 
   spendingByDayOfWeek = computed(() => {
@@ -1285,7 +1352,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     const dayNames = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
 
-    expenses.forEach(expense => {
+    expenses.forEach((expense) => {
       const date = new Date(expense.date);
       const dayOfWeek = date.getDay();
       const dayName = dayNames[dayOfWeek];
@@ -1298,33 +1365,31 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     });
 
     // Return in order: CN, T2, T3, T4, T5, T6, T7
-    return dayNames.map(dayName => {
-      const data = dayMap[dayName] || { total: 0, count: 0 };
-      return {
-        day: dayName,
-        total: data.total,
-        count: data.count,
-        average: data.count > 0 ? Math.round(data.total / data.count) : 0
-      };
-    }).filter(item => item.count > 0);
+    return dayNames
+      .map((dayName) => {
+        const data = dayMap[dayName] || { total: 0, count: 0 };
+        return {
+          day: dayName,
+          total: data.total,
+          count: data.count,
+          average: data.count > 0 ? Math.round(data.total / data.count) : 0,
+        };
+      })
+      .filter((item) => item.count > 0);
   });
 
   maxExpense = computed(() => {
     const expenses = this.filteredExpenses();
     if (expenses.length === 0) return null;
 
-    return expenses.reduce((max, expense) =>
-      expense.amount > max.amount ? expense : max
-    );
+    return expenses.reduce((max, expense) => (expense.amount > max.amount ? expense : max));
   });
 
   minExpense = computed(() => {
     const expenses = this.filteredExpenses();
     if (expenses.length === 0) return null;
 
-    return expenses.reduce((min, expense) =>
-      expense.amount < min.amount ? expense : min
-    );
+    return expenses.reduce((min, expense) => (expense.amount < min.amount ? expense : min));
   });
 
   // Cash Flow Statistics - Weekly
@@ -1334,7 +1399,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     const weeklyMap: { [key: string]: { total: number; count: number; weekStart: string } } = {};
 
-    expenses.forEach(expense => {
+    expenses.forEach((expense) => {
       const date = this.parseDate(expense.date);
       if (!date) return;
 
@@ -1349,7 +1414,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         weeklyMap[weekKey] = {
           total: 0,
           count: 0,
-          weekStart: this.formatDateLocal(weekStart)
+          weekStart: this.formatDateLocal(weekStart),
         };
       }
       weeklyMap[weekKey].total += expense.amount;
@@ -1358,12 +1423,12 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     return Object.keys(weeklyMap)
       .sort()
-      .map(key => ({
+      .map((key) => ({
         weekKey: key,
         weekStart: weeklyMap[key].weekStart,
         total: weeklyMap[key].total,
         count: weeklyMap[key].count,
-        average: Math.round(weeklyMap[key].total / weeklyMap[key].count)
+        average: Math.round(weeklyMap[key].total / weeklyMap[key].count),
       }));
   });
 
@@ -1381,7 +1446,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     const monthlyMap: { [key: string]: { total: number; count: number; days: Set<string> } } = {};
 
-    expenses.forEach(expense => {
+    expenses.forEach((expense) => {
       const date = this.parseDate(expense.date);
       if (!date) return;
 
@@ -1391,7 +1456,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         monthlyMap[monthKey] = {
           total: 0,
           count: 0,
-          days: new Set()
+          days: new Set(),
         };
       }
       monthlyMap[monthKey].total += expense.amount;
@@ -1401,13 +1466,13 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     return Object.keys(monthlyMap)
       .sort()
-      .map(key => ({
+      .map((key) => ({
         monthKey: key,
         total: monthlyMap[key].total,
         count: monthlyMap[key].count,
         daysWithExpenses: monthlyMap[key].days.size,
         averagePerDay: Math.round(monthlyMap[key].total / monthlyMap[key].days.size),
-        averagePerTransaction: Math.round(monthlyMap[key].total / monthlyMap[key].count)
+        averagePerTransaction: Math.round(monthlyMap[key].total / monthlyMap[key].count),
       }));
   });
 
@@ -1423,14 +1488,14 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const expenses = this.filteredExpenses();
     if (expenses.length === 0) return { daysWithExpenses: 0, totalDays: 0, frequency: 0 };
 
-    const uniqueDates = new Set(expenses.map(e => e.date));
+    const uniqueDates = new Set(expenses.map((e) => e.date));
     const dates = this.uniqueDates();
     const totalDays = dates.length;
 
     return {
       daysWithExpenses: uniqueDates.size,
       totalDays: totalDays,
-      frequency: totalDays > 0 ? Math.round((uniqueDates.size / totalDays) * 100) : 0
+      frequency: totalDays > 0 ? Math.round((uniqueDates.size / totalDays) * 100) : 0,
     };
   });
 
@@ -1448,7 +1513,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     if (expenses.length === 0) {
       return {
         weekday: { total: 0, count: 0, average: 0 },
-        weekend: { total: 0, count: 0, average: 0 }
+        weekend: { total: 0, count: 0, average: 0 },
       };
     }
 
@@ -1457,7 +1522,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     let weekendTotal = 0;
     let weekendCount = 0;
 
-    expenses.forEach(expense => {
+    expenses.forEach((expense) => {
       const date = this.parseDate(expense.date);
       if (!date) return;
 
@@ -1477,13 +1542,13 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       weekday: {
         total: weekdayTotal,
         count: weekdayCount,
-        average: weekdayCount > 0 ? Math.round(weekdayTotal / weekdayCount) : 0
+        average: weekdayCount > 0 ? Math.round(weekdayTotal / weekdayCount) : 0,
       },
       weekend: {
         total: weekendTotal,
         count: weekendCount,
-        average: weekendCount > 0 ? Math.round(weekendTotal / weekendCount) : 0
-      }
+        average: weekendCount > 0 ? Math.round(weekendTotal / weekendCount) : 0,
+      },
     };
   });
 
@@ -1516,7 +1581,9 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       const currDate = this.parseDate(dates[i]);
       if (!prevDate || !currDate) continue;
 
-      const daysDiff = Math.round((currDate.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24));
+      const daysDiff = Math.round(
+        (currDate.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24)
+      );
 
       if (daysDiff === 1) {
         currentStreak++;
@@ -1534,7 +1601,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     return {
       streak: maxStreak,
       startDate: maxStreakStart,
-      endDate: maxStreakEnd
+      endDate: maxStreakEnd,
     };
   });
 
@@ -1547,16 +1614,16 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     // If viewing whole year, return all expenses for that year
     if (month === null) {
-      return this.expenses().filter(expense => {
+      return this.expenses().filter((expense) => {
         const expenseDate = new Date(expense.date);
         return expenseDate.getFullYear() === year;
       });
     }
 
     // Otherwise filter by specific month
-    return this.expenses().filter(expense => {
+    return this.expenses().filter((expense) => {
       const expenseDate = new Date(expense.date);
-      return expenseDate.getMonth() === (month - 1) && expenseDate.getFullYear() === year;
+      return expenseDate.getMonth() === month - 1 && expenseDate.getFullYear() === year;
     });
   });
 
@@ -1591,7 +1658,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     // If viewing whole year or a past month, return 0
     if (month === null) return 0;
 
-    const isCurrentMonth = year === now.getFullYear() && month === (now.getMonth() + 1);
+    const isCurrentMonth = year === now.getFullYear() && month === now.getMonth() + 1;
 
     if (isCurrentMonth) {
       const lastDay = new Date(year, month, 0);
@@ -1617,22 +1684,24 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const catBudgets = this.editCategoryBudgets();
     const monthExpenses = this.currentMonthExpenses();
 
-    return categories.map(category => {
-      const spent = monthExpenses
-        .filter(e => e.category === category)
-        .reduce((sum, e) => sum + e.amount, 0);
-      const budget = catBudgets[category] || 0;
-      const percentage = budget > 0 ? Math.round((spent / budget) * 100) : 0;
-      const remaining = budget - spent;
+    return categories
+      .map((category) => {
+        const spent = monthExpenses
+          .filter((e) => e.category === category)
+          .reduce((sum, e) => sum + e.amount, 0);
+        const budget = catBudgets[category] || 0;
+        const percentage = budget > 0 ? Math.round((spent / budget) * 100) : 0;
+        const remaining = budget - spent;
 
-      return {
-        category,
-        spent,
-        budget,
-        percentage,
-        remaining
-      };
-    }).sort((a, b) => b.spent - a.spent);
+        return {
+          category,
+          spent,
+          budget,
+          percentage,
+          remaining,
+        };
+      })
+      .sort((a, b) => b.spent - a.spent);
   });
 
   // ============ INSIGHTS COMPUTED VALUES ============
@@ -1645,7 +1714,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const top = byCategory[0];
     return {
       ...top,
-      percentage: total > 0 ? Math.round((top.total / total) * 100) : 0
+      percentage: total > 0 ? Math.round((top.total / total) * 100) : 0,
     };
   });
 
@@ -1661,7 +1730,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       dayTotals[i] = { total: 0, count: 0 };
     }
 
-    expenses.forEach(expense => {
+    expenses.forEach((expense) => {
       const day = new Date(expense.date).getDay();
       dayTotals[day].total += expense.amount;
       dayTotals[day].count++;
@@ -1681,7 +1750,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     return {
       day: maxDay,
       dayName: dayNames[maxDay],
-      average: Math.round(maxAverage)
+      average: Math.round(maxAverage),
     };
   });
 
@@ -1692,12 +1761,12 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
     const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
 
-    const recent = expenses.filter(e => {
+    const recent = expenses.filter((e) => {
       const d = new Date(e.date);
       return d >= thirtyDaysAgo && d <= now;
     });
 
-    const previous = expenses.filter(e => {
+    const previous = expenses.filter((e) => {
       const d = new Date(e.date);
       return d >= sixtyDaysAgo && d < thirtyDaysAgo;
     });
@@ -1729,16 +1798,18 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const expenses = this.reportPeriodExpenses();
     const totals: { [key: string]: number } = {};
 
-    expenses.forEach(expense => {
+    expenses.forEach((expense) => {
       if (expense.category) {
         totals[expense.category] = (totals[expense.category] || 0) + expense.amount;
       }
     });
 
-    return Object.keys(totals).map(category => ({
-      category,
-      total: totals[category]
-    })).sort((a, b) => b.total - a.total);
+    return Object.keys(totals)
+      .map((category) => ({
+        category,
+        total: totals[category],
+      }))
+      .sort((a, b) => b.total - a.total);
   });
 
   // Weekday spending for insights (uses reportPeriodExpenses)
@@ -1752,7 +1823,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       dayData[i] = { total: 0, count: 0 };
     }
 
-    expenses.forEach(expense => {
+    expenses.forEach((expense) => {
       const day = new Date(expense.date).getDay();
       dayData[day].total += expense.amount;
       dayData[day].count++;
@@ -1760,18 +1831,18 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     const averages = Object.entries(dayData).map(([day, data]) => ({
       day: parseInt(day),
-      average: data.count > 0 ? data.total / data.count : 0
+      average: data.count > 0 ? data.total / data.count : 0,
     }));
 
-    const maxAverage = Math.max(...averages.map(d => d.average));
+    const maxAverage = Math.max(...averages.map((d) => d.average));
 
-    return averages.map(item => ({
+    return averages.map((item) => ({
       day: item.day,
       shortName: dayNames[item.day],
       fullName: fullDayNames[item.day],
       average: Math.round(item.average),
       percentage: maxAverage > 0 ? Math.round((item.average / maxAverage) * 100) : 0,
-      isHighest: item.average === maxAverage && maxAverage > 0
+      isHighest: item.average === maxAverage && maxAverage > 0,
     }));
   });
 
@@ -1786,7 +1857,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const top = byCategory[0];
     return {
       ...top,
-      percentage: total > 0 ? Math.round((top.total / total) * 100) : 0
+      percentage: total > 0 ? Math.round((top.total / total) * 100) : 0,
     };
   });
 
@@ -1802,7 +1873,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       dayTotals[i] = { total: 0, count: 0 };
     }
 
-    expenses.forEach(expense => {
+    expenses.forEach((expense) => {
       const day = new Date(expense.date).getDay();
       dayTotals[day].total += expense.amount;
       dayTotals[day].count++;
@@ -1822,7 +1893,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     return {
       day: maxDay,
       dayName: dayNames[maxDay],
-      average: Math.round(maxAverage)
+      average: Math.round(maxAverage),
     };
   });
 
@@ -1837,11 +1908,11 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     if (month === null) {
       // Whole year view: compare with previous year
-      currentPeriodExpenses = allExpenses.filter(e => {
+      currentPeriodExpenses = allExpenses.filter((e) => {
         const d = new Date(e.date);
         return d.getFullYear() === year;
       });
-      previousPeriodExpenses = allExpenses.filter(e => {
+      previousPeriodExpenses = allExpenses.filter((e) => {
         const d = new Date(e.date);
         return d.getFullYear() === year - 1;
       });
@@ -1849,18 +1920,18 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       // Month view: compare with previous month
       const currentMonthStart = new Date(year, month - 1, 1);
       const currentMonthEnd = new Date(year, month, 0);
-      
+
       const prevMonth = month === 1 ? 12 : month - 1;
       const prevYear = month === 1 ? year - 1 : year;
       const prevMonthStart = new Date(prevYear, prevMonth - 1, 1);
       const prevMonthEnd = new Date(prevYear, prevMonth, 0);
 
-      currentPeriodExpenses = allExpenses.filter(e => {
+      currentPeriodExpenses = allExpenses.filter((e) => {
         const d = new Date(e.date);
         return d >= currentMonthStart && d <= currentMonthEnd;
       });
 
-      previousPeriodExpenses = allExpenses.filter(e => {
+      previousPeriodExpenses = allExpenses.filter((e) => {
         const d = new Date(e.date);
         return d >= prevMonthStart && d <= prevMonthEnd;
       });
@@ -1884,13 +1955,13 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   insightsAverageTransactionsPerDay = computed(() => {
     const expenses = this.reportPeriodExpenses();
     if (expenses.length === 0) return 0;
-    
+
     const dateSet = new Set<string>();
-    expenses.forEach(expense => {
+    expenses.forEach((expense) => {
       dateSet.add(expense.date);
     });
     const uniqueDates = Array.from(dateSet);
-    
+
     if (uniqueDates.length === 0) return 0;
     return expenses.length / uniqueDates.length;
   });
@@ -1901,11 +1972,11 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     if (expenses.length === 0) return 0;
 
     const dateSet = new Set<string>();
-    expenses.forEach(expense => {
+    expenses.forEach((expense) => {
       dateSet.add(expense.date);
     });
     const uniqueDates = Array.from(dateSet);
-    
+
     if (uniqueDates.length === 0) return 0;
 
     const total = expenses.reduce((sum, expense) => sum + expense.amount, 0);
@@ -1923,7 +1994,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       dayData[i] = { total: 0, count: 0 };
     }
 
-    expenses.forEach(expense => {
+    expenses.forEach((expense) => {
       const day = new Date(expense.date).getDay();
       dayData[day].total += expense.amount;
       dayData[day].count++;
@@ -1931,18 +2002,18 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     const averages = Object.entries(dayData).map(([day, data]) => ({
       day: parseInt(day),
-      average: data.count > 0 ? data.total / data.count : 0
+      average: data.count > 0 ? data.total / data.count : 0,
     }));
 
-    const maxAverage = Math.max(...averages.map(d => d.average));
+    const maxAverage = Math.max(...averages.map((d) => d.average));
 
-    return averages.map(item => ({
+    return averages.map((item) => ({
       day: item.day,
       shortName: dayNames[item.day],
       fullName: fullDayNames[item.day],
       average: Math.round(item.average),
       percentage: maxAverage > 0 ? Math.round((item.average / maxAverage) * 100) : 0,
-      isHighest: item.average === maxAverage && maxAverage > 0
+      isHighest: item.average === maxAverage && maxAverage > 0,
     }));
   });
 
@@ -1956,7 +2027,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       weekData[i] = { total: 0, count: 0 };
     }
 
-    expenses.forEach(expense => {
+    expenses.forEach((expense) => {
       const date = new Date(expense.date);
       const week = Math.ceil(date.getDate() / 7);
       if (week <= 5) {
@@ -1967,17 +2038,17 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     const averages = Object.entries(weekData).map(([week, data]) => ({
       week: parseInt(week),
-      average: data.count > 0 ? data.total / data.count : 0
+      average: data.count > 0 ? data.total / data.count : 0,
     }));
 
-    const maxAverage = Math.max(...averages.map(w => w.average));
+    const maxAverage = Math.max(...averages.map((w) => w.average));
 
-    return averages.map(item => ({
+    return averages.map((item) => ({
       week: item.week,
       label: weekLabels[item.week - 1],
       average: Math.round(item.average),
       percentage: maxAverage > 0 ? Math.round((item.average / maxAverage) * 100) : 0,
-      isHighest: item.average === maxAverage && maxAverage > 0
+      isHighest: item.average === maxAverage && maxAverage > 0,
     }));
   });
 
@@ -1991,7 +2062,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       weekData[i] = { total: 0, count: 0 };
     }
 
-    expenses.forEach(expense => {
+    expenses.forEach((expense) => {
       const date = new Date(expense.date);
       const week = Math.ceil(date.getDate() / 7);
       if (week <= 5) {
@@ -2002,23 +2073,29 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     const averages = Object.entries(weekData).map(([week, data]) => ({
       week: parseInt(week),
-      average: data.count > 0 ? data.total / data.count : 0
+      average: data.count > 0 ? data.total / data.count : 0,
     }));
 
-    const maxAverage = Math.max(...averages.map(w => w.average));
+    const maxAverage = Math.max(...averages.map((w) => w.average));
 
-    return averages.map(item => ({
+    return averages.map((item) => ({
       week: item.week,
       label: weekLabels[item.week - 1],
       average: Math.round(item.average),
       percentage: maxAverage > 0 ? Math.round((item.average / maxAverage) * 100) : 0,
-      isHighest: item.average === maxAverage && maxAverage > 0
+      isHighest: item.average === maxAverage && maxAverage > 0,
     }));
   });
 
   // Spending tips based on analysis
   spendingTips = computed(() => {
-    const tips: Array<{ title: string; description: string; type: 'warning' | 'success' | 'info'; icon: string; action?: string }> = [];
+    const tips: Array<{
+      title: string;
+      description: string;
+      type: 'warning' | 'success' | 'info';
+      icon: string;
+      action?: string;
+    }> = [];
 
     // Check budget status
     const budgetPercent = this.budgetPercentage();
@@ -2028,7 +2105,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         description: `Bạn đã chi tiêu vượt ${budgetPercent - 100}% ngân sách tháng này.`,
         type: 'warning',
         icon: 'pi-exclamation-triangle',
-        action: 'Xem xét cắt giảm các chi tiêu không cần thiết'
+        action: 'Xem xét cắt giảm các chi tiêu không cần thiết',
       });
     } else if (budgetPercent > 80) {
       tips.push({
@@ -2036,7 +2113,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         description: `Đã sử dụng ${budgetPercent}% ngân sách. Còn ${this.remainingDaysInMonth()} ngày trong tháng.`,
         type: 'warning',
         icon: 'pi-exclamation-circle',
-        action: 'Hạn chế chi tiêu để không vượt ngân sách'
+        action: 'Hạn chế chi tiêu để không vượt ngân sách',
       });
     }
 
@@ -2048,7 +2125,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         description: `Danh mục này chiếm tỷ trọng lớn trong chi tiêu của bạn.`,
         type: 'info',
         icon: 'pi-chart-pie',
-        action: 'Xem xét tối ưu chi tiêu cho danh mục này'
+        action: 'Xem xét tối ưu chi tiêu cho danh mục này',
       });
     }
 
@@ -2059,7 +2136,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         title: 'Chi tiêu giảm đáng kể!',
         description: `Chi tiêu 30 ngày qua giảm ${Math.abs(trend.percentage)}% so với kỳ trước.`,
         type: 'success',
-        icon: 'pi-thumbs-up'
+        icon: 'pi-thumbs-up',
       });
     }
 
@@ -2071,7 +2148,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         description: `Trung bình ${this.formatAmount(highestDay.average)} mỗi ${highestDay.dayName}.`,
         type: 'info',
         icon: 'pi-calendar',
-        action: 'Cân nhắc lên kế hoạch chi tiêu cho ngày này'
+        action: 'Cân nhắc lên kế hoạch chi tiêu cho ngày này',
       });
     }
 
@@ -2081,7 +2158,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         title: 'Theo dõi chi tiêu thường xuyên',
         description: 'Ghi chép chi tiêu hàng ngày giúp bạn kiểm soát tài chính tốt hơn.',
         type: 'info',
-        icon: 'pi-bookmark'
+        icon: 'pi-bookmark',
       });
     }
 
@@ -2090,7 +2167,13 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
   // Spending tips for insights (uses insights-specific computed properties)
   insightsSpendingTips = computed(() => {
-    const tips: Array<{ title: string; description: string; type: 'warning' | 'success' | 'info'; icon: string; action?: string }> = [];
+    const tips: Array<{
+      title: string;
+      description: string;
+      type: 'warning' | 'success' | 'info';
+      icon: string;
+      action?: string;
+    }> = [];
 
     // Top spending category tip
     const topCat = this.insightsTopSpendingCategory();
@@ -2101,7 +2184,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         description: `Danh mục này chiếm tỷ trọng lớn trong chi tiêu ${periodLabel} này.`,
         type: 'info',
         icon: 'pi-chart-pie',
-        action: 'Xem xét tối ưu chi tiêu cho danh mục này'
+        action: 'Xem xét tối ưu chi tiêu cho danh mục này',
       });
     }
 
@@ -2113,7 +2196,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         title: 'Chi tiêu giảm đáng kể!',
         description: `Chi tiêu ${periodLabel} này giảm ${Math.abs(trend.percentage)}% so với ${periodLabel} trước.`,
         type: 'success',
-        icon: 'pi-thumbs-up'
+        icon: 'pi-thumbs-up',
       });
     } else if (trend.percentage > 15) {
       const periodLabel = this.reportMonth() === null ? 'năm' : 'tháng';
@@ -2122,7 +2205,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         description: `Chi tiêu ${periodLabel} này tăng ${trend.percentage}% so với ${periodLabel} trước.`,
         type: 'warning',
         icon: 'pi-exclamation-triangle',
-        action: 'Xem xét lại các khoản chi tiêu'
+        action: 'Xem xét lại các khoản chi tiêu',
       });
     }
 
@@ -2134,7 +2217,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         description: `Trung bình ${this.formatAmount(highestDay.average)} mỗi ${highestDay.dayName}.`,
         type: 'info',
         icon: 'pi-calendar',
-        action: 'Cân nhắc lên kế hoạch chi tiêu cho ngày này'
+        action: 'Cân nhắc lên kế hoạch chi tiêu cho ngày này',
       });
     }
 
@@ -2144,7 +2227,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         title: 'Theo dõi chi tiêu thường xuyên',
         description: 'Ghi chép chi tiêu hàng ngày giúp bạn kiểm soát tài chính tốt hơn.',
         type: 'info',
-        icon: 'pi-bookmark'
+        icon: 'pi-bookmark',
       });
     }
 
@@ -2155,7 +2238,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   insightsCurrentMonthDailyData = computed(() => {
     const year = this.reportYear();
     const month = this.reportMonth();
-    
+
     // If viewing whole year, return empty data
     if (month === null) {
       return { dailyAmounts: new Array(31).fill(0), total: 0, daysInMonth: 0 };
@@ -2166,11 +2249,11 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     let total = 0;
 
     this.expenses()
-      .filter(e => {
+      .filter((e) => {
         const d = new Date(e.date);
-        return d.getFullYear() === year && d.getMonth() === (month - 1);
+        return d.getFullYear() === year && d.getMonth() === month - 1;
       })
-      .forEach(e => {
+      .forEach((e) => {
         const day = new Date(e.date).getDate();
         dailyAmounts[day - 1] += e.amount;
         total += e.amount;
@@ -2183,7 +2266,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   insightsPreviousMonthDailyData = computed(() => {
     const year = this.reportYear();
     const month = this.reportMonth();
-    
+
     // If viewing whole year, return empty data
     if (month === null) {
       return { dailyAmounts: new Array(31).fill(0), total: 0, daysInMonth: 0 };
@@ -2202,11 +2285,11 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     let total = 0;
 
     this.expenses()
-      .filter(e => {
+      .filter((e) => {
         const d = new Date(e.date);
-        return d.getFullYear() === prevYear && d.getMonth() === (prevMonth - 1);
+        return d.getFullYear() === prevYear && d.getMonth() === prevMonth - 1;
       })
-      .forEach(e => {
+      .forEach((e) => {
         const day = new Date(e.date).getDate();
         dailyAmounts[day - 1] += e.amount;
         total += e.amount;
@@ -2221,13 +2304,26 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   getInsightsCurrentMonthLabel(): string {
     const year = this.reportYear();
     const month = this.reportMonth();
-    
+
     if (month === null) {
       return `Năm ${year}`;
     }
 
-    const monthNames = ['', 'Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6',
-                        'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'];
+    const monthNames = [
+      '',
+      'Tháng 1',
+      'Tháng 2',
+      'Tháng 3',
+      'Tháng 4',
+      'Tháng 5',
+      'Tháng 6',
+      'Tháng 7',
+      'Tháng 8',
+      'Tháng 9',
+      'Tháng 10',
+      'Tháng 11',
+      'Tháng 12',
+    ];
     return `${monthNames[month]} ${year}`;
   }
 
@@ -2237,7 +2333,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   getInsightsPreviousMonthLabel(): string {
     const year = this.reportYear();
     const month = this.reportMonth();
-    
+
     if (month === null) {
       return `Năm ${year - 1}`;
     }
@@ -2250,8 +2346,21 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       prevYear--;
     }
 
-    const monthNames = ['', 'Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6',
-                        'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'];
+    const monthNames = [
+      '',
+      'Tháng 1',
+      'Tháng 2',
+      'Tháng 3',
+      'Tháng 4',
+      'Tháng 5',
+      'Tháng 6',
+      'Tháng 7',
+      'Tháng 8',
+      'Tháng 9',
+      'Tháng 10',
+      'Tháng 11',
+      'Tháng 12',
+    ];
     return `${monthNames[prevMonth]} ${prevYear}`;
   }
 
@@ -2275,7 +2384,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       description: string;
       icon: string;
       achieved: boolean;
-      progress?: number
+      progress?: number;
     }> = [];
 
     const budgetPercent = this.budgetPercentage();
@@ -2292,7 +2401,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
           title: 'Kiểm soát ngân sách tốt',
           description: 'Chi tiêu theo đúng kế hoạch ngân sách',
           icon: 'pi-wallet',
-          achieved: true
+          achieved: true,
         });
       } else {
         achievements.push({
@@ -2300,7 +2409,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
           description: 'Tiếp tục cố gắng để đạt mục tiêu',
           icon: 'pi-wallet',
           achieved: false,
-          progress: Math.max(0, Math.round(100 - (budgetPercent - targetPercent)))
+          progress: Math.max(0, Math.round(100 - (budgetPercent - targetPercent))),
         });
       }
     }
@@ -2311,7 +2420,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         title: 'Xu hướng tiết kiệm',
         description: `Giảm ${Math.abs(trend.percentage)}% so với kỳ trước`,
         icon: 'pi-chart-line',
-        achieved: true
+        achieved: true,
       });
     }
 
@@ -2322,7 +2431,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         title: 'Ghi chép đều đặn',
         description: `Đã ghi chép ${uniqueDates.length} ngày`,
         icon: 'pi-check-circle',
-        achieved: true
+        achieved: true,
       });
     } else {
       achievements.push({
@@ -2330,7 +2439,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         description: 'Ghi chép ít nhất 7 ngày để đạt thành tích',
         icon: 'pi-check-circle',
         achieved: false,
-        progress: Math.round((uniqueDates.length / 7) * 100)
+        progress: Math.round((uniqueDates.length / 7) * 100),
       });
     }
 
@@ -2341,7 +2450,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         title: 'Chi tiêu hợp lý',
         description: `Trung bình ${this.formatAmount(avgExpense)}/giao dịch`,
         icon: 'pi-star',
-        achieved: true
+        achieved: true,
       });
     }
 
@@ -2354,7 +2463,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const dayNum = d.getUTCDay() || 7;
     d.setUTCDate(d.getUTCDate() + 4 - dayNum);
     const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-    return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+    return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
   }
 
   /**
@@ -2387,32 +2496,26 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         zScores: [],
         coefficientOfVariation: 0,
         skewness: 0,
-        kurtosis: 0
+        kurtosis: 0,
       };
     }
 
-    const amounts = expenses.map(e => e.amount).sort((a, b) => a - b);
+    const amounts = expenses.map((e) => e.amount).sort((a, b) => a - b);
     const n = amounts.length;
 
     // Mean
     const mean = amounts.reduce((sum, val) => sum + val, 0) / n;
 
     // Median (Q2)
-    const q2 = n % 2 === 0
-      ? (amounts[n / 2 - 1] + amounts[n / 2]) / 2
-      : amounts[Math.floor(n / 2)];
+    const q2 = n % 2 === 0 ? (amounts[n / 2 - 1] + amounts[n / 2]) / 2 : amounts[Math.floor(n / 2)];
 
     // Q1 (25th percentile)
     const q1Index = Math.floor(n * 0.25);
-    const q1 = n % 4 === 0
-      ? (amounts[q1Index - 1] + amounts[q1Index]) / 2
-      : amounts[q1Index];
+    const q1 = n % 4 === 0 ? (amounts[q1Index - 1] + amounts[q1Index]) / 2 : amounts[q1Index];
 
     // Q3 (75th percentile)
     const q3Index = Math.floor(n * 0.75);
-    const q3 = n % 4 === 0
-      ? (amounts[q3Index - 1] + amounts[q3Index]) / 2
-      : amounts[q3Index];
+    const q3 = n % 4 === 0 ? (amounts[q3Index - 1] + amounts[q3Index]) / 2 : amounts[q3Index];
 
     // IQR
     const iqr = q3 - q1;
@@ -2423,7 +2526,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     // Mode (most frequent value within ranges)
     const modeMap: { [key: number]: number } = {};
-    amounts.forEach(amount => {
+    amounts.forEach((amount) => {
       const rounded = Math.round(amount / 10000) * 10000; // Round to nearest 10k
       modeMap[rounded] = (modeMap[rounded] || 0) + 1;
     });
@@ -2432,40 +2535,48 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     );
 
     // Z-scores
-    const zScores = amounts.map(amount => ({
+    const zScores = amounts.map((amount) => ({
       amount,
-      zScore: standardDeviation > 0 ? (amount - mean) / standardDeviation : 0
+      zScore: standardDeviation > 0 ? (amount - mean) / standardDeviation : 0,
     }));
 
     // Outliers using IQR method
     const lowerBound = q1 - 1.5 * iqr;
     const upperBound = q3 + 1.5 * iqr;
 
-    const outliers: Array<Expense & { zScore: number; isOutlier: boolean; outlierType: 'low' | 'high' | 'normal' }> = expenses
+    const outliers: Array<
+      Expense & { zScore: number; isOutlier: boolean; outlierType: 'low' | 'high' | 'normal' }
+    > = expenses
       .map((expense, index) => ({
         ...expense,
         zScore: zScores[index]?.zScore || 0,
         isOutlier: expense.amount < lowerBound || expense.amount > upperBound,
-        outlierType: (expense.amount < lowerBound ? 'low' : expense.amount > upperBound ? 'high' : 'normal') as 'low' | 'high' | 'normal'
+        outlierType: (expense.amount < lowerBound
+          ? 'low'
+          : expense.amount > upperBound
+            ? 'high'
+            : 'normal') as 'low' | 'high' | 'normal',
       }))
-      .filter(item => item.isOutlier)
+      .filter((item) => item.isOutlier)
       .sort((a, b) => Math.abs(b.zScore) - Math.abs(a.zScore));
 
     // Coefficient of Variation
     const coefficientOfVariation = mean > 0 ? (standardDeviation / mean) * 100 : 0;
 
     // Skewness
-    const skewness = n > 2 && standardDeviation > 0
-      ? (n / ((n - 1) * (n - 2))) * amounts.reduce((sum, val) =>
-          sum + Math.pow((val - mean) / standardDeviation, 3), 0)
-      : 0;
+    const skewness =
+      n > 2 && standardDeviation > 0
+        ? (n / ((n - 1) * (n - 2))) *
+          amounts.reduce((sum, val) => sum + Math.pow((val - mean) / standardDeviation, 3), 0)
+        : 0;
 
     // Kurtosis
-    const kurtosis = n > 3 && standardDeviation > 0
-      ? ((n * (n + 1)) / ((n - 1) * (n - 2) * (n - 3))) *
-        amounts.reduce((sum, val) => sum + Math.pow((val - mean) / standardDeviation, 4), 0) -
-        (3 * (n - 1) * (n - 1)) / ((n - 2) * (n - 3))
-      : 0;
+    const kurtosis =
+      n > 3 && standardDeviation > 0
+        ? ((n * (n + 1)) / ((n - 1) * (n - 2) * (n - 3))) *
+            amounts.reduce((sum, val) => sum + Math.pow((val - mean) / standardDeviation, 4), 0) -
+          (3 * (n - 1) * (n - 1)) / ((n - 2) * (n - 3))
+        : 0;
 
     return {
       mean: Math.round(mean),
@@ -2484,7 +2595,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       skewness: Math.round(skewness * 100) / 100,
       kurtosis: Math.round(kurtosis * 100) / 100,
       lowerBound: Math.round(lowerBound),
-      upperBound: Math.round(upperBound)
+      upperBound: Math.round(upperBound),
     };
   });
 
@@ -2498,8 +2609,8 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     const allExpenses = this.expenses();
 
-    const todayExpenses = allExpenses.filter(e => e.date === todayStr);
-    const yesterdayExpenses = allExpenses.filter(e => e.date === yesterdayStr);
+    const todayExpenses = allExpenses.filter((e) => e.date === todayStr);
+    const yesterdayExpenses = allExpenses.filter((e) => e.date === yesterdayStr);
 
     const todayTotal = todayExpenses.reduce((sum, e) => sum + e.amount, 0);
     const yesterdayTotal = yesterdayExpenses.reduce((sum, e) => sum + e.amount, 0);
@@ -2533,7 +2644,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       change,
       changePercent: Math.abs(changePercent),
       status,
-      hasData: yesterdayTotal > 0 || todayTotal > 0
+      hasData: yesterdayTotal > 0 || todayTotal > 0,
     };
   });
 
@@ -2544,7 +2655,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const allExpenses = this.expenses(); // Use all expenses, not filtered
 
     // Get today's expenses
-    const todayExpenses = allExpenses.filter(e => e.date === todayStr);
+    const todayExpenses = allExpenses.filter((e) => e.date === todayStr);
     const todayTotal = todayExpenses.reduce((sum, e) => sum + e.amount, 0);
     const todayCount = todayExpenses.length;
 
@@ -2553,11 +2664,11 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     thirtyDaysAgo.setDate(today.getDate() - 30);
     const thirtyDaysAgoStr = this.formatDateLocal(thirtyDaysAgo);
 
-    const last30DaysExpenses = allExpenses.filter(e => {
+    const last30DaysExpenses = allExpenses.filter((e) => {
       return e.date >= thirtyDaysAgoStr && e.date < todayStr;
     });
 
-    const last30DaysDates = new Set(last30DaysExpenses.map(e => e.date));
+    const last30DaysDates = new Set(last30DaysExpenses.map((e) => e.date));
     const last30DaysTotal = last30DaysExpenses.reduce((sum, e) => sum + e.amount, 0);
     const last30DaysAvg = last30DaysDates.size > 0 ? last30DaysTotal / last30DaysDates.size : 0;
 
@@ -2566,11 +2677,11 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     sevenDaysAgo.setDate(today.getDate() - 7);
     const sevenDaysAgoStr = this.formatDateLocal(sevenDaysAgo);
 
-    const last7DaysExpenses = allExpenses.filter(e => {
+    const last7DaysExpenses = allExpenses.filter((e) => {
       return e.date >= sevenDaysAgoStr && e.date < todayStr;
     });
 
-    const last7DaysDates = new Set(last7DaysExpenses.map(e => e.date));
+    const last7DaysDates = new Set(last7DaysExpenses.map((e) => e.date));
     const last7DaysTotal = last7DaysExpenses.reduce((sum, e) => sum + e.amount, 0);
     const last7DaysAvg = last7DaysDates.size > 0 ? last7DaysTotal / last7DaysDates.size : 0;
 
@@ -2582,11 +2693,11 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     weekStart.setHours(0, 0, 0, 0);
     const weekStartStr = this.formatDateLocal(weekStart);
 
-    const currentWeekExpenses = allExpenses.filter(e => {
+    const currentWeekExpenses = allExpenses.filter((e) => {
       return e.date >= weekStartStr && e.date < todayStr;
     });
 
-    const currentWeekDates = new Set(currentWeekExpenses.map(e => e.date));
+    const currentWeekDates = new Set(currentWeekExpenses.map((e) => e.date));
     const currentWeekTotal = currentWeekExpenses.reduce((sum, e) => sum + e.amount, 0);
     const currentWeekAvg = currentWeekDates.size > 0 ? currentWeekTotal / currentWeekDates.size : 0;
 
@@ -2594,27 +2705,26 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
     const monthStartStr = this.formatDateLocal(monthStart);
 
-    const currentMonthExpenses = allExpenses.filter(e => {
+    const currentMonthExpenses = allExpenses.filter((e) => {
       return e.date >= monthStartStr && e.date < todayStr;
     });
 
-    const currentMonthDates = new Set(currentMonthExpenses.map(e => e.date));
+    const currentMonthDates = new Set(currentMonthExpenses.map((e) => e.date));
     const currentMonthTotal = currentMonthExpenses.reduce((sum, e) => sum + e.amount, 0);
-    const currentMonthAvg = currentMonthDates.size > 0 ? currentMonthTotal / currentMonthDates.size : 0;
+    const currentMonthAvg =
+      currentMonthDates.size > 0 ? currentMonthTotal / currentMonthDates.size : 0;
 
     // Calculate comparisons
-    const compare30Days = last30DaysAvg > 0
-      ? Math.round(((todayTotal - last30DaysAvg) / last30DaysAvg) * 100)
-      : 0;
-    const compare7Days = last7DaysAvg > 0
-      ? Math.round(((todayTotal - last7DaysAvg) / last7DaysAvg) * 100)
-      : 0;
-    const compareWeek = currentWeekAvg > 0
-      ? Math.round(((todayTotal - currentWeekAvg) / currentWeekAvg) * 100)
-      : 0;
-    const compareMonth = currentMonthAvg > 0
-      ? Math.round(((todayTotal - currentMonthAvg) / currentMonthAvg) * 100)
-      : 0;
+    const compare30Days =
+      last30DaysAvg > 0 ? Math.round(((todayTotal - last30DaysAvg) / last30DaysAvg) * 100) : 0;
+    const compare7Days =
+      last7DaysAvg > 0 ? Math.round(((todayTotal - last7DaysAvg) / last7DaysAvg) * 100) : 0;
+    const compareWeek =
+      currentWeekAvg > 0 ? Math.round(((todayTotal - currentWeekAvg) / currentWeekAvg) * 100) : 0;
+    const compareMonth =
+      currentMonthAvg > 0
+        ? Math.round(((todayTotal - currentMonthAvg) / currentMonthAvg) * 100)
+        : 0;
 
     // Determine overall status
     let overallStatus: 'high' | 'normal' | 'low' = 'normal';
@@ -2651,7 +2761,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       compareMonth: compareMonth,
       overallStatus: overallStatus,
       overallMessage: overallMessage,
-      hasData: last30DaysDates.size > 0
+      hasData: last30DaysDates.size > 0,
     };
   });
 
@@ -2674,29 +2784,39 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       const topPercentage = (topCategory.total / total) * 100;
 
       if (topPercentage > 40) {
-        suggestions.push(`⚠️ Bạn đang chi ${topPercentage.toFixed(1)}% tổng chi tiêu cho "${topCategory.category}". Hãy xem xét giảm chi tiêu ở mục này.`);
+        suggestions.push(
+          `⚠️ Bạn đang chi ${topPercentage.toFixed(1)}% tổng chi tiêu cho "${topCategory.category}". Hãy xem xét giảm chi tiêu ở mục này.`
+        );
       }
     }
 
     // Check daily average
     if (avgDaily > 500000) {
-      suggestions.push(`💰 Trung bình mỗi ngày bạn chi ${this.formatAmount(avgDaily)}. Hãy cân nhắc lập ngân sách hàng ngày.`);
+      suggestions.push(
+        `💰 Trung bình mỗi ngày bạn chi ${this.formatAmount(avgDaily)}. Hãy cân nhắc lập ngân sách hàng ngày.`
+      );
     }
 
     // Check if there are many small expenses
-    const smallExpenses = expenses.filter(e => e.amount < 50000).length;
+    const smallExpenses = expenses.filter((e) => e.amount < 50000).length;
     if (smallExpenses > expenses.length * 0.5) {
-      suggestions.push(`📝 Bạn có nhiều chi tiêu nhỏ (${smallExpenses} giao dịch). Tổng hợp các chi tiêu nhỏ có thể giúp tiết kiệm.`);
+      suggestions.push(
+        `📝 Bạn có nhiều chi tiêu nhỏ (${smallExpenses} giao dịch). Tổng hợp các chi tiêu nhỏ có thể giúp tiết kiệm.`
+      );
     }
 
     // Check category diversity
     if (categoryData.length < 3) {
-      suggestions.push(`📊 Bạn chỉ chi tiêu ở ${categoryData.length} phân loại. Hãy đa dạng hóa để quản lý tốt hơn.`);
+      suggestions.push(
+        `📊 Bạn chỉ chi tiêu ở ${categoryData.length} phân loại. Hãy đa dạng hóa để quản lý tốt hơn.`
+      );
     }
 
     // Positive feedback
     if (avgDaily < 200000 && expenses.length > 10) {
-      suggestions.push(`✅ Bạn đang quản lý chi tiêu tốt với mức trung bình ${this.formatAmount(avgDaily)}/ngày. Tiếp tục phát huy!`);
+      suggestions.push(
+        `✅ Bạn đang quản lý chi tiêu tốt với mức trung bình ${this.formatAmount(avgDaily)}/ngày. Tiếp tục phát huy!`
+      );
     }
 
     if (suggestions.length === 0) {
@@ -2712,7 +2832,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     if (!category) return [];
 
     return this.filteredExpenses()
-      .filter(expense => expense.category === category)
+      .filter((expense) => expense.category === category)
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   });
 
@@ -2720,7 +2840,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const expenses = this.categoryDetailExpenses();
     const dailyMap: { [key: string]: { total: number; items: Expense[] } } = {};
 
-    expenses.forEach(expense => {
+    expenses.forEach((expense) => {
       const date = expense.date;
       if (dailyMap[date]) {
         dailyMap[date].total += expense.amount;
@@ -2728,19 +2848,19 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       } else {
         dailyMap[date] = {
           total: expense.amount,
-          items: [expense]
+          items: [expense],
         };
       }
     });
 
     return Object.keys(dailyMap)
       .sort()
-      .map(date => ({
+      .map((date) => ({
         date: date,
         displayDate: this.formatDate(date),
         shortDate: this.formatDateShort(date),
         total: dailyMap[date].total,
-        items: dailyMap[date].items
+        items: dailyMap[date].items,
       }));
   });
 
@@ -2768,7 +2888,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     // Group by month
     const monthlyMap: { [key: string]: number } = {};
-    expenses.forEach(expense => {
+    expenses.forEach((expense) => {
       const date = new Date(expense.date);
       const monthKey = `${date.getFullYear()}-${date.getMonth() + 1}`;
       if (monthlyMap[monthKey]) {
@@ -2798,7 +2918,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     if (expenses.length === 0) return 0;
 
     const monthlySet = new Set<string>();
-    expenses.forEach(expense => {
+    expenses.forEach((expense) => {
       const date = new Date(expense.date);
       const monthKey = `${date.getFullYear()}-${date.getMonth() + 1}`;
       monthlySet.add(monthKey);
@@ -2845,7 +2965,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       const month = this.reportMonth();
       const year = this.reportYear();
       const dialogOpen = this.showBudgetCategoryDetailDialog();
-      
+
       // Re-initialize chart if dialog is open and month/year changes
       if (dialogOpen && this.budgetCategoryMonthlyChartRef?.nativeElement) {
         setTimeout(() => {
@@ -2862,7 +2982,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         this.columnWidths.set({
           date: widths.date || 150,
           content: widths.content || 0,
-          actions: widths.actions || 160
+          actions: widths.actions || 160,
         });
       } catch (e) {
         console.error('Error loading column widths:', e);
@@ -3040,7 +3160,10 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         // Store hash of username:password combination in sessionStorage
         // This hash includes date component, so it changes daily
         // Username is NOT stored - will be found by iterating through valid usernames
-        const credentialsHash = this.expenseService.generateCredentialsHash(validUsername, inputPassword);
+        const credentialsHash = this.expenseService.generateCredentialsHash(
+          validUsername,
+          inputPassword
+        );
         sessionStorage.setItem('expense_app_auth_hash', credentialsHash);
       }
 
@@ -3124,9 +3247,11 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       },
       error: (err) => {
         console.error('Error loading expenses:', err);
-        this.error.set('Không thể tải danh sách chi tiêu. Vui lòng kiểm tra quyền truy cập Google Sheets.');
+        this.error.set(
+          'Không thể tải danh sách chi tiêu. Vui lòng kiểm tra quyền truy cập Google Sheets.'
+        );
         this.isLoading.set(false);
-      }
+      },
     });
   }
 
@@ -3149,7 +3274,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         console.error('Error loading groups:', err);
         this.isLoadingGroups.set(false);
         // Don't show error to user, groups are optional
-      }
+      },
     });
   }
 
@@ -3158,7 +3283,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
    */
   showGroupDetailDialog(group: ExpenseGroup): void {
     const expenses = this.expenses();
-    let groupExpenses = expenses.filter(exp => exp.groupId === group.id);
+    let groupExpenses = expenses.filter((exp) => exp.groupId === group.id);
 
     // Sort by date descending, then by rowIndex descending (newer on top)
     groupExpenses.sort((a, b) => {
@@ -3205,7 +3330,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   applyGroupToAll(): void {
     const groupId = this.selectedGroupForAll();
     const expenses = this.multipleExpenses();
-    expenses.forEach(expense => {
+    expenses.forEach((expense) => {
       expense.groupId = groupId;
     });
     this.multipleExpenses.set([...expenses]);
@@ -3221,7 +3346,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       content: '',
       dateFrom: '',
       dateTo: '',
-      totalAmount: 0
+      totalAmount: 0,
     };
     this.editingGroup.set(null);
     this.showGroupForm.set(true);
@@ -3248,7 +3373,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       ...group,
       dateFrom: this.formatDateForInput(group.dateFrom),
       dateTo: this.formatDateForInput(group.dateTo),
-      totalAmount: calculatedTotal // Use calculated total from expenses
+      totalAmount: calculatedTotal, // Use calculated total from expenses
     };
     this.editingGroup.set(group);
     this.showGroupForm.set(true);
@@ -3277,7 +3402,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     const group = {
       ...this.newGroup,
-      totalAmount: calculatedTotal // Always use calculated total from expenses
+      totalAmount: calculatedTotal, // Always use calculated total from expenses
     };
     const isEditing = this.editingGroup() !== null;
 
@@ -3291,7 +3416,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         },
         error: (err) => {
           this.showNotificationDialog('Không thể cập nhật nhóm chi tiêu: ' + err.message, 'error');
-        }
+        },
       });
     } else {
       this.expenseService.addGroup(group).subscribe({
@@ -3302,7 +3427,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         },
         error: (err) => {
           this.showNotificationDialog('Không thể thêm nhóm chi tiêu: ' + err.message, 'error');
-        }
+        },
       });
     }
   }
@@ -3331,7 +3456,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       },
       error: (err) => {
         this.showNotificationDialog('Không thể xóa nhóm chi tiêu: ' + err.message, 'error');
-      }
+      },
     });
   }
 
@@ -3394,7 +3519,10 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   /**
    * Get top categories for a group (uses cache, limit 3 for display)
    */
-  getGroupTopCategories(group: ExpenseGroup, limit: number = 5): Array<{category: string, total: number, count: number}> {
+  getGroupTopCategories(
+    group: ExpenseGroup,
+    limit: number = 5
+  ): Array<{ category: string; total: number; count: number }> {
     const cached = this.groupStatistics().topCategories[group.id] || [];
     // Return cached (limit 3) or slice if limit is different
     return limit === 3 ? cached : cached.slice(0, limit);
@@ -3419,7 +3547,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
    */
   getGroupCategoryExpenses(groupId: string, category: string): Expense[] {
     const groupExpenses = this.expensesByGroup()[groupId] || [];
-    return groupExpenses.filter(expense => expense.category === category);
+    return groupExpenses.filter((expense) => expense.category === category);
   }
 
   /**
@@ -3440,7 +3568,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   /**
    * Get date range for a group (from first to last expense) (uses cache)
    */
-  getGroupDateRange(group: ExpenseGroup): {from: string, to: string} | null {
+  getGroupDateRange(group: ExpenseGroup): { from: string; to: string } | null {
     return this.groupStatistics().dateRanges[group.id] || null;
   }
 
@@ -3458,7 +3586,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     let totalAmount = 0;
     let totalExpenses = 0;
 
-    groups.forEach(group => {
+    groups.forEach((group) => {
       const groupExpenses = this.expensesByGroup()[group.id] || [];
       totalAmount += this.getGroupTotalAmount(group);
       totalExpenses += groupExpenses.length;
@@ -3469,7 +3597,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       totalAmount,
       totalExpenses,
       averagePerGroup: groups.length > 0 ? totalAmount / groups.length : 0,
-      averagePerExpense: totalExpenses > 0 ? totalAmount / totalExpenses : 0
+      averagePerExpense: totalExpenses > 0 ? totalAmount / totalExpenses : 0,
     };
   }
 
@@ -3493,7 +3621,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       amount: 0,
       category: '',
       note: '',
-      groupId: ''
+      groupId: '',
     };
     this.inputMode.set('single');
     this.multipleExpenses.set([this.createEmptyExpense()]);
@@ -3513,7 +3641,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       amount: 0,
       category: '',
       note: '',
-      groupId: ''
+      groupId: '',
     };
   }
 
@@ -3533,7 +3661,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       amount: 0,
       category: '',
       note: '',
-      groupId: ''
+      groupId: '',
     };
   }
 
@@ -3557,7 +3685,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       amount: expense.amount,
       category: expense.category,
       note: expense.note || '',
-      groupId: expense.groupId || ''
+      groupId: expense.groupId || '',
     };
     // Set formatted amount for display - format immediately
     const formatted = this.formatNumberInput(expense.amount);
@@ -3579,7 +3707,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       content: '',
       amount: 0,
       category: '',
-      note: ''
+      note: '',
     };
     this.editExpenseAmountDisplay.set('');
   }
@@ -3593,9 +3721,12 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     this.showNotification.set(true);
 
     // Auto close after 3 seconds for success, 5 seconds for error
-    setTimeout(() => {
-      this.hideNotificationDialog();
-    }, type === 'success' ? 3000 : 5000);
+    setTimeout(
+      () => {
+        this.hideNotificationDialog();
+      },
+      type === 'success' ? 3000 : 5000
+    );
   }
 
   /**
@@ -3638,11 +3769,12 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     // Find the row index in the original expenses list
     // Row index = index in expenses array + 2 (row 1 is header, row 2 is first data)
     const expenses = this.expenses();
-    const originalExpense = expenses.find(e =>
-      e.date === expense.date &&
-      e.content === expense.content &&
-      e.amount === expense.amount &&
-      e.category === expense.category
+    const originalExpense = expenses.find(
+      (e) =>
+        e.date === expense.date &&
+        e.content === expense.content &&
+        e.amount === expense.amount &&
+        e.category === expense.category
     );
 
     if (!originalExpense) {
@@ -3667,8 +3799,11 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         console.error('Error updating expense:', err);
         this.error.set('Không thể cập nhật chi tiêu. Vui lòng thử lại sau.');
         this.isLoading.set(false);
-        this.showNotificationDialog('Lỗi: Không thể cập nhật chi tiêu. Vui lòng kiểm tra kết nối hoặc quyền truy cập Google Sheets.', 'error');
-      }
+        this.showNotificationDialog(
+          'Lỗi: Không thể cập nhật chi tiêu. Vui lòng kiểm tra kết nối hoặc quyền truy cập Google Sheets.',
+          'error'
+        );
+      },
     });
   }
 
@@ -3750,21 +3885,35 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     }
 
     const colors = [
-      '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8',
-      '#F7DC6F', '#BB8FCE', '#85C1E2', '#F8B739', '#52BE80',
-      '#EC7063', '#5DADE2', '#58D68D', '#F4D03F', '#AF7AC5'
+      '#FF6B6B',
+      '#4ECDC4',
+      '#45B7D1',
+      '#FFA07A',
+      '#98D8C8',
+      '#F7DC6F',
+      '#BB8FCE',
+      '#85C1E2',
+      '#F8B739',
+      '#52BE80',
+      '#EC7063',
+      '#5DADE2',
+      '#58D68D',
+      '#F4D03F',
+      '#AF7AC5',
     ];
 
     const config: ChartConfiguration = {
       type: 'pie',
       data: {
-        labels: categoryData.map(item => item.category),
-        datasets: [{
-          data: categoryData.map(item => item.total),
-          backgroundColor: colors.slice(0, categoryData.length),
-          borderWidth: 2,
-          borderColor: '#ffffff'
-        }]
+        labels: categoryData.map((item) => item.category),
+        datasets: [
+          {
+            data: categoryData.map((item) => item.total),
+            backgroundColor: colors.slice(0, categoryData.length),
+            borderWidth: 2,
+            borderColor: '#ffffff',
+          },
+        ],
       },
       options: {
         responsive: true,
@@ -3775,9 +3924,9 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
             labels: {
               padding: 15,
               font: {
-                size: 13
-              }
-            }
+                size: 13,
+              },
+            },
           },
           tooltip: {
             callbacks: {
@@ -3787,11 +3936,11 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
                 const total = categoryData.reduce((sum, item) => sum + item.total, 0);
                 const percentage = ((value / total) * 100).toFixed(1);
                 return `${label}: ${this.formatAmount(value)} (${percentage}%)`;
-              }
-            }
-          }
-        }
-      }
+              },
+            },
+          },
+        },
+      },
     };
 
     this.categoryChart = new Chart(this.categoryChartRef.nativeElement, config);
@@ -3831,37 +3980,39 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const config: ChartConfiguration = {
       type: 'line',
       data: {
-        labels: sortedData.map(item => this.formatDateDDMMYYYY(item.date)),
-        datasets: [{
-          label: 'Chi tiêu theo ngày',
-          data: sortedData.map(item => item.total),
-          borderColor: '#FF6B6B',
-          backgroundColor: 'rgba(255, 107, 107, 0.1)',
-          borderWidth: 3,
-          fill: true,
-          tension: 0.4,
-          pointRadius: 5,
-          pointHoverRadius: 7,
-          pointBackgroundColor: '#FF6B6B',
-          pointBorderColor: '#ffffff',
-          pointBorderWidth: 2
-        }]
+        labels: sortedData.map((item) => this.formatDateDDMMYYYY(item.date)),
+        datasets: [
+          {
+            label: 'Chi tiêu theo ngày',
+            data: sortedData.map((item) => item.total),
+            borderColor: '#FF6B6B',
+            backgroundColor: 'rgba(255, 107, 107, 0.1)',
+            borderWidth: 3,
+            fill: true,
+            tension: 0.4,
+            pointRadius: 5,
+            pointHoverRadius: 7,
+            pointBackgroundColor: '#FF6B6B',
+            pointBorderColor: '#ffffff',
+            pointBorderWidth: 2,
+          },
+        ],
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
           legend: {
-            display: false
+            display: false,
           },
           tooltip: {
             callbacks: {
               label: (context) => {
                 const value = context.parsed.y;
                 return `Chi tiêu: ${this.formatAmount(typeof value === 'number' ? value : 0)}`;
-              }
-            }
-          }
+              },
+            },
+          },
         },
         scales: {
           y: {
@@ -3871,11 +4022,11 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
                 if (value === null || value === undefined) return '';
                 const numValue = typeof value === 'number' ? value : 0;
                 return this.formatAmount(numValue);
-              }
-            }
-          }
-        }
-      }
+              },
+            },
+          },
+        },
+      },
     };
 
     this.dailyChart = new Chart(this.dailyChartRef.nativeElement, config);
@@ -3905,32 +4056,46 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     }
 
     const colors = [
-      '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8',
-      '#F7DC6F', '#BB8FCE', '#85C1E2', '#F8B739', '#52BE80',
-      '#EC7063', '#5DADE2', '#58D68D', '#F4D03F', '#AF7AC5'
+      '#FF6B6B',
+      '#4ECDC4',
+      '#45B7D1',
+      '#FFA07A',
+      '#98D8C8',
+      '#F7DC6F',
+      '#BB8FCE',
+      '#85C1E2',
+      '#F8B739',
+      '#52BE80',
+      '#EC7063',
+      '#5DADE2',
+      '#58D68D',
+      '#F4D03F',
+      '#AF7AC5',
     ];
 
     const config: ChartConfiguration = {
       type: 'bar',
       data: {
-        labels: categoryData.map(item => item.category),
-        datasets: [{
-          label: 'Chi tiêu theo phân loại',
-          data: categoryData.map(item => item.total),
-          backgroundColor: colors.slice(0, categoryData.length).map((color, index) =>
-            index % 2 === 0 ? color : color + '80'
-          ),
-          borderColor: colors.slice(0, categoryData.length),
-          borderWidth: 2,
-          borderRadius: 8
-        }]
+        labels: categoryData.map((item) => item.category),
+        datasets: [
+          {
+            label: 'Chi tiêu theo phân loại',
+            data: categoryData.map((item) => item.total),
+            backgroundColor: colors
+              .slice(0, categoryData.length)
+              .map((color, index) => (index % 2 === 0 ? color : color + '80')),
+            borderColor: colors.slice(0, categoryData.length),
+            borderWidth: 2,
+            borderRadius: 8,
+          },
+        ],
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
           legend: {
-            display: false
+            display: false,
           },
           tooltip: {
             callbacks: {
@@ -3941,9 +4106,9 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
                 const numValue = typeof value === 'number' ? value : 0;
                 const percentage = total > 0 ? ((numValue / total) * 100).toFixed(1) : '0';
                 return `${this.formatAmount(numValue)} (${percentage}%)`;
-              }
-            }
-          }
+              },
+            },
+          },
         },
         scales: {
           y: {
@@ -3953,11 +4118,11 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
                 if (value === null || value === undefined) return '';
                 const numValue = typeof value === 'number' ? value : 0;
                 return this.formatAmount(numValue);
-              }
-            }
-          }
-        }
-      }
+              },
+            },
+          },
+        },
+      },
     };
 
     this.categoryBarChart = new Chart(this.categoryBarChartRef.nativeElement, config);
@@ -3981,50 +4146,58 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       type: 'bar',
       data: {
         labels: ['Hôm nay', 'TB 7 ngày', 'TB 30 ngày', 'TB tuần này', 'TB tháng này'],
-        datasets: [{
-          label: 'Chi tiêu',
-          data: [
-            evaluation.todayTotal,
-            evaluation.last7DaysAvg,
-            evaluation.last30DaysAvg,
-            evaluation.currentWeekAvg,
-            evaluation.currentMonthAvg
-          ],
-          backgroundColor: [
-            evaluation.overallStatus === 'high' ? '#f44336' :
-            evaluation.overallStatus === 'low' ? '#4caf50' : '#ff9800',
-            'rgba(33, 150, 243, 0.6)',
-            'rgba(33, 150, 243, 0.6)',
-            'rgba(33, 150, 243, 0.6)',
-            'rgba(33, 150, 243, 0.6)'
-          ],
-          borderColor: [
-            evaluation.overallStatus === 'high' ? '#d32f2f' :
-            evaluation.overallStatus === 'low' ? '#388e3c' : '#f57c00',
-            '#2196F3',
-            '#2196F3',
-            '#2196F3',
-            '#2196F3'
-          ],
-          borderWidth: 2,
-          borderRadius: 8
-        }]
+        datasets: [
+          {
+            label: 'Chi tiêu',
+            data: [
+              evaluation.todayTotal,
+              evaluation.last7DaysAvg,
+              evaluation.last30DaysAvg,
+              evaluation.currentWeekAvg,
+              evaluation.currentMonthAvg,
+            ],
+            backgroundColor: [
+              evaluation.overallStatus === 'high'
+                ? '#f44336'
+                : evaluation.overallStatus === 'low'
+                  ? '#4caf50'
+                  : '#ff9800',
+              'rgba(33, 150, 243, 0.6)',
+              'rgba(33, 150, 243, 0.6)',
+              'rgba(33, 150, 243, 0.6)',
+              'rgba(33, 150, 243, 0.6)',
+            ],
+            borderColor: [
+              evaluation.overallStatus === 'high'
+                ? '#d32f2f'
+                : evaluation.overallStatus === 'low'
+                  ? '#388e3c'
+                  : '#f57c00',
+              '#2196F3',
+              '#2196F3',
+              '#2196F3',
+              '#2196F3',
+            ],
+            borderWidth: 2,
+            borderRadius: 8,
+          },
+        ],
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
           legend: {
-            display: false
+            display: false,
           },
           tooltip: {
             callbacks: {
               label: (context) => {
                 const value = context.parsed.y;
                 return `Chi tiêu: ${this.formatAmount(typeof value === 'number' ? value : 0)}`;
-              }
-            }
-          }
+              },
+            },
+          },
         },
         scales: {
           y: {
@@ -4034,11 +4207,11 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
                 if (value === null || value === undefined) return '';
                 const numValue = typeof value === 'number' ? value : 0;
                 return this.formatAmount(numValue);
-              }
-            }
-          }
-        }
-      }
+              },
+            },
+          },
+        },
+      },
     };
 
     this.todayComparisonChart = new Chart(this.todayComparisonChartRef.nativeElement, config);
@@ -4057,7 +4230,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const thirtyDaysAgoStr = this.formatDateLocal(thirtyDaysAgo);
 
     const allExpenses = this.expenses();
-    const last30DaysExpenses = allExpenses.filter(e => {
+    const last30DaysExpenses = allExpenses.filter((e) => {
       return e.date >= thirtyDaysAgoStr && e.date <= todayStr;
     });
 
@@ -4065,7 +4238,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     // Group by date
     const dailyMap: { [key: string]: number } = {};
-    last30DaysExpenses.forEach(expense => {
+    last30DaysExpenses.forEach((expense) => {
       dailyMap[expense.date] = (dailyMap[expense.date] || 0) + expense.amount;
     });
 
@@ -4111,13 +4284,16 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
             },
             pointBackgroundColor: (context: any) => {
               return todayIndex >= 0 && context.dataIndex === todayIndex
-                ? (evaluation.overallStatus === 'high' ? '#f44336' :
-                   evaluation.overallStatus === 'low' ? '#4caf50' : '#ff9800')
+                ? evaluation.overallStatus === 'high'
+                  ? '#f44336'
+                  : evaluation.overallStatus === 'low'
+                    ? '#4caf50'
+                    : '#ff9800'
                 : '#2196F3';
             },
             pointBorderColor: '#ffffff',
             pointBorderWidth: 2,
-            pointHoverRadius: 8
+            pointHoverRadius: 8,
           },
           {
             label: 'Trung bình 30 ngày',
@@ -4127,9 +4303,9 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
             borderDash: [5, 5],
             fill: false,
             pointRadius: 0,
-            pointHoverRadius: 0
-          }
-        ]
+            pointHoverRadius: 0,
+          },
+        ],
       },
       options: {
         responsive: true,
@@ -4137,16 +4313,16 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         plugins: {
           legend: {
             display: true,
-            position: 'top'
+            position: 'top',
           },
           tooltip: {
             callbacks: {
               label: (context) => {
                 const value = context.parsed.y;
                 return `${context.dataset.label}: ${this.formatAmount(typeof value === 'number' ? value : 0)}`;
-              }
-            }
-          }
+              },
+            },
+          },
         },
         scales: {
           y: {
@@ -4156,11 +4332,11 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
                 if (value === null || value === undefined) return '';
                 const numValue = typeof value === 'number' ? value : 0;
                 return this.formatAmount(numValue);
-              }
-            }
-          }
-        }
-      }
+              },
+            },
+          },
+        },
+      },
     };
 
     this.todayTrendChart = new Chart(this.todayTrendChartRef.nativeElement, config);
@@ -4182,13 +4358,15 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     }
 
     // Prepare data: show all expenses with outliers highlighted
-    const sortedExpenses = [...expenses].sort((a, b) =>
-      new Date(a.date).getTime() - new Date(b.date).getTime()
+    const sortedExpenses = [...expenses].sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
     );
 
-    const labels = sortedExpenses.map(e => this.formatDateShort(e.date));
-    const isOutlier = sortedExpenses.map(e =>
-      analysis.outliers.some(o => o.date === e.date && o.content === e.content && o.amount === e.amount)
+    const labels = sortedExpenses.map((e) => this.formatDateShort(e.date));
+    const isOutlier = sortedExpenses.map((e) =>
+      analysis.outliers.some(
+        (o) => o.date === e.date && o.content === e.content && o.amount === e.amount
+      )
     );
 
     const config: ChartConfiguration = {
@@ -4198,70 +4376,83 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
           {
             label: 'Chi tiêu bình thường',
             data: sortedExpenses
-              .map((e, i) => isOutlier[i] ? null : ({ x: i, y: e.amount }))
+              .map((e, i) => (isOutlier[i] ? null : { x: i, y: e.amount }))
               .filter((point): point is { x: number; y: number } => {
                 return point !== null && point.y !== undefined && typeof point.y === 'number';
               })
-              .map(point => ({ x: point.x, y: point.y })),
+              .map((point) => ({ x: point.x, y: point.y })),
             backgroundColor: 'rgba(33, 150, 243, 0.6)',
             borderColor: '#2196F3',
             pointRadius: 4,
-            pointHoverRadius: 6
+            pointHoverRadius: 6,
           },
           {
             label: 'Chi tiêu đột biến (Cao)',
             data: sortedExpenses
-              .map((e, i) => isOutlier[i] && e.amount > analysis.mean ? ({ x: i, y: e.amount }) : null)
+              .map((e, i) =>
+                isOutlier[i] && e.amount > analysis.mean ? { x: i, y: e.amount } : null
+              )
               .filter((point): point is { x: number; y: number } => {
                 return point !== null && point.y !== undefined && typeof point.y === 'number';
               })
-              .map(point => ({ x: point.x, y: point.y })),
+              .map((point) => ({ x: point.x, y: point.y })),
             backgroundColor: 'rgba(244, 67, 54, 0.8)',
             borderColor: '#f44336',
             pointRadius: 8,
-            pointHoverRadius: 10
+            pointHoverRadius: 10,
           },
           {
             label: 'Chi tiêu đột biến (Thấp)',
             data: sortedExpenses
-              .map((e, i) => isOutlier[i] && e.amount < analysis.mean ? ({ x: i, y: e.amount }) : null)
-              .filter((point): point is { x: number; y: number } => point !== null && typeof point.y === 'number'),
+              .map((e, i) =>
+                isOutlier[i] && e.amount < analysis.mean ? { x: i, y: e.amount } : null
+              )
+              .filter(
+                (point): point is { x: number; y: number } =>
+                  point !== null && typeof point.y === 'number'
+              ),
             backgroundColor: 'rgba(76, 175, 80, 0.8)',
             borderColor: '#4caf50',
             pointRadius: 8,
-            pointHoverRadius: 10
+            pointHoverRadius: 10,
           },
           {
             label: 'Trung bình',
-            data: Array(sortedExpenses.length).fill(null).map((_, i) => ({ x: i, y: analysis.mean })),
+            data: Array(sortedExpenses.length)
+              .fill(null)
+              .map((_, i) => ({ x: i, y: analysis.mean })),
             type: 'line',
             borderColor: '#757575',
             borderWidth: 2,
             borderDash: [5, 5],
             pointRadius: 0,
-            fill: false
+            fill: false,
           },
           {
             label: 'Ngưỡng trên (Q3 + 1.5*IQR)',
-            data: Array(sortedExpenses.length).fill(null).map((_, i) => ({ x: i, y: analysis.upperBound || 0 })),
+            data: Array(sortedExpenses.length)
+              .fill(null)
+              .map((_, i) => ({ x: i, y: analysis.upperBound || 0 })),
             type: 'line',
             borderColor: '#ff9800',
             borderWidth: 1,
             borderDash: [3, 3],
             pointRadius: 0,
-            fill: false
+            fill: false,
           },
           {
             label: 'Ngưỡng dưới (Q1 - 1.5*IQR)',
-            data: Array(sortedExpenses.length).fill(null).map((_, i) => ({ x: i, y: analysis.lowerBound || 0 })),
+            data: Array(sortedExpenses.length)
+              .fill(null)
+              .map((_, i) => ({ x: i, y: analysis.lowerBound || 0 })),
             type: 'line',
             borderColor: '#ff9800',
             borderWidth: 1,
             borderDash: [3, 3],
             pointRadius: 0,
-            fill: false
-          }
-        ]
+            fill: false,
+          },
+        ],
       },
       options: {
         responsive: true,
@@ -4269,7 +4460,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         plugins: {
           legend: {
             display: true,
-            position: 'top'
+            position: 'top',
           },
           tooltip: {
             callbacks: {
@@ -4283,9 +4474,9 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
                 }
                 const y = context.parsed.y;
                 return `${context.dataset.label}: ${this.formatAmount(y !== null && y !== undefined ? y : 0)}`;
-              }
-            }
-          }
+              },
+            },
+          },
         },
         scales: {
           x: {
@@ -4297,12 +4488,12 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
                 return index >= 0 && index < labels.length ? labels[index] : '';
               },
               maxRotation: 45,
-              minRotation: 45
+              minRotation: 45,
             },
             title: {
               display: true,
-              text: 'Thời gian'
-            }
+              text: 'Thời gian',
+            },
           },
           y: {
             beginAtZero: true,
@@ -4311,15 +4502,15 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
                 if (value === null || value === undefined) return '';
                 const numValue = typeof value === 'number' ? value : 0;
                 return this.formatAmount(numValue);
-              }
+              },
             },
             title: {
               display: true,
-              text: 'Số tiền'
-            }
-          }
-        }
-      }
+              text: 'Số tiền',
+            },
+          },
+        },
+      },
     };
 
     this.outlierChart = new Chart(this.outlierChartRef.nativeElement, config);
@@ -4340,7 +4531,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     }
 
     const expenses = this.filteredExpenses();
-    const amounts = expenses.map(e => e.amount).sort((a, b) => a - b);
+    const amounts = expenses.map((e) => e.amount).sort((a, b) => a - b);
     const min = amounts[0];
     const max = amounts[amounts.length - 1];
 
@@ -4354,35 +4545,35 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
             data: [min],
             backgroundColor: 'rgba(76, 175, 80, 0.6)',
             borderColor: '#4caf50',
-            borderWidth: 2
+            borderWidth: 2,
           },
           {
             label: 'Q1',
             data: [analysis.q1],
             backgroundColor: 'rgba(33, 150, 243, 0.6)',
             borderColor: '#2196F3',
-            borderWidth: 2
+            borderWidth: 2,
           },
           {
             label: 'Median (Q2)',
             data: [analysis.q2],
             backgroundColor: 'rgba(255, 152, 0, 0.8)',
             borderColor: '#ff9800',
-            borderWidth: 3
+            borderWidth: 3,
           },
           {
             label: 'Q3',
             data: [analysis.q3],
             backgroundColor: 'rgba(33, 150, 243, 0.6)',
             borderColor: '#2196F3',
-            borderWidth: 2
+            borderWidth: 2,
           },
           {
             label: 'Max',
             data: [max],
             backgroundColor: 'rgba(244, 67, 54, 0.6)',
             borderColor: '#f44336',
-            borderWidth: 2
+            borderWidth: 2,
           },
           {
             label: 'Mean',
@@ -4392,9 +4583,9 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
             borderWidth: 2,
             borderDash: [5, 5],
             pointRadius: 0,
-            fill: false
-          }
-        ]
+            fill: false,
+          },
+        ],
       },
       options: {
         responsive: true,
@@ -4402,7 +4593,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         plugins: {
           legend: {
             display: true,
-            position: 'top'
+            position: 'top',
           },
           tooltip: {
             callbacks: {
@@ -4410,9 +4601,9 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
                 const y = context.parsed.y;
                 const numValue = y !== null && y !== undefined ? y : 0;
                 return `${context.dataset.label}: ${this.formatAmount(numValue)}`;
-              }
-            }
-          }
+              },
+            },
+          },
         },
         scales: {
           y: {
@@ -4422,11 +4613,11 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
                 if (value === null || value === undefined) return '';
                 const numValue = typeof value === 'number' ? value : 0;
                 return this.formatAmount(numValue);
-              }
-            }
-          }
-        }
-      }
+              },
+            },
+          },
+        },
+      },
     };
 
     this.boxPlotChart = new Chart(this.boxPlotChartRef.nativeElement, config);
@@ -4448,7 +4639,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     // Group Z-scores into bins
     const bins: { [key: string]: number } = {};
-    analysis.zScores.forEach(z => {
+    analysis.zScores.forEach((z) => {
       const bin = Math.floor(z.zScore);
       const binKey = `${bin} to ${bin + 1}`;
       bins[binKey] = (bins[binKey] || 0) + 1;
@@ -4459,65 +4650,67 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       const bNum = parseInt(b.split(' ')[0]);
       return aNum - bNum;
     });
-    const data = labels.map(label => bins[label]);
+    const data = labels.map((label) => bins[label]);
 
     const config: ChartConfiguration = {
       type: 'bar',
       data: {
         labels: labels,
-        datasets: [{
-          label: 'Số lượng giao dịch',
-          data: data,
-          backgroundColor: labels.map(label => {
-            const num = Math.abs(parseInt(label.split(' ')[0]));
-            if (num >= 2) return 'rgba(244, 67, 54, 0.8)'; // Red for outliers
-            if (num >= 1) return 'rgba(255, 152, 0, 0.8)'; // Orange for moderate
-            return 'rgba(33, 150, 243, 0.6)'; // Blue for normal
-          }),
-          borderColor: labels.map(label => {
-            const num = Math.abs(parseInt(label.split(' ')[0]));
-            if (num >= 2) return '#f44336';
-            if (num >= 1) return '#ff9800';
-            return '#2196F3';
-          }),
-          borderWidth: 2,
-          borderRadius: 4
-        }]
+        datasets: [
+          {
+            label: 'Số lượng giao dịch',
+            data: data,
+            backgroundColor: labels.map((label) => {
+              const num = Math.abs(parseInt(label.split(' ')[0]));
+              if (num >= 2) return 'rgba(244, 67, 54, 0.8)'; // Red for outliers
+              if (num >= 1) return 'rgba(255, 152, 0, 0.8)'; // Orange for moderate
+              return 'rgba(33, 150, 243, 0.6)'; // Blue for normal
+            }),
+            borderColor: labels.map((label) => {
+              const num = Math.abs(parseInt(label.split(' ')[0]));
+              if (num >= 2) return '#f44336';
+              if (num >= 1) return '#ff9800';
+              return '#2196F3';
+            }),
+            borderWidth: 2,
+            borderRadius: 4,
+          },
+        ],
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
           legend: {
-            display: false
+            display: false,
           },
           tooltip: {
             callbacks: {
               label: (context) => {
                 return `Z-score ${context.label}: ${context.parsed.y} giao dịch`;
-              }
-            }
-          }
+              },
+            },
+          },
         },
         scales: {
           y: {
             beginAtZero: true,
             ticks: {
-              stepSize: 1
+              stepSize: 1,
             },
             title: {
               display: true,
-              text: 'Số lượng giao dịch'
-            }
+              text: 'Số lượng giao dịch',
+            },
           },
           x: {
             title: {
               display: true,
-              text: 'Z-score Range'
-            }
-          }
-        }
-      }
+              text: 'Z-score Range',
+            },
+          },
+        },
+      },
     };
 
     this.zScoreChart = new Chart(this.zScoreChartRef.nativeElement, config);
@@ -4647,8 +4840,10 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         console.error('Error adding expense:', err);
         this.error.set('Không thể thêm chi tiêu. Vui lòng thử lại sau.');
         this.isLoading.set(false);
-        alert('Lỗi: Không thể thêm chi tiêu. Vui lòng kiểm tra kết nối hoặc quyền truy cập Google Sheets.');
-      }
+        alert(
+          'Lỗi: Không thể thêm chi tiêu. Vui lòng kiểm tra kết nối hoặc quyền truy cập Google Sheets.'
+        );
+      },
     });
   }
 
@@ -4658,7 +4853,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
    * Toggle quick input visibility
    */
   toggleQuickInput(): void {
-    this.showQuickInput.update(v => !v);
+    this.showQuickInput.update((v) => !v);
     if (this.showQuickInput()) {
       // Focus on input when opened
       setTimeout(() => {
@@ -4706,7 +4901,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         console.error('Error parsing quick input:', err);
         this.quickInputError.set(err.message || 'Không thể phân tích chi tiêu');
         this.quickInputParsing.set(false);
-      }
+      },
     });
   }
 
@@ -4716,12 +4911,12 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   onQuickInputChange(event: Event): void {
     const value = (event.target as HTMLInputElement).value;
     this.quickInputText.set(value);
-    
+
     // Auto-parse after user stops typing (debounce)
     if (this.quickInputDebounceTimer) {
       clearTimeout(this.quickInputDebounceTimer);
     }
-    
+
     if (value.trim()) {
       this.quickInputDebounceTimer = setTimeout(() => {
         this.parseQuickInput();
@@ -4772,7 +4967,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       content: parsed.content,
       amount: parsed.amount,
       category: parsed.category,
-      note: parsed.note
+      note: parsed.note,
     };
 
     this.expenseService.addExpense(expense).subscribe({
@@ -4780,7 +4975,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         // Success - reload expenses and reset input
         this.loadExpenses(true);
         this.quickInputSaving.set(false);
-        
+
         // Show success briefly then reset
         this.quickInputText.set('✓ Đã thêm: ' + parsed.content);
         setTimeout(() => {
@@ -4789,9 +4984,11 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       },
       error: (err) => {
         console.error('Error saving quick expense:', err);
-        this.quickInputError.set('Không thể lưu chi tiêu: ' + (err.message || 'Lỗi không xác định'));
+        this.quickInputError.set(
+          'Không thể lưu chi tiêu: ' + (err.message || 'Lỗi không xác định')
+        );
         this.quickInputSaving.set(false);
-      }
+      },
     });
   }
 
@@ -4803,7 +5000,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     if (current) {
       this.quickInputParsed.set({
         ...current,
-        [field]: value
+        [field]: value,
       });
     }
   }
@@ -4830,17 +5027,17 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     if (!text) return;
 
     this.quickInputSaving.set(true);
-    
+
     // Use the local parsing first (faster)
     const localParsed = this.llmService.parseExpenseLocally(text);
-    
+
     if (localParsed.amount > 0) {
       const expense: Expense = {
         date: localParsed.date,
         content: localParsed.content,
         amount: localParsed.amount,
         category: localParsed.category,
-        note: localParsed.note
+        note: localParsed.note,
       };
 
       this.expenseService.addExpense(expense).subscribe({
@@ -4853,7 +5050,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         error: (err) => {
           this.quickInputError.set('Lỗi: ' + err.message);
           this.quickInputSaving.set(false);
-        }
+        },
       });
     } else {
       this.quickInputError.set('Không thể phân tích. VD: "mua bánh 10k"');
@@ -4870,10 +5067,10 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     if (!text) return;
 
     this.quickInputSaving.set(true);
-    
+
     this.llmService.parseMultipleExpenses(text).subscribe({
       next: (parsedList) => {
-        const validExpenses = parsedList.filter(p => p.amount > 0);
+        const validExpenses = parsedList.filter((p) => p.amount > 0);
         if (validExpenses.length === 0) {
           this.quickInputError.set('Không tìm thấy chi tiêu hợp lệ');
           this.quickInputSaving.set(false);
@@ -4886,7 +5083,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       error: (err) => {
         this.quickInputError.set('Lỗi phân tích: ' + err.message);
         this.quickInputSaving.set(false);
-      }
+      },
     });
   }
 
@@ -4909,7 +5106,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       content: parsed.content,
       amount: parsed.amount,
       category: parsed.category,
-      note: parsed.note
+      note: parsed.note,
     };
 
     this.expenseService.addExpense(expense).subscribe({
@@ -4922,7 +5119,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         this.quickInputSaving.set(false);
         // Still reload to get what was saved
         this.loadExpenses(true);
-      }
+      },
     });
   }
 
@@ -4932,7 +5129,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
    * Toggle AI Insights panel
    */
   toggleAIInsights(): void {
-    this.showAIInsights.update(v => !v);
+    this.showAIInsights.update((v) => !v);
     if (this.showAIInsights() && !this.aiInsightsSummary()) {
       // Load insights automatically when first opened
       this.loadAIInsights();
@@ -4961,7 +5158,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       error: (err) => {
         console.error('Error getting AI summary:', err);
         this.aiInsightsSummary.set('Không thể tạo tóm tắt.');
-      }
+      },
     });
 
     // Get spending advice
@@ -4976,7 +5173,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
             console.error('Error getting AI advice:', err);
             this.aiInsightsAdvice.set(['Không thể tạo lời khuyên.']);
             this.aiInsightsLoading.set(false);
-          }
+          },
         });
       },
       error: () => {
@@ -4989,9 +5186,9 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
           error: () => {
             this.aiInsightsAdvice.set(['Không thể tạo lời khuyên.']);
             this.aiInsightsLoading.set(false);
-          }
+          },
         });
-      }
+      },
     });
 
     // Get spending patterns
@@ -5002,7 +5199,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       error: (err) => {
         console.error('Error getting AI patterns:', err);
         this.aiInsightsPatterns.set('Không thể phân tích xu hướng.');
-      }
+      },
     });
   }
 
@@ -5036,7 +5233,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         console.error('Error asking AI:', err);
         this.aiChatAnswer.set('Xin lỗi, tôi không thể trả lời câu hỏi này. ' + (err.message || ''));
         this.aiChatLoading.set(false);
-      }
+      },
     });
   }
 
@@ -5072,14 +5269,17 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
    * Toggle AI Chat Panel
    */
   toggleAIChatPanel(): void {
-    this.showAIChatPanel.update(v => !v);
+    this.showAIChatPanel.update((v) => !v);
     if (this.showAIChatPanel() && this.aiChatMessages().length === 0) {
       // Add welcome message
-      this.aiChatMessages.set([{
-        role: 'assistant',
-        content: 'Xin chào! Tôi là trợ lý AI giúp bạn phân tích chi tiêu. Bạn có thể hỏi tôi bất kỳ điều gì về chi tiêu của mình, ví dụ:\n\n• "Tôi đã chi bao nhiêu tháng này?"\n• "So sánh chi tiêu tuần này với tuần trước"\n• "Danh mục nào tôi chi nhiều nhất?"\n• "Làm sao để tiết kiệm hơn?"',
-        timestamp: new Date()
-      }]);
+      this.aiChatMessages.set([
+        {
+          role: 'assistant',
+          content:
+            'Xin chào! Tôi là trợ lý AI giúp bạn phân tích chi tiêu. Bạn có thể hỏi tôi bất kỳ điều gì về chi tiêu của mình, ví dụ:\n\n• "Tôi đã chi bao nhiêu tháng này?"\n• "So sánh chi tiêu tuần này với tuần trước"\n• "Danh mục nào tôi chi nhiều nhất?"\n• "Làm sao để tiết kiệm hơn?"',
+          timestamp: new Date(),
+        },
+      ]);
     }
   }
 
@@ -5095,7 +5295,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     messages.push({
       role: 'user',
       content: message,
-      timestamp: new Date()
+      timestamp: new Date(),
     });
     this.aiChatMessages.set(messages);
     this.aiChatInput.set('');
@@ -5106,7 +5306,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     // Process with AI
     const expenses = this.expenses();
-    
+
     // Check for special commands
     if (this.isCompareCommand(message)) {
       this.handleCompareCommand(message);
@@ -5116,14 +5316,16 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
           this.addAssistantMessage(response);
         },
         error: (err) => {
-          this.addAssistantMessage('Xin lỗi, tôi gặp lỗi khi xử lý câu hỏi. ' + (err.message || ''));
+          this.addAssistantMessage(
+            'Xin lỗi, tôi gặp lỗi khi xử lý câu hỏi. ' + (err.message || '')
+          );
         },
         complete: () => {
           // Ensure loading is stopped even if no response
           if (this.aiChatProcessing()) {
             this.aiChatProcessing.set(false);
           }
-        }
+        },
       });
     }
   }
@@ -5136,7 +5338,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     messages.push({
       role: 'assistant',
       content,
-      timestamp: new Date()
+      timestamp: new Date(),
     });
     this.aiChatMessages.set(messages);
     this.aiChatProcessing.set(false);
@@ -5154,7 +5356,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       if (chatBody) {
         chatBody.scrollTo({
           top: chatBody.scrollHeight,
-          behavior: 'smooth'
+          behavior: 'smooth',
         });
       }
     }, 50);
@@ -5165,10 +5367,12 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
    */
   private isCompareCommand(message: string): boolean {
     const lowerMsg = message.toLowerCase();
-    return lowerMsg.includes('so sánh') || 
-           lowerMsg.includes('compare') ||
-           lowerMsg.includes('tuần trước') ||
-           lowerMsg.includes('tháng trước');
+    return (
+      lowerMsg.includes('so sánh') ||
+      lowerMsg.includes('compare') ||
+      lowerMsg.includes('tuần trước') ||
+      lowerMsg.includes('tháng trước')
+    );
   }
 
   /**
@@ -5177,44 +5381,44 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   private handleCompareCommand(message: string): void {
     const lowerMsg = message.toLowerCase();
     const today = new Date();
-    
+
     let period1: { from: string; to: string };
     let period2: { from: string; to: string };
-    
+
     if (lowerMsg.includes('tuần')) {
       // Compare this week vs last week
       const thisWeekStart = this.getStartOfWeek(today);
       const thisWeekEnd = new Date(thisWeekStart);
       thisWeekEnd.setDate(thisWeekEnd.getDate() + 6);
-      
+
       const lastWeekStart = new Date(thisWeekStart);
       lastWeekStart.setDate(lastWeekStart.getDate() - 7);
       const lastWeekEnd = new Date(thisWeekStart);
       lastWeekEnd.setDate(lastWeekEnd.getDate() - 1);
-      
+
       period1 = {
         from: lastWeekStart.toISOString().split('T')[0],
-        to: lastWeekEnd.toISOString().split('T')[0]
+        to: lastWeekEnd.toISOString().split('T')[0],
       };
       period2 = {
         from: thisWeekStart.toISOString().split('T')[0],
-        to: thisWeekEnd.toISOString().split('T')[0]
+        to: thisWeekEnd.toISOString().split('T')[0],
       };
     } else {
       // Compare this month vs last month
       const thisMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
       const thisMonthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-      
+
       const lastMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
       const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0);
-      
+
       period1 = {
         from: lastMonthStart.toISOString().split('T')[0],
-        to: lastMonthEnd.toISOString().split('T')[0]
+        to: lastMonthEnd.toISOString().split('T')[0],
       };
       period2 = {
         from: thisMonthStart.toISOString().split('T')[0],
-        to: thisMonthEnd.toISOString().split('T')[0]
+        to: thisMonthEnd.toISOString().split('T')[0],
       };
     }
 
@@ -5230,7 +5434,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         if (this.aiChatProcessing()) {
           this.aiChatProcessing.set(false);
         }
-      }
+      },
     });
   }
 
@@ -5256,11 +5460,13 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
    * Clear chat history
    */
   clearAIChatHistory(): void {
-    this.aiChatMessages.set([{
-      role: 'assistant',
-      content: 'Đã xóa lịch sử chat. Bạn muốn hỏi gì?',
-      timestamp: new Date()
-    }]);
+    this.aiChatMessages.set([
+      {
+        role: 'assistant',
+        content: 'Đã xóa lịch sử chat. Bạn muốn hỏi gì?',
+        timestamp: new Date(),
+      },
+    ]);
   }
 
   /**
@@ -5285,7 +5491,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   formatChatTimestamp(date: Date): string {
     const now = new Date();
     const diff = now.getTime() - date.getTime();
-    
+
     if (diff < 60000) {
       return 'Vừa xong';
     } else if (diff < 3600000) {
@@ -5293,7 +5499,12 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     } else if (date.toDateString() === now.toDateString()) {
       return date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
     } else {
-      return date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+      return date.toLocaleDateString('vi-VN', {
+        day: '2-digit',
+        month: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
     }
   }
 
@@ -5304,11 +5515,8 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const expenses = this.multipleExpenses();
 
     // Filter out empty rows
-    const validExpenses = expenses.filter(expense =>
-      expense.content.trim() &&
-      expense.amount > 0 &&
-      expense.category &&
-      expense.date
+    const validExpenses = expenses.filter(
+      (expense) => expense.content.trim() && expense.amount > 0 && expense.category && expense.date
     );
 
     if (validExpenses.length === 0) {
@@ -5385,10 +5593,12 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         console.error(`Error adding expense ${index + 1}:`, err);
         this.savingProgress.set({ current: index, total: expenses.length, saving: false });
         this.isLoading.set(false);
-        alert(`Lỗi khi lưu chi tiêu thứ ${index + 1}: ${expense.content}. Đã lưu được ${index}/${expenses.length} chi tiêu.`);
+        alert(
+          `Lỗi khi lưu chi tiêu thứ ${index + 1}: ${expense.content}. Đã lưu được ${index}/${expenses.length} chi tiêu.`
+        );
         // Reload to get what was saved
         this.loadExpenses(true);
-      }
+      },
     });
   }
 
@@ -5398,12 +5608,13 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   addExpenseRow(): void {
     const expenses = this.multipleExpenses();
     // Get date from last row if exists, otherwise use today's date
-    const lastRowDate = expenses.length > 0 ? expenses[expenses.length - 1].date : this.expenseService.getTodayDate();
-    
+    const lastRowDate =
+      expenses.length > 0 ? expenses[expenses.length - 1].date : this.expenseService.getTodayDate();
+
     // Create new expense with date from last row
     const newExpense = this.createEmptyExpense();
     newExpense.date = lastRowDate;
-    
+
     expenses.push(newExpense);
     this.multipleExpenses.set([...expenses]);
   }
@@ -5450,7 +5661,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       amount: expense.amount,
       category: expense.category,
       note: expense.note || '',
-      groupId: expense.groupId || ''
+      groupId: expense.groupId || '',
     };
     this.showAddForm.set(true);
     this.inputMode.set('single');
@@ -5468,7 +5679,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         ...expenses[index],
         date: previousExpense.date,
         category: previousExpense.category,
-        note: previousExpense.note
+        note: previousExpense.note,
       };
       this.multipleExpenses.set([...expenses]);
     }
@@ -5496,7 +5707,6 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     return `${dayName}, ${day}/${month}/${year}`;
   }
-
 
   /**
    * Format amount for display
@@ -5601,9 +5811,9 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
   // Column widths for resize functionality
   columnWidths = signal<{ date: number; content: number; actions: number }>({
-    date: 150,  // Increased from 100px
+    date: 150, // Increased from 100px
     content: 0, // Will be calculated
-    actions: 160
+    actions: 160,
   });
 
   private isResizing = false;
@@ -5653,7 +5863,6 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     document.body.style.userSelect = '';
   };
 
-
   /**
    * Clear filters
    */
@@ -5684,11 +5893,15 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
    * Match search text based on search mode
    * Supports Vietnamese text with and without diacritics
    */
-  matchSearch(text: string, search: string, mode: 'contains' | 'starts' | 'ends' | 'exact' | 'regex'): boolean {
+  matchSearch(
+    text: string,
+    search: string,
+    mode: 'contains' | 'starts' | 'ends' | 'exact' | 'regex'
+  ): boolean {
     // Normalize both text and search for Vietnamese diacritic-insensitive matching
     const normalizedText = this.normalizeVietnamese(text);
     const normalizedSearch = this.normalizeVietnamese(search);
-    
+
     // Check both original and normalized versions
     const checkMatch = (textToCheck: string, searchToCheck: string): boolean => {
       switch (mode) {
@@ -5712,7 +5925,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
           return textToCheck.includes(searchToCheck);
       }
     };
-    
+
     // Match on original text first, then normalized (for Vietnamese without diacritics)
     return checkMatch(text, search) || checkMatch(normalizedText, normalizedSearch);
   }
@@ -5735,11 +5948,11 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
    */
   matchAmount(amount: number, searchNumber: string): boolean {
     if (!this.isNumericString(searchNumber)) return false;
-    
+
     // Convert amount to string and check if it contains the search number
     const amountStr = amount.toString();
     const searchNum = searchNumber.trim();
-    
+
     // Check if amount string contains the search number
     return amountStr.includes(searchNum);
   }
@@ -5765,7 +5978,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const suggestions = new Set<string>();
     const lowerQuery = query.toLowerCase();
 
-    this.expenses().forEach(expense => {
+    this.expenses().forEach((expense) => {
       // Content suggestions
       if (expense.content.toLowerCase().includes(lowerQuery)) {
         suggestions.add(expense.content);
@@ -5800,7 +6013,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const trimmedSearch = search.trim();
 
     // Remove if already exists
-    const filtered = recent.filter(s => s !== trimmedSearch);
+    const filtered = recent.filter((s) => s !== trimmedSearch);
 
     // Add to beginning
     filtered.unshift(trimmedSearch);
@@ -5818,8 +6031,8 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     // Split by comma or space, filter empty
     return searchText
       .split(/[,\s]+/)
-      .map(k => k.trim())
-      .filter(k => k.length > 0);
+      .map((k) => k.trim())
+      .filter((k) => k.length > 0);
   }
 
   /**
@@ -5890,11 +6103,11 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   uniqueDatesWithStats = computed((): Array<{ date: string; count: number; total: number }> => {
     const dateMap = new Map<string, { count: number; total: number }>();
 
-    this.expenses().forEach(expense => {
+    this.expenses().forEach((expense) => {
       const existing = dateMap.get(expense.date) || { count: 0, total: 0 };
       dateMap.set(expense.date, {
         count: existing.count + 1,
-        total: existing.total + expense.amount
+        total: existing.total + expense.amount,
       });
     });
 
@@ -5933,7 +6146,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   toggleDateSelection(date: string): void {
     const current = this.filterSelectedDates();
     if (current.includes(date)) {
-      this.filterSelectedDates.set(current.filter(d => d !== date));
+      this.filterSelectedDates.set(current.filter((d) => d !== date));
     } else {
       this.filterSelectedDates.set([...current, date]);
     }
@@ -5950,7 +6163,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
    * Select all visible dates
    */
   selectAllVisibleDates(): void {
-    const visibleDates = this.filteredUniqueDates().map(d => d.date);
+    const visibleDates = this.filteredUniqueDates().map((d) => d.date);
     this.filterSelectedDates.set(visibleDates);
   }
 
@@ -5969,12 +6182,12 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const dates: string[] = [];
 
     // Split by comma
-    const parts = input.split(',').map(p => p.trim());
+    const parts = input.split(',').map((p) => p.trim());
 
-    parts.forEach(part => {
+    parts.forEach((part) => {
       if (part.includes('-')) {
         // Range: "1-5"
-        const [start, end] = part.split('-').map(n => parseInt(n.trim()));
+        const [start, end] = part.split('-').map((n) => parseInt(n.trim()));
         if (!isNaN(start) && !isNaN(end) && start > 0 && end > 0 && start <= end) {
           for (let day = start; day <= end; day++) {
             const dateStr = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
@@ -6006,7 +6219,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
    */
   removeSelectedDate(date: string): void {
     const current = this.filterSelectedDates();
-    this.filterSelectedDates.set(current.filter(d => d !== date));
+    this.filterSelectedDates.set(current.filter((d) => d !== date));
   }
 
   /**
@@ -6025,7 +6238,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   getMaxExpense(): number {
     const expenses = this.filteredExpenses();
     if (expenses.length === 0) return 0;
-    return Math.max(...expenses.map(e => e.amount));
+    return Math.max(...expenses.map((e) => e.amount));
   }
 
   /**
@@ -6034,7 +6247,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   getMinExpense(): number {
     const expenses = this.filteredExpenses();
     if (expenses.length === 0) return 0;
-    return Math.min(...expenses.map(e => e.amount));
+    return Math.min(...expenses.map((e) => e.amount));
   }
 
   // Date search for date list panel
@@ -6049,7 +6262,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     if (!search) return dates;
 
-    return dates.filter(dateGroup => {
+    return dates.filter((dateGroup) => {
       const dateStr = this.formatDate(dateGroup.date).toLowerCase();
       return dateStr.includes(search);
     });
@@ -6061,7 +6274,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   toggleCategory(category: string): void {
     const current = this.filterCategory();
     if (current.includes(category)) {
-      this.filterCategory.set(current.filter(c => c !== category));
+      this.filterCategory.set(current.filter((c) => c !== category));
     } else {
       this.filterCategory.set([...current, category]);
     }
@@ -6120,7 +6333,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const current = this.filterCategory();
     const newSelection = [...current];
 
-    filtered.forEach(cat => {
+    filtered.forEach((cat) => {
       if (!newSelection.includes(cat)) {
         newSelection.push(cat);
       }
@@ -6136,7 +6349,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const filtered = this.filteredCategories();
     const current = this.filterCategory();
 
-    this.filterCategory.set(current.filter(cat => !filtered.includes(cat)));
+    this.filterCategory.set(current.filter((cat) => !filtered.includes(cat)));
   }
 
   /**
@@ -6153,7 +6366,9 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   /**
    * Change sort option from dropdown
    */
-  onSortOptionChange(option: 'newest' | 'oldest' | 'amount_desc' | 'amount_asc' | 'most_frequent' | 'least_frequent'): void {
+  onSortOptionChange(
+    option: 'newest' | 'oldest' | 'amount_desc' | 'amount_asc' | 'most_frequent' | 'least_frequent'
+  ): void {
     this.sortOption.set(option);
   }
 
@@ -6387,7 +6602,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
    */
   removeCategory(category: string): void {
     const current = this.filterCategory();
-    this.filterCategory.set(current.filter(c => c !== category));
+    this.filterCategory.set(current.filter((c) => c !== category));
   }
 
   /**
@@ -6423,11 +6638,11 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
    */
   getExpenseLevelLabel(level: string): string {
     const labels: { [key: string]: string } = {
-      'all': 'Tất cả',
-      'high': 'Rất cao',
+      all: 'Tất cả',
+      high: 'Rất cao',
       'above-average': 'Trên TB',
       'below-average': 'Dưới TB',
-      'low': 'Thấp'
+      low: 'Thấp',
     };
     return labels[level] || level;
   }
@@ -6462,8 +6677,10 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const today = new Date();
     const last7Days = new Date(today);
     last7Days.setDate(today.getDate() - 7);
-    return this.filterDateFrom() === this.formatDateLocal(last7Days) &&
-           this.filterDateTo() === this.formatDateLocal(today);
+    return (
+      this.filterDateFrom() === this.formatDateLocal(last7Days) &&
+      this.filterDateTo() === this.formatDateLocal(today)
+    );
   }
 
   /**
@@ -6474,8 +6691,10 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const today = new Date();
     const last30Days = new Date(today);
     last30Days.setDate(today.getDate() - 30);
-    return this.filterDateFrom() === this.formatDateLocal(last30Days) &&
-           this.filterDateTo() === this.formatDateLocal(today);
+    return (
+      this.filterDateFrom() === this.formatDateLocal(last30Days) &&
+      this.filterDateTo() === this.formatDateLocal(today)
+    );
   }
 
   /**
@@ -6485,8 +6704,10 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     if (!this.filterDateFrom() || !this.filterDateTo()) return false;
     const today = new Date();
     const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-    return this.filterDateFrom() === this.formatDateLocal(firstDay) &&
-           this.filterDateTo() === this.formatDateLocal(today);
+    return (
+      this.filterDateFrom() === this.formatDateLocal(firstDay) &&
+      this.filterDateTo() === this.formatDateLocal(today)
+    );
   }
 
   /**
@@ -6520,7 +6741,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
    * Show day detail dialog
    */
   showDayDetailDialog(date: string): void {
-    const expenses = this.filteredExpenses().filter(e => e.date === date);
+    const expenses = this.filteredExpenses().filter((e) => e.date === date);
     this.selectedDay.set(date);
     this.selectedDayExpenses.set(expenses);
     this.showDayDetail.set(true);
@@ -6541,19 +6762,32 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   showDayOfWeekDetailDialog(dayOfWeek: string): void {
     // Map display names to day indices
     const dayNameMap: { [key: string]: number } = {
-      'CN': 0, 'Chủ Nhật': 0,
-      'T2': 1, 'Thứ 2': 1, 'Thứ Hai': 1,
-      'T3': 2, 'Thứ 3': 2, 'Thứ Ba': 2,
-      'T4': 3, 'Thứ 4': 3, 'Thứ Tư': 3,
-      'T5': 4, 'Thứ 5': 4, 'Thứ Năm': 4,
-      'T6': 5, 'Thứ 6': 5, 'Thứ Sáu': 5,
-      'T7': 6, 'Thứ 7': 6, 'Thứ Bảy': 6
+      CN: 0,
+      'Chủ Nhật': 0,
+      T2: 1,
+      'Thứ 2': 1,
+      'Thứ Hai': 1,
+      T3: 2,
+      'Thứ 3': 2,
+      'Thứ Ba': 2,
+      T4: 3,
+      'Thứ 4': 3,
+      'Thứ Tư': 3,
+      T5: 4,
+      'Thứ 5': 4,
+      'Thứ Năm': 4,
+      T6: 5,
+      'Thứ 6': 5,
+      'Thứ Sáu': 5,
+      T7: 6,
+      'Thứ 7': 6,
+      'Thứ Bảy': 6,
     };
     const dayIndex = dayNameMap[dayOfWeek] ?? -1;
 
     if (dayIndex === -1) return;
 
-    const expenses = this.filteredExpenses().filter(e => {
+    const expenses = this.filteredExpenses().filter((e) => {
       const date = new Date(e.date);
       return date.getDay() === dayIndex;
     });
@@ -6592,7 +6826,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const expenses = this.selectedDayOfWeekExpenses();
     const dateMap: { [key: string]: number } = {};
 
-    expenses.forEach(expense => {
+    expenses.forEach((expense) => {
       if (!dateMap[expense.date]) {
         dateMap[expense.date] = 0;
       }
@@ -6627,15 +6861,17 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     this.dayOfWeekDetailChart = new Chart(this.dayOfWeekDetailChartRef.nativeElement, {
       type: 'bar',
       data: {
-        labels: data.map(d => this.formatDate(d.date)),
-        datasets: [{
-          label: 'Chi tiêu',
-          data: data.map(d => d.total),
-          backgroundColor: gradient,
-          borderColor: 'rgba(244, 169, 150, 1)',
-          borderWidth: 2,
-          borderRadius: 0
-        }]
+        labels: data.map((d) => this.formatDate(d.date)),
+        datasets: [
+          {
+            label: 'Chi tiêu',
+            data: data.map((d) => d.total),
+            backgroundColor: gradient,
+            borderColor: 'rgba(244, 169, 150, 1)',
+            borderWidth: 2,
+            borderRadius: 0,
+          },
+        ],
       },
       options: {
         responsive: true,
@@ -6644,26 +6880,26 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
           legend: { display: false },
           tooltip: {
             callbacks: {
-              label: (context) => this.formatAmount(context.parsed.y || 0)
-            }
-          }
+              label: (context) => this.formatAmount(context.parsed.y || 0),
+            },
+          },
         },
         scales: {
           y: {
             beginAtZero: true,
             ticks: { callback: (value) => this.formatCompactAmount(value as number) },
-            grid: { color: 'rgba(0,0,0,0.05)' }
+            grid: { color: 'rgba(0,0,0,0.05)' },
           },
           x: {
             grid: { display: false },
             ticks: {
               maxRotation: 45,
               minRotation: 0,
-              font: { size: 10 }
-            }
-          }
-        }
-      }
+              font: { size: 10 },
+            },
+          },
+        },
+      },
     });
   }
 
@@ -6680,40 +6916,50 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     }
 
     const colors = [
-      '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8',
-      '#F7DC6F', '#BB8FCE', '#85C1E2', '#F8B739', '#52BE80'
+      '#FF6B6B',
+      '#4ECDC4',
+      '#45B7D1',
+      '#FFA07A',
+      '#98D8C8',
+      '#F7DC6F',
+      '#BB8FCE',
+      '#85C1E2',
+      '#F8B739',
+      '#52BE80',
     ];
 
     const config: ChartConfiguration = {
       type: 'bar',
       data: {
-        labels: detailByDate.map(item => item.shortDate),
-        datasets: [{
-          label: 'Chi tiêu theo ngày',
-          data: detailByDate.map(item => item.total),
-          backgroundColor: colors.slice(0, detailByDate.length).map((color, index) =>
-            index % 2 === 0 ? color : color + '80'
-          ),
-          borderColor: colors.slice(0, detailByDate.length),
-          borderWidth: 2,
-          borderRadius: 8
-        }]
+        labels: detailByDate.map((item) => item.shortDate),
+        datasets: [
+          {
+            label: 'Chi tiêu theo ngày',
+            data: detailByDate.map((item) => item.total),
+            backgroundColor: colors
+              .slice(0, detailByDate.length)
+              .map((color, index) => (index % 2 === 0 ? color : color + '80')),
+            borderColor: colors.slice(0, detailByDate.length),
+            borderWidth: 2,
+            borderRadius: 8,
+          },
+        ],
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
           legend: {
-            display: false
+            display: false,
           },
           tooltip: {
             callbacks: {
               label: (context) => {
                 const value = context.parsed.y;
                 return `Chi tiêu: ${this.formatAmount(typeof value === 'number' ? value : 0)}`;
-              }
-            }
-          }
+              },
+            },
+          },
         },
         scales: {
           y: {
@@ -6723,11 +6969,11 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
                 if (value === null || value === undefined) return '';
                 const numValue = typeof value === 'number' ? value : 0;
                 return this.formatAmount(numValue);
-              }
-            }
-          }
-        }
-      }
+              },
+            },
+          },
+        },
+      },
     };
 
     const chartElement = document.getElementById('categoryDetailChart') as HTMLCanvasElement;
@@ -6749,7 +6995,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     return count;
   }
 
-  toggleDropdown(event?: Event){
+  toggleDropdown(event?: Event) {
     const newValue = !this.showCategoryDropdown();
     this.showCategoryDropdown.set(newValue);
 
@@ -6759,7 +7005,6 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       this.categoryDropdownPosition.set(null);
     }
   }
-
 
   // ============ BUDGET METHODS ============
 
@@ -6848,7 +7093,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         const budgetMap: { [category: string]: number } = {};
         let totalBudget = 0;
 
-        budgets.forEach(b => {
+        budgets.forEach((b) => {
           if (b.category && b.amount > 0) {
             budgetMap[b.category] = b.amount;
             totalBudget += b.amount;
@@ -6869,7 +7114,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       error: (err) => {
         console.error('Failed to load budgets:', err);
         // Continue with default values
-      }
+      },
     });
   }
 
@@ -6908,9 +7153,9 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   saveBudgetSettings(): void {
     // Prepare budgets array from editCategoryBudgets
     const categoryBudgets = this.editCategoryBudgets();
-    const budgets = this.categories().map(category => ({
+    const budgets = this.categories().map((category) => ({
       category,
-      amount: categoryBudgets[category] || 0
+      amount: categoryBudgets[category] || 0,
     }));
 
     // Save to Google Sheets
@@ -6928,7 +7173,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       error: (err) => {
         console.error('Failed to save budgets:', err);
         this.showNotificationDialog('Lỗi khi lưu ngân sách: ' + err.message, 'error');
-      }
+      },
     });
   }
 
@@ -6956,14 +7201,14 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const weights: { [category: string]: number } = {};
 
     if (total > 0) {
-      categories.forEach(cat => {
+      categories.forEach((cat) => {
         const budget = budgets[cat] || 0;
         weights[cat] = Math.round((budget / total) * 100);
       });
     } else {
       // Default equal weights
       const equalWeight = Math.floor(100 / categories.length);
-      categories.forEach(cat => {
+      categories.forEach((cat) => {
         weights[cat] = equalWeight;
       });
     }
@@ -6982,20 +7227,20 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     // Ensure weights exist
     let totalWeight = 0;
-    categories.forEach(cat => {
+    categories.forEach((cat) => {
       totalWeight += weights[cat] || 0;
     });
 
     if (totalWeight === 0) {
       // Default equal weights
       const equalWeight = Math.floor(100 / categories.length);
-      categories.forEach(cat => {
-        newBudgets[cat] = Math.floor(total * equalWeight / 100);
+      categories.forEach((cat) => {
+        newBudgets[cat] = Math.floor((total * equalWeight) / 100);
       });
     } else {
-      categories.forEach(cat => {
+      categories.forEach((cat) => {
         const weight = weights[cat] || 0;
-        newBudgets[cat] = Math.floor(total * weight / totalWeight);
+        newBudgets[cat] = Math.floor((total * weight) / totalWeight);
       });
     }
 
@@ -7047,7 +7292,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         // Last category gets the remaining to ensure total is 100
         normalized[cat] = Math.max(0, remaining);
       } else {
-        const normalizedWeight = Math.round((weights[cat] || 0) / total * 100);
+        const normalizedWeight = Math.round(((weights[cat] || 0) / total) * 100);
         normalized[cat] = normalizedWeight;
         remaining -= normalizedWeight;
       }
@@ -7077,14 +7322,17 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const equalWeight = Math.floor(100 / categories.length);
     const newWeights: { [category: string]: number } = {};
 
-    categories.forEach(cat => {
+    categories.forEach((cat) => {
       newBudgets[cat] = budgetPerCategory;
       newWeights[cat] = equalWeight;
     });
 
     this.editCategoryBudgets.set(newBudgets);
     this.categoryWeights.set(newWeights);
-    this.showNotificationDialog(`Đã chia đều ${this.formatCompactAmount(budgetPerCategory)} cho mỗi danh mục`, 'success');
+    this.showNotificationDialog(
+      `Đã chia đều ${this.formatCompactAmount(budgetPerCategory)} cho mỗi danh mục`,
+      'success'
+    );
   }
 
   /**
@@ -7103,7 +7351,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const value = this.setAllValue();
     const newBudgets: { [category: string]: number } = {};
 
-    categories.forEach(cat => {
+    categories.forEach((cat) => {
       newBudgets[cat] = value;
     });
 
@@ -7116,7 +7364,10 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     }
 
     this.showSetAllDialog.set(false);
-    this.showNotificationDialog(`Đã đặt ${this.formatCompactAmount(value)} cho tất cả danh mục`, 'success');
+    this.showNotificationDialog(
+      `Đã đặt ${this.formatCompactAmount(value)} cho tất cả danh mục`,
+      'success'
+    );
   }
 
   /**
@@ -7155,7 +7406,8 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   // ========== BUDGET CATEGORY DETAIL ==========
-  @ViewChild('budgetCategoryMonthlyChart') budgetCategoryMonthlyChartRef!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('budgetCategoryMonthlyChart')
+  budgetCategoryMonthlyChartRef!: ElementRef<HTMLCanvasElement>;
   private budgetCategoryMonthlyChart: Chart | null = null;
 
   /**
@@ -7166,7 +7418,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     if (!category) return null;
 
     const budgets = this.categoryBudgets();
-    return budgets.find(b => b.category === category) || null;
+    return budgets.find((b) => b.category === category) || null;
   });
 
   /**
@@ -7180,11 +7432,13 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const currentMonth = (this.reportMonth() ?? 1) - 1;
 
     return this.expenses()
-      .filter(e => {
+      .filter((e) => {
         const expenseDate = new Date(e.date);
-        return e.category === category &&
-               expenseDate.getMonth() === currentMonth &&
-               expenseDate.getFullYear() === currentYear;
+        return (
+          e.category === category &&
+          expenseDate.getMonth() === currentMonth &&
+          expenseDate.getFullYear() === currentYear
+        );
       })
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   });
@@ -7210,13 +7464,15 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     // Sum expenses by day
     this.expenses()
-      .filter(e => {
+      .filter((e) => {
         const expenseDate = new Date(e.date);
-        return e.category === category &&
-               expenseDate.getMonth() === selectedMonth &&
-               expenseDate.getFullYear() === year;
+        return (
+          e.category === category &&
+          expenseDate.getMonth() === selectedMonth &&
+          expenseDate.getFullYear() === year
+        );
       })
-      .forEach(e => {
+      .forEach((e) => {
         const day = new Date(e.date).getDate();
         dailyTotals[day - 1].amount += e.amount;
       });
@@ -7268,10 +7524,10 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const month = this.reportMonth() ?? new Date().getMonth() + 1;
     const now = new Date();
     const daysInMonth = dailyData.length;
-    
+
     // Calculate today based on selected month
     let today = 0;
-    if (year === now.getFullYear() && month === (now.getMonth() + 1)) {
+    if (year === now.getFullYear() && month === now.getMonth() + 1) {
       today = now.getDate();
     } else {
       // For past or future months, show all days
@@ -7281,8 +7537,8 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     // Calculate daily budget line
     const dailyBudget = categoryInfo?.budget ? categoryInfo.budget / daysInMonth : 0;
 
-    const labels = dailyData.map(d => d.day.toString());
-    const actualData = dailyData.map(d => d.amount);
+    const labels = dailyData.map((d) => d.day.toString());
+    const actualData = dailyData.map((d) => d.amount);
     const budgetLineData = dailyData.map(() => dailyBudget);
 
     const ctx = this.budgetCategoryMonthlyChartRef.nativeElement.getContext('2d')!;
@@ -7304,7 +7560,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
               return val > dailyBudget ? 'rgba(239, 68, 68, 0.7)' : 'rgba(16, 185, 129, 0.7)';
             }),
             borderRadius: 4,
-            order: 2
+            order: 2,
           },
           {
             type: 'line',
@@ -7315,16 +7571,16 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
             borderDash: [5, 5],
             pointRadius: 0,
             fill: false,
-            order: 1
-          }
-        ]
+            order: 1,
+          },
+        ],
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
         interaction: {
           intersect: false,
-          mode: 'index'
+          mode: 'index',
         },
         scales: {
           x: {
@@ -7339,16 +7595,16 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
                   return day.toString();
                 }
                 return '';
-              }
-            }
+              },
+            },
           },
           y: {
             grid: { color: 'rgba(0, 0, 0, 0.05)' },
             ticks: {
               font: { size: 10 },
-              callback: (value) => this.formatCompactAmount(value as number)
-            }
-          }
+              callback: (value) => this.formatCompactAmount(value as number),
+            },
+          },
         },
         plugins: {
           legend: {
@@ -7357,8 +7613,8 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
             labels: {
               font: { size: 11 },
               usePointStyle: true,
-              padding: 15
-            }
+              padding: 15,
+            },
           },
           tooltip: {
             backgroundColor: 'rgba(0, 0, 0, 0.8)',
@@ -7373,14 +7629,17 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
                   return `Chi tiêu: ${this.formatAmount(value)}`;
                 }
                 return `Ngân sách: ${this.formatAmount(value)}`;
-              }
-            }
-          }
-        }
-      }
+              },
+            },
+          },
+        },
+      },
     };
 
-    this.budgetCategoryMonthlyChart = new Chart(this.budgetCategoryMonthlyChartRef.nativeElement, config);
+    this.budgetCategoryMonthlyChart = new Chart(
+      this.budgetCategoryMonthlyChartRef.nativeElement,
+      config
+    );
   }
 
   /**
@@ -7417,7 +7676,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const monthExpenses = this.currentMonthExpenses();
     const dailyTotals: { [key: number]: number } = {};
 
-    monthExpenses.forEach(expense => {
+    monthExpenses.forEach((expense) => {
       const day = new Date(expense.date).getDate();
       dailyTotals[day] = (dailyTotals[day] || 0) + expense.amount;
     });
@@ -7425,7 +7684,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     let cumulativeActual = 0;
 
     // Determine how many days to show actual spending
-    const isCurrentMonth = year === now.getFullYear() && month === (now.getMonth() + 1);
+    const isCurrentMonth = year === now.getFullYear() && month === now.getMonth() + 1;
     const lastDayWithData = isCurrentMonth ? now.getDate() : daysInMonth;
 
     for (let day = 1; day <= daysInMonth; day++) {
@@ -7443,7 +7702,8 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const ctx = this.budgetTrendChartRef.nativeElement.getContext('2d');
     if (!ctx) return;
 
-    const isOverBudget = actualSpending[actualSpending.length - 1] > budgetLine[actualSpending.length - 1];
+    const isOverBudget =
+      actualSpending[actualSpending.length - 1] > budgetLine[actualSpending.length - 1];
 
     // Create gradient for actual spending
     const actualGradient = ctx.createLinearGradient(0, 0, 0, 300);
@@ -7480,32 +7740,32 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
             pointHoverRadius: 6,
             pointHoverBackgroundColor: 'rgba(91, 141, 239, 1)',
             pointHoverBorderColor: '#fff',
-            pointHoverBorderWidth: 2
+            pointHoverBorderWidth: 2,
           },
           {
             label: 'Chi tiêu thực tế',
             data: actualSpending,
-            borderColor: isOverBudget
-              ? 'rgba(239, 68, 68, 1)'
-              : 'rgba(16, 185, 129, 1)',
+            borderColor: isOverBudget ? 'rgba(239, 68, 68, 1)' : 'rgba(16, 185, 129, 1)',
             backgroundColor: actualGradient,
             borderWidth: 3,
             fill: true,
             tension: 0.4,
             pointRadius: 0,
             pointHoverRadius: 8,
-            pointHoverBackgroundColor: isOverBudget ? 'rgba(239, 68, 68, 1)' : 'rgba(16, 185, 129, 1)',
+            pointHoverBackgroundColor: isOverBudget
+              ? 'rgba(239, 68, 68, 1)'
+              : 'rgba(16, 185, 129, 1)',
             pointHoverBorderColor: '#fff',
-            pointHoverBorderWidth: 3
-          }
-        ]
+            pointHoverBorderWidth: 3,
+          },
+        ],
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
         interaction: {
           intersect: false,
-          mode: 'index'
+          mode: 'index',
         },
         plugins: {
           legend: {
@@ -7518,9 +7778,9 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
               padding: 20,
               font: {
                 size: 12,
-                weight: 500
-              }
-            }
+                weight: 500,
+              },
+            },
           },
           tooltip: {
             backgroundColor: 'rgba(255, 255, 255, 0.95)',
@@ -7535,47 +7795,47 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
               label: (context) => {
                 const value = context.parsed.y || 0;
                 return `  ${context.dataset.label}: ${this.formatAmount(value)}`;
-              }
-            }
-          }
+              },
+            },
+          },
         },
         scales: {
           y: {
             beginAtZero: true,
             grid: {
-              color: 'rgba(0, 0, 0, 0.05)'
+              color: 'rgba(0, 0, 0, 0.05)',
             },
             ticks: {
               callback: (value) => this.formatCompactAmount(value as number),
               font: {
-                size: 11
+                size: 11,
               },
-              color: '#8E99A8'
-            }
+              color: '#8E99A8',
+            },
           },
           x: {
             grid: {
-              display: false
+              display: false,
             },
             ticks: {
               font: {
-                size: 11
+                size: 11,
               },
               color: '#8E99A8',
-              maxRotation: 0
+              maxRotation: 0,
             },
             title: {
               display: true,
               text: 'Ngày trong tháng',
               font: {
                 size: 11,
-                weight: 500
+                weight: 500,
               },
-              color: '#6B7685'
-            }
-          }
-        }
-      }
+              color: '#6B7685',
+            },
+          },
+        },
+      },
     };
 
     this.budgetTrendChart = new Chart(this.budgetTrendChartRef.nativeElement, config);
@@ -7613,7 +7873,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     const weeks: { [key: number]: number } = {};
 
-    expenses.forEach(expense => {
+    expenses.forEach((expense) => {
       const date = new Date(expense.date);
       const weekOfMonth = Math.ceil(date.getDate() / 7);
       weeks[weekOfMonth] = (weeks[weekOfMonth] || 0) + expense.amount;
@@ -7621,19 +7881,24 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     return Object.entries(weeks)
       .map(([week, total]) => ({ week: `Tuần ${week}`, total: total as number }))
-      .sort((a, b) => parseInt(a.week.replace('Tuần ', '')) - parseInt(b.week.replace('Tuần ', '')));
+      .sort(
+        (a, b) => parseInt(a.week.replace('Tuần ', '')) - parseInt(b.week.replace('Tuần ', ''))
+      );
   }
 
   getHighestWeekSpending(): number {
     const data = this.getWeeklySpendingData();
     if (data.length === 0) return 0;
-    return Math.max(...data.map(d => d.total));
+    return Math.max(...data.map((d) => d.total));
   }
 
   getAverageWeekSpending(): number {
     const data = this.getWeeklySpendingData();
     if (data.length === 0) return 0;
-    return data.reduce((sum: number, d: { week: string; total: number }) => sum + d.total, 0) / data.length;
+    return (
+      data.reduce((sum: number, d: { week: string; total: number }) => sum + d.total, 0) /
+      data.length
+    );
   }
 
   getDailyAverageThisMonth(): number {
@@ -7645,7 +7910,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const month = this.reportMonth();
     if (!month) return 0;
 
-    const isCurrentMonth = year === now.getFullYear() && month === (now.getMonth() + 1);
+    const isCurrentMonth = year === now.getFullYear() && month === now.getMonth() + 1;
     const daysElapsed = isCurrentMonth ? now.getDate() : new Date(year, month, 0).getDate();
 
     const total = expenses.reduce((sum, e) => sum + e.amount, 0);
@@ -7662,7 +7927,12 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     return dailyAvg * daysInMonth;
   }
 
-  getPreviousMonthComparison(): { previousTotal: number; difference: number; percentChange: number; previousMonth: string } | null {
+  getPreviousMonthComparison(): {
+    previousTotal: number;
+    difference: number;
+    percentChange: number;
+    previousMonth: string;
+  } | null {
     const year = this.reportYear();
     const month = this.reportMonth();
     if (!month) return null;
@@ -7675,11 +7945,24 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       prevYear = year - 1;
     }
 
-    const monthNames = ['', 'Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6',
-      'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'];
+    const monthNames = [
+      '',
+      'Tháng 1',
+      'Tháng 2',
+      'Tháng 3',
+      'Tháng 4',
+      'Tháng 5',
+      'Tháng 6',
+      'Tháng 7',
+      'Tháng 8',
+      'Tháng 9',
+      'Tháng 10',
+      'Tháng 11',
+      'Tháng 12',
+    ];
 
     // Get previous month expenses
-    const prevMonthExpenses = this.expenses().filter(expense => {
+    const prevMonthExpenses = this.expenses().filter((expense) => {
       const expenseDate = new Date(expense.date);
       return expenseDate.getFullYear() === prevYear && expenseDate.getMonth() + 1 === prevMonth;
     });
@@ -7693,7 +7976,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       previousTotal,
       difference,
       percentChange,
-      previousMonth: monthNames[prevMonth]
+      previousMonth: monthNames[prevMonth],
     };
   }
 
@@ -7717,15 +8000,17 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     this.weeklyTrendChart2 = new Chart(this.weeklyTrendChartRef2.nativeElement, {
       type: 'bar',
       data: {
-        labels: data.map(d => d.week),
-        datasets: [{
-          label: 'Chi tiêu',
-          data: data.map(d => d.total),
-          backgroundColor: gradient,
-          borderColor: 'rgba(91, 141, 239, 1)',
-          borderWidth: 2,
-          borderRadius: 0
-        }]
+        labels: data.map((d) => d.week),
+        datasets: [
+          {
+            label: 'Chi tiêu',
+            data: data.map((d) => d.total),
+            backgroundColor: gradient,
+            borderColor: 'rgba(91, 141, 239, 1)',
+            borderWidth: 2,
+            borderRadius: 0,
+          },
+        ],
       },
       options: {
         responsive: true,
@@ -7734,19 +8019,19 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
           legend: { display: false },
           tooltip: {
             callbacks: {
-              label: (context) => this.formatAmount(context.parsed.y || 0)
-            }
-          }
+              label: (context) => this.formatAmount(context.parsed.y || 0),
+            },
+          },
         },
         scales: {
           y: {
             beginAtZero: true,
             ticks: { callback: (value) => this.formatCompactAmount(value as number) },
-            grid: { color: 'rgba(0,0,0,0.05)' }
+            grid: { color: 'rgba(0,0,0,0.05)' },
           },
-          x: { grid: { display: false } }
-        }
-      }
+          x: { grid: { display: false } },
+        },
+      },
     });
   }
 
@@ -7766,12 +8051,14 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       type: 'doughnut',
       data: {
         labels: categoryData.map((d: any) => d.category),
-        datasets: [{
-          data: categoryData.map((d: any) => d.total),
-          backgroundColor: colors.slice(0, categoryData.length),
-          borderWidth: 0,
-          hoverOffset: 10
-        }]
+        datasets: [
+          {
+            data: categoryData.map((d: any) => d.total),
+            backgroundColor: colors.slice(0, categoryData.length),
+            borderWidth: 0,
+            hoverOffset: 10,
+          },
+        ],
       },
       options: {
         responsive: true,
@@ -7784,20 +8071,23 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
             labels: {
               usePointStyle: true,
               padding: 12,
-              font: { size: 11 }
-            }
+              font: { size: 11 },
+            },
           },
           tooltip: {
             callbacks: {
               label: (context) => {
-                const total = categoryData.reduce((sum: number, d: { category: string; total: number }) => sum + d.total, 0);
+                const total = categoryData.reduce(
+                  (sum: number, d: { category: string; total: number }) => sum + d.total,
+                  0
+                );
                 const percent = ((context.parsed / total) * 100).toFixed(1);
                 return `${this.formatAmount(context.parsed)} (${percent}%)`;
-              }
-            }
-          }
-        }
-      }
+              },
+            },
+          },
+        },
+      },
     });
   }
 
@@ -7813,7 +8103,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const dayTotals = new Array(7).fill(0);
     const dayCounts = new Array(7).fill(0);
 
-    expenses.forEach(expense => {
+    expenses.forEach((expense) => {
       const dayOfWeek = new Date(expense.date).getDay();
       dayTotals[dayOfWeek] += expense.amount;
       dayCounts[dayOfWeek]++;
@@ -7830,14 +8120,16 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       type: 'bar',
       data: {
         labels: dayNames,
-        datasets: [{
-          label: 'Chi tiêu',
-          data: dayTotals,
-          backgroundColor: gradient,
-          borderColor: 'rgba(124, 110, 232, 1)',
-          borderWidth: 2,
-          borderRadius: 0
-        }]
+        datasets: [
+          {
+            label: 'Chi tiêu',
+            data: dayTotals,
+            backgroundColor: gradient,
+            borderColor: 'rgba(124, 110, 232, 1)',
+            borderWidth: 2,
+            borderRadius: 0,
+          },
+        ],
       },
       options: {
         responsive: true,
@@ -7846,19 +8138,19 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
           legend: { display: false },
           tooltip: {
             callbacks: {
-              label: (context) => this.formatAmount(context.parsed.y || 0)
-            }
-          }
+              label: (context) => this.formatAmount(context.parsed.y || 0),
+            },
+          },
         },
         scales: {
           y: {
             beginAtZero: true,
             ticks: { callback: (value) => this.formatCompactAmount(value as number) },
-            grid: { color: 'rgba(0,0,0,0.05)' }
+            grid: { color: 'rgba(0,0,0,0.05)' },
           },
-          x: { grid: { display: false } }
-        }
-      }
+          x: { grid: { display: false } },
+        },
+      },
     });
   }
 
@@ -7874,7 +8166,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     if (!month) return;
 
     const now = new Date();
-    const isCurrentMonth = year === now.getFullYear() && month === (now.getMonth() + 1);
+    const isCurrentMonth = year === now.getFullYear() && month === now.getMonth() + 1;
     const daysInMonth = new Date(year, month, 0).getDate();
     const currentDay = isCurrentMonth ? now.getDate() : daysInMonth;
 
@@ -7882,7 +8174,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const expenses = this.currentMonthExpenses();
     const dailyTotals: { [key: number]: number } = {};
 
-    expenses.forEach(expense => {
+    expenses.forEach((expense) => {
       const day = new Date(expense.date).getDate();
       dailyTotals[day] = (dailyTotals[day] || 0) + expense.amount;
     });
@@ -7925,7 +8217,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
             borderWidth: 2,
             fill: false,
             tension: 0,
-            pointRadius: 0
+            pointRadius: 0,
           },
           {
             label: 'Thực tế',
@@ -7935,9 +8227,9 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
             borderWidth: 2,
             fill: true,
             tension: 0.4,
-            pointRadius: 0
-          }
-        ]
+            pointRadius: 0,
+          },
+        ],
       },
       options: {
         responsive: true,
@@ -7946,26 +8238,26 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
           legend: {
             display: true,
             position: 'top',
-            labels: { usePointStyle: true, font: { size: 10 } }
+            labels: { usePointStyle: true, font: { size: 10 } },
           },
           tooltip: {
             callbacks: {
-              label: (context) => this.formatAmount(context.parsed.y || 0)
-            }
-          }
+              label: (context) => this.formatAmount(context.parsed.y || 0),
+            },
+          },
         },
         scales: {
           y: {
             beginAtZero: true,
             ticks: { callback: (value) => this.formatCompactAmount(value as number) },
-            grid: { color: 'rgba(0,0,0,0.05)' }
+            grid: { color: 'rgba(0,0,0,0.05)' },
           },
           x: {
             grid: { display: false },
-            ticks: { maxRotation: 0 }
-          }
-        }
-      }
+            ticks: { maxRotation: 0 },
+          },
+        },
+      },
     });
   }
 
@@ -7983,8 +8275,16 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   private monthDailyCompareChart: Chart | null = null;
 
   private insightChartColors = [
-    '#f43f5e', '#8b5cf6', '#06b6d4', '#10b981', '#f59e0b',
-    '#ec4899', '#6366f1', '#14b8a6', '#84cc16', '#f97316'
+    '#f43f5e',
+    '#8b5cf6',
+    '#06b6d4',
+    '#10b981',
+    '#f59e0b',
+    '#ec4899',
+    '#6366f1',
+    '#14b8a6',
+    '#84cc16',
+    '#f97316',
   ];
 
   getCategoryChartColor(index: number): string {
@@ -7995,7 +8295,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const now = new Date();
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
     return this.filteredExpenses()
-      .filter(e => new Date(e.date) >= thirtyDaysAgo)
+      .filter((e) => new Date(e.date) >= thirtyDaysAgo)
       .reduce((sum, e) => sum + e.amount, 0);
   }
 
@@ -8016,11 +8316,11 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     let total = 0;
 
     this.expenses()
-      .filter(e => {
+      .filter((e) => {
         const d = new Date(e.date);
         return d.getFullYear() === year && d.getMonth() === month;
       })
-      .forEach(e => {
+      .forEach((e) => {
         const day = new Date(e.date).getDate();
         dailyAmounts[day - 1] += e.amount;
         total += e.amount;
@@ -8047,11 +8347,11 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     let total = 0;
 
     this.expenses()
-      .filter(e => {
+      .filter((e) => {
         const d = new Date(e.date);
         return d.getFullYear() === year && d.getMonth() === month;
       })
-      .forEach(e => {
+      .forEach((e) => {
         const day = new Date(e.date).getDate();
         dailyAmounts[day - 1] += e.amount;
         total += e.amount;
@@ -8111,19 +8411,21 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     }
 
     const categories = this.insightsTotalByCategory().slice(0, 6);
-    const labels = categories.map(c => c.category);
-    const data = categories.map(c => c.total);
+    const labels = categories.map((c) => c.category);
+    const data = categories.map((c) => c.total);
 
     this.categoryPieChart = new Chart(this.categoryPieChartRef.nativeElement, {
       type: 'doughnut',
       data: {
         labels,
-        datasets: [{
-          data,
-          backgroundColor: this.insightChartColors.slice(0, labels.length),
-          borderWidth: 0,
-          hoverOffset: 8
-        }]
+        datasets: [
+          {
+            data,
+            backgroundColor: this.insightChartColors.slice(0, labels.length),
+            borderWidth: 0,
+            hoverOffset: 8,
+          },
+        ],
       },
       options: {
         responsive: true,
@@ -8131,7 +8433,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         cutout: '65%',
         plugins: {
           legend: {
-            display: false
+            display: false,
           },
           tooltip: {
             backgroundColor: 'rgba(0, 0, 0, 0.8)',
@@ -8141,13 +8443,13 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
             callbacks: {
               label: (context) => {
                 const total = data.reduce((a, b) => a + b, 0);
-                const percentage = ((context.raw as number) / total * 100).toFixed(1);
+                const percentage = (((context.raw as number) / total) * 100).toFixed(1);
                 return `${this.formatAmount(context.raw as number)} (${percentage}%)`;
-              }
-            }
-          }
-        }
-      }
+              },
+            },
+          },
+        },
+      },
     });
   }
 
@@ -8170,7 +8472,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       for (let m = 1; m <= 12; m++) {
         labels.push(`Tháng ${m}`);
         const monthTotal = expenses
-          .filter(e => {
+          .filter((e) => {
             const d = new Date(e.date);
             return d.getFullYear() === year && d.getMonth() + 1 === m;
           })
@@ -8186,13 +8488,15 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         labels.push(`${day}/${month}`);
 
         const dayTotal = expenses
-          .filter(e => e.date === dateStr)
+          .filter((e) => e.date === dateStr)
           .reduce((sum, e) => sum + e.amount, 0);
         data.push(dayTotal);
       }
     }
 
-    const gradient = this.dailyTrendChartRef.nativeElement.getContext('2d')!.createLinearGradient(0, 0, 0, 200);
+    const gradient = this.dailyTrendChartRef.nativeElement
+      .getContext('2d')!
+      .createLinearGradient(0, 0, 0, 200);
     gradient.addColorStop(0, 'rgba(139, 92, 246, 0.3)');
     gradient.addColorStop(1, 'rgba(139, 92, 246, 0)');
 
@@ -8200,26 +8504,28 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       type: 'line',
       data: {
         labels,
-        datasets: [{
-          data,
-          borderColor: '#8b5cf6',
-          backgroundColor: gradient,
-          borderWidth: 2,
-          fill: true,
-          tension: 0.4,
-          pointRadius: 0,
-          pointHoverRadius: 6,
-          pointHoverBackgroundColor: '#8b5cf6',
-          pointHoverBorderColor: '#fff',
-          pointHoverBorderWidth: 2
-        }]
+        datasets: [
+          {
+            data,
+            borderColor: '#8b5cf6',
+            backgroundColor: gradient,
+            borderWidth: 2,
+            fill: true,
+            tension: 0.4,
+            pointRadius: 0,
+            pointHoverRadius: 6,
+            pointHoverBackgroundColor: '#8b5cf6',
+            pointHoverBorderColor: '#fff',
+            pointHoverBorderWidth: 2,
+          },
+        ],
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
         interaction: {
           intersect: false,
-          mode: 'index'
+          mode: 'index',
         },
         scales: {
           x: {
@@ -8227,16 +8533,16 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
             ticks: {
               font: { size: 10 },
               maxRotation: 0,
-              maxTicksLimit: 10
-            }
+              maxTicksLimit: 10,
+            },
           },
           y: {
             grid: { color: 'rgba(0, 0, 0, 0.05)' },
             ticks: {
               font: { size: 10 },
-              callback: (value) => this.formatCompactAmount(value as number)
-            }
-          }
+              callback: (value) => this.formatCompactAmount(value as number),
+            },
+          },
         },
         plugins: {
           legend: { display: false },
@@ -8244,11 +8550,11 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
             backgroundColor: 'rgba(0, 0, 0, 0.8)',
             padding: 12,
             callbacks: {
-              label: (context) => this.formatAmount(context.raw as number)
-            }
-          }
-        }
-      }
+              label: (context) => this.formatAmount(context.raw as number),
+            },
+          },
+        },
+      },
     });
   }
 
@@ -8260,20 +8566,22 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     }
 
     const weekdays = this.insightsWeekdaySpending();
-    const labels = weekdays.map(d => d.shortName);
-    const data = weekdays.map(d => d.average);
+    const labels = weekdays.map((d) => d.shortName);
+    const data = weekdays.map((d) => d.average);
     const maxVal = Math.max(...data);
 
     this.weekdayChart = new Chart(this.weekdayChartRef.nativeElement, {
       type: 'bar',
       data: {
         labels,
-        datasets: [{
-          data,
-          backgroundColor: data.map(v => v === maxVal ? '#f43f5e' : '#06b6d4'),
-          borderRadius: 6,
-          borderSkipped: false
-        }]
+        datasets: [
+          {
+            data,
+            backgroundColor: data.map((v) => (v === maxVal ? '#f43f5e' : '#06b6d4')),
+            borderRadius: 6,
+            borderSkipped: false,
+          },
+        ],
       },
       options: {
         responsive: true,
@@ -8281,15 +8589,15 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         scales: {
           x: {
             grid: { display: false },
-            ticks: { font: { size: 11, weight: 500 } }
+            ticks: { font: { size: 11, weight: 500 } },
           },
           y: {
             grid: { color: 'rgba(0, 0, 0, 0.05)' },
             ticks: {
               font: { size: 10 },
-              callback: (value) => this.formatCompactAmount(value as number)
-            }
-          }
+              callback: (value) => this.formatCompactAmount(value as number),
+            },
+          },
         },
         plugins: {
           legend: { display: false },
@@ -8297,11 +8605,11 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
             backgroundColor: 'rgba(0, 0, 0, 0.8)',
             padding: 12,
             callbacks: {
-              label: (context) => `TB: ${this.formatAmount(context.raw as number)}`
-            }
-          }
-        }
-      }
+              label: (context) => `TB: ${this.formatAmount(context.raw as number)}`,
+            },
+          },
+        },
+      },
     });
   }
 
@@ -8326,7 +8634,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0);
 
       const monthTotal = this.filteredExpenses()
-        .filter(e => {
+        .filter((e) => {
           const expenseDate = new Date(e.date);
           return expenseDate >= monthStart && expenseDate <= monthEnd;
         })
@@ -8340,12 +8648,16 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
       type: 'bar',
       data: {
         labels,
-        datasets: [{
-          data,
-          backgroundColor: data.map((v, i) => i === data.length - 1 ? '#10b981' : (v === maxVal ? '#f43f5e' : '#8b5cf6')),
-          borderRadius: 6,
-          borderSkipped: false
-        }]
+        datasets: [
+          {
+            data,
+            backgroundColor: data.map((v, i) =>
+              i === data.length - 1 ? '#10b981' : v === maxVal ? '#f43f5e' : '#8b5cf6'
+            ),
+            borderRadius: 6,
+            borderSkipped: false,
+          },
+        ],
       },
       options: {
         responsive: true,
@@ -8353,15 +8665,15 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         scales: {
           x: {
             grid: { display: false },
-            ticks: { font: { size: 11, weight: 500 } }
+            ticks: { font: { size: 11, weight: 500 } },
           },
           y: {
             grid: { color: 'rgba(0, 0, 0, 0.05)' },
             ticks: {
               font: { size: 10 },
-              callback: (value) => this.formatCompactAmount(value as number)
-            }
-          }
+              callback: (value) => this.formatCompactAmount(value as number),
+            },
+          },
         },
         plugins: {
           legend: { display: false },
@@ -8369,11 +8681,11 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
             backgroundColor: 'rgba(0, 0, 0, 0.8)',
             padding: 12,
             callbacks: {
-              label: (context) => this.formatAmount(context.raw as number)
-            }
-          }
-        }
-      }
+              label: (context) => this.formatAmount(context.raw as number),
+            },
+          },
+        },
+      },
     });
   }
 
@@ -8386,12 +8698,16 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     // Use insights-specific data if in Insights tab, otherwise use current month data
     const isInsightsTab = this.activeTab() === 'insights';
-    const currentData = isInsightsTab ? this.insightsCurrentMonthDailyData() : this.currentMonthDailyData();
-    const previousData = isInsightsTab ? this.insightsPreviousMonthDailyData() : this.previousMonthDailyData();
-    
+    const currentData = isInsightsTab
+      ? this.insightsCurrentMonthDailyData()
+      : this.currentMonthDailyData();
+    const previousData = isInsightsTab
+      ? this.insightsPreviousMonthDailyData()
+      : this.previousMonthDailyData();
+
     const now = new Date();
     const today = now.getDate();
-    
+
     // For insights, use the last day of the selected month
     const lastDay = isInsightsTab ? currentData.daysInMonth : today;
 
@@ -8409,7 +8725,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     });
 
     let previousCumulative = 0;
-    const previousCumulativeData = previousData.dailyAmounts.map(val => {
+    const previousCumulativeData = previousData.dailyAmounts.map((val) => {
       previousCumulative += val;
       return previousCumulative;
     });
@@ -8432,20 +8748,24 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         labels,
         datasets: [
           {
-            label: isInsightsTab ? this.getInsightsCurrentMonthLabel() : this.getCurrentMonthLabel(),
+            label: isInsightsTab
+              ? this.getInsightsCurrentMonthLabel()
+              : this.getCurrentMonthLabel(),
             data: currentCumulativeData,
             borderColor: '#10b981',
             backgroundColor: currentGradient,
             borderWidth: 3,
             fill: true,
             tension: 0.3,
-            pointRadius: currentCumulativeData.map((_, idx) => idx + 1 === lastDay ? 6 : 0),
+            pointRadius: currentCumulativeData.map((_, idx) => (idx + 1 === lastDay ? 6 : 0)),
             pointBackgroundColor: '#10b981',
             pointBorderColor: '#ffffff',
-            pointBorderWidth: 2
+            pointBorderWidth: 2,
           },
           {
-            label: isInsightsTab ? this.getInsightsPreviousMonthLabel() : this.getPreviousMonthLabel(),
+            label: isInsightsTab
+              ? this.getInsightsPreviousMonthLabel()
+              : this.getPreviousMonthLabel(),
             data: previousCumulativeData,
             borderColor: '#8b5cf6',
             backgroundColor: previousGradient,
@@ -8453,16 +8773,16 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
             borderDash: [5, 5],
             fill: true,
             tension: 0.3,
-            pointRadius: 0
-          }
-        ]
+            pointRadius: 0,
+          },
+        ],
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
         interaction: {
           intersect: false,
-          mode: 'index'
+          mode: 'index',
         },
         scales: {
           x: {
@@ -8477,16 +8797,16 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
                   return day.toString();
                 }
                 return '';
-              }
-            }
+              },
+            },
           },
           y: {
             grid: { color: 'rgba(0, 0, 0, 0.05)' },
             ticks: {
               font: { size: 10 },
-              callback: (value) => this.formatCompactAmount(value as number)
-            }
-          }
+              callback: (value) => this.formatCompactAmount(value as number),
+            },
+          },
         },
         plugins: {
           legend: {
@@ -8495,8 +8815,8 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
             labels: {
               font: { size: 12 },
               usePointStyle: true,
-              padding: 20
-            }
+              padding: 20,
+            },
           },
           tooltip: {
             backgroundColor: 'rgba(0, 0, 0, 0.85)',
@@ -8516,22 +8836,27 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
                 const previousDay = previousData.dailyAmounts[dayIndex];
 
                 const lines = [];
-                const currentLabel = isInsightsTab ? this.getInsightsCurrentMonthLabel() : this.getCurrentMonthLabel();
-                const previousLabel = isInsightsTab ? this.getInsightsPreviousMonthLabel() : this.getPreviousMonthLabel();
-                
+                const currentLabel = isInsightsTab
+                  ? this.getInsightsCurrentMonthLabel()
+                  : this.getCurrentMonthLabel();
+                const previousLabel = isInsightsTab
+                  ? this.getInsightsPreviousMonthLabel()
+                  : this.getPreviousMonthLabel();
+
                 if (dayIndex + 1 <= lastDay && currentDay > 0) {
                   lines.push(`Chi trong ngày (${currentLabel}): ${this.formatAmount(currentDay)}`);
                 }
                 if (previousDay > 0) {
-                  lines.push(`Chi trong ngày (${previousLabel}): ${this.formatAmount(previousDay)}`);
+                  lines.push(
+                    `Chi trong ngày (${previousLabel}): ${this.formatAmount(previousDay)}`
+                  );
                 }
                 return lines.length > 0 ? ['\n' + lines.join('\n')] : [];
-              }
-            }
-          }
-        }
-      }
+              },
+            },
+          },
+        },
+      },
     });
   }
 }
-

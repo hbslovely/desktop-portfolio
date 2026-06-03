@@ -1,73 +1,74 @@
-<div 
-  class="window" 
+<div
+  class="window"
   [attr.data-window-id]="windowId"
   [class.maximized]="isMaximized()"
   [class.minimized]="isMinimized()"
   [class.focused]="isFocused"
   [style]="windowCssVars()"
   (click)="onWindowClick()"
-  (mousedown)="onWindowClick()">
-  
+  (mousedown)="onWindowClick()"
+>
   <!-- Title Bar -->
-  <div 
-    class="title-bar" 
+  <div
+    class="title-bar"
     (mousedown)="onTitleBarMouseDown($event)"
     (dblclick)="onTitleBarDoubleClick()"
-    [class.dragging]="isDragging">
-    
+    [class.dragging]="isDragging"
+  >
     <!-- Left side - Icon and Title -->
     <div class="title-section">
       <!-- Sprite icon -->
-      <div *ngIf="icon && !icon.startsWith('http') && !icon.startsWith('pi ')" [class]="'icon-sprite window-icon ' + icon"></div>
+      <div
+        *ngIf="icon && !icon.startsWith('http') && !icon.startsWith('pi ')"
+        [class]="'icon-sprite window-icon ' + icon"
+      ></div>
       <!-- Font icon -->
       <i *ngIf="icon && icon.startsWith('pi ')" [class]="icon + ' window-icon-fallback'"></i>
       <!-- External image -->
-      <img *ngIf="icon && icon.startsWith('http')" [src]="icon" class="window-icon" [alt]="title">
+      <img *ngIf="icon && icon.startsWith('http')" [src]="icon" class="window-icon" [alt]="title" />
       <!-- Fallback icon -->
       <i *ngIf="!icon" class="pi pi-window-maximize window-icon-fallback"></i>
       <span class="title-text">{{ title }}</span>
     </div>
-    
+
     <!-- Right side - Window Controls -->
     <div class="window-controls">
-      <button 
+      <button
         *ngIf="minimizable"
-        class="control-btn minimize-btn" 
+        class="control-btn minimize-btn"
         (click)="minimize()"
-        title="Minimize">
+        title="Minimize"
+      >
         <span class="minimize-icon">_</span>
       </button>
-      
-      <button 
+
+      <button
         *ngIf="maximizable"
-        class="control-btn maximize-btn" 
+        class="control-btn maximize-btn"
         (click)="isMaximized() ? restore() : maximize()"
-        [title]="isMaximized() ? 'Restore Down' : 'Maximize'">
+        [title]="isMaximized() ? 'Restore Down' : 'Maximize'"
+      >
         <span class="maximize-icon" [class.restore]="isMaximized()">⬜</span>
       </button>
-      
-      <button 
-        *ngIf="closable"
-        class="control-btn close-btn" 
-        (click)="close()"
-        title="Close">
+
+      <button *ngIf="closable" class="control-btn close-btn" (click)="close()" title="Close">
         <i class="pi pi-times"></i>
       </button>
     </div>
   </div>
-  
+
   <!-- Window Content -->
   <div class="window-content" (click)="onWindowClick()" (mousedown)="onWindowClick()">
     <ng-content></ng-content>
   </div>
-  
+
   <!-- Status Bar -->
   <div *ngIf="showStatusBar" class="status-bar">
     <div class="status-section">
       <i class="pi pi-circle-fill status-indicator"></i>
       <span class="status-text">{{ statusText }}</span>
     </div>
-    
+
     <div class="status-actions">
       <span class="resize-handle-corner" *ngIf="resizable && !isMaximized()">
         <i class="pi pi-angle-double-down"></i>
@@ -82,7 +83,7 @@
     <div class="resize-handle ne" (mousedown)="onResizeStart($event, 'ne')"></div>
     <div class="resize-handle sw" (mousedown)="onResizeStart($event, 'sw')"></div>
     <div class="resize-handle se" (mousedown)="onResizeStart($event, 'se')"></div>
-    
+
     <!-- Edge handles -->
     <div class="resize-handle n" (mousedown)="onResizeStart($event, 'n')"></div>
     <div class="resize-handle s" (mousedown)="onResizeStart($event, 's')"></div>

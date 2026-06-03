@@ -82,10 +82,12 @@ interface StoredApiUrl {
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class AngularLoveService {
-  private baseUrlSubject = new BehaviorSubject<string>('https://0dd7e866-blog-bff.contact-ef8.workers.dev');
+  private baseUrlSubject = new BehaviorSubject<string>(
+    'https://0dd7e866-blog-bff.contact-ef8.workers.dev'
+  );
   public baseUrl$ = this.baseUrlSubject.asObservable();
 
   // Fallback URL in case fetching fails
@@ -141,7 +143,7 @@ export class AngularLoveService {
     try {
       const data: StoredApiUrl = {
         url,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
       console.log('API URL cached for 3 days:', url);
@@ -161,12 +163,14 @@ export class AngularLoveService {
    * Fetch and store new API URL
    */
   private fetchAndStoreApiUrl(): void {
-    this.fetchApiUrl().then(() => {
-      const currentUrl = this.baseUrlSubject.value;
-      this.storeApiUrl(currentUrl);
-    }).catch(error => {
-      console.error('Failed to fetch API URL, using fallback:', error);
-    });
+    this.fetchApiUrl()
+      .then(() => {
+        const currentUrl = this.baseUrlSubject.value;
+        this.storeApiUrl(currentUrl);
+      })
+      .catch((error) => {
+        console.error('Failed to fetch API URL, using fallback:', error);
+      });
   }
 
   /**
@@ -190,7 +194,7 @@ export class AngularLoveService {
 
       // Use a Set to track files we've already scanned (avoid duplicates)
       const scannedFiles = new Set<string>();
-      
+
       // Queue of files to scan
       const filesToScan: string[] = [...initialMatches];
 
@@ -211,7 +215,7 @@ export class AngularLoveService {
         try {
           const scriptUrl = `https://angular.love/${scriptFile}`;
           console.log(`Scanning: ${scriptFile}`);
-          
+
           const scriptContent = await firstValueFrom(
             this.http.get(scriptUrl, { responseType: 'text' })
           );
@@ -230,7 +234,7 @@ export class AngularLoveService {
           // Look for references to other chunk/main files in this script
           // Patterns: "chunk-ABC123.js", 'main-XYZ789.js', etc.
           const referencedFiles = scriptContent.match(/(chunk|main)-[A-Z0-9]+\.js/gi);
-          
+
           if (referencedFiles) {
             // Add newly discovered files to the scan queue
             for (const referencedFile of referencedFiles) {
@@ -247,7 +251,9 @@ export class AngularLoveService {
         }
       }
 
-      console.warn(`⚠️ AL_API_URL not found in any of ${scannedFiles.size} scanned files, using fallback`);
+      console.warn(
+        `⚠️ AL_API_URL not found in any of ${scannedFiles.size} scanned files, using fallback`
+      );
       this.baseUrlSubject.next(this.FALLBACK_URL);
     } catch (error) {
       console.error('❌ Error fetching API URL:', error);
@@ -273,51 +279,58 @@ export class AngularLoveService {
   /**
    * Get list of articles with pagination and category filter
    */
-  getArticles(take: number = 12, skip: number = 0, category?: string): Observable<AngularLoveArticlesResponse> {
-    let params = new HttpParams()
-      .set('take', take.toString())
-      .set('skip', skip.toString());
+  getArticles(
+    take: number = 12,
+    skip: number = 0,
+    category?: string
+  ): Observable<AngularLoveArticlesResponse> {
+    let params = new HttpParams().set('take', take.toString()).set('skip', skip.toString());
 
     if (category) {
       params = params.set('category', category);
     }
 
-    return this.http.get<AngularLoveArticlesResponse>(`${this.getCurrentBaseUrl()}/articles`, { params }).pipe(
-      catchError((error) => {
-        console.error('Failed to fetch articles:', error);
-        // Trigger API URL refresh on failure
-        this.handleApiFailure();
-        return throwError(() => error);
-      })
-    );
+    return this.http
+      .get<AngularLoveArticlesResponse>(`${this.getCurrentBaseUrl()}/articles`, { params })
+      .pipe(
+        catchError((error) => {
+          console.error('Failed to fetch articles:', error);
+          // Trigger API URL refresh on failure
+          this.handleApiFailure();
+          return throwError(() => error);
+        })
+      );
   }
 
   /**
    * Get article detail by slug
    */
   getArticleBySlug(slug: string): Observable<AngularLoveArticleDetail> {
-    return this.http.get<AngularLoveArticleDetail>(`${this.getCurrentBaseUrl()}/articles/${slug}`).pipe(
-      catchError((error) => {
-        console.error('Failed to fetch article:', error);
-        // Trigger API URL refresh on failure
-        this.handleApiFailure();
-        return throwError(() => error);
-      })
-    );
+    return this.http
+      .get<AngularLoveArticleDetail>(`${this.getCurrentBaseUrl()}/articles/${slug}`)
+      .pipe(
+        catchError((error) => {
+          console.error('Failed to fetch article:', error);
+          // Trigger API URL refresh on failure
+          this.handleApiFailure();
+          return throwError(() => error);
+        })
+      );
   }
 
   /**
    * Get author detail by slug
    */
   getAuthorBySlug(slug: string): Observable<AngularLoveAuthorDetail> {
-    return this.http.get<AngularLoveAuthorDetail>(`${this.getCurrentBaseUrl()}/authors/${slug}`).pipe(
-      catchError((error) => {
-        console.error('Failed to fetch author:', error);
-        // Trigger API URL refresh on failure
-        this.handleApiFailure();
-        return throwError(() => error);
-      })
-    );
+    return this.http
+      .get<AngularLoveAuthorDetail>(`${this.getCurrentBaseUrl()}/authors/${slug}`)
+      .pipe(
+        catchError((error) => {
+          console.error('Failed to fetch author:', error);
+          // Trigger API URL refresh on failure
+          this.handleApiFailure();
+          return throwError(() => error);
+        })
+      );
   }
 }
-

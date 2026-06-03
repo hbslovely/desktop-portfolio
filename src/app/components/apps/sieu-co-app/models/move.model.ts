@@ -9,10 +9,10 @@ export interface Move {
   to: Position;
   piece: Piece;
   capturedPiece?: Piece | null;
-  notation?: string;        // Ký hiệu kỳ phổ
-  isCheck?: boolean;        // Có chiếu không
-  isCheckmate?: boolean;    // Có chiếu bí không
-  score?: number;           // Điểm đánh giá (cho AI)
+  notation?: string; // Ký hiệu kỳ phổ
+  isCheck?: boolean; // Có chiếu không
+  isCheckmate?: boolean; // Có chiếu bí không
+  score?: number; // Điểm đánh giá (cho AI)
 }
 
 /**
@@ -20,7 +20,7 @@ export interface Move {
  */
 export interface MoveHistory {
   move: Move;
-  boardSnapshot: string;    // FEN của bàn cờ trước khi đi
+  boardSnapshot: string; // FEN của bàn cờ trước khi đi
   timestamp: number;
 }
 
@@ -28,9 +28,9 @@ export interface MoveHistory {
  * Hướng di chuyển
  */
 export enum MoveDirection {
-  ADVANCE = '.',   // Tấn (tiến)
-  RETREAT = '/',   // Thoái (lùi)
-  HORIZONTAL = '-' // Bình (ngang)
+  ADVANCE = '.', // Tấn (tiến)
+  RETREAT = '/', // Thoái (lùi)
+  HORIZONTAL = '-', // Bình (ngang)
 }
 
 /**
@@ -46,7 +46,7 @@ export function createMove(
     from: { ...from },
     to: { ...to },
     piece: { ...piece },
-    capturedPiece: capturedPiece ? { ...capturedPiece } : null
+    capturedPiece: capturedPiece ? { ...capturedPiece } : null,
   };
 }
 

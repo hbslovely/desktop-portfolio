@@ -26,12 +26,12 @@ export interface TrainingProgress {
 }
 
 export interface TrainingConfig {
-  epochs: number;           // Số vòng lặp huấn luyện (50-200)
-  batchSize: number;        // Kích thước batch (16-64)
-  validationSplit: number;  // Tỷ lệ validation (0.1-0.3)
-  lookbackDays: number;     // Số ngày lịch sử để xét (30-120)
-  forecastDays: number;     // Số ngày dự đoán (1-7)
-  learningRate: number;     // Tốc độ học (0.0001-0.01)
+  epochs: number; // Số vòng lặp huấn luyện (50-200)
+  batchSize: number; // Kích thước batch (16-64)
+  validationSplit: number; // Tỷ lệ validation (0.1-0.3)
+  lookbackDays: number; // Số ngày lịch sử để xét (30-120)
+  forecastDays: number; // Số ngày dự đoán (1-7)
+  learningRate: number; // Tốc độ học (0.0001-0.01)
 }
 
 export interface NeuralNetworkWeights {
@@ -56,62 +56,70 @@ export interface ModelStatus {
 
 // Default training configuration with descriptions
 export const DEFAULT_TRAINING_CONFIG: TrainingConfig = {
-  epochs: 50,           // Số vòng lặp huấn luyện
-  batchSize: 32,        // Kích thước batch
+  epochs: 50, // Số vòng lặp huấn luyện
+  batchSize: 32, // Kích thước batch
   validationSplit: 0.2, // Tỷ lệ validation
-  lookbackDays: 60,     // Số ngày lịch sử
-  forecastDays: 1,      // Số ngày dự đoán
-  learningRate: 0.001,  // Tốc độ học
+  lookbackDays: 60, // Số ngày lịch sử
+  forecastDays: 1, // Số ngày dự đoán
+  learningRate: 0.001, // Tốc độ học
 };
 
 // Training config descriptions for UI
-export const TRAINING_CONFIG_DESCRIPTIONS: Record<keyof TrainingConfig, { label: string; description: string; min: number; max: number; step: number }> = {
+export const TRAINING_CONFIG_DESCRIPTIONS: Record<
+  keyof TrainingConfig,
+  { label: string; description: string; min: number; max: number; step: number }
+> = {
   epochs: {
     label: 'Số Epochs',
-    description: 'Số vòng lặp huấn luyện. Nhiều epochs hơn = model học kỹ hơn nhưng có thể bị overfit. Khuyến nghị: 30-100',
+    description:
+      'Số vòng lặp huấn luyện. Nhiều epochs hơn = model học kỹ hơn nhưng có thể bị overfit. Khuyến nghị: 30-100',
     min: 10,
     max: 200,
-    step: 10
+    step: 10,
   },
   batchSize: {
     label: 'Batch Size',
-    description: 'Số mẫu dữ liệu xử lý mỗi lần. Batch nhỏ = học chi tiết hơn nhưng chậm hơn. Khuyến nghị: 16-64',
+    description:
+      'Số mẫu dữ liệu xử lý mỗi lần. Batch nhỏ = học chi tiết hơn nhưng chậm hơn. Khuyến nghị: 16-64',
     min: 8,
     max: 128,
-    step: 8
+    step: 8,
   },
   validationSplit: {
     label: 'Validation Split',
-    description: 'Tỷ lệ dữ liệu dùng để kiểm tra (validation). 0.2 = 20% data để validate. Khuyến nghị: 0.1-0.3',
+    description:
+      'Tỷ lệ dữ liệu dùng để kiểm tra (validation). 0.2 = 20% data để validate. Khuyến nghị: 0.1-0.3',
     min: 0.1,
     max: 0.4,
-    step: 0.05
+    step: 0.05,
   },
   lookbackDays: {
     label: 'Lookback Days',
-    description: 'Số ngày lịch sử để model xem xét. Nhiều ngày hơn = nhìn xa hơn nhưng cần nhiều data hơn. Khuyến nghị: 30-90',
+    description:
+      'Số ngày lịch sử để model xem xét. Nhiều ngày hơn = nhìn xa hơn nhưng cần nhiều data hơn. Khuyến nghị: 30-90',
     min: 20,
     max: 120,
-    step: 10
+    step: 10,
   },
   forecastDays: {
     label: 'Forecast Days',
     description: 'Số ngày dự đoán phía trước. Dự đoán xa hơn = độ chính xác giảm. Khuyến nghị: 1-5',
     min: 1,
     max: 10,
-    step: 1
+    step: 1,
   },
   learningRate: {
     label: 'Learning Rate',
-    description: 'Tốc độ học của model. Cao = học nhanh nhưng có thể bỏ lỡ điểm tối ưu. Khuyến nghị: 0.0005-0.005',
+    description:
+      'Tốc độ học của model. Cao = học nhanh nhưng có thể bỏ lỡ điểm tối ưu. Khuyến nghị: 0.0005-0.005',
     min: 0.0001,
     max: 0.01,
-    step: 0.0001
-  }
+    step: 0.0001,
+  },
 };
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class NeuralNetworkService {
   private model: tf.Sequential | null = null;
@@ -149,17 +157,19 @@ export class NeuralNetworkService {
    * Check if model exists in database
    */
   checkModelExists(symbol: string): Observable<ModelStatus> {
-    return this.http.get<any>(`/api/stocks-v2/neural-network/${symbol.toUpperCase()}?action=check`).pipe(
-      map(response => ({
-        exists: response.exists || false,
-        hasWeights: response.hasWeights || false,
-        hasSimulation: response.hasSimulation || false
-      })),
-      catchError(error => {
-        console.error('Error checking model exists:', error);
-        return of({ exists: false, hasWeights: false, hasSimulation: false });
-      })
-    );
+    return this.http
+      .get<any>(`/api/stocks-v2/neural-network/${symbol.toUpperCase()}?action=check`)
+      .pipe(
+        map((response) => ({
+          exists: response.exists || false,
+          hasWeights: response.hasWeights || false,
+          hasSimulation: response.hasSimulation || false,
+        })),
+        catchError((error) => {
+          console.error('Error checking model exists:', error);
+          return of({ exists: false, hasWeights: false, hasSimulation: false });
+        })
+      );
   }
 
   /**
@@ -175,38 +185,38 @@ export class NeuralNetworkService {
           inputShape: [inputSize],
           units: 128,
           activation: 'relu',
-          name: 'dense1'
+          name: 'dense1',
         }),
         tf.layers.dropout({ rate: 0.2 }),
-        
+
         // Hidden layers
         tf.layers.dense({
           units: 64,
           activation: 'relu',
-          name: 'dense2'
+          name: 'dense2',
         }),
         tf.layers.dropout({ rate: 0.2 }),
-        
+
         tf.layers.dense({
           units: 32,
           activation: 'relu',
-          name: 'dense3'
+          name: 'dense3',
         }),
-        
+
         // Output layer: [predictedPrice, buySignal, sellSignal]
         // buySignal and sellSignal are probabilities (0-1) from sigmoid
         tf.layers.dense({
           units: 3,
           activation: 'linear', // We'll apply sigmoid to buy/sell signals manually
-          name: 'output'
-        })
-      ]
+          name: 'output',
+        }),
+      ],
     });
 
     // Compile the model with configurable learning rate
     model.compile({
       optimizer: tf.train.adam(learningRate),
-      loss: 'meanSquaredError'
+      loss: 'meanSquaredError',
     });
 
     return model;
@@ -219,7 +229,7 @@ export class NeuralNetworkService {
     prices: number[],
     lookback: number = 60,
     forecastDays: number = 1
-  ): { xs: number[][], ys: number[] } {
+  ): { xs: number[][]; ys: number[] } {
     const xs: number[][] = [];
     const ys: number[] = [];
 
@@ -227,7 +237,7 @@ export class NeuralNetworkService {
       // Input: last 'lookback' days of prices
       const x = prices.slice(i - lookback, i);
       xs.push(x);
-      
+
       // Output: price 'forecastDays' days ahead
       const y = prices[i + forecastDays - 1];
       ys.push(y);
@@ -239,12 +249,12 @@ export class NeuralNetworkService {
   /**
    * Normalize data to 0-1 range
    */
-  normalizeData(data: number[]): { normalized: number[], min: number, max: number } {
+  normalizeData(data: number[]): { normalized: number[]; min: number; max: number } {
     const min = Math.min(...data);
     const max = Math.max(...data);
     const range = max - min || 1; // Avoid division by zero
 
-    const normalized = data.map(val => (val - min) / range);
+    const normalized = data.map((val) => (val - min) / range);
     return { normalized, min, max };
   }
 
@@ -253,7 +263,7 @@ export class NeuralNetworkService {
    */
   denormalizeData(normalized: number[], min: number, max: number): number[] {
     const range = max - min;
-    return normalized.map(val => val * range + min);
+    return normalized.map((val) => val * range + min);
   }
 
   /**
@@ -277,9 +287,9 @@ export class NeuralNetworkService {
     }
 
     // Signal line is EMA of MACD (9 periods)
-    const validMacd = macd.filter(v => !isNaN(v));
+    const validMacd = macd.filter((v) => !isNaN(v));
     const signal = this.calculateEMA(validMacd, 9);
-    
+
     // Pad signal array to match macd length
     const paddedSignal: number[] = [];
     const signalOffset = macd.length - signal.length;
@@ -341,7 +351,7 @@ export class NeuralNetworkService {
     prices: number[],
     lookback: number = 60,
     forecastDays: number = 1
-  ): { xs: number[][], ys: number[][] } {
+  ): { xs: number[][]; ys: number[][] } {
     const xs: number[][] = [];
     const ys: number[][] = [];
 
@@ -351,40 +361,40 @@ export class NeuralNetworkService {
     for (let i = lookback; i < prices.length - forecastDays + 1; i++) {
       // Input: last 'lookback' days of prices + MACD indicators
       const priceFeatures = prices.slice(i - lookback, i);
-      
+
       // Get MACD values at current position
       const macdValue = isNaN(macdData.macd[i]) ? 0 : macdData.macd[i];
       const signalValue = isNaN(macdData.signal[i]) ? 0 : macdData.signal[i];
       const histogramValue = isNaN(macdData.histogram[i]) ? 0 : macdData.histogram[i];
-      
+
       // Normalize MACD values (they can be negative, so we need to handle this)
       // For simplicity, we'll use raw values and let normalization handle it
       const x = [...priceFeatures, macdValue, signalValue, histogramValue];
       xs.push(x);
-      
+
       // Output: [predictedPrice, buySignal, sellSignal]
       const predictedPrice = prices[i + forecastDays - 1];
-      
+
       // Calculate buy/sell signals based on future returns + MACD
       const currentPrice = prices[i];
       const futurePrice = prices[Math.min(i + 5, prices.length - 1)]; // Look 5 days ahead
       const returnPercent = (futurePrice - currentPrice) / currentPrice;
-      
+
       // MACD signals
       const macdCrossUp = histogramValue > 0 && (i === 0 || macdData.histogram[i - 1] <= 0);
       const macdCrossDown = histogramValue < 0 && (i === 0 || macdData.histogram[i - 1] >= 0);
-      
+
       // Combined signal: price return + MACD
       let buySignal = 0;
       let sellSignal = 0;
-      
+
       if (returnPercent > 0.02 || (macdCrossUp && returnPercent > 0)) {
         buySignal = 1;
       }
       if (returnPercent < -0.02 || (macdCrossDown && returnPercent < 0)) {
         sellSignal = 1;
       }
-      
+
       ys.push([predictedPrice, buySignal, sellSignal]);
     }
 
@@ -413,32 +423,38 @@ export class NeuralNetworkService {
     try {
       // Prepare data with trading signals and MACD
       const lookback = trainingConfig.lookbackDays;
-      const { xs, ys } = this.prepareTrainingDataWithSignals(prices, lookback, trainingConfig.forecastDays);
+      const { xs, ys } = this.prepareTrainingDataWithSignals(
+        prices,
+        lookback,
+        trainingConfig.forecastDays
+      );
 
       if (xs.length === 0) {
-        throw new Error('Not enough data for training. Need at least ' + (lookback + 1) + ' data points.');
+        throw new Error(
+          'Not enough data for training. Need at least ' + (lookback + 1) + ' data points.'
+        );
       }
 
       // Normalize data - need to normalize prices and MACD separately
       const allPrices = [...prices];
       const { normalized: normalizedPrices, min, max } = this.normalizeData(allPrices);
-      
+
       // Calculate MACD for normalized prices
       const macdData = this.calculateMACD(normalizedPrices);
-      
+
       // Normalize MACD values (they can be negative)
-      const allMacdValues = macdData.macd.filter(v => !isNaN(v));
-      const allSignalValues = macdData.signal.filter(v => !isNaN(v));
-      const allHistogramValues = macdData.histogram.filter(v => !isNaN(v));
-      
+      const allMacdValues = macdData.macd.filter((v) => !isNaN(v));
+      const allSignalValues = macdData.signal.filter((v) => !isNaN(v));
+      const allHistogramValues = macdData.histogram.filter((v) => !isNaN(v));
+
       const macdMin = Math.min(...allMacdValues);
       const macdMax = Math.max(...allMacdValues);
       const macdRange = macdMax - macdMin || 1;
-      
+
       const signalMin = Math.min(...allSignalValues);
       const signalMax = Math.max(...allSignalValues);
       const signalRange = signalMax - signalMin || 1;
-      
+
       const histMin = Math.min(...allHistogramValues);
       const histMax = Math.max(...allHistogramValues);
       const histRange = histMax - histMin || 1;
@@ -447,43 +463,55 @@ export class NeuralNetworkService {
       // Make sure xs and ys have the same length
       const normalizedXs: number[][] = [];
       const normalizedYs: number[][] = [];
-      
+
       // Use the same loop structure as prepareTrainingDataWithSignals
       for (let i = lookback; i < normalizedPrices.length - 1; i++) {
         const priceFeatures = normalizedPrices.slice(i - lookback, i);
         const macdValue = isNaN(macdData.macd[i]) ? 0 : (macdData.macd[i] - macdMin) / macdRange;
-        const signalValue = isNaN(macdData.signal[i]) ? 0 : (macdData.signal[i] - signalMin) / signalRange;
-        const histogramValue = isNaN(macdData.histogram[i]) ? 0 : (macdData.histogram[i] - histMin) / histRange;
+        const signalValue = isNaN(macdData.signal[i])
+          ? 0
+          : (macdData.signal[i] - signalMin) / signalRange;
+        const histogramValue = isNaN(macdData.histogram[i])
+          ? 0
+          : (macdData.histogram[i] - histMin) / histRange;
         normalizedXs.push([...priceFeatures, macdValue, signalValue, histogramValue]);
-        
+
         // Get corresponding y value (future price at i + 1)
         const futurePrice = normalizedPrices[i + 1 - 1]; // i + forecastDays - 1, where forecastDays = 1
         const originalFuturePrice = prices[i + 1 - 1];
-        
+
         // Calculate buy/sell signals
         const currentPrice = prices[i];
         const futurePriceOriginal = prices[Math.min(i + 5, prices.length - 1)];
         const returnPercent = (futurePriceOriginal - currentPrice) / currentPrice;
-        
+
         // MACD signals
-        const macdCrossUp = !isNaN(macdData.histogram[i]) && i > 0 && macdData.histogram[i] > 0 && macdData.histogram[i - 1] <= 0;
-        const macdCrossDown = !isNaN(macdData.histogram[i]) && i > 0 && macdData.histogram[i] < 0 && macdData.histogram[i - 1] >= 0;
-        
+        const macdCrossUp =
+          !isNaN(macdData.histogram[i]) &&
+          i > 0 &&
+          macdData.histogram[i] > 0 &&
+          macdData.histogram[i - 1] <= 0;
+        const macdCrossDown =
+          !isNaN(macdData.histogram[i]) &&
+          i > 0 &&
+          macdData.histogram[i] < 0 &&
+          macdData.histogram[i - 1] >= 0;
+
         let buySignal = 0;
         let sellSignal = 0;
-        
+
         if (returnPercent > 0.02 || (macdCrossUp && returnPercent > 0)) {
           buySignal = 1;
         }
         if (returnPercent < -0.02 || (macdCrossDown && returnPercent < 0)) {
           sellSignal = 1;
         }
-        
+
         // Normalize price
         const normalizedPrice = (originalFuturePrice - min) / (max - min);
         normalizedYs.push([normalizedPrice, buySignal, sellSignal]);
       }
-      
+
       // Ensure xs and ys have the same length
       const minLength = Math.min(normalizedXs.length, normalizedYs.length);
       const finalXs = normalizedXs.slice(0, minLength);
@@ -492,10 +520,14 @@ export class NeuralNetworkService {
       // Convert to tensors
       const xsTensor = tf.tensor2d(finalXs);
       const ysTensor = tf.tensor2d(finalYs);
-      
+
       const inputSize = lookback + 3; // lookback prices + 3 MACD features
-      console.log(`Training data: ${finalXs.length} samples, input shape: [${finalXs.length}, ${inputSize}], output shape: [${finalYs.length}, 3]`);
-      console.log(`Training config: epochs=${trainingConfig.epochs}, batchSize=${trainingConfig.batchSize}, validationSplit=${trainingConfig.validationSplit}, learningRate=${trainingConfig.learningRate}`);
+      console.log(
+        `Training data: ${finalXs.length} samples, input shape: [${finalXs.length}, ${inputSize}], output shape: [${finalYs.length}, 3]`
+      );
+      console.log(
+        `Training config: epochs=${trainingConfig.epochs}, batchSize=${trainingConfig.batchSize}, validationSplit=${trainingConfig.validationSplit}, learningRate=${trainingConfig.learningRate}`
+      );
 
       // Create or recreate model
       if (this.model) {
@@ -520,7 +552,7 @@ export class NeuralNetworkService {
             const progress: TrainingProgress = {
               epoch: epoch + 1,
               loss: finalLoss,
-              accuracy: finalAccuracy
+              accuracy: finalAccuracy,
             };
             this.trainingProgress = progress;
             this.lastTrainingLoss = finalLoss;
@@ -529,8 +561,8 @@ export class NeuralNetworkService {
             if (onProgress) {
               onProgress(progress);
             }
-          }
-        }
+          },
+        },
       });
 
       // Clean up tensors
@@ -550,10 +582,7 @@ export class NeuralNetworkService {
   /**
    * Predict next price(s) using the trained model
    */
-  async predict(
-    prices: number[],
-    days: number = 1
-  ): Promise<StockPrediction> {
+  async predict(prices: number[], days: number = 1): Promise<StockPrediction> {
     if (!this.model || !this.isModelReady) {
       throw new Error('Model is not trained yet. Please train the model first.');
     }
@@ -570,20 +599,20 @@ export class NeuralNetworkService {
 
       // Calculate MACD
       const macdData = this.calculateMACD(normalizedPrices);
-      
+
       // Normalize MACD values
-      const allMacdValues = macdData.macd.filter(v => !isNaN(v));
-      const allSignalValues = macdData.signal.filter(v => !isNaN(v));
-      const allHistogramValues = macdData.histogram.filter(v => !isNaN(v));
-      
+      const allMacdValues = macdData.macd.filter((v) => !isNaN(v));
+      const allSignalValues = macdData.signal.filter((v) => !isNaN(v));
+      const allHistogramValues = macdData.histogram.filter((v) => !isNaN(v));
+
       const macdMin = Math.min(...allMacdValues);
       const macdMax = Math.max(...allMacdValues);
       const macdRange = macdMax - macdMin || 1;
-      
+
       const signalMin = Math.min(...allSignalValues);
       const signalMax = Math.max(...allSignalValues);
       const signalRange = signalMax - signalMin || 1;
-      
+
       const histMin = Math.min(...allHistogramValues);
       const histMax = Math.max(...allHistogramValues);
       const histRange = histMax - histMin || 1;
@@ -591,10 +620,16 @@ export class NeuralNetworkService {
       // Get last lookback days of prices + MACD indicators
       const lastDays = normalizedPrices.slice(-lookback);
       const lastIndex = normalizedPrices.length - 1;
-      const macdValue = isNaN(macdData.macd[lastIndex]) ? 0 : (macdData.macd[lastIndex] - macdMin) / macdRange;
-      const signalValue = isNaN(macdData.signal[lastIndex]) ? 0 : (macdData.signal[lastIndex] - signalMin) / signalRange;
-      const histogramValue = isNaN(macdData.histogram[lastIndex]) ? 0 : (macdData.histogram[lastIndex] - histMin) / histRange;
-      
+      const macdValue = isNaN(macdData.macd[lastIndex])
+        ? 0
+        : (macdData.macd[lastIndex] - macdMin) / macdRange;
+      const signalValue = isNaN(macdData.signal[lastIndex])
+        ? 0
+        : (macdData.signal[lastIndex] - signalMin) / signalRange;
+      const histogramValue = isNaN(macdData.histogram[lastIndex])
+        ? 0
+        : (macdData.histogram[lastIndex] - histMin) / histRange;
+
       const inputFeatures = [...lastDays, macdValue, signalValue, histogramValue];
       const inputTensor = tf.tensor2d([inputFeatures]);
 
@@ -604,7 +639,7 @@ export class NeuralNetworkService {
       const predictedNormalized = predictedValue[0];
       const buySignalRaw = predictedValue[1];
       const sellSignalRaw = predictedValue[2];
-      
+
       // Get current MACD for decision making
       const currentMacd = macdData.macd[lastIndex];
       const currentSignal = macdData.signal[lastIndex];
@@ -612,56 +647,62 @@ export class NeuralNetworkService {
 
       // Denormalize price
       const predictedPrice = predictedNormalized * (max - min) + min;
-      
+
       // Apply sigmoid to buy/sell signals to get probabilities
       const buySignalProb = 1 / (1 + Math.exp(-buySignalRaw));
       const sellSignalProb = 1 / (1 + Math.exp(-sellSignalRaw));
-      
+
       // MACD signals
       const macdBullish = !isNaN(currentHistogram) && currentHistogram > 0;
       const macdBearish = !isNaN(currentHistogram) && currentHistogram < 0;
-      const macdCrossUp = !isNaN(currentHistogram) && normalizedPrices.length > 1 && 
-                          currentHistogram > 0 && macdData.histogram[lastIndex - 1] <= 0;
-      const macdCrossDown = !isNaN(currentHistogram) && normalizedPrices.length > 1 && 
-                            currentHistogram < 0 && macdData.histogram[lastIndex - 1] >= 0;
-      
+      const macdCrossUp =
+        !isNaN(currentHistogram) &&
+        normalizedPrices.length > 1 &&
+        currentHistogram > 0 &&
+        macdData.histogram[lastIndex - 1] <= 0;
+      const macdCrossDown =
+        !isNaN(currentHistogram) &&
+        normalizedPrices.length > 1 &&
+        currentHistogram < 0 &&
+        macdData.histogram[lastIndex - 1] >= 0;
+
       // Combine model prediction with MACD
       let finalBuyProb = buySignalProb;
       let finalSellProb = sellSignalProb;
-      
+
       // Boost buy signal if MACD is bullish
       if (macdBullish || macdCrossUp) {
         finalBuyProb = Math.min(1, buySignalProb + 0.15);
       }
-      
+
       // Boost sell signal if MACD is bearish
       if (macdBearish || macdCrossDown) {
         finalSellProb = Math.min(1, sellSignalProb + 0.15);
       }
-      
+
       // Determine trading decision
       let tradingDecision: StockPrediction['tradingDecision'];
-      const macdInfo = !isNaN(currentHistogram) 
+      const macdInfo = !isNaN(currentHistogram)
         ? `MACD: ${currentHistogram > 0 ? 'Tăng' : 'Giảm'}${macdCrossUp ? ' (Cắt lên)' : macdCrossDown ? ' (Cắt xuống)' : ''}`
         : '';
-      
+
       if (finalBuyProb > 0.6 && finalBuyProb > finalSellProb) {
         tradingDecision = {
           action: 'buy',
           confidence: finalBuyProb,
-          reason: `Model + MACD: Nên mua (confidence: ${(finalBuyProb * 100).toFixed(1)}%)${macdInfo ? '. ' + macdInfo : ''}`
+          reason: `Model + MACD: Nên mua (confidence: ${(finalBuyProb * 100).toFixed(1)}%)${macdInfo ? '. ' + macdInfo : ''}`,
         };
       } else if (finalSellProb > 0.6 && finalSellProb > finalBuyProb) {
         tradingDecision = {
           action: 'sell',
           confidence: finalSellProb,
-          reason: `Model + MACD: Nên bán (confidence: ${(finalSellProb * 100).toFixed(1)}%)${macdInfo ? '. ' + macdInfo : ''}`
+          reason: `Model + MACD: Nên bán (confidence: ${(finalSellProb * 100).toFixed(1)}%)${macdInfo ? '. ' + macdInfo : ''}`,
         };
       } else {
         tradingDecision = {
           action: 'hold',
           confidence: Math.max(finalBuyProb, finalSellProb),
-          reason: `Model + MACD: Khuyến nghị giữ (buy: ${(finalBuyProb * 100).toFixed(1)}%, sell: ${(finalSellProb * 100).toFixed(1)}%)${macdInfo ? '. ' + macdInfo : ''}`
+          reason: `Model + MACD: Khuyến nghị giữ (buy: ${(finalBuyProb * 100).toFixed(1)}%, sell: ${(finalSellProb * 100).toFixed(1)}%)${macdInfo ? '. ' + macdInfo : ''}`,
         };
       }
 
@@ -674,9 +715,10 @@ export class NeuralNetworkService {
       const currentPrice = prices[prices.length - 1];
       const priceChange = predictedPrice - currentPrice;
       const changePercent = Math.abs(priceChange / currentPrice);
-      
+
       let trend: 'up' | 'down' | 'neutral' = 'neutral';
-      if (changePercent > 0.02) { // 2% threshold
+      if (changePercent > 0.02) {
+        // 2% threshold
         trend = priceChange > 0 ? 'up' : 'down';
       }
 
@@ -692,20 +734,40 @@ export class NeuralNetworkService {
       // For longer predictions, use iterative approach
       if (days >= 7) {
         const weekPrediction = await this.predictMultipleDays(
-          normalizedPrices, min, max, 7,
-          macdData, macdMin, macdMax, macdRange,
-          signalMin, signalMax, signalRange,
-          histMin, histMax, histRange
+          normalizedPrices,
+          min,
+          max,
+          7,
+          macdData,
+          macdMin,
+          macdMax,
+          macdRange,
+          signalMin,
+          signalMax,
+          signalRange,
+          histMin,
+          histMax,
+          histRange
         );
         nextWeekPrediction = weekPrediction;
       }
 
       if (days >= 30) {
         const monthPrediction = await this.predictMultipleDays(
-          normalizedPrices, min, max, 30,
-          macdData, macdMin, macdMax, macdRange,
-          signalMin, signalMax, signalRange,
-          histMin, histMax, histRange
+          normalizedPrices,
+          min,
+          max,
+          30,
+          macdData,
+          macdMin,
+          macdMax,
+          macdRange,
+          signalMin,
+          signalMax,
+          signalRange,
+          histMin,
+          histMax,
+          histRange
         );
         nextMonthPrediction = monthPrediction;
       }
@@ -724,8 +786,10 @@ export class NeuralNetworkService {
         trend,
         nextDayPrediction: nextDayPrediction ? nextDayPrediction * PRICE_MULTIPLIER : undefined,
         nextWeekPrediction: nextWeekPrediction ? nextWeekPrediction * PRICE_MULTIPLIER : undefined,
-        nextMonthPrediction: nextMonthPrediction ? nextMonthPrediction * PRICE_MULTIPLIER : undefined,
-        tradingDecision
+        nextMonthPrediction: nextMonthPrediction
+          ? nextMonthPrediction * PRICE_MULTIPLIER
+          : undefined,
+        tradingDecision,
       };
     } catch (error) {
       console.error('Error making prediction:', error);
@@ -742,7 +806,7 @@ export class NeuralNetworkService {
     min: number,
     max: number,
     days: number,
-    macdData?: { macd: number[], signal: number[], histogram: number[] },
+    macdData?: { macd: number[]; signal: number[]; histogram: number[] },
     macdMin?: number,
     macdMax?: number,
     macdRange?: number,
@@ -764,20 +828,32 @@ export class NeuralNetworkService {
 
     for (let i = 0; i < days; i++) {
       // Get MACD values (use last known values for simplicity)
-      const macdValue = macdData && !isNaN(macdData.macd[lastIndex]) && macdMin !== undefined && macdRange !== undefined
-        ? (macdData.macd[lastIndex] - macdMin) / macdRange
-        : 0;
-      const signalValue = macdData && !isNaN(macdData.signal[lastIndex]) && signalMin !== undefined && signalRange !== undefined
-        ? (macdData.signal[lastIndex] - signalMin) / signalRange
-        : 0;
-      const histogramValue = macdData && !isNaN(macdData.histogram[lastIndex]) && histMin !== undefined && histRange !== undefined
-        ? (macdData.histogram[lastIndex] - histMin) / histRange
-        : 0;
+      const macdValue =
+        macdData &&
+        !isNaN(macdData.macd[lastIndex]) &&
+        macdMin !== undefined &&
+        macdRange !== undefined
+          ? (macdData.macd[lastIndex] - macdMin) / macdRange
+          : 0;
+      const signalValue =
+        macdData &&
+        !isNaN(macdData.signal[lastIndex]) &&
+        signalMin !== undefined &&
+        signalRange !== undefined
+          ? (macdData.signal[lastIndex] - signalMin) / signalRange
+          : 0;
+      const histogramValue =
+        macdData &&
+        !isNaN(macdData.histogram[lastIndex]) &&
+        histMin !== undefined &&
+        histRange !== undefined
+          ? (macdData.histogram[lastIndex] - histMin) / histRange
+          : 0;
 
       // Create input with lookback + 3 features (lookback prices + 3 MACD)
       const inputFeatures = [...currentSequence, macdValue, signalValue, histogramValue];
       const inputTensor = tf.tensor2d([inputFeatures]);
-      
+
       const prediction = this.model.predict(inputTensor) as tf.Tensor;
       const predictedValue = await prediction.data();
       // Model outputs [predictedPrice, buySignal, sellSignal]
@@ -857,7 +933,7 @@ export class NeuralNetworkService {
     let summary = 'Neural Network Model:\n';
     summary += `Status: ${this.isModelReady ? 'Ready' : 'Not Ready'}\n`;
     summary += `Training: ${this.isTraining ? 'Yes' : 'No'}\n`;
-    
+
     if (this.trainingProgress) {
       summary += `Last Epoch: ${this.trainingProgress.epoch}\n`;
       summary += `Loss: ${this.trainingProgress.loss.toFixed(6)}\n`;
@@ -877,7 +953,7 @@ export class NeuralNetworkService {
       return throwError(() => new Error('Model is not trained yet'));
     }
 
-    return new Observable(observer => {
+    return new Observable((observer) => {
       // Use async IIFE to handle async operations
       (async () => {
         try {
@@ -891,51 +967,54 @@ export class NeuralNetworkService {
               const shape = weight.shape;
               weightData.push({
                 data: Array.from(data),
-                shape: shape
+                shape: shape,
               });
             }
             weights.push({
               layerName: layer.name,
-              weights: weightData
+              weights: weightData,
             });
           }
 
           const inputSize = this.currentTrainingConfig.lookbackDays + 3;
 
           // Save to API (database)
-          this.http.post<any>(`/api/stocks-v2/neural-network/${symbol.toUpperCase()}`, {
-            weights,
-            trainingEpochs: this.lastTrainingEpochs,
-            loss: this.lastTrainingLoss,
-            accuracy: this.lastTrainingAccuracy,
-            modelConfig: {
-              inputSize: inputSize,
-              layers: [
-                { units: 128, activation: 'relu' },
-                { units: 64, activation: 'relu' },
-                { units: 32, activation: 'relu' },
-                { units: 3, activation: 'linear' }
-              ]
-            },
-            // Save training config
-            lookbackDays: this.currentTrainingConfig.lookbackDays,
-            forecastDays: this.currentTrainingConfig.forecastDays,
-            batchSize: this.currentTrainingConfig.batchSize,
-            validationSplit: this.currentTrainingConfig.validationSplit,
-          }).pipe(
-            catchError(error => {
-              console.error('Error saving weights:', error);
-              return throwError(() => error);
+          this.http
+            .post<any>(`/api/stocks-v2/neural-network/${symbol.toUpperCase()}`, {
+              weights,
+              trainingEpochs: this.lastTrainingEpochs,
+              loss: this.lastTrainingLoss,
+              accuracy: this.lastTrainingAccuracy,
+              modelConfig: {
+                inputSize: inputSize,
+                layers: [
+                  { units: 128, activation: 'relu' },
+                  { units: 64, activation: 'relu' },
+                  { units: 32, activation: 'relu' },
+                  { units: 3, activation: 'linear' },
+                ],
+              },
+              // Save training config
+              lookbackDays: this.currentTrainingConfig.lookbackDays,
+              forecastDays: this.currentTrainingConfig.forecastDays,
+              batchSize: this.currentTrainingConfig.batchSize,
+              validationSplit: this.currentTrainingConfig.validationSplit,
             })
-          ).subscribe({
-            next: (response) => {
-              observer.next(response);
-              observer.complete();
-            },
-            error: (error) => {
-              observer.error(error);
-            }
-          });
+            .pipe(
+              catchError((error) => {
+                console.error('Error saving weights:', error);
+                return throwError(() => error);
+              })
+            )
+            .subscribe({
+              next: (response) => {
+                observer.next(response);
+                observer.complete();
+              },
+              error: (error) => {
+                observer.error(error);
+              },
+            });
         } catch (error) {
           observer.error(error);
         }
@@ -948,8 +1027,10 @@ export class NeuralNetworkService {
    */
   async loadWeights(symbol: string): Promise<boolean> {
     try {
-      const response: any = await this.http.get<any>(`/api/stocks-v2/neural-network/${symbol.toUpperCase()}`).toPromise();
-      
+      const response: any = await this.http
+        .get<any>(`/api/stocks-v2/neural-network/${symbol.toUpperCase()}`)
+        .toPromise();
+
       if (!response.success || !response.data) {
         console.log('No saved weights found for', symbol);
         return false;
@@ -973,7 +1054,7 @@ export class NeuralNetworkService {
         lookbackDays,
         forecastDays,
         batchSize,
-        validationSplit
+        validationSplit,
       };
 
       const inputSize = lookbackDays + 3; // lookback prices + 3 MACD features
@@ -1000,17 +1081,19 @@ export class NeuralNetworkService {
       }
 
       // Clean up temporary tensors
-      weightTensors.forEach(layerWeights => {
-        layerWeights.forEach(tensor => tensor.dispose());
+      weightTensors.forEach((layerWeights) => {
+        layerWeights.forEach((tensor) => tensor.dispose());
       });
 
       this.isModelReady = true;
       this.lastTrainingEpochs = response.trainingEpochs || response.data.trainingEpochs || 0;
       this.lastTrainingLoss = response.loss || response.data.loss || null;
       this.lastTrainingAccuracy = response.accuracy || response.data.accuracy || null;
-      
+
       console.log('✅ Neural network weights loaded successfully');
-      console.log(`   Training config: lookback=${lookbackDays}, forecast=${forecastDays}, batch=${batchSize}`);
+      console.log(
+        `   Training config: lookback=${lookbackDays}, forecast=${forecastDays}, batch=${batchSize}`
+      );
       return true;
     } catch (error) {
       console.error('Error loading weights:', error);

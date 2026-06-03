@@ -1,10 +1,7 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import type { TimelineMilestone } from '../../baby-timeline.data';
-import type {
-  HeightGrowthEvaluation,
-  WeightGrowthEvaluation,
-} from '../../baby-weight-growth';
+import type { HeightGrowthEvaluation, WeightGrowthEvaluation } from '../../baby-weight-growth';
 import type { WeightLog } from '../../../../services/weight-log.service';
 import {
   formatWeightCm,

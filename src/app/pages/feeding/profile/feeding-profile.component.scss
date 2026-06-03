@@ -54,8 +54,8 @@
     letter-spacing: 0.02em;
   }
 
-  input[type="text"],
-  input[type="date"] {
+  input[type='text'],
+  input[type='date'] {
     padding: 12px 14px;
     border: 1.5px solid var(--border);
     border-radius: 10px;
@@ -68,7 +68,9 @@
     box-sizing: border-box;
     appearance: none;
     -webkit-appearance: none;
-    transition: border-color 0.15s, background 0.15s;
+    transition:
+      border-color 0.15s,
+      background 0.15s;
     min-height: 46px;
     font-variant-numeric: tabular-nums;
 
@@ -131,7 +133,10 @@
   font-weight: 600;
   font-family: inherit;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s,
+    border-color 0.15s;
 
   &:disabled {
     opacity: 0.5;

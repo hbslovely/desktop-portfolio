@@ -12,10 +12,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { interval } from 'rxjs';
-import {
-  EventLogService,
-  FeedingEventLog,
-} from '../../../services/event-log.service';
+import { EventLogService, FeedingEventLog } from '../../../services/event-log.service';
 import { ActivityLogService } from '../../../services/activity-log.service';
 
 interface EventDraft {
@@ -77,9 +74,7 @@ export class FeedingScheduleComponent {
 
   now = signal<Date>(new Date());
   calendarDialogOpen = signal(false);
-  calendarCursor = signal<Date>(
-    new Date(new Date().getFullYear(), new Date().getMonth(), 1)
-  );
+  calendarCursor = signal<Date>(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
   selectedCalendarDate = signal<string>('');
 
   placePickerOpen = signal<'add' | 'edit' | null>(null);
@@ -126,11 +121,7 @@ export class FeedingScheduleComponent {
 
     const todayIso = this.toDateStr(this.now());
     for (let i = 0; i < 42; i++) {
-      const d = new Date(
-        gridStart.getFullYear(),
-        gridStart.getMonth(),
-        gridStart.getDate() + i
-      );
+      const d = new Date(gridStart.getFullYear(), gridStart.getMonth(), gridStart.getDate() + i);
       const dateIso = this.toDateStr(d);
       const dayEvents = eventsByDate.get(dateIso) ?? [];
       const hasFutureEvent = dayEvents.some((ev) => this.isFuture(ev));
@@ -151,30 +142,33 @@ export class FeedingScheduleComponent {
    * Xác định màu sắc cho indicator số sự kiện dựa trên loại và trạng thái sự kiện
    */
   getEventIndicatorColor(dateIso: string): string {
-    const events = this.events().filter(ev => ev.date === dateIso);
+    const events = this.events().filter((ev) => ev.date === dateIso);
     if (events.length === 0) return '#4f46e5';
 
     // Ưu tiên màu theo loại sự kiện
-    const hasFuture = events.some(ev => this.isFuture(ev));
-    const hasPast = events.some(ev => !this.isFuture(ev));
-    
+    const hasFuture = events.some((ev) => this.isFuture(ev));
+    const hasPast = events.some((ev) => !this.isFuture(ev));
+
     // Phân loại theo nội dung sự kiện
-    const hasVaccine = events.some(ev => 
-      ev.title.toLowerCase().includes('tiêm') || 
-      ev.title.toLowerCase().includes('vaccine') ||
-      ev.title.toLowerCase().includes('chích')
-    );
-    
-    const hasCheckup = events.some(ev => 
-      ev.title.toLowerCase().includes('khám') ||
-      ev.title.toLowerCase().includes('check') ||
-      ev.title.toLowerCase().includes('xét nghiệm')
+    const hasVaccine = events.some(
+      (ev) =>
+        ev.title.toLowerCase().includes('tiêm') ||
+        ev.title.toLowerCase().includes('vaccine') ||
+        ev.title.toLowerCase().includes('chích')
     );
 
-    const hasImportant = events.some(ev =>
-      ev.title.toLowerCase().includes('quan trọng') ||
-      ev.title.toLowerCase().includes('emergency') ||
-      ev.title.toLowerCase().includes('khẩn')
+    const hasCheckup = events.some(
+      (ev) =>
+        ev.title.toLowerCase().includes('khám') ||
+        ev.title.toLowerCase().includes('check') ||
+        ev.title.toLowerCase().includes('xét nghiệm')
+    );
+
+    const hasImportant = events.some(
+      (ev) =>
+        ev.title.toLowerCase().includes('quan trọng') ||
+        ev.title.toLowerCase().includes('emergency') ||
+        ev.title.toLowerCase().includes('khẩn')
     );
 
     // Màu sắc theo mức độ ưu tiên
@@ -183,7 +177,7 @@ export class FeedingScheduleComponent {
     if (hasCheckup) return '#2563eb'; // Xanh dương - khám bệnh
     if (hasFuture) return '#059669'; // Xanh lá - sự kiện sắp tới
     if (hasPast) return '#6b7280'; // Xám - sự kiện đã qua
-    
+
     return '#4f46e5'; // Màu mặc định
   }
 
@@ -265,12 +259,7 @@ export class FeedingScheduleComponent {
 
     const todayGroups = this.groupByDate(buckets.today, now, sortAsc, false);
     const soonGroups = this.groupByDate(buckets.soon, now, sortAsc, false);
-    const nextMonthGroups = this.groupByDate(
-      buckets.nextMonth,
-      now,
-      sortAsc,
-      false
-    );
+    const nextMonthGroups = this.groupByDate(buckets.nextMonth, now, sortAsc, false);
     const laterGroups = this.groupByDate(buckets.later, now, sortAsc, false);
 
     return [
@@ -385,11 +374,11 @@ export class FeedingScheduleComponent {
     const startYear = currentYear - 10;
     const endYear = currentYear + 10;
     const years: number[] = [];
-    
+
     for (let year = startYear; year <= endYear; year++) {
       years.push(year);
     }
-    
+
     return years;
   }
 
@@ -421,7 +410,7 @@ export class FeedingScheduleComponent {
   closeAdd(keepCalendarReturn = false) {
     this.addOpen.set(false);
     this.closePlacePicker();
-    
+
     // Nếu được mở từ calendar và cần quay lại
     if (this.reopenCalendarAfterAdd && !keepCalendarReturn) {
       this.openCalendarDialog();
@@ -477,7 +466,7 @@ export class FeedingScheduleComponent {
       // Check if dropdown would go below visible area
       const dropdownHeight = 200; // max-height of dropdown
       const visibleBottom = vv.height;
-      
+
       if (top + dropdownHeight > visibleBottom) {
         // Position above the input instead
         top = rect.top - dropdownHeight - 4;
@@ -509,9 +498,7 @@ export class FeedingScheduleComponent {
   }
 
   filteredPlaces(context: 'add' | 'edit'): string[] {
-    const query = (
-      context === 'add' ? this.draft().place : this.editDraft().place
-    )
+    const query = (context === 'add' ? this.draft().place : this.editDraft().place)
       .trim()
       .toLowerCase();
     const all = this.placeOptions();
@@ -555,7 +542,10 @@ export class FeedingScheduleComponent {
       return;
     }
     const ev: FeedingEventLog = {
-      user: String(this.user() || 'guest').toLowerCase().trim() || 'guest',
+      user:
+        String(this.user() || 'guest')
+          .toLowerCase()
+          .trim() || 'guest',
       date: d.date,
       time: this.normalizeTimeInput(d.time),
       title,
@@ -570,11 +560,12 @@ export class FeedingScheduleComponent {
         this.saving.set(false);
         this.successMsg.set('Đã thêm sự kiện.');
         // Log activity
-        this.activityLogService.logSchedule(
-          String(this.user() || 'guest'),
-          'SCHEDULE_ADDED',
-          { title: ev.title, date: this.formatEventDate(ev.date) }
-        ).subscribe();
+        this.activityLogService
+          .logSchedule(String(this.user() || 'guest'), 'SCHEDULE_ADDED', {
+            title: ev.title,
+            date: this.formatEventDate(ev.date),
+          })
+          .subscribe();
         setTimeout(() => this.successMsg.set(''), 3000);
         this.closeAdd(true);
         if (this.reopenCalendarAfterAdd) {
@@ -614,11 +605,9 @@ export class FeedingScheduleComponent {
           this.saving.set(false);
           this.successMsg.set('Đã cập nhật.');
           // Log activity
-          this.activityLogService.logSchedule(
-            String(this.user() || 'guest'),
-            'SCHEDULE_UPDATED',
-            { title }
-          ).subscribe();
+          this.activityLogService
+            .logSchedule(String(this.user() || 'guest'), 'SCHEDULE_UPDATED', { title })
+            .subscribe();
           setTimeout(() => this.successMsg.set(''), 3000);
           this.cancelEdit();
           setTimeout(() => this.refresh(), 700);
@@ -637,11 +626,9 @@ export class FeedingScheduleComponent {
       next: () => {
         this.successMsg.set('Đã xoá.');
         // Log activity
-        this.activityLogService.logSchedule(
-          String(this.user() || 'guest'),
-          'SCHEDULE_DELETED',
-          { title: ev.title }
-        ).subscribe();
+        this.activityLogService
+          .logSchedule(String(this.user() || 'guest'), 'SCHEDULE_DELETED', { title: ev.title })
+          .subscribe();
         setTimeout(() => this.successMsg.set(''), 3000);
         if (this.editing()?.rowIndex === ev.rowIndex) this.cancelEdit();
         setTimeout(() => this.refresh(), 700);
@@ -687,17 +674,11 @@ export class FeedingScheduleComponent {
     if (this.isSectionExpanded(section.id)) {
       return section.dayGroups;
     }
-    return this.limitDayGroups(
-      section.dayGroups,
-      FeedingScheduleComponent.PREVIEW_EVENT_LIMIT
-    );
+    return this.limitDayGroups(section.dayGroups, FeedingScheduleComponent.PREVIEW_EVENT_LIMIT);
   }
 
   hiddenEventCount(section: ScheduleTimeSection): number {
-    return Math.max(
-      0,
-      section.eventCount - FeedingScheduleComponent.PREVIEW_EVENT_LIMIT
-    );
+    return Math.max(0, section.eventCount - FeedingScheduleComponent.PREVIEW_EVENT_LIMIT);
   }
 
   trackSection(_: number, s: ScheduleTimeSection): string {
@@ -722,21 +703,13 @@ export class FeedingScheduleComponent {
     return this.calendarDayDiff(+m[1], +m[2], +m[3], now);
   }
 
-  private calendarDayDiff(
-    y: number,
-    mo: number,
-    d: number,
-    now: Date
-  ): number {
+  private calendarDayDiff(y: number, mo: number, d: number, now: Date): number {
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const target = new Date(y, mo - 1, d);
     return Math.round((target.getTime() - today.getTime()) / 86_400_000);
   }
 
-  private limitDayGroups(
-    groups: ScheduleDayGroup[],
-    limit: number
-  ): ScheduleDayGroup[] {
+  private limitDayGroups(groups: ScheduleDayGroup[], limit: number): ScheduleDayGroup[] {
     let count = 0;
     const result: ScheduleDayGroup[] = [];
     for (const day of groups) {
@@ -763,9 +736,7 @@ export class FeedingScheduleComponent {
     }
 
     return [...byDate.entries()]
-      .sort(([a], [b]) =>
-        datesDesc ? b.localeCompare(a) : a.localeCompare(b)
-      )
+      .sort(([a], [b]) => (datesDesc ? b.localeCompare(a) : a.localeCompare(b)))
       .map(([dateIso, dayEvents]) => {
         const sorted = [...dayEvents].sort(sortEvents);
         const header = this.formatDateHeader(dateIso, now);
@@ -778,10 +749,7 @@ export class FeedingScheduleComponent {
       });
   }
 
-  private formatDateHeader(
-    iso: string,
-    now: Date
-  ): { label: string; subLabel: string } {
+  private formatDateHeader(iso: string, now: Date): { label: string; subLabel: string } {
     const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
     if (!m) return { label: iso, subLabel: '' };
 
@@ -796,24 +764,11 @@ export class FeedingScheduleComponent {
 
   private formatFullDateLabel(y: number, mo: number, d: number): string {
     const date = new Date(y, mo - 1, d, 12, 0, 0, 0);
-    const weekdays = [
-      'Chủ nhật',
-      'Thứ 2',
-      'Thứ 3',
-      'Thứ 4',
-      'Thứ 5',
-      'Thứ 6',
-      'Thứ 7',
-    ];
+    const weekdays = ['Chủ nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
     return `${weekdays[date.getDay()]}, ngày ${d} tháng ${mo} năm ${y}`;
   }
 
-  private formatScheduleRelativeLabel(
-    y: number,
-    mo: number,
-    d: number,
-    now: Date
-  ): string {
+  private formatScheduleRelativeLabel(y: number, mo: number, d: number, now: Date): string {
     const startNow = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const startEv = new Date(y, mo - 1, d);
     const diff = this.calendarDayDiff(y, mo, d, now);
@@ -856,10 +811,7 @@ export class FeedingScheduleComponent {
     return `Đã qua ${parts.join(' ')}`;
   }
 
-  private calendarSpan(
-    start: Date,
-    end: Date
-  ): { years: number; months: number; days: number } {
+  private calendarSpan(start: Date, end: Date): { years: number; months: number; days: number } {
     let years = end.getFullYear() - start.getFullYear();
     let months = end.getMonth() - start.getMonth();
     let days = end.getDate() - start.getDate();

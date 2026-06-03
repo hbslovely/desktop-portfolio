@@ -25,7 +25,7 @@ export abstract class BaseAlgorithm implements IAIAlgorithm {
       useOpeningBook: config?.useOpeningBook ?? false,
       useQuiescence: config?.useQuiescence ?? true,
       useIterativeDeepening: config?.useIterativeDeepening ?? false,
-      useTranspositionTable: config?.useTranspositionTable ?? false
+      useTranspositionTable: config?.useTranspositionTable ?? false,
     };
   }
 
@@ -79,12 +79,7 @@ export abstract class BaseAlgorithm implements IAIAlgorithm {
    * Tìm kiếm yên tĩnh (quiescence search)
    * Chỉ xét các nước ăn quân để tránh horizon effect
    */
-  protected quiescenceSearch(
-    board: Board,
-    alpha: number,
-    beta: number,
-    color: PieceColor
-  ): number {
+  protected quiescenceSearch(board: Board, alpha: number, beta: number, color: PieceColor): number {
     this.nodesSearched++;
 
     const standPat = this.evaluate(board);
@@ -99,7 +94,7 @@ export abstract class BaseAlgorithm implements IAIAlgorithm {
     }
 
     // Chỉ xét nước ăn quân
-    const moves = generateAllMoves(board, color).filter(m => m.capturedPiece);
+    const moves = generateAllMoves(board, color).filter((m) => m.capturedPiece);
     this.sortMoves(moves, isMaximizing);
 
     const enemyColor = color === PieceColor.RED ? PieceColor.BLACK : PieceColor.RED;

@@ -1,4 +1,15 @@
-import { Component, Input, Output, EventEmitter, signal, computed, OnInit, OnDestroy, OnChanges, ChangeDetectionStrategy } from '@angular/core';
+import {
+  Component,
+  Input,
+  Output,
+  EventEmitter,
+  signal,
+  computed,
+  OnInit,
+  OnDestroy,
+  OnChanges,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 export interface WindowState {
@@ -14,7 +25,7 @@ export interface WindowState {
   imports: [CommonModule],
   templateUrl: './window.component.html',
   styleUrl: './window.component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class WindowComponent implements OnInit, OnDestroy, OnChanges {
   @Input() title = 'Window';
@@ -38,12 +49,12 @@ export class WindowComponent implements OnInit, OnDestroy, OnChanges {
 
   // Make z-index reactive
   private _zIndex = signal(1000);
-  
-  @Input() 
+
+  @Input()
   set zIndex(value: number) {
     this._zIndex.set(value);
   }
-  
+
   get zIndex(): number {
     return this._zIndex();
   }
@@ -59,7 +70,7 @@ export class WindowComponent implements OnInit, OnDestroy, OnChanges {
     isMaximized: false,
     isMinimized: false,
     position: { x: this.initialX, y: this.initialY },
-    size: { width: this.initialWidth, height: this.initialHeight }
+    size: { width: this.initialWidth, height: this.initialHeight },
   });
 
   // Computed CSS variables for positioning (much simpler than inline styles)
@@ -71,7 +82,7 @@ export class WindowComponent implements OnInit, OnDestroy, OnChanges {
       '--window-width': `${state.size.width}px`,
       '--window-height': `${state.size.height}px`,
       '--window-z-index': this._zIndex().toString(),
-      '--window-opacity': '1'
+      '--window-opacity': '1',
     };
   });
 
@@ -92,12 +103,12 @@ export class WindowComponent implements OnInit, OnDestroy, OnChanges {
 
   ngOnInit() {
     // Initialize position and size
-    this.windowState.update(state => ({
+    this.windowState.update((state) => ({
       ...state,
       position: { x: this.initialX, y: this.initialY },
-      size: { width: this.initialWidth, height: this.initialHeight }
+      size: { width: this.initialWidth, height: this.initialHeight },
     }));
-    
+
     // Initialize previous external minimize state
     this.previousIsMinimizedExternal = this.isMinimizedExternal;
   }
@@ -107,7 +118,7 @@ export class WindowComponent implements OnInit, OnDestroy, OnChanges {
     if (this.previousIsMinimizedExternal && !this.isMinimizedExternal) {
       this.resetMinimizeState();
     }
-    
+
     // Update previous state
     this.previousIsMinimizedExternal = this.isMinimizedExternal;
   }
@@ -132,20 +143,20 @@ export class WindowComponent implements OnInit, OnDestroy, OnChanges {
   onTitleBarMouseDown(event: MouseEvent) {
     // Focus the window first
     this.onFocus.emit();
-    
+
     if (this.windowState().isMaximized) return;
-    
+
     this.isDragging = true;
     this.dragOffset = {
       x: event.clientX - this.windowState().position.x,
-      y: event.clientY - this.windowState().position.y
+      y: event.clientY - this.windowState().position.y,
     };
-    
+
     // Add global event listeners for smooth dragging
     document.addEventListener('mousemove', this.onDocumentMouseMove);
     document.addEventListener('mouseup', this.onDocumentMouseUp);
     document.addEventListener('mouseleave', this.onDocumentMouseUp);
-    
+
     event.preventDefault();
   }
 
@@ -178,12 +189,12 @@ export class WindowComponent implements OnInit, OnDestroy, OnChanges {
     this.isResizing = false;
     this.resizeDirection = '';
     this.pendingUpdate = false;
-    
+
     if (this.animationFrameId) {
       cancelAnimationFrame(this.animationFrameId);
       this.animationFrameId = null;
     }
-    
+
     // Remove global event listeners
     document.removeEventListener('mousemove', this.onDocumentMouseMove);
     document.removeEventListener('mouseup', this.onDocumentMouseUp);
@@ -194,42 +205,42 @@ export class WindowComponent implements OnInit, OnDestroy, OnChanges {
     // Constrain to viewport bounds
     const maxX = window.innerWidth - this.windowState().size.width;
     const maxY = window.innerHeight - 48 - this.windowState().size.height; // Account for taskbar
-    
+
     const constrainedX = Math.max(0, Math.min(x, maxX));
     const constrainedY = Math.max(0, Math.min(y, maxY));
-    
-    this.windowState.update(state => ({
+
+    this.windowState.update((state) => ({
       ...state,
-      position: { x: constrainedX, y: constrainedY }
+      position: { x: constrainedX, y: constrainedY },
     }));
   }
 
   minimize() {
     if (!this.minimizable) return;
-    this.windowState.update(state => ({ ...state, isMinimized: true }));
+    this.windowState.update((state) => ({ ...state, isMinimized: true }));
     this.onMinimize.emit();
   }
 
   maximize() {
     if (!this.maximizable) return;
-    this.windowState.update(state => ({ ...state, isMaximized: true }));
+    this.windowState.update((state) => ({ ...state, isMaximized: true }));
     this.onMaximize.emit();
   }
 
   restore() {
-    this.windowState.update(state => ({ 
-      ...state, 
-      isMaximized: false, 
-      isMinimized: false 
+    this.windowState.update((state) => ({
+      ...state,
+      isMaximized: false,
+      isMinimized: false,
     }));
     this.onRestore.emit();
   }
 
   // Reset minimize state (called externally)
   resetMinimizeState() {
-    this.windowState.update(state => ({ 
-      ...state, 
-      isMinimized: false 
+    this.windowState.update((state) => ({
+      ...state,
+      isMinimized: false,
     }));
   }
 
@@ -248,24 +259,24 @@ export class WindowComponent implements OnInit, OnDestroy, OnChanges {
 
   onResizeStart(event: MouseEvent, direction: string) {
     if (!this.resizable || this.windowState().isMaximized) return;
-    
+
     this.isResizing = true;
     this.resizeDirection = direction;
     this.resizeStartPos = { x: event.clientX, y: event.clientY };
-    this.resizeStartSize = { 
-      width: this.windowState().size.width, 
-      height: this.windowState().size.height 
+    this.resizeStartSize = {
+      width: this.windowState().size.width,
+      height: this.windowState().size.height,
     };
-    this.resizeStartWindowPos = { 
-      x: this.windowState().position.x, 
-      y: this.windowState().position.y 
+    this.resizeStartWindowPos = {
+      x: this.windowState().position.x,
+      y: this.windowState().position.y,
     };
-    
+
     // Add global event listeners for resize
     document.addEventListener('mousemove', this.onDocumentMouseMove);
     document.addEventListener('mouseup', this.onDocumentMouseUp);
     document.addEventListener('mouseleave', this.onDocumentMouseUp);
-    
+
     event.preventDefault();
     event.stopPropagation();
   }
@@ -275,7 +286,7 @@ export class WindowComponent implements OnInit, OnDestroy, OnChanges {
 
     const deltaX = event.clientX - this.resizeStartPos.x;
     const deltaY = event.clientY - this.resizeStartPos.y;
-    
+
     let newWidth = this.resizeStartSize.width;
     let newHeight = this.resizeStartSize.height;
     let newX = this.resizeStartWindowPos.x;
@@ -306,14 +317,14 @@ export class WindowComponent implements OnInit, OnDestroy, OnChanges {
     // Constrain to viewport
     const maxWidth = window.innerWidth - newX;
     const maxHeight = window.innerHeight - 48 - newY; // Account for taskbar
-    
+
     newWidth = Math.min(newWidth, maxWidth);
     newHeight = Math.min(newHeight, maxHeight);
 
-    this.windowState.update(state => ({
+    this.windowState.update((state) => ({
       ...state,
       size: { width: newWidth, height: newHeight },
-      position: { x: newX, y: newY }
+      position: { x: newX, y: newY },
     }));
   }
 }

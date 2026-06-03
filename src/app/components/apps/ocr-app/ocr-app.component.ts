@@ -53,7 +53,7 @@ export class OcrAppComponent implements AfterViewInit, OnDestroy {
     // Suppress Tesseract.js warnings about missing parameters
     // These warnings don't affect functionality but clutter the console
     this.suppressTesseractWarnings();
-    
+
     // Initialize Tesseract worker
     this.initializeWorker();
     // Load history
@@ -63,7 +63,7 @@ export class OcrAppComponent implements AfterViewInit, OnDestroy {
   private suppressTesseractWarnings() {
     // Store original console.warn
     this.originalConsoleWarn = console.warn;
-    
+
     // Override console.warn to filter Tesseract.js warnings
     console.warn = (...args: any[]) => {
       // Filter out Tesseract.js parameter warnings
@@ -103,7 +103,7 @@ export class OcrAppComponent implements AfterViewInit, OnDestroy {
   onFileSelected(event: Event) {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
-    
+
     if (!file) return;
     this.processFile(file);
   }
@@ -111,10 +111,10 @@ export class OcrAppComponent implements AfterViewInit, OnDestroy {
   handleDrop(event: DragEvent) {
     event.preventDefault();
     event.stopPropagation();
-    
+
     const file = event.dataTransfer?.files?.[0];
     if (!file) return;
-    
+
     this.processFile(file);
   }
 
@@ -133,19 +133,21 @@ export class OcrAppComponent implements AfterViewInit, OnDestroy {
 
     this.error.set(null);
     const reader = new FileReader();
-    
+
     reader.onload = (e) => {
       const imageUrl = e.target?.result as string;
       // Resize image if too large to prevent app from expanding
-      this.resizeImageIfNeeded(imageUrl).then(resizedUrl => {
-        this.selectedImage.set(resizedUrl);
-        this.ocrResult.set(null);
-      }).catch(err => {
-        console.error('Error resizing image:', err);
-        // Fallback to original image if resize fails
-        this.selectedImage.set(imageUrl);
-        this.ocrResult.set(null);
-      });
+      this.resizeImageIfNeeded(imageUrl)
+        .then((resizedUrl) => {
+          this.selectedImage.set(resizedUrl);
+          this.ocrResult.set(null);
+        })
+        .catch((err) => {
+          console.error('Error resizing image:', err);
+          // Fallback to original image if resize fails
+          this.selectedImage.set(imageUrl);
+          this.ocrResult.set(null);
+        });
     };
 
     reader.readAsDataURL(file);
@@ -157,16 +159,16 @@ export class OcrAppComponent implements AfterViewInit, OnDestroy {
       img.onload = () => {
         const MAX_WIDTH = 1200;
         const MAX_HEIGHT = 800;
-        
+
         let width = img.width;
         let height = img.height;
-        
+
         // Check if resize is needed
         if (width <= MAX_WIDTH && height <= MAX_HEIGHT) {
           resolve(imageUrl);
           return;
         }
-        
+
         // Calculate new dimensions maintaining aspect ratio
         if (width > height) {
           if (width > MAX_WIDTH) {
@@ -179,23 +181,23 @@ export class OcrAppComponent implements AfterViewInit, OnDestroy {
             height = MAX_HEIGHT;
           }
         }
-        
+
         // Resize using canvas
         const canvas = document.createElement('canvas');
         canvas.width = width;
         canvas.height = height;
         const ctx = canvas.getContext('2d');
-        
+
         if (!ctx) {
           reject(new Error('Could not get canvas context'));
           return;
         }
-        
+
         ctx.drawImage(img, 0, 0, width, height);
         const resizedUrl = canvas.toDataURL('image/jpeg', 0.9);
         resolve(resizedUrl);
       };
-      
+
       img.onerror = () => reject(new Error('Failed to load image'));
       img.src = imageUrl;
     });
@@ -230,7 +232,7 @@ export class OcrAppComponent implements AfterViewInit, OnDestroy {
       // Tesseract.js handles progress internally, we'll simulate progress
       this.progress.set(10);
       this.progressStatus.set('Đang xử lý hình ảnh...');
-      
+
       // Simulate progress while processing
       progressInterval = setInterval(() => {
         const current = this.progress();
@@ -239,14 +241,14 @@ export class OcrAppComponent implements AfterViewInit, OnDestroy {
           this.progressStatus.set(`Đang nhận dạng: ${Math.min(current + 10, 90)}%`);
         }
       }, 500);
-      
+
       const { data } = await this.worker.recognize(imageUrl);
-      
+
       if (progressInterval) {
         clearInterval(progressInterval);
         progressInterval = null;
       }
-      
+
       // Update progress to 100% after recognition completes
       this.progress.set(100);
       this.progressStatus.set('Đang nhận dạng: 100%');
@@ -256,11 +258,11 @@ export class OcrAppComponent implements AfterViewInit, OnDestroy {
         confidence: data.confidence,
         imageUrl: imageUrl,
         timestamp: new Date(),
-        language: currentLang
+        language: currentLang,
       };
 
       this.ocrResult.set(result);
-      
+
       // Add to history
       const currentHistory = this.history();
       this.history.set([result, ...currentHistory].slice(0, 20)); // Keep last 20 results
@@ -298,11 +300,13 @@ export class OcrAppComponent implements AfterViewInit, OnDestroy {
     const result = this.ocrResult();
     if (!result || !result.text) return;
 
-    navigator.clipboard.writeText(result.text).then(() => {
-      // Show notification
-      const notification = document.createElement('div');
-      notification.textContent = 'Đã sao chép vào clipboard!';
-      notification.style.cssText = `
+    navigator.clipboard
+      .writeText(result.text)
+      .then(() => {
+        // Show notification
+        const notification = document.createElement('div');
+        notification.textContent = 'Đã sao chép vào clipboard!';
+        notification.style.cssText = `
         position: fixed;
         top: 20px;
         right: 20px;
@@ -313,11 +317,12 @@ export class OcrAppComponent implements AfterViewInit, OnDestroy {
         z-index: 10000;
         box-shadow: 0 2px 8px rgba(0,0,0,0.2);
       `;
-      document.body.appendChild(notification);
-      setTimeout(() => notification.remove(), 2000);
-    }).catch(err => {
-      console.error('Failed to copy:', err);
-    });
+        document.body.appendChild(notification);
+        setTimeout(() => notification.remove(), 2000);
+      })
+      .catch((err) => {
+        console.error('Failed to copy:', err);
+      });
   }
 
   downloadText() {
@@ -370,11 +375,11 @@ export class OcrAppComponent implements AfterViewInit, OnDestroy {
   private saveHistory() {
     const history = this.history();
     // Save only essential data (exclude imageUrl to save space)
-    const historyToSave = history.map(r => ({
+    const historyToSave = history.map((r) => ({
       text: r.text,
       confidence: r.confidence,
       timestamp: r.timestamp.toISOString(),
-      language: r.language
+      language: r.language,
     }));
     localStorage.setItem('ocr-history', JSON.stringify(historyToSave));
   }
@@ -385,11 +390,13 @@ export class OcrAppComponent implements AfterViewInit, OnDestroy {
       try {
         const history = JSON.parse(stored);
         // Note: imageUrl won't be available from localStorage, but that's okay for history view
-        this.history.set(history.map((h: any) => ({
-          ...h,
-          timestamp: new Date(h.timestamp),
-          imageUrl: '' // Images not stored in history
-        })));
+        this.history.set(
+          history.map((h: any) => ({
+            ...h,
+            timestamp: new Date(h.timestamp),
+            imageUrl: '', // Images not stored in history
+          }))
+        );
       } catch (err) {
         console.error('Failed to load history:', err);
       }
@@ -398,7 +405,7 @@ export class OcrAppComponent implements AfterViewInit, OnDestroy {
 
   getLanguageName(code: string | undefined): string {
     if (!code) return '';
-    const lang = this.languages.find(l => l.code === code);
+    const lang = this.languages.find((l) => l.code === code);
     return lang?.name || code;
   }
 
@@ -406,11 +413,10 @@ export class OcrAppComponent implements AfterViewInit, OnDestroy {
     if (this.worker) {
       this.worker.terminate();
     }
-    
+
     // Restore original console.warn
     if (this.originalConsoleWarn) {
       console.warn = this.originalConsoleWarn;
     }
   }
 }
-

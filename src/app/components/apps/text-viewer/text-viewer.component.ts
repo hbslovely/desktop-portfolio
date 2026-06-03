@@ -13,15 +13,15 @@ export class TextViewerComponent implements OnInit {
   @Input() filePath = '';
   @Input() fileName = '';
   @Input() fileType: 'txt' | 'md' = 'txt';
-  
+
   content = signal<string>('');
   isLoading = signal(true);
   hasError = signal(false);
   errorMessage = signal('');
-  
+
   // Computed properties for rendering
   isMarkdown = computed(() => this.fileType === 'md');
-  
+
   // Simple markdown parser for basic formatting
   formattedContent = computed(() => {
     const rawContent = this.content();
@@ -30,13 +30,13 @@ export class TextViewerComponent implements OnInit {
     }
     return rawContent;
   });
-  
+
   constructor(private http: HttpClient) {}
-  
+
   ngOnInit() {
     this.loadFile();
   }
-  
+
   private loadFile() {
     if (!this.filePath) {
       this.hasError.set(true);
@@ -44,25 +44,23 @@ export class TextViewerComponent implements OnInit {
       this.isLoading.set(false);
       return;
     }
-    
+
     this.isLoading.set(true);
     this.hasError.set(false);
-    
-    this.http.get(this.filePath, { responseType: 'text' })
-      .subscribe({
-        next: (data) => {
-          this.content.set(data);
-          this.isLoading.set(false);
-        },
-        error: (error) => {
 
-          this.hasError.set(true);
-          this.errorMessage.set(`Failed to load ${this.fileName}`);
-          this.isLoading.set(false);
-        }
-      });
+    this.http.get(this.filePath, { responseType: 'text' }).subscribe({
+      next: (data) => {
+        this.content.set(data);
+        this.isLoading.set(false);
+      },
+      error: (error) => {
+        this.hasError.set(true);
+        this.errorMessage.set(`Failed to load ${this.fileName}`);
+        this.isLoading.set(false);
+      },
+    });
   }
-  
+
   private parseMarkdown(content: string): string {
     // Simple markdown parser for basic formatting
     let html = content
@@ -82,10 +80,10 @@ export class TextViewerComponent implements OnInit {
       .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>')
       // Line breaks
       .replace(/\n/g, '<br>');
-    
+
     return html;
   }
-  
+
   reload() {
     this.loadFile();
   }

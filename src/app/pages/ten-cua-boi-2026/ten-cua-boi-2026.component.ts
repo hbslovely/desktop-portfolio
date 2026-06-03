@@ -16,15 +16,17 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
       ></iframe>
     </div>
   `,
-  styles: [`
-    .ten-cua-boi-2026-container {
-      width: 100%;
-      height: 100vh;
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
-    }
-  `]
+  styles: [
+    `
+      .ten-cua-boi-2026-container {
+        width: 100%;
+        height: 100vh;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+      }
+    `,
+  ],
 })
 export class TenCuaBoi2026Component {
   private sanitizer = inject(DomSanitizer);

@@ -20,34 +20,43 @@
   display: contents;
 }
 
-.muted { color: var(--muted); }
-.sep { color: var(--muted-2); }
+.muted {
+  color: var(--muted);
+}
+.sep {
+  color: var(--muted-2);
+}
 
-  /** Tên người pha + giờ pha — widget bình & khối tính trong dialog */
-  .bp-prep-user {
-    font-weight: 800;
-    color: #0369a1;
-    background: rgba(14, 165, 233, 0.2);
-    padding: 0 5px;
-    margin-right: 2px;
-    border-radius: 5px;
-    white-space: nowrap;
-    transition: color 0.2s, background 0.2s;
-  }
+/** Tên người pha + giờ pha — widget bình & khối tính trong dialog */
+.bp-prep-user {
+  font-weight: 800;
+  color: #0369a1;
+  background: rgba(14, 165, 233, 0.2);
+  padding: 0 5px;
+  margin-right: 2px;
+  border-radius: 5px;
+  white-space: nowrap;
+  transition:
+    color 0.2s,
+    background 0.2s;
+}
 
-  .bp-prep-time {
-    font-weight: 800;
-    font-variant-numeric: tabular-nums;
-    color: #0284c7;
-    background: linear-gradient(180deg, #f0f9ff 0%, #e0f2fe 100%);
-    border: 1px solid rgba(14, 165, 233, 0.35);
-    padding: 1px 7px;
-    margin-left: 2px;
-    border-radius: 6px;
-    white-space: nowrap;
-    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.65) inset;
-    transition: color 0.2s, background 0.2s, border-color 0.2s;
-  }
+.bp-prep-time {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: #0284c7;
+  background: linear-gradient(180deg, #f0f9ff 0%, #e0f2fe 100%);
+  border: 1px solid rgba(14, 165, 233, 0.35);
+  padding: 1px 7px;
+  margin-left: 2px;
+  border-radius: 6px;
+  white-space: nowrap;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.65) inset;
+  transition:
+    color 0.2s,
+    background 0.2s,
+    border-color 0.2s;
+}
 
 .field {
   display: flex;
@@ -74,10 +83,10 @@
     }
   }
 
-  input[type="text"],
-  input[type="date"],
-  input[type="time"],
-  input[type="number"] {
+  input[type='text'],
+  input[type='date'],
+  input[type='time'],
+  input[type='number'] {
     padding: 12px 14px;
     border: 1.5px solid var(--border);
     border-radius: 10px;
@@ -90,7 +99,9 @@
     box-sizing: border-box;
     appearance: none;
     -webkit-appearance: none;
-    transition: border-color 0.15s, background 0.15s;
+    transition:
+      border-color 0.15s,
+      background 0.15s;
     min-height: 46px;
     font-variant-numeric: tabular-nums;
 
@@ -106,7 +117,7 @@
   }
 
   // Hide number spinners
-  input[type="number"] {
+  input[type='number'] {
     -moz-appearance: textfield;
 
     &::-webkit-outer-spin-button,
@@ -165,7 +176,10 @@
   font-weight: 600;
   font-family: inherit;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s,
+    border-color 0.15s;
 
   &:disabled {
     opacity: 0.5;
@@ -254,10 +268,7 @@
   /* Trên mobile: giảm thêm chiều cao để header (có nút X) không bị thanh địa chỉ đè */
   @media (max-width: 640px) {
     max-height: calc(
-      100dvh
-      - env(safe-area-inset-top, 0px)
-      - env(safe-area-inset-bottom, 0px)
-      - 72px
+      100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 72px
     );
     border-radius: 14px;
   }
@@ -895,7 +906,10 @@
   font-family: inherit;
   cursor: pointer;
   box-shadow: 0 8px 24px rgba(91, 108, 255, 0.45);
-  transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
+  transition:
+    transform 0.15s,
+    box-shadow 0.15s,
+    background 0.15s;
 
   i {
     font-size: 18px;
@@ -958,7 +972,8 @@
 
   /* Trên mobile: thêm safe-area để dialog không bị thanh địa chỉ/notch đè lên header */
   @media (max-width: 640px) {
-    padding: calc(env(safe-area-inset-top, 0px) + 16px) 12px calc(env(safe-area-inset-bottom, 0px) + 16px);
+    padding: calc(env(safe-area-inset-top, 0px) + 16px) 12px
+      calc(env(safe-area-inset-bottom, 0px) + 16px);
     align-items: flex-start;
   }
 }
@@ -985,7 +1000,9 @@
   box-shadow: 0 20px 60px rgba(15, 23, 42, 0.25);
 
   @media (max-width: 640px) {
-    max-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 32px);
+    max-height: calc(
+      100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 32px
+    );
     border-radius: 16px;
   }
 }
@@ -1036,7 +1053,9 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  transition: background 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s;
 
   &:hover {
     background: var(--rose-soft);
@@ -1063,7 +1082,7 @@
     min-width: 0;
   }
 
-  .log-volume-input-row > input[type="number"] {
+  .log-volume-input-row > input[type='number'] {
     flex: 0 0 118px;
     width: 118px;
     max-width: min(118px, 100%);
@@ -1101,7 +1120,7 @@
   }
 
   @media (max-width: 400px) {
-    .log-volume-input-row > input[type="number"] {
+    .log-volume-input-row > input[type='number'] {
       flex: 1 1 100px;
       width: 100%;
       max-width: none;
@@ -1279,7 +1298,9 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  transition: background 0.2s, border-color 0.2s;
+  transition:
+    background 0.2s,
+    border-color 0.2s;
 
   /* Khi có warning - chuyển sang màu vàng */
   &:has(.bp-warning) {
@@ -1525,7 +1546,9 @@
     border: 1px solid #7dd3fc;
     border-radius: 10px;
     padding: 3px;
-    transition: border-color 0.15s, box-shadow 0.15s;
+    transition:
+      border-color 0.15s,
+      box-shadow 0.15s;
 
     &:focus-within {
       border-color: #0ea5e9;
@@ -1921,7 +1944,7 @@
 
   .label {
     position: relative;
-    
+
     code {
       font-size: 11px;
       font-weight: 600;
@@ -1930,7 +1953,7 @@
       padding: 2px 6px;
       border-radius: 4px;
     }
-    
+
     .notification-badge {
       display: inline-flex;
       align-items: center;
@@ -1951,23 +1974,23 @@
   // Enhanced styling for the notification field
   .notification-setting-field {
     position: relative;
-    
+
     input {
       border: 1.5px solid #10b981;
       background: linear-gradient(to right, #ffffff 0%, #f0fdf4 100%);
-      
+
       &:focus {
         border-color: #059669;
         box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
         background: #ffffff;
       }
-      
+
       &::placeholder {
         color: #6b7280;
         opacity: 0.7;
       }
     }
-    
+
     .field-hint {
       border-left-color: #10b981;
       background: linear-gradient(to right, #f0fdf4 0%, #f8fafc 100%);
@@ -1977,7 +2000,8 @@
 
 // Gentle pulse animation for the "Mới" badge
 @keyframes gentle-pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
     transform: scale(1);
   }
@@ -2107,7 +2131,9 @@
   display: grid;
   place-items: center;
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
-  transition: background 0.15s ease, color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
 
   &:hover {
     background: #fff;

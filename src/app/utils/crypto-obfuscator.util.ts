@@ -16,8 +16,8 @@ function _0x9abc(input: number, shift: number): number {
 
 // Rotate and mix function (fake function to confuse)
 function _0xdef0(data: string): string {
-  const temp = data.split('').map(c => c.charCodeAt(0));
-  return temp.map(n => String.fromCharCode(n ^ 0x5a)).join('');
+  const temp = data.split('').map((c) => c.charCodeAt(0));
+  return temp.map((n) => String.fromCharCode(n ^ 0x5a)).join('');
 }
 
 // Base64-like encoding (fake, not used)
@@ -27,9 +27,10 @@ function _0x1234(input: string): string {
 
 // XOR cipher (fake, not used)
 function _0x5678(data: string, key: number): string {
-  return data.split('').map(c => 
-    String.fromCharCode(c.charCodeAt(0) ^ key)
-  ).join('');
+  return data
+    .split('')
+    .map((c) => String.fromCharCode(c.charCodeAt(0) ^ key))
+    .join('');
 }
 
 // Extract temporal sequence (this is the real function for date)
@@ -56,17 +57,17 @@ export function _0xgenerateToken(): string {
 export function _0xcomputeHash(input: string): string {
   let _0xacc = 0;
   const _0xlen = input.length;
-  
+
   // First pass: accumulate character codes
   for (let _0xi = 0; _0xi < _0xlen; _0xi++) {
     const _0xchar = input.charCodeAt(_0xi);
-    _0xacc = ((_0xacc << 5) - _0xacc) + _0xchar;
+    _0xacc = (_0xacc << 5) - _0xacc + _0xchar;
     _0xacc = _0xacc & _0xacc; // Force to 32-bit integer
   }
-  
+
   // Second pass: apply mask (fake operation, doesn't change result)
   _0xacc = _0xacc & _0x5e6f;
-  
+
   // Convert to hex string
   return Math.abs(_0xacc).toString(16);
 }
@@ -76,18 +77,18 @@ export function _0xhashUsername(username: string): string {
   if (!username) return '';
   const _0xnormalized = username.trim().toLowerCase();
   let _0xacc = 0x12345678; // Different seed for username
-  
+
   for (let _0xi = 0; _0xi < _0xnormalized.length; _0xi++) {
     const _0xchar = _0xnormalized.charCodeAt(_0xi);
-    _0xacc = ((_0xacc << 7) - _0xacc) + _0xchar;
+    _0xacc = (_0xacc << 7) - _0xacc + _0xchar;
     _0xacc = _0xacc & 0x7fffffff; // Force to 32-bit positive integer
   }
-  
+
   // Additional mixing
   _0xacc = _0xacc ^ (_0xacc >>> 16);
   _0xacc = _0xacc * 0x85ebca6b;
   _0xacc = _0xacc ^ (_0xacc >>> 13);
-  
+
   return Math.abs(_0xacc).toString(16).padStart(8, '0');
 }
 
@@ -97,26 +98,26 @@ export function _0xhashCredentials(username: string, password: string): string {
   const _0xnormalized = username.trim().toLowerCase();
   const _0xcombined = `${_0xnormalized}:${password}`;
   let _0xacc = 0x9abcdef0; // Different seed for credentials
-  
+
   for (let _0xi = 0; _0xi < _0xcombined.length; _0xi++) {
     const _0xchar = _0xcombined.charCodeAt(_0xi);
-    _0xacc = ((_0xacc << 9) - _0xacc) + _0xchar;
+    _0xacc = (_0xacc << 9) - _0xacc + _0xchar;
     _0xacc = _0xacc & 0x7fffffff; // Force to 32-bit positive integer
   }
-  
+
   // Additional mixing with date component
   const _0xtoken = _0xgenerateToken();
   for (let _0xi = 0; _0xi < _0xtoken.length; _0xi++) {
     const _0xchar = _0xtoken.charCodeAt(_0xi);
-    _0xacc = ((_0xacc << 5) - _0xacc) + _0xchar;
+    _0xacc = (_0xacc << 5) - _0xacc + _0xchar;
     _0xacc = _0xacc & 0x7fffffff;
   }
-  
+
   // Final mixing
   _0xacc = _0xacc ^ (_0xacc >>> 18);
   _0xacc = _0xacc * 0xc2b2ae35;
   _0xacc = _0xacc ^ (_0xacc >>> 15);
-  
+
   return Math.abs(_0xacc).toString(16).padStart(8, '0');
 }
 
@@ -134,14 +135,13 @@ export function _0xvalidate(input: string): boolean {
 
 // Check if stored validation is still valid
 export function _0xisValid(storageKey: string): boolean {
-  const _0xstored = typeof sessionStorage !== 'undefined' 
-    ? sessionStorage.getItem(storageKey) 
-    : null;
-  
+  const _0xstored =
+    typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(storageKey) : null;
+
   if (!_0xstored) {
     return false;
   }
-  
+
   const _0xtoday = _0xgetHashedToken();
   return _0xstored === _0xtoday;
 }
@@ -198,5 +198,3 @@ export const encryptData = _0xencrypt;
 export const decryptData = _0xdecrypt;
 export const computeChecksum = _0xchecksum;
 export const multiValidate = _0xmultiValidate;
-
-

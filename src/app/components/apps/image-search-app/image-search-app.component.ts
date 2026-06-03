@@ -7,7 +7,7 @@ import {
   SearchResult,
   SearchWeights,
   MatchReason,
-  LearnedWeights
+  LearnedWeights,
 } from '../../../services/image-search.service';
 
 type ViewMode = 'gallery' | 'search' | 'results' | 'detail' | 'result-detail';
@@ -54,20 +54,20 @@ export class ImageSearchAppComponent implements OnInit {
   // Search weights - Matching service default weights with CBIR algorithms
   weights = signal<SearchWeights>({
     pHash: 0.12,
-    dHash: 0.10,
+    dHash: 0.1,
     aHash: 0.03,
     colorHistogramRGB: 0.08,
-    colorHistogramHSV: 0.10,
+    colorHistogramHSV: 0.1,
     colorMoments: 0.07,
     edgeHistogram: 0.07,
     lbpHistogram: 0.06,
     huMoments: 0.05,
     // CBIR Advanced
-    colorLayout: 0.10,
+    colorLayout: 0.1,
     hogDescriptor: 0.08,
     gaborFeatures: 0.06,
     glcmFeatures: 0.05,
-    spatialHistogram: 0.03
+    spatialHistogram: 0.03,
   });
 
   // Search settings
@@ -82,7 +82,7 @@ export class ImageSearchAppComponent implements OnInit {
     { value: 0.4, label: '≥ 40%' },
     { value: 0.5, label: '≥ 50%' },
     { value: 0.6, label: '≥ 60%' },
-    { value: 0.7, label: '≥ 70%' }
+    { value: 0.7, label: '≥ 70%' },
   ];
 
   // Max results options
@@ -131,7 +131,7 @@ export class ImageSearchAppComponent implements OnInit {
 
     this.error.set(null);
 
-    const validFiles = Array.from(files).filter(f => f.type.startsWith('image/'));
+    const validFiles = Array.from(files).filter((f) => f.type.startsWith('image/'));
 
     if (validFiles.length === 0) {
       this.error.set('Vui lòng chọn file hình ảnh hợp lệ');
@@ -157,7 +157,7 @@ export class ImageSearchAppComponent implements OnInit {
         size: file.size,
         preview,
         status: 'pending',
-        progress: 0
+        progress: 0,
       });
     }
 
@@ -206,8 +206,13 @@ export class ImageSearchAppComponent implements OnInit {
     this.isUploading.set(false);
   }
 
-  private updateFileStatus(index: number, status: UploadFileItem['status'], progress: number, error?: string) {
-    this.uploadFiles.update(files => {
+  private updateFileStatus(
+    index: number,
+    status: UploadFileItem['status'],
+    progress: number,
+    error?: string
+  ) {
+    this.uploadFiles.update((files) => {
       const updated = [...files];
       updated[index] = { ...updated[index], status, progress, error };
       return updated;
@@ -215,7 +220,7 @@ export class ImageSearchAppComponent implements OnInit {
   }
 
   private updateFileProgress(index: number, progress: number) {
-    this.uploadFiles.update(files => {
+    this.uploadFiles.update((files) => {
       const updated = [...files];
       updated[index] = { ...updated[index], progress };
       return updated;
@@ -224,7 +229,7 @@ export class ImageSearchAppComponent implements OnInit {
 
   removeUploadFile(index: number) {
     if (this.isUploading()) return;
-    this.uploadFiles.update(files => files.filter((_, i) => i !== index));
+    this.uploadFiles.update((files) => files.filter((_, i) => i !== index));
 
     if (this.uploadFiles().length === 0) {
       this.closeUploadDialog();
@@ -237,7 +242,7 @@ export class ImageSearchAppComponent implements OnInit {
     this.uploadFiles.set([]);
 
     // Go to gallery if files were uploaded
-    const hasCompleted = this.uploadFiles().some(f => f.status === 'completed');
+    const hasCompleted = this.uploadFiles().some((f) => f.status === 'completed');
     if (hasCompleted) {
       this.setTab('gallery');
     }
@@ -250,15 +255,16 @@ export class ImageSearchAppComponent implements OnInit {
   }
 
   getCompletedCount(): number {
-    return this.uploadFiles().filter(f => f.status === 'completed').length;
+    return this.uploadFiles().filter((f) => f.status === 'completed').length;
   }
 
   getErrorCount(): number {
-    return this.uploadFiles().filter(f => f.status === 'error').length;
+    return this.uploadFiles().filter((f) => f.status === 'error').length;
   }
 
   getPendingCount(): number {
-    return this.uploadFiles().filter(f => f.status === 'pending' || f.status === 'processing').length;
+    return this.uploadFiles().filter((f) => f.status === 'pending' || f.status === 'processing')
+      .length;
   }
 
   getOverallProgress(): number {
@@ -313,15 +319,13 @@ export class ImageSearchAppComponent implements OnInit {
     let filtered = [...results]; // Copy to avoid mutating original
 
     // 0. Filter out NaN or invalid similarity scores
-    filtered = filtered.filter(r => 
-      r.similarity != null && 
-      !isNaN(r.similarity) && 
-      isFinite(r.similarity)
+    filtered = filtered.filter(
+      (r) => r.similarity != null && !isNaN(r.similarity) && isFinite(r.similarity)
     );
 
     // 1. Filter by minimum similarity threshold
     if (this.minSimilarity() > 0) {
-      filtered = filtered.filter(r => r.similarity >= this.minSimilarity());
+      filtered = filtered.filter((r) => r.similarity >= this.minSimilarity());
     }
 
     // 2. SORT by similarity (descending - highest first)
@@ -381,7 +385,7 @@ export class ImageSearchAppComponent implements OnInit {
     const files = event.dataTransfer?.files;
     if (!files || files.length === 0) return;
 
-    const imageFiles = Array.from(files).filter(f => f.type.startsWith('image/'));
+    const imageFiles = Array.from(files).filter((f) => f.type.startsWith('image/'));
     if (imageFiles.length === 0) {
       this.error.set('Vui lòng thả file hình ảnh');
       return;
@@ -444,7 +448,7 @@ export class ImageSearchAppComponent implements OnInit {
       const optimalWeights = this.imageSearchService.getOptimalWeights();
       const results = await this.imageSearchService.searchByImageUrl(image.dataUrl, optimalWeights);
       // Exclude self and apply filters
-      const filtered = this.filterResults(results.filter(r => r.image.id !== image.id));
+      const filtered = this.filterResults(results.filter((r) => r.image.id !== image.id));
       this.searchResults.set(filtered);
       this.viewMode.set('results');
       this.activeTab.set('search');
@@ -463,7 +467,7 @@ export class ImageSearchAppComponent implements OnInit {
 
   // Weight adjustments
   updateWeight(key: keyof SearchWeights, value: number) {
-    this.weights.update(w => ({ ...w, [key]: value / 100 }));
+    this.weights.update((w) => ({ ...w, [key]: value / 100 }));
   }
 
   resetWeights() {
@@ -471,7 +475,7 @@ export class ImageSearchAppComponent implements OnInit {
   }
 
   toggleAdvancedWeights() {
-    this.showAdvancedWeights.update(v => !v);
+    this.showAdvancedWeights.update((v) => !v);
   }
 
   // Navigation
@@ -516,7 +520,7 @@ export class ImageSearchAppComponent implements OnInit {
       month: '2-digit',
       year: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     }).format(date);
   }
 
@@ -537,7 +541,7 @@ export class ImageSearchAppComponent implements OnInit {
       structure: '🏗️',
       color: '🎨',
       shape: '📐',
-      texture: '🧩'
+      texture: '🧩',
     };
     return icons[category] || '📊';
   }
@@ -546,11 +550,12 @@ export class ImageSearchAppComponent implements OnInit {
     const groups = new Map<string, MatchReason[]>();
 
     for (const reason of reasons) {
-      const meta = this.imageSearchService.algorithmMeta[
-        Object.keys(this.imageSearchService.algorithmMeta).find(
-          k => this.imageSearchService.algorithmMeta[k].name === reason.algorithm
-        ) || ''
-      ];
+      const meta =
+        this.imageSearchService.algorithmMeta[
+          Object.keys(this.imageSearchService.algorithmMeta).find(
+            (k) => this.imageSearchService.algorithmMeta[k].name === reason.algorithm
+          ) || ''
+        ];
       const category = meta?.category || 'other';
 
       if (!groups.has(category)) {
@@ -567,7 +572,7 @@ export class ImageSearchAppComponent implements OnInit {
       structure: 'Cấu trúc',
       color: 'Màu sắc',
       shape: 'Hình dạng',
-      texture: 'Kết cấu'
+      texture: 'Kết cấu',
     };
     return names[category] || category;
   }
@@ -580,7 +585,7 @@ export class ImageSearchAppComponent implements OnInit {
     await this.imageSearchService.submitFeedback(queryId, result, isRelevant);
 
     // Track which results have been given feedback
-    this.feedbackGiven.update(map => {
+    this.feedbackGiven.update((map) => {
       const newMap = new Map(map);
       newMap.set(result.image.id, isRelevant);
       return newMap;
@@ -596,7 +601,7 @@ export class ImageSearchAppComponent implements OnInit {
   }
 
   toggleLearningPanel() {
-    this.showLearningPanel.update(v => !v);
+    this.showLearningPanel.update((v) => !v);
   }
 
   async resetLearning() {

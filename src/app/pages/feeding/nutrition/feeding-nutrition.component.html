@@ -1,9 +1,5 @@
 <!-- ============ NUTRITION EVALUATION ============ -->
-<section
-  class="card nutri-card"
-  *ngIf="nutritionEval() as ev"
-  [attr.data-status]="ev.status"
->
+<section class="card nutri-card" *ngIf="nutritionEval() as ev" [attr.data-status]="ev.status">
   <header class="nutri-head">
     <span class="nutri-head__icon" aria-hidden="true">
       <i class="pi pi-heart-fill"></i>
@@ -12,13 +8,9 @@
       <div class="eyebrow">Dinh dưỡng hôm nay</div>
       <h2>{{ ev.target.ageLabel }}</h2>
       <div class="nutri-head__meta">
-        <span *ngIf="latestWeightKg() as w">
-          {{ formatWeightKg(w) }} kg
-        </span>
+        <span *ngIf="latestWeightKg() as w"> {{ formatWeightKg(w) }} kg </span>
         <span class="sep" *ngIf="latestWeightKg()">·</span>
-        <span>
-          KN {{ ev.target.dailyMlMin }}–{{ ev.target.dailyMlMax }} ml
-        </span>
+        <span> KN {{ ev.target.dailyMlMin }}–{{ ev.target.dailyMlMax }} ml </span>
       </div>
     </div>
     <div class="nutri-badge" [attr.data-status]="ev.status">
@@ -30,9 +22,7 @@
   <div class="nutri-hero" *ngIf="nutritionZones() as z">
     <div class="nutri-hero__top">
       <div class="nutri-hero__lead">
-        <span class="h-label">
-          <i class="pi pi-bolt"></i> Đã nạp hôm nay
-        </span>
+        <span class="h-label"> <i class="pi pi-bolt"></i> Đã nạp hôm nay </span>
         <div class="h-value">
           {{ ev.actualMl }}<em>ml</em>
           <small>· {{ ev.actualCount }} cữ</small>
@@ -55,8 +45,8 @@
     </div>
     <p class="nutri-hero__pace-note" *ngIf="nutritionPace() as pn">
       <i class="pi pi-clock"></i>
-      Đã qua {{ (pn.dayFraction * 100) | number : '1.0-0' }}% ngày •
-      Dự kiến: <strong>{{ pn.expectedMidMl }}ml</strong> •
+      Đã qua {{ pn.dayFraction * 100 | number: '1.0-0' }}% ngày • Dự kiến:
+      <strong>{{ pn.expectedMidMl }}ml</strong> •
       <em>{{ pn.paceLabelVi }}</em>
     </p>
 
@@ -116,14 +106,8 @@
               [attr.data-pace]="zp.paceStatus"
               [style.width.%]="zp.pointerVisPct"
             ></div>
-            <div
-              class="nb-tick nb-tick--min"
-              [style.left.%]="zp.minTickPct"
-            ></div>
-            <div
-              class="nb-tick nb-tick--max"
-              [style.left.%]="zp.maxTickPct"
-            ></div>
+            <div class="nb-tick nb-tick--min" [style.left.%]="zp.minTickPct"></div>
+            <div class="nb-tick nb-tick--max" [style.left.%]="zp.maxTickPct"></div>
             <div class="nb-pointer nb-pointer--pace" [style.left.%]="zp.pointerVisPct">
               <span class="nb-pointer__pill">{{ ev.actualMl }}ml</span>
               <span class="nb-pointer__stem"></span>
@@ -144,47 +128,27 @@
   <!-- Facts -->
   <div class="nutri-facts">
     <div class="fact">
-      <span class="fact-label">
-        <i class="pi pi-compass"></i> Khuyến nghị/ngày
-      </span>
+      <span class="fact-label"> <i class="pi pi-compass"></i> Khuyến nghị/ngày </span>
       <strong class="fact-value">
         {{ ev.target.dailyMlMin }}<em>–</em>{{ ev.target.dailyMlMax }}<em>ml</em>
       </strong>
-      <span class="fact-sub">
-        {{ ev.target.perKgFactor }} ml/kg/ngày
-      </span>
+      <span class="fact-sub"> {{ ev.target.perKgFactor }} ml/kg/ngày </span>
     </div>
 
     <div class="fact" *ngIf="ev.remainingToMin > 0">
-      <span class="fact-label warn">
-        <i class="pi pi-arrow-circle-down"></i> Còn thiếu
-      </span>
-      <strong class="fact-value warn">
-        {{ ev.remainingToMin }}<em>ml</em>
-      </strong>
+      <span class="fact-label warn"> <i class="pi pi-arrow-circle-down"></i> Còn thiếu </span>
+      <strong class="fact-value warn"> {{ ev.remainingToMin }}<em>ml</em> </strong>
       <span class="fact-sub">để đạt mức tối thiểu</span>
     </div>
 
-    <div
-      class="fact"
-      *ngIf="ev.remainingToMin === 0 && ev.remainingToMax > 0"
-    >
-      <span class="fact-label ok">
-        <i class="pi pi-check-circle"></i> Còn có thể bú
-      </span>
-      <strong class="fact-value ok">
-        {{ ev.remainingToMax }}<em>ml</em>
-      </strong>
+    <div class="fact" *ngIf="ev.remainingToMin === 0 && ev.remainingToMax > 0">
+      <span class="fact-label ok"> <i class="pi pi-check-circle"></i> Còn có thể bú </span>
+      <strong class="fact-value ok"> {{ ev.remainingToMax }}<em>ml</em> </strong>
       <span class="fact-sub">tới mức tối đa khuyến nghị</span>
     </div>
 
-    <div
-      class="fact"
-      *ngIf="ev.actualMl > ev.target.dailyMlMax"
-    >
-      <span class="fact-label over">
-        <i class="pi pi-arrow-circle-up"></i> Vượt mức tối đa
-      </span>
+    <div class="fact" *ngIf="ev.actualMl > ev.target.dailyMlMax">
+      <span class="fact-label over"> <i class="pi pi-arrow-circle-up"></i> Vượt mức tối đa </span>
       <strong class="fact-value over">
         +{{ ev.actualMl - ev.target.dailyMlMax }}<em>ml</em>
       </strong>
@@ -201,18 +165,12 @@
           <ng-container *ngIf="todayStats().count >= 3; else nutriTbMl">
             Trung vị {{ todayStats().typicalFeedMl }}ml/cữ
           </ng-container>
-          <ng-template #nutriTbMl>
-            TB {{ todayStats().typicalFeedMl }}ml/cữ
-          </ng-template>
+          <ng-template #nutriTbMl> TB {{ todayStats().typicalFeedMl }}ml/cữ </ng-template>
         </strong>
         <ng-template #nutriAvgEmpty><strong>Chưa có cữ</strong></ng-template>
         <span>so với ~{{ ms.modelAvgMl }}ml/cữ TB</span>
       </div>
-      <span
-        class="m-status"
-        [attr.data-met]="ms.avgPerFeed"
-        [title]="ms.avgPerFeedTitle"
-      >
+      <span class="m-status" [attr.data-met]="ms.avgPerFeed" [title]="ms.avgPerFeedTitle">
         <i class="pi" [ngClass]="ms.avgPerFeedIcon"></i>
       </span>
     </li>
@@ -221,14 +179,12 @@
       <div class="m-body">
         <strong>{{ todayStats().count }} cữ</strong>
         <span>
-          DK ~{{ ms.feedsLow }}–{{ ms.feedsHigh }} cữ (KN {{ ev.target.feedsPerDayMin }}–{{ ev.target.feedsPerDayMax }}/ngày)
+          DK ~{{ ms.feedsLow }}–{{ ms.feedsHigh }} cữ (KN {{ ev.target.feedsPerDayMin }}–{{
+            ev.target.feedsPerDayMax
+          }}/ngày)
         </span>
       </div>
-      <span
-        class="m-status"
-        [attr.data-met]="ms.feedsByNow"
-        [title]="ms.feedsByNowTitle"
-      >
+      <span class="m-status" [attr.data-met]="ms.feedsByNow" [title]="ms.feedsByNowTitle">
         <i class="pi" [ngClass]="ms.feedsByNowIcon"></i>
       </span>
     </li>
@@ -238,11 +194,7 @@
         <strong>{{ ms.pctPaceMid }}%</strong>
         <span>tổng ml so với mức trung bình hiện tại</span>
       </div>
-      <span
-        class="m-status"
-        [attr.data-met]="ms.volumeByNow"
-        [title]="ms.volumeByNowTitle"
-      >
+      <span class="m-status" [attr.data-met]="ms.volumeByNow" [title]="ms.volumeByNowTitle">
         <i class="pi" [ngClass]="ms.volumeByNowIcon"></i>
       </span>
     </li>
@@ -251,7 +203,8 @@
   <!-- Advice banner -->
   <div class="nutri-advice" [attr.data-status]="ev.status">
     <span class="adv-icon">
-      <i class="pi"
+      <i
+        class="pi"
         [class.pi-check-circle]="ev.status === 'ok'"
         [class.pi-info-circle]="ev.status === 'under' || ev.status === 'no-data'"
         [class.pi-exclamation-circle]="ev.status === 'low' || ev.status === 'high'"
@@ -268,18 +221,15 @@
 </section>
 
 <!-- Chưa có cân từ tab Weight → chưa đánh giá dinh dưỡng -->
-<section
-  class="card nutrition-empty"
-  *ngIf="!latestWeightKg() && !editing()"
->
+<section class="card nutrition-empty" *ngIf="!latestWeightKg() && !editing()">
   <div class="empty-head">
     <i class="pi pi-info-circle"></i>
     <div>
       <h3>Ghi cân ở tab Thể trạng để đánh giá dinh dưỡng</h3>
       <p>
         Khối lượng dùng cho mục dinh dưỡng lấy từ
-        <strong>lần cân mới nhất</strong> trên sheet Weight (theo ngày ghi). Cột user chỉ
-        để biết ai đã log. Công thức <strong>ml/kg/ngày</strong> theo tuổi và chuẩn tham khảo.
+        <strong>lần cân mới nhất</strong> trên sheet Weight (theo ngày ghi). Cột user chỉ để biết ai
+        đã log. Công thức <strong>ml/kg/ngày</strong> theo tuổi và chuẩn tham khảo.
       </p>
     </div>
     <button type="button" class="btn primary" (click)="onGoToWeight()">

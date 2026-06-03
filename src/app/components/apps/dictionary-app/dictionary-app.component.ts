@@ -54,19 +54,52 @@ export class DictionaryAppComponent implements AfterViewInit {
 
   // Popular words to suggest
   popularWords = [
-    'serendipity', 'ephemeral', 'eloquent', 'resilient',
-    'paradigm', 'ubiquitous', 'innovation', 'perspective',
-    'integrity', 'wisdom', 'courage', 'harmony'
+    'serendipity',
+    'ephemeral',
+    'eloquent',
+    'resilient',
+    'paradigm',
+    'ubiquitous',
+    'innovation',
+    'perspective',
+    'integrity',
+    'wisdom',
+    'courage',
+    'harmony',
   ];
 
   // Word of the Day list
   wordOfTheDayList = [
-    'serendipity', 'ephemeral', 'eloquent', 'resilient', 'paradigm',
-    'ubiquitous', 'innovation', 'perspective', 'integrity', 'wisdom',
-    'courage', 'harmony', 'magnificent', 'extraordinary', 'brilliant',
-    'wonderful', 'remarkable', 'exceptional', 'outstanding', 'phenomenal',
-    'splendid', 'marvelous', 'fantastic', 'incredible', 'amazing',
-    'beautiful', 'elegant', 'graceful', 'sophisticated', 'refined'
+    'serendipity',
+    'ephemeral',
+    'eloquent',
+    'resilient',
+    'paradigm',
+    'ubiquitous',
+    'innovation',
+    'perspective',
+    'integrity',
+    'wisdom',
+    'courage',
+    'harmony',
+    'magnificent',
+    'extraordinary',
+    'brilliant',
+    'wonderful',
+    'remarkable',
+    'exceptional',
+    'outstanding',
+    'phenomenal',
+    'splendid',
+    'marvelous',
+    'fantastic',
+    'incredible',
+    'amazing',
+    'beautiful',
+    'elegant',
+    'graceful',
+    'sophisticated',
+    'refined',
   ];
 
   constructor(private http: HttpClient) {
@@ -102,14 +135,13 @@ export class DictionaryAppComponent implements AfterViewInit {
         }
       },
       error: (err) => {
-
         if (err.status === 404) {
           this.error.set(`No definition found for "${trimmedWord}". Please check the spelling.`);
         } else {
           this.error.set('Failed to fetch word definition. Please try again.');
         }
         this.loading.set(false);
-      }
+      },
     });
   }
 
@@ -142,10 +174,8 @@ export class DictionaryAppComponent implements AfterViewInit {
     // Create and play new audio
     const audio = new Audio(audioUrl.startsWith('//') ? 'https:' + audioUrl : audioUrl);
     this.currentAudio.set(audio);
-    
-    audio.play().catch(err => {
 
-    });
+    audio.play().catch((err) => {});
 
     audio.onended = () => {
       this.currentAudio.set(null);
@@ -169,7 +199,7 @@ export class DictionaryAppComponent implements AfterViewInit {
 
   private addToHistory(word: string) {
     const history = this.searchHistory();
-    const updatedHistory = [word, ...history.filter(w => w !== word)].slice(0, 10);
+    const updatedHistory = [word, ...history.filter((w) => w !== word)].slice(0, 10);
     this.searchHistory.set(updatedHistory);
     localStorage.setItem('dictionary-search-history', JSON.stringify(updatedHistory));
   }
@@ -180,9 +210,7 @@ export class DictionaryAppComponent implements AfterViewInit {
       try {
         const history = JSON.parse(stored);
         this.searchHistory.set(history);
-      } catch (err) {
-
-      }
+      } catch (err) {}
     }
   }
 
@@ -191,12 +219,12 @@ export class DictionaryAppComponent implements AfterViewInit {
     if (!data) return [];
 
     const synonyms = new Set<string>();
-    data.meanings.forEach(meaning => {
-      meaning.definitions.forEach(def => {
-        def.synonyms.forEach(syn => synonyms.add(syn));
+    data.meanings.forEach((meaning) => {
+      meaning.definitions.forEach((def) => {
+        def.synonyms.forEach((syn) => synonyms.add(syn));
       });
       if (meaning.synonyms) {
-        meaning.synonyms.forEach(syn => synonyms.add(syn));
+        meaning.synonyms.forEach((syn) => synonyms.add(syn));
       }
     });
 
@@ -208,12 +236,12 @@ export class DictionaryAppComponent implements AfterViewInit {
     if (!data) return [];
 
     const antonyms = new Set<string>();
-    data.meanings.forEach(meaning => {
-      meaning.definitions.forEach(def => {
-        def.antonyms.forEach(ant => antonyms.add(ant));
+    data.meanings.forEach((meaning) => {
+      meaning.definitions.forEach((def) => {
+        def.antonyms.forEach((ant) => antonyms.add(ant));
       });
       if (meaning.antonyms) {
-        meaning.antonyms.forEach(ant => antonyms.add(ant));
+        meaning.antonyms.forEach((ant) => antonyms.add(ant));
       }
     });
 
@@ -224,7 +252,7 @@ export class DictionaryAppComponent implements AfterViewInit {
     const data = this.wordData();
     if (!data) return null;
 
-    return data.phonetics.find(p => p.audio && p.audio.length > 0) || null;
+    return data.phonetics.find((p) => p.audio && p.audio.length > 0) || null;
   }
 
   // Bookmark functionality
@@ -235,9 +263,9 @@ export class DictionaryAppComponent implements AfterViewInit {
   toggleBookmark(word: string) {
     const wordLower = word.toLowerCase();
     const bookmarks = this.bookmarkedWords();
-    
+
     if (this.isBookmarked(wordLower)) {
-      const updated = bookmarks.filter(w => w !== wordLower);
+      const updated = bookmarks.filter((w) => w !== wordLower);
       this.bookmarkedWords.set(updated);
       this.saveBookmarks(updated);
     } else {
@@ -266,7 +294,7 @@ export class DictionaryAppComponent implements AfterViewInit {
   }
 
   removeBookmark(word: string) {
-    const updated = this.bookmarkedWords().filter(w => w !== word.toLowerCase());
+    const updated = this.bookmarkedWords().filter((w) => w !== word.toLowerCase());
     this.bookmarkedWords.set(updated);
     this.saveBookmarks(updated);
   }
@@ -274,7 +302,9 @@ export class DictionaryAppComponent implements AfterViewInit {
   // Word of the Day
   setWordOfTheDay() {
     const today = new Date();
-    const dayOfYear = Math.floor((today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / 86400000);
+    const dayOfYear = Math.floor(
+      (today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / 86400000
+    );
     const wordIndex = dayOfYear % this.wordOfTheDayList.length;
     this.wordOfTheDay.set(this.wordOfTheDayList[wordIndex]);
   }
@@ -290,7 +320,7 @@ export class DictionaryAppComponent implements AfterViewInit {
     if (!data) return;
 
     let text = `📖 ${data.word}\n\n`;
-    
+
     if (data.phonetic) {
       text += `Pronunciation: ${data.phonetic}\n\n`;
     }
@@ -318,12 +348,15 @@ export class DictionaryAppComponent implements AfterViewInit {
       text += `Antonyms: ${this.getAllAntonyms().join(', ')}\n`;
     }
 
-    navigator.clipboard.writeText(text).then(() => {
-      this.showCopyNotification.set(true);
-      setTimeout(() => this.showCopyNotification.set(false), 2000);
-    }).catch(err => {
-      console.error('Failed to copy:', err);
-    });
+    navigator.clipboard
+      .writeText(text)
+      .then(() => {
+        this.showCopyNotification.set(true);
+        setTimeout(() => this.showCopyNotification.set(false), 2000);
+      })
+      .catch((err) => {
+        console.error('Failed to copy:', err);
+      });
   }
 
   // Share definition
@@ -335,13 +368,15 @@ export class DictionaryAppComponent implements AfterViewInit {
     const url = window.location.href;
 
     if (navigator.share) {
-      navigator.share({
-        title: `Definition: ${data.word}`,
-        text: text,
-        url: url
-      }).catch(err => {
-        console.error('Error sharing:', err);
-      });
+      navigator
+        .share({
+          title: `Definition: ${data.word}`,
+          text: text,
+          url: url,
+        })
+        .catch((err) => {
+          console.error('Error sharing:', err);
+        });
     } else {
       // Fallback: copy to clipboard
       navigator.clipboard.writeText(`${text}\n${url}`).then(() => {
@@ -359,7 +394,7 @@ export class DictionaryAppComponent implements AfterViewInit {
     let text = `Dictionary Definition\n`;
     text += `===================\n\n`;
     text += `Word: ${data.word}\n`;
-    
+
     if (data.phonetic) {
       text += `Pronunciation: ${data.phonetic}\n`;
     }

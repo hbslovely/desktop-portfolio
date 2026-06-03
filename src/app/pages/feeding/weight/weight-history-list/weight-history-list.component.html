@@ -59,7 +59,12 @@
   <section class="whl-dialog" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
     <header class="whl-dialog__head">
       <h3>Toàn bộ lịch sử cân ({{ logs().length }})</h3>
-      <button type="button" class="whl-btn whl-btn--icon" (click)="closeFullHistory()" aria-label="Đóng">
+      <button
+        type="button"
+        class="whl-btn whl-btn--icon"
+        (click)="closeFullHistory()"
+        aria-label="Đóng"
+      >
         <i class="pi pi-times"></i>
       </button>
     </header>

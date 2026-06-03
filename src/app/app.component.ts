@@ -1,10 +1,29 @@
-import { Component, signal, computed, ViewChild, AfterViewInit, OnDestroy, ChangeDetectorRef, ElementRef, inject, HostListener, ChangeDetectionStrategy } from '@angular/core';
+import {
+  Component,
+  signal,
+  computed,
+  ViewChild,
+  AfterViewInit,
+  OnDestroy,
+  ChangeDetectorRef,
+  ElementRef,
+  inject,
+  HostListener,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { WindowComponent } from './components/window/window.component';
-import { DesktopIconComponent, DesktopIconData } from './components/desktop-icon/desktop-icon.component';
+import {
+  DesktopIconComponent,
+  DesktopIconData,
+} from './components/desktop-icon/desktop-icon.component';
 import { CalculatorComponent } from './components/apps/calculator/calculator.component';
 import { IframeAppComponent } from './components/apps/iframe-app/iframe-app.component';
 import { LoveAppComponent } from './components/apps/love-app/love-app.component';
-import { ExplorerComponent, FileOpenEvent, ContextMenuEvent } from './components/apps/explorer/explorer.component';
+import {
+  ExplorerComponent,
+  FileOpenEvent,
+  ContextMenuEvent,
+} from './components/apps/explorer/explorer.component';
 import { TextViewerComponent } from './components/apps/text-viewer/text-viewer.component';
 import { ImageViewerComponent } from './components/apps/image-viewer/image-viewer.component';
 import { PdfViewerComponent } from './components/apps/pdf-viewer/pdf-viewer.component';
@@ -36,11 +55,11 @@ import { WeatherWidgetComponent } from './components/desktop-widgets/weather-wid
 import { WelcomeScreenComponent } from './components/welcome-screen/welcome-screen.component';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { DomSanitizer } from "@angular/platform-browser";
+import { DomSanitizer } from '@angular/platform-browser';
 import { Router, RouterOutlet, NavigationEnd } from '@angular/router';
 import { filter, takeUntil } from 'rxjs/operators';
 import { Subject, Subscription } from 'rxjs';
-import { SettingsDialogComponent } from "./components/settings-dialog/settings-dialog.component";
+import { SettingsDialogComponent } from './components/settings-dialog/settings-dialog.component';
 import { APP_ICONS, APP_SEARCH_CONFIG } from './config/app-icons.config';
 import { SearchService, SearchResult } from './services/search.service';
 import { WindowManagerService } from './services/window-manager.service';
@@ -71,15 +90,57 @@ interface WindowConfig {
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [ WelcomeScreenComponent, WindowComponent, DesktopIconComponent, CalculatorComponent, IframeAppComponent, LoveAppComponent, ExplorerComponent, TextViewerComponent, ImageViewerComponent, PdfViewerComponent, PaintAppComponent, HcmcAppComponent, NewsAppComponent, SettingsAppComponent, WeatherAppComponent, DictionaryAppComponent, CountriesAppComponent, YugiohAppComponent, YugiohCardDetailComponent, CalendarAppComponent, AngularLoveAppComponent, MusicAppComponent, AngularGuidelinesAppComponent, TuoiTreNewsAppComponent, ExpenseAppComponent, BusinessAppComponent, ChineseChessAppComponent, OcrAppComponent, FbIdFinderAppComponent, GraphVisualizerAppComponent, StockAppComponent, SieuCoAppComponent, ImageSearchAppComponent, ShopCloneAppComponent, WeatherWidgetComponent, CommonModule, FormsModule, SettingsDialogComponent, AppSplashComponent, RouterOutlet ],
+  imports: [
+    WelcomeScreenComponent,
+    WindowComponent,
+    DesktopIconComponent,
+    CalculatorComponent,
+    IframeAppComponent,
+    LoveAppComponent,
+    ExplorerComponent,
+    TextViewerComponent,
+    ImageViewerComponent,
+    PdfViewerComponent,
+    PaintAppComponent,
+    HcmcAppComponent,
+    NewsAppComponent,
+    SettingsAppComponent,
+    WeatherAppComponent,
+    DictionaryAppComponent,
+    CountriesAppComponent,
+    YugiohAppComponent,
+    YugiohCardDetailComponent,
+    CalendarAppComponent,
+    AngularLoveAppComponent,
+    MusicAppComponent,
+    AngularGuidelinesAppComponent,
+    TuoiTreNewsAppComponent,
+    ExpenseAppComponent,
+    BusinessAppComponent,
+    ChineseChessAppComponent,
+    OcrAppComponent,
+    FbIdFinderAppComponent,
+    GraphVisualizerAppComponent,
+    StockAppComponent,
+    SieuCoAppComponent,
+    ImageSearchAppComponent,
+    ShopCloneAppComponent,
+    WeatherWidgetComponent,
+    CommonModule,
+    FormsModule,
+    SettingsDialogComponent,
+    AppSplashComponent,
+    RouterOutlet,
+  ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AppComponent implements AfterViewInit, OnDestroy {
   @ViewChild(WelcomeScreenComponent) welcomeScreen!: WelcomeScreenComponent;
   @ViewChild('searchInput', { static: false }) searchInput!: ElementRef<HTMLInputElement>;
-  @ViewChild('startMenuSearchInput', { static: false }) startMenuSearchInput!: ElementRef<HTMLInputElement>;
+  @ViewChild('startMenuSearchInput', { static: false })
+  startMenuSearchInput!: ElementRef<HTMLInputElement>;
   @ViewChild('previewContainer', { static: false }) previewContainer!: ElementRef<HTMLDivElement>;
 
   windowManager = inject(WindowManagerService);
@@ -112,13 +173,15 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     this.systemRestartHandler = () => this.restartSystem();
     window.addEventListener('system-restart-requested', this.systemRestartHandler);
 
-    this.router.events.pipe(
-      filter((event): event is NavigationEnd => event instanceof NavigationEnd),
-      takeUntil(this.destroy$)
-    ).subscribe((event) => {
-      // Show desktop only on root route
-      this.isDesktopRoute.set(event.url === '/' || event.url === '');
-    });
+    this.router.events
+      .pipe(
+        filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+        takeUntil(this.destroy$)
+      )
+      .subscribe((event) => {
+        // Show desktop only on root route
+        this.isDesktopRoute.set(event.url === '/' || event.url === '');
+      });
 
     // Check initial route
     this.isDesktopRoute.set(this.router.url === '/' || this.router.url === '');
@@ -165,21 +228,30 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     ['credits', { id: 'credits', showSignal: this.showCreditsWindow }],
     ['hcmc', { id: 'hcmc', showSignal: this.showHcmcWindow }],
     ['news', { id: 'news', showSignal: this.showNewsWindow }],
-    ['text-viewer', {
-      id: 'text-viewer',
-      showSignal: this.showTextViewerWindow,
-      onCloseExtra: () => this.currentTextFile.set(null)
-    }],
-    ['image-viewer', {
-      id: 'image-viewer',
-      showSignal: this.showImageViewerWindow,
-      onCloseExtra: () => this.currentImageFile.set(null)
-    }],
-    ['pdf-viewer', {
-      id: 'pdf-viewer',
-      showSignal: this.showPdfViewerWindow,
-      onCloseExtra: () => this.currentPdfFile.set(null)
-    }]
+    [
+      'text-viewer',
+      {
+        id: 'text-viewer',
+        showSignal: this.showTextViewerWindow,
+        onCloseExtra: () => this.currentTextFile.set(null),
+      },
+    ],
+    [
+      'image-viewer',
+      {
+        id: 'image-viewer',
+        showSignal: this.showImageViewerWindow,
+        onCloseExtra: () => this.currentImageFile.set(null),
+      },
+    ],
+    [
+      'pdf-viewer',
+      {
+        id: 'pdf-viewer',
+        showSignal: this.showPdfViewerWindow,
+        onCloseExtra: () => this.currentPdfFile.set(null),
+      },
+    ],
   ]);
 
   // Window management
@@ -282,20 +354,16 @@ export class AppComponent implements AfterViewInit, OnDestroy {
 
   // Computed search results
   get appSearchResults() {
-    return this.searchResults.filter(r => r.type === 'app');
+    return this.searchResults.filter((r) => r.type === 'app');
   }
 
   get fileSearchResults() {
-    return this.searchResults.filter(r => r.type === 'file');
+    return this.searchResults.filter((r) => r.type === 'file');
   }
 
   get webSearchResults() {
-    return this.searchResults.filter(r => r.type === 'web');
+    return this.searchResults.filter((r) => r.type === 'web');
   }
-
-
-
-
 
   ngAfterViewInit() {
     // Load settings after view is initialized to ensure DOM elements exist
@@ -360,8 +428,8 @@ export class AppComponent implements AfterViewInit, OnDestroy {
         { id: 'credit', name: 'Finance Tracker', icon: 'pi pi-wallet' },
         { id: 'explorer', name: 'File Explorer', icon: 'pi pi-folder' },
         { id: 'dictionary', name: 'Dictionary', icon: 'pi pi-book' },
-        { id: 'link-shortener', name: 'Link Shortener', icon: 'pi pi-link' }
-      ]
+        { id: 'link-shortener', name: 'Link Shortener', icon: 'pi pi-link' },
+      ],
     },
     {
       id: 'creative',
@@ -369,8 +437,8 @@ export class AppComponent implements AfterViewInit, OnDestroy {
       icon: 'pi pi-palette',
       apps: [
         { id: 'paint', name: 'Paint', icon: 'pi pi-palette' },
-        { id: 'love', name: 'Love', icon: 'pi pi-heart' }
-      ]
+        { id: 'love', name: 'Love', icon: 'pi pi-heart' },
+      ],
     },
     {
       id: 'information',
@@ -381,8 +449,8 @@ export class AppComponent implements AfterViewInit, OnDestroy {
         { id: 'hcmc', name: 'Ho Chi Minh City', icon: 'pi pi-globe' },
         { id: 'news', name: 'News Headlines', icon: 'pi pi-globe' },
         { id: 'weather', name: 'Weather Forecast', icon: 'pi pi-cloud' },
-        { id: 'yugioh', name: 'Yu-Gi-Oh! Cards', icon: 'pi pi-images' }
-      ]
+        { id: 'yugioh', name: 'Yu-Gi-Oh! Cards', icon: 'pi pi-images' },
+      ],
     },
     {
       id: 'system',
@@ -390,9 +458,9 @@ export class AppComponent implements AfterViewInit, OnDestroy {
       icon: 'pi pi-cog',
       apps: [
         { id: 'settings', name: 'Settings', icon: 'pi pi-cog' },
-        { id: 'credits', name: 'Credits', icon: 'pi pi-star' }
-      ]
-    }
+        { id: 'credits', name: 'Credits', icon: 'pi pi-star' },
+      ],
+    },
   ];
 
   // Filtered groups based on search
@@ -403,13 +471,14 @@ export class AppComponent implements AfterViewInit, OnDestroy {
       return this.startMenuGroups;
     }
 
-    return this.startMenuGroups.map(group => ({
-      ...group,
-      apps: group.apps.filter(app =>
-        app.name.toLowerCase().includes(search) ||
-        app.id.toLowerCase().includes(search)
-      )
-    })).filter(group => group.apps.length > 0);
+    return this.startMenuGroups
+      .map((group) => ({
+        ...group,
+        apps: group.apps.filter(
+          (app) => app.name.toLowerCase().includes(search) || app.id.toLowerCase().includes(search)
+        ),
+      }))
+      .filter((group) => group.apps.length > 0);
   });
 
   // ============================================
@@ -436,7 +505,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
    * @param windowId - The window identifier
    */
   protected minimizeWindow(windowId: string): void {
-    this.minimizedWindows.update(set => new Set(set).add(windowId));
+    this.minimizedWindows.update((set) => new Set(set).add(windowId));
   }
 
   /**
@@ -452,7 +521,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
    * @param windowId - The window identifier
    */
   protected restoreWindow(windowId: string): void {
-    this.minimizedWindows.update(set => {
+    this.minimizedWindows.update((set) => {
       const newSet = new Set(set);
       newSet.delete(windowId);
       return newSet;
@@ -728,14 +797,12 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   onExplorerFileOpen(event: FileOpenEvent) {
     const { item, fileType, extension } = event;
 
-
-
     if (fileType === 'text') {
       // Open all text files in text viewer
       this.currentTextFile.set({
         path: item.content || `assets/explorer${item.path}`,
         name: item.name,
-        type: extension === 'md' || extension === 'markdown' ? 'md' : 'txt'
+        type: extension === 'md' || extension === 'markdown' ? 'md' : 'txt',
       });
       this.showTextViewerWindow.set(true);
       // Wait for window to be rendered before focusing
@@ -749,7 +816,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
       // Open image file
       this.currentImageFile.set({
         path: item.content || `assets/explorer${item.path}`,
-        name: item.name
+        name: item.name,
       });
       this.showImageViewerWindow.set(true);
       // Wait for window to be rendered before focusing
@@ -763,7 +830,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
       // Open PDF file
       this.currentPdfFile.set({
         path: item.content || `assets/explorer${item.path}`,
-        name: item.name
+        name: item.name,
       });
       this.showPdfViewerWindow.set(true);
       // Wait for window to be rendered before focusing
@@ -784,7 +851,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   onExplorerContextMenu(event: ContextMenuEvent) {
     const { action, item, newName } = event;
 
-
     switch (action) {
       case 'edit':
         // Text editor has been removed
@@ -793,7 +859,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
 
       case 'rename':
         if (newName) {
-
           // Update the item name in the file system
           item.name = newName;
         }
@@ -801,20 +866,17 @@ export class AppComponent implements AfterViewInit, OnDestroy {
 
       case 'delete':
         if (confirm(`Are you sure you want to delete "${item.name}"?`)) {
-
           // Remove the item from its parent's children array
           this.deleteFileSystemItem(item);
         }
         break;
 
       case 'copy':
-
         this.clipboardItem.set(item);
         this.clipboardAction.set('copy');
         break;
 
       case 'cut':
-
         this.clipboardItem.set(item);
         this.clipboardAction.set('cut');
         break;
@@ -823,7 +885,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
         const clipboardItem = this.clipboardItem();
         const clipboardAction = this.clipboardAction();
         if (clipboardItem && clipboardAction) {
-
           this.pasteFileSystemItem(clipboardItem, clipboardAction);
         }
         break;
@@ -838,13 +899,10 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   deleteFileSystemItem(item: any) {
     // Find and remove the item from its parent's children array
     // This is a simplified implementation - in a real app, you'd need to traverse the file system
-
     // For now, we'll just log the action since we don't have a direct reference to the parent
   }
 
   pasteFileSystemItem(item: any, action: 'copy' | 'cut') {
-
-
     if (action === 'cut') {
       // Remove the original item after pasting
       this.deleteFileSystemItem(item);
@@ -858,7 +916,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   // Set image as wallpaper
   setImageAsWallpaper(item: any) {
     const imagePath = item.content || `assets/explorer${item.path}`;
-
 
     // Apply the wallpaper immediately
     const wallpaperElement = document.querySelector('.wallpaper') as HTMLElement;
@@ -881,7 +938,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   }
 
   onDesktopIconDoubleClick(icon: DesktopIconData) {
-
     // Double-click opens the app
     this.openTestApp(icon);
   }
@@ -900,7 +956,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
         {
           appId: icon.id,
           appName: icon.name,
-          appIcon: icon.icon
+          appIcon: icon.icon,
         },
         () => this.doOpenApp(icon)
       );
@@ -924,7 +980,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
         initialX: definition.defaultX,
         initialY: definition.defaultY,
         maximizable: definition.maximizable,
-        statusText: definition.statusText
+        statusText: definition.statusText,
       });
       return;
     }
@@ -963,7 +1019,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   onDesktopIconContextMenu(event: any) {
     const { action, icon } = event;
 
-
     switch (action) {
       case 'open':
         this.openTestApp(icon);
@@ -980,15 +1035,12 @@ export class AppComponent implements AfterViewInit, OnDestroy {
 
         break;
       case 'copy':
-
         // Copy is handled by the icon component itself
         break;
       case 'cut':
-
         // Cut is handled by the icon component itself
         break;
       case 'paste':
-
         this.pasteDesktopIcon(icon);
         break;
     }
@@ -1002,21 +1054,19 @@ export class AppComponent implements AfterViewInit, OnDestroy {
       name: `${icon.name} (Copy)`,
       position: {
         x: icon.position.x + 20,
-        y: icon.position.y + 20
-      }
+        y: icon.position.y + 20,
+      },
     };
 
     // Add the new icon to the desktop
     this.testIcons = [...this.testIcons, newIcon];
-
   }
 
   deleteDesktopIcon(icon: DesktopIconData) {
     // Remove the icon from the testIcons array
-    const index = this.testIcons.findIndex(i => i.id === icon.id);
+    const index = this.testIcons.findIndex((i) => i.id === icon.id);
     if (index > -1) {
       this.testIcons.splice(index, 1);
-
 
       // Close the associated window if it's open
       if (icon.id === 'calculator' && this.showTestWindow()) {
@@ -1060,7 +1110,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     this.showStartMenu.set(false);
   }
 
-
   openApp(appId: string, data?: any) {
     this.closeStartMenu();
 
@@ -1078,7 +1127,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
         initialY: definition.defaultY,
         maximizable: definition.maximizable,
         statusText: definition.statusText,
-        data
+        data,
       });
     }
   }
@@ -1096,9 +1145,9 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     // If forceHighZIndex is true (e.g., when opening file from explorer),
     // increment more to ensure it's above all other windows
     if (forceHighZIndex) {
-      this.maxZIndex.update(max => max + 10);
+      this.maxZIndex.update((max) => max + 10);
     } else {
-      this.maxZIndex.update(max => max + 1);
+      this.maxZIndex.update((max) => max + 1);
     }
 
     // Force change detection to ensure z-index updates are reflected
@@ -1178,7 +1227,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
           this.focusWindow('my-info');
         }
         break;
-
 
       case 'love':
         if (this.showLoveWindow()) {
@@ -1343,7 +1391,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     this.showDesktopContextMenu.set(true);
     this.desktopContextMenuPosition.set({
       x: event.clientX,
-      y: event.clientY
+      y: event.clientY,
     });
     // Close start menu if open
     this.showStartMenu.set(false);
@@ -1369,7 +1417,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   closeSettingsDialog() {
     this.showSettingsDialog.set(false);
   }
-
 
   onSettingsChange(settings: any) {
     // Apply wallpaper change
@@ -1448,15 +1495,10 @@ export class AppComponent implements AfterViewInit, OnDestroy {
         wallpaperPath = 'assets/images/lib/wallpaper/1.png';
     }
 
-
-
-
     element.style.backgroundImage = `url('${wallpaperPath}')`;
     element.style.backgroundSize = 'cover';
     element.style.backgroundPosition = 'center';
     element.style.backgroundRepeat = 'no-repeat';
-
-
   }
 
   applyTheme(theme: string) {
@@ -1489,8 +1531,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
         document.documentElement.style.setProperty('--border-color', '#dee2e6');
       }
     }
-
-
   }
 
   applyThemeColor(color: string) {
@@ -1570,9 +1610,9 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   applyFontSize(size: 'small' | 'medium' | 'large') {
     // Apply font size to the entire application
     const fontSizes = {
-      'small': '13px',
-      'medium': '14px',
-      'large': '16px'
+      small: '13px',
+      medium: '14px',
+      large: '16px',
     };
 
     document.documentElement.style.setProperty('--base-font-size', fontSizes[size]);
@@ -1584,7 +1624,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     if (savedSettings) {
       try {
         const settings = JSON.parse(savedSettings);
-
 
         // Apply wallpaper
         if (settings.wallpaper) {
@@ -1628,7 +1667,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
         if (settings.fontSize) {
           this.applyFontSize(settings.fontSize);
         }
-
       } catch (error) {
         // Apply default wallpaper on error
         this.applyWallpaper('1');
@@ -1643,7 +1681,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
         windowColor: '#1e3a5f',
         windowOpacity: 95,
         animations: true,
-        fontSize: 'medium'
+        fontSize: 'medium',
       };
       localStorage.setItem('desktop-portfolio-settings', JSON.stringify(defaultSettings));
 
@@ -1666,12 +1704,14 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   openQuickActionsMenu(event: MouseEvent) {
     event.preventDefault();
     event.stopPropagation();
-    const rect = (event.target as HTMLElement).closest('.context-menu-item')?.getBoundingClientRect();
+    const rect = (event.target as HTMLElement)
+      .closest('.context-menu-item')
+      ?.getBoundingClientRect();
     if (rect) {
       this.showQuickActionsMenu.set(true);
       this.quickActionsMenuPosition.set({
         x: rect.right + 4,
-        y: rect.top
+        y: rect.top,
       });
     }
   }
@@ -1684,11 +1724,21 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   quickActionMinimizeAll() {
     this.windowManager.minimizeAllWindows();
     // Also minimize legacy windows
-    this.minimizedWindows.update(set => {
-
-      const allWindows = ['calculator', 'my-info', 'love', 'explorer', 'text-viewer',
-                         'image-viewer', 'pdf-viewer', 'credit',
-                         'paint', 'credits', 'hcmc', 'news'];
+    this.minimizedWindows.update((set) => {
+      const allWindows = [
+        'calculator',
+        'my-info',
+        'love',
+        'explorer',
+        'text-viewer',
+        'image-viewer',
+        'pdf-viewer',
+        'credit',
+        'paint',
+        'credits',
+        'hcmc',
+        'news',
+      ];
       return new Set(allWindows);
     });
     this.closeQuickActionsMenu();
@@ -1696,10 +1746,21 @@ export class AppComponent implements AfterViewInit, OnDestroy {
 
   quickActionShowDesktop() {
     this.windowManager.minimizeAllWindows();
-    this.minimizedWindows.update(set => {
-      const allWindows = ['calculator', 'my-info', 'love', 'explorer', 'text-viewer',
-                         'image-viewer', 'pdf-viewer', 'credit',
-                         'paint', 'credits', 'hcmc', 'news'];
+    this.minimizedWindows.update((set) => {
+      const allWindows = [
+        'calculator',
+        'my-info',
+        'love',
+        'explorer',
+        'text-viewer',
+        'image-viewer',
+        'pdf-viewer',
+        'credit',
+        'paint',
+        'credits',
+        'hcmc',
+        'news',
+      ];
       return new Set(allWindows);
     });
     this.closeQuickActionsMenu();
@@ -1737,21 +1798,19 @@ export class AppComponent implements AfterViewInit, OnDestroy {
       shortcuts: [
         { keys: ['Option', '←'], description: 'Switch to previous window' },
         { keys: ['Option', '→'], description: 'Switch to next window' },
-      ]
+      ],
     },
     {
       category: 'Desktop',
       shortcuts: [
         { keys: ['Right Click'], description: 'Open desktop context menu' },
         { keys: ['Click Start'], description: 'Open start menu' },
-      ]
+      ],
     },
     {
       category: 'System',
-      shortcuts: [
-        { keys: ['Esc'], description: 'Close dialogs/menus' },
-      ]
-    }
+      shortcuts: [{ keys: ['Esc'], description: 'Close dialogs/menus' }],
+    },
   ];
 
   // Search methods
@@ -1812,7 +1871,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
       this.currentTextFile.set({
         path: contentPath,
         name: displayPath.split('/').pop() || 'Unknown File',
-        type: extension === 'md' ? 'md' : 'txt'
+        type: extension === 'md' ? 'md' : 'txt',
       });
       this.showTextViewerWindow.set(true);
       this.focusWindow('text-viewer');
@@ -1820,7 +1879,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
       // Open image files in image viewer
       this.currentImageFile.set({
         path: contentPath,
-        name: displayPath.split('/').pop() || 'Unknown Image'
+        name: displayPath.split('/').pop() || 'Unknown Image',
       });
       this.showImageViewerWindow.set(true);
       this.focusWindow('image-viewer');
@@ -1828,7 +1887,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
       // Open PDF files in PDF viewer
       this.currentPdfFile.set({
         path: contentPath,
-        name: displayPath.split('/').pop() || 'Unknown PDF'
+        name: displayPath.split('/').pop() || 'Unknown PDF',
       });
       this.showPdfViewerWindow.set(true);
       this.focusWindow('pdf-viewer');
@@ -1869,7 +1928,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     return globalIndex + localIndex;
   }
 
-
   // Lock screen functionality
   lockScreen() {
     if (this.welcomeScreen) {
@@ -1901,7 +1959,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
             this.completeRestart();
           }, 1000);
         }, 500);
-      }
+      },
     });
     this.subscriptions.push(sub);
   }
@@ -1925,7 +1983,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     const typingMessage: BootMessage = {
       text: '',
       type: message.type,
-      timestamp: timestamp
+      timestamp: timestamp,
     };
 
     // Add the message container
@@ -1980,46 +2038,95 @@ export class AppComponent implements AfterViewInit, OnDestroy {
 
   // Legacy windows configuration - moved to class level for reuse
   private readonly legacyWindowsConfig: LegacyWindowState[] = [
-    { id: 'calculator', title: 'Calculator', icon: 'pi pi-calculator', show: () => this.showTestWindow() },
+    {
+      id: 'calculator',
+      title: 'Calculator',
+      icon: 'pi pi-calculator',
+      show: () => this.showTestWindow(),
+    },
     { id: 'my-info', title: 'About Me', icon: 'pi pi-user', show: () => this.showMyInfoWindow() },
     { id: 'love', title: 'Love', icon: 'pi pi-heart', show: () => this.showLoveWindow() },
-    { id: 'explorer', title: 'File Explorer', icon: 'pi pi-folder', show: () => this.showExplorerWindow() },
-    { id: 'text-viewer', title: 'Text Viewer', icon: 'pi pi-file', show: () => this.showTextViewerWindow() },
-    { id: 'image-viewer', title: 'Image Viewer', icon: 'pi pi-image', show: () => this.showImageViewerWindow() },
-    { id: 'pdf-viewer', title: 'PDF Viewer', icon: 'pi pi-file-pdf', show: () => this.showPdfViewerWindow() },
-    { id: 'credit', title: 'Finance Tracker', icon: 'pi pi-wallet', show: () => this.showCreditWindow() },
+    {
+      id: 'explorer',
+      title: 'File Explorer',
+      icon: 'pi pi-folder',
+      show: () => this.showExplorerWindow(),
+    },
+    {
+      id: 'text-viewer',
+      title: 'Text Viewer',
+      icon: 'pi pi-file',
+      show: () => this.showTextViewerWindow(),
+    },
+    {
+      id: 'image-viewer',
+      title: 'Image Viewer',
+      icon: 'pi pi-image',
+      show: () => this.showImageViewerWindow(),
+    },
+    {
+      id: 'pdf-viewer',
+      title: 'PDF Viewer',
+      icon: 'pi pi-file-pdf',
+      show: () => this.showPdfViewerWindow(),
+    },
+    {
+      id: 'credit',
+      title: 'Finance Tracker',
+      icon: 'pi pi-wallet',
+      show: () => this.showCreditWindow(),
+    },
     { id: 'paint', title: 'Paint', icon: 'pi pi-palette', show: () => this.showPaintWindow() },
     { id: 'credits', title: 'Credits', icon: 'pi pi-star', show: () => this.showCreditsWindow() },
-    { id: 'hcmc', title: 'Ho Chi Minh City', icon: 'pi pi-globe', show: () => this.showHcmcWindow() },
-    { id: 'news', title: 'News Headlines', icon: 'pi pi-globe', show: () => this.showNewsWindow() }
+    {
+      id: 'hcmc',
+      title: 'Ho Chi Minh City',
+      icon: 'pi pi-globe',
+      show: () => this.showHcmcWindow(),
+    },
+    { id: 'news', title: 'News Headlines', icon: 'pi pi-globe', show: () => this.showNewsWindow() },
   ];
 
   // Window Switcher Methods - Private compute method for cached computed signal
-  private computeAllOpenWindows(): Array<{ id: string; title: string; icon: string; isWindowManager: boolean; isMinimized: boolean; statusText?: string }> {
-    const windows: Array<{ id: string; title: string; icon: string; isWindowManager: boolean; isMinimized: boolean; statusText?: string }> = [];
+  private computeAllOpenWindows(): Array<{
+    id: string;
+    title: string;
+    icon: string;
+    isWindowManager: boolean;
+    isMinimized: boolean;
+    statusText?: string;
+  }> {
+    const windows: Array<{
+      id: string;
+      title: string;
+      icon: string;
+      isWindowManager: boolean;
+      isMinimized: boolean;
+      statusText?: string;
+    }> = [];
 
     // Add windows from WindowManagerService (including minimized)
     const windowManagerWindows = this.windowManager.windowList();
-    windowManagerWindows.forEach(w => {
+    windowManagerWindows.forEach((w) => {
       windows.push({
         id: w.id,
         title: w.title,
         icon: w.icon,
         isWindowManager: true,
         isMinimized: w.isMinimized,
-        statusText: w.statusText
+        statusText: w.statusText,
       });
     });
 
     // Add legacy windows (old system) - including minimized
-    this.legacyWindowsConfig.forEach(w => {
+    this.legacyWindowsConfig.forEach((w) => {
       if (w.show()) {
         windows.push({
           id: w.id,
           title: w.title,
           icon: w.icon,
           isWindowManager: false,
-          isMinimized: this.minimizedWindows().has(w.id)
+          isMinimized: this.minimizedWindows().has(w.id),
         });
       }
     });
@@ -2037,7 +2144,14 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   }
 
   // Public method that uses the computed signal - for external calls
-  getAllOpenWindows(): Array<{ id: string; title: string; icon: string; isWindowManager: boolean; isMinimized: boolean; statusText?: string }> {
+  getAllOpenWindows(): Array<{
+    id: string;
+    title: string;
+    icon: string;
+    isWindowManager: boolean;
+    isMinimized: boolean;
+    statusText?: string;
+  }> {
     return this.openWindowsList();
   }
 
@@ -2063,7 +2177,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     const currentFocused = this.windowManager.focusedWindow();
     const currentFocusedId = currentFocused?.id || this.focusedWindow();
 
-    let currentIndex = windows.findIndex(w => w.id === currentFocusedId);
+    let currentIndex = windows.findIndex((w) => w.id === currentFocusedId);
     if (currentIndex === -1) {
       currentIndex = 0;
     }
@@ -2112,7 +2226,9 @@ export class AppComponent implements AfterViewInit, OnDestroy {
       let windowElement: HTMLElement | null = null;
 
       if (selected.isWindowManager) {
-        windowElement = document.querySelector(`app-window[data-window-id="${selected.id}"]`) as HTMLElement;
+        windowElement = document.querySelector(
+          `app-window[data-window-id="${selected.id}"]`
+        ) as HTMLElement;
       } else {
         windowElement = document.querySelector(`[data-window-id="${selected.id}"]`) as HTMLElement;
       }
@@ -2149,8 +2265,10 @@ export class AppComponent implements AfterViewInit, OnDestroy {
         clone.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)';
 
         // Disable all interactive elements
-        const interactiveElements = clone.querySelectorAll('button, input, select, textarea, a, [onclick]');
-        interactiveElements.forEach(el => {
+        const interactiveElements = clone.querySelectorAll(
+          'button, input, select, textarea, a, [onclick]'
+        );
+        interactiveElements.forEach((el) => {
           (el as HTMLElement).style.pointerEvents = 'none';
           (el as HTMLElement).style.cursor = 'default';
         });
@@ -2212,7 +2330,9 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     let windowElement: HTMLElement | null = null;
 
     if (isWindowManager) {
-      windowElement = document.querySelector(`app-window[data-window-id="${windowId}"]`) as HTMLElement;
+      windowElement = document.querySelector(
+        `app-window[data-window-id="${windowId}"]`
+      ) as HTMLElement;
     } else {
       windowElement = document.querySelector(`[data-window-id="${windowId}"]`) as HTMLElement;
     }
@@ -2260,7 +2380,9 @@ export class AppComponent implements AfterViewInit, OnDestroy {
         let windowElement: HTMLElement | null = null;
 
         if (isWindowManager) {
-          windowElement = document.querySelector(`app-window[data-window-id="${windowId}"]`) as HTMLElement;
+          windowElement = document.querySelector(
+            `app-window[data-window-id="${windowId}"]`
+          ) as HTMLElement;
         } else {
           windowElement = document.querySelector(`[data-window-id="${windowId}"]`) as HTMLElement;
         }
@@ -2305,7 +2427,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     this.destroy$.complete();
 
     // Unsubscribe from all subscriptions
-    this.subscriptions.forEach(sub => sub?.unsubscribe());
+    this.subscriptions.forEach((sub) => sub?.unsubscribe());
     this.subscriptions = [];
 
     // Clear any active typing interval

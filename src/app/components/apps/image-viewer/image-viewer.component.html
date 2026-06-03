@@ -76,7 +76,8 @@
         (error)="onImageError()"
         (mousedown)="onMouseDown($event)"
         (dblclick)="onDoubleClick()"
-        draggable="false">
+        draggable="false"
+      />
     </div>
   </div>
 
@@ -89,7 +90,7 @@
           <i class="pi pi-times"></i>
         </button>
       </div>
-      
+
       <div class="save-dialog-content">
         <div class="form-group">
           <label for="fileName">Tên file:</label>
@@ -101,20 +102,18 @@
             class="file-name-input"
             (keydown.enter)="saveAsPNG()"
             (keydown.escape)="closeSaveDialog()"
-            autofocus>
+            autofocus
+          />
         </div>
-        
+
         <div class="form-group">
           <label for="savePath">Thư mục:</label>
-          <select
-            id="savePath"
-            [(ngModel)]="savePath"
-            class="path-select">
+          <select id="savePath" [(ngModel)]="savePath" class="path-select">
             <option *ngFor="let folder of availableFolders" [value]="folder">{{ folder }}</option>
           </select>
         </div>
       </div>
-      
+
       <div class="save-dialog-actions">
         <button class="btn btn-primary" (click)="saveAsPNG()">
           <i class="pi pi-save"></i> Lưu

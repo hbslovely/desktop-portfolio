@@ -56,7 +56,9 @@
     background: transparent;
     color: var(--muted);
     border: 1.5px solid var(--border);
-    &:hover { color: var(--text); }
+    &:hover {
+      color: var(--text);
+    }
   }
 }
 
@@ -66,7 +68,9 @@
   text-transform: uppercase;
   color: var(--muted-2);
   letter-spacing: 0.06em;
-  i { margin-right: 4px; }
+  i {
+    margin-right: 4px;
+  }
 }
 
 /* ========== CARD ========== */
@@ -146,10 +150,10 @@
     }
   }
 
-  input[type="text"],
-  input[type="date"],
-  input[type="time"],
-  input[type="number"] {
+  input[type='text'],
+  input[type='date'],
+  input[type='time'],
+  input[type='number'] {
     padding: 12px 14px;
     border: 1.5px solid var(--border);
     border-radius: 10px;
@@ -162,7 +166,9 @@
     box-sizing: border-box;
     appearance: none;
     -webkit-appearance: none;
-    transition: border-color 0.15s, background 0.15s;
+    transition:
+      border-color 0.15s,
+      background 0.15s;
     min-height: 46px;
     font-variant-numeric: tabular-nums;
 
@@ -178,7 +184,7 @@
   }
 
   // Hide number spinners
-  input[type="number"] {
+  input[type='number'] {
     -moz-appearance: textfield;
 
     &::-webkit-outer-spin-button,
@@ -237,7 +243,10 @@
   font-weight: 600;
   font-family: inherit;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s,
+    border-color 0.15s;
 
   &:disabled {
     opacity: 0.5;
@@ -679,13 +688,13 @@
     align-items: center;
     gap: 6px;
     flex: 1;
-    
+
     .label {
       color: var(--muted);
       font-weight: 500;
       font-size: 11px;
     }
-    
+
     .count {
       color: var(--muted-2);
       font-size: 11px;
@@ -702,7 +711,7 @@
 
     i {
       font-size: 10px;
-      
+
       &.up {
         color: var(--mint);
       }
@@ -711,11 +720,11 @@
         color: var(--amber);
       }
     }
-    
+
     strong {
       font-size: 12px;
     }
-    
+
     span {
       color: var(--muted-2);
       font-weight: 500;
@@ -819,7 +828,8 @@
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {
@@ -934,7 +944,7 @@
   border: 1px solid #e6e9ff;
   transition: all 0.3s ease;
   margin-bottom: 20px;
-  
+
   .hero-main {
     display: flex;
     flex-direction: row;
@@ -942,17 +952,17 @@
     justify-content: space-between;
     gap: 20px;
   }
-  
+
   .feeding-time-card {
     flex: 1;
     min-width: 0;
     text-align: center;
-    
+
     .time-header {
       margin-bottom: 12px;
       display: flex;
       justify-content: center;
-      
+
       .status-badge {
         display: inline-flex;
         align-items: center;
@@ -964,16 +974,16 @@
         padding: 6px 12px;
         border-radius: 14px;
         white-space: nowrap;
-        
+
         i {
           font-size: 11px;
         }
-        
+
         &.status-waiting {
           background: var(--primary-soft);
           color: var(--primary);
         }
-        
+
         &.status-now {
           background: #fee2e2;
           color: #dc2626;
@@ -982,14 +992,14 @@
           text-transform: none;
           font-weight: 700;
         }
-        
+
         &.status-late {
           background: var(--rose-soft);
           color: var(--rose);
         }
       }
     }
-    
+
     .time-display {
       .predicted-time {
         font-size: 42px;
@@ -1000,7 +1010,7 @@
         letter-spacing: -0.02em;
         margin-bottom: 4px;
       }
-      
+
       .time-remaining {
         font-size: 15px;
         font-weight: 500;
@@ -1050,7 +1060,6 @@
     .recommend-label {
       color: var(--mint);
     }
-
   }
 
   .volume-info {
@@ -1062,13 +1071,13 @@
     flex-shrink: 0;
     min-width: 160px;
     transition: all 0.3s ease;
-    
+
     .volume-row {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      
+
       .volume-prefix {
         font-size: 12px;
         font-weight: 600;
@@ -1077,7 +1086,7 @@
         color: var(--muted-2);
         flex-shrink: 0;
       }
-      
+
       .volume-amount {
         font-size: 22px;
         font-weight: 700;
@@ -1086,125 +1095,125 @@
         line-height: 1;
         text-align: right;
       }
-      
+
       &.predicted-row {
         .volume-prefix {
           color: var(--primary);
         }
-        
+
         .volume-amount {
           color: var(--primary);
         }
       }
-      
+
       &.recommended-row {
         .volume-prefix {
           color: var(--mint);
         }
-        
+
         .volume-amount {
           color: var(--mint);
         }
       }
     }
-    
+
     // No individual volume animations since entire card pulses
   }
 
-  &[data-status="waiting"] {
+  &[data-status='waiting'] {
     border-color: #bbf7d0;
     background: linear-gradient(135deg, #f7fef8 0%, #f0fdf4 100%);
-    
+
     .feeding-time-card {
       .time-display {
         .predicted-time {
           color: #16a34a;
         }
-        
+
         .time-remaining {
           color: #15803d;
         }
       }
-      
+
       .status-badge.status-waiting {
         background: #dcfce7 !important;
         color: #15803d !important;
         border: 1px solid #86efac;
       }
     }
-    
+
     .volume-info {
       .volume-amount {
         color: #16a34a;
       }
-      
+
       .volume-prefix {
         color: #15803d;
       }
     }
   }
 
-  &[data-status="late"] {
+  &[data-status='late'] {
     border-color: #fca5a5;
     background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
-    
+
     .feeding-time-card {
       .time-display {
         .predicted-time {
           color: #dc2626;
         }
-        
+
         .time-remaining {
           color: #b91c1c;
         }
       }
-      
+
       .status-badge.status-late {
         background: #fee2e2;
         color: #dc2626;
         border: 1px solid #fca5a5;
       }
     }
-    
+
     .volume-info {
       .volume-amount {
         color: #dc2626;
       }
-      
+
       .volume-prefix {
         color: #b91c1c;
       }
     }
   }
 
-  &[data-status="now"] {
+  &[data-status='now'] {
     border-color: #fbbf24;
     background: linear-gradient(135deg, #fefce8 0%, #fef3c7 100%);
     animation: pulse-card 2s ease-in-out infinite;
-    
+
     .feeding-time-card {
       .time-display {
         .predicted-time {
           color: #92400e;
         }
-        
+
         .time-remaining {
           color: #a16207;
         }
       }
-      
+
       .status-badge.status-now {
         background: #fef3c7 !important;
         color: #b45309 !important;
         border: 1px solid #f59e0b !important;
       }
     }
-    
+
     .volume-info {
       .volume-amount {
         color: #92400e;
       }
-      
+
       .volume-prefix {
         color: #a16207;
       }
@@ -1223,18 +1232,18 @@
         padding-left: 0;
         padding-top: 12px;
         min-width: auto;
-        
+
         .volume-row {
           justify-content: space-between;
           padding: 0 4px;
         }
       }
-      
+
       .feeding-time-card {
         .time-display .predicted-time {
           font-size: 36px;
         }
-        
+
         .volume-info {
           .volume-amount {
             font-size: 20px;
@@ -1250,12 +1259,12 @@
         font-size: 10px;
         padding: 4px 10px;
       }
-      
+
       .time-display .predicted-time {
         font-size: 32px;
       }
     }
-    
+
     .volume-info {
       .volume-amount {
         font-size: 18px;
@@ -1264,9 +1273,9 @@
   }
 }
 
-
 @keyframes pulse-soft {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {
@@ -1275,7 +1284,8 @@
 }
 
 @keyframes pulse-gentle {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {
@@ -1284,7 +1294,8 @@
 }
 
 @keyframes pulse-urgent {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
     text-shadow: 0 0 0 rgba(239, 68, 68, 0);
   }
@@ -1295,13 +1306,18 @@
 }
 
 @keyframes pulse-card {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale(1);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 0 0 rgba(248, 113, 113, 0);
+    box-shadow:
+      0 1px 3px rgba(0, 0, 0, 0.1),
+      0 0 0 rgba(248, 113, 113, 0);
   }
   50% {
     transform: scale(1.02);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 0 0 2px rgba(248, 113, 113, 0.3);
+    box-shadow:
+      0 4px 12px rgba(0, 0, 0, 0.15),
+      0 0 0 2px rgba(248, 113, 113, 0.3);
   }
 }
 
@@ -1464,15 +1480,15 @@
     border-radius: 999px;
     transition: width 0.4s ease;
 
-    &[data-status="waiting"] {
+    &[data-status='waiting'] {
       background: linear-gradient(90deg, #22c55e, #16a34a);
     }
 
-    &[data-status="late"] {
+    &[data-status='late'] {
       background: linear-gradient(90deg, #f87171, #dc2626);
     }
 
-    &[data-status="now"] {
+    &[data-status='now'] {
       background: linear-gradient(90deg, #fbbf24, #d97706);
     }
   }
@@ -1749,7 +1765,7 @@
 
   .feed-row-edit:hover {
     color: var(--primary, #5b6cff);
-    background: rgba(91, 108, 255, 0.10);
+    background: rgba(91, 108, 255, 0.1);
   }
 
   .feed-row-del:hover {
@@ -1936,7 +1952,9 @@
       border: none;
       border-radius: 6px;
       cursor: pointer;
-      transition: background 0.12s ease, transform 0.1s ease;
+      transition:
+        background 0.12s ease,
+        transform 0.1s ease;
 
       .pi {
         font-size: 12px;
@@ -1969,7 +1987,10 @@
       color: #64748b;
       cursor: pointer;
       font-size: 14px;
-      transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+      transition:
+        background 0.12s ease,
+        border-color 0.12s ease,
+        color 0.12s ease;
 
       &:hover {
         background: #f1f5f9;
@@ -2149,7 +2170,9 @@
     gap: 8px;
     font-family: inherit;
     text-align: left;
-    transition: background 0.15s ease, border-color 0.15s ease;
+    transition:
+      background 0.15s ease,
+      border-color 0.15s ease;
 
     > i {
       font-size: 16px;
@@ -2195,7 +2218,9 @@
     border: 1px solid #7dd3fc;
     border-radius: 10px;
     padding: 3px;
-    transition: border-color 0.15s, box-shadow 0.15s;
+    transition:
+      border-color 0.15s,
+      box-shadow 0.15s;
 
     &:focus-within {
       border-color: #0ea5e9;

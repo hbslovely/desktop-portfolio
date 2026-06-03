@@ -1,7 +1,12 @@
 import { Component, OnInit, OnDestroy, signal, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule, DecimalPipe } from '@angular/common';
 import { Subject, takeUntil } from 'rxjs';
-import { WeatherService, WeatherData, HourlyData, DailyData } from '../../../services/weather.service';
+import {
+  WeatherService,
+  WeatherData,
+  HourlyData,
+  DailyData,
+} from '../../../services/weather.service';
 
 @Component({
   selector: 'app-weather-app',
@@ -9,7 +14,7 @@ import { WeatherService, WeatherData, HourlyData, DailyData } from '../../../ser
   imports: [CommonModule, DecimalPipe],
   templateUrl: './weather-app.component.html',
   styleUrls: ['./weather-app.component.scss'],
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class WeatherAppComponent implements OnInit, OnDestroy {
   weatherData = signal<WeatherData | null>(null);
@@ -46,9 +51,7 @@ export class WeatherAppComponent implements OnInit, OnDestroy {
         this.units()
       );
 
-      weatherObservable.pipe(
-        takeUntil(this.destroy$)
-      ).subscribe({
+      weatherObservable.pipe(takeUntil(this.destroy$)).subscribe({
         next: (data) => {
           this.weatherData.set(data);
           this.loading.set(false);
@@ -58,7 +61,7 @@ export class WeatherAppComponent implements OnInit, OnDestroy {
         error: () => {
           this.error.set('Failed to load weather data. Please try again.');
           this.loading.set(false);
-        }
+        },
       });
     } catch {
       this.error.set('Failed to get location. Please enable location services.');
@@ -68,9 +71,9 @@ export class WeatherAppComponent implements OnInit, OnDestroy {
 
   private calculateTempRange(data: WeatherData): void {
     if (data.daily?.data) {
-      const temps = data.daily.data.flatMap(d => [
+      const temps = data.daily.data.flatMap((d) => [
         d.all_day?.temperature_min || 0,
-        d.all_day?.temperature_max || 0
+        d.all_day?.temperature_max || 0,
       ]);
       this.minTempRange = Math.min(...temps) - 5;
       this.maxTempRange = Math.max(...temps) + 5;
@@ -81,23 +84,31 @@ export class WeatherAppComponent implements OnInit, OnDestroy {
     try {
       const cleanLat = parseFloat(String(lat).replace(/[NSEW]/gi, ''));
       const cleanLon = parseFloat(String(lon).replace(/[NSEW]/gi, ''));
-      
-      const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${cleanLat}&lon=${cleanLon}&zoom=10`, {
-        headers: {
-          'User-Agent': 'DesktopPortfolioApp/1.0'
+
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${cleanLat}&lon=${cleanLon}&zoom=10`,
+        {
+          headers: {
+            'User-Agent': 'DesktopPortfolioApp/1.0',
+          },
         }
-      });
+      );
       const data = await response.json();
-      
+
       if (data.error) {
         this.locationName.set(`${cleanLat.toFixed(2)}°, ${cleanLon.toFixed(2)}°`);
         return;
       }
-      
+
       if (data.address) {
-        const city = data.address.city || data.address.town || data.address.village || data.address.state;
+        const city =
+          data.address.city || data.address.town || data.address.village || data.address.state;
         const country = data.address.country;
-        this.locationName.set(city ? `${city}, ${country}` : country || `${cleanLat.toFixed(2)}°, ${cleanLon.toFixed(2)}°`);
+        this.locationName.set(
+          city
+            ? `${city}, ${country}`
+            : country || `${cleanLat.toFixed(2)}°, ${cleanLon.toFixed(2)}°`
+        );
       } else {
         this.locationName.set(`${cleanLat.toFixed(2)}°, ${cleanLon.toFixed(2)}°`);
       }
@@ -181,10 +192,10 @@ export class WeatherAppComponent implements OnInit, OnDestroy {
   }
 
   getCurrentTime(): string {
-    return new Date().toLocaleTimeString('en-US', { 
-      hour: 'numeric', 
+    return new Date().toLocaleTimeString('en-US', {
+      hour: 'numeric',
       minute: '2-digit',
-      hour12: true 
+      hour12: true,
     });
   }
 
@@ -203,17 +214,21 @@ export class WeatherAppComponent implements OnInit, OnDestroy {
     if (iconNum >= 9 && iconNum <= 12) return 'rainy';
     if (iconNum >= 13 && iconNum <= 14) return 'stormy';
     if (iconNum >= 15 && iconNum <= 17) return 'snowy';
-    
+
     return 'cloudy';
   }
 
   // Get tab indicator position
   getTabPosition(): number {
     switch (this.selectedView()) {
-      case 'current': return 0;
-      case 'hourly': return 100;
-      case 'daily': return 200;
-      default: return 0;
+      case 'current':
+        return 0;
+      case 'hourly':
+        return 100;
+      case 'daily':
+        return 200;
+      default:
+        return 0;
     }
   }
 

@@ -10,38 +10,38 @@ import { AVAILABLE_ALGORITHMS, getDefaultAlgorithm, createAlgorithm } from '../a
  * AI Service - Manages AI algorithms and computation
  */
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class AIService {
   private currentAlgorithm: IAIAlgorithm;
   private isThinking = false;
   private lastResult: SearchResult | null = null;
-  
+
   constructor() {
     this.currentAlgorithm = getDefaultAlgorithm();
   }
-  
+
   /**
    * Get available algorithms
    */
   getAvailableAlgorithms(): IAIAlgorithm[] {
     return AVAILABLE_ALGORITHMS;
   }
-  
+
   /**
    * Set current algorithm by ID
    */
   setAlgorithm(algorithmId: string): void {
     this.currentAlgorithm = createAlgorithm(algorithmId);
   }
-  
+
   /**
    * Get current algorithm info
    */
   getCurrentAlgorithmInfo() {
     return this.currentAlgorithm.info;
   }
-  
+
   /**
    * Find best move for current position
    */
@@ -55,17 +55,17 @@ export class AIService {
       console.warn('AI is already thinking');
       return null;
     }
-    
+
     this.isThinking = true;
-    
+
     try {
       const options = this.getSearchOptions(difficulty);
-      
+
       // Run in next tick to allow UI update
       return new Promise((resolve) => {
         setTimeout(() => {
           const result = this.currentAlgorithm.findBestMove(board, color, options, gameState);
-          
+
           // Handle both old (Move | null) and new (SearchResult) return types
           if (result && typeof result === 'object' && 'bestMove' in result) {
             // New format: SearchResult
@@ -78,7 +78,7 @@ export class AIService {
               bestMove: result as Move | null,
               score: 0,
               nodesSearched: 0,
-              depth: options.maxDepth
+              depth: options.maxDepth,
             };
             this.isThinking = false;
             resolve(result as Move | null);
@@ -91,7 +91,7 @@ export class AIService {
       return null;
     }
   }
-  
+
   /**
    * Get hint for current position
    */
@@ -103,20 +103,20 @@ export class AIService {
     if (this.currentAlgorithm.getHint) {
       return this.currentAlgorithm.getHint(board, color);
     }
-    
+
     // Fall back to findBestMove with reduced depth
     const options = this.getSearchOptions(difficulty);
     options.maxDepth = Math.min(options.maxDepth, 3);
-    
+
     const result = this.currentAlgorithm.findBestMove(board, color, options);
-    
+
     // Handle both return types
     if (result && typeof result === 'object' && 'bestMove' in result) {
       return (result as SearchResult).bestMove;
     }
     return result as Move | null;
   }
-  
+
   /**
    * Get search options based on difficulty
    */
@@ -126,20 +126,20 @@ export class AIService {
         maxDepth: 2,
         maxTime: 1000,
         useQuiescence: false,
-        useOpeningBook: false
+        useOpeningBook: false,
       },
       [AIDifficulty.AMATEUR]: {
         maxDepth: 4,
         maxTime: 3000,
         useQuiescence: true,
-        useOpeningBook: false
+        useOpeningBook: false,
       },
       [AIDifficulty.EXPERT]: {
         maxDepth: 6,
         maxTime: 8000,
         useQuiescence: true,
         useOpeningBook: true,
-        useTranspositionTable: true
+        useTranspositionTable: true,
       },
       [AIDifficulty.MASTER]: {
         maxDepth: 10,
@@ -147,13 +147,13 @@ export class AIService {
         useQuiescence: true,
         useOpeningBook: true,
         useTranspositionTable: true,
-        useIterativeDeepening: true
-      }
+        useIterativeDeepening: true,
+      },
     };
-    
+
     return configs[difficulty] || configs[AIDifficulty.EXPERT];
   }
-  
+
   /**
    * Stop current search
    */
@@ -163,21 +163,21 @@ export class AIService {
     }
     this.isThinking = false;
   }
-  
+
   /**
    * Check if AI is currently thinking
    */
   isCurrentlyThinking(): boolean {
     return this.isThinking;
   }
-  
+
   /**
    * Get last search result
    */
   getLastResult(): SearchResult | null {
     return this.lastResult;
   }
-  
+
   /**
    * Evaluate current position
    */
@@ -187,7 +187,7 @@ export class AIService {
     }
     return 0;
   }
-  
+
   /**
    * Get difficulty name in Vietnamese
    */
@@ -196,11 +196,11 @@ export class AIService {
       [AIDifficulty.BEGINNER]: 'Tập Sự',
       [AIDifficulty.AMATEUR]: 'Nghiệp Dư',
       [AIDifficulty.EXPERT]: 'Kỳ Thủ',
-      [AIDifficulty.MASTER]: 'Đại Sư'
+      [AIDifficulty.MASTER]: 'Đại Sư',
     };
     return names[difficulty] || 'Kỳ Thủ';
   }
-  
+
   /**
    * Get all difficulty levels
    */
@@ -209,7 +209,7 @@ export class AIService {
       { value: AIDifficulty.BEGINNER, name: 'Tập Sự' },
       { value: AIDifficulty.AMATEUR, name: 'Nghiệp Dư' },
       { value: AIDifficulty.EXPERT, name: 'Kỳ Thủ' },
-      { value: AIDifficulty.MASTER, name: 'Đại Sư' }
+      { value: AIDifficulty.MASTER, name: 'Đại Sư' },
     ];
   }
 }

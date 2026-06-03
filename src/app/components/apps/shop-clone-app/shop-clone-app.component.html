@@ -30,8 +30,14 @@
             type="text"
             placeholder="Tìm sản phẩm, thương hiệu và tên shop"
             [ngModel]="searchTerm()"
-            (ngModelChange)="searchTerm.set($event)">
-          <button class="clear-btn" *ngIf="searchTerm()" (click)="searchTerm.set('')" title="Xóa tìm kiếm">
+            (ngModelChange)="searchTerm.set($event)"
+          />
+          <button
+            class="clear-btn"
+            *ngIf="searchTerm()"
+            (click)="searchTerm.set('')"
+            title="Xóa tìm kiếm"
+          >
             <i class="pi pi-times"></i>
           </button>
           <button class="search-btn">
@@ -39,7 +45,9 @@
           </button>
         </div>
         <div class="keyword-row">
-          <button *ngFor="let keyword of hotKeywords" (click)="setKeyword(keyword)">{{ keyword }}</button>
+          <button *ngFor="let keyword of hotKeywords" (click)="setKeyword(keyword)">
+            {{ keyword }}
+          </button>
         </div>
       </div>
 
@@ -72,7 +80,11 @@
     </section>
 
     <section class="quick-service-grid">
-      <button *ngFor="let service of quickServices" class="quick-service" [attr.data-tone]="service.tone">
+      <button
+        *ngFor="let service of quickServices"
+        class="quick-service"
+        [attr.data-tone]="service.tone"
+      >
         <i [class]="service.icon"></i>
         <span>{{ service.label }}</span>
       </button>
@@ -85,7 +97,8 @@
           *ngFor="let category of categories"
           class="category-tile"
           [class.active]="selectedCategory() === category.id"
-          (click)="setCategory(category.id)">
+          (click)="setCategory(category.id)"
+        >
           <div class="category-icon"><i [class]="category.icon"></i></div>
           <span>{{ category.name }}</span>
         </button>
@@ -102,7 +115,11 @@
       </div>
 
       <div class="flash-row">
-        <button class="flash-item" *ngFor="let product of featuredDeals()" (click)="addToCart(product)">
+        <button
+          class="flash-item"
+          *ngFor="let product of featuredDeals()"
+          (click)="addToCart(product)"
+        >
           <div class="flash-image">
             <span>{{ product.image }}</span>
             <small>-{{ discountPercent(product) }}%</small>
@@ -143,10 +160,18 @@
       <div class="sticky-reco-title">
         <span>Gợi Ý Hôm Nay</span>
         <div class="sort-tabs">
-          <button [class.active]="selectedSort() === 'popular'" (click)="setSort('popular')">Liên quan</button>
-          <button [class.active]="selectedSort() === 'sold'" (click)="setSort('sold')">Bán chạy</button>
-          <button [class.active]="selectedSort() === 'price-asc'" (click)="setSort('price-asc')">Giá thấp</button>
-          <button [class.active]="selectedSort() === 'price-desc'" (click)="setSort('price-desc')">Giá cao</button>
+          <button [class.active]="selectedSort() === 'popular'" (click)="setSort('popular')">
+            Liên quan
+          </button>
+          <button [class.active]="selectedSort() === 'sold'" (click)="setSort('sold')">
+            Bán chạy
+          </button>
+          <button [class.active]="selectedSort() === 'price-asc'" (click)="setSort('price-asc')">
+            Giá thấp
+          </button>
+          <button [class.active]="selectedSort() === 'price-desc'" (click)="setSort('price-desc')">
+            Giá cao
+          </button>
         </div>
       </div>
 
@@ -160,7 +185,7 @@
           <div class="product-media">
             <span class="preferred-badge">{{ product.badge }}</span>
             <strong>{{ product.image }}</strong>
-            <span class="discount-flag">{{ discountPercent(product) }}%<br>GIẢM</span>
+            <span class="discount-flag">{{ discountPercent(product) }}%<br />GIẢM</span>
           </div>
           <div class="product-info">
             <h4>{{ product.name }}</h4>
@@ -177,9 +202,7 @@
               <span>Đã bán {{ formatSold(product.sold) }}</span>
             </div>
             <div class="location-row">{{ product.location }}</div>
-            <button class="add-cart" (click)="addToCart(product)">
-              Thêm vào giỏ
-            </button>
+            <button class="add-cart" (click)="addToCart(product)">Thêm vào giỏ</button>
           </div>
         </article>
       </div>

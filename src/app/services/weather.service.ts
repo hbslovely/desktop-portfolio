@@ -107,7 +107,7 @@ export interface LocationCoordinates {
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class WeatherService {
   private apiUrl = environment.weatherApiUrl;
@@ -129,7 +129,7 @@ export class WeatherService {
         (position) => {
           resolve({
             lat: position.coords.latitude,
-            lon: position.coords.longitude
+            lon: position.coords.longitude,
           });
         },
         (error) => {
@@ -139,12 +139,12 @@ export class WeatherService {
             lat: 10.8231,
             lon: 106.6297,
             city: 'Ho Chi Minh City',
-            country: 'Vietnam'
+            country: 'Vietnam',
           });
         },
         {
           timeout: 10000,
-          maximumAge: 300000 // Cache for 5 minutes
+          maximumAge: 300000, // Cache for 5 minutes
         }
       );
     });
@@ -168,8 +168,7 @@ export class WeatherService {
       .set('key', this.apiKey);
 
     return this.http.get<WeatherData>(`${this.apiUrl}/point`, { params }).pipe(
-      catchError(error => {
-
+      catchError((error) => {
         return throwError(() => new Error('Failed to fetch weather data'));
       })
     );
@@ -199,25 +198,25 @@ export class WeatherService {
   getWeatherIconClass(iconNum: number): string {
     // Icon mapping based on Meteosource icon numbers
     const iconMap: { [key: number]: string } = {
-      1: 'pi pi-sun',           // Clear sky
-      2: 'pi pi-sun',           // Mostly clear
-      3: 'pi pi-cloud',         // Partly cloudy
-      4: 'pi pi-cloud',         // Mostly cloudy
-      5: 'pi pi-cloud',         // Overcast
-      6: 'pi pi-cloud',         // Partly cloudy and light rain
-      7: 'pi pi-cloud',         // Mostly cloudy and light rain
-      8: 'pi pi-cloud',         // Overcast and light rain
-      9: 'pi pi-cloud',         // Overcast and rain
-      10: 'pi pi-cloud',        // Light rain
-      11: 'pi pi-cloud',        // Rain
-      12: 'pi pi-cloud',        // Possible rain
-      13: 'pi pi-bolt',         // Rain and thunderstorm
-      14: 'pi pi-bolt',         // Thunderstorm
-      15: 'pi pi-cloud',        // Light snow
-      16: 'pi pi-cloud',        // Snow
-      17: 'pi pi-cloud',        // Rain and snow
-      18: 'pi pi-cloud',        // Fog
-      19: 'pi pi-cloud',        // Light fog
+      1: 'pi pi-sun', // Clear sky
+      2: 'pi pi-sun', // Mostly clear
+      3: 'pi pi-cloud', // Partly cloudy
+      4: 'pi pi-cloud', // Mostly cloudy
+      5: 'pi pi-cloud', // Overcast
+      6: 'pi pi-cloud', // Partly cloudy and light rain
+      7: 'pi pi-cloud', // Mostly cloudy and light rain
+      8: 'pi pi-cloud', // Overcast and light rain
+      9: 'pi pi-cloud', // Overcast and rain
+      10: 'pi pi-cloud', // Light rain
+      11: 'pi pi-cloud', // Rain
+      12: 'pi pi-cloud', // Possible rain
+      13: 'pi pi-bolt', // Rain and thunderstorm
+      14: 'pi pi-bolt', // Thunderstorm
+      15: 'pi pi-cloud', // Light snow
+      16: 'pi pi-cloud', // Snow
+      17: 'pi pi-cloud', // Rain and snow
+      18: 'pi pi-cloud', // Fog
+      19: 'pi pi-cloud', // Light fog
     };
     return iconMap[iconNum] || 'pi pi-cloud';
   }
@@ -235,16 +234,15 @@ export class WeatherService {
    */
   getWindDirectionText(direction: string): string {
     const directions: { [key: string]: string } = {
-      'N': 'North',
-      'NE': 'Northeast',
-      'E': 'East',
-      'SE': 'Southeast',
-      'S': 'South',
-      'SW': 'Southwest',
-      'W': 'West',
-      'NW': 'Northwest'
+      N: 'North',
+      NE: 'Northeast',
+      E: 'East',
+      SE: 'Southeast',
+      S: 'South',
+      SW: 'Southwest',
+      W: 'West',
+      NW: 'Northwest',
     };
     return directions[direction] || direction;
   }
 }
-

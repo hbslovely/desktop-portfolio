@@ -18,7 +18,7 @@ export const PUZZLES: Puzzle[] = [
           board[r][c] = null;
         }
       }
-      
+
       // Setup puzzle position
       // Red King at palace
       board[9][4] = { type: PieceType.KING, color: PieceColor.RED };
@@ -29,7 +29,7 @@ export const PUZZLES: Puzzle[] = [
       // Black is stuck
       board[0][3] = { type: PieceType.ADVISOR, color: PieceColor.BLACK };
       board[0][5] = { type: PieceType.ADVISOR, color: PieceColor.BLACK };
-    }
+    },
   },
   {
     id: 'puzzle-2',
@@ -42,13 +42,13 @@ export const PUZZLES: Puzzle[] = [
           board[r][c] = null;
         }
       }
-      
+
       board[9][4] = { type: PieceType.KING, color: PieceColor.RED };
       board[0][4] = { type: PieceType.KING, color: PieceColor.BLACK };
       board[2][3] = { type: PieceType.HORSE, color: PieceColor.RED };
       board[2][5] = { type: PieceType.HORSE, color: PieceColor.RED };
       board[0][3] = { type: PieceType.ADVISOR, color: PieceColor.BLACK };
-    }
+    },
   },
   {
     id: 'puzzle-3',
@@ -61,13 +61,13 @@ export const PUZZLES: Puzzle[] = [
           board[r][c] = null;
         }
       }
-      
+
       board[9][4] = { type: PieceType.KING, color: PieceColor.RED };
       board[0][4] = { type: PieceType.KING, color: PieceColor.BLACK };
       board[5][4] = { type: PieceType.CANNON, color: PieceColor.RED };
       board[3][4] = { type: PieceType.ROOK, color: PieceColor.RED };
       board[1][4] = { type: PieceType.PAWN, color: PieceColor.BLACK };
-    }
+    },
   },
   {
     id: 'puzzle-4',
@@ -80,14 +80,14 @@ export const PUZZLES: Puzzle[] = [
           board[r][c] = null;
         }
       }
-      
+
       board[9][4] = { type: PieceType.KING, color: PieceColor.RED };
       board[0][4] = { type: PieceType.KING, color: PieceColor.BLACK };
       board[4][2] = { type: PieceType.HORSE, color: PieceColor.RED };
       board[4][6] = { type: PieceType.CANNON, color: PieceColor.RED };
       board[1][3] = { type: PieceType.ADVISOR, color: PieceColor.BLACK };
       board[1][5] = { type: PieceType.ADVISOR, color: PieceColor.BLACK };
-    }
+    },
   },
   {
     id: 'puzzle-5',
@@ -100,7 +100,7 @@ export const PUZZLES: Puzzle[] = [
           board[r][c] = null;
         }
       }
-      
+
       board[9][4] = { type: PieceType.KING, color: PieceColor.RED };
       board[0][4] = { type: PieceType.KING, color: PieceColor.BLACK };
       board[2][4] = { type: PieceType.ROOK, color: PieceColor.RED };
@@ -109,20 +109,20 @@ export const PUZZLES: Puzzle[] = [
       board[1][5] = { type: PieceType.ADVISOR, color: PieceColor.BLACK };
       board[2][2] = { type: PieceType.ELEPHANT, color: PieceColor.BLACK };
       board[2][6] = { type: PieceType.ELEPHANT, color: PieceColor.BLACK };
-    }
-  }
+    },
+  },
 ];
 
 /**
  * Get puzzle by ID
  */
 export function getPuzzleById(id: string): Puzzle | undefined {
-  return PUZZLES.find(p => p.id === id);
+  return PUZZLES.find((p) => p.id === id);
 }
 
 /**
  * Get puzzles by difficulty
  */
 export function getPuzzlesByDifficulty(difficulty: number): Puzzle[] {
-  return PUZZLES.filter(p => p.difficulty === difficulty);
+  return PUZZLES.filter((p) => p.difficulty === difficulty);
 }

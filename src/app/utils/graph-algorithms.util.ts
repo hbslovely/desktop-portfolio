@@ -62,7 +62,7 @@ export class GraphAlgorithms {
     const steps: AlgorithmStep[] = [];
 
     // Initialize
-    nodes.forEach(node => {
+    nodes.forEach((node) => {
       distances[node.id] = Infinity;
       previous[node.id] = null;
       unvisited.add(node.id);
@@ -74,7 +74,7 @@ export class GraphAlgorithms {
       message: `Bước 1 - Khởi tạo: Đặt khoảng cách của node bắt đầu ${start} = 0 (vì đây là điểm xuất phát), tất cả các node khác = ∞ (chưa biết khoảng cách). Tạo tập hợp các node chưa được xét (unvisited set).`,
       distances: { ...distances },
       current: start,
-      nodes: nodes.map(n => n.id)
+      nodes: nodes.map((n) => n.id),
     };
     steps.push(initStep);
     if (onStep) await onStep(initStep);
@@ -83,8 +83,8 @@ export class GraphAlgorithms {
       // Find unvisited node with smallest distance
       let current: string | null = null;
       let minDistance = Infinity;
-      
-      unvisited.forEach(nodeId => {
+
+      unvisited.forEach((nodeId) => {
         if (distances[nodeId] < minDistance) {
           minDistance = distances[nodeId];
           current = nodeId;
@@ -102,7 +102,7 @@ export class GraphAlgorithms {
         distances: { ...distances },
         current: current,
         visited: Array.from(unvisited),
-        nodes: nodes.map(n => n.id)
+        nodes: nodes.map((n) => n.id),
       };
       steps.push(visitStep);
       if (onStep) await onStep(visitStep);
@@ -112,9 +112,15 @@ export class GraphAlgorithms {
         let neighbor: string | null = null;
         let edgeWeight = edge.weight;
 
-        if (edge.from === current && (edge.direction === 'forward' || edge.direction === 'bidirectional')) {
+        if (
+          edge.from === current &&
+          (edge.direction === 'forward' || edge.direction === 'bidirectional')
+        ) {
           neighbor = edge.to;
-        } else if (edge.to === current && (edge.direction === 'backward' || edge.direction === 'bidirectional')) {
+        } else if (
+          edge.to === current &&
+          (edge.direction === 'backward' || edge.direction === 'bidirectional')
+        ) {
           neighbor = edge.from;
         }
 
@@ -131,7 +137,7 @@ export class GraphAlgorithms {
               current: current,
               updated: neighbor,
               edge: edge.id,
-              nodes: nodes.map(n => n.id)
+              nodes: nodes.map((n) => n.id),
             };
             steps.push(updateStep);
             if (onStep) await onStep(updateStep);
@@ -145,7 +151,7 @@ export class GraphAlgorithms {
       const resultStep: AlgorithmStep = {
         type: 'result',
         message: 'Không tìm thấy đường đi từ Start đến End',
-        path: null
+        path: null,
       };
       steps.push(resultStep);
       if (onStep) await onStep(resultStep);
@@ -153,7 +159,7 @@ export class GraphAlgorithms {
         path: [],
         distance: Infinity,
         algorithm: 'Dijkstra',
-        steps
+        steps,
       };
     }
 
@@ -168,7 +174,7 @@ export class GraphAlgorithms {
       type: 'result',
       message: `Kết quả cuối cùng - Truy vết đường đi: Bắt đầu từ node đích ${end}, truy ngược lại theo các node trước đó (previous) để tìm đường đi ngắn nhất. Đường đi tìm được: ${path.join(' → ')} với tổng khoảng cách = ${distances[end]}. Thuật toán Dijkstra đảm bảo tìm được đường đi ngắn nhất vì mỗi lần chọn node có khoảng cách nhỏ nhất, khoảng cách đó đã là tối ưu.`,
       path: path,
-      distance: distances[end]
+      distance: distances[end],
     };
     steps.push(resultStep);
     if (onStep) await onStep(resultStep);
@@ -177,7 +183,7 @@ export class GraphAlgorithms {
       path,
       distance: distances[end],
       algorithm: 'Dijkstra',
-      steps
+      steps,
     };
   }
 
@@ -196,7 +202,7 @@ export class GraphAlgorithms {
     const steps: AlgorithmStep[] = [];
 
     // Initialize
-    nodes.forEach(node => {
+    nodes.forEach((node) => {
       distances[node.id] = Infinity;
       previous[node.id] = null;
     });
@@ -207,7 +213,7 @@ export class GraphAlgorithms {
       message: `Bước 1 - Khởi tạo Bellman-Ford: Đặt khoảng cách của node bắt đầu ${start} = 0 (điểm xuất phát), tất cả các node khác = ∞ (chưa biết khoảng cách). Thuật toán Bellman-Ford sẽ lặp lại việc "relax" (nới lỏng) các cạnh (V-1) lần, trong đó V là số lượng node.`,
       distances: { ...distances },
       iteration: 0,
-      nodes: nodes.map(n => n.id)
+      nodes: nodes.map((n) => n.id),
     };
     steps.push(initStep);
     if (onStep) await onStep(initStep);
@@ -219,7 +225,7 @@ export class GraphAlgorithms {
         message: `Bước ${i + 2} - Lần lặp ${i + 1}/${nodes.length - 1}: Bắt đầu lần lặp thứ ${i + 1}. Trong mỗi lần lặp, ta sẽ xét tất cả các cạnh trong đồ thị và thực hiện "relax" (nới lỏng): nếu khoảng cách đến node đích có thể được cải thiện bằng cách đi qua node nguồn, ta sẽ cập nhật khoảng cách.`,
         distances: { ...distances },
         iteration: i + 1,
-        nodes: nodes.map(n => n.id)
+        nodes: nodes.map((n) => n.id),
       };
       steps.push(iterationStep);
       if (onStep) await onStep(iterationStep);
@@ -240,7 +246,7 @@ export class GraphAlgorithms {
               distances: { ...distances },
               edge: edge.id,
               updated: to,
-              nodes: nodes.map(n => n.id)
+              nodes: nodes.map((n) => n.id),
             };
             steps.push(relaxStep);
             if (onStep) await onStep(relaxStep);
@@ -259,7 +265,7 @@ export class GraphAlgorithms {
               distances: { ...distances },
               edge: edge.id,
               updated: from,
-              nodes: nodes.map(n => n.id)
+              nodes: nodes.map((n) => n.id),
             };
             steps.push(relaxStep);
             if (onStep) await onStep(relaxStep);
@@ -272,7 +278,7 @@ export class GraphAlgorithms {
       const resultStep: AlgorithmStep = {
         type: 'result',
         message: 'Không tìm thấy đường đi',
-        path: null
+        path: null,
       };
       steps.push(resultStep);
       if (onStep) await onStep(resultStep);
@@ -280,7 +286,7 @@ export class GraphAlgorithms {
         path: [],
         distance: Infinity,
         algorithm: 'Bellman-Ford',
-        steps
+        steps,
       };
     }
 
@@ -295,7 +301,7 @@ export class GraphAlgorithms {
       type: 'result',
       message: `Kết quả cuối cùng - Truy vết đường đi: Sau ${nodes.length - 1} lần lặp, thuật toán Bellman-Ford đã tìm được khoảng cách ngắn nhất từ ${start} đến ${end}. Truy ngược lại từ node đích theo các node trước đó để tìm đường đi. Đường đi: ${path.join(' → ')} với tổng khoảng cách = ${distances[end]}. Lưu ý: Bellman-Ford có thể xử lý đồ thị có cạnh trọng số âm (nhưng không có chu trình âm).`,
       path: path,
-      distance: distances[end]
+      distance: distances[end],
     };
     steps.push(resultStep);
     if (onStep) await onStep(resultStep);
@@ -304,7 +310,7 @@ export class GraphAlgorithms {
       path,
       distance: distances[end],
       algorithm: 'Bellman-Ford',
-      steps
+      steps,
     };
   }
 
@@ -319,7 +325,7 @@ export class GraphAlgorithms {
     onStep?: (step: AlgorithmStep) => Promise<void>
   ): Promise<AlgorithmResult> {
     const n = nodes.length;
-    const nodeIds = nodes.map(n => n.id);
+    const nodeIds = nodes.map((n) => n.id);
     const dist: number[][] = [];
     const next: (string | null)[][] = [];
     const steps: AlgorithmStep[] = [];
@@ -338,7 +344,7 @@ export class GraphAlgorithms {
     }
 
     // Set initial distances
-    edges.forEach(edge => {
+    edges.forEach((edge) => {
       const i = nodeIds.indexOf(edge.from);
       const j = nodeIds.indexOf(edge.to);
       if (edge.direction === 'forward' || edge.direction === 'bidirectional') {
@@ -358,8 +364,8 @@ export class GraphAlgorithms {
     const initStep: AlgorithmStep = {
       type: 'init',
       message: `Bước 1 - Khởi tạo ma trận khoảng cách: Tạo ma trận dist[V][V] với V là số node. Khởi tạo: dist[i][i] = 0 (khoảng cách từ node đến chính nó), dist[i][j] = ∞ (chưa biết khoảng cách) nếu i ≠ j. Sau đó, với mỗi cạnh từ u đến v có trọng số w, đặt dist[u][v] = w. Ma trận này sẽ lưu khoảng cách ngắn nhất giữa mọi cặp node.`,
-      distances: dist.map(row => [...row]),
-      nodes: nodeIds
+      distances: dist.map((row) => [...row]),
+      nodes: nodeIds,
     };
     steps.push(initStep);
     if (onStep) await onStep(initStep);
@@ -371,8 +377,8 @@ export class GraphAlgorithms {
         message: `Bước ${k + 2} - Xét node trung gian ${nodeIds[k]} (k = ${k + 1}/${n}): Với mỗi node trung gian k, ta kiểm tra xem có thể cải thiện khoảng cách giữa mọi cặp node (i, j) bằng cách đi qua k không. Công thức: dist[i][j] = min(dist[i][j], dist[i][k] + dist[k][j]). Nghĩa là: khoảng cách từ i đến j có thể được cải thiện bằng cách đi từ i → k → j.`,
         intermediate: nodeIds[k],
         iteration: k + 1,
-        distances: dist.map(row => [...row]),
-        nodes: nodeIds
+        distances: dist.map((row) => [...row]),
+        nodes: nodeIds,
       };
       steps.push(iterationStep);
       if (onStep) await onStep(iterationStep);
@@ -396,7 +402,7 @@ export class GraphAlgorithms {
       const resultStep: AlgorithmStep = {
         type: 'result',
         message: 'Không tìm thấy đường đi',
-        path: null
+        path: null,
       };
       steps.push(resultStep);
       if (onStep) await onStep(resultStep);
@@ -404,7 +410,7 @@ export class GraphAlgorithms {
         path: [],
         distance: Infinity,
         algorithm: 'Floyd-Warshall',
-        steps
+        steps,
       };
     }
 
@@ -423,7 +429,7 @@ export class GraphAlgorithms {
       type: 'result',
       message: `Kết quả cuối cùng - Truy vết đường đi: Sau khi xét tất cả các node trung gian, ma trận dist chứa khoảng cách ngắn nhất giữa mọi cặp node. Để tìm đường đi từ ${start} đến ${end}, sử dụng ma trận next để truy vết. Đường đi: ${path.join(' → ')} với tổng khoảng cách = ${dist[startIdx][endIdx]}. Thuật toán Floyd-Warshall tìm khoảng cách ngắn nhất giữa TẤT CẢ các cặp node trong một lần chạy.`,
       path: path,
-      distance: dist[startIdx][endIdx]
+      distance: dist[startIdx][endIdx],
     };
     steps.push(resultStep);
     if (onStep) await onStep(resultStep);
@@ -432,7 +438,7 @@ export class GraphAlgorithms {
       path,
       distance: dist[startIdx][endIdx],
       algorithm: 'Floyd-Warshall',
-      steps
+      steps,
     };
   }
 
@@ -446,21 +452,21 @@ export class GraphAlgorithms {
     end: string,
     onStep?: (step: AlgorithmStep) => Promise<void>
   ): Promise<AlgorithmResult> {
-    const startNode = nodes.find(n => n.id === start);
-    const endNode = nodes.find(n => n.id === end);
+    const startNode = nodes.find((n) => n.id === start);
+    const endNode = nodes.find((n) => n.id === end);
     const steps: AlgorithmStep[] = [];
-    
+
     if (!startNode || !endNode) {
       return {
         path: [],
         distance: Infinity,
         algorithm: 'A*',
-        steps
+        steps,
       };
     }
 
     const heuristic = (nodeId: string): number => {
-      const node = nodes.find(n => n.id === nodeId);
+      const node = nodes.find((n) => n.id === nodeId);
       if (!node) return Infinity;
       const dx = node.x - endNode.x;
       const dy = node.y - endNode.y;
@@ -473,7 +479,7 @@ export class GraphAlgorithms {
     const fScore: Record<string, number> = {};
     const cameFrom: Record<string, string | null> = {};
 
-    nodes.forEach(node => {
+    nodes.forEach((node) => {
       gScore[node.id] = Infinity;
       fScore[node.id] = Infinity;
       cameFrom[node.id] = null;
@@ -487,7 +493,7 @@ export class GraphAlgorithms {
       message: `Bước 1 - Khởi tạo A*: A* sử dụng hàm đánh giá f(n) = g(n) + h(n), trong đó g(n) là khoảng cách thực tế từ node bắt đầu đến n, h(n) là hàm heuristic (ước tính khoảng cách từ n đến đích). Khởi tạo: g(${start}) = 0 (khoảng cách từ điểm xuất phát), h(${start}) = ${fScore[start].toFixed(2)} (ước tính khoảng cách đến đích dựa trên tọa độ), f(${start}) = g + h = ${fScore[start].toFixed(2)}. Tạo openSet chứa node bắt đầu, closedSet rỗng.`,
       distances: { ...gScore },
       fScore: { ...fScore },
-      nodes: nodes.map(n => n.id)
+      nodes: nodes.map((n) => n.id),
     };
     steps.push(initStep);
     if (onStep) await onStep(initStep);
@@ -495,8 +501,8 @@ export class GraphAlgorithms {
     while (openSet.size > 0) {
       let current: string | null = null;
       let minF = Infinity;
-      
-      openSet.forEach(nodeId => {
+
+      openSet.forEach((nodeId) => {
         if (fScore[nodeId] < minF) {
           minF = fScore[nodeId];
           current = nodeId;
@@ -511,21 +517,21 @@ export class GraphAlgorithms {
           path.unshift(node);
           node = cameFrom[node] || null;
         }
-        
+
         const resultStep: AlgorithmStep = {
           type: 'result',
           message: `Kết quả cuối cùng - Truy vết đường đi: Đã tìm thấy node đích ${end}. Truy ngược lại từ node đích theo các node trước đó (cameFrom) để tìm đường đi. Đường đi: ${path.join(' → ')} với tổng khoảng cách thực tế = ${gScore[end].toFixed(2)}. A* đảm bảo tìm được đường đi ngắn nhất nếu hàm heuristic h(n) là "admissible" (không bao giờ đánh giá quá cao khoảng cách thực tế).`,
           path: path,
-          distance: gScore[end]
+          distance: gScore[end],
         };
         steps.push(resultStep);
         if (onStep) await onStep(resultStep);
-        
+
         return {
           path,
           distance: gScore[end],
           algorithm: 'A*',
-          steps
+          steps,
         };
       }
 
@@ -539,7 +545,7 @@ export class GraphAlgorithms {
         distances: { ...gScore },
         fScore: { ...fScore },
         closedSet: Array.from(closedSet),
-        nodes: nodes.map(n => n.id)
+        nodes: nodes.map((n) => n.id),
       };
       steps.push(visitStep);
       if (onStep) await onStep(visitStep);
@@ -548,9 +554,15 @@ export class GraphAlgorithms {
         let neighbor: string | null = null;
         let edgeWeight = edge.weight;
 
-        if (edge.from === current && (edge.direction === 'forward' || edge.direction === 'bidirectional')) {
+        if (
+          edge.from === current &&
+          (edge.direction === 'forward' || edge.direction === 'bidirectional')
+        ) {
           neighbor = edge.to;
-        } else if (edge.to === current && (edge.direction === 'backward' || edge.direction === 'bidirectional')) {
+        } else if (
+          edge.to === current &&
+          (edge.direction === 'backward' || edge.direction === 'bidirectional')
+        ) {
           neighbor = edge.from;
         }
 
@@ -575,7 +587,7 @@ export class GraphAlgorithms {
           distances: { ...gScore },
           fScore: { ...fScore },
           edge: edge.id,
-          nodes: nodes.map(n => n.id)
+          nodes: nodes.map((n) => n.id),
         };
         steps.push(updateStep);
         if (onStep) await onStep(updateStep);
@@ -585,7 +597,7 @@ export class GraphAlgorithms {
     const resultStep: AlgorithmStep = {
       type: 'result',
       message: 'Không tìm thấy đường đi',
-      path: null
+      path: null,
     };
     steps.push(resultStep);
     if (onStep) await onStep(resultStep);
@@ -594,7 +606,7 @@ export class GraphAlgorithms {
       path: [],
       distance: Infinity,
       algorithm: 'A*',
-      steps
+      steps,
     };
   }
 
@@ -614,7 +626,7 @@ export class GraphAlgorithms {
     const initStep: AlgorithmStep = {
       type: 'init',
       message: `Bước 1 - Khởi tạo thuật toán tô màu đồ thị (Graph Coloring): Mục tiêu là tô màu các đỉnh sao cho không có hai đỉnh kề nhau có cùng màu. Sử dụng thuật toán Greedy: duyệt từng đỉnh, tìm màu nhỏ nhất chưa được sử dụng bởi các đỉnh kề. Khởi tạo: tất cả đỉnh chưa có màu (màu = -1).`,
-      nodes: nodes.map(n => n.id)
+      nodes: nodes.map((n) => n.id),
     };
     steps.push(initStep);
     if (onStep) await onStep(initStep);
@@ -630,7 +642,7 @@ export class GraphAlgorithms {
       // they are neighbors regardless of direction
       for (const edge of edges) {
         let neighbor: string | null = null;
-        
+
         // Treat all edges as undirected for graph coloring
         if (edge.from === node.id) {
           neighbor = edge.to;
@@ -662,10 +674,15 @@ export class GraphAlgorithms {
       const visited = Object.keys(colors); // All nodes that have been colored so far
       const colorStep: AlgorithmStep = {
         type: 'update',
-        message: `Bước ${i + 2} - Tô màu đỉnh ${node.id}: Tìm các đỉnh kề: ${neighborList.length > 0 ? neighborList.join(', ') : 'không có'}. Các đỉnh kề đã được tô màu: ${neighborList.filter(n => colors[n] !== undefined).map(n => `${n} (màu ${colors[n]})`).join(', ') || 'không có'}. Các màu đã được sử dụng bởi đỉnh kề: ${Array.from(neighborColors).join(', ') || 'không có'}. Chọn màu nhỏ nhất chưa được sử dụng = ${colorIndex}. Tô đỉnh ${node.id} bằng màu ${colorIndex}.`,
+        message: `Bước ${i + 2} - Tô màu đỉnh ${node.id}: Tìm các đỉnh kề: ${neighborList.length > 0 ? neighborList.join(', ') : 'không có'}. Các đỉnh kề đã được tô màu: ${
+          neighborList
+            .filter((n) => colors[n] !== undefined)
+            .map((n) => `${n} (màu ${colors[n]})`)
+            .join(', ') || 'không có'
+        }. Các màu đã được sử dụng bởi đỉnh kề: ${Array.from(neighborColors).join(', ') || 'không có'}. Chọn màu nhỏ nhất chưa được sử dụng = ${colorIndex}. Tô đỉnh ${node.id} bằng màu ${colorIndex}.`,
         current: node.id,
         visited: visited,
-        nodes: nodes.map(n => n.id)
+        nodes: nodes.map((n) => n.id),
       };
       steps.push(colorStep);
       if (onStep) await onStep(colorStep);
@@ -673,8 +690,12 @@ export class GraphAlgorithms {
 
     const resultStep: AlgorithmStep = {
       type: 'result',
-      message: `Kết quả cuối cùng: Đã tô màu tất cả các đỉnh. Số màu tối thiểu cần dùng (số sắc tố - Chromatic Number) = ${usedColors.size}. Màu của từng đỉnh: ${Object.entries(colors).map(([id, c]) => `${id}: màu ${c}`).join(', ')}. Ứng dụng: Lập lịch thi, phân bổ tài nguyên, đăng ký tần số radio.`,
-      nodes: nodes.map(n => n.id)
+      message: `Kết quả cuối cùng: Đã tô màu tất cả các đỉnh. Số màu tối thiểu cần dùng (số sắc tố - Chromatic Number) = ${usedColors.size}. Màu của từng đỉnh: ${Object.entries(
+        colors
+      )
+        .map(([id, c]) => `${id}: màu ${c}`)
+        .join(', ')}. Ứng dụng: Lập lịch thi, phân bổ tài nguyên, đăng ký tần số radio.`,
+      nodes: nodes.map((n) => n.id),
     };
     steps.push(resultStep);
     if (onStep) await onStep(resultStep);
@@ -682,7 +703,7 @@ export class GraphAlgorithms {
     return {
       colors,
       chromaticNumber: usedColors.size,
-      steps
+      steps,
     };
   }
 
@@ -706,7 +727,7 @@ export class GraphAlgorithms {
       type: 'init',
       message: `Bước 1 - Khởi tạo BFS (Breadth-First Search - Tìm kiếm theo chiều rộng): BFS duyệt đồ thị theo từng lớp, từ gần đến xa. Sử dụng hàng đợi (queue) để lưu các đỉnh cần xét. Khởi tạo: thêm đỉnh bắt đầu ${start} vào queue, đánh dấu đã thăm, thêm vào danh sách thứ tự duyệt.`,
       current: start,
-      nodes: nodes.map(n => n.id)
+      nodes: nodes.map((n) => n.id),
     };
     steps.push(initStep);
     if (onStep) await onStep(initStep);
@@ -722,7 +743,7 @@ export class GraphAlgorithms {
         message: `Bước ${steps.length + 1} - Xét đỉnh ${current}: Lấy đỉnh đầu tiên trong queue (${current}). Đây là đỉnh ở lớp gần nhất chưa được xét. Bây giờ ta sẽ xét tất cả các đỉnh kề của ${current} chưa được thăm.`,
         current: current,
         visited: Array.from(visited),
-        nodes: nodes.map(n => n.id)
+        nodes: nodes.map((n) => n.id),
       };
       steps.push(visitStep);
       if (onStep) await onStep(visitStep);
@@ -730,9 +751,15 @@ export class GraphAlgorithms {
       // Find all neighbors
       for (const edge of edges) {
         let neighbor: string | null = null;
-        if (edge.from === current && (edge.direction === 'forward' || edge.direction === 'bidirectional')) {
+        if (
+          edge.from === current &&
+          (edge.direction === 'forward' || edge.direction === 'bidirectional')
+        ) {
           neighbor = edge.to;
-        } else if (edge.to === current && (edge.direction === 'backward' || edge.direction === 'bidirectional')) {
+        } else if (
+          edge.to === current &&
+          (edge.direction === 'backward' || edge.direction === 'bidirectional')
+        ) {
           neighbor = edge.from;
         }
 
@@ -748,7 +775,7 @@ export class GraphAlgorithms {
             current: current,
             updated: neighbor,
             visited: Array.from(visited),
-            nodes: nodes.map(n => n.id)
+            nodes: nodes.map((n) => n.id),
           };
           steps.push(discoverStep);
           if (onStep) await onStep(discoverStep);
@@ -760,7 +787,7 @@ export class GraphAlgorithms {
       type: 'result',
       message: `Kết quả cuối cùng: BFS đã duyệt hết tất cả các đỉnh có thể đến được từ ${start}. Thứ tự duyệt: ${order.join(' → ')}. Tổng số đỉnh đã thăm: ${visited.size}. BFS đảm bảo tìm được đường đi ngắn nhất (theo số cạnh) trong đồ thị không trọng số. Ứng dụng: Tìm đường đi ngắn nhất, kiểm tra tính liên thông, tìm cây khung.`,
       visited: Array.from(visited),
-      nodes: nodes.map(n => n.id)
+      nodes: nodes.map((n) => n.id),
     };
     steps.push(resultStep);
     if (onStep) await onStep(resultStep);
@@ -768,7 +795,7 @@ export class GraphAlgorithms {
     return {
       visited: Array.from(visited),
       order,
-      steps
+      steps,
     };
   }
 
@@ -791,7 +818,7 @@ export class GraphAlgorithms {
       type: 'init',
       message: `Bước 1 - Khởi tạo DFS (Depth-First Search - Tìm kiếm theo chiều sâu): DFS duyệt đồ thị bằng cách đi sâu nhất có thể trước khi quay lại. Sử dụng đệ quy hoặc stack. Khởi tạo: bắt đầu từ đỉnh ${start}, đánh dấu đã thăm, thêm vào danh sách thứ tự duyệt.`,
       current: start,
-      nodes: nodes.map(n => n.id)
+      nodes: nodes.map((n) => n.id),
     };
     steps.push(initStep);
     if (onStep) await onStep(initStep);
@@ -805,7 +832,7 @@ export class GraphAlgorithms {
         message: `Bước ${steps.length + 1} - Thăm đỉnh ${node}: Đánh dấu đỉnh ${node} đã được thăm. Bây giờ ta sẽ xét tất cả các đỉnh kề của ${node} chưa được thăm và gọi đệ quy để duyệt sâu vào từng nhánh.`,
         current: node,
         visited: Array.from(visited),
-        nodes: nodes.map(n => n.id)
+        nodes: nodes.map((n) => n.id),
       };
       steps.push(visitStep);
       if (onStep) await onStep(visitStep);
@@ -813,9 +840,15 @@ export class GraphAlgorithms {
       // Find all neighbors
       for (const edge of edges) {
         let neighbor: string | null = null;
-        if (edge.from === node && (edge.direction === 'forward' || edge.direction === 'bidirectional')) {
+        if (
+          edge.from === node &&
+          (edge.direction === 'forward' || edge.direction === 'bidirectional')
+        ) {
           neighbor = edge.to;
-        } else if (edge.to === node && (edge.direction === 'backward' || edge.direction === 'bidirectional')) {
+        } else if (
+          edge.to === node &&
+          (edge.direction === 'backward' || edge.direction === 'bidirectional')
+        ) {
           neighbor = edge.from;
         }
 
@@ -828,7 +861,7 @@ export class GraphAlgorithms {
             current: node,
             updated: neighbor,
             visited: Array.from(visited),
-            nodes: nodes.map(n => n.id)
+            nodes: nodes.map((n) => n.id),
           };
           steps.push(discoverStep);
           if (onStep) await onStep(discoverStep);
@@ -844,7 +877,7 @@ export class GraphAlgorithms {
       type: 'result',
       message: `Kết quả cuối cùng: DFS đã duyệt hết tất cả các đỉnh có thể đến được từ ${start}. Thứ tự duyệt: ${order.join(' → ')}. Tổng số đỉnh đã thăm: ${visited.size}. DFS tạo ra cây duyệt (DFS tree) với các cạnh nối từ đỉnh cha đến đỉnh con. Ứng dụng: Tìm chu trình, kiểm tra tính liên thông, topological sort, tìm thành phần liên thông.`,
       visited: Array.from(visited),
-      nodes: nodes.map(n => n.id)
+      nodes: nodes.map((n) => n.id),
     };
     steps.push(resultStep);
     if (onStep) await onStep(resultStep);
@@ -852,7 +885,7 @@ export class GraphAlgorithms {
     return {
       visited: Array.from(visited),
       order,
-      steps
+      steps,
     };
   }
 
@@ -864,7 +897,13 @@ export class GraphAlgorithms {
     nodes: GraphNode[],
     edges: GraphEdge[],
     onStep?: (step: AlgorithmStep) => Promise<void>
-  ): Promise<{ hasCycle: boolean; cycles: string[][]; eulerCycles: string[][]; hamiltonCycles: string[][]; steps: AlgorithmStep[] }> {
+  ): Promise<{
+    hasCycle: boolean;
+    cycles: string[][];
+    eulerCycles: string[][];
+    hamiltonCycles: string[][];
+    steps: AlgorithmStep[];
+  }> {
     const steps: AlgorithmStep[] = [];
     const visited = new Set<string>();
     const recStack = new Set<string>();
@@ -876,7 +915,7 @@ export class GraphAlgorithms {
     const initStep: AlgorithmStep = {
       type: 'init',
       message: `Bước 1 - Khởi tạo phát hiện chu trình: Sử dụng DFS với một stack đệ quy (recursion stack) để phát hiện back edge. Ta sẽ tìm 2 loại chu trình: Chu trình Euler (đi qua mỗi cạnh đúng 1 lần) và Chu trình Hamilton (đi qua mỗi đỉnh đúng 1 lần). Nếu trong quá trình DFS, ta gặp một đỉnh đã có trong stack đệ quy (đang được xét), nghĩa là có chu trình. Khởi tạo: tất cả đỉnh chưa được thăm.`,
-      nodes: nodes.map(n => n.id)
+      nodes: nodes.map((n) => n.id),
     };
     steps.push(initStep);
     if (onStep) await onStep(initStep);
@@ -891,16 +930,22 @@ export class GraphAlgorithms {
         message: `Bước ${steps.length + 1} - Thăm đỉnh ${node}: Đánh dấu đã thăm, thêm vào recursion stack (đang xét), thêm vào đường đi hiện tại. Đường đi hiện tại: ${path.join(' → ')}.`,
         current: node,
         visited: Array.from(visited),
-        nodes: nodes.map(n => n.id)
+        nodes: nodes.map((n) => n.id),
       };
       steps.push(visitStep);
       if (onStep) await onStep(visitStep);
 
       for (const edge of edges) {
         let neighbor: string | null = null;
-        if (edge.from === node && (edge.direction === 'forward' || edge.direction === 'bidirectional')) {
+        if (
+          edge.from === node &&
+          (edge.direction === 'forward' || edge.direction === 'bidirectional')
+        ) {
           neighbor = edge.to;
-        } else if (edge.to === node && (edge.direction === 'backward' || edge.direction === 'bidirectional')) {
+        } else if (
+          edge.to === node &&
+          (edge.direction === 'backward' || edge.direction === 'bidirectional')
+        ) {
           neighbor = edge.from;
         }
 
@@ -916,8 +961,9 @@ export class GraphAlgorithms {
 
             // Check if it's a Hamiltonian cycle (visits all nodes exactly once)
             const uniqueNodes = new Set(cycle);
-            const isHamiltonian = uniqueNodes.size === nodes.length && cycle.length === nodes.length + 1;
-            
+            const isHamiltonian =
+              uniqueNodes.size === nodes.length && cycle.length === nodes.length + 1;
+
             // Check if it's an Eulerian cycle (visits all edges exactly once)
             // For Eulerian cycle, we need to check if all edges are visited
             const cycleEdges = new Set<string>();
@@ -935,7 +981,7 @@ export class GraphAlgorithms {
               message: `Phát hiện chu trình ${cycleType}! Từ đỉnh ${node}, ta gặp lại đỉnh ${neighbor} đang có trong recursion stack. Điều này có nghĩa là có một đường đi từ ${neighbor} quay lại chính nó. ${isHamiltonian ? 'Đây là chu trình Hamilton (đi qua tất cả đỉnh đúng 1 lần).' : isEulerian ? 'Đây là chu trình Euler (đi qua tất cả cạnh đúng 1 lần).' : ''} Chu trình: ${cycle.join(' → ')}.`,
               current: node,
               updated: neighbor,
-              nodes: nodes.map(n => n.id)
+              nodes: nodes.map((n) => n.id),
             };
             steps.push(cycleStep);
             if (onStep) await onStep(cycleStep);
@@ -962,8 +1008,8 @@ export class GraphAlgorithms {
 
     const resultStep: AlgorithmStep = {
       type: 'result',
-      message: `Kết quả cuối cùng: ${cycles.length > 0 ? `Phát hiện ${cycles.length} chu trình (${hamiltonCycles.length} chu trình Hamilton, ${eulerCycles.length} chu trình Euler): ${cycles.map(c => c.join(' → ')).join('; ')}` : 'Không có chu trình trong đồ thị'}. Chu trình Hamilton: đi qua mỗi đỉnh đúng 1 lần. Chu trình Euler: đi qua mỗi cạnh đúng 1 lần. Ứng dụng: Kiểm tra DAG (Directed Acyclic Graph), phát hiện deadlock, kiểm tra tính hợp lệ của dependency graph, tối ưu hóa tuyến đường.`,
-      nodes: nodes.map(n => n.id)
+      message: `Kết quả cuối cùng: ${cycles.length > 0 ? `Phát hiện ${cycles.length} chu trình (${hamiltonCycles.length} chu trình Hamilton, ${eulerCycles.length} chu trình Euler): ${cycles.map((c) => c.join(' → ')).join('; ')}` : 'Không có chu trình trong đồ thị'}. Chu trình Hamilton: đi qua mỗi đỉnh đúng 1 lần. Chu trình Euler: đi qua mỗi cạnh đúng 1 lần. Ứng dụng: Kiểm tra DAG (Directed Acyclic Graph), phát hiện deadlock, kiểm tra tính hợp lệ của dependency graph, tối ưu hóa tuyến đường.`,
+      nodes: nodes.map((n) => n.id),
     };
     steps.push(resultStep);
     if (onStep) await onStep(resultStep);
@@ -973,7 +1019,7 @@ export class GraphAlgorithms {
       cycles,
       eulerCycles,
       hamiltonCycles,
-      steps
+      steps,
     };
   }
 
@@ -993,7 +1039,7 @@ export class GraphAlgorithms {
     const initStep: AlgorithmStep = {
       type: 'init',
       message: `Bước 1 - Khởi tạo tìm thành phần liên thông: Một thành phần liên thông là một tập hợp các đỉnh mà từ bất kỳ đỉnh nào trong tập hợp, ta có thể đến được tất cả các đỉnh khác trong tập hợp. Sử dụng DFS hoặc BFS để tìm tất cả các thành phần. Khởi tạo: tất cả đỉnh chưa được thăm.`,
-      nodes: nodes.map(n => n.id)
+      nodes: nodes.map((n) => n.id),
     };
     steps.push(initStep);
     if (onStep) await onStep(initStep);
@@ -1009,7 +1055,7 @@ export class GraphAlgorithms {
         visited: Array.from(visited),
         component: component,
         componentIndex: componentIndex,
-        nodes: nodes.map(n => n.id)
+        nodes: nodes.map((n) => n.id),
       };
       steps.push(visitStep);
       if (onStep) await onStep(visitStep);
@@ -1042,7 +1088,7 @@ export class GraphAlgorithms {
           visited: Array.from(visited),
           component: component,
           componentIndex: componentIndex,
-          nodes: nodes.map(n => n.id)
+          nodes: nodes.map((n) => n.id),
         };
         steps.push(startComponentStep);
         if (onStep) await onStep(startComponentStep);
@@ -1056,7 +1102,7 @@ export class GraphAlgorithms {
           visited: Array.from(visited),
           component: component,
           componentIndex: componentIndex,
-          nodes: nodes.map(n => n.id)
+          nodes: nodes.map((n) => n.id),
         };
         steps.push(endComponentStep);
         if (onStep) await onStep(endComponentStep);
@@ -1066,7 +1112,7 @@ export class GraphAlgorithms {
     const resultStep: AlgorithmStep = {
       type: 'result',
       message: `Kết quả cuối cùng: Tìm được ${components.length} thành phần liên thông. ${components.map((c, i) => `Thành phần ${i + 1}: ${c.join(', ')}`).join('; ')}. Ứng dụng: Phân tích mạng xã hội, phân cụm dữ liệu, kiểm tra tính liên thông của mạng.`,
-      nodes: nodes.map(n => n.id)
+      nodes: nodes.map((n) => n.id),
     };
     steps.push(resultStep);
     if (onStep) await onStep(resultStep);
@@ -1074,7 +1120,7 @@ export class GraphAlgorithms {
     return {
       components,
       count: components.length,
-      steps
+      steps,
     };
   }
 
@@ -1095,7 +1141,7 @@ export class GraphAlgorithms {
     const initStep: AlgorithmStep = {
       type: 'init',
       message: `Bước 1 - Khởi tạo tìm thành phần liên thông mạnh (SCC - Strongly Connected Components): Một SCC là một tập hợp các đỉnh mà từ bất kỳ đỉnh nào, ta có thể đến được tất cả các đỉnh khác trong tập hợp (theo hướng của cạnh). Sử dụng thuật toán Kosaraju: 1) DFS để lấy thứ tự kết thúc, 2) Đảo ngược đồ thị, 3) DFS theo thứ tự ngược lại.`,
-      nodes: nodes.map(n => n.id)
+      nodes: nodes.map((n) => n.id),
     };
     steps.push(initStep);
     if (onStep) await onStep(initStep);
@@ -1109,13 +1155,16 @@ export class GraphAlgorithms {
         message: `DFS lần 1 - Thăm đỉnh ${node}: Đánh dấu đã thăm, tiếp tục DFS vào các đỉnh kề theo hướng của cạnh.`,
         current: node,
         visited: Array.from(visited),
-        nodes: nodes.map(n => n.id)
+        nodes: nodes.map((n) => n.id),
       };
       steps.push(visitStep);
       if (onStep) await onStep(visitStep);
 
       for (const edge of edges) {
-        if (edge.from === node && (edge.direction === 'forward' || edge.direction === 'bidirectional')) {
+        if (
+          edge.from === node &&
+          (edge.direction === 'forward' || edge.direction === 'bidirectional')
+        ) {
           const neighbor = edge.to;
           if (!visited.has(neighbor)) {
             await dfs1(neighbor);
@@ -1135,7 +1184,7 @@ export class GraphAlgorithms {
     const finishOrderStep: AlgorithmStep = {
       type: 'result',
       message: `Hoàn thành DFS lần 1: Thứ tự kết thúc (finish order): ${finishOrder.join(' → ')}. Đỉnh kết thúc sau cùng sẽ được xét đầu tiên trong bước tiếp theo.`,
-      nodes: nodes.map(n => n.id)
+      nodes: nodes.map((n) => n.id),
     };
     steps.push(finishOrderStep);
     if (onStep) await onStep(finishOrderStep);
@@ -1155,14 +1204,17 @@ export class GraphAlgorithms {
         visited: Array.from(visited),
         component: component,
         componentIndex: componentIndex,
-        nodes: nodes.map(n => n.id)
+        nodes: nodes.map((n) => n.id),
       };
       steps.push(visitStep);
       if (onStep) await onStep(visitStep);
 
       for (const edge of edges) {
         // Reverse edge direction
-        if (edge.to === node && (edge.direction === 'forward' || edge.direction === 'bidirectional')) {
+        if (
+          edge.to === node &&
+          (edge.direction === 'forward' || edge.direction === 'bidirectional')
+        ) {
           const neighbor = edge.from;
           if (!visited.has(neighbor)) {
             await dfs2(neighbor, component, componentIndex);
@@ -1188,7 +1240,7 @@ export class GraphAlgorithms {
           visited: Array.from(visited),
           component: component,
           componentIndex: componentIndex,
-          nodes: nodes.map(n => n.id)
+          nodes: nodes.map((n) => n.id),
         };
         steps.push(startSCCStep);
         if (onStep) await onStep(startSCCStep);
@@ -1202,7 +1254,7 @@ export class GraphAlgorithms {
           visited: Array.from(visited),
           component: component,
           componentIndex: componentIndex,
-          nodes: nodes.map(n => n.id)
+          nodes: nodes.map((n) => n.id),
         };
         steps.push(endSCCStep);
         if (onStep) await onStep(endSCCStep);
@@ -1212,7 +1264,7 @@ export class GraphAlgorithms {
     const resultStep: AlgorithmStep = {
       type: 'result',
       message: `Kết quả cuối cùng: Tìm được ${components.length} thành phần liên thông mạnh (SCC). ${components.map((c, i) => `SCC ${i + 1}: ${c.join(', ')}`).join('; ')}. Ứng dụng: Phân tích dependency graph, tối ưu hóa compiler, phân tích mạng xã hội có hướng.`,
-      nodes: nodes.map(n => n.id)
+      nodes: nodes.map((n) => n.id),
     };
     steps.push(resultStep);
     if (onStep) await onStep(resultStep);
@@ -1220,8 +1272,7 @@ export class GraphAlgorithms {
     return {
       components,
       count: components.length,
-      steps
+      steps,
     };
   }
 }
-

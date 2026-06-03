@@ -19,25 +19,20 @@
 
   <!-- Main Content -->
   <div *ngIf="!loading() && !error()" class="countries-content">
-    
     <!-- List View -->
     <div *ngIf="viewMode() === 'list'" class="list-view">
       <!-- Toolbar -->
       <div class="toolbar">
         <div class="search-box">
           <i class="pi pi-search"></i>
-          <input 
-            type="text" 
-            placeholder="Search countries, capitals, languages..." 
+          <input
+            type="text"
+            placeholder="Search countries, capitals, languages..."
             [value]="searchQuery()"
             (input)="onSearchChange($any($event.target).value)"
             class="search-input"
           />
-          <button 
-            *ngIf="searchQuery()" 
-            class="clear-btn"
-            (click)="onSearchChange('')"
-          >
+          <button *ngIf="searchQuery()" class="clear-btn" (click)="onSearchChange('')">
             <i class="pi pi-times"></i>
           </button>
         </div>
@@ -45,8 +40,8 @@
         <div class="filters">
           <div class="filter-group">
             <label>Region:</label>
-            <select 
-              class="region-select" 
+            <select
+              class="region-select"
               [(ngModel)]="selectedRegion"
               (ngModelChange)="filterByRegion($event)"
             >
@@ -58,8 +53,8 @@
 
           <div class="filter-group">
             <label>Sort:</label>
-            <select 
-              class="sort-select" 
+            <select
+              class="sort-select"
               [(ngModel)]="sortType"
               (ngModelChange)="setSortType($event)"
             >
@@ -68,19 +63,21 @@
               <option value="area">Area</option>
               <option value="region">Region</option>
             </select>
-            <button 
-              class="icon-btn-sm" 
+            <button
+              class="icon-btn-sm"
               (click)="setSortType(sortType())"
               [title]="sortOrder() === 'asc' ? 'Sort Ascending' : 'Sort Descending'"
             >
-              <i [class]="sortOrder() === 'asc' ? 'pi pi-sort-amount-up' : 'pi pi-sort-amount-down'"></i>
+              <i
+                [class]="sortOrder() === 'asc' ? 'pi pi-sort-amount-up' : 'pi pi-sort-amount-down'"
+              ></i>
             </button>
           </div>
 
           <div class="filter-group">
             <label>Group:</label>
-            <select 
-              class="group-select" 
+            <select
+              class="group-select"
               [(ngModel)]="groupType"
               (ngModelChange)="setGroupType($event)"
             >
@@ -93,16 +90,16 @@
           </div>
 
           <div class="display-toggle">
-            <button 
-              class="icon-btn-sm" 
+            <button
+              class="icon-btn-sm"
               [class.active]="displayType() === 'grid'"
               (click)="setDisplayType('grid')"
               title="Grid View"
             >
               <i class="pi pi-th-large"></i>
             </button>
-            <button 
-              class="icon-btn-sm" 
+            <button
+              class="icon-btn-sm"
               [class.active]="displayType() === 'list'"
               (click)="setDisplayType('list')"
               title="List View"
@@ -126,30 +123,47 @@
       <div class="countries-container">
         <ng-container *ngFor="let groupKey of getGroupKeys()">
           <!-- Group Header -->
-          <div class="group-header" *ngIf="groupType() !== 'none'" (click)="toggleGroupCollapse(groupKey)">
+          <div
+            class="group-header"
+            *ngIf="groupType() !== 'none'"
+            (click)="toggleGroupCollapse(groupKey)"
+          >
             <button class="collapse-btn" [class.collapsed]="isGroupCollapsed(groupKey)">
-              <i [class]="isGroupCollapsed(groupKey) ? 'pi pi-chevron-right' : 'pi pi-chevron-down'"></i>
+              <i
+                [class]="isGroupCollapsed(groupKey) ? 'pi pi-chevron-right' : 'pi pi-chevron-down'"
+              ></i>
             </button>
             <h3>{{ groupKey }}</h3>
             <span class="group-count">({{ groupedCountries()[groupKey].length }})</span>
           </div>
 
           <!-- Countries Grid/List -->
-          <div 
+          <div
             [class]="displayType() === 'grid' ? 'countries-grid' : 'countries-list'"
             [class.collapsed]="isGroupCollapsed(groupKey)"
           >
-            <div 
-              *ngFor="let country of groupedCountries()[groupKey]" 
+            <div
+              *ngFor="let country of groupedCountries()[groupKey]"
               [class]="displayType() === 'grid' ? 'country-card' : 'country-row'"
               (click)="selectCountry(country)"
             >
               <div class="card-flag" *ngIf="country.flags?.png || country.flags?.svg">
-                <img [src]="country.flags?.png || country.flags?.svg || ''" [alt]="country.flags?.alt || (country.name.common || 'Country') + ' flag'" />
+                <img
+                  [src]="country.flags?.png || country.flags?.svg || ''"
+                  [alt]="country.flags?.alt || (country.name.common || 'Country') + ' flag'"
+                />
               </div>
               <div class="card-content">
-                <h3 class="card-title" [title]="country.name.official || country.name.common || 'Unknown'">
-                  {{ country.name.common || country.name.official || country.cca3 || 'Unknown Country' }}
+                <h3
+                  class="card-title"
+                  [title]="country.name.official || country.name.common || 'Unknown'"
+                >
+                  {{
+                    country.name.common ||
+                      country.name.official ||
+                      country.cca3 ||
+                      'Unknown Country'
+                  }}
                 </h3>
                 <div class="card-details">
                   <div class="detail-row">
@@ -196,19 +210,21 @@
             <i class="pi pi-spin pi-spinner"></i>
             Loading details...
           </span>
-          <button 
-            *ngIf="selectedCountry()?.maps?.googleMaps" 
-            class="icon-btn" 
-            (click)="openMap(selectedCountry()!, 'google')" 
-            title="View on Google Maps">
+          <button
+            *ngIf="selectedCountry()?.maps?.googleMaps"
+            class="icon-btn"
+            (click)="openMap(selectedCountry()!, 'google')"
+            title="View on Google Maps"
+          >
             <i class="pi pi-map"></i>
             <span>Google Maps</span>
           </button>
-          <button 
-            *ngIf="selectedCountry()?.maps?.openStreetMaps" 
-            class="icon-btn" 
-            (click)="openMap(selectedCountry()!, 'osm')" 
-            title="View on OpenStreetMap">
+          <button
+            *ngIf="selectedCountry()?.maps?.openStreetMaps"
+            class="icon-btn"
+            (click)="openMap(selectedCountry()!, 'osm')"
+            title="View on OpenStreetMap"
+          >
             <i class="pi pi-map-marker"></i>
             <span>OSM</span>
           </button>
@@ -219,31 +235,57 @@
       <div class="detail-content">
         <!-- Flag & Basic Info -->
         <div class="detail-hero">
-          <div class="hero-flag" *ngIf="selectedCountry()?.flags?.svg || selectedCountry()?.flags?.png">
-            <img 
-              [src]="selectedCountry()?.flags?.svg || selectedCountry()?.flags?.png || ''" 
-              [alt]="(selectedCountry()?.flags?.alt || selectedCountry()?.name?.common + ' flag' || 'Country flag')"
+          <div
+            class="hero-flag"
+            *ngIf="selectedCountry()?.flags?.svg || selectedCountry()?.flags?.png"
+          >
+            <img
+              [src]="selectedCountry()?.flags?.svg || selectedCountry()?.flags?.png || ''"
+              [alt]="
+                selectedCountry()?.flags?.alt ||
+                selectedCountry()?.name?.common + ' flag' ||
+                'Country flag'
+              "
               loading="lazy"
             />
           </div>
           <div class="hero-info">
             <div class="country-name-group">
-              <span class="flag-emoji" *ngIf="selectedCountry()?.flag">{{ selectedCountry()!.flag }}</span>
+              <span class="flag-emoji" *ngIf="selectedCountry()?.flag">{{
+                selectedCountry()!.flag
+              }}</span>
               <h1 class="country-name">{{ selectedCountry()?.name?.common || 'Unknown' }}</h1>
             </div>
-            <h2 class="country-official">{{ selectedCountry()?.name?.official || selectedCountry()?.name?.common || 'Unknown' }}</h2>
+            <h2 class="country-official">
+              {{
+                selectedCountry()?.name?.official || selectedCountry()?.name?.common || 'Unknown'
+              }}
+            </h2>
             <div class="country-meta">
-              <span class="meta-tag region-tag" *ngIf="selectedCountry()?.region">{{ selectedCountry()!.region }}</span>
-              <span class="meta-tag" *ngIf="selectedCountry()?.subregion">{{ selectedCountry()!.subregion }}</span>
-              <span class="meta-tag success-tag" *ngIf="selectedCountry()?.independent">Independent</span>
-              <span class="meta-tag success-tag" *ngIf="selectedCountry()?.independent === false">Not Independent</span>
+              <span class="meta-tag region-tag" *ngIf="selectedCountry()?.region">{{
+                selectedCountry()!.region
+              }}</span>
+              <span class="meta-tag" *ngIf="selectedCountry()?.subregion">{{
+                selectedCountry()!.subregion
+              }}</span>
+              <span class="meta-tag success-tag" *ngIf="selectedCountry()?.independent"
+                >Independent</span
+              >
+              <span class="meta-tag success-tag" *ngIf="selectedCountry()?.independent === false"
+                >Not Independent</span
+              >
               <span class="meta-tag info-tag" *ngIf="selectedCountry()?.unMember">UN Member</span>
-              <span class="meta-tag warning-tag" *ngIf="selectedCountry()?.unMember === false">Not UN Member</span>
+              <span class="meta-tag warning-tag" *ngIf="selectedCountry()?.unMember === false"
+                >Not UN Member</span
+              >
             </div>
           </div>
-          <div class="hero-coat" *ngIf="selectedCountry()?.coatOfArms?.svg || selectedCountry()?.coatOfArms?.png">
-            <img 
-              [src]="selectedCountry()?.coatOfArms?.svg || selectedCountry()?.coatOfArms?.png || ''" 
+          <div
+            class="hero-coat"
+            *ngIf="selectedCountry()?.coatOfArms?.svg || selectedCountry()?.coatOfArms?.png"
+          >
+            <img
+              [src]="selectedCountry()?.coatOfArms?.svg || selectedCountry()?.coatOfArms?.png || ''"
               [alt]="(selectedCountry()?.name?.common || 'Country') + ' coat of arms'"
               loading="lazy"
             />
@@ -258,7 +300,9 @@
               <i class="pi pi-users stat-icon"></i>
               <div class="stat-content">
                 <span class="stat-label">Population</span>
-                <span class="stat-value">{{ selectedCountry()!.population?.toLocaleString() || 'N/A' }}</span>
+                <span class="stat-value">{{
+                  selectedCountry()!.population?.toLocaleString() || 'N/A'
+                }}</span>
               </div>
             </div>
             <div class="stat-card" *ngIf="selectedCountry()!.area != null">
@@ -268,7 +312,10 @@
                 <span class="stat-value">{{ selectedCountry()?.area | formatArea }}</span>
               </div>
             </div>
-            <div class="stat-card" *ngIf="selectedCountry()!.population != null && selectedCountry()!.area != null">
+            <div
+              class="stat-card"
+              *ngIf="selectedCountry()!.population != null && selectedCountry()!.area != null"
+            >
               <i class="pi pi-chart-line stat-icon"></i>
               <div class="stat-content">
                 <span class="stat-label">Density</span>
@@ -303,8 +350,8 @@
                 <span class="info-label">Capital</span>
                 <span class="info-value capital-with-map">
                   {{ getCapital(selectedCountry()!) }}
-                  <button 
-                    *ngIf="selectedCountry()!.capitalInfo?.latlng" 
+                  <button
+                    *ngIf="selectedCountry()!.capitalInfo?.latlng"
                     class="map-link-btn"
                     (click)="openCapitalOnMap(selectedCountry()!)"
                     title="View capital on Google Maps"
@@ -320,13 +367,18 @@
               </div>
               <div class="info-item" *ngIf="selectedCountry()!.population != null">
                 <span class="info-label">Population</span>
-                <span class="info-value">{{ selectedCountry()!.population?.toLocaleString() || 'N/A' }}</span>
+                <span class="info-value">{{
+                  selectedCountry()!.population?.toLocaleString() || 'N/A'
+                }}</span>
               </div>
               <div class="info-item" *ngIf="selectedCountry()!.area != null">
                 <span class="info-label">Area</span>
                 <span class="info-value">{{ selectedCountry()?.area | formatArea }}</span>
               </div>
-              <div class="info-item" *ngIf="selectedCountry()!.population != null && selectedCountry()!.area != null">
+              <div
+                class="info-item"
+                *ngIf="selectedCountry()!.population != null && selectedCountry()!.area != null"
+              >
                 <span class="info-label">Population Density</span>
                 <span class="info-value">{{ getPopulationDensity(selectedCountry()!) }}</span>
               </div>
@@ -344,7 +396,9 @@
               </div>
               <div class="info-item">
                 <span class="info-label">Independent</span>
-                <span class="info-value">{{ selectedCountry()!.independent ? '✓ Yes' : '✗ No' }}</span>
+                <span class="info-value">{{
+                  selectedCountry()!.independent ? '✓ Yes' : '✗ No'
+                }}</span>
               </div>
               <div class="info-item">
                 <span class="info-label">UN Member</span>
@@ -360,7 +414,10 @@
               Native Names
             </h3>
             <div class="native-names-grid">
-              <div class="native-name-item" *ngFor="let nativeName of getNativeNames(selectedCountry()!)">
+              <div
+                class="native-name-item"
+                *ngFor="let nativeName of getNativeNames(selectedCountry()!)"
+              >
                 <div class="native-lang">{{ nativeName.lang }}</div>
                 <div class="native-values">
                   <div><strong>Official:</strong> {{ nativeName.official }}</div>
@@ -377,11 +434,19 @@
               Location & Geography
             </h3>
             <div class="info-grid">
-              <div class="info-item" *ngIf="selectedCountry()!.latlng && selectedCountry()!.latlng.length >= 2">
+              <div
+                class="info-item"
+                *ngIf="selectedCountry()!.latlng && selectedCountry()!.latlng.length >= 2"
+              >
                 <span class="info-label">Coordinates</span>
-                <span class="info-value">{{ selectedCountry()!.latlng[0] }}°, {{ selectedCountry()!.latlng[1] }}°</span>
+                <span class="info-value"
+                  >{{ selectedCountry()!.latlng[0] }}°, {{ selectedCountry()!.latlng[1] }}°</span
+                >
               </div>
-              <div class="info-item" *ngIf="selectedCountry()!.continents && selectedCountry()!.continents.length > 0">
+              <div
+                class="info-item"
+                *ngIf="selectedCountry()!.continents && selectedCountry()!.continents.length > 0"
+              >
                 <span class="info-label">Continents</span>
                 <span class="info-value">{{ selectedCountry()!.continents.join(', ') }}</span>
               </div>
@@ -395,9 +460,14 @@
               </div>
               <div class="info-item">
                 <span class="info-label">Landlocked</span>
-                <span class="info-value">{{ isLandlocked(selectedCountry()!) ? '✓ Yes' : '✗ No' }}</span>
+                <span class="info-value">{{
+                  isLandlocked(selectedCountry()!) ? '✓ Yes' : '✗ No'
+                }}</span>
               </div>
-              <div class="info-item" *ngIf="selectedCountry()!.borders && selectedCountry()!.borders!.length > 0">
+              <div
+                class="info-item"
+                *ngIf="selectedCountry()!.borders && selectedCountry()!.borders!.length > 0"
+              >
                 <span class="info-label">Border Countries</span>
                 <span class="info-value">{{ selectedCountry()!.borders!.length }} countries</span>
               </div>
@@ -431,14 +501,17 @@
           </div>
 
           <!-- Coat of Arms -->
-          <div class="detail-section coat-of-arms-section" *ngIf="selectedCountry()!.coatOfArms?.svg || selectedCountry()!.coatOfArms?.png">
+          <div
+            class="detail-section coat-of-arms-section"
+            *ngIf="selectedCountry()!.coatOfArms?.svg || selectedCountry()!.coatOfArms?.png"
+          >
             <h3 class="section-title">
               <i class="pi pi-shield"></i>
               Coat of Arms
             </h3>
             <div class="coat-of-arms-display">
-              <img 
-                [src]="selectedCountry()!.coatOfArms!.svg || selectedCountry()!.coatOfArms!.png" 
+              <img
+                [src]="selectedCountry()!.coatOfArms!.svg || selectedCountry()!.coatOfArms!.png"
                 [alt]="(selectedCountry()?.name?.common || 'Country') + ' coat of arms'"
                 class="coat-of-arms-large"
               />
@@ -471,8 +544,12 @@
               <div class="info-item">
                 <span class="info-label">Top-Level Domain</span>
                 <div class="tld-list">
-                  <span class="tld-badge" *ngFor="let tld of getTLDList(selectedCountry()!)">{{ tld }}</span>
-                  <span *ngIf="getTLDList(selectedCountry()!).length === 0" class="info-value">N/A</span>
+                  <span class="tld-badge" *ngFor="let tld of getTLDList(selectedCountry()!)">{{
+                    tld
+                  }}</span>
+                  <span *ngIf="getTLDList(selectedCountry()!).length === 0" class="info-value"
+                    >N/A</span
+                  >
                 </div>
               </div>
               <div class="info-item" *ngIf="selectedCountry()!.fifa">
@@ -495,11 +572,15 @@
               </div>
               <div class="info-item" *ngIf="selectedCountry()!.postalCode?.format">
                 <span class="info-label">Postal Code Format</span>
-                <span class="info-value code-value">{{ selectedCountry()!.postalCode!.format }}</span>
+                <span class="info-value code-value">{{
+                  selectedCountry()!.postalCode!.format
+                }}</span>
               </div>
               <div class="info-item" *ngIf="selectedCountry()!.postalCode?.regex">
                 <span class="info-label">Postal Code Regex</span>
-                <span class="info-value code-value">{{ selectedCountry()!.postalCode!.regex }}</span>
+                <span class="info-value code-value">{{
+                  selectedCountry()!.postalCode!.regex
+                }}</span>
               </div>
               <div class="info-item" *ngIf="!selectedCountry()!.postalCode?.format">
                 <span class="info-label">Postal Code</span>
@@ -557,28 +638,49 @@
               Name Translations - Common Languages
             </h3>
             <div class="translations-grid">
-              <div class="translation-item featured" *ngFor="let trans of getCommonTranslations(selectedCountry()!)">
-                <span class="trans-lang" [class.popular]="isPopularLanguage(trans.lang)">{{ trans.lang }}</span>
+              <div
+                class="translation-item featured"
+                *ngFor="let trans of getCommonTranslations(selectedCountry()!)"
+              >
+                <span class="trans-lang" [class.popular]="isPopularLanguage(trans.lang)">{{
+                  trans.lang
+                }}</span>
                 <div class="trans-values">
                   <div class="trans-name" [title]="trans.official">{{ trans.common }}</div>
-                  <div class="trans-official" *ngIf="trans.official !== trans.common">{{ trans.official }}</div>
+                  <div class="trans-official" *ngIf="trans.official !== trans.common">
+                    {{ trans.official }}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
           <!-- All Translations (Expandable) -->
-          <div class="detail-section" *ngIf="getAllTranslations(selectedCountry()!).length > getCommonTranslations(selectedCountry()!).length">
+          <div
+            class="detail-section"
+            *ngIf="
+              getAllTranslations(selectedCountry()!).length >
+              getCommonTranslations(selectedCountry()!).length
+            "
+          >
             <h3 class="section-title clickable" (click)="toggleAllTranslations()">
               <i [class]="showAllTranslations() ? 'pi pi-chevron-down' : 'pi pi-chevron-right'"></i>
-              All Other Translations ({{ getAllTranslations(selectedCountry()!).length - getCommonTranslations(selectedCountry()!).length }})
+              All Other Translations ({{
+                getAllTranslations(selectedCountry()!).length -
+                  getCommonTranslations(selectedCountry()!).length
+              }})
             </h3>
             <div class="translations-grid" *ngIf="showAllTranslations()">
-              <div class="translation-item" *ngFor="let trans of getOtherTranslations(selectedCountry()!)">
+              <div
+                class="translation-item"
+                *ngFor="let trans of getOtherTranslations(selectedCountry()!)"
+              >
                 <span class="trans-lang">{{ trans.lang }}</span>
                 <div class="trans-values">
                   <div class="trans-name" [title]="trans.official">{{ trans.common }}</div>
-                  <div class="trans-official" *ngIf="trans.official !== trans.common">{{ trans.official }}</div>
+                  <div class="trans-official" *ngIf="trans.official !== trans.common">
+                    {{ trans.official }}
+                  </div>
                 </div>
               </div>
             </div>
@@ -591,13 +693,16 @@
               Bordering Countries ({{ borderCountries().length }})
             </h3>
             <div class="border-countries-detailed">
-              <div 
-                class="border-country-card" 
+              <div
+                class="border-country-card"
                 *ngFor="let border of borderCountries()"
                 (click)="selectCountry(border)"
               >
                 <div class="border-flag" *ngIf="border.flags?.svg || border.flags?.png">
-                  <img [src]="border.flags?.svg || border.flags?.png || ''" [alt]="border.name.common || 'Border country'" />
+                  <img
+                    [src]="border.flags?.svg || border.flags?.png || ''"
+                    [alt]="border.name.common || 'Border country'"
+                  />
                 </div>
                 <div class="border-info">
                   <div class="border-name">
@@ -605,8 +710,12 @@
                     <strong>{{ border.name.common || 'Unknown' }}</strong>
                   </div>
                   <div class="border-details">
-                    <span class="border-detail"><i class="pi pi-map-marker"></i> {{ border.region }}</span>
-                    <span class="border-detail" *ngIf="border.population != null"><i class="pi pi-users"></i> {{ border.population | formatPopulation }}</span>
+                    <span class="border-detail"
+                      ><i class="pi pi-map-marker"></i> {{ border.region }}</span
+                    >
+                    <span class="border-detail" *ngIf="border.population != null"
+                      ><i class="pi pi-users"></i> {{ border.population | formatPopulation }}</span
+                    >
                   </div>
                   <div class="border-capital" *ngIf="border.capital && border.capital.length > 0">
                     <i class="pi pi-building"></i> Capital: {{ getCapital(border) }}
@@ -628,4 +737,3 @@
     </span>
   </div>
 </div>
-

@@ -1,4 +1,12 @@
-import { Component, Output, EventEmitter, signal, computed, OnInit, ViewEncapsulation } from '@angular/core';
+import {
+  Component,
+  Output,
+  EventEmitter,
+  signal,
+  computed,
+  OnInit,
+  ViewEncapsulation,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
@@ -46,16 +54,31 @@ export class SettingsAppComponent implements OnInit {
 
   // Available wallpapers
   wallpapers: WallpaperOption[] = [
-    { id: '1', name: 'Wallpaper 1', path: 'assets/images/lib/wallpaper/1.png', preview: 'assets/images/lib/wallpaper/1.png' },
-    { id: '2', name: 'Wallpaper 2', path: 'assets/images/lib/wallpaper/2.png', preview: 'assets/images/lib/wallpaper/2.png' },
-    { id: '3', name: 'Wallpaper 3', path: 'assets/images/lib/wallpaper/3.png', preview: 'assets/images/lib/wallpaper/3.png' }
+    {
+      id: '1',
+      name: 'Wallpaper 1',
+      path: 'assets/images/lib/wallpaper/1.png',
+      preview: 'assets/images/lib/wallpaper/1.png',
+    },
+    {
+      id: '2',
+      name: 'Wallpaper 2',
+      path: 'assets/images/lib/wallpaper/2.png',
+      preview: 'assets/images/lib/wallpaper/2.png',
+    },
+    {
+      id: '3',
+      name: 'Wallpaper 3',
+      path: 'assets/images/lib/wallpaper/3.png',
+      preview: 'assets/images/lib/wallpaper/3.png',
+    },
   ];
 
   // Theme options
   themes = [
     { value: 'light', label: 'Light', icon: 'pi pi-sun' },
     { value: 'dark', label: 'Dark', icon: 'pi pi-moon' },
-    { value: 'auto', label: 'Auto', icon: 'pi pi-circle' }
+    { value: 'auto', label: 'Auto', icon: 'pi pi-circle' },
   ];
 
   // Theme colors
@@ -67,7 +90,7 @@ export class SettingsAppComponent implements OnInit {
     { value: '#6f42c1', label: 'Purple', color: '#6f42c1' },
     { value: '#fd7e14', label: 'Orange', color: '#fd7e14' },
     { value: '#20c997', label: 'Teal', color: '#20c997' },
-    { value: '#e83e8c', label: 'Pink', color: '#e83e8c' }
+    { value: '#e83e8c', label: 'Pink', color: '#e83e8c' },
   ];
 
   // Window colors
@@ -77,14 +100,14 @@ export class SettingsAppComponent implements OnInit {
     { value: '#1a1a1a', label: 'Black', color: '#1a1a1a' },
     { value: '#2c3e50', label: 'Dark Blue', color: '#2c3e50' },
     { value: '#34495e', label: 'Slate', color: '#34495e' },
-    { value: '#1e272e', label: 'Dark Navy', color: '#1e272e' }
+    { value: '#1e272e', label: 'Dark Navy', color: '#1e272e' },
   ];
 
   // Font sizes
   readonly fontSizes = [
     { value: 'small' as const, label: 'Small' },
     { value: 'medium' as const, label: 'Medium' },
-    { value: 'large' as const, label: 'Large' }
+    { value: 'large' as const, label: 'Large' },
   ] as const;
 
   // Computed settings data
@@ -96,16 +119,16 @@ export class SettingsAppComponent implements OnInit {
     windowColor: this.selectedWindowColor(),
     windowOpacity: this.windowOpacity(),
     animations: this.animations(),
-    fontSize: this.fontSize()
+    fontSize: this.fontSize(),
   }));
 
   // Check for unsaved changes
   hasUnsavedChanges = computed(() => {
     const current = this.settingsData();
     const original = this.originalSettings();
-    
+
     if (!original) return true;
-    
+
     return JSON.stringify(current) !== JSON.stringify(original);
   });
 
@@ -119,7 +142,7 @@ export class SettingsAppComponent implements OnInit {
       try {
         const settings = JSON.parse(savedSettings);
         this.originalSettings.set(settings);
-        
+
         // Load all settings
         this.selectedWallpaper.set(settings.wallpaper || '1');
         this.selectedTheme.set(settings.theme || 'auto');
@@ -129,7 +152,7 @@ export class SettingsAppComponent implements OnInit {
         this.windowOpacity.set(settings.windowOpacity || 95);
         this.animations.set(settings.animations !== false);
         this.fontSize.set(settings.fontSize || 'medium');
-        
+
         this.onSettingsChange.emit(settings);
       } catch (error) {
         this.setDefaultSettings();
@@ -148,9 +171,9 @@ export class SettingsAppComponent implements OnInit {
       windowColor: '#1e3a5f',
       windowOpacity: 95,
       animations: true,
-      fontSize: 'medium'
+      fontSize: 'medium',
     };
-    
+
     // Update all signals with default values
     this.selectedWallpaper.set(defaultSettings.wallpaper);
     this.selectedTheme.set(defaultSettings.theme);
@@ -160,7 +183,7 @@ export class SettingsAppComponent implements OnInit {
     this.windowOpacity.set(defaultSettings.windowOpacity);
     this.animations.set(defaultSettings.animations);
     this.fontSize.set(defaultSettings.fontSize);
-    
+
     this.originalSettings.set(defaultSettings);
     this.saveSettingsToStorage(defaultSettings);
     this.onSettingsChange.emit(defaultSettings);
@@ -198,7 +221,7 @@ export class SettingsAppComponent implements OnInit {
   }
 
   toggleSetting(setting: 'backdropEnabled' | 'animations') {
-    this[setting].update(val => !val);
+    this[setting].update((val) => !val);
     this.applySettingsPreview();
   }
 

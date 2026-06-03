@@ -641,7 +641,10 @@
   border: 1px solid transparent;
   background: #ffffff;
   cursor: pointer;
-  transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+  transition:
+    transform 0.15s,
+    border-color 0.15s,
+    box-shadow 0.15s;
 
   &:hover {
     z-index: 2;

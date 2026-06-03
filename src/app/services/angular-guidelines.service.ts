@@ -20,7 +20,7 @@ export interface GuidelineCategory {
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class AngularGuidelinesService {
   // Base URLs for Angular documentation
@@ -36,8 +36,8 @@ export class AngularGuidelinesService {
       guidelines: [
         '/guide/what-is-angular.md.html',
         '/guide/installation.md.html',
-        '/guide/start-coding.md.html'
-      ]
+        '/guide/start-coding.md.html',
+      ],
     },
     {
       id: 'components',
@@ -48,8 +48,8 @@ export class AngularGuidelinesService {
         '/guide/components/lifecycle.md.html',
         '/guide/components/queries.md.html',
         '/guide/components/styling.md.html',
-        '/guide/components/host-elements.md.html'
-      ]
+        '/guide/components/host-elements.md.html',
+      ],
     },
     {
       id: 'signals',
@@ -59,8 +59,8 @@ export class AngularGuidelinesService {
         '/guide/signals.md.html',
         '/guide/signals/overview.md.html',
         '/guide/signals/inputs.md.html',
-        '/guide/signals/outputs.md.html'
-      ]
+        '/guide/signals/outputs.md.html',
+      ],
     },
     {
       id: 'templates',
@@ -70,8 +70,8 @@ export class AngularGuidelinesService {
         '/guide/templates/overview.md.html',
         '/guide/templates/binding.md.html',
         '/guide/templates/control-flow.md.html',
-        '/guide/templates/pipes.md.html'
-      ]
+        '/guide/templates/pipes.md.html',
+      ],
     },
     {
       id: 'directives',
@@ -80,8 +80,8 @@ export class AngularGuidelinesService {
       guidelines: [
         '/guide/directives/overview.md.html',
         '/guide/directives/attribute-directives.md.html',
-        '/guide/directives/structural-directives.md.html'
-      ]
+        '/guide/directives/structural-directives.md.html',
+      ],
     },
     {
       id: 'dependency-injection',
@@ -90,8 +90,8 @@ export class AngularGuidelinesService {
       guidelines: [
         '/guide/di/overview.md.html',
         '/guide/di/dependency-injection-providers.md.html',
-        '/guide/di/hierarchical-dependency-injection.md.html'
-      ]
+        '/guide/di/hierarchical-dependency-injection.md.html',
+      ],
     },
     {
       id: 'routing',
@@ -100,8 +100,8 @@ export class AngularGuidelinesService {
       guidelines: [
         '/guide/routing/overview.md.html',
         '/guide/routing/router-tutorial.md.html',
-        '/guide/routing/common-router-tasks.md.html'
-      ]
+        '/guide/routing/common-router-tasks.md.html',
+      ],
     },
     {
       id: 'forms',
@@ -110,8 +110,8 @@ export class AngularGuidelinesService {
       guidelines: [
         '/guide/forms/overview.md.html',
         '/guide/forms/reactive-forms.md.html',
-        '/guide/forms/template-driven-forms.md.html'
-      ]
+        '/guide/forms/template-driven-forms.md.html',
+      ],
     },
     {
       id: 'http',
@@ -120,8 +120,8 @@ export class AngularGuidelinesService {
       guidelines: [
         '/guide/http/setup.md.html',
         '/guide/http/making-requests.md.html',
-        '/guide/http/interceptors.md.html'
-      ]
+        '/guide/http/interceptors.md.html',
+      ],
     },
     {
       id: 'best-practices',
@@ -130,9 +130,9 @@ export class AngularGuidelinesService {
       guidelines: [
         '/best-practices/runtime-performance.md.html',
         '/best-practices/security.md.html',
-        '/best-practices/accessibility.md.html'
-      ]
-    }
+        '/best-practices/accessibility.md.html',
+      ],
+    },
   ];
 
   constructor(private http: HttpClient) {}
@@ -176,7 +176,7 @@ export class AngularGuidelinesService {
       content,
       url: `${this.ANGULAR_DEV}${url.replace('.md.html', '')}`,
       description,
-      tags
+      tags,
     };
   }
 
@@ -196,20 +196,31 @@ export class AngularGuidelinesService {
    */
   private extractTags(content: string): string[] {
     const commonTags = [
-      'component', 'directive', 'service', 'pipe', 'module',
-      'routing', 'forms', 'http', 'signals', 'template',
-      'dependency injection', 'testing', 'performance', 'security'
+      'component',
+      'directive',
+      'service',
+      'pipe',
+      'module',
+      'routing',
+      'forms',
+      'http',
+      'signals',
+      'template',
+      'dependency injection',
+      'testing',
+      'performance',
+      'security',
     ];
 
     const contentLower = content.toLowerCase();
-    return commonTags.filter(tag => contentLower.includes(tag));
+    return commonTags.filter((tag) => contentLower.includes(tag));
   }
 
   /**
    * Get all guidelines for a category
    */
   getCategoryGuidelines(categoryId: string): string[] {
-    const category = this.categories.find(c => c.id === categoryId);
+    const category = this.categories.find((c) => c.id === categoryId);
     return category?.guidelines || [];
   }
 
@@ -218,12 +229,12 @@ export class AngularGuidelinesService {
    */
   searchGuidelines(query: string, guidelines: AngularGuideline[]): AngularGuideline[] {
     const searchTerm = query.toLowerCase();
-    return guidelines.filter(g =>
-      g.title.toLowerCase().includes(searchTerm) ||
-      g.description?.toLowerCase().includes(searchTerm) ||
-      g.content.toLowerCase().includes(searchTerm) ||
-      g.tags?.some(tag => tag.toLowerCase().includes(searchTerm))
+    return guidelines.filter(
+      (g) =>
+        g.title.toLowerCase().includes(searchTerm) ||
+        g.description?.toLowerCase().includes(searchTerm) ||
+        g.content.toLowerCase().includes(searchTerm) ||
+        g.tags?.some((tag) => tag.toLowerCase().includes(searchTerm))
     );
   }
 }
-

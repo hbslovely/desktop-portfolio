@@ -10,9 +10,9 @@ export interface SearchResult {
   icon: string;
   description?: string;
   action?: string; // For apps
-  path?: string;   // For files (virtual path)
+  path?: string; // For files (virtual path)
   content?: string; // For files (actual content path)
-  url?: string;    // For web
+  url?: string; // For web
   score: number;
 }
 
@@ -32,10 +32,9 @@ export interface FileSystemData {
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class SearchService {
-
   private fileSystemData: FileSystemItem[] = [];
   private isDataLoaded = false;
 
@@ -44,15 +43,15 @@ export class SearchService {
   }
 
   private loadFileSystemData(): void {
-    this.http.get<FileSystemData>('assets/json/explore.json')
+    this.http
+      .get<FileSystemData>('assets/json/explore.json')
       .pipe(
-        map(data => this.flattenFileSystem(data.fileSystem)),
-        catchError(error => {
-
+        map((data) => this.flattenFileSystem(data.fileSystem)),
+        catchError((error) => {
           return of([]);
         })
       )
-      .subscribe(files => {
+      .subscribe((files) => {
         this.fileSystemData = files;
         this.isDataLoaded = true;
       });
@@ -66,7 +65,7 @@ export class SearchService {
     }
 
     if (item.children) {
-      item.children.forEach(child => {
+      item.children.forEach((child) => {
         files.push(...this.flattenFileSystem(child));
       });
     }
@@ -83,7 +82,7 @@ export class SearchService {
     const results: SearchResult[] = [];
 
     // Search apps
-    APP_SEARCH_CONFIG.apps.forEach(app => {
+    APP_SEARCH_CONFIG.apps.forEach((app) => {
       const score = this.calculateScore(app.name, app.description, app.keywords, lowerCaseQuery);
       if (score > 0) {
         results.push({
@@ -92,14 +91,14 @@ export class SearchService {
           icon: this.getAppIcon(app.id),
           description: app.description,
           action: app.id,
-          score: score
+          score: score,
         });
       }
     });
 
     // Search files from JSON data
     if (this.isDataLoaded) {
-      this.fileSystemData.forEach(file => {
+      this.fileSystemData.forEach((file) => {
         const score = this.calculateFileScore(file, lowerCaseQuery);
         if (score > 0) {
           results.push({
@@ -109,7 +108,7 @@ export class SearchService {
             description: this.getFileDescription(file),
             path: file.path,
             content: file.content,
-            score: score
+            score: score,
           });
         }
       });
@@ -122,14 +121,19 @@ export class SearchService {
         name: `Search Google for "${query}"`,
         icon: 'pi-google',
         url: `https://www.google.com/search?q=${encodeURIComponent(query)}`,
-        score: 1 // Base score for web search
+        score: 1, // Base score for web search
       });
     }
 
     return results.sort((a, b) => b.score - a.score);
   }
 
-  private calculateScore(name: string, description: string, keywords: string[], searchTerm: string): number {
+  private calculateScore(
+    name: string,
+    description: string,
+    keywords: string[],
+    searchTerm: string
+  ): number {
     let score = 0;
     const nameLower = name.toLowerCase();
     const descLower = description.toLowerCase();
@@ -153,7 +157,7 @@ export class SearchService {
     }
 
     // Keyword matches
-    keywords.forEach(keyword => {
+    keywords.forEach((keyword) => {
       if (keyword.toLowerCase().includes(searchTerm)) {
         score += 2;
       }
@@ -244,14 +248,14 @@ export class SearchService {
 
   private getAppIcon(appId: string): string {
     const icons: { [key: string]: string } = {
-      'calculator': 'pi pi-calculator',
+      calculator: 'pi pi-calculator',
       'my-info': 'pi pi-user',
-      'love': 'pi pi-heart',
-      'explorer': 'pi pi-folder',
-      'credit': 'pi pi-dollar',
-      'paint': 'pi pi-palette',
-      'credits': 'pi pi-star',
-      'hcmc': 'pi pi-globe'
+      love: 'pi pi-heart',
+      explorer: 'pi pi-folder',
+      credit: 'pi pi-dollar',
+      paint: 'pi pi-palette',
+      credits: 'pi pi-star',
+      hcmc: 'pi pi-globe',
     };
     return icons[appId] || 'pi pi-circle';
   }

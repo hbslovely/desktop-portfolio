@@ -35,7 +35,7 @@ iframe {
 
 .loading-spinner {
   margin-bottom: 16px;
-  
+
   i {
     font-size: 32px;
     color: #e91e63; /* Pink color for love theme */
@@ -55,13 +55,13 @@ iframe {
 
 .error-content {
   max-width: 400px;
-  
+
   i {
     font-size: 48px;
     color: #d13438;
     margin-bottom: 16px;
   }
-  
+
   h3 {
     color: #333333;
     margin: 0 0 12px 0;
@@ -69,7 +69,7 @@ iframe {
     font-weight: 600;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   }
-  
+
   p {
     color: #666666;
     margin: 0 0 24px 0;
@@ -92,18 +92,16 @@ iframe {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   cursor: pointer;
   transition: background-color 0.15s ease;
-  
+
   &:hover {
     background: #c2185b;
   }
-  
+
   &:active {
     background: #ad1457;
   }
-  
+
   i {
     font-size: 12px;
   }
 }
-
-

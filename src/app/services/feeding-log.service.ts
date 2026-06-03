@@ -99,13 +99,9 @@ const DEFAULT_FEEDING_SETTINGS: FeedingSettingsResolved = {
   activityLogRefreshMinutes: 5,
 };
 
-export function parseFeedingSettingsFromRows(
-  rows: FeedingSettingRow[]
-): FeedingSettingsResolved {
+export function parseFeedingSettingsFromRows(rows: FeedingSettingRow[]): FeedingSettingsResolved {
   const byId = new Map(rows.map((r) => [r.id.trim(), r]));
-  const timeRow =
-    byId.get(FEEDING_SETTING_ID.FEED_TIME_WARNING) ??
-    byId.get('GROUP_FEEDING_TIME');
+  const timeRow = byId.get(FEEDING_SETTING_ID.FEED_TIME_WARNING) ?? byId.get('GROUP_FEEDING_TIME');
   const wRow = byId.get(FEEDING_SETTING_ID.FEED_WARNING_AMOUNT);
   const gapRow = byId.get(FEEDING_SETTING_ID.FEED_GROUP_GAP_MINUTES);
   const notifyRow = byId.get(FEEDING_SETTING_ID.FEEDING_NOTIFICATION_MINUTES);
@@ -115,32 +111,19 @@ export function parseFeedingSettingsFromRows(
   const activityLogRow = byId.get(FEEDING_SETTING_ID.ACTIVITY_LOG_REFRESH_MINUTES);
 
   let feedTimeWarningHours = parseFloat(
-    String(timeRow?.value ?? '').replace(',', '.').trim()
+    String(timeRow?.value ?? '')
+      .replace(',', '.')
+      .trim()
   );
-  let feedWarningMl = parseInt(
-    String(wRow?.value ?? '').replace(/[^\d]/g, ''),
-    10
-  );
-  let feedGroupGapMinutes = parseInt(
-    String(gapRow?.value ?? '0').replace(/[^\d]/g, ''),
-    10
-  );
+  let feedWarningMl = parseInt(String(wRow?.value ?? '').replace(/[^\d]/g, ''), 10);
+  let feedGroupGapMinutes = parseInt(String(gapRow?.value ?? '0').replace(/[^\d]/g, ''), 10);
   let feedingNotificationMinutes = parseInt(
     String(notifyRow?.value ?? '5').replace(/[^\d]/g, ''),
     10
   );
-  let burpDurationMinutes = parseInt(
-    String(burpRow?.value ?? '10').replace(/[^\d]/g, ''),
-    10
-  );
-  let eventReminderDays = parseInt(
-    String(evDaysRow?.value ?? '3').replace(/[^\d]/g, ''),
-    10
-  );
-  let eventReminderHours = parseInt(
-    String(evHoursRow?.value ?? '0').replace(/[^\d]/g, ''),
-    10
-  );
+  let burpDurationMinutes = parseInt(String(burpRow?.value ?? '10').replace(/[^\d]/g, ''), 10);
+  let eventReminderDays = parseInt(String(evDaysRow?.value ?? '3').replace(/[^\d]/g, ''), 10);
+  let eventReminderHours = parseInt(String(evHoursRow?.value ?? '0').replace(/[^\d]/g, ''), 10);
   let activityLogRefreshMinutes = parseInt(
     String(activityLogRow?.value ?? '5').replace(/[^\d]/g, ''),
     10
@@ -200,7 +183,7 @@ export class FeedingLogService {
   private readonly SHEET_NAME = 'Feeding';
   private readonly SETTINGS_SHEET_NAME = 'Settings';
   private readonly API_KEY = environment.googleSheetsApiKey;
-  private readonly BASE_URL = `https://sheets.googleapis.com/v4/spreadsheets/${ this.SHEET_ID }`;
+  private readonly BASE_URL = `https://sheets.googleapis.com/v4/spreadsheets/${this.SHEET_ID}`;
 
   /**
    * Luôn đi qua same-origin proxy trên Vercel để tránh redirect CORS của
@@ -219,8 +202,8 @@ export class FeedingLogService {
    * Trả về TẤT CẢ cữ bú trong sheet — mọi user share chung dữ liệu của bé.
    */
   getLogs(): Observable<FeedingLog[]> {
-    const range = `${ this.SHEET_NAME }!A2:E`;
-    const url = `${ this.BASE_URL }/values/${ range }?key=${ this.API_KEY }&valueRenderOption=FORMATTED_VALUE`;
+    const range = `${this.SHEET_NAME}!A2:E`;
+    const url = `${this.BASE_URL}/values/${range}?key=${this.API_KEY}&valueRenderOption=FORMATTED_VALUE`;
 
     return this.http.get<{ values?: string[][] }>(url).pipe(
       map((resp) => {
@@ -253,8 +236,8 @@ export class FeedingLogService {
           })
           .filter((l): l is FeedingLog => !!l)
           .sort((a, b) => {
-            const aK = `${ a.date } ${ a.time }`;
-            const bK = `${ b.date } ${ b.time }`;
+            const aK = `${a.date} ${a.time}`;
+            const bK = `${b.date} ${b.time}`;
             return bK.localeCompare(aK);
           });
       }),
@@ -271,8 +254,8 @@ export class FeedingLogService {
    * Nếu K trống (script cũ): suy ra `at` từ J + ngày gần nhất với giờ đó.
    */
   getBottlePrep(): Observable<BottlePrepFromSheet | null> {
-    const range = `${ this.SHEET_NAME }!G1:K1`;
-    const url = `${ this.BASE_URL }/values/${ range }?key=${ this.API_KEY }&valueRenderOption=FORMATTED_VALUE`;
+    const range = `${this.SHEET_NAME}!G1:K1`;
+    const url = `${this.BASE_URL}/values/${range}?key=${this.API_KEY}&valueRenderOption=FORMATTED_VALUE`;
 
     return this.http.get<{ values?: string[][] }>(url).pipe(
       map((resp) => this.parseBottlePrepRow(resp.values?.[0])),
@@ -338,12 +321,8 @@ export class FeedingLogService {
       updates: updates.map((u) => ({
         id: String(u.id || '').trim(),
         value: u.value,
-        ...(u.name != null && String(u.name).trim()
-          ? { name: String(u.name).trim() }
-          : {}),
-        ...(u.unit != null && String(u.unit).trim()
-          ? { unit: String(u.unit).trim() }
-          : {}),
+        ...(u.name != null && String(u.name).trim() ? { name: String(u.name).trim() } : {}),
+        ...(u.unit != null && String(u.unit).trim() ? { unit: String(u.unit).trim() } : {}),
         ...(u.dataType != null && String(u.dataType).trim()
           ? { dataType: String(u.dataType).trim() }
           : {}),
@@ -486,24 +465,20 @@ export class FeedingLogService {
    *  - Content-Type `text/plain;charset=utf-8` vẫn cần để nằm trong
    *    "CORS-safelisted" và không trigger preflight OPTIONS.
    */
-  private postToAppsScript(
-    body: Record<string, unknown>
-  ): Observable<FeedingSheetResponse> {
+  private postToAppsScript(body: Record<string, unknown>): Observable<FeedingSheetResponse> {
     const url = this.APPS_SCRIPT_URL;
     const isProxy = !environment.production;
 
     if (isProxy) {
       // 🚀 Mobile CORS fix: Avoid preflight by using simple content-type for dev proxy
-      const headers = new HttpHeaders({ 
-        'Content-Type': 'text/plain;charset=UTF-8' 
+      const headers = new HttpHeaders({
+        'Content-Type': 'text/plain;charset=UTF-8',
       });
-      return this.http
-        .post<FeedingSheetResponse>(url, JSON.stringify(body), { headers })
-        .pipe(
-          map((resp) => {
-            return resp;
-          })
-        );
+      return this.http.post<FeedingSheetResponse>(url, JSON.stringify(body), { headers }).pipe(
+        map((resp) => {
+          return resp;
+        })
+      );
     }
 
     const payload = JSON.stringify(body);
@@ -535,20 +510,20 @@ export class FeedingLogService {
     if (!raw) return null;
     const m1 = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
     if (m1) {
-      const [ , d, mo, y ] = m1;
-      return `${ y }-${ mo.padStart(2, '0') }-${ d.padStart(2, '0') }`;
+      const [, d, mo, y] = m1;
+      return `${y}-${mo.padStart(2, '0')}-${d.padStart(2, '0')}`;
     }
     const m2 = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
     if (m2) {
-      const [ , y, mo, d ] = m2;
-      return `${ y }-${ mo.padStart(2, '0') }-${ d.padStart(2, '0') }`;
+      const [, y, mo, d] = m2;
+      return `${y}-${mo.padStart(2, '0')}-${d.padStart(2, '0')}`;
     }
     const parsed = new Date(raw);
     if (!isNaN(parsed.getTime())) {
       const y = parsed.getFullYear();
       const mo = (parsed.getMonth() + 1).toString().padStart(2, '0');
       const d = parsed.getDate().toString().padStart(2, '0');
-      return `${ y }-${ mo }-${ d }`;
+      return `${y}-${mo}-${d}`;
     }
     return null;
   }
@@ -557,14 +532,12 @@ export class FeedingLogService {
     if (!raw) return '00:00';
     const m = raw.match(/(\d{1,2})[:h](\d{1,2})/);
     if (m) {
-      return `${ m[1].padStart(2, '0') }:${ m[2].padStart(2, '0') }`;
+      return `${m[1].padStart(2, '0')}:${m[2].padStart(2, '0')}`;
     }
     return raw;
   }
 
-  private parseBottlePrepRow(
-    row: string[] | undefined,
-  ): BottlePrepFromSheet | null {
+  private parseBottlePrepRow(row: string[] | undefined): BottlePrepFromSheet | null {
     if (!row?.length) return null;
     const sheetUser = String(row[1] ?? '')
       .toLowerCase()
@@ -593,27 +566,11 @@ export class FeedingLogService {
     if (isNaN(hh) || isNaN(mm)) return new Date().toISOString();
 
     const now = new Date();
-    let best = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate(),
-      hh,
-      mm,
-      0,
-      0
-    );
+    let best = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hh, mm, 0, 0);
     let bestDiff = Math.abs(now.getTime() - best.getTime());
 
-    for (const delta of [ -1, 1 ]) {
-      const d = new Date(
-        now.getFullYear(),
-        now.getMonth(),
-        now.getDate() + delta,
-        hh,
-        mm,
-        0,
-        0
-      );
+    for (const delta of [-1, 1]) {
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + delta, hh, mm, 0, 0);
       const diff = Math.abs(now.getTime() - d.getTime());
       if (diff < bestDiff) {
         best = d;

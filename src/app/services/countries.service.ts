@@ -84,14 +84,15 @@ export interface CountrySearchParams {
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class CountriesService {
   private readonly BASE_URL = 'https://restcountries.com/v3.1';
-  
+
   // Essential fields (limited to important ones for performance)
   // Note: REST Countries API allows us to fetch all fields without limit for non-/all endpoints
-  private readonly ESSENTIAL_FIELDS = 'name,flags,capital,region,population,cca2,cca3,area,borders,latlng';
+  private readonly ESSENTIAL_FIELDS =
+    'name,flags,capital,region,population,cca2,cca3,area,borders,latlng';
 
   constructor(private http: HttpClient) {}
 
@@ -100,14 +101,12 @@ export class CountriesService {
    * Note: The /all endpoint requires fields parameter
    */
   getAllCountries(): Observable<Country[]> {
-    return this.http.get<Country[]>(`${this.BASE_URL}/all?fields=${this.ESSENTIAL_FIELDS}`)
-      .pipe(
-        map(countries => this.sortCountries(countries)),
-        catchError(error => {
-
-          return of([]);
-        })
-      );
+    return this.http.get<Country[]>(`${this.BASE_URL}/all?fields=${this.ESSENTIAL_FIELDS}`).pipe(
+      map((countries) => this.sortCountries(countries)),
+      catchError((error) => {
+        return of([]);
+      })
+    );
   }
 
   /**
@@ -117,39 +116,35 @@ export class CountriesService {
     if (!name || name.trim().length === 0) {
       return this.getAllCountries();
     }
-    return this.http.get<Country[]>(`${this.BASE_URL}/name/${encodeURIComponent(name)}`)
-      .pipe(
-        map(countries => this.sortCountries(countries)),
-        catchError(error => {
-
-          return of([]);
-        })
-      );
+    return this.http.get<Country[]>(`${this.BASE_URL}/name/${encodeURIComponent(name)}`).pipe(
+      map((countries) => this.sortCountries(countries)),
+      catchError((error) => {
+        return of([]);
+      })
+    );
   }
 
   /**
    * Filter countries by region
    */
   getByRegion(region: string): Observable<Country[]> {
-    return this.http.get<Country[]>(`${this.BASE_URL}/region/${encodeURIComponent(region)}`)
-      .pipe(
-        map(countries => this.sortCountries(countries)),
-        catchError(error => {
-
-          return of([]);
-        })
-      );
+    return this.http.get<Country[]>(`${this.BASE_URL}/region/${encodeURIComponent(region)}`).pipe(
+      map((countries) => this.sortCountries(countries)),
+      catchError((error) => {
+        return of([]);
+      })
+    );
   }
 
   /**
    * Filter countries by subregion
    */
   getBySubregion(subregion: string): Observable<Country[]> {
-    return this.http.get<Country[]>(`${this.BASE_URL}/subregion/${encodeURIComponent(subregion)}`)
+    return this.http
+      .get<Country[]>(`${this.BASE_URL}/subregion/${encodeURIComponent(subregion)}`)
       .pipe(
-        map(countries => this.sortCountries(countries)),
-        catchError(error => {
-
+        map((countries) => this.sortCountries(countries)),
+        catchError((error) => {
           return of([]);
         })
       );
@@ -162,25 +157,23 @@ export class CountriesService {
     if (!capital || capital.trim().length === 0) {
       return of([]);
     }
-    return this.http.get<Country[]>(`${this.BASE_URL}/capital/${encodeURIComponent(capital)}`)
-      .pipe(
-        map(countries => this.sortCountries(countries)),
-        catchError(error => {
-
-          return of([]);
-        })
-      );
+    return this.http.get<Country[]>(`${this.BASE_URL}/capital/${encodeURIComponent(capital)}`).pipe(
+      map((countries) => this.sortCountries(countries)),
+      catchError((error) => {
+        return of([]);
+      })
+    );
   }
 
   /**
    * Filter by currency
    */
   getByCurrency(currency: string): Observable<Country[]> {
-    return this.http.get<Country[]>(`${this.BASE_URL}/currency/${encodeURIComponent(currency)}`)
+    return this.http
+      .get<Country[]>(`${this.BASE_URL}/currency/${encodeURIComponent(currency)}`)
       .pipe(
-        map(countries => this.sortCountries(countries)),
-        catchError(error => {
-
+        map((countries) => this.sortCountries(countries)),
+        catchError((error) => {
           return of([]);
         })
       );
@@ -190,14 +183,12 @@ export class CountriesService {
    * Filter by language
    */
   getByLanguage(language: string): Observable<Country[]> {
-    return this.http.get<Country[]>(`${this.BASE_URL}/lang/${encodeURIComponent(language)}`)
-      .pipe(
-        map(countries => this.sortCountries(countries)),
-        catchError(error => {
-
-          return of([]);
-        })
-      );
+    return this.http.get<Country[]>(`${this.BASE_URL}/lang/${encodeURIComponent(language)}`).pipe(
+      map((countries) => this.sortCountries(countries)),
+      catchError((error) => {
+        return of([]);
+      })
+    );
   }
 
   /**
@@ -206,17 +197,16 @@ export class CountriesService {
    * Note: API returns an array with a single country object
    */
   getByCode(code: string): Observable<Country | null> {
-    return this.http.get<Country[]>(`${this.BASE_URL}/alpha/${encodeURIComponent(code)}`)
-      .pipe(
-        map(countries => {
-          // API returns an array, get the first element
-          return (countries && countries.length > 0) ? countries[0] : null;
-        }),
-        catchError(error => {
-          console.error('Error fetching country by code:', error);
-          return of(null);
-        })
-      );
+    return this.http.get<Country[]>(`${this.BASE_URL}/alpha/${encodeURIComponent(code)}`).pipe(
+      map((countries) => {
+        // API returns an array, get the first element
+        return countries && countries.length > 0 ? countries[0] : null;
+      }),
+      catchError((error) => {
+        console.error('Error fetching country by code:', error);
+        return of(null);
+      })
+    );
   }
 
   /**
@@ -227,23 +217,19 @@ export class CountriesService {
       return of([]);
     }
     const codesParam = codes.join(',');
-    return this.http.get<Country[]>(`${this.BASE_URL}/alpha?codes=${codesParam}`)
-      .pipe(
-        map(countries => this.sortCountries(countries)),
-        catchError(error => {
-
-          return of([]);
-        })
-      );
+    return this.http.get<Country[]>(`${this.BASE_URL}/alpha?codes=${codesParam}`).pipe(
+      map((countries) => this.sortCountries(countries)),
+      catchError((error) => {
+        return of([]);
+      })
+    );
   }
 
   /**
    * Sort countries alphabetically by common name
    */
   private sortCountries(countries: Country[]): Country[] {
-    return countries.sort((a, b) => 
-      a.name.common.localeCompare(b.name.common)
-    );
+    return countries.sort((a, b) => a.name.common.localeCompare(b.name.common));
   }
 
   /**
@@ -289,7 +275,9 @@ export class CountriesService {
    */
   getCurrenciesString(currencies?: { [key: string]: { name: string; symbol: string } }): string {
     if (!currencies) return 'N/A';
-    return Object.values(currencies).map(c => `${c.name} (${c.symbol})`).join(', ');
+    return Object.values(currencies)
+      .map((c) => `${c.name} (${c.symbol})`)
+      .join(', ');
   }
 
   /**
@@ -300,4 +288,3 @@ export class CountriesService {
     return capital.join(', ');
   }
 }
-

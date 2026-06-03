@@ -103,11 +103,7 @@
   padding: 12px 14px;
   border-radius: 16px;
   border: 1px solid color-mix(in srgb, var(--primary, #5b6cff) 22%, var(--border, #e6e8ef));
-  background: linear-gradient(
-    120deg,
-    color-mix(in srgb, var(--primary, #5b6cff) 8%, #fff),
-    #fff
-  );
+  background: linear-gradient(120deg, color-mix(in srgb, var(--primary, #5b6cff) 8%, #fff), #fff);
   cursor: pointer;
   font-family: inherit;
   text-align: left;

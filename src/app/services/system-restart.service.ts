@@ -9,7 +9,7 @@ export interface BootMessage {
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class SystemRestartService {
   private isRestartingSubject = new BehaviorSubject<boolean>(false);
@@ -51,31 +51,31 @@ export class SystemRestartService {
     { text: '[    2.567890] [  OK  ] Reached target Graphical Interface', type: 'success' },
     { text: '', type: 'info' },
     { text: 'Desktop Portfolio OS booted successfully!', type: 'success' },
-    { text: 'Initializing desktop environment...', type: 'info' }
+    { text: 'Initializing desktop environment...', type: 'info' },
   ];
 
   constructor() {}
 
   startRestart(): Observable<BootMessage> {
     this.isRestartingSubject.next(true);
-    
+
     // Emit boot messages one by one with random delays
-    return new Observable(observer => {
+    return new Observable((observer) => {
       let currentIndex = 0;
-      
+
       const emitNext = () => {
         if (currentIndex < this.bootMessages.length) {
           const baseMessage = this.bootMessages[currentIndex];
           const message: BootMessage = {
             ...baseMessage,
-            timestamp: baseMessage.text ? this.getTimestamp() : ''
+            timestamp: baseMessage.text ? this.getTimestamp() : '',
           };
-          
+
           observer.next(message);
-          
+
           // Calculate delay for next message BEFORE incrementing
           let delay: number;
-          
+
           // Second to last message gets a longer delay before showing the last message (2-3 seconds)
           if (currentIndex === this.bootMessages.length - 2) {
             delay = 2000 + Math.random() * 1000; // 2000-3000ms
@@ -88,9 +88,9 @@ export class SystemRestartService {
           else {
             delay = 40 + Math.random() * 120; // 40-160ms
           }
-          
+
           currentIndex++;
-          
+
           if (currentIndex < this.bootMessages.length) {
             setTimeout(emitNext, delay);
           } else {
@@ -100,10 +100,10 @@ export class SystemRestartService {
           observer.complete();
         }
       };
-      
+
       // Start emitting messages
       emitNext();
-      
+
       // Return cleanup function
       return () => {
         currentIndex = this.bootMessages.length;
@@ -124,4 +124,3 @@ export class SystemRestartService {
     return now.toTimeString().split(' ')[0];
   }
 }
-

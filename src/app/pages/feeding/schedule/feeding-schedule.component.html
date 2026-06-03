@@ -87,10 +87,7 @@
     </button>
   </section>
 
-  <section
-    class="schedule-section schedule-section--past"
-    *ngIf="pastSection() as past"
-  >
+  <section class="schedule-section schedule-section--past" *ngIf="pastSection() as past">
     <div class="schedule-section__head">
       <span class="schedule-section__icon" aria-hidden="true">
         <i class="pi" [ngClass]="past.icon"></i>
@@ -198,25 +195,48 @@
     <span class="fab-label">Thêm sự kiện</span>
   </button>
 
-  <div class="dialog-overlay dialog-overlay--top" *ngIf="calendarDialogOpen()" (click)="closeCalendarDialog()">
-    <div class="dialog dialog--calendar" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+  <div
+    class="dialog-overlay dialog-overlay--top"
+    *ngIf="calendarDialogOpen()"
+    (click)="closeCalendarDialog()"
+  >
+    <div
+      class="dialog dialog--calendar"
+      role="dialog"
+      aria-modal="true"
+      (click)="$event.stopPropagation()"
+    >
       <div class="dialog-head">
         <div>
           <h2><i class="pi pi-calendar"></i> {{ calendarMonthLabel() }}</h2>
         </div>
-        <button type="button" class="dialog-close" (click)="closeCalendarDialog()" aria-label="Đóng">
+        <button
+          type="button"
+          class="dialog-close"
+          (click)="closeCalendarDialog()"
+          aria-label="Đóng"
+        >
           <i class="pi pi-times"></i>
         </button>
       </div>
 
       <div class="calendar-nav">
-        <button type="button" class="btn ghost sm icon-only" (click)="calendarPrevMonth()" aria-label="Tháng trước">
+        <button
+          type="button"
+          class="btn ghost sm icon-only"
+          (click)="calendarPrevMonth()"
+          aria-label="Tháng trước"
+        >
           <i class="pi pi-chevron-left"></i>
         </button>
-        
+
         <div class="calendar-nav-center">
           <div class="calendar-nav-dropdowns">
-            <select class="calendar-month-select" [value]="calendarCursor().getMonth()" (change)="calendarChangeMonth(+$any($event.target).value)">
+            <select
+              class="calendar-month-select"
+              [value]="calendarCursor().getMonth()"
+              (change)="calendarChangeMonth(+$any($event.target).value)"
+            >
               <option value="0">Tháng 1</option>
               <option value="1">Tháng 2</option>
               <option value="2">Tháng 3</option>
@@ -230,17 +250,31 @@
               <option value="10">Tháng 11</option>
               <option value="11">Tháng 12</option>
             </select>
-            <select class="calendar-year-select" [value]="calendarCursor().getFullYear()" (change)="calendarChangeYear(+$any($event.target).value)">
+            <select
+              class="calendar-year-select"
+              [value]="calendarCursor().getFullYear()"
+              (change)="calendarChangeYear(+$any($event.target).value)"
+            >
               <option *ngFor="let year of getCalendarYearRange()" [value]="year">{{ year }}</option>
             </select>
           </div>
-          <button type="button" class="btn ghost sm calendar-today-btn" (click)="calendarGoToToday()" title="Về hôm nay">
+          <button
+            type="button"
+            class="btn ghost sm calendar-today-btn"
+            (click)="calendarGoToToday()"
+            title="Về hôm nay"
+          >
             <i class="pi pi-home"></i>
             <span>Hôm nay</span>
           </button>
         </div>
-        
-        <button type="button" class="btn ghost sm icon-only" (click)="calendarNextMonth()" aria-label="Tháng sau">
+
+        <button
+          type="button"
+          class="btn ghost sm icon-only"
+          (click)="calendarNextMonth()"
+          aria-label="Tháng sau"
+        >
           <i class="pi pi-chevron-right"></i>
         </button>
       </div>
@@ -262,8 +296,8 @@
         >
           <div class="calendar-cell__content">
             <span class="calendar-cell__day">{{ c.day }}</span>
-            <span 
-              class="calendar-cell__event-indicator" 
+            <span
+              class="calendar-cell__event-indicator"
               *ngIf="c.eventCount > 0"
               [style.background-color]="getEventIndicatorColor(c.dateIso)"
             >
@@ -277,7 +311,9 @@
         <div class="calendar-events__head">
           <h3>
             Sự kiện ngày {{ selectedCalendarDate() || '—' }}
-            <span *ngIf="selectedCalendarEvents().length > 0">({{ selectedCalendarEvents().length }})</span>
+            <span *ngIf="selectedCalendarEvents().length > 0"
+              >({{ selectedCalendarEvents().length }})</span
+            >
           </h3>
           <button
             type="button"
@@ -316,11 +352,23 @@
       <div class="form-grid" *ngIf="draft() as dr">
         <label class="field">
           <span class="label">Ngày *</span>
-          <input type="date" class="input" [ngModel]="dr.date" (ngModelChange)="updateDraft({ date: $event })" name="evd" />
+          <input
+            type="date"
+            class="input"
+            [ngModel]="dr.date"
+            (ngModelChange)="updateDraft({ date: $event })"
+            name="evd"
+          />
         </label>
         <label class="field">
           <span class="label">Giờ *</span>
-          <input type="time" class="input" [ngModel]="dr.time" (ngModelChange)="updateDraft({ time: $event })" name="evt" />
+          <input
+            type="time"
+            class="input"
+            [ngModel]="dr.time"
+            (ngModelChange)="updateDraft({ time: $event })"
+            name="evt"
+          />
         </label>
         <label class="field full">
           <span class="label">Tên sự kiện *</span>
@@ -385,15 +433,33 @@
       <div class="form-grid" *ngIf="editDraft() as dr">
         <label class="field">
           <span class="label">Ngày *</span>
-          <input type="date" class="input" [ngModel]="dr.date" (ngModelChange)="updateEditDraft({ date: $event })" name="eed" />
+          <input
+            type="date"
+            class="input"
+            [ngModel]="dr.date"
+            (ngModelChange)="updateEditDraft({ date: $event })"
+            name="eed"
+          />
         </label>
         <label class="field">
           <span class="label">Giờ *</span>
-          <input type="time" class="input" [ngModel]="dr.time" (ngModelChange)="updateEditDraft({ time: $event })" name="eet" />
+          <input
+            type="time"
+            class="input"
+            [ngModel]="dr.time"
+            (ngModelChange)="updateEditDraft({ time: $event })"
+            name="eet"
+          />
         </label>
         <label class="field full">
           <span class="label">Tên *</span>
-          <input type="text" class="input" [ngModel]="dr.title" (ngModelChange)="updateEditDraft({ title: $event })" name="eeti" />
+          <input
+            type="text"
+            class="input"
+            [ngModel]="dr.title"
+            (ngModelChange)="updateEditDraft({ title: $event })"
+            name="eeti"
+          />
         </label>
         <label class="field full">
           <span class="label">Ghi chú</span>
@@ -445,11 +511,7 @@
   (mousedown)="$event.preventDefault()"
 >
   <li *ngFor="let place of vm.places">
-    <button
-      type="button"
-      class="place-combobox__option"
-      (mousedown)="selectPlace(place, vm.ctx)"
-    >
+    <button type="button" class="place-combobox__option" (mousedown)="selectPlace(place, vm.ctx)">
       {{ place }}
     </button>
   </li>

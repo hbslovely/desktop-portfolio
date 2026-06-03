@@ -1,8 +1,4 @@
-<div
-  class="dialog-overlay"
-  *ngIf="dialogOpen()"
-  (click)="closeDialog()"
->
+<div class="dialog-overlay" *ngIf="dialogOpen()" (click)="closeDialog()">
   <div
     class="dialog medical-dialog"
     role="dialog"
@@ -16,12 +12,7 @@
           {{ editingEntry() ? 'Sửa sự kiện' : 'Thêm sự kiện' }}
         </h2>
       </div>
-      <button
-        type="button"
-        class="dialog-close"
-        (click)="closeDialog()"
-        aria-label="Đóng"
-      >
+      <button type="button" class="dialog-close" (click)="closeDialog()" aria-label="Đóng">
         <i class="pi pi-times"></i>
       </button>
     </div>
@@ -52,19 +43,11 @@
             class="mh-combo-trigger"
             (click)="toggleKindPicker(); $event.stopPropagation()"
           >
-            <span class="mh-combo-trigger__icon"
-              ><i [class]="metaFor(draft().kind).icon"></i
-            ></span>
-            <span class="mh-combo-trigger__text">{{
-              metaFor(draft().kind).label
-            }}</span>
+            <span class="mh-combo-trigger__icon"><i [class]="metaFor(draft().kind).icon"></i></span>
+            <span class="mh-combo-trigger__text">{{ metaFor(draft().kind).label }}</span>
             <i class="pi pi-chevron-down mh-combo-chev"></i>
           </button>
-          <div
-            class="mh-combo-panel"
-            *ngIf="kindPickerOpen()"
-            (click)="$event.stopPropagation()"
-          >
+          <div class="mh-combo-panel" *ngIf="kindPickerOpen()" (click)="$event.stopPropagation()">
             <input
               type="search"
               class="mh-combo-search"
@@ -120,34 +103,24 @@
             class="mh-combo-input"
             [ngModel]="draft().place"
             (ngModelChange)="
-              updateDraft({ place: $event });
-              kindPickerOpen.set(false);
-              placePickerOpen.set(true)
+              updateDraft({ place: $event }); kindPickerOpen.set(false); placePickerOpen.set(true)
             "
             (focus)="onPlaceFieldFocus()"
             name="mhPlace"
             placeholder="Chọn hoặc gõ tên cơ sở…"
             autocomplete="off"
           />
-          <div
-            class="mh-combo-panel"
-            *ngIf="placePickerOpen()"
-            (click)="$event.stopPropagation()"
-          >
+          <div class="mh-combo-panel" *ngIf="placePickerOpen()" (click)="$event.stopPropagation()">
             <button
               type="button"
               class="mh-combo-add"
               *ngIf="canAddCustomPlace()"
               (click)="addCustomPlaceFromDraft()"
             >
-              <i class="pi pi-plus"></i> Thêm «{{ draft().place.trim() }}» vào
-              danh sách
+              <i class="pi pi-plus"></i> Thêm «{{ draft().place.trim() }}» vào danh sách
             </button>
             <ul class="mh-combo-list mh-combo-list--places">
-              <li
-                *ngFor="let p of filteredPlaceSuggestions()"
-                (click)="selectPlace(p)"
-              >
+              <li *ngFor="let p of filteredPlaceSuggestions()" (click)="selectPlace(p)">
                 {{ p }}
               </li>
             </ul>
@@ -166,22 +139,18 @@
             attachmentFor(editingEntry()!) as sav
           "
         >
-          <img *ngIf="sav.content || sav.previewUrl" [src]="sav.previewUrl || sav.content" alt="Đính kèm hiện tại" />
-          <button
-            type="button"
-            class="btn ghost sm"
-            (click)="removeSavedAttachment()"
-          >
+          <img
+            *ngIf="sav.content || sav.previewUrl"
+            [src]="sav.previewUrl || sav.content"
+            alt="Đính kèm hiện tại"
+          />
+          <button type="button" class="btn ghost sm" (click)="removeSavedAttachment()">
             <i class="pi pi-times"></i> Gỡ ảnh đã lưu
           </button>
         </div>
         <div class="med-preview med-preview--new" *ngIf="pendingAttachmentPreviewUrl() as prevUrl">
           <img [src]="prevUrl" alt="Xem trước" />
-          <button
-            type="button"
-            class="btn ghost sm"
-            (click)="clearPendingAttachment()"
-          >
+          <button type="button" class="btn ghost sm" (click)="clearPendingAttachment()">
             Huỷ ảnh mới
           </button>
         </div>

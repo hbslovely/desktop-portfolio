@@ -1,4 +1,12 @@
-import { Component, OnInit, OnDestroy, signal, ChangeDetectionStrategy, Output, EventEmitter } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  OnDestroy,
+  signal,
+  ChangeDetectionStrategy,
+  Output,
+  EventEmitter,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Subject, takeUntil, interval } from 'rxjs';
 import { WeatherService, WeatherData, HourlyData } from '../../../services/weather.service';
@@ -9,7 +17,7 @@ import { WeatherService, WeatherData, HourlyData } from '../../../services/weath
   imports: [CommonModule],
   templateUrl: './weather-widget.component.html',
   styleUrls: ['./weather-widget.component.scss'],
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class WeatherWidgetComponent implements OnInit, OnDestroy {
   @Output() openWeatherApp = new EventEmitter<void>();
@@ -37,18 +45,20 @@ export class WeatherWidgetComponent implements OnInit, OnDestroy {
 
   private startClock(): void {
     this.updateTime();
-    interval(60000).pipe(
-      takeUntil(this.destroy$)
-    ).subscribe(() => this.updateTime());
+    interval(60000)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => this.updateTime());
   }
 
   private updateTime(): void {
     const now = new Date();
-    this.currentTime.set(now.toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
-    }));
+    this.currentTime.set(
+      now.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+      })
+    );
   }
 
   async loadWeather(): Promise<void> {
@@ -61,9 +71,7 @@ export class WeatherWidgetComponent implements OnInit, OnDestroy {
         this.units()
       );
 
-      weatherObservable.pipe(
-        takeUntil(this.destroy$)
-      ).subscribe({
+      weatherObservable.pipe(takeUntil(this.destroy$)).subscribe({
         next: (data) => {
           this.weatherData.set(data);
           this.loading.set(false);
@@ -72,7 +80,7 @@ export class WeatherWidgetComponent implements OnInit, OnDestroy {
         error: () => {
           this.error.set('Unable to load weather');
           this.loading.set(false);
-        }
+        },
       });
     } catch {
       this.error.set('Location unavailable');
@@ -84,15 +92,16 @@ export class WeatherWidgetComponent implements OnInit, OnDestroy {
     try {
       const cleanLat = parseFloat(String(lat).replace(/[NSEW]/gi, ''));
       const cleanLon = parseFloat(String(lon).replace(/[NSEW]/gi, ''));
-      
+
       const response = await fetch(
         `https://nominatim.openstreetmap.org/reverse?format=json&lat=${cleanLat}&lon=${cleanLon}&zoom=10`,
         { headers: { 'User-Agent': 'DesktopPortfolioApp/1.0' } }
       );
       const data = await response.json();
-      
+
       if (data.address) {
-        const city = data.address.city || data.address.town || data.address.village || data.address.state;
+        const city =
+          data.address.city || data.address.town || data.address.village || data.address.state;
         this.locationName.set(city || 'Unknown');
       } else {
         this.locationName.set('Unknown');
@@ -136,7 +145,7 @@ export class WeatherWidgetComponent implements OnInit, OnDestroy {
     if (iconNum <= 2) return 'sunny';
     if (iconNum <= 5) return 'cloudy';
     if (iconNum >= 9 && iconNum <= 14) return 'rainy';
-    
+
     return 'cloudy';
   }
 

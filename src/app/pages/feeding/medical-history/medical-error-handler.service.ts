@@ -12,10 +12,9 @@ export interface MedicalHistoryError {
  * Service to handle and categorize medical history related errors
  */
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class MedicalErrorHandlerService {
-
   /**
    * Convert generic errors to user-friendly medical history errors
    */
@@ -27,9 +26,10 @@ export class MedicalErrorHandlerService {
       return {
         type: 'permission',
         message: errorMessage,
-        userMessage: 'Ứng dụng chưa được cấu hình để truy cập Google Sheets. Vui lòng liên hệ quản trị viên.',
+        userMessage:
+          'Ứng dụng chưa được cấu hình để truy cập Google Sheets. Vui lòng liên hệ quản trị viên.',
         actionable: false,
-        retryable: false
+        retryable: false,
       };
     }
 
@@ -39,7 +39,7 @@ export class MedicalErrorHandlerService {
         message: errorMessage,
         userMessage: 'Không có quyền truy cập Google Sheets. Vui lòng kiểm tra quyền chia sẻ.',
         actionable: true,
-        retryable: true
+        retryable: true,
       };
     }
 
@@ -49,7 +49,7 @@ export class MedicalErrorHandlerService {
         message: errorMessage,
         userMessage: 'Không tìm thấy bảng dữ liệu y tế. Vui lòng kiểm tra liên kết Google Sheets.',
         actionable: true,
-        retryable: true
+        retryable: true,
       };
     }
 
@@ -57,9 +57,10 @@ export class MedicalErrorHandlerService {
       return {
         type: 'data',
         message: errorMessage,
-        userMessage: 'Không tìm thấy trang dữ liệu y tế trong Google Sheets. Vui lòng kiểm tra cấu hình.',
+        userMessage:
+          'Không tìm thấy trang dữ liệu y tế trong Google Sheets. Vui lòng kiểm tra cấu hình.',
         actionable: false,
-        retryable: false
+        retryable: false,
       };
     }
 
@@ -69,7 +70,7 @@ export class MedicalErrorHandlerService {
         message: errorMessage,
         userMessage: 'Yêu cầu không hợp lệ tới Google Sheets. Vui lòng thử lại sau.',
         actionable: false,
-        retryable: true
+        retryable: true,
       };
     }
 
@@ -78,9 +79,10 @@ export class MedicalErrorHandlerService {
       return {
         type: 'validation',
         message: errorMessage,
-        userMessage: 'Dữ liệu không hợp lệ: ' + errorMessage.replace('Validation failed:', '').trim(),
+        userMessage:
+          'Dữ liệu không hợp lệ: ' + errorMessage.replace('Validation failed:', '').trim(),
         actionable: true,
-        retryable: false
+        retryable: false,
       };
     }
 
@@ -90,20 +92,22 @@ export class MedicalErrorHandlerService {
         message: errorMessage,
         userMessage: 'Định dạng ngày không đúng. Vui lòng nhập theo định dạng DD/MM/YYYY.',
         actionable: true,
-        retryable: false
+        retryable: false,
       };
     }
 
     // Network connectivity errors
-    if (errorMessage.includes('Failed to fetch') || 
-        errorMessage.includes('Network error') ||
-        errorMessage.includes('ERR_NETWORK')) {
+    if (
+      errorMessage.includes('Failed to fetch') ||
+      errorMessage.includes('Network error') ||
+      errorMessage.includes('ERR_NETWORK')
+    ) {
       return {
         type: 'network',
         message: errorMessage,
         userMessage: 'Lỗi kết nối mạng. Vui lòng kiểm tra kết nối Internet và thử lại.',
         actionable: true,
-        retryable: true
+        retryable: true,
       };
     }
 
@@ -114,7 +118,7 @@ export class MedicalErrorHandlerService {
         message: errorMessage,
         userMessage: 'Yêu cầu bị hết thời gian chờ. Vui lòng thử lại sau.',
         actionable: false,
-        retryable: true
+        retryable: true,
       };
     }
 
@@ -124,7 +128,7 @@ export class MedicalErrorHandlerService {
       message: errorMessage,
       userMessage: 'Đã xảy ra lỗi không xác định. Vui lòng thử lại sau hoặc liên hệ hỗ trợ.',
       actionable: false,
-      retryable: true
+      retryable: true,
     };
   }
 
@@ -185,13 +189,13 @@ export class MedicalErrorHandlerService {
       permission: 5000,
       data: 3000,
       validation: 0,
-      unknown: 3000
+      unknown: 3000,
     };
 
     // Exponential backoff with jitter
     const delay = baseDelay[error.type] * Math.pow(1.5, attemptCount - 1);
     const jitter = Math.random() * 1000;
-    
+
     return Math.min(delay + jitter, 30000); // Max 30 seconds
   }
 }

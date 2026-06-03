@@ -19,10 +19,7 @@ import {
 } from '../../../services/feeding-log.service';
 import { ActivityLogService } from '../../../services/activity-log.service';
 import { FeedingPrediction } from '../feeding-prediction';
-import {
-  FeedingViewGroup,
-  groupLogsByProximity,
-} from '../feeding-view-group';
+import { FeedingViewGroup, groupLogsByProximity } from '../feeding-view-group';
 
 interface LogDraft {
   date: string;
@@ -224,9 +221,7 @@ export class FeedingDialogsComponent {
     return out;
   });
 
-  historyFilteredFeedTotal = computed(
-    () => this.historyLogsFilteredSorted().length
-  );
+  historyFilteredFeedTotal = computed(() => this.historyLogsFilteredSorted().length);
 
   historyDisplayedFeedCount = computed(() =>
     Math.min(this.historyFeedDisplayLimit(), this.historyFilteredFeedTotal())
@@ -248,14 +243,9 @@ export class FeedingDialogsComponent {
     }
     return Array.from(groups.entries())
       .map(([date, dayLogs]) => {
-        const viewRows = groupLogsByProximity(dayLogs, gap, (l) =>
-          this.logTimestamp(l)
-        );
+        const viewRows = groupLogsByProximity(dayLogs, gap, (l) => this.logTimestamp(l));
         const count = viewRows.length;
-        const total = viewRows.reduce(
-          (s, g) => s + this.viewGroupDisplayVolume(g),
-          0
-        );
+        const total = viewRows.reduce((s, g) => s + this.viewGroupDisplayVolume(g), 0);
         return {
           date,
           logs: dayLogs.sort((a, b) => b.time.localeCompare(a.time)),
@@ -268,8 +258,7 @@ export class FeedingDialogsComponent {
       .sort((a, b) => b.date.localeCompare(a.date));
   });
 
-  trackFeedingViewGroup = (_index: number, g: FeedingViewGroup): string =>
-    this.viewGroupKey(g);
+  trackFeedingViewGroup = (_index: number, g: FeedingViewGroup): string => this.viewGroupKey(g);
 
   trackHistoryGroup(_index: number, g: { date: string }): string {
     return g.date;
@@ -683,58 +672,42 @@ export class FeedingDialogsComponent {
 
   updateSettingsDraftTimeWarning(v: string): void {
     const n = parseFloat(String(v).replace(',', '.'));
-    this.settingsDraft.update((d) =>
-      d && Number.isFinite(n) ? { ...d, timeWarningHours: n } : d
-    );
+    this.settingsDraft.update((d) => (d && Number.isFinite(n) ? { ...d, timeWarningHours: n } : d));
   }
 
   updateSettingsDraftWarning(v: string): void {
     const n = parseInt(String(v).replace(/[^\d]/g, ''), 10);
-    this.settingsDraft.update((d) =>
-      d && !isNaN(n) ? { ...d, warningMl: n } : d
-    );
+    this.settingsDraft.update((d) => (d && !isNaN(n) ? { ...d, warningMl: n } : d));
   }
 
   updateSettingsDraftGroupGap(v: string): void {
     const n = parseInt(String(v).replace(/[^\d]/g, ''), 10);
-    this.settingsDraft.update((d) =>
-      d && !isNaN(n) ? { ...d, groupGapMinutes: n } : d
-    );
+    this.settingsDraft.update((d) => (d && !isNaN(n) ? { ...d, groupGapMinutes: n } : d));
   }
 
   updateSettingsDraftNotification(v: string): void {
     const n = parseInt(String(v).replace(/[^\d]/g, ''), 10);
-    this.settingsDraft.update((d) =>
-      d && !isNaN(n) ? { ...d, notificationMinutes: n } : d
-    );
+    this.settingsDraft.update((d) => (d && !isNaN(n) ? { ...d, notificationMinutes: n } : d));
   }
 
   updateSettingsDraftBurpDuration(v: string): void {
     const n = parseInt(String(v).replace(/[^\d]/g, ''), 10);
-    this.settingsDraft.update((d) =>
-      d && !isNaN(n) ? { ...d, burpDurationMinutes: n } : d
-    );
+    this.settingsDraft.update((d) => (d && !isNaN(n) ? { ...d, burpDurationMinutes: n } : d));
   }
 
   updateSettingsDraftEventReminderDays(v: string): void {
     const n = parseInt(String(v).replace(/[^\d]/g, ''), 10);
-    this.settingsDraft.update((d) =>
-      d && !isNaN(n) ? { ...d, eventReminderDays: n } : d
-    );
+    this.settingsDraft.update((d) => (d && !isNaN(n) ? { ...d, eventReminderDays: n } : d));
   }
 
   updateSettingsDraftEventReminderHours(v: string): void {
     const n = parseInt(String(v).replace(/[^\d]/g, ''), 10);
-    this.settingsDraft.update((d) =>
-      d && !isNaN(n) ? { ...d, eventReminderHours: n } : d
-    );
+    this.settingsDraft.update((d) => (d && !isNaN(n) ? { ...d, eventReminderHours: n } : d));
   }
 
   updateSettingsDraftActivityLogRefresh(v: string): void {
     const n = parseInt(String(v).replace(/[^\d]/g, ''), 10);
-    this.settingsDraft.update((d) =>
-      d && !isNaN(n) ? { ...d, activityLogRefreshMinutes: n } : d
-    );
+    this.settingsDraft.update((d) => (d && !isNaN(n) ? { ...d, activityLogRefreshMinutes: n } : d));
   }
 
   submitFeedingSettings(): void {
@@ -757,9 +730,7 @@ export class FeedingDialogsComponent {
       return;
     }
     if (!Number.isFinite(gap) || gap < 0 || gap > 180) {
-      this.settingsFormError.set(
-        'Gom nhóm (FEED_GROUP_GAP_MINUTES): từ 0 (tắt) đến 180 phút.'
-      );
+      this.settingsFormError.set('Gom nhóm (FEED_GROUP_GAP_MINUTES): từ 0 (tắt) đến 180 phút.');
       return;
     }
     if (!Number.isFinite(notify) || notify < 1 || notify > 180) {
@@ -769,21 +740,15 @@ export class FeedingDialogsComponent {
       return;
     }
     if (!Number.isFinite(burp) || burp < 1 || burp > 30) {
-      this.settingsFormError.set(
-        'Thời gian vỗ ợ (BURP_DURATION_MINUTES): từ 1 đến 30 phút.'
-      );
+      this.settingsFormError.set('Thời gian vỗ ợ (BURP_DURATION_MINUTES): từ 1 đến 30 phút.');
       return;
     }
     if (!Number.isFinite(evDays) || evDays < 0 || evDays > 30) {
-      this.settingsFormError.set(
-        'Nhắc lịch — ngày (EVENT_REMINDER_DAYS): từ 0 đến 30.'
-      );
+      this.settingsFormError.set('Nhắc lịch — ngày (EVENT_REMINDER_DAYS): từ 0 đến 30.');
       return;
     }
     if (!Number.isFinite(evHours) || evHours < 0 || evHours > 168) {
-      this.settingsFormError.set(
-        'Nhắc lịch — giờ (EVENT_REMINDER_HOURS): từ 0 đến 168.'
-      );
+      this.settingsFormError.set('Nhắc lịch — giờ (EVENT_REMINDER_HOURS): từ 0 đến 168.');
       return;
     }
     if (!Number.isFinite(actLog) || actLog < 1 || actLog > 60) {
@@ -903,8 +868,7 @@ export class FeedingDialogsComponent {
     if (!this.historyHasMoreFeeds()) return;
     const el = event.target as HTMLElement;
     if (!el) return;
-    const nearBottom =
-      el.scrollHeight - el.scrollTop - el.clientHeight < 180;
+    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 180;
     if (!nearBottom) return;
     const t = Date.now();
     if (t - this.lastHistoryInfiniteScrollAt < 450) return;
@@ -940,19 +904,12 @@ export class FeedingDialogsComponent {
   }
 
   viewGroupNote(g: FeedingViewGroup): string {
-    const parts = g.members
-      .map((m) => (m.note || '').trim())
-      .filter(Boolean);
+    const parts = g.members.map((m) => (m.note || '').trim()).filter(Boolean);
     return parts.length ? parts.join(' · ') : '';
   }
 
-  formatIntervalFromPrevViewGroup(
-    g: FeedingViewGroup,
-    listDesc: FeedingViewGroup[]
-  ): string {
-    const idx = listDesc.findIndex(
-      (x) => this.viewGroupKey(x) === this.viewGroupKey(g)
-    );
+  formatIntervalFromPrevViewGroup(g: FeedingViewGroup, listDesc: FeedingViewGroup[]): string {
+    const idx = listDesc.findIndex((x) => this.viewGroupKey(x) === this.viewGroupKey(g));
     let prev: FeedingLog | undefined;
     if (idx >= 0 && idx < listDesc.length - 1) {
       const older = listDesc[idx + 1];
@@ -961,8 +918,7 @@ export class FeedingDialogsComponent {
       prev = this.globalPrevLogBefore(g);
     }
     if (!prev) return '';
-    const diffMs =
-      this.logTimestamp(g.members[0]) - this.logTimestamp(prev);
+    const diffMs = this.logTimestamp(g.members[0]) - this.logTimestamp(prev);
     const diff = Math.round(diffMs / 60000);
     if (diff <= 0) return '';
     const hh = Math.floor(diff / 60);
@@ -972,13 +928,8 @@ export class FeedingDialogsComponent {
     return `${hh}h${mm.toString().padStart(2, '0')}p`;
   }
 
-  isFeedTimeGapWarningViewGroup(
-    g: FeedingViewGroup,
-    listDesc: FeedingViewGroup[]
-  ): boolean {
-    const idx = listDesc.findIndex(
-      (x) => this.viewGroupKey(x) === this.viewGroupKey(g)
-    );
+  isFeedTimeGapWarningViewGroup(g: FeedingViewGroup, listDesc: FeedingViewGroup[]): boolean {
+    const idx = listDesc.findIndex((x) => this.viewGroupKey(x) === this.viewGroupKey(g));
     let prev: FeedingLog | undefined;
     if (idx >= 0 && idx < listDesc.length - 1) {
       const older = listDesc[idx + 1];
@@ -987,8 +938,7 @@ export class FeedingDialogsComponent {
       prev = this.globalPrevLogBefore(g);
     }
     if (!prev) return false;
-    const diffMs =
-      this.logTimestamp(g.members[0]) - this.logTimestamp(prev);
+    const diffMs = this.logTimestamp(g.members[0]) - this.logTimestamp(prev);
     const hours = diffMs / (1000 * 60 * 60);
     return hours >= this.feedingSettings().feedTimeWarningHours;
   }
@@ -1132,23 +1082,15 @@ export class FeedingDialogsComponent {
     dayLogs.sort((a, b) => a.time.localeCompare(b.time));
 
     const allGroups = groupLogsByProximity(all, gap, (l) => this.logTimestamp(l));
-    const dayGroups = groupLogsByProximity(dayLogs, gap, (l) =>
-      this.logTimestamp(l)
-    );
+    const dayGroups = groupLogsByProximity(dayLogs, gap, (l) => this.logTimestamp(l));
     const currentGroup = this.findViewGroupForLog(log, allGroups);
     const currentDayGroup = this.findViewGroupForLog(log, dayGroups);
 
     const curTs = this.logTimestamp(log);
-    const effectiveTs = currentGroup
-      ? this.viewGroupEndTs(currentGroup)
-      : curTs;
-    const currentVol = currentGroup
-      ? this.viewGroupDisplayVolume(currentGroup)
-      : log.volume;
+    const effectiveTs = currentGroup ? this.viewGroupEndTs(currentGroup) : curTs;
+    const currentVol = currentGroup ? this.viewGroupDisplayVolume(currentGroup) : log.volume;
 
-    const upToDayGroupsDesc = dayGroups.filter(
-      (g) => this.viewGroupEndTs(g) <= effectiveTs
-    );
+    const upToDayGroupsDesc = dayGroups.filter((g) => this.viewGroupEndTs(g) <= effectiveTs);
     const upToDayGroupsAsc = [...upToDayGroupsDesc].reverse();
     const dayToPoint = this.statsFromViewGroups(log.date, upToDayGroupsAsc);
     const dayFull =
@@ -1190,14 +1132,9 @@ export class FeedingDialogsComponent {
     }
 
     if (currentDayGroup && upToDayGroupsAsc.length > 0) {
-      const idx =
-        upToDayGroupsAsc.findIndex((g) => g === currentDayGroup) + 1;
-      const totalSoFar = upToDayGroupsAsc.reduce(
-        (s, g) => s + this.viewGroupDisplayVolume(g),
-        0
-      );
-      const dayLabel =
-        log.date === this.todayDateStr() ? 'hôm nay (tới lúc này)' : 'trong ngày';
+      const idx = upToDayGroupsAsc.findIndex((g) => g === currentDayGroup) + 1;
+      const totalSoFar = upToDayGroupsAsc.reduce((s, g) => s + this.viewGroupDisplayVolume(g), 0);
+      const dayLabel = log.date === this.todayDateStr() ? 'hôm nay (tới lúc này)' : 'trong ngày';
       const dayTotal = dayFull.total || totalSoFar;
       compares.push({
         label: 'Vị trí trong ngày',
@@ -1215,8 +1152,7 @@ export class FeedingDialogsComponent {
     }
 
     if (dayToPoint.count >= 1 && dayToPoint.avg > 0) {
-      const ref =
-        dayToPoint.count >= 3 ? dayToPoint.typicalFeedMl : dayToPoint.avg;
+      const ref = dayToPoint.count >= 3 ? dayToPoint.typicalFeedMl : dayToPoint.avg;
       const diffRef = currentVol - ref;
       const refLabel = dayToPoint.count >= 3 ? 'TB điển hình' : 'TB';
       const diffPart =
@@ -1273,14 +1209,11 @@ export class FeedingDialogsComponent {
       else {
         const hh = Math.floor(diff / 60);
         const mm = diff % 60;
-        ageLabel =
-          mm === 0 ? `Cách đây ${hh} giờ` : `Cách đây ${hh} giờ ${mm} phút`;
+        ageLabel = mm === 0 ? `Cách đây ${hh} giờ` : `Cách đây ${hh} giờ ${mm} phút`;
       }
     }
 
-    const volumeStatus: FeedDetailView['volumeStatus'] = this.isLowVolume(
-      log.volume
-    )
+    const volumeStatus: FeedDetailView['volumeStatus'] = this.isLowVolume(log.volume)
       ? 'low'
       : this.isHighVolume(log.volume)
         ? 'high'
@@ -1300,9 +1233,7 @@ export class FeedingDialogsComponent {
     groups: FeedingViewGroup[]
   ): FeedingViewGroup | undefined {
     const key = this.logRowKey(log);
-    return groups.find((g) =>
-      g.members.some((m) => this.logRowKey(m) === key)
-    );
+    return groups.find((g) => g.members.some((m) => this.logRowKey(m) === key));
   }
 
   private viewGroupEndTs(g: FeedingViewGroup): number {
@@ -1322,10 +1253,7 @@ export class FeedingDialogsComponent {
     });
   }
 
-  private statsFromViewGroups(
-    date: string,
-    groups: FeedingViewGroup[]
-  ): DayStatsFull {
+  private statsFromViewGroups(date: string, groups: FeedingViewGroup[]): DayStatsFull {
     return this.statsFromList(date, this.pseudoLogsFromViewGroups(groups));
   }
 

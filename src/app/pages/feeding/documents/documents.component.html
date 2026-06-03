@@ -1,8 +1,4 @@
-<div
-  class="docs"
-  [attr.data-view]="viewMode()"
-  [class.is-search]="searchOpen()"
->
+<div class="docs" [attr.data-view]="viewMode()" [class.is-search]="searchOpen()">
   <!--
     Path bar: Home icon đứng đầu kiêm vai trò "về root", theo sau là
     breadcrumb. Khi đang ở root chỉ thấy mỗi icon Home (đậm) → đỡ chữ
@@ -12,11 +8,7 @@
   -->
   <header class="docs-toolbar" [class.searching]="searchOpen()">
     <!-- Breadcrumb (ẩn khi search bật) -->
-    <nav
-      class="docs-crumbs"
-      *ngIf="!searchOpen()"
-      aria-label="Đường dẫn thư mục"
-    >
+    <nav class="docs-crumbs" *ngIf="!searchOpen()" aria-label="Đường dẫn thư mục">
       <button
         type="button"
         class="docs-crumb home"
@@ -85,15 +77,8 @@
   </header>
 
   <!-- ============ Search results ============ -->
-  <section
-    class="docs-search-results"
-    *ngIf="searchOpen()"
-    aria-live="polite"
-  >
-    <div
-      class="docs-search-results__hint"
-      *ngIf="searchQuery().trim().length === 0"
-    >
+  <section class="docs-search-results" *ngIf="searchOpen()" aria-live="polite">
+    <div class="docs-search-results__hint" *ngIf="searchQuery().trim().length === 0">
       <i class="pi pi-info-circle"></i>
       Gõ tên thư mục hoặc ảnh để tìm. Bấm <kbd>Esc</kbd> để đóng.
     </div>
@@ -107,10 +92,7 @@
       <strong>"{{ searchQuery() }}"</strong>.
     </div>
 
-    <div
-      class="docs-search-results__count"
-      *ngIf="searchResults().length > 0"
-    >
+    <div class="docs-search-results__count" *ngIf="searchResults().length > 0">
       {{ searchResults().length }} kết quả
     </div>
 
@@ -136,9 +118,7 @@
 
           <span class="docs-search-row__body">
             <span class="docs-search-row__name">
-              <ng-container
-                *ngFor="let seg of highlightSegments(r.name, searchQuery())"
-              >
+              <ng-container *ngFor="let seg of highlightSegments(r.name, searchQuery())">
                 <mark *ngIf="seg.match">{{ seg.text }}</mark>
                 <ng-container *ngIf="!seg.match">{{ seg.text }}</ng-container>
               </ng-container>
@@ -172,17 +152,8 @@
         <i class="pi pi-chevron-down docs-menu-caret"></i>
       </button>
 
-      <div
-        class="docs-menu-pop"
-        *ngIf="folderMenuOpen()"
-        role="menu"
-      >
-        <button
-          type="button"
-          class="docs-menu-item"
-          role="menuitem"
-          (click)="openAddFolder()"
-        >
+      <div class="docs-menu-pop" *ngIf="folderMenuOpen()" role="menu">
+        <button type="button" class="docs-menu-item" role="menuitem" (click)="openAddFolder()">
           <i class="pi pi-plus"></i>
           <span>Thêm thư mục</span>
         </button>
@@ -246,7 +217,6 @@
         <i class="pi pi-list"></i>
       </button>
     </div>
-
   </div>
 
   <!-- ============ Selection action bar ============ -->
@@ -262,9 +232,15 @@
         class="docs-btn ghost small"
         (click)="toggleSelectAllInCurrent()"
         [disabled]="folderCount() + fileCount() === 0"
-        [title]="allFilesSelected() ? 'Bỏ chọn tất cả ở thư mục này' : 'Chọn tất cả mục ở thư mục này'"
+        [title]="
+          allFilesSelected() ? 'Bỏ chọn tất cả ở thư mục này' : 'Chọn tất cả mục ở thư mục này'
+        "
       >
-        <i class="pi" [class.pi-times-circle]="allFilesSelected()" [class.pi-check-circle]="!allFilesSelected()"></i>
+        <i
+          class="pi"
+          [class.pi-times-circle]="allFilesSelected()"
+          [class.pi-check-circle]="!allFilesSelected()"
+        ></i>
         <span>{{ allFilesSelected() ? 'Bỏ chọn tất cả' : 'Chọn tất cả' }}</span>
       </button>
       <!--
@@ -281,16 +257,14 @@
           [disabled]="selectedCount() === 0 || saving()"
           aria-haspopup="menu"
           [attr.aria-expanded]="selectActionsMenuOpen()"
-          [title]="selectedCount() === 0 ? 'Chọn mục để xem thao tác' : 'Thao tác với các mục đã chọn'"
+          [title]="
+            selectedCount() === 0 ? 'Chọn mục để xem thao tác' : 'Thao tác với các mục đã chọn'
+          "
         >
           <i class="pi pi-ellipsis-v"></i>
         </button>
 
-        <div
-          class="docs-menu-pop docs-menu-pop--right"
-          *ngIf="selectActionsMenuOpen()"
-          role="menu"
-        >
+        <div class="docs-menu-pop docs-menu-pop--right" *ngIf="selectActionsMenuOpen()" role="menu">
           <button
             type="button"
             class="docs-menu-item"
@@ -325,11 +299,7 @@
         </div>
       </div>
 
-      <button
-        type="button"
-        class="docs-btn ghost small"
-        (click)="exitSelectMode()"
-      >
+      <button type="button" class="docs-btn ghost small" (click)="exitSelectMode()">
         <i class="pi pi-times"></i>
         <span>Huỷ</span>
       </button>
@@ -350,14 +320,15 @@
         (click)="pasteHere()"
         [disabled]="saving()"
       >
-        <i class="pi" [class.pi-arrow-down]="!saving()" [class.pi-spinner]="saving()" [class.pi-spin]="saving()"></i>
+        <i
+          class="pi"
+          [class.pi-arrow-down]="!saving()"
+          [class.pi-spinner]="saving()"
+          [class.pi-spin]="saving()"
+        ></i>
         <span>{{ saving() ? 'Đang dán…' : 'Dán vào đây' }}</span>
       </button>
-      <button
-        type="button"
-        class="docs-btn ghost small"
-        (click)="cancelClipboard()"
-      >
+      <button type="button" class="docs-btn ghost small" (click)="cancelClipboard()">
         <i class="pi pi-times"></i>
         <span>Huỷ cắt</span>
       </button>
@@ -397,14 +368,14 @@
   <div class="docs-empty" *ngIf="isEmpty()">
     <div class="docs-empty__icon">📁</div>
     <h3>Thư mục trống</h3>
-    <p>Tạo thư mục con từ menu <strong>Thư mục</strong>, hoặc nhấn nút <strong>+</strong> ở góc dưới để tải ảnh lên.</p>
+    <p>
+      Tạo thư mục con từ menu <strong>Thư mục</strong>, hoặc nhấn nút <strong>+</strong> ở góc dưới
+      để tải ảnh lên.
+    </p>
   </div>
 
   <!-- ============ Detail view (table) ============ -->
-  <div
-    class="docs-detail"
-    *ngIf="viewMode() === 'detail' && currentChildren().length > 0"
-  >
+  <div class="docs-detail" *ngIf="viewMode() === 'detail' && currentChildren().length > 0">
     <div class="docs-detail__head">
       <div class="dh-name">Tên</div>
       <div class="dh-size">Kích thước</div>
@@ -570,7 +541,11 @@
             </span>
           </div>
         </div>
-        <div class="docs-card__actions docs-menu item-actions" *ngIf="!selectMode()" (click)="$event.stopPropagation()">
+        <div
+          class="docs-card__actions docs-menu item-actions"
+          *ngIf="!selectMode()"
+          (click)="$event.stopPropagation()"
+        >
           <button
             type="button"
             class="docs-icon-btn item-action-trigger"
@@ -662,7 +637,11 @@
             </span>
           </div>
         </div>
-        <div class="docs-card__actions docs-menu item-actions" *ngIf="!selectMode()" (click)="$event.stopPropagation()">
+        <div
+          class="docs-card__actions docs-menu item-actions"
+          *ngIf="!selectMode()"
+          (click)="$event.stopPropagation()"
+        >
           <button
             type="button"
             class="docs-icon-btn item-action-trigger"
@@ -730,7 +709,12 @@
       [attr.aria-disabled]="saving()"
       title="Chọn file để tải lên"
     >
-      <i class="pi" [class.pi-plus]="!saving()" [class.pi-spinner]="saving()" [class.pi-spin]="saving()"></i>
+      <i
+        class="pi"
+        [class.pi-plus]="!saving()"
+        [class.pi-spinner]="saving()"
+        [class.pi-spin]="saving()"
+      ></i>
       <span class="docs-fab__label">{{ saving() ? 'Đang tải…' : 'Thêm file' }}</span>
       <input
         #fileInput
@@ -745,11 +729,7 @@
   </div>
 
   <!-- ============ Modal: add folder / rename folder hoặc file ============ -->
-  <div
-    class="docs-overlay"
-    *ngIf="folderDraft() as draft"
-    (click)="closeFolderDraft()"
-  >
+  <div class="docs-overlay" *ngIf="folderDraft() as draft" (click)="closeFolderDraft()">
     <div class="docs-modal" (click)="$event.stopPropagation()" role="dialog">
       <div class="docs-modal__head">
         <h3>
@@ -765,12 +745,7 @@
             <span *ngSwitchDefault>Chỉnh sửa</span>
           </ng-container>
         </h3>
-        <button
-          type="button"
-          class="docs-icon-btn"
-          (click)="closeFolderDraft()"
-          aria-label="Đóng"
-        >
+        <button type="button" class="docs-icon-btn" (click)="closeFolderDraft()" aria-label="Đóng">
           <i class="pi pi-times"></i>
         </button>
       </div>
@@ -780,14 +755,19 @@
           <span class="docs-field__label">
             {{ draft.entryType === 'file' ? 'Tên ảnh' : 'Tên thư mục' }}
           </span>
-          <div class="docs-input-group" [class.has-suffix]="draft.entryType === 'file' && !!draft.extension">
+          <div
+            class="docs-input-group"
+            [class.has-suffix]="draft.entryType === 'file' && !!draft.extension"
+          >
             <input
               type="text"
               class="docs-input"
               [ngModel]="draft.name"
               (ngModelChange)="updateFolderDraftName($event)"
               name="folderName"
-              [placeholder]="draft.entryType === 'file' ? 'VD: cat, hoa-don…' : 'VD: docs, img, hợp đồng…'"
+              [placeholder]="
+                draft.entryType === 'file' ? 'VD: cat, hoa-don…' : 'VD: docs, img, hợp đồng…'
+              "
               autocomplete="off"
               autofocus
               required
@@ -802,7 +782,8 @@
             </span>
           </div>
           <span class="docs-field__hint" *ngIf="draft.entryType === 'file'">
-            Phần đuôi <code>{{ draft.extension || '.jpg' }}</code> được giữ tự động — bạn chỉ cần gõ tên.
+            Phần đuôi <code>{{ draft.extension || '.jpg' }}</code> được giữ tự động — bạn chỉ cần gõ
+            tên.
           </span>
         </label>
 
@@ -811,16 +792,19 @@
         </div>
 
         <div class="docs-modal__actions">
-          <button type="button" class="docs-btn ghost" (click)="closeFolderDraft()">
-            Huỷ
-          </button>
+          <button type="button" class="docs-btn ghost" (click)="closeFolderDraft()">Huỷ</button>
           <button
             type="submit"
             class="docs-btn primary"
             [disabled]="saving() || !draft.name.trim()"
           >
-            <i class="pi" [class.pi-check]="!saving()" [class.pi-spinner]="saving()" [class.pi-spin]="saving()"></i>
-            {{ saving() ? 'Đang lưu…' : (draft.mode === 'add' ? 'Tạo' : 'Lưu') }}
+            <i
+              class="pi"
+              [class.pi-check]="!saving()"
+              [class.pi-spinner]="saving()"
+              [class.pi-spin]="saving()"
+            ></i>
+            {{ saving() ? 'Đang lưu…' : draft.mode === 'add' ? 'Tạo' : 'Lưu' }}
           </button>
         </div>
       </form>
@@ -828,10 +812,7 @@
   </div>
 
   <!-- ============ Image preview (zoom + pan) ============ -->
-  <div
-    class="docs-preview"
-    *ngIf="previewEntry() as p"
-  >
+  <div class="docs-preview" *ngIf="previewEntry() as p">
     <button
       type="button"
       class="docs-preview__rename"

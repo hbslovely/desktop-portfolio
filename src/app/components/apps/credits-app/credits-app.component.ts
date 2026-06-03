@@ -76,7 +76,7 @@ export class CreditsAppComponent implements OnInit, OnDestroy {
     { type: 'section', text: 'PRODUCTION' },
     { type: 'title', text: 'THANK YOU FOR VIEWING' },
     { type: 'section', text: 'Made with ❤️ and Angular' },
-    { type: 'section', text: '© 2024 Desktop Portfolio' }
+    { type: 'section', text: '© 2024 Desktop Portfolio' },
   ]);
 
   // Animation properties

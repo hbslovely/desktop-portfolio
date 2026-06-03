@@ -29,7 +29,9 @@ $danger: #f56565;
 $info: #4299e1;
 
 // Typography
-$font-primary: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Helvetica Neue', sans-serif;
+$font-primary:
+  -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell',
+  'Helvetica Neue', sans-serif;
 
 .angular-love-hub {
   height: 100%;
@@ -261,8 +263,12 @@ $font-primary: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen'
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 // ============================================
@@ -370,7 +376,8 @@ $font-primary: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen'
   padding: 120px 20px;
   gap: 28px;
 
-  p, h3 {
+  p,
+  h3 {
     margin: 0;
     color: $text-secondary;
   }
@@ -469,12 +476,12 @@ $font-primary: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen'
   align-content: start;
 
   // Grid view - Flat Cards
-  &[data-view="grid"] {
+  &[data-view='grid'] {
     grid-template-columns: repeat(auto-fill, minmax(370px, 1fr));
   }
 
   // List view - Horizontal Layout
-  &[data-view="list"] {
+  &[data-view='list'] {
     grid-template-columns: 1fr;
     gap: 20px;
 
@@ -507,7 +514,7 @@ $font-primary: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen'
   }
 
   // Compact view - Dense Grid
-  &[data-view="compact"] {
+  &[data-view='compact'] {
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 20px;
 
@@ -599,12 +606,7 @@ $font-primary: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen'
   .image-overlay {
     position: absolute;
     inset: 0;
-    background: linear-gradient(
-      180deg,
-      transparent 0%,
-      transparent 50%,
-      rgba(0, 0, 0, 0.15) 100%
-    );
+    background: linear-gradient(180deg, transparent 0%, transparent 50%, rgba(0, 0, 0, 0.15) 100%);
     transition: opacity 0.4s ease;
     opacity: 0;
   }
@@ -1251,7 +1253,10 @@ $font-primary: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen'
     color: $text-secondary;
   }
 
-  h1, h2, h3, h4 {
+  h1,
+  h2,
+  h3,
+  h4 {
     color: $text-primary;
     font-weight: 800;
     margin: 2.2em 0 1.2em 0;
@@ -1259,10 +1264,18 @@ $font-primary: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen'
     letter-spacing: -0.5px;
   }
 
-  h1 { font-size: 2.6em; }
-  h2 { font-size: 2.1em; }
-  h3 { font-size: 1.6em; }
-  h4 { font-size: 1.3em; }
+  h1 {
+    font-size: 2.6em;
+  }
+  h2 {
+    font-size: 2.1em;
+  }
+  h3 {
+    font-size: 1.6em;
+  }
+  h4 {
+    font-size: 1.3em;
+  }
 
   a {
     color: $love-primary;
@@ -1361,7 +1374,8 @@ $font-primary: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen'
     border: 3px solid $border-light;
   }
 
-  ul, ol {
+  ul,
+  ol {
     padding-left: 2.2em;
     margin: 2em 0;
 
@@ -1552,8 +1566,12 @@ button.code-copy-btn {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .author-dialog {
@@ -1737,8 +1755,12 @@ button.code-copy-btn {
   p {
     margin: 1.2em 0;
 
-    &:first-child { margin-top: 0; }
-    &:last-child { margin-bottom: 0; }
+    &:first-child {
+      margin-top: 0;
+    }
+    &:last-child {
+      margin-bottom: 0;
+    }
   }
 
   a {
@@ -1753,7 +1775,8 @@ button.code-copy-btn {
     }
   }
 
-  strong, b {
+  strong,
+  b {
     font-weight: 700;
     color: $text-primary;
   }
@@ -1789,7 +1812,7 @@ button.code-copy-btn {
     padding: 24px;
     grid-template-columns: 1fr;
 
-    &[data-view="list"] .article-card {
+    &[data-view='list'] .article-card {
       flex-direction: column;
 
       .article-image {

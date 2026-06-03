@@ -37,7 +37,11 @@ import { WeightComponent } from './weight/weight.component';
 import { FeedingScheduleComponent } from './schedule/feeding-schedule.component';
 import { groupLogsByProximity } from './feeding-view-group';
 import { ActivityLogComponent } from './activity-log/activity-log.component';
-import { ActivityLogService, formatLogContent, ACTIVITY_EVENT } from '../../services/activity-log.service';
+import {
+  ActivityLogService,
+  formatLogContent,
+  ACTIVITY_EVENT,
+} from '../../services/activity-log.service';
 
 interface Profile {
   babyName: string;
@@ -102,13 +106,11 @@ export class FeedingComponent {
   Math = Math;
 
   /** Tab nav phía dưới: feeding | weight | schedule | mom | medical | documents. */
-  bottomTab = signal<
-    'feeding' | 'weight' | 'schedule' | 'mom' | 'medical' | 'documents'
-  >('feeding');
+  bottomTab = signal<'feeding' | 'weight' | 'schedule' | 'mom' | 'medical' | 'documents'>(
+    'feeding'
+  );
 
-  setBottomTab(
-    tab: 'feeding' | 'weight' | 'schedule' | 'mom' | 'medical' | 'documents'
-  ) {
+  setBottomTab(tab: 'feeding' | 'weight' | 'schedule' | 'mom' | 'medical' | 'documents') {
     this.bottomTab.set(tab);
     this.scrollFeedingShellToTop();
     if (tab === 'feeding') {
@@ -174,7 +176,6 @@ export class FeedingComponent {
   /** Synced from daily + dialogs (log calc). */
   bottlePrep = signal<BottlePrepFromSheet | null>(null);
 
-
   /** Ngày đang xem trên card lịch sử (mặc định: hôm qua). */
   ageInDays = computed<number | null>(() => {
     const p = this.profile();
@@ -190,8 +191,7 @@ export class FeedingComponent {
    */
   scheduleReminderEvents = computed(() => {
     const s = this.feedingSettings();
-    const leadMs =
-      (s.eventReminderDays * 24 + s.eventReminderHours) * 3600 * 1000;
+    const leadMs = (s.eventReminderDays * 24 + s.eventReminderHours) * 3600 * 1000;
     const nowMs = this.now().getTime();
     return this.eventLogService.events().filter((e) => {
       if (e.acknowledged) return false;
@@ -257,9 +257,7 @@ export class FeedingComponent {
 
   // ===== Stats =====
   todayStats = computed<DayStats>(() => this.computeDayStats(this.todayDateStr()));
-  yesterdayStats = computed<DayStats>(() =>
-    this.computeDayStats(this.yesterdayDateStr())
-  );
+  yesterdayStats = computed<DayStats>(() => this.computeDayStats(this.yesterdayDateStr()));
 
   todayLogs = computed<FeedingLog[]>(() =>
     this.logs()
@@ -310,22 +308,17 @@ export class FeedingComponent {
     // Load settings immediately with default values
     this.loadFeedingSettings();
 
-    this.route.queryParamMap
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((qp) => {
-        const user = (qp.get('user') || 'guest').toLowerCase().trim() || 'guest';
-        this.user.set(user);
-        this.loadProfile(user);
-        this.loadLogs();
-        this.loadFeedingSettings(); // Load again with user context
-        this.loadWeightLogs();
-        this.loadScheduleEvents();
-      });
+    this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((qp) => {
+      const user = (qp.get('user') || 'guest').toLowerCase().trim() || 'guest';
+      this.user.set(user);
+      this.loadProfile(user);
+      this.loadLogs();
+      this.loadFeedingSettings(); // Load again with user context
+      this.loadWeightLogs();
+      this.loadScheduleEvents();
+    });
 
-    const clockId = window.setInterval(
-      () => this.now.set(new Date()),
-      60_000
-    );
+    const clockId = window.setInterval(() => this.now.set(new Date()), 60_000);
     this.destroyRef.onDestroy(() => window.clearInterval(clockId));
 
     effect(
@@ -349,10 +342,7 @@ export class FeedingComponent {
         const profile: Profile = {
           babyName: String(parsed['babyName'] ?? '').trim(),
           birthDate: String(parsed['birthDate'] ?? '').trim(),
-          gender:
-            g === 'boy' || g === 'girl' || g === ''
-              ? (g as Profile['gender'])
-              : '',
+          gender: g === 'boy' || g === 'girl' || g === '' ? (g as Profile['gender']) : '',
         };
         this.profile.set(profile);
         this.draft.set({ ...profile });
@@ -498,9 +488,7 @@ export class FeedingComponent {
     this.eventReminderDialogOpen.set(false);
   }
 
-  private tryOpenEventReminderAfterLoad(options?: {
-    markHandledIfEmpty?: boolean;
-  }): void {
+  private tryOpenEventReminderAfterLoad(options?: { markHandledIfEmpty?: boolean }): void {
     if (this.eventReminderHandledThisLoad()) return;
     if (this.eventReminderSessionDismissed()) return;
     if (this.eventLogService.loading()) return;
@@ -561,13 +549,14 @@ export class FeedingComponent {
     // 🚀 Acknowledge each event independently - không đợi nhau
     let completedCount = 0;
     const totalCount = rows.length;
-    
+
     rows.forEach((row) => {
-      this.eventLogService.acknowledgeEvent(row)
+      this.eventLogService
+        .acknowledgeEvent(row)
         .pipe(catchError(() => of(null)))
         .subscribe(() => {
           completedCount++;
-          
+
           // Reload events after all completed (hoặc có thể reload ngay sau từng cái)
           if (completedCount === totalCount) {
             this.eventLogService.loadEvents().subscribe();
@@ -630,9 +619,7 @@ export class FeedingComponent {
     return Math.min(23, Math.max(0, parseInt(m[1], 10)));
   }
 
-  private reminderTimePeriod(
-    hour: number
-  ): 'sáng' | 'trưa' | 'chiều' | 'tối' | null {
+  private reminderTimePeriod(hour: number): 'sáng' | 'trưa' | 'chiều' | 'tối' | null {
     if (hour >= 5 && hour < 12) return 'sáng';
     if (hour >= 12 && hour < 13) return 'trưa';
     if (hour >= 13 && hour < 18) return 'chiều';
@@ -736,9 +723,7 @@ export class FeedingComponent {
   /** Tổng/cữ của 1 ngày chỉ tính tới cùng giờ hiện tại (so «ngang giờ»). */
   private statsUpToNowForDate(dateStr: string): DayStats {
     const nowTime = this.toTimeStr(this.now());
-    const list = this.logs().filter(
-      (l) => l.date === dateStr && l.time <= nowTime
-    );
+    const list = this.logs().filter((l) => l.date === dateStr && l.time <= nowTime);
     return this.dayLogsGroupedStats(dateStr, list);
   }
 

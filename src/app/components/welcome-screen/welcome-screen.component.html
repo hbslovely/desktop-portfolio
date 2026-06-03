@@ -93,17 +93,17 @@
           <svg viewBox="0 0 100 100">
             <defs>
               <linearGradient id="ringGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" style="stop-color:#06b6d4"/>
-                <stop offset="50%" style="stop-color:#10b981"/>
-                <stop offset="100%" style="stop-color:#3b82f6"/>
+                <stop offset="0%" style="stop-color: #06b6d4" />
+                <stop offset="50%" style="stop-color: #10b981" />
+                <stop offset="100%" style="stop-color: #3b82f6" />
               </linearGradient>
             </defs>
-            <circle class="ring-bg" cx="50" cy="50" r="46"/>
-            <circle class="ring-progress" cx="50" cy="50" r="46" stroke="url(#ringGradient)"/>
+            <circle class="ring-bg" cx="50" cy="50" r="46" />
+            <circle class="ring-progress" cx="50" cy="50" r="46" stroke="url(#ringGradient)" />
           </svg>
         </div>
         <div class="avatar-inner">
-          <img src="assets/images/icons/profile.png" alt="User" class="avatar-img">
+          <img src="assets/images/icons/profile.png" alt="User" class="avatar-img" />
         </div>
         <div class="avatar-status"></div>
       </div>
@@ -125,20 +125,19 @@
               (input)="onPasswordInput($event)"
               (keypress)="onKeyPress($event)"
               placeholder="Enter password"
-              autofocus>
-            <button 
-              type="button" 
-              class="field-toggle"
-              (click)="togglePasswordVisibility()">
+              autofocus
+            />
+            <button type="button" class="field-toggle" (click)="togglePasswordVisibility()">
               <i [class]="showPassword() ? 'pi pi-eye-slash' : 'pi pi-eye'"></i>
             </button>
           </div>
-          <button 
-            type="button" 
+          <button
+            type="button"
             class="submit-btn"
             [class.loading]="isLoading()"
             [disabled]="!password() || isLoading()"
-            (click)="onSubmit()">
+            (click)="onSubmit()"
+          >
             <i class="pi pi-arrow-right" *ngIf="!isLoading()"></i>
             <span class="spinner" *ngIf="isLoading()"></span>
           </button>
@@ -191,7 +190,7 @@
 <div class="loading-screen" *ngIf="showWelcomeLoading()">
   <div class="loading-content">
     <div class="loading-avatar">
-      <img src="assets/images/icons/profile.png" alt="User Avatar" class="avatar-image">
+      <img src="assets/images/icons/profile.png" alt="User Avatar" class="avatar-image" />
       <div class="success-checkmark">
         <i class="pi pi-check"></i>
       </div>

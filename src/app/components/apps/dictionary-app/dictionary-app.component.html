@@ -3,27 +3,25 @@
   <div class="search-header">
     <div class="search-container">
       <i class="pi pi-search search-icon"></i>
-      <input 
+      <input
         #searchInput
-        type="text" 
+        type="text"
         class="search-input"
         placeholder="Search for a word..."
         [value]="searchTerm()"
         (input)="onSearchInput($event)"
         (keypress)="onKeyPress($event)"
-        [disabled]="loading()">
-      <button 
-        *ngIf="searchTerm()" 
-        (click)="clearSearch()" 
-        class="clear-btn"
-        title="Clear">
+        [disabled]="loading()"
+      />
+      <button *ngIf="searchTerm()" (click)="clearSearch()" class="clear-btn" title="Clear">
         <i class="pi pi-times"></i>
       </button>
-      <button 
-        (click)="searchWord()" 
+      <button
+        (click)="searchWord()"
         class="search-btn"
         [disabled]="!searchTerm() || loading()"
-        title="Search">
+        title="Search"
+      >
         <i class="pi pi-arrow-right"></i>
       </button>
     </div>
@@ -79,10 +77,11 @@
           </h3>
         </div>
         <div class="bookmark-chips">
-          <button 
-            *ngFor="let word of bookmarkedWords()" 
+          <button
+            *ngFor="let word of bookmarkedWords()"
             (click)="searchSuggestion(word)"
-            class="bookmark-chip">
+            class="bookmark-chip"
+          >
             <i class="pi pi-bookmark-fill"></i>
             {{ word }}
           </button>
@@ -99,10 +98,11 @@
           </button>
         </div>
         <div class="history-chips">
-          <button 
-            *ngFor="let word of searchHistory()" 
+          <button
+            *ngFor="let word of searchHistory()"
             (click)="searchFromHistory(word)"
-            class="history-chip">
+            class="history-chip"
+          >
             <i class="pi pi-clock"></i>
             {{ word }}
           </button>
@@ -113,10 +113,11 @@
       <div class="suggestions-section">
         <h3>Try These Words</h3>
         <div class="suggestion-chips">
-          <button 
-            *ngFor="let word of popularWords" 
+          <button
+            *ngFor="let word of popularWords"
             (click)="searchSuggestion(word)"
-            class="suggestion-chip">
+            class="suggestion-chip"
+          >
             {{ word }}
           </button>
         </div>
@@ -131,40 +132,51 @@
           <div class="word-title-row">
             <h1 class="word-title">{{ wordData()?.word }}</h1>
             <div class="word-actions">
-              <button 
+              <button
                 (click)="toggleBookmark(wordData()!.word)"
                 class="action-btn bookmark-btn"
                 [class.bookmarked]="isBookmarked(wordData()!.word)"
-                [title]="isBookmarked(wordData()!.word) ? 'Remove bookmark' : 'Bookmark word'">
-                <i [class]="isBookmarked(wordData()!.word) ? 'pi pi-bookmark-fill' : 'pi pi-bookmark'"></i>
+                [title]="isBookmarked(wordData()!.word) ? 'Remove bookmark' : 'Bookmark word'"
+              >
+                <i
+                  [class]="
+                    isBookmarked(wordData()!.word) ? 'pi pi-bookmark-fill' : 'pi pi-bookmark'
+                  "
+                ></i>
               </button>
-              <button 
+              <button
                 (click)="copyDefinition()"
                 class="action-btn copy-btn"
-                title="Copy definition">
+                title="Copy definition"
+              >
                 <i class="pi pi-copy"></i>
               </button>
-              <button 
+              <button
                 (click)="shareDefinition()"
                 class="action-btn share-btn"
-                title="Share definition">
+                title="Share definition"
+              >
                 <i class="pi pi-share-alt"></i>
               </button>
-              <button 
+              <button
                 (click)="exportDefinition()"
                 class="action-btn export-btn"
-                title="Export as text file">
+                title="Export as text file"
+              >
                 <i class="pi pi-download"></i>
               </button>
             </div>
           </div>
           <div class="phonetic-section" *ngIf="wordData()?.phonetic || getPhoneticWithAudio()">
-            <span class="phonetic-text">{{ wordData()?.phonetic || getPhoneticWithAudio()?.text }}</span>
-            <button 
+            <span class="phonetic-text">{{
+              wordData()?.phonetic || getPhoneticWithAudio()?.text
+            }}</span>
+            <button
               *ngIf="getPhoneticWithAudio()"
               (click)="playAudio(getPhoneticWithAudio()!.audio!)"
               class="audio-btn"
-              title="Play pronunciation">
+              title="Play pronunciation"
+            >
               <i class="pi pi-volume-up"></i>
             </button>
           </div>
@@ -188,7 +200,10 @@
           </div>
 
           <div class="definitions-list">
-            <div *ngFor="let definition of meaning.definitions; let j = index" class="definition-item">
+            <div
+              *ngFor="let definition of meaning.definitions; let j = index"
+              class="definition-item"
+            >
               <div class="definition-number">{{ j + 1 }}</div>
               <div class="definition-content">
                 <p class="definition-text">{{ definition.definition }}</p>
@@ -200,14 +215,20 @@
                 <!-- Definition-level Synonyms/Antonyms -->
                 <div *ngIf="definition.synonyms.length > 0" class="word-relations">
                   <span class="relation-label">Synonyms:</span>
-                  <span *ngFor="let syn of definition.synonyms.slice(0, 5); let last = last" class="relation-word">
+                  <span
+                    *ngFor="let syn of definition.synonyms.slice(0, 5); let last = last"
+                    class="relation-word"
+                  >
                     {{ syn }}<span *ngIf="!last">, </span>
                   </span>
                 </div>
 
                 <div *ngIf="definition.antonyms.length > 0" class="word-relations">
                   <span class="relation-label">Antonyms:</span>
-                  <span *ngFor="let ant of definition.antonyms.slice(0, 5); let last = last" class="relation-word">
+                  <span
+                    *ngFor="let ant of definition.antonyms.slice(0, 5); let last = last"
+                    class="relation-word"
+                  >
                     {{ ant }}<span *ngIf="!last">, </span>
                   </span>
                 </div>
@@ -218,17 +239,21 @@
       </div>
 
       <!-- All Synonyms & Antonyms -->
-      <div class="relations-section" *ngIf="getAllSynonyms().length > 0 || getAllAntonyms().length > 0">
+      <div
+        class="relations-section"
+        *ngIf="getAllSynonyms().length > 0 || getAllAntonyms().length > 0"
+      >
         <div *ngIf="getAllSynonyms().length > 0" class="relation-group">
           <h3 class="section-title">
             <i class="pi pi-link"></i>
             Synonyms
           </h3>
           <div class="relation-tags">
-            <button 
-              *ngFor="let syn of getAllSynonyms()" 
+            <button
+              *ngFor="let syn of getAllSynonyms()"
               (click)="searchSuggestion(syn)"
-              class="relation-tag synonym-tag">
+              class="relation-tag synonym-tag"
+            >
               {{ syn }}
             </button>
           </div>
@@ -240,10 +265,11 @@
             Antonyms
           </h3>
           <div class="relation-tags">
-            <button 
-              *ngFor="let ant of getAllAntonyms()" 
+            <button
+              *ngFor="let ant of getAllAntonyms()"
               (click)="searchSuggestion(ant)"
-              class="relation-tag antonym-tag">
+              class="relation-tag antonym-tag"
+            >
               {{ ant }}
             </button>
           </div>
@@ -263,4 +289,3 @@
     <span>Word bookmarked!</span>
   </div>
 </div>
-

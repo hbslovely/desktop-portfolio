@@ -200,7 +200,9 @@
   font-weight: 700;
   font-family: inherit;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
 
   &:hover {
     background: #fff;
@@ -298,7 +300,9 @@
   border: 1px solid var(--border);
   border-radius: 14px;
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
 
   &:hover {
     border-color: #c7d2fe;
@@ -618,7 +622,9 @@
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
 
   &:hover {
     border-color: #9ca3af;
@@ -648,7 +654,7 @@
   font-weight: 600;
   color: #059669;
   border-color: #d1fae5;
-  
+
   &:hover {
     background-color: #ecfdf5;
     border-color: #a7f3d0;
@@ -664,11 +670,11 @@
     flex-direction: row;
     justify-content: center;
   }
-  
+
   .calendar-nav-dropdowns {
     gap: 4px;
   }
-  
+
   .calendar-today-btn {
     span {
       display: none;
@@ -861,7 +867,9 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  transition: background 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s;
 
   &:hover {
     background: #fee2e2;

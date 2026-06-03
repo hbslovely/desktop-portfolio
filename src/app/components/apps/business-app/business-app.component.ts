@@ -8,7 +8,7 @@ import { BusinessService, BusinessItem, SheetName } from '../../../services/busi
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './business-app.component.html',
-  styleUrl: './business-app.component.scss'
+  styleUrl: './business-app.component.scss',
 })
 export class BusinessAppComponent implements OnInit, OnDestroy {
   // Active sheet tab
@@ -47,7 +47,7 @@ export class BusinessAppComponent implements OnInit, OnDestroy {
   availableBrands = computed(() => {
     if (!this.isIngredientSheet()) return [];
     const brands = new Set<string>();
-    this.items().forEach(item => {
+    this.items().forEach((item) => {
       if (item.thuongHieuNguyenLieu?.trim()) {
         brands.add(item.thuongHieuNguyenLieu.trim());
       }
@@ -62,7 +62,7 @@ export class BusinessAppComponent implements OnInit, OnDestroy {
     // Apply search filter (only for Nguồn nguyên liệu)
     if (this.isIngredientSheet() && this.searchQuery().trim()) {
       const query = this.normalizeVietnamese(this.searchQuery().trim().toLowerCase());
-      result = result.filter(item => {
+      result = result.filter((item) => {
         const monHang = this.normalizeVietnamese((item.monHangNguyenLieu || '').toLowerCase());
         return monHang.includes(query);
       });
@@ -70,7 +70,7 @@ export class BusinessAppComponent implements OnInit, OnDestroy {
 
     // Apply brand filter
     if (this.isIngredientSheet() && this.selectedBrands().length > 0) {
-      result = result.filter(item => {
+      result = result.filter((item) => {
         return this.selectedBrands().includes(item.thuongHieuNguyenLieu || '');
       });
     }
@@ -78,7 +78,7 @@ export class BusinessAppComponent implements OnInit, OnDestroy {
     // Apply max gia cot filter
     if (this.isIngredientSheet() && this.maxGiaCot().trim()) {
       const maxGia = this.businessService.parseAmount(this.maxGiaCot());
-      result = result.filter(item => {
+      result = result.filter((item) => {
         const giaCot = this.businessService.parseAmount(item.giaCot || '0');
         return giaCot <= maxGia;
       });
@@ -117,7 +117,7 @@ export class BusinessAppComponent implements OnInit, OnDestroy {
     const tab = this.incomeExpenseTab();
     if (tab === 'all') return this.items();
 
-    return this.items().filter(item => {
+    return this.items().filter((item) => {
       const amount = this.businessService.parseAmountWithSign(item.soTien || '0');
       if (tab === 'income') return amount > 0;
       if (tab === 'expense') return amount < 0;
@@ -144,18 +144,18 @@ export class BusinessAppComponent implements OnInit, OnDestroy {
     const allItems = this.items();
 
     if (sheet === 'Đầu vào đầu ra') {
-      const incomeItems = allItems.filter(item => {
+      const incomeItems = allItems.filter((item) => {
         const amount = this.businessService.parseAmountWithSign(item.soTien || '0');
         return amount > 0;
       });
-      const expenseItems = allItems.filter(item => {
+      const expenseItems = allItems.filter((item) => {
         const amount = this.businessService.parseAmountWithSign(item.soTien || '0');
         return amount < 0;
       });
 
       // Group by platform (Sàn)
       const incomeByPlatform = new Map<string, number>();
-      incomeItems.forEach(item => {
+      incomeItems.forEach((item) => {
         const platform = item.san || 'Khác';
         const amount = this.businessService.parseAmountWithSign(item.soTien || '0');
         incomeByPlatform.set(platform, (incomeByPlatform.get(platform) || 0) + amount);
@@ -163,7 +163,7 @@ export class BusinessAppComponent implements OnInit, OnDestroy {
 
       // Group by category (Phân loại)
       const expenseByCategory = new Map<string, number>();
-      expenseItems.forEach(item => {
+      expenseItems.forEach((item) => {
         const category = item.phanLoai || 'Khác';
         const amount = Math.abs(this.businessService.parseAmountWithSign(item.soTien || '0'));
         expenseByCategory.set(category, (expenseByCategory.get(category) || 0) + amount);
@@ -176,19 +176,19 @@ export class BusinessAppComponent implements OnInit, OnDestroy {
         netAmount: this.totalChiPhi(),
         incomeByPlatform: Array.from(incomeByPlatform.entries()).map(([platform, amount]) => ({
           platform,
-          amount
+          amount,
         })),
         expenseByCategory: Array.from(expenseByCategory.entries()).map(([category, amount]) => ({
           category,
-          amount
+          amount,
         })),
         incomeCount: incomeItems.length,
-        expenseCount: expenseItems.length
+        expenseCount: expenseItems.length,
       };
     } else if (sheet === 'Nguồn nguyên liệu') {
       // Group by brand
       const byBrand = new Map<string, { count: number; totalGiaGoc: number; avgGiaCot: number }>();
-      allItems.forEach(item => {
+      allItems.forEach((item) => {
         const brand = item.thuongHieuNguyenLieu || 'Khác';
         const giaGoc = this.businessService.parseAmount(item.giaGoc || '0');
         const giaCot = this.businessService.parseAmount(item.giaCot || '0');
@@ -207,13 +207,13 @@ export class BusinessAppComponent implements OnInit, OnDestroy {
           brand,
           count: data.count,
           totalGiaGoc: data.totalGiaGoc,
-          avgGiaCot: data.avgGiaCot
-        }))
+          avgGiaCot: data.avgGiaCot,
+        })),
       };
     } else if (sheet === 'Nguồn vật liệu') {
       // Group by brand
       const byBrand = new Map<string, { count: number; totalGiaTien: number }>();
-      allItems.forEach(item => {
+      allItems.forEach((item) => {
         const brand = item.thuongHieu || 'Khác';
         const giaTien = this.businessService.parseAmount(item.giaTien || '0');
 
@@ -230,13 +230,13 @@ export class BusinessAppComponent implements OnInit, OnDestroy {
         byBrand: Array.from(byBrand.entries()).map(([brand, data]) => ({
           brand,
           count: data.count,
-          totalGiaTien: data.totalGiaTien
-        }))
+          totalGiaTien: data.totalGiaTien,
+        })),
       };
     } else if (sheet === 'Menu') {
       // Group by category
       const byCategory = new Map<string, { count: number; totalGiaBan: number }>();
-      allItems.forEach(item => {
+      allItems.forEach((item) => {
         const category = item.danhMuc || 'Khác';
         const giaBan = this.businessService.parseAmount(item.giaBan || '0');
 
@@ -253,8 +253,8 @@ export class BusinessAppComponent implements OnInit, OnDestroy {
         byCategory: Array.from(byCategory.entries()).map(([category, data]) => ({
           category,
           count: data.count,
-          totalGiaBan: data.totalGiaBan
-        }))
+          totalGiaBan: data.totalGiaBan,
+        })),
       };
     }
 
@@ -343,17 +343,17 @@ export class BusinessAppComponent implements OnInit, OnDestroy {
    * Load all sheets data for global search
    */
   loadAllSheetsData(): void {
-    this.sheets.forEach(sheet => {
+    this.sheets.forEach((sheet) => {
       this.businessService.getItems(sheet, false).subscribe({
         next: (data) => {
-          this.allSheetsData.update(current => ({
+          this.allSheetsData.update((current) => ({
             ...current,
-            [sheet]: data
+            [sheet]: data,
           }));
         },
         error: (err) => {
           console.error(`Error loading ${sheet}:`, err);
-        }
+        },
       });
     });
   }
@@ -395,7 +395,7 @@ export class BusinessAppComponent implements OnInit, OnDestroy {
   toggleBrand(brand: string): void {
     const brands = this.selectedBrands();
     if (brands.includes(brand)) {
-      this.selectedBrands.set(brands.filter(b => b !== brand));
+      this.selectedBrands.set(brands.filter((b) => b !== brand));
     } else {
       this.selectedBrands.set([...brands, brand]);
     }
@@ -446,9 +446,11 @@ export class BusinessAppComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         console.error('Error loading items:', err);
-        this.error.set(`Không thể tải dữ liệu từ ${this.activeSheet()}. Vui lòng kiểm tra quyền truy cập Google Sheets.`);
+        this.error.set(
+          `Không thể tải dữ liệu từ ${this.activeSheet()}. Vui lòng kiểm tra quyền truy cập Google Sheets.`
+        );
         this.isLoading.set(false);
-      }
+      },
     });
   }
 
@@ -480,14 +482,14 @@ export class BusinessAppComponent implements OnInit, OnDestroy {
         soTien: '',
         tongChiPhi: '',
         phanLoai: '',
-        san: ''
+        san: '',
       };
     } else if (sheet === 'Nguồn vật liệu') {
       return {
         monHang: '',
         giaTien: '',
         khoiLuong: '',
-        thuongHieu: ''
+        thuongHieu: '',
       };
     } else if (sheet === 'Nguồn nguyên liệu') {
       return {
@@ -496,7 +498,7 @@ export class BusinessAppComponent implements OnInit, OnDestroy {
         giaGoc: '',
         donViTinh: '',
         thuongHieuNguyenLieu: '',
-        soLuongVien: ''
+        soLuongVien: '',
       };
     } else if (sheet === 'Menu') {
       return {
@@ -504,7 +506,7 @@ export class BusinessAppComponent implements OnInit, OnDestroy {
         moTa: '',
         danhMuc: '',
         giaBan: '',
-        cachCheBien: ''
+        cachCheBien: '',
       };
     }
 
@@ -521,16 +523,16 @@ export class BusinessAppComponent implements OnInit, OnDestroy {
     let errorMessage = '';
 
     if (sheet === 'Đầu vào đầu ra') {
-      isValid = !!(this.newItem.tenChiPhi?.trim());
+      isValid = !!this.newItem.tenChiPhi?.trim();
       errorMessage = 'Vui lòng nhập tên chi phí';
     } else if (sheet === 'Nguồn vật liệu') {
-      isValid = !!(this.newItem.monHang?.trim());
+      isValid = !!this.newItem.monHang?.trim();
       errorMessage = 'Vui lòng nhập món hàng';
     } else if (sheet === 'Nguồn nguyên liệu') {
-      isValid = !!(this.newItem.monHangNguyenLieu?.trim());
+      isValid = !!this.newItem.monHangNguyenLieu?.trim();
       errorMessage = 'Vui lòng nhập món hàng';
     } else if (sheet === 'Menu') {
-      isValid = !!(this.newItem.tenMon?.trim());
+      isValid = !!this.newItem.tenMon?.trim();
       errorMessage = 'Vui lòng nhập tên món';
     }
 
@@ -553,8 +555,11 @@ export class BusinessAppComponent implements OnInit, OnDestroy {
       error: (err) => {
         console.error('Error adding item:', err);
         this.isLoading.set(false);
-        this.showNotificationDialog('Lỗi: Không thể thêm dữ liệu. Vui lòng kiểm tra kết nối hoặc quyền truy cập Google Sheets.', 'error');
-      }
+        this.showNotificationDialog(
+          'Lỗi: Không thể thêm dữ liệu. Vui lòng kiểm tra kết nối hoặc quyền truy cập Google Sheets.',
+          'error'
+        );
+      },
     });
   }
 
@@ -575,11 +580,14 @@ export class BusinessAppComponent implements OnInit, OnDestroy {
       text = `${item.tenMon || ''}\t${item.moTa || ''}\t${item.danhMuc || ''}\t${item.giaBan || ''}`;
     }
 
-    navigator.clipboard.writeText(text).then(() => {
-      this.showNotificationDialog('Đã sao chép vào clipboard!', 'success');
-    }).catch(() => {
-      this.showNotificationDialog('Không thể sao chép vào clipboard', 'error');
-    });
+    navigator.clipboard
+      .writeText(text)
+      .then(() => {
+        this.showNotificationDialog('Đã sao chép vào clipboard!', 'success');
+      })
+      .catch(() => {
+        this.showNotificationDialog('Không thể sao chép vào clipboard', 'error');
+      });
   }
 
   /**
@@ -588,7 +596,7 @@ export class BusinessAppComponent implements OnInit, OnDestroy {
   exportToCSV(): void {
     const sheet = this.activeSheet();
     const data = this.items();
-    
+
     if (data.length === 0) {
       this.showNotificationDialog('Không có dữ liệu để xuất', 'error');
       return;
@@ -604,7 +612,7 @@ export class BusinessAppComponent implements OnInit, OnDestroy {
         item.tenChiPhi || '',
         item.soTien || '',
         item.phanLoai || '',
-        item.san || ''
+        item.san || '',
       ]);
     } else if (sheet === 'Nguồn vật liệu') {
       headers = ['STT', 'Món hàng', 'Giá tiền', 'Khối lượng', 'Thương hiệu'];
@@ -613,10 +621,20 @@ export class BusinessAppComponent implements OnInit, OnDestroy {
         item.monHang || '',
         item.giaTien || '',
         item.khoiLuong || '',
-        item.thuongHieu || ''
+        item.thuongHieu || '',
       ]);
     } else if (sheet === 'Nguồn nguyên liệu') {
-      headers = ['STT', 'Món hàng', 'Giá gốc', 'Đơn vị tính', 'Thương hiệu', 'Số lượng viên', 'Giá cốt', 'Giá bán đề xuất', 'Giá bán lẻ đề xuất'];
+      headers = [
+        'STT',
+        'Món hàng',
+        'Giá gốc',
+        'Đơn vị tính',
+        'Thương hiệu',
+        'Số lượng viên',
+        'Giá cốt',
+        'Giá bán đề xuất',
+        'Giá bán lẻ đề xuất',
+      ];
       rows = data.map((item, index) => [
         (index + 1).toString(),
         item.monHangNguyenLieu || '',
@@ -626,7 +644,7 @@ export class BusinessAppComponent implements OnInit, OnDestroy {
         item.soLuongVien || '',
         item.giaCot || '',
         item.giaBanDeXuat || '',
-        item.giaBanLeDeXuat || ''
+        item.giaBanLeDeXuat || '',
       ]);
     } else if (sheet === 'Menu') {
       headers = ['STT', 'Tên món', 'Mô tả', 'Danh mục', 'Giá bán', 'Cách chế biến'];
@@ -636,14 +654,14 @@ export class BusinessAppComponent implements OnInit, OnDestroy {
         item.moTa || '',
         item.danhMuc || '',
         item.giaBan || '',
-        item.cachCheBien || ''
+        item.cachCheBien || '',
       ]);
     }
 
     // Convert to CSV format
     const csvContent = [
       headers.join(','),
-      ...rows.map(row => row.map(cell => `"${cell.replace(/"/g, '""')}"`).join(','))
+      ...rows.map((row) => row.map((cell) => `"${cell.replace(/"/g, '""')}"`).join(',')),
     ].join('\n');
 
     // Add BOM for Excel compatibility
@@ -667,7 +685,14 @@ export class BusinessAppComponent implements OnInit, OnDestroy {
   shouldFormatAsAmount(key: unknown, value: unknown): boolean {
     if (typeof value !== 'number') return false;
     const keyStr = String(key);
-    return keyStr.includes('Gia') || keyStr.includes('giá') || keyStr.includes('Thu') || keyStr.includes('Chi') || keyStr.includes('Còn') || keyStr.includes('TB');
+    return (
+      keyStr.includes('Gia') ||
+      keyStr.includes('giá') ||
+      keyStr.includes('Thu') ||
+      keyStr.includes('Chi') ||
+      keyStr.includes('Còn') ||
+      keyStr.includes('TB')
+    );
   }
 
   /**
@@ -688,15 +713,15 @@ export class BusinessAppComponent implements OnInit, OnDestroy {
     const data = this.items();
 
     if (sheet === 'Đầu vào đầu ra') {
-      const income = data.filter(item => {
+      const income = data.filter((item) => {
         const amount = this.businessService.parseAmountWithSign(item.soTien || '0');
         return amount > 0;
       });
-      const expense = data.filter(item => {
+      const expense = data.filter((item) => {
         const amount = this.businessService.parseAmountWithSign(item.soTien || '0');
         return amount < 0;
       });
-      
+
       return {
         'Tổng số mục': data.length,
         'Số mục thu vào': income.length,
@@ -705,7 +730,7 @@ export class BusinessAppComponent implements OnInit, OnDestroy {
         'Tổng chi ra': this.totalChiRa(),
         'Còn lại': this.totalChiPhi(),
         'TB thu vào': income.length > 0 ? this.totalThuVao() / income.length : 0,
-        'TB chi ra': expense.length > 0 ? this.totalChiRa() / expense.length : 0
+        'TB chi ra': expense.length > 0 ? this.totalChiRa() / expense.length : 0,
       };
     } else if (sheet === 'Nguồn nguyên liệu') {
       const totalGiaGoc = data.reduce((sum, item) => {
@@ -714,39 +739,41 @@ export class BusinessAppComponent implements OnInit, OnDestroy {
       const totalGiaCot = data.reduce((sum, item) => {
         return sum + this.businessService.parseAmount(item.giaCot || '0');
       }, 0);
-      
+
       return {
         'Tổng số mục': data.length,
         'Tổng giá gốc': totalGiaGoc,
         'TB giá gốc': data.length > 0 ? totalGiaGoc / data.length : 0,
         'Tổng giá cốt': totalGiaCot,
         'TB giá cốt': data.length > 0 ? totalGiaCot / data.length : 0,
-        'Số thương hiệu': this.availableBrands().length
+        'Số thương hiệu': this.availableBrands().length,
       };
     } else if (sheet === 'Nguồn vật liệu') {
       const totalGiaTien = data.reduce((sum, item) => {
         return sum + this.businessService.parseAmount(item.giaTien || '0');
       }, 0);
-      
+
       return {
         'Tổng số mục': data.length,
         'Tổng giá tiền': totalGiaTien,
-        'TB giá tiền': data.length > 0 ? totalGiaTien / data.length : 0
+        'TB giá tiền': data.length > 0 ? totalGiaTien / data.length : 0,
       };
     } else if (sheet === 'Menu') {
       const totalGiaBan = data.reduce((sum, item) => {
         return sum + this.businessService.parseAmount(item.giaBan || '0');
       }, 0);
-      const categories = new Set(data.map(item => item.danhMuc || '').filter(c => c));
-      const giaBanValues = data.map(item => this.businessService.parseAmount(item.giaBan || '0')).filter(v => v > 0);
-      
+      const categories = new Set(data.map((item) => item.danhMuc || '').filter((c) => c));
+      const giaBanValues = data
+        .map((item) => this.businessService.parseAmount(item.giaBan || '0'))
+        .filter((v) => v > 0);
+
       return {
         'Tổng số món': data.length,
         'Tổng giá bán': totalGiaBan,
         'TB giá bán': data.length > 0 ? totalGiaBan / data.length : 0,
         'Số danh mục': categories.size,
         'Giá bán thấp nhất': giaBanValues.length > 0 ? Math.min(...giaBanValues) : 0,
-        'Giá bán cao nhất': giaBanValues.length > 0 ? Math.max(...giaBanValues) : 0
+        'Giá bán cao nhất': giaBanValues.length > 0 ? Math.max(...giaBanValues) : 0,
       };
     }
 
@@ -761,9 +788,12 @@ export class BusinessAppComponent implements OnInit, OnDestroy {
     this.notificationType.set(type);
     this.showNotification.set(true);
 
-    setTimeout(() => {
-      this.hideNotificationDialog();
-    }, type === 'success' ? 3000 : 5000);
+    setTimeout(
+      () => {
+        this.hideNotificationDialog();
+      },
+      type === 'success' ? 3000 : 5000
+    );
   }
 
   /**
@@ -803,10 +833,10 @@ export class BusinessAppComponent implements OnInit, OnDestroy {
    */
   getSheetIcon(sheetName: SheetName): string {
     const icons: { [key in SheetName]: string } = {
-      'Menu': 'pi-list',
+      Menu: 'pi-list',
       'Nguồn nguyên liệu': 'pi-box',
       'Nguồn vật liệu': 'pi-cube',
-      'Đầu vào đầu ra': 'pi-chart-line'
+      'Đầu vào đầu ra': 'pi-chart-line',
     };
     return icons[sheetName] || 'pi-file';
   }
@@ -875,11 +905,11 @@ export class BusinessAppComponent implements OnInit, OnDestroy {
     const allData = this.allSheetsData();
 
     // Search in each sheet
-    this.sheets.forEach(sheet => {
+    this.sheets.forEach((sheet) => {
       const items = allData[sheet] || [];
       const matchedItems: BusinessItem[] = [];
 
-      items.forEach(item => {
+      items.forEach((item) => {
         let match = false;
         let searchText = '';
 
@@ -906,7 +936,7 @@ export class BusinessAppComponent implements OnInit, OnDestroy {
       if (matchedItems.length > 0) {
         results.push({
           sheet: sheet,
-          items: matchedItems
+          items: matchedItems,
         });
       }
     });
@@ -1034,4 +1064,3 @@ export class BusinessAppComponent implements OnInit, OnDestroy {
     return (data as any)?.byCategory || [];
   }
 }
-

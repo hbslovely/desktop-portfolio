@@ -32,7 +32,6 @@ export interface MedicalSheetResponse {
   error?: string;
 }
 
-
 @Injectable({ providedIn: 'root' })
 export class MedicalHistoryService {
   private http = inject(HttpClient);
@@ -60,21 +59,21 @@ export class MedicalHistoryService {
     const config = {
       spreadsheetId: this.SHEET_ID,
       sheetGid: this.SHEET_GID,
-      range: 'A2:H' // Include column H for id file Explorer
+      range: 'A2:H', // Include column H for id file Explorer
     };
 
     return this.googleSheets.getSheetValues(config).pipe(
-      map(rows => {
+      map((rows) => {
         console.log(`Fetched ${rows.length} rows from Google Sheets`);
         const entries = this.dataMapper.mapRowsToEntries(rows);
         console.log(`Mapped to ${entries.length} valid medical history entries`);
         return entries;
       }),
-      catchError(err => {
+      catchError((err) => {
         const handledError = this.errorHandler.handleError(err);
         console.error('MedicalHistoryService.getEntries failed', {
           original: err,
-          handled: handledError
+          handled: handledError,
         });
         return throwError(() => handledError);
       })
@@ -88,11 +87,11 @@ export class MedicalHistoryService {
     const config = {
       spreadsheetId: this.SHEET_ID,
       sheetGid: this.SHEET_GID,
-      range: 'A1:H10' // Test with first 10 rows including header
+      range: 'A1:H10', // Test with first 10 rows including header
     };
 
     return this.googleSheets.getSheetValues(config).pipe(
-      map(rows => {
+      map((rows) => {
         const hasHeader = rows.length > 0;
         const headerRow = hasHeader ? rows[0] : [];
         const dataRows = rows.slice(1);
@@ -101,19 +100,18 @@ export class MedicalHistoryService {
         return {
           success: true,
           message: `Connected successfully. Header: [${headerRow.join(', ')}]. Found ${entries.length} valid entries.`,
-          rowCount: dataRows.length
+          rowCount: dataRows.length,
         };
       }),
-      catchError(err => {
+      catchError((err) => {
         return of({
           success: false,
           message: `Connection failed: ${err.message}`,
-          rowCount: 0
+          rowCount: 0,
         });
       })
     );
   }
-
 
   addEntry(entry: MedicalHistoryEntry): Observable<MedicalSheetResponse> {
     if (!this.APPS_SCRIPT_URL) {
@@ -161,12 +159,9 @@ export class MedicalHistoryService {
     if (patch.title !== undefined) bodyPatch['title'] = patch.title;
     if (patch.detail !== undefined) bodyPatch['detail'] = patch.detail;
     if (patch.place !== undefined) bodyPatch['place'] = patch.place;
-    if (
-      Object.prototype.hasOwnProperty.call(patch, 'driveFileId')
-    ) {
+    if (Object.prototype.hasOwnProperty.call(patch, 'driveFileId')) {
       const v = patch.driveFileId;
-      bodyPatch['attachment_id'] =
-        v === null || v === '' ? '' : v;
+      bodyPatch['attachment_id'] = v === null || v === '' ? '' : v;
     }
 
     return this.postToAppsScript({
@@ -186,16 +181,14 @@ export class MedicalHistoryService {
     }).pipe(catchError(() => of({ success: true })));
   }
 
-  private postToAppsScript(
-    body: Record<string, unknown>
-  ): Observable<MedicalSheetResponse> {
+  private postToAppsScript(body: Record<string, unknown>): Observable<MedicalSheetResponse> {
     const url = this.APPS_SCRIPT_URL;
     const isProxy = !environment.production;
 
     if (isProxy) {
       // 🚀 Mobile CORS fix: Avoid preflight by using simple content-type for dev proxy
-      const headers = new HttpHeaders({ 
-        'Content-Type': 'text/plain;charset=UTF-8' 
+      const headers = new HttpHeaders({
+        'Content-Type': 'text/plain;charset=UTF-8',
       });
       return this.http.post<MedicalSheetResponse>(url, JSON.stringify(body), { headers });
     }

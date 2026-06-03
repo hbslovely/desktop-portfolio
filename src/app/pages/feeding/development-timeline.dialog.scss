@@ -14,7 +14,9 @@
   cursor: pointer;
   text-align: left;
   color: var(--text);
-  transition: border-color 0.18s ease, box-shadow 0.18s ease,
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
     transform 0.18s ease;
 
   &:hover {
@@ -81,7 +83,7 @@
     border-radius: 999px;
     font-size: 11px;
     font-weight: 700;
-    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
     line-height: 1.4;
   }
 
@@ -89,7 +91,9 @@
     flex-shrink: 0;
     color: var(--muted-2);
     font-size: 13px;
-    transition: color 0.18s ease, transform 0.18s ease;
+    transition:
+      color 0.18s ease,
+      transform 0.18s ease;
   }
 
   &:hover > i {
@@ -230,7 +234,7 @@
 
   /* Vertical axis per item (connects markers) */
   &::before {
-    content: "";
+    content: '';
     position: absolute;
     left: 27px;
     top: 56px;
@@ -249,49 +253,49 @@
   }
 
   /* Accent colors */
-  &[data-accent="rose"] {
+  &[data-accent='rose'] {
     --tl-accent: #f43f5e;
     --tl-accent-soft: #fff1f2;
     --tl-accent-dim: #fecdd3;
   }
-  &[data-accent="peach"] {
+  &[data-accent='peach'] {
     --tl-accent: #fb923c;
     --tl-accent-soft: #fff7ed;
     --tl-accent-dim: #fed7aa;
   }
-  &[data-accent="coral"] {
+  &[data-accent='coral'] {
     --tl-accent: #f97316;
     --tl-accent-soft: #fff7ed;
     --tl-accent-dim: #fed7aa;
   }
-  &[data-accent="amber"] {
+  &[data-accent='amber'] {
     --tl-accent: #d97706;
     --tl-accent-soft: #fffbeb;
     --tl-accent-dim: #fde68a;
   }
-  &[data-accent="mint"] {
+  &[data-accent='mint'] {
     --tl-accent: #10b981;
     --tl-accent-soft: #ecfdf5;
     --tl-accent-dim: #a7f3d0;
   }
-  &[data-accent="sky"] {
+  &[data-accent='sky'] {
     --tl-accent: #0ea5e9;
     --tl-accent-soft: #f0f9ff;
     --tl-accent-dim: #bae6fd;
   }
-  &[data-accent="lavender"] {
+  &[data-accent='lavender'] {
     --tl-accent: #8b5cf6;
     --tl-accent-soft: #f5f3ff;
     --tl-accent-dim: #ddd6fe;
   }
-  &[data-accent="plum"] {
+  &[data-accent='plum'] {
     --tl-accent: #c026d3;
     --tl-accent-soft: #fdf4ff;
     --tl-accent-dim: #f5d0fe;
   }
 
   /* Past: dim */
-  &[data-state="past"] {
+  &[data-state='past'] {
     .tl-card {
       background: #fafbfc;
       border-color: #e5e7eb;
@@ -310,7 +314,7 @@
   }
 
   /* Current: subtle highlight — no scale to avoid overlap */
-  &[data-state="current"] {
+  &[data-state='current'] {
     .tl-card {
       background: var(--tl-accent-soft, #f5f3ff);
       border-color: var(--tl-accent, #8b5cf6);
@@ -321,16 +325,12 @@
       border-color: var(--tl-accent);
     }
     &::before {
-      background: linear-gradient(
-        180deg,
-        var(--tl-accent) 0%,
-        #e5e7eb 100%
-      );
+      background: linear-gradient(180deg, var(--tl-accent) 0%, #e5e7eb 100%);
     }
   }
 
   /* Future: full opacity but muted card */
-  &[data-state="future"] {
+  &[data-state='future'] {
     .tl-card {
       background: #ffffff;
     }
@@ -418,7 +418,9 @@
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 14px 14px 12px;
-  transition: background 0.2s ease, border-color 0.2s ease,
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
     box-shadow 0.2s ease;
 
   @media (max-width: 640px) {
@@ -492,23 +494,23 @@
    *   growth            = CAM (hơi khó chịu, tăng trưởng)
    *   leap              = ĐỎ (khó chịu mạnh, wonder week)
    */
-  &[data-mood="happy"] {
+  &[data-mood='happy'] {
     background: #dcfce7;
     color: #15803d;
   }
-  &[data-mood="milestone"] {
+  &[data-mood='milestone'] {
     background: #d1fae5;
     color: #047857;
   }
-  &[data-mood="calm"] {
+  &[data-mood='calm'] {
     background: #fef9c3;
     color: #854d0e;
   }
-  &[data-mood="growth"] {
+  &[data-mood='growth'] {
     background: #ffedd5;
     color: #c2410c;
   }
-  &[data-mood="leap"] {
+  &[data-mood='leap'] {
     background: #fee2e2;
     color: #b91c1c;
   }
@@ -581,7 +583,7 @@
   font-size: 11.5px;
   color: var(--muted);
   margin-top: 2px;
-  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
   font-weight: 600;
 }
 
@@ -678,7 +680,7 @@
     position: relative;
 
     &::before {
-      content: "";
+      content: '';
       position: absolute;
       left: 3px;
       top: 8px;
@@ -816,7 +818,9 @@
   font-size: 13px;
   font-weight: 600;
   color: var(--muted);
-  transition: color 0.15s ease, border-color 0.15s ease,
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease,
     background 0.15s ease;
   border-radius: 8px 8px 0 0;
 
@@ -906,10 +910,18 @@
   font-weight: 700;
   font-family: inherit;
 
-  &[data-mood="happy"] { fill: #15803d; }
-  &[data-mood="calm"] { fill: #a16207; }
-  &[data-mood="growth"] { fill: #c2410c; }
-  &[data-mood="leap"] { fill: #b91c1c; }
+  &[data-mood='happy'] {
+    fill: #15803d;
+  }
+  &[data-mood='calm'] {
+    fill: #a16207;
+  }
+  &[data-mood='growth'] {
+    fill: #c2410c;
+  }
+  &[data-mood='leap'] {
+    fill: #b91c1c;
+  }
 }
 
 /* X-axis period labels under nodes */
@@ -935,17 +947,39 @@
   transition: transform 0.15s ease;
 
   /* Traffic-light mood palette (currentColor cho pulse & halo) */
-  &[data-mood="happy"]     { --tl-mood: #22c55e; --tl-mood-soft: #dcfce7; color: #22c55e; } /* xanh lá */
-  &[data-mood="milestone"] { --tl-mood: #10b981; --tl-mood-soft: #d1fae5; color: #10b981; } /* xanh ngọc */
-  &[data-mood="calm"]      { --tl-mood: #eab308; --tl-mood-soft: #fef9c3; color: #eab308; } /* vàng */
-  &[data-mood="growth"]    { --tl-mood: #f97316; --tl-mood-soft: #ffedd5; color: #f97316; } /* cam */
-  &[data-mood="leap"]      { --tl-mood: #ef4444; --tl-mood-soft: #fee2e2; color: #ef4444; } /* đỏ */
+  &[data-mood='happy'] {
+    --tl-mood: #22c55e;
+    --tl-mood-soft: #dcfce7;
+    color: #22c55e;
+  } /* xanh lá */
+  &[data-mood='milestone'] {
+    --tl-mood: #10b981;
+    --tl-mood-soft: #d1fae5;
+    color: #10b981;
+  } /* xanh ngọc */
+  &[data-mood='calm'] {
+    --tl-mood: #eab308;
+    --tl-mood-soft: #fef9c3;
+    color: #eab308;
+  } /* vàng */
+  &[data-mood='growth'] {
+    --tl-mood: #f97316;
+    --tl-mood-soft: #ffedd5;
+    color: #f97316;
+  } /* cam */
+  &[data-mood='leap'] {
+    --tl-mood: #ef4444;
+    --tl-mood-soft: #fee2e2;
+    color: #ef4444;
+  } /* đỏ */
 
   .tl-chart-dot {
     fill: #ffffff;
     stroke: var(--tl-mood, #cbd5e1);
     stroke-width: 2.5;
-    transition: r 0.15s ease, stroke-width 0.15s ease;
+    transition:
+      r 0.15s ease,
+      stroke-width 0.15s ease;
   }
 
   .tl-chart-emoji {
@@ -963,7 +997,7 @@
   }
 
   /* PAST */
-  &[data-state="past"] {
+  &[data-state='past'] {
     .tl-chart-dot {
       fill: #f3f4f6;
       stroke: #cbd5e1;
@@ -974,7 +1008,7 @@
   }
 
   /* CURRENT: tô đầy màu mood */
-  &[data-state="current"] {
+  &[data-state='current'] {
     .tl-chart-dot {
       fill: var(--tl-mood, #8b5cf6);
       stroke: var(--tl-mood, #8b5cf6);
@@ -985,7 +1019,7 @@
   }
 
   /* Selected (click) */
-  &[data-selected="true"] {
+  &[data-selected='true'] {
     .tl-chart-dot {
       r: 17;
       stroke-width: 3;
@@ -995,7 +1029,7 @@
   }
 
   /* Selected + current → keep current fill */
-  &[data-state="current"][data-selected="true"] {
+  &[data-state='current'][data-selected='true'] {
     .tl-chart-dot {
       fill: var(--tl-mood, #8b5cf6);
     }
@@ -1009,7 +1043,8 @@
 }
 
 @keyframes tl-chart-pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 0.5;
     r: 20;
   }
@@ -1231,7 +1266,7 @@
   font-size: 12px;
   font-weight: 700;
   color: var(--muted);
-  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
   padding: 4px 9px;
   background: #ffffff;
   border: 1px solid var(--border);
@@ -1268,17 +1303,20 @@
   border-radius: 3px;
   padding: 0;
   cursor: pointer;
-  transition: background 0.15s ease, transform 0.15s ease, height 0.15s ease;
+  transition:
+    background 0.15s ease,
+    transform 0.15s ease,
+    height 0.15s ease;
 
-  &[data-state="past"] {
+  &[data-state='past'] {
     background: #cbd5e1;
   }
 
-  &[data-state="current"] {
+  &[data-state='current'] {
     background: linear-gradient(90deg, #8b5cf6, #ec4899);
   }
 
-  &[data-state="future"] {
+  &[data-state='future'] {
     background: #e5e7eb;
   }
 
@@ -1286,10 +1324,12 @@
     transform: scaleY(1.6);
   }
 
-  &[data-selected="true"] {
+  &[data-selected='true'] {
     height: 10px;
     background: #7c3aed !important;
-    box-shadow: 0 0 0 2px #ffffff, 0 0 0 3px #c4b5fd;
+    box-shadow:
+      0 0 0 2px #ffffff,
+      0 0 0 3px #c4b5fd;
   }
 }
 

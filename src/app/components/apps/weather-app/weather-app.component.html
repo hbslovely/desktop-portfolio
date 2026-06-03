@@ -41,7 +41,11 @@
         </div>
       </div>
       <div class="header-actions">
-        <button class="action-btn" (click)="toggleUnits()" [title]="'Switch to ' + (units() === 'metric' ? 'Fahrenheit' : 'Celsius')">
+        <button
+          class="action-btn"
+          (click)="toggleUnits()"
+          [title]="'Switch to ' + (units() === 'metric' ? 'Fahrenheit' : 'Celsius')"
+        >
           <span class="unit-badge">{{ units() === 'metric' ? '°C' : '°F' }}</span>
         </button>
         <button class="action-btn refresh-btn" (click)="refresh()" title="Refresh">
@@ -53,26 +57,24 @@
     <!-- View Tabs -->
     <div class="view-tabs">
       <div class="tabs-track">
-        <div class="tab-indicator" [style.transform]="'translateX(' + getTabPosition() + '%)'"></div>
+        <div
+          class="tab-indicator"
+          [style.transform]="'translateX(' + getTabPosition() + '%)'"
+        ></div>
       </div>
       <button
         class="tab"
         [class.active]="selectedView() === 'current'"
-        (click)="setView('current')">
+        (click)="setView('current')"
+      >
         <i class="pi pi-sun"></i>
         <span>Now</span>
       </button>
-      <button
-        class="tab"
-        [class.active]="selectedView() === 'hourly'"
-        (click)="setView('hourly')">
+      <button class="tab" [class.active]="selectedView() === 'hourly'" (click)="setView('hourly')">
         <i class="pi pi-clock"></i>
         <span>Hourly</span>
       </button>
-      <button
-        class="tab"
-        [class.active]="selectedView() === 'daily'"
-        (click)="setView('daily')">
+      <button class="tab" [class.active]="selectedView() === 'daily'" (click)="setView('daily')">
         <i class="pi pi-calendar"></i>
         <span>7 Days</span>
       </button>
@@ -84,13 +86,17 @@
       <div class="weather-hero">
         <div class="weather-icon-container">
           <div class="icon-glow"></div>
-          <img [src]="getWeatherIcon(weatherData()!.current.icon_num)" 
-               [alt]="weatherData()!.current.summary"
-               class="weather-icon-main">
+          <img
+            [src]="getWeatherIcon(weatherData()!.current.icon_num)"
+            [alt]="weatherData()!.current.summary"
+            class="weather-icon-main"
+          />
         </div>
         <div class="weather-main-info">
           <div class="temperature-display">
-            <span class="temp-value">{{ weatherData()!.current.temperature | number:'1.0-0' }}</span>
+            <span class="temp-value">{{
+              weatherData()!.current.temperature | number: '1.0-0'
+            }}</span>
             <span class="temp-unit">{{ units() === 'metric' ? '°C' : '°F' }}</span>
           </div>
           <div class="weather-summary">{{ weatherData()!.current.summary }}</div>
@@ -105,11 +111,27 @@
       <div class="quick-stats">
         <div class="stat-pill">
           <i class="pi pi-arrow-up"></i>
-          <span>H: {{ formatTemperature(weatherData()!.daily?.data?.[0]?.all_day?.temperature_max || weatherData()!.current.temperature) }}</span>
+          <span
+            >H:
+            {{
+              formatTemperature(
+                weatherData()!.daily?.data?.[0]?.all_day?.temperature_max ||
+                  weatherData()!.current.temperature
+              )
+            }}</span
+          >
         </div>
         <div class="stat-pill">
           <i class="pi pi-arrow-down"></i>
-          <span>L: {{ formatTemperature(weatherData()!.daily?.data?.[0]?.all_day?.temperature_min || weatherData()!.current.temperature) }}</span>
+          <span
+            >L:
+            {{
+              formatTemperature(
+                weatherData()!.daily?.data?.[0]?.all_day?.temperature_min ||
+                  weatherData()!.current.temperature
+              )
+            }}</span
+          >
         </div>
       </div>
 
@@ -124,7 +146,10 @@
             <div class="wind-speed">{{ weatherData()!.current.wind.speed }}</div>
             <div class="wind-unit">m/s</div>
             <div class="wind-direction">
-              <div class="direction-arrow" [style.transform]="'rotate(' + weatherData()!.current.wind.angle + 'deg)'">
+              <div
+                class="direction-arrow"
+                [style.transform]="'rotate(' + weatherData()!.current.wind.angle + 'deg)'"
+              >
                 <i class="pi pi-arrow-up"></i>
               </div>
               <span>{{ weatherData()!.current.wind.dir }}</span>
@@ -140,11 +165,15 @@
           <div class="card-content">
             <div class="humidity-circle">
               <svg viewBox="0 0 36 36" class="circular-chart">
-                <path class="circle-bg"
-                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                <path class="circle"
+                <path
+                  class="circle-bg"
+                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                />
+                <path
+                  class="circle"
                   [attr.stroke-dasharray]="weatherData()!.current.humidity + ', 100'"
-                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                />
               </svg>
               <span class="humidity-value">{{ weatherData()!.current.humidity }}%</span>
             </div>
@@ -164,7 +193,10 @@
               {{ getUVIndexLevel(weatherData()!.current.uv_index) }}
             </div>
             <div class="uv-bar">
-              <div class="uv-fill" [style.width]="(weatherData()!.current.uv_index / 11 * 100) + '%'"></div>
+              <div
+                class="uv-fill"
+                [style.width]="(weatherData()!.current.uv_index / 11) * 100 + '%'"
+              ></div>
             </div>
           </div>
         </div>
@@ -199,7 +231,10 @@
           <div class="card-content">
             <div class="cloud-value">{{ weatherData()!.current.cloud_cover }}%</div>
             <div class="cloud-visual">
-              <div class="cloud-fill" [style.width]="weatherData()!.current.cloud_cover + '%'"></div>
+              <div
+                class="cloud-fill"
+                [style.width]="weatherData()!.current.cloud_cover + '%'"
+              ></div>
             </div>
           </div>
         </div>
@@ -230,11 +265,14 @@
     <!-- Hourly Forecast View -->
     <div *ngIf="selectedView() === 'hourly'" class="hourly-view">
       <div class="hourly-scroll">
-        <div class="hourly-card" *ngFor="let hour of getHourlyForecast(); let i = index" 
-             [class.now]="i === 0">
+        <div
+          class="hourly-card"
+          *ngFor="let hour of getHourlyForecast(); let i = index"
+          [class.now]="i === 0"
+        >
           <div class="hour-label">{{ i === 0 ? 'Now' : formatHour(hour.date) }}</div>
           <div class="hour-icon">
-            <img [src]="getWeatherIcon(hour.icon)" [alt]="hour.summary">
+            <img [src]="getWeatherIcon(hour.icon)" [alt]="hour.summary" />
           </div>
           <div class="hour-temp">{{ formatTemperature(hour.temperature) }}</div>
           <div class="hour-rain" *ngIf="getPrecipitationChance(hour) > 0">
@@ -242,7 +280,10 @@
             <span>{{ getPrecipitationChance(hour) }}%</span>
           </div>
           <div class="hour-wind">
-            <i class="pi pi-send" [style.transform]="'rotate(' + (hour.wind.angle || 0) + 'deg)'"></i>
+            <i
+              class="pi pi-send"
+              [style.transform]="'rotate(' + (hour.wind.angle || 0) + 'deg)'"
+            ></i>
             <span>{{ hour.wind.speed }}</span>
           </div>
         </div>
@@ -252,16 +293,22 @@
     <!-- Daily Forecast View -->
     <div *ngIf="selectedView() === 'daily'" class="daily-view">
       <div class="daily-list">
-        <div class="daily-card" *ngFor="let day of getDailyForecast(); let i = index"
-             [class.today]="i === 0">
+        <div
+          class="daily-card"
+          *ngFor="let day of getDailyForecast(); let i = index"
+          [class.today]="i === 0"
+        >
           <div class="day-left">
             <div class="day-name">{{ formatDay(day.day) }}</div>
             <div class="day-summary">{{ day.summary }}</div>
           </div>
-          
+
           <div class="day-center">
-            <img [src]="getWeatherIcon(day.icon)" [alt]="day.summary" class="day-icon">
-            <div class="day-rain" *ngIf="day.all_day?.precipitation?.total && day.all_day.precipitation.total > 0">
+            <img [src]="getWeatherIcon(day.icon)" [alt]="day.summary" class="day-icon" />
+            <div
+              class="day-rain"
+              *ngIf="day.all_day?.precipitation?.total && day.all_day.precipitation.total > 0"
+            >
               <i class="pi pi-droplet"></i>
               {{ day.all_day.precipitation.total }}mm
             </div>
@@ -271,10 +318,13 @@
             <div class="day-temps">
               <span class="temp-high">{{ formatTemperature(day.all_day.temperature_max) }}</span>
               <div class="temp-bar">
-                <div class="temp-range" 
-                     [style.left]="getTempBarPosition(day.all_day.temperature_min) + '%'"
-                     [style.width]="getTempBarWidth(day.all_day.temperature_min, day.all_day.temperature_max) + '%'">
-                </div>
+                <div
+                  class="temp-range"
+                  [style.left]="getTempBarPosition(day.all_day.temperature_min) + '%'"
+                  [style.width]="
+                    getTempBarWidth(day.all_day.temperature_min, day.all_day.temperature_max) + '%'
+                  "
+                ></div>
               </div>
               <span class="temp-low">{{ formatTemperature(day.all_day.temperature_min) }}</span>
             </div>

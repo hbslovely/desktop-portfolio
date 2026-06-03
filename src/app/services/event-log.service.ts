@@ -189,9 +189,7 @@ export class EventLogService {
     return s === 'true' || s === 'x' || s === '1' || s === 'yes' || s === 'có';
   }
 
-  private postToAppsScript(
-    body: Record<string, unknown>
-  ): Observable<EventSheetResponse> {
+  private postToAppsScript(body: Record<string, unknown>): Observable<EventSheetResponse> {
     const url = this.APPS_SCRIPT_URL;
     const isProxy = !environment.production;
 

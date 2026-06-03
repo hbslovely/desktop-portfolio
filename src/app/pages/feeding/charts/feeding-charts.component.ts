@@ -1,16 +1,7 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  input,
-  signal,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FeedingLog } from '../../../services/feeding-log.service';
-import {
-  DailySummary,
-  getDailySummaries,
-} from '../feeding-prediction';
+import { DailySummary, getDailySummaries } from '../feeding-prediction';
 import { NutritionTarget } from '../feeding-nutrition';
 
 @Component({
@@ -34,8 +25,7 @@ export class FeedingChartsComponent {
   private static readonly TIMELINE_ZOOM_LEVELS = [1, 1.5, 2, 2.5] as const;
   timelineChartZoomIndex = signal(0);
   timelineChartZoom = computed(
-    () =>
-      FeedingChartsComponent.TIMELINE_ZOOM_LEVELS[this.timelineChartZoomIndex()]
+    () => FeedingChartsComponent.TIMELINE_ZOOM_LEVELS[this.timelineChartZoomIndex()]
   );
 
   timelineZoomIn(): void {
@@ -85,8 +75,7 @@ export class FeedingChartsComponent {
     const totalMl = withData.reduce((s, d) => s + d.total, 0);
     const totalCount = withData.reduce((s, d) => s + d.count, 0);
     const avgMl = withData.length > 0 ? Math.round(totalMl / withData.length) : 0;
-    const avgCount =
-      withData.length > 0 ? +(totalCount / withData.length).toFixed(1) : 0;
+    const avgCount = withData.length > 0 ? +(totalCount / withData.length).toFixed(1) : 0;
 
     let maxDay = withData[0];
     let minDay = withData[0];
@@ -141,8 +130,7 @@ export class FeedingChartsComponent {
     const data = this.weeklySummary();
     const max = Math.max(...data.map((d) => d.total), 1);
     const lay = this.chartLayout();
-    const { W, H, PAD_L, PAD_R, PAD_T, PAD_B, labelStep, showBarValueOnAll } =
-      lay;
+    const { W, H, PAD_L, PAD_R, PAD_T, PAD_B, labelStep, showBarValueOnAll } = lay;
     const chartW = W - PAD_L - PAD_R;
     const chartH = H - PAD_T - PAD_B;
     const barCount = data.length;
@@ -179,8 +167,7 @@ export class FeedingChartsComponent {
       const bottomY = PAD_T + chartH;
       data.forEach((d, i) => {
         const cx = PAD_L + i * slot + slot / 2;
-        const y =
-          d.total > 0 ? PAD_T + chartH - (d.total / max) * chartH : bottomY;
+        const y = d.total > 0 ? PAD_T + chartH - (d.total / max) * chartH : bottomY;
         const showLabel = i % labelStep === 0 || i === barCount - 1;
         const showValue = d.total > 0 && (i % 3 === 0 || i === barCount - 1);
         points.push({ x: cx, y, d, showLabel, showValue });
@@ -214,8 +201,7 @@ export class FeedingChartsComponent {
     const data = this.weeklySummary();
     const max = Math.max(...data.map((d) => d.count), 1);
     const lay = this.chartLayout();
-    const { W, H, PAD_L, PAD_R, PAD_T, PAD_B, labelStep, showBarValueOnAll } =
-      lay;
+    const { W, H, PAD_L, PAD_R, PAD_T, PAD_B, labelStep, showBarValueOnAll } = lay;
     const chartW = W - PAD_L - PAD_R;
     const chartH = H - PAD_T - PAD_B;
     const barCount = data.length;
@@ -300,8 +286,7 @@ export class FeedingChartsComponent {
     const samples: number[] = [];
     for (let m = 0; m <= 1440; m += STEP) samples.push(m);
 
-    const nowMinute =
-      this.now().getHours() * 60 + this.now().getMinutes();
+    const nowMinute = this.now().getHours() * 60 + this.now().getMinutes();
 
     const todayData = samples
       .filter((m) => m <= nowMinute)
@@ -456,18 +441,14 @@ export class FeedingChartsComponent {
       x: xOf(h * 60),
     }));
 
-    const lastToday =
-      todayData.length > 0 ? todayData[todayData.length - 1] : null;
+    const lastToday = todayData.length > 0 ? todayData[todayData.length - 1] : null;
     const todayEndPoint = lastToday
       ? { x: xOf(lastToday.m), y: yOf(lastToday.v), v: Math.round(lastToday.v) }
       : null;
 
     const yesterdayTotal =
-      yesterdayData.length > 0
-        ? Math.round(yesterdayData[yesterdayData.length - 1].v)
-        : 0;
-    const avg3Total =
-      avg3Data.length > 0 ? Math.round(avg3Data[avg3Data.length - 1].v) : 0;
+      yesterdayData.length > 0 ? Math.round(yesterdayData[yesterdayData.length - 1].v) : 0;
+    const avg3Total = avg3Data.length > 0 ? Math.round(avg3Data[avg3Data.length - 1].v) : 0;
     const todayTotal = lastToday ? Math.round(lastToday.v) : 0;
 
     return {

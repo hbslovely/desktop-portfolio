@@ -35,7 +35,7 @@ iframe {
 
 .loading-spinner {
   margin-bottom: 16px;
-  
+
   i {
     font-size: 32px;
     color: #0078d4;
@@ -55,13 +55,13 @@ iframe {
 
 .error-content {
   max-width: 400px;
-  
+
   i {
     font-size: 48px;
     color: #d13438;
     margin-bottom: 16px;
   }
-  
+
   h3 {
     color: #333333;
     margin: 0 0 12px 0;
@@ -69,7 +69,7 @@ iframe {
     font-weight: 600;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   }
-  
+
   p {
     color: #666666;
     margin: 0 0 16px 0;
@@ -77,7 +77,7 @@ iframe {
     line-height: 1.5;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   }
-  
+
   .url-display {
     font-size: 12px;
     color: #999999;
@@ -108,7 +108,7 @@ iframe {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   cursor: pointer;
   transition: background-color 0.15s ease;
-  
+
   i {
     font-size: 12px;
   }
@@ -117,11 +117,11 @@ iframe {
 .retry-button {
   background: #0078d4;
   color: #ffffff;
-  
+
   &:hover {
     background: #106ebe;
   }
-  
+
   &:active {
     background: #005a9e;
   }
@@ -130,13 +130,12 @@ iframe {
 .open-external-button {
   background: #28a745;
   color: #ffffff;
-  
+
   &:hover {
     background: #218838;
   }
-  
+
   &:active {
     background: #1e7e34;
   }
 }
-

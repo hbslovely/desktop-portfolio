@@ -28,16 +28,26 @@ $radius-lg: 14px;
 $radius-xl: 20px;
 
 $shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-$shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-$shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-$shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+$shadow:
+  0 4px 6px -1px rgba(0, 0, 0, 0.1),
+  0 2px 4px -1px rgba(0, 0, 0, 0.06);
+$shadow-lg:
+  0 10px 15px -3px rgba(0, 0, 0, 0.1),
+  0 4px 6px -2px rgba(0, 0, 0, 0.05);
+$shadow-xl:
+  0 20px 25px -5px rgba(0, 0, 0, 0.1),
+  0 10px 10px -5px rgba(0, 0, 0, 0.04);
 
 .image-search-app {
   display: flex;
   flex-direction: column;
   height: 100%;
   background: linear-gradient(145deg, #f8fafc 0%, #eef2ff 50%, #f0fdf4 100%);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family:
+    'Inter',
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
   overflow: hidden;
 }
 
@@ -234,23 +244,29 @@ $shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 
 }
 
 @keyframes fadeInOverlay {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes scaleIn {
-  from { 
+  from {
     opacity: 0;
     transform: scale(0.95);
   }
-  to { 
+  to {
     opacity: 1;
     transform: scale(1);
   }
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 // Upload Dialog
@@ -267,8 +283,12 @@ $shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .upload-dialog {
@@ -285,11 +305,11 @@ $shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 
 }
 
 @keyframes slideUp {
-  from { 
+  from {
     opacity: 0;
     transform: translateY(20px);
   }
-  to { 
+  to {
     opacity: 1;
     transform: translateY(0);
   }
@@ -415,7 +435,9 @@ $shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 
   background: white;
   border-radius: $radius;
   border: 1px solid $gray-200;
-  transition: background 0.15s, border-color 0.15s;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
 
   &.processing {
     border-color: $primary;
@@ -609,7 +631,8 @@ $shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 
     color: $gray-600;
   }
 
-  .primary-btn, .secondary-btn {
+  .primary-btn,
+  .secondary-btn {
     padding: 8px 16px;
     font-size: 13px;
   }
@@ -658,9 +681,13 @@ $shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 
   border: 2px dashed $gray-300;
   border-radius: $radius-xl;
   cursor: pointer;
-  transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
 
-  &:hover, &.dragging {
+  &:hover,
+  &.dragging {
     border-color: $primary;
     background: linear-gradient(135deg, #eef2ff, #f0f9ff);
     box-shadow: $shadow;
@@ -821,7 +848,9 @@ $shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 
   overflow: hidden;
   box-shadow: $shadow;
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 
   &:hover {
     transform: translateY(-4px);
@@ -852,7 +881,7 @@ $shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 
     .image-overlay {
       position: absolute;
       inset: 0;
-      background: linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.6) 100%);
+      background: linear-gradient(180deg, rgba(0, 0, 0, 0.1) 0%, rgba(0, 0, 0, 0.6) 100%);
       display: flex;
       align-items: flex-end;
       justify-content: center;
@@ -891,7 +920,7 @@ $shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 
       width: 16px;
       height: 16px;
       border-radius: 50%;
-      box-shadow: inset 0 0 0 1px rgba(0,0,0,0.1);
+      box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1);
     }
   }
 }
@@ -1133,7 +1162,9 @@ $shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 
         width: 50px;
         height: 50px;
         border-radius: $radius;
-        box-shadow: $shadow-sm, inset 0 0 0 1px rgba(0,0,0,0.08);
+        box-shadow:
+          $shadow-sm,
+          inset 0 0 0 1px rgba(0, 0, 0, 0.08);
         cursor: pointer;
         transition: transform 0.2s;
 
@@ -1266,7 +1297,7 @@ $shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 
       }
     }
 
-    input[type="range"] {
+    input[type='range'] {
       width: 100%;
       height: 6px;
       appearance: none;
@@ -1334,7 +1365,7 @@ $shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 
     padding: 16px 20px;
     background: linear-gradient(135deg, white, $gray-50);
     border-radius: $radius-xl;
-    box-shadow: 
+    box-shadow:
       0 4px 20px rgba(0, 0, 0, 0.06),
       0 2px 8px rgba(0, 0, 0, 0.03);
     border: 1px solid rgba($gray-200, 0.5);
@@ -1387,7 +1418,7 @@ $shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 
         border-color: $primary;
         color: $primary;
       }
-      
+
       &.active {
         background: linear-gradient(135deg, $primary, $primary-dark);
         border-color: $primary;
@@ -1405,10 +1436,15 @@ $shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 
         box-shadow: 0 2px 6px rgba($success, 0.4);
         animation: pulse 2s ease-in-out infinite;
       }
-      
+
       @keyframes pulse {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.7; }
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.7;
+        }
       }
     }
   }
@@ -1433,7 +1469,9 @@ $shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 
         align-items: center;
         gap: 6px;
 
-        i { color: $primary; }
+        i {
+          color: $primary;
+        }
       }
 
       .learning-hint {
@@ -1466,9 +1504,15 @@ $shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 
           color: $gray-800;
         }
 
-        &.positive .stat-value { color: $success; }
-        &.negative .stat-value { color: $danger; }
-        &.accuracy .stat-value { color: $primary; }
+        &.positive .stat-value {
+          color: $success;
+        }
+        &.negative .stat-value {
+          color: $danger;
+        }
+        &.accuracy .stat-value {
+          color: $primary;
+        }
       }
     }
 
@@ -1544,7 +1588,7 @@ $shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 
     background: linear-gradient(135deg, white, $gray-50);
     border-radius: $radius-xl;
     margin-bottom: 20px;
-    box-shadow: 
+    box-shadow:
       0 4px 20px rgba(0, 0, 0, 0.06),
       0 2px 8px rgba(0, 0, 0, 0.03);
     border: 1px solid rgba($gray-200, 0.5);
@@ -1562,7 +1606,7 @@ $shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 
         display: flex;
         align-items: center;
         gap: 6px;
-        
+
         &::before {
           content: '';
           width: 3px;
@@ -1618,7 +1662,7 @@ $shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 
   .query-section {
     position: sticky;
     top: 24px;
-    
+
     h4 {
       margin: 0 0 14px;
       font-size: 14px;
@@ -1627,7 +1671,7 @@ $shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 
       display: flex;
       align-items: center;
       gap: 8px;
-      
+
       &::before {
         content: '';
         width: 4px;
@@ -1641,31 +1685,25 @@ $shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 
       background: linear-gradient(135deg, white, $gray-50);
       padding: 16px;
       border-radius: $radius-xl;
-      box-shadow: 
+      box-shadow:
         0 4px 20px rgba(0, 0, 0, 0.08),
         0 2px 8px rgba(0, 0, 0, 0.04);
       border: 2px solid $primary;
       position: relative;
       overflow: hidden;
-      
+
       // Animated border glow
       &::before {
         content: '';
         position: absolute;
         inset: -2px;
-        background: linear-gradient(
-          45deg,
-          $primary,
-          $primary-light,
-          $info,
-          $primary
-        );
+        background: linear-gradient(45deg, $primary, $primary-light, $info, $primary);
         border-radius: $radius-xl;
         z-index: -1;
         animation: borderGlow 3s linear infinite;
         background-size: 300% 300%;
       }
-      
+
       &::after {
         content: 'Ảnh tìm kiếm';
         position: absolute;
@@ -1689,11 +1727,17 @@ $shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 
         margin-top: 8px;
       }
     }
-    
+
     @keyframes borderGlow {
-      0% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
+      0% {
+        background-position: 0% 50%;
+      }
+      50% {
+        background-position: 100% 50%;
+      }
+      100% {
+        background-position: 0% 50%;
+      }
     }
   }
 
@@ -1711,9 +1755,9 @@ $shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     border: 2px solid transparent;
-    
+
     // Glassmorphism effect
-    box-shadow: 
+    box-shadow:
       0 4px 20px rgba(0, 0, 0, 0.08),
       0 2px 8px rgba(0, 0, 0, 0.04);
 
@@ -1721,11 +1765,7 @@ $shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 
       content: '';
       position: absolute;
       inset: 0;
-      background: linear-gradient(
-        135deg,
-        rgba(255, 255, 255, 0.1) 0%,
-        transparent 100%
-      );
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, transparent 100%);
       pointer-events: none;
       z-index: 1;
       opacity: 0;
@@ -1734,7 +1774,7 @@ $shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 
 
     &:hover {
       transform: translateY(-8px) scale(1.02);
-      box-shadow: 
+      box-shadow:
         0 20px 40px rgba(0, 0, 0, 0.12),
         0 8px 16px rgba(0, 0, 0, 0.08);
 
@@ -1745,7 +1785,7 @@ $shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 
       .result-thumb img {
         transform: scale(1.1);
       }
-      
+
       .similarity-ring {
         transform: scale(1.1);
       }
@@ -1754,86 +1794,77 @@ $shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 
     // Level-based styling with glow effects
     &.excellent {
       border-color: $success;
-      box-shadow: 
+      box-shadow:
         0 4px 20px rgba($success, 0.15),
         0 2px 8px rgba(0, 0, 0, 0.04);
-      
+
       &:hover {
-        box-shadow: 
+        box-shadow:
           0 20px 40px rgba($success, 0.25),
           0 8px 16px rgba($success, 0.15);
       }
-      
-      .similarity-badge { 
+
+      .similarity-badge {
         background: linear-gradient(135deg, $success 0%, $success-light 100%);
         box-shadow: 0 4px 15px rgba($success, 0.4);
       }
-      
+
       .similarity-ring {
-        background: conic-gradient(
-          $success var(--progress),
-          rgba($success, 0.15) var(--progress)
-        );
+        background: conic-gradient($success var(--progress), rgba($success, 0.15) var(--progress));
       }
     }
 
     &.good {
       border-color: $primary;
-      box-shadow: 
+      box-shadow:
         0 4px 20px rgba($primary, 0.15),
         0 2px 8px rgba(0, 0, 0, 0.04);
-      
+
       &:hover {
-        box-shadow: 
+        box-shadow:
           0 20px 40px rgba($primary, 0.25),
           0 8px 16px rgba($primary, 0.15);
       }
-      
-      .similarity-badge { 
+
+      .similarity-badge {
         background: linear-gradient(135deg, $primary 0%, $primary-light 100%);
         box-shadow: 0 4px 15px rgba($primary, 0.4);
       }
-      
+
       .similarity-ring {
-        background: conic-gradient(
-          $primary var(--progress),
-          rgba($primary, 0.15) var(--progress)
-        );
+        background: conic-gradient($primary var(--progress), rgba($primary, 0.15) var(--progress));
       }
     }
 
     &.moderate {
       border-color: $warning;
-      box-shadow: 
+      box-shadow:
         0 4px 20px rgba($warning, 0.15),
         0 2px 8px rgba(0, 0, 0, 0.04);
-      
+
       &:hover {
-        box-shadow: 
+        box-shadow:
           0 20px 40px rgba($warning, 0.25),
           0 8px 16px rgba($warning, 0.15);
       }
-      
-      .similarity-badge { 
+
+      .similarity-badge {
         background: linear-gradient(135deg, $warning 0%, $warning-light 100%);
         box-shadow: 0 4px 15px rgba($warning, 0.4);
       }
-      
+
       .similarity-ring {
-        background: conic-gradient(
-          $warning var(--progress),
-          rgba($warning, 0.15) var(--progress)
-        );
+        background: conic-gradient($warning var(--progress), rgba($warning, 0.15) var(--progress));
       }
     }
 
     &.low {
       border-color: $gray-300;
-      
-      .similarity-badge { 
+
+      .similarity-badge {
         background: linear-gradient(135deg, $gray-400 0%, $gray-500 100%);
       }
-      
+
       .similarity-ring {
         background: conic-gradient(
           $gray-400 var(--progress),
@@ -1845,7 +1876,7 @@ $shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 
     &.feedback-positive {
       border-color: $success !important;
       background: linear-gradient(135deg, #ecfdf5 0%, white 100%);
-      
+
       &::after {
         content: '✓';
         position: absolute;
@@ -1863,7 +1894,7 @@ $shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 
       background: linear-gradient(135deg, #fef2f2 0%, white 100%);
       opacity: 0.6;
       filter: grayscale(30%);
-      
+
       &:hover {
         opacity: 0.8;
         filter: grayscale(0%);
@@ -1894,9 +1925,15 @@ $shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 
     }
 
     @keyframes feedbackPop {
-      0% { transform: scale(0); }
-      50% { transform: scale(1.2); }
-      100% { transform: scale(1); }
+      0% {
+        transform: scale(0);
+      }
+      50% {
+        transform: scale(1.2);
+      }
+      100% {
+        transform: scale(1);
+      }
     }
 
     .result-rank {
@@ -1913,26 +1950,26 @@ $shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 
       z-index: 2;
       letter-spacing: 0.5px;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-      
+
       // Gold medal for #1
       &:has(+ .result-thumb) {
         // Can't use :has reliably, using class instead
       }
     }
-    
+
     // Special styling for top 3
     &:nth-child(1) .result-rank {
       background: linear-gradient(135deg, #ffd700 0%, #ffb700 100%);
       color: #1a1a1a;
       box-shadow: 0 2px 12px rgba(255, 215, 0, 0.5);
     }
-    
+
     &:nth-child(2) .result-rank {
       background: linear-gradient(135deg, #c0c0c0 0%, #a8a8a8 100%);
       color: #1a1a1a;
       box-shadow: 0 2px 12px rgba(192, 192, 192, 0.5);
     }
-    
+
     &:nth-child(3) .result-rank {
       background: linear-gradient(135deg, #cd7f32 0%, #b87333 100%);
       color: white;
@@ -1951,7 +1988,7 @@ $shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 
         object-fit: cover;
         transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
       }
-      
+
       // Gradient overlay at bottom
       &::after {
         content: '';
@@ -1960,11 +1997,7 @@ $shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 
         left: 0;
         right: 0;
         height: 60%;
-        background: linear-gradient(
-          to top,
-          rgba(0, 0, 0, 0.4) 0%,
-          transparent 100%
-        );
+        background: linear-gradient(to top, rgba(0, 0, 0, 0.4) 0%, transparent 100%);
         pointer-events: none;
       }
     }
@@ -1991,12 +2024,7 @@ $shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 
           left: -100%;
           width: 100%;
           height: 100%;
-          background: linear-gradient(
-            90deg,
-            transparent,
-            rgba(255, 255, 255, 0.3),
-            transparent
-          );
+          background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
           animation: badgeShine 3s ease-in-out infinite;
         }
 
@@ -2018,8 +2046,13 @@ $shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 
       }
 
       @keyframes badgeShine {
-        0%, 100% { left: -100%; }
-        50% { left: 100%; }
+        0%,
+        100% {
+          left: -100%;
+        }
+        50% {
+          left: 100%;
+        }
       }
 
       .primary-reason {
@@ -2062,10 +2095,18 @@ $shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 
           .reason-value {
             font-weight: 700;
 
-            &.excellent { color: $success; }
-            &.good { color: $primary; }
-            &.moderate { color: $warning; }
-            &.low { color: $gray-400; }
+            &.excellent {
+              color: $success;
+            }
+            &.good {
+              color: $primary;
+            }
+            &.moderate {
+              color: $warning;
+            }
+            &.low {
+              color: $gray-400;
+            }
           }
         }
       }
@@ -2098,13 +2139,14 @@ $shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 
           }
 
           &.positive {
-            &:hover, &.active {
+            &:hover,
+            &.active {
               background: linear-gradient(135deg, rgba($success, 0.1), rgba($success, 0.05));
               border-color: $success;
               color: $success;
               box-shadow: 0 4px 12px rgba($success, 0.2);
             }
-            
+
             &.active {
               background: linear-gradient(135deg, $success, $success-light);
               color: white;
@@ -2112,13 +2154,14 @@ $shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 
           }
 
           &.negative {
-            &:hover, &.active {
+            &:hover,
+            &.active {
               background: linear-gradient(135deg, rgba($danger, 0.1), rgba($danger, 0.05));
               border-color: $danger;
               color: $danger;
               box-shadow: 0 4px 12px rgba($danger, 0.2);
             }
-            
+
             &.active {
               background: linear-gradient(135deg, $danger, #f87171);
               color: white;
@@ -2147,18 +2190,18 @@ $shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 
     padding: 100px 40px;
     background: linear-gradient(135deg, white, $gray-50);
     border-radius: $radius-xl;
-    box-shadow: 
+    box-shadow:
       0 4px 20px rgba(0, 0, 0, 0.06),
       0 2px 8px rgba(0, 0, 0, 0.03);
     border: 2px dashed $gray-300;
     position: relative;
     overflow: hidden;
-    
+
     &::before {
       content: '';
       position: absolute;
       inset: 0;
-      background: 
+      background:
         radial-gradient(circle at 20% 80%, rgba($primary, 0.03) 0%, transparent 50%),
         radial-gradient(circle at 80% 20%, rgba($info, 0.03) 0%, transparent 50%);
     }
@@ -2169,10 +2212,15 @@ $shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 
       animation: float 3s ease-in-out infinite;
       position: relative;
     }
-    
+
     @keyframes float {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-10px); }
+      0%,
+      100% {
+        transform: translateY(0);
+      }
+      50% {
+        transform: translateY(-10px);
+      }
     }
 
     h3 {
@@ -2269,23 +2317,39 @@ $shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 
       }
 
       &.excellent {
-        .score-value { color: $success; }
-        .score-label { color: $success; }
+        .score-value {
+          color: $success;
+        }
+        .score-label {
+          color: $success;
+        }
       }
 
       &.good {
-        .score-value { color: $primary; }
-        .score-label { color: $primary; }
+        .score-value {
+          color: $primary;
+        }
+        .score-label {
+          color: $primary;
+        }
       }
 
       &.moderate {
-        .score-value { color: $warning; }
-        .score-label { color: $warning; }
+        .score-value {
+          color: $warning;
+        }
+        .score-label {
+          color: $warning;
+        }
       }
 
       &.low {
-        .score-value { color: $gray-400; }
-        .score-label { color: $gray-500; }
+        .score-value {
+          color: $gray-400;
+        }
+        .score-label {
+          color: $gray-500;
+        }
       }
     }
 
@@ -2318,10 +2382,18 @@ $shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 
       box-shadow: $shadow-sm;
       border-left: 4px solid transparent;
 
-      &.excellent { border-left-color: $success; }
-      &.good { border-left-color: $primary; }
-      &.moderate { border-left-color: $warning; }
-      &.low { border-left-color: $gray-300; }
+      &.excellent {
+        border-left-color: $success;
+      }
+      &.good {
+        border-left-color: $primary;
+      }
+      &.moderate {
+        border-left-color: $warning;
+      }
+      &.low {
+        border-left-color: $gray-300;
+      }
 
       .breakdown-header {
         display: flex;
@@ -2369,23 +2441,39 @@ $shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 
       }
 
       &.excellent {
-        .score-fill { background: linear-gradient(90deg, $success, $success-light); }
-        .score-text { color: $success; }
+        .score-fill {
+          background: linear-gradient(90deg, $success, $success-light);
+        }
+        .score-text {
+          color: $success;
+        }
       }
 
       &.good {
-        .score-fill { background: linear-gradient(90deg, $primary, $primary-light); }
-        .score-text { color: $primary; }
+        .score-fill {
+          background: linear-gradient(90deg, $primary, $primary-light);
+        }
+        .score-text {
+          color: $primary;
+        }
       }
 
       &.moderate {
-        .score-fill { background: linear-gradient(90deg, $warning, $warning-light); }
-        .score-text { color: $warning; }
+        .score-fill {
+          background: linear-gradient(90deg, $warning, $warning-light);
+        }
+        .score-text {
+          color: $warning;
+        }
       }
 
       &.low {
-        .score-fill { background: $gray-300; }
-        .score-text { color: $gray-500; }
+        .score-fill {
+          background: $gray-300;
+        }
+        .score-text {
+          color: $gray-500;
+        }
       }
 
       .breakdown-desc {
@@ -2443,7 +2531,7 @@ $shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 
         width: 24px;
         height: 24px;
         border-radius: 6px;
-        box-shadow: inset 0 0 0 1px rgba(0,0,0,0.1);
+        box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1);
       }
     }
   }
@@ -2457,8 +2545,12 @@ $shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 
     padding: 12px 16px;
 
     .header-title {
-      h1 { font-size: 17px; }
-      .badge { display: none; }
+      h1 {
+        font-size: 17px;
+      }
+      .badge {
+        display: none;
+      }
     }
   }
 
@@ -2470,7 +2562,9 @@ $shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 
       padding: 8px 14px;
       font-size: 13px;
 
-      span { display: none; }
+      span {
+        display: none;
+      }
     }
   }
 
@@ -2482,8 +2576,12 @@ $shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 
     min-height: 180px;
     padding: 32px 20px;
 
-    .drop-icon i { font-size: 48px; }
-    h3 { font-size: 16px; }
+    .drop-icon i {
+      font-size: 48px;
+    }
+    h3 {
+      font-size: 16px;
+    }
   }
 
   .image-grid {
@@ -2510,10 +2608,14 @@ $shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 
 
       .similarity-badge {
         padding: 4px 10px;
-        .score { font-size: 14px; }
+        .score {
+          font-size: 14px;
+        }
       }
 
-      .primary-reason { display: none; }
+      .primary-reason {
+        display: none;
+      }
     }
   }
 

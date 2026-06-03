@@ -12,7 +12,8 @@ $green-border: #81c784;
 // Cascadia Code: Microsoft's modern monospace
 // Consolas: Windows fallback
 // monospace: System fallback
-$font-numbers: 'JetBrains Mono', 'Roboto Mono', 'SF Mono', 'Cascadia Code', 'Consolas', 'Monaco', monospace;
+$font-numbers:
+  'JetBrains Mono', 'Roboto Mono', 'SF Mono', 'Cascadia Code', 'Consolas', 'Monaco', monospace;
 
 .stock-app {
   display: flex;
@@ -856,7 +857,8 @@ $font-numbers: 'JetBrains Mono', 'Roboto Mono', 'SF Mono', 'Cascadia Code', 'Con
 }
 
 @keyframes bounce {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateY(0);
   }
   50% {
@@ -956,22 +958,22 @@ $font-numbers: 'JetBrains Mono', 'Roboto Mono', 'SF Mono', 'Cascadia Code', 'Con
         font-weight: 600;
         text-transform: uppercase;
 
-        &[data-exchange="hose"] {
+        &[data-exchange='hose'] {
           background: #e3f2fd;
           color: #1976d2;
         }
 
-        &[data-exchange="hnx"] {
+        &[data-exchange='hnx'] {
           background: #f3e5f5;
           color: #7b1fa2;
         }
 
-        &[data-exchange="upcom"] {
+        &[data-exchange='upcom'] {
           background: #e8f5e9;
           color: #388e3c;
         }
 
-        &[data-exchange="vn30"] {
+        &[data-exchange='vn30'] {
           background: #fff3e0;
           color: #f57c00;
         }
@@ -1986,7 +1988,7 @@ $font-numbers: 'JetBrains Mono', 'Roboto Mono', 'SF Mono', 'Cascadia Code', 'Con
           font-weight: 500;
         }
 
-        input[type="date"] {
+        input[type='date'] {
           padding: 6px 10px;
           border: 1px solid #ccc;
           border-radius: 0;
@@ -2054,7 +2056,7 @@ $font-numbers: 'JetBrains Mono', 'Roboto Mono', 'SF Mono', 'Cascadia Code', 'Con
       cursor: pointer;
       font-size: 12px;
 
-      input[type="checkbox"] {
+      input[type='checkbox'] {
         width: 14px;
         height: 14px;
         cursor: pointer;
@@ -2446,7 +2448,7 @@ $font-numbers: 'JetBrains Mono', 'Roboto Mono', 'SF Mono', 'Cascadia Code', 'Con
     }
 
     .transactions-list,
-.trades-list {
+    .trades-list {
       h5 {
         margin: 0 0 12px 0;
         font-size: 14px;
@@ -2462,7 +2464,7 @@ $font-numbers: 'JetBrains Mono', 'Roboto Mono', 'SF Mono', 'Cascadia Code', 'Con
       }
 
       .transactions-table,
-.trades-table {
+      .trades-table {
         width: 100%;
         border-collapse: collapse;
         font-size: 13px;
@@ -2587,7 +2589,8 @@ $font-numbers: 'JetBrains Mono', 'Roboto Mono', 'SF Mono', 'Cascadia Code', 'Con
                 font-weight: 500;
               }
 
-              .win-count, .loss-count {
+              .win-count,
+              .loss-count {
                 font-weight: 600;
                 font-size: 12px;
                 padding: 2px 6px;
@@ -2610,7 +2613,8 @@ $font-numbers: 'JetBrains Mono', 'Roboto Mono', 'SF Mono', 'Cascadia Code', 'Con
               text-align: right;
               font-size: 12px;
 
-              .total-win, .total-loss {
+              .total-win,
+              .total-loss {
                 font-weight: 600;
               }
             }
@@ -3583,7 +3587,9 @@ $font-numbers: 'JetBrains Mono', 'Roboto Mono', 'SF Mono', 'Cascadia Code', 'Con
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
     opacity: 0;
     visibility: hidden;
-    transition: opacity 0.15s, visibility 0.15s;
+    transition:
+      opacity 0.15s,
+      visibility 0.15s;
     pointer-events: none;
     text-align: left;
   }
@@ -3880,7 +3886,8 @@ $font-numbers: 'JetBrains Mono', 'Roboto Mono', 'SF Mono', 'Cascadia Code', 'Con
   border-collapse: collapse;
   font-size: 13px;
 
-  th, td {
+  th,
+  td {
     padding: 12px 16px;
     text-align: left;
     border-bottom: 1px solid #e0e0e0;
@@ -3942,7 +3949,7 @@ $font-numbers: 'JetBrains Mono', 'Roboto Mono', 'SF Mono', 'Cascadia Code', 'Con
 
       &.positive {
         color: $light-green;
-        
+
         .change-percent {
           color: $dark-green;
         }
@@ -3950,7 +3957,7 @@ $font-numbers: 'JetBrains Mono', 'Roboto Mono', 'SF Mono', 'Cascadia Code', 'Con
 
       &.negative {
         color: #e53935;
-        
+
         .change-percent {
           color: #c62828;
         }
@@ -4283,7 +4290,7 @@ $font-numbers: 'JetBrains Mono', 'Roboto Mono', 'SF Mono', 'Cascadia Code', 'Con
             }
           }
 
-          input[type="range"] {
+          input[type='range'] {
             width: 100%;
             height: 6px;
             -webkit-appearance: none;
@@ -4905,8 +4912,12 @@ $font-numbers: 'JetBrains Mono', 'Roboto Mono', 'SF Mono', 'Cascadia Code', 'Con
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .fullscreen-dialog {
@@ -4932,11 +4943,11 @@ $font-numbers: 'JetBrains Mono', 'Roboto Mono', 'SF Mono', 'Cascadia Code', 'Con
 }
 
 @keyframes slideUp {
-  from { 
+  from {
     opacity: 0;
     transform: translateY(20px);
   }
-  to { 
+  to {
     opacity: 1;
     transform: translateY(0);
   }
@@ -5170,7 +5181,7 @@ $font-numbers: 'JetBrains Mono', 'Roboto Mono', 'SF Mono', 'Cascadia Code', 'Con
     }
   }
 
-  input[type="range"] {
+  input[type='range'] {
     width: 100%;
     height: 6px;
     border-radius: 3px;
@@ -5220,7 +5231,8 @@ $font-numbers: 'JetBrains Mono', 'Roboto Mono', 'SF Mono', 'Cascadia Code', 'Con
     white-space: nowrap;
   }
 
-  .quantity-cell, .shares-cell {
+  .quantity-cell,
+  .shares-cell {
     font-weight: 600;
     text-align: center;
   }
@@ -5233,7 +5245,9 @@ $font-numbers: 'JetBrains Mono', 'Roboto Mono', 'SF Mono', 'Cascadia Code', 'Con
     color: #1e1e1e;
   }
 
-  .price-cell, .avg-price-cell, .capital-cell {
+  .price-cell,
+  .avg-price-cell,
+  .capital-cell {
     font-family: $font-numbers;
     font-size: 11px;
     text-align: right;
@@ -5250,7 +5264,8 @@ $font-numbers: 'JetBrains Mono', 'Roboto Mono', 'SF Mono', 'Cascadia Code', 'Con
     text-align: center;
   }
 
-  th, td {
+  th,
+  td {
     padding: 8px 6px;
     font-size: 12px;
   }
@@ -5283,7 +5298,7 @@ $font-numbers: 'JetBrains Mono', 'Roboto Mono', 'SF Mono', 'Cascadia Code', 'Con
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
   border: 1px solid #ddd;
   animation: dialogSlideIn 0.2s ease-out;
-  
+
   @keyframes dialogSlideIn {
     from {
       opacity: 0;
@@ -5303,7 +5318,7 @@ $font-numbers: 'JetBrains Mono', 'Roboto Mono', 'SF Mono', 'Cascadia Code', 'Con
   padding: 12px 16px;
   border-bottom: 1px solid #ddd;
   background: #f5f5f5;
-  
+
   h3 {
     margin: 0;
     font-size: 14px;
@@ -5312,13 +5327,13 @@ $font-numbers: 'JetBrains Mono', 'Roboto Mono', 'SF Mono', 'Cascadia Code', 'Con
     display: flex;
     align-items: center;
     gap: 8px;
-    
+
     i {
       color: #1976d2;
       font-size: 16px;
     }
   }
-  
+
   .close-btn {
     background: none;
     border: none;
@@ -5327,12 +5342,12 @@ $font-numbers: 'JetBrains Mono', 'Roboto Mono', 'SF Mono', 'Cascadia Code', 'Con
     padding: 4px 8px;
     border-radius: 0;
     transition: all 0.15s;
-    
+
     &:hover:not(:disabled) {
       background: #e0e0e0;
       color: #333;
     }
-    
+
     &:disabled {
       opacity: 0.5;
       cursor: not-allowed;
@@ -5352,22 +5367,22 @@ $font-numbers: 'JetBrains Mono', 'Roboto Mono', 'SF Mono', 'Cascadia Code', 'Con
   gap: 10px;
   padding: 12px;
   border-radius: 0;
-  
+
   &.loading {
     background: #e3f2fd;
     color: #1565c0;
     border: 1px solid #90caf9;
-    
+
     i {
       font-size: 20px;
     }
   }
-  
+
   &.error {
     background: #ffebee;
     color: #c62828;
     border: 1px solid #ef9a9a;
-    
+
     i {
       font-size: 20px;
     }
@@ -5379,12 +5394,12 @@ $font-numbers: 'JetBrains Mono', 'Roboto Mono', 'SF Mono', 'Cascadia Code', 'Con
     display: flex;
     gap: 12px;
     margin-bottom: 16px;
-    
+
     @media (max-width: 500px) {
       flex-direction: column;
     }
   }
-  
+
   .result-item {
     flex: 1;
     display: flex;
@@ -5395,13 +5410,13 @@ $font-numbers: 'JetBrains Mono', 'Roboto Mono', 'SF Mono', 'Cascadia Code', 'Con
     border-radius: 0;
     border: 1px solid #ddd;
     transition: all 0.15s;
-    
+
     &.highlight {
       border-color: #ff9800;
       background: #fff8e1;
     }
   }
-  
+
   .result-icon {
     width: 40px;
     height: 40px;
@@ -5409,37 +5424,37 @@ $font-numbers: 'JetBrains Mono', 'Roboto Mono', 'SF Mono', 'Cascadia Code', 'Con
     display: flex;
     align-items: center;
     justify-content: center;
-    
+
     i {
       font-size: 18px;
     }
-    
+
     &.db {
       background: #e8f5e9;
       color: #2e7d32;
     }
-    
+
     &.dnse {
       background: #e3f2fd;
       color: #1565c0;
     }
-    
+
     &.missing {
       background: #fff8e1;
       color: #f57c00;
     }
   }
-  
+
   .result-info {
     display: flex;
     flex-direction: column;
     gap: 2px;
-    
+
     .result-label {
       font-size: 11px;
       color: #666;
     }
-    
+
     .result-value {
       font-size: 13px;
       font-weight: 600;
@@ -5450,7 +5465,7 @@ $font-numbers: 'JetBrains Mono', 'Roboto Mono', 'SF Mono', 'Cascadia Code', 'Con
 
 .missing-symbols-section {
   margin-top: 12px;
-  
+
   h4 {
     font-size: 12px;
     font-weight: 600;
@@ -5459,7 +5474,7 @@ $font-numbers: 'JetBrains Mono', 'Roboto Mono', 'SF Mono', 'Cascadia Code', 'Con
     display: flex;
     align-items: center;
     gap: 6px;
-    
+
     i {
       color: #f57c00;
     }
@@ -5500,11 +5515,11 @@ $font-numbers: 'JetBrains Mono', 'Roboto Mono', 'SF Mono', 'Cascadia Code', 'Con
   border-radius: 0;
   border: 1px solid #a5d6a7;
   color: #2e7d32;
-  
+
   i {
     font-size: 20px;
   }
-  
+
   span {
     font-size: 13px;
   }
@@ -5530,21 +5545,21 @@ $font-numbers: 'JetBrains Mono', 'Roboto Mono', 'SF Mono', 'Cascadia Code', 'Con
   cursor: pointer;
   transition: all 0.15s;
   border: 1px solid #ddd;
-  
+
   &.secondary {
     background: #f5f5f5;
     color: #333;
-    
+
     &:hover {
       background: #e0e0e0;
     }
   }
-  
+
   &.primary {
     background: #1976d2;
     color: #fff;
     border-color: #1976d2;
-    
+
     &:hover {
       background: #1565c0;
     }
@@ -5561,7 +5576,7 @@ $font-numbers: 'JetBrains Mono', 'Roboto Mono', 'SF Mono', 'Cascadia Code', 'Con
 
   .section-header {
     margin-bottom: 12px;
-    
+
     h4 {
       margin: 0;
       font-size: 13px;
@@ -5571,7 +5586,7 @@ $font-numbers: 'JetBrains Mono', 'Roboto Mono', 'SF Mono', 'Cascadia Code', 'Con
       align-items: center;
       gap: 8px;
       text-transform: uppercase;
-      
+
       i {
         color: #1976d2;
         font-size: 14px;
@@ -5685,7 +5700,7 @@ $font-numbers: 'JetBrains Mono', 'Roboto Mono', 'SF Mono', 'Cascadia Code', 'Con
     gap: 8px;
     font-size: 16px;
     font-weight: 700;
-    
+
     .recommendation-buy & {
       color: #2e7d32;
     }
@@ -6101,4 +6116,3 @@ $font-numbers: 'JetBrains Mono', 'Roboto Mono', 'SF Mono', 'Cascadia Code', 'Con
     }
   }
 }
-

@@ -168,7 +168,8 @@
 }
 
 // Side Panels
-.captured-panel, .history-panel {
+.captured-panel,
+.history-panel {
   background: rgba(0, 0, 0, 0.3);
   border-radius: 12px;
   padding: 16px;
@@ -206,11 +207,11 @@
     font-size: 24px;
     font-weight: bold;
     text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
-    
-    &.red { 
+
+    &.red {
       color: var(--red-color);
     }
-    &.black { 
+    &.black {
       color: #636e72;
     }
   }
@@ -232,8 +233,12 @@
   border-radius: 4px;
   margin-bottom: 2px;
 
-  &.red-move { background: rgba(192, 57, 43, 0.2); }
-  &.black-move { background: rgba(45, 52, 54, 0.3); }
+  &.red-move {
+    background: rgba(192, 57, 43, 0.2);
+  }
+  &.black-move {
+    background: rgba(45, 52, 54, 0.3);
+  }
 
   .move-number {
     color: rgba(255, 255, 255, 0.5);
@@ -345,8 +350,13 @@
 }
 
 @keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
 }
 
 .status-bar {
@@ -392,14 +402,22 @@
     border-radius: 50%;
     animation: thinkingBounce 1.4s ease-in-out infinite both;
 
-    &:nth-child(1) { animation-delay: -0.32s; }
-    &:nth-child(2) { animation-delay: -0.16s; }
-    &:nth-child(3) { animation-delay: 0s; }
+    &:nth-child(1) {
+      animation-delay: -0.32s;
+    }
+    &:nth-child(2) {
+      animation-delay: -0.16s;
+    }
+    &:nth-child(3) {
+      animation-delay: 0s;
+    }
   }
 }
 
 @keyframes thinkingBounce {
-  0%, 80%, 100% {
+  0%,
+  80%,
+  100% {
     transform: scale(0.6);
     opacity: 0.5;
   }
@@ -410,8 +428,13 @@
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
 }
 
 .board-wrapper {
@@ -474,21 +497,22 @@
       ),
       // Vertical lines
       repeating-linear-gradient(
-        to right,
-        var(--line-color) 0,
-        var(--line-color) 1px,
-        transparent 1px,
-        transparent 50px
-      );
+          to right,
+          var(--line-color) 0,
+          var(--line-color) 1px,
+          transparent 1px,
+          transparent 50px
+        );
     pointer-events: none;
   }
-
 }
 
 // Hidden chess mode styling (same board, different feel)
 .board.hidden-mode {
   background: linear-gradient(145deg, var(--board-light), #c9a87c);
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6), inset 0 0 30px rgba(0, 0, 0, 0.1);
+  box-shadow:
+    0 10px 40px rgba(0, 0, 0, 0.6),
+    inset 0 0 30px rgba(0, 0, 0, 0.1);
 }
 
 .cell {
@@ -554,7 +578,9 @@
   font-size: 28px;
   font-weight: bold;
   cursor: pointer;
-  transition: transform 0.15s, box-shadow 0.3s;
+  transition:
+    transform 0.15s,
+    box-shadow 0.3s;
   position: relative;
   z-index: 10;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
@@ -577,7 +603,9 @@
 
   // Highlight the piece that was just moved
   &.last-moved {
-    box-shadow: 0 0 0 3px rgba(46, 204, 113, 0.7), 0 4px 12px rgba(46, 204, 113, 0.4);
+    box-shadow:
+      0 0 0 3px rgba(46, 204, 113, 0.7),
+      0 4px 12px rgba(46, 204, 113, 0.4);
     animation: pieceGlow 1.5s ease-in-out;
   }
 
@@ -597,9 +625,15 @@
 }
 
 @keyframes pieceGlow {
-  0% { transform: scale(1.1); }
-  50% { transform: scale(1.05); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(1.1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 .move-indicator {
@@ -623,8 +657,13 @@
 }
 
 @keyframes captureGlow {
-  0%, 100% { border-color: rgba(231, 76, 60, 0.8); }
-  50% { border-color: rgba(231, 76, 60, 0.4); }
+  0%,
+  100% {
+    border-color: rgba(231, 76, 60, 0.8);
+  }
+  50% {
+    border-color: rgba(231, 76, 60, 0.4);
+  }
 }
 
 .game-controls {
@@ -687,7 +726,9 @@
   .puzzle-difficulty {
     .star {
       color: rgba(255, 255, 255, 0.2);
-      &.filled { color: #f1c40f; }
+      &.filled {
+        color: #f1c40f;
+      }
     }
   }
 }
@@ -755,8 +796,13 @@
       margin-right: 12px;
     }
 
-    .red-move { color: var(--red-color); margin-right: 20px; }
-    .black-move { color: #888; }
+    .red-move {
+      color: var(--red-color);
+      margin-right: 20px;
+    }
+    .black-move {
+      color: #888;
+    }
   }
 }
 
@@ -902,7 +948,8 @@
   }
 }
 
-.mode-selector, .color-selector {
+.mode-selector,
+.color-selector {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 10px;
@@ -945,8 +992,12 @@
 
   .color-preview {
     font-size: 28px;
-    &.red { color: var(--red-color); }
-    &.black { color: #555; }
+    &.red {
+      color: var(--red-color);
+    }
+    &.black {
+      color: #555;
+    }
   }
 }
 

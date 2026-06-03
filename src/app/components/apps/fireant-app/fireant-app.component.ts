@@ -1,7 +1,13 @@
 import { Component, OnInit, OnDestroy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { FireantService, SearchResult, SymbolPost, InstitutionProfile, SymbolFundamental } from '../../../services/fireant.service';
+import {
+  FireantService,
+  SearchResult,
+  SymbolPost,
+  InstitutionProfile,
+  SymbolFundamental,
+} from '../../../services/fireant.service';
 
 interface StockInfo {
   symbol: string;
@@ -43,7 +49,7 @@ type DetailTab = 'overview' | 'fundamental' | 'profile' | 'posts';
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './fireant-app.component.html',
-  styleUrl: './fireant-app.component.scss'
+  styleUrl: './fireant-app.component.scss',
 })
 export class FireantAppComponent implements OnInit, OnDestroy {
   // Current view: 'market' or 'stock'
@@ -89,7 +95,7 @@ export class FireantAppComponent implements OnInit, OnDestroy {
     this.loadMarketOverview();
 
     // Wait for token before connecting WebSocket
-    this.fireantService.token$.subscribe(token => {
+    this.fireantService.token$.subscribe((token) => {
       if (token && !this.ws) {
         console.log('🔑 Token ready, connecting WebSocket...');
         this.connectWebSocket();
@@ -115,10 +121,11 @@ export class FireantAppComponent implements OnInit, OnDestroy {
    */
   private sendHandshake(): void {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      const handshake = JSON.stringify({
-        protocol: 'messagepack',
-        version: 1
-      }) + '\x1E'; // SignalR uses \x1E as record separator
+      const handshake =
+        JSON.stringify({
+          protocol: 'messagepack',
+          version: 1,
+        }) + '\x1E'; // SignalR uses \x1E as record separator
 
       this.ws.send(handshake);
       console.log('🤝 Sent handshake:', handshake);
@@ -183,8 +190,12 @@ export class FireantAppComponent implements OnInit, OnDestroy {
             } catch {
               // If not JSON, it's MessagePack binary format
               // For now, log the raw data
-              console.log('📦 MessagePack data (first 50 bytes):',
-                Array.from(uint8Array.slice(0, 50)).map(b => b.toString(16).padStart(2, '0')).join(' '));
+              console.log(
+                '📦 MessagePack data (first 50 bytes):',
+                Array.from(uint8Array.slice(0, 50))
+                  .map((b) => b.toString(16).padStart(2, '0'))
+                  .join(' ')
+              );
 
               // TODO: Implement MessagePack parser if needed
               // For now, we'll wait to see the actual format from the server
@@ -240,7 +251,12 @@ export class FireantAppComponent implements OnInit, OnDestroy {
       const uint8Array = new Uint8Array(binaryMessage);
       console.log('📡 Subscribed to symbols:', symbols);
       console.log('📦 Binary message:', uint8Array.length, 'bytes');
-      console.log('📦 Hex:', Array.from(uint8Array).map(b => b.toString(16).padStart(2, '0')).join(' '));
+      console.log(
+        '📦 Hex:',
+        Array.from(uint8Array)
+          .map((b) => b.toString(16).padStart(2, '0'))
+          .join(' ')
+      );
     }
   }
 
@@ -255,7 +271,7 @@ export class FireantAppComponent implements OnInit, OnDestroy {
 
       // Update market stocks with real-time data
       const stocks = this.marketStocks();
-      const updatedStocks = stocks.map(stock => {
+      const updatedStocks = stocks.map((stock) => {
         if (stock.symbol === data.symbol) {
           return { ...stock, ...data };
         }
@@ -286,7 +302,7 @@ export class FireantAppComponent implements OnInit, OnDestroy {
     const stocks: StockInfo[] = [];
     let completed = 0;
 
-    this.popularSymbols.forEach(symbol => {
+    this.popularSymbols.forEach((symbol) => {
       this.fireantService.getStockInfo(symbol).subscribe({
         next: (data: StockInfo) => {
           stocks.push(data);
@@ -303,7 +319,7 @@ export class FireantAppComponent implements OnInit, OnDestroy {
             this.marketStocks.set(stocks);
             this.isLoadingMarket.set(false);
           }
-        }
+        },
       });
     });
   }
@@ -334,7 +350,7 @@ export class FireantAppComponent implements OnInit, OnDestroy {
       error: (error) => {
         console.error('Search error:', error);
         this.isSearching.set(false);
-      }
+      },
     });
   }
 
@@ -344,7 +360,7 @@ export class FireantAppComponent implements OnInit, OnDestroy {
   viewStockDetail(stock: SearchResult | string): void {
     this.isSearching.set(true);
 
-    const symbol = typeof stock === 'string' ? stock : (stock.symbol || stock.key || '');
+    const symbol = typeof stock === 'string' ? stock : stock.symbol || stock.key || '';
 
     if (!symbol) {
       console.error('No symbol found');
@@ -365,7 +381,7 @@ export class FireantAppComponent implements OnInit, OnDestroy {
       error: (error) => {
         console.error('Error loading stock:', error);
         this.isSearching.set(false);
-      }
+      },
     });
   }
 
@@ -415,7 +431,7 @@ export class FireantAppComponent implements OnInit, OnDestroy {
       error: (error) => {
         console.error('Error loading fundamental:', error);
         this.isLoadingDetails.set(false);
-      }
+      },
     });
   }
 
@@ -432,7 +448,7 @@ export class FireantAppComponent implements OnInit, OnDestroy {
       error: (error) => {
         console.error('Error loading profile:', error);
         this.isLoadingDetails.set(false);
-      }
+      },
     });
   }
 
@@ -452,7 +468,7 @@ export class FireantAppComponent implements OnInit, OnDestroy {
     this.fireantService.getSymbolPosts(symbol, this.postsLimit).subscribe({
       next: (data: any) => {
         // API returns array directly or in data property
-        const newPosts = Array.isArray(data) ? data : (data.data || []);
+        const newPosts = Array.isArray(data) ? data : data.data || [];
 
         if (reset) {
           this.stockPosts.set(newPosts);
@@ -470,7 +486,7 @@ export class FireantAppComponent implements OnInit, OnDestroy {
       error: (error) => {
         console.error('Error loading posts:', error);
         this.isLoadingDetails.set(false);
-      }
+      },
     });
   }
 
@@ -484,11 +500,11 @@ export class FireantAppComponent implements OnInit, OnDestroy {
     }
 
     this.isLoadingMorePosts.set(true);
-    this.postsOffset.update(offset => offset + this.postsLimit);
+    this.postsOffset.update((offset) => offset + this.postsLimit);
 
     this.fireantService.getSymbolPosts(stock.symbol, this.postsLimit).subscribe({
       next: (data: any) => {
-        const newPosts = Array.isArray(data) ? data : (data.data || []);
+        const newPosts = Array.isArray(data) ? data : data.data || [];
         this.stockPosts.set([...this.stockPosts(), ...newPosts]);
 
         if (newPosts.length < this.postsLimit) {
@@ -500,7 +516,7 @@ export class FireantAppComponent implements OnInit, OnDestroy {
       error: (error) => {
         console.error('Error loading more posts:', error);
         this.isLoadingMorePosts.set(false);
-      }
+      },
     });
   }
 
@@ -580,4 +596,3 @@ export class FireantAppComponent implements OnInit, OnDestroy {
     return `${sign}${value.toFixed(2)}%`;
   }
 }
-

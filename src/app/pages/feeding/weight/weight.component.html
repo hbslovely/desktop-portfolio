@@ -195,11 +195,7 @@
   </aside>
 
   <!-- Timeline phát triển -->
-  <div
-    class="dialog-overlay"
-    *ngIf="timelineDialogOpen()"
-    (click)="closeTimelineDialog()"
-  >
+  <div class="dialog-overlay" *ngIf="timelineDialogOpen()" (click)="closeTimelineDialog()">
     <div
       class="dialog dialog-wide timeline-dialog"
       role="dialog"
@@ -267,9 +263,7 @@
           <span class="tl-mood-badge" data-mood="growth">
             <i class="pi pi-arrow-up"></i> Tăng trưởng
           </span>
-          <span class="tl-mood-badge" data-mood="leap">
-            <i class="pi pi-bolt"></i> Leap/WW
-          </span>
+          <span class="tl-mood-badge" data-mood="leap"> <i class="pi pi-bolt"></i> Leap/WW </span>
         </div>
 
         <div class="tl-chart-scroll" *ngIf="timelineChartData() as cd">
@@ -354,7 +348,9 @@
                 (click)="selectTimelineNode(p.entry.milestone.id)"
                 role="button"
                 tabindex="0"
-                [attr.aria-label]="p.entry.milestone.periodLabel + ' - ' + p.entry.milestone.tagline"
+                [attr.aria-label]="
+                  p.entry.milestone.periodLabel + ' - ' + p.entry.milestone.tagline
+                "
               >
                 <circle
                   *ngIf="p.entry.state === 'current'"
@@ -372,12 +368,7 @@
                   fill-opacity="0.18"
                 />
                 <circle class="tl-chart-dot" r="15" />
-                <text
-                  class="tl-chart-emoji"
-                  text-anchor="middle"
-                  dominant-baseline="central"
-                  y="1"
-                >
+                <text class="tl-chart-emoji" text-anchor="middle" dominant-baseline="central" y="1">
                   {{ p.entry.milestone.heroEmoji }}
                 </text>
                 <g *ngIf="p.entry.state === 'past'" transform="translate(11,-11)">
@@ -452,27 +443,21 @@
               </div>
 
               <div class="tl-skills" *ngIf="sel.milestone.skills?.length">
-                <span class="tl-skills-label">
-                  <i class="pi pi-sparkles"></i> Kỹ năng:
-                </span>
+                <span class="tl-skills-label"> <i class="pi pi-sparkles"></i> Kỹ năng: </span>
                 <span class="tl-skill-chip" *ngFor="let s of sel.milestone.skills">{{ s }}</span>
               </div>
 
               <div class="tl-section">
-                <div class="tl-section-label">
-                  <i class="pi pi-lightbulb"></i> Điều thú vị
-                </div>
+                <div class="tl-section-label"><i class="pi pi-lightbulb"></i> Điều thú vị</div>
                 <ul class="tl-list">
                   <li *ngFor="let f of sel.milestone.funFacts">{{ f }}</li>
                 </ul>
               </div>
 
               <div class="tl-section">
-                <div class="tl-section-label">
-                  <i class="pi pi-bookmark-fill"></i> Ba mẹ lưu ý
-                </div>
+                <div class="tl-section-label"><i class="pi pi-bookmark-fill"></i> Ba mẹ lưu ý</div>
                 <ul class="tl-list">
-                  <li *ngFor="let n of sel.milestone.parentNotes | slice : 0 : 2">
+                  <li *ngFor="let n of sel.milestone.parentNotes | slice: 0 : 2">
                     {{ n }}
                   </li>
                 </ul>
@@ -481,18 +466,14 @@
               <ng-container *ngIf="selectedTimelineCareGuide() as care">
                 <div class="tl-care-grid">
                   <div class="tl-section tl-section-care tl-section-care--todo">
-                    <div class="tl-section-label">
-                      <i class="pi pi-check-circle"></i> Todo list
-                    </div>
+                    <div class="tl-section-label"><i class="pi pi-check-circle"></i> Todo list</div>
                     <ul class="tl-list">
                       <li *ngFor="let item of care.todos">{{ item }}</li>
                     </ul>
                   </div>
 
                   <div class="tl-section tl-section-care tl-section-care--avoid">
-                    <div class="tl-section-label">
-                      <i class="pi pi-ban"></i> Not-to-do list
-                    </div>
+                    <div class="tl-section-label"><i class="pi pi-ban"></i> Not-to-do list</div>
                     <ul class="tl-list">
                       <li *ngFor="let item of care.notToDo">{{ item }}</li>
                     </ul>
@@ -534,7 +515,9 @@
               class="tl-nav-today"
               (click)="goToCurrentTimeline()"
               *ngIf="currentTimelineMilestone()"
-              [class.active]="selectedTimelineEntry() && selectedTimelineEntry()!.state === 'current'"
+              [class.active]="
+                selectedTimelineEntry() && selectedTimelineEntry()!.state === 'current'
+              "
               title="Về cột mốc hiện tại"
             >
               <i class="pi pi-compass"></i>
@@ -629,27 +612,21 @@
               </div>
 
               <div class="tl-skills" *ngIf="sel.milestone.skills?.length">
-                <span class="tl-skills-label">
-                  <i class="pi pi-sparkles"></i> Kỹ năng:
-                </span>
+                <span class="tl-skills-label"> <i class="pi pi-sparkles"></i> Kỹ năng: </span>
                 <span class="tl-skill-chip" *ngFor="let s of sel.milestone.skills">{{ s }}</span>
               </div>
 
               <div class="tl-section">
-                <div class="tl-section-label">
-                  <i class="pi pi-lightbulb"></i> Điều thú vị
-                </div>
+                <div class="tl-section-label"><i class="pi pi-lightbulb"></i> Điều thú vị</div>
                 <ul class="tl-list">
                   <li *ngFor="let f of sel.milestone.funFacts">{{ f }}</li>
                 </ul>
               </div>
 
               <div class="tl-section">
-                <div class="tl-section-label">
-                  <i class="pi pi-bookmark-fill"></i> Ba mẹ lưu ý
-                </div>
+                <div class="tl-section-label"><i class="pi pi-bookmark-fill"></i> Ba mẹ lưu ý</div>
                 <ul class="tl-list">
-                  <li *ngFor="let n of sel.milestone.parentNotes | slice : 0 : 2">
+                  <li *ngFor="let n of sel.milestone.parentNotes | slice: 0 : 2">
                     {{ n }}
                   </li>
                 </ul>
@@ -658,18 +635,14 @@
               <ng-container *ngIf="selectedTimelineCareGuide() as care">
                 <div class="tl-care-grid">
                   <div class="tl-section tl-section-care tl-section-care--todo">
-                    <div class="tl-section-label">
-                      <i class="pi pi-check-circle"></i> Todo list
-                    </div>
+                    <div class="tl-section-label"><i class="pi pi-check-circle"></i> Todo list</div>
                     <ul class="tl-list">
                       <li *ngFor="let item of care.todos">{{ item }}</li>
                     </ul>
                   </div>
 
                   <div class="tl-section tl-section-care tl-section-care--avoid">
-                    <div class="tl-section-label">
-                      <i class="pi pi-ban"></i> Not-to-do list
-                    </div>
+                    <div class="tl-section-label"><i class="pi pi-ban"></i> Not-to-do list</div>
                     <ul class="tl-list">
                       <li *ngFor="let item of care.notToDo">{{ item }}</li>
                     </ul>
@@ -698,11 +671,7 @@
   </div>
 
   <!-- WHO Standards Table Dialog -->
-  <div
-    class="dialog-overlay"
-    *ngIf="whoTableDialogOpen()"
-    (click)="closeWhoTableDialog()"
-  >
+  <div class="dialog-overlay" *ngIf="whoTableDialogOpen()" (click)="closeWhoTableDialog()">
     <div
       class="dialog dialog-wide who-table-dialog"
       role="dialog"
@@ -716,9 +685,7 @@
             WHO 0-24 tháng
           </div>
           <h2>Bảng cân nặng & chiều cao theo tuổi</h2>
-          <p class="dialog-lead">
-            {{ gender() === 'girl' ? 'Bé gái' : 'Bé trai' }} · 0-24 tháng
-          </p>
+          <p class="dialog-lead">{{ gender() === 'girl' ? 'Bé gái' : 'Bé trai' }} · 0-24 tháng</p>
         </div>
         <button
           type="button"
@@ -755,19 +722,13 @@
                 <span class="who-th-title">Chiều cao</span>
                 <span class="who-th-unit">cm</span>
               </th>
-              <th
-                class="who-th-current"
-                *ngIf="sortedLogsDesc().length > 0 || latestHeightLog()"
-              >
+              <th class="who-th-current" *ngIf="sortedLogsDesc().length > 0 || latestHeightLog()">
                 Bé
               </th>
             </tr>
           </thead>
           <tbody>
-            <tr
-              *ngFor="let row of whoStandardTable()"
-              [class.who-row-current]="row.isCurrent"
-            >
+            <tr *ngFor="let row of whoStandardTable()" [class.who-row-current]="row.isCurrent">
               <td class="who-td-age">
                 <span class="who-age-label">{{ row.label }}</span>
                 <span class="who-age-weeks" *ngIf="row.weeks > 0">{{ row.weeks }} tuần</span>
@@ -825,14 +786,16 @@
       <div class="who-table-footer">
         <p class="who-footer-note">
           <i class="pi pi-info-circle"></i>
-          Mốc <strong>-2SD</strong>: có thể gợi ý suy dinh dưỡng, thiếu chất hoặc thấp còi.
-          Mốc <strong>+2SD</strong>: có thể gợi ý thừa cân, béo phì hoặc rất cao.
+          Mốc <strong>-2SD</strong>: có thể gợi ý suy dinh dưỡng, thiếu chất hoặc thấp còi. Mốc
+          <strong>+2SD</strong>: có thể gợi ý thừa cân, béo phì hoặc rất cao.
         </p>
         <p class="who-footer-note who-footer-note--muted">
-          Số liệu theo Chuẩn tăng trưởng trẻ em WHO 2024 (áp dụng tại Việt Nam), chỉ mang tính tham khảo và không thay cho tư vấn y tế.
+          Số liệu theo Chuẩn tăng trưởng trẻ em WHO 2024 (áp dụng tại Việt Nam), chỉ mang tính tham
+          khảo và không thay cho tư vấn y tế.
         </p>
         <p class="who-footer-note who-footer-note--muted" *ngIf="whoReferenceRows()[0] as r0">
-          P50 tham khảo: sơ sinh ~{{ formatKg(r0.weightMedianKg) }} kg, {{ formatCm(r0.heightMedianCm) }} cm.
+          P50 tham khảo: sơ sinh ~{{ formatKg(r0.weightMedianKg) }} kg,
+          {{ formatCm(r0.heightMedianCm) }} cm.
         </p>
       </div>
     </div>

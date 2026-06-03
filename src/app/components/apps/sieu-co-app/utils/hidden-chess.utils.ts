@@ -1,6 +1,6 @@
 /**
  * Hidden Chess (Cờ Úp) Utilities
- * 
+ *
  * Cờ Tướng với tất cả quân bị úp ban đầu
  * Luật:
  * - Bàn cờ 10x9 giống cờ tướng thường
@@ -9,7 +9,18 @@
  * - Sau khi lật, quân di chuyển theo luật cờ tướng thông thường
  */
 
-import { Board, Position, createEmptyBoard, createStandardBoard, setPieceAt, getPieceAt, isValidPosition, createPiece, BOARD_ROWS, BOARD_COLS } from '../models/board.model';
+import {
+  Board,
+  Position,
+  createEmptyBoard,
+  createStandardBoard,
+  setPieceAt,
+  getPieceAt,
+  isValidPosition,
+  createPiece,
+  BOARD_ROWS,
+  BOARD_COLS,
+} from '../models/board.model';
 import { PieceType, PieceColor, PieceState, Piece } from '../models/piece.model';
 import { Move, createMove } from '../models/move.model';
 import { generatePieceMoves as generateStandardMoves } from './move-validator.utils';
@@ -20,21 +31,25 @@ import { generatePieceMoves as generateStandardMoves } from './move-validator.ut
 export function createHiddenBoard(): Board {
   // Start with standard board
   const board = createStandardBoard();
-  
+
   // Hide all pieces
   for (let row = 0; row < BOARD_ROWS; row++) {
     for (let col = 0; col < BOARD_COLS; col++) {
       const piece = getPieceAt(board, { row, col });
       if (piece) {
         // Set piece to hidden state
-        setPieceAt(board, { row, col }, {
-          ...piece,
-          state: PieceState.HIDDEN
-        });
+        setPieceAt(
+          board,
+          { row, col },
+          {
+            ...piece,
+            state: PieceState.HIDDEN,
+          }
+        );
       }
     }
   }
-  
+
   return board;
 }
 
@@ -44,13 +59,13 @@ export function createHiddenBoard(): Board {
 export function flipPiece(board: Board, pos: Position): Piece | null {
   const piece = getPieceAt(board, pos);
   if (!piece || piece.state !== PieceState.HIDDEN) return null;
-  
+
   // Reveal the piece
   const revealedPiece: Piece = {
     ...piece,
-    state: PieceState.NORMAL
+    state: PieceState.NORMAL,
   };
-  
+
   setPieceAt(board, pos, revealedPiece);
   return revealedPiece;
 }
@@ -70,12 +85,12 @@ export function isValidHiddenPosition(pos: Position): boolean {
 export function generateHiddenPieceMoves(board: Board, pos: Position): Move[] {
   const piece = getPieceAt(board, pos);
   if (!piece || piece.state === PieceState.HIDDEN) return [];
-  
+
   // Generate moves using standard chess rules
   const allMoves = generateStandardMoves(board, pos, true);
-  
+
   // Filter: không thể đi vào ô có quân úp
-  return allMoves.filter(move => {
+  return allMoves.filter((move) => {
     const targetPiece = getPieceAt(board, move.to);
     // Cho phép đi nếu ô trống hoặc ô có quân đã lật (của đối phương)
     return !targetPiece || targetPiece.state !== PieceState.HIDDEN;
@@ -88,7 +103,7 @@ export function generateHiddenPieceMoves(board: Board, pos: Position): Move[] {
  */
 export function generateAllHiddenMoves(board: Board, color: PieceColor): Move[] {
   const moves: Move[] = [];
-  
+
   for (let row = 0; row < BOARD_ROWS; row++) {
     for (let col = 0; col < BOARD_COLS; col++) {
       const piece = getPieceAt(board, { row, col });
@@ -97,7 +112,7 @@ export function generateAllHiddenMoves(board: Board, color: PieceColor): Move[] 
       }
     }
   }
-  
+
   return moves;
 }
 
@@ -106,7 +121,7 @@ export function generateAllHiddenMoves(board: Board, color: PieceColor): Move[] 
  */
 export function getFlippablePositions(board: Board): Position[] {
   const positions: Position[] = [];
-  
+
   for (let row = 0; row < BOARD_ROWS; row++) {
     for (let col = 0; col < BOARD_COLS; col++) {
       const piece = getPieceAt(board, { row, col });
@@ -115,7 +130,7 @@ export function getFlippablePositions(board: Board): Position[] {
       }
     }
   }
-  
+
   return positions;
 }
 
@@ -123,8 +138,10 @@ export function getFlippablePositions(board: Board): Position[] {
  * Count pieces for each color
  */
 export function countPieces(board: Board): { red: number; black: number; hidden: number } {
-  let red = 0, black = 0, hidden = 0;
-  
+  let red = 0,
+    black = 0,
+    hidden = 0;
+
   for (let row = 0; row < BOARD_ROWS; row++) {
     for (let col = 0; col < BOARD_COLS; col++) {
       const piece = getPieceAt(board, { row, col });
@@ -139,7 +156,7 @@ export function countPieces(board: Board): { red: number; black: number; hidden:
       }
     }
   }
-  
+
   return { red, black, hidden };
 }
 
@@ -148,13 +165,13 @@ export function countPieces(board: Board): { red: number; black: number; hidden:
  */
 export function isHiddenGameOver(board: Board): PieceColor | null {
   const count = countPieces(board);
-  
+
   // Game is not over if there are still hidden pieces
   if (count.hidden > 0) return null;
-  
+
   if (count.red === 0) return PieceColor.BLACK; // Black wins
   if (count.black === 0) return PieceColor.RED; // Red wins
-  
+
   return null;
 }
 
@@ -163,7 +180,7 @@ export function isHiddenGameOver(board: Board): PieceColor | null {
  */
 export function evaluateHiddenPosition(board: Board, color: PieceColor): number {
   let score = 0;
-  
+
   // Standard piece values
   const PIECE_VALUES: Record<PieceType, number> = {
     [PieceType.NONE]: 0,
@@ -173,9 +190,9 @@ export function evaluateHiddenPosition(board: Board, color: PieceColor): number 
     [PieceType.HORSE]: 400,
     [PieceType.ROOK]: 900,
     [PieceType.CANNON]: 450,
-    [PieceType.PAWN]: 100
+    [PieceType.PAWN]: 100,
   };
-  
+
   for (let row = 0; row < BOARD_ROWS; row++) {
     for (let col = 0; col < BOARD_COLS; col++) {
       const piece = getPieceAt(board, { row, col });
@@ -189,13 +206,13 @@ export function evaluateHiddenPosition(board: Board, color: PieceColor): number 
       }
     }
   }
-  
+
   // Bonus for having more moves
   const myMoves = generateAllHiddenMoves(board, color);
   const oppColor = color === PieceColor.RED ? PieceColor.BLACK : PieceColor.RED;
   const oppMoves = generateAllHiddenMoves(board, oppColor);
-  
+
   score += (myMoves.length - oppMoves.length) * 2;
-  
+
   return score;
 }

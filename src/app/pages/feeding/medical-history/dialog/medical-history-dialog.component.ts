@@ -25,11 +25,7 @@ import {
   MedicalHistoryEntry,
   MedicalHistoryService,
 } from '../../../../services/medical-history.service';
-import {
-  MEDICAL_KINDS,
-  MedicalKindMeta,
-  kindMeta,
-} from '../medical-history-kinds.data';
+import { MEDICAL_KINDS, MedicalKindMeta, kindMeta } from '../medical-history-kinds.data';
 import { DEFAULT_PLACES_VI } from '../medical-places.presets';
 import { viFoldIncludes } from '../medical-history-vi.utils';
 import { ActivityLogService } from '../../../../services/activity-log.service';
@@ -104,15 +100,12 @@ export class MedicalHistoryDialogComponent {
         .trim() || 'guest'
   );
 
-
   filteredKindCatalog = computed(() => {
     const q = this.kindSearch().trim();
     if (!q) return this.kindCatalog;
     return this.kindCatalog.filter(
       (km) =>
-        viFoldIncludes(km.label, q) ||
-        viFoldIncludes(km.shortLabel, q) ||
-        viFoldIncludes(km.id, q)
+        viFoldIncludes(km.label, q) || viFoldIncludes(km.shortLabel, q) || viFoldIncludes(km.id, q)
     );
   });
 
@@ -126,11 +119,7 @@ export class MedicalHistoryDialogComponent {
   });
 
   filteredPlaceSuggestions = computed(() => {
-    const raw = [
-      ...this.defaultPlaces,
-      ...this.customPlaces(),
-      ...this.placesFromEntries(),
-    ];
+    const raw = [...this.defaultPlaces, ...this.customPlaces(), ...this.placesFromEntries()];
     const seen = new Set<string>();
     const uniq: string[] = [];
     for (const p of raw) {
@@ -140,9 +129,7 @@ export class MedicalHistoryDialogComponent {
       uniq.push(t);
     }
     const q = this.normalizePlace(this.draft().place).toLowerCase();
-    const filtered = !q
-      ? uniq
-      : uniq.filter((p) => p.toLowerCase().includes(q));
+    const filtered = !q ? uniq : uniq.filter((p) => p.toLowerCase().includes(q));
     filtered.sort((a, b) => a.localeCompare(b, 'vi'));
     return filtered;
   });
@@ -180,9 +167,7 @@ export class MedicalHistoryDialogComponent {
   @HostListener('document:click', ['$event'])
   onDocumentClick(ev: Event): void {
     const path = ev.composedPath?.() ?? [];
-    const inCombo = path.some(
-      (n) => n instanceof HTMLElement && n.classList.contains('mh-combo')
-    );
+    const inCombo = path.some((n) => n instanceof HTMLElement && n.classList.contains('mh-combo'));
     if (!inCombo) {
       this.kindPickerOpen.set(false);
       this.placePickerOpen.set(false);
@@ -194,7 +179,7 @@ export class MedicalHistoryDialogComponent {
   }
 
   attachmentFor(entry: MedicalHistoryEntry): ExplorerEntry | undefined {
-    // Ưu tiên driveFileId trực tiếp từ medical entry  
+    // Ưu tiên driveFileId trực tiếp từ medical entry
     if (entry.driveFileId) {
       // Create a minimal ExplorerEntry object for the driveFileId
       return {
@@ -207,7 +192,7 @@ export class MedicalHistoryDialogComponent {
         storageStatus: 'drive',
       };
     }
-    
+
     // Fallback: tìm trong Explorer entries (để tương thích với data cũ)
     const legacyId = (entry as any).attachmentExplorerId;
     if (legacyId) {
@@ -219,7 +204,7 @@ export class MedicalHistoryDialogComponent {
         }
       }
     }
-    
+
     return undefined;
   }
 
@@ -311,9 +296,7 @@ export class MedicalHistoryDialogComponent {
     if (files.length === 0) return;
     const file = files[0];
     if (!this.isImageFile(file)) {
-      this.errorMsg.set(
-        'Chỉ hỗ trợ ảnh (jpg, png, heic…). Thử chụp lại hoặc chọn từ thư viện.'
-      );
+      this.errorMsg.set('Chỉ hỗ trợ ảnh (jpg, png, heic…). Thử chụp lại hoặc chọn từ thư viện.');
       return;
     }
     this.errorMsg.set('');
@@ -384,9 +367,7 @@ export class MedicalHistoryDialogComponent {
         if (pending || this.stripExistingAttachment()) {
           patch.driveFileId = driveFileId ?? null;
         }
-        await firstValueFrom(
-          this.medicalService.updateEntry(edit.rowIndex, patch)
-        );
+        await firstValueFrom(this.medicalService.updateEntry(edit.rowIndex, patch));
         this.activityLogService
           .logMedical(this.userNorm(), 'MEDICAL_UPDATED', {
             title: base.title,
@@ -412,9 +393,7 @@ export class MedicalHistoryDialogComponent {
       this.resetAttachmentDraft();
       this.saved.emit();
     } catch (err: unknown) {
-      this.errorMsg.set(
-        err instanceof Error ? err.message : 'Thao tác thất bại.'
-      );
+      this.errorMsg.set(err instanceof Error ? err.message : 'Thao tác thất bại.');
     } finally {
       this.saving.set(false);
     }
@@ -443,9 +422,7 @@ export class MedicalHistoryDialogComponent {
         return;
       }
       this.customPlaces.set(
-        arr
-          .filter((x): x is string => typeof x === 'string')
-          .map((x) => this.normalizePlace(x))
+        arr.filter((x): x is string => typeof x === 'string').map((x) => this.normalizePlace(x))
       );
     } catch {
       this.customPlaces.set([]);
@@ -454,10 +431,7 @@ export class MedicalHistoryDialogComponent {
 
   private persistCustomPlaces(): void {
     try {
-      localStorage.setItem(
-        this.placesStorageKey(),
-        JSON.stringify(this.customPlaces())
-      );
+      localStorage.setItem(this.placesStorageKey(), JSON.stringify(this.customPlaces()));
     } catch {
       /* ignore quota */
     }
@@ -480,10 +454,7 @@ export class MedicalHistoryDialogComponent {
   private isImageFile(f: File): boolean {
     const t = (f.type || '').toLowerCase();
     if (t.startsWith('image/')) return true;
-    if (
-      !t &&
-      /\.(jpe?g|png|gif|webp|heic|heif|bmp|avif)$/i.test(f.name)
-    ) {
+    if (!t && /\.(jpe?g|png|gif|webp|heic|heif|bmp|avif)$/i.test(f.name)) {
       return true;
     }
     return false;
@@ -503,7 +474,6 @@ export class MedicalHistoryDialogComponent {
     };
   }
 
-
   private async compressMedicalImage(file: File): Promise<string> {
     const tries: Array<[number, number]> = [
       [2048, 0.92],
@@ -517,11 +487,7 @@ export class MedicalHistoryDialogComponent {
     ];
     let last = '';
     for (const [size, q] of tries) {
-      last = await this.explorerService.fileToCompressedBase64(
-        file,
-        size,
-        q
-      );
+      last = await this.explorerService.fileToCompressedBase64(file, size, q);
       if (last.length <= MAX_ATTACH_CHARS) return last;
     }
     throw new Error(
@@ -547,7 +513,7 @@ export class MedicalHistoryDialogComponent {
     if (!response.driveFileId) {
       throw new Error('Không nhận được Drive file ID sau khi upload ảnh.');
     }
-    
+
     return response.driveFileId;
   }
 
@@ -562,9 +528,7 @@ export class MedicalHistoryDialogComponent {
 
     let folder = all.find(
       (e) =>
-        e.type === 'folder' &&
-        e.parentId === EXPLORER_ROOT_ID &&
-        e.name === MEDICAL_FOLDER_NAME
+        e.type === 'folder' && e.parentId === EXPLORER_ROOT_ID && e.name === MEDICAL_FOLDER_NAME
     );
     if (folder?.id) {
       return folder.id;
@@ -581,14 +545,10 @@ export class MedicalHistoryDialogComponent {
     all = await firstValueFrom(this.explorerService.getEntries());
     folder = all.find(
       (e) =>
-        e.type === 'folder' &&
-        e.parentId === EXPLORER_ROOT_ID &&
-        e.name === MEDICAL_FOLDER_NAME
+        e.type === 'folder' && e.parentId === EXPLORER_ROOT_ID && e.name === MEDICAL_FOLDER_NAME
     );
     if (!folder?.id) {
-      throw new Error(
-        'Không tạo được thư mục « Y tế » trong tab Tài liệu.'
-      );
+      throw new Error('Không tạo được thư mục « Y tế » trong tab Tài liệu.');
     }
     return folder.id;
   }

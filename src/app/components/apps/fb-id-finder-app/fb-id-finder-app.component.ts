@@ -26,22 +26,22 @@ interface FacebookProfile {
     trigger('slideUp', [
       transition(':enter', [
         style({ opacity: 0, transform: 'translateY(20px)' }),
-        animate('400ms ease-out', style({ opacity: 1, transform: 'translateY(0)' }))
+        animate('400ms ease-out', style({ opacity: 1, transform: 'translateY(0)' })),
       ]),
       transition(':leave', [
-        animate('300ms ease-in', style({ opacity: 0, transform: 'translateY(20px)' }))
-      ])
+        animate('300ms ease-in', style({ opacity: 0, transform: 'translateY(20px)' })),
+      ]),
     ]),
     trigger('fadeSlide', [
       transition(':enter', [
         style({ opacity: 0, transform: 'translateY(-10px)' }),
-        animate('300ms ease-out', style({ opacity: 1, transform: 'translateY(0)' }))
+        animate('300ms ease-out', style({ opacity: 1, transform: 'translateY(0)' })),
       ]),
       transition(':leave', [
-        animate('200ms ease-in', style({ opacity: 0, transform: 'translateY(-10px)' }))
-      ])
-    ])
-  ]
+        animate('200ms ease-in', style({ opacity: 0, transform: 'translateY(-10px)' })),
+      ]),
+    ]),
+  ],
 })
 export class FbIdFinderAppComponent implements AfterViewInit {
   @ViewChild('phoneInput') phoneInput!: ElementRef<HTMLInputElement>;
@@ -69,7 +69,7 @@ export class FbIdFinderAppComponent implements AfterViewInit {
 
   searchFbId() {
     const phoneNumber = this.phone().trim();
-    
+
     if (!phoneNumber) {
       this.error.set('Please enter a phone number');
       return;
@@ -87,66 +87,69 @@ export class FbIdFinderAppComponent implements AfterViewInit {
     this.facebookProfile.set(null);
 
     const headers = new HttpHeaders({
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
     });
 
-    this.http.patch<ApiResponse | string>(this.API_URL, { phone: phoneNumber }, { headers }).subscribe({
-      next: (response) => {
-        this.loading.set(false);
-        
-        // Handle both text and JSON responses
-        let fbId = '';
-        if (typeof response === 'string') {
-          fbId = response.trim();
-          this.result.set(fbId);
-        } else if (response && typeof response === 'object' && 'data' in response) {
-          fbId = (response.data || '').trim();
-          this.result.set(fbId);
-        } else {
-          const resultStr = JSON.stringify(response, null, 2);
-          this.result.set(resultStr);
-          // Try to extract ID from JSON
-          const idMatch = resultStr.match(/"id"\s*:\s*"([^"]+)"/i) || resultStr.match(/(\d{10,})/);
-          if (idMatch) {
-            fbId = idMatch[1];
-          }
-        }
+    this.http
+      .patch<ApiResponse | string>(this.API_URL, { phone: phoneNumber }, { headers })
+      .subscribe({
+        next: (response) => {
+          this.loading.set(false);
 
-        // If we have a valid ID, create Facebook link and fetch profile info
-        if (fbId && /^\d+$/.test(fbId)) {
-          const profile: FacebookProfile = {
-            id: fbId,
-            link: `https://www.facebook.com/${fbId}`
-          };
-          this.facebookProfile.set(profile);
-          this.fetchFacebookProfile(fbId);
-        } else {
-          this.facebookProfile.set(null);
-        }
-
-        this.addToHistory(phoneNumber);
-      },
-      error: (err) => {
-        this.loading.set(false);
-        
-        // Try to extract error message
-        if (err.error) {
-          if (typeof err.error === 'string') {
-            this.error.set(err.error);
-          } else if (err.error.data) {
-            this.error.set(err.error.data);
-          } else if (err.error.message) {
-            this.error.set(err.error.message);
+          // Handle both text and JSON responses
+          let fbId = '';
+          if (typeof response === 'string') {
+            fbId = response.trim();
+            this.result.set(fbId);
+          } else if (response && typeof response === 'object' && 'data' in response) {
+            fbId = (response.data || '').trim();
+            this.result.set(fbId);
           } else {
-            this.error.set('Error occurred while searching for Facebook ID');
+            const resultStr = JSON.stringify(response, null, 2);
+            this.result.set(resultStr);
+            // Try to extract ID from JSON
+            const idMatch =
+              resultStr.match(/"id"\s*:\s*"([^"]+)"/i) || resultStr.match(/(\d{10,})/);
+            if (idMatch) {
+              fbId = idMatch[1];
+            }
           }
-        } else {
-          this.error.set('Unable to connect to server');
-        }
-        
-        console.error('Error searching FB ID:', err);
-      }
-    });
+
+          // If we have a valid ID, create Facebook link and fetch profile info
+          if (fbId && /^\d+$/.test(fbId)) {
+            const profile: FacebookProfile = {
+              id: fbId,
+              link: `https://www.facebook.com/${fbId}`,
+            };
+            this.facebookProfile.set(profile);
+            this.fetchFacebookProfile(fbId);
+          } else {
+            this.facebookProfile.set(null);
+          }
+
+          this.addToHistory(phoneNumber);
+        },
+        error: (err) => {
+          this.loading.set(false);
+
+          // Try to extract error message
+          if (err.error) {
+            if (typeof err.error === 'string') {
+              this.error.set(err.error);
+            } else if (err.error.data) {
+              this.error.set(err.error.data);
+            } else if (err.error.message) {
+              this.error.set(err.error.message);
+            } else {
+              this.error.set('Error occurred while searching for Facebook ID');
+            }
+          } else {
+            this.error.set('Unable to connect to server');
+          }
+
+          console.error('Error searching FB ID:', err);
+        },
+      });
   }
 
   onPhoneKeyDown(event: KeyboardEvent) {
@@ -173,7 +176,7 @@ export class FbIdFinderAppComponent implements AfterViewInit {
 
   addToHistory(phone: string) {
     const history = this.searchHistory();
-    const updatedHistory = [phone, ...history.filter(p => p !== phone)].slice(0, 10);
+    const updatedHistory = [phone, ...history.filter((p) => p !== phone)].slice(0, 10);
     this.searchHistory.set(updatedHistory);
     this.saveSearchHistory();
   }
@@ -205,32 +208,38 @@ export class FbIdFinderAppComponent implements AfterViewInit {
   copyResult() {
     const result = this.result();
     if (result) {
-      navigator.clipboard.writeText(result).then(() => {
-        // Show temporary notification
-        const originalResult = this.result();
-        this.result.set('✓ Copied!');
-        setTimeout(() => {
-          this.result.set(originalResult);
-        }, 1000);
-      }).catch(err => {
-        console.error('Failed to copy:', err);
-      });
+      navigator.clipboard
+        .writeText(result)
+        .then(() => {
+          // Show temporary notification
+          const originalResult = this.result();
+          this.result.set('✓ Copied!');
+          setTimeout(() => {
+            this.result.set(originalResult);
+          }, 1000);
+        })
+        .catch((err) => {
+          console.error('Failed to copy:', err);
+        });
     }
   }
 
   copyFacebookLink() {
     const profile = this.facebookProfile();
     if (profile?.link) {
-      navigator.clipboard.writeText(profile.link).then(() => {
-        // Show temporary notification
-        const originalLink = profile.link;
-        this.facebookProfile.set({ ...profile, link: '✓ Link copied!' });
-        setTimeout(() => {
-          this.facebookProfile.set({ ...profile, link: originalLink });
-        }, 1000);
-      }).catch(err => {
-        console.error('Failed to copy:', err);
-      });
+      navigator.clipboard
+        .writeText(profile.link)
+        .then(() => {
+          // Show temporary notification
+          const originalLink = profile.link;
+          this.facebookProfile.set({ ...profile, link: '✓ Link copied!' });
+          setTimeout(() => {
+            this.facebookProfile.set({ ...profile, link: originalLink });
+          }, 1000);
+        })
+        .catch((err) => {
+          console.error('Failed to copy:', err);
+        });
     }
   }
 
@@ -244,36 +253,43 @@ export class FbIdFinderAppComponent implements AfterViewInit {
   fetchFacebookProfile(fbId: string) {
     this.loadingProfile.set(true);
     const profileUrl = `/api/facebook/${fbId}`;
-    
-    this.http.get(profileUrl, { 
-      responseType: 'text',
-      headers: new HttpHeaders({
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
-        'Accept-Language': 'en,vi;q=0.9,en-US;q=0.8',
-        'Accept-Encoding': 'gzip, deflate, br',
-        'Cache-Control': 'max-age=0',
-        'Sec-CH-UA': '"Chromium";v="142", "Google Chrome";v="142", "Not_A Brand";v="99"',
-        'Sec-CH-UA-Mobile': '?0',
-        'Sec-CH-UA-Platform': '"macOS"',
-        'Sec-CH-UA-Platform-Version': '"15.7.1"',
-        'Sec-Fetch-Dest': 'document',
-        'Sec-Fetch-Mode': 'navigate',
-        'Sec-Fetch-Site': 'same-origin',
-        'Sec-Fetch-User': '?1',
-        'Upgrade-Insecure-Requests': '1',
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36'
+
+    this.http
+      .get(profileUrl, {
+        responseType: 'text',
+        headers: new HttpHeaders({
+          Accept:
+            'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+          'Accept-Language': 'en,vi;q=0.9,en-US;q=0.8',
+          'Accept-Encoding': 'gzip, deflate, br',
+          'Cache-Control': 'max-age=0',
+          'Sec-CH-UA': '"Chromium";v="142", "Google Chrome";v="142", "Not_A Brand";v="99"',
+          'Sec-CH-UA-Mobile': '?0',
+          'Sec-CH-UA-Platform': '"macOS"',
+          'Sec-CH-UA-Platform-Version': '"15.7.1"',
+          'Sec-Fetch-Dest': 'document',
+          'Sec-Fetch-Mode': 'navigate',
+          'Sec-Fetch-Site': 'same-origin',
+          'Sec-Fetch-User': '?1',
+          'Upgrade-Insecure-Requests': '1',
+          'User-Agent':
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36',
+        }),
       })
-    }).subscribe({
-      next: (html) => {
-        this.loadingProfile.set(false);
-        this.parseFacebookProfile(html, fbId);
-      },
-      error: (err) => {
-        this.loadingProfile.set(false);
-        console.log('Could not fetch Facebook profile (this is normal due to Facebook restrictions):', err);
-        // Don't show error to user, just keep the link
-      }
-    });
+      .subscribe({
+        next: (html) => {
+          this.loadingProfile.set(false);
+          this.parseFacebookProfile(html, fbId);
+        },
+        error: (err) => {
+          this.loadingProfile.set(false);
+          console.log(
+            'Could not fetch Facebook profile (this is normal due to Facebook restrictions):',
+            err
+          );
+          // Don't show error to user, just keep the link
+        },
+      });
   }
 
   parseFacebookProfile(html: string, fbId: string) {
@@ -305,7 +321,9 @@ export class FbIdFinderAppComponent implements AfterViewInit {
       }
 
       // Try to extract from JSON-LD structured data
-      const jsonLdMatch = html.match(/<script[^>]*type=["']application\/ld\+json["'][^>]*>(.*?)<\/script>/is);
+      const jsonLdMatch = html.match(
+        /<script[^>]*type=["']application\/ld\+json["'][^>]*>(.*?)<\/script>/is
+      );
       if (jsonLdMatch && jsonLdMatch[1]) {
         try {
           const jsonData = JSON.parse(jsonLdMatch[1]);

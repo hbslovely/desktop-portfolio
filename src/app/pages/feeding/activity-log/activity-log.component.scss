@@ -463,8 +463,7 @@
   border-bottom: 1px solid #edf1f7;
   background: var(--activity-surface);
   box-shadow: none;
-  transition:
-    background 0.15s ease;
+  transition: background 0.15s ease;
 
   &:last-child {
     border-bottom: 0;

@@ -30,7 +30,7 @@ export class AudioService {
    */
   setVolume(volume: number): void {
     this.volume = Math.max(0, Math.min(1, volume));
-    this.sounds.forEach(sound => {
+    this.sounds.forEach((sound) => {
       sound.volume = this.volume;
     });
   }

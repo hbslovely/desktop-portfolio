@@ -27,10 +27,7 @@ import {
 } from '../../../services/feeding-log.service';
 import { NutritionTarget } from '../feeding-nutrition';
 import { predictNextFeeding } from '../feeding-prediction';
-import {
-  FeedingViewGroup,
-  groupLogsByProximity,
-} from '../feeding-view-group';
+import { FeedingViewGroup, groupLogsByProximity } from '../feeding-view-group';
 import {
   formatIntervalFromPrevViewGroup,
   isFeedTimeGapWarningViewGroup,
@@ -165,9 +162,7 @@ export class FeedingDailyComponent implements AfterViewInit {
     if (!prep) {
       const p = this.prediction();
       if (!p?.nextAt) return null;
-      const diffMin = Math.round(
-        (p.nextAt.getTime() - this.now().getTime()) / 60000
-      );
+      const diffMin = Math.round((p.nextAt.getTime() - this.now().getTime()) / 60000);
       const notifyMinutes = this.feedingSettings().feedingNotificationMinutes;
       const bottlePrepNotifyMinutes = notifyMinutes + 20;
       if (diffMin < 0) {
@@ -205,15 +200,11 @@ export class FeedingDailyComponent implements AfterViewInit {
     }
     const w = this.bottlePrepWarning();
     if (!w) return 0;
-    const notifyMinutes =
-      this.feedingSettings().feedingNotificationMinutes + 20;
+    const notifyMinutes = this.feedingSettings().feedingNotificationMinutes + 20;
     if (w.type === 'no-prep-late') return 100;
     if (w.type === 'no-prep-soon') {
       if (w.minutes <= 0) return 100;
-      return Math.min(
-        100,
-        Math.round((1 - w.minutes / notifyMinutes) * 100)
-      );
+      return Math.min(100, Math.round((1 - w.minutes / notifyMinutes) * 100));
     }
     return 0;
   });
@@ -222,8 +213,7 @@ export class FeedingDailyComponent implements AfterViewInit {
     const w = this.bottlePrepWarning();
     if (!w) return 'calm';
     if (w.type === 'expired' || w.type === 'no-prep-late') return 'danger';
-    if (w.type === 'expiring-soon' || w.type === 'no-prep-soon')
-      return 'soon';
+    if (w.type === 'expiring-soon' || w.type === 'no-prep-soon') return 'soon';
     return 'calm';
   });
 
@@ -239,8 +229,7 @@ export class FeedingDailyComponent implements AfterViewInit {
       return `Còn ${m} phút nữa là sữa hết hạn.`;
     }
     if (w?.type === 'no-prep-soon') {
-      if (w.minutes <= 0)
-        return 'Đến giờ bú — chưa có sữa đã pha trong bình.';
+      if (w.minutes <= 0) return 'Đến giờ bú — chưa có sữa đã pha trong bình.';
       return `Còn ${minutesToVietnamese(w.minutes)} tới cữ bú — chưa có sữa đã pha.`;
     }
     if (w?.type === 'no-prep-late') {
@@ -269,9 +258,7 @@ export class FeedingDailyComponent implements AfterViewInit {
     return `Cách đây ${minutesToVietnamese(diffMin)}`;
   });
 
-  todayStats = computed<DayStats>(() =>
-    this.computeDayStats(this.todayDateStr())
-  );
+  todayStats = computed<DayStats>(() => this.computeDayStats(this.todayDateStr()));
 
   todayLogs = computed(() =>
     this.logs()
@@ -280,10 +267,8 @@ export class FeedingDailyComponent implements AfterViewInit {
   );
 
   todayLogViewGroups = computed<FeedingViewGroup[]>(() =>
-    groupLogsByProximity(
-      this.todayLogs(),
-      this.feedingSettings().feedGroupGapMinutes,
-      (l) => this.logTimestamp(l)
+    groupLogsByProximity(this.todayLogs(), this.feedingSettings().feedGroupGapMinutes, (l) =>
+      this.logTimestamp(l)
     )
   );
 
@@ -305,9 +290,7 @@ export class FeedingDailyComponent implements AfterViewInit {
     return map;
   });
 
-  pastDayViewLogs = computed(
-    () => this.logsByDateMap().get(this.pastDayViewDate()) ?? []
-  );
+  pastDayViewLogs = computed(() => this.logsByDateMap().get(this.pastDayViewDate()) ?? []);
 
   pastDayViewStats = computed<DayStats>(() => {
     const date = this.pastDayViewDate();
@@ -315,10 +298,8 @@ export class FeedingDailyComponent implements AfterViewInit {
   });
 
   pastDayViewLogViewGroups = computed<FeedingViewGroup[]>(() =>
-    groupLogsByProximity(
-      this.pastDayViewLogs(),
-      this.feedingSettings().feedGroupGapMinutes,
-      (l) => this.logTimestamp(l)
+    groupLogsByProximity(this.pastDayViewLogs(), this.feedingSettings().feedGroupGapMinutes, (l) =>
+      this.logTimestamp(l)
     )
   );
 
@@ -326,12 +307,8 @@ export class FeedingDailyComponent implements AfterViewInit {
     const map = this.logsByDateMap();
     const yesterday = this.yesterdayDateStr();
     const today = this.todayDateStr();
-    const minStart = this.dateStrDaysAgo(
-      FeedingDailyComponent.PAST_DAY_STRIP_MIN_DAYS
-    );
-    const maxStart = this.dateStrDaysAgo(
-      FeedingDailyComponent.PAST_DAY_STRIP_MAX_DAYS
-    );
+    const minStart = this.dateStrDaysAgo(FeedingDailyComponent.PAST_DAY_STRIP_MIN_DAYS);
+    const maxStart = this.dateStrDaysAgo(FeedingDailyComponent.PAST_DAY_STRIP_MAX_DAYS);
     let earliest = minStart;
     for (const date of map.keys()) {
       if (date < today && date < earliest) {
@@ -367,9 +344,7 @@ export class FeedingDailyComponent implements AfterViewInit {
   yesterdayUpToNowStats = computed<DayStats>(() => {
     const nowTime = this.toTimeStr(this.now());
     const yDate = this.yesterdayDateStr();
-    const list = this.logs().filter(
-      (l) => l.date === yDate && l.time <= nowTime
-    );
+    const list = this.logs().filter((l) => l.date === yDate && l.time <= nowTime);
     return this.statsFromList(yDate, list);
   });
 
@@ -394,8 +369,7 @@ export class FeedingDailyComponent implements AfterViewInit {
     const t = this.todayStats();
     const p = this.priorThreeDaysUpToNowAvg();
     const totalDiff = t.total - p.avgTotal;
-    const pct =
-      p.avgTotal > 0 ? Math.round((totalDiff / p.avgTotal) * 100) : null;
+    const pct = p.avgTotal > 0 ? Math.round((totalDiff / p.avgTotal) * 100) : null;
     return { totalDiff, pct };
   });
 
@@ -443,10 +417,7 @@ export class FeedingDailyComponent implements AfterViewInit {
       return {
         state: 'active' as const,
         remainingMinutes: Math.ceil(remainingMs / 60000),
-        elapsedMinutes: Math.max(
-          0,
-          Math.floor((nowMs - feedAt.getTime()) / 60000)
-        ),
+        elapsedMinutes: Math.max(0, Math.floor((nowMs - feedAt.getTime()) / 60000)),
         lastFeedTime: last.time,
         lastFeedVolume: last.volume,
         burpDuration,
@@ -471,10 +442,7 @@ export class FeedingDailyComponent implements AfterViewInit {
     if (!info) return 0;
     if (info.state === 'done') return 100;
     if (info.burpDuration <= 0) return 0;
-    return Math.max(
-      0,
-      Math.min(100, Math.round((info.elapsedMinutes / info.burpDuration) * 100))
-    );
+    return Math.max(0, Math.min(100, Math.round((info.elapsedMinutes / info.burpDuration) * 100)));
   });
 
   closeBurpDoneBanner(): void {
@@ -490,14 +458,11 @@ export class FeedingDailyComponent implements AfterViewInit {
   timeUntilNext = computed(() => {
     const p = this.prediction();
     if (!p?.nextAt) return '';
-    const diffMin = Math.round(
-      (p.nextAt.getTime() - this.now().getTime()) / 60000
-    );
+    const diffMin = Math.round((p.nextAt.getTime() - this.now().getTime()) / 60000);
     const notifyMinutes = this.feedingSettings().feedingNotificationMinutes;
     if (diffMin < -5) return `đã trễ ${minutesToVietnamese(-diffMin)}`;
     if (diffMin < 0) return `đã trễ ${minutesToVietnamese(-diffMin)}`;
-    if (diffMin <= notifyMinutes)
-      return `trong ${minutesToVietnamese(diffMin)} nữa`;
+    if (diffMin <= notifyMinutes) return `trong ${minutesToVietnamese(diffMin)} nữa`;
     return `trong ${minutesToVietnamese(diffMin)} nữa`;
   });
 
@@ -548,9 +513,7 @@ export class FeedingDailyComponent implements AfterViewInit {
   countdownStatus = computed<'late' | 'now' | 'waiting'>(() => {
     const p = this.prediction();
     if (!p?.nextAt) return 'waiting';
-    const diffMin = Math.round(
-      (p.nextAt.getTime() - this.now().getTime()) / 60000
-    );
+    const diffMin = Math.round((p.nextAt.getTime() - this.now().getTime()) / 60000);
     const notifyMinutes = this.feedingSettings().feedingNotificationMinutes;
     if (diffMin < -5) return 'late';
     if (diffMin <= notifyMinutes) return 'now';
@@ -568,24 +531,17 @@ export class FeedingDailyComponent implements AfterViewInit {
     const now = this.now().getTime();
     const total = nextAt - lastAt;
     if (total <= 0) return 100;
-    return Math.max(
-      0,
-      Math.min(100, Math.round(((now - lastAt) / total) * 100))
-    );
+    return Math.max(0, Math.min(100, Math.round(((now - lastAt) / total) * 100)));
   });
 
   recentFeedViewGroups = computed<FeedingViewGroup[]>(() => {
     const gap = this.feedingSettings().feedGroupGapMinutes;
-    const all = groupLogsByProximity(this.logs(), gap, (l) =>
-      this.logTimestamp(l)
-    );
+    const all = groupLogsByProximity(this.logs(), gap, (l) => this.logTimestamp(l));
     return all.slice(0, 5);
   });
 
   todayLogsPreview = computed(() => this.todayLogViewGroups().slice(0, 2));
-  pastDayViewLogsPreview = computed(() =>
-    this.pastDayViewLogViewGroups().slice(0, 2)
-  );
+  pastDayViewLogsPreview = computed(() => this.pastDayViewLogViewGroups().slice(0, 2));
 
   constructor() {
     effect(() => {
@@ -596,9 +552,7 @@ export class FeedingDailyComponent implements AfterViewInit {
     effect(() => {
       const date = this.pastDayViewDate();
       if (date) {
-        queueMicrotask(() =>
-          this.scrollPastDayStripIntoView(date, 'instant')
-        );
+        queueMicrotask(() => this.scrollPastDayStripIntoView(date, 'instant'));
       }
     });
   }
@@ -607,13 +561,10 @@ export class FeedingDailyComponent implements AfterViewInit {
     if (!this.pastDayViewDate()) {
       this.pastDayViewDate.set(this.yesterdayDateStr());
     }
-    queueMicrotask(() =>
-      this.scrollPastDayStripIntoView(this.pastDayViewDate(), 'instant')
-    );
+    queueMicrotask(() => this.scrollPastDayStripIntoView(this.pastDayViewDate(), 'instant'));
   }
 
-  trackFeedingViewGroup = (_index: number, g: FeedingViewGroup): string =>
-    viewGroupKey(g);
+  trackFeedingViewGroup = (_index: number, g: FeedingViewGroup): string => viewGroupKey(g);
 
   trackPastDayStripItem(_index: number, item: { date: string }): string {
     return item.date;
@@ -639,23 +590,12 @@ export class FeedingDailyComponent implements AfterViewInit {
     return isHighVolumeViewGroup(g);
   }
 
-  formatIntervalFromPrevViewGroup(
-    g: FeedingViewGroup,
-    listDesc: FeedingViewGroup[]
-  ): string {
+  formatIntervalFromPrevViewGroup(g: FeedingViewGroup, listDesc: FeedingViewGroup[]): string {
     return formatIntervalFromPrevViewGroup(g, listDesc, this.logs());
   }
 
-  isFeedTimeGapWarningViewGroup(
-    g: FeedingViewGroup,
-    listDesc: FeedingViewGroup[]
-  ): boolean {
-    return isFeedTimeGapWarningViewGroup(
-      g,
-      listDesc,
-      this.logs(),
-      this.feedingSettings()
-    );
+  isFeedTimeGapWarningViewGroup(g: FeedingViewGroup, listDesc: FeedingViewGroup[]): boolean {
+    return isFeedTimeGapWarningViewGroup(g, listDesc, this.logs(), this.feedingSettings());
   }
 
   onFeedRowClick(g: FeedingViewGroup): void {
@@ -781,16 +721,13 @@ export class FeedingDailyComponent implements AfterViewInit {
     const t = this.toTimeStr(new Date(atIso));
 
     const isExpiryReplace =
-      !!oldPrep &&
-      !!warn &&
-      (warn.type === 'expired' || warn.type === 'expiring-soon');
+      !!oldPrep && !!warn && (warn.type === 'expired' || warn.type === 'expiring-soon');
 
     if (oldPrep && n === oldPrep.volumeMl && !isExpiryReplace) {
       return;
     }
 
-    const isEditVolumeOnly =
-      !!oldPrep && n !== oldPrep.volumeMl && !isExpiryReplace;
+    const isEditVolumeOnly = !!oldPrep && n !== oldPrep.volumeMl && !isExpiryReplace;
 
     if (isEditVolumeOnly) {
       this.bottlePrepEditPending.set({
@@ -830,11 +767,7 @@ export class FeedingDailyComponent implements AfterViewInit {
           this.bottlePrepDraft.set('');
 
           let expiryLog$ = of(true);
-          if (
-            oldPrep &&
-            warn &&
-            (warn.type === 'expired' || warn.type === 'expiring-soon')
-          ) {
+          if (oldPrep && warn && (warn.type === 'expired' || warn.type === 'expiring-soon')) {
             if (warn.type === 'expired') {
               const prepTime = new Date(oldPrep.at);
               const expiryTime = new Date(prepTime.getTime() + 60 * 60 * 1000);
@@ -874,8 +807,7 @@ export class FeedingDailyComponent implements AfterViewInit {
 
           setTimeout(() => this.loadBottlePrepFromSheet(), 450);
         },
-        error: (err) =>
-          console.warn('Đồng bộ thông tin pha sữa lên Google Sheet thất bại', err),
+        error: (err) => console.warn('Đồng bộ thông tin pha sữa lên Google Sheet thất bại', err),
       });
   }
 
@@ -928,8 +860,7 @@ export class FeedingDailyComponent implements AfterViewInit {
             .subscribe();
           setTimeout(() => this.loadBottlePrepFromSheet(), 450);
         },
-        error: (err) =>
-          console.warn('Đồng bộ thông tin pha sữa lên Google Sheet thất bại', err),
+        error: (err) => console.warn('Đồng bộ thông tin pha sữa lên Google Sheet thất bại', err),
       });
   }
 
@@ -1112,9 +1043,7 @@ export class FeedingDailyComponent implements AfterViewInit {
 
   private statsUpToNowForDate(dateStr: string): DayStats {
     const nowTime = this.toTimeStr(this.now());
-    const list = this.logs().filter(
-      (l) => l.date === dateStr && l.time <= nowTime
-    );
+    const list = this.logs().filter((l) => l.date === dateStr && l.time <= nowTime);
     return this.dayLogsGroupedStats(dateStr, list);
   }
 
@@ -1133,10 +1062,7 @@ export class FeedingDailyComponent implements AfterViewInit {
     });
   }
 
-  private statsFromViewGroups(
-    date: string,
-    groups: FeedingViewGroup[]
-  ): DayStats {
+  private statsFromViewGroups(date: string, groups: FeedingViewGroup[]): DayStats {
     return this.statsFromList(date, this.pseudoLogsFromViewGroups(groups));
   }
 
@@ -1193,17 +1119,12 @@ export class FeedingDailyComponent implements AfterViewInit {
     return `${h}:${m}`;
   }
 
-  private scrollPastDayStripIntoView(
-    date: string,
-    behavior: ScrollBehavior = 'smooth'
-  ): void {
+  private scrollPastDayStripIntoView(date: string, behavior: ScrollBehavior = 'smooth'): void {
     if (!date) return;
     queueMicrotask(() => {
       const scroller = this.pastDayStripScroller?.nativeElement;
       if (!scroller) return;
-      const el = scroller.querySelector(
-        `[data-past-day="${date}"]`
-      ) as HTMLElement | null;
+      const el = scroller.querySelector(`[data-past-day="${date}"]`) as HTMLElement | null;
       el?.scrollIntoView({ inline: 'center', block: 'nearest', behavior });
     });
   }

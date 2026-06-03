@@ -1,6 +1,11 @@
 import { Component, OnInit, signal, computed, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { TuoiTreService, TuoiTreCategory, TuoiTreNewsItem, TuoiTreArticle } from '../../../services/tuoitre.service';
+import {
+  TuoiTreService,
+  TuoiTreCategory,
+  TuoiTreNewsItem,
+  TuoiTreArticle,
+} from '../../../services/tuoitre.service';
 
 @Component({
   selector: 'app-tuoitre-news-app',
@@ -8,7 +13,7 @@ import { TuoiTreService, TuoiTreCategory, TuoiTreNewsItem, TuoiTreArticle } from
   imports: [CommonModule],
   templateUrl: './tuoitre-news-app.component.html',
   styleUrl: './tuoitre-news-app.component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TuoiTreNewsAppComponent implements OnInit {
   categories = signal<TuoiTreCategory[]>([]);
@@ -31,8 +36,12 @@ export class TuoiTreNewsAppComponent implements OnInit {
   readonly ZOOM_STEP = 10;
 
   // Expose constants for template
-  get minZoom() { return this.MIN_ZOOM; }
-  get maxZoom() { return this.MAX_ZOOM; }
+  get minZoom() {
+    return this.MIN_ZOOM;
+  }
+  get maxZoom() {
+    return this.MAX_ZOOM;
+  }
 
   // Search
   searchTerm = signal<string>('');
@@ -51,10 +60,11 @@ export class TuoiTreNewsAppComponent implements OnInit {
     // Client-side filtering for local search
     if (!search) return items;
 
-    return items.filter(item =>
-      item.title.toLowerCase().includes(search) ||
-      item.summary?.toLowerCase().includes(search) ||
-      item.category?.toLowerCase().includes(search)
+    return items.filter(
+      (item) =>
+        item.title.toLowerCase().includes(search) ||
+        item.summary?.toLowerCase().includes(search) ||
+        item.category?.toLowerCase().includes(search)
     );
   });
 
@@ -87,7 +97,7 @@ export class TuoiTreNewsAppComponent implements OnInit {
       return;
     }
 
-    const category = this.categories().find(c => c.id === categoryId);
+    const category = this.categories().find((c) => c.id === categoryId);
     if (!category) return;
 
     this.selectedCategory.set(categoryId);
@@ -116,7 +126,7 @@ export class TuoiTreNewsAppComponent implements OnInit {
       const article = await this.tuoitreService.getArticle(newsItem.url);
       this.selectedArticle.set(article);
       this.articleLoading.set(false);
-      
+
       // Fix image URLs after content is rendered
       setTimeout(() => {
         this.fixImageUrls();
@@ -234,7 +244,7 @@ export class TuoiTreNewsAppComponent implements OnInit {
     if (!articleContent) return;
 
     const images = articleContent.querySelectorAll('img');
-    images.forEach(img => {
+    images.forEach((img) => {
       const src = img.getAttribute('src');
       if (src && !src.startsWith('http') && !src.startsWith('/api/tuoitre')) {
         if (src.startsWith('/')) {
@@ -263,7 +273,7 @@ export class TuoiTreNewsAppComponent implements OnInit {
 
       const wrapper = document.createElement('div');
       wrapper.className = 'image-wrapper';
-      
+
       // Add caption if image has alt text
       if (img.alt && img.alt.trim()) {
         const caption = document.createElement('div');
@@ -301,7 +311,7 @@ export class TuoiTreNewsAppComponent implements OnInit {
 
     // Enhance blockquotes
     const blockquotes = articleContent.querySelectorAll('blockquote');
-    blockquotes.forEach(blockquote => {
+    blockquotes.forEach((blockquote) => {
       blockquote.classList.add('decorated-quote');
     });
 
@@ -318,7 +328,7 @@ export class TuoiTreNewsAppComponent implements OnInit {
 
   getTimeAgo(dateString?: string): string {
     if (!dateString) return '';
-    
+
     try {
       // Parse Vietnamese date format (dd-MM-yyyy or dd/MM/yyyy)
       const parts = dateString.split(/[-\/]/);
@@ -335,18 +345,22 @@ export class TuoiTreNewsAppComponent implements OnInit {
         if (seconds < 86400) return `${Math.floor(seconds / 3600)} giờ trước`;
         if (seconds < 604800) return `${Math.floor(seconds / 86400)} ngày trước`;
 
-        return date.toLocaleDateString('vi-VN', { day: 'numeric', month: 'short', year: 'numeric' });
+        return date.toLocaleDateString('vi-VN', {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+        });
       }
     } catch (e) {
       console.error('Error parsing date:', e);
     }
-    
+
     return dateString;
   }
 
   onImageError(event: Event) {
     const img = event.target as HTMLImageElement;
-    img.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect fill="%23e0e0e0" width="400" height="300"/%3E%3Ctext fill="%23999" font-family="sans-serif" font-size="16" x="50%25" y="50%25" text-anchor="middle" dy=".3em"%3EKhông có hình ảnh%3C/text%3E%3C/svg%3E';
+    img.src =
+      'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect fill="%23e0e0e0" width="400" height="300"/%3E%3Ctext fill="%23999" font-family="sans-serif" font-size="16" x="50%25" y="50%25" text-anchor="middle" dy=".3em"%3EKhông có hình ảnh%3C/text%3E%3C/svg%3E';
   }
 }
-

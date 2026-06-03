@@ -10,7 +10,11 @@
           }
         </div>
         <button class="toggle-btn" (click)="toggleSidebar()" title="Toggle sidebar">
-          <i class="pi" [class.pi-angle-left]="!sidebarCollapsed()" [class.pi-angle-right]="sidebarCollapsed()"></i>
+          <i
+            class="pi"
+            [class.pi-angle-left]="!sidebarCollapsed()"
+            [class.pi-angle-right]="sidebarCollapsed()"
+          ></i>
         </button>
       </div>
     </div>
@@ -18,11 +22,12 @@
     <div class="sidebar-content">
       <div class="categories-list">
         @for (category of categories(); track category.id) {
-          <button 
+          <button
             class="category-item"
             [class.active]="selectedCategory() === category.id"
             (click)="loadCategory(category.id)"
-            [title]="category.name">
+            [title]="category.name"
+          >
             <i [class]="category.icon"></i>
             @if (!sidebarCollapsed()) {
               <span>{{ category.name }}</span>
@@ -44,7 +49,8 @@
             <div class="title-section">
               <h1>Angular Official Documentation</h1>
               <p class="subtitle">
-                {{ getGreeting() }}! Explore comprehensive guides and best practices from Angular.dev
+                {{ getGreeting() }}! Explore comprehensive guides and best practices from
+                Angular.dev
               </p>
             </div>
           </div>
@@ -79,7 +85,7 @@
                 <span>{{ getCategoryById(selectedCategory())!.name }}</span>
               </div>
               <div class="results-count">
-                {{ filteredGuidelines().length }} 
+                {{ filteredGuidelines().length }}
                 {{ filteredGuidelines().length === 1 ? 'guideline' : 'guidelines' }}
               </div>
             </div>
@@ -118,7 +124,7 @@
                     <span>{{ guideline.category }}</span>
                   </div>
                 </div>
-                
+
                 @if (guideline.description) {
                   <p class="card-description">{{ guideline.description }}</p>
                 }
@@ -182,8 +188,7 @@
         <!-- Guideline Content -->
         @if (selectedGuideline()) {
           <div class="guideline-viewer">
-            <article class="guideline-content" [innerHTML]="selectedGuideline()!.content">
-            </article>
+            <article class="guideline-content" [innerHTML]="selectedGuideline()!.content"></article>
           </div>
         }
 
@@ -210,5 +215,3 @@
     }
   </main>
 </div>
-
-

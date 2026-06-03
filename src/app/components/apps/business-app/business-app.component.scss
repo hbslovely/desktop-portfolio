@@ -5,7 +5,8 @@
   flex-direction: column;
   background: #f5f5f5;
   overflow: hidden;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
 
   // Authentication Screen
   .auth-screen {
@@ -13,7 +14,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #42A5F5 0%, #2196F3 50%, #1976D2 100%);
+    background: linear-gradient(135deg, #42a5f5 0%, #2196f3 50%, #1976d2 100%);
     padding: 20px;
 
     .auth-container {
@@ -30,7 +31,7 @@
 
         i {
           font-size: 48px;
-          color: #2196F3;
+          color: #2196f3;
         }
       }
 
@@ -64,13 +65,13 @@
           transition: border-color 0.2s;
 
           &:focus {
-            border-color: #2196F3;
+            border-color: #2196f3;
           }
         }
 
         .login-btn {
           padding: 12px 24px;
-          background: #2196F3;
+          background: #2196f3;
           color: #ffffff;
           border: none;
           border-radius: 8px;
@@ -83,7 +84,7 @@
           transition: background 0.2s;
 
           &:hover {
-            background: #1976D2;
+            background: #1976d2;
           }
 
           &:active {
@@ -136,7 +137,7 @@
 
       i {
         font-size: 20px;
-        color: #2196F3;
+        color: #2196f3;
       }
 
       h1 {
@@ -171,7 +172,7 @@
         }
 
         &.active {
-          background: #2196F3;
+          background: #2196f3;
           color: #ffffff;
         }
       }
@@ -181,7 +182,7 @@
         align-items: center;
         gap: 6px;
         padding: 8px 16px;
-        background: #2196F3;
+        background: #2196f3;
         color: #ffffff;
         border: none;
         border-radius: 6px;
@@ -191,7 +192,7 @@
         transition: background 0.2s;
 
         &:hover {
-          background: #1976D2;
+          background: #1976d2;
         }
 
         &:active {
@@ -332,7 +333,7 @@
       }
 
       &.active {
-        background: #2196F3;
+        background: #2196f3;
         color: #ffffff;
       }
 
@@ -372,7 +373,7 @@
         transition: border-color 0.2s;
 
         &:focus {
-          border-color: #2196F3;
+          border-color: #2196f3;
         }
       }
 
@@ -416,7 +417,7 @@
           border-bottom: 1px solid #e0e0e0;
 
           i {
-            color: #2196F3;
+            color: #2196f3;
             font-size: 16px;
           }
 
@@ -467,7 +468,7 @@
                   display: inline-block;
                   padding: 2px 8px;
                   background: #e3f2fd;
-                  color: #1976D2;
+                  color: #1976d2;
                   border-radius: 4px;
                   font-size: 11px;
                 }
@@ -540,7 +541,7 @@
           min-width: 200px;
 
           &:focus {
-            border-color: #2196F3;
+            border-color: #2196f3;
           }
         }
 
@@ -555,7 +556,7 @@
           min-width: 180px;
 
           &:focus {
-            border-color: #2196F3;
+            border-color: #2196f3;
           }
         }
 
@@ -583,11 +584,11 @@
               transition: all 0.2s;
 
               &:hover {
-                border-color: #2196F3;
+                border-color: #2196f3;
                 background: #f5f5f5;
               }
 
-              input[type="checkbox"] {
+              input[type='checkbox'] {
                 margin: 0;
                 cursor: pointer;
               }
@@ -649,7 +650,7 @@
       }
 
       &.active {
-        background: #2196F3;
+        background: #2196f3;
         color: #ffffff;
       }
 
@@ -912,7 +913,7 @@
 
             &.amount-cell {
               font-weight: 600;
-              color: #2196F3;
+              color: #2196f3;
 
               &.negative {
                 color: #e53935;
@@ -931,7 +932,7 @@
                 display: inline-block;
                 padding: 4px 10px;
                 background: #e3f2fd;
-                color: #1976D2;
+                color: #1976d2;
                 border-radius: 12px;
                 font-size: 12px;
                 font-weight: 500;
@@ -974,20 +975,20 @@
               }
 
               .edit-btn {
-                color: #2196F3;
+                color: #2196f3;
 
                 &:hover {
                   background: #e3f2fd;
-                  color: #1976D2;
+                  color: #1976d2;
                 }
               }
 
               .copy-btn {
-                color: #2196F3;
+                color: #2196f3;
 
                 &:hover {
                   background: #e3f2fd;
-                  color: #1976D2;
+                  color: #1976d2;
                 }
               }
             }
@@ -1023,7 +1024,7 @@
       align-items: center;
       gap: 8px;
       padding: 12px 24px;
-      background: #2196F3;
+      background: #2196f3;
       color: #ffffff;
       border: none;
       border-radius: 8px;
@@ -1033,7 +1034,7 @@
       transition: background 0.2s;
 
       &:hover {
-        background: #1976D2;
+        background: #1976d2;
       }
     }
   }
@@ -1051,7 +1052,7 @@
     i {
       font-size: 48px;
       margin-bottom: 16px;
-      color: #2196F3;
+      color: #2196f3;
     }
 
     p {
@@ -1146,7 +1147,7 @@
             font-family: inherit;
 
             &:focus {
-              border-color: #2196F3;
+              border-color: #2196f3;
             }
 
             &::placeholder {
@@ -1202,11 +1203,11 @@
         }
 
         .save-btn {
-          background: #2196F3;
+          background: #2196f3;
           color: #ffffff;
 
           &:hover {
-            background: #1976D2;
+            background: #1976d2;
           }
 
           &:disabled {
@@ -1311,4 +1312,3 @@
     transform: rotate(360deg);
   }
 }
-

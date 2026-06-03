@@ -1,11 +1,25 @@
-import { Component, OnInit, OnDestroy, signal, computed, ChangeDetectionStrategy } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  OnDestroy,
+  signal,
+  computed,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
 import { GameService, PuzzleService, AudioService } from './services';
-import { GameState, GameStatus, GameMode, AIDifficulty, BOARD_THEMES, BoardTheme } from './models/game-state.model';
+import {
+  GameState,
+  GameStatus,
+  GameMode,
+  AIDifficulty,
+  BOARD_THEMES,
+  BoardTheme,
+} from './models/game-state.model';
 import { PieceColor, PieceType, PIECE_CHARS, Piece, PieceState } from './models/piece.model';
 import { Board, BOARD_ROWS, BOARD_COLS, getPieceAt, Position } from './models/board.model';
 import { Move } from './models/move.model';
@@ -22,7 +36,12 @@ const BOARD_COLS_FLIPPED = [8, 7, 6, 5, 4, 3, 2, 1, 0];
 // Hidden chess board indices (4 rows x 8 cols)
 const HIDDEN_ROWS_ARRAY = [0, 1, 2, 3];
 const HIDDEN_COLS_ARRAY = [0, 1, 2, 3, 4, 5, 6, 7];
-const DIFFICULTY_LEVELS = [AIDifficulty.BEGINNER, AIDifficulty.AMATEUR, AIDifficulty.EXPERT, AIDifficulty.MASTER];
+const DIFFICULTY_LEVELS = [
+  AIDifficulty.BEGINNER,
+  AIDifficulty.AMATEUR,
+  AIDifficulty.EXPERT,
+  AIDifficulty.MASTER,
+];
 const STAR_RATINGS = [1, 2, 3, 4, 5];
 
 // Difficulty name mapping
@@ -30,7 +49,7 @@ const DIFFICULTY_NAMES: Record<AIDifficulty, string> = {
   [AIDifficulty.BEGINNER]: 'Tập sự',
   [AIDifficulty.AMATEUR]: 'Nghiệp dư',
   [AIDifficulty.EXPERT]: 'Kỳ thủ',
-  [AIDifficulty.MASTER]: 'Đại sư'
+  [AIDifficulty.MASTER]: 'Đại sư',
 };
 
 @Component({
@@ -40,7 +59,7 @@ const DIFFICULTY_NAMES: Record<AIDifficulty, string> = {
   templateUrl: './sieu-co-app.component.html',
   styleUrls: ['./sieu-co-app.component.scss'],
   providers: [GameService, PuzzleService, AudioService],
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SieuCoAppComponent implements OnInit, OnDestroy {
   // ============ Signals ============
@@ -103,7 +122,7 @@ export class SieuCoAppComponent implements OnInit, OnDestroy {
   possibleMovesSet = computed(() => {
     const state = this.gameState();
     if (!state) return new Set<string>();
-    return new Set(state.possibleMoves.map(m => `${m.row},${m.col}`));
+    return new Set(state.possibleMoves.map((m) => `${m.row},${m.col}`));
   });
 
   // Last move positions
@@ -121,12 +140,14 @@ export class SieuCoAppComponent implements OnInit, OnDestroy {
     const selected = this.selectedPosition();
     const lastMove = state?.lastMove;
 
-    const cells: Array<Array<{
-      isSelected: boolean;
-      isPossibleMove: boolean;
-      isLastMoveFrom: boolean;
-      isLastMoveTo: boolean;
-    }>> = [];
+    const cells: Array<
+      Array<{
+        isSelected: boolean;
+        isPossibleMove: boolean;
+        isLastMoveFrom: boolean;
+        isLastMoveTo: boolean;
+      }>
+    > = [];
 
     for (let row = 0; row < BOARD_ROWS; row++) {
       cells[row] = [];
@@ -135,8 +156,8 @@ export class SieuCoAppComponent implements OnInit, OnDestroy {
         cells[row][col] = {
           isSelected: selected !== null && selected.row === row && selected.col === col,
           isPossibleMove: possibleMoves.has(key),
-          isLastMoveFrom: lastMove ? (lastMove.from.row === row && lastMove.from.col === col) : false,
-          isLastMoveTo: lastMove ? (lastMove.to.row === row && lastMove.to.col === col) : false
+          isLastMoveFrom: lastMove ? lastMove.from.row === row && lastMove.from.col === col : false,
+          isLastMoveTo: lastMove ? lastMove.to.row === row && lastMove.to.col === col : false,
         };
       }
     }
@@ -163,7 +184,7 @@ export class SieuCoAppComponent implements OnInit, OnDestroy {
   // Move notations pre-computed
   moveNotations = computed(() => {
     const history = this.moveHistory();
-    return history.map(h => h.move.notation || '');
+    return history.map((h) => h.move.notation || '');
   });
 
   // Captured pieces
@@ -190,13 +211,18 @@ export class SieuCoAppComponent implements OnInit, OnDestroy {
   aiColorName = computed(() => {
     const state = this.gameState();
     // AI plays the opposite color of player
-    const aiColor = state?.config?.playerColor === PieceColor.RED ? PieceColor.BLACK : PieceColor.RED;
+    const aiColor =
+      state?.config?.playerColor === PieceColor.RED ? PieceColor.BLACK : PieceColor.RED;
     return aiColor === PieceColor.RED ? 'Đỏ' : 'Đen';
   });
 
   // Computed board rows/cols based on orientation
-  displayBoardRows = computed(() => this.isBoardFlipped() ? BOARD_ROWS_FLIPPED : BOARD_ROWS_ARRAY);
-  displayBoardCols = computed(() => this.isBoardFlipped() ? BOARD_COLS_FLIPPED : BOARD_COLS_ARRAY);
+  displayBoardRows = computed(() =>
+    this.isBoardFlipped() ? BOARD_ROWS_FLIPPED : BOARD_ROWS_ARRAY
+  );
+  displayBoardCols = computed(() =>
+    this.isBoardFlipped() ? BOARD_COLS_FLIPPED : BOARD_COLS_ARRAY
+  );
 
   // ============ Static Data ============
   readonly availableAlgorithms = getAvailableAlgorithms();
@@ -227,19 +253,15 @@ export class SieuCoAppComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     // Subscribe to game state
-    this.gameService.gameState$
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(state => {
-        this.gameState.set(state);
-        this.selectedTheme.set(state.config.theme);
-      });
+    this.gameService.gameState$.pipe(takeUntil(this.destroy$)).subscribe((state) => {
+      this.gameState.set(state);
+      this.selectedTheme.set(state.config.theme);
+    });
 
     // Subscribe to AI thinking state
-    this.gameService.isAIThinking$
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(thinking => {
-        this.isAIThinking.set(thinking);
-      });
+    this.gameService.isAIThinking$.pipe(takeUntil(this.destroy$)).subscribe((thinking) => {
+      this.isAIThinking.set(thinking);
+    });
 
     // Load puzzles
     this.puzzles.set(this.puzzleService.getPuzzleList());
@@ -253,9 +275,7 @@ export class SieuCoAppComponent implements OnInit, OnDestroy {
   // ============ Helper Methods (Pure, no side effects) ============
 
   private createEmptyPiecesArray(): (Piece | null)[][] {
-    return Array.from({ length: BOARD_ROWS }, () =>
-      Array.from({ length: BOARD_COLS }, () => null)
-    );
+    return Array.from({ length: BOARD_ROWS }, () => Array.from({ length: BOARD_COLS }, () => null));
   }
 
   /**
@@ -277,7 +297,6 @@ export class SieuCoAppComponent implements OnInit, OnDestroy {
     return this.gameState()?.config.mode === GameMode.HIDDEN;
   });
 
-
   // ============ Game Actions ============
 
   startNewGame(): void {
@@ -286,7 +305,7 @@ export class SieuCoAppComponent implements OnInit, OnDestroy {
       playerColor: this.selectedPlayerColor(),
       aiDifficulty: this.selectedDifficulty(),
       theme: this.selectedTheme(),
-      soundEnabled: this.soundEnabled()
+      soundEnabled: this.soundEnabled(),
     });
     this.showNewGameDialog.set(false);
     this.currentTab.set('game');
@@ -319,7 +338,11 @@ export class SieuCoAppComponent implements OnInit, OnDestroy {
     }
 
     // Check game over
-    if (newState && newState.status !== GameStatus.PLAYING && newState.status !== GameStatus.NOT_STARTED) {
+    if (
+      newState &&
+      newState.status !== GameStatus.PLAYING &&
+      newState.status !== GameStatus.NOT_STARTED
+    ) {
       this.audioService.playCheckmate();
     }
   }

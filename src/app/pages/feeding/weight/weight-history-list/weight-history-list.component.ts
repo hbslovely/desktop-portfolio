@@ -1,18 +1,7 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  input,
-  output,
-  signal,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import type { WeightLog } from '../../../../services/weight-log.service';
-import {
-  formatWeightCm,
-  formatWeightDateDisplay,
-  formatWeightKg,
-} from '../weight-display.utils';
+import { formatWeightCm, formatWeightDateDisplay, formatWeightKg } from '../weight-display.utils';
 
 @Component({
   selector: 'app-weight-history-list',
@@ -34,9 +23,7 @@ export class WeightHistoryListComponent {
 
   previewLogs = computed(() => this.logs().slice(0, this.previewLimit));
   hasMoreLogs = computed(() => this.logs().length > this.previewLimit);
-  hiddenLogsCount = computed(() =>
-    Math.max(0, this.logs().length - this.previewLimit)
-  );
+  hiddenLogsCount = computed(() => Math.max(0, this.logs().length - this.previewLimit));
 
   formatDate(iso: string): string {
     return formatWeightDateDisplay(iso);

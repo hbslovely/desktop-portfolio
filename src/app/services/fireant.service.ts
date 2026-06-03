@@ -201,7 +201,7 @@ export interface SymbolHolder {
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class FireantService {
   private tokenSubject = new BehaviorSubject<string>('');
@@ -237,7 +237,7 @@ export class FireantService {
       // Use stored token if not expired
       this.tokenSubject.next(stored.token);
       console.log('Using cached FireAnt token');
-        } else {
+    } else {
       // Fetch new token if expired or not found
       console.log('Cached token expired or not found, fetching new one...');
       this.fetchAndStoreToken();
@@ -266,7 +266,7 @@ export class FireantService {
     try {
       const data: StoredToken = {
         token,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
       console.log('FireAnt token cached for 3 days');
@@ -286,14 +286,16 @@ export class FireantService {
    * Fetch and store new JWT token
    */
   private fetchAndStoreToken(): void {
-    this.fetchToken().then(() => {
-      const currentToken = this.tokenSubject.value;
-      if (currentToken) {
-        this.storeToken(currentToken);
-      }
-    }).catch(error => {
-      console.error('Failed to fetch FireAnt token:', error);
-    });
+    this.fetchToken()
+      .then(() => {
+        const currentToken = this.tokenSubject.value;
+        if (currentToken) {
+          this.storeToken(currentToken);
+        }
+      })
+      .catch((error) => {
+        console.error('Failed to fetch FireAnt token:', error);
+      });
   }
 
   /**
@@ -311,12 +313,12 @@ export class FireantService {
       if (redirectMatch && redirectMatch[1]) {
         const redirectUrl = redirectMatch[1];
         console.log('🔄 Detected redirect, fetching from:', redirectUrl);
-        
+
         // Extract the path and query from the redirect URL
         // Example: "https://fireant.vn/?jskey=..." -> "/?jskey=..."
         const urlObj = new URL(redirectUrl);
         const pathWithQuery = urlObj.pathname + urlObj.search;
-        
+
         // Fetch the redirected page through proxy
         htmlResponse = await firstValueFrom(
           this.http.get(`/api/fireant${pathWithQuery}`, { responseType: 'text' })
@@ -357,7 +359,7 @@ export class FireantService {
       console.warn('⚠️ JWT token not found in any script files');
     } catch (error) {
       console.error('❌ Error fetching FireAnt token:', error);
-        throw error;
+      throw error;
     }
   }
 
@@ -381,15 +383,20 @@ export class FireantService {
    */
   private getHeaders(): HttpHeaders {
     return new HttpHeaders({
-      'Authorization': `Bearer ${this.getCurrentToken()}`,
-      'Content-Type': 'application/json'
+      Authorization: `Bearer ${this.getCurrentToken()}`,
+      'Content-Type': 'application/json',
     });
   }
 
   /**
    * Search for stocks/symbols
    */
-  search(keywords: string, type: string = 'symbol', offset: number = 0, limit: number = 20): Observable<SearchResult[]> {
+  search(
+    keywords: string,
+    type: string = 'symbol',
+    offset: number = 0,
+    limit: number = 20
+  ): Observable<SearchResult[]> {
     const url = `${this.BASE_URL}/search?keywords=${encodeURIComponent(keywords)}&type=${type}&offset=${offset}&limit=${limit}`;
 
     return this.http.get<any[]>(url, { headers: this.getHeaders() }).pipe(
@@ -403,7 +410,7 @@ export class FireantService {
           id: item.id,
           description: item.description || '',
           type: item.type || 'symbol',
-          ...item // Include all other properties from API
+          ...item, // Include all other properties from API
         }));
       }),
       catchError((error) => {
@@ -462,7 +469,7 @@ export class FireantService {
   // Additional methods for VNStock app compatibility
   loginAnonymous(): Observable<any> {
     // Token is already managed, just return success
-    return new Observable(observer => {
+    return new Observable((observer) => {
       observer.next({ success: true });
       observer.complete();
     });
@@ -553,7 +560,12 @@ export class FireantService {
     );
   }
 
-  searchSymbols(keywords: string, type: string = 'symbol', offset: number = 0, limit: number = 20): Observable<SearchResult[]> {
+  searchSymbols(
+    keywords: string,
+    type: string = 'symbol',
+    offset: number = 0,
+    limit: number = 20
+  ): Observable<SearchResult[]> {
     return this.search(keywords, type, offset, limit);
   }
 }

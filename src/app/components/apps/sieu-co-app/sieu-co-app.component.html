@@ -1,11 +1,13 @@
-<div class="sieu-co-container" [style.--board-light]="selectedTheme().boardLight"
-     [style.--board-dark]="selectedTheme().boardDark"
-     [style.--line-color]="selectedTheme().lineColor"
-     [style.--red-color]="selectedTheme().redColor"
-     [style.--black-color]="selectedTheme().blackColor"
-     [style.--highlight-color]="selectedTheme().highlightColor"
-     [style.--selected-color]="selectedTheme().selectedColor">
-
+<div
+  class="sieu-co-container"
+  [style.--board-light]="selectedTheme().boardLight"
+  [style.--board-dark]="selectedTheme().boardDark"
+  [style.--line-color]="selectedTheme().lineColor"
+  [style.--red-color]="selectedTheme().redColor"
+  [style.--black-color]="selectedTheme().blackColor"
+  [style.--highlight-color]="selectedTheme().highlightColor"
+  [style.--selected-color]="selectedTheme().selectedColor"
+>
   <!-- Header -->
   <header class="app-header">
     <div class="logo">
@@ -29,13 +31,15 @@
     </nav>
 
     <div class="header-actions">
-      <button class="btn-icon" (click)="onToggleSound()" [title]="soundEnabled() ? 'Tắt âm' : 'Bật âm'">
+      <button
+        class="btn-icon"
+        (click)="onToggleSound()"
+        [title]="soundEnabled() ? 'Tắt âm' : 'Bật âm'"
+      >
         {{ soundEnabled() ? '🔊' : '🔇' }}
       </button>
       @if (!isNotStarted()) {
-        <button class="btn-primary" (click)="onOpenNewGameDialog()">
-          + Ván Mới
-        </button>
+        <button class="btn-primary" (click)="onOpenNewGameDialog()">+ Ván Mới</button>
       }
     </div>
   </header>
@@ -102,12 +106,15 @@
               </div>
             } @else {
               <!-- Game Board -->
-              <div class="status-bar" [class.check]="isCheck()" [class.game-over]="isGameOver()" [class.ai-thinking]="isAIThinking()">
+              <div
+                class="status-bar"
+                [class.check]="isCheck()"
+                [class.game-over]="isGameOver()"
+                [class.ai-thinking]="isAIThinking()"
+              >
                 @if (isAIThinking()) {
                   <span class="thinking-indicator">
-                    <span class="thinking-dots">
-                      <span></span><span></span><span></span>
-                    </span>
+                    <span class="thinking-dots"> <span></span><span></span><span></span> </span>
                     {{ aiColorName() }} đang suy nghĩ...
                   </span>
                 } @else {
@@ -134,21 +141,31 @@
                   <div class="board-grid" [class.flipped]="isBoardFlipped()">
                     @for (row of displayBoardRows(); track row) {
                       @for (col of displayBoardCols(); track col) {
-                        <div class="cell"
-                             [class.selected]="cellStates()[row][col].isSelected"
-                             [class.possible-move]="cellStates()[row][col].isPossibleMove"
-                             [class.last-move-from]="cellStates()[row][col].isLastMoveFrom"
-                             [class.last-move-to]="cellStates()[row][col].isLastMoveTo"
-                             [class.palace]="(row <= 2 && col >= 3 && col <= 5) || (row >= 7 && col >= 3 && col <= 5)"
-                             (click)="onCellClick(row, col)">
-
+                        <div
+                          class="cell"
+                          [class.selected]="cellStates()[row][col].isSelected"
+                          [class.possible-move]="cellStates()[row][col].isPossibleMove"
+                          [class.last-move-from]="cellStates()[row][col].isLastMoveFrom"
+                          [class.last-move-to]="cellStates()[row][col].isLastMoveTo"
+                          [class.palace]="
+                            (row <= 2 && col >= 3 && col <= 5) || (row >= 7 && col >= 3 && col <= 5)
+                          "
+                          (click)="onCellClick(row, col)"
+                        >
                           <!-- Piece -->
                           @if (boardPieces()[row][col]; as piece) {
-                            <div class="piece"
-                                 [class.red]="piece.color === PieceColor.RED && piece.state !== PieceState.HIDDEN"
-                                 [class.black]="piece.color === PieceColor.BLACK && piece.state !== PieceState.HIDDEN"
-                                 [class.hidden-piece]="piece.state === PieceState.HIDDEN"
-                                 [class.last-moved]="cellStates()[row][col].isLastMoveTo">
+                            <div
+                              class="piece"
+                              [class.red]="
+                                piece.color === PieceColor.RED && piece.state !== PieceState.HIDDEN
+                              "
+                              [class.black]="
+                                piece.color === PieceColor.BLACK &&
+                                piece.state !== PieceState.HIDDEN
+                              "
+                              [class.hidden-piece]="piece.state === PieceState.HIDDEN"
+                              [class.last-moved]="cellStates()[row][col].isLastMoveTo"
+                            >
                               <span class="piece-char">{{ getPieceChar(piece) }}</span>
                             </div>
                           }
@@ -183,10 +200,12 @@
             <h3>Lịch sử nước đi</h3>
             <div class="move-list">
               @for (history of moveHistory(); track $index) {
-                <div class="move-entry"
-                     [class.red-move]="$index % 2 === 0"
-                     [class.black-move]="$index % 2 === 1">
-                  <span class="move-number">{{ ($index / 2 | number:'1.0-0') }}.</span>
+                <div
+                  class="move-entry"
+                  [class.red-move]="$index % 2 === 0"
+                  [class.black-move]="$index % 2 === 1"
+                >
+                  <span class="move-number">{{ $index / 2 | number: '1.0-0' }}.</span>
                   <span class="move-notation">{{ history.move.notation }}</span>
                   @if (history.move.isCheck) {
                     <span class="check-badge">+</span>
@@ -283,11 +302,21 @@
             <h3>Giao diện</h3>
             <div class="theme-picker">
               @for (theme of themes; track theme.id) {
-                <div class="theme-option"
-                     [class.selected]="theme.id === selectedTheme().id"
-                     (click)="onSetTheme(theme)">
-                  <div class="theme-preview"
-                       [style.background]="'linear-gradient(135deg, ' + theme.boardLight + ' 50%, ' + theme.boardDark + ' 50%)'">
+                <div
+                  class="theme-option"
+                  [class.selected]="theme.id === selectedTheme().id"
+                  (click)="onSetTheme(theme)"
+                >
+                  <div
+                    class="theme-preview"
+                    [style.background]="
+                      'linear-gradient(135deg, ' +
+                      theme.boardLight +
+                      ' 50%, ' +
+                      theme.boardDark +
+                      ' 50%)'
+                    "
+                  >
                     <span class="preview-piece" [style.color]="theme.redColor">帥</span>
                     <span class="preview-piece" [style.color]="theme.blackColor">將</span>
                   </div>
@@ -308,8 +337,8 @@
               }
             </div>
             <p class="info-text">
-              💡 Bạn có thể tự implement thuật toán mới bằng cách implement interface <code>IAIAlgorithm</code>
-              và đăng ký qua <code>registerAlgorithm()</code>.
+              💡 Bạn có thể tự implement thuật toán mới bằng cách implement interface
+              <code>IAIAlgorithm</code> và đăng ký qua <code>registerAlgorithm()</code>.
             </p>
           </section>
         </div>
@@ -328,18 +357,25 @@
           <div class="form-group">
             <label>Chế độ chơi</label>
             <div class="mode-selector">
-              <button [class.selected]="selectedMode() === GameMode.XIANGQI"
-                      (click)="onSetMode(GameMode.XIANGQI)">
+              <button
+                [class.selected]="selectedMode() === GameMode.XIANGQI"
+                (click)="onSetMode(GameMode.XIANGQI)"
+              >
                 <span class="mode-icon">♚</span>
                 <span>Cờ Tướng</span>
               </button>
-              <button [class.selected]="selectedMode() === GameMode.HIDDEN"
-                      (click)="onSetMode(GameMode.HIDDEN)">
+              <button
+                [class.selected]="selectedMode() === GameMode.HIDDEN"
+                (click)="onSetMode(GameMode.HIDDEN)"
+              >
                 <span class="mode-icon">🎲</span>
                 <span>Cờ Úp</span>
               </button>
-              <button [class.selected]="selectedMode() === GameMode.PUZZLE"
-                      disabled title="Xem tab Cờ Thế">
+              <button
+                [class.selected]="selectedMode() === GameMode.PUZZLE"
+                disabled
+                title="Xem tab Cờ Thế"
+              >
                 <span class="mode-icon">🧩</span>
                 <span>Cờ Thế</span>
               </button>
@@ -350,13 +386,17 @@
           <div class="form-group">
             <label>Bạn chơi quân</label>
             <div class="color-selector">
-              <button [class.selected]="selectedPlayerColor() === PieceColor.RED"
-                      (click)="onSetPlayerColor(PieceColor.RED)">
+              <button
+                [class.selected]="selectedPlayerColor() === PieceColor.RED"
+                (click)="onSetPlayerColor(PieceColor.RED)"
+              >
                 <span class="color-preview red">帥</span>
                 <span>Đỏ (đi trước)</span>
               </button>
-              <button [class.selected]="selectedPlayerColor() === PieceColor.BLACK"
-                      (click)="onSetPlayerColor(PieceColor.BLACK)">
+              <button
+                [class.selected]="selectedPlayerColor() === PieceColor.BLACK"
+                (click)="onSetPlayerColor(PieceColor.BLACK)"
+              >
                 <span class="color-preview black">將</span>
                 <span>Đen</span>
               </button>
@@ -368,8 +408,10 @@
             <label>Độ khó AI</label>
             <div class="difficulty-selector">
               @for (diff of difficultyLevels; track diff) {
-                <button [class.selected]="selectedDifficulty() === diff"
-                        (click)="onSetDifficulty(diff)">
+                <button
+                  [class.selected]="selectedDifficulty() === diff"
+                  (click)="onSetDifficulty(diff)"
+                >
                   {{ difficultyNames[diff] }}
                 </button>
               }

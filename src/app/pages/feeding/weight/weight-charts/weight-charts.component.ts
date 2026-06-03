@@ -1,10 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  input,
-  signal,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   formatWeightCm,
@@ -69,12 +63,7 @@ export class WeightChartsComponent {
     this.pinLatestPoint.update((v) => !v);
   }
 
-  private spanStartX(
-    maxDays: number,
-    width: number,
-    left: number,
-    right: number
-  ): number {
+  private spanStartX(maxDays: number, width: number, left: number, right: number): number {
     const span = this.spanDays();
     if (span === null || maxDays <= 0) return left - 8;
     const visibleStartDays = Math.max(0, maxDays - span);

@@ -53,7 +53,8 @@ body {
     height: 100%;
     padding: 24px;
     overflow-y: auto;
-    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Courier New', 'Consolas', monospace;
+    font-family:
+      'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Courier New', 'Consolas', monospace;
     font-size: 14px;
     line-height: 1.5;
     color: #ffffff;
@@ -94,7 +95,7 @@ body {
         flex: 1;
         position: relative;
         display: inline-block;
-        
+
         &.typing::after {
           content: '█';
           display: inline-block;
@@ -148,10 +149,12 @@ body {
 }
 
 @keyframes cursorBlink {
-  0%, 50% {
+  0%,
+  50% {
     opacity: 1;
   }
-  51%, 100% {
+  51%,
+  100% {
     opacity: 0;
   }
 }
@@ -162,7 +165,7 @@ body {
   height: 100vh;
   overflow: hidden;
   background: #000000;
-  
+
   // Add subtle overlay for better icon visibility
   &::before {
     content: '';
@@ -171,8 +174,7 @@ body {
     left: 0;
     right: 0;
     bottom: 0;
-    background: 
-      radial-gradient(circle at 50% 50%, transparent 0%, rgba(0, 0, 0, 0.1) 100%);
+    background: radial-gradient(circle at 50% 50%, transparent 0%, rgba(0, 0, 0, 0.1) 100%);
     z-index: 1;
     pointer-events: none;
   }
@@ -190,7 +192,7 @@ body {
   background-repeat: no-repeat;
   z-index: 0;
   overflow: hidden;
-  
+
   // Enhanced depth effect
   filter: brightness(1) contrast(1.05) saturate(1.1);
 
@@ -240,7 +242,8 @@ body {
 }
 
 @keyframes wallpaperShift {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
     transform: scale(1);
   }
@@ -273,11 +276,11 @@ body {
   align-items: center;
   padding: 0 12px;
   z-index: 2000;
-  box-shadow: 
+  box-shadow:
     0 -4px 24px rgba(0, 0, 0, 0.3),
     0 -2px 8px rgba(0, 0, 0, 0.2),
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  
+
   // Add subtle gradient overlay
   &::before {
     content: '';
@@ -286,10 +289,12 @@ body {
     left: 0;
     right: 0;
     height: 1px;
-    background: linear-gradient(90deg, 
-      transparent 0%, 
-      rgba(255, 255, 255, 0.2) 50%, 
-      transparent 100%);
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.2) 50%,
+      transparent 100%
+    );
   }
 }
 
@@ -307,12 +312,16 @@ body {
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
-  
+
   &::before {
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.05) 100%);
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.2) 0%,
+      rgba(255, 255, 255, 0.05) 100%
+    );
     opacity: 0;
     transition: opacity 0.25s ease;
   }
@@ -321,15 +330,15 @@ body {
     background: rgba(255, 255, 255, 0.2);
     border-color: rgba(255, 255, 255, 0.3);
     transform: translateY(-2px) scale(1.05);
-    box-shadow: 
+    box-shadow:
       0 4px 12px rgba(0, 0, 0, 0.2),
       0 2px 6px rgba(0, 0, 0, 0.15);
-    
+
     &::before {
       opacity: 1;
     }
   }
-  
+
   &:active {
     transform: translateY(0) scale(0.98);
   }
@@ -395,12 +404,16 @@ body {
   max-width: 200px;
   position: relative;
   overflow: hidden;
-  
+
   &::before {
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.1) 0%,
+      rgba(255, 255, 255, 0.05) 100%
+    );
     opacity: 0;
     transition: opacity 0.25s ease;
   }
@@ -410,12 +423,12 @@ body {
     border-color: rgba(255, 255, 255, 0.2);
     transform: translateY(-1px);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-    
+
     &::before {
       opacity: 1;
     }
   }
-  
+
   &:active {
     transform: translateY(0);
   }
@@ -424,19 +437,19 @@ body {
     background: rgba(0, 120, 212, 0.3);
     border-color: rgba(0, 120, 212, 0.5);
     border-bottom: 2px solid #0078d4;
-    box-shadow: 
+    box-shadow:
       0 2px 8px rgba(0, 120, 212, 0.3),
       inset 0 1px 0 rgba(255, 255, 255, 0.1);
-    
+
     &::before {
       opacity: 1;
       background: linear-gradient(135deg, rgba(0, 120, 212, 0.2) 0%, rgba(0, 120, 212, 0.1) 100%);
     }
   }
-  
+
   &.minimized {
     opacity: 0.7;
-    
+
     &::after {
       content: '';
       position: absolute;
@@ -544,11 +557,11 @@ body {
 }
 
 @keyframes backdropFadeIn {
-  from { 
+  from {
     opacity: 0;
     backdrop-filter: blur(0);
   }
-  to { 
+  to {
     opacity: 1;
     backdrop-filter: blur(4px);
   }
@@ -558,10 +571,12 @@ body {
   width: 600px;
   height: calc(100vh - 96px);
   max-height: 700px;
-  background: linear-gradient(165deg, 
+  background: linear-gradient(
+    165deg,
     rgba(15, 23, 42, 0.97) 0%,
     rgba(30, 41, 59, 0.98) 50%,
-    rgba(15, 23, 42, 0.97) 100%);
+    rgba(15, 23, 42, 0.97) 100%
+  );
   backdrop-filter: blur(40px) saturate(200%);
   margin-left: 8px;
   margin-bottom: 0;
@@ -572,7 +587,7 @@ body {
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 16px 16px 0 0;
-  box-shadow: 
+  box-shadow:
     0 -4px 32px rgba(0, 0, 0, 0.3),
     0 8px 48px rgba(0, 0, 0, 0.4),
     0 16px 64px rgba(0, 0, 0, 0.3),
@@ -615,7 +630,7 @@ body {
       justify-content: center;
       color: white;
       font-size: 18px;
-      box-shadow: 
+      box-shadow:
         0 4px 12px rgba(13, 148, 136, 0.4),
         inset 0 1px 0 rgba(255, 255, 255, 0.2);
       transition: all 0.3s ease;
@@ -683,8 +698,15 @@ body {
 }
 
 @keyframes statusPulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.7; transform: scale(1.2); }
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.2);
+  }
 }
 
 // Start Menu Body
@@ -899,7 +921,7 @@ body {
     background: rgba(255, 255, 255, 0.1);
     border-color: rgba(255, 255, 255, 0.15);
     transform: translateY(-2px);
-    
+
     i {
       color: #14b8a6;
     }
@@ -923,7 +945,7 @@ body {
   &.shutdown-btn:hover {
     background: rgba(239, 68, 68, 0.15);
     border-color: rgba(239, 68, 68, 0.3);
-    
+
     i {
       color: #ef4444;
     }
@@ -936,8 +958,12 @@ body {
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 // Submenu styles
@@ -947,10 +973,12 @@ body {
   bottom: 0;
   width: 300px;
   height: 420px;
-  background: linear-gradient(165deg, 
+  background: linear-gradient(
+    165deg,
     rgba(15, 23, 42, 0.98) 0%,
     rgba(30, 41, 59, 0.99) 50%,
-    rgba(15, 23, 42, 0.98) 100%);
+    rgba(15, 23, 42, 0.98) 100%
+  );
   backdrop-filter: blur(30px) saturate(180%);
   color: #ffffff;
   z-index: 3001;
@@ -958,7 +986,7 @@ body {
   flex-direction: column;
   border-radius: 14px;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 
+  box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.4),
     0 4px 16px rgba(0, 0, 0, 0.3);
   animation: submenuSlideIn 0.2s ease;
@@ -1459,16 +1487,25 @@ body {
 
 // Animations
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes loading {
-  0% { width: 0%; }
-  50% { width: 70%; }
-  100% { width: 100%; }
+  0% {
+    width: 0%;
+  }
+  50% {
+    width: 70%;
+  }
+  100% {
+    width: 100%;
+  }
 }
-
 
 // Floating Clock Widget styling
 .floating-clock-widget {
@@ -2886,7 +2923,11 @@ body {
     .open-weather-app-btn {
       width: 100%;
       padding: 10px;
-      background: linear-gradient(135deg, rgba(102, 126, 234, 0.8) 0%, rgba(118, 75, 162, 0.8) 100%);
+      background: linear-gradient(
+        135deg,
+        rgba(102, 126, 234, 0.8) 0%,
+        rgba(118, 75, 162, 0.8) 100%
+      );
       border: 1px solid rgba(255, 255, 255, 0.2);
       border-radius: 8px;
       color: white;
@@ -2914,7 +2955,6 @@ body {
       }
     }
   }
-
 }
 
 // Notes Widget
@@ -2922,7 +2962,7 @@ body {
   .widget-body {
     max-height: 180px;
     overflow-y: auto;
-    
+
     &::-webkit-scrollbar {
       width: 6px;
     }
@@ -3055,7 +3095,7 @@ body {
     min-height: 100px;
     max-height: 200px;
     overflow-y: auto;
-    
+
     &::-webkit-scrollbar {
       width: 6px;
     }
@@ -3101,7 +3141,7 @@ body {
     min-height: 100px;
     max-height: 200px;
     overflow-y: auto;
-    
+
     &::-webkit-scrollbar {
       width: 6px;
     }
@@ -3156,7 +3196,7 @@ body {
     overflow: hidden;
     border-radius: 0 0 12px 12px;
     cursor: pointer;
-    
+
     .fox-image {
       width: 100%;
       height: 100%;
@@ -3232,11 +3272,11 @@ body {
 
 .start-section {
   padding: 20px 24px;
-  
+
   &.pinned-section {
     background: #1e3a5f;
   }
-  
+
   &.all-apps-section {
     padding-bottom: 24px;
     background: #1e3a5f;
@@ -3293,12 +3333,16 @@ body {
   position: relative;
   overflow: hidden;
   backdrop-filter: blur(10px);
-  
+
   &::before {
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.05) 100%);
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.15) 0%,
+      rgba(255, 255, 255, 0.05) 100%
+    );
     opacity: 0;
     transition: opacity 0.25s ease;
   }
@@ -3307,10 +3351,10 @@ body {
     background: rgba(61, 107, 153, 0.8);
     border-color: rgba(255, 255, 255, 0.2);
     transform: translateY(-4px) scale(1.05);
-    box-shadow: 
+    box-shadow:
       0 8px 24px rgba(0, 0, 0, 0.3),
       0 4px 12px rgba(0, 0, 0, 0.2);
-    
+
     &::before {
       opacity: 1;
     }
@@ -3330,7 +3374,7 @@ body {
     justify-content: center;
     margin-bottom: 12px;
     transition: all 0.25s ease;
-    box-shadow: 
+    box-shadow:
       0 4px 12px rgba(0, 0, 0, 0.2),
       inset 0 1px 0 rgba(255, 255, 255, 0.2);
     position: relative;
@@ -3338,7 +3382,7 @@ body {
 
     .app-tile:hover & {
       transform: scale(1.1) rotate(5deg);
-      box-shadow: 
+      box-shadow:
         0 6px 16px rgba(0, 0, 0, 0.3),
         inset 0 1px 0 rgba(255, 255, 255, 0.3);
     }
@@ -3687,7 +3731,12 @@ body {
   }
 
   // Disable all interactive elements in preview
-  button, input, select, textarea, a, [onclick] {
+  button,
+  input,
+  select,
+  textarea,
+  a,
+  [onclick] {
     pointer-events: none !important;
     cursor: default !important;
   }
@@ -3860,7 +3909,7 @@ body {
 }
 
 // Dark theme support for window switcher
-[data-theme="dark"] {
+[data-theme='dark'] {
   .window-switcher-preview {
     background: rgba(30, 30, 30, 0.95);
     border: 1px solid rgba(255, 255, 255, 0.1);

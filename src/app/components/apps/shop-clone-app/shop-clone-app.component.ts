@@ -44,7 +44,7 @@ interface CartItem extends ShopProduct {
   imports: [CommonModule, FormsModule],
   templateUrl: './shop-clone-app.component.html',
   styleUrl: './shop-clone-app.component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ShopCloneAppComponent {
   searchTerm = signal('');
@@ -60,7 +60,7 @@ export class ShopCloneAppComponent {
     'ốp điện thoại',
     'đèn ngủ',
     'bánh tráng',
-    'túi tote'
+    'túi tote',
   ];
 
   readonly quickServices: QuickService[] = [
@@ -73,7 +73,7 @@ export class ShopCloneAppComponent {
     { label: 'Mall Chính Hãng', icon: 'pi pi-verified', tone: 'pink' },
     { label: 'Shopee Live', icon: 'pi pi-video', tone: 'orange' },
     { label: 'Shopee Food', icon: 'pi pi-shopping-bag', tone: 'green' },
-    { label: 'Hàng Quốc Tế', icon: 'pi pi-globe', tone: 'blue' }
+    { label: 'Hàng Quốc Tế', icon: 'pi pi-globe', tone: 'blue' },
   ];
 
   readonly categories: ShopCategory[] = [
@@ -86,7 +86,7 @@ export class ShopCloneAppComponent {
     { id: 'beauty', name: 'Sắc Đẹp', icon: 'pi pi-sparkles' },
     { id: 'food', name: 'Bách Hóa Online', icon: 'pi pi-shopping-bag' },
     { id: 'sports', name: 'Thể Thao & Du Lịch', icon: 'pi pi-compass' },
-    { id: 'mom', name: 'Mẹ & Bé', icon: 'pi pi-gift' }
+    { id: 'mom', name: 'Mẹ & Bé', icon: 'pi pi-gift' },
   ];
 
   readonly mallItems: MallItem[] = [
@@ -95,20 +95,140 @@ export class ShopCloneAppComponent {
     { title: 'Samsung', subtitle: 'Giảm đến 40%', image: 'SS' },
     { title: 'Lifebuoy', subtitle: 'Mua 2 giảm 10%', image: 'LB' },
     { title: 'Maybelline', subtitle: 'Deal từ 99K', image: 'MB' },
-    { title: 'LocknLock', subtitle: 'Ưu đãi độc quyền', image: 'LL' }
+    { title: 'LocknLock', subtitle: 'Ưu đãi độc quyền', image: 'LL' },
   ];
 
   readonly products: ShopProduct[] = [
-    { id: 1, name: 'Áo thun oversize cotton basic nhiều màu, form rộng unisex', category: 'fashion', price: 99000, originalPrice: 189000, rating: 4.8, sold: 12500, location: 'TP. Hồ Chí Minh', badge: 'Mall', image: 'AT', shipping: 'Freeship' },
-    { id: 2, name: 'Tai nghe bluetooth chống ồn pin 32 giờ, bảo hành 12 tháng', category: 'electronics', price: 349000, originalPrice: 699000, rating: 4.7, sold: 8300, location: 'Hà Nội', badge: 'Yêu thích', image: 'TN', shipping: 'Hỏa tốc' },
-    { id: 3, name: 'Serum dưỡng sáng da vitamin C 30ml, hỗ trợ đều màu da', category: 'beauty', price: 159000, originalPrice: 299000, rating: 4.9, sold: 21100, location: 'Đà Nẵng', badge: 'Sale', image: 'VC', shipping: 'Freeship' },
-    { id: 4, name: 'Kệ để bàn gỗ mini phong cách tối giản, lắp ráp dễ dàng', category: 'home', price: 129000, originalPrice: 220000, rating: 4.6, sold: 4600, location: 'Bình Dương', badge: 'Top', image: 'KG', shipping: 'Freeship' },
-    { id: 5, name: 'Combo snack rong biển và hạt dinh dưỡng ăn vặt văn phòng', category: 'food', price: 79000, originalPrice: 135000, rating: 4.8, sold: 17400, location: 'Đồng Nai', badge: 'Deal sốc', image: 'SN', shipping: 'Freeship' },
-    { id: 6, name: 'Váy midi hoa nhí dáng xòe đi chơi, chất voan mềm nhẹ', category: 'fashion', price: 219000, originalPrice: 399000, rating: 4.7, sold: 6800, location: 'TP. Hồ Chí Minh', badge: 'Hot', image: 'VM', shipping: 'Hỏa tốc' },
-    { id: 7, name: 'Đèn ngủ cảm ứng ánh sáng ấm, sạc USB, decor phòng ngủ', category: 'home', price: 89000, originalPrice: 159000, rating: 4.5, sold: 3900, location: 'Hà Nội', badge: 'New', image: 'DN', shipping: 'Freeship' },
-    { id: 8, name: 'Bàn phím cơ không dây layout 84 phím, switch êm, RGB', category: 'electronics', price: 599000, originalPrice: 990000, rating: 4.9, sold: 5200, location: 'TP. Hồ Chí Minh', badge: 'Mall', image: 'BP', shipping: 'Freeship' },
-    { id: 9, name: 'Set quần áo thể thao nam nữ co giãn, thấm hút mồ hôi', category: 'sports', price: 179000, originalPrice: 320000, rating: 4.6, sold: 2800, location: 'Cần Thơ', badge: 'Rẻ vô địch', image: 'TT', shipping: 'Freeship' },
-    { id: 10, name: 'Bộ bình sữa silicon cho bé, chống đầy hơi, dễ vệ sinh', category: 'mom', price: 245000, originalPrice: 420000, rating: 4.8, sold: 7200, location: 'Hà Nội', badge: 'Mall', image: 'BB', shipping: 'Freeship' }
+    {
+      id: 1,
+      name: 'Áo thun oversize cotton basic nhiều màu, form rộng unisex',
+      category: 'fashion',
+      price: 99000,
+      originalPrice: 189000,
+      rating: 4.8,
+      sold: 12500,
+      location: 'TP. Hồ Chí Minh',
+      badge: 'Mall',
+      image: 'AT',
+      shipping: 'Freeship',
+    },
+    {
+      id: 2,
+      name: 'Tai nghe bluetooth chống ồn pin 32 giờ, bảo hành 12 tháng',
+      category: 'electronics',
+      price: 349000,
+      originalPrice: 699000,
+      rating: 4.7,
+      sold: 8300,
+      location: 'Hà Nội',
+      badge: 'Yêu thích',
+      image: 'TN',
+      shipping: 'Hỏa tốc',
+    },
+    {
+      id: 3,
+      name: 'Serum dưỡng sáng da vitamin C 30ml, hỗ trợ đều màu da',
+      category: 'beauty',
+      price: 159000,
+      originalPrice: 299000,
+      rating: 4.9,
+      sold: 21100,
+      location: 'Đà Nẵng',
+      badge: 'Sale',
+      image: 'VC',
+      shipping: 'Freeship',
+    },
+    {
+      id: 4,
+      name: 'Kệ để bàn gỗ mini phong cách tối giản, lắp ráp dễ dàng',
+      category: 'home',
+      price: 129000,
+      originalPrice: 220000,
+      rating: 4.6,
+      sold: 4600,
+      location: 'Bình Dương',
+      badge: 'Top',
+      image: 'KG',
+      shipping: 'Freeship',
+    },
+    {
+      id: 5,
+      name: 'Combo snack rong biển và hạt dinh dưỡng ăn vặt văn phòng',
+      category: 'food',
+      price: 79000,
+      originalPrice: 135000,
+      rating: 4.8,
+      sold: 17400,
+      location: 'Đồng Nai',
+      badge: 'Deal sốc',
+      image: 'SN',
+      shipping: 'Freeship',
+    },
+    {
+      id: 6,
+      name: 'Váy midi hoa nhí dáng xòe đi chơi, chất voan mềm nhẹ',
+      category: 'fashion',
+      price: 219000,
+      originalPrice: 399000,
+      rating: 4.7,
+      sold: 6800,
+      location: 'TP. Hồ Chí Minh',
+      badge: 'Hot',
+      image: 'VM',
+      shipping: 'Hỏa tốc',
+    },
+    {
+      id: 7,
+      name: 'Đèn ngủ cảm ứng ánh sáng ấm, sạc USB, decor phòng ngủ',
+      category: 'home',
+      price: 89000,
+      originalPrice: 159000,
+      rating: 4.5,
+      sold: 3900,
+      location: 'Hà Nội',
+      badge: 'New',
+      image: 'DN',
+      shipping: 'Freeship',
+    },
+    {
+      id: 8,
+      name: 'Bàn phím cơ không dây layout 84 phím, switch êm, RGB',
+      category: 'electronics',
+      price: 599000,
+      originalPrice: 990000,
+      rating: 4.9,
+      sold: 5200,
+      location: 'TP. Hồ Chí Minh',
+      badge: 'Mall',
+      image: 'BP',
+      shipping: 'Freeship',
+    },
+    {
+      id: 9,
+      name: 'Set quần áo thể thao nam nữ co giãn, thấm hút mồ hôi',
+      category: 'sports',
+      price: 179000,
+      originalPrice: 320000,
+      rating: 4.6,
+      sold: 2800,
+      location: 'Cần Thơ',
+      badge: 'Rẻ vô địch',
+      image: 'TT',
+      shipping: 'Freeship',
+    },
+    {
+      id: 10,
+      name: 'Bộ bình sữa silicon cho bé, chống đầy hơi, dễ vệ sinh',
+      category: 'mom',
+      price: 245000,
+      originalPrice: 420000,
+      rating: 4.8,
+      sold: 7200,
+      location: 'Hà Nội',
+      badge: 'Mall',
+      image: 'BB',
+      shipping: 'Freeship',
+    },
   ];
 
   filteredProducts = computed(() => {
@@ -116,7 +236,7 @@ export class ShopCloneAppComponent {
     const category = this.selectedCategory();
     const sort = this.selectedSort();
 
-    const result = this.products.filter(product => {
+    const result = this.products.filter((product) => {
       const matchesCategory = category === 'all' || product.category === category;
       const matchesSearch = !term || this.normalize(product.name).includes(term);
       return matchesCategory && matchesSearch;
@@ -130,7 +250,9 @@ export class ShopCloneAppComponent {
     });
   });
 
-  cartTotal = computed(() => this.cart().reduce((total, item) => total + item.price * item.quantity, 0));
+  cartTotal = computed(() =>
+    this.cart().reduce((total, item) => total + item.price * item.quantity, 0)
+  );
 
   cartCount = computed(() => this.cart().reduce((total, item) => total + item.quantity, 0));
 
@@ -149,17 +271,19 @@ export class ShopCloneAppComponent {
   }
 
   addToCart(product: ShopProduct): void {
-    this.cart.update(items => {
-      const existing = items.find(item => item.id === product.id);
+    this.cart.update((items) => {
+      const existing = items.find((item) => item.id === product.id);
       if (existing) {
-        return items.map(item => item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item);
+        return items.map((item) =>
+          item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
+        );
       }
       return [...items, { ...product, quantity: 1 }];
     });
   }
 
   removeFromCart(productId: number): void {
-    this.cart.update(items => items.filter(item => item.id !== productId));
+    this.cart.update((items) => items.filter((item) => item.id !== productId));
   }
 
   clearCart(): void {
@@ -174,7 +298,7 @@ export class ShopCloneAppComponent {
     return new Intl.NumberFormat('vi-VN', {
       style: 'currency',
       currency: 'VND',
-      maximumFractionDigits: 0
+      maximumFractionDigits: 0,
     }).format(value);
   }
 

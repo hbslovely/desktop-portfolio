@@ -6,7 +6,7 @@ import {
   cloneBoard,
   setPieceAt,
   getPieceAt,
-  boardToFEN
+  boardToFEN,
 } from '../models/board.model';
 import { PieceColor, PieceType, PieceState } from '../models/piece.model';
 import { Move, MoveHistory, createMove } from '../models/move.model';
@@ -15,14 +15,14 @@ import {
   GameStatus,
   GameMode,
   GameConfig,
-  createDefaultGameConfig
+  createDefaultGameConfig,
 } from '../models/game-state.model';
 import {
   generatePieceMoves,
   generateAllMoves,
   isInCheck,
   isCheckmate,
-  isStalemate
+  isStalemate,
 } from '../utils/move-validator.utils';
 import { createMoveNotation } from '../utils/notation.utils';
 import { getAlgorithm } from '../algorithms';
@@ -31,7 +31,7 @@ import {
   generateHiddenPieceMoves,
   flipPiece,
   isHiddenGameOver,
-  isValidHiddenPosition
+  isValidHiddenPosition,
 } from '../utils/hidden-chess.utils';
 
 @Injectable()
@@ -63,7 +63,7 @@ export class GameService {
       isCheck: false,
       selectedPosition: null,
       possibleMoves: [],
-      lastMove: null
+      lastMove: null,
     };
   }
 
@@ -92,7 +92,10 @@ export class GameService {
     this.gameStateSubject.next(newState);
 
     // Nếu AI đi trước (only for standard chess)
-    if (newState.config.mode !== GameMode.HIDDEN && newState.config.playerColor === PieceColor.BLACK) {
+    if (
+      newState.config.mode !== GameMode.HIDDEN &&
+      newState.config.playerColor === PieceColor.BLACK
+    ) {
       this.makeAIMove();
     }
   }
@@ -112,8 +115,8 @@ export class GameService {
     // Standard Chess logic
     // Cho phép xem nước đi khi chưa start (preview mode)
     const isPreviewMode = state.status === GameStatus.NOT_STARTED;
-    const isPlayingAndMyTurn = state.status === GameStatus.PLAYING &&
-                               state.currentTurn === state.config.playerColor;
+    const isPlayingAndMyTurn =
+      state.status === GameStatus.PLAYING && state.currentTurn === state.config.playerColor;
 
     // Không cho phép khi game over hoặc đang lượt AI
     if (!isPreviewMode && !isPlayingAndMyTurn) return;
@@ -122,8 +125,8 @@ export class GameService {
 
     // Nếu đang có quân được chọn và click vào ô có thể đi
     if (state.selectedPosition) {
-      const possibleMove = state.possibleMoves.find(m => m.row === row && m.col === col);
-      
+      const possibleMove = state.possibleMoves.find((m) => m.row === row && m.col === col);
+
       if (possibleMove) {
         if (isPlayingAndMyTurn) {
           // Đang chơi - thực hiện nước đi
@@ -138,20 +141,20 @@ export class GameService {
 
     // Chọn quân của mình (hoặc quân đỏ khi preview)
     const canSelectPiece = isPreviewMode
-      ? piece && piece.color === PieceColor.RED  // Preview: chỉ xem quân Đỏ
+      ? piece && piece.color === PieceColor.RED // Preview: chỉ xem quân Đỏ
       : piece && piece.color === state.config.playerColor;
 
     if (canSelectPiece) {
       const moves = generatePieceMoves(state.board, { row, col });
       this.updateState({
         selectedPosition: { row, col },
-        possibleMoves: moves.map(m => m.to)
+        possibleMoves: moves.map((m) => m.to),
       });
     } else {
       // Bỏ chọn
       this.updateState({
         selectedPosition: null,
-        possibleMoves: []
+        possibleMoves: [],
       });
     }
   }
@@ -176,7 +179,7 @@ export class GameService {
 
     // If already selected and clicking on possible move
     if (state.selectedPosition) {
-      const possibleMove = state.possibleMoves.find(m => m.row === row && m.col === col);
+      const possibleMove = state.possibleMoves.find((m) => m.row === row && m.col === col);
       if (possibleMove) {
         this.makeHiddenMove(state.selectedPosition, { row, col });
         return;
@@ -188,13 +191,13 @@ export class GameService {
       const moves = generateHiddenPieceMoves(state.board, { row, col });
       this.updateState({
         selectedPosition: { row, col },
-        possibleMoves: moves.map(m => m.to)
+        possibleMoves: moves.map((m) => m.to),
       });
     } else {
       // Deselect
       this.updateState({
         selectedPosition: null,
-        possibleMoves: []
+        possibleMoves: [],
       });
     }
   }
@@ -205,7 +208,7 @@ export class GameService {
   private flipHiddenPiece(row: number, col: number): void {
     const state = this.state;
     const newBoard = cloneBoard(state.board);
-    
+
     const revealedPiece = flipPiece(newBoard, { row, col });
     if (!revealedPiece) return;
 
@@ -214,8 +217,10 @@ export class GameService {
 
     // Check game over
     const winner = isHiddenGameOver(newBoard);
-    const newStatus = winner 
-      ? (winner === PieceColor.RED ? GameStatus.RED_WIN : GameStatus.BLACK_WIN)
+    const newStatus = winner
+      ? winner === PieceColor.RED
+        ? GameStatus.RED_WIN
+        : GameStatus.BLACK_WIN
       : GameStatus.PLAYING;
 
     this.updateState({
@@ -224,7 +229,7 @@ export class GameService {
       status: newStatus,
       selectedPosition: null,
       possibleMoves: [],
-      lastMove: { from: { row, col }, to: { row, col } }
+      lastMove: { from: { row, col }, to: { row, col } },
     });
 
     // AI turn
@@ -236,7 +241,10 @@ export class GameService {
   /**
    * Thực hiện nước đi Cờ Úp
    */
-  private makeHiddenMove(from: { row: number; col: number }, to: { row: number; col: number }): void {
+  private makeHiddenMove(
+    from: { row: number; col: number },
+    to: { row: number; col: number }
+  ): void {
     const state = this.state;
     const piece = getPieceAt(state.board, from);
     if (!piece) return;
@@ -263,8 +271,10 @@ export class GameService {
 
     // Check game over
     const winner = isHiddenGameOver(newBoard);
-    const newStatus = winner 
-      ? (winner === PieceColor.RED ? GameStatus.RED_WIN : GameStatus.BLACK_WIN)
+    const newStatus = winner
+      ? winner === PieceColor.RED
+        ? GameStatus.RED_WIN
+        : GameStatus.BLACK_WIN
       : GameStatus.PLAYING;
 
     this.updateState({
@@ -274,7 +284,7 @@ export class GameService {
       capturedPieces,
       selectedPosition: null,
       possibleMoves: [],
-      lastMove: { from, to }
+      lastMove: { from, to },
     });
 
     // AI turn
@@ -292,7 +302,7 @@ export class GameService {
     if (state.currentTurn === state.config.playerColor) return;
 
     this.isAIThinkingSubject.next(true);
-    await new Promise(resolve => setTimeout(resolve, 300));
+    await new Promise((resolve) => setTimeout(resolve, 300));
 
     const algorithm = getAlgorithm('hidden-chess');
     if (!algorithm) {
@@ -302,7 +312,11 @@ export class GameService {
       return;
     }
 
-    const result = algorithm.findBestMove(state.board, state.currentTurn, state.config.aiDifficulty);
+    const result = algorithm.findBestMove(
+      state.board,
+      state.currentTurn,
+      state.config.aiDifficulty
+    );
     this.isAIThinkingSubject.next(false);
 
     // Handle both return types (Move | SearchResult)
@@ -326,7 +340,7 @@ export class GameService {
    */
   private makeRandomHiddenMove(): void {
     const state = this.state;
-    
+
     // Try to find a hidden piece to flip
     for (let row = 0; row < 10; row++) {
       for (let col = 0; col < 9; col++) {
@@ -349,7 +363,7 @@ export class GameService {
 
     // Validate nước đi
     const validMoves = generatePieceMoves(state.board, from);
-    const isValid = validMoves.some(m => m.to.row === to.row && m.to.col === to.col);
+    const isValid = validMoves.some((m) => m.to.row === to.row && m.to.col === to.col);
     if (!isValid) return false;
 
     const capturedPiece = getPieceAt(state.board, to);
@@ -365,7 +379,7 @@ export class GameService {
     const history: MoveHistory = {
       move,
       boardSnapshot: boardToFEN(state.board),
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
 
     // Cập nhật quân bị ăn
@@ -407,7 +421,7 @@ export class GameService {
       checkingColor,
       selectedPosition: null,
       possibleMoves: [],
-      lastMove: { from, to }
+      lastMove: { from, to },
     });
 
     // AI đi sau
@@ -430,11 +444,11 @@ export class GameService {
     this.isAIThinkingSubject.next(true);
 
     // Add delay to show thinking state
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 100));
 
     const algorithm = getAlgorithm('minimax', {
       maxDepth: state.config.aiDifficulty,
-      useQuiescence: true
+      useQuiescence: true,
     });
 
     if (!algorithm) {
@@ -471,10 +485,10 @@ export class GameService {
     const state = this.state;
     const algorithm = getAlgorithm('minimax', { maxDepth: 3 });
     if (!algorithm) return null;
-    
+
     const result = algorithm.getHint?.(state.board, state.currentTurn);
     if (!result) return null;
-    
+
     // Handle both return types
     if (typeof result === 'object' && 'bestMove' in result) {
       return (result as { bestMove: Move | null }).bestMove;
@@ -504,14 +518,14 @@ export class GameService {
    */
   updateConfig(config: Partial<GameConfig>): void {
     this.updateState({
-      config: { ...this.state.config, ...config }
+      config: { ...this.state.config, ...config },
     });
   }
 
   private updateState(partial: Partial<GameState>): void {
     this.gameStateSubject.next({
       ...this.state,
-      ...partial
+      ...partial,
     });
   }
 }

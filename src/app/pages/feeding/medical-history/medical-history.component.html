@@ -13,16 +13,15 @@
         </p>
       </div>
     </div>
-    <div
-      class="medical-hero__stats"
-      *ngIf="!loading() && myEntries().length > 0"
-      role="status"
-    >
+    <div class="medical-hero__stats" *ngIf="!loading() && myEntries().length > 0" role="status">
       <span class="medical-stat">
         <strong>{{ visibleEntries().length }}</strong>
         <span class="medical-stat__label">mục hiển thị</span>
       </span>
-      <span class="medical-stat medical-stat--dim" *ngIf="visibleEntries().length !== myEntries().length">
+      <span
+        class="medical-stat medical-stat--dim"
+        *ngIf="visibleEntries().length !== myEntries().length"
+      >
         <span class="medical-stat__sep">·</span>
         {{ myEntries().length }} trong sổ
       </span>
@@ -73,7 +72,10 @@
     <p class="medical-state__hint">Đồng bộ từ bảng tiền sử trên Google Sheet.</p>
   </section>
 
-  <section class="card medical-state medical-state--empty" *ngIf="!loading() && myEntries().length === 0">
+  <section
+    class="card medical-state medical-state--empty"
+    *ngIf="!loading() && myEntries().length === 0"
+  >
     <div class="medical-state__icon medical-state__icon--heart" aria-hidden="true">
       <i class="pi pi-heart"></i>
     </div>
@@ -83,7 +85,10 @@
     </p>
   </section>
 
-  <section class="card medical-state medical-state--soft" *ngIf="!loading() && myEntries().length > 0 && filteredEntries().length === 0">
+  <section
+    class="card medical-state medical-state--soft"
+    *ngIf="!loading() && myEntries().length > 0 && filteredEntries().length === 0"
+  >
     <div class="medical-state__icon" aria-hidden="true">
       <i class="pi pi-filter-slash"></i>
     </div>

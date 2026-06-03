@@ -27,11 +27,12 @@
 
   <!-- Navigation Tabs -->
   <div class="nav-tabs">
-    <button 
+    <button
       *ngFor="let tab of ['overview', 'attractions', 'food', 'explore']"
       (click)="setActiveTab(tab)"
       [class.active]="activeTab() === tab"
-      class="nav-tab">
+      class="nav-tab"
+    >
       <i [class]="getTabIcon(tab)"></i>
       <span>{{ getTabLabel(tab) }}</span>
     </button>
@@ -39,14 +40,13 @@
 
   <!-- Content Area -->
   <div class="content-area">
-    
     <!-- Overview Tab -->
     <div *ngIf="activeTab() === 'overview'" class="tab-content overview-tab">
       <div class="overview-hero">
         <p class="hero-text">
-          Ho Chi Minh City (Saigon) is Vietnam's largest and most vibrant metropolis. 
-          A dynamic fusion of traditional Vietnamese culture and modern urban life, 
-          this economic powerhouse offers incredible food, rich history, and endless energy.
+          Ho Chi Minh City (Saigon) is Vietnam's largest and most vibrant metropolis. A dynamic
+          fusion of traditional Vietnamese culture and modern urban life, this economic powerhouse
+          offers incredible food, rich history, and endless energy.
         </p>
       </div>
 
@@ -108,23 +108,25 @@
     <!-- Attractions Tab -->
     <div *ngIf="activeTab() === 'attractions'" class="tab-content attractions-tab">
       <div class="category-filters">
-        <button 
+        <button
           *ngFor="let category of ['all', 'landmark', 'culture', 'entertainment', 'shopping']"
           (click)="setCategory(category)"
           [class.active]="selectedCategory() === category"
-          class="category-btn">
+          class="category-btn"
+        >
           <i [class]="getCategoryIcon(category)"></i>
           <span>{{ getCategoryLabel(category) }}</span>
         </button>
       </div>
-      
+
       <div class="attractions-grid">
-        <div 
-          *ngFor="let attraction of filteredAttractions()"
-          class="attraction-card">
+        <div *ngFor="let attraction of filteredAttractions()" class="attraction-card">
           <div class="attraction-image">
-            <img [src]="attraction.image" [alt]="attraction.name" (error)="onImageError($event)">
-            <span class="category-badge" [style.background-color]="getCategoryColor(attraction.category)">
+            <img [src]="attraction.image" [alt]="attraction.name" (error)="onImageError($event)" />
+            <span
+              class="category-badge"
+              [style.background-color]="getCategoryColor(attraction.category)"
+            >
               {{ getCategoryLabel(attraction.category) }}
             </span>
           </div>
@@ -136,10 +138,11 @@
             </p>
             <p class="description">{{ attraction.description }}</p>
             <div class="rating">
-              <i 
+              <i
                 *ngFor="let star of getStarRating(attraction.rating)"
                 [class]="star ? 'pi pi-star-fill' : 'pi pi-star'"
-                class="star"></i>
+                class="star"
+              ></i>
               <span>{{ attraction.rating }}</span>
             </div>
           </div>
@@ -150,15 +153,15 @@
     <!-- Food Tab -->
     <div *ngIf="activeTab() === 'food'" class="tab-content food-tab">
       <div class="food-intro">
-        <p>Discover the incredible flavors of Saigon street food and traditional Vietnamese cuisine</p>
+        <p>
+          Discover the incredible flavors of Saigon street food and traditional Vietnamese cuisine
+        </p>
       </div>
-      
+
       <div class="food-grid">
-        <div 
-          *ngFor="let food of foods()"
-          class="food-card">
+        <div *ngFor="let food of foods()" class="food-card">
           <div class="food-image">
-            <img [src]="food.image" [alt]="food.name" (error)="onImageError($event)">
+            <img [src]="food.image" [alt]="food.name" (error)="onImageError($event)" />
             <span class="food-category">
               <i [class]="getFoodCategoryIcon(food.category)"></i>
               {{ getFoodCategoryLabel(food.category) }}
@@ -186,12 +189,13 @@
         <p>Explore Ho Chi Minh City with our interactive map and discover hidden gems</p>
       </div>
       <div class="iframe-wrapper">
-        <iframe 
+        <iframe
           src="https://hello-hcmc.vercel.app/"
           frameborder="0"
           allowfullscreen
           sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
-          title="Ho Chi Minh City Interactive Map">
+          title="Ho Chi Minh City Interactive Map"
+        >
         </iframe>
       </div>
     </div>

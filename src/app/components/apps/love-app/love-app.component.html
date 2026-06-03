@@ -6,7 +6,7 @@
     </div>
     <p>Loading {{ title }}...</p>
   </div>
-  
+
   <!-- Error state -->
   <div class="error-overlay" *ngIf="hasError()">
     <div class="error-content">
@@ -19,17 +19,16 @@
       </button>
     </div>
   </div>
-  
+
   <!-- Iframe -->
-  <iframe 
+  <iframe
     [src]="safeUrl()"
     [title]="title"
     (load)="onIframeLoad()"
     (error)="onIframeError()"
     frameborder="0"
     allowfullscreen
-    *ngIf="safeUrl()">
+    *ngIf="safeUrl()"
+  >
   </iframe>
 </div>
-
-

@@ -81,12 +81,15 @@ export interface ProductiveCalendarEvent {
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class TimesheetService {
   constructor(private http: HttpClient) {}
 
-  submitTimesheet(config: TimesheetConfig, dateEntries: TimesheetEntry[]): Observable<TimesheetSubmissionResult> {
+  submitTimesheet(
+    config: TimesheetConfig,
+    dateEntries: TimesheetEntry[]
+  ): Observable<TimesheetSubmissionResult> {
     return new Observable<TimesheetSubmissionResult>((observer) => {
       void this.submitEntriesSequentially(config, dateEntries)
         .then((result) => {
@@ -97,7 +100,10 @@ export class TimesheetService {
     });
   }
 
-  submitTimesheets(config: TimesheetConfig, dates: string[]): Observable<TimesheetSubmissionResult> {
+  submitTimesheets(
+    config: TimesheetConfig,
+    dates: string[]
+  ): Observable<TimesheetSubmissionResult> {
     return new Observable<TimesheetSubmissionResult>((observer) => {
       void this.submitTimesheetsBulk(config, dates)
         .then((result) => {
@@ -117,21 +123,21 @@ export class TimesheetService {
       'filter[person_id]': config.personId,
       'filter[after]': startDate,
       'filter[before]': endDate,
-      include: 'person.manager,approver,rejecter,updater,service.deal.company,service.deal.responsible,service.deal.contract,service.deal.project,service.deal.time_approval_workflow.approvers,service.section,task.project,approval_statuses.approver,approval_statuses.actual_approver,approval_statuses.approval_workflow.approval_policy',
+      include:
+        'person.manager,approver,rejecter,updater,service.deal.company,service.deal.responsible,service.deal.contract,service.deal.project,service.deal.time_approval_workflow.approvers,service.section,task.project,approval_statuses.approver,approval_statuses.actual_approver,approval_statuses.approval_workflow.approval_policy',
       page: '1',
-      per_page: '200'
+      per_page: '200',
     });
 
     return this.http
-      .get<ProductiveListResponse<ProductiveTimeEntry>>(
-        `/api/productive/api/v2/time_entries?${params.toString()}`,
-        { headers: this.createHeaders(config, 'timetracking-manager') }
-      )
+      .get<
+        ProductiveListResponse<ProductiveTimeEntry>
+      >(`/api/productive/api/v2/time_entries?${params.toString()}`, { headers: this.createHeaders(config, 'timetracking-manager') })
       .pipe(
         timeout(30000),
         map((response) => ({
           ...response,
-          data: Array.isArray(response?.data) ? response.data : []
+          data: Array.isArray(response?.data) ? response.data : [],
         })),
         catchError((error) => throwError(() => new Error(this.extractHttpErrorMessage(error))))
       );
@@ -149,25 +155,28 @@ export class TimesheetService {
       'filter[end_date]': endDate,
       'filter[start_date]': startDate,
       page: '1',
-      per_page: '200'
+      per_page: '200',
     });
 
     return this.http
-      .get<ProductiveListResponse<ProductiveCalendarEvent>>(
-        `/api/productive/api/v2/calendar_events?${params.toString()}`,
-        { headers: this.createHeaders(config, 'timetracking-manager') }
-      )
+      .get<
+        ProductiveListResponse<ProductiveCalendarEvent>
+      >(`/api/productive/api/v2/calendar_events?${params.toString()}`, { headers: this.createHeaders(config, 'timetracking-manager') })
       .pipe(
         timeout(30000),
         map((response) => ({
           ...response,
-          data: Array.isArray(response?.data) ? response.data : []
+          data: Array.isArray(response?.data) ? response.data : [],
         })),
         catchError((error) => throwError(() => new Error(this.extractHttpErrorMessage(error))))
       );
   }
 
-  async getVietnamHolidayDates(config: TimesheetConfig, startDate: string, endDate: string): Promise<Set<string>> {
+  async getVietnamHolidayDates(
+    config: TimesheetConfig,
+    startDate: string,
+    endDate: string
+  ): Promise<Set<string>> {
     const response = await firstValueFrom(this.listCalendarEvents(config, startDate, endDate));
     const holidayDates = new Set<string>();
 
@@ -192,8 +201,8 @@ export class TimesheetService {
       method: 'POST',
       headers: this.createHeaders(config, undefined, true),
       body: JSON.stringify({
-        data: dates.map((date) => this.createTimesheetPayload(config, date))
-      })
+        data: dates.map((date) => this.createTimesheetPayload(config, date)),
+      }),
     });
 
     const responseBody = await response.json().catch(() => null);
@@ -206,8 +215,8 @@ export class TimesheetService {
         summary: {
           total: dates.length,
           successful: dates.length,
-          failed: 0
-        }
+          failed: 0,
+        },
       };
     }
 
@@ -218,13 +227,13 @@ export class TimesheetService {
         date,
         success: false,
         error: this.extractErrorMessage(responseBody),
-        status: response.status
+        status: response.status,
       })),
       summary: {
         total: dates.length,
         successful: 0,
-        failed: dates.length
-      }
+        failed: dates.length,
+      },
     };
   }
 
@@ -242,7 +251,7 @@ export class TimesheetService {
           {
             method: 'POST',
             headers: this.createHeaders(config),
-            body: JSON.stringify(this.createTimeEntryPayload(config, entry))
+            body: JSON.stringify(this.createTimeEntryPayload(config, entry)),
           }
         );
 
@@ -252,21 +261,21 @@ export class TimesheetService {
           results.push({
             date: entry.date,
             success: true,
-            data: responseBody
+            data: responseBody,
           });
         } else {
           errors.push({
             date: entry.date,
             success: false,
             error: this.extractErrorMessage(responseBody),
-            status: response.status
+            status: response.status,
           });
         }
       } catch (error) {
         errors.push({
           date: entry.date,
           success: false,
-          error: error instanceof Error ? error.message : 'Unknown error'
+          error: error instanceof Error ? error.message : 'Unknown error',
         });
       }
     }
@@ -278,14 +287,18 @@ export class TimesheetService {
       summary: {
         total: dateEntries.length,
         successful: results.length,
-        failed: errors.length
-      }
+        failed: errors.length,
+      },
     };
   }
 
-  private createHeaders(config: TimesheetConfig, context = 'time-week-table', bulk = false): Record<string, string> {
+  private createHeaders(
+    config: TimesheetConfig,
+    context = 'time-week-table',
+    bulk = false
+  ): Record<string, string> {
     const headers: Record<string, string> = {
-      'Accept': bulk ? 'application/vnd.api+json; ext=bulk' : 'application/vnd.api+json',
+      Accept: bulk ? 'application/vnd.api+json; ext=bulk' : 'application/vnd.api+json',
       'Accept-Language': 'en-US,en;q=0.9,vi;q=0.8',
       'Content-Type': bulk ? 'application/vnd.api+json; ext=bulk' : 'application/vnd.api+json',
       'X-Auth-Token': config.authToken,
@@ -294,7 +307,7 @@ export class TimesheetService {
       'X-Client-Source': 'app',
       'X-Client-Version': '0.2.0+26-05-27|08:00+a182c1a663',
       'X-Feature-Flags': 'displayAICredits,automationNewJsonSchema,importFieldErrorCodes',
-      'X-Organization-Id': config.organizationId
+      'X-Organization-Id': config.organizationId,
     };
 
     if (context) {
@@ -309,17 +322,17 @@ export class TimesheetService {
       attributes: {
         date,
         created_at: null,
-        updated_at: null
+        updated_at: null,
       },
       relationships: {
         person: {
           data: {
             type: 'people',
-            id: config.personId
-          }
-        }
+            id: config.personId,
+          },
+        },
       },
-      type: 'timesheets'
+      type: 'timesheets',
     };
   }
 
@@ -358,24 +371,24 @@ export class TimesheetService {
           jira_issue_summary: null,
           jira_issue_status: null,
           jira_organization: null,
-          jira_worklog_id: null
+          jira_worklog_id: null,
         },
         relationships: {
           person: {
             data: {
               type: 'people',
-              id: config.personId
-            }
+              id: config.personId,
+            },
           },
           service: {
             data: {
               type: 'services',
-              id: config.serviceId
-            }
-          }
+              id: config.serviceId,
+            },
+          },
         },
-        type: 'time-entries'
-      }
+        type: 'time-entries',
+      },
     };
   }
 
@@ -388,7 +401,10 @@ export class TimesheetService {
       const productiveErrors: Array<{ detail?: string; title?: string }> = responseBody.errors;
 
       return productiveErrors
-        .map((productiveError) => productiveError.detail || productiveError.title || JSON.stringify(productiveError))
+        .map(
+          (productiveError) =>
+            productiveError.detail || productiveError.title || JSON.stringify(productiveError)
+        )
         .join(', ');
     }
 
@@ -412,24 +428,27 @@ export class TimesheetService {
   }
 
   getCalendarEventTitle(event: ProductiveCalendarEvent): string {
-    return event.attributes?.title
-      || event.attributes?.name
-      || event.attributes?.summary
-      || (this.isVietnamHolidayEvent(event) ? 'Vietnam holiday' : 'Calendar event');
+    return (
+      event.attributes?.title ||
+      event.attributes?.name ||
+      event.attributes?.summary ||
+      (this.isVietnamHolidayEvent(event) ? 'Vietnam holiday' : 'Calendar event')
+    );
   }
 
   getCalendarEventDates(event: ProductiveCalendarEvent): string[] {
     const start = this.normalizeEventDate(
-      event.attributes?.date
-        || event.attributes?.start_date
-        || event.attributes?.starts_at
-        || event.attributes?.start_time
-        || event.attributes?.started_at
+      event.attributes?.date ||
+        event.attributes?.start_date ||
+        event.attributes?.starts_at ||
+        event.attributes?.start_time ||
+        event.attributes?.started_at
     );
-    const rawEnd = event.attributes?.end_date
-      || event.attributes?.ends_at
-      || event.attributes?.end_time
-      || event.attributes?.ended_at;
+    const rawEnd =
+      event.attributes?.end_date ||
+      event.attributes?.ends_at ||
+      event.attributes?.end_time ||
+      event.attributes?.ended_at;
     const end = this.normalizeEventDate(rawEnd || start);
 
     if (!start) {
@@ -464,12 +483,12 @@ export class TimesheetService {
   generateDateRange(startDate: Date, endDate: Date): string[] {
     const dates: string[] = [];
     const current = new Date(startDate);
-    
+
     while (current <= endDate) {
       dates.push(this.formatLocalDate(current));
       current.setDate(current.getDate() + 1);
     }
-    
+
     return dates;
   }
 
@@ -477,7 +496,7 @@ export class TimesheetService {
   getBusinessDays(startDate: Date, endDate: Date): string[] {
     const dates: string[] = [];
     const current = new Date(startDate);
-    
+
     while (current <= endDate) {
       const dayOfWeek = current.getDay();
       // 1-5 are Monday to Friday (business days)
@@ -486,7 +505,7 @@ export class TimesheetService {
       }
       current.setDate(current.getDate() + 1);
     }
-    
+
     return dates;
   }
 

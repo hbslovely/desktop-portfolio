@@ -12,10 +12,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { interval } from 'rxjs';
-import {
-  WeightLog,
-  WeightLogService,
-} from '../../../services/weight-log.service';
+import { WeightLog, WeightLogService } from '../../../services/weight-log.service';
 import {
   BABY_TIMELINE,
   TimelineMilestone,
@@ -145,9 +142,7 @@ export class WeightComponent {
     this.load();
   }
 
-  growthSex = computed<WeightGrowthSex>(() =>
-    this.gender() === 'girl' ? 'female' : 'male'
-  );
+  growthSex = computed<WeightGrowthSex>(() => (this.gender() === 'girl' ? 'female' : 'male'));
 
   ageInDays = computed<number | null>(() => {
     const b = this.birthDate();
@@ -158,13 +153,9 @@ export class WeightComponent {
     return Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
   });
 
-  sortedLogsAsc = computed(() =>
-    [...this.logs()].sort((a, b) => a.date.localeCompare(b.date))
-  );
+  sortedLogsAsc = computed(() => [...this.logs()].sort((a, b) => a.date.localeCompare(b.date)));
 
-  sortedLogsDesc = computed(() =>
-    [...this.logs()].sort((a, b) => b.date.localeCompare(a.date))
-  );
+  sortedLogsDesc = computed(() => [...this.logs()].sort((a, b) => b.date.localeCompare(a.date)));
 
   latestHeightLog(): WeightLog | null {
     for (const l of this.sortedLogsDesc()) {
@@ -201,10 +192,7 @@ export class WeightComponent {
         toDate: cur.date,
         days,
         deltaKg,
-        gPerDay:
-          days > 0
-            ? Math.round(((1000 * deltaKg) / days) * 10) / 10
-            : null,
+        gPerDay: days > 0 ? Math.round(((1000 * deltaKg) / days) * 10) / 10 : null,
         labelShort: `${this.formatDateShort(prev.date)}→${this.formatDateShort(cur.date)}`,
       });
     }
@@ -249,9 +237,7 @@ export class WeightComponent {
           ? Math.round((next.monthsAge * 30.4375) / 7)
           : Number.MAX_SAFE_INTEGER;
         const isCurrent =
-          currentWeeks !== null &&
-          currentWeeks >= weeks &&
-          currentWeeks < nextWeeks;
+          currentWeeks !== null && currentWeeks >= weeks && currentWeeks < nextWeeks;
         return {
           weeks,
           label: r.ageLabelVi,
@@ -288,20 +274,27 @@ export class WeightComponent {
     return milestones.map((m) => {
       const median = medianWeightKgAtWeeks(m.weeks, sex);
       const sd = approxSdKgAtWeeks(m.weeks, sex);
-      const isCurrent = currentWeeks !== null && 
-        currentWeeks >= m.weeks && 
+      const isCurrent =
+        currentWeeks !== null &&
+        currentWeeks >= m.weeks &&
         (milestones.findIndex((x) => x.weeks === m.weeks) === milestones.length - 1 ||
-         currentWeeks < milestones[milestones.findIndex((x) => x.weeks === m.weeks) + 1].weeks);
-      
+          currentWeeks < milestones[milestones.findIndex((x) => x.weeks === m.weeks) + 1].weeks);
+
       return {
         weeks: m.weeks,
         label: m.label,
         minKg: Math.round((median - 2 * sd) * 100) / 100,
         medianKg: Math.round(median * 100) / 100,
         maxKg: Math.round((median + 2 * sd) * 100) / 100,
-        minCm: Math.round((this.medianHeightByWeeks(m.weeks, sex) - 2 * this.sdHeightByWeeks(m.weeks, sex)) * 10) / 10,
+        minCm:
+          Math.round(
+            (this.medianHeightByWeeks(m.weeks, sex) - 2 * this.sdHeightByWeeks(m.weeks, sex)) * 10
+          ) / 10,
         medianCm: Math.round(this.medianHeightByWeeks(m.weeks, sex) * 10) / 10,
-        maxCm: Math.round((this.medianHeightByWeeks(m.weeks, sex) + 2 * this.sdHeightByWeeks(m.weeks, sex)) * 10) / 10,
+        maxCm:
+          Math.round(
+            (this.medianHeightByWeeks(m.weeks, sex) + 2 * this.sdHeightByWeeks(m.weeks, sex)) * 10
+          ) / 10,
         isCurrent,
         currentWeight: isCurrent ? latestWeight : null,
         currentHeight: isCurrent ? latestHeight : null,
@@ -310,21 +303,11 @@ export class WeightComponent {
   });
 
   whoCurrentWeightLevel(row: WhoStandardRow): 'ok' | 'mid' | 'warn' {
-    return this.whoMetricLevel(
-      row.currentWeight,
-      row.minKg,
-      row.medianKg,
-      row.maxKg
-    );
+    return this.whoMetricLevel(row.currentWeight, row.minKg, row.medianKg, row.maxKg);
   }
 
   whoCurrentHeightLevel(row: WhoStandardRow): 'ok' | 'mid' | 'warn' {
-    return this.whoMetricLevel(
-      row.currentHeight,
-      row.minCm,
-      row.medianCm,
-      row.maxCm
-    );
+    return this.whoMetricLevel(row.currentHeight, row.minCm, row.medianCm, row.maxCm);
   }
 
   openWhoTableDialog() {
@@ -345,9 +328,7 @@ export class WeightComponent {
   ] as const;
 
   /** Xu hướng đơn khi không có biểu đồ so sánh WHO (thiếu ngày sinh hoặc tương đương). */
-  simpleTrendForCharts = computed(
-    () => !this.weightVsStandardChart() && !!this.weightTrendChart()
-  );
+  simpleTrendForCharts = computed(() => !this.weightVsStandardChart() && !!this.weightTrendChart());
 
   weightTrendChart = computed(() => {
     const logs = this.sortedLogsAsc();
@@ -374,10 +355,8 @@ export class WeightComponent {
     const chartH = H - PAD_T - PAD_B;
     const bottomY = PAD_T + chartH;
 
-    const xOf = (i: number) =>
-      PAD_L + (n === 1 ? innerW / 2 : (i / Math.max(1, n - 1)) * innerW);
-    const yOf = (kg: number) =>
-      PAD_T + chartH - ((kg - minKg) / range) * chartH;
+    const xOf = (i: number) => PAD_L + (n === 1 ? innerW / 2 : (i / Math.max(1, n - 1)) * innerW);
+    const yOf = (kg: number) => PAD_T + chartH - ((kg - minKg) / range) * chartH;
 
     let pathActual = '';
     const pts: Array<{
@@ -456,11 +435,7 @@ export class WeightComponent {
     const ref = sampleWhoWeightBandByDay(maxDays, sex, 140);
 
     const kgFromLogs = raw.map((p) => p.log.weightKg);
-    const kgFromRef = ref.flatMap((r) => [
-      r.medianKg,
-      r.minus2SdKg,
-      r.plus2SdKg,
-    ]);
+    const kgFromRef = ref.flatMap((r) => [r.medianKg, r.minus2SdKg, r.plus2SdKg]);
     let minKg = Math.min(...kgFromLogs, ...kgFromRef);
     let maxKg = Math.max(...kgFromLogs, ...kgFromRef);
     const span = maxKg - minKg;
@@ -483,8 +458,7 @@ export class WeightComponent {
     const maxD = maxDays;
     const spanD = Math.max(1, maxD - minD);
     const xOfDays = (d: number) => PAD_L + ((d - minD) / spanD) * innerW;
-    const yOfKg = (kg: number) =>
-      PAD_T + chartH - ((kg - minKg) / range) * chartH;
+    const yOfKg = (kg: number) => PAD_T + chartH - ((kg - minKg) / range) * chartH;
 
     let pathMedian = '';
     let pathLow = '';
@@ -612,9 +586,7 @@ export class WeightComponent {
 
   heightVsStandardChart = computed(() => {
     const birthIso = this.birthDate();
-    const logs = this.sortedLogsAsc().filter(
-      (l) => l.heightCm !== undefined && l.heightCm > 0
-    );
+    const logs = this.sortedLogsAsc().filter((l) => l.heightCm !== undefined && l.heightCm > 0);
     if (!birthIso || logs.length === 0) return null;
 
     const sex = this.growthSex();
@@ -632,11 +604,7 @@ export class WeightComponent {
     const ref = sampleWhoHeightBandByDay(maxDays, sex, 120);
 
     const cmFromLogs = raw.map((p) => p.heightCm);
-    const cmFromRef = ref.flatMap((r) => [
-      r.medianCm,
-      r.minus2SdCm,
-      r.plus2SdCm,
-    ]);
+    const cmFromRef = ref.flatMap((r) => [r.medianCm, r.minus2SdCm, r.plus2SdCm]);
     let minCm = Math.min(...cmFromLogs, ...cmFromRef);
     let maxCm = Math.max(...cmFromLogs, ...cmFromRef);
     const span = maxCm - minCm;
@@ -656,8 +624,7 @@ export class WeightComponent {
     const bottomY = PAD_T + chartH;
     const spanD = Math.max(1, maxDays);
     const xOfDays = (d: number) => PAD_L + (d / spanD) * innerW;
-    const yOfCm = (cm: number) =>
-      PAD_T + chartH - ((cm - minCm) / range) * chartH;
+    const yOfCm = (cm: number) => PAD_T + chartH - ((cm - minCm) / range) * chartH;
 
     let pathMedian = '';
     let pathLow = '';
@@ -775,10 +742,8 @@ export class WeightComponent {
     const innerW = Math.max(300, Math.max(n - 1, 1) * 64);
     const W = PAD_L + innerW + PAD_R;
     const chartH = H - PAD_T - PAD_B;
-    const yOf = (v: number) =>
-      PAD_T + chartH - ((v - minV) / range) * chartH;
-    const xOf = (i: number) =>
-      PAD_L + (n === 1 ? innerW / 2 : (i / Math.max(1, n - 1)) * innerW);
+    const yOf = (v: number) => PAD_T + chartH - ((v - minV) / range) * chartH;
+    const xOf = (i: number) => PAD_L + (n === 1 ? innerW / 2 : (i / Math.max(1, n - 1)) * innerW);
     const zeroY = yOf(0);
     const bottomY = PAD_T + chartH;
     const showZeroLine = zeroY >= PAD_T - 0.5 && zeroY <= bottomY + 0.5;
@@ -926,9 +891,7 @@ export class WeightComponent {
       const found = entries.find((e) => e.milestone.id === id);
       if (found) return found;
     }
-    return (
-      entries.find((e) => e.state === 'current') || entries[0] || null
-    );
+    return entries.find((e) => e.state === 'current') || entries[0] || null;
   });
 
   selectedTimelineCareGuide = computed(() => {
@@ -1000,8 +963,7 @@ export class WeightComponent {
         if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
       } else {
         const el = document.querySelector('.tl-chart-scroll [data-current="true"]');
-        if (el)
-          el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
       }
     }, 150);
   }
@@ -1100,7 +1062,10 @@ export class WeightComponent {
     }
 
     const log: WeightLog = {
-      user: String(this.user() || 'guest').toLowerCase().trim() || 'guest',
+      user:
+        String(this.user() || 'guest')
+          .toLowerCase()
+          .trim() || 'guest',
       date: d.date,
       weightKg: kg,
       ...(h !== null ? { heightCm: Math.round(h * 10) / 10 } : {}),
@@ -1119,10 +1084,12 @@ export class WeightComponent {
         );
 
         // Log activity
-        this.activityLogService.logWeight(this.user(), 'WEIGHT_ADDED', {
-          date: this.formatDateDisplay(log.date),
-          weight: kg,
-        }).subscribe();
+        this.activityLogService
+          .logWeight(this.user(), 'WEIGHT_ADDED', {
+            date: this.formatDateDisplay(log.date),
+            weight: kg,
+          })
+          .subscribe();
 
         setTimeout(() => this.successMsg.set(''), 4000);
         this.closeAddDialog();
@@ -1239,11 +1206,13 @@ export class WeightComponent {
           this.successMsg.set('Đã cập nhật.');
 
           // Log activity
-          this.activityLogService.logWeight(this.user(), 'WEIGHT_UPDATED', {
-            date: this.formatDateDisplay(d.date),
-            oldWeight: orig.weightKg,
-            newWeight: kg,
-          }).subscribe();
+          this.activityLogService
+            .logWeight(this.user(), 'WEIGHT_UPDATED', {
+              date: this.formatDateDisplay(d.date),
+              oldWeight: orig.weightKg,
+              newWeight: kg,
+            })
+            .subscribe();
 
           setTimeout(() => this.successMsg.set(''), 3000);
           this.cancelEdit();
@@ -1252,8 +1221,7 @@ export class WeightComponent {
         error: (err) => {
           this.saving.set(false);
           this.errorMsg.set(
-            err?.message ||
-              'Cập nhật thất bại. Kiểm tra Apps Script đã có action updateWeight.'
+            err?.message || 'Cập nhật thất bại. Kiểm tra Apps Script đã có action updateWeight.'
           );
         },
       });
@@ -1274,10 +1242,12 @@ export class WeightComponent {
         this.successMsg.set('Đã xoá.');
 
         // Log activity
-        this.activityLogService.logWeight(this.user(), 'WEIGHT_DELETED', {
-          date: this.formatDateDisplay(log.date),
-          weight: log.weightKg,
-        }).subscribe();
+        this.activityLogService
+          .logWeight(this.user(), 'WEIGHT_DELETED', {
+            date: this.formatDateDisplay(log.date),
+            weight: log.weightKg,
+          })
+          .subscribe();
 
         setTimeout(() => this.successMsg.set(''), 3000);
         if (this.editingLog()?.rowIndex === log.rowIndex) this.cancelEdit();

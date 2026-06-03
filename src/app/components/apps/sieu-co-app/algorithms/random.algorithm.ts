@@ -25,7 +25,7 @@ export class RandomAlgorithm extends BaseAlgorithm {
     if (moves.length === 0) return null;
 
     // Ưu tiên nước ăn quân (50% cơ hội)
-    const captureMoves = moves.filter(m => m.capturedPiece);
+    const captureMoves = moves.filter((m) => m.capturedPiece);
     if (captureMoves.length > 0 && Math.random() < 0.5) {
       return captureMoves[Math.floor(Math.random() * captureMoves.length)];
     }
@@ -43,5 +43,5 @@ export const RANDOM_METADATA: AlgorithmMetadata = {
   description: 'Chọn nước đi ngẫu nhiên trong các nước hợp lệ',
   author: 'System',
   version: '1.0.0',
-  complexity: 'O(n)'
+  complexity: 'O(n)',
 };

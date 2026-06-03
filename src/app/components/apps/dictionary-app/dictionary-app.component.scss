@@ -3,7 +3,8 @@
   display: flex;
   flex-direction: column;
   background: #f8f9fa;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
   overflow: hidden;
   color: #212529;
 }
@@ -184,7 +185,9 @@
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 // Error State
@@ -262,7 +265,7 @@
   .welcome-icon {
     font-size: 64px;
     margin-bottom: 20px;
-    
+
     i {
       color: #6366f1;
       opacity: 0.9;
@@ -1094,4 +1097,3 @@
     transform: translateX(0);
   }
 }
-

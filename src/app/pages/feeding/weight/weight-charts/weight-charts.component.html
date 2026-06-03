@@ -1,12 +1,45 @@
 <section class="wg-controls">
   <div class="wg-controls__group">
     <span class="wg-controls__label">Span</span>
-    <button type="button" class="wg-chip" [class.active]="spanPreset() === '30d'" (click)="setSpanPreset('30d')">30 ngày</button>
-    <button type="button" class="wg-chip" [class.active]="spanPreset() === '90d'" (click)="setSpanPreset('90d')">90 ngày</button>
-    <button type="button" class="wg-chip" [class.active]="spanPreset() === '180d'" (click)="setSpanPreset('180d')">180 ngày</button>
-    <button type="button" class="wg-chip" [class.active]="spanPreset() === 'all'" (click)="setSpanPreset('all')">Toàn bộ</button>
+    <button
+      type="button"
+      class="wg-chip"
+      [class.active]="spanPreset() === '30d'"
+      (click)="setSpanPreset('30d')"
+    >
+      30 ngày
+    </button>
+    <button
+      type="button"
+      class="wg-chip"
+      [class.active]="spanPreset() === '90d'"
+      (click)="setSpanPreset('90d')"
+    >
+      90 ngày
+    </button>
+    <button
+      type="button"
+      class="wg-chip"
+      [class.active]="spanPreset() === '180d'"
+      (click)="setSpanPreset('180d')"
+    >
+      180 ngày
+    </button>
+    <button
+      type="button"
+      class="wg-chip"
+      [class.active]="spanPreset() === 'all'"
+      (click)="setSpanPreset('all')"
+    >
+      Toàn bộ
+    </button>
   </div>
-  <button type="button" class="wg-pin" [class.active]="pinLatestPoint()" (click)="togglePinLatest()">
+  <button
+    type="button"
+    class="wg-pin"
+    [class.active]="pinLatestPoint()"
+    (click)="togglePinLatest()"
+  >
     <i class="pi pi-map-marker"></i>
     {{ pinLatestPoint() ? 'Pin điểm mới nhất' : 'Hiện nhiều nhãn' }}
   </button>

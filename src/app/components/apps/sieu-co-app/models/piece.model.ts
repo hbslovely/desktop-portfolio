@@ -3,13 +3,13 @@
  */
 export enum PieceType {
   NONE = 0,
-  KING = 1,      // Tướng/Soái
-  ADVISOR = 2,   // Sĩ
-  ELEPHANT = 3,  // Tượng/Tịnh
-  HORSE = 4,     // Mã
-  ROOK = 5,      // Xe
-  CANNON = 6,    // Pháo
-  PAWN = 7       // Tốt/Binh
+  KING = 1, // Tướng/Soái
+  ADVISOR = 2, // Sĩ
+  ELEPHANT = 3, // Tượng/Tịnh
+  HORSE = 4, // Mã
+  ROOK = 5, // Xe
+  CANNON = 6, // Pháo
+  PAWN = 7, // Tốt/Binh
 }
 
 /**
@@ -17,8 +17,8 @@ export enum PieceType {
  */
 export enum PieceColor {
   NONE = 0,
-  RED = 8,       // Đỏ (đi trước)
-  BLACK = 16     // Đen
+  RED = 8, // Đỏ (đi trước)
+  BLACK = 16, // Đen
 }
 
 /**
@@ -26,7 +26,7 @@ export enum PieceColor {
  */
 export enum PieceState {
   NORMAL = 0,
-  HIDDEN = 32    // Quân úp (cho chế độ Cờ Úp)
+  HIDDEN = 32, // Quân úp (cho chế độ Cờ Úp)
 }
 
 /**
@@ -36,7 +36,7 @@ export interface Piece {
   type: PieceType;
   color: PieceColor;
   state: PieceState;
-  trueType?: PieceType;  // Loại thật (khi bị úp)
+  trueType?: PieceType; // Loại thật (khi bị úp)
 }
 
 /**
@@ -50,7 +50,7 @@ export const PIECE_NAMES_VI: Record<PieceType, { red: string; black: string }> =
   [PieceType.HORSE]: { red: 'Mã', black: 'Mã' },
   [PieceType.ROOK]: { red: 'Xe', black: 'Xe' },
   [PieceType.CANNON]: { red: 'Pháo', black: 'Pháo' },
-  [PieceType.PAWN]: { red: 'Tốt', black: 'Binh' }
+  [PieceType.PAWN]: { red: 'Tốt', black: 'Binh' },
 };
 
 /**
@@ -64,7 +64,7 @@ export const PIECE_CHARS: Record<PieceType, { red: string; black: string }> = {
   [PieceType.HORSE]: { red: '傌', black: '馬' },
   [PieceType.ROOK]: { red: '俥', black: '車' },
   [PieceType.CANNON]: { red: '炮', black: '砲' },
-  [PieceType.PAWN]: { red: '兵', black: '卒' }
+  [PieceType.PAWN]: { red: '兵', black: '卒' },
 };
 
 /**
@@ -78,7 +78,7 @@ export const PIECE_VALUES: Record<PieceType, number> = {
   [PieceType.HORSE]: 400,
   [PieceType.ROOK]: 900,
   [PieceType.CANNON]: 450,
-  [PieceType.PAWN]: 100
+  [PieceType.PAWN]: 100,
 };
 
 /**
@@ -92,5 +92,5 @@ export const PIECE_NOTATION: Record<PieceType, string> = {
   [PieceType.HORSE]: 'M',
   [PieceType.ROOK]: 'X',
   [PieceType.CANNON]: 'P',
-  [PieceType.PAWN]: 'B'
+  [PieceType.PAWN]: 'B',
 };

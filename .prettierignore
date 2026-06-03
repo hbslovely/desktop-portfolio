@@ -1,0 +1,8 @@
+dist
+node_modules
+coverage
+.angular
+server
+src/assets
+package-lock.json
+*.min.js

@@ -1,8 +1,22 @@
-import { Component, signal, ViewChild, ElementRef, AfterViewInit, OnDestroy, effect, HostListener } from '@angular/core';
+import {
+  Component,
+  signal,
+  ViewChild,
+  ElementRef,
+  AfterViewInit,
+  OnDestroy,
+  effect,
+  HostListener,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 // import * as d3 from 'd3'; // Will enable after npm install d3
-import { GraphAlgorithms, GraphNode, GraphEdge, AlgorithmResult } from '../../../utils/graph-algorithms.util';
+import {
+  GraphAlgorithms,
+  GraphNode,
+  GraphEdge,
+  AlgorithmResult,
+} from '../../../utils/graph-algorithms.util';
 
 // Use types from util file
 type PathResult = AlgorithmResult;
@@ -12,14 +26,15 @@ type PathResult = AlgorithmResult;
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './graph-visualizer-app.component.html',
-  styleUrl: './graph-visualizer-app.component.scss'
+  styleUrl: './graph-visualizer-app.component.scss',
 })
 export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
   @ViewChild('canvas', { static: false }) canvasRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('svg', { static: false }) svgRef!: ElementRef<SVGSVGElement>;
   @ViewChild('previewCanvas', { static: false }) previewCanvasRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('graphContainer', { static: false }) graphContainerRef!: ElementRef<HTMLDivElement>;
-  @ViewChild('templatePreviewCanvas', { static: false }) templatePreviewCanvasRef!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('templatePreviewCanvas', { static: false })
+  templatePreviewCanvasRef!: ElementRef<HTMLCanvasElement>;
 
   nodes = signal<GraphNode[]>([]);
   edges = signal<GraphEdge[]>([]);
@@ -35,7 +50,18 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
   panOffset = signal<{ x: number; y: number }>({ x: 0, y: 0 });
 
   // Algorithm settings
-  selectedAlgorithm = signal<'dijkstra' | 'bellman-ford' | 'floyd-warshall' | 'a-star' | 'graph-coloring' | 'bfs' | 'dfs' | 'cycle-detection' | 'connected-components' | 'scc'>('dijkstra');
+  selectedAlgorithm = signal<
+    | 'dijkstra'
+    | 'bellman-ford'
+    | 'floyd-warshall'
+    | 'a-star'
+    | 'graph-coloring'
+    | 'bfs'
+    | 'dfs'
+    | 'cycle-detection'
+    | 'connected-components'
+    | 'scc'
+  >('dijkstra');
   startNode = signal<string | null>(null);
   endNode = signal<string | null>(null);
   pathResult = signal<PathResult | any | null>(null);
@@ -56,10 +82,11 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
 
   // Graph input form data
   inputNodes = signal<string>('');
-  inputEdges = signal<Array<{ from: string; to: string; weight: number; directed: boolean }>>([{ from: '', to: '', weight: 1, directed: false }]);
+  inputEdges = signal<Array<{ from: string; to: string; weight: number; directed: boolean }>>([
+    { from: '', to: '', weight: 1, directed: false },
+  ]);
   previewNodes = signal<GraphNode[]>([]);
   previewEdges = signal<GraphEdge[]>([]);
-
 
   // Algorithm visualization
   algorithmSteps = signal<any[]>([]);
@@ -198,95 +225,112 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     }
 
     // Watch mode changes to reset edge creation
-    effect(() => {
-      const currentMode = this.mode();
-      const creating = this.creatingEdge();
+    effect(
+      () => {
+        const currentMode = this.mode();
+        const creating = this.creatingEdge();
 
-      // If switching away from add-edge mode and edge creation is in progress, reset it
-      if (currentMode !== 'add-edge' && creating.from !== null) {
-        this.creatingEdge.set({ from: null, to: null });
-        this.selectedNode.set(null);
-        this.mousePosition.set(null);
-        this.drawGraph();
-      }
-    }, { allowSignalWrites: true });
+        // If switching away from add-edge mode and edge creation is in progress, reset it
+        if (currentMode !== 'add-edge' && creating.from !== null) {
+          this.creatingEdge.set({ from: null, to: null });
+          this.selectedNode.set(null);
+          this.mousePosition.set(null);
+          this.drawGraph();
+        }
+      },
+      { allowSignalWrites: true }
+    );
 
     // Watch sidebar view changes to reset/restore colors
-    effect(() => {
-      const view = this.sidebarView();
-      const hasResult = this.finalResult() !== null;
+    effect(
+      () => {
+        const view = this.sidebarView();
+        const hasResult = this.finalResult() !== null;
 
-      if (view === 'control' && hasResult) {
-        // Reset colors when switching to control view
-        this.nodeColors.set({});
-        this.componentColors.set({});
-        this.cycleColors.set({});
-        // Use setTimeout to ensure drawGraph is called after state update
-        setTimeout(() => {
-          this.drawGraph();
-        }, 0);
-      } else if (view === 'result' && hasResult) {
-        // Restore colors when switching to result view
-        const savedNode = this.savedNodeColors();
-        const savedComponent = this.savedComponentColors();
-        const savedCycle = this.savedCycleColors();
-
-        // Only restore if we have saved colors
-        if (Object.keys(savedNode).length > 0 || Object.keys(savedComponent).length > 0 || Object.keys(savedCycle).length > 0) {
-          this.nodeColors.set(savedNode);
-          this.componentColors.set(savedComponent);
-          this.cycleColors.set(savedCycle);
+        if (view === 'control' && hasResult) {
+          // Reset colors when switching to control view
+          this.nodeColors.set({});
+          this.componentColors.set({});
+          this.cycleColors.set({});
           // Use setTimeout to ensure drawGraph is called after state update
           setTimeout(() => {
             this.drawGraph();
           }, 0);
+        } else if (view === 'result' && hasResult) {
+          // Restore colors when switching to result view
+          const savedNode = this.savedNodeColors();
+          const savedComponent = this.savedComponentColors();
+          const savedCycle = this.savedCycleColors();
+
+          // Only restore if we have saved colors
+          if (
+            Object.keys(savedNode).length > 0 ||
+            Object.keys(savedComponent).length > 0 ||
+            Object.keys(savedCycle).length > 0
+          ) {
+            this.nodeColors.set(savedNode);
+            this.componentColors.set(savedComponent);
+            this.cycleColors.set(savedCycle);
+            // Use setTimeout to ensure drawGraph is called after state update
+            setTimeout(() => {
+              this.drawGraph();
+            }, 0);
+          }
         }
-      }
-    }, { allowSignalWrites: true });
+      },
+      { allowSignalWrites: true }
+    );
 
     // Auto-save edge config when weight or direction changes
     let autoSaveTimeout: any = null;
     let isUpdatingEdge = false; // Flag to prevent infinite loop
 
-    effect(() => {
-      const selectedEdgeId = this.selectedEdge();
-      const weight = this.edgeWeight();
-      const direction = this.edgeDirection();
+    effect(
+      () => {
+        const selectedEdgeId = this.selectedEdge();
+        const weight = this.edgeWeight();
+        const direction = this.edgeDirection();
 
-      // Skip if currently updating to prevent loop
-      if (isUpdatingEdge) {
-        return;
-      }
-
-      // Only auto-save if edge is selected and config panel is open
-      if (selectedEdgeId && this.showEdgeConfig()) {
-        // Get current edge values
-        const currentEdge = this.edges().find(e => e.id === selectedEdgeId);
-        if (!currentEdge) return;
-
-        // Check if values actually changed from current edge
-        if (currentEdge.weight === weight && currentEdge.direction === direction) {
-          return; // No change, skip auto-save
+        // Skip if currently updating to prevent loop
+        if (isUpdatingEdge) {
+          return;
         }
 
-        // Debounce to avoid too many updates
-        if (autoSaveTimeout) {
-          clearTimeout(autoSaveTimeout);
-        }
-        autoSaveTimeout = setTimeout(() => {
-          // Double-check edge still exists and values are different
-          const edge = this.edges().find(e => e.id === selectedEdgeId);
-          if (edge && (edge.weight !== weight || edge.direction !== direction) && !isUpdatingEdge) {
-            isUpdatingEdge = true;
-            this.updateEdge(selectedEdgeId);
-            // Reset flag after update completes
-            setTimeout(() => {
-              isUpdatingEdge = false;
-            }, 50);
+        // Only auto-save if edge is selected and config panel is open
+        if (selectedEdgeId && this.showEdgeConfig()) {
+          // Get current edge values
+          const currentEdge = this.edges().find((e) => e.id === selectedEdgeId);
+          if (!currentEdge) return;
+
+          // Check if values actually changed from current edge
+          if (currentEdge.weight === weight && currentEdge.direction === direction) {
+            return; // No change, skip auto-save
           }
-        }, 300); // Wait 300ms after last change
-      }
-    }, { allowSignalWrites: true });
+
+          // Debounce to avoid too many updates
+          if (autoSaveTimeout) {
+            clearTimeout(autoSaveTimeout);
+          }
+          autoSaveTimeout = setTimeout(() => {
+            // Double-check edge still exists and values are different
+            const edge = this.edges().find((e) => e.id === selectedEdgeId);
+            if (
+              edge &&
+              (edge.weight !== weight || edge.direction !== direction) &&
+              !isUpdatingEdge
+            ) {
+              isUpdatingEdge = true;
+              this.updateEdge(selectedEdgeId);
+              // Reset flag after update completes
+              setTimeout(() => {
+                isUpdatingEdge = false;
+              }, 50);
+            }
+          }, 300); // Wait 300ms after last change
+        }
+      },
+      { allowSignalWrites: true }
+    );
   }
 
   // Hover state for edge creation
@@ -302,74 +346,74 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
       name: 'Đường thẳng',
       description: 'A → B → C → D',
       icon: 'pi pi-arrow-right',
-      template: () => this.createLinearGraph()
+      template: () => this.createLinearGraph(),
     },
     {
       name: 'Vòng tròn',
       description: 'A → B → C → D → A',
       icon: 'pi pi-circle',
-      template: () => this.createCycleGraph()
+      template: () => this.createCycleGraph(),
     },
     {
       name: 'Sao',
       description: 'Tất cả nối với 1 đỉnh trung tâm',
       icon: 'pi pi-star',
-      template: () => this.createStarGraph()
+      template: () => this.createStarGraph(),
     },
     {
       name: 'Đồ thị đầy đủ',
       description: 'Tất cả đỉnh nối với nhau',
       icon: 'pi pi-th-large',
-      template: () => this.createCompleteGraph()
+      template: () => this.createCompleteGraph(),
     },
     {
       name: 'Lưới 2x2',
       description: 'Lưới 2 hàng x 2 cột',
       icon: 'pi pi-table',
-      template: () => this.createGridGraph(2, 2)
+      template: () => this.createGridGraph(2, 2),
     },
     {
       name: 'Lưới 3x3',
       description: 'Lưới 3 hàng x 3 cột',
       icon: 'pi pi-table',
-      template: () => this.createGridGraph(3, 3)
+      template: () => this.createGridGraph(3, 3),
     },
     {
       name: 'Lưới 4x4',
       description: 'Lưới 4 hàng x 4 cột',
       icon: 'pi pi-table',
-      template: () => this.createGridGraph(4, 4)
+      template: () => this.createGridGraph(4, 4),
     },
     {
       name: 'Cây nhị phân',
       description: 'Cây nhị phân hoàn chỉnh',
       icon: 'pi pi-sitemap',
-      template: () => this.createBinaryTree()
+      template: () => this.createBinaryTree(),
     },
     {
       name: 'Đồ thị hai phía',
       description: 'Bipartite graph',
       icon: 'pi pi-objects-column',
-      template: () => this.createBipartiteGraph()
+      template: () => this.createBipartiteGraph(),
     },
     {
       name: 'Đồ thị hình thang',
       description: 'Trapezoid graph',
       icon: 'pi pi-shapes',
-      template: () => this.createTrapezoidGraph()
+      template: () => this.createTrapezoidGraph(),
     },
     {
       name: 'Đồ thị bánh xe',
       description: 'Wheel graph',
       icon: 'pi pi-circle-fill',
-      template: () => this.createWheelGraph()
+      template: () => this.createWheelGraph(),
     },
     {
       name: 'Đồ thị lục giác',
       description: 'Hexagonal graph',
       icon: 'pi pi-hexagon',
-      template: () => this.createHexagonalGraph()
-    }
+      template: () => this.createHexagonalGraph(),
+    },
   ];
 
   ngAfterViewInit() {
@@ -422,20 +466,20 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
       { id: 'A', x: centerX, y: centerY - radius, label: 'A', isStart: true },
       { id: 'B', x: centerX + radius, y: centerY, label: 'B', isStart: false },
       { id: 'C', x: centerX, y: centerY + radius, label: 'C', isStart: false },
-      { id: 'D', x: centerX - radius, y: centerY, label: 'D', isStart: false }
+      { id: 'D', x: centerX - radius, y: centerY, label: 'D', isStart: false },
     ];
 
     const edges = [
       { from: 'A', to: 'B' },
       { from: 'B', to: 'C' },
       { from: 'C', to: 'D' },
-      { from: 'D', to: 'A' }
+      { from: 'D', to: 'A' },
     ];
 
     // Draw edges
-    edges.forEach(edge => {
-      const fromNode = nodes.find(n => n.id === edge.from);
-      const toNode = nodes.find(n => n.id === edge.to);
+    edges.forEach((edge) => {
+      const fromNode = nodes.find((n) => n.id === edge.from);
+      const toNode = nodes.find((n) => n.id === edge.to);
       if (!fromNode || !toNode) return;
 
       ctx.strokeStyle = this.edgeColor();
@@ -447,7 +491,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     });
 
     // Draw nodes
-    nodes.forEach(node => {
+    nodes.forEach((node) => {
       const nodeRadius = this.nodeRadius();
       ctx.beginPath();
       ctx.arc(node.x, node.y, nodeRadius, 0, 2 * Math.PI);
@@ -505,7 +549,12 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     }
 
     // Handle Delete key
-    if (event.key === 'Delete' || event.key === 'Backspace' || event.keyCode === 46 || event.keyCode === 8) {
+    if (
+      event.key === 'Delete' ||
+      event.key === 'Backspace' ||
+      event.keyCode === 46 ||
+      event.keyCode === 8
+    ) {
       event.preventDefault();
 
       // Delete selected edge first (if any)
@@ -531,9 +580,9 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
         // Delete all nodes and their edges at once
         const currentNodes = this.nodes();
         const currentEdges = this.edges();
-        const nodesToKeep = currentNodes.filter(n => !nodesToDelete.includes(n.id));
-        const edgesToKeep = currentEdges.filter(e =>
-          !nodesToDelete.includes(e.from) && !nodesToDelete.includes(e.to)
+        const nodesToKeep = currentNodes.filter((n) => !nodesToDelete.includes(n.id));
+        const edgesToKeep = currentEdges.filter(
+          (e) => !nodesToDelete.includes(e.from) && !nodesToDelete.includes(e.to)
         );
 
         // Update start/end nodes if they were deleted
@@ -730,20 +779,27 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     const nodes = this.nodes();
 
     for (const edge of edges) {
-      const fromNode = nodes.find(n => n.id === edge.from);
-      const toNode = nodes.find(n => n.id === edge.to);
+      const fromNode = nodes.find((n) => n.id === edge.from);
+      const toNode = nodes.find((n) => n.id === edge.to);
       if (!fromNode || !toNode) continue;
 
       const distance = this.distanceToLineSegment(x, y, fromNode.x, fromNode.y, toNode.x, toNode.y);
-      if (distance <= 5) { // Edge click threshold
+      if (distance <= 5) {
+        // Edge click threshold
         return edge;
       }
     }
     return null;
   }
 
-
-  distanceToLineSegment(px: number, py: number, x1: number, y1: number, x2: number, y2: number): number {
+  distanceToLineSegment(
+    px: number,
+    py: number,
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number
+  ): number {
     const A = px - x1;
     const B = py - y1;
     const C = x2 - x1;
@@ -794,10 +850,9 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
   }
 
   getEdgeWeight(edgeId: string): number {
-    const edge = this.edges().find(e => e.id === edgeId);
+    const edge = this.edges().find((e) => e.id === edgeId);
     return edge?.weight || 1;
   }
-
 
   handleNodeClick(node: GraphNode) {
     this.selectedNode.set(node.id);
@@ -807,12 +862,12 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
   }
 
   getEdgeFromNode(edgeId: string): string {
-    const edge = this.edges().find(e => e.id === edgeId);
+    const edge = this.edges().find((e) => e.id === edgeId);
     return edge?.from || '';
   }
 
   getEdgeToNode(edgeId: string): string {
-    const edge = this.edges().find(e => e.id === edgeId);
+    const edge = this.edges().find((e) => e.id === edgeId);
     return edge?.to || '';
   }
 
@@ -868,7 +923,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
       y,
       label: this.getNodeLabelFromIndex(counter),
       isStart: false,
-      isEnd: false
+      isEnd: false,
     };
 
     this.nodes.set([...this.nodes(), newNode]);
@@ -885,7 +940,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
       from: fromId,
       to: toId,
       weight: this.edgeWeight(),
-      direction: this.edgeDirection() // Default is now bidirectional
+      direction: this.edgeDirection(), // Default is now bidirectional
     };
 
     this.edges.set([...this.edges(), newEdge]);
@@ -895,7 +950,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
 
   updateEdge(edgeId: string) {
     const edges = this.edges();
-    const edgeIndex = edges.findIndex(e => e.id === edgeId);
+    const edgeIndex = edges.findIndex((e) => e.id === edgeId);
     if (edgeIndex === -1) return;
 
     const newWeight = this.edgeWeight();
@@ -911,7 +966,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     updatedEdges[edgeIndex] = {
       ...updatedEdges[edgeIndex],
       weight: newWeight,
-      direction: newDirection
+      direction: newDirection,
     };
 
     this.edges.set(updatedEdges);
@@ -945,7 +1000,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
         const currentPan = this.panOffset();
         this.panOffset.set({
           x: currentPan.x + deltaX,
-          y: currentPan.y + deltaY
+          y: currentPan.y + deltaY,
         });
         this.panStartPos.set({ x: screenX, y: screenY });
         this.drawGraph();
@@ -968,7 +1023,11 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
 
       // Check if hovering over a node
       const hoveredNode = this.getNodeAt(x, y);
-      if (hoveredNode && this.creatingEdge().from !== null && hoveredNode.id !== this.creatingEdge().from) {
+      if (
+        hoveredNode &&
+        this.creatingEdge().from !== null &&
+        hoveredNode.id !== this.creatingEdge().from
+      ) {
         this.hoveredNode.set(hoveredNode.id);
       } else {
         this.hoveredNode.set(null);
@@ -980,20 +1039,20 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     const draggingId = this.draggingNode();
     if (draggingId && currentMode === 'move' && !this.isPanning()) {
       const nodes = this.nodes();
-      const nodeIndex = nodes.findIndex(n => n.id === draggingId);
+      const nodeIndex = nodes.findIndex((n) => n.id === draggingId);
       if (nodeIndex !== -1) {
         const updatedNodes = [...nodes];
         const nodeRadius = 25;
         // Constrain to canvas bounds (in world coordinates)
-        const maxX = (canvas.width / this.zoomLevel()) - this.panOffset().x - nodeRadius;
-        const maxY = (canvas.height / this.zoomLevel()) - this.panOffset().y - nodeRadius;
+        const maxX = canvas.width / this.zoomLevel() - this.panOffset().x - nodeRadius;
+        const maxY = canvas.height / this.zoomLevel() - this.panOffset().y - nodeRadius;
         const minX = -this.panOffset().x + nodeRadius;
         const minY = -this.panOffset().y + nodeRadius;
 
         updatedNodes[nodeIndex] = {
           ...updatedNodes[nodeIndex],
           x: Math.max(minX, Math.min(maxX, x)),
-          y: Math.max(minY, Math.min(maxY, y))
+          y: Math.max(minY, Math.min(maxY, y)),
         };
         this.nodes.set(updatedNodes);
         this.drawGraph();
@@ -1049,10 +1108,14 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
         const selected = new Set(this.selectedNodes());
         const nodeRadius = this.nodeRadius();
 
-        nodes.forEach(node => {
+        nodes.forEach((node) => {
           // Check if node center is inside selection rectangle
-          if (node.x >= minX - nodeRadius && node.x <= maxX + nodeRadius &&
-              node.y >= minY - nodeRadius && node.y <= maxY + nodeRadius) {
+          if (
+            node.x >= minX - nodeRadius &&
+            node.x <= maxX + nodeRadius &&
+            node.y >= minY - nodeRadius &&
+            node.y <= maxY + nodeRadius
+          ) {
             if (event.ctrlKey || event.shiftKey) {
               // Toggle selection
               if (selected.has(node.id)) {
@@ -1088,8 +1151,8 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
   }
 
   deleteNode(nodeId: string) {
-    this.nodes.set(this.nodes().filter(n => n.id !== nodeId));
-    this.edges.set(this.edges().filter(e => e.from !== nodeId && e.to !== nodeId));
+    this.nodes.set(this.nodes().filter((n) => n.id !== nodeId));
+    this.edges.set(this.edges().filter((e) => e.from !== nodeId && e.to !== nodeId));
 
     if (this.startNode() === nodeId) this.startNode.set(null);
     if (this.endNode() === nodeId) this.endNode.set(null);
@@ -1098,7 +1161,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
   }
 
   deleteEdge(edgeId: string) {
-    this.edges.set(this.edges().filter(e => e.id !== edgeId));
+    this.edges.set(this.edges().filter((e) => e.id !== edgeId));
     this.selectedEdge.set(null);
     this.showEdgeConfig.set(false);
     this.drawGraph();
@@ -1106,10 +1169,10 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
 
   setStartNode(nodeId: string) {
     const nodes = this.nodes();
-    const updatedNodes = nodes.map(n => ({
+    const updatedNodes = nodes.map((n) => ({
       ...n,
       isStart: n.id === nodeId,
-      isEnd: n.id === this.endNode() ? true : false
+      isEnd: n.id === this.endNode() ? true : false,
     }));
     this.nodes.set(updatedNodes);
     this.startNode.set(nodeId);
@@ -1118,10 +1181,10 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
 
   setEndNode(nodeId: string) {
     const nodes = this.nodes();
-    const updatedNodes = nodes.map(n => ({
+    const updatedNodes = nodes.map((n) => ({
       ...n,
       isEnd: n.id === nodeId,
-      isStart: n.id === this.startNode() ? true : false
+      isStart: n.id === this.startNode() ? true : false,
     }));
     this.nodes.set(updatedNodes);
     this.endNode.set(nodeId);
@@ -1137,7 +1200,10 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
 
     // Save context and apply zoom/pan transformations
     this.ctx.save();
-    this.ctx.translate(this.panOffset().x * this.zoomLevel(), this.panOffset().y * this.zoomLevel());
+    this.ctx.translate(
+      this.panOffset().x * this.zoomLevel(),
+      this.panOffset().y * this.zoomLevel()
+    );
     this.ctx.scale(this.zoomLevel(), this.zoomLevel());
 
     const nodes = this.nodes();
@@ -1150,7 +1216,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
 
     // Group edges by node pairs to calculate curve index
     const edgeGroups = new Map<string, GraphEdge[]>();
-    edges.forEach(edge => {
+    edges.forEach((edge) => {
       // Create a key for the edge pair (order-independent, use sorted node IDs)
       const nodePair = [edge.from, edge.to].sort().join('-');
 
@@ -1161,40 +1227,57 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     });
 
     // Draw edges
-    edges.forEach(edge => {
-      const fromNode = nodes.find(n => n.id === edge.from);
-      const toNode = nodes.find(n => n.id === edge.to);
+    edges.forEach((edge) => {
+      const fromNode = nodes.find((n) => n.id === edge.from);
+      const toNode = nodes.find((n) => n.id === edge.to);
       if (!fromNode || !toNode) return;
 
       // Check if edge is part of shortest path
-      const isHighlighted = pathResult?.path && Array.isArray(pathResult.path) && pathResult.path.some((nodeId: string, index: number) => {
-        const nextId = pathResult.path[index + 1];
-        if (!nextId) return false;
-        // Check both directions for bidirectional edges
-        return (edge.from === nodeId && edge.to === nextId) ||
-               (edge.direction === 'bidirectional' && edge.from === nextId && edge.to === nodeId) ||
-               (edge.direction === 'bidirectional' && edge.from === nodeId && edge.to === nextId);
-      });
+      const isHighlighted =
+        pathResult?.path &&
+        Array.isArray(pathResult.path) &&
+        pathResult.path.some((nodeId: string, index: number) => {
+          const nextId = pathResult.path[index + 1];
+          if (!nextId) return false;
+          // Check both directions for bidirectional edges
+          return (
+            (edge.from === nodeId && edge.to === nextId) ||
+            (edge.direction === 'bidirectional' && edge.from === nextId && edge.to === nodeId) ||
+            (edge.direction === 'bidirectional' && edge.from === nodeId && edge.to === nextId)
+          );
+        });
 
       // Check if edge is highlighted from step
-      const isStepHighlighted = highlightedStepEdge &&
+      const isStepHighlighted =
+        highlightedStepEdge &&
         ((edge.from === highlightedStepEdge.from && edge.to === highlightedStepEdge.to) ||
-         (edge.direction === 'bidirectional' && edge.from === highlightedStepEdge.to && edge.to === highlightedStepEdge.from));
+          (edge.direction === 'bidirectional' &&
+            edge.from === highlightedStepEdge.to &&
+            edge.to === highlightedStepEdge.from));
 
       // Find edge index in its group to determine curve
       const nodePair = [edge.from, edge.to].sort().join('-');
       const group = edgeGroups.get(nodePair) || [];
       // Sort edges by ID to ensure consistent ordering
       const sortedGroup = [...group].sort((a, b) => a.id.localeCompare(b.id));
-      const edgeIndex = sortedGroup.findIndex(e => e.id === edge.id);
+      const edgeIndex = sortedGroup.findIndex((e) => e.id === edge.id);
       const isCurved = group.length > 1 && edgeIndex > 0; // First edge is straight, others are curved
 
-      this.drawEdge(fromNode, toNode, edge, isHighlighted || false, selectedEdgeId === edge.id, isStepHighlighted || false, isCurved, edgeIndex);
+      this.drawEdge(
+        fromNode,
+        toNode,
+        edge,
+        isHighlighted || false,
+        selectedEdgeId === edge.id,
+        isStepHighlighted || false,
+        isCurved,
+        edgeIndex
+      );
     });
 
     // Draw creating edge (temporary edge while dragging)
     if (creating.from) {
-      const fromNode = nodes.find(n => n.id === creating.from);
+      const fromNode = nodes.find((n) => n.id === creating.from);
       const mousePos = this.mousePosition();
       if (fromNode && mousePos) {
         this.drawTemporaryEdge(fromNode, mousePos);
@@ -1204,9 +1287,11 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     // Draw nodes
     const highlightedStepNode = this.highlightedStepNode();
     const selectedNodes = this.selectedNodes();
-    nodes.forEach(node => {
+    nodes.forEach((node) => {
       const isSelected = selectedNodeId === node.id || selectedNodes.has(node.id);
-      const isInPath = pathResult?.path && Array.isArray(pathResult.path) && pathResult.path.includes(node.id) || false;
+      const isInPath =
+        (pathResult?.path && Array.isArray(pathResult.path) && pathResult.path.includes(node.id)) ||
+        false;
       const isStepHighlighted = highlightedStepNode === node.id;
 
       // Get color from algorithm results
@@ -1247,7 +1332,16 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-  drawEdge(from: GraphNode, to: GraphNode, edge: GraphEdge, isHighlighted: boolean, isSelected: boolean, isStepHighlighted: boolean = false, isCurved: boolean = false, curveIndex: number = 0) {
+  drawEdge(
+    from: GraphNode,
+    to: GraphNode,
+    edge: GraphEdge,
+    isHighlighted: boolean,
+    isSelected: boolean,
+    isStepHighlighted: boolean = false,
+    isCurved: boolean = false,
+    curveIndex: number = 0
+  ) {
     if (!this.ctx) return;
 
     const animationProgress = this.animationProgress();
@@ -1267,9 +1361,9 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     // Draw edge line with animation - step highlight takes priority (red)
     if (isStepHighlighted) {
       // Animated red edge for step highlight
-      const edgeIntensity = 0.6 + (animationProgress * 0.4);
+      const edgeIntensity = 0.6 + animationProgress * 0.4;
       this.ctx.strokeStyle = this.adjustColorIntensity('#F44336', edgeIntensity);
-      this.ctx.lineWidth = 3 + (animationProgress * 3); // Animate from 3 to 6
+      this.ctx.lineWidth = 3 + animationProgress * 3; // Animate from 3 to 6
 
       // Add glow effect
       this.ctx.shadowBlur = 15 * animationProgress;
@@ -1297,7 +1391,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
       const perpendicularAngle = angle + Math.PI / 2;
       // Alternate curve direction: first curved edge goes up, second goes down, etc.
       const curveDirection = curveIndex % 2 === 0 ? 1 : -1;
-      const curveOffset = 40 * curveDirection * Math.ceil((curveIndex) / 2);
+      const curveOffset = 40 * curveDirection * Math.ceil(curveIndex / 2);
 
       // Control point for quadratic curve (perpendicular to the line)
       const midX = (from.x + to.x) / 2;
@@ -1382,7 +1476,13 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     this.drawArrowForContext(this.ctx, x, y, angle, isHighlighted);
   }
 
-  drawArrowForContext(ctx: CanvasRenderingContext2D, x: number, y: number, angle: number, isHighlighted: boolean = false) {
+  drawArrowForContext(
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    angle: number,
+    isHighlighted: boolean = false
+  ) {
     const arrowLength = this.edgeArrowSize();
     const arrowWidth = this.edgeArrowSize() / 2;
 
@@ -1421,7 +1521,13 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     this.ctx.setLineDash([]);
   }
 
-  drawNode(node: GraphNode, isSelected: boolean, isInPath: boolean, isStepHighlighted: boolean = false, customColor?: string | null) {
+  drawNode(
+    node: GraphNode,
+    isSelected: boolean,
+    isInPath: boolean,
+    isStepHighlighted: boolean = false,
+    customColor?: string | null
+  ) {
     if (!this.ctx) return;
 
     const radius = this.nodeRadius();
@@ -1429,7 +1535,10 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     const endNode = this.endNode();
     const isStartHighlighted = startNode === node.id;
     const isEndHighlighted = endNode === node.id;
-    const isHovered = this.hoveredNode() === node.id && this.mode() === 'add-edge' && this.creatingEdge().from !== null;
+    const isHovered =
+      this.hoveredNode() === node.id &&
+      this.mode() === 'add-edge' &&
+      this.creatingEdge().from !== null;
     const visitedNodes = this.visitedNodes();
     const processingNodes = this.processingNodes();
     const animationProgress = this.animationProgress();
@@ -1441,7 +1550,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     // Calculate animated radius for pulse effect
     let animatedRadius = radius;
     if (isStepHighlighted || isProcessing) {
-      const pulseScale = 1 + (animationProgress * 0.3); // Pulse from 1.0 to 1.3
+      const pulseScale = 1 + animationProgress * 0.3; // Pulse from 1.0 to 1.3
       animatedRadius = radius * pulseScale;
     }
 
@@ -1473,19 +1582,19 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
       '#FFEB3B', // Yellow
       '#795548', // Brown
       '#E91E63', // Pink
-      '#607D8B'  // Blue Grey
+      '#607D8B', // Blue Grey
     ];
 
     // Step highlight takes priority (red with animation)
     if (isStepHighlighted) {
       // Animate color intensity
       const baseColor = '#F44336';
-      const intensity = 0.7 + (animationProgress * 0.3);
+      const intensity = 0.7 + animationProgress * 0.3;
       this.ctx.fillStyle = this.adjustColorIntensity(baseColor, intensity);
     } else if (isProcessing) {
       // Processing nodes get blue pulse
       const baseColor = '#2196F3';
-      const intensity = 0.6 + (animationProgress * 0.4);
+      const intensity = 0.6 + animationProgress * 0.4;
       this.ctx.fillStyle = this.adjustColorIntensity(baseColor, intensity);
     } else if (customColor) {
       // Use custom color from algorithm result (graph coloring, components, cycles)
@@ -1511,9 +1620,9 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
 
     if (isStepHighlighted) {
       // Animated red border for step highlight
-      const borderIntensity = 0.5 + (animationProgress * 0.5);
+      const borderIntensity = 0.5 + animationProgress * 0.5;
       this.ctx.strokeStyle = this.adjustColorIntensity('#D32F2F', borderIntensity);
-      this.ctx.lineWidth = 3 + (animationProgress * 4); // Animate from 3 to 7
+      this.ctx.lineWidth = 3 + animationProgress * 4; // Animate from 3 to 7
     } else if (isSelected) {
       this.ctx.strokeStyle = '#FF5722';
       this.ctx.lineWidth = 3;
@@ -1665,8 +1774,16 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
       // Graph coloring: assign random colors to nodes based on color index
       // Map color indices to random colors from palette
       const colorPalette = [
-        '#2196F3', '#4CAF50', '#FF9800', '#9C27B0', '#F44336',
-        '#00BCD4', '#FFEB3B', '#795548', '#E91E63', '#607D8B'
+        '#2196F3',
+        '#4CAF50',
+        '#FF9800',
+        '#9C27B0',
+        '#F44336',
+        '#00BCD4',
+        '#FFEB3B',
+        '#795548',
+        '#E91E63',
+        '#607D8B',
       ];
 
       // Create a mapping from color index to random color
@@ -1680,7 +1797,10 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
           let randomColorIndex: number;
           do {
             randomColorIndex = Math.floor(Math.random() * colorPalette.length);
-          } while (usedColorIndices.has(randomColorIndex) && usedColorIndices.size < colorPalette.length);
+          } while (
+            usedColorIndices.has(randomColorIndex) &&
+            usedColorIndices.size < colorPalette.length
+          );
 
           // If all colors are used, reuse them
           if (usedColorIndices.size >= colorPalette.length) {
@@ -1704,12 +1824,20 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     } else if (algorithm === 'connected-components' && result.components) {
       // Connected components: assign different colors to each component
       const colorPalette = [
-        '#2196F3', '#4CAF50', '#FF9800', '#9C27B0', '#F44336',
-        '#00BCD4', '#FFEB3B', '#795548', '#E91E63', '#607D8B'
+        '#2196F3',
+        '#4CAF50',
+        '#FF9800',
+        '#9C27B0',
+        '#F44336',
+        '#00BCD4',
+        '#FFEB3B',
+        '#795548',
+        '#E91E63',
+        '#607D8B',
       ];
       const componentColorMap: Record<string, number> = {};
       result.components.forEach((component: string[], index: number) => {
-        component.forEach(nodeId => {
+        component.forEach((nodeId) => {
           componentColorMap[nodeId] = index;
         });
       });
@@ -1718,12 +1846,20 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     } else if (algorithm === 'scc' && result.components) {
       // Strongly connected components: assign different colors to each SCC
       const colorPalette = [
-        '#2196F3', '#4CAF50', '#FF9800', '#9C27B0', '#F44336',
-        '#00BCD4', '#FFEB3B', '#795548', '#E91E63', '#607D8B'
+        '#2196F3',
+        '#4CAF50',
+        '#FF9800',
+        '#9C27B0',
+        '#F44336',
+        '#00BCD4',
+        '#FFEB3B',
+        '#795548',
+        '#E91E63',
+        '#607D8B',
       ];
       const sccColorMap: Record<string, number> = {};
       result.components.forEach((component: string[], index: number) => {
-        component.forEach(nodeId => {
+        component.forEach((nodeId) => {
           sccColorMap[nodeId] = index;
         });
       });
@@ -1732,12 +1868,20 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     } else if (algorithm === 'cycle-detection' && result.cycles) {
       // Cycle detection: assign different colors to nodes in different cycles
       const colorPalette = [
-        '#2196F3', '#4CAF50', '#FF9800', '#9C27B0', '#F44336',
-        '#00BCD4', '#FFEB3B', '#795548', '#E91E63', '#607D8B'
+        '#2196F3',
+        '#4CAF50',
+        '#FF9800',
+        '#9C27B0',
+        '#F44336',
+        '#00BCD4',
+        '#FFEB3B',
+        '#795548',
+        '#E91E63',
+        '#607D8B',
       ];
       const cycleColorMap: Record<string, number> = {};
       result.cycles.forEach((cycle: string[], index: number) => {
-        cycle.forEach(nodeId => {
+        cycle.forEach((nodeId) => {
           if (!cycleColorMap[nodeId]) {
             cycleColorMap[nodeId] = index;
           }
@@ -1759,7 +1903,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
       '#FFEB3B', // Yellow
       '#795548', // Brown
       '#E91E63', // Pink
-      '#607D8B'  // Blue Grey
+      '#607D8B', // Blue Grey
     ];
 
     // Check graph coloring result
@@ -1786,8 +1930,16 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
   getColorLegend(): Array<{ colorIndex: number; color: string; nodes: string[] }> {
     const nodeColors = this.nodeColors();
     const colorPalette = [
-      '#2196F3', '#4CAF50', '#FF9800', '#9C27B0', '#F44336',
-      '#00BCD4', '#FFEB3B', '#795548', '#E91E63', '#607D8B'
+      '#2196F3',
+      '#4CAF50',
+      '#FF9800',
+      '#9C27B0',
+      '#F44336',
+      '#00BCD4',
+      '#FFEB3B',
+      '#795548',
+      '#E91E63',
+      '#607D8B',
     ];
 
     const legend: Record<number, string[]> = {};
@@ -1802,23 +1954,39 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
       .map(([colorIndex, nodes]) => ({
         colorIndex: parseInt(colorIndex),
         color: colorPalette[parseInt(colorIndex) % colorPalette.length],
-        nodes: nodes.map(id => this.getNodeLabel(id))
+        nodes: nodes.map((id) => this.getNodeLabel(id)),
       }))
       .sort((a, b) => a.colorIndex - b.colorIndex);
   }
 
   getComponentColor(index: number): string {
     const colorPalette = [
-      '#2196F3', '#4CAF50', '#FF9800', '#9C27B0', '#F44336',
-      '#00BCD4', '#FFEB3B', '#795548', '#E91E63', '#607D8B'
+      '#2196F3',
+      '#4CAF50',
+      '#FF9800',
+      '#9C27B0',
+      '#F44336',
+      '#00BCD4',
+      '#FFEB3B',
+      '#795548',
+      '#E91E63',
+      '#607D8B',
     ];
     return colorPalette[index % colorPalette.length];
   }
 
   getCycleColor(index: number): string {
     const colorPalette = [
-      '#2196F3', '#4CAF50', '#FF9800', '#9C27B0', '#F44336',
-      '#00BCD4', '#FFEB3B', '#795548', '#E91E63', '#607D8B'
+      '#2196F3',
+      '#4CAF50',
+      '#FF9800',
+      '#9C27B0',
+      '#F44336',
+      '#00BCD4',
+      '#FFEB3B',
+      '#795548',
+      '#E91E63',
+      '#607D8B',
     ];
     return colorPalette[index % colorPalette.length];
   }
@@ -1848,15 +2016,16 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
 
     // Update highlighted edge
     if (step.edge) {
-      const edge = this.edges().find(e => e.id === step.edge);
+      const edge = this.edges().find((e) => e.id === step.edge);
       if (edge) {
         this.highlightedStepEdge.set({ from: edge.from, to: edge.to });
       }
     } else if (step.current && step.updated) {
       // Check if there's an edge between current and updated
-      const edge = this.edges().find(e =>
-        (e.from === step.current && e.to === step.updated) ||
-        (e.to === step.current && e.from === step.updated)
+      const edge = this.edges().find(
+        (e) =>
+          (e.from === step.current && e.to === step.updated) ||
+          (e.to === step.current && e.from === step.updated)
       );
       if (edge) {
         this.highlightedStepEdge.set({ from: edge.from, to: edge.to });
@@ -1882,9 +2051,15 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     }
 
     // For connected components, update component colors in real-time
-    if ((this.selectedAlgorithm() === 'connected-components' || this.selectedAlgorithm() === 'scc') && step.component) {
+    if (
+      (this.selectedAlgorithm() === 'connected-components' || this.selectedAlgorithm() === 'scc') &&
+      step.component
+    ) {
       const componentColors = { ...this.componentColors() };
-      const componentIndex = step.componentIndex !== undefined ? step.componentIndex : Object.keys(componentColors).length;
+      const componentIndex =
+        step.componentIndex !== undefined
+          ? step.componentIndex
+          : Object.keys(componentColors).length;
       if (Array.isArray(step.component)) {
         step.component.forEach((nodeId: string) => {
           componentColors[nodeId] = componentIndex;
@@ -1913,7 +2088,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
       const pulse = progress < 0.5 ? progress * 2 : 1 - (progress - 0.5) * 2;
       this.animationProgress.set(pulse);
       this.drawGraph();
-      await new Promise(resolve => setTimeout(resolve, stepDuration));
+      await new Promise((resolve) => setTimeout(resolve, stepDuration));
     }
 
     // Reset progress
@@ -1966,12 +2141,12 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     const nodeId = this.selectedNode();
     if (nodeId) {
       const nodes = this.nodes();
-      const nodeIndex = nodes.findIndex(n => n.id === nodeId);
+      const nodeIndex = nodes.findIndex((n) => n.id === nodeId);
       if (nodeIndex !== -1) {
         const updatedNodes = [...nodes];
         updatedNodes[nodeIndex] = {
           ...updatedNodes[nodeIndex],
-          label: this.nodeLabel()
+          label: this.nodeLabel(),
         };
         this.nodes.set(updatedNodes);
         this.drawGraph();
@@ -1981,16 +2156,13 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
   }
 
   getNodeLabel(nodeId: string): string {
-    const node = this.nodes().find(n => n.id === nodeId);
+    const node = this.nodes().find((n) => n.id === nodeId);
     return node ? node.label : nodeId;
   }
 
   // Graph Input Methods
   addInputEdge() {
-    this.inputEdges.set([
-      ...this.inputEdges(),
-      { from: '', to: '', weight: 1, directed: false }
-    ]);
+    this.inputEdges.set([...this.inputEdges(), { from: '', to: '', weight: 1, directed: false }]);
   }
 
   removeInputEdge(index: number) {
@@ -2011,7 +2183,10 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     }
 
     // Parse nodes
-    const nodeNames = nodesText.split(',').map(n => n.trim()).filter(n => n.length > 0);
+    const nodeNames = nodesText
+      .split(',')
+      .map((n) => n.trim())
+      .filter((n) => n.length > 0);
     const uniqueNodes = [...new Set(nodeNames)];
 
     if (uniqueNodes.length === 0) {
@@ -2033,7 +2208,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
         y: centerY + radius * Math.sin(angle),
         label: name,
         isStart: false,
-        isEnd: false
+        isEnd: false,
       };
     });
     this.previewNodes.set(previewNodes);
@@ -2052,7 +2227,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
           from: from,
           to: to,
           weight: edge.weight || 1,
-          direction: edge.directed ? 'forward' : 'bidirectional'
+          direction: edge.directed ? 'forward' : 'bidirectional',
         });
       }
     });
@@ -2069,7 +2244,10 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
       return errors;
     }
 
-    const nodeNames = nodesText.split(',').map(n => n.trim()).filter(n => n.length > 0);
+    const nodeNames = nodesText
+      .split(',')
+      .map((n) => n.trim())
+      .filter((n) => n.length > 0);
     const nodeSet = new Set(nodeNames);
 
     this.inputEdges().forEach((edge, index) => {
@@ -2116,9 +2294,9 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     const edges = this.previewEdges();
 
     // Draw edges
-    edges.forEach(edge => {
-      const fromNode = nodes.find(n => n.id === edge.from);
-      const toNode = nodes.find(n => n.id === edge.to);
+    edges.forEach((edge) => {
+      const fromNode = nodes.find((n) => n.id === edge.from);
+      const toNode = nodes.find((n) => n.id === edge.to);
       if (!fromNode || !toNode) return;
 
       const dx = toNode.x - fromNode.x;
@@ -2157,7 +2335,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     });
 
     // Draw nodes
-    nodes.forEach(node => {
+    nodes.forEach((node) => {
       const radius = 20;
       ctx.beginPath();
       ctx.arc(node.x, node.y, radius, 0, 2 * Math.PI);
@@ -2209,7 +2387,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
         y: centerY + radius * Math.sin(angle),
         label: previewNode.label,
         isStart: false,
-        isEnd: false
+        isEnd: false,
       };
     });
 
@@ -2219,7 +2397,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
       from: previewEdge.from,
       to: previewEdge.to,
       weight: previewEdge.weight,
-      direction: previewEdge.direction
+      direction: previewEdge.direction,
     }));
 
     this.nodes.set(newNodes);
@@ -2236,7 +2414,6 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
 
     this.drawGraph();
   }
-
 
   applyTemplate(template: any) {
     if (template && template.template) {
@@ -2257,21 +2434,31 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
 
   getDensitySpacing(density: 'sparse' | 'medium' | 'dense' | 'very-dense' = 'medium'): number {
     switch (density) {
-      case 'sparse': return 200;
-      case 'medium': return 150;
-      case 'dense': return 100;
-      case 'very-dense': return 70;
-      default: return 150;
+      case 'sparse':
+        return 200;
+      case 'medium':
+        return 150;
+      case 'dense':
+        return 100;
+      case 'very-dense':
+        return 70;
+      default:
+        return 150;
     }
   }
 
   getDensityRadius(density: 'sparse' | 'medium' | 'dense' | 'very-dense' = 'medium'): number {
     switch (density) {
-      case 'sparse': return 180;
-      case 'medium': return 120;
-      case 'dense': return 80;
-      case 'very-dense': return 60;
-      default: return 120;
+      case 'sparse':
+        return 180;
+      case 'medium':
+        return 120;
+      case 'dense':
+        return 80;
+      case 'very-dense':
+        return 60;
+      default:
+        return 120;
     }
   }
 
@@ -2279,7 +2466,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     const config: any = {
       edgeWeight: 1,
       direction: 'bidirectional' as const,
-      density: 'medium' as const
+      density: 'medium' as const,
     };
 
     // Set default config based on template type
@@ -2358,7 +2545,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
           x: startX + i * spacing,
           y: startY,
           label: nodeId,
-          isStart: i === 0
+          isStart: i === 0,
         });
         if (i > 0) {
           edges.push({ from: String.fromCharCode(65 + i - 1), to: nodeId });
@@ -2375,7 +2562,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
           x: centerX + radius * Math.cos(angle),
           y: centerY + radius * Math.sin(angle),
           label: nodeId,
-          isStart: i === 0
+          isStart: i === 0,
         });
         const nextId = String.fromCharCode(65 + ((i + 1) % nodeCount));
         edges.push({ from: nodeId, to: nextId });
@@ -2389,7 +2576,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
         x: centerX,
         y: centerY,
         label: 'A',
-        isStart: true
+        isStart: true,
       });
       // Outer nodes
       for (let i = 0; i < outerCount; i++) {
@@ -2400,7 +2587,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
           x: centerX + radius * Math.cos(angle),
           y: centerY + radius * Math.sin(angle),
           label: nodeId,
-          isStart: false
+          isStart: false,
         });
         edges.push({ from: 'A', to: nodeId });
       }
@@ -2415,7 +2602,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
           x: centerX + radius * Math.cos(angle),
           y: centerY + radius * Math.sin(angle),
           label: nodeId,
-          isStart: i === 0
+          isStart: i === 0,
         });
       }
       // All pairs
@@ -2423,7 +2610,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
         for (let j = i + 1; j < nodeCount; j++) {
           edges.push({
             from: String.fromCharCode(65 + i),
-            to: String.fromCharCode(65 + j)
+            to: String.fromCharCode(65 + j),
           });
         }
       }
@@ -2443,7 +2630,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
             x: startX + col * spacing,
             y: startY + row * spacing,
             label: nodeId,
-            isStart: row === 0 && col === 0
+            isStart: row === 0 && col === 0,
           });
           nodeIndex++;
         }
@@ -2455,13 +2642,13 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
           if (col < cols - 1) {
             edges.push({
               from: String.fromCharCode(65 + currentIndex),
-              to: String.fromCharCode(65 + currentIndex + 1)
+              to: String.fromCharCode(65 + currentIndex + 1),
             });
           }
           if (row < rows - 1) {
             edges.push({
               from: String.fromCharCode(65 + currentIndex),
-              to: String.fromCharCode(65 + currentIndex + cols)
+              to: String.fromCharCode(65 + currentIndex + cols),
             });
           }
         }
@@ -2469,9 +2656,9 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     }
 
     // Draw edges
-    edges.forEach(edge => {
-      const fromNode = nodes.find(n => n.id === edge.from);
-      const toNode = nodes.find(n => n.id === edge.to);
+    edges.forEach((edge) => {
+      const fromNode = nodes.find((n) => n.id === edge.from);
+      const toNode = nodes.find((n) => n.id === edge.to);
       if (!fromNode || !toNode) return;
 
       const dx = toNode.x - fromNode.x;
@@ -2511,7 +2698,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     });
 
     // Draw nodes
-    nodes.forEach(node => {
+    nodes.forEach((node) => {
       ctx.beginPath();
       ctx.arc(node.x, node.y, nodeRadius, 0, 2 * Math.PI);
 
@@ -2539,7 +2726,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     const config = this.templateConfig();
     this.templateConfig.set({
       ...config,
-      edgeWeight: value
+      edgeWeight: value,
     });
   }
 
@@ -2547,7 +2734,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     const config = this.templateConfig();
     this.templateConfig.set({
       ...config,
-      direction: value
+      direction: value,
     });
   }
 
@@ -2555,7 +2742,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     const config = this.templateConfig();
     this.templateConfig.set({
       ...config,
-      nodeCount: value
+      nodeCount: value,
     });
   }
 
@@ -2563,7 +2750,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     const config = this.templateConfig();
     this.templateConfig.set({
       ...config,
-      nodeCount: value + 1 // Total nodes = outer + 1 center
+      nodeCount: value + 1, // Total nodes = outer + 1 center
     });
   }
 
@@ -2571,17 +2758,22 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     const config = this.templateConfig();
     this.templateConfig.set({
       ...config,
-      density: value
+      density: value,
     });
   }
 
   getDensityValue(density: string): number {
     switch (density) {
-      case 'sparse': return 1;
-      case 'medium': return 3;
-      case 'dense': return 4;
-      case 'very-dense': return 5;
-      default: return 3;
+      case 'sparse':
+        return 1;
+      case 'medium':
+        return 3;
+      case 'dense':
+        return 4;
+      case 'very-dense':
+        return 5;
+      default:
+        return 3;
     }
   }
 
@@ -2610,36 +2802,83 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
 
     // Apply the template with config (don't clear existing graph)
     if (template.name === 'Đồ thị đầy đủ' && config.nodeCount) {
-      this.createCompleteGraph(config.nodeCount, config.edgeWeight || 1, config.direction || 'bidirectional', radius);
+      this.createCompleteGraph(
+        config.nodeCount,
+        config.edgeWeight || 1,
+        config.direction || 'bidirectional',
+        radius
+      );
     } else if (template.name === 'Sao' && config.nodeCount) {
-      this.createStarGraph(config.nodeCount - 1, config.edgeWeight || 1, config.direction || 'bidirectional', radius);
+      this.createStarGraph(
+        config.nodeCount - 1,
+        config.edgeWeight || 1,
+        config.direction || 'bidirectional',
+        radius
+      );
     } else if (template.name === 'Vòng tròn' && config.nodeCount) {
-      this.createCycleGraph(config.nodeCount, config.edgeWeight || 1, config.direction || 'bidirectional', radius);
+      this.createCycleGraph(
+        config.nodeCount,
+        config.edgeWeight || 1,
+        config.direction || 'bidirectional',
+        radius
+      );
     } else if (template.name === 'Đường thẳng' && config.nodeCount) {
-      this.createLinearGraph(config.nodeCount, config.edgeWeight || 1, config.direction || 'bidirectional', spacing);
+      this.createLinearGraph(
+        config.nodeCount,
+        config.edgeWeight || 1,
+        config.direction || 'bidirectional',
+        spacing
+      );
     } else if (template.name.includes('Lưới')) {
       // Grid templates
       const rows = template.name.includes('2x2') ? 2 : template.name.includes('3x3') ? 3 : 4;
       const cols = template.name.includes('2x2') ? 2 : template.name.includes('3x3') ? 3 : 4;
-      this.createGridGraph(rows, cols, config.edgeWeight || 1, config.direction || 'bidirectional', spacing);
+      this.createGridGraph(
+        rows,
+        cols,
+        config.edgeWeight || 1,
+        config.direction || 'bidirectional',
+        spacing
+      );
     } else if (template.name === 'Cây nhị phân') {
-      this.createBinaryTree(3, config.edgeWeight || 1, config.direction || 'bidirectional', spacing);
+      this.createBinaryTree(
+        3,
+        config.edgeWeight || 1,
+        config.direction || 'bidirectional',
+        spacing
+      );
     } else if (template.name === 'Đồ thị hai phía') {
-      this.createBipartiteGraph(3, 3, config.edgeWeight || 1, config.direction || 'bidirectional', spacing);
+      this.createBipartiteGraph(
+        3,
+        3,
+        config.edgeWeight || 1,
+        config.direction || 'bidirectional',
+        spacing
+      );
     } else if (template.name === 'Đồ thị hình thang') {
-      this.createTrapezoidGraph(5, config.edgeWeight || 1, config.direction || 'bidirectional', spacing);
+      this.createTrapezoidGraph(
+        5,
+        config.edgeWeight || 1,
+        config.direction || 'bidirectional',
+        spacing
+      );
     } else if (template.name === 'Đồ thị bánh xe') {
       this.createWheelGraph(6, config.edgeWeight || 1, config.direction || 'bidirectional', radius);
     } else if (template.name === 'Đồ thị lục giác') {
-      this.createHexagonalGraph(3, config.edgeWeight || 1, config.direction || 'bidirectional', spacing);
+      this.createHexagonalGraph(
+        3,
+        config.edgeWeight || 1,
+        config.direction || 'bidirectional',
+        spacing
+      );
     } else {
       // For default, just apply and update edges
       template.template();
       const edges = this.edges();
-      const updatedEdges = edges.map(edge => ({
+      const updatedEdges = edges.map((edge) => ({
         ...edge,
         weight: config.edgeWeight || edge.weight,
-        direction: config.direction || edge.direction
+        direction: config.direction || edge.direction,
       }));
       this.edges.set(updatedEdges);
     }
@@ -2719,12 +2958,14 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     }
 
     // Find bounding box of all nodes
-    let minX = Infinity, maxX = -Infinity;
-    let minY = Infinity, maxY = -Infinity;
+    let minX = Infinity,
+      maxX = -Infinity;
+    let minY = Infinity,
+      maxY = -Infinity;
     const nodeRadius = this.nodeRadius();
     const padding = 50; // Padding around nodes
 
-    nodes.forEach(node => {
+    nodes.forEach((node) => {
       minX = Math.min(minX, node.x - nodeRadius);
       maxX = Math.max(maxX, node.x + nodeRadius);
       minY = Math.min(minY, node.y - nodeRadius);
@@ -2752,8 +2993,8 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     const centerY = (minY + maxY) / 2;
 
     // Calculate pan offset to center graph
-    const newPanX = (canvasWidth / 2) / newZoom - centerX;
-    const newPanY = (canvasHeight / 2) / newZoom - centerY;
+    const newPanX = canvasWidth / 2 / newZoom - centerX;
+    const newPanY = canvasHeight / 2 / newZoom - centerY;
 
     this.zoomLevel.set(newZoom);
     this.panOffset.set({ x: newPanX, y: newPanY });
@@ -2778,16 +3019,16 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
 
     // Check left/right bounds
     if (screenX < padding) {
-      newPanX = (padding / zoom) - worldX;
+      newPanX = padding / zoom - worldX;
     } else if (screenX > canvas.width - padding) {
-      newPanX = ((canvas.width - padding) / zoom) - worldX;
+      newPanX = (canvas.width - padding) / zoom - worldX;
     }
 
     // Check top/bottom bounds
     if (screenY < padding) {
-      newPanY = (padding / zoom) - worldY;
+      newPanY = padding / zoom - worldY;
     } else if (screenY > canvas.height - padding) {
-      newPanY = ((canvas.height - padding) / zoom) - worldY;
+      newPanY = (canvas.height - padding) / zoom - worldY;
     }
 
     // Only update if pan changed
@@ -2810,7 +3051,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     // Highlight current node if exists
     if (step.current) {
       this.highlightedStepNode.set(step.current);
-      const node = this.nodes().find(n => n.id === step.current);
+      const node = this.nodes().find((n) => n.id === step.current);
       if (node) {
         this.panToElement(node.x, node.y);
       }
@@ -2819,7 +3060,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     // Highlight updated node if exists
     if (step.updated) {
       this.highlightedStepNode.set(step.updated);
-      const node = this.nodes().find(n => n.id === step.updated);
+      const node = this.nodes().find((n) => n.id === step.updated);
       if (node) {
         this.panToElement(node.x, node.y);
       }
@@ -2828,8 +3069,8 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     // Highlight edge if considering an edge
     if (step.from && step.to) {
       this.highlightedStepEdge.set({ from: step.from, to: step.to });
-      const fromNode = this.nodes().find(n => n.id === step.from);
-      const toNode = this.nodes().find(n => n.id === step.to);
+      const fromNode = this.nodes().find((n) => n.id === step.from);
+      const toNode = this.nodes().find((n) => n.id === step.to);
       if (fromNode && toNode) {
         // Pan to center of edge
         const centerX = (fromNode.x + toNode.x) / 2;
@@ -2841,7 +3082,12 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     this.drawGraph();
   }
 
-  createLinearGraph(nodeCount: number = 4, edgeWeight: number = 1, direction: 'forward' | 'backward' | 'bidirectional' = 'bidirectional', spacing: number = 150) {
+  createLinearGraph(
+    nodeCount: number = 4,
+    edgeWeight: number = 1,
+    direction: 'forward' | 'backward' | 'bidirectional' = 'bidirectional',
+    spacing: number = 150
+  ) {
     const existingNodes = this.nodes();
     const existingEdges = this.edges();
     const nodes: GraphNode[] = [...existingNodes];
@@ -2854,7 +3100,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
 
     if (existingNodes.length > 0) {
       // Find the rightmost node and start from there
-      const rightmostNode = existingNodes.reduce((max, node) => node.x > max.x ? node : max);
+      const rightmostNode = existingNodes.reduce((max, node) => (node.x > max.x ? node : max));
       startX = rightmostNode.x + spacing * 2;
       startY = rightmostNode.y;
     } else {
@@ -2876,7 +3122,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
         y: startY,
         label: nodeId,
         isStart: i === 0 && existingNodes.length === 0,
-        isEnd: i === nodeCount - 1 && existingNodes.length === 0
+        isEnd: i === nodeCount - 1 && existingNodes.length === 0,
       });
 
       if (i > 0) {
@@ -2886,7 +3132,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
           from: prevNodeId,
           to: nodeId,
           weight: edgeWeight,
-          direction: direction
+          direction: direction,
         });
         nodeIndex++;
       }
@@ -2903,7 +3149,12 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     this.drawGraph();
   }
 
-  createCycleGraph(nodeCount: number = 4, edgeWeight: number = 1, direction: 'forward' | 'backward' | 'bidirectional' = 'bidirectional', radius: number = 120) {
+  createCycleGraph(
+    nodeCount: number = 4,
+    edgeWeight: number = 1,
+    direction: 'forward' | 'backward' | 'bidirectional' = 'bidirectional',
+    radius: number = 120
+  ) {
     const existingNodes = this.nodes();
     const existingEdges = this.edges();
     const nodes: GraphNode[] = [...existingNodes];
@@ -2916,7 +3167,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
 
     if (existingNodes.length > 0) {
       // Find the rightmost node and place cycle to the right
-      const rightmostNode = existingNodes.reduce((max, node) => node.x > max.x ? node : max);
+      const rightmostNode = existingNodes.reduce((max, node) => (node.x > max.x ? node : max));
       centerX = rightmostNode.x + radius * 2;
       centerY = rightmostNode.y;
     } else {
@@ -2938,7 +3189,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
         y: centerY + radius * Math.sin(angle),
         label: nodeId,
         isStart: i === 0 && existingNodes.length === 0,
-        isEnd: i === Math.floor(nodeCount / 2) && existingNodes.length === 0
+        isEnd: i === Math.floor(nodeCount / 2) && existingNodes.length === 0,
       });
 
       const nextId = this.getNodeLabelFromIndex(currentMaxCounter + ((i + 1) % nodeCount));
@@ -2947,7 +3198,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
         from: nodeId,
         to: nextId,
         weight: edgeWeight,
-        direction: direction
+        direction: direction,
       });
     }
 
@@ -2962,7 +3213,12 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     this.drawGraph();
   }
 
-  createStarGraph(outerNodeCount: number = 5, edgeWeight: number = 1, direction: 'forward' | 'backward' | 'bidirectional' = 'bidirectional', radius: number = 120) {
+  createStarGraph(
+    outerNodeCount: number = 5,
+    edgeWeight: number = 1,
+    direction: 'forward' | 'backward' | 'bidirectional' = 'bidirectional',
+    radius: number = 120
+  ) {
     const existingNodes = this.nodes();
     const existingEdges = this.edges();
     const nodes: GraphNode[] = [...existingNodes];
@@ -2975,7 +3231,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
 
     if (existingNodes.length > 0) {
       // Find the rightmost node and place star to the right
-      const rightmostNode = existingNodes.reduce((max, node) => node.x > max.x ? node : max);
+      const rightmostNode = existingNodes.reduce((max, node) => (node.x > max.x ? node : max));
       centerX = rightmostNode.x + radius * 2;
       centerY = rightmostNode.y;
     } else {
@@ -2996,7 +3252,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
       y: centerY,
       label: centerNodeId,
       isStart: existingNodes.length === 0,
-      isEnd: false
+      isEnd: false,
     });
 
     // Outer nodes
@@ -3009,7 +3265,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
         y: centerY + radius * Math.sin(angle),
         label: nodeId,
         isStart: false,
-        isEnd: i === Math.floor(outerNodeCount / 2) && existingNodes.length === 0
+        isEnd: i === Math.floor(outerNodeCount / 2) && existingNodes.length === 0,
       });
 
       edges.push({
@@ -3017,7 +3273,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
         from: centerNodeId,
         to: nodeId,
         weight: edgeWeight,
-        direction: direction
+        direction: direction,
       });
     }
 
@@ -3027,13 +3283,20 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     this.edgeCounter.set(this.edgeCounter() + outerNodeCount);
     if (existingNodes.length === 0) {
       this.startNode.set(centerNodeId);
-      const endNodeId = this.getNodeLabelFromIndex(currentMaxCounter + 1 + Math.floor(outerNodeCount / 2));
+      const endNodeId = this.getNodeLabelFromIndex(
+        currentMaxCounter + 1 + Math.floor(outerNodeCount / 2)
+      );
       this.endNode.set(endNodeId);
     }
     this.drawGraph();
   }
 
-  createCompleteGraph(nodeCount: number = 5, edgeWeight: number = 1, direction: 'forward' | 'backward' | 'bidirectional' = 'bidirectional', radius: number = 120) {
+  createCompleteGraph(
+    nodeCount: number = 5,
+    edgeWeight: number = 1,
+    direction: 'forward' | 'backward' | 'bidirectional' = 'bidirectional',
+    radius: number = 120
+  ) {
     const existingNodes = this.nodes();
     const existingEdges = this.edges();
     const nodes: GraphNode[] = [...existingNodes];
@@ -3046,7 +3309,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
 
     if (existingNodes.length > 0) {
       // Find the rightmost node and place complete graph to the right
-      const rightmostNode = existingNodes.reduce((max, node) => node.x > max.x ? node : max);
+      const rightmostNode = existingNodes.reduce((max, node) => (node.x > max.x ? node : max));
       centerX = rightmostNode.x + radius * 2;
       centerY = rightmostNode.y;
     } else {
@@ -3069,7 +3332,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
         y: centerY + radius * Math.sin(angle),
         label: nodeId,
         isStart: i === 0 && existingNodes.length === 0,
-        isEnd: i === Math.floor(nodeCount / 2) && existingNodes.length === 0
+        isEnd: i === Math.floor(nodeCount / 2) && existingNodes.length === 0,
       });
     }
 
@@ -3084,7 +3347,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
           from: fromNodeId,
           to: toNodeId,
           weight: edgeWeight,
-          direction: direction
+          direction: direction,
         });
         edgeIndex++;
       }
@@ -3101,7 +3364,13 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     this.drawGraph();
   }
 
-  createGridGraph(rows: number, cols: number, edgeWeight: number = 1, direction: 'forward' | 'backward' | 'bidirectional' = 'bidirectional', spacing: number = 120) {
+  createGridGraph(
+    rows: number,
+    cols: number,
+    edgeWeight: number = 1,
+    direction: 'forward' | 'backward' | 'bidirectional' = 'bidirectional',
+    spacing: number = 120
+  ) {
     const existingNodes = this.nodes();
     const existingEdges = this.edges();
     const nodes: GraphNode[] = [...existingNodes];
@@ -3114,7 +3383,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
 
     if (existingNodes.length > 0) {
       // Find the rightmost node and place grid to the right
-      const rightmostNode = existingNodes.reduce((max, node) => node.x > max.x ? node : max);
+      const rightmostNode = existingNodes.reduce((max, node) => (node.x > max.x ? node : max));
       startX = rightmostNode.x + spacing * 2;
       startY = rightmostNode.y;
     } else {
@@ -3137,7 +3406,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
           y: startY + row * spacing,
           label: nodeId,
           isStart: row === 0 && col === 0 && existingNodes.length === 0,
-          isEnd: row === rows - 1 && col === cols - 1 && existingNodes.length === 0
+          isEnd: row === rows - 1 && col === cols - 1 && existingNodes.length === 0,
         });
         nodeIndex++;
       }
@@ -3158,7 +3427,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
             from: currentNode,
             to: rightNode,
             weight: edgeWeight,
-            direction: direction
+            direction: direction,
           });
           edgeIndex++;
         }
@@ -3172,7 +3441,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
             from: currentNode,
             to: downNode,
             weight: edgeWeight,
-            direction: direction
+            direction: direction,
           });
           edgeIndex++;
         }
@@ -3190,7 +3459,12 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     this.drawGraph();
   }
 
-  createBinaryTree(levels: number = 3, edgeWeight: number = 1, direction: 'forward' | 'backward' | 'bidirectional' = 'bidirectional', spacing: number = 120) {
+  createBinaryTree(
+    levels: number = 3,
+    edgeWeight: number = 1,
+    direction: 'forward' | 'backward' | 'bidirectional' = 'bidirectional',
+    spacing: number = 120
+  ) {
     const existingNodes = this.nodes();
     const existingEdges = this.edges();
     const nodes: GraphNode[] = [...existingNodes];
@@ -3201,7 +3475,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     let startY = 100;
 
     if (existingNodes.length > 0) {
-      const rightmostNode = existingNodes.reduce((max, node) => node.x > max.x ? node : max);
+      const rightmostNode = existingNodes.reduce((max, node) => (node.x > max.x ? node : max));
       startX = rightmostNode.x + spacing * 3;
       startY = rightmostNode.y;
     } else {
@@ -3231,7 +3505,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
           y,
           label: nodeId,
           isStart: level === 0 && i === 0 && existingNodes.length === 0,
-          isEnd: level === levels - 1 && i === nodesInLevel - 1 && existingNodes.length === 0
+          isEnd: level === levels - 1 && i === nodesInLevel - 1 && existingNodes.length === 0,
         });
 
         nodeMap[level * 100 + i] = nodeId;
@@ -3244,7 +3518,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
             from: parentId,
             to: nodeId,
             weight: edgeWeight,
-            direction: direction
+            direction: direction,
           });
         }
         nodeIndex++;
@@ -3262,7 +3536,13 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     this.drawGraph();
   }
 
-  createBipartiteGraph(leftCount: number = 3, rightCount: number = 3, edgeWeight: number = 1, direction: 'forward' | 'backward' | 'bidirectional' = 'bidirectional', spacing: number = 120) {
+  createBipartiteGraph(
+    leftCount: number = 3,
+    rightCount: number = 3,
+    edgeWeight: number = 1,
+    direction: 'forward' | 'backward' | 'bidirectional' = 'bidirectional',
+    spacing: number = 120
+  ) {
     const existingNodes = this.nodes();
     const existingEdges = this.edges();
     const nodes: GraphNode[] = [...existingNodes];
@@ -3273,7 +3553,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     let centerY = canvas ? canvas.height / 2 : 300;
 
     if (existingNodes.length > 0) {
-      const rightmostNode = existingNodes.reduce((max, node) => node.x > max.x ? node : max);
+      const rightmostNode = existingNodes.reduce((max, node) => (node.x > max.x ? node : max));
       centerX = rightmostNode.x + spacing * 2;
       centerY = rightmostNode.y;
     } else {
@@ -3294,9 +3574,9 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
       nodes.push({
         id: nodeId,
         x: centerX - spacing,
-        y: centerY - (leftCount - 1) * spacing / 2 + i * spacing,
+        y: centerY - ((leftCount - 1) * spacing) / 2 + i * spacing,
         label: nodeId,
-        isStart: i === 0 && existingNodes.length === 0
+        isStart: i === 0 && existingNodes.length === 0,
       });
     }
 
@@ -3307,9 +3587,9 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
       nodes.push({
         id: nodeId,
         x: centerX + spacing,
-        y: centerY - (rightCount - 1) * spacing / 2 + i * spacing,
+        y: centerY - ((rightCount - 1) * spacing) / 2 + i * spacing,
         label: nodeId,
-        isEnd: i === 0 && existingNodes.length === 0
+        isEnd: i === 0 && existingNodes.length === 0,
       });
     }
 
@@ -3322,7 +3602,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
           from: leftNode,
           to: rightNode,
           weight: edgeWeight,
-          direction: direction
+          direction: direction,
         });
         edgeIndex++;
       }
@@ -3339,7 +3619,12 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     this.drawGraph();
   }
 
-  createTrapezoidGraph(nodeCount: number = 5, edgeWeight: number = 1, direction: 'forward' | 'backward' | 'bidirectional' = 'bidirectional', spacing: number = 120) {
+  createTrapezoidGraph(
+    nodeCount: number = 5,
+    edgeWeight: number = 1,
+    direction: 'forward' | 'backward' | 'bidirectional' = 'bidirectional',
+    spacing: number = 120
+  ) {
     const existingNodes = this.nodes();
     const existingEdges = this.edges();
     const nodes: GraphNode[] = [...existingNodes];
@@ -3350,7 +3635,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     let centerY = canvas ? canvas.height / 2 : 300;
 
     if (existingNodes.length > 0) {
-      const rightmostNode = existingNodes.reduce((max, node) => node.x > max.x ? node : max);
+      const rightmostNode = existingNodes.reduce((max, node) => (node.x > max.x ? node : max));
       centerX = rightmostNode.x + spacing * 2;
       centerY = rightmostNode.y;
     } else {
@@ -3370,10 +3655,10 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
       topNodes.push(nodeId);
       nodes.push({
         id: nodeId,
-        x: centerX - (nodeCount - 1) * spacing / 2 + i * spacing,
+        x: centerX - ((nodeCount - 1) * spacing) / 2 + i * spacing,
         y: centerY - spacing,
         label: nodeId,
-        isStart: i === 0 && existingNodes.length === 0
+        isStart: i === 0 && existingNodes.length === 0,
       });
     }
 
@@ -3383,10 +3668,10 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
       bottomNodes.push(nodeId);
       nodes.push({
         id: nodeId,
-        x: centerX - (nodeCount - 1) * spacing / 2 + i * spacing,
+        x: centerX - ((nodeCount - 1) * spacing) / 2 + i * spacing,
         y: centerY + spacing,
         label: nodeId,
-        isEnd: i === 0 && existingNodes.length === 0
+        isEnd: i === 0 && existingNodes.length === 0,
       });
     }
 
@@ -3398,7 +3683,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
         from: topNodes[i],
         to: bottomNodes[i],
         weight: edgeWeight,
-        direction: direction
+        direction: direction,
       });
       edgeIndex++;
     }
@@ -3410,7 +3695,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
         from: topNodes[i],
         to: topNodes[i + 1],
         weight: edgeWeight,
-        direction: direction
+        direction: direction,
       });
       edgeIndex++;
       edges.push({
@@ -3418,7 +3703,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
         from: bottomNodes[i],
         to: bottomNodes[i + 1],
         weight: edgeWeight,
-        direction: direction
+        direction: direction,
       });
       edgeIndex++;
     }
@@ -3434,7 +3719,12 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     this.drawGraph();
   }
 
-  createWheelGraph(outerNodeCount: number = 6, edgeWeight: number = 1, direction: 'forward' | 'backward' | 'bidirectional' = 'bidirectional', radius: number = 120) {
+  createWheelGraph(
+    outerNodeCount: number = 6,
+    edgeWeight: number = 1,
+    direction: 'forward' | 'backward' | 'bidirectional' = 'bidirectional',
+    radius: number = 120
+  ) {
     const existingNodes = this.nodes();
     const existingEdges = this.edges();
     const nodes: GraphNode[] = [...existingNodes];
@@ -3445,7 +3735,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     let centerY = canvas ? canvas.height / 2 : 300;
 
     if (existingNodes.length > 0) {
-      const rightmostNode = existingNodes.reduce((max, node) => node.x > max.x ? node : max);
+      const rightmostNode = existingNodes.reduce((max, node) => (node.x > max.x ? node : max));
       centerX = rightmostNode.x + radius * 2;
       centerY = rightmostNode.y;
     } else {
@@ -3465,7 +3755,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
       x: centerX,
       y: centerY,
       label: centerNodeId,
-      isStart: existingNodes.length === 0
+      isStart: existingNodes.length === 0,
     });
 
     // Outer nodes
@@ -3478,7 +3768,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
         x: centerX + radius * Math.cos(angle),
         y: centerY + radius * Math.sin(angle),
         label: nodeId,
-        isEnd: i === 0 && existingNodes.length === 0
+        isEnd: i === 0 && existingNodes.length === 0,
       });
 
       // Connect to center
@@ -3487,7 +3777,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
         from: centerNodeId,
         to: nodeId,
         weight: edgeWeight,
-        direction: direction
+        direction: direction,
       });
     }
 
@@ -3499,7 +3789,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
         from: outerNodes[i],
         to: outerNodes[(i + 1) % outerNodeCount],
         weight: edgeWeight,
-        direction: direction
+        direction: direction,
       });
       edgeIndex++;
     }
@@ -3515,7 +3805,12 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     this.drawGraph();
   }
 
-  createHexagonalGraph(hexCount: number = 3, edgeWeight: number = 1, direction: 'forward' | 'backward' | 'bidirectional' = 'bidirectional', spacing: number = 120) {
+  createHexagonalGraph(
+    hexCount: number = 3,
+    edgeWeight: number = 1,
+    direction: 'forward' | 'backward' | 'bidirectional' = 'bidirectional',
+    spacing: number = 120
+  ) {
     const existingNodes = this.nodes();
     const existingEdges = this.edges();
     const nodes: GraphNode[] = [...existingNodes];
@@ -3526,7 +3821,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     let startY = canvas ? canvas.height / 2 : 300;
 
     if (existingNodes.length > 0) {
-      const rightmostNode = existingNodes.reduce((max, node) => node.x > max.x ? node : max);
+      const rightmostNode = existingNodes.reduce((max, node) => (node.x > max.x ? node : max));
       startX = rightmostNode.x + spacing * 2;
       startY = rightmostNode.y;
     } else {
@@ -3554,7 +3849,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
           y: startY + ringRadius * Math.sin(angle),
           label: nodeId,
           isStart: ring === 0 && i === 0 && existingNodes.length === 0,
-          isEnd: ring === hexCount - 1 && i === nodesInRing - 1 && existingNodes.length === 0
+          isEnd: ring === hexCount - 1 && i === nodesInRing - 1 && existingNodes.length === 0,
         });
         nodeIndex++;
       }
@@ -3573,7 +3868,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
             from: node1.id,
             to: node2.id,
             weight: edgeWeight,
-            direction: direction
+            direction: direction,
           });
           edgeIndex++;
         }
@@ -3595,22 +3890,27 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
   getMatrixExportData(): string {
     const nodes = this.nodes();
     const edges = this.edges();
-    const nodeIds = nodes.map(n => n.id);
+    const nodeIds = nodes.map((n) => n.id);
     const matrix: (number | string)[][] = [];
 
     // Header row
     matrix.push(['', ...nodeIds]);
 
     // Data rows
-    nodeIds.forEach(fromId => {
+    nodeIds.forEach((fromId) => {
       const row: (number | string)[] = [fromId];
-      nodeIds.forEach(toId => {
+      nodeIds.forEach((toId) => {
         if (fromId === toId) {
           row.push(0);
         } else {
-          const edge = edges.find(e =>
-            (e.from === fromId && e.to === toId && (e.direction === 'forward' || e.direction === 'bidirectional')) ||
-            (e.to === fromId && e.from === toId && (e.direction === 'backward' || e.direction === 'bidirectional'))
+          const edge = edges.find(
+            (e) =>
+              (e.from === fromId &&
+                e.to === toId &&
+                (e.direction === 'forward' || e.direction === 'bidirectional')) ||
+              (e.to === fromId &&
+                e.from === toId &&
+                (e.direction === 'backward' || e.direction === 'bidirectional'))
           );
           row.push(edge ? edge.weight : '∞');
         }
@@ -3618,7 +3918,7 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
       matrix.push(row);
     });
 
-    return matrix.map(row => row.join('\t')).join('\n');
+    return matrix.map((row) => row.join('\t')).join('\n');
   }
 
   downloadGraphFile() {
@@ -3635,22 +3935,22 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
       origin: {
         nodeId: originNode?.id || '',
         x: originNode?.x || 0,
-        y: originNode?.y || 0
+        y: originNode?.y || 0,
       },
-      nodes: nodes.map(node => ({
+      nodes: nodes.map((node) => ({
         id: node.id,
         label: node.label,
         relativeX: originNode ? node.x - originNode.x : node.x,
-        relativeY: originNode ? node.y - originNode.y : node.y
+        relativeY: originNode ? node.y - originNode.y : node.y,
       })),
-      edges: edges.map(edge => ({
+      edges: edges.map((edge) => ({
         from: edge.from,
         to: edge.to,
         weight: edge.weight,
-        direction: edge.direction
+        direction: edge.direction,
       })),
       startNode: this.startNode(),
-      endNode: this.endNode()
+      endNode: this.endNode(),
     };
 
     // Combine matrix data with metadata
@@ -3768,7 +4068,7 @@ ${JSON.stringify(metadata, null, 2)}`;
               x: originX + (nodeData.relativeX || 0),
               y: originY + (nodeData.relativeY || 0),
               isStart: nodeData.id === metadata.startNode,
-              isEnd: nodeData.id === metadata.endNode
+              isEnd: nodeData.id === metadata.endNode,
             }));
 
             this.nodes.set(restoredNodes);
@@ -3816,9 +4116,10 @@ ${JSON.stringify(metadata, null, 2)}`;
         matrixData = data.substring(0, metadataIndex).trim();
       }
       // Remove comment lines
-      const lines = matrixData.split('\n')
-        .filter(l => l.trim() && !l.trim().startsWith('#'))
-        .map(l => l.trim());
+      const lines = matrixData
+        .split('\n')
+        .filter((l) => l.trim() && !l.trim().startsWith('#'))
+        .map((l) => l.trim());
 
       if (lines.length < 2) {
         alert('Dữ liệu không hợp lệ. Vui lòng kiểm tra định dạng ma trận.');
@@ -3831,14 +4132,14 @@ ${JSON.stringify(metadata, null, 2)}`;
 
       // Try tab-separated first
       if (headerLine.includes('\t')) {
-        nodeIds = headerLine.split('\t').filter(h => h && h.trim() !== '');
+        nodeIds = headerLine.split('\t').filter((h) => h && h.trim() !== '');
         // Remove first empty element if exists
         if (nodeIds[0] === '' || nodeIds[0].trim() === '') {
           nodeIds.shift();
         }
       } else {
         // Space-separated
-        nodeIds = headerLine.split(/\s+/).filter(h => h && h.trim() !== '');
+        nodeIds = headerLine.split(/\s+/).filter((h) => h && h.trim() !== '');
         // Remove first empty element if exists
         if (nodeIds[0] === '' || nodeIds[0].trim() === '') {
           nodeIds.shift();
@@ -3866,20 +4167,23 @@ ${JSON.stringify(metadata, null, 2)}`;
           y: centerY + radius * Math.sin(angle),
           label: id.trim(),
           isStart: index === 0,
-          isEnd: index === nodeIds.length - 1
+          isEnd: index === nodeIds.length - 1,
         });
       });
 
       // Parse matrix rows and detect symmetric (bidirectional) vs asymmetric (directed) edges
-      const edgeMap = new Map<string, { from: string; to: string; weight: number; isSymmetric: boolean }>();
+      const edgeMap = new Map<
+        string,
+        { from: string; to: string; weight: number; isSymmetric: boolean }
+      >();
 
       for (let i = 1; i < lines.length; i++) {
         let row: string[];
         // Support both tab and space separated
         if (lines[i].includes('\t')) {
-          row = lines[i].split('\t').filter(r => r !== '');
+          row = lines[i].split('\t').filter((r) => r !== '');
         } else {
-          row = lines[i].split(/\s+/).filter(r => r && r.trim() !== '');
+          row = lines[i].split(/\s+/).filter((r) => r && r.trim() !== '');
         }
 
         if (row.length === 0) continue;
@@ -3889,7 +4193,12 @@ ${JSON.stringify(metadata, null, 2)}`;
           const toId = nodeIds[j - 1].trim();
           const weightStr = row[j].trim();
 
-          if (weightStr !== '∞' && weightStr !== 'Infinity' && weightStr !== '0' && fromId !== toId) {
+          if (
+            weightStr !== '∞' &&
+            weightStr !== 'Infinity' &&
+            weightStr !== '0' &&
+            fromId !== toId
+          ) {
             const weight = parseFloat(weightStr);
             if (!isNaN(weight) && weight > 0) {
               const edgeKey = `${fromId}-${toId}`;
@@ -3907,7 +4216,7 @@ ${JSON.stringify(metadata, null, 2)}`;
                   from: fromId,
                   to: toId,
                   weight: weight,
-                  isSymmetric: false
+                  isSymmetric: false,
                 });
               }
             }
@@ -3934,7 +4243,7 @@ ${JSON.stringify(metadata, null, 2)}`;
           from: edgeData.from,
           to: edgeData.to,
           weight: edgeData.weight,
-          direction: isBidirectional ? 'bidirectional' : 'forward'
+          direction: isBidirectional ? 'bidirectional' : 'forward',
         });
       });
 
@@ -3953,4 +4262,3 @@ ${JSON.stringify(metadata, null, 2)}`;
     }
   }
 }
-

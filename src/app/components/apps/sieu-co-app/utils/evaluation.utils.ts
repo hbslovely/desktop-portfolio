@@ -15,7 +15,7 @@ const HORSE_PST: number[][] = [
   [2, 10, 12, 16, 14, 16, 12, 10, 2],
   [4, 6, 12, 14, 14, 14, 12, 6, 4],
   [-3, 2, 4, 6, 10, 6, 4, 2, -3],
-  [0, -3, 5, 4, 2, 4, 5, -3, 0]
+  [0, -3, 5, 4, 2, 4, 5, -3, 0],
 ];
 
 /**
@@ -31,7 +31,7 @@ const CANNON_PST: number[][] = [
   [2, 4, 6, 5, 4, 5, 6, 4, 2],
   [1, 2, 4, 3, 3, 3, 4, 2, 1],
   [0, 1, 0, 0, 0, 0, 0, 1, 0],
-  [0, 0, 1, 0, -1, 0, 1, 0, 0]
+  [0, 0, 1, 0, -1, 0, 1, 0, 0],
 ];
 
 /**
@@ -47,7 +47,7 @@ const ROOK_PST: number[][] = [
   [2, 3, 3, 4, 6, 4, 3, 3, 2],
   [0, 0, 0, 3, 4, 3, 0, 0, 0],
   [0, 0, 0, 1, 2, 1, 0, 0, 0],
-  [0, 0, 0, 2, 4, 2, 0, 0, 0]
+  [0, 0, 0, 2, 4, 2, 0, 0, 0],
 ];
 
 /**
@@ -63,7 +63,7 @@ const PAWN_PST: number[][] = [
   [4, 8, 12, 14, 16, 14, 12, 8, 4],
   [10, 18, 22, 28, 32, 28, 22, 18, 10],
   [15, 25, 30, 40, 50, 40, 30, 25, 15],
-  [20, 30, 40, 50, 60, 50, 40, 30, 20]
+  [20, 30, 40, 50, 60, 50, 40, 30, 20],
 ];
 
 /**
@@ -73,7 +73,7 @@ const PST_MAP: { [key: number]: number[][] } = {
   [PieceType.HORSE]: HORSE_PST,
   [PieceType.CANNON]: CANNON_PST,
   [PieceType.ROOK]: ROOK_PST,
-  [PieceType.PAWN]: PAWN_PST
+  [PieceType.PAWN]: PAWN_PST,
 };
 
 /**
@@ -89,7 +89,7 @@ export function getPositionalBonus(
   if (!pst) return 0;
 
   // Đảo hàng cho quân Đỏ
-  const actualRow = color === PieceColor.RED ? (9 - row) : row;
+  const actualRow = color === PieceColor.RED ? 9 - row : row;
   return pst[actualRow][col] * 3;
 }
 
@@ -101,9 +101,18 @@ export function evaluateKingSafety(board: Board, color: PieceColor): number {
   if (!kingPos) return -10000;
 
   let safety = 0;
-  const advisorPositions = color === PieceColor.RED
-    ? [[8, 3], [8, 5], [9, 4]]
-    : [[1, 3], [1, 5], [0, 4]];
+  const advisorPositions =
+    color === PieceColor.RED
+      ? [
+          [8, 3],
+          [8, 5],
+          [9, 4],
+        ]
+      : [
+          [1, 3],
+          [1, 5],
+          [0, 4],
+        ];
 
   // Kiểm tra Sĩ bảo vệ
   for (const [r, c] of advisorPositions) {
@@ -114,9 +123,22 @@ export function evaluateKingSafety(board: Board, color: PieceColor): number {
   }
 
   // Kiểm tra Tượng bảo vệ
-  const elephantPositions = color === PieceColor.RED
-    ? [[7, 2], [7, 6], [9, 0], [9, 4], [9, 8]]
-    : [[2, 2], [2, 6], [0, 0], [0, 4], [0, 8]];
+  const elephantPositions =
+    color === PieceColor.RED
+      ? [
+          [7, 2],
+          [7, 6],
+          [9, 0],
+          [9, 4],
+          [9, 8],
+        ]
+      : [
+          [2, 2],
+          [2, 6],
+          [0, 0],
+          [0, 4],
+          [0, 8],
+        ];
 
   for (const [r, c] of elephantPositions) {
     const piece = getPieceAt(board, { row: r, col: c });

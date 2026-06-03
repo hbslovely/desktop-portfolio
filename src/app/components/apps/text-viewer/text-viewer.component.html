@@ -6,14 +6,14 @@
       <span class="file-name">{{ fileName }}</span>
       <span class="file-type" *ngIf="fileType">.{{ fileType }}</span>
     </div>
-    
+
     <div class="toolbar-actions">
       <button class="action-btn" (click)="reload()" title="Reload">
         <i class="pi pi-refresh"></i>
       </button>
     </div>
   </div>
-  
+
   <!-- Content Area -->
   <div class="content-area">
     <!-- Loading State -->
@@ -21,7 +21,7 @@
       <i class="pi pi-spin pi-spinner"></i>
       <p>Loading {{ fileName }}...</p>
     </div>
-    
+
     <!-- Error State -->
     <div *ngIf="hasError()" class="error-state">
       <i class="pi pi-exclamation-triangle"></i>
@@ -32,12 +32,12 @@
         Try Again
       </button>
     </div>
-    
+
     <!-- Content Display -->
     <div *ngIf="!isLoading() && !hasError()" class="content-display">
       <!-- Plain Text -->
       <pre *ngIf="!isMarkdown()" class="text-content">{{ content() }}</pre>
-      
+
       <!-- Markdown Content -->
       <div *ngIf="isMarkdown()" class="markdown-content" [innerHTML]="formattedContent()"></div>
     </div>

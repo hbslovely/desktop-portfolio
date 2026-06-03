@@ -16,7 +16,8 @@ import { generateAllMoves, isCheckmate } from '../utils/move-validator.utils';
  */
 export class MinimaxAlgorithm extends BaseAlgorithm {
   readonly name = 'Minimax + Alpha-Beta';
-  readonly description = 'Thuật toán tìm kiếm cây với cắt tỉa alpha-beta. Cân bằng giữa độ sâu và tốc độ.';
+  readonly description =
+    'Thuật toán tìm kiếm cây với cắt tỉa alpha-beta. Cân bằng giữa độ sâu và tốc độ.';
   readonly defaultDepth = 4;
 
   private transpositionTable: Map<string, { depth: number; score: number }> = new Map();
@@ -47,14 +48,7 @@ export class MinimaxAlgorithm extends BaseAlgorithm {
       const newBoard = this.makeMove(board, move);
       const enemyColor = color === PieceColor.RED ? PieceColor.BLACK : PieceColor.RED;
 
-      const score = this.minimax(
-        newBoard,
-        depth - 1,
-        alpha,
-        beta,
-        !isMaximizing,
-        enemyColor
-      );
+      const score = this.minimax(newBoard, depth - 1, alpha, beta, !isMaximizing, enemyColor);
 
       move.score = score;
 
@@ -92,7 +86,9 @@ export class MinimaxAlgorithm extends BaseAlgorithm {
 
     // Kiểm tra chiếu bí
     if (isCheckmate(board, color)) {
-      return isMaximizing ? -10000 + (this.config.maxDepth - depth) : 10000 - (this.config.maxDepth - depth);
+      return isMaximizing
+        ? -10000 + (this.config.maxDepth - depth)
+        : 10000 - (this.config.maxDepth - depth);
     }
 
     // Đạt độ sâu tối đa
@@ -152,5 +148,5 @@ export const MINIMAX_METADATA: AlgorithmMetadata = {
   description: 'Thuật toán tìm kiếm cây quyết định với cắt tỉa alpha-beta',
   author: 'System',
   version: '1.0.0',
-  complexity: 'O(b^d)'
+  complexity: 'O(b^d)',
 };

@@ -68,5 +68,5 @@ export const GREEDY_METADATA: AlgorithmMetadata = {
   description: 'Chọn nước đi tốt nhất ngay lập tức, không tính toán sâu',
   author: 'System',
   version: '1.0.0',
-  complexity: 'O(n)'
+  complexity: 'O(n)',
 };

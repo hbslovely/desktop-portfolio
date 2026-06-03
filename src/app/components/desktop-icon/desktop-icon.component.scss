@@ -42,7 +42,7 @@
   margin-bottom: 6px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
-  
+
   // Add subtle glow effect
   &::before {
     content: '';
@@ -53,26 +53,26 @@
     opacity: 0;
     transition: opacity 0.3s ease;
   }
-  
+
   .desktop-icon:hover &::before {
     opacity: 1;
   }
-  
+
   i {
     font-size: 36px;
     color: #ffffff;
-    text-shadow: 
+    text-shadow:
       0 2px 4px rgba(0, 0, 0, 0.4),
       0 1px 2px rgba(0, 0, 0, 0.3);
     filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
-  
+
   .desktop-icon:hover & i {
     transform: scale(1.1);
     filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
   }
-  
+
   img {
     width: 100%;
     height: 100%;
@@ -81,7 +81,7 @@
     filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
-  
+
   .desktop-icon:hover & img {
     transform: scale(1.1);
     filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
@@ -95,7 +95,7 @@
   line-height: 1.3;
   max-width: 100%;
   word-wrap: break-word;
-  text-shadow: 
+  text-shadow:
     0 2px 4px rgba(0, 0, 0, 0.8),
     0 1px 2px rgba(0, 0, 0, 0.6);
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -105,14 +105,14 @@
   transition: all 0.2s ease;
   background: rgba(0, 0, 0, 0.2);
   backdrop-filter: blur(4px);
-  
+
   .desktop-icon:hover & {
     background: rgba(0, 0, 0, 0.4);
-    text-shadow: 
+    text-shadow:
       0 2px 6px rgba(0, 0, 0, 0.9),
       0 1px 3px rgba(0, 0, 0, 0.7);
   }
-  
+
   .desktop-icon.selected & {
     background: rgba(0, 120, 212, 0.3);
     color: #ffffff;
@@ -147,7 +147,7 @@
   backdrop-filter: blur(20px);
   border: 1px solid rgba(0, 0, 0, 0.1);
   border-radius: 12px;
-  box-shadow: 
+  box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.2),
     0 4px 16px rgba(0, 0, 0, 0.15),
     inset 0 1px 0 rgba(255, 255, 255, 0.9);
@@ -195,7 +195,7 @@
 
   &.danger {
     color: #dc2626;
-    
+
     &:hover {
       background: linear-gradient(135deg, rgba(220, 38, 38, 0.1) 0%, rgba(239, 68, 68, 0.1) 100%);
       color: #dc2626;
@@ -208,7 +208,7 @@
     text-align: center;
     transition: transform 0.2s ease;
   }
-  
+
   &:hover i {
     transform: scale(1.1);
   }
@@ -228,21 +228,21 @@
 // Icon types specific styling
 .desktop-icon {
   // Application icons
-  &[data-type="application"] {
+  &[data-type='application'] {
     .icon-image i {
       color: #0078d4;
     }
   }
-  
+
   // Folder icons
-  &[data-type="folder"] {
+  &[data-type='folder'] {
     .icon-image i {
       color: #ffc107;
     }
   }
-  
+
   // File icons
-  &[data-type="file"] {
+  &[data-type='file'] {
     .icon-image i {
       color: #6c757d;
     }
@@ -253,19 +253,19 @@
 // Beautiful gradient icons for specific apps
 
 // Image Search App - Modern gradient icon with glassmorphism
-.desktop-icon[data-app-id="image-search"] {
+.desktop-icon[data-app-id='image-search'] {
   .icon-image {
     width: 52px;
     height: 52px;
     background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
     border-radius: 14px;
     position: relative;
-    box-shadow: 
+    box-shadow:
       0 4px 15px rgba(99, 102, 241, 0.4),
       0 2px 6px rgba(139, 92, 246, 0.3),
       inset 0 1px 0 rgba(255, 255, 255, 0.2);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    
+
     // Glassmorphism overlay
     &::before {
       content: '';
@@ -273,15 +273,15 @@
       inset: 0;
       border-radius: 14px;
       background: linear-gradient(
-        135deg, 
-        rgba(255, 255, 255, 0.25) 0%, 
+        135deg,
+        rgba(255, 255, 255, 0.25) 0%,
         rgba(255, 255, 255, 0.05) 50%,
         transparent 100%
       );
       opacity: 1;
       pointer-events: none;
     }
-    
+
     // Shine effect
     &::after {
       content: '';
@@ -299,7 +299,7 @@
       );
       pointer-events: none;
     }
-    
+
     i {
       font-size: 26px;
       color: white;
@@ -309,10 +309,10 @@
       z-index: 1;
     }
   }
-  
+
   &:hover .icon-image {
     transform: scale(1.08) translateY(-2px);
-    box-shadow: 
+    box-shadow:
       0 8px 25px rgba(99, 102, 241, 0.5),
       0 4px 10px rgba(139, 92, 246, 0.4),
       inset 0 1px 0 rgba(255, 255, 255, 0.3);
@@ -320,32 +320,32 @@
 }
 
 // Calculator App - Modern orange gradient
-.desktop-icon[data-app-id="calculator"] {
+.desktop-icon[data-app-id='calculator'] {
   .icon-image {
     width: 52px;
     height: 52px;
     background: linear-gradient(135deg, #f59e0b 0%, #f97316 50%, #ea580c 100%);
     border-radius: 14px;
     position: relative;
-    box-shadow: 
+    box-shadow:
       0 4px 15px rgba(245, 158, 11, 0.4),
       0 2px 6px rgba(249, 115, 22, 0.3),
       inset 0 1px 0 rgba(255, 255, 255, 0.2);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    
+
     &::before {
       content: '';
       position: absolute;
       inset: 0;
       border-radius: 14px;
       background: linear-gradient(
-        135deg, 
-        rgba(255, 255, 255, 0.25) 0%, 
+        135deg,
+        rgba(255, 255, 255, 0.25) 0%,
         rgba(255, 255, 255, 0.05) 50%,
         transparent 100%
       );
     }
-    
+
     &::after {
       content: '';
       position: absolute;
@@ -361,7 +361,7 @@
         transparent 100%
       );
     }
-    
+
     i {
       font-size: 26px;
       color: white;
@@ -370,42 +370,42 @@
       z-index: 1;
     }
   }
-  
+
   &:hover .icon-image {
     transform: scale(1.08) translateY(-2px);
-    box-shadow: 
+    box-shadow:
       0 8px 25px rgba(245, 158, 11, 0.5),
       0 4px 10px rgba(249, 115, 22, 0.4);
   }
 }
 
 // Tetris App - Modern teal gradient
-.desktop-icon[data-app-id="tetris"] {
+.desktop-icon[data-app-id='tetris'] {
   .icon-image {
     width: 52px;
     height: 52px;
     background: linear-gradient(135deg, #14b8a6 0%, #0d9488 50%, #0f766e 100%);
     border-radius: 14px;
     position: relative;
-    box-shadow: 
+    box-shadow:
       0 4px 15px rgba(20, 184, 166, 0.4),
       0 2px 6px rgba(13, 148, 136, 0.3),
       inset 0 1px 0 rgba(255, 255, 255, 0.2);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    
+
     &::before {
       content: '';
       position: absolute;
       inset: 0;
       border-radius: 14px;
       background: linear-gradient(
-        135deg, 
-        rgba(255, 255, 255, 0.25) 0%, 
+        135deg,
+        rgba(255, 255, 255, 0.25) 0%,
         rgba(255, 255, 255, 0.05) 50%,
         transparent 100%
       );
     }
-    
+
     &::after {
       content: '';
       position: absolute;
@@ -421,7 +421,7 @@
         transparent 100%
       );
     }
-    
+
     i {
       font-size: 26px;
       color: white;
@@ -430,45 +430,45 @@
       z-index: 1;
     }
   }
-  
+
   &:hover .icon-image {
     transform: scale(1.08) translateY(-2px);
-    box-shadow: 
+    box-shadow:
       0 8px 25px rgba(20, 184, 166, 0.5),
       0 4px 10px rgba(13, 148, 136, 0.4);
   }
 }
 
 // Chatbot App - Modern blue gradient with AI feel
-.desktop-icon[data-app-id="chatbot"] {
+.desktop-icon[data-app-id='chatbot'] {
   .icon-image {
     width: 52px;
     height: 52px;
     background: linear-gradient(135deg, #3b82f6 0%, #2563eb 50%, #1d4ed8 100%);
     border-radius: 14px;
     position: relative;
-    box-shadow: 
+    box-shadow:
       0 4px 15px rgba(59, 130, 246, 0.4),
       0 2px 6px rgba(37, 99, 235, 0.3),
       inset 0 1px 0 rgba(255, 255, 255, 0.2);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    
+
     // Animated pulse for AI feel
     animation: aiPulse 3s ease-in-out infinite;
-    
+
     &::before {
       content: '';
       position: absolute;
       inset: 0;
       border-radius: 14px;
       background: linear-gradient(
-        135deg, 
-        rgba(255, 255, 255, 0.25) 0%, 
+        135deg,
+        rgba(255, 255, 255, 0.25) 0%,
         rgba(255, 255, 255, 0.05) 50%,
         transparent 100%
       );
     }
-    
+
     &::after {
       content: '';
       position: absolute;
@@ -484,7 +484,7 @@
         transparent 100%
       );
     }
-    
+
     i {
       font-size: 26px;
       color: white;
@@ -493,25 +493,26 @@
       z-index: 1;
     }
   }
-  
+
   &:hover .icon-image {
     transform: scale(1.08) translateY(-2px);
     animation: none;
-    box-shadow: 
+    box-shadow:
       0 8px 25px rgba(59, 130, 246, 0.5),
       0 4px 10px rgba(37, 99, 235, 0.4);
   }
 }
 
 @keyframes aiPulse {
-  0%, 100% {
-    box-shadow: 
+  0%,
+  100% {
+    box-shadow:
       0 4px 15px rgba(59, 130, 246, 0.4),
       0 2px 6px rgba(37, 99, 235, 0.3),
       inset 0 1px 0 rgba(255, 255, 255, 0.2);
   }
   50% {
-    box-shadow: 
+    box-shadow:
       0 4px 20px rgba(59, 130, 246, 0.6),
       0 2px 8px rgba(37, 99, 235, 0.5),
       inset 0 1px 0 rgba(255, 255, 255, 0.3);
@@ -519,32 +520,32 @@
 }
 
 // Sieu Co (Chess) App - Elegant dark gradient
-.desktop-icon[data-app-id="sieu-co"] {
+.desktop-icon[data-app-id='sieu-co'] {
   .icon-image {
     width: 52px;
     height: 52px;
     background: linear-gradient(135deg, #334155 0%, #1e293b 50%, #0f172a 100%);
     border-radius: 14px;
     position: relative;
-    box-shadow: 
+    box-shadow:
       0 4px 15px rgba(30, 41, 59, 0.5),
       0 2px 6px rgba(15, 23, 42, 0.4),
       inset 0 1px 0 rgba(255, 255, 255, 0.1);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    
+
     &::before {
       content: '';
       position: absolute;
       inset: 0;
       border-radius: 14px;
       background: linear-gradient(
-        135deg, 
-        rgba(255, 255, 255, 0.15) 0%, 
+        135deg,
+        rgba(255, 255, 255, 0.15) 0%,
         rgba(255, 255, 255, 0.02) 50%,
         transparent 100%
       );
     }
-    
+
     &::after {
       content: '';
       position: absolute;
@@ -560,7 +561,7 @@
         transparent 100%
       );
     }
-    
+
     i {
       font-size: 26px;
       color: #fbbf24;
@@ -570,13 +571,13 @@
       z-index: 1;
     }
   }
-  
+
   &:hover .icon-image {
     transform: scale(1.08) translateY(-2px);
-    box-shadow: 
+    box-shadow:
       0 8px 25px rgba(30, 41, 59, 0.6),
       0 4px 10px rgba(15, 23, 42, 0.5);
-    
+
     i {
       filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.5));
     }
@@ -584,32 +585,32 @@
 }
 
 // About Me App - Modern rose gradient
-.desktop-icon[data-app-id="about-me"] {
+.desktop-icon[data-app-id='about-me'] {
   .icon-image {
     width: 52px;
     height: 52px;
     background: linear-gradient(135deg, #ec4899 0%, #db2777 50%, #be185d 100%);
     border-radius: 14px;
     position: relative;
-    box-shadow: 
+    box-shadow:
       0 4px 15px rgba(236, 72, 153, 0.4),
       0 2px 6px rgba(219, 39, 119, 0.3),
       inset 0 1px 0 rgba(255, 255, 255, 0.2);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    
+
     &::before {
       content: '';
       position: absolute;
       inset: 0;
       border-radius: 14px;
       background: linear-gradient(
-        135deg, 
-        rgba(255, 255, 255, 0.25) 0%, 
+        135deg,
+        rgba(255, 255, 255, 0.25) 0%,
         rgba(255, 255, 255, 0.05) 50%,
         transparent 100%
       );
     }
-    
+
     &::after {
       content: '';
       position: absolute;
@@ -625,7 +626,7 @@
         transparent 100%
       );
     }
-    
+
     i {
       font-size: 26px;
       color: white;
@@ -634,41 +635,37 @@
       z-index: 1;
     }
   }
-  
+
   &:hover .icon-image {
     transform: scale(1.08) translateY(-2px);
-    box-shadow: 
+    box-shadow:
       0 8px 25px rgba(236, 72, 153, 0.5),
       0 4px 10px rgba(219, 39, 119, 0.4);
   }
 }
 
 // Terminal App - Hacker green gradient
-.desktop-icon[data-app-id="terminal"] {
+.desktop-icon[data-app-id='terminal'] {
   .icon-image {
     width: 52px;
     height: 52px;
     background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f0f23 100%);
     border-radius: 14px;
     position: relative;
-    box-shadow: 
+    box-shadow:
       0 4px 15px rgba(16, 185, 129, 0.2),
       0 2px 6px rgba(0, 0, 0, 0.4),
       inset 0 1px 0 rgba(16, 185, 129, 0.1);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    
+
     &::before {
       content: '';
       position: absolute;
       inset: 0;
       border-radius: 14px;
-      background: linear-gradient(
-        135deg, 
-        rgba(16, 185, 129, 0.1) 0%, 
-        transparent 50%
-      );
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, transparent 50%);
     }
-    
+
     &::after {
       content: '';
       position: absolute;
@@ -677,13 +674,9 @@
       right: 2px;
       height: 50%;
       border-radius: 12px 12px 50% 50%;
-      background: linear-gradient(
-        180deg,
-        rgba(255, 255, 255, 0.08) 0%,
-        transparent 100%
-      );
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, transparent 100%);
     }
-    
+
     i {
       font-size: 26px;
       color: #10b981;
@@ -694,13 +687,13 @@
       animation: terminalBlink 2s ease-in-out infinite;
     }
   }
-  
+
   &:hover .icon-image {
     transform: scale(1.08) translateY(-2px);
-    box-shadow: 
+    box-shadow:
       0 8px 25px rgba(16, 185, 129, 0.3),
       0 4px 10px rgba(0, 0, 0, 0.5);
-    
+
     i {
       animation: none;
       text-shadow: 0 0 15px rgba(16, 185, 129, 0.8);
@@ -709,38 +702,43 @@
 }
 
 @keyframes terminalBlink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
 }
 
 // Weather App - Sky blue gradient
-.desktop-icon[data-app-id="weather"] {
+.desktop-icon[data-app-id='weather'] {
   .icon-image {
     width: 52px;
     height: 52px;
     background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 50%, #0284c7 100%);
     border-radius: 14px;
     position: relative;
-    box-shadow: 
+    box-shadow:
       0 4px 15px rgba(56, 189, 248, 0.4),
       0 2px 6px rgba(14, 165, 233, 0.3),
       inset 0 1px 0 rgba(255, 255, 255, 0.3);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     overflow: hidden;
-    
+
     &::before {
       content: '';
       position: absolute;
       inset: 0;
       border-radius: 14px;
       background: linear-gradient(
-        135deg, 
-        rgba(255, 255, 255, 0.3) 0%, 
+        135deg,
+        rgba(255, 255, 255, 0.3) 0%,
         rgba(255, 255, 255, 0.1) 50%,
         transparent 100%
       );
     }
-    
+
     // Cloud effect
     &::after {
       content: '';
@@ -754,7 +752,7 @@
       filter: blur(4px);
       animation: cloudFloat 4s ease-in-out infinite;
     }
-    
+
     i {
       font-size: 26px;
       color: #fcd34d;
@@ -764,47 +762,52 @@
       z-index: 1;
     }
   }
-  
+
   &:hover .icon-image {
     transform: scale(1.08) translateY(-2px);
-    box-shadow: 
+    box-shadow:
       0 8px 25px rgba(56, 189, 248, 0.5),
       0 4px 10px rgba(14, 165, 233, 0.4);
   }
 }
 
 @keyframes cloudFloat {
-  0%, 100% { transform: translateX(0); }
-  50% { transform: translateX(10px); }
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(10px);
+  }
 }
 
 // Settings App - Gear with smooth gradient
-.desktop-icon[data-app-id="settings"] {
+.desktop-icon[data-app-id='settings'] {
   .icon-image {
     width: 52px;
     height: 52px;
     background: linear-gradient(135deg, #64748b 0%, #475569 50%, #334155 100%);
     border-radius: 14px;
     position: relative;
-    box-shadow: 
+    box-shadow:
       0 4px 15px rgba(100, 116, 139, 0.4),
       0 2px 6px rgba(71, 85, 105, 0.3),
       inset 0 1px 0 rgba(255, 255, 255, 0.15);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    
+
     &::before {
       content: '';
       position: absolute;
       inset: 0;
       border-radius: 14px;
       background: linear-gradient(
-        135deg, 
-        rgba(255, 255, 255, 0.2) 0%, 
+        135deg,
+        rgba(255, 255, 255, 0.2) 0%,
         rgba(255, 255, 255, 0.05) 50%,
         transparent 100%
       );
     }
-    
+
     &::after {
       content: '';
       position: absolute;
@@ -820,7 +823,7 @@
         transparent 100%
       );
     }
-    
+
     i {
       font-size: 26px;
       color: white;
@@ -830,13 +833,13 @@
       transition: transform 0.5s ease;
     }
   }
-  
+
   &:hover .icon-image {
     transform: scale(1.08) translateY(-2px);
-    box-shadow: 
+    box-shadow:
       0 8px 25px rgba(100, 116, 139, 0.5),
       0 4px 10px rgba(71, 85, 105, 0.4);
-    
+
     i {
       transform: rotate(90deg);
     }
@@ -844,32 +847,32 @@
 }
 
 // Paint App - Creative rainbow gradient
-.desktop-icon[data-app-id="paint"] {
+.desktop-icon[data-app-id='paint'] {
   .icon-image {
     width: 52px;
     height: 52px;
     background: linear-gradient(135deg, #f472b6 0%, #a855f7 33%, #3b82f6 66%, #22c55e 100%);
     border-radius: 14px;
     position: relative;
-    box-shadow: 
+    box-shadow:
       0 4px 15px rgba(168, 85, 247, 0.4),
       0 2px 6px rgba(59, 130, 246, 0.3),
       inset 0 1px 0 rgba(255, 255, 255, 0.25);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    
+
     &::before {
       content: '';
       position: absolute;
       inset: 0;
       border-radius: 14px;
       background: linear-gradient(
-        135deg, 
-        rgba(255, 255, 255, 0.3) 0%, 
+        135deg,
+        rgba(255, 255, 255, 0.3) 0%,
         rgba(255, 255, 255, 0.1) 50%,
         transparent 100%
       );
     }
-    
+
     &::after {
       content: '';
       position: absolute;
@@ -885,7 +888,7 @@
         transparent 100%
       );
     }
-    
+
     i {
       font-size: 26px;
       color: white;
@@ -894,42 +897,42 @@
       z-index: 1;
     }
   }
-  
+
   &:hover .icon-image {
     transform: scale(1.08) translateY(-2px);
-    box-shadow: 
+    box-shadow:
       0 8px 25px rgba(168, 85, 247, 0.5),
       0 4px 10px rgba(59, 130, 246, 0.4);
   }
 }
 
 // Music App - YouTube-style red gradient
-.desktop-icon[data-app-id="music"] {
+.desktop-icon[data-app-id='music'] {
   .icon-image {
     width: 52px;
     height: 52px;
     background: linear-gradient(135deg, #ef4444 0%, #dc2626 50%, #b91c1c 100%);
     border-radius: 14px;
     position: relative;
-    box-shadow: 
+    box-shadow:
       0 4px 15px rgba(239, 68, 68, 0.4),
       0 2px 6px rgba(220, 38, 38, 0.3),
       inset 0 1px 0 rgba(255, 255, 255, 0.2);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    
+
     &::before {
       content: '';
       position: absolute;
       inset: 0;
       border-radius: 14px;
       background: linear-gradient(
-        135deg, 
-        rgba(255, 255, 255, 0.25) 0%, 
+        135deg,
+        rgba(255, 255, 255, 0.25) 0%,
         rgba(255, 255, 255, 0.05) 50%,
         transparent 100%
       );
     }
-    
+
     &::after {
       content: '';
       position: absolute;
@@ -945,7 +948,7 @@
         transparent 100%
       );
     }
-    
+
     i {
       font-size: 26px;
       color: white;
@@ -954,42 +957,42 @@
       z-index: 1;
     }
   }
-  
+
   &:hover .icon-image {
     transform: scale(1.08) translateY(-2px);
-    box-shadow: 
+    box-shadow:
       0 8px 25px rgba(239, 68, 68, 0.5),
       0 4px 10px rgba(220, 38, 38, 0.4);
   }
 }
 
 // Expense App - Money green gradient
-.desktop-icon[data-app-id="expense"] {
+.desktop-icon[data-app-id='expense'] {
   .icon-image {
     width: 52px;
     height: 52px;
     background: linear-gradient(135deg, #22c55e 0%, #16a34a 50%, #15803d 100%);
     border-radius: 14px;
     position: relative;
-    box-shadow: 
+    box-shadow:
       0 4px 15px rgba(34, 197, 94, 0.4),
       0 2px 6px rgba(22, 163, 74, 0.3),
       inset 0 1px 0 rgba(255, 255, 255, 0.2);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    
+
     &::before {
       content: '';
       position: absolute;
       inset: 0;
       border-radius: 14px;
       background: linear-gradient(
-        135deg, 
-        rgba(255, 255, 255, 0.25) 0%, 
+        135deg,
+        rgba(255, 255, 255, 0.25) 0%,
         rgba(255, 255, 255, 0.05) 50%,
         transparent 100%
       );
     }
-    
+
     &::after {
       content: '';
       position: absolute;
@@ -1005,7 +1008,7 @@
         transparent 100%
       );
     }
-    
+
     i {
       font-size: 26px;
       color: white;
@@ -1014,42 +1017,42 @@
       z-index: 1;
     }
   }
-  
+
   &:hover .icon-image {
     transform: scale(1.08) translateY(-2px);
-    box-shadow: 
+    box-shadow:
       0 8px 25px rgba(34, 197, 94, 0.5),
       0 4px 10px rgba(22, 163, 74, 0.4);
   }
 }
 
 // Business/Shopping App - E-commerce amber gradient
-.desktop-icon[data-app-id="business"] {
+.desktop-icon[data-app-id='business'] {
   .icon-image {
     width: 52px;
     height: 52px;
     background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%);
     border-radius: 14px;
     position: relative;
-    box-shadow: 
+    box-shadow:
       0 4px 15px rgba(251, 191, 36, 0.4),
       0 2px 6px rgba(245, 158, 11, 0.3),
       inset 0 1px 0 rgba(255, 255, 255, 0.25);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    
+
     &::before {
       content: '';
       position: absolute;
       inset: 0;
       border-radius: 14px;
       background: linear-gradient(
-        135deg, 
-        rgba(255, 255, 255, 0.3) 0%, 
+        135deg,
+        rgba(255, 255, 255, 0.3) 0%,
         rgba(255, 255, 255, 0.1) 50%,
         transparent 100%
       );
     }
-    
+
     &::after {
       content: '';
       position: absolute;
@@ -1065,7 +1068,7 @@
         transparent 100%
       );
     }
-    
+
     i {
       font-size: 26px;
       color: white;
@@ -1074,32 +1077,32 @@
       z-index: 1;
     }
   }
-  
+
   &:hover .icon-image {
     transform: scale(1.08) translateY(-2px);
-    box-shadow: 
+    box-shadow:
       0 8px 25px rgba(251, 191, 36, 0.5),
       0 4px 10px rgba(245, 158, 11, 0.4);
   }
 }
 
 // OCR App - Vision cyan gradient
-.desktop-icon[data-app-id="ocr"] {
+.desktop-icon[data-app-id='ocr'] {
   .icon-image {
     width: 52px;
     height: 52px;
     background: linear-gradient(135deg, #06b6d4 0%, #0891b2 50%, #0e7490 100%);
     border-radius: 14px;
     position: relative;
-    box-shadow: 
+    box-shadow:
       0 4px 15px rgba(6, 182, 212, 0.4),
       0 2px 6px rgba(8, 145, 178, 0.3),
       inset 0 1px 0 rgba(255, 255, 255, 0.2);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    
+
     // Scan line animation
     overflow: hidden;
-    
+
     &::before {
       content: '';
       position: absolute;
@@ -1110,7 +1113,7 @@
       background: rgba(255, 255, 255, 0.6);
       animation: scanLine 2s ease-in-out infinite;
     }
-    
+
     &::after {
       content: '';
       position: absolute;
@@ -1126,7 +1129,7 @@
         transparent 100%
       );
     }
-    
+
     i {
       font-size: 26px;
       color: white;
@@ -1135,13 +1138,13 @@
       z-index: 1;
     }
   }
-  
+
   &:hover .icon-image {
     transform: scale(1.08) translateY(-2px);
-    box-shadow: 
+    box-shadow:
       0 8px 25px rgba(6, 182, 212, 0.5),
       0 4px 10px rgba(8, 145, 178, 0.4);
-    
+
     &::before {
       animation: none;
       opacity: 0;
@@ -1150,39 +1153,50 @@
 }
 
 @keyframes scanLine {
-  0%, 100% { top: 0; opacity: 0; }
-  10% { opacity: 1; }
-  90% { opacity: 1; }
-  100% { top: calc(100% - 3px); opacity: 0; }
+  0%,
+  100% {
+    top: 0;
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    top: calc(100% - 3px);
+    opacity: 0;
+  }
 }
 
 // Facebook Scanner - Facebook blue gradient
-.desktop-icon[data-app-id="fb-id-finder"] {
+.desktop-icon[data-app-id='fb-id-finder'] {
   .icon-image {
     width: 52px;
     height: 52px;
     background: linear-gradient(135deg, #1877f2 0%, #166fe5 50%, #0d65e1 100%);
     border-radius: 14px;
     position: relative;
-    box-shadow: 
+    box-shadow:
       0 4px 15px rgba(24, 119, 242, 0.4),
       0 2px 6px rgba(22, 111, 229, 0.3),
       inset 0 1px 0 rgba(255, 255, 255, 0.2);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    
+
     &::before {
       content: '';
       position: absolute;
       inset: 0;
       border-radius: 14px;
       background: linear-gradient(
-        135deg, 
-        rgba(255, 255, 255, 0.25) 0%, 
+        135deg,
+        rgba(255, 255, 255, 0.25) 0%,
         rgba(255, 255, 255, 0.05) 50%,
         transparent 100%
       );
     }
-    
+
     &::after {
       content: '';
       position: absolute;
@@ -1198,7 +1212,7 @@
         transparent 100%
       );
     }
-    
+
     i {
       font-size: 26px;
       color: white;
@@ -1207,42 +1221,42 @@
       z-index: 1;
     }
   }
-  
+
   &:hover .icon-image {
     transform: scale(1.08) translateY(-2px);
-    box-shadow: 
+    box-shadow:
       0 8px 25px rgba(24, 119, 242, 0.5),
       0 4px 10px rgba(22, 111, 229, 0.4);
   }
 }
 
 // Graph Visualizer - Network indigo gradient
-.desktop-icon[data-app-id="graph-visualizer"] {
+.desktop-icon[data-app-id='graph-visualizer'] {
   .icon-image {
     width: 52px;
     height: 52px;
     background: linear-gradient(135deg, #818cf8 0%, #6366f1 50%, #4f46e5 100%);
     border-radius: 14px;
     position: relative;
-    box-shadow: 
+    box-shadow:
       0 4px 15px rgba(129, 140, 248, 0.4),
       0 2px 6px rgba(99, 102, 241, 0.3),
       inset 0 1px 0 rgba(255, 255, 255, 0.2);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    
+
     &::before {
       content: '';
       position: absolute;
       inset: 0;
       border-radius: 14px;
       background: linear-gradient(
-        135deg, 
-        rgba(255, 255, 255, 0.25) 0%, 
+        135deg,
+        rgba(255, 255, 255, 0.25) 0%,
         rgba(255, 255, 255, 0.05) 50%,
         transparent 100%
       );
     }
-    
+
     &::after {
       content: '';
       position: absolute;
@@ -1258,7 +1272,7 @@
         transparent 100%
       );
     }
-    
+
     i {
       font-size: 26px;
       color: white;
@@ -1267,42 +1281,42 @@
       z-index: 1;
     }
   }
-  
+
   &:hover .icon-image {
     transform: scale(1.08) translateY(-2px);
-    box-shadow: 
+    box-shadow:
       0 8px 25px rgba(129, 140, 248, 0.5),
       0 4px 10px rgba(99, 102, 241, 0.4);
   }
 }
 
 // Stock App - Finance emerald-teal gradient
-.desktop-icon[data-app-id="stock"] {
+.desktop-icon[data-app-id='stock'] {
   .icon-image {
     width: 52px;
     height: 52px;
     background: linear-gradient(135deg, #34d399 0%, #10b981 50%, #059669 100%);
     border-radius: 14px;
     position: relative;
-    box-shadow: 
+    box-shadow:
       0 4px 15px rgba(52, 211, 153, 0.4),
       0 2px 6px rgba(16, 185, 129, 0.3),
       inset 0 1px 0 rgba(255, 255, 255, 0.2);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    
+
     &::before {
       content: '';
       position: absolute;
       inset: 0;
       border-radius: 14px;
       background: linear-gradient(
-        135deg, 
-        rgba(255, 255, 255, 0.25) 0%, 
+        135deg,
+        rgba(255, 255, 255, 0.25) 0%,
         rgba(255, 255, 255, 0.05) 50%,
         transparent 100%
       );
     }
-    
+
     &::after {
       content: '';
       position: absolute;
@@ -1318,7 +1332,7 @@
         transparent 100%
       );
     }
-    
+
     i {
       font-size: 26px;
       color: white;
@@ -1327,10 +1341,10 @@
       z-index: 1;
     }
   }
-  
+
   &:hover .icon-image {
     transform: scale(1.08) translateY(-2px);
-    box-shadow: 
+    box-shadow:
       0 8px 25px rgba(52, 211, 153, 0.5),
       0 4px 10px rgba(16, 185, 129, 0.4);
   }
@@ -1340,25 +1354,25 @@
 @media (max-width: 768px) {
   .desktop-icon {
     width: 70px;
-    
+
     .icon-image {
       width: 40px;
       height: 40px;
-      
+
       i {
         font-size: 28px;
       }
     }
-    
+
     .icon-name {
       font-size: 10px;
     }
   }
-  
+
   .context-menu {
     min-width: 120px;
   }
-  
+
   .context-menu-item {
     padding: 12px 16px;
     font-size: 14px;

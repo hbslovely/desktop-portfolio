@@ -3,7 +3,7 @@ import { Injectable, signal } from '@angular/core';
 /**
  * Image Search Service using Content-Based Image Retrieval (CBIR) algorithms
  * No AI/API required - runs entirely in browser using classical Computer Vision
- * 
+ *
  * ========== BASIC ALGORITHMS ==========
  * 1. Perceptual Hash (pHash) - DCT-based, good for similar images
  * 2. Difference Hash (dHash) - Gradient-based, fast
@@ -14,7 +14,7 @@ import { Injectable, signal } from '@angular/core';
  * 7. Edge Detection - Sobel operator for shape matching
  * 8. LBP (Local Binary Pattern) - Texture analysis
  * 9. Hu Moments - Shape descriptors (rotation/scale invariant)
- * 
+ *
  * ========== CBIR ADVANCED ALGORITHMS ==========
  * 10. Color Layout Descriptor (MPEG-7 like) - Spatial color distribution
  * 11. HOG (Histogram of Oriented Gradients) - Object/shape recognition
@@ -47,11 +47,11 @@ export interface ImageRecord {
   brightness: number;
   contrast: number;
   // CBIR Advanced Features
-  colorLayout: number[];        // Spatial color distribution (block-based)
-  hogDescriptor: number[];      // Histogram of Oriented Gradients
-  gaborFeatures: number[];      // Gabor filter responses
-  glcmFeatures: GLCMFeatures;   // Gray Level Co-occurrence Matrix
-  spatialHistogram: number[];   // Grid-based color histogram
+  colorLayout: number[]; // Spatial color distribution (block-based)
+  hogDescriptor: number[]; // Histogram of Oriented Gradients
+  gaborFeatures: number[]; // Gabor filter responses
+  glcmFeatures: GLCMFeatures; // Gray Level Co-occurrence Matrix
+  spatialHistogram: number[]; // Grid-based color histogram
 }
 
 export interface GLCMFeatures {
@@ -146,7 +146,7 @@ export interface LearnedWeights {
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class ImageSearchService {
   // State
@@ -154,7 +154,7 @@ export class ImageSearchService {
   isProcessing = signal<boolean>(false);
   processingProgress = signal<number>(0);
   processingStatus = signal<string>('');
-  
+
   // Feedback & Learning state
   feedbackHistory = signal<FeedbackRecord[]>([]);
   learnedWeights = signal<LearnedWeights | null>(null);
@@ -163,109 +163,112 @@ export class ImageSearchService {
   // Default search weights - optimized for better results with CBIR
   defaultWeights: SearchWeights = {
     pHash: 0.12,
-    dHash: 0.10,
+    dHash: 0.1,
     aHash: 0.03,
     colorHistogramRGB: 0.08,
-    colorHistogramHSV: 0.10,
+    colorHistogramHSV: 0.1,
     colorMoments: 0.07,
     edgeHistogram: 0.07,
     lbpHistogram: 0.06,
     huMoments: 0.05,
     // CBIR Advanced - more emphasis
-    colorLayout: 0.10,      // Spatial color distribution
-    hogDescriptor: 0.08,    // Shape/Object features
-    gaborFeatures: 0.06,    // Multi-scale texture
-    glcmFeatures: 0.05,     // Texture properties
-    spatialHistogram: 0.03  // Grid-based color
+    colorLayout: 0.1, // Spatial color distribution
+    hogDescriptor: 0.08, // Shape/Object features
+    gaborFeatures: 0.06, // Multi-scale texture
+    glcmFeatures: 0.05, // Texture properties
+    spatialHistogram: 0.03, // Grid-based color
   };
 
   // Algorithm metadata for UI
-  algorithmMeta: Record<string, { name: string; icon: string; description: string; category: string }> = {
+  algorithmMeta: Record<
+    string,
+    { name: string; icon: string; description: string; category: string }
+  > = {
     pHash: {
       name: 'Perceptual Hash',
       icon: '🔍',
       description: 'So sánh cấu trúc tổng thể bằng DCT',
-      category: 'structure'
+      category: 'structure',
     },
     dHash: {
       name: 'Difference Hash',
       icon: '📊',
       description: 'So sánh gradient giữa các pixel liền kề',
-      category: 'structure'
+      category: 'structure',
     },
     aHash: {
       name: 'Average Hash',
       icon: '📈',
       description: 'So sánh độ sáng trung bình',
-      category: 'structure'
+      category: 'structure',
     },
     colorHistogramRGB: {
       name: 'RGB Histogram',
       icon: '🎨',
       description: 'Phân bố màu RGB',
-      category: 'color'
+      category: 'color',
     },
     colorHistogramHSV: {
       name: 'HSV Histogram',
       icon: '🌈',
       description: 'Phân bố màu HSV (gần với nhận thức con người)',
-      category: 'color'
+      category: 'color',
     },
     colorMoments: {
       name: 'Color Moments',
       icon: '📉',
       description: 'Thống kê màu: Mean, Std, Skewness',
-      category: 'color'
+      category: 'color',
     },
     edgeHistogram: {
       name: 'Edge Detection',
       icon: '📐',
       description: 'Phân bố hướng cạnh (Sobel)',
-      category: 'shape'
+      category: 'shape',
     },
     lbpHistogram: {
       name: 'LBP Texture',
       icon: '🧩',
       description: 'Phân tích kết cấu bề mặt',
-      category: 'texture'
+      category: 'texture',
     },
     huMoments: {
       name: 'Hu Moments',
       icon: '🔷',
       description: 'Đặc trưng hình dạng (bất biến với xoay/scale)',
-      category: 'shape'
+      category: 'shape',
     },
     // CBIR Advanced Algorithms
     colorLayout: {
       name: 'Color Layout (CBIR)',
       icon: '🗺️',
       description: 'Phân bố màu theo không gian (chia ô lưới 8x8)',
-      category: 'spatial'
+      category: 'spatial',
     },
     hogDescriptor: {
       name: 'HOG Descriptor',
       icon: '🎯',
       description: 'Histogram hướng gradient - nhận diện đối tượng',
-      category: 'shape'
+      category: 'shape',
     },
     gaborFeatures: {
       name: 'Gabor Filters',
       icon: '🌀',
       description: 'Lọc đa tỷ lệ, đa hướng - kết cấu phức tạp',
-      category: 'texture'
+      category: 'texture',
     },
     glcmFeatures: {
       name: 'GLCM Texture',
       icon: '🔬',
       description: 'Ma trận đồng xuất hiện mức xám - phân tích kết cấu',
-      category: 'texture'
+      category: 'texture',
     },
     spatialHistogram: {
       name: 'Spatial Histogram',
       icon: '📍',
       description: 'Histogram màu theo vùng (4 góc + trung tâm)',
-      category: 'spatial'
-    }
+      category: 'spatial',
+    },
   };
 
   private db: IDBDatabase | null = null;
@@ -281,7 +284,7 @@ export class ImageSearchService {
       const request = indexedDB.open(DB_NAME, DB_VERSION);
 
       request.onerror = () => reject(request.error);
-      
+
       request.onsuccess = () => {
         this.db = request.result;
         this.loadImages();
@@ -292,7 +295,7 @@ export class ImageSearchService {
 
       request.onupgradeneeded = (event) => {
         const db = (event.target as IDBOpenDBRequest).result;
-        
+
         // Images store
         if (db.objectStoreNames.contains(STORE_NAME)) {
           db.deleteObjectStore(STORE_NAME);
@@ -328,7 +331,7 @@ export class ImageSearchService {
     request.onsuccess = () => {
       const images = request.result.map((img: any) => ({
         ...img,
-        addedAt: new Date(img.addedAt)
+        addedAt: new Date(img.addedAt),
       }));
       this.images.set(images.sort((a, b) => b.addedAt.getTime() - a.addedAt.getTime()));
     };
@@ -401,14 +404,14 @@ export class ImageSearchService {
         hogDescriptor,
         gaborFeatures,
         glcmFeatures,
-        spatialHistogram
+        spatialHistogram,
       };
 
       // Save to DB
       await this.saveImage(record);
 
       // Update state
-      this.images.update(images => [record, ...images]);
+      this.images.update((images) => [record, ...images]);
 
       return record;
     } finally {
@@ -436,13 +439,13 @@ export class ImageSearchService {
 
   private async saveImage(record: ImageRecord): Promise<void> {
     if (!this.db) await this.initDB();
-    
+
     return new Promise((resolve, reject) => {
       const transaction = this.db!.transaction(STORE_NAME, 'readwrite');
       const store = transaction.objectStore(STORE_NAME);
       const request = store.put({
         ...record,
-        addedAt: record.addedAt.toISOString()
+        addedAt: record.addedAt.toISOString(),
       });
 
       request.onsuccess = () => resolve();
@@ -459,7 +462,7 @@ export class ImageSearchService {
       const request = store.delete(id);
 
       request.onsuccess = () => {
-        this.images.update(images => images.filter(img => img.id !== id));
+        this.images.update((images) => images.filter((img) => img.id !== id));
         resolve();
       };
       request.onerror = () => reject(request.error);
@@ -533,38 +536,52 @@ export class ImageSearchService {
       hogDescriptor: this.computeHOGDescriptor(img),
       gaborFeatures: this.computeGaborFeatures(img),
       glcmFeatures: this.computeGLCMFeatures(img),
-      spatialHistogram: this.computeSpatialHistogram(img)
+      spatialHistogram: this.computeSpatialHistogram(img),
     };
 
     this.processingStatus.set('Đang so sánh với kho ảnh...');
 
     // Compare with all images in database
     const w = weights || this.defaultWeights;
-    const results: SearchResult[] = this.images().map(image => {
+    const results: SearchResult[] = this.images().map((image) => {
       const scores = {
         pHash: this.compareHashes(queryFeatures.pHash, image.pHash),
         dHash: this.compareHashes(queryFeatures.dHash, image.dHash),
         aHash: this.compareHashes(queryFeatures.aHash, image.aHash),
-        colorHistogramRGB: this.compareHistograms(queryFeatures.colorHistogramRGB, image.colorHistogramRGB),
-        colorHistogramHSV: this.compareHistograms(queryFeatures.colorHistogramHSV, image.colorHistogramHSV),
+        colorHistogramRGB: this.compareHistograms(
+          queryFeatures.colorHistogramRGB,
+          image.colorHistogramRGB
+        ),
+        colorHistogramHSV: this.compareHistograms(
+          queryFeatures.colorHistogramHSV,
+          image.colorHistogramHSV
+        ),
         colorMoments: this.compareColorMoments(queryFeatures.colorMoments, image.colorMoments),
         edgeHistogram: this.compareHistograms(queryFeatures.edgeHistogram, image.edgeHistogram),
         lbpHistogram: this.compareHistograms(queryFeatures.lbpHistogram, image.lbpHistogram),
         huMoments: this.compareHuMoments(queryFeatures.huMoments, image.huMoments),
         // CBIR Advanced
         colorLayout: this.compareHistograms(queryFeatures.colorLayout, image.colorLayout || []),
-        hogDescriptor: this.compareHistograms(queryFeatures.hogDescriptor, image.hogDescriptor || []),
-        gaborFeatures: this.compareHistograms(queryFeatures.gaborFeatures, image.gaborFeatures || []),
+        hogDescriptor: this.compareHistograms(
+          queryFeatures.hogDescriptor,
+          image.hogDescriptor || []
+        ),
+        gaborFeatures: this.compareHistograms(
+          queryFeatures.gaborFeatures,
+          image.gaborFeatures || []
+        ),
         glcmFeatures: this.compareGLCMFeatures(queryFeatures.glcmFeatures, image.glcmFeatures),
-        spatialHistogram: this.compareHistograms(queryFeatures.spatialHistogram, image.spatialHistogram || [])
+        spatialHistogram: this.compareHistograms(
+          queryFeatures.spatialHistogram,
+          image.spatialHistogram || []
+        ),
       };
 
       // Helper function to safely get score (default to 0 if NaN)
-      const safeScore = (score: number): number => 
-        isNaN(score) || !isFinite(score) ? 0 : score;
+      const safeScore = (score: number): number => (isNaN(score) || !isFinite(score) ? 0 : score);
 
       // Weighted average with NaN protection
-      const similarity = 
+      const similarity =
         safeScore(scores.pHash) * w.pHash +
         safeScore(scores.dHash) * w.dHash +
         safeScore(scores.aHash) * w.aHash +
@@ -595,7 +612,10 @@ export class ImageSearchService {
     return results;
   }
 
-  private generateMatchReasons(scores: SearchResult['scores'], weights: SearchWeights): MatchReason[] {
+  private generateMatchReasons(
+    scores: SearchResult['scores'],
+    weights: SearchWeights
+  ): MatchReason[] {
     const reasons: MatchReason[] = [];
     const scoreKeys = Object.keys(scores) as (keyof typeof scores)[];
 
@@ -629,7 +649,7 @@ export class ImageSearchService {
         contribution,
         description,
         icon: meta.icon,
-        level
+        level,
       });
     }
 
@@ -653,7 +673,7 @@ export class ImageSearchService {
       hogDescriptor: `Đặc trưng đối tượng rất tương đồng (${(score * 100).toFixed(0)}%)`,
       gaborFeatures: `Kết cấu đa tỷ lệ trùng khớp (${(score * 100).toFixed(0)}%)`,
       glcmFeatures: `Thuộc tính kết cấu GLCM giống nhau (${(score * 100).toFixed(0)}%)`,
-      spatialHistogram: `Màu theo vùng rất tương đồng (${(score * 100).toFixed(0)}%)`
+      spatialHistogram: `Màu theo vùng rất tương đồng (${(score * 100).toFixed(0)}%)`,
     };
     return descriptions[key] || `Điểm cao (${(score * 100).toFixed(0)}%)`;
   }
@@ -673,7 +693,7 @@ export class ImageSearchService {
       hogDescriptor: `Đặc trưng đối tượng có điểm chung (${(score * 100).toFixed(0)}%)`,
       gaborFeatures: `Kết cấu đa tỷ lệ tương đồng (${(score * 100).toFixed(0)}%)`,
       glcmFeatures: `Thuộc tính kết cấu GLCM gần giống (${(score * 100).toFixed(0)}%)`,
-      spatialHistogram: `Màu theo vùng có điểm tương đồng (${(score * 100).toFixed(0)}%)`
+      spatialHistogram: `Màu theo vùng có điểm tương đồng (${(score * 100).toFixed(0)}%)`,
     };
     return descriptions[key] || `Điểm khá (${(score * 100).toFixed(0)}%)`;
   }
@@ -693,7 +713,7 @@ export class ImageSearchService {
       hogDescriptor: `Đặc trưng đối tượng có khác biệt (${(score * 100).toFixed(0)}%)`,
       gaborFeatures: `Kết cấu đa tỷ lệ khác biệt nhẹ (${(score * 100).toFixed(0)}%)`,
       glcmFeatures: `Thuộc tính GLCM có sự khác biệt (${(score * 100).toFixed(0)}%)`,
-      spatialHistogram: `Màu theo vùng hơi khác (${(score * 100).toFixed(0)}%)`
+      spatialHistogram: `Màu theo vùng hơi khác (${(score * 100).toFixed(0)}%)`,
     };
     return descriptions[key] || `Điểm trung bình (${(score * 100).toFixed(0)}%)`;
   }
@@ -713,7 +733,7 @@ export class ImageSearchService {
       hogDescriptor: `Đặc trưng đối tượng rất khác (${(score * 100).toFixed(0)}%)`,
       gaborFeatures: `Kết cấu đa tỷ lệ khác biệt lớn (${(score * 100).toFixed(0)}%)`,
       glcmFeatures: `Thuộc tính GLCM hoàn toàn khác (${(score * 100).toFixed(0)}%)`,
-      spatialHistogram: `Màu theo vùng không tương đồng (${(score * 100).toFixed(0)}%)`
+      spatialHistogram: `Màu theo vùng không tương đồng (${(score * 100).toFixed(0)}%)`,
     };
     return descriptions[key] || `Điểm thấp (${(score * 100).toFixed(0)}%)`;
   }
@@ -800,7 +820,7 @@ export class ImageSearchService {
 
   private dct2d(matrix: number[][], size: number): number[][] {
     const result: number[][] = [];
-    
+
     const cosines: number[][] = [];
     for (let i = 0; i < size; i++) {
       cosines[i] = [];
@@ -842,17 +862,21 @@ export class ImageSearchService {
     const pixels = imageData.data;
 
     let hash = '';
-    
+
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width - 1; x++) {
         const i1 = (y * width + x) * 4;
         const i2 = (y * width + x + 1) * 4;
-        
+
         // Quantize grayscale values to reduce sensitivity to minor pixel variations
         // This helps produce more consistent hashes for similar images
-        const gray1 = Math.round((0.299 * pixels[i1] + 0.587 * pixels[i1 + 1] + 0.114 * pixels[i1 + 2]) / 4) * 4;
-        const gray2 = Math.round((0.299 * pixels[i2] + 0.587 * pixels[i2 + 1] + 0.114 * pixels[i2 + 2]) / 4) * 4;
-        
+        const gray1 =
+          Math.round((0.299 * pixels[i1] + 0.587 * pixels[i1 + 1] + 0.114 * pixels[i1 + 2]) / 4) *
+          4;
+        const gray2 =
+          Math.round((0.299 * pixels[i2] + 0.587 * pixels[i2 + 1] + 0.114 * pixels[i2 + 2]) / 4) *
+          4;
+
         hash += gray1 < gray2 ? '1' : '0';
       }
     }
@@ -893,7 +917,7 @@ export class ImageSearchService {
   // ==================== COLOR HISTOGRAM RGB ====================
   private computeColorHistogramRGB(img: HTMLImageElement, bins: number = 16): number[] {
     const size = 64;
-    
+
     const canvas = document.createElement('canvas');
     canvas.width = size;
     canvas.height = size;
@@ -916,7 +940,7 @@ export class ImageSearchService {
     }
 
     const total = pixels.length / 4;
-    return histogram.map(h => h / total);
+    return histogram.map((h) => h / total);
   }
 
   // ==================== COLOR HISTOGRAM HSV ====================
@@ -925,7 +949,7 @@ export class ImageSearchService {
     const hBins = 18; // 20° per bin
     const sBins = 8;
     const vBins = 8;
-    
+
     const canvas = document.createElement('canvas');
     canvas.width = size;
     canvas.height = size;
@@ -938,7 +962,7 @@ export class ImageSearchService {
 
     for (let i = 0; i < pixels.length; i += 4) {
       const [h, s, v] = this.rgbToHsv(pixels[i], pixels[i + 1], pixels[i + 2]);
-      
+
       const hBin = Math.min(Math.floor(h / (360 / hBins)), hBins - 1);
       const sBin = Math.min(Math.floor(s * sBins), sBins - 1);
       const vBin = Math.min(Math.floor(v * vBins), vBins - 1);
@@ -949,25 +973,33 @@ export class ImageSearchService {
     }
 
     const total = pixels.length / 4;
-    return histogram.map(h => h / total);
+    return histogram.map((h) => h / total);
   }
 
   private rgbToHsv(r: number, g: number, b: number): [number, number, number] {
-    r /= 255; g /= 255; b /= 255;
-    
+    r /= 255;
+    g /= 255;
+    b /= 255;
+
     const max = Math.max(r, g, b);
     const min = Math.min(r, g, b);
     const d = max - min;
-    
+
     let h = 0;
     const s = max === 0 ? 0 : d / max;
     const v = max;
 
     if (d !== 0) {
       switch (max) {
-        case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
-        case g: h = ((b - r) / d + 2) / 6; break;
-        case b: h = ((r - g) / d + 4) / 6; break;
+        case r:
+          h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
+          break;
+        case g:
+          h = ((b - r) / d + 2) / 6;
+          break;
+        case b:
+          h = ((r - g) / d + 4) / 6;
+          break;
       }
     }
 
@@ -977,7 +1009,7 @@ export class ImageSearchService {
   // ==================== COLOR MOMENTS ====================
   private computeColorMoments(img: HTMLImageElement): ColorMoments {
     const size = 64;
-    
+
     const canvas = document.createElement('canvas');
     canvas.width = size;
     canvas.height = size;
@@ -986,7 +1018,9 @@ export class ImageSearchService {
     const imageData = ctx.getImageData(0, 0, size, size);
     const pixels = imageData.data;
 
-    const r: number[] = [], g: number[] = [], b: number[] = [];
+    const r: number[] = [],
+      g: number[] = [],
+      b: number[] = [];
     for (let i = 0; i < pixels.length; i += 4) {
       r.push(pixels[i]);
       g.push(pixels[i + 1]);
@@ -996,20 +1030,20 @@ export class ImageSearchService {
     const calcMoments = (values: number[]): [number, number, number] => {
       const n = values.length;
       const mean = values.reduce((a, b) => a + b, 0) / n;
-      
+
       const variance = values.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / n;
       const std = Math.sqrt(variance);
-      
-      const skewness = std === 0 ? 0 : 
-        Math.cbrt(values.reduce((a, b) => a + Math.pow(b - mean, 3), 0) / n);
-      
+
+      const skewness =
+        std === 0 ? 0 : Math.cbrt(values.reduce((a, b) => a + Math.pow(b - mean, 3), 0) / n);
+
       return [mean / 255, std / 255, skewness / 255];
     };
 
     return {
       mean: [calcMoments(r)[0], calcMoments(g)[0], calcMoments(b)[0]],
       std: [calcMoments(r)[1], calcMoments(g)[1], calcMoments(b)[1]],
-      skewness: [calcMoments(r)[2], calcMoments(g)[2], calcMoments(b)[2]]
+      skewness: [calcMoments(r)[2], calcMoments(g)[2], calcMoments(b)[2]],
     };
   }
 
@@ -1017,7 +1051,7 @@ export class ImageSearchService {
   private computeEdgeHistogram(img: HTMLImageElement): number[] {
     const size = 64;
     const bins = 8;
-    
+
     const canvas = document.createElement('canvas');
     canvas.width = size;
     canvas.height = size;
@@ -1035,16 +1069,25 @@ export class ImageSearchService {
       }
     }
 
-    const sobelX = [[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]];
-    const sobelY = [[-1, -2, -1], [0, 0, 0], [1, 2, 1]];
+    const sobelX = [
+      [-1, 0, 1],
+      [-2, 0, 2],
+      [-1, 0, 1],
+    ];
+    const sobelY = [
+      [-1, -2, -1],
+      [0, 0, 0],
+      [1, 2, 1],
+    ];
 
     const histogram = new Array(bins).fill(0);
     let totalMagnitude = 0;
 
     for (let y = 1; y < size - 1; y++) {
       for (let x = 1; x < size - 1; x++) {
-        let gx = 0, gy = 0;
-        
+        let gx = 0,
+          gy = 0;
+
         for (let ky = -1; ky <= 1; ky++) {
           for (let kx = -1; kx <= 1; kx++) {
             const pixel = gray[y + ky][x + kx];
@@ -1055,9 +1098,9 @@ export class ImageSearchService {
 
         const magnitude = Math.sqrt(gx * gx + gy * gy);
         if (magnitude > 25) {
-          let angle = Math.atan2(gy, gx) * 180 / Math.PI;
+          let angle = (Math.atan2(gy, gx) * 180) / Math.PI;
           if (angle < 0) angle += 360;
-          
+
           const bin = Math.floor(angle / (360 / bins)) % bins;
           histogram[bin] += magnitude;
           totalMagnitude += magnitude;
@@ -1065,15 +1108,13 @@ export class ImageSearchService {
       }
     }
 
-    return totalMagnitude > 0 
-      ? histogram.map(h => h / totalMagnitude)
-      : histogram;
+    return totalMagnitude > 0 ? histogram.map((h) => h / totalMagnitude) : histogram;
   }
 
   // ==================== LBP (Local Binary Pattern) ====================
   private computeLBPHistogram(img: HTMLImageElement): number[] {
     const size = 64;
-    
+
     const canvas = document.createElement('canvas');
     canvas.width = size;
     canvas.height = size;
@@ -1101,17 +1142,22 @@ export class ImageSearchService {
       for (let x = 1; x < size - 1; x++) {
         const center = gray[y][x];
         let pattern = 0;
-        
+
         // 8 neighbors: clockwise from top-left
         const neighbors = [
-          gray[y-1][x-1], gray[y-1][x], gray[y-1][x+1],
-          gray[y][x+1], gray[y+1][x+1], gray[y+1][x],
-          gray[y+1][x-1], gray[y][x-1]
+          gray[y - 1][x - 1],
+          gray[y - 1][x],
+          gray[y - 1][x + 1],
+          gray[y][x + 1],
+          gray[y + 1][x + 1],
+          gray[y + 1][x],
+          gray[y + 1][x - 1],
+          gray[y][x - 1],
         ];
 
         for (let i = 0; i < 8; i++) {
           if (neighbors[i] >= center) {
-            pattern |= (1 << i);
+            pattern |= 1 << i;
           }
         }
 
@@ -1123,7 +1169,7 @@ export class ImageSearchService {
 
     // Normalize
     const total = (size - 2) * (size - 2);
-    return histogram.map(h => h / total);
+    return histogram.map((h) => h / total);
   }
 
   private getUniformPatterns(): Map<number, number> {
@@ -1153,7 +1199,7 @@ export class ImageSearchService {
   // ==================== HU MOMENTS ====================
   private computeHuMoments(img: HTMLImageElement): number[] {
     const size = 64;
-    
+
     const canvas = document.createElement('canvas');
     canvas.width = size;
     canvas.height = size;
@@ -1164,7 +1210,9 @@ export class ImageSearchService {
 
     // Convert to binary image (simple thresholding)
     const binary: number[][] = [];
-    let sumX = 0, sumY = 0, total = 0;
+    let sumX = 0,
+      sumY = 0,
+      total = 0;
 
     for (let y = 0; y < size; y++) {
       binary[y] = [];
@@ -1172,7 +1220,7 @@ export class ImageSearchService {
         const i = (y * size + x) * 4;
         const gray = 0.299 * pixels[i] + 0.587 * pixels[i + 1] + 0.114 * pixels[i + 2];
         binary[y][x] = gray > 128 ? 1 : 0;
-        
+
         if (binary[y][x]) {
           sumX += x;
           sumY += y;
@@ -1234,11 +1282,11 @@ export class ImageSearchService {
       (n20 - n02) * (Math.pow(n30 + n12, 2) - Math.pow(n21 + n03, 2)) +
         4 * n11 * (n30 + n12) * (n21 + n03),
       (3 * n21 - n03) * (n30 + n12) * (Math.pow(n30 + n12, 2) - 3 * Math.pow(n21 + n03, 2)) -
-        (n30 - 3 * n12) * (n21 + n03) * (3 * Math.pow(n30 + n12, 2) - Math.pow(n21 + n03, 2))
+        (n30 - 3 * n12) * (n21 + n03) * (3 * Math.pow(n30 + n12, 2) - Math.pow(n21 + n03, 2)),
     ];
 
     // Log transform for better comparison
-    return hu.map(h => h === 0 ? 0 : -Math.sign(h) * Math.log10(Math.abs(h) + 1e-10));
+    return hu.map((h) => (h === 0 ? 0 : -Math.sign(h) * Math.log10(Math.abs(h) + 1e-10)));
   }
 
   // ==================== COLOR LAYOUT (CBIR - MPEG-7 like) ====================
@@ -1250,7 +1298,7 @@ export class ImageSearchService {
   private computeColorLayout(img: HTMLImageElement): number[] {
     const gridSize = 8;
     const size = 64;
-    
+
     const canvas = document.createElement('canvas');
     canvas.width = size;
     canvas.height = size;
@@ -1273,21 +1321,25 @@ export class ImageSearchService {
       yGrid[gy] = [];
       cbGrid[gy] = [];
       crGrid[gy] = [];
-      
+
       for (let gx = 0; gx < gridSize; gx++) {
-        let sumY = 0, sumCb = 0, sumCr = 0;
+        let sumY = 0,
+          sumCb = 0,
+          sumCr = 0;
         let count = 0;
 
         for (let y = gy * cellSize; y < (gy + 1) * cellSize; y++) {
           for (let x = gx * cellSize; x < (gx + 1) * cellSize; x++) {
             const i = (y * size + x) * 4;
-            const r = pixels[i], g = pixels[i + 1], b = pixels[i + 2];
-            
+            const r = pixels[i],
+              g = pixels[i + 1],
+              b = pixels[i + 2];
+
             // RGB to YCbCr
             const Y = 0.299 * r + 0.587 * g + 0.114 * b;
             const Cb = 128 - 0.168736 * r - 0.331264 * g + 0.5 * b;
             const Cr = 128 + 0.5 * r - 0.418688 * g - 0.081312 * b;
-            
+
             sumY += Y;
             sumCb += Cb;
             sumCr += Cr;
@@ -1307,8 +1359,15 @@ export class ImageSearchService {
     const crDCT = this.dct2d(crGrid, gridSize);
 
     // Lấy 6 hệ số DC và AC đầu tiên cho mỗi kênh (zigzag)
-    const zigzagIndices = [[0,0], [0,1], [1,0], [2,0], [1,1], [0,2]];
-    
+    const zigzagIndices = [
+      [0, 0],
+      [0, 1],
+      [1, 0],
+      [2, 0],
+      [1, 1],
+      [0, 2],
+    ];
+
     for (const [row, col] of zigzagIndices) {
       yCoeffs.push(yDCT[row][col] / 255);
       cbCoeffs.push(cbDCT[row][col] / 255);
@@ -1329,7 +1388,7 @@ export class ImageSearchService {
     const cellSize = 8;
     const numBins = 9; // 0-180 độ, mỗi bin 20 độ
     const numCells = size / cellSize;
-    
+
     const canvas = document.createElement('canvas');
     canvas.width = size;
     canvas.height = size;
@@ -1351,16 +1410,16 @@ export class ImageSearchService {
     // Tính gradient
     const gradMag: number[][] = [];
     const gradDir: number[][] = [];
-    
+
     for (let y = 1; y < size - 1; y++) {
       gradMag[y] = [];
       gradDir[y] = [];
       for (let x = 1; x < size - 1; x++) {
         const gx = gray[y][x + 1] - gray[y][x - 1];
         const gy = gray[y + 1][x] - gray[y - 1][x];
-        
+
         gradMag[y][x] = Math.sqrt(gx * gx + gy * gy);
-        let angle = Math.atan2(gy, gx) * 180 / Math.PI;
+        let angle = (Math.atan2(gy, gx) * 180) / Math.PI;
         if (angle < 0) angle += 180; // 0-180 độ (unsigned gradient)
         gradDir[y][x] = angle;
       }
@@ -1368,30 +1427,30 @@ export class ImageSearchService {
 
     // Tính histogram cho mỗi cell
     const descriptor: number[] = [];
-    
+
     for (let cy = 0; cy < numCells; cy++) {
       for (let cx = 0; cx < numCells; cx++) {
         const histogram = new Array(numBins).fill(0);
-        
+
         for (let y = cy * cellSize + 1; y < (cy + 1) * cellSize - 1 && y < size - 1; y++) {
           for (let x = cx * cellSize + 1; x < (cx + 1) * cellSize - 1 && x < size - 1; x++) {
             const mag = gradMag[y]?.[x] || 0;
             const dir = gradDir[y]?.[x] || 0;
-            
+
             // Bilinear interpolation giữa 2 bins
             const binIdx = (dir / 180) * numBins;
             const bin1 = Math.floor(binIdx) % numBins;
             const bin2 = (bin1 + 1) % numBins;
             const ratio = binIdx - Math.floor(binIdx);
-            
+
             histogram[bin1] += mag * (1 - ratio);
             histogram[bin2] += mag * ratio;
           }
         }
-        
+
         // L2 normalize histogram
         const norm = Math.sqrt(histogram.reduce((a, b) => a + b * b, 0) + 1e-6);
-        descriptor.push(...histogram.map(h => h / norm));
+        descriptor.push(...histogram.map((h) => h / norm));
       }
     }
 
@@ -1408,7 +1467,7 @@ export class ImageSearchService {
     const size = 64;
     const scales = [4, 8, 16]; // Kích thước kernel
     const orientations = [0, 45, 90, 135]; // Hướng (độ)
-    
+
     const canvas = document.createElement('canvas');
     canvas.width = size;
     canvas.height = size;
@@ -1428,16 +1487,16 @@ export class ImageSearchService {
     for (const scale of scales) {
       for (const theta of orientations) {
         // Tạo Gabor kernel
-        const kernel = this.createGaborKernel(scale, theta * Math.PI / 180);
-        
+        const kernel = this.createGaborKernel(scale, (theta * Math.PI) / 180);
+
         // Convolution với ảnh
         const response = this.convolve2D(gray, size, size, kernel);
-        
+
         // Tính mean và std của response (energy features)
         const mean = response.reduce((a, b) => a + b, 0) / response.length;
         const variance = response.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / response.length;
         const std = Math.sqrt(variance);
-        
+
         features.push(mean / 255, std / 255);
       }
     }
@@ -1451,23 +1510,25 @@ export class ImageSearchService {
     const lambda = size / 2;
     const gamma = 0.5;
     const psi = 0;
-    
+
     const halfSize = Math.floor(size / 2);
-    
+
     for (let y = -halfSize; y <= halfSize; y++) {
       const row: number[] = [];
       for (let x = -halfSize; x <= halfSize; x++) {
         const xTheta = x * Math.cos(theta) + y * Math.sin(theta);
         const yTheta = -x * Math.sin(theta) + y * Math.cos(theta);
-        
-        const gaussian = Math.exp(-(xTheta * xTheta + gamma * gamma * yTheta * yTheta) / (2 * sigma * sigma));
-        const sinusoid = Math.cos(2 * Math.PI * xTheta / lambda + psi);
-        
+
+        const gaussian = Math.exp(
+          -(xTheta * xTheta + gamma * gamma * yTheta * yTheta) / (2 * sigma * sigma)
+        );
+        const sinusoid = Math.cos((2 * Math.PI * xTheta) / lambda + psi);
+
         row.push(gaussian * sinusoid);
       }
       kernel.push(row);
     }
-    
+
     return kernel;
   }
 
@@ -1475,11 +1536,11 @@ export class ImageSearchService {
     const result: number[] = new Array(width * height).fill(0);
     const kSize = kernel.length;
     const halfK = Math.floor(kSize / 2);
-    
+
     for (let y = halfK; y < height - halfK; y++) {
       for (let x = halfK; x < width - halfK; x++) {
         let sum = 0;
-        
+
         for (let ky = 0; ky < kSize; ky++) {
           for (let kx = 0; kx < kSize; kx++) {
             const imgY = y + ky - halfK;
@@ -1487,11 +1548,11 @@ export class ImageSearchService {
             sum += image[imgY * width + imgX] * kernel[ky][kx];
           }
         }
-        
+
         result[y * width + x] = Math.abs(sum);
       }
     }
-    
+
     return result;
   }
 
@@ -1504,7 +1565,7 @@ export class ImageSearchService {
   private computeGLCMFeatures(img: HTMLImageElement): GLCMFeatures {
     const size = 64;
     const levels = 16; // Số mức xám (giảm từ 256 để tăng tốc)
-    
+
     const canvas = document.createElement('canvas');
     canvas.width = size;
     canvas.height = size;
@@ -1520,7 +1581,7 @@ export class ImageSearchService {
       for (let x = 0; x < size; x++) {
         const i = (y * size + x) * 4;
         const g = 0.299 * pixels[i] + 0.587 * pixels[i + 1] + 0.114 * pixels[i + 2];
-        gray[y][x] = Math.min(Math.floor(g / 256 * levels), levels - 1);
+        gray[y][x] = Math.min(Math.floor((g / 256) * levels), levels - 1);
       }
     }
 
@@ -1531,14 +1592,19 @@ export class ImageSearchService {
     }
 
     // Tính GLCM với 4 hướng và lấy trung bình
-    const offsets = [[0, 1], [1, 0], [1, 1], [1, -1]]; // 0°, 90°, 45°, 135°
-    
+    const offsets = [
+      [0, 1],
+      [1, 0],
+      [1, 1],
+      [1, -1],
+    ]; // 0°, 90°, 45°, 135°
+
     for (const [dy, dx] of offsets) {
       for (let y = 0; y < size; y++) {
         for (let x = 0; x < size; x++) {
           const ny = y + dy;
           const nx = x + dx;
-          
+
           if (ny >= 0 && ny < size && nx >= 0 && nx < size) {
             const i = gray[y][x];
             const j = gray[ny][nx];
@@ -1556,7 +1622,7 @@ export class ImageSearchService {
         total += glcm[i][j];
       }
     }
-    
+
     if (total > 0) {
       for (let i = 0; i < levels; i++) {
         for (let j = 0; j < levels; j++) {
@@ -1566,8 +1632,16 @@ export class ImageSearchService {
     }
 
     // Tính các features từ GLCM
-    let contrast = 0, dissimilarity = 0, homogeneity = 0, energy = 0, entropy = 0;
-    let meanI = 0, meanJ = 0, varI = 0, varJ = 0, correlation = 0;
+    let contrast = 0,
+      dissimilarity = 0,
+      homogeneity = 0,
+      energy = 0,
+      entropy = 0;
+    let meanI = 0,
+      meanJ = 0,
+      varI = 0,
+      varJ = 0,
+      correlation = 0;
 
     // Tính mean
     for (let i = 0; i < levels; i++) {
@@ -1592,16 +1666,16 @@ export class ImageSearchService {
     for (let i = 0; i < levels; i++) {
       for (let j = 0; j < levels; j++) {
         const p = glcm[i][j];
-        
+
         contrast += Math.pow(i - j, 2) * p;
         dissimilarity += Math.abs(i - j) * p;
         homogeneity += p / (1 + Math.pow(i - j, 2));
         energy += p * p;
-        
+
         if (p > 0) {
           entropy -= p * Math.log2(p);
         }
-        
+
         if (stdI > 0 && stdJ > 0) {
           correlation += ((i - meanI) * (j - meanJ) * p) / (stdI * stdJ);
         }
@@ -1614,7 +1688,7 @@ export class ImageSearchService {
       homogeneity,
       energy,
       correlation: (correlation + 1) / 2, // Map [-1, 1] to [0, 1]
-      entropy: entropy / Math.log2(levels * levels) // Normalize
+      entropy: entropy / Math.log2(levels * levels), // Normalize
     };
   }
 
@@ -1627,7 +1701,7 @@ export class ImageSearchService {
   private computeSpatialHistogram(img: HTMLImageElement): number[] {
     const size = 64;
     const bins = 8;
-    
+
     const canvas = document.createElement('canvas');
     canvas.width = size;
     canvas.height = size;
@@ -1638,11 +1712,11 @@ export class ImageSearchService {
 
     // 5 regions: top-left, top-right, bottom-left, bottom-right, center
     const regions = [
-      { x1: 0, y1: 0, x2: size/2, y2: size/2 },           // Top-left
-      { x1: size/2, y1: 0, x2: size, y2: size/2 },        // Top-right
-      { x1: 0, y1: size/2, x2: size/2, y2: size },        // Bottom-left
-      { x1: size/2, y1: size/2, x2: size, y2: size },     // Bottom-right
-      { x1: size/4, y1: size/4, x2: 3*size/4, y2: 3*size/4 } // Center
+      { x1: 0, y1: 0, x2: size / 2, y2: size / 2 }, // Top-left
+      { x1: size / 2, y1: 0, x2: size, y2: size / 2 }, // Top-right
+      { x1: 0, y1: size / 2, x2: size / 2, y2: size }, // Bottom-left
+      { x1: size / 2, y1: size / 2, x2: size, y2: size }, // Bottom-right
+      { x1: size / 4, y1: size / 4, x2: (3 * size) / 4, y2: (3 * size) / 4 }, // Center
     ];
 
     const allHistograms: number[] = [];
@@ -1655,12 +1729,14 @@ export class ImageSearchService {
       for (let y = region.y1; y < region.y2; y++) {
         for (let x = region.x1; x < region.x2; x++) {
           const i = (y * size + x) * 4;
-          const r = pixels[i], g = pixels[i + 1], b = pixels[i + 2];
-          
+          const r = pixels[i],
+            g = pixels[i + 1],
+            b = pixels[i + 2];
+
           const rBin = Math.min(Math.floor(r / binSize), bins - 1);
           const gBin = Math.min(Math.floor(g / binSize), bins - 1);
           const bBin = Math.min(Math.floor(b / binSize), bins - 1);
-          
+
           histogram[rBin]++;
           histogram[bins + gBin]++;
           histogram[bins * 2 + bBin]++;
@@ -1682,9 +1758,12 @@ export class ImageSearchService {
   }
 
   // ==================== BRIGHTNESS & CONTRAST ====================
-  private computeBrightnessContrast(img: HTMLImageElement): { brightness: number; contrast: number } {
+  private computeBrightnessContrast(img: HTMLImageElement): {
+    brightness: number;
+    contrast: number;
+  } {
     const size = 64;
-    
+
     const canvas = document.createElement('canvas');
     canvas.width = size;
     canvas.height = size;
@@ -1704,14 +1783,14 @@ export class ImageSearchService {
 
     return {
       brightness: mean / 255, // 0-1
-      contrast: std / 128     // Normalized
+      contrast: std / 128, // Normalized
     };
   }
 
   // ==================== DOMINANT COLORS (K-Means) ====================
   private extractDominantColors(img: HTMLImageElement, k: number): string[] {
     const size = 32;
-    
+
     const canvas = document.createElement('canvas');
     canvas.width = size;
     canvas.height = size;
@@ -1722,7 +1801,9 @@ export class ImageSearchService {
 
     const points: [number, number, number][] = [];
     for (let i = 0; i < pixels.length; i += 4) {
-      const r = pixels[i], g = pixels[i + 1], b = pixels[i + 2];
+      const r = pixels[i],
+        g = pixels[i + 1],
+        b = pixels[i + 2];
       const brightness = (r + g + b) / 3;
       if (brightness > 15 && brightness < 240) {
         points.push([r, g, b]);
@@ -1734,9 +1815,10 @@ export class ImageSearchService {
     }
 
     const centroids = this.kMeans(points, k, 15);
-    
-    return centroids.map(([r, g, b]) => 
-      '#' + [r, g, b].map(c => Math.round(c).toString(16).padStart(2, '0')).join('')
+
+    return centroids.map(
+      ([r, g, b]) =>
+        '#' + [r, g, b].map((c) => Math.round(c).toString(16).padStart(2, '0')).join('')
     );
   }
 
@@ -1753,11 +1835,11 @@ export class ImageSearchService {
 
     for (let iter = 0; iter < iterations; iter++) {
       const clusters: [number, number, number][][] = centroids.map(() => []);
-      
+
       for (const point of points) {
         let minDist = Infinity;
         let closestIdx = 0;
-        
+
         for (let i = 0; i < centroids.length; i++) {
           const dist = this.colorDistance(point, centroids[i]);
           if (dist < minDist) {
@@ -1765,7 +1847,7 @@ export class ImageSearchService {
             closestIdx = i;
           }
         }
-        
+
         clusters[closestIdx].push(point);
       }
 
@@ -1774,7 +1856,7 @@ export class ImageSearchService {
           centroids[i] = [
             clusters[i].reduce((a, p) => a + p[0], 0) / clusters[i].length,
             clusters[i].reduce((a, p) => a + p[1], 0) / clusters[i].length,
-            clusters[i].reduce((a, p) => a + p[2], 0) / clusters[i].length
+            clusters[i].reduce((a, p) => a + p[2], 0) / clusters[i].length,
           ];
         }
       }
@@ -1785,9 +1867,7 @@ export class ImageSearchService {
 
   private colorDistance(c1: [number, number, number], c2: [number, number, number]): number {
     return Math.sqrt(
-      Math.pow(c1[0] - c2[0], 2) +
-      Math.pow(c1[1] - c2[1], 2) +
-      Math.pow(c1[2] - c2[2], 2)
+      Math.pow(c1[0] - c2[0], 2) + Math.pow(c1[1] - c2[1], 2) + Math.pow(c1[2] - c2[2], 2)
     );
   }
 
@@ -1796,26 +1876,30 @@ export class ImageSearchService {
    * Create a canvas with consistent rendering settings for feature extraction
    * This helps reduce variations between different renders of the same image
    */
-  private createConsistentCanvas(img: HTMLImageElement, width: number, height: number): { 
-    canvas: HTMLCanvasElement; 
-    ctx: CanvasRenderingContext2D; 
-    pixels: Uint8ClampedArray 
+  private createConsistentCanvas(
+    img: HTMLImageElement,
+    width: number,
+    height: number
+  ): {
+    canvas: HTMLCanvasElement;
+    ctx: CanvasRenderingContext2D;
+    pixels: Uint8ClampedArray;
   } {
     const canvas = document.createElement('canvas');
     canvas.width = width;
     canvas.height = height;
-    const ctx = canvas.getContext('2d', { 
+    const ctx = canvas.getContext('2d', {
       willReadFrequently: true,
-      alpha: false 
+      alpha: false,
     })!;
-    
+
     // Disable image smoothing for deterministic results
     ctx.imageSmoothingEnabled = false;
     ctx.imageSmoothingQuality = 'low';
-    
+
     // Draw image
     ctx.drawImage(img, 0, 0, width, height);
-    
+
     const imageData = ctx.getImageData(0, 0, width, height);
     return { canvas, ctx, pixels: imageData.data };
   }
@@ -1832,22 +1916,29 @@ export class ImageSearchService {
   // ==================== COMPARISON FUNCTIONS ====================
 
   private compareHashes(hash1: string, hash2: string): number {
-    if (!hash1 || !hash2 || hash1.length === 0 || hash2.length === 0 || hash1.length !== hash2.length) return 0;
-    
+    if (
+      !hash1 ||
+      !hash2 ||
+      hash1.length === 0 ||
+      hash2.length === 0 ||
+      hash1.length !== hash2.length
+    )
+      return 0;
+
     let diff = 0;
     for (let i = 0; i < hash1.length; i++) {
       if (hash1[i] !== hash2[i]) diff++;
     }
-    
+
     // Use a non-linear similarity curve for better perceptual matching
     // Small differences (< 10%) are considered nearly identical
     // This adds tolerance for minor variations in hash computation
     const hammingDistance = diff / hash1.length;
-    
+
     let similarity: number;
     if (hammingDistance <= 0.1) {
       // Very similar: 90-100% similarity
-      similarity = 1 - (hammingDistance * 0.5);
+      similarity = 1 - hammingDistance * 0.5;
     } else if (hammingDistance <= 0.25) {
       // Similar: 70-95% similarity
       similarity = 0.95 - (hammingDistance - 0.1) * 1.67;
@@ -1855,13 +1946,13 @@ export class ImageSearchService {
       // Less similar: linear falloff
       similarity = Math.max(0, 1 - hammingDistance);
     }
-    
+
     return isNaN(similarity) ? 0 : similarity;
   }
 
   private compareHistograms(h1: number[], h2: number[]): number {
     if (!h1 || !h2 || h1.length === 0 || h2.length === 0 || h1.length !== h2.length) return 0;
-    
+
     // Bhattacharyya coefficient
     let sum = 0;
     for (let i = 0; i < h1.length; i++) {
@@ -1871,16 +1962,16 @@ export class ImageSearchService {
         sum += Math.sqrt(val1 * val2);
       }
     }
-    
+
     const result = Math.min(sum, 1);
     return isNaN(result) ? 0 : result;
   }
 
   private compareColorMoments(m1: ColorMoments, m2: ColorMoments): number {
     if (!m1 || !m2 || !m1.mean || !m2.mean || !m1.std || !m2.std) return 0;
-    
+
     let dist = 0;
-    
+
     for (let i = 0; i < 3; i++) {
       const mean1 = m1.mean[i] || 0;
       const mean2 = m2.mean[i] || 0;
@@ -1888,26 +1979,26 @@ export class ImageSearchService {
       const std2 = m2.std[i] || 0;
       const skew1 = m1.skewness?.[i] || 0;
       const skew2 = m2.skewness?.[i] || 0;
-      
+
       dist += Math.pow(mean1 - mean2, 2) * 1.5; // Weight mean more
       dist += Math.pow(std1 - std2, 2);
       dist += Math.pow(skew1 - skew2, 2) * 0.5;
     }
-    
+
     const result = Math.max(0, 1 - Math.sqrt(dist) / 2.5);
     return isNaN(result) ? 0 : result;
   }
 
   private compareHuMoments(h1: number[], h2: number[]): number {
     if (!h1 || !h2 || h1.length === 0 || h2.length === 0 || h1.length !== h2.length) return 0;
-    
+
     let dist = 0;
     for (let i = 0; i < h1.length; i++) {
       const val1 = isNaN(h1[i]) ? 0 : h1[i];
       const val2 = isNaN(h2[i]) ? 0 : h2[i];
       dist += Math.pow(val1 - val2, 2);
     }
-    
+
     // Normalize - Hu moments can have large values
     const result = Math.max(0, 1 - Math.sqrt(dist) / 10);
     return isNaN(result) ? 0 : result;
@@ -1915,11 +2006,10 @@ export class ImageSearchService {
 
   private compareGLCMFeatures(g1: GLCMFeatures, g2: GLCMFeatures | undefined): number {
     if (!g1 || !g2) return 0;
-    
+
     // Helper to safely get value (default to 0 if NaN/undefined)
-    const safe = (val: number | undefined): number => 
-      val == null || isNaN(val) ? 0 : val;
-    
+    const safe = (val: number | undefined): number => (val == null || isNaN(val) ? 0 : val);
+
     // So sánh các thuộc tính GLCM với trọng số khác nhau
     const weights = {
       contrast: 0.2,
@@ -1927,26 +2017,27 @@ export class ImageSearchService {
       homogeneity: 0.2,
       energy: 0.15,
       correlation: 0.15,
-      entropy: 0.15
+      entropy: 0.15,
     };
 
     let similarity = 0;
-    
+
     // Contrast (0 to ~1 normalized)
     similarity += weights.contrast * (1 - Math.abs(safe(g1.contrast) - safe(g2.contrast)));
-    
+
     // Dissimilarity (0 to ~1 normalized)
-    similarity += weights.dissimilarity * (1 - Math.abs(safe(g1.dissimilarity) - safe(g2.dissimilarity)));
-    
+    similarity +=
+      weights.dissimilarity * (1 - Math.abs(safe(g1.dissimilarity) - safe(g2.dissimilarity)));
+
     // Homogeneity (0 to 1)
     similarity += weights.homogeneity * (1 - Math.abs(safe(g1.homogeneity) - safe(g2.homogeneity)));
-    
+
     // Energy (0 to 1)
     similarity += weights.energy * (1 - Math.abs(safe(g1.energy) - safe(g2.energy)));
-    
+
     // Correlation (0 to 1 normalized)
     similarity += weights.correlation * (1 - Math.abs(safe(g1.correlation) - safe(g2.correlation)));
-    
+
     // Entropy (0 to 1 normalized)
     similarity += weights.entropy * (1 - Math.abs(safe(g1.entropy) - safe(g2.entropy)));
 
@@ -1967,7 +2058,7 @@ export class ImageSearchService {
       request.onsuccess = () => {
         const feedback = request.result.map((f: any) => ({
           ...f,
-          timestamp: new Date(f.timestamp)
+          timestamp: new Date(f.timestamp),
         }));
         this.feedbackHistory.set(feedback);
       };
@@ -1988,7 +2079,7 @@ export class ImageSearchService {
         if (request.result) {
           this.learnedWeights.set({
             ...request.result.value,
-            lastUpdated: new Date(request.result.value.lastUpdated)
+            lastUpdated: new Date(request.result.value.lastUpdated),
           });
         }
       };
@@ -2015,7 +2106,7 @@ export class ImageSearchService {
       isRelevant,
       similarity: result.similarity,
       scores: result.scores,
-      timestamp: new Date()
+      timestamp: new Date(),
     };
 
     // Save to DB
@@ -2026,7 +2117,7 @@ export class ImageSearchService {
         await new Promise<void>((resolve, reject) => {
           const request = store.put({
             ...feedback,
-            timestamp: feedback.timestamp.toISOString()
+            timestamp: feedback.timestamp.toISOString(),
           });
           request.onsuccess = () => resolve();
           request.onerror = () => reject(request.error);
@@ -2037,7 +2128,7 @@ export class ImageSearchService {
     }
 
     // Update local state
-    this.feedbackHistory.update(history => [...history, feedback]);
+    this.feedbackHistory.update((history) => [...history, feedback]);
 
     // Trigger learning if enabled
     if (this.isLearningEnabled()) {
@@ -2059,14 +2150,14 @@ export class ImageSearchService {
 
     // Calculate gradient for each weight
     const gradients: Partial<SearchWeights> = {};
-    
+
     for (const key of keys) {
       let gradient = 0;
-      
+
       for (const fb of feedback) {
         const score = fb.scores[key];
-        const error = fb.isRelevant ? (1 - score) : score; // Error based on relevance
-        
+        const error = fb.isRelevant ? 1 - score : score; // Error based on relevance
+
         // Positive gradient if relevant (increase weight for good scores)
         // Negative gradient if not relevant (decrease weight for bad scores)
         if (fb.isRelevant) {
@@ -2075,7 +2166,7 @@ export class ImageSearchService {
           gradient -= score * learningRate; // Penalize algorithms that scored high for irrelevant
         }
       }
-      
+
       gradients[key] = gradient / feedback.length;
     }
 
@@ -2094,7 +2185,7 @@ export class ImageSearchService {
     }
 
     // Calculate accuracy estimate
-    const correctPredictions = feedback.filter(fb => {
+    const correctPredictions = feedback.filter((fb) => {
       const predicted = fb.similarity >= 0.5;
       return predicted === fb.isRelevant;
     }).length;
@@ -2105,7 +2196,7 @@ export class ImageSearchService {
       weights: newWeights,
       feedbackCount: feedback.length,
       lastUpdated: new Date(),
-      accuracy
+      accuracy,
     };
 
     this.learnedWeights.set(learned);
@@ -2120,8 +2211,8 @@ export class ImageSearchService {
             key: 'learnedWeights',
             value: {
               ...learned,
-              lastUpdated: learned.lastUpdated.toISOString()
-            }
+              lastUpdated: learned.lastUpdated.toISOString(),
+            },
           });
           request.onsuccess = () => resolve();
           request.onerror = () => reject(request.error);
@@ -2172,7 +2263,7 @@ export class ImageSearchService {
    */
   getFeedbackStats(): { total: number; positive: number; negative: number; accuracy: number } {
     const feedback = this.feedbackHistory();
-    const positive = feedback.filter(f => f.isRelevant).length;
+    const positive = feedback.filter((f) => f.isRelevant).length;
     const negative = feedback.length - positive;
     const accuracy = this.learnedWeights()?.accuracy || 0;
 
@@ -2236,12 +2327,21 @@ export class ImageSearchService {
 
   getWeightKeys(): (keyof SearchWeights)[] {
     return [
-      'pHash', 'dHash', 'aHash', 
-      'colorHistogramRGB', 'colorHistogramHSV', 'colorMoments',
-      'edgeHistogram', 'lbpHistogram', 'huMoments',
+      'pHash',
+      'dHash',
+      'aHash',
+      'colorHistogramRGB',
+      'colorHistogramHSV',
+      'colorMoments',
+      'edgeHistogram',
+      'lbpHistogram',
+      'huMoments',
       // CBIR Advanced
-      'colorLayout', 'hogDescriptor', 'gaborFeatures', 
-      'glcmFeatures', 'spatialHistogram'
+      'colorLayout',
+      'hogDescriptor',
+      'gaborFeatures',
+      'glcmFeatures',
+      'spatialHistogram',
     ];
   }
 }

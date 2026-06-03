@@ -19,7 +19,7 @@ export interface WindowConfig {
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class WindowManagerService {
   private windows = signal<Map<string, WindowConfig>>(new Map());
@@ -28,8 +28,8 @@ export class WindowManagerService {
 
   // Computed values
   windowList = computed(() => Array.from(this.windows().values()));
-  openWindows = computed(() => this.windowList().filter(w => !w.isMinimized));
-  minimizedWindows = computed(() => this.windowList().filter(w => w.isMinimized));
+  openWindows = computed(() => this.windowList().filter((w) => !w.isMinimized));
+  minimizedWindows = computed(() => this.windowList().filter((w) => w.isMinimized));
   focusedWindow = computed(() => {
     const id = this.focusedWindowId();
     return id ? this.windows().get(id) : null;
@@ -38,7 +38,7 @@ export class WindowManagerService {
   // Window operations
   openWindow(config: Partial<WindowConfig> & { id: string; component: string }): void {
     const windows = new Map(this.windows());
-    
+
     // Check if window already exists
     const existingWindow = windows.get(config.id);
     if (existingWindow) {
@@ -67,12 +67,12 @@ export class WindowManagerService {
       initialY: config.initialY || 100,
       maximizable: config.maximizable !== false,
       statusText: config.statusText,
-      data: config.data
+      data: config.data,
     };
 
     windows.set(config.id, newWindow);
     this.windows.set(windows);
-    this.maxZIndex.update(z => z + 1);
+    this.maxZIndex.update((z) => z + 1);
     this.focusWindow(config.id);
   }
 
@@ -83,10 +83,10 @@ export class WindowManagerService {
 
     // Update focused window
     if (this.focusedWindowId() === id) {
-      const remaining = Array.from(windows.values()).filter(w => !w.isMinimized);
+      const remaining = Array.from(windows.values()).filter((w) => !w.isMinimized);
       if (remaining.length > 0) {
         // Focus the window with highest z-index
-        const topWindow = remaining.reduce((max, w) => w.zIndex > max.zIndex ? w : max);
+        const topWindow = remaining.reduce((max, w) => (w.zIndex > max.zIndex ? w : max));
         this.focusedWindowId.set(topWindow.id);
       } else {
         this.focusedWindowId.set(null);
@@ -105,9 +105,9 @@ export class WindowManagerService {
 
       if (this.focusedWindowId() === id) {
         // Focus next available window
-        const remaining = Array.from(windows.values()).filter(w => !w.isMinimized);
+        const remaining = Array.from(windows.values()).filter((w) => !w.isMinimized);
         if (remaining.length > 0) {
-          const topWindow = remaining.reduce((max, w) => w.zIndex > max.zIndex ? w : max);
+          const topWindow = remaining.reduce((max, w) => (w.zIndex > max.zIndex ? w : max));
           this.focusWindow(topWindow.id);
         } else {
           this.focusedWindowId.set(null);
@@ -150,18 +150,18 @@ export class WindowManagerService {
   focusWindow(id: string): void {
     const windows = new Map(this.windows());
     const window = windows.get(id);
-    
+
     if (window) {
       // Unfocus all windows
-      windows.forEach(w => w.isFocused = false);
-      
+      windows.forEach((w) => (w.isFocused = false));
+
       // Focus the target window and bring to front
       window.isFocused = true;
       window.zIndex = this.maxZIndex() + 1;
       windows.set(id, window);
-      
+
       this.windows.set(windows);
-      this.maxZIndex.update(z => z + 1);
+      this.maxZIndex.update((z) => z + 1);
       this.focusedWindowId.set(id);
     }
   }
@@ -215,7 +215,7 @@ export class WindowManagerService {
 
   minimizeAllWindows(): void {
     const windows = new Map(this.windows());
-    windows.forEach(window => {
+    windows.forEach((window) => {
       window.isMinimized = true;
       window.isFocused = false;
     });
@@ -225,7 +225,7 @@ export class WindowManagerService {
 
   // Get windows for taskbar (exclude certain windows if needed)
   getTaskbarWindows(): WindowConfig[] {
-    return this.windowList().filter(w => {
+    return this.windowList().filter((w) => {
       // You can filter out certain windows here
       return true;
     });
@@ -234,7 +234,7 @@ export class WindowManagerService {
   // Get windows sorted by z-index (highest first) for window switcher
   getWindowsByZIndex(): WindowConfig[] {
     return this.windowList()
-      .filter(w => !w.isMinimized)
+      .filter((w) => !w.isMinimized)
       .sort((a, b) => b.zIndex - a.zIndex);
   }
 
@@ -248,7 +248,7 @@ export class WindowManagerService {
       return windows[0];
     }
 
-    const currentIndex = windows.findIndex(w => w.id === currentWindowId);
+    const currentIndex = windows.findIndex((w) => w.id === currentWindowId);
     if (currentIndex === -1) {
       return windows[0];
     }
@@ -268,7 +268,7 @@ export class WindowManagerService {
       return windows[windows.length - 1];
     }
 
-    const currentIndex = windows.findIndex(w => w.id === currentWindowId);
+    const currentIndex = windows.findIndex((w) => w.id === currentWindowId);
     if (currentIndex === -1) {
       return windows[windows.length - 1];
     }
@@ -278,4 +278,3 @@ export class WindowManagerService {
     return windows[prevIndex];
   }
 }
-

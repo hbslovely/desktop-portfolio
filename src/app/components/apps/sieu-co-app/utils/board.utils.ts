@@ -45,29 +45,32 @@ export function findKingPosition(board: Board, color: PieceColor): Position | nu
 export function areKingsFacing(board: Board): boolean {
   const redKing = findKingPosition(board, PieceColor.RED);
   const blackKing = findKingPosition(board, PieceColor.BLACK);
-  
+
   if (!redKing || !blackKing) return false;
   if (redKing.col !== blackKing.col) return false;
-  
+
   // Check if any piece between the kings
   const minRow = Math.min(redKing.row, blackKing.row);
   const maxRow = Math.max(redKing.row, blackKing.row);
-  
+
   for (let row = minRow + 1; row < maxRow; row++) {
     if (board[row][redKing.col] !== null) {
       return false;
     }
   }
-  
+
   return true;
 }
 
 /**
  * Get all pieces of a color
  */
-export function getPiecesOfColor(board: Board, color: PieceColor): { piece: Piece; pos: Position }[] {
+export function getPiecesOfColor(
+  board: Board,
+  color: PieceColor
+): { piece: Piece; pos: Position }[] {
   const pieces: { piece: Piece; pos: Position }[] = [];
-  
+
   for (let row = 0; row < BOARD_ROWS; row++) {
     for (let col = 0; col < BOARD_COLS; col++) {
       const piece = board[row][col];
@@ -76,7 +79,7 @@ export function getPiecesOfColor(board: Board, color: PieceColor): { piece: Piec
       }
     }
   }
-  
+
   return pieces;
 }
 
@@ -101,7 +104,7 @@ export function getBoardHash(board: Board, turn: PieceColor): string {
  */
 export function setupStandardBoard(): Board {
   const board = createEmptyBoard();
-  
+
   // Black pieces (top)
   board[0][0] = { type: PieceType.ROOK, color: PieceColor.BLACK };
   board[0][1] = { type: PieceType.HORSE, color: PieceColor.BLACK };
@@ -112,16 +115,16 @@ export function setupStandardBoard(): Board {
   board[0][6] = { type: PieceType.ELEPHANT, color: PieceColor.BLACK };
   board[0][7] = { type: PieceType.HORSE, color: PieceColor.BLACK };
   board[0][8] = { type: PieceType.ROOK, color: PieceColor.BLACK };
-  
+
   board[2][1] = { type: PieceType.CANNON, color: PieceColor.BLACK };
   board[2][7] = { type: PieceType.CANNON, color: PieceColor.BLACK };
-  
+
   board[3][0] = { type: PieceType.PAWN, color: PieceColor.BLACK };
   board[3][2] = { type: PieceType.PAWN, color: PieceColor.BLACK };
   board[3][4] = { type: PieceType.PAWN, color: PieceColor.BLACK };
   board[3][6] = { type: PieceType.PAWN, color: PieceColor.BLACK };
   board[3][8] = { type: PieceType.PAWN, color: PieceColor.BLACK };
-  
+
   // Red pieces (bottom)
   board[9][0] = { type: PieceType.ROOK, color: PieceColor.RED };
   board[9][1] = { type: PieceType.HORSE, color: PieceColor.RED };
@@ -132,16 +135,16 @@ export function setupStandardBoard(): Board {
   board[9][6] = { type: PieceType.ELEPHANT, color: PieceColor.RED };
   board[9][7] = { type: PieceType.HORSE, color: PieceColor.RED };
   board[9][8] = { type: PieceType.ROOK, color: PieceColor.RED };
-  
+
   board[7][1] = { type: PieceType.CANNON, color: PieceColor.RED };
   board[7][7] = { type: PieceType.CANNON, color: PieceColor.RED };
-  
+
   board[6][0] = { type: PieceType.PAWN, color: PieceColor.RED };
   board[6][2] = { type: PieceType.PAWN, color: PieceColor.RED };
   board[6][4] = { type: PieceType.PAWN, color: PieceColor.RED };
   board[6][6] = { type: PieceType.PAWN, color: PieceColor.RED };
   board[6][8] = { type: PieceType.PAWN, color: PieceColor.RED };
-  
+
   return board;
 }
 
@@ -149,8 +152,9 @@ export function setupStandardBoard(): Board {
  * Count pieces on the board
  */
 export function countPieces(board: Board): { red: number; black: number; total: number } {
-  let red = 0, black = 0;
-  
+  let red = 0,
+    black = 0;
+
   for (let row = 0; row < BOARD_ROWS; row++) {
     for (let col = 0; col < BOARD_COLS; col++) {
       const piece = board[row][col];
@@ -160,6 +164,6 @@ export function countPieces(board: Board): { red: number; black: number; total: 
       }
     }
   }
-  
+
   return { red, black, total: red + black };
 }

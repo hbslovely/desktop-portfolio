@@ -89,7 +89,7 @@ interface StoredPageViewId {
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class BookingService {
   private pageviewIdSubject = new BehaviorSubject<string>('');
@@ -156,7 +156,7 @@ export class BookingService {
     try {
       const data: StoredPageViewId = {
         pageviewId,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
       console.log('Booking pageview ID cached for 1 day:', pageviewId);
@@ -176,14 +176,16 @@ export class BookingService {
    * Fetch and store new pageview ID
    */
   private fetchAndStorePageViewId(): void {
-    this.fetchPageViewId().then(() => {
-      const currentId = this.pageviewIdSubject.value;
-      if (currentId) {
-        this.storePageViewId(currentId);
-      }
-    }).catch(error => {
-      console.error('Failed to fetch pageview ID:', error);
-    });
+    this.fetchPageViewId()
+      .then(() => {
+        const currentId = this.pageviewIdSubject.value;
+        if (currentId) {
+          this.storePageViewId(currentId);
+        }
+      })
+      .catch((error) => {
+        console.error('Failed to fetch pageview ID:', error);
+      });
   }
 
   /**
@@ -223,9 +225,7 @@ export class BookingService {
    * Generate a fallback pageview ID (16 hex characters)
    */
   private generateFallbackPageViewId(): string {
-    return Array.from({ length: 16 }, () => 
-      Math.floor(Math.random() * 16).toString(16)
-    ).join('');
+    return Array.from({ length: 16 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
   }
 
   /**
@@ -244,16 +244,16 @@ export class BookingService {
             mergeResults: true,
             nbMaxMergedResults: 6,
             nbMaxThirdPartyResults: 3,
-            sources: ['GOOGLE', 'HERE']
+            sources: ['GOOGLE', 'HERE'],
           },
           requestConfig: {
-            enableRequestContextBoost: true
+            enableRequestContextBoost: true,
           },
           requestContext: {
             pageviewId: pageviewId,
-            location: null
-          }
-        }
+            location: null,
+          },
+        },
       },
       extensions: {},
       query: `query AutoComplete($input: AutoCompleteRequestInput!) {
@@ -305,24 +305,22 @@ export class BookingService {
     __typename
   }
 }
-`
+`,
     };
 
     const headers = new HttpHeaders({
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
     });
 
-    return this.http.post<BookingAutoCompleteResponse>(
-      this.GRAPHQL_URL,
-      graphqlQuery,
-      { headers }
-    ).pipe(
-      map(response => response.data.autoCompleteSuggestions.results),
-      catchError(error => {
-        console.error('Error fetching autocomplete suggestions:', error);
-        return of([]);
-      })
-    );
+    return this.http
+      .post<BookingAutoCompleteResponse>(this.GRAPHQL_URL, graphqlQuery, { headers })
+      .pipe(
+        map((response) => response.data.autoCompleteSuggestions.results),
+        catchError((error) => {
+          console.error('Error fetching autocomplete suggestions:', error);
+          return of([]);
+        })
+      );
   }
 
   /**
@@ -338,7 +336,7 @@ export class BookingService {
    */
   searchHotels(params: HotelSearchParams): Observable<HotelCard[]> {
     const { destination, checkin, checkout, adults, rooms, children } = params;
-    
+
     console.log('🔍 Searching hotels with params:', {
       destination: destination.displayInfo.title,
       destId: destination.destination.destId,
@@ -346,9 +344,9 @@ export class BookingService {
       rooms,
       children,
       checkin,
-      checkout
+      checkout,
     });
-    
+
     // Build query parameters
     const queryParams = new URLSearchParams();
     queryParams.append('ss', destination.displayInfo.title);
@@ -357,10 +355,10 @@ export class BookingService {
     queryParams.append('group_adults', adults.toString());
     queryParams.append('no_rooms', rooms.toString());
     queryParams.append('group_children', children.toString());
-    
+
     if (checkin) queryParams.append('checkin', checkin);
     if (checkout) queryParams.append('checkout', checkout);
-    
+
     // Add additional params
     queryParams.append('map', '1');
     queryParams.append('lang', 'en-us');
@@ -372,10 +370,10 @@ export class BookingService {
 
     const url = `${this.SEARCH_RESULTS_URL}?${queryParams.toString()}`;
     console.log('📡 Fetching from URL:', url);
-    
+
     return this.http.get(url, { responseType: 'text' }).pipe(
-      map(html => this.parseHotelCards(html)),
-      catchError(error => {
+      map((html) => this.parseHotelCards(html)),
+      catchError((error) => {
         console.error('Error searching hotels:', error);
         return of([]);
       })
@@ -387,71 +385,84 @@ export class BookingService {
    */
   private parseHotelCards(html: string): HotelCard[] {
     console.log('📄 Parsing HTML response, length:', html.length);
-    
+
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, 'text/html');
-    
+
     const cards: HotelCard[] = [];
     const propertyCards = doc.querySelectorAll('[data-testid="property-card"]');
-    
+
     console.log(`🔍 Found ${propertyCards.length} property cards in HTML`);
-    
+
     if (propertyCards.length === 0) {
       console.warn('⚠️ No property cards found. Checking for other possible selectors...');
       // Log some HTML structure to help debug
       const bodyText = doc.body?.textContent?.substring(0, 500) || 'No body content';
       console.log('Body preview:', bodyText);
     }
-    
+
     propertyCards.forEach((card, index) => {
       try {
         // Extract image
-        const imageEl = card.querySelector('[data-testid="property-card-desktop-single-image"] [data-testid="image"]') as HTMLImageElement;
+        const imageEl = card.querySelector(
+          '[data-testid="property-card-desktop-single-image"] [data-testid="image"]'
+        ) as HTMLImageElement;
         const imageUrl = imageEl?.src || imageEl?.getAttribute('data-src') || '';
-        
+
         // Extract title and link
         const titleLinkEl = card.querySelector('[data-testid="title-link"]') as HTMLAnchorElement;
         const titleEl = titleLinkEl?.querySelector('[data-testid="title"]');
         const title = titleEl?.textContent?.trim() || '';
         const link = titleLinkEl?.href || '';
-        
+
         // Extract review score
         const reviewScoreEl = card.querySelector('[data-testid="review-score"]');
-        const reviewScoreValue = reviewScoreEl?.querySelector('[aria-label]')?.getAttribute('aria-label') || 
-                                 reviewScoreEl?.querySelector('div[class*="review-score"]')?.textContent?.trim() || '';
-        const reviewScoreWord = reviewScoreEl?.querySelector('[data-testid="review-score-word"]')?.textContent?.trim() || '';
-        const reviewCountEl = reviewScoreEl?.querySelector('[data-testid="review-score-reviews-count"]');
+        const reviewScoreValue =
+          reviewScoreEl?.querySelector('[aria-label]')?.getAttribute('aria-label') ||
+          reviewScoreEl?.querySelector('div[class*="review-score"]')?.textContent?.trim() ||
+          '';
+        const reviewScoreWord =
+          reviewScoreEl?.querySelector('[data-testid="review-score-word"]')?.textContent?.trim() ||
+          '';
+        const reviewCountEl = reviewScoreEl?.querySelector(
+          '[data-testid="review-score-reviews-count"]'
+        );
         const reviewCount = reviewCountEl?.textContent?.trim() || '';
-        
+
         // Extract address
         const addressEl = card.querySelector('[data-testid="address"]');
         const address = addressEl?.textContent?.trim() || '';
-        
+
         // Extract distance
         const distanceEl = card.querySelector('[data-testid="distance"]');
         const distance = distanceEl?.textContent?.trim() || '';
-        
+
         // Extract room type
-        const roomTypeEl = card.querySelector('[data-testid="recommended-units"]') || 
-                          card.querySelector('[data-testid="room-name"]');
+        const roomTypeEl =
+          card.querySelector('[data-testid="recommended-units"]') ||
+          card.querySelector('[data-testid="room-name"]');
         const roomType = roomTypeEl?.textContent?.trim() || '';
-        
+
         // Extract bed info
         const bedInfoEl = card.querySelector('[data-testid="bed-information"]');
         const bedInfo = bedInfoEl?.textContent?.trim() || '';
-        
+
         // Check breakfast
         const breakfastEl = card.querySelector('[data-testid="availability-group-breakfast"]');
-        const breakfastIncluded = breakfastEl?.textContent?.toLowerCase().includes('breakfast') || false;
-        
+        const breakfastIncluded =
+          breakfastEl?.textContent?.toLowerCase().includes('breakfast') || false;
+
         // Extract prices
         const priceContainerEl = card.querySelector('[data-testid="price-and-discounted-price"]');
-        const originalPriceEl = priceContainerEl?.querySelector('[data-testid="price-for-x-nights"]') ||
-                                priceContainerEl?.querySelector('[aria-hidden="true"]');
+        const originalPriceEl =
+          priceContainerEl?.querySelector('[data-testid="price-for-x-nights"]') ||
+          priceContainerEl?.querySelector('[aria-hidden="true"]');
         const originalPrice = originalPriceEl?.textContent?.trim() || '';
-        
-        const currentPriceEl = card.querySelector('[data-testid="price-and-discounted-price"] [data-testid="price-and-discounted-price"]') ||
-                              card.querySelector('[data-testid="price-and-discounted-price"]');
+
+        const currentPriceEl =
+          card.querySelector(
+            '[data-testid="price-and-discounted-price"] [data-testid="price-and-discounted-price"]'
+          ) || card.querySelector('[data-testid="price-and-discounted-price"]');
         let currentPrice = '';
         if (currentPriceEl) {
           const priceText = currentPriceEl.textContent || '';
@@ -460,15 +471,15 @@ export class BookingService {
             currentPrice = priceMatch[0];
           }
         }
-        
+
         // Extract taxes info
         const taxesEl = card.querySelector('[data-testid="taxes-and-charges"]');
         const taxesInfo = taxesEl?.textContent?.trim() || '';
-        
+
         // Extract availability
         const availabilityEl = card.querySelector('[data-testid="availability"]');
         const availability = availabilityEl?.textContent?.trim() || '';
-        
+
         // Only add if we have at least title and image
         if (title && imageUrl) {
           const hotelCard = {
@@ -486,16 +497,16 @@ export class BookingService {
             originalPrice,
             currentPrice,
             taxesInfo,
-            availability
+            availability,
           };
           cards.push(hotelCard);
-          
+
           if (index === 0) {
             console.log('📋 Sample hotel card (first one):', {
               title: hotelCard.title,
               reviewScore: hotelCard.reviewScore,
               currentPrice: hotelCard.currentPrice,
-              address: hotelCard.address
+              address: hotelCard.address,
             });
           }
         } else {
@@ -505,9 +516,8 @@ export class BookingService {
         console.error(`❌ Error parsing hotel card ${index}:`, error);
       }
     });
-    
+
     console.log(`✅ Successfully parsed ${cards.length} hotel cards`);
     return cards;
   }
 }
-

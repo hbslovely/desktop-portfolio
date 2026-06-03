@@ -31,7 +31,7 @@ export interface ExpenseSettings {
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class ExpenseSettingsService {
   private readonly STORAGE_KEY = 'expense-app-settings';
@@ -46,7 +46,7 @@ export class ExpenseSettingsService {
         linear: 0.3,
         moving: 0.3,
         exponential: 0.2,
-        seasonal: 0.2
+        seasonal: 0.2,
       },
       exponentialAlpha: 0.3,
       movingAveragePeriod: 7,
@@ -54,9 +54,9 @@ export class ExpenseSettingsService {
       enableLinearRegression: true,
       enableMovingAverage: true,
       enableExponentialSmoothing: true,
-      enableSeasonalPattern: true
+      enableSeasonalPattern: true,
     },
-    excludeCategories: []
+    excludeCategories: [],
   };
 
   // Signals for reactive updates
@@ -182,4 +182,3 @@ export class ExpenseSettingsService {
     this.saveSettings({ ...current, excludeCategories: categories });
   }
 }
-

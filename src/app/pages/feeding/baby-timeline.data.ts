@@ -577,7 +577,12 @@ export const BABY_TIMELINE: TimelineMilestone[] = [
     ageFromDays: 731,
     ageToDays: 912,
     heroEmoji: '🧸',
-    stomach: { compareTo: 'cốc nhỏ / bát', volumeMl: '180–240ml sữa hoặc bữa', emoji: '🥛', scale: 1.35 },
+    stomach: {
+      compareTo: 'cốc nhỏ / bát',
+      volumeMl: '180–240ml sữa hoặc bữa',
+      emoji: '🥛',
+      scale: 1.35,
+    },
     mood: 'happy',
     moodLabel: 'Happy • 2.5 tuổi',
     funFacts: [
@@ -600,7 +605,12 @@ export const BABY_TIMELINE: TimelineMilestone[] = [
     ageFromDays: 913,
     ageToDays: 1200,
     heroEmoji: '🎈',
-    stomach: { compareTo: 'bữa + sữa', volumeMl: '~200–300ml sữa/ngày (tùy bé)', emoji: '🍼', scale: 1.4 },
+    stomach: {
+      compareTo: 'bữa + sữa',
+      volumeMl: '~200–300ml sữa/ngày (tùy bé)',
+      emoji: '🍼',
+      scale: 1.4,
+    },
     mood: 'milestone',
     moodLabel: 'Cột mốc • 3 tuổi',
     funFacts: [
@@ -749,9 +759,7 @@ export const BABY_TIMELINE_CARE_GUIDES: Record<string, TimelineCareGuide> = {
       'Không bật màn hình để giữ bé yên; dưới 18 tháng nên tránh màn hình trừ video call.',
       'Không để bé tự bú bình không có người quan sát.',
     ],
-    watchFor: [
-      'Không đưa tay lên miệng, không nhìn theo vật hoặc không tạo âm ngoài tiếng khóc.',
-    ],
+    watchFor: ['Không đưa tay lên miệng, không nhìn theo vật hoặc không tạo âm ngoài tiếng khóc.'],
   },
   w12: {
     todos: [
@@ -995,22 +1003,14 @@ export const BABY_TIMELINE_CARE_GUIDES: Record<string, TimelineCareGuide> = {
   },
 };
 
-export function getTimelineCareGuide(
-  milestoneId: string
-): TimelineCareGuide | null {
+export function getTimelineCareGuide(milestoneId: string): TimelineCareGuide | null {
   return BABY_TIMELINE_CARE_GUIDES[milestoneId] || null;
 }
 
 /** Trả về milestone hiện tại dựa theo ngày tuổi */
-export function getCurrentMilestone(
-  ageInDays: number
-): TimelineMilestone | null {
+export function getCurrentMilestone(ageInDays: number): TimelineMilestone | null {
   if (ageInDays < 0) return null;
-  return (
-    BABY_TIMELINE.find(
-      (m) => ageInDays >= m.ageFromDays && ageInDays <= m.ageToDays
-    ) || null
-  );
+  return BABY_TIMELINE.find((m) => ageInDays >= m.ageFromDays && ageInDays <= m.ageToDays) || null;
 }
 
 /** Trạng thái của milestone so với ngày tuổi hiện tại */

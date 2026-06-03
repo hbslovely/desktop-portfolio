@@ -7,7 +7,7 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
   standalone: true,
   imports: [CommonModule],
   templateUrl: './chinese-chess-app.component.html',
-  styleUrl: './chinese-chess-app.component.scss'
+  styleUrl: './chinese-chess-app.component.scss',
 })
 export class ChineseChessAppComponent implements OnInit {
   gameUrl: SafeResourceUrl;
@@ -22,4 +22,3 @@ export class ChineseChessAppComponent implements OnInit {
     // Component initialization
   }
 }
-

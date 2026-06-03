@@ -31,11 +31,11 @@ export interface NutritionTarget {
 
 export type NutritionStatus =
   | 'no-data'
-  | 'low'      // thấp hơn khuyến nghị > 15%
-  | 'under'    // dưới khoảng khuyến nghị (nhẹ)
-  | 'ok'       // trong khoảng khuyến nghị
-  | 'over'     // hơi trên khoảng
-  | 'high';    // cao hơn > 15%
+  | 'low' // thấp hơn khuyến nghị > 15%
+  | 'under' // dưới khoảng khuyến nghị (nhẹ)
+  | 'ok' // trong khoảng khuyến nghị
+  | 'over' // hơi trên khoảng
+  | 'high'; // cao hơn > 15%
 
 export interface NutritionEvaluation {
   target: NutritionTarget;
@@ -75,28 +75,16 @@ export function computeNutritionPace(
   actualMl: number,
   now: Date
 ): NutritionPaceInfo {
-  const dayStart = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate(),
-    0,
-    0,
-    0,
-    0
-  );
+  const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
   const elapsedMin = (now.getTime() - dayStart.getTime()) / 60000;
-  const dayFraction = Math.min(
-    1,
-    Math.max(elapsedMin / 1440, 1 / 1440)
-  );
+  const dayFraction = Math.min(1, Math.max(elapsedMin / 1440, 1 / 1440));
 
   const mid = (target.dailyMlMin + target.dailyMlMax) / 2;
   const expectedMidMl = Math.round(mid * dayFraction);
   const expectedMinMl = Math.round(target.dailyMlMin * dayFraction);
   const expectedMaxMl = Math.round(target.dailyMlMax * dayFraction);
 
-  const percentOfPaceMid =
-    expectedMidMl > 0 ? Math.round((actualMl / expectedMidMl) * 100) : 0;
+  const percentOfPaceMid = expectedMidMl > 0 ? Math.round((actualMl / expectedMidMl) * 100) : 0;
 
   let paceStatus: NutritionPaceInfo['paceStatus'];
   if (actualMl >= expectedMidMl * 1.12 && dayFraction >= 0.04) {
@@ -123,10 +111,7 @@ export function computeNutritionPace(
  * Week 1: linearly ramps up from day 1 (very small) to day 7 (~150ml/kg)
  *   - Rule of thumb: day N × 10-15ml per feed × 8-12 feeds
  */
-export function getNutritionTarget(
-  weightKg: number,
-  ageInDays: number
-): NutritionTarget | null {
+export function getNutritionTarget(weightKg: number, ageInDays: number): NutritionTarget | null {
   if (!weightKg || weightKg <= 0 || ageInDays < 0) return null;
 
   let perKgMin = 150;
@@ -148,8 +133,7 @@ export function getNutritionTarget(
     feedsPerDayMin = 8;
     feedsPerDayMax = 12;
     ageLabel = `Tuần đầu · ngày ${day}`;
-    note =
-      'Dạ dày bé rất nhỏ, đừng lo nếu bé bú ít. Ưu tiên sữa non/sữa mẹ, bú theo nhu cầu.';
+    note = 'Dạ dày bé rất nhỏ, đừng lo nếu bé bú ít. Ưu tiên sữa non/sữa mẹ, bú theo nhu cầu.';
   } else if (ageInDays < 30) {
     perKgMin = 150;
     perKgMax = 180;
@@ -185,8 +169,7 @@ export function getNutritionTarget(
     feedsPerDayMin = 4;
     feedsPerDayMax = 6;
     ageLabel = '6-12 tháng';
-    note =
-      'Kết hợp ăn dặm 2-3 bữa/ngày + sữa. Tổng sữa khoảng 500-800ml/ngày.';
+    note = 'Kết hợp ăn dặm 2-3 bữa/ngày + sữa. Tổng sữa khoảng 500-800ml/ngày.';
   } else {
     perKgMin = 70;
     perKgMax = 90;
@@ -195,8 +178,7 @@ export function getNutritionTarget(
     feedsPerDayMin = 2;
     feedsPerDayMax = 4;
     ageLabel = 'Trên 1 tuổi';
-    note =
-      'Bữa ăn chính là thức ăn đặc, sữa chỉ 2-3 cữ/ngày (500-600ml).';
+    note = 'Bữa ăn chính là thức ăn đặc, sữa chỉ 2-3 cữ/ngày (500-600ml).';
   }
 
   const dailyMlMin = Math.round(weightKg * perKgMin);

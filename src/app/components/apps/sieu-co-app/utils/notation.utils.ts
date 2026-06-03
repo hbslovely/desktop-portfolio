@@ -18,7 +18,7 @@ export function createMoveNotation(move: Move): string {
   const pieceChar = PIECE_NOTATION[piece.type];
 
   // Cột xuất phát (Đỏ đếm phải-trái 9-1, Đen đếm trái-phải 1-9)
-  const fromCol = color === PieceColor.RED ? (9 - move.from.col) : (move.from.col + 1);
+  const fromCol = color === PieceColor.RED ? 9 - move.from.col : move.from.col + 1;
 
   // Xác định hướng di chuyển
   let direction: MoveDirection;
@@ -39,14 +39,19 @@ export function createMoveNotation(move: Move): string {
 
   // Đích: cột đến (cho ngang/chéo) hoặc số bước (cho thẳng)
   let destination: number;
-  const isStraightMover = [PieceType.ROOK, PieceType.CANNON, PieceType.PAWN, PieceType.KING].includes(piece.type);
+  const isStraightMover = [
+    PieceType.ROOK,
+    PieceType.CANNON,
+    PieceType.PAWN,
+    PieceType.KING,
+  ].includes(piece.type);
 
   if (isVertical && isStraightMover) {
     // Quân đi thẳng dọc: ghi số bước
     destination = Math.abs(move.to.row - move.from.row);
   } else {
     // Quân đi chéo hoặc ngang: ghi cột đích
-    destination = color === PieceColor.RED ? (9 - move.to.col) : (move.to.col + 1);
+    destination = color === PieceColor.RED ? 9 - move.to.col : move.to.col + 1;
   }
 
   return `${pieceChar}${fromCol}${direction}${destination}`;
@@ -83,9 +88,9 @@ export function formatGameResult(
   reason?: string
 ): string {
   const resultText = {
-    'red_win': 'Đỏ Thắng',
-    'black_win': 'Đen Thắng',
-    'draw': 'Hòa'
+    red_win: 'Đỏ Thắng',
+    black_win: 'Đen Thắng',
+    draw: 'Hòa',
   };
 
   let text = `\n=== KẾT QUẢ: ${resultText[result]} ===`;

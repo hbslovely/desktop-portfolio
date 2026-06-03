@@ -7,19 +7,34 @@
           <i class="pi pi-arrow-left"></i>
         </button>
         <!-- Company Header Info -->
-        <div class="header-company-info" *ngIf="selectedSymbol()?.basicInfo?.fullData || selectedSymbol()?.basicInfo">
+        <div
+          class="header-company-info"
+          *ngIf="selectedSymbol()?.basicInfo?.fullData || selectedSymbol()?.basicInfo"
+        >
           <div class="company-logo-small" *ngIf="getCompanyField('image')">
-            <img [src]="getCompanyField('image')" [alt]="getCompanyField('fullName') || selectedSymbol()?.symbol"
-                 onerror="this.style.display='none'">
+            <img
+              [src]="getCompanyField('image')"
+              [alt]="getCompanyField('fullName') || selectedSymbol()?.symbol"
+              onerror="this.style.display = 'none'"
+            />
           </div>
           <div class="header-company-details">
-            <h2>{{ getCompanyField('fullName') || selectedSymbol()?.basicInfo?.companyName || selectedSymbol()?.symbol }}</h2>
+            <h2>
+              {{
+                getCompanyField('fullName') ||
+                  selectedSymbol()?.basicInfo?.companyName ||
+                  selectedSymbol()?.symbol
+              }}
+            </h2>
             <div class="company-name-en" *ngIf="getCompanyField('fullNameEn')">
               {{ getCompanyField('fullNameEn') }}
             </div>
             <div class="company-symbol-badge">
               <span class="badge">{{ selectedSymbol()?.symbol }}</span>
-              <span class="badge" *ngFor="let exch of getExchangesArray(selectedSymbol()?.exchange)">
+              <span
+                class="badge"
+                *ngFor="let exch of getExchangesArray(selectedSymbol()?.exchange)"
+              >
                 {{ exchangeNames[exch] || exch }}
               </span>
               <span class="badge index-badge" *ngFor="let index of getTickerField('indexCodes')">
@@ -27,10 +42,25 @@
               </span>
             </div>
             <div class="price-info" *ngIf="selectedSymbol()?.basicInfo?.matchPrice">
-              <span class="price-value">{{ (parseFloat(selectedSymbol()!.basicInfo!.matchPrice) * 1000) | number:'1.0-0' }} đ</span>
-              <span [class]="parseFloat(selectedSymbol()!.basicInfo!.changedValue || '0') >= 0 ? 'positive' : 'negative'">
-                {{ parseFloat(selectedSymbol()!.basicInfo!.changedValue || '0') >= 0 ? '+' : '' }}{{ (parseFloat(selectedSymbol()!.basicInfo!.changedValue || '0') * 1000) | number:'1.0-0' }} đ
-                ({{ selectedSymbol()?.basicInfo?.changedRatio || '0' }}%)
+              <span class="price-value"
+                >{{
+                  parseFloat(selectedSymbol()!.basicInfo!.matchPrice) * 1000 | number: '1.0-0'
+                }}
+                đ</span
+              >
+              <span
+                [class]="
+                  parseFloat(selectedSymbol()!.basicInfo!.changedValue || '0') >= 0
+                    ? 'positive'
+                    : 'negative'
+                "
+              >
+                {{ parseFloat(selectedSymbol()!.basicInfo!.changedValue || '0') >= 0 ? '+' : ''
+                }}{{
+                  parseFloat(selectedSymbol()!.basicInfo!.changedValue || '0') * 1000
+                    | number: '1.0-0'
+                }}
+                đ ({{ selectedSymbol()?.basicInfo?.changedRatio || '0' }}%)
               </span>
             </div>
           </div>
@@ -46,14 +76,32 @@
               (focus)="showSearchSuggestions.set(headerSearchQuery().length > 0)"
               (blur)="onHeaderSearchBlur()"
               placeholder="Tìm mã cổ phiếu..."
-              class="header-search-input">
-            <button *ngIf="headerSearchQuery()" (click)="headerSearchQuery.set(''); showSearchSuggestions.set(false); apiSearchResults.set([])" class="clear-search-btn">
+              class="header-search-input"
+            />
+            <button
+              *ngIf="headerSearchQuery()"
+              (click)="
+                headerSearchQuery.set('');
+                showSearchSuggestions.set(false);
+                apiSearchResults.set([])
+              "
+              class="clear-search-btn"
+            >
               <i class="pi pi-times"></i>
             </button>
           </div>
-          <div class="search-suggestions" *ngIf="showSearchSuggestions() && (getHeaderSearchSuggestions().length > 0 || isSearchingAPI())">
+          <div
+            class="search-suggestions"
+            *ngIf="
+              showSearchSuggestions() &&
+              (getHeaderSearchSuggestions().length > 0 || isSearchingAPI())
+            "
+          >
             <!-- Loading state -->
-            <div class="suggestion-loading" *ngIf="isSearchingAPI() && getHeaderSearchSuggestions().length === 0">
+            <div
+              class="suggestion-loading"
+              *ngIf="isSearchingAPI() && getHeaderSearchSuggestions().length === 0"
+            >
               <i class="pi pi-spin pi-spinner"></i>
               <span>Đang tìm kiếm...</span>
             </div>
@@ -63,18 +111,24 @@
               class="suggestion-item"
               (mousedown)="selectSymbolFromSuggestion(suggestion)"
               [class.fetched]="suggestion.isFetched"
-              [class.from-api]="$any(suggestion).source === 'api'">
+              [class.from-api]="$any(suggestion).source === 'api'"
+            >
               <div class="suggestion-symbol">
                 {{ suggestion.symbol }}
                 <span class="api-badge" *ngIf="$any(suggestion).source === 'api'">DB</span>
               </div>
               <div class="suggestion-name">{{ suggestion.name }}</div>
               <div class="suggestion-exchange">
-                <span class="badge" *ngFor="let exch of suggestion.exchange">{{ $any(exchangeNames)[exch] || exch }}</span>
+                <span class="badge" *ngFor="let exch of suggestion.exchange">{{
+                  $any(exchangeNames)[exch] || exch
+                }}</span>
               </div>
             </div>
             <!-- Searching indicator at bottom -->
-            <div class="suggestion-searching" *ngIf="isSearchingAPI() && getHeaderSearchSuggestions().length > 0">
+            <div
+              class="suggestion-searching"
+              *ngIf="isSearchingAPI() && getHeaderSearchSuggestions().length > 0"
+            >
               <i class="pi pi-spin pi-spinner"></i> Đang tìm thêm...
             </div>
           </div>
@@ -92,35 +146,40 @@
       <button
         class="tab-btn"
         [class.active]="activeTab() === 'overview'"
-        (click)="activeTab.set('overview')">
+        (click)="activeTab.set('overview')"
+      >
         <i class="pi pi-info-circle"></i>
         <span>Tổng quan</span>
       </button>
       <button
         class="tab-btn"
         [class.active]="activeTab() === 'financial'"
-        (click)="activeTab.set('financial')">
+        (click)="activeTab.set('financial')"
+      >
         <i class="pi pi-wallet"></i>
         <span>Tài chính</span>
       </button>
       <button
         class="tab-btn"
         [class.active]="activeTab() === 'trading'"
-        (click)="activeTab.set('trading')">
+        (click)="activeTab.set('trading')"
+      >
         <i class="pi pi-shopping-cart"></i>
         <span>Trading</span>
       </button>
       <button
         class="tab-btn"
         [class.active]="activeTab() === 'chart'"
-        (click)="activeTab.set('chart')">
+        (click)="activeTab.set('chart')"
+      >
         <i class="pi pi-chart-line"></i>
         <span>Biểu đồ</span>
       </button>
       <button
         class="tab-btn"
         [class.active]="activeTab() === 'advisor'"
-        (click)="activeTab.set('advisor')">
+        (click)="activeTab.set('advisor')"
+      >
         <i class="pi pi-compass"></i>
         <span>Tư vấn tự động</span>
       </button>
@@ -136,16 +195,24 @@
       <!-- Overview Tab -->
       <div *ngIf="activeTab() === 'overview' && !isLoadingDetail()">
         <!-- Basic Info from fullData -->
-        <section class="section" *ngIf="selectedSymbol()?.basicInfo?.fullData || selectedSymbol()?.basicInfo">
+        <section
+          class="section"
+          *ngIf="selectedSymbol()?.basicInfo?.fullData || selectedSymbol()?.basicInfo"
+        >
           <h3><i class="pi pi-building"></i> Thông tin doanh nghiệp</h3>
           <div class="info-grid">
             <div class="info-item" *ngIf="selectedSymbol()?.symbol">
               <label>Mã cổ phiếu</label>
               <span>{{ selectedSymbol()?.symbol }}</span>
             </div>
-            <div class="info-item" *ngIf="selectedSymbol()?.basicInfo?.companyName || getCompanyField('fullName')">
+            <div
+              class="info-item"
+              *ngIf="selectedSymbol()?.basicInfo?.companyName || getCompanyField('fullName')"
+            >
               <label>Tên công ty</label>
-              <span>{{ getCompanyField('fullName') || selectedSymbol()?.basicInfo?.companyName }}</span>
+              <span>{{
+                getCompanyField('fullName') || selectedSymbol()?.basicInfo?.companyName
+              }}</span>
             </div>
             <div class="info-item" *ngIf="getCompanyField('fullNameEn')">
               <label>Tên tiếng Anh</label>
@@ -158,7 +225,10 @@
             <div class="info-item" *ngIf="selectedSymbol()?.exchange">
               <label>Sàn giao dịch</label>
               <span>
-                <span class="badge" *ngFor="let exch of getExchangesArray(selectedSymbol()?.exchange)">
+                <span
+                  class="badge"
+                  *ngFor="let exch of getExchangesArray(selectedSymbol()?.exchange)"
+                >
                   {{ exchangeNames[exch] || exch }}
                 </span>
               </span>
@@ -167,11 +237,17 @@
               <label>Mã số thuế</label>
               <span>{{ getCompanyField('taxCode') }}</span>
             </div>
-            <div class="info-item" *ngIf="getCompanyField('address') || getCompanyField('permanentAddress')">
+            <div
+              class="info-item"
+              *ngIf="getCompanyField('address') || getCompanyField('permanentAddress')"
+            >
               <label>Địa chỉ</label>
               <span>{{ getCompanyField('address') || getCompanyField('permanentAddress') }}</span>
             </div>
-            <div class="info-item" *ngIf="getCompanyField('permanentAddress') && getCompanyField('address')">
+            <div
+              class="info-item"
+              *ngIf="getCompanyField('permanentAddress') && getCompanyField('address')"
+            >
               <label>Địa chỉ trụ sở chính</label>
               <span>{{ getCompanyField('permanentAddress') }}</span>
             </div>
@@ -181,11 +257,19 @@
             </div>
             <div class="info-item" *ngIf="getCompanyField('email')">
               <label>Email</label>
-              <span><a [href]="'mailto:' + getCompanyField('email')">{{ getCompanyField('email') }}</a></span>
+              <span
+                ><a [href]="'mailto:' + getCompanyField('email')">{{
+                  getCompanyField('email')
+                }}</a></span
+              >
             </div>
             <div class="info-item" *ngIf="getCompanyField('url')">
               <label>Website</label>
-              <span><a [href]="'https://' + getCompanyField('url')" target="_blank" rel="noopener">{{ getCompanyField('url') }}</a></span>
+              <span
+                ><a [href]="'https://' + getCompanyField('url')" target="_blank" rel="noopener">{{
+                  getCompanyField('url')
+                }}</a></span
+              >
             </div>
             <div class="info-item" *ngIf="getCompanyField('fax')">
               <label>Fax</label>
@@ -193,102 +277,138 @@
             </div>
             <div class="info-item" *ngIf="getCompanyField('foundDate')">
               <label>Ngày thành lập</label>
-              <span>{{ getCompanyField('foundDate') | date:'dd/MM/yyyy' }}</span>
+              <span>{{ getCompanyField('foundDate') | date: 'dd/MM/yyyy' }}</span>
             </div>
             <div class="info-item" *ngIf="getCompanyField('issueDate')">
               <label>Ngày niêm yết</label>
-              <span>{{ getCompanyField('issueDate') | date:'dd/MM/yyyy' }}</span>
+              <span>{{ getCompanyField('issueDate') | date: 'dd/MM/yyyy' }}</span>
             </div>
             <div class="info-item" *ngIf="getTickerField('listedDate')">
               <label>Ngày giao dịch đầu tiên</label>
-              <span>{{ getTickerField('listedDate') | date:'dd/MM/yyyy' }}</span>
+              <span>{{ getTickerField('listedDate') | date: 'dd/MM/yyyy' }}</span>
             </div>
             <div class="info-item" *ngIf="getCompanyField('firstTradingSessionPrice')">
               <label>Giá giao dịch đầu tiên</label>
-              <span class="price">{{ (getCompanyField('firstTradingSessionPrice') * 1000) | number:'1.0-0' }} đ</span>
+              <span class="price"
+                >{{ getCompanyField('firstTradingSessionPrice') * 1000 | number: '1.0-0' }} đ</span
+              >
             </div>
             <div class="info-item" *ngIf="getCompanyField('capital')">
               <label>Vốn điều lệ</label>
-              <span>{{ (getCompanyField('capital') / 1000000000) | number:'1.2-2' }} tỷ đồng</span>
+              <span>{{ getCompanyField('capital') / 1000000000 | number: '1.2-2' }} tỷ đồng</span>
             </div>
             <div class="info-item" *ngIf="getCompanyField('stockFaceValue')">
               <label>Mệnh giá</label>
-              <span>{{ getCompanyField('stockFaceValue') | number:'1.0-0' }} đ</span>
+              <span>{{ getCompanyField('stockFaceValue') | number: '1.0-0' }} đ</span>
             </div>
             <div class="info-item" *ngIf="selectedSymbol()?.basicInfo?.matchPrice">
               <label>Giá khớp</label>
-              <span class="price">{{ (parseFloat(selectedSymbol()!.basicInfo!.matchPrice) * 1000) | number:'1.0-0' }} đ</span>
+              <span class="price"
+                >{{
+                  parseFloat(selectedSymbol()!.basicInfo!.matchPrice) * 1000 | number: '1.0-0'
+                }}
+                đ</span
+              >
             </div>
             <div class="info-item" *ngIf="selectedSymbol()?.basicInfo?.changedValue">
               <label>Thay đổi</label>
-              <span [class]="parseFloat(selectedSymbol()!.basicInfo!.changedValue) >= 0 ? 'positive' : 'negative'">
-                {{ (parseFloat(selectedSymbol()!.basicInfo!.changedValue) * 1000) | number:'1.0-0' }} đ
-                ({{ selectedSymbol()?.basicInfo?.changedRatio || '0' }}%)
+              <span
+                [class]="
+                  parseFloat(selectedSymbol()!.basicInfo!.changedValue) >= 0
+                    ? 'positive'
+                    : 'negative'
+                "
+              >
+                {{ parseFloat(selectedSymbol()!.basicInfo!.changedValue) * 1000 | number: '1.0-0' }}
+                đ ({{ selectedSymbol()?.basicInfo?.changedRatio || '0' }}%)
               </span>
             </div>
             <div class="info-item" *ngIf="selectedSymbol()?.basicInfo?.totalVolume">
               <label>Khối lượng</label>
-              <span>{{ selectedSymbol()?.basicInfo?.totalVolume | number:'1.0-0' }}</span>
+              <span>{{ selectedSymbol()?.basicInfo?.totalVolume | number: '1.0-0' }}</span>
             </div>
             <div class="info-item" *ngIf="getCompanyField('beta')">
               <label>Beta</label>
-              <span>{{ getCompanyField('beta') | number:'1.2-2' }}</span>
+              <span>{{ getCompanyField('beta') | number: '1.2-2' }}</span>
             </div>
             <div class="info-item" *ngIf="getTickerField('outstandingShares')">
               <label>Số cổ phiếu lưu hành</label>
-              <span>{{ (getTickerField('outstandingShares') / 1000000) | number:'1.2-2' }} triệu CP</span>
+              <span
+                >{{ getTickerField('outstandingShares') / 1000000 | number: '1.2-2' }} triệu
+                CP</span
+              >
             </div>
             <div class="info-item" *ngIf="getTickerField('listedShares')">
               <label>Số cổ phiếu niêm yết</label>
-              <span>{{ (getTickerField('listedShares') / 1000000) | number:'1.2-2' }} triệu CP</span>
+              <span>{{ getTickerField('listedShares') / 1000000 | number: '1.2-2' }} triệu CP</span>
             </div>
-            <div class="info-item" *ngIf="getTickerField('foreignOwnership') !== null && getTickerField('foreignOwnership') !== undefined">
+            <div
+              class="info-item"
+              *ngIf="
+                getTickerField('foreignOwnership') !== null &&
+                getTickerField('foreignOwnership') !== undefined
+              "
+            >
               <label>Tỷ lệ sở hữu nước ngoài</label>
-              <span>{{ formatPercent(getTickerField('foreignOwnership')) | number:'1.2-2' }}%</span>
+              <span
+                >{{ formatPercent(getTickerField('foreignOwnership')) | number: '1.2-2' }}%</span
+              >
             </div>
             <div class="info-item" *ngIf="getTickerField('dividend')">
               <label>Cổ tức</label>
-              <span>{{ formatPercent(getTickerField('dividend')) | number:'1.2-2' }}%</span>
+              <span>{{ formatPercent(getTickerField('dividend')) | number: '1.2-2' }}%</span>
             </div>
             <div class="info-item" *ngIf="getTickerField('dividendYield')">
               <label>Tỷ suất cổ tức</label>
-              <span>{{ formatPercent(getTickerField('dividendYield')) | number:'1.2-2' }}%</span>
+              <span>{{ formatPercent(getTickerField('dividendYield')) | number: '1.2-2' }}%</span>
             </div>
             <div class="info-item" *ngIf="getTickerField('high52w')">
               <label>Giá cao nhất 52 tuần</label>
-              <span class="price">{{ (getTickerField('high52w') * 1000) | number:'1.0-0' }} đ</span>
+              <span class="price">{{ getTickerField('high52w') * 1000 | number: '1.0-0' }} đ</span>
             </div>
             <div class="info-item" *ngIf="getTickerField('low52w')">
               <label>Giá thấp nhất 52 tuần</label>
-              <span class="price">{{ (getTickerField('low52w') * 1000) | number:'1.0-0' }} đ</span>
+              <span class="price">{{ getTickerField('low52w') * 1000 | number: '1.0-0' }} đ</span>
             </div>
             <div class="info-item" *ngIf="getTickerField('avgVolume20d')">
               <label>KL trung bình 20 ngày</label>
-              <span>{{ (getTickerField('avgVolume20d') / 1000000) | number:'1.2-2' }} triệu</span>
+              <span>{{ getTickerField('avgVolume20d') / 1000000 | number: '1.2-2' }} triệu</span>
             </div>
             <div class="info-item" *ngIf="getTickerField('avgVolume30d')">
               <label>KL trung bình 30 ngày</label>
-              <span>{{ (getTickerField('avgVolume30d') / 1000000) | number:'1.2-2' }} triệu</span>
+              <span>{{ getTickerField('avgVolume30d') / 1000000 | number: '1.2-2' }} triệu</span>
             </div>
             <div class="info-item" *ngIf="getTickerField('marketCap')">
               <label>Vốn hóa thị trường</label>
-              <span>{{ (getTickerField('marketCap') / 1000000000) | number:'1.2-2' }} tỷ đồng</span>
+              <span>{{ getTickerField('marketCap') / 1000000000 | number: '1.2-2' }} tỷ đồng</span>
             </div>
             <div class="info-item" *ngIf="getTickerField('freeFloat')">
               <label>Free float</label>
-              <span>{{ (getTickerField('freeFloat') / 1000000) | number:'1.2-2' }} triệu CP</span>
+              <span>{{ getTickerField('freeFloat') / 1000000 | number: '1.2-2' }} triệu CP</span>
             </div>
-            <div class="info-item" *ngIf="getTickerField('freeFloatRatio') !== null && getTickerField('freeFloatRatio') !== undefined">
+            <div
+              class="info-item"
+              *ngIf="
+                getTickerField('freeFloatRatio') !== null &&
+                getTickerField('freeFloatRatio') !== undefined
+              "
+            >
               <label>Tỷ lệ free float</label>
-              <span>{{ formatPercent(getTickerField('freeFloatRatio')) | number:'1.2-2' }}%</span>
+              <span>{{ formatPercent(getTickerField('freeFloatRatio')) | number: '1.2-2' }}%</span>
             </div>
             <div class="info-item" *ngIf="getCompanyField('contactPerson')">
               <label>Người liên hệ</label>
-              <span>{{ getCompanyField('contactPerson') }} - {{ getCompanyField('contactPersonPosition') }}</span>
+              <span
+                >{{ getCompanyField('contactPerson') }} -
+                {{ getCompanyField('contactPersonPosition') }}</span
+              >
             </div>
             <div class="info-item" *ngIf="getCompanyField('infoSupplier')">
               <label>Người cung cấp thông tin</label>
-              <span>{{ getCompanyField('infoSupplier') }} - {{ getCompanyField('infoSupplierPosition') }}</span>
+              <span
+                >{{ getCompanyField('infoSupplier') }} -
+                {{ getCompanyField('infoSupplierPosition') }}</span
+              >
             </div>
             <div class="info-item" *ngIf="getCompanyField('phoneSupplier')">
               <label>Điện thoại liên hệ</label>
@@ -330,34 +450,65 @@
         </section>
 
         <!-- Industry & Sector Info -->
-        <section class="section" *ngIf="getCompanyField('industryName') || getTickerField('industry')">
+        <section
+          class="section"
+          *ngIf="getCompanyField('industryName') || getTickerField('industry')"
+        >
           <h3><i class="pi pi-sitemap"></i> Phân loại ngành nghề</h3>
           <div class="info-grid">
-            <div class="info-item has-tooltip" *ngIf="getCompanyField('industryName') || getTickerField('industry')" data-tooltip="Ngành chính mà công ty hoạt động. Dùng để so sánh với các công ty cùng ngành">
+            <div
+              class="info-item has-tooltip"
+              *ngIf="getCompanyField('industryName') || getTickerField('industry')"
+              data-tooltip="Ngành chính mà công ty hoạt động. Dùng để so sánh với các công ty cùng ngành"
+            >
               <label>Ngành</label>
               <span>{{ getCompanyField('industryName') || getTickerField('industry') }}</span>
             </div>
-            <div class="info-item has-tooltip" *ngIf="getCompanyField('subIndustryName') || getTickerField('subIndustry')" data-tooltip="Phân ngành chi tiết hơn trong ngành chính">
+            <div
+              class="info-item has-tooltip"
+              *ngIf="getCompanyField('subIndustryName') || getTickerField('subIndustry')"
+              data-tooltip="Phân ngành chi tiết hơn trong ngành chính"
+            >
               <label>Ngành phụ</label>
               <span>{{ getCompanyField('subIndustryName') || getTickerField('subIndustry') }}</span>
             </div>
-            <div class="info-item has-tooltip" *ngIf="getCompanyField('sectorName') || getTickerField('sector')" data-tooltip="Lĩnh vực kinh doanh rộng hơn của công ty">
+            <div
+              class="info-item has-tooltip"
+              *ngIf="getCompanyField('sectorName') || getTickerField('sector')"
+              data-tooltip="Lĩnh vực kinh doanh rộng hơn của công ty"
+            >
               <label>Lĩnh vực</label>
               <span>{{ getCompanyField('sectorName') || getTickerField('sector') }}</span>
             </div>
-            <div class="info-item has-tooltip" *ngIf="getCompanyField('sectorIndexName') || getTickerField('sectorIndex')" data-tooltip="Chỉ số ngành tương ứng trên sàn chứng khoán">
+            <div
+              class="info-item has-tooltip"
+              *ngIf="getCompanyField('sectorIndexName') || getTickerField('sectorIndex')"
+              data-tooltip="Chỉ số ngành tương ứng trên sàn chứng khoán"
+            >
               <label>Chỉ số ngành</label>
               <span>{{ getCompanyField('sectorIndexName') || getTickerField('sectorIndex') }}</span>
             </div>
-            <div class="info-item has-tooltip" *ngIf="getCompanyField('companyTypeName')" data-tooltip="Loại hình doanh nghiệp theo pháp luật Việt Nam">
+            <div
+              class="info-item has-tooltip"
+              *ngIf="getCompanyField('companyTypeName')"
+              data-tooltip="Loại hình doanh nghiệp theo pháp luật Việt Nam"
+            >
               <label>Loại hình công ty</label>
               <span>{{ getCompanyField('companyTypeName') }}</span>
             </div>
-            <div class="info-item has-tooltip" *ngIf="getTickerField('indexCode')" data-tooltip="Chỉ số chính mà cổ phiếu thuộc về (VN30, HNX30, UPCOM...)">
+            <div
+              class="info-item has-tooltip"
+              *ngIf="getTickerField('indexCode')"
+              data-tooltip="Chỉ số chính mà cổ phiếu thuộc về (VN30, HNX30, UPCOM...)"
+            >
               <label>Chỉ số chính</label>
               <span class="badge index-badge">{{ getTickerField('indexCode') }}</span>
             </div>
-            <div class="info-item has-tooltip" *ngIf="getTickerField('indexCodes') && getTickerField('indexCodes').length > 0" data-tooltip="Danh sách tất cả các chỉ số mà cổ phiếu thuộc về">
+            <div
+              class="info-item has-tooltip"
+              *ngIf="getTickerField('indexCodes') && getTickerField('indexCodes').length > 0"
+              data-tooltip="Danh sách tất cả các chỉ số mà cổ phiếu thuộc về"
+            >
               <label>Các chỉ số</label>
               <div class="badge-list">
                 <span class="badge index-badge" *ngFor="let index of getTickerField('indexCodes')">
@@ -369,57 +520,103 @@
         </section>
 
         <!-- GICS Classification -->
-        <section class="section" *ngIf="getCompanyField('gicsSector') || getTickerField('gicsSector')">
+        <section
+          class="section"
+          *ngIf="getCompanyField('gicsSector') || getTickerField('gicsSector')"
+        >
           <h3><i class="pi pi-th-large"></i> Phân loại GICS</h3>
           <div class="info-grid">
-            <div class="info-item has-tooltip" *ngIf="getCompanyField('gicsSector') || getTickerField('gicsSector')" data-tooltip="GICS Sector - Phân loại ngành cấp cao nhất theo chuẩn quốc tế GICS (11 sectors)">
+            <div
+              class="info-item has-tooltip"
+              *ngIf="getCompanyField('gicsSector') || getTickerField('gicsSector')"
+              data-tooltip="GICS Sector - Phân loại ngành cấp cao nhất theo chuẩn quốc tế GICS (11 sectors)"
+            >
               <label>GICS Sector</label>
               <span>{{ getCompanyField('gicsSector') || getTickerField('gicsSector') }}</span>
             </div>
-            <div class="info-item has-tooltip" *ngIf="getCompanyField('gicsIndustryGroup') || getTickerField('gicsIndustryGroup')" data-tooltip="GICS Industry Group - Nhóm ngành (25 nhóm), chi tiết hơn Sector">
+            <div
+              class="info-item has-tooltip"
+              *ngIf="getCompanyField('gicsIndustryGroup') || getTickerField('gicsIndustryGroup')"
+              data-tooltip="GICS Industry Group - Nhóm ngành (25 nhóm), chi tiết hơn Sector"
+            >
               <label>GICS Industry Group</label>
-              <span>{{ getCompanyField('gicsIndustryGroup') || getTickerField('gicsIndustryGroup') }}</span>
+              <span>{{
+                getCompanyField('gicsIndustryGroup') || getTickerField('gicsIndustryGroup')
+              }}</span>
             </div>
-            <div class="info-item has-tooltip" *ngIf="getCompanyField('gicsIndustry') || getTickerField('gicsIndustry')" data-tooltip="GICS Industry - Ngành (74 ngành), chi tiết hơn Industry Group">
+            <div
+              class="info-item has-tooltip"
+              *ngIf="getCompanyField('gicsIndustry') || getTickerField('gicsIndustry')"
+              data-tooltip="GICS Industry - Ngành (74 ngành), chi tiết hơn Industry Group"
+            >
               <label>GICS Industry</label>
               <span>{{ getCompanyField('gicsIndustry') || getTickerField('gicsIndustry') }}</span>
             </div>
-            <div class="info-item has-tooltip" *ngIf="getCompanyField('gicsSubIndustry') || getTickerField('gicsSubIndustry')" data-tooltip="GICS Sub-Industry - Phân ngành (163 phân ngành), mức chi tiết nhất">
+            <div
+              class="info-item has-tooltip"
+              *ngIf="getCompanyField('gicsSubIndustry') || getTickerField('gicsSubIndustry')"
+              data-tooltip="GICS Sub-Industry - Phân ngành (163 phân ngành), mức chi tiết nhất"
+            >
               <label>GICS Sub-Industry</label>
-              <span>{{ getCompanyField('gicsSubIndustry') || getTickerField('gicsSubIndustry') }}</span>
+              <span>{{
+                getCompanyField('gicsSubIndustry') || getTickerField('gicsSubIndustry')
+              }}</span>
             </div>
           </div>
         </section>
 
         <!-- Trading Features -->
-        <section class="section" *ngIf="getCompanyField('isMargin') !== null || getCompanyField('isVn30') !== null">
+        <section
+          class="section"
+          *ngIf="getCompanyField('isMargin') !== null || getCompanyField('isVn30') !== null"
+        >
           <h3><i class="pi pi-sliders-h"></i> Tính năng giao dịch</h3>
           <div class="info-grid">
-            <div class="info-item has-tooltip" *ngIf="getCompanyField('isMargin') !== null" data-tooltip="Cổ phiếu có được phép giao dịch ký quỹ (vay tiền từ công ty chứng khoán để mua). Margin = rủi ro cao hơn nhưng có thể tăng lợi nhuận">
+            <div
+              class="info-item has-tooltip"
+              *ngIf="getCompanyField('isMargin') !== null"
+              data-tooltip="Cổ phiếu có được phép giao dịch ký quỹ (vay tiền từ công ty chứng khoán để mua). Margin = rủi ro cao hơn nhưng có thể tăng lợi nhuận"
+            >
               <label>Margin</label>
               <span [class]="getCompanyField('isMargin') ? 'positive' : 'negative'">
                 {{ getCompanyField('isMargin') ? 'Có' : 'Không' }}
               </span>
             </div>
-            <div class="info-item has-tooltip" *ngIf="getCompanyField('isVn30') !== null" data-tooltip="VN30 - Rổ 30 cổ phiếu có vốn hóa và thanh khoản lớn nhất sàn HOSE. Đây là các blue-chip, đại diện cho thị trường">
+            <div
+              class="info-item has-tooltip"
+              *ngIf="getCompanyField('isVn30') !== null"
+              data-tooltip="VN30 - Rổ 30 cổ phiếu có vốn hóa và thanh khoản lớn nhất sàn HOSE. Đây là các blue-chip, đại diện cho thị trường"
+            >
               <label>VN30</label>
               <span [class]="getCompanyField('isVn30') ? 'positive' : 'negative'">
                 {{ getCompanyField('isVn30') ? 'Có' : 'Không' }}
               </span>
             </div>
-            <div class="info-item has-tooltip" *ngIf="getCompanyField('isHnx30') !== null" data-tooltip="HNX30 - Rổ 30 cổ phiếu hàng đầu trên sàn HNX. Thường là các công ty vừa và nhỏ tiềm năng">
+            <div
+              class="info-item has-tooltip"
+              *ngIf="getCompanyField('isHnx30') !== null"
+              data-tooltip="HNX30 - Rổ 30 cổ phiếu hàng đầu trên sàn HNX. Thường là các công ty vừa và nhỏ tiềm năng"
+            >
               <label>HNX30</label>
               <span [class]="getCompanyField('isHnx30') ? 'positive' : 'negative'">
                 {{ getCompanyField('isHnx30') ? 'Có' : 'Không' }}
               </span>
             </div>
-            <div class="info-item has-tooltip" *ngIf="getCompanyField('isFtse') !== null" data-tooltip="FTSE Vietnam Index - Chỉ số của tổ chức quốc tế FTSE Russell. Các quỹ ETF nước ngoài thường theo dõi rổ này">
+            <div
+              class="info-item has-tooltip"
+              *ngIf="getCompanyField('isFtse') !== null"
+              data-tooltip="FTSE Vietnam Index - Chỉ số của tổ chức quốc tế FTSE Russell. Các quỹ ETF nước ngoài thường theo dõi rổ này"
+            >
               <label>FTSE</label>
               <span [class]="getCompanyField('isFtse') ? 'positive' : 'negative'">
                 {{ getCompanyField('isFtse') ? 'Có' : 'Không' }}
               </span>
             </div>
-            <div class="info-item has-tooltip" *ngIf="getCompanyField('isVnmetf') !== null" data-tooltip="Thuộc danh mục quỹ ETF VNM của VanEck. Đây là quỹ ETF Việt Nam lớn nhất được giao dịch tại Mỹ">
+            <div
+              class="info-item has-tooltip"
+              *ngIf="getCompanyField('isVnmetf') !== null"
+              data-tooltip="Thuộc danh mục quỹ ETF VNM của VanEck. Đây là quỹ ETF Việt Nam lớn nhất được giao dịch tại Mỹ"
+            >
               <label>VNMetf</label>
               <span [class]="getCompanyField('isVnmetf') ? 'positive' : 'negative'">
                 {{ getCompanyField('isVnmetf') ? 'Có' : 'Không' }}
@@ -429,40 +626,80 @@
         </section>
 
         <!-- Quick Price Summary - Tóm tắt giá nhanh -->
-        <section class="section" *ngIf="selectedSymbolPriceData()?.c && selectedSymbolPriceData()!.c!.length > 0">
+        <section
+          class="section"
+          *ngIf="selectedSymbolPriceData()?.c && selectedSymbolPriceData()!.c!.length > 0"
+        >
           <h3><i class="pi pi-chart-line"></i> Tóm tắt giá</h3>
           <div class="metrics-grid">
-            <div class="metric-item has-tooltip" data-tooltip="Giá đóng cửa phiên giao dịch gần nhất">
+            <div
+              class="metric-item has-tooltip"
+              data-tooltip="Giá đóng cửa phiên giao dịch gần nhất"
+            >
               <label>Giá hiện tại</label>
-              <span>{{ (selectedSymbolPriceData()!.c![selectedSymbolPriceData()!.c!.length - 1] * 1000) | number:'1.0-0' }}đ</span>
+              <span
+                >{{
+                  selectedSymbolPriceData()!.c![selectedSymbolPriceData()!.c!.length - 1] * 1000
+                    | number: '1.0-0'
+                }}đ</span
+              >
             </div>
-            <div class="metric-item has-tooltip" data-tooltip="Giá cao nhất trong khoảng thời gian đang xem">
+            <div
+              class="metric-item has-tooltip"
+              data-tooltip="Giá cao nhất trong khoảng thời gian đang xem"
+            >
               <label>Cao nhất</label>
-              <span>{{ (getHighestPrice()) | number:'1.0-0' }}đ</span>
+              <span>{{ getHighestPrice() | number: '1.0-0' }}đ</span>
             </div>
-            <div class="metric-item has-tooltip" data-tooltip="Giá thấp nhất trong khoảng thời gian đang xem">
+            <div
+              class="metric-item has-tooltip"
+              data-tooltip="Giá thấp nhất trong khoảng thời gian đang xem"
+            >
               <label>Thấp nhất</label>
-              <span>{{ (getLowestPrice()) | number:'1.0-0' }}đ</span>
+              <span>{{ getLowestPrice() | number: '1.0-0' }}đ</span>
             </div>
-            <div class="metric-item has-tooltip" *ngIf="getTickerField('high52w')" data-tooltip="Mức giá cao nhất trong 52 tuần qua (1 năm). Nếu giá hiện tại gần mức này, cổ phiếu đang trong xu hướng tăng mạnh">
+            <div
+              class="metric-item has-tooltip"
+              *ngIf="getTickerField('high52w')"
+              data-tooltip="Mức giá cao nhất trong 52 tuần qua (1 năm). Nếu giá hiện tại gần mức này, cổ phiếu đang trong xu hướng tăng mạnh"
+            >
               <label>Cao 52W</label>
-              <span>{{ (getTickerField('high52w') * 1000) | number:'1.0-0' }}đ</span>
+              <span>{{ getTickerField('high52w') * 1000 | number: '1.0-0' }}đ</span>
             </div>
-            <div class="metric-item has-tooltip" *ngIf="getTickerField('low52w')" data-tooltip="Mức giá thấp nhất trong 52 tuần qua (1 năm). Nếu giá hiện tại gần mức này, có thể là cơ hội mua vào">
+            <div
+              class="metric-item has-tooltip"
+              *ngIf="getTickerField('low52w')"
+              data-tooltip="Mức giá thấp nhất trong 52 tuần qua (1 năm). Nếu giá hiện tại gần mức này, có thể là cơ hội mua vào"
+            >
               <label>Thấp 52W</label>
-              <span>{{ (getTickerField('low52w') * 1000) | number:'1.0-0' }}đ</span>
+              <span>{{ getTickerField('low52w') * 1000 | number: '1.0-0' }}đ</span>
             </div>
-            <div class="metric-item has-tooltip" *ngIf="selectedSymbolPriceData()!.v" data-tooltip="Khối lượng giao dịch trong phiên gần nhất. So sánh với KL trung bình để đánh giá mức độ quan tâm">
+            <div
+              class="metric-item has-tooltip"
+              *ngIf="selectedSymbolPriceData()!.v"
+              data-tooltip="Khối lượng giao dịch trong phiên gần nhất. So sánh với KL trung bình để đánh giá mức độ quan tâm"
+            >
               <label>KL hôm nay</label>
-              <span>{{ selectedSymbolPriceData()!.v![selectedSymbolPriceData()!.v!.length - 1] | number:'1.0-0' }}</span>
+              <span>{{
+                selectedSymbolPriceData()!.v![selectedSymbolPriceData()!.v!.length - 1]
+                  | number: '1.0-0'
+              }}</span>
             </div>
-            <div class="metric-item has-tooltip" *ngIf="getTickerField('avgVolume20d')" data-tooltip="Khối lượng giao dịch trung bình 20 ngày. Dùng để so sánh thanh khoản hiện tại với bình thường">
+            <div
+              class="metric-item has-tooltip"
+              *ngIf="getTickerField('avgVolume20d')"
+              data-tooltip="Khối lượng giao dịch trung bình 20 ngày. Dùng để so sánh thanh khoản hiện tại với bình thường"
+            >
               <label>KL TB 20D</label>
-              <span>{{ (getTickerField('avgVolume20d') / 1000000) | number:'1.2-2' }}M</span>
+              <span>{{ getTickerField('avgVolume20d') / 1000000 | number: '1.2-2' }}M</span>
             </div>
-            <div class="metric-item has-tooltip" *ngIf="getTickerField('avgVolume30d')" data-tooltip="Khối lượng giao dịch trung bình 30 ngày. Chỉ số thanh khoản dài hạn hơn">
+            <div
+              class="metric-item has-tooltip"
+              *ngIf="getTickerField('avgVolume30d')"
+              data-tooltip="Khối lượng giao dịch trung bình 30 ngày. Chỉ số thanh khoản dài hạn hơn"
+            >
               <label>KL TB 30D</label>
-              <span>{{ (getTickerField('avgVolume30d') / 1000000) | number:'1.2-2' }}M</span>
+              <span>{{ getTickerField('avgVolume30d') / 1000000 | number: '1.2-2' }}M</span>
             </div>
           </div>
         </section>
@@ -471,53 +708,109 @@
         <section class="section" *ngIf="selectedSymbol()?.basicInfo">
           <h3><i class="pi pi-calculator"></i> Chỉ số định giá & sinh lời</h3>
           <div class="metrics-grid">
-            <div class="metric-item has-tooltip" *ngIf="selectedSymbol()?.basicInfo?.eps" data-tooltip="Earnings Per Share - Lợi nhuận trên mỗi cổ phiếu. EPS cao = công ty làm ăn có lời. So sánh với các công ty cùng ngành">
+            <div
+              class="metric-item has-tooltip"
+              *ngIf="selectedSymbol()?.basicInfo?.eps"
+              data-tooltip="Earnings Per Share - Lợi nhuận trên mỗi cổ phiếu. EPS cao = công ty làm ăn có lời. So sánh với các công ty cùng ngành"
+            >
               <label>EPS</label>
-              <span>{{ parseFloat(selectedSymbol()!.basicInfo!.eps) | number:'1.0-0' }}</span>
+              <span>{{ parseFloat(selectedSymbol()!.basicInfo!.eps) | number: '1.0-0' }}</span>
             </div>
-            <div class="metric-item has-tooltip" *ngIf="selectedSymbol()?.basicInfo?.pe" data-tooltip="Price to Earnings - Giá/Lợi nhuận. P/E thấp có thể là cơ hội (định giá rẻ), P/E cao có thể là kỳ vọng tăng trưởng. Trung bình ngành: 10-15">
+            <div
+              class="metric-item has-tooltip"
+              *ngIf="selectedSymbol()?.basicInfo?.pe"
+              data-tooltip="Price to Earnings - Giá/Lợi nhuận. P/E thấp có thể là cơ hội (định giá rẻ), P/E cao có thể là kỳ vọng tăng trưởng. Trung bình ngành: 10-15"
+            >
               <label>P/E</label>
-              <span>{{ parseFloat(selectedSymbol()!.basicInfo!.pe) | number:'1.2-2' }}</span>
+              <span>{{ parseFloat(selectedSymbol()!.basicInfo!.pe) | number: '1.2-2' }}</span>
             </div>
-            <div class="metric-item has-tooltip" *ngIf="selectedSymbol()?.basicInfo?.pb" data-tooltip="Price to Book - Giá/Giá trị sổ sách. P/B < 1 có thể là định giá rẻ hơn tài sản thực. P/B cao = thị trường kỳ vọng lớn">
+            <div
+              class="metric-item has-tooltip"
+              *ngIf="selectedSymbol()?.basicInfo?.pb"
+              data-tooltip="Price to Book - Giá/Giá trị sổ sách. P/B < 1 có thể là định giá rẻ hơn tài sản thực. P/B cao = thị trường kỳ vọng lớn"
+            >
               <label>P/B</label>
-              <span>{{ parseFloat(selectedSymbol()!.basicInfo!.pb) | number:'1.2-2' }}</span>
+              <span>{{ parseFloat(selectedSymbol()!.basicInfo!.pb) | number: '1.2-2' }}</span>
             </div>
-            <div class="metric-item has-tooltip" *ngIf="selectedSymbol()?.basicInfo?.roe" data-tooltip="Return on Equity - Tỷ suất sinh lời trên vốn chủ sở hữu. ROE > 15% = hiệu quả tốt. Càng cao càng tốt">
+            <div
+              class="metric-item has-tooltip"
+              *ngIf="selectedSymbol()?.basicInfo?.roe"
+              data-tooltip="Return on Equity - Tỷ suất sinh lời trên vốn chủ sở hữu. ROE > 15% = hiệu quả tốt. Càng cao càng tốt"
+            >
               <label>ROE</label>
-              <span>{{ formatPercent(selectedSymbol()!.basicInfo!.roe) | number:'1.2-2' }}%</span>
+              <span>{{ formatPercent(selectedSymbol()!.basicInfo!.roe) | number: '1.2-2' }}%</span>
             </div>
-            <div class="metric-item has-tooltip" *ngIf="selectedSymbol()?.basicInfo?.roa" data-tooltip="Return on Assets - Tỷ suất sinh lời trên tổng tài sản. ROA > 5% = sử dụng tài sản hiệu quả. Ngành ngân hàng thường thấp hơn">
+            <div
+              class="metric-item has-tooltip"
+              *ngIf="selectedSymbol()?.basicInfo?.roa"
+              data-tooltip="Return on Assets - Tỷ suất sinh lời trên tổng tài sản. ROA > 5% = sử dụng tài sản hiệu quả. Ngành ngân hàng thường thấp hơn"
+            >
               <label>ROA</label>
-              <span>{{ formatPercent(selectedSymbol()!.basicInfo!.roa) | number:'1.2-2' }}%</span>
+              <span>{{ formatPercent(selectedSymbol()!.basicInfo!.roa) | number: '1.2-2' }}%</span>
             </div>
-            <div class="metric-item has-tooltip" *ngIf="getTickerField('marketCap')" data-tooltip="Vốn hóa thị trường = Giá CP × Số CP lưu hành. Phản ánh quy mô công ty. Large-cap > 10.000 tỷ, Mid-cap: 1.000-10.000 tỷ">
+            <div
+              class="metric-item has-tooltip"
+              *ngIf="getTickerField('marketCap')"
+              data-tooltip="Vốn hóa thị trường = Giá CP × Số CP lưu hành. Phản ánh quy mô công ty. Large-cap > 10.000 tỷ, Mid-cap: 1.000-10.000 tỷ"
+            >
               <label>Vốn hóa</label>
-              <span>{{ (getTickerField('marketCap') / 1000000000) | number:'1.1-1' }}T</span>
+              <span>{{ getTickerField('marketCap') / 1000000000 | number: '1.1-1' }}T</span>
             </div>
-            <div class="metric-item has-tooltip" *ngIf="getTickerField('dividend')" data-tooltip="Tỷ lệ cổ tức - % lợi nhuận công ty chia cho cổ đông. Cổ tức cao = thu nhập ổn định, phù hợp đầu tư dài hạn">
+            <div
+              class="metric-item has-tooltip"
+              *ngIf="getTickerField('dividend')"
+              data-tooltip="Tỷ lệ cổ tức - % lợi nhuận công ty chia cho cổ đông. Cổ tức cao = thu nhập ổn định, phù hợp đầu tư dài hạn"
+            >
               <label>Cổ tức</label>
-              <span>{{ formatPercent(getTickerField('dividend')) | number:'1.2-2' }}%</span>
+              <span>{{ formatPercent(getTickerField('dividend')) | number: '1.2-2' }}%</span>
             </div>
-            <div class="metric-item has-tooltip" *ngIf="getTickerField('dividendYield')" data-tooltip="Tỷ suất cổ tức = Cổ tức/Giá CP. Cho biết % lợi nhuận nhận được từ cổ tức so với giá mua. > 5% là khá hấp dẫn">
+            <div
+              class="metric-item has-tooltip"
+              *ngIf="getTickerField('dividendYield')"
+              data-tooltip="Tỷ suất cổ tức = Cổ tức/Giá CP. Cho biết % lợi nhuận nhận được từ cổ tức so với giá mua. > 5% là khá hấp dẫn"
+            >
               <label>Tỷ suất CT</label>
-              <span>{{ formatPercent(getTickerField('dividendYield')) | number:'1.2-2' }}%</span>
+              <span>{{ formatPercent(getTickerField('dividendYield')) | number: '1.2-2' }}%</span>
             </div>
-            <div class="metric-item has-tooltip" *ngIf="getCompanyField('beta')" data-tooltip="Hệ số Beta - Đo độ biến động so với thị trường. Beta > 1: biến động mạnh hơn, Beta < 1: ổn định hơn. Beta = 1: biến động như VN-Index">
+            <div
+              class="metric-item has-tooltip"
+              *ngIf="getCompanyField('beta')"
+              data-tooltip="Hệ số Beta - Đo độ biến động so với thị trường. Beta > 1: biến động mạnh hơn, Beta < 1: ổn định hơn. Beta = 1: biến động như VN-Index"
+            >
               <label>Beta</label>
-              <span>{{ getCompanyField('beta') | number:'1.2-2' }}</span>
+              <span>{{ getCompanyField('beta') | number: '1.2-2' }}</span>
             </div>
-            <div class="metric-item has-tooltip" *ngIf="getTickerField('outstandingShares')" data-tooltip="Số cổ phiếu đang lưu hành trên thị trường. Ảnh hưởng đến thanh khoản và biến động giá">
+            <div
+              class="metric-item has-tooltip"
+              *ngIf="getTickerField('outstandingShares')"
+              data-tooltip="Số cổ phiếu đang lưu hành trên thị trường. Ảnh hưởng đến thanh khoản và biến động giá"
+            >
               <label>CP lưu hành</label>
-              <span>{{ (getTickerField('outstandingShares') / 1000000) | number:'1.1-1' }}M</span>
+              <span>{{ getTickerField('outstandingShares') / 1000000 | number: '1.1-1' }}M</span>
             </div>
-            <div class="metric-item has-tooltip" *ngIf="getTickerField('freeFloatRatio') !== null && getTickerField('freeFloatRatio') !== undefined" data-tooltip="Tỷ lệ cổ phiếu tự do chuyển nhượng. Free float cao = thanh khoản tốt, dễ giao dịch. Thấp = có thể bị thao túng giá">
+            <div
+              class="metric-item has-tooltip"
+              *ngIf="
+                getTickerField('freeFloatRatio') !== null &&
+                getTickerField('freeFloatRatio') !== undefined
+              "
+              data-tooltip="Tỷ lệ cổ phiếu tự do chuyển nhượng. Free float cao = thanh khoản tốt, dễ giao dịch. Thấp = có thể bị thao túng giá"
+            >
               <label>Free Float</label>
-              <span>{{ formatPercent(getTickerField('freeFloatRatio')) | number:'1.1-1' }}%</span>
+              <span>{{ formatPercent(getTickerField('freeFloatRatio')) | number: '1.1-1' }}%</span>
             </div>
-            <div class="metric-item has-tooltip" *ngIf="getTickerField('foreignOwnership') !== null && getTickerField('foreignOwnership') !== undefined" data-tooltip="Tỷ lệ sở hữu của nhà đầu tư nước ngoài. Tỷ lệ cao = được khối ngoại quan tâm, thường là dấu hiệu tích cực">
+            <div
+              class="metric-item has-tooltip"
+              *ngIf="
+                getTickerField('foreignOwnership') !== null &&
+                getTickerField('foreignOwnership') !== undefined
+              "
+              data-tooltip="Tỷ lệ sở hữu của nhà đầu tư nước ngoài. Tỷ lệ cao = được khối ngoại quan tâm, thường là dấu hiệu tích cực"
+            >
               <label>SH nước ngoài</label>
-              <span>{{ formatPercent(getTickerField('foreignOwnership')) | number:'1.1-1' }}%</span>
+              <span
+                >{{ formatPercent(getTickerField('foreignOwnership')) | number: '1.1-1' }}%</span
+              >
             </div>
           </div>
         </section>
@@ -531,10 +824,15 @@
               class="key-indicator-card has-tooltip"
               [class.positive]="indicator.isPositive === true"
               [class.negative]="indicator.isPositive === false"
-              [attr.data-tooltip]="indicator.tooltip || indicator.label">
+              [attr.data-tooltip]="indicator.tooltip || indicator.label"
+            >
               <div class="indicator-label">{{ indicator.label }}</div>
               <div class="indicator-value">{{ indicator.value }}</div>
-              <i class="pi pi-info-circle tooltip-icon" *ngIf="indicator.tooltip" [attr.data-tooltip]="indicator.tooltip"></i>
+              <i
+                class="pi pi-info-circle tooltip-icon"
+                *ngIf="indicator.tooltip"
+                [attr.data-tooltip]="indicator.tooltip"
+              ></i>
             </div>
           </div>
         </section>
@@ -554,7 +852,8 @@
               class="sector-stock-card"
               [class.fetched]="stock.isFetched === true"
               [class.checking]="stock.isFetched === 'checking'"
-              (click)="navigateToStock(stock.symbol)">
+              (click)="navigateToStock(stock.symbol)"
+            >
               <div class="stock-header">
                 <span class="stock-symbol">{{ stock.symbol }}</span>
                 <span class="stock-status">
@@ -584,7 +883,8 @@
             <div
               *ngFor="let indicator of allFinancialIndicators()"
               class="indicator-row"
-              [title]="indicator.tooltip">
+              [title]="indicator.tooltip"
+            >
               <div class="indicator-label">
                 {{ indicator.label }}
                 <i class="pi pi-info-circle info-icon" *ngIf="indicator.tooltip"></i>
@@ -615,9 +915,18 @@
                   <td class="label-cell">{{ item.label }}</td>
                   <td class="value-cell">{{ formatLargeNumber(item.value) }}</td>
                   <td class="value-cell year-value">{{ formatLargeNumber(item.yearValue) }}</td>
-                  <td class="change-cell" [class.positive]="item.change > 0" [class.negative]="item.change < 0">
-                    <span class="change-value">{{ item.change >= 0 ? '+' : '' }}{{ formatLargeNumber(item.change) }}</span>
-                    <span class="change-percent">({{ item.changePercent >= 0 ? '+' : '' }}{{ item.changePercent | number:'1.1-1' }}%)</span>
+                  <td
+                    class="change-cell"
+                    [class.positive]="item.change > 0"
+                    [class.negative]="item.change < 0"
+                  >
+                    <span class="change-value"
+                      >{{ item.change >= 0 ? '+' : '' }}{{ formatLargeNumber(item.change) }}</span
+                    >
+                    <span class="change-percent"
+                      >({{ item.changePercent >= 0 ? '+' : ''
+                      }}{{ item.changePercent | number: '1.1-1' }}%)</span
+                    >
                   </td>
                 </tr>
               </tbody>
@@ -640,7 +949,8 @@
               class="sector-stock-row"
               [class.fetched]="stock.isFetched === true"
               [class.checking]="stock.isFetched === 'checking'"
-              (click)="navigateToStock(stock.symbol)">
+              (click)="navigateToStock(stock.symbol)"
+            >
               <div class="stock-info">
                 <span class="stock-symbol">{{ stock.symbol }}</span>
                 <span class="stock-name">{{ stock.name || stock.shortName }}</span>
@@ -673,22 +983,33 @@
           <div class="trading-info-grid">
             <div class="trading-info-item" *ngIf="selectedSymbol()?.basicInfo?.matchPrice">
               <label>Giá khớp</label>
-              <span class="price-value">{{ (parseFloat(selectedSymbol()!.basicInfo!.matchPrice) * 1000) | number:'1.0-0' }} đ</span>
+              <span class="price-value"
+                >{{
+                  parseFloat(selectedSymbol()!.basicInfo!.matchPrice) * 1000 | number: '1.0-0'
+                }}
+                đ</span
+              >
             </div>
             <div class="trading-info-item" *ngIf="selectedSymbol()?.basicInfo?.changedValue">
               <label>Thay đổi</label>
-              <span [class]="parseFloat(selectedSymbol()!.basicInfo!.changedValue) >= 0 ? 'positive' : 'negative'">
-                {{ (parseFloat(selectedSymbol()!.basicInfo!.changedValue) * 1000) | number:'1.0-0' }} đ
-                ({{ selectedSymbol()?.basicInfo?.changedRatio || '0' }}%)
+              <span
+                [class]="
+                  parseFloat(selectedSymbol()!.basicInfo!.changedValue) >= 0
+                    ? 'positive'
+                    : 'negative'
+                "
+              >
+                {{ parseFloat(selectedSymbol()!.basicInfo!.changedValue) * 1000 | number: '1.0-0' }}
+                đ ({{ selectedSymbol()?.basicInfo?.changedRatio || '0' }}%)
               </span>
             </div>
             <div class="trading-info-item" *ngIf="selectedSymbol()?.basicInfo?.totalVolume">
               <label>Khối lượng</label>
-              <span>{{ selectedSymbol()?.basicInfo?.totalVolume | number:'1.0-0' }}</span>
+              <span>{{ selectedSymbol()?.basicInfo?.totalVolume | number: '1.0-0' }}</span>
             </div>
             <div class="trading-info-item" *ngIf="getCompanyField('capital')">
               <label>Vốn điều lệ</label>
-              <span>{{ (getCompanyField('capital') / 1000000) | number:'1.0-0' }} triệu đồng</span>
+              <span>{{ getCompanyField('capital') / 1000000 | number: '1.0-0' }} triệu đồng</span>
             </div>
           </div>
         </section>
@@ -699,19 +1020,19 @@
           <div class="trading-stats-grid">
             <div class="stat-card">
               <label>Giá cao nhất</label>
-              <span class="stat-value">{{ getHighestPrice() | number:'1.0-0' }} đ</span>
+              <span class="stat-value">{{ getHighestPrice() | number: '1.0-0' }} đ</span>
             </div>
             <div class="stat-card">
               <label>Giá thấp nhất</label>
-              <span class="stat-value">{{ getLowestPrice() | number:'1.0-0' }} đ</span>
+              <span class="stat-value">{{ getLowestPrice() | number: '1.0-0' }} đ</span>
             </div>
             <div class="stat-card">
               <label>Giá trung bình</label>
-              <span class="stat-value">{{ getAveragePrice() | number:'1.0-0' }} đ</span>
+              <span class="stat-value">{{ getAveragePrice() | number: '1.0-0' }} đ</span>
             </div>
             <div class="stat-card">
               <label>Tổng khối lượng</label>
-              <span class="stat-value">{{ getTotalVolumeDisplay() | number:'1.0-0' }}</span>
+              <span class="stat-value">{{ getTotalVolumeDisplay() | number: '1.0-0' }}</span>
             </div>
           </div>
         </section>
@@ -753,12 +1074,19 @@
               <!-- Training Progress -->
               <div class="nn-training-progress" *ngIf="isNNTraining() && nnTrainingProgress()">
                 <div class="progress-bar">
-                  <div class="progress-fill" [style.width.%]="(nnTrainingProgress()!.epoch / trainingConfig().epochs) * 100"></div>
+                  <div
+                    class="progress-fill"
+                    [style.width.%]="(nnTrainingProgress()!.epoch / trainingConfig().epochs) * 100"
+                  ></div>
                 </div>
                 <div class="progress-info">
-                  <span>Epoch: {{ nnTrainingProgress()!.epoch }}/{{ trainingConfig().epochs }}</span>
+                  <span
+                    >Epoch: {{ nnTrainingProgress()!.epoch }}/{{ trainingConfig().epochs }}</span
+                  >
                   <span>Loss: {{ nnTrainingProgress()!.loss.toFixed(6) }}</span>
-                  <span *ngIf="nnTrainingProgress()?.accuracy">Accuracy: {{ (nnTrainingProgress()!.accuracy! * 100).toFixed(1) }}%</span>
+                  <span *ngIf="nnTrainingProgress()?.accuracy"
+                    >Accuracy: {{ (nnTrainingProgress()!.accuracy! * 100).toFixed(1) }}%</span
+                  >
                 </div>
               </div>
 
@@ -771,21 +1099,33 @@
               <!-- Training Config Summary & Toggle -->
               <div class="training-config-summary">
                 <div class="config-quick-view">
-                  <span class="config-tag"><i class="pi pi-sync"></i> {{ trainingConfig().epochs }} epochs</span>
-                  <span class="config-tag"><i class="pi pi-calendar"></i> {{ trainingConfig().lookbackDays }} ngày</span>
-                  <span class="config-tag"><i class="pi pi-percentage"></i> {{ (trainingConfig().validationSplit * 100).toFixed(0) }}% val</span>
+                  <span class="config-tag"
+                    ><i class="pi pi-sync"></i> {{ trainingConfig().epochs }} epochs</span
+                  >
+                  <span class="config-tag"
+                    ><i class="pi pi-calendar"></i> {{ trainingConfig().lookbackDays }} ngày</span
+                  >
+                  <span class="config-tag"
+                    ><i class="pi pi-percentage"></i>
+                    {{ (trainingConfig().validationSplit * 100).toFixed(0) }}% val</span
+                  >
                 </div>
-                <button
-                  class="btn btn-config"
-                  (click)="showTrainingConfig.set(true)">
+                <button class="btn btn-config" (click)="showTrainingConfig.set(true)">
                   <i class="pi pi-cog"></i>
                   Cấu hình
                 </button>
               </div>
 
               <!-- Training Config Dialog -->
-              <div class="fullscreen-dialog-overlay" *ngIf="showTrainingConfig()" (click)="showTrainingConfig.set(false)">
-                <div class="fullscreen-dialog training-config-dialog" (click)="$event.stopPropagation()">
+              <div
+                class="fullscreen-dialog-overlay"
+                *ngIf="showTrainingConfig()"
+                (click)="showTrainingConfig.set(false)"
+              >
+                <div
+                  class="fullscreen-dialog training-config-dialog"
+                  (click)="$event.stopPropagation()"
+                >
                   <div class="dialog-header">
                     <h3><i class="pi pi-sliders-h"></i> Cấu hình huấn luyện mô hình</h3>
                     <button class="btn-close" (click)="showTrainingConfig.set(false)">
@@ -793,7 +1133,9 @@
                     </button>
                   </div>
                   <div class="dialog-body">
-                    <p class="config-description">Điều chỉnh các thông số để tối ưu mô hình Neural Network.</p>
+                    <p class="config-description">
+                      Điều chỉnh các thông số để tối ưu mô hình Neural Network.
+                    </p>
 
                     <!-- Presets -->
                     <div class="config-presets-section">
@@ -804,7 +1146,10 @@
                           <span class="preset-name">Nhanh</span>
                           <span class="preset-desc">30 epochs, 30 ngày</span>
                         </button>
-                        <button class="btn-preset-card active" (click)="applyTrainingPreset('balanced')">
+                        <button
+                          class="btn-preset-card active"
+                          (click)="applyTrainingPreset('balanced')"
+                        >
                           <i class="pi pi-sliders-h"></i>
                           <span class="preset-name">Cân bằng</span>
                           <span class="preset-desc">50 epochs, 60 ngày</span>
@@ -833,15 +1178,20 @@
                             [min]="trainingConfigDescriptions.epochs.min"
                             [max]="trainingConfigDescriptions.epochs.max"
                             [step]="trainingConfigDescriptions.epochs.step"
-                            (input)="updateTrainingConfig({ epochs: +$any($event.target).value })">
-                          <p class="field-hint">{{ trainingConfigDescriptions.epochs.description }}</p>
+                            (input)="updateTrainingConfig({ epochs: +$any($event.target).value })"
+                          />
+                          <p class="field-hint">
+                            {{ trainingConfigDescriptions.epochs.description }}
+                          </p>
                         </div>
 
                         <!-- Lookback Days -->
                         <div class="config-field">
                           <div class="field-header">
                             <label>{{ trainingConfigDescriptions.lookbackDays.label }}</label>
-                            <span class="field-value">{{ trainingConfig().lookbackDays }} ngày</span>
+                            <span class="field-value"
+                              >{{ trainingConfig().lookbackDays }} ngày</span
+                            >
                           </div>
                           <input
                             type="range"
@@ -849,8 +1199,13 @@
                             [min]="trainingConfigDescriptions.lookbackDays.min"
                             [max]="trainingConfigDescriptions.lookbackDays.max"
                             [step]="trainingConfigDescriptions.lookbackDays.step"
-                            (input)="updateTrainingConfig({ lookbackDays: +$any($event.target).value })">
-                          <p class="field-hint">{{ trainingConfigDescriptions.lookbackDays.description }}</p>
+                            (input)="
+                              updateTrainingConfig({ lookbackDays: +$any($event.target).value })
+                            "
+                          />
+                          <p class="field-hint">
+                            {{ trainingConfigDescriptions.lookbackDays.description }}
+                          </p>
                         </div>
 
                         <!-- Batch Size -->
@@ -865,15 +1220,22 @@
                             [min]="trainingConfigDescriptions.batchSize.min"
                             [max]="trainingConfigDescriptions.batchSize.max"
                             [step]="trainingConfigDescriptions.batchSize.step"
-                            (input)="updateTrainingConfig({ batchSize: +$any($event.target).value })">
-                          <p class="field-hint">{{ trainingConfigDescriptions.batchSize.description }}</p>
+                            (input)="
+                              updateTrainingConfig({ batchSize: +$any($event.target).value })
+                            "
+                          />
+                          <p class="field-hint">
+                            {{ trainingConfigDescriptions.batchSize.description }}
+                          </p>
                         </div>
 
                         <!-- Validation Split -->
                         <div class="config-field">
                           <div class="field-header">
                             <label>{{ trainingConfigDescriptions.validationSplit.label }}</label>
-                            <span class="field-value">{{ (trainingConfig().validationSplit * 100).toFixed(0) }}%</span>
+                            <span class="field-value"
+                              >{{ (trainingConfig().validationSplit * 100).toFixed(0) }}%</span
+                            >
                           </div>
                           <input
                             type="range"
@@ -881,8 +1243,13 @@
                             [min]="trainingConfigDescriptions.validationSplit.min"
                             [max]="trainingConfigDescriptions.validationSplit.max"
                             [step]="trainingConfigDescriptions.validationSplit.step"
-                            (input)="updateTrainingConfig({ validationSplit: +$any($event.target).value })">
-                          <p class="field-hint">{{ trainingConfigDescriptions.validationSplit.description }}</p>
+                            (input)="
+                              updateTrainingConfig({ validationSplit: +$any($event.target).value })
+                            "
+                          />
+                          <p class="field-hint">
+                            {{ trainingConfigDescriptions.validationSplit.description }}
+                          </p>
                         </div>
 
                         <!-- Learning Rate -->
@@ -897,15 +1264,22 @@
                             [min]="trainingConfigDescriptions.learningRate.min"
                             [max]="trainingConfigDescriptions.learningRate.max"
                             [step]="trainingConfigDescriptions.learningRate.step"
-                            (input)="updateTrainingConfig({ learningRate: +$any($event.target).value })">
-                          <p class="field-hint">{{ trainingConfigDescriptions.learningRate.description }}</p>
+                            (input)="
+                              updateTrainingConfig({ learningRate: +$any($event.target).value })
+                            "
+                          />
+                          <p class="field-hint">
+                            {{ trainingConfigDescriptions.learningRate.description }}
+                          </p>
                         </div>
 
                         <!-- Forecast Days -->
                         <div class="config-field">
                           <div class="field-header">
                             <label>{{ trainingConfigDescriptions.forecastDays.label }}</label>
-                            <span class="field-value">{{ trainingConfig().forecastDays }} ngày</span>
+                            <span class="field-value"
+                              >{{ trainingConfig().forecastDays }} ngày</span
+                            >
                           </div>
                           <input
                             type="range"
@@ -913,8 +1287,13 @@
                             [min]="trainingConfigDescriptions.forecastDays.min"
                             [max]="trainingConfigDescriptions.forecastDays.max"
                             [step]="trainingConfigDescriptions.forecastDays.step"
-                            (input)="updateTrainingConfig({ forecastDays: +$any($event.target).value })">
-                          <p class="field-hint">{{ trainingConfigDescriptions.forecastDays.description }}</p>
+                            (input)="
+                              updateTrainingConfig({ forecastDays: +$any($event.target).value })
+                            "
+                          />
+                          <p class="field-hint">
+                            {{ trainingConfigDescriptions.forecastDays.description }}
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -936,14 +1315,16 @@
                   <button
                     class="btn-train"
                     (click)="trainNeuralNetwork()"
-                    [disabled]="isNNTraining() || !hasEnoughDataForTraining()">
+                    [disabled]="isNNTraining() || !hasEnoughDataForTraining()"
+                  >
                     <i class="pi" [ngClass]="isNNTraining() ? 'pi-spin pi-spinner' : 'pi-cog'"></i>
                     {{ isNNTraining() ? 'Đang huấn luyện...' : 'Huấn luyện mô hình' }}
                   </button>
                   <button
                     class="btn-predict"
                     (click)="predictWithNeuralNetwork()"
-                    [disabled]="!isNNReady() || isNNTraining()">
+                    [disabled]="!isNNReady() || isNNTraining()"
+                  >
                     <i class="pi pi-chart-line"></i>
                     Dự đoán giá
                   </button>
@@ -952,15 +1333,20 @@
                   <button
                     class="btn-reload"
                     (click)="reloadDataAndRetrain()"
-                    [disabled]="isNNTraining() || isLoadingPrice()">
-                    <i class="pi" [ngClass]="isLoadingPrice() ? 'pi-spin pi-spinner' : 'pi-refresh'"></i>
+                    [disabled]="isNNTraining() || isLoadingPrice()"
+                  >
+                    <i
+                      class="pi"
+                      [ngClass]="isLoadingPrice() ? 'pi-spin pi-spinner' : 'pi-refresh'"
+                    ></i>
                     {{ isLoadingPrice() ? 'Đang tải...' : 'Reload & Train lại' }}
                   </button>
                   <button
                     class="btn-load"
                     (click)="loadSavedWeights()"
                     [disabled]="isNNTraining()"
-                    [class.has-model]="modelStatus().hasWeights">
+                    [class.has-model]="modelStatus().hasWeights"
+                  >
                     <i class="pi pi-download"></i>
                     {{ modelStatus().hasWeights ? 'Load từ DB' : 'Load mô hình đã lưu' }}
                   </button>
@@ -973,7 +1359,9 @@
                 <div class="prediction-grid">
                   <div class="prediction-item">
                     <label>Giá hiện tại:</label>
-                    <span class="price-value">{{ formatPredictionPrice(getLatestClosePrice()) }}</span>
+                    <span class="price-value">{{
+                      formatPredictionPrice(getLatestClosePrice())
+                    }}</span>
                   </div>
                   <div class="prediction-item">
                     <label>Dự đoán ngày mai:</label>
@@ -984,27 +1372,52 @@
                   </div>
                   <div class="prediction-item" *ngIf="nnPrediction()!.nextWeekPrediction">
                     <label>Dự đoán 1 tuần:</label>
-                    <span class="price-value">{{ formatPredictionPrice(nnPrediction()!.nextWeekPrediction!) }}</span>
+                    <span class="price-value">{{
+                      formatPredictionPrice(nnPrediction()!.nextWeekPrediction!)
+                    }}</span>
                   </div>
                   <div class="prediction-item" *ngIf="nnPrediction()!.nextMonthPrediction">
                     <label>Dự đoán 1 tháng:</label>
-                    <span class="price-value">{{ formatPredictionPrice(nnPrediction()!.nextMonthPrediction!) }}</span>
+                    <span class="price-value">{{
+                      formatPredictionPrice(nnPrediction()!.nextMonthPrediction!)
+                    }}</span>
                   </div>
                   <div class="prediction-item">
                     <label>Độ tin cậy:</label>
-                    <span class="confidence-value">{{ formatConfidence(nnPrediction()!.confidence) }}</span>
+                    <span class="confidence-value">{{
+                      formatConfidence(nnPrediction()!.confidence)
+                    }}</span>
                   </div>
                   <div class="prediction-item">
                     <label>Xu hướng:</label>
                     <span class="trend-badge" [ngClass]="getTrendColorClass(nnPrediction()!.trend)">
-                      {{ nnPrediction()!.trend === 'up' ? 'Tăng' : nnPrediction()!.trend === 'down' ? 'Giảm' : 'Ổn định' }}
+                      {{
+                        nnPrediction()!.trend === 'up'
+                          ? 'Tăng'
+                          : nnPrediction()!.trend === 'down'
+                            ? 'Giảm'
+                            : 'Ổn định'
+                      }}
                     </span>
                   </div>
                   <div class="prediction-item" *ngIf="nnPrediction()!.tradingDecision">
                     <label>Quyết định giao dịch:</label>
-                    <span class="trading-decision-badge" [ngClass]="'decision-' + nnPrediction()!.tradingDecision!.action">
-                      {{ nnPrediction()!.tradingDecision!.action === 'buy' ? 'MUA' : nnPrediction()!.tradingDecision!.action === 'sell' ? 'BÁN' : 'GIỮ' }}
-                      <span class="decision-confidence">({{ (nnPrediction()!.tradingDecision!.confidence * 100).toFixed(1) }}%)</span>
+                    <span
+                      class="trading-decision-badge"
+                      [ngClass]="'decision-' + nnPrediction()!.tradingDecision!.action"
+                    >
+                      {{
+                        nnPrediction()!.tradingDecision!.action === 'buy'
+                          ? 'MUA'
+                          : nnPrediction()!.tradingDecision!.action === 'sell'
+                            ? 'BÁN'
+                            : 'GIỮ'
+                      }}
+                      <span class="decision-confidence"
+                        >({{
+                          (nnPrediction()!.tradingDecision!.confidence * 100).toFixed(1)
+                        }}%)</span
+                      >
                     </span>
                     <div class="decision-reason">{{ nnPrediction()!.tradingDecision!.reason }}</div>
                   </div>
@@ -1013,10 +1426,14 @@
 
               <!-- Info -->
               <div class="nn-info" *ngIf="!nnPrediction() && !isNNTraining()">
-                <p>Hệ thống Neural Network sử dụng mô hình deep learning để phân tích dữ liệu lịch sử và dự đoán giá cổ phiếu.</p>
+                <p>
+                  Hệ thống Neural Network sử dụng mô hình deep learning để phân tích dữ liệu lịch sử
+                  và dự đoán giá cổ phiếu.
+                </p>
                 <p class="nn-note">
                   <i class="pi pi-info-circle"></i>
-                  Cần ít nhất 100 ngày dữ liệu để huấn luyện mô hình. Sau khi huấn luyện, bạn có thể sử dụng để dự đoán giá trong tương lai.
+                  Cần ít nhất 100 ngày dữ liệu để huấn luyện mô hình. Sau khi huấn luyện, bạn có thể
+                  sử dụng để dự đoán giá trong tương lai.
                 </p>
               </div>
             </div>
@@ -1029,8 +1446,12 @@
               <button
                 class="btn btn-small"
                 (click)="loadPredictionComparison()"
-                [disabled]="isLoadingComparison() || isNNTraining()">
-                <i class="pi" [ngClass]="isLoadingComparison() ? 'pi-spin pi-spinner' : 'pi-refresh'"></i>
+                [disabled]="isLoadingComparison() || isNNTraining()"
+              >
+                <i
+                  class="pi"
+                  [ngClass]="isLoadingComparison() ? 'pi-spin pi-spinner' : 'pi-refresh'"
+                ></i>
                 {{ isLoadingComparison() ? 'Đang tải...' : 'Tải so sánh' }}
               </button>
             </div>
@@ -1047,7 +1468,10 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr *ngFor="let comp of nnPredictionComparison()" [ngClass]="getComparisonRowClass(comp.errorPercent)">
+                  <tr
+                    *ngFor="let comp of nnPredictionComparison()"
+                    [ngClass]="getComparisonRowClass(comp.errorPercent)"
+                  >
                     <td>{{ comp.dateStr }}</td>
                     <td>{{ formatPredictionPrice(comp.predictedPrice) }}</td>
                     <td>{{ formatPredictionPrice(comp.actualPrice) }}</td>
@@ -1090,7 +1514,8 @@
             <button
               class="backtest-tab-btn"
               [class.active]="backtestActiveTab() === 'setup'"
-              (click)="backtestActiveTab.set('setup')">
+              (click)="backtestActiveTab.set('setup')"
+            >
               <i class="pi pi-cog"></i>
               <span>Thiết lập</span>
             </button>
@@ -1098,16 +1523,20 @@
               class="backtest-tab-btn"
               [class.active]="backtestActiveTab() === 'results'"
               (click)="backtestActiveTab.set('results')"
-              [disabled]="!tradingResult()">
+              [disabled]="!tradingResult()"
+            >
               <i class="pi pi-chart-bar"></i>
               <span>Kết quả</span>
-              <span class="badge-count" *ngIf="tradingResult()">{{ tradingResult()!.totalTrades }}</span>
+              <span class="badge-count" *ngIf="tradingResult()">{{
+                tradingResult()!.totalTrades
+              }}</span>
             </button>
             <button
               class="backtest-tab-btn"
               [class.active]="backtestActiveTab() === 'chart'"
               (click)="backtestActiveTab.set('chart')"
-              [disabled]="!tradingResult()">
+              [disabled]="!tradingResult()"
+            >
               <i class="pi pi-chart-line"></i>
               <span>Biểu đồ</span>
             </button>
@@ -1128,7 +1557,8 @@
                       [min]="getAvailableDateRange()?.minDate"
                       [max]="getAvailableDateRange()?.maxDate"
                       (change)="backtestStartDate.set($any($event.target).value)"
-                      (focus)="initializeDateRange()">
+                      (focus)="initializeDateRange()"
+                    />
                   </div>
                   <div class="date-input-item">
                     <label>Ngày kết thúc:</label>
@@ -1138,13 +1568,18 @@
                       [min]="getAvailableDateRange()?.minDate"
                       [max]="getAvailableDateRange()?.maxDate"
                       (change)="backtestEndDate.set($any($event.target).value)"
-                      (focus)="initializeDateRange()">
+                      (focus)="initializeDateRange()"
+                    />
                   </div>
                   <div class="date-input-item">
                     <label>Khoảng thời gian:</label>
                     <button
                       class="btn-quick-range"
-                      (click)="backtestStartDate.set(getAvailableDateRange()?.minDate || ''); backtestEndDate.set(getAvailableDateRange()?.maxDate || '')">
+                      (click)="
+                        backtestStartDate.set(getAvailableDateRange()?.minDate || '');
+                        backtestEndDate.set(getAvailableDateRange()?.maxDate || '')
+                      "
+                    >
                       <i class="pi pi-calendar"></i>
                       Toàn bộ
                     </button>
@@ -1162,22 +1597,30 @@
               <div class="strategy-selection">
                 <h4>Chọn chiến lược giao dịch</h4>
                 <div class="strategy-grid">
-                  <div class="strategy-card"
-                       *ngFor="let strategy of availableStrategies"
-                       [class.active]="tradingConfig().strategy === strategy"
-                       (click)="updateTradingStrategy(strategy)">
+                  <div
+                    class="strategy-card"
+                    *ngFor="let strategy of availableStrategies"
+                    [class.active]="tradingConfig().strategy === strategy"
+                    (click)="updateTradingStrategy(strategy)"
+                  >
                     <div class="strategy-icon">
-                      <i class="pi" [ngClass]="{
-                        'pi-brain': strategy === 'neural_network',
-                        'pi-chart-line': strategy === 'ma_crossover' || strategy === 'ema_crossover',
-                        'pi-percentage': strategy === 'rsi',
-                        'pi-chart-bar': strategy === 'macd',
-                        'pi-chart-scatter': strategy === 'bollinger_bands'
-                      }"></i>
+                      <i
+                        class="pi"
+                        [ngClass]="{
+                          'pi-brain': strategy === 'neural_network',
+                          'pi-chart-line':
+                            strategy === 'ma_crossover' || strategy === 'ema_crossover',
+                          'pi-percentage': strategy === 'rsi',
+                          'pi-chart-bar': strategy === 'macd',
+                          'pi-chart-scatter': strategy === 'bollinger_bands',
+                        }"
+                      ></i>
                     </div>
                     <div class="strategy-info">
                       <span class="strategy-name">{{ strategyDescriptions[strategy].name }}</span>
-                      <span class="strategy-desc">{{ strategyDescriptions[strategy].description }}</span>
+                      <span class="strategy-desc">{{
+                        strategyDescriptions[strategy].description
+                      }}</span>
                     </div>
                     <div class="strategy-check" *ngIf="tradingConfig().strategy === strategy">
                       <i class="pi pi-check-circle"></i>
@@ -1188,18 +1631,36 @@
                 <!-- Strategy-specific configuration -->
                 <div class="strategy-config" *ngIf="tradingConfig().strategy !== 'neural_network'">
                   <!-- MA Crossover Config -->
-                  <div class="strategy-params" *ngIf="tradingConfig().strategy === 'ma_crossover' || tradingConfig().strategy === 'ema_crossover'">
+                  <div
+                    class="strategy-params"
+                    *ngIf="
+                      tradingConfig().strategy === 'ma_crossover' ||
+                      tradingConfig().strategy === 'ema_crossover'
+                    "
+                  >
                     <div class="param-item">
                       <label>MA ngắn hạn:</label>
-                      <input type="number" [value]="tradingConfig().strategyConfig.maShortPeriod"
-                             (input)="updateStrategyConfig({ maShortPeriod: +$any($event.target).value })"
-                             min="5" max="50" step="1">
+                      <input
+                        type="number"
+                        [value]="tradingConfig().strategyConfig.maShortPeriod"
+                        (input)="
+                          updateStrategyConfig({ maShortPeriod: +$any($event.target).value })
+                        "
+                        min="5"
+                        max="50"
+                        step="1"
+                      />
                     </div>
                     <div class="param-item">
                       <label>MA dài hạn:</label>
-                      <input type="number" [value]="tradingConfig().strategyConfig.maLongPeriod"
-                             (input)="updateStrategyConfig({ maLongPeriod: +$any($event.target).value })"
-                             min="10" max="200" step="1">
+                      <input
+                        type="number"
+                        [value]="tradingConfig().strategyConfig.maLongPeriod"
+                        (input)="updateStrategyConfig({ maLongPeriod: +$any($event.target).value })"
+                        min="10"
+                        max="200"
+                        step="1"
+                      />
                     </div>
                   </div>
 
@@ -1207,21 +1668,38 @@
                   <div class="strategy-params" *ngIf="tradingConfig().strategy === 'rsi'">
                     <div class="param-item">
                       <label>Chu kỳ RSI:</label>
-                      <input type="number" [value]="tradingConfig().strategyConfig.rsiPeriod"
-                             (input)="updateStrategyConfig({ rsiPeriod: +$any($event.target).value })"
-                             min="5" max="30" step="1">
+                      <input
+                        type="number"
+                        [value]="tradingConfig().strategyConfig.rsiPeriod"
+                        (input)="updateStrategyConfig({ rsiPeriod: +$any($event.target).value })"
+                        min="5"
+                        max="30"
+                        step="1"
+                      />
                     </div>
                     <div class="param-item">
                       <label>Ngưỡng quá mua:</label>
-                      <input type="number" [value]="tradingConfig().strategyConfig.rsiOverbought"
-                             (input)="updateStrategyConfig({ rsiOverbought: +$any($event.target).value })"
-                             min="60" max="90" step="5">
+                      <input
+                        type="number"
+                        [value]="tradingConfig().strategyConfig.rsiOverbought"
+                        (input)="
+                          updateStrategyConfig({ rsiOverbought: +$any($event.target).value })
+                        "
+                        min="60"
+                        max="90"
+                        step="5"
+                      />
                     </div>
                     <div class="param-item">
                       <label>Ngưỡng quá bán:</label>
-                      <input type="number" [value]="tradingConfig().strategyConfig.rsiOversold"
-                             (input)="updateStrategyConfig({ rsiOversold: +$any($event.target).value })"
-                             min="10" max="40" step="5">
+                      <input
+                        type="number"
+                        [value]="tradingConfig().strategyConfig.rsiOversold"
+                        (input)="updateStrategyConfig({ rsiOversold: +$any($event.target).value })"
+                        min="10"
+                        max="40"
+                        step="5"
+                      />
                     </div>
                   </div>
 
@@ -1229,45 +1707,85 @@
                   <div class="strategy-params" *ngIf="tradingConfig().strategy === 'macd'">
                     <div class="param-item">
                       <label>EMA nhanh:</label>
-                      <input type="number" [value]="tradingConfig().strategyConfig.macdFastPeriod"
-                             (input)="updateStrategyConfig({ macdFastPeriod: +$any($event.target).value })"
-                             min="5" max="20" step="1">
+                      <input
+                        type="number"
+                        [value]="tradingConfig().strategyConfig.macdFastPeriod"
+                        (input)="
+                          updateStrategyConfig({ macdFastPeriod: +$any($event.target).value })
+                        "
+                        min="5"
+                        max="20"
+                        step="1"
+                      />
                     </div>
                     <div class="param-item">
                       <label>EMA chậm:</label>
-                      <input type="number" [value]="tradingConfig().strategyConfig.macdSlowPeriod"
-                             (input)="updateStrategyConfig({ macdSlowPeriod: +$any($event.target).value })"
-                             min="15" max="50" step="1">
+                      <input
+                        type="number"
+                        [value]="tradingConfig().strategyConfig.macdSlowPeriod"
+                        (input)="
+                          updateStrategyConfig({ macdSlowPeriod: +$any($event.target).value })
+                        "
+                        min="15"
+                        max="50"
+                        step="1"
+                      />
                     </div>
                     <div class="param-item">
                       <label>Signal Line:</label>
-                      <input type="number" [value]="tradingConfig().strategyConfig.macdSignalPeriod"
-                             (input)="updateStrategyConfig({ macdSignalPeriod: +$any($event.target).value })"
-                             min="5" max="15" step="1">
+                      <input
+                        type="number"
+                        [value]="tradingConfig().strategyConfig.macdSignalPeriod"
+                        (input)="
+                          updateStrategyConfig({ macdSignalPeriod: +$any($event.target).value })
+                        "
+                        min="5"
+                        max="15"
+                        step="1"
+                      />
                     </div>
                   </div>
 
                   <!-- Bollinger Bands Config -->
-                  <div class="strategy-params" *ngIf="tradingConfig().strategy === 'bollinger_bands'">
+                  <div
+                    class="strategy-params"
+                    *ngIf="tradingConfig().strategy === 'bollinger_bands'"
+                  >
                     <div class="param-item">
                       <label>Chu kỳ:</label>
-                      <input type="number" [value]="tradingConfig().strategyConfig.bbPeriod"
-                             (input)="updateStrategyConfig({ bbPeriod: +$any($event.target).value })"
-                             min="10" max="50" step="1">
+                      <input
+                        type="number"
+                        [value]="tradingConfig().strategyConfig.bbPeriod"
+                        (input)="updateStrategyConfig({ bbPeriod: +$any($event.target).value })"
+                        min="10"
+                        max="50"
+                        step="1"
+                      />
                     </div>
                     <div class="param-item">
                       <label>Độ lệch chuẩn:</label>
-                      <input type="number" [value]="tradingConfig().strategyConfig.bbStdDev"
-                             (input)="updateStrategyConfig({ bbStdDev: +$any($event.target).value })"
-                             min="1" max="4" step="0.5">
+                      <input
+                        type="number"
+                        [value]="tradingConfig().strategyConfig.bbStdDev"
+                        (input)="updateStrategyConfig({ bbStdDev: +$any($event.target).value })"
+                        min="1"
+                        max="4"
+                        step="0.5"
+                      />
                     </div>
                   </div>
                 </div>
 
                 <!-- NN requirement notice -->
-                <div class="nn-notice" *ngIf="tradingConfig().strategy === 'neural_network' && !nnService.isReady()">
+                <div
+                  class="nn-notice"
+                  *ngIf="tradingConfig().strategy === 'neural_network' && !nnService.isReady()"
+                >
                   <i class="pi pi-exclamation-triangle"></i>
-                  <span>Chiến lược Neural Network yêu cầu huấn luyện mô hình trước. Hãy chuyển sang tab "Mạng Neural" để huấn luyện.</span>
+                  <span
+                    >Chiến lược Neural Network yêu cầu huấn luyện mô hình trước. Hãy chuyển sang tab
+                    "Mạng Neural" để huấn luyện.</span
+                  >
                 </div>
               </div>
 
@@ -1279,25 +1797,55 @@
                     <label>Vốn ban đầu (đồng):</label>
                     <input
                       type="text"
-                      [value]="tradingConfig().initialCapital | number:'1.0-0'"
-                      (input)="updateTradingConfig({ initialCapital: parseCapitalInput($any($event.target).value) })"
+                      [value]="tradingConfig().initialCapital | number: '1.0-0'"
+                      (input)="
+                        updateTradingConfig({
+                          initialCapital: parseCapitalInput($any($event.target).value),
+                        })
+                      "
                       (blur)="formatCapitalInput($event)"
-                      class="capital-input">
+                      class="capital-input"
+                    />
                     <div class="capital-helper" *ngIf="tradingConfig().initialCapital > 0">
                       <i class="pi pi-info-circle"></i>
                       <span>{{ getInitialCapitalText() }}</span>
                     </div>
                     <div class="capital-presets">
-                      <button type="button" (click)="updateTradingConfig({ initialCapital: 50000000 })"
-                              [class.active]="tradingConfig().initialCapital === 50000000">50M</button>
-                      <button type="button" (click)="updateTradingConfig({ initialCapital: 100000000 })"
-                              [class.active]="tradingConfig().initialCapital === 100000000">100M</button>
-                      <button type="button" (click)="updateTradingConfig({ initialCapital: 200000000 })"
-                              [class.active]="tradingConfig().initialCapital === 200000000">200M</button>
-                      <button type="button" (click)="updateTradingConfig({ initialCapital: 500000000 })"
-                              [class.active]="tradingConfig().initialCapital === 500000000">500M</button>
-                      <button type="button" (click)="updateTradingConfig({ initialCapital: 1000000000 })"
-                              [class.active]="tradingConfig().initialCapital === 1000000000">1B</button>
+                      <button
+                        type="button"
+                        (click)="updateTradingConfig({ initialCapital: 50000000 })"
+                        [class.active]="tradingConfig().initialCapital === 50000000"
+                      >
+                        50M
+                      </button>
+                      <button
+                        type="button"
+                        (click)="updateTradingConfig({ initialCapital: 100000000 })"
+                        [class.active]="tradingConfig().initialCapital === 100000000"
+                      >
+                        100M
+                      </button>
+                      <button
+                        type="button"
+                        (click)="updateTradingConfig({ initialCapital: 200000000 })"
+                        [class.active]="tradingConfig().initialCapital === 200000000"
+                      >
+                        200M
+                      </button>
+                      <button
+                        type="button"
+                        (click)="updateTradingConfig({ initialCapital: 500000000 })"
+                        [class.active]="tradingConfig().initialCapital === 500000000"
+                      >
+                        500M
+                      </button>
+                      <button
+                        type="button"
+                        (click)="updateTradingConfig({ initialCapital: 1000000000 })"
+                        [class.active]="tradingConfig().initialCapital === 1000000000"
+                      >
+                        1B
+                      </button>
                     </div>
                   </div>
                   <div class="config-item">
@@ -1308,40 +1856,59 @@
                       (input)="updateTradingConfig({ stopLossPercent: +$any($event.target).value })"
                       min="1"
                       max="20"
-                      step="0.5">
+                      step="0.5"
+                    />
                   </div>
                   <div class="config-item">
                     <label>Chốt lời (%):</label>
                     <input
                       type="number"
                       [value]="tradingConfig().takeProfitPercent"
-                      (input)="updateTradingConfig({ takeProfitPercent: +$any($event.target).value })"
+                      (input)="
+                        updateTradingConfig({ takeProfitPercent: +$any($event.target).value })
+                      "
                       min="0"
                       max="50"
-                      step="0.5">
-                    <small style="font-size: 11px; color: #6c757d;">
-                      {{ tradingConfig().takeProfitPercent === 0 ? '🔄 Tự động tối ưu điểm bán theo tín hiệu' : '📍 Chốt lời cố định ' + tradingConfig().takeProfitPercent + '%' }}
+                      step="0.5"
+                    />
+                    <small style="font-size: 11px; color: #6c757d">
+                      {{
+                        tradingConfig().takeProfitPercent === 0
+                          ? '🔄 Tự động tối ưu điểm bán theo tín hiệu'
+                          : '📍 Chốt lời cố định ' + tradingConfig().takeProfitPercent + '%'
+                      }}
                     </small>
                   </div>
                   <div class="config-item trailing-stop-config">
                     <label>
-                      <input type="checkbox"
-                             [checked]="tradingConfig().useTrailingStop"
-                             (change)="updateTradingConfig({ useTrailingStop: $any($event.target).checked })">
+                      <input
+                        type="checkbox"
+                        [checked]="tradingConfig().useTrailingStop"
+                        (change)="
+                          updateTradingConfig({ useTrailingStop: $any($event.target).checked })
+                        "
+                      />
                       Trailing Stop
                     </label>
                     <div class="trailing-input" *ngIf="tradingConfig().useTrailingStop">
                       <input
                         type="number"
                         [value]="tradingConfig().trailingStopPercent"
-                        (input)="updateTradingConfig({ trailingStopPercent: +$any($event.target).value })"
+                        (input)="
+                          updateTradingConfig({ trailingStopPercent: +$any($event.target).value })
+                        "
                         min="1"
                         max="20"
-                        step="0.5">
+                        step="0.5"
+                      />
                       <span>%</span>
                     </div>
-                    <small style="font-size: 11px; color: #6c757d;">
-                      {{ tradingConfig().useTrailingStop ? '📈 Cắt lỗ di động từ đỉnh giá' : '❌ Tắt trailing stop' }}
+                    <small style="font-size: 11px; color: #6c757d">
+                      {{
+                        tradingConfig().useTrailingStop
+                          ? '📈 Cắt lỗ di động từ đỉnh giá'
+                          : '❌ Tắt trailing stop'
+                      }}
                     </small>
                   </div>
                   <div class="config-item">
@@ -1352,8 +1919,11 @@
                       (input)="updateTradingConfig({ maxPositions: +$any($event.target).value })"
                       min="1"
                       max="10"
-                      step="1">
-                    <small style="font-size: 11px; color: #6c757d;">Số lần có thể mua đồng thời (tăng để mua bán liên tục)</small>
+                      step="1"
+                    />
+                    <small style="font-size: 11px; color: #6c757d"
+                      >Số lần có thể mua đồng thời (tăng để mua bán liên tục)</small
+                    >
                   </div>
                   <div class="config-item">
                     <label>T+ (ngày):</label>
@@ -1363,22 +1933,34 @@
                       (input)="updateTradingConfig({ tPlusDays: +$any($event.target).value })"
                       min="0"
                       max="5"
-                      step="1">
-                    <small style="font-size: 11px; color: #6c757d;">Số ngày phải đợi sau khi mua mới được bán (T+2 = 2 ngày)</small>
+                      step="1"
+                    />
+                    <small style="font-size: 11px; color: #6c757d"
+                      >Số ngày phải đợi sau khi mua mới được bán (T+2 = 2 ngày)</small
+                    >
                   </div>
                 </div>
                 <div class="simulation-actions">
                   <button
                     class="btn-simulate"
                     (click)="runTradingSimulation()"
-                    [disabled]="(isNeuralNetworkStrategy() && !isNNReady()) || isRunningSimulation() || isNNTraining()">
-                    <i class="pi" [ngClass]="isRunningSimulation() ? 'pi-spin pi-spinner' : 'pi-play'"></i>
+                    [disabled]="
+                      (isNeuralNetworkStrategy() && !isNNReady()) ||
+                      isRunningSimulation() ||
+                      isNNTraining()
+                    "
+                  >
+                    <i
+                      class="pi"
+                      [ngClass]="isRunningSimulation() ? 'pi-spin pi-spinner' : 'pi-play'"
+                    ></i>
                     {{ isRunningSimulation() ? 'Đang chạy...' : 'Chạy mô phỏng' }}
                   </button>
                   <button
                     class="btn btn-load"
                     (click)="loadSavedSimulationResult()"
-                    [disabled]="!selectedSymbol()">
+                    [disabled]="!selectedSymbol()"
+                  >
                     <i class="pi pi-download"></i>
                     Load kết quả đã lưu
                   </button>
@@ -1391,18 +1973,28 @@
               <div class="simulation-results" *ngIf="tradingResult()">
                 <!-- Summary Stats -->
                 <div class="results-summary">
-                  <div class="stat-card profit" [ngClass]="tradingResult()!.totalProfit >= 0 ? 'positive' : 'negative'">
+                  <div
+                    class="stat-card profit"
+                    [ngClass]="tradingResult()!.totalProfit >= 0 ? 'positive' : 'negative'"
+                  >
                     <label>Lãi/Lỗ:</label>
                     <div class="stat-value">{{ formatCurrency(tradingResult()!.totalProfit) }}</div>
-                    <div class="stat-percent">{{ tradingResult()!.totalProfitPercent >= 0 ? '+' : '' }}{{ tradingResult()!.totalProfitPercent.toFixed(2) }}%</div>
+                    <div class="stat-percent">
+                      {{ tradingResult()!.totalProfitPercent >= 0 ? '+' : ''
+                      }}{{ tradingResult()!.totalProfitPercent.toFixed(2) }}%
+                    </div>
                   </div>
                   <div class="stat-card">
                     <label>Vốn ban đầu:</label>
-                    <div class="stat-value">{{ formatCurrency(tradingResult()!.initialCapital) }}</div>
+                    <div class="stat-value">
+                      {{ formatCurrency(tradingResult()!.initialCapital) }}
+                    </div>
                   </div>
                   <div class="stat-card">
                     <label>Vốn cuối:</label>
-                    <div class="stat-value">{{ formatCurrency(tradingResult()!.finalCapital) }}</div>
+                    <div class="stat-value">
+                      {{ formatCurrency(tradingResult()!.finalCapital) }}
+                    </div>
                   </div>
                   <div class="stat-card">
                     <label>Tổng giao dịch:</label>
@@ -1422,8 +2014,12 @@
                   </div>
                   <div class="stat-card">
                     <label>Drawdown tối đa:</label>
-                    <div class="stat-value negative">{{ formatCurrency(tradingResult()!.maxDrawdown) }}</div>
-                    <div class="stat-percent">{{ tradingResult()!.maxDrawdownPercent.toFixed(2) }}%</div>
+                    <div class="stat-value negative">
+                      {{ formatCurrency(tradingResult()!.maxDrawdown) }}
+                    </div>
+                    <div class="stat-percent">
+                      {{ tradingResult()!.maxDrawdownPercent.toFixed(2) }}%
+                    </div>
                   </div>
                 </div>
 
@@ -1433,7 +2029,9 @@
                   <div class="metrics-grid">
                     <div class="metric-card">
                       <label>Chiến lược:</label>
-                      <div class="metric-value strategy-name">{{ getStrategyDisplayName(tradingResult()!.strategy) }}</div>
+                      <div class="metric-value strategy-name">
+                        {{ getStrategyDisplayName(tradingResult()!.strategy) }}
+                      </div>
                     </div>
                     <div class="metric-card">
                       <label>Sharpe Ratio:</label>
@@ -1451,7 +2049,10 @@
                     </div>
                     <div class="metric-card">
                       <label>Lãi TB/GD:</label>
-                      <div class="metric-value" [ngClass]="tradingResult()!.avgWinAmount > 0 ? 'positive' : ''">
+                      <div
+                        class="metric-value"
+                        [ngClass]="tradingResult()!.avgWinAmount > 0 ? 'positive' : ''"
+                      >
                         {{ formatCurrency(tradingResult()!.avgWinAmount || 0) }}
                       </div>
                     </div>
@@ -1463,14 +2064,22 @@
                     </div>
                     <div class="metric-card">
                       <label>Recovery Factor:</label>
-                      <div class="metric-value" [ngClass]="getRecoveryFactorClass(tradingResult()!)">
+                      <div
+                        class="metric-value"
+                        [ngClass]="getRecoveryFactorClass(tradingResult()!)"
+                      >
                         {{ calculateRecoveryFactor(tradingResult()!).toFixed(2) }}
                       </div>
                       <small>Khả năng phục hồi từ drawdown</small>
                     </div>
                     <div class="metric-card">
                       <label>Expectancy:</label>
-                      <div class="metric-value" [ngClass]="calculateExpectancy(tradingResult()!) >= 0 ? 'positive' : 'negative'">
+                      <div
+                        class="metric-value"
+                        [ngClass]="
+                          calculateExpectancy(tradingResult()!) >= 0 ? 'positive' : 'negative'
+                        "
+                      >
                         {{ formatCurrency(calculateExpectancy(tradingResult()!)) }}
                       </div>
                       <small>Kỳ vọng lợi nhuận/giao dịch</small>
@@ -1504,34 +2113,52 @@
                         </tr>
                       </thead>
                       <tbody>
-                        <tr *ngFor="let tx of transactions()"
-                            [ngClass]="{
-                              'transaction-buy': tx.type === 'buy',
-                              'transaction-sell': tx.type === 'sell',
-                              'transaction-loss': tx.type === 'sell' && tx.profit !== undefined && tx.profit < 0,
-                              'transaction-profit': tx.type === 'sell' && tx.profit !== undefined && tx.profit > 0
-                            }">
+                        <tr
+                          *ngFor="let tx of transactions()"
+                          [ngClass]="{
+                            'transaction-buy': tx.type === 'buy',
+                            'transaction-sell': tx.type === 'sell',
+                            'transaction-loss':
+                              tx.type === 'sell' && tx.profit !== undefined && tx.profit < 0,
+                            'transaction-profit':
+                              tx.type === 'sell' && tx.profit !== undefined && tx.profit > 0,
+                          }"
+                        >
                           <td class="date-cell">{{ tx.dateStr }}</td>
                           <td>
                             <span class="transaction-type" [ngClass]="'type-' + tx.type">
                               {{ tx.type === 'buy' ? 'MUA' : 'BÁN' }}
                             </span>
                           </td>
-                          <td class="quantity-cell">{{ tx.quantity | number:'1.0-0' }}</td>
+                          <td class="quantity-cell">{{ tx.quantity | number: '1.0-0' }}</td>
                           <td class="price-cell">{{ formatPredictionPrice(tx.price) }}</td>
-                          <td class="amount-cell" [ngClass]="tx.type === 'buy' ? 'negative' : 'positive'">
-                            {{ tx.type === 'buy' ? '-' : '+' }}{{ formatCurrency(tx.transactionAmount) }}
+                          <td
+                            class="amount-cell"
+                            [ngClass]="tx.type === 'buy' ? 'negative' : 'positive'"
+                          >
+                            {{ tx.type === 'buy' ? '-' : '+'
+                            }}{{ formatCurrency(tx.transactionAmount) }}
                           </td>
                           <td class="shares-cell">
-                            <span class="shares-change">{{ tx.totalSharesBefore | number:'1.0-0' }} → {{ tx.totalSharesAfter | number:'1.0-0' }}</span>
+                            <span class="shares-change"
+                              >{{ tx.totalSharesBefore | number: '1.0-0' }} →
+                              {{ tx.totalSharesAfter | number: '1.0-0' }}</span
+                            >
                           </td>
                           <td class="avg-price-cell">
-                            {{ tx.avgPriceAfter > 0 ? formatPredictionPrice(tx.avgPriceAfter) : '-' }}
+                            {{
+                              tx.avgPriceAfter > 0 ? formatPredictionPrice(tx.avgPriceAfter) : '-'
+                            }}
                           </td>
                           <td class="capital-cell">{{ formatCurrency(tx.capitalAfter) }}</td>
-                          <td class="holding-cell">{{ tx.holdingDays !== undefined ? tx.holdingDays + ' ngày' : '-' }}</td>
+                          <td class="holding-cell">
+                            {{ tx.holdingDays !== undefined ? tx.holdingDays + ' ngày' : '-' }}
+                          </td>
                           <td class="profit-cell">
-                            <span *ngIf="tx.type === 'sell' && tx.profit !== undefined" [ngClass]="tx.profit >= 0 ? 'positive' : 'negative'">
+                            <span
+                              *ngIf="tx.type === 'sell' && tx.profit !== undefined"
+                              [ngClass]="tx.profit >= 0 ? 'positive' : 'negative'"
+                            >
                               <span class="profit-icon">{{ tx.profit >= 0 ? '✅' : '⚠️' }}</span>
                               {{ tx.profit >= 0 ? '+' : '' }}{{ formatCurrency(tx.profit) }}
                             </span>
@@ -1545,17 +2172,32 @@
                             <strong>TỔNG KẾT</strong>
                           </td>
                           <td class="summary-trades" colspan="3">
-                            <span class="trade-count">{{ tradingResult()!.totalTrades }} giao dịch</span>
-                            <span class="win-count positive">{{ tradingResult()!.winningTrades }} lãi</span>
-                            <span class="loss-count negative">{{ tradingResult()!.losingTrades }} lỗ</span>
+                            <span class="trade-count"
+                              >{{ tradingResult()!.totalTrades }} giao dịch</span
+                            >
+                            <span class="win-count positive"
+                              >{{ tradingResult()!.winningTrades }} lãi</span
+                            >
+                            <span class="loss-count negative"
+                              >{{ tradingResult()!.losingTrades }} lỗ</span
+                            >
                           </td>
                           <td colspan="2" class="summary-amounts">
-                            <span class="total-win positive">+{{ formatCurrency(tradingResult()!.totalWinAmount || 0) }}</span>
-                            <span class="total-loss negative">-{{ formatCurrency(tradingResult()!.totalLossAmount || 0) }}</span>
+                            <span class="total-win positive"
+                              >+{{ formatCurrency(tradingResult()!.totalWinAmount || 0) }}</span
+                            >
+                            <span class="total-loss negative"
+                              >-{{ formatCurrency(tradingResult()!.totalLossAmount || 0) }}</span
+                            >
                           </td>
                           <td colspan="3" class="summary-net">
-                            <strong [ngClass]="tradingResult()!.totalProfit >= 0 ? 'positive' : 'negative'">
-                              {{ tradingResult()!.totalProfit >= 0 ? '+' : '' }}{{ formatCurrency(tradingResult()!.totalProfit) }}
+                            <strong
+                              [ngClass]="
+                                tradingResult()!.totalProfit >= 0 ? 'positive' : 'negative'
+                              "
+                            >
+                              {{ tradingResult()!.totalProfit >= 0 ? '+' : ''
+                              }}{{ formatCurrency(tradingResult()!.totalProfit) }}
                             </strong>
                           </td>
                         </tr>
@@ -1589,26 +2231,29 @@
             </div>
 
             <!-- TAB 3: CHART -->
-            <div class="backtest-tab-content backtest-chart-tab" *ngIf="backtestActiveTab() === 'chart'">
-              <div class="backtest-chart-container" *ngIf="tradingResult() && selectedSymbolPriceData()">
+            <div
+              class="backtest-tab-content backtest-chart-tab"
+              *ngIf="backtestActiveTab() === 'chart'"
+            >
+              <div
+                class="backtest-chart-container"
+                *ngIf="tradingResult() && selectedSymbolPriceData()"
+              >
                 <div class="chart-header">
                   <h4>
                     <i class="pi pi-chart-line"></i>
                     Biểu đồ giá với điểm mua/bán
                   </h4>
                   <div class="chart-legend-info">
-                    <span class="legend-item buy">
-                      <i class="pi pi-arrow-up"></i> Mua
-                    </span>
-                    <span class="legend-item sell">
-                      <i class="pi pi-arrow-down"></i> Bán
-                    </span>
+                    <span class="legend-item buy"> <i class="pi pi-arrow-up"></i> Mua </span>
+                    <span class="legend-item sell"> <i class="pi pi-arrow-down"></i> Bán </span>
                   </div>
                 </div>
                 <app-tradingview-chart
                   [data]="selectedSymbolPriceData()"
                   [symbol]="selectedSymbol()?.symbol || ''"
-                  [markers]="chartMarkers()">
+                  [markers]="chartMarkers()"
+                >
                 </app-tradingview-chart>
               </div>
 
@@ -1629,27 +2274,43 @@
         <section class="section" *ngIf="tradingResult()">
           <h3>Đánh giá 1 tuần gần đây</h3>
           <div class="recent-week-analysis" *ngIf="getRecentWeekAnalysis() as weekAnalysis">
-
             <!-- Today's Recommendation -->
             <div class="today-recommendation" *ngIf="weekAnalysis.todayRecommendation">
               <h4>Khuyến nghị hôm nay</h4>
-              <div class="recommendation-card" [ngClass]="'recommendation-' + weekAnalysis.todayRecommendation.action">
+              <div
+                class="recommendation-card"
+                [ngClass]="'recommendation-' + weekAnalysis.todayRecommendation.action"
+              >
                 <div class="recommendation-header">
                   <span class="recommendation-action">
-                    {{ weekAnalysis.todayRecommendation.action === 'buy' ? 'MUA' : weekAnalysis.todayRecommendation.action === 'sell' ? 'BÁN' : 'GIỮ' }}
+                    {{
+                      weekAnalysis.todayRecommendation.action === 'buy'
+                        ? 'MUA'
+                        : weekAnalysis.todayRecommendation.action === 'sell'
+                          ? 'BÁN'
+                          : 'GIỮ'
+                    }}
                   </span>
                   <span class="recommendation-confidence">
-                    Độ tin cậy: {{ (weekAnalysis.todayRecommendation.confidence * 100).toFixed(1) }}%
+                    Độ tin cậy:
+                    {{ (weekAnalysis.todayRecommendation.confidence * 100).toFixed(1) }}%
                   </span>
                 </div>
                 <div class="recommendation-details">
                   <div class="detail-item">
                     <label>Giá hiện tại:</label>
-                    <span>{{ formatPredictionPrice(weekAnalysis.todayRecommendation.currentPrice) }}</span>
+                    <span>{{
+                      formatPredictionPrice(weekAnalysis.todayRecommendation.currentPrice)
+                    }}</span>
                   </div>
-                  <div class="detail-item" *ngIf="weekAnalysis.todayRecommendation.action === 'buy'">
+                  <div
+                    class="detail-item"
+                    *ngIf="weekAnalysis.todayRecommendation.action === 'buy'"
+                  >
                     <label>Giá dự đoán:</label>
-                    <span class="predicted-price">{{ formatPredictionPrice(weekAnalysis.todayRecommendation.predictedPrice) }}</span>
+                    <span class="predicted-price">{{
+                      formatPredictionPrice(weekAnalysis.todayRecommendation.predictedPrice)
+                    }}</span>
                   </div>
                   <div class="detail-item">
                     <label>Lý do:</label>
@@ -1665,7 +2326,9 @@
               <div class="positions-list">
                 <div class="position-card buy" *ngFor="let position of weekAnalysis.buyPositions">
                   <div class="position-header">
-                    <span class="position-date">{{ formatDateFromTimestamp(position.buyDate) }}</span>
+                    <span class="position-date">{{
+                      formatDateFromTimestamp(position.buyDate)
+                    }}</span>
                     <span class="position-status" [ngClass]="position.status">
                       {{ position.status === 'sold' ? 'Đã bán' : 'Đang giữ' }}
                     </span>
@@ -1673,32 +2336,71 @@
                   <div class="position-details">
                     <div class="detail-row">
                       <span>Giá mua:</span>
-                      <span class="price-value">{{ formatPredictionPrice(position.buyPrice) }}</span>
+                      <span class="price-value">{{
+                        formatPredictionPrice(position.buyPrice)
+                      }}</span>
                     </div>
                     <div class="detail-row" *ngIf="position.sellPrice">
                       <span>Giá bán:</span>
-                      <span class="price-value">{{ formatPredictionPrice(position.sellPrice) }}</span>
+                      <span class="price-value">{{
+                        formatPredictionPrice(position.sellPrice)
+                      }}</span>
                     </div>
                     <div class="detail-row" *ngIf="position.status === 'holding'">
                       <span>Giá hiện tại:</span>
-                      <span class="price-value">{{ formatPredictionPrice(position.currentPrice) }}</span>
+                      <span class="price-value">{{
+                        formatPredictionPrice(position.currentPrice)
+                      }}</span>
                     </div>
                     <div class="detail-row">
                       <span>Số lượng:</span>
-                      <span>{{ position.quantity | number:'1.0-0' }}</span>
+                      <span>{{ position.quantity | number: '1.0-0' }}</span>
                     </div>
-                    <div class="detail-row" *ngIf="position.profit !== null && position.profitPercent !== null && position.profitPercent !== undefined">
+                    <div
+                      class="detail-row"
+                      *ngIf="
+                        position.profit !== null &&
+                        position.profitPercent !== null &&
+                        position.profitPercent !== undefined
+                      "
+                    >
                       <span>Lãi/Lỗ:</span>
                       <span [ngClass]="position.profit >= 0 ? 'positive' : 'negative'">
                         {{ formatCurrency(position.profit) }}
-                        ({{ position.profitPercent >= 0 ? '+' : '' }}{{ position.profitPercent.toFixed(2) }}%)
+                        ({{ position.profitPercent >= 0 ? '+' : ''
+                        }}{{ position.profitPercent.toFixed(2) }}%)
                       </span>
                     </div>
-                    <div class="detail-row" *ngIf="position.status === 'holding' && position.currentPrice && position.buyPrice">
+                    <div
+                      class="detail-row"
+                      *ngIf="
+                        position.status === 'holding' && position.currentPrice && position.buyPrice
+                      "
+                    >
                       <span>Lãi/Lỗ chưa thực hiện:</span>
-                      <span [ngClass]="(position.currentPrice - position.buyPrice) * position.quantity >= 0 ? 'positive' : 'negative'">
-                        {{ formatCurrency((position.currentPrice - position.buyPrice) * position.quantity) }}
-                        ({{ ((position.currentPrice - position.buyPrice) / position.buyPrice * 100) >= 0 ? '+' : '' }}{{ ((position.currentPrice - position.buyPrice) / position.buyPrice * 100).toFixed(2) }}%)
+                      <span
+                        [ngClass]="
+                          (position.currentPrice - position.buyPrice) * position.quantity >= 0
+                            ? 'positive'
+                            : 'negative'
+                        "
+                      >
+                        {{
+                          formatCurrency(
+                            (position.currentPrice - position.buyPrice) * position.quantity
+                          )
+                        }}
+                        ({{
+                          ((position.currentPrice - position.buyPrice) / position.buyPrice) * 100 >=
+                          0
+                            ? '+'
+                            : ''
+                        }}{{
+                          (
+                            ((position.currentPrice - position.buyPrice) / position.buyPrice) *
+                            100
+                          ).toFixed(2)
+                        }}%)
                       </span>
                     </div>
                   </div>
@@ -1712,27 +2414,34 @@
               <div class="positions-list">
                 <div class="position-card sell" *ngFor="let position of weekAnalysis.sellPositions">
                   <div class="position-header">
-                    <span class="position-date">{{ formatDateFromTimestamp(position.sellDate) }}</span>
+                    <span class="position-date">{{
+                      formatDateFromTimestamp(position.sellDate)
+                    }}</span>
                     <span class="position-status sold">Đã bán</span>
                   </div>
                   <div class="position-details">
                     <div class="detail-row">
                       <span>Giá mua (kỳ vọng):</span>
-                      <span class="price-value">{{ formatPredictionPrice(position.expectedBuyPrice) }}</span>
+                      <span class="price-value">{{
+                        formatPredictionPrice(position.expectedBuyPrice)
+                      }}</span>
                     </div>
                     <div class="detail-row">
                       <span>Giá bán:</span>
-                      <span class="price-value">{{ formatPredictionPrice(position.sellPrice) }}</span>
+                      <span class="price-value">{{
+                        formatPredictionPrice(position.sellPrice)
+                      }}</span>
                     </div>
                     <div class="detail-row">
                       <span>Số lượng:</span>
-                      <span>{{ position.quantity | number:'1.0-0' }}</span>
+                      <span>{{ position.quantity | number: '1.0-0' }}</span>
                     </div>
                     <div class="detail-row">
                       <span>Lãi/Lỗ:</span>
                       <span [ngClass]="position.profit >= 0 ? 'positive' : 'negative'">
                         {{ formatCurrency(position.profit) }}
-                        ({{ position.profitPercent >= 0 ? '+' : '' }}{{ position.profitPercent.toFixed(2) }}%)
+                        ({{ position.profitPercent >= 0 ? '+' : ''
+                        }}{{ position.profitPercent.toFixed(2) }}%)
                       </span>
                     </div>
                     <div class="detail-row">
@@ -1745,7 +2454,12 @@
             </div>
 
             <!-- No positions message -->
-            <div class="no-positions" *ngIf="weekAnalysis.buyPositions.length === 0 && weekAnalysis.sellPositions.length === 0">
+            <div
+              class="no-positions"
+              *ngIf="
+                weekAnalysis.buyPositions.length === 0 && weekAnalysis.sellPositions.length === 0
+              "
+            >
               <p>Không có giao dịch nào trong 7 ngày gần đây.</p>
             </div>
           </div>
@@ -1759,28 +2473,46 @@
           <div class="section-header">
             <h3>Biểu đồ TradingView</h3>
             <div class="chart-data-controls">
-              <select [value]="selectedYears()" (change)="selectedYears.set(+$any($event.target).value)">
+              <select
+                [value]="selectedYears()"
+                (change)="selectedYears.set(+$any($event.target).value)"
+              >
                 <option [value]="1">1 năm</option>
                 <option [value]="2">2 năm</option>
                 <option [value]="3">3 năm</option>
                 <option [value]="5">5 năm</option>
               </select>
-              <button class="btn btn-small" (click)="fetchPriceDataOnly(selectedYears())" [disabled]="isLoadingPrice()">
-                <i class="pi" [ngClass]="isLoadingPrice() ? 'pi-spin pi-spinner' : 'pi-refresh'"></i>
+              <button
+                class="btn btn-small"
+                (click)="fetchPriceDataOnly(selectedYears())"
+                [disabled]="isLoadingPrice()"
+              >
+                <i
+                  class="pi"
+                  [ngClass]="isLoadingPrice() ? 'pi-spin pi-spinner' : 'pi-refresh'"
+                ></i>
                 {{ isLoadingPrice() ? 'Đang tải...' : 'Cập nhật' }}
               </button>
-              <button class="btn btn-small btn-fullscreen" (click)="showChartFullscreen.set(true)" *ngIf="selectedSymbolPriceData()">
+              <button
+                class="btn btn-small btn-fullscreen"
+                (click)="showChartFullscreen.set(true)"
+                *ngIf="selectedSymbolPriceData()"
+              >
                 <i class="pi pi-expand"></i>
                 Phóng to
               </button>
             </div>
           </div>
 
-          <div class="tradingview-chart-container compact" *ngIf="selectedSymbolPriceData() && !isLoadingPrice()">
+          <div
+            class="tradingview-chart-container compact"
+            *ngIf="selectedSymbolPriceData() && !isLoadingPrice()"
+          >
             <app-tradingview-chart
               [data]="selectedSymbolPriceData()"
               [symbol]="selectedSymbol()?.symbol || ''"
-              [theme]="'dark'">
+              [theme]="'dark'"
+            >
             </app-tradingview-chart>
           </div>
 
@@ -1796,7 +2528,11 @@
         </section>
 
         <!-- Chart Fullscreen Dialog -->
-        <div class="fullscreen-dialog-overlay" *ngIf="showChartFullscreen()" (click)="showChartFullscreen.set(false)">
+        <div
+          class="fullscreen-dialog-overlay"
+          *ngIf="showChartFullscreen()"
+          (click)="showChartFullscreen.set(false)"
+        >
           <div class="fullscreen-dialog chart-dialog" (click)="$event.stopPropagation()">
             <div class="dialog-header">
               <h3>{{ selectedSymbol()?.symbol }} - Biểu đồ</h3>
@@ -1808,7 +2544,8 @@
               <app-tradingview-chart
                 [data]="selectedSymbolPriceData()"
                 [symbol]="selectedSymbol()?.symbol || ''"
-                [theme]="'dark'">
+                [theme]="'dark'"
+              >
               </app-tradingview-chart>
             </div>
           </div>
@@ -1818,7 +2555,10 @@
         <section class="section collapsible" *ngIf="selectedSymbolPriceData() && !isLoadingPrice()">
           <div class="section-header clickable" (click)="togglePriceTable()">
             <h3>
-              <i class="pi" [ngClass]="showPriceTable() ? 'pi-chevron-down' : 'pi-chevron-right'"></i>
+              <i
+                class="pi"
+                [ngClass]="showPriceTable() ? 'pi-chevron-down' : 'pi-chevron-right'"
+              ></i>
               Lịch sử giá (20 phiên gần nhất)
             </h3>
           </div>
@@ -1840,26 +2580,76 @@
               <tbody>
                 <tr *ngFor="let item of priceTableData()">
                   <td>{{ item.date }}</td>
-                  <td class="reference">{{ (item.referencePrice * 1000) | number:'1.0-0' }}</td>
-                  <td [ngClass]="getPriceColorClass(item.open, item.referencePrice, item.ceilingPrice, item.floorPrice)">
-                    {{ (item.open * 1000) | number:'1.0-0' }}
+                  <td class="reference">{{ item.referencePrice * 1000 | number: '1.0-0' }}</td>
+                  <td
+                    [ngClass]="
+                      getPriceColorClass(
+                        item.open,
+                        item.referencePrice,
+                        item.ceilingPrice,
+                        item.floorPrice
+                      )
+                    "
+                  >
+                    {{ item.open * 1000 | number: '1.0-0' }}
                   </td>
-                  <td [ngClass]="getPriceColorClass(item.high, item.referencePrice, item.ceilingPrice, item.floorPrice)">
-                    {{ (item.high * 1000) | number:'1.0-0' }}
+                  <td
+                    [ngClass]="
+                      getPriceColorClass(
+                        item.high,
+                        item.referencePrice,
+                        item.ceilingPrice,
+                        item.floorPrice
+                      )
+                    "
+                  >
+                    {{ item.high * 1000 | number: '1.0-0' }}
                   </td>
-                  <td [ngClass]="getPriceColorClass(item.low, item.referencePrice, item.ceilingPrice, item.floorPrice)">
-                    {{ (item.low * 1000) | number:'1.0-0' }}
+                  <td
+                    [ngClass]="
+                      getPriceColorClass(
+                        item.low,
+                        item.referencePrice,
+                        item.ceilingPrice,
+                        item.floorPrice
+                      )
+                    "
+                  >
+                    {{ item.low * 1000 | number: '1.0-0' }}
                   </td>
-                  <td [ngClass]="getPriceColorClass(item.close, item.referencePrice, item.ceilingPrice, item.floorPrice)">
-                    {{ (item.close * 1000) | number:'1.0-0' }}
+                  <td
+                    [ngClass]="
+                      getPriceColorClass(
+                        item.close,
+                        item.referencePrice,
+                        item.ceilingPrice,
+                        item.floorPrice
+                      )
+                    "
+                  >
+                    {{ item.close * 1000 | number: '1.0-0' }}
                   </td>
-                  <td [ngClass]="{'positive': item.changeValue > 0, 'negative': item.changeValue < 0, 'reference': item.changeValue === 0}">
-                    {{ item.changeValue >= 0 ? '+' : '' }}{{ (item.changeValue * 1000) | number:'1.0-0' }}
+                  <td
+                    [ngClass]="{
+                      positive: item.changeValue > 0,
+                      negative: item.changeValue < 0,
+                      reference: item.changeValue === 0,
+                    }"
+                  >
+                    {{ item.changeValue >= 0 ? '+' : ''
+                    }}{{ item.changeValue * 1000 | number: '1.0-0' }}
                   </td>
-                  <td [ngClass]="{'positive': item.changePercent > 0, 'negative': item.changePercent < 0, 'reference': item.changePercent === 0}">
-                    {{ item.changePercent >= 0 ? '+' : '' }}{{ item.changePercent | number:'1.2-2' }}%
+                  <td
+                    [ngClass]="{
+                      positive: item.changePercent > 0,
+                      negative: item.changePercent < 0,
+                      reference: item.changePercent === 0,
+                    }"
+                  >
+                    {{ item.changePercent >= 0 ? '+' : ''
+                    }}{{ item.changePercent | number: '1.2-2' }}%
                   </td>
-                  <td>{{ item.volume | number:'1.0-0' }}</td>
+                  <td>{{ item.volume | number: '1.0-0' }}</td>
                 </tr>
               </tbody>
             </table>
@@ -1881,7 +2671,10 @@
               <i class="pi pi-exclamation-triangle"></i>
               <div class="warning-text">
                 <strong>Cần huấn luyện mô hình AI</strong>
-                <p>Vui lòng huấn luyện mô hình Neural Network trong tab Trading trước khi sử dụng tính năng tư vấn tự động.</p>
+                <p>
+                  Vui lòng huấn luyện mô hình Neural Network trong tab Trading trước khi sử dụng
+                  tính năng tư vấn tự động.
+                </p>
               </div>
             </div>
             <button class="btn btn-primary" (click)="activeTab.set('trading')">
@@ -1910,7 +2703,8 @@
                     (ngModelChange)="userHoldingShares.set($event)"
                     min="0"
                     step="100"
-                    placeholder="VD: 1000">
+                    placeholder="VD: 1000"
+                  />
                 </div>
                 <div class="input-group">
                   <label>Giá trung bình (VNĐ):</label>
@@ -1920,34 +2714,56 @@
                     (ngModelChange)="userAveragePrice.set($event)"
                     min="0"
                     step="100"
-                    placeholder="VD: 25000">
+                    placeholder="VD: 25000"
+                  />
                 </div>
               </div>
-              <div class="holding-summary" *ngIf="userHoldingShares() > 0 && userAveragePrice() > 0">
+              <div
+                class="holding-summary"
+                *ngIf="userHoldingShares() > 0 && userAveragePrice() > 0"
+              >
                 <span class="summary-item">
                   <i class="pi pi-wallet"></i>
-                  Giá trị nắm giữ: <strong>{{ formatCurrency(userHoldingShares() * userAveragePrice()) }}</strong>
+                  Giá trị nắm giữ:
+                  <strong>{{ formatCurrency(userHoldingShares() * userAveragePrice()) }}</strong>
                 </span>
                 <span class="summary-item" *ngIf="strategyRecommendation()">
                   <i class="pi pi-chart-line"></i>
-                  Giá hiện tại: <strong>{{ formatPredictionPrice(strategyRecommendation()!.currentPrice) }}</strong>
+                  Giá hiện tại:
+                  <strong>{{
+                    formatPredictionPrice(strategyRecommendation()!.currentPrice)
+                  }}</strong>
                 </span>
               </div>
             </div>
 
             <!-- Strategy Recommendation -->
             <div class="strategy-recommendation" *ngIf="strategyRecommendation()">
-              <div class="recommendation-header" [ngClass]="'recommendation-' + strategyRecommendation()!.recommendation">
+              <div
+                class="recommendation-header"
+                [ngClass]="'recommendation-' + strategyRecommendation()!.recommendation"
+              >
                 <div class="recommendation-badge">
-                  <i class="pi" [ngClass]="{
-                    'pi-arrow-up': strategyRecommendation()!.recommendation === 'buy' || strategyRecommendation()!.recommendation === 'buy_more',
-                    'pi-arrow-down': strategyRecommendation()!.recommendation === 'sell',
-                    'pi-pause': strategyRecommendation()!.recommendation === 'hold'
-                  }"></i>
+                  <i
+                    class="pi"
+                    [ngClass]="{
+                      'pi-arrow-up':
+                        strategyRecommendation()!.recommendation === 'buy' ||
+                        strategyRecommendation()!.recommendation === 'buy_more',
+                      'pi-arrow-down': strategyRecommendation()!.recommendation === 'sell',
+                      'pi-pause': strategyRecommendation()!.recommendation === 'hold',
+                    }"
+                  ></i>
                   <span>
-                    {{ strategyRecommendation()!.recommendation === 'buy' ? 'MUA VÀO' :
-                       strategyRecommendation()!.recommendation === 'buy_more' ? 'MUA THÊM' :
-                       strategyRecommendation()!.recommendation === 'sell' ? 'BÁN RA' : 'NẮM GIỮ' }}
+                    {{
+                      strategyRecommendation()!.recommendation === 'buy'
+                        ? 'MUA VÀO'
+                        : strategyRecommendation()!.recommendation === 'buy_more'
+                          ? 'MUA THÊM'
+                          : strategyRecommendation()!.recommendation === 'sell'
+                            ? 'BÁN RA'
+                            : 'NẮM GIỮ'
+                    }}
                   </span>
                 </div>
                 <div class="recommendation-confidence">
@@ -1961,12 +2777,17 @@
 
               <!-- Unrealized P/L if holding -->
               <div class="unrealized-pl" *ngIf="userHoldingShares() > 0">
-                <div class="pl-item" [ngClass]="strategyRecommendation()!.unrealizedPL >= 0 ? 'profit' : 'loss'">
+                <div
+                  class="pl-item"
+                  [ngClass]="strategyRecommendation()!.unrealizedPL >= 0 ? 'profit' : 'loss'"
+                >
                   <span class="pl-label">Lãi/Lỗ chưa thực hiện:</span>
                   <span class="pl-value">
-                    {{ strategyRecommendation()!.unrealizedPL >= 0 ? '+' : '' }}{{ formatCurrency(strategyRecommendation()!.unrealizedPL) }}
+                    {{ strategyRecommendation()!.unrealizedPL >= 0 ? '+' : ''
+                    }}{{ formatCurrency(strategyRecommendation()!.unrealizedPL) }}
                     <span class="pl-percent">
-                      ({{ strategyRecommendation()!.unrealizedPLPercent >= 0 ? '+' : '' }}{{ strategyRecommendation()!.unrealizedPLPercent.toFixed(2) }}%)
+                      ({{ strategyRecommendation()!.unrealizedPLPercent >= 0 ? '+' : ''
+                      }}{{ strategyRecommendation()!.unrealizedPLPercent.toFixed(2) }}%)
                     </span>
                   </span>
                 </div>
@@ -1985,7 +2806,9 @@
                     </div>
                     <div class="zone-info">
                       <span class="zone-label">Giá hiện tại</span>
-                      <span class="zone-price">{{ formatPredictionPrice(strategyRecommendation()!.currentPrice) }}</span>
+                      <span class="zone-price">{{
+                        formatPredictionPrice(strategyRecommendation()!.currentPrice)
+                      }}</span>
                     </div>
                   </div>
                   <div class="zone-item predicted">
@@ -1994,7 +2817,9 @@
                     </div>
                     <div class="zone-info">
                       <span class="zone-label">Giá dự đoán (AI)</span>
-                      <span class="zone-price">{{ formatPredictionPrice(strategyRecommendation()!.predictedPrice) }}</span>
+                      <span class="zone-price">{{
+                        formatPredictionPrice(strategyRecommendation()!.predictedPrice)
+                      }}</span>
                     </div>
                   </div>
                   <div class="zone-item stop-loss">
@@ -2003,7 +2828,10 @@
                     </div>
                     <div class="zone-info">
                       <span class="zone-label">Vùng cắt lỗ</span>
-                      <span class="zone-price">≤ {{ formatPredictionPrice(strategyRecommendation()!.stopLossPrice) }}</span>
+                      <span class="zone-price"
+                        >≤
+                        {{ formatPredictionPrice(strategyRecommendation()!.stopLossPrice) }}</span
+                      >
                     </div>
                   </div>
                   <div class="zone-item take-profit">
@@ -2012,7 +2840,10 @@
                     </div>
                     <div class="zone-info">
                       <span class="zone-label">Vùng chốt lãi</span>
-                      <span class="zone-price">≥ {{ formatPredictionPrice(strategyRecommendation()!.takeProfitPrice) }}</span>
+                      <span class="zone-price"
+                        >≥
+                        {{ formatPredictionPrice(strategyRecommendation()!.takeProfitPrice) }}</span
+                      >
                     </div>
                   </div>
                   <div class="zone-item buy-more">
@@ -2021,14 +2852,25 @@
                     </div>
                     <div class="zone-info">
                       <span class="zone-label">Vùng mua thêm (DCA)</span>
-                      <span class="zone-price">{{ formatPredictionPrice(strategyRecommendation()!.buyMoreZoneEnd) }} - {{ formatPredictionPrice(strategyRecommendation()!.buyMoreZoneStart) }}</span>
+                      <span class="zone-price"
+                        >{{ formatPredictionPrice(strategyRecommendation()!.buyMoreZoneEnd) }} -
+                        {{
+                          formatPredictionPrice(strategyRecommendation()!.buyMoreZoneStart)
+                        }}</span
+                      >
                     </div>
                   </div>
                 </div>
               </div>
 
               <!-- Estimated Sessions -->
-              <div class="estimated-sessions" *ngIf="strategyRecommendation()!.estimatedSessions && strategyRecommendation()!.estimatedSessions! > 0">
+              <div
+                class="estimated-sessions"
+                *ngIf="
+                  strategyRecommendation()!.estimatedSessions &&
+                  strategyRecommendation()!.estimatedSessions! > 0
+                "
+              >
                 <div class="sessions-info">
                   <i class="pi pi-clock"></i>
                   <span>
@@ -2048,14 +2890,32 @@
                 <div class="model-info-grid">
                   <div class="model-info-item" *ngIf="nnPrediction()">
                     <span class="info-label">Xu hướng dự đoán:</span>
-                    <span class="info-value trend-badge" [ngClass]="getTrendColorClass(nnPrediction()!.trend)">
-                      {{ nnPrediction()!.trend === 'up' ? '📈 Tăng' : nnPrediction()!.trend === 'down' ? '📉 Giảm' : '➡️ Ổn định' }}
+                    <span
+                      class="info-value trend-badge"
+                      [ngClass]="getTrendColorClass(nnPrediction()!.trend)"
+                    >
+                      {{
+                        nnPrediction()!.trend === 'up'
+                          ? '📈 Tăng'
+                          : nnPrediction()!.trend === 'down'
+                            ? '📉 Giảm'
+                            : '➡️ Ổn định'
+                      }}
                     </span>
                   </div>
                   <div class="model-info-item" *ngIf="nnPrediction()?.tradingDecision">
                     <span class="info-label">Quyết định AI:</span>
-                    <span class="info-value decision-badge" [ngClass]="'decision-' + nnPrediction()!.tradingDecision!.action">
-                      {{ nnPrediction()!.tradingDecision!.action === 'buy' ? 'MUA' : nnPrediction()!.tradingDecision!.action === 'sell' ? 'BÁN' : 'GIỮ' }}
+                    <span
+                      class="info-value decision-badge"
+                      [ngClass]="'decision-' + nnPrediction()!.tradingDecision!.action"
+                    >
+                      {{
+                        nnPrediction()!.tradingDecision!.action === 'buy'
+                          ? 'MUA'
+                          : nnPrediction()!.tradingDecision!.action === 'sell'
+                            ? 'BÁN'
+                            : 'GIỮ'
+                      }}
                       ({{ (nnPrediction()!.tradingDecision!.confidence * 100).toFixed(0) }}%)
                     </span>
                   </div>
@@ -2065,7 +2925,11 @@
                   </div>
                   <div class="model-info-item">
                     <span class="info-label">Take Profit:</span>
-                    <span class="info-value">{{ tradingConfig().takeProfitPercent > 0 ? '+' + tradingConfig().takeProfitPercent + '%' : 'Tự động (AI)' }}</span>
+                    <span class="info-value">{{
+                      tradingConfig().takeProfitPercent > 0
+                        ? '+' + tradingConfig().takeProfitPercent + '%'
+                        : 'Tự động (AI)'
+                    }}</span>
                   </div>
                 </div>
               </div>
@@ -2082,8 +2946,8 @@
           </div>
         </section>
       </div>
-      </div>
     </div>
+  </div>
 
   <!-- List View -->
   <div *ngIf="!showDetailView()" class="list-view">
@@ -2106,7 +2970,8 @@
           [value]="searchQuery()"
           (input)="onSearchChange($any($event.target).value)"
           placeholder="Tìm kiếm mã hoặc tên công ty..."
-          class="search-input">
+          class="search-input"
+        />
         <button *ngIf="searchQuery()" (click)="onSearchChange('')" class="clear-btn">
           <i class="pi pi-times"></i>
         </button>
@@ -2117,7 +2982,8 @@
           class="toggle-btn"
           [class.active]="searchType() === 'all'"
           (click)="onSearchTypeChange('all')"
-          title="Hiển thị tất cả mã (cổ phiếu, ETF, chứng quyền, trái phiếu...)">
+          title="Hiển thị tất cả mã (cổ phiếu, ETF, chứng quyền, trái phiếu...)"
+        >
           <i class="pi pi-list"></i>
           Tất cả
         </button>
@@ -2125,25 +2991,38 @@
           class="toggle-btn"
           [class.active]="searchType() === 'stocks'"
           (click)="onSearchTypeChange('stocks')"
-          title="Chỉ hiển thị cổ phiếu (mã 3 ký tự như VNM, FPT, VIC...)">
+          title="Chỉ hiển thị cổ phiếu (mã 3 ký tự như VNM, FPT, VIC...)"
+        >
           <i class="pi pi-chart-line"></i>
           Cổ phiếu
         </button>
       </div>
       <div class="filters">
-        <select [value]="selectedExchange()" (change)="onExchangeChange($any($event.target).value)" class="select">
+        <select
+          [value]="selectedExchange()"
+          (change)="onExchangeChange($any($event.target).value)"
+          class="select"
+        >
           <option value="all">Tất cả sàn</option>
           <option *ngFor="let exchange of exchanges" [value]="exchange">
             {{ exchangeNames[exchange] }} ({{ getExchangeCountText(exchange) }})
           </option>
         </select>
-        <select [value]="filterMode()" (change)="onFilterModeChange($any($event.target).value)" class="select">
+        <select
+          [value]="filterMode()"
+          (change)="onFilterModeChange($any($event.target).value)"
+          class="select"
+        >
           <option value="all">Tất cả</option>
           <option value="unfetched">Chưa fetch</option>
         </select>
       </div>
       <div class="actions">
-        <button class="btn primary" (click)="fetchAllUnfetched()" [disabled]="isLoading() || !hasUnfetchedSymbols()">
+        <button
+          class="btn primary"
+          (click)="fetchAllUnfetched()"
+          [disabled]="isLoading() || !hasUnfetchedSymbols()"
+        >
           <i class="pi pi-download"></i>
           Fetch tất cả
         </button>
@@ -2180,7 +3059,8 @@
         <button
           class="btn-sync"
           (click)="checkMissingStocksFromDNSE()"
-          [disabled]="isSyncingDNSE()">
+          [disabled]="isSyncingDNSE()"
+        >
           <i class="pi" [ngClass]="isSyncingDNSE() ? 'pi-spin pi-spinner' : 'pi-search'"></i>
           {{ isSyncingDNSE() ? 'Đang kiểm tra...' : 'Kiểm tra DNSE' }}
         </button>
@@ -2188,16 +3068,22 @@
           class="btn-sync primary"
           *ngIf="missingSymbolsCount() > 0"
           (click)="syncMissingStocks()"
-          [disabled]="isSyncingDNSE()">
+          [disabled]="isSyncingDNSE()"
+        >
           <i class="pi pi-cloud-download"></i>
           Thêm {{ missingSymbolsCount() }} cổ phiếu
         </button>
         <button
           class="btn-sync"
           (click)="updateAllPricesFromDNSE()"
-          [disabled]="isUpdatingPrices()">
+          [disabled]="isUpdatingPrices()"
+        >
           <i class="pi" [ngClass]="isUpdatingPrices() ? 'pi-spin pi-spinner' : 'pi-refresh'"></i>
-          {{ isUpdatingPrices() ? 'Đang cập nhật ' + priceUpdateProgress().current + '/' + priceUpdateProgress().total : 'Cập nhật giá tất cả' }}
+          {{
+            isUpdatingPrices()
+              ? 'Đang cập nhật ' + priceUpdateProgress().current + '/' + priceUpdateProgress().total
+              : 'Cập nhật giá tất cả'
+          }}
         </button>
       </div>
     </div>
@@ -2220,12 +3106,15 @@
           class="stock-row"
           [class.fetched]="symbol.isFetched"
           [class.not-fetched]="!symbol.isFetched"
-          (click)="symbol.isFetched && viewStockDetail(symbol)">
+          (click)="symbol.isFetched && viewStockDetail(symbol)"
+        >
           <div class="col-symbol">
             <strong>{{ symbol.symbol }}</strong>
           </div>
           <div class="col-name">
-            <div class="company-name">{{ symbol.basicInfo?.companyName || symbol.name || '-' }}</div>
+            <div class="company-name">
+              {{ symbol.basicInfo?.companyName || symbol.name || '-' }}
+            </div>
             <div class="company-address" *ngIf="symbol.basicInfo?.fullData">
               {{ getCompanyAddress(symbol) }}
             </div>
@@ -2236,19 +3125,41 @@
             </span>
           </div>
           <div class="col-price" *ngIf="symbol.isFetched && symbol.basicInfo?.matchPrice">
-            <strong>{{ (parseFloat(symbol.basicInfo.matchPrice) * 1000) | number:'1.0-0' }} đ</strong>
+            <strong
+              >{{ parseFloat(symbol.basicInfo.matchPrice) * 1000 | number: '1.0-0' }} đ</strong
+            >
           </div>
           <div class="col-price" *ngIf="!symbol.isFetched || !symbol.basicInfo?.matchPrice">-</div>
           <div class="col-change" *ngIf="symbol.isFetched && symbol.basicInfo?.changedValue">
-            <span [class]="parseFloat(symbol.basicInfo.changedValue) >= 0 ? 'positive' : 'negative'">
-              {{ (parseFloat(symbol.basicInfo.changedValue) * 1000) | number:'1.0-0' }} đ
-              ({{ symbol.basicInfo.changedRatio || '0' }}%)
+            <span
+              [class]="parseFloat(symbol.basicInfo.changedValue) >= 0 ? 'positive' : 'negative'"
+            >
+              {{ parseFloat(symbol.basicInfo.changedValue) * 1000 | number: '1.0-0' }} đ ({{
+                symbol.basicInfo.changedRatio || '0'
+              }}%)
             </span>
           </div>
-          <div class="col-change" *ngIf="!symbol.isFetched || !symbol.basicInfo?.changedValue">-</div>
+          <div class="col-change" *ngIf="!symbol.isFetched || !symbol.basicInfo?.changedValue">
+            -
+          </div>
           <div class="col-updated">
-            <span class="updated-date" [ngClass]="{'outdated': isPriceOutdated(symbol.updatedAt), 'not-fetched': !symbol.isFetched}">
-              <i class="pi" [ngClass]="symbol.isFetched ? (isPriceOutdated(symbol.updatedAt) ? 'pi-exclamation-triangle' : 'pi-check-circle') : 'pi-clock'"></i>
+            <span
+              class="updated-date"
+              [ngClass]="{
+                outdated: isPriceOutdated(symbol.updatedAt),
+                'not-fetched': !symbol.isFetched,
+              }"
+            >
+              <i
+                class="pi"
+                [ngClass]="
+                  symbol.isFetched
+                    ? isPriceOutdated(symbol.updatedAt)
+                      ? 'pi-exclamation-triangle'
+                      : 'pi-check-circle'
+                    : 'pi-clock'
+                "
+              ></i>
               {{ symbol.isFetched ? formatUpdatedDate(symbol.updatedAt) : 'Chưa fetch' }}
             </span>
           </div>
@@ -2258,14 +3169,16 @@
               class="btn-icon"
               (click)="fetchSymbol(symbol)"
               [disabled]="symbol.isFetching || fetchingSymbols().has(symbol.symbol)"
-              title="Fetch">
+              title="Fetch"
+            >
               <i class="pi pi-download"></i>
             </button>
             <button
               *ngIf="symbol.isFetched"
               class="btn-icon"
               (click)="viewStockDetail(symbol)"
-              title="Xem chi tiết">
+              title="Xem chi tiết"
+            >
               <i class="pi pi-eye"></i>
             </button>
             <button
@@ -2273,15 +3186,22 @@
               class="btn-icon"
               (click)="updatePriceFromDNSE(symbol)"
               [disabled]="isUpdatingPrices() || symbol.isFetching"
-              title="Cập nhật thông tin & giá">
-              <i class="pi" [ngClass]="updatingPriceSymbol() === symbol.symbol ? 'pi-spin pi-spinner' : 'pi-sync'"></i>
+              title="Cập nhật thông tin & giá"
+            >
+              <i
+                class="pi"
+                [ngClass]="
+                  updatingPriceSymbol() === symbol.symbol ? 'pi-spin pi-spinner' : 'pi-sync'
+                "
+              ></i>
             </button>
             <button
               *ngIf="symbol.isFetched"
               class="btn-icon"
               (click)="fetchSymbol(symbol)"
               [disabled]="symbol.isFetching || fetchingSymbols().has(symbol.symbol)"
-              title="Fetch lại toàn bộ">
+              title="Fetch lại toàn bộ"
+            >
               <i class="pi pi-refresh"></i>
             </button>
           </div>
@@ -2295,7 +3215,10 @@
 
         <!-- End of list indicator -->
         <div *ngIf="!hasMoreData() && filteredSymbols().length > 0" class="end-of-list">
-          <span>Đã hiển thị tất cả {{ filteredSymbols().length }} / {{ paginationTotal() }} cổ phiếu</span>
+          <span
+            >Đã hiển thị tất cả {{ filteredSymbols().length }} / {{ paginationTotal() }} cổ
+            phiếu</span
+          >
         </div>
       </cdk-virtual-scroll-viewport>
 
@@ -2323,7 +3246,11 @@
         <i class="pi pi-cloud"></i>
         Kiểm tra DNSE
       </h3>
-      <button class="close-btn" (click)="closeDnseDialog()" [disabled]="dnseDialogStatus() === 'loading'">
+      <button
+        class="close-btn"
+        (click)="closeDnseDialog()"
+        [disabled]="dnseDialogStatus() === 'loading'"
+      >
         <i class="pi pi-times"></i>
       </button>
     </div>
@@ -2366,7 +3293,12 @@
 
           <div class="result-item" [class.highlight]="missingSymbolsCount() > 0">
             <div class="result-icon missing">
-              <i class="pi" [ngClass]="missingSymbolsCount() > 0 ? 'pi-exclamation-triangle' : 'pi-check-circle'"></i>
+              <i
+                class="pi"
+                [ngClass]="
+                  missingSymbolsCount() > 0 ? 'pi-exclamation-triangle' : 'pi-check-circle'
+                "
+              ></i>
             </div>
             <div class="result-info">
               <span class="result-label">Chưa có trong DB</span>
@@ -2395,13 +3327,12 @@
     </div>
 
     <div class="dnse-dialog-footer" *ngIf="dnseDialogStatus() !== 'loading'">
-      <button class="btn-dialog secondary" (click)="closeDnseDialog()">
-        Đóng
-      </button>
+      <button class="btn-dialog secondary" (click)="closeDnseDialog()">Đóng</button>
       <button
         class="btn-dialog primary"
         *ngIf="missingSymbolsCount() > 0"
-        (click)="syncMissingStocks(); closeDnseDialog()">
+        (click)="syncMissingStocks(); closeDnseDialog()"
+      >
         <i class="pi pi-cloud-download"></i>
         Thêm {{ missingSymbolsCount() }} cổ phiếu
       </button>

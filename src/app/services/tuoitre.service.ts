@@ -30,7 +30,7 @@ export interface TuoiTreArticle {
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class TuoiTreService {
   private readonly BASE_URL = '/api/tuoitre';
@@ -143,13 +143,14 @@ export class TuoiTreService {
       /<a[^>]*href=["']([^"']*\/the-thao[^"']*)["'][^>]*>([^<]*Thể thao[^<]*)<\/a>/i,
       /<a[^>]*href=["']([^"']*\/giao-duc[^"']*)["'][^>]*>([^<]*Giáo dục[^<]*)<\/a>/i,
       /<a[^>]*href=["']([^"']*\/nha-dat[^"']*)["'][^>]*>([^<]*Nhà đất[^<]*)<\/a>/i,
-      /<a[^>]*href=["']([^"']*\/suc-khoe[^"']*)["'][^>]*>([^<]*Sức khỏe[^<]*)<\/a>/i
+      /<a[^>]*href=["']([^"']*\/suc-khoe[^"']*)["'][^>]*>([^<]*Sức khỏe[^<]*)<\/a>/i,
     ];
 
     // Also try to find categories from the navigation structure
     // Look for common navigation patterns
-    const navMatch = html.match(/<nav[^>]*>([\s\S]*?)<\/nav>/i) ||
-                     html.match(/<ul[^>]*class=["'][^"']*nav[^"']*["'][^>]*>([\s\S]*?)<\/ul>/i);
+    const navMatch =
+      html.match(/<nav[^>]*>([\s\S]*?)<\/nav>/i) ||
+      html.match(/<ul[^>]*class=["'][^"']*nav[^"']*["'][^>]*>([\s\S]*?)<\/ul>/i);
 
     if (navMatch) {
       const navContent = navMatch[1];
@@ -164,25 +165,41 @@ export class TuoiTreService {
         const text = match[2].trim();
 
         // Filter out non-category links
-        if (url && text &&
-            !url.includes('#') &&
-            !url.includes('javascript:') &&
-            !url.includes('mailto:') &&
-            url.startsWith('/') &&
-            text.length < 30 &&
-            !seenUrls.has(url)) {
-
+        if (
+          url &&
+          text &&
+          !url.includes('#') &&
+          !url.includes('javascript:') &&
+          !url.includes('mailto:') &&
+          url.startsWith('/') &&
+          text.length < 30 &&
+          !seenUrls.has(url)
+        ) {
           // Check if it's a category link (common patterns)
-          const categoryNames = ['Video', 'Thời sự', 'Thế giới', 'Pháp luật', 'Kinh doanh',
-                                'Công nghệ', 'Xe', 'Du lịch', 'Nhịp sống trẻ', 'Văn hóa',
-                                'Giải trí', 'Thể thao', 'Giáo dục', 'Nhà đất', 'Sức khỏe'];
+          const categoryNames = [
+            'Video',
+            'Thời sự',
+            'Thế giới',
+            'Pháp luật',
+            'Kinh doanh',
+            'Công nghệ',
+            'Xe',
+            'Du lịch',
+            'Nhịp sống trẻ',
+            'Văn hóa',
+            'Giải trí',
+            'Thể thao',
+            'Giáo dục',
+            'Nhà đất',
+            'Sức khỏe',
+          ];
 
-          if (categoryNames.some(name => text.includes(name))) {
+          if (categoryNames.some((name) => text.includes(name))) {
             const categoryId = url.split('/').filter(Boolean).pop() || url.replace(/\//g, '-');
             categories.push({
               id: categoryId,
               name: text,
-              url: url
+              url: url,
             });
             seenUrls.add(url);
           }
@@ -233,7 +250,7 @@ export class TuoiTreService {
 
       // Extract image or video from the container
       let imageUrl: string | undefined;
-      
+
       // Try to find image first
       const img = container.querySelector('img');
       if (img) {
@@ -265,24 +282,24 @@ export class TuoiTreService {
 
       // Extract title - try multiple sources
       let title = '';
-      
+
       // Try h2 or h3 first
       const heading = contentElement.querySelector('h2, h3');
       if (heading) {
         title = heading.textContent?.trim() || '';
       }
-      
+
       // Try link title attribute
       if (!title) {
         title = link.getAttribute('title')?.trim() || '';
       }
-      
+
       // Try span inside link
       if (!title) {
         const span = link.querySelector('span');
         title = span?.textContent?.trim() || '';
       }
-      
+
       // Try link text content
       if (!title) {
         title = link.textContent?.trim() || '';
@@ -312,7 +329,9 @@ export class TuoiTreService {
       if (timeElement) {
         publishedAt = timeElement.textContent?.trim();
       } else {
-        const timeSpan = container.querySelector('span.time, .time') || contentElement.querySelector('span.time, .time');
+        const timeSpan =
+          container.querySelector('span.time, .time') ||
+          contentElement.querySelector('span.time, .time');
         publishedAt = timeSpan?.textContent?.trim();
       }
       if (!publishedAt) {
@@ -322,21 +341,34 @@ export class TuoiTreService {
       }
 
       // Generate ID from URL
-      const id = url.split('/').filter(Boolean).pop()?.replace(/\.(html|htm)$/, '') ||
-                 `article-${newsItems.length}`;
+      const id =
+        url
+          .split('/')
+          .filter(Boolean)
+          .pop()
+          ?.replace(/\.(html|htm)$/, '') || `article-${newsItems.length}`;
 
       // Only add if it looks like a news article URL
-      if (url.includes('.html') || url.includes('.htm') || url.match(/\/\d{4}\/\d{2}\/\d{2}\//) || url.match(/\/\d{4}\/\d{2}\//)) {
+      if (
+        url.includes('.html') ||
+        url.includes('.htm') ||
+        url.match(/\/\d{4}\/\d{2}\/\d{2}\//) ||
+        url.match(/\/\d{4}\/\d{2}\//)
+      ) {
         newsItems.push({
           id,
           title,
           url: url.startsWith('http') ? url.replace(this.BASE_DOMAIN, '') : url,
           summary,
-          imageUrl: imageUrl?.startsWith('http') ? imageUrl :
-                   imageUrl?.startsWith('//') ? `https:${imageUrl}` :
-                   imageUrl?.startsWith('/') ? `${this.BASE_DOMAIN}${imageUrl}` : imageUrl,
+          imageUrl: imageUrl?.startsWith('http')
+            ? imageUrl
+            : imageUrl?.startsWith('//')
+              ? `https:${imageUrl}`
+              : imageUrl?.startsWith('/')
+                ? `${this.BASE_DOMAIN}${imageUrl}`
+                : imageUrl,
           publishedAt,
-          category: this.extractCategoryFromUrl(url)
+          category: this.extractCategoryFromUrl(url),
         });
 
         seenUrls.add(url);
@@ -351,7 +383,7 @@ export class TuoiTreService {
         // Pattern for news list items
         /<div[^>]*class=["'][^"']*article[^"']*["'][^>]*>([\s\S]*?)<\/div>/gi,
         // Pattern for links with news titles
-        /<a[^>]*href=["']([^"']+\/[^"']+\.(html|htm))["'][^>]*>([\s\S]*?)<\/a>/gi
+        /<a[^>]*href=["']([^"']+\/[^"']+\.(html|htm))["'][^>]*>([\s\S]*?)<\/a>/gi,
       ];
 
       // Try to find article containers
@@ -370,9 +402,10 @@ export class TuoiTreService {
           }
 
           // Extract title
-          const titleMatch = content.match(/<h[23][^>]*>([^<]+)<\/h[23]>/i) ||
-                              content.match(/title=["']([^"']+)["']/i) ||
-                              content.match(/<a[^>]*>([^<]+)<\/a>/i);
+          const titleMatch =
+            content.match(/<h[23][^>]*>([^<]+)<\/h[23]>/i) ||
+            content.match(/title=["']([^"']+)["']/i) ||
+            content.match(/<a[^>]*>([^<]+)<\/a>/i);
 
           if (!titleMatch) continue;
 
@@ -392,21 +425,33 @@ export class TuoiTreService {
           const publishedAt = dateMatch ? dateMatch[1] : undefined;
 
           // Generate ID from URL
-          const id = url.split('/').filter(Boolean).pop()?.replace(/\.(html|htm)$/, '') ||
-                     `article-${newsItems.length}`;
+          const id =
+            url
+              .split('/')
+              .filter(Boolean)
+              .pop()
+              ?.replace(/\.(html|htm)$/, '') || `article-${newsItems.length}`;
 
           // Only add if it looks like a news article URL
-          if (url.includes('.html') || url.includes('.htm') || url.match(/\/\d{4}\/\d{2}\/\d{2}\//)) {
+          if (
+            url.includes('.html') ||
+            url.includes('.htm') ||
+            url.match(/\/\d{4}\/\d{2}\/\d{2}\//)
+          ) {
             newsItems.push({
               id,
               title,
               url: url.startsWith('http') ? url.replace(this.BASE_DOMAIN, '') : url,
               summary,
-              imageUrl: imageUrl?.startsWith('http') ? imageUrl :
-                       imageUrl?.startsWith('//') ? `https:${imageUrl}` :
-                       imageUrl?.startsWith('/') ? `${this.BASE_DOMAIN}${imageUrl}` : imageUrl,
+              imageUrl: imageUrl?.startsWith('http')
+                ? imageUrl
+                : imageUrl?.startsWith('//')
+                  ? `https:${imageUrl}`
+                  : imageUrl?.startsWith('/')
+                    ? `${this.BASE_DOMAIN}${imageUrl}`
+                    : imageUrl,
               publishedAt,
-              category: this.extractCategoryFromUrl(url)
+              category: this.extractCategoryFromUrl(url),
             });
 
             seenUrls.add(url);
@@ -418,7 +463,8 @@ export class TuoiTreService {
 
       // Final fallback: Try simpler pattern - just find all article links
       if (newsItems.length === 0) {
-        const simplePattern = /<a[^>]*href=["']([^"']+\/\d{4}\/\d{2}\/\d{2}\/[^"']+\.(?:html|htm))["'][^>]*>([^<]+)<\/a>/gi;
+        const simplePattern =
+          /<a[^>]*href=["']([^"']+\/\d{4}\/\d{2}\/\d{2}\/[^"']+\.(?:html|htm))["'][^>]*>([^<]+)<\/a>/gi;
         let simpleMatch;
         while ((simpleMatch = simplePattern.exec(html)) !== null && newsItems.length < 50) {
           const url = simpleMatch[1];
@@ -426,10 +472,14 @@ export class TuoiTreService {
 
           if (url && title && title.length > 10 && !seenUrls.has(url)) {
             newsItems.push({
-              id: url.split('/').pop()?.replace(/\.(html|htm)$/, '') || `article-${newsItems.length}`,
+              id:
+                url
+                  .split('/')
+                  .pop()
+                  ?.replace(/\.(html|htm)$/, '') || `article-${newsItems.length}`,
               title,
               url: url.startsWith('http') ? url.replace(this.BASE_DOMAIN, '') : url,
-              category: this.extractCategoryFromUrl(url)
+              category: this.extractCategoryFromUrl(url),
             });
             seenUrls.add(url);
           }
@@ -586,10 +636,14 @@ export class TuoiTreService {
       content: content || '<p>Nội dung không khả dụng.</p>',
       author,
       publishedAt,
-      imageUrl: imageUrl?.startsWith('http') ? imageUrl :
-               imageUrl?.startsWith('//') ? `https:${imageUrl}` :
-               imageUrl?.startsWith('/') ? `${this.BASE_DOMAIN}${imageUrl}` : imageUrl,
-      category: this.extractCategoryFromUrl(articleUrl)
+      imageUrl: imageUrl?.startsWith('http')
+        ? imageUrl
+        : imageUrl?.startsWith('//')
+          ? `https:${imageUrl}`
+          : imageUrl?.startsWith('/')
+            ? `${this.BASE_DOMAIN}${imageUrl}`
+            : imageUrl,
+      category: this.extractCategoryFromUrl(articleUrl),
     };
   }
 
@@ -642,8 +696,9 @@ export class TuoiTreService {
    * Extract category from URL
    */
   private extractCategoryFromUrl(url: string): string | undefined {
-    const categoryMatch = url.match(/\/(video|thoi-su|the-gioi|phap-luat|kinh-doanh|cong-nghe|xe|du-lich|nhip-song-tre|van-hoa|giai-tri|the-thao|giao-duc|nha-dat|suc-khoe)\//i);
+    const categoryMatch = url.match(
+      /\/(video|thoi-su|the-gioi|phap-luat|kinh-doanh|cong-nghe|xe|du-lich|nhip-song-tre|van-hoa|giai-tri|the-thao|giao-duc|nha-dat|suc-khoe)\//i
+    );
     return categoryMatch ? categoryMatch[1] : undefined;
   }
 }
-

@@ -1,24 +1,29 @@
 <div class="news-hub-v2" [class.viewing-article]="showArticleViewer()">
   <!-- Main Content View -->
   <div class="main-view" *ngIf="!showArticleViewer()">
-    
     <!-- Top Bar -->
     <div class="top-bar">
       <div class="brand">
         <i class="pi pi-bolt"></i>
         <span class="brand-text">DEV<span class="highlight">News</span></span>
       </div>
-      
+
       <div class="top-controls">
         <!-- Search -->
         <div class="search-box">
           <i class="pi pi-search"></i>
-          <input 
-            type="text" 
-            placeholder="Search articles..." 
+          <input
+            type="text"
+            placeholder="Search articles..."
             [value]="searchTerm()"
-            (input)="onSearchChange($event)">
-          <button *ngIf="searchTerm()" (click)="clearSearch()" class="clear-search" title="Clear search">
+            (input)="onSearchChange($event)"
+          />
+          <button
+            *ngIf="searchTerm()"
+            (click)="clearSearch()"
+            class="clear-search"
+            title="Clear search"
+          >
             <i class="pi pi-times"></i>
           </button>
         </div>
@@ -30,13 +35,19 @@
             (click)="setViewMode(mode.id)"
             [class.active]="viewMode() === mode.id"
             class="mode-btn"
-            [title]="mode.tooltip">
+            [title]="mode.tooltip"
+          >
             <i [class]="mode.icon"></i>
           </button>
         </div>
 
         <!-- Refresh -->
-        <button (click)="refreshNews()" class="refresh-btn" [class.loading]="loading()" title="Refresh articles">
+        <button
+          (click)="refreshNews()"
+          class="refresh-btn"
+          [class.loading]="loading()"
+          title="Refresh articles"
+        >
           <i class="pi pi-refresh"></i>
         </button>
       </div>
@@ -50,12 +61,13 @@
           (click)="selectCategory(category.id)"
           [class.active]="selectedCategory() === category.id"
           class="category-pill"
-          [title]="'Show ' + category.name + ' articles'">
+          [title]="'Show ' + category.name + ' articles'"
+        >
           <i [class]="category.icon"></i>
           <span>{{ category.name }}</span>
         </button>
       </div>
-      
+
       <!-- Filter Dropdown -->
       <div class="filter-dropdown">
         <button
@@ -63,7 +75,8 @@
           (click)="selectFilter(filter.id)"
           [class.active]="selectedFilter() === filter.id"
           class="filter-btn"
-          [title]="'Filter by ' + filter.name">
+          [title]="'Filter by ' + filter.name"
+        >
           <i [class]="filter.icon"></i>
         </button>
       </div>
@@ -88,14 +101,18 @@
 
     <!-- Articles Grid -->
     <div *ngIf="!loading() && !error()" class="articles-grid" [attr.data-view]="viewMode()">
-      
       <!-- Featured Article (First one if available) -->
-      <div *ngIf="filteredArticles().length > 0" class="featured-article" (click)="openArticle(filteredArticles()[0])">
+      <div
+        *ngIf="filteredArticles().length > 0"
+        class="featured-article"
+        (click)="openArticle(filteredArticles()[0])"
+      >
         <div class="featured-image">
-          <img 
-            [src]="filteredArticles()[0].image_url" 
+          <img
+            [src]="filteredArticles()[0].image_url"
             [alt]="filteredArticles()[0].title"
-            (error)="onImageError($event)">
+            (error)="onImageError($event)"
+          />
           <div class="featured-overlay"></div>
           <div class="featured-badge" *ngIf="filteredArticles()[0].featured">
             <i class="pi pi-star-fill"></i>
@@ -116,8 +133,13 @@
           </div>
           <h2 class="featured-title">{{ filteredArticles()[0].title }}</h2>
           <p class="featured-summary">{{ filteredArticles()[0].summary }}</p>
-          <div class="featured-tags" *ngIf="filteredArticles()[0].tags && filteredArticles()[0].tags!.length > 0">
-            <span *ngFor="let tag of filteredArticles()[0].tags!.slice(0, 3)" class="tag">#{{ tag }}</span>
+          <div
+            class="featured-tags"
+            *ngIf="filteredArticles()[0].tags && filteredArticles()[0].tags!.length > 0"
+          >
+            <span *ngFor="let tag of filteredArticles()[0].tags!.slice(0, 3)" class="tag"
+              >#{{ tag }}</span
+            >
           </div>
           <div class="featured-stats">
             <span class="stat" *ngIf="filteredArticles()[0].reactions">
@@ -133,15 +155,13 @@
       </div>
 
       <!-- Regular Articles (Skip first one) -->
-      <div 
-        *ngFor="let article of filteredArticles().slice(1)" 
+      <div
+        *ngFor="let article of filteredArticles().slice(1)"
         class="article-item"
-        (click)="openArticle(article)">
+        (click)="openArticle(article)"
+      >
         <div class="article-image">
-          <img 
-            [src]="article.image_url" 
-            [alt]="article.title"
-            (error)="onImageError($event)">
+          <img [src]="article.image_url" [alt]="article.title" (error)="onImageError($event)" />
           <div class="image-overlay"></div>
           <span class="featured-star" *ngIf="article.featured">
             <i class="pi pi-star-fill"></i>
@@ -225,9 +245,12 @@
       </div>
 
       <!-- Article Content -->
-      <article *ngIf="!articleLoading() && !articleError() && selectedArticle()" class="article-detail">
+      <article
+        *ngIf="!articleLoading() && !articleError() && selectedArticle()"
+        class="article-detail"
+      >
         <div class="article-hero" *ngIf="selectedArticle()?.image_url">
-          <img [src]="selectedArticle()!.image_url" [alt]="selectedArticle()!.title">
+          <img [src]="selectedArticle()!.image_url" [alt]="selectedArticle()!.title" />
           <div class="hero-overlay"></div>
         </div>
 
@@ -261,11 +284,17 @@
 
           <h1 class="article-heading">{{ selectedArticle()?.title }}</h1>
 
-          <div class="article-tags-row" *ngIf="selectedArticle()?.tags && selectedArticle()!.tags!.length > 0">
+          <div
+            class="article-tags-row"
+            *ngIf="selectedArticle()?.tags && selectedArticle()!.tags!.length > 0"
+          >
             <span *ngFor="let tag of selectedArticle()?.tags" class="article-tag">#{{ tag }}</span>
           </div>
 
-          <div class="article-body" [innerHTML]="selectedArticle()?.body || selectedArticle()?.summary"></div>
+          <div
+            class="article-body"
+            [innerHTML]="selectedArticle()?.body || selectedArticle()?.summary"
+          ></div>
         </div>
       </article>
     </div>

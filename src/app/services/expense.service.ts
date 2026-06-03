@@ -3,20 +3,26 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError, map, shareReplay, switchMap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
-import { 
-  _0xgenerateToken, 
-  _0xcomputeHash, 
-  _0xgetHashedToken, 
-  _0xvalidate, 
+import {
+  _0xgenerateToken,
+  _0xcomputeHash,
+  _0xgetHashedToken,
+  _0xvalidate,
   _0xisValid,
   _0xencrypt,
   _0xdecrypt,
   _0xchecksum,
   _0xmultiValidate,
   _0xhashUsername,
-  _0xhashCredentials
+  _0xhashCredentials,
 } from '../utils/crypto-obfuscator.util';
-import { LLMService, ExpenseSummaryResponse, ExpenseSummaryRequest, ParsedExpense, EXPENSE_CATEGORIES } from './llm.service';
+import {
+  LLMService,
+  ExpenseSummaryResponse,
+  ExpenseSummaryRequest,
+  ParsedExpense,
+  EXPENSE_CATEGORIES,
+} from './llm.service';
 
 export interface Expense {
   date: string;
@@ -52,7 +58,7 @@ export interface ExpenseGroup {
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 class ExpenseService {
   // Google Sheets API configuration
@@ -96,7 +102,7 @@ class ExpenseService {
   getExpenses(forceRefresh: boolean = false): Observable<Expense[]> {
     // Check cache first
     const now = Date.now();
-    if (!forceRefresh && this.cachedExpenses$ && (now - this.lastLoadTime) < this.CACHE_DURATION) {
+    if (!forceRefresh && this.cachedExpenses$ && now - this.lastLoadTime < this.CACHE_DURATION) {
       console.log('📦 Using cached expenses');
       return this.cachedExpenses$;
     }
@@ -151,7 +157,7 @@ class ExpenseService {
               amount: amount,
               category: category,
               note: note || undefined,
-              groupId: groupId || undefined
+              groupId: groupId || undefined,
             };
           });
 
@@ -179,7 +185,6 @@ class ExpenseService {
     console.log('🗑️ Cache cleared');
   }
 
-
   /**
    * Update an existing expense in Google Sheets
    * NOTE: Requires row index to update the correct row
@@ -189,26 +194,39 @@ class ExpenseService {
   updateExpense(expense: Expense, rowIndex: number): Observable<any> {
     // If using Google Apps Script (RECOMMENDED)
     if (this.APPS_SCRIPT_URL) {
-      return this.http.post(this.APPS_SCRIPT_URL, {
-        action: 'edit',
-        expense: expense,
-        row: rowIndex
-      }, {
-        headers: new HttpHeaders({
-          'Content-Type': 'application/json'
-        })
-      }).pipe(
-        catchError((error) => {
-          console.error('Failed to update expense via Apps Script:', error);
-          return throwError(() => new Error('Không thể cập nhật chi tiêu. Vui lòng kiểm tra cấu hình Google Apps Script.'));
-        })
-      );
+      return this.http
+        .post(
+          this.APPS_SCRIPT_URL,
+          {
+            action: 'edit',
+            expense: expense,
+            row: rowIndex,
+          },
+          {
+            headers: new HttpHeaders({
+              'Content-Type': 'application/json',
+            }),
+          }
+        )
+        .pipe(
+          catchError((error) => {
+            console.error('Failed to update expense via Apps Script:', error);
+            return throwError(
+              () =>
+                new Error(
+                  'Không thể cập nhật chi tiêu. Vui lòng kiểm tra cấu hình Google Apps Script.'
+                )
+            );
+          })
+        );
     }
 
     // Fallback: Try API key (will fail for write operations)
     const dateStr = this.formatDateForSheet(expense.date);
     const amountStr = this.formatAmountForSheet(expense.amount);
-    const values = [[dateStr, expense.content, '', amountStr, expense.category, expense.note || '']];
+    const values = [
+      [dateStr, expense.content, '', amountStr, expense.category, expense.note || ''],
+    ];
     const range = `${this.SHEET_NAME}!A${rowIndex}:F${rowIndex}`;
     const url = `${this.BASE_URL}/values/${range}?valueInputOption=USER_ENTERED&key=${this.API_KEY}`;
 
@@ -217,19 +235,24 @@ class ExpenseService {
     // Clear cache after updating
     this.clearCache();
 
-    return this.http.put(url, body, {
-      headers: new HttpHeaders({
-        'Content-Type': 'application/json'
+    return this.http
+      .put(url, body, {
+        headers: new HttpHeaders({
+          'Content-Type': 'application/json',
+        }),
       })
-    }).pipe(
-      catchError((error) => {
-        console.error('Failed to update expense in Google Sheets:', error);
-        if (error.status === 401 || error.status === 403) {
-          return throwError(() => new Error('API Key không thể ghi dữ liệu. Vui lòng thiết lập Google Apps Script.'));
-        }
-        return throwError(() => error);
-      })
-    );
+      .pipe(
+        catchError((error) => {
+          console.error('Failed to update expense in Google Sheets:', error);
+          if (error.status === 401 || error.status === 403) {
+            return throwError(
+              () =>
+                new Error('API Key không thể ghi dữ liệu. Vui lòng thiết lập Google Apps Script.')
+            );
+          }
+          return throwError(() => error);
+        })
+      );
   }
 
   /**
@@ -241,26 +264,39 @@ class ExpenseService {
   addExpense(expense: Expense): Observable<any> {
     // If using Google Apps Script (RECOMMENDED)
     if (this.APPS_SCRIPT_URL) {
-      return this.http.post(this.APPS_SCRIPT_URL, {
-        expense,
-        action: 'add'
-      }, {
-        headers: new HttpHeaders({
-          'Content-Type': 'application/json'
-        })
-      }).pipe(
-        catchError((error) => {
-          console.error('Failed to add expense via Apps Script:', error);
-          return throwError(() => new Error('Không thể thêm chi tiêu. Vui lòng kiểm tra cấu hình Google Apps Script. Xem docs/integrations/google-apps-script/GOOGLE_APPS_SCRIPT_SETUP.md để biết cách thiết lập.'));
-        })
-      );
+      return this.http
+        .post(
+          this.APPS_SCRIPT_URL,
+          {
+            expense,
+            action: 'add',
+          },
+          {
+            headers: new HttpHeaders({
+              'Content-Type': 'application/json',
+            }),
+          }
+        )
+        .pipe(
+          catchError((error) => {
+            console.error('Failed to add expense via Apps Script:', error);
+            return throwError(
+              () =>
+                new Error(
+                  'Không thể thêm chi tiêu. Vui lòng kiểm tra cấu hình Google Apps Script. Xem docs/integrations/google-apps-script/GOOGLE_APPS_SCRIPT_SETUP.md để biết cách thiết lập.'
+                )
+            );
+          })
+        );
     }
 
     // Fallback: Try API key (will fail for write operations)
     // This is only for backward compatibility
     const dateStr = this.formatDateForSheet(expense.date);
     const amountStr = this.formatAmountForSheet(expense.amount);
-    const values = [[dateStr, expense.content, '', amountStr, expense.category, expense.note || '']];
+    const values = [
+      [dateStr, expense.content, '', amountStr, expense.category, expense.note || ''],
+    ];
     const range = `${this.SHEET_NAME}!A:F`;
     const url = `${this.BASE_URL}/values/${range}:append?valueInputOption=USER_ENTERED&key=${this.API_KEY}`;
 
@@ -269,25 +305,31 @@ class ExpenseService {
     // Clear cache after adding
     this.clearCache();
 
-    return this.http.post(url, body, {
-      headers: new HttpHeaders({
-        'Content-Type': 'application/json'
+    return this.http
+      .post(url, body, {
+        headers: new HttpHeaders({
+          'Content-Type': 'application/json',
+        }),
       })
-    }).pipe(
-      catchError((error) => {
-        console.error('Failed to add expense to Google Sheets:', error);
-        // Provide helpful error message
-        if (error.status === 401 || error.status === 403) {
-          return throwError(() => new Error('API Key không thể ghi dữ liệu. Vui lòng thiết lập Google Apps Script. Xem docs/integrations/google-apps-script/GOOGLE_APPS_SCRIPT_SETUP.md để biết cách thiết lập.'));
-        }
-        return throwError(() => error);
-      })
-    );
+      .pipe(
+        catchError((error) => {
+          console.error('Failed to add expense to Google Sheets:', error);
+          // Provide helpful error message
+          if (error.status === 401 || error.status === 403) {
+            return throwError(
+              () =>
+                new Error(
+                  'API Key không thể ghi dữ liệu. Vui lòng thiết lập Google Apps Script. Xem docs/integrations/google-apps-script/GOOGLE_APPS_SCRIPT_SETUP.md để biết cách thiết lập.'
+                )
+            );
+          }
+          return throwError(() => error);
+        })
+      );
   }
 
-
   // ========== BUDGET METHODS ==========
-  
+
   private readonly BUDGET_SHEET_NAME = 'Ngân sách'; // Budget tab name
   private cachedBudgets$: Observable<CategoryBudget[]> | null = null;
   private lastBudgetLoadTime: number = 0;
@@ -299,7 +341,11 @@ class ExpenseService {
   getBudgets(forceRefresh: boolean = false): Observable<CategoryBudget[]> {
     // Check cache first
     const now = Date.now();
-    if (!forceRefresh && this.cachedBudgets$ && (now - this.lastBudgetLoadTime) < this.CACHE_DURATION) {
+    if (
+      !forceRefresh &&
+      this.cachedBudgets$ &&
+      now - this.lastBudgetLoadTime < this.CACHE_DURATION
+    ) {
       console.log('📦 Using cached budgets');
       return this.cachedBudgets$;
     }
@@ -322,21 +368,21 @@ class ExpenseService {
           .map((row: string[]) => {
             const category = row[0]?.trim() || '';
             const rawValue = row[1]?.trim() || '0';
-            
+
             // Parse amount - handle different formats:
             // 1. Pure number: 1200000
             // 2. Vietnamese format with dots: "1.200.000"
             // 3. Number with decimal: 1171717.17
             // 4. Formatted with "đ": "1.200.000 đ"
             let amount = 0;
-            
+
             // Remove currency symbol and spaces
             let cleanValue = rawValue.replace(/[đ\s]/g, '').trim();
-            
+
             if (cleanValue) {
               // Check if it's a decimal number (has a dot followed by 1-2 digits at the end)
               const decimalMatch = cleanValue.match(/^[\d.]+[,.](\d{1,2})$/);
-              
+
               if (decimalMatch) {
                 // It's a decimal number - parse as float and round
                 // Replace comma with dot for parsing
@@ -355,12 +401,12 @@ class ExpenseService {
                 amount = parseInt(cleanValue.replace(/[^\d]/g, ''), 10) || 0;
               }
             }
-            
+
             console.log(`📊 Budget: ${category} = ${rawValue} -> ${amount}`);
 
             return {
               category,
-              amount
+              amount,
             };
           });
 
@@ -383,25 +429,34 @@ class ExpenseService {
    */
   saveBudgets(budgets: CategoryBudget[]): Observable<any> {
     if (this.APPS_SCRIPT_URL) {
-      return this.http.post(this.APPS_SCRIPT_URL, {
-        action: 'saveBudgets',
-        budgets: budgets
-      }, {
-        headers: new HttpHeaders({
-          'Content-Type': 'application/json'
-        })
-      }).pipe(
-        map((response) => {
-          // Clear budget cache after saving
-          this.cachedBudgets$ = null;
-          this.lastBudgetLoadTime = 0;
-          return response;
-        }),
-        catchError((error) => {
-          console.error('Failed to save budgets via Apps Script:', error);
-          return throwError(() => new Error('Không thể lưu ngân sách. Vui lòng kiểm tra cấu hình Google Apps Script.'));
-        })
-      );
+      return this.http
+        .post(
+          this.APPS_SCRIPT_URL,
+          {
+            action: 'saveBudgets',
+            budgets: budgets,
+          },
+          {
+            headers: new HttpHeaders({
+              'Content-Type': 'application/json',
+            }),
+          }
+        )
+        .pipe(
+          map((response) => {
+            // Clear budget cache after saving
+            this.cachedBudgets$ = null;
+            this.lastBudgetLoadTime = 0;
+            return response;
+          }),
+          catchError((error) => {
+            console.error('Failed to save budgets via Apps Script:', error);
+            return throwError(
+              () =>
+                new Error('Không thể lưu ngân sách. Vui lòng kiểm tra cấu hình Google Apps Script.')
+            );
+          })
+        );
     }
 
     return throwError(() => new Error('Google Apps Script URL not configured'));
@@ -550,7 +605,7 @@ class ExpenseService {
     '56571693', // phat
     '26c7d4b7', // quyen
     '5e566f1c', // phat.hong
-    '24f715b1'  // quyen.ninh
+    '24f715b1', // quyen.ninh
   ];
 
   /**
@@ -563,7 +618,7 @@ class ExpenseService {
     'phat',
     'quyen',
     'phat.hong',
-    'quyen.ninh'
+    'quyen.ninh',
   ];
 
   /**
@@ -627,10 +682,10 @@ class ExpenseService {
    */
   generateCredentialsHash(username: string, password: string): string {
     if (!username || !password) return '';
-    
+
     // First, hash the username to get hash_username
     const hashUsername = _0xhashUsername(username);
-    
+
     // Then hash the combination: hash_username:password
     return _0xhashCredentials(hashUsername, password);
   }
@@ -642,17 +697,18 @@ class ExpenseService {
    * Security: Does not store username, iterates through all valid username hashes
    */
   isAuthenticationValid(): boolean {
-    const storedHash = typeof sessionStorage !== 'undefined' 
-      ? sessionStorage.getItem('expense_app_auth_hash') 
-      : null;
-    
+    const storedHash =
+      typeof sessionStorage !== 'undefined'
+        ? sessionStorage.getItem('expense_app_auth_hash')
+        : null;
+
     if (!storedHash) {
       return false;
     }
 
     // Generate expected password (reversed date)
     const expectedPassword = _0xgenerateToken();
-    
+
     // Try each hashed username to find a match
     // Format: Hash(hash_username:expectedPassword)
     for (const hashUsername of this.VALID_USERNAME_HASHES) {
@@ -661,7 +717,7 @@ class ExpenseService {
         return true;
       }
     }
-    
+
     // No match found
     return false;
   }
@@ -678,7 +734,11 @@ class ExpenseService {
   getGroups(forceRefresh: boolean = false): Observable<ExpenseGroup[]> {
     // Check cache first
     const now = Date.now();
-    if (!forceRefresh && this.cachedGroups$ && (now - this.lastGroupsLoadTime) < this.CACHE_DURATION) {
+    if (
+      !forceRefresh &&
+      this.cachedGroups$ &&
+      now - this.lastGroupsLoadTime < this.CACHE_DURATION
+    ) {
       console.log('📦 Using cached groups');
       return this.cachedGroups$;
     }
@@ -701,11 +761,11 @@ class ExpenseService {
           } else if (typeof amountValue === 'number') {
             totalAmount = amountValue;
           }
-          
+
           return {
             ...group,
             totalAmount: totalAmount,
-            rowIndex: index + 2 // Row index in sheet (row 1 is header)
+            rowIndex: index + 2, // Row index in sheet (row 1 is header)
           } as ExpenseGroup;
         });
         this.lastGroupsLoadTime = Date.now();
@@ -729,25 +789,36 @@ class ExpenseService {
       return throwError(() => new Error('Google Apps Script URL not configured'));
     }
 
-    return this.http.post(this.APPS_SCRIPT_URL, {
-      action: 'addGroup',
-      group: group
-    }, {
-      headers: new HttpHeaders({
-        'Content-Type': 'application/json'
-      })
-    }).pipe(
-      map((response) => {
-        // Clear cache after adding
-        this.cachedGroups$ = null;
-        this.lastGroupsLoadTime = 0;
-        return response;
-      }),
-      catchError((error) => {
-        console.error('Failed to add group via Apps Script:', error);
-        return throwError(() => new Error('Không thể thêm nhóm chi tiêu. Vui lòng kiểm tra cấu hình Google Apps Script.'));
-      })
-    );
+    return this.http
+      .post(
+        this.APPS_SCRIPT_URL,
+        {
+          action: 'addGroup',
+          group: group,
+        },
+        {
+          headers: new HttpHeaders({
+            'Content-Type': 'application/json',
+          }),
+        }
+      )
+      .pipe(
+        map((response) => {
+          // Clear cache after adding
+          this.cachedGroups$ = null;
+          this.lastGroupsLoadTime = 0;
+          return response;
+        }),
+        catchError((error) => {
+          console.error('Failed to add group via Apps Script:', error);
+          return throwError(
+            () =>
+              new Error(
+                'Không thể thêm nhóm chi tiêu. Vui lòng kiểm tra cấu hình Google Apps Script.'
+              )
+          );
+        })
+      );
   }
 
   /**
@@ -758,26 +829,37 @@ class ExpenseService {
       return throwError(() => new Error('Google Apps Script URL not configured'));
     }
 
-    return this.http.post(this.APPS_SCRIPT_URL, {
-      action: 'updateGroup',
-      group: group,
-      row: rowIndex
-    }, {
-      headers: new HttpHeaders({
-        'Content-Type': 'application/json'
-      })
-    }).pipe(
-      map((response) => {
-        // Clear cache after updating
-        this.cachedGroups$ = null;
-        this.lastGroupsLoadTime = 0;
-        return response;
-      }),
-      catchError((error) => {
-        console.error('Failed to update group via Apps Script:', error);
-        return throwError(() => new Error('Không thể cập nhật nhóm chi tiêu. Vui lòng kiểm tra cấu hình Google Apps Script.'));
-      })
-    );
+    return this.http
+      .post(
+        this.APPS_SCRIPT_URL,
+        {
+          action: 'updateGroup',
+          group: group,
+          row: rowIndex,
+        },
+        {
+          headers: new HttpHeaders({
+            'Content-Type': 'application/json',
+          }),
+        }
+      )
+      .pipe(
+        map((response) => {
+          // Clear cache after updating
+          this.cachedGroups$ = null;
+          this.lastGroupsLoadTime = 0;
+          return response;
+        }),
+        catchError((error) => {
+          console.error('Failed to update group via Apps Script:', error);
+          return throwError(
+            () =>
+              new Error(
+                'Không thể cập nhật nhóm chi tiêu. Vui lòng kiểm tra cấu hình Google Apps Script.'
+              )
+          );
+        })
+      );
   }
 
   /**
@@ -788,25 +870,36 @@ class ExpenseService {
       return throwError(() => new Error('Google Apps Script URL not configured'));
     }
 
-    return this.http.post(this.APPS_SCRIPT_URL, {
-      action: 'deleteGroup',
-      row: rowIndex
-    }, {
-      headers: new HttpHeaders({
-        'Content-Type': 'application/json'
-      })
-    }).pipe(
-      map((response) => {
-        // Clear cache after deleting
-        this.cachedGroups$ = null;
-        this.lastGroupsLoadTime = 0;
-        return response;
-      }),
-      catchError((error) => {
-        console.error('Failed to delete group via Apps Script:', error);
-        return throwError(() => new Error('Không thể xóa nhóm chi tiêu. Vui lòng kiểm tra cấu hình Google Apps Script.'));
-      })
-    );
+    return this.http
+      .post(
+        this.APPS_SCRIPT_URL,
+        {
+          action: 'deleteGroup',
+          row: rowIndex,
+        },
+        {
+          headers: new HttpHeaders({
+            'Content-Type': 'application/json',
+          }),
+        }
+      )
+      .pipe(
+        map((response) => {
+          // Clear cache after deleting
+          this.cachedGroups$ = null;
+          this.lastGroupsLoadTime = 0;
+          return response;
+        }),
+        catchError((error) => {
+          console.error('Failed to delete group via Apps Script:', error);
+          return throwError(
+            () =>
+              new Error(
+                'Không thể xóa nhóm chi tiêu. Vui lòng kiểm tra cấu hình Google Apps Script.'
+              )
+          );
+        })
+      );
   }
 
   /**
@@ -835,12 +928,12 @@ class ExpenseService {
     // If no expenses provided, fetch them first
     if (!expenses) {
       return this.getExpenses().pipe(
-        switchMap(fetchedExpenses => {
+        switchMap((fetchedExpenses) => {
           return this.llmService.summarizeExpenses({
             expenses: fetchedExpenses,
             budgets,
             timeRange: options?.timeRange,
-            language: options?.language || 'vi'
+            language: options?.language || 'vi',
           });
         })
       );
@@ -850,7 +943,7 @@ class ExpenseService {
       expenses,
       budgets,
       timeRange: options?.timeRange,
-      language: options?.language || 'vi'
+      language: options?.language || 'vi',
     });
   }
 
@@ -858,15 +951,10 @@ class ExpenseService {
    * Get a quick summary of recent expenses
    * Returns a short 1-2 sentence summary
    */
-  getQuickExpenseSummary(
-    expenses?: Expense[],
-    language: 'vi' | 'en' = 'vi'
-  ): Observable<string> {
+  getQuickExpenseSummary(expenses?: Expense[], language: 'vi' | 'en' = 'vi'): Observable<string> {
     if (!expenses) {
       return this.getExpenses().pipe(
-        switchMap(fetchedExpenses => 
-          this.llmService.getQuickSummary(fetchedExpenses, language)
-        )
+        switchMap((fetchedExpenses) => this.llmService.getQuickSummary(fetchedExpenses, language))
       );
     }
     return this.llmService.getQuickSummary(expenses, language);
@@ -883,12 +971,12 @@ class ExpenseService {
   ): Observable<string[]> {
     if (!expenses || !budgets) {
       return this.getExpenses().pipe(
-        switchMap(fetchedExpenses => 
+        switchMap((fetchedExpenses) =>
           this.getBudgets().pipe(
-            switchMap(fetchedBudgets => 
+            switchMap((fetchedBudgets) =>
               this.llmService.getSpendingAdvice(
-                expenses || fetchedExpenses, 
-                budgets || fetchedBudgets, 
+                expenses || fetchedExpenses,
+                budgets || fetchedBudgets,
                 language
               )
             )
@@ -903,15 +991,10 @@ class ExpenseService {
    * Analyze spending patterns over time
    * Identifies trends and patterns in spending behavior
    */
-  analyzeSpendingPatterns(
-    expenses?: Expense[],
-    language: 'vi' | 'en' = 'vi'
-  ): Observable<string> {
+  analyzeSpendingPatterns(expenses?: Expense[], language: 'vi' | 'en' = 'vi'): Observable<string> {
     if (!expenses) {
       return this.getExpenses().pipe(
-        switchMap(fetchedExpenses => 
-          this.llmService.analyzePatterns(fetchedExpenses, language)
-        )
+        switchMap((fetchedExpenses) => this.llmService.analyzePatterns(fetchedExpenses, language))
       );
     }
     return this.llmService.analyzePatterns(expenses, language);
@@ -928,7 +1011,7 @@ class ExpenseService {
   ): Observable<string> {
     if (!expenses) {
       return this.getExpenses().pipe(
-        switchMap(fetchedExpenses => 
+        switchMap((fetchedExpenses) =>
           this.llmService.askAboutExpenses(question, fetchedExpenses, language)
         )
       );
@@ -946,9 +1029,9 @@ class ExpenseService {
     language: 'vi' | 'en' = 'vi'
   ): Observable<ExpenseSummaryResponse> {
     return this.getExpenses().pipe(
-      switchMap(expenses => {
+      switchMap((expenses) => {
         // Filter expenses for the specified month
-        const monthlyExpenses = expenses.filter(expense => {
+        const monthlyExpenses = expenses.filter((expense) => {
           const date = new Date(expense.date);
           return date.getFullYear() === year && date.getMonth() === month - 1;
         });
@@ -957,15 +1040,15 @@ class ExpenseService {
         const endDate = new Date(year, month, 0);
 
         return this.getBudgets().pipe(
-          switchMap(budgets => 
+          switchMap((budgets) =>
             this.llmService.summarizeExpenses({
               expenses: monthlyExpenses,
               budgets,
               timeRange: {
                 from: startDate.toISOString().split('T')[0],
-                to: endDate.toISOString().split('T')[0]
+                to: endDate.toISOString().split('T')[0],
               },
-              language
+              language,
             })
           )
         );
@@ -986,22 +1069,22 @@ class ExpenseService {
     end.setDate(end.getDate() + 6);
 
     return this.getExpenses().pipe(
-      switchMap(expenses => {
-        const weeklyExpenses = expenses.filter(expense => {
+      switchMap((expenses) => {
+        const weeklyExpenses = expenses.filter((expense) => {
           const date = new Date(expense.date);
           return date >= start && date <= end;
         });
 
         return this.getBudgets().pipe(
-          switchMap(budgets =>
+          switchMap((budgets) =>
             this.llmService.summarizeExpenses({
               expenses: weeklyExpenses,
               budgets,
               timeRange: {
                 from: start.toISOString().split('T')[0],
-                to: end.toISOString().split('T')[0]
+                to: end.toISOString().split('T')[0],
               },
-              language
+              language,
             })
           )
         );
@@ -1028,13 +1111,13 @@ class ExpenseService {
     language: 'vi' | 'en' = 'vi'
   ): Observable<string> {
     return this.getExpenses().pipe(
-      switchMap(expenses => {
-        const expenses1 = expenses.filter(e => {
+      switchMap((expenses) => {
+        const expenses1 = expenses.filter((e) => {
           const date = new Date(e.date);
           return date >= new Date(period1.from) && date <= new Date(period1.to);
         });
 
-        const expenses2 = expenses.filter(e => {
+        const expenses2 = expenses.filter((e) => {
           const date = new Date(e.date);
           return date >= new Date(period2.from) && date <= new Date(period2.to);
         });
@@ -1042,13 +1125,14 @@ class ExpenseService {
         const total1 = expenses1.reduce((sum, e) => sum + e.amount, 0);
         const total2 = expenses2.reduce((sum, e) => sum + e.amount, 0);
 
-        const prompt = language === 'vi'
-          ? `So sánh chi tiêu giữa 2 khoảng thời gian:
+        const prompt =
+          language === 'vi'
+            ? `So sánh chi tiêu giữa 2 khoảng thời gian:
 Kỳ 1 (${period1.from} - ${period1.to}): ${total1.toLocaleString('vi-VN')} đ (${expenses1.length} giao dịch)
 Kỳ 2 (${period2.from} - ${period2.to}): ${total2.toLocaleString('vi-VN')} đ (${expenses2.length} giao dịch)
 
 Đưa ra nhận xét ngắn gọn (2-3 câu) về sự thay đổi. Không dùng markdown.`
-          : `Compare expenses between 2 periods:
+            : `Compare expenses between 2 periods:
 Period 1 (${period1.from} - ${period1.to}): ${total1.toLocaleString('vi-VN')} VND (${expenses1.length} transactions)
 Period 2 (${period2.from} - ${period2.to}): ${total2.toLocaleString('vi-VN')} VND (${expenses2.length} transactions)
 
@@ -1086,18 +1170,16 @@ Give a brief comment (2-3 sentences) about the change. No markdown.`;
    */
   parseAndAddExpense(rawInput: string): Observable<{ parsed: ParsedExpense; saved: any }> {
     return this.llmService.parseExpenseFromText(rawInput).pipe(
-      switchMap(parsed => {
+      switchMap((parsed) => {
         const expense: Expense = {
           date: parsed.date,
           content: parsed.content,
           amount: parsed.amount,
           category: parsed.category,
-          note: parsed.note
+          note: parsed.note,
         };
-        
-        return this.addExpense(expense).pipe(
-          map(saved => ({ parsed, saved }))
-        );
+
+        return this.addExpense(expense).pipe(map((saved) => ({ parsed, saved })));
       })
     );
   }
@@ -1133,9 +1215,7 @@ Give a brief comment (2-3 sentences) about the change. No markdown.`;
   /**
    * Configure LLM
    */
-  configureLLM(config: {
-    model?: string;
-  }): void {
+  configureLLM(config: { model?: string }): void {
     this.llmService.saveConfig(config);
   }
 
@@ -1147,6 +1227,4 @@ Give a brief comment (2-3 sentences) about the change. No markdown.`;
   }
 }
 
-export default ExpenseService
-
-    
+export default ExpenseService;

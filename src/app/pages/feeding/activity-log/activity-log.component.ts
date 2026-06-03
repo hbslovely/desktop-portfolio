@@ -26,7 +26,14 @@ import {
 } from '../../../services/activity-log.service';
 
 type SortOrder = 'desc' | 'asc';
-type FilterCategory = 'all' | 'feeding' | 'weight' | 'medical' | 'schedule' | 'document' | 'settings';
+type FilterCategory =
+  | 'all'
+  | 'feeding'
+  | 'weight'
+  | 'medical'
+  | 'schedule'
+  | 'document'
+  | 'settings';
 
 @Component({
   selector: 'app-activity-log',
@@ -100,9 +107,7 @@ export class ActivityLogComponent implements OnInit, OnDestroy {
       category === 'all'
         ? logs
         : logs.filter((log) =>
-            this.categoryPrefixes[category].some((p) =>
-              log.eventType.startsWith(p)
-            )
+            this.categoryPrefixes[category].some((p) => log.eventType.startsWith(p))
           );
 
     const q = this.normalizeSearchText(this.textSearchQuery());
@@ -111,12 +116,7 @@ export class ActivityLogComponent implements OnInit, OnDestroy {
     return list.filter((log) => {
       const label = getEventTypeLabel(log.eventType as any);
       const haystack = this.normalizeSearchText(
-        [
-          displayActivityLogActor(log.user),
-          log.content,
-          String(log.eventType),
-          label,
-        ].join(' ')
+        [displayActivityLogActor(log.user), log.content, String(log.eventType), label].join(' ')
       );
       return haystack.includes(q);
     });
@@ -134,9 +134,7 @@ export class ActivityLogComponent implements OnInit, OnDestroy {
   parsedDisplayRows = computed(() => {
     return this.displayedLogs().map((log) => ({
       log,
-      contentHtml: this.sanitizer.bypassSecurityTrustHtml(
-        buildActivityLogMessageHtml(log.content)
-      ),
+      contentHtml: this.sanitizer.bypassSecurityTrustHtml(buildActivityLogMessageHtml(log.content)),
     }));
   });
 
@@ -221,7 +219,7 @@ export class ActivityLogComponent implements OnInit, OnDestroy {
   }
 
   loadMore(): void {
-    this.displayCount.update(c => c + this.PAGE_SIZE);
+    this.displayCount.update((c) => c + this.PAGE_SIZE);
   }
 
   onSortChange(): void {

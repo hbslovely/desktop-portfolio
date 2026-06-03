@@ -10,7 +10,7 @@ import {
   generateAllHiddenMoves,
   getFlippablePositions,
   evaluateHiddenPosition,
-  flipPiece
+  flipPiece,
 } from '../utils/hidden-chess.utils';
 
 export interface HiddenMove {
@@ -23,7 +23,7 @@ export const HIDDEN_CHESS_METADATA: AlgorithmMetadata = {
   id: 'hidden-chess',
   name: 'Hidden Chess AI',
   description: 'AI cho cờ úp sử dụng Minimax với Alpha-Beta',
-  version: '1.0.0'
+  version: '1.0.0',
 };
 
 export class HiddenChessAlgorithm implements IAIAlgorithm {
@@ -55,14 +55,7 @@ export class HiddenChessAlgorithm implements IAIAlgorithm {
 
     for (const hiddenMove of allMoves) {
       const newBoard = this.applyHiddenMove(board, hiddenMove);
-      const score = this.minimax(
-        newBoard,
-        maxDepth - 1,
-        -Infinity,
-        Infinity,
-        false,
-        color
-      );
+      const score = this.minimax(newBoard, maxDepth - 1, -Infinity, Infinity, false, color);
 
       if (score > bestScore) {
         bestScore = score;
@@ -87,7 +80,11 @@ export class HiddenChessAlgorithm implements IAIAlgorithm {
       return evaluateHiddenPosition(board, aiColor);
     }
 
-    const currentColor = isMaximizing ? aiColor : (aiColor === PieceColor.RED ? PieceColor.BLACK : PieceColor.RED);
+    const currentColor = isMaximizing
+      ? aiColor
+      : aiColor === PieceColor.RED
+        ? PieceColor.BLACK
+        : PieceColor.RED;
     const moves = this.getAllHiddenMoves(board, currentColor);
 
     if (moves.length === 0) {

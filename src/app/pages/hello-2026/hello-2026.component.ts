@@ -8,30 +8,34 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
   imports: [CommonModule],
   template: `
     <div class="hello-2026-container">
-      <iframe 
-        [src]="safeHtmlUrl" 
+      <iframe
+        [src]="safeHtmlUrl"
         frameborder="0"
         style="width: 100%; height: 100vh; border: none;"
         title="Vòng Quay Tết 2026"
       ></iframe>
     </div>
   `,
-  styles: [`
-    .hello-2026-container {
-      width: 100%;
-      height: 100vh;
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
-    }
-  `]
+  styles: [
+    `
+      .hello-2026-container {
+        width: 100%;
+        height: 100vh;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+      }
+    `,
+  ],
 })
 export class Hello2026Component {
   private sanitizer = inject(DomSanitizer);
-  
+
   safeHtmlUrl: SafeResourceUrl;
 
   constructor() {
-    this.safeHtmlUrl = this.sanitizer.bypassSecurityTrustResourceUrl('/assets/lucky-wheel/index.html');
+    this.safeHtmlUrl = this.sanitizer.bypassSecurityTrustResourceUrl(
+      '/assets/lucky-wheel/index.html'
+    );
   }
 }

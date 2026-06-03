@@ -29,7 +29,7 @@ export class WeightLogService {
   private readonly SHEET_ID = '1O4kAA61k4cX4mEwAjDy5gioVUAElCyu62Z3zPvgdDMM';
   private readonly SHEET_NAME = 'Weight';
   private readonly API_KEY = environment.googleSheetsApiKey;
-  private readonly BASE_URL = `https://sheets.googleapis.com/v4/spreadsheets/${ this.SHEET_ID }`;
+  private readonly BASE_URL = `https://sheets.googleapis.com/v4/spreadsheets/${this.SHEET_ID}`;
 
   private readonly APPS_SCRIPT_URL = '/api/feeding-apps-script';
 
@@ -42,8 +42,8 @@ export class WeightLogService {
    *   E = Ghi chú
    */
   getLogs(): Observable<WeightLog[]> {
-    const range = `${ this.SHEET_NAME }!A2:E`;
-    const url = `${ this.BASE_URL }/values/${ range }?key=${ this.API_KEY }&valueRenderOption=FORMATTED_VALUE`;
+    const range = `${this.SHEET_NAME}!A2:E`;
+    const url = `${this.BASE_URL}/values/${range}?key=${this.API_KEY}&valueRenderOption=FORMATTED_VALUE`;
 
     return this.http.get<{ values?: string[][] }>(url).pipe(
       map((resp) => {
@@ -75,8 +75,8 @@ export class WeightLogService {
           })
           .filter((l): l is WeightLog => !!l)
           .sort((a, b) => {
-            const ak = `${ a.date }`;
-            const bk = `${ b.date }`;
+            const ak = `${a.date}`;
+            const bk = `${b.date}`;
             return bk.localeCompare(ak);
           });
       }),
@@ -132,9 +132,7 @@ export class WeightLogService {
     }).pipe(catchError(() => of({ success: true })));
   }
 
-  private postToAppsScript(
-    body: Record<string, unknown>
-  ): Observable<WeightSheetResponse> {
+  private postToAppsScript(body: Record<string, unknown>): Observable<WeightSheetResponse> {
     const url = this.APPS_SCRIPT_URL;
     const isProxy = !environment.production;
 
@@ -159,13 +157,13 @@ export class WeightLogService {
     if (!raw) return null;
     const m1 = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
     if (m1) {
-      const [, d, mo, y ] = m1;
-      return `${ y }-${ mo.padStart(2, '0') }-${ d.padStart(2, '0') }`;
+      const [, d, mo, y] = m1;
+      return `${y}-${mo.padStart(2, '0')}-${d.padStart(2, '0')}`;
     }
     const m2 = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
     if (m2) {
-      const [, y, mo, d ] = m2;
-      return `${ y }-${ mo.padStart(2, '0') }-${ d.padStart(2, '0') }`;
+      const [, y, mo, d] = m2;
+      return `${y}-${mo.padStart(2, '0')}-${d.padStart(2, '0')}`;
     }
     return null;
   }

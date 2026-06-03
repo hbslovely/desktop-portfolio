@@ -5,7 +5,8 @@
   flex-direction: column;
   background: #ffffff;
   overflow: hidden;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
 
   &.viewing-article {
     .main-view {
@@ -1022,7 +1023,9 @@
                 }
               }
 
-              h2, h3, h4 {
+              h2,
+              h3,
+              h4 {
                 margin-top: 0;
                 margin-bottom: 16px;
                 color: #212121;
@@ -1114,7 +1117,7 @@
             }
 
             // TuoiTre original styles
-            ::ng-deep [data-role="content"] {
+            ::ng-deep [data-role='content'] {
               h2 {
                 font-size: 25px;
               }
@@ -1143,13 +1146,13 @@
             ::ng-deep .detail-frame-video {
               margin-bottom: 20px;
 
-              .VCSortableInPreviewMode[type="VideoStream"] .videoNewsPlayer {
+              .VCSortableInPreviewMode[type='VideoStream'] .videoNewsPlayer {
                 padding-top: 56.26% !important;
                 height: 0 !important;
               }
             }
 
-            ::ng-deep .VCSortableInPreviewMode[type="Audio"] {
+            ::ng-deep .VCSortableInPreviewMode[type='Audio'] {
               display: flex;
               flex-direction: column-reverse;
 
@@ -1171,7 +1174,7 @@
               }
             }
 
-            ::ng-deep .VCSortableInPreviewMode[type="RelatedOneNews"] {
+            ::ng-deep .VCSortableInPreviewMode[type='RelatedOneNews'] {
               img {
                 width: 150px !important;
                 height: 93px !important;
@@ -1179,7 +1182,10 @@
 
               .VCObjectBoxRelatedNewsItemSapo {
                 margin: 0 10px;
-                font: normal 12px/normal Helvetica, Arial, sans-serif;
+                font:
+                  normal 12px/normal Helvetica,
+                  Arial,
+                  sans-serif;
                 line-height: 1.44;
               }
 
@@ -1189,13 +1195,13 @@
               }
             }
 
-            ::ng-deep .VCSortableInPreviewMode[type="RelatedNewsBox"] {
+            ::ng-deep .VCSortableInPreviewMode[type='RelatedNewsBox'] {
               .kbwscwlr-list .kbwscwlrl .kbwscwlrl-title .inforNews .timeNews i {
                 font-style: normal;
               }
             }
 
-            ::ng-deep .VCSortableInPreviewMode[type="insertembedcode"] {
+            ::ng-deep .VCSortableInPreviewMode[type='insertembedcode'] {
               &.alignCenterOverflow iframe {
                 width: 100%;
               }
@@ -1212,7 +1218,7 @@
             }
 
             ::ng-deep .detail__im-main .detail__im-container .detail-content {
-              .VCSortableInPreviewMode[type="Photo"] {
+              .VCSortableInPreviewMode[type='Photo'] {
                 max-width: unset;
                 z-index: 1;
               }

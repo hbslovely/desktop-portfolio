@@ -1,4 +1,15 @@
-import { Component, OnInit, OnDestroy, Output, EventEmitter, Input, signal, computed, effect, ChangeDetectionStrategy } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  OnDestroy,
+  Output,
+  EventEmitter,
+  Input,
+  signal,
+  computed,
+  effect,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { Subject, takeUntil } from 'rxjs';
@@ -42,7 +53,7 @@ export interface ContextMenuEvent {
   imports: [CommonModule, FormatDatePipe, FormatFileSizePipe],
   templateUrl: './explorer.component.html',
   styleUrl: './explorer.component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ExplorerComponent implements OnInit, OnDestroy {
   private readonly destroy$ = new Subject<void>();
@@ -86,17 +97,18 @@ export class ExplorerComponent implements OnInit, OnDestroy {
     private fileSystemService: FileSystemService
   ) {
     // Watch for changes in the shared file system
-    effect(() => {
-      const sharedFileSystem = this.fileSystemService.getFileSystem()();
-      if (sharedFileSystem) {
-
-        // Always update from shared file system if available
-        if (!this.externalFileSystem) {
-          this.fileSystem.set(sharedFileSystem);
-
+    effect(
+      () => {
+        const sharedFileSystem = this.fileSystemService.getFileSystem()();
+        if (sharedFileSystem) {
+          // Always update from shared file system if available
+          if (!this.externalFileSystem) {
+            this.fileSystem.set(sharedFileSystem);
+          }
         }
-      }
-    }, { allowSignalWrites: true });
+      },
+      { allowSignalWrites: true }
+    );
   }
 
   ngOnInit(): void {
@@ -119,19 +131,19 @@ export class ExplorerComponent implements OnInit, OnDestroy {
   }
 
   private getIconForFileType(extension: string): string {
-    const iconMap: {[key: string]: string} = {
-      'txt': 'pi pi-file',
-      'md': 'pi pi-file-edit',
-      'html': 'pi pi-file-edit',
-      'css': 'pi pi-file-edit',
-      'js': 'pi pi-file-edit',
-      'ts': 'pi pi-file-edit',
-      'json': 'pi pi-file',
-      'pdf': 'pi pi-file-pdf',
-      'png': 'pi pi-image',
-      'jpg': 'pi pi-image',
-      'jpeg': 'pi pi-image',
-      'gif': 'pi pi-image'
+    const iconMap: { [key: string]: string } = {
+      txt: 'pi pi-file',
+      md: 'pi pi-file-edit',
+      html: 'pi pi-file-edit',
+      css: 'pi pi-file-edit',
+      js: 'pi pi-file-edit',
+      ts: 'pi pi-file-edit',
+      json: 'pi pi-file',
+      pdf: 'pi pi-file-pdf',
+      png: 'pi pi-image',
+      jpg: 'pi pi-image',
+      jpeg: 'pi pi-image',
+      gif: 'pi pi-image',
     };
     return iconMap[extension] || 'pi pi-file';
   }
@@ -141,7 +153,7 @@ export class ExplorerComponent implements OnInit, OnDestroy {
     virtualFiles[path] = {
       htmlContent,
       textContent,
-      savedAt: new Date().toISOString()
+      savedAt: new Date().toISOString(),
     };
     localStorage.setItem('virtual-files', JSON.stringify(virtualFiles));
   }
@@ -162,9 +174,7 @@ export class ExplorerComponent implements OnInit, OnDestroy {
     if (!fs) return [];
 
     const path = this.currentPath();
-    const items = path === '/' 
-      ? (fs.children || [])
-      : (this.findItemByPath(fs, path)?.children || []);
+    const items = path === '/' ? fs.children || [] : this.findItemByPath(fs, path)?.children || [];
 
     // 🚀 Return items immediately without waiting for images
     // Images will load individually với lazy loading
@@ -180,7 +190,7 @@ export class ExplorerComponent implements OnInit, OnDestroy {
     const path = this.currentPath();
     if (path === '/') return [{ name: 'Explorer', path: '/' }];
 
-    const parts = path.split('/').filter(part => part);
+    const parts = path.split('/').filter((part) => part);
     const breadcrumbs = [{ name: 'Explorer', path: '/' }];
 
     let currentPath = '';
@@ -193,18 +203,19 @@ export class ExplorerComponent implements OnInit, OnDestroy {
   });
 
   private loadFileSystem(): void {
-    this.http.get<{fileSystem: FileSystemItem}>('assets/json/explore.json').pipe(
-      takeUntil(this.destroy$)
-    ).subscribe({
-      next: (data) => {
-        this.fileSystem.set(data.fileSystem);
-        // Also update the shared file system service
-        this.fileSystemService.setFileSystem(data.fileSystem);
-      },
-      error: () => {
-        // Handle error silently or show user-friendly message
-      }
-    });
+    this.http
+      .get<{ fileSystem: FileSystemItem }>('assets/json/explore.json')
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (data) => {
+          this.fileSystem.set(data.fileSystem);
+          // Also update the shared file system service
+          this.fileSystemService.setFileSystem(data.fileSystem);
+        },
+        error: () => {
+          // Handle error silently or show user-friendly message
+        },
+      });
   }
 
   private findItemByPath(root: FileSystemItem, path: string): FileSystemItem | null {
@@ -269,14 +280,13 @@ export class ExplorerComponent implements OnInit, OnDestroy {
     const fileName = item.name.toLowerCase();
     const fileExtension = fileName.split('.').pop() || '';
 
-
     // Check if this is a virtual file
     if (item.content?.startsWith('virtual-file://')) {
       const virtualPath = item.content.replace('virtual-file://', '');
 
       // Check if it's an image file
       const isImage = ['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(fileExtension.toLowerCase());
-      
+
       if (isImage) {
         // Load image data
         const imageData = this.fileSystemService.loadVirtualImageFile(virtualPath);
@@ -284,14 +294,14 @@ export class ExplorerComponent implements OnInit, OnDestroy {
           // Create a modified item with the image data URL
           const itemWithContent = {
             ...item,
-            content: imageData
+            content: imageData,
           };
 
           // Emit file open event with the loaded image data
           this.onFileOpen.emit({
             item: itemWithContent,
             fileType: 'image',
-            extension: fileExtension
+            extension: fileExtension,
           });
           return;
         }
@@ -302,14 +312,14 @@ export class ExplorerComponent implements OnInit, OnDestroy {
           // Create a modified item with the actual content
           const itemWithContent = {
             ...item,
-            content: content
+            content: content,
           };
 
           // Emit file open event with the loaded content
           this.onFileOpen.emit({
             item: itemWithContent,
             fileType: this.getFileType(fileExtension),
-            extension: fileExtension
+            extension: fileExtension,
           });
           return;
         }
@@ -320,12 +330,30 @@ export class ExplorerComponent implements OnInit, OnDestroy {
     this.onFileOpen.emit({
       item,
       fileType: this.getFileType(fileExtension),
-      extension: fileExtension
+      extension: fileExtension,
     });
   }
 
   private getFileType(extension: string): 'text' | 'image' | 'pdf' | 'unknown' {
-    const textExtensions = ['txt', 'md', 'markdown', 'json', 'csv', 'log', 'xml', 'html', 'css', 'js', 'ts', 'py', 'java', 'cpp', 'c', 'h', 'rtf'];
+    const textExtensions = [
+      'txt',
+      'md',
+      'markdown',
+      'json',
+      'csv',
+      'log',
+      'xml',
+      'html',
+      'css',
+      'js',
+      'ts',
+      'py',
+      'java',
+      'cpp',
+      'c',
+      'h',
+      'rtf',
+    ];
     const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp', 'ico'];
     const pdfExtensions = ['pdf'];
 
@@ -375,7 +403,6 @@ export class ExplorerComponent implements OnInit, OnDestroy {
   toggleViewMode() {
     this.viewMode.set(this.viewMode() === 'list' ? 'icons' : 'list');
   }
-
 
   // Context menu methods
   onItemRightClick(event: MouseEvent, item: FileSystemItem) {
@@ -443,7 +470,7 @@ export class ExplorerComponent implements OnInit, OnDestroy {
       this.onContextMenuAction.emit({
         action: 'rename',
         item,
-        newName
+        newName,
       });
 
       // Update the item name locally
@@ -475,7 +502,7 @@ export class ExplorerComponent implements OnInit, OnDestroy {
     if (confirm(`Are you sure you want to delete "${item.name}"?`)) {
       this.onContextMenuAction.emit({
         action: 'delete',
-        item
+        item,
       });
     }
   }
@@ -485,7 +512,7 @@ export class ExplorerComponent implements OnInit, OnDestroy {
     this.clipboardAction.set('copy');
     this.onContextMenuAction.emit({
       action: 'copy',
-      item
+      item,
     });
   }
 
@@ -494,7 +521,7 @@ export class ExplorerComponent implements OnInit, OnDestroy {
     this.clipboardAction.set('cut');
     this.onContextMenuAction.emit({
       action: 'cut',
-      item
+      item,
     });
   }
 
@@ -505,7 +532,7 @@ export class ExplorerComponent implements OnInit, OnDestroy {
     if (clipboardItem && action) {
       this.onContextMenuAction.emit({
         action: 'paste',
-        item: clipboardItem
+        item: clipboardItem,
       });
     }
   }
@@ -514,7 +541,7 @@ export class ExplorerComponent implements OnInit, OnDestroy {
     if (this.getFileType(item.name.split('.').pop() || '') === 'image') {
       this.onContextMenuAction.emit({
         action: 'set-wallpaper',
-        item
+        item,
       });
     }
   }
@@ -631,19 +658,26 @@ export class ExplorerComponent implements OnInit, OnDestroy {
   getFileTypeDisplay(filename: string): string {
     const extension = filename.split('.').pop()?.toLowerCase();
     switch (extension) {
-      case 'txt': return 'Text File';
-      case 'md': return 'Markdown File';
+      case 'txt':
+        return 'Text File';
+      case 'md':
+        return 'Markdown File';
       case 'png':
       case 'jpg':
       case 'jpeg':
       case 'gif':
-      case 'svg': return 'Image File';
-      case 'pdf': return 'PDF Document';
+      case 'svg':
+        return 'Image File';
+      case 'pdf':
+        return 'PDF Document';
       case 'doc':
-      case 'docx': return 'Word Document';
+      case 'docx':
+        return 'Word Document';
       case 'xls':
-      case 'xlsx': return 'Excel Spreadsheet';
-      default: return 'File';
+      case 'xlsx':
+        return 'Excel Spreadsheet';
+      default:
+        return 'File';
     }
   }
 
@@ -664,7 +698,8 @@ export class ExplorerComponent implements OnInit, OnDestroy {
   onImageError(event: Event): void {
     // Fallback for failed image loads
     const img = event.target as HTMLImageElement;
-    img.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiBmaWxsPSIjZjNmNGY2Ii8+CjxwYXRoIGQ9Ik0yNCAyNGw0IDR2LThoLTR2NHptMC04aDR2NGgtNHYtNHoiIGZpbGw9IiM5Y2EzYWYiLz4KPC9zdmc+';
+    img.src =
+      'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiBmaWxsPSIjZjNmNGY2Ii8+CjxwYXRoIGQ9Ik0yNCAyNGw0IDR2LThoLTR2NHptMC04aDR2NGgtNHYtNHoiIGZpbGw9IiM5Y2EzYWYiLz4KPC9zdmc+';
   }
 
   isTextFile(item: any): boolean {

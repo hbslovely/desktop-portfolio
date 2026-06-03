@@ -17,15 +17,11 @@ export function groupLogsByProximity(
 ): FeedingViewGroup[] {
   if (!logsAnyOrder.length) return [];
   if (!gapMinutes || gapMinutes <= 0) {
-    const desc = [...logsAnyOrder].sort(
-      (a, b) => timestampMs(b) - timestampMs(a)
-    );
+    const desc = [...logsAnyOrder].sort((a, b) => timestampMs(b) - timestampMs(a));
     return desc.map((m) => ({ members: [m] }));
   }
 
-  const asc = [...logsAnyOrder].sort(
-    (a, b) => timestampMs(a) - timestampMs(b)
-  );
+  const asc = [...logsAnyOrder].sort((a, b) => timestampMs(a) - timestampMs(b));
   const clusters: FeedingLog[][] = [];
   for (const l of asc) {
     if (!clusters.length) {

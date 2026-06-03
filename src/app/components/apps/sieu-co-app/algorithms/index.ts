@@ -17,26 +17,26 @@ export * from './advanced.algorithm';
  * Người dùng có thể đăng ký thêm thuật toán của riêng họ
  */
 export const ALGORITHM_REGISTRY: AlgorithmRegistry = {
-  'advanced': {
+  advanced: {
     metadata: ADVANCED_METADATA,
-    factory: () => new AdvancedAlgorithm()
+    factory: () => new AdvancedAlgorithm(),
   },
-  'minimax': {
+  minimax: {
     metadata: MINIMAX_METADATA,
-    factory: (config?: AlgorithmConfig) => new MinimaxAlgorithm(config)
+    factory: (config?: AlgorithmConfig) => new MinimaxAlgorithm(config),
   },
-  'random': {
+  random: {
     metadata: RANDOM_METADATA,
-    factory: (config?: AlgorithmConfig) => new RandomAlgorithm(config)
+    factory: (config?: AlgorithmConfig) => new RandomAlgorithm(config),
   },
-  'greedy': {
+  greedy: {
     metadata: GREEDY_METADATA,
-    factory: (config?: AlgorithmConfig) => new GreedyAlgorithm(config)
+    factory: (config?: AlgorithmConfig) => new GreedyAlgorithm(config),
   },
   'hidden-chess': {
     metadata: HIDDEN_CHESS_METADATA,
-    factory: () => new HiddenChessAlgorithm()
-  }
+    factory: () => new HiddenChessAlgorithm(),
+  },
 };
 
 // List of available algorithms for UI
@@ -45,7 +45,7 @@ export const AVAILABLE_ALGORITHMS = [
   new MinimaxAlgorithm(),
   new RandomAlgorithm(),
   new GreedyAlgorithm(),
-  new HiddenChessAlgorithm()
+  new HiddenChessAlgorithm(),
 ];
 
 // Get default algorithm - Sử dụng Advanced AI mặc định
@@ -75,7 +75,7 @@ export function getAlgorithm(id: string, config?: AlgorithmConfig): IAIAlgorithm
 export function getAvailableAlgorithms() {
   return Object.entries(ALGORITHM_REGISTRY).map(([id, entry]) => ({
     ...entry.metadata,
-    id  // Override with the key
+    id, // Override with the key
   }));
 }
 

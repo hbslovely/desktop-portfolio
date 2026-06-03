@@ -7,13 +7,10 @@ import { MEDICAL_KINDS } from './medical-history-kinds.data';
  * Handles data validation, date parsing, and type mapping
  */
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class MedicalDataMapperService {
-
-  private readonly KIND_SET = new Set<string>(
-    MEDICAL_KINDS.map(k => k.id as string)
-  );
+  private readonly KIND_SET = new Set<string>(MEDICAL_KINDS.map((k) => k.id as string));
 
   /**
    * Map Google Sheets row data to MedicalHistoryEntry
@@ -158,12 +155,12 @@ export class MedicalDataMapperService {
    * Get available medical event kinds with labels
    */
   getAvailableKinds() {
-    return MEDICAL_KINDS.map(kind => ({
+    return MEDICAL_KINDS.map((kind) => ({
       id: kind.id,
       label: kind.label,
       shortLabel: kind.shortLabel,
       icon: kind.icon,
-      color: kind.color
+      color: kind.color,
     }));
   }
 }

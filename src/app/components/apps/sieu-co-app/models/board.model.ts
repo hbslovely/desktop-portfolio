@@ -49,7 +49,7 @@ export function createEmptyBoard(): Board {
     for (let col = 0; col < BOARD_COLS; col++) {
       board[row][col] = {
         position: { row, col },
-        piece: null
+        piece: null,
       };
     }
   }
@@ -115,10 +115,10 @@ export function createStandardBoard(): Board {
  * Clone bàn cờ (deep copy)
  */
 export function cloneBoard(board: Board): Board {
-  return board.map(row =>
-    row.map(cell => ({
+  return board.map((row) =>
+    row.map((cell) => ({
       position: { ...cell.position },
-      piece: cell.piece ? { ...cell.piece } : null
+      piece: cell.piece ? { ...cell.piece } : null,
     }))
   );
 }

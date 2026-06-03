@@ -21,7 +21,10 @@
   font-weight: 600;
   font-family: inherit;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s,
+    border-color 0.15s;
 
   &.primary {
     background: var(--primary);
@@ -96,8 +99,8 @@
     border-color: #cdeee0;
   }
 
-  &[data-status="under"],
-  &[data-status="no-data"] {
+  &[data-status='under'],
+  &[data-status='no-data'] {
     --accent-rgb: 245, 158, 11;
     --tone-strong: #f59e0b;
     --tone-soft: #fffbeb;
@@ -105,7 +108,7 @@
     border-color: #f5e3b7;
   }
 
-  &[data-status="low"] {
+  &[data-status='low'] {
     --accent-rgb: 244, 63, 94;
     --tone-strong: #f43f5e;
     --tone-soft: #fff1f2;
@@ -113,7 +116,7 @@
     border-color: #f5c9cf;
   }
 
-  &[data-status="over"] {
+  &[data-status='over'] {
     --accent-rgb: 234, 179, 8;
     --tone-strong: #eab308;
     --tone-soft: #fefce8;
@@ -121,7 +124,7 @@
     border-color: #f0e1a8;
   }
 
-  &[data-status="high"] {
+  &[data-status='high'] {
     --accent-rgb: 220, 38, 38;
     --tone-strong: #dc2626;
     --tone-soft: #fef2f2;
@@ -256,12 +259,7 @@
   z-index: 1;
   padding: 16px 18px 12px;
   border-radius: 18px;
-  background: linear-gradient(
-    180deg,
-    rgba(var(--accent-rgb), 0.07) 0%,
-    #ffffff 58%,
-    #fafbfc 100%
-  );
+  background: linear-gradient(180deg, rgba(var(--accent-rgb), 0.07) 0%, #ffffff 58%, #fafbfc 100%);
   border: 1px solid color-mix(in srgb, rgb(var(--accent-rgb)) 16%, #e8ecf1);
   margin-bottom: 16px;
   box-shadow:
@@ -459,7 +457,9 @@
   border-radius: 3px;
   background: var(--tone-strong);
   box-shadow: 0 1px 3px rgba(var(--accent-rgb), 0.25);
-  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1), background 0.35s ease;
+  transition:
+    width 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+    background 0.35s ease;
   max-width: 100%;
 
   &--pace[data-pace='ahead'] {
@@ -735,17 +735,17 @@
       }
     }
 
-    &[data-met="met"] {
+    &[data-met='met'] {
       border-color: #bbf7d0;
       background: linear-gradient(180deg, #f0fdf4 0%, #ffffff 60%);
     }
 
-    &[data-met="partial"] {
+    &[data-met='partial'] {
       border-color: #fde68a;
       background: linear-gradient(180deg, #fffbeb 0%, #ffffff 60%);
     }
 
-    &[data-met="unmet"] {
+    &[data-met='unmet'] {
       border-color: #fecaca;
       background: linear-gradient(180deg, #fef2f2 0%, #ffffff 60%);
     }
@@ -854,15 +854,15 @@
       }
     }
 
-    &[data-met="met"] i {
+    &[data-met='met'] i {
       color: #10b981;
     }
 
-    &[data-met="partial"] i {
+    &[data-met='partial'] i {
       color: #f59e0b;
     }
 
-    &[data-met="unmet"] i {
+    &[data-met='unmet'] i {
       color: #ef4444;
     }
   }

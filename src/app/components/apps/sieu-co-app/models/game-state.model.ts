@@ -6,9 +6,9 @@ import { MoveHistory } from './move.model';
  * Chế độ chơi
  */
 export enum GameMode {
-  XIANGQI = 'xiangqi',     // Cờ Tướng chuẩn
-  HIDDEN = 'hidden',       // Cờ Úp
-  PUZZLE = 'puzzle'        // Cờ Thế
+  XIANGQI = 'xiangqi', // Cờ Tướng chuẩn
+  HIDDEN = 'hidden', // Cờ Úp
+  PUZZLE = 'puzzle', // Cờ Thế
 }
 
 /**
@@ -20,17 +20,17 @@ export enum GameStatus {
   PAUSED = 'paused',
   RED_WIN = 'red_win',
   BLACK_WIN = 'black_win',
-  DRAW = 'draw'
+  DRAW = 'draw',
 }
 
 /**
  * Độ khó AI
  */
 export enum AIDifficulty {
-  BEGINNER = 2,    // Tập sự
-  AMATEUR = 3,     // Nghiệp dư
-  EXPERT = 4,      // Kỳ thủ
-  MASTER = 5       // Đại sư
+  BEGINNER = 2, // Tập sự
+  AMATEUR = 3, // Nghiệp dư
+  EXPERT = 4, // Kỳ thủ
+  MASTER = 5, // Đại sư
 }
 
 /**
@@ -61,7 +61,7 @@ export const BOARD_THEMES: BoardTheme[] = [
     redColor: '#c0392b',
     blackColor: '#2d3436',
     highlightColor: 'rgba(46, 204, 113, 0.5)',
-    selectedColor: 'rgba(52, 152, 219, 0.5)'
+    selectedColor: 'rgba(52, 152, 219, 0.5)',
   },
   {
     id: 'jade',
@@ -72,7 +72,7 @@ export const BOARD_THEMES: BoardTheme[] = [
     redColor: '#d63031',
     blackColor: '#2d3436',
     highlightColor: 'rgba(255, 234, 167, 0.5)',
-    selectedColor: 'rgba(52, 152, 219, 0.5)'
+    selectedColor: 'rgba(52, 152, 219, 0.5)',
   },
   {
     id: 'ink',
@@ -83,8 +83,8 @@ export const BOARD_THEMES: BoardTheme[] = [
     redColor: '#e74c3c',
     blackColor: '#000000',
     highlightColor: 'rgba(52, 152, 219, 0.5)',
-    selectedColor: 'rgba(46, 204, 113, 0.5)'
-  }
+    selectedColor: 'rgba(46, 204, 113, 0.5)',
+  },
 ];
 
 /**
@@ -109,8 +109,8 @@ export interface GameState {
   config: GameConfig;
   moveHistory: MoveHistory[];
   capturedPieces: {
-    byRed: Piece[];    // Quân Đen bị Đỏ ăn
-    byBlack: Piece[];  // Quân Đỏ bị Đen ăn
+    byRed: Piece[]; // Quân Đen bị Đỏ ăn
+    byBlack: Piece[]; // Quân Đỏ bị Đen ăn
   };
   isCheck: boolean;
   checkingColor?: PieceColor;
@@ -127,7 +127,7 @@ export interface PuzzleInfo {
   id: number;
   name: string;
   description: string;
-  difficulty: number;  // 1-5
+  difficulty: number; // 1-5
   solution?: string[]; // Danh sách nước đi đúng
 }
 
@@ -141,6 +141,6 @@ export function createDefaultGameConfig(): GameConfig {
     aiDifficulty: AIDifficulty.EXPERT,
     theme: BOARD_THEMES[0],
     soundEnabled: true,
-    showHints: true
+    showHints: true,
   };
 }

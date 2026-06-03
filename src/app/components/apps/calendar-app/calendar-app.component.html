@@ -1,35 +1,37 @@
-<div class="calendar-app" 
-     [style.--theme-primary]="getCurrentTheme().primary"
-     [style.--theme-secondary]="getCurrentTheme().secondary"
-     [style.--theme-light]="getCurrentTheme().light">
+<div
+  class="calendar-app"
+  [style.--theme-primary]="getCurrentTheme().primary"
+  [style.--theme-secondary]="getCurrentTheme().secondary"
+  [style.--theme-light]="getCurrentTheme().light"
+>
   <!-- Header with tabs -->
   <div class="calendar-header">
     <div class="tabs">
-      <button 
-        class="tab" 
+      <button
+        class="tab"
         [class.active]="selectedTab() === 'calendar'"
-        (click)="selectTab('calendar')">
+        (click)="selectTab('calendar')"
+      >
         <i class="pi pi-calendar"></i>
         <span>Lịch</span>
       </button>
-      <button 
-        class="tab" 
-        [class.active]="selectedTab() === 'zodiac'"
-        (click)="selectTab('zodiac')">
+      <button class="tab" [class.active]="selectedTab() === 'zodiac'" (click)="selectTab('zodiac')">
         <i class="pi pi-star"></i>
         <span>Con Giáp</span>
       </button>
-      <button 
-        class="tab" 
+      <button
+        class="tab"
         [class.active]="selectedTab() === 'calculate'"
-        (click)="selectTab('calculate')">
+        (click)="selectTab('calculate')"
+      >
         <i class="pi pi-calculator"></i>
         <span>Tính Ngày</span>
       </button>
-      <button 
-        class="tab" 
+      <button
+        class="tab"
         [class.active]="selectedTab() === 'settings'"
-        (click)="selectTab('settings')">
+        (click)="selectTab('settings')"
+      >
         <i class="pi pi-cog"></i>
         <span>Cài Đặt</span>
       </button>
@@ -40,18 +42,20 @@
   <div class="calendar-content" *ngIf="selectedTab() === 'calendar'">
     <!-- View Mode Toggle -->
     <div class="view-mode-toggle">
-      <button 
-        class="mode-btn" 
+      <button
+        class="mode-btn"
         [class.active]="viewMode() === 'month'"
         (click)="viewMode.set('month')"
-        title="Xem Tháng">
+        title="Xem Tháng"
+      >
         <i class="pi pi-calendar"></i>
       </button>
-      <button 
-        class="mode-btn" 
+      <button
+        class="mode-btn"
         [class.active]="viewMode() === 'day'"
         (click)="viewMode.set('day')"
-        title="Xem Ngày">
+        title="Xem Ngày"
+      >
         <i class="pi pi-eye"></i>
       </button>
     </div>
@@ -68,9 +72,13 @@
             <i class="pi pi-chevron-left"></i>
           </button>
         </div>
-        
+
         <div class="month-year-selectors">
-          <select class="month-select" [value]="currentMonthIndex()" (change)="changeMonth(+$any($event.target).value)">
+          <select
+            class="month-select"
+            [value]="currentMonthIndex()"
+            (change)="changeMonth(+$any($event.target).value)"
+          >
             <option [value]="0" [selected]="currentMonthIndex() === 0">Tháng 1</option>
             <option [value]="1" [selected]="currentMonthIndex() === 1">Tháng 2</option>
             <option [value]="2" [selected]="currentMonthIndex() === 2">Tháng 3</option>
@@ -84,11 +92,21 @@
             <option [value]="10" [selected]="currentMonthIndex() === 10">Tháng 11</option>
             <option [value]="11" [selected]="currentMonthIndex() === 11">Tháng 12</option>
           </select>
-          <select class="year-select" [value]="currentYear()" (change)="changeYear(+$any($event.target).value)">
-            <option *ngFor="let year of getYearRange()" [value]="year" [selected]="currentYear() === year">{{ year }}</option>
+          <select
+            class="year-select"
+            [value]="currentYear()"
+            (change)="changeYear(+$any($event.target).value)"
+          >
+            <option
+              *ngFor="let year of getYearRange()"
+              [value]="year"
+              [selected]="currentYear() === year"
+            >
+              {{ year }}
+            </option>
           </select>
         </div>
-        
+
         <div class="nav-group">
           <button class="nav-btn" (click)="nextMonth()" title="Tháng sau">
             <i class="pi pi-chevron-right"></i>
@@ -106,12 +124,12 @@
       <!-- Calendar Grid -->
       <div class="calendar-grid">
         <!-- Day headers -->
-        <div class="day-header" *ngFor="let i of [0,1,2,3,4,5,6]">
+        <div class="day-header" *ngFor="let i of [0, 1, 2, 3, 4, 5, 6]">
           {{ getDayName(i) }}
         </div>
 
         <!-- Calendar days -->
-        <div 
+        <div
           *ngFor="let day of calendarDays()"
           class="calendar-day"
           [class.current-month]="day.isCurrentMonth"
@@ -124,11 +142,14 @@
           [class.bad-day]="isBadDay(day)"
           [class.clickable]="day.isCurrentMonth"
           [title]="day.holidayName || ''"
-          (click)="selectDay(day)">
-          
+          (click)="selectDay(day)"
+        >
           <div class="day-number">{{ day.day }}</div>
-          
-          <div class="lunar-date" *ngIf="showLunarCalendar() && day.isCurrentMonth && !day.isHoliday">
+
+          <div
+            class="lunar-date"
+            *ngIf="showLunarCalendar() && day.isCurrentMonth && !day.isHoliday"
+          >
             <span *ngIf="day.lunarDay === 1" class="lunar-month">1/{{ day.lunarMonth }}</span>
             <span *ngIf="day.lunarDay !== 1">{{ day.lunarDay }}</span>
           </div>
@@ -136,7 +157,7 @@
           <div class="holiday-name" *ngIf="day.isHoliday && day.holidayName">
             {{ day.holidayName }}
           </div>
-          
+
           <div class="day-status" *ngIf="day.isCurrentMonth && !day.isHoliday">
             <span *ngIf="isGoodDay(day)" class="good-indicator">✓</span>
             <span *ngIf="isBadDay(day)" class="bad-indicator">✗</span>
@@ -183,12 +204,12 @@
             <span>Tháng</span>
           </button>
         </div>
-        
+
         <button class="today-btn-day" (click)="goToToday()" title="Về ngày hôm nay">
           <i class="pi pi-calendar"></i>
           Hôm nay
         </button>
-        
+
         <div class="nav-controls">
           <button class="nav-control-btn" (click)="nextMonthDay()" title="Tháng sau">
             <span>Tháng</span>
@@ -218,7 +239,11 @@
           </div>
         </div>
 
-        <div class="day-rating" [class.good]="selectedDayDetails().isGood" [class.bad]="selectedDayDetails().isBad">
+        <div
+          class="day-rating"
+          [class.good]="selectedDayDetails().isGood"
+          [class.bad]="selectedDayDetails().isBad"
+        >
           <div class="rating-badge">{{ selectedDayDetails().rating }}</div>
         </div>
 
@@ -261,7 +286,11 @@
           </div>
 
           <!-- Zodiac Section -->
-          <div class="info-section-card zodiac-section clickable-card" (click)="showZodiacInfo()" title="Click để xem chi tiết">
+          <div
+            class="info-section-card zodiac-section clickable-card"
+            (click)="showZodiacInfo()"
+            title="Click để xem chi tiết"
+          >
             <div class="section-icon zodiac-icon">
               <i class="pi pi-bolt"></i>
             </div>
@@ -346,11 +375,11 @@
       <div class="input-row">
         <div class="input-group">
           <label>Ngày bắt đầu:</label>
-          <input type="date" [(ngModel)]="startDate">
+          <input type="date" [(ngModel)]="startDate" />
         </div>
         <div class="input-group">
           <label>Ngày kết thúc:</label>
-          <input type="date" [(ngModel)]="endDate">
+          <input type="date" [(ngModel)]="endDate" />
         </div>
       </div>
       <div class="result" *ngIf="daysBetween() > 0">
@@ -364,11 +393,11 @@
       <div class="input-row">
         <div class="input-group">
           <label>Ngày bắt đầu:</label>
-          <input type="date" [(ngModel)]="startDate">
+          <input type="date" [(ngModel)]="startDate" />
         </div>
         <div class="input-group">
           <label>Số ngày cộng thêm:</label>
-          <input type="number" [(ngModel)]="addDays" placeholder="Nhập số ngày">
+          <input type="number" [(ngModel)]="addDays" placeholder="Nhập số ngày" />
         </div>
       </div>
       <div class="result" *ngIf="dateAfterDays()">
@@ -381,7 +410,13 @@
       <h3><i class="pi pi-history"></i> Tính Can Chi Năm</h3>
       <div class="input-group">
         <label>Nhập năm cần tra:</label>
-        <input type="number" [(ngModel)]="yearToCheck" placeholder="VD: 2024" min="1900" max="2100">
+        <input
+          type="number"
+          [(ngModel)]="yearToCheck"
+          placeholder="VD: 2024"
+          min="1900"
+          max="2100"
+        />
       </div>
       <div class="result" *ngIf="yearToCheck() >= 1900">
         <div class="result-value">{{ yearCanChi() }}</div>
@@ -402,7 +437,11 @@
           <div class="setting-desc">Hiển thị ngày âm lịch trên lịch</div>
         </div>
         <label class="toggle-switch">
-          <input type="checkbox" [checked]="showLunarCalendar()" (change)="showLunarCalendar.set($any($event.target).checked)">
+          <input
+            type="checkbox"
+            [checked]="showLunarCalendar()"
+            (change)="showLunarCalendar.set($any($event.target).checked)"
+          />
           <span class="slider"></span>
         </label>
       </div>
@@ -416,7 +455,11 @@
           <div class="setting-desc">Highlight các ngày lễ, tết</div>
         </div>
         <label class="toggle-switch">
-          <input type="checkbox" [checked]="highlightHolidays()" (change)="highlightHolidays.set($any($event.target).checked)">
+          <input
+            type="checkbox"
+            [checked]="highlightHolidays()"
+            (change)="highlightHolidays.set($any($event.target).checked)"
+          />
           <span class="slider"></span>
         </label>
       </div>
@@ -429,14 +472,22 @@
           <div class="setting-title">Ngày đầu tuần</div>
           <div class="setting-desc">Chọn ngày bắt đầu tuần</div>
         </div>
-        <select class="setting-select" [value]="firstDayOfWeek()" (change)="firstDayOfWeek.set($any($event.target).value === '1' ? 1 : 0)">
+        <select
+          class="setting-select"
+          [value]="firstDayOfWeek()"
+          (change)="firstDayOfWeek.set($any($event.target).value === '1' ? 1 : 0)"
+        >
           <option [value]="1" [selected]="firstDayOfWeek() === 1">Thứ Hai</option>
           <option [value]="0" [selected]="firstDayOfWeek() === 0">Chủ Nhật</option>
         </select>
       </div>
 
       <div class="setting-card theme-card">
-        <div class="setting-icon" [style.background]="getCurrentTheme().light" [style.border-color]="getCurrentTheme().primary">
+        <div
+          class="setting-icon"
+          [style.background]="getCurrentTheme().light"
+          [style.border-color]="getCurrentTheme().primary"
+        >
           <i class="pi pi-palette" [style.color]="getCurrentTheme().primary"></i>
         </div>
         <div class="setting-info">
@@ -447,13 +498,14 @@
 
       <!-- Theme Color Palette -->
       <div class="theme-palette">
-        <div 
+        <div
           *ngFor="let theme of themeColors"
           class="theme-color-option"
           [class.active]="themeColor() === theme.id"
           [style.background]="theme.primary"
           [title]="theme.name"
-          (click)="changeTheme(theme.id)">
+          (click)="changeTheme(theme.id)"
+        >
           <i class="pi pi-check" *ngIf="themeColor() === theme.id"></i>
         </div>
       </div>

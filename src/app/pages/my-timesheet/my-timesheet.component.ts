@@ -23,7 +23,7 @@ import {
   TimesheetService,
   TimesheetEntry,
   TimesheetConfig,
-  TimesheetSubmissionResult
+  TimesheetSubmissionResult,
 } from '../../services/timesheet.service';
 
 type TimesheetTab = 'log' | 'submit' | 'detail';
@@ -60,7 +60,7 @@ interface TimesheetCalendarDay {
     ToastModule,
     ProgressBarModule,
     TableModule,
-    TagModule
+    TagModule,
   ],
   providers: [MessageService],
   template: `
@@ -92,7 +92,7 @@ interface TimesheetCalendarDay {
                   <p class="card-subtitle">Setup your connection settings</p>
                 </div>
               </div>
-              
+
               <div class="card-content">
                 <div class="input-group">
                   <label class="input-label">
@@ -237,7 +237,7 @@ interface TimesheetCalendarDay {
                   <p class="card-subtitle">Pick the days you want to log</p>
                 </div>
               </div>
-              
+
               <div class="card-content">
                 <div class="range-shell">
                   <div class="range-picker-card">
@@ -270,9 +270,15 @@ interface TimesheetCalendarDay {
 
                   <div class="range-actions">
                     <div class="quick-buttons">
-                      <button type="button" class="quick-btn" (click)="setThisWeek()">This week</button>
-                      <button type="button" class="quick-btn" (click)="setLastWeek()">Last week</button>
-                      <button type="button" class="quick-btn" (click)="setThisMonth()">This month</button>
+                      <button type="button" class="quick-btn" (click)="setThisWeek()">
+                        This week
+                      </button>
+                      <button type="button" class="quick-btn" (click)="setLastWeek()">
+                        Last week
+                      </button>
+                      <button type="button" class="quick-btn" (click)="setThisMonth()">
+                        This month
+                      </button>
                     </div>
 
                     <div class="workday-toggle">
@@ -291,7 +297,9 @@ interface TimesheetCalendarDay {
                   <div class="range-footer">
                     <div class="range-preview" [class.empty-preview]="!startDate || !endDate">
                       <i class="pi pi-info-circle"></i>
-                      <span>{{ getDateRangePreview() || 'Select both dates to preview generated entries.' }}</span>
+                      <span>{{
+                        getDateRangePreview() || 'Select both dates to preview generated entries.'
+                      }}</span>
                     </div>
 
                     <button
@@ -310,220 +318,225 @@ interface TimesheetCalendarDay {
 
             <!-- Bulk Settings -->
             <ng-container *ngIf="activeTab === 'log'">
-            <div class="panel-card bulk-settings-card" *ngIf="dateEntries.length > 0">
-              <div class="card-header">
-                <div class="card-icon">⚙️</div>
-                <div>
-                  <h3 class="card-title">Bulk Settings</h3>
-                  <p class="card-subtitle">Apply settings to all entries</p>
-                </div>
-              </div>
-              
-              <div class="card-content">
-                <div class="bulk-grid">
-                  <div class="input-group">
-                    <label class="input-label">Default Hours</label>
-                    <input
-                      type="number"
-                      [(ngModel)]="bulkHours"
-                      min="0"
-                      max="24"
-                      step="0.5"
-                      placeholder="8.0"
-                      class="styled-input number-input"
-                    />
+              <div class="panel-card bulk-settings-card" *ngIf="dateEntries.length > 0">
+                <div class="card-header">
+                  <div class="card-icon">⚙️</div>
+                  <div>
+                    <h3 class="card-title">Bulk Settings</h3>
+                    <p class="card-subtitle">Apply settings to all entries</p>
                   </div>
-
-                  <div class="input-group">
-                    <label class="input-label">Default Note</label>
-                    <input
-                      pInputText
-                      [(ngModel)]="bulkNote"
-                      placeholder="Daily work tasks"
-                      class="styled-input"
-                    />
-                  </div>
-
-                  <button
-                    pButton
-                    (click)="applyBulkSettings()"
-                    label="Apply to All"
-                    icon="pi pi-copy"
-                    class="apply-bulk-btn"
-                  ></button>
-                </div>
-              </div>
-            </div>
-
-            <!-- Time Entries Table -->
-            <div class="panel-card entries-card" *ngIf="dateEntries.length > 0">
-              <div class="card-header">
-                <div class="card-icon">📊</div>
-                <div>
-                  <h3 class="card-title">Time Entries</h3>
-                  <p class="card-subtitle">Review and edit your timesheet</p>
-                </div>
-              </div>
-              
-              <div class="card-content">
-                <div class="table-wrapper">
-                  <p-table
-                    [value]="dateEntries"
-                    styleClass="modern-table"
-                    [scrollable]="true"
-                    scrollHeight="360px"
-                  >
-                    <ng-template pTemplate="header">
-                      <tr>
-                        <th class="date-col">Date</th>
-                        <th class="hours-col">Hours</th>
-                        <th class="hours-col">Billable</th>
-                        <th class="note-col">Description</th>
-                        <th class="status-col">Status</th>
-                      </tr>
-                    </ng-template>
-                    <ng-template pTemplate="body" let-entry let-i="rowIndex">
-                      <tr class="table-row">
-                        <td class="date-col date-cell">
-                          <div class="date-display">{{ entry.date | date:'EEE, MMM d' }}</div>
-                          <div class="date-small">{{ entry.date }}</div>
-                        </td>
-                        <td class="hours-col">
-                          <input
-                            type="number"
-                            [(ngModel)]="entry.hours"
-                            (ngModelChange)="updateEntryTime(i)"
-                            min="0"
-                            max="24"
-                            step="0.5"
-                            placeholder="8.0"
-                            class="table-input"
-                          />
-                        </td>
-                        <td class="hours-col">
-                          <input
-                            type="number"
-                            [(ngModel)]="entry.billableHours"
-                            (ngModelChange)="updateEntryBillableTime(i)"
-                            min="0"
-                            max="24"
-                            step="0.5"
-                            placeholder="8.0"
-                            class="table-input"
-                          />
-                        </td>
-                        <td class="note-col">
-                          <textarea
-                            pInputTextarea
-                            [(ngModel)]="entry.note"
-                            rows="2"
-                            class="note-input"
-                            placeholder="Describe your work..."
-                          ></textarea>
-                        </td>
-                        <td class="status-col">
-                          <p-tag 
-                            [value]="getEntryStatus(entry)"
-                            [severity]="getEntryStatusSeverity(entry)"
-                            styleClass="status-tag"
-                          ></p-tag>
-                        </td>
-                      </tr>
-                    </ng-template>
-                  </p-table>
                 </div>
 
-                <div class="table-footer">
-                  <div class="summary-stats">
-                    <div class="stat-item">
-                      <span class="stat-value">{{ dateEntries.length }}</span>
-                      <span class="stat-label">Days</span>
+                <div class="card-content">
+                  <div class="bulk-grid">
+                    <div class="input-group">
+                      <label class="input-label">Default Hours</label>
+                      <input
+                        type="number"
+                        [(ngModel)]="bulkHours"
+                        min="0"
+                        max="24"
+                        step="0.5"
+                        placeholder="8.0"
+                        class="styled-input number-input"
+                      />
                     </div>
-                    <div class="stat-divider"></div>
-                    <div class="stat-item">
-                      <span class="stat-value">{{ getTotalHours() }}h</span>
-                      <span class="stat-label">Total Hours</span>
+
+                    <div class="input-group">
+                      <label class="input-label">Default Note</label>
+                      <input
+                        pInputText
+                        [(ngModel)]="bulkNote"
+                        placeholder="Daily work tasks"
+                        class="styled-input"
+                      />
                     </div>
-                    <div class="stat-divider"></div>
-                    <div class="stat-item">
-                      <span class="stat-value">{{ getTotalBillableHours() }}h</span>
-                      <span class="stat-label">Billable</span>
-                    </div>
-                  </div>
-                  
-                  <div class="action-buttons">
+
                     <button
                       pButton
-                      (click)="clearAll()"
-                      label="Clear All"
-                      icon="pi pi-trash"
-                      severity="secondary"
-                      [disabled]="submitting"
-                      class="clear-btn"
-                    ></button>
-                    
-                    <button
-                      pButton
-                      (click)="submitTimesheet()"
-                      label="Submit Timesheet"
-                      icon="pi pi-send"
-                      [loading]="submitting"
-                      [disabled]="!canSubmit()"
-                      class="submit-btn"
+                      (click)="applyBulkSettings()"
+                      label="Apply to All"
+                      icon="pi pi-copy"
+                      class="apply-bulk-btn"
                     ></button>
                   </div>
                 </div>
               </div>
-            </div>
 
-            <!-- Progress & Results -->
-            <div class="panel-card results-card" *ngIf="submitting || lastResult">
-              <div class="card-header">
-                <div class="card-icon">📈</div>
-                <div>
-                  <h3 class="card-title">Submission Progress</h3>
-                  <p class="card-subtitle">Track your submission status</p>
-                </div>
-              </div>
-              
-              <div class="card-content">
-                <div *ngIf="submitting" class="progress-section">
-                  <p class="progress-text">Submitting your timesheet entries...</p>
-                  <p-progressBar [value]="submissionProgress" styleClass="modern-progress"></p-progressBar>
+              <!-- Time Entries Table -->
+              <div class="panel-card entries-card" *ngIf="dateEntries.length > 0">
+                <div class="card-header">
+                  <div class="card-icon">📊</div>
+                  <div>
+                    <h3 class="card-title">Time Entries</h3>
+                    <p class="card-subtitle">Review and edit your timesheet</p>
+                  </div>
                 </div>
 
-                <div *ngIf="lastResult" class="results-section">
-                  <div class="results-grid">
-                    <div class="result-card total-card">
-                      <div class="result-icon">📊</div>
-                      <div class="result-number">{{ lastResult.summary.total }}</div>
-                      <div class="result-label">Total Entries</div>
-                    </div>
-                    <div class="result-card success-card">
-                      <div class="result-icon">✅</div>
-                      <div class="result-number">{{ lastResult.summary.successful }}</div>
-                      <div class="result-label">Successful</div>
-                    </div>
-                    <div class="result-card error-card">
-                      <div class="result-icon">❌</div>
-                      <div class="result-number">{{ lastResult.summary.failed }}</div>
-                      <div class="result-label">Failed</div>
-                    </div>
+                <div class="card-content">
+                  <div class="table-wrapper">
+                    <p-table
+                      [value]="dateEntries"
+                      styleClass="modern-table"
+                      [scrollable]="true"
+                      scrollHeight="360px"
+                    >
+                      <ng-template pTemplate="header">
+                        <tr>
+                          <th class="date-col">Date</th>
+                          <th class="hours-col">Hours</th>
+                          <th class="hours-col">Billable</th>
+                          <th class="note-col">Description</th>
+                          <th class="status-col">Status</th>
+                        </tr>
+                      </ng-template>
+                      <ng-template pTemplate="body" let-entry let-i="rowIndex">
+                        <tr class="table-row">
+                          <td class="date-col date-cell">
+                            <div class="date-display">{{ entry.date | date: 'EEE, MMM d' }}</div>
+                            <div class="date-small">{{ entry.date }}</div>
+                          </td>
+                          <td class="hours-col">
+                            <input
+                              type="number"
+                              [(ngModel)]="entry.hours"
+                              (ngModelChange)="updateEntryTime(i)"
+                              min="0"
+                              max="24"
+                              step="0.5"
+                              placeholder="8.0"
+                              class="table-input"
+                            />
+                          </td>
+                          <td class="hours-col">
+                            <input
+                              type="number"
+                              [(ngModel)]="entry.billableHours"
+                              (ngModelChange)="updateEntryBillableTime(i)"
+                              min="0"
+                              max="24"
+                              step="0.5"
+                              placeholder="8.0"
+                              class="table-input"
+                            />
+                          </td>
+                          <td class="note-col">
+                            <textarea
+                              pInputTextarea
+                              [(ngModel)]="entry.note"
+                              rows="2"
+                              class="note-input"
+                              placeholder="Describe your work..."
+                            ></textarea>
+                          </td>
+                          <td class="status-col">
+                            <p-tag
+                              [value]="getEntryStatus(entry)"
+                              [severity]="getEntryStatusSeverity(entry)"
+                              styleClass="status-tag"
+                            ></p-tag>
+                          </td>
+                        </tr>
+                      </ng-template>
+                    </p-table>
                   </div>
 
-                  <div *ngIf="lastResult.errors.length > 0" class="errors-section">
-                    <h4 class="errors-title">Failed Submissions</h4>
-                    <div class="errors-list">
-                      <div *ngFor="let error of lastResult.errors" class="error-item">
-                        <div class="error-date">{{ error.date }}</div>
-                        <div class="error-message">{{ error.error }}</div>
-                        <div *ngIf="error.status" class="error-status">Status: {{ error.status }}</div>
+                  <div class="table-footer">
+                    <div class="summary-stats">
+                      <div class="stat-item">
+                        <span class="stat-value">{{ dateEntries.length }}</span>
+                        <span class="stat-label">Days</span>
+                      </div>
+                      <div class="stat-divider"></div>
+                      <div class="stat-item">
+                        <span class="stat-value">{{ getTotalHours() }}h</span>
+                        <span class="stat-label">Total Hours</span>
+                      </div>
+                      <div class="stat-divider"></div>
+                      <div class="stat-item">
+                        <span class="stat-value">{{ getTotalBillableHours() }}h</span>
+                        <span class="stat-label">Billable</span>
+                      </div>
+                    </div>
+
+                    <div class="action-buttons">
+                      <button
+                        pButton
+                        (click)="clearAll()"
+                        label="Clear All"
+                        icon="pi pi-trash"
+                        severity="secondary"
+                        [disabled]="submitting"
+                        class="clear-btn"
+                      ></button>
+
+                      <button
+                        pButton
+                        (click)="submitTimesheet()"
+                        label="Submit Timesheet"
+                        icon="pi pi-send"
+                        [loading]="submitting"
+                        [disabled]="!canSubmit()"
+                        class="submit-btn"
+                      ></button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Progress & Results -->
+              <div class="panel-card results-card" *ngIf="submitting || lastResult">
+                <div class="card-header">
+                  <div class="card-icon">📈</div>
+                  <div>
+                    <h3 class="card-title">Submission Progress</h3>
+                    <p class="card-subtitle">Track your submission status</p>
+                  </div>
+                </div>
+
+                <div class="card-content">
+                  <div *ngIf="submitting" class="progress-section">
+                    <p class="progress-text">Submitting your timesheet entries...</p>
+                    <p-progressBar
+                      [value]="submissionProgress"
+                      styleClass="modern-progress"
+                    ></p-progressBar>
+                  </div>
+
+                  <div *ngIf="lastResult" class="results-section">
+                    <div class="results-grid">
+                      <div class="result-card total-card">
+                        <div class="result-icon">📊</div>
+                        <div class="result-number">{{ lastResult.summary.total }}</div>
+                        <div class="result-label">Total Entries</div>
+                      </div>
+                      <div class="result-card success-card">
+                        <div class="result-icon">✅</div>
+                        <div class="result-number">{{ lastResult.summary.successful }}</div>
+                        <div class="result-label">Successful</div>
+                      </div>
+                      <div class="result-card error-card">
+                        <div class="result-icon">❌</div>
+                        <div class="result-number">{{ lastResult.summary.failed }}</div>
+                        <div class="result-label">Failed</div>
+                      </div>
+                    </div>
+
+                    <div *ngIf="lastResult.errors.length > 0" class="errors-section">
+                      <h4 class="errors-title">Failed Submissions</h4>
+                      <div class="errors-list">
+                        <div *ngFor="let error of lastResult.errors" class="error-item">
+                          <div class="error-date">{{ error.date }}</div>
+                          <div class="error-message">{{ error.error }}</div>
+                          <div *ngIf="error.status" class="error-status">
+                            Status: {{ error.status }}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
             </ng-container>
 
             <div class="panel-card submit-timesheet-card" *ngIf="activeTab === 'submit'">
@@ -564,7 +577,9 @@ interface TimesheetCalendarDay {
                       <div class="result-label">Total dates</div>
                     </div>
                     <div class="result-card success-card">
-                      <div class="result-number">{{ timesheetSubmitResult.summary.successful }}</div>
+                      <div class="result-number">
+                        {{ timesheetSubmitResult.summary.successful }}
+                      </div>
                       <div class="result-label">Submitted</div>
                     </div>
                     <div class="result-card error-card">
@@ -676,8 +691,14 @@ interface TimesheetCalendarDay {
                     </div>
 
                     <div class="calendar-status-row" *ngIf="day.isSubmitted || day.isApproved">
-                      <span class="calendar-status approved-status" *ngIf="day.isApproved">Approved</span>
-                      <span class="calendar-status submitted-status" *ngIf="!day.isApproved && day.isSubmitted">Submitted</span>
+                      <span class="calendar-status approved-status" *ngIf="day.isApproved"
+                        >Approved</span
+                      >
+                      <span
+                        class="calendar-status submitted-status"
+                        *ngIf="!day.isApproved && day.isSubmitted"
+                        >Submitted</span
+                      >
                     </div>
 
                     <div class="calendar-event-list" *ngIf="day.events.length > 0">
@@ -686,7 +707,11 @@ interface TimesheetCalendarDay {
                         *ngFor="let event of day.events"
                         [class.holiday-event]="isHolidayEvent(event)"
                       >
-                        <i class="pi" [class.pi-flag]="isHolidayEvent(event)" [class.pi-calendar]="!isHolidayEvent(event)"></i>
+                        <i
+                          class="pi"
+                          [class.pi-flag]="isHolidayEvent(event)"
+                          [class.pi-calendar]="!isHolidayEvent(event)"
+                        ></i>
                         <span>{{ getCalendarEventTitle(event) }}</span>
                       </div>
                     </div>
@@ -696,12 +721,16 @@ interface TimesheetCalendarDay {
                         class="calendar-entry"
                         *ngFor="let entry of day.entries"
                         [class.entry-approved]="entry.attributes.approved"
-                        [class.entry-submitted]="entry.attributes.submitted && !entry.attributes.approved"
+                        [class.entry-submitted]="
+                          entry.attributes.submitted && !entry.attributes.approved
+                        "
                       >
                         <strong>{{ minutesToHours(entry.attributes.time || 0) }}</strong>
                         <span>{{ entry.attributes.note || 'No note' }}</span>
                         <em *ngIf="entry.attributes.approved">Approved</em>
-                        <em *ngIf="!entry.attributes.approved && entry.attributes.submitted">Submitted</em>
+                        <em *ngIf="!entry.attributes.approved && entry.attributes.submitted"
+                          >Submitted</em
+                        >
                       </div>
                     </div>
                   </div>
@@ -719,1411 +748,1425 @@ interface TimesheetCalendarDay {
       <p-toast></p-toast>
     </div>
   `,
-  styles: [`
-    :host {
-      display: block;
-      min-height: 100dvh;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      overflow-x: hidden;
-    }
-
-    /* App Container */
-    .app-container {
-      max-width: 1400px;
-      margin: 0 auto;
-      padding: 0;
-      min-height: 100dvh;
-      display: flex;
-      flex-direction: column;
-    }
-
-    /* Hero Section */
-    .hero-section {
-      position: relative;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      padding: 28px 40px;
-      text-align: center;
-      color: white;
-      overflow: hidden;
-      flex: 0 0 auto;
-    }
-
-    .hero-content {
-      position: relative;
-      z-index: 2;
-    }
-
-    .hero-icon {
-      font-size: 2.5rem;
-      margin-bottom: 0.5rem;
-      display: block;
-      animation: bounce 2s infinite;
-    }
-
-    .hero-title {
-      font-size: 2.5rem;
-      font-weight: 800;
-      margin: 0 0 0.5rem 0;
-      text-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    }
-
-    .hero-subtitle {
-      font-size: 1rem;
-      opacity: 0.9;
-      margin: 0;
-      font-weight: 400;
-    }
-
-    .hero-decoration {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      pointer-events: none;
-    }
-
-    .decoration-circle {
-      position: absolute;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.1);
-      animation: float 6s ease-in-out infinite;
-    }
-
-    .circle-1 {
-      width: 200px;
-      height: 200px;
-      top: -100px;
-      left: -100px;
-      animation-delay: 0s;
-    }
-
-    .circle-2 {
-      width: 150px;
-      height: 150px;
-      top: 50%;
-      right: -75px;
-      animation-delay: 2s;
-    }
-
-    .circle-3 {
-      width: 100px;
-      height: 100px;
-      bottom: -50px;
-      left: 50%;
-      animation-delay: 4s;
-    }
-
-    @keyframes bounce {
-      0%, 20%, 53%, 80%, 100% {
-        transform: translateY(0);
+  styles: [
+    `
+      :host {
+        display: block;
+        min-height: 100dvh;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        font-family:
+          'Inter',
+          -apple-system,
+          BlinkMacSystemFont,
+          sans-serif;
+        overflow-x: hidden;
       }
-      40%, 43% {
-        transform: translateY(-15px);
+
+      /* App Container */
+      .app-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 0;
+        min-height: 100dvh;
+        display: flex;
+        flex-direction: column;
       }
-      70% {
-        transform: translateY(-10px);
-      }
-      90% {
-        transform: translateY(-4px);
-      }
-    }
 
-    @keyframes float {
-      0%, 100% {
-        transform: translateY(0px) rotate(0deg);
-      }
-      50% {
-        transform: translateY(-20px) rotate(180deg);
-      }
-    }
-
-    /* Main Content */
-    .main-content {
-      background: #f8fafc;
-      flex: 1 1 auto;
-      min-height: 0;
-      padding: 24px;
-    }
-
-    .content-grid {
-      display: grid;
-      grid-template-columns: 400px 1fr;
-      gap: 30px;
-      max-width: 1400px;
-      margin: 0 auto;
-      align-items: start;
-    }
-
-    @media (max-width: 1200px) {
-      .content-grid {
-        grid-template-columns: 1fr;
-        gap: 20px;
-      }
-      .main-content {
-        padding: 20px;
-      }
-    }
-
-    .main-panel {
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-    }
-
-    .tabs-card {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 10px;
-      padding: 8px;
-      border: 1px solid #dbe4f0;
-      border-radius: 18px;
-      background: rgba(255, 255, 255, 0.86);
-      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
-      backdrop-filter: blur(10px);
-    }
-
-    .tab-button {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      min-height: 46px;
-      padding: 10px 14px;
-      border: 0;
-      border-radius: 14px;
-      color: #475569;
-      background: transparent;
-      font: inherit;
-      font-weight: 800;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-
-    .tab-button:hover {
-      color: #4338ca;
-      background: #eef2ff;
-    }
-
-    .tab-button.active {
-      color: white;
-      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-      box-shadow: 0 10px 24px rgba(99, 102, 241, 0.28);
-    }
-
-    /* Panel Cards */
-    .panel-card {
-      background: white;
-      border-radius: 20px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-      overflow: hidden;
-      transition: all 0.3s ease;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-    }
-
-    .panel-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
-    }
-
-    .card-header {
-      padding: 18px 24px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      display: flex;
-      align-items: center;
-      gap: 16px;
-    }
-
-    .card-icon {
-      font-size: 1.6rem;
-      line-height: 1;
-    }
-
-    .card-title {
-      font-size: 1.25rem;
-      font-weight: 700;
-      margin: 0 0 4px 0;
-    }
-
-    .card-subtitle {
-      font-size: 0.95rem;
-      opacity: 0.9;
-      margin: 0;
-      font-weight: 400;
-    }
-
-    .card-content {
-      padding: 22px;
-    }
-
-    /* Configuration Panel */
-    .config-panel {
-      height: fit-content;
-    }
-
-    .config-card {
-      position: sticky;
-      top: 20px;
-    }
-
-    /* Input Groups */
-    .input-group {
-      margin-bottom: 16px;
-    }
-
-    .input-label {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-weight: 600;
-      color: #374151;
-      margin-bottom: 8px;
-      font-size: 0.95rem;
-    }
-
-    .input-wrapper {
-      position: relative;
-    }
-
-    .styled-input {
-      width: 100%;
-      padding: 12px 14px;
-      border: 2px solid #e5e7eb;
-      border-radius: 12px;
-      font-size: 1rem;
-      transition: all 0.3s ease;
-      background: #fafbfc;
-    }
-
-    .styled-input:focus {
-      border-color: #667eea;
-      background: white;
-      box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
-      outline: none;
-    }
-
-    .styled-input::placeholder {
-      color: #9ca3af;
-    }
-
-    .native-date-input {
-      color-scheme: light;
-      min-height: 46px;
-    }
-
-    .number-input {
-      appearance: textfield;
-      min-height: 46px;
-      font-weight: 700;
-      color: #0f172a;
-    }
-
-    .number-input::-webkit-outer-spin-button,
-    .number-input::-webkit-inner-spin-button,
-    .table-input::-webkit-outer-spin-button,
-    .table-input::-webkit-inner-spin-button {
-      margin: 0;
-      appearance: none;
-    }
-
-    .native-date-input::-webkit-calendar-picker-indicator,
-    .range-date-input::-webkit-calendar-picker-indicator {
-      cursor: pointer;
-      opacity: 0.75;
-      transform: scale(1.15);
-    }
-
-    /* Buttons */
-    ::ng-deep .p-button .p-button-icon-left {
-      margin-right: 0.65rem;
-    }
-
-    ::ng-deep .p-button .p-button-icon-right {
-      margin-left: 0.65rem;
-    }
-
-    ::ng-deep .p-button .p-button-label {
-      line-height: 1;
-    }
-
-    .save-config-btn {
-      width: 100%;
-      padding: 14px;
-      font-weight: 600;
-      border-radius: 12px;
-      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-      border: none;
-      color: white;
-      font-size: 1rem;
-      transition: all 0.3s ease;
-    }
-
-    .save-config-btn:enabled:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4);
-    }
-
-    .save-config-btn:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-
-    /* Date range */
-    .range-shell {
-      display: flex;
-      flex-direction: column;
-      gap: 24px;
-    }
-
-    .range-picker-card {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) 52px minmax(0, 1fr);
-      align-items: center;
-      gap: 16px;
-      padding: 18px;
-      border: 1px solid #dbe4f0;
-      border-radius: 24px;
-      background: linear-gradient(135deg, #f8fbff 0%, #eef4ff 100%);
-    }
-
-    .range-field {
-      position: relative;
-      display: grid;
-      gap: 8px;
-      padding: 16px;
-      border: 1px solid #e2e8f0;
-      border-radius: 18px;
-      background: white;
-      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
-    }
-
-    .range-field label {
-      padding-left: 40px;
-      color: #64748b;
-      font-size: 0.78rem;
-      font-weight: 800;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }
-
-    .range-field-icon {
-      position: absolute;
-      top: 18px;
-      left: 18px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 30px;
-      height: 30px;
-      border-radius: 10px;
-      color: #4f46e5;
-      background: #eef2ff;
-    }
-
-    .range-date-input {
-      width: 100%;
-      height: 42px;
-      padding: 0;
-      border: 0;
-      outline: none;
-      color: #0f172a;
-      background: transparent;
-      font: inherit;
-      font-size: 1.18rem;
-      font-weight: 750;
-      color-scheme: light;
-    }
-
-    .range-field:focus-within {
-      border-color: #818cf8;
-      box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.12), 0 14px 28px rgba(15, 23, 42, 0.08);
-    }
-
-    .range-arrow {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 52px;
-      height: 52px;
-      border-radius: 999px;
-      color: white;
-      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-      box-shadow: 0 12px 24px rgba(99, 102, 241, 0.28);
-    }
-
-    .range-actions {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-    }
-
-    .quick-buttons {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    .quick-btn {
-      padding: 10px 16px;
-      border: 1px solid #dbe4f0;
-      border-radius: 999px;
-      color: #334155;
-      background: white;
-      font-size: 0.85rem;
-      font-weight: 750;
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
-
-    .quick-btn:hover {
-      border-color: #667eea;
-      color: #667eea;
-      background: #f8fafc;
-      transform: translateY(-1px);
-    }
-
-    .workday-toggle {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 12px 16px;
-      border-radius: 16px;
-      background: #fffbeb;
-      border: 1px solid #fde68a;
-    }
-
-    .workday-toggle label {
-      cursor: pointer;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .workday-toggle span {
-      font-weight: 600;
-      color: #92400e;
-      font-size: 0.95rem;
-      line-height: 1.2;
-    }
-
-    .workday-toggle small {
-      font-size: 0.8rem;
-      color: #a16207;
-      font-weight: 400;
-    }
-
-    ::ng-deep .workday-toggle .p-checkbox {
-      display: inline-flex;
-      position: relative;
-      flex: 0 0 auto;
-      width: 20px;
-      height: 20px;
-    }
-
-    ::ng-deep .workday-toggle .p-checkbox input,
-    ::ng-deep .workday-toggle .p-hidden-accessible,
-    ::ng-deep .workday-toggle .p-hidden-accessible input {
-      position: absolute !important;
-      width: 1px !important;
-      height: 1px !important;
-      padding: 0 !important;
-      margin: -1px !important;
-      overflow: hidden !important;
-      clip: rect(0, 0, 0, 0) !important;
-      white-space: nowrap !important;
-      border: 0 !important;
-      opacity: 0 !important;
-      pointer-events: none !important;
-    }
-
-    .range-footer {
-      display: flex;
-      justify-content: space-between;
-      gap: 16px;
-      align-items: center;
-    }
-
-    .range-preview {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-      padding: 12px 20px;
-      border-radius: 12px;
-      border: 1px solid #3b82f6;
-      color: #1e40af;
-      font-weight: 600;
-      font-size: 0.9rem;
-    }
-
-    .empty-preview {
-      background: #f8fafc;
-      border-color: #e2e8f0;
-    }
-
-    .empty-preview .preview-info,
-    .empty-preview {
-      color: #64748b;
-    }
-
-    .preview-info {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      color: #1e40af;
-      font-weight: 600;
-      font-size: 0.9rem;
-    }
-
-    .generate-entries-btn {
-      background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
-      border: none !important;
-      color: white !important;
-      padding: 14px 24px !important;
-      font-weight: 700 !important;
-      border-radius: 14px !important;
-      font-size: 1rem !important;
-      transition: all 0.3s ease !important;
-      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3) !important;
-      white-space: nowrap;
-    }
-
-    .generate-entries-btn:enabled:hover {
-      transform: translateY(-3px) !important;
-      box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4) !important;
-    }
-
-    .generate-entries-btn:disabled {
-      opacity: 0.6 !important;
-      cursor: not-allowed !important;
-      transform: none !important;
-      box-shadow: none !important;
-    }
-
-    /* Bulk Settings */
-    .bulk-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr auto;
-      gap: 20px;
-      align-items: end;
-    }
-
-    .apply-bulk-btn {
-      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-      border: none;
-      color: white;
-      padding: 14px 20px;
-      font-weight: 600;
-      border-radius: 12px;
-      transition: all 0.3s ease;
-      white-space: nowrap;
-    }
-
-    .apply-bulk-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 10px 25px rgba(245, 158, 11, 0.4);
-    }
-
-    /* Table Styles */
-    .table-wrapper {
-      border-radius: 16px;
-      overflow: hidden;
-      border: 1px solid #e5e7eb;
-      margin-bottom: 24px;
-      background: white;
-    }
-
-    .date-col {
-      width: 150px;
-      min-width: 150px;
-      max-width: 150px;
-    }
-
-    .hours-col {
-      width: 112px;
-      min-width: 112px;
-      max-width: 112px;
-      text-align: center;
-    }
-
-    .note-col {
-      min-width: 320px;
-    }
-
-    .status-col {
-      width: 126px;
-      min-width: 126px;
-      max-width: 126px;
-      text-align: center;
-    }
-
-    .date-cell {
-      padding: 16px !important;
-    }
-
-    .date-display {
-      font-weight: 600;
-      color: #374151;
-      font-size: 0.95rem;
-    }
-
-    .date-small {
-      font-size: 0.8rem;
-      color: #6b7280;
-      margin-top: 2px;
-    }
-
-    .table-input {
-      width: 76px;
-      height: 38px;
-      padding: 0 10px;
-      border: 1px solid #dbe4f0;
-      border-radius: 12px;
-      text-align: center;
-      font: inherit;
-      font-weight: 800;
-      color: #0f172a;
-      background: #f8fafc;
-      appearance: textfield;
-      transition: all 0.2s ease;
-    }
-
-    .table-input:focus {
-      border-color: #6366f1;
-      background: white;
-      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.14);
-      outline: none;
-    }
-
-    .table-input:hover {
-      border-color: #94a3b8;
-      background: white;
-    }
-
-    .note-input {
-      width: 100%;
-      padding: 10px 12px;
-      border: 1px solid #e5e7eb;
-      border-radius: 8px;
-      resize: vertical;
-      font-family: inherit;
-      min-height: 50px;
-    }
-
-    .note-input:focus {
-      border-color: #667eea;
-      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-      outline: none;
-    }
-
-    .status-tag {
-      font-weight: 600;
-      padding: 6px 12px;
-      border-radius: 20px;
-      font-size: 0.8rem;
-    }
-
-    /* Table Footer */
-    .table-footer {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 20px 0;
-      border-top: 1px solid #e5e7eb;
-    }
-
-    .summary-stats {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-    }
-
-    .stat-item {
-      text-align: center;
-    }
-
-    .stat-value {
-      display: block;
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: #374151;
-      line-height: 1.2;
-    }
-
-    .stat-label {
-      display: block;
-      font-size: 0.85rem;
-      color: #6b7280;
-      font-weight: 500;
-    }
-
-    .stat-divider {
-      width: 1px;
-      height: 40px;
-      background: #e5e7eb;
-    }
-
-    .action-buttons {
-      display: flex;
-      gap: 12px;
-    }
-
-    .clear-btn {
-      background: #6b7280;
-      border: none;
-      color: white;
-      padding: 12px 20px;
-      font-weight: 600;
-      border-radius: 10px;
-      transition: all 0.3s ease;
-    }
-
-    .clear-btn:enabled:hover {
-      background: #4b5563;
-      transform: translateY(-1px);
-    }
-
-    .submit-btn {
-      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-      border: none;
-      color: white;
-      padding: 12px 24px;
-      font-weight: 600;
-      border-radius: 10px;
-      transition: all 0.3s ease;
-    }
-
-    .submit-btn:enabled:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
-    }
-
-    .submit-btn:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-
-    .submit-summary {
-      display: grid;
-      grid-template-columns: 1fr 180px;
-      gap: 16px;
-      margin-bottom: 20px;
-    }
-
-    .submit-summary-item {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      padding: 16px;
-      border: 1px solid #e2e8f0;
-      border-radius: 14px;
-      background: #f8fafc;
-    }
-
-    .summary-label {
-      color: #64748b;
-      font-size: 0.75rem;
-      font-weight: 800;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }
-
-    .submit-timesheets-btn {
-      min-width: 240px;
-    }
-
-    .submit-result {
-      margin-top: 24px;
-    }
-
-    .detail-toolbar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      margin-bottom: 20px;
-    }
-
-    .month-picker-field {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 12px;
-      border: 1px solid #e2e8f0;
-      border-radius: 16px;
-      background: #f8fafc;
-    }
-
-    .month-nav-btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 42px;
-      height: 42px;
-      border: 1px solid #dbe4f0;
-      border-radius: 12px;
-      color: #475569;
-      background: white;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-
-    .month-nav-btn:hover {
-      color: white;
-      border-color: #6366f1;
-      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-      box-shadow: 0 8px 18px rgba(99, 102, 241, 0.24);
-    }
-
-    .month-picker-field label {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      color: #334155;
-      font-size: 0.85rem;
-      font-weight: 900;
-      white-space: nowrap;
-    }
-
-    .month-picker-field input {
-      width: 170px;
-      min-height: 42px;
-      padding: 10px 12px;
-      background: white;
-    }
-
-    .detail-total {
-      display: flex;
-      align-items: baseline;
-      gap: 8px;
-      color: #475569;
-    }
-
-    .detail-total strong {
-      color: #0f172a;
-      font-size: 1.5rem;
-      font-weight: 900;
-    }
-
-    .calendar-grid {
-      display: grid;
-      grid-template-columns: repeat(7, minmax(118px, 1fr));
-      gap: 8px;
-      overflow-x: auto;
-      padding-bottom: 8px;
-    }
-
-    .calendar-weekday {
-      padding: 10px 12px;
-      color: #64748b;
-      background: #f8fafc;
-      border-radius: 12px;
-      font-size: 0.78rem;
-      font-weight: 900;
-      letter-spacing: 0.08em;
-      text-align: center;
-      text-transform: uppercase;
-    }
-
-    .calendar-day {
-      min-height: 132px;
-      padding: 12px;
-      border: 1px solid #e2e8f0;
-      border-radius: 14px;
-      background: white;
-    }
-
-    .calendar-day.weekend {
-      background: #fff7ed;
-    }
-
-    .calendar-day.outside {
-      opacity: 0.45;
-    }
-
-    .calendar-day.has-entry {
-      border-color: #93c5fd;
-      background: #eff6ff;
-    }
-
-    .calendar-day.submitted {
-      border-color: #fbbf24;
-      background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
-    }
-
-    .calendar-day.approved {
-      border-color: #34d399;
-      background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
-    }
-
-    .calendar-day.holiday {
-      border-color: #fb7185;
-      background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%);
-    }
-
-    .holiday-banner {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 8px;
-      padding: 8px;
-      border: 1px solid #fb7185;
-      border-radius: 12px;
-      color: #9f1239;
-      background: rgba(255, 255, 255, 0.78);
-    }
-
-    .holiday-banner i {
-      margin-top: 2px;
-      color: #e11d48;
-    }
-
-    .holiday-banner div {
-      display: grid;
-      gap: 2px;
-      min-width: 0;
-    }
-
-    .holiday-banner strong {
-      font-size: 0.72rem;
-      font-weight: 900;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-    }
-
-    .holiday-banner span {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      font-size: 0.76rem;
-      font-weight: 800;
-    }
-
-    .calendar-day-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 8px;
-      color: #334155;
-      font-weight: 900;
-    }
-
-    .calendar-day-header small {
-      color: #94a3b8;
-      font-size: 0.72rem;
-      text-transform: uppercase;
-    }
-
-    .calendar-day-total {
-      display: inline-flex;
-      margin-bottom: 8px;
-      padding: 4px 8px;
-      border-radius: 999px;
-      color: #1d4ed8;
-      background: white;
-      font-size: 0.78rem;
-      font-weight: 900;
-    }
-
-    .calendar-status-row {
-      margin-bottom: 8px;
-    }
-
-    .calendar-status {
-      display: inline-flex;
-      padding: 3px 8px;
-      border-radius: 999px;
-      font-size: 0.68rem;
-      font-weight: 900;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-    }
-
-    .submitted-status {
-      color: #92400e;
-      background: #fde68a;
-    }
-
-    .approved-status {
-      color: #065f46;
-      background: #a7f3d0;
-    }
-
-    .calendar-entry-list {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .calendar-event-list {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      margin-bottom: 8px;
-    }
-
-    .calendar-event {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 6px 8px;
-      border-radius: 10px;
-      color: #475569;
-      background: rgba(255, 255, 255, 0.75);
-      font-size: 0.72rem;
-      font-weight: 800;
-    }
-
-    .calendar-event.holiday-event {
-      color: #be123c;
-      background: #ffe4e6;
-    }
-
-    .calendar-entry {
-      display: grid;
-      gap: 2px;
-      padding: 8px;
-      border-radius: 10px;
-      background: rgba(255, 255, 255, 0.82);
-      color: #334155;
-      font-size: 0.78rem;
-    }
-
-    .calendar-entry.entry-submitted {
-      border-left: 3px solid #f59e0b;
-    }
-
-    .calendar-entry.entry-approved {
-      border-left: 3px solid #10b981;
-    }
-
-    .calendar-entry strong {
-      color: #0f172a;
-    }
-
-    .calendar-entry em {
-      color: #64748b;
-      font-size: 0.68rem;
-      font-style: normal;
-      font-weight: 900;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-    }
-
-    .calendar-entry span {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .empty-calendar {
-      padding: 28px;
-      border: 1px dashed #cbd5e1;
-      border-radius: 16px;
-      color: #64748b;
-      background: #f8fafc;
-      text-align: center;
-      font-weight: 700;
-    }
-
-    /* Progress & Results */
-    .progress-section {
-      margin-bottom: 24px;
-    }
-
-    .progress-text {
-      font-weight: 500;
-      color: #374151;
-      margin-bottom: 12px;
-    }
-
-    .results-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 20px;
-      margin-bottom: 24px;
-    }
-
-    .result-card {
-      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-      padding: 24px;
-      border-radius: 16px;
-      text-align: center;
-      border: 1px solid #e5e7eb;
-      transition: all 0.3s ease;
-    }
-
-    .result-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-    }
-
-    .total-card {
-      border-left: 4px solid #3b82f6;
-    }
-
-    .success-card {
-      border-left: 4px solid #10b981;
-    }
-
-    .error-card {
-      border-left: 4px solid #ef4444;
-    }
-
-    .result-icon {
-      font-size: 2rem;
-      margin-bottom: 8px;
-    }
-
-    .result-number {
-      font-size: 2.5rem;
-      font-weight: 800;
-      margin-bottom: 4px;
-      color: #374151;
-    }
-
-    .result-label {
-      font-size: 0.9rem;
-      font-weight: 600;
-      color: #6b7280;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .errors-section {
-      border-top: 1px solid #e5e7eb;
-      padding-top: 24px;
-    }
-
-    .errors-title {
-      font-size: 1.2rem;
-      font-weight: 700;
-      color: #ef4444;
-      margin-bottom: 16px;
-    }
-
-    .errors-list {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    .error-item {
-      background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
-      padding: 16px;
-      border-radius: 12px;
-      border-left: 4px solid #ef4444;
-    }
-
-    .error-date {
-      font-weight: 600;
-      color: #374151;
-      margin-bottom: 4px;
-    }
-
-    .error-message {
-      color: #dc2626;
-      margin-bottom: 4px;
-    }
-
-    .error-status {
-      font-size: 0.85rem;
-      color: #6b7280;
-    }
-
-    /* PrimeNG Overrides */
-    ::ng-deep .p-button {
-      transition: all 0.3s ease;
-    }
-
-    ::ng-deep .p-button:enabled:hover {
-      transform: translateY(-1px);
-    }
-
-    ::ng-deep .p-inputtext {
-      transition: all 0.3s ease;
-    }
-
-    ::ng-deep .p-checkbox .p-checkbox-box {
-      border: 2px solid #d97706 !important;
-      border-radius: 6px !important;
-      width: 20px !important;
-      height: 20px !important;
-      transition: all 0.3s ease !important;
-    }
-
-    ::ng-deep .p-checkbox .p-checkbox-box.p-highlight {
-      background: #f59e0b !important;
-      border-color: #f59e0b !important;
-    }
-
-    ::ng-deep .p-checkbox .p-checkbox-box .p-checkbox-icon {
-      color: white !important;
-      font-size: 12px !important;
-    }
-
-    ::ng-deep .modern-table .p-datatable-wrapper {
-      max-height: 360px !important;
-      overflow-y: auto !important;
-      overflow-x: auto !important;
-      scrollbar-color: #94a3b8 #f1f5f9;
-      scrollbar-width: thin;
-    }
-
-    ::ng-deep .modern-table .p-datatable-wrapper::-webkit-scrollbar {
-      width: 10px;
-      height: 10px;
-    }
-
-    ::ng-deep .modern-table .p-datatable-wrapper::-webkit-scrollbar-track {
-      background: #f1f5f9;
-      border-radius: 999px;
-    }
-
-    ::ng-deep .modern-table .p-datatable-wrapper::-webkit-scrollbar-thumb {
-      background: linear-gradient(180deg, #94a3b8 0%, #64748b 100%);
-      border: 2px solid #f1f5f9;
-      border-radius: 999px;
-    }
-
-    ::ng-deep .modern-table .p-datatable-wrapper::-webkit-scrollbar-thumb:hover {
-      background: #475569;
-    }
-
-    ::ng-deep .modern-table table {
-      table-layout: fixed;
-      min-width: 820px;
-    }
-
-    ::ng-deep .modern-table .p-datatable-thead > tr > th,
-    ::ng-deep .modern-table .p-datatable-scrollable-header th {
-      position: sticky;
-      top: 0;
-      z-index: 2;
-      background: #f8fafc !important;
-      color: #334155;
-      font-weight: 800;
-      padding: 14px 16px;
-      border: 0;
-      border-bottom: 1px solid #e2e8f0;
-      font-size: 0.9rem;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      box-shadow: inset 0 -1px 0 #e2e8f0;
-    }
-
-    ::ng-deep .modern-table .p-datatable-tbody > tr > td {
-      padding: 14px 16px;
-      border-bottom: 1px solid #f3f4f6;
-      vertical-align: middle;
-      background: white;
-    }
-
-    ::ng-deep .modern-table .p-datatable-tbody > tr:hover {
-      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-    }
-
-    ::ng-deep .modern-progress .p-progressbar {
-      height: 12px;
-      border-radius: 6px;
-      background: #f3f4f6;
-      overflow: hidden;
-    }
-
-    ::ng-deep .modern-progress .p-progressbar-value {
-      background: linear-gradient(90deg, #10b981 0%, #059669 100%);
-      transition: width 0.5s ease;
-    }
-
-    /* Responsive Design */
-    @media (max-width: 768px) {
+      /* Hero Section */
       .hero-section {
-        padding: 40px 20px;
+        position: relative;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 28px 40px;
+        text-align: center;
+        color: white;
+        overflow: hidden;
+        flex: 0 0 auto;
       }
-      
+
+      .hero-content {
+        position: relative;
+        z-index: 2;
+      }
+
+      .hero-icon {
+        font-size: 2.5rem;
+        margin-bottom: 0.5rem;
+        display: block;
+        animation: bounce 2s infinite;
+      }
+
       .hero-title {
         font-size: 2.5rem;
+        font-weight: 800;
+        margin: 0 0 0.5rem 0;
+        text-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      }
+
+      .hero-subtitle {
+        font-size: 1rem;
+        opacity: 0.9;
+        margin: 0;
+        font-weight: 400;
+      }
+
+      .hero-decoration {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        pointer-events: none;
+      }
+
+      .decoration-circle {
+        position: absolute;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.1);
+        animation: float 6s ease-in-out infinite;
+      }
+
+      .circle-1 {
+        width: 200px;
+        height: 200px;
+        top: -100px;
+        left: -100px;
+        animation-delay: 0s;
+      }
+
+      .circle-2 {
+        width: 150px;
+        height: 150px;
+        top: 50%;
+        right: -75px;
+        animation-delay: 2s;
+      }
+
+      .circle-3 {
+        width: 100px;
+        height: 100px;
+        bottom: -50px;
+        left: 50%;
+        animation-delay: 4s;
+      }
+
+      @keyframes bounce {
+        0%,
+        20%,
+        53%,
+        80%,
+        100% {
+          transform: translateY(0);
+        }
+        40%,
+        43% {
+          transform: translateY(-15px);
+        }
+        70% {
+          transform: translateY(-10px);
+        }
+        90% {
+          transform: translateY(-4px);
+        }
+      }
+
+      @keyframes float {
+        0%,
+        100% {
+          transform: translateY(0px) rotate(0deg);
+        }
+        50% {
+          transform: translateY(-20px) rotate(180deg);
+        }
+      }
+
+      /* Main Content */
+      .main-content {
+        background: #f8fafc;
+        flex: 1 1 auto;
+        min-height: 0;
+        padding: 24px;
+      }
+
+      .content-grid {
+        display: grid;
+        grid-template-columns: 400px 1fr;
+        gap: 30px;
+        max-width: 1400px;
+        margin: 0 auto;
+        align-items: start;
+      }
+
+      @media (max-width: 1200px) {
+        .content-grid {
+          grid-template-columns: 1fr;
+          gap: 20px;
+        }
+        .main-content {
+          padding: 20px;
+        }
+      }
+
+      .main-panel {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
       }
 
       .tabs-card {
-        grid-template-columns: 1fr;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+        padding: 8px;
+        border: 1px solid #dbe4f0;
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.86);
+        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+        backdrop-filter: blur(10px);
       }
-      
+
+      .tab-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        min-height: 46px;
+        padding: 10px 14px;
+        border: 0;
+        border-radius: 14px;
+        color: #475569;
+        background: transparent;
+        font: inherit;
+        font-weight: 800;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .tab-button:hover {
+        color: #4338ca;
+        background: #eef2ff;
+      }
+
+      .tab-button.active {
+        color: white;
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+        box-shadow: 0 10px 24px rgba(99, 102, 241, 0.28);
+      }
+
+      /* Panel Cards */
+      .panel-card {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        transition: all 0.3s ease;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+      }
+
+      .panel-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+      }
+
+      .card-header {
+        padding: 18px 24px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+
+      .card-icon {
+        font-size: 1.6rem;
+        line-height: 1;
+      }
+
+      .card-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        margin: 0 0 4px 0;
+      }
+
+      .card-subtitle {
+        font-size: 0.95rem;
+        opacity: 0.9;
+        margin: 0;
+        font-weight: 400;
+      }
+
+      .card-content {
+        padding: 22px;
+      }
+
+      /* Configuration Panel */
+      .config-panel {
+        height: fit-content;
+      }
+
+      .config-card {
+        position: sticky;
+        top: 20px;
+      }
+
+      /* Input Groups */
+      .input-group {
+        margin-bottom: 16px;
+      }
+
+      .input-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 8px;
+        font-size: 0.95rem;
+      }
+
+      .input-wrapper {
+        position: relative;
+      }
+
+      .styled-input {
+        width: 100%;
+        padding: 12px 14px;
+        border: 2px solid #e5e7eb;
+        border-radius: 12px;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        background: #fafbfc;
+      }
+
+      .styled-input:focus {
+        border-color: #667eea;
+        background: white;
+        box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        outline: none;
+      }
+
+      .styled-input::placeholder {
+        color: #9ca3af;
+      }
+
+      .native-date-input {
+        color-scheme: light;
+        min-height: 46px;
+      }
+
+      .number-input {
+        appearance: textfield;
+        min-height: 46px;
+        font-weight: 700;
+        color: #0f172a;
+      }
+
+      .number-input::-webkit-outer-spin-button,
+      .number-input::-webkit-inner-spin-button,
+      .table-input::-webkit-outer-spin-button,
+      .table-input::-webkit-inner-spin-button {
+        margin: 0;
+        appearance: none;
+      }
+
+      .native-date-input::-webkit-calendar-picker-indicator,
+      .range-date-input::-webkit-calendar-picker-indicator {
+        cursor: pointer;
+        opacity: 0.75;
+        transform: scale(1.15);
+      }
+
+      /* Buttons */
+      ::ng-deep .p-button .p-button-icon-left {
+        margin-right: 0.65rem;
+      }
+
+      ::ng-deep .p-button .p-button-icon-right {
+        margin-left: 0.65rem;
+      }
+
+      ::ng-deep .p-button .p-button-label {
+        line-height: 1;
+      }
+
+      .save-config-btn {
+        width: 100%;
+        padding: 14px;
+        font-weight: 600;
+        border-radius: 12px;
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        border: none;
+        color: white;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+      }
+
+      .save-config-btn:enabled:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4);
+      }
+
+      .save-config-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      /* Date range */
+      .range-shell {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+      }
+
       .range-picker-card {
-        grid-template-columns: 1fr;
-        gap: 20px;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 52px minmax(0, 1fr);
+        align-items: center;
+        gap: 16px;
+        padding: 18px;
+        border: 1px solid #dbe4f0;
+        border-radius: 24px;
+        background: linear-gradient(135deg, #f8fbff 0%, #eef4ff 100%);
+      }
+
+      .range-field {
+        position: relative;
+        display: grid;
+        gap: 8px;
+        padding: 16px;
+        border: 1px solid #e2e8f0;
+        border-radius: 18px;
+        background: white;
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+      }
+
+      .range-field label {
+        padding-left: 40px;
+        color: #64748b;
+        font-size: 0.78rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .range-field-icon {
+        position: absolute;
+        top: 18px;
+        left: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 30px;
+        height: 30px;
+        border-radius: 10px;
+        color: #4f46e5;
+        background: #eef2ff;
+      }
+
+      .range-date-input {
+        width: 100%;
+        height: 42px;
+        padding: 0;
+        border: 0;
+        outline: none;
+        color: #0f172a;
+        background: transparent;
+        font: inherit;
+        font-size: 1.18rem;
+        font-weight: 750;
+        color-scheme: light;
+      }
+
+      .range-field:focus-within {
+        border-color: #818cf8;
+        box-shadow:
+          0 0 0 4px rgba(99, 102, 241, 0.12),
+          0 14px 28px rgba(15, 23, 42, 0.08);
       }
 
       .range-arrow {
-        width: 44px;
-        height: 44px;
-        margin: 0 auto;
-        transform: rotate(90deg);
-      }
-      
-      .range-actions,
-      .range-footer {
-        align-items: stretch;
-        flex-direction: column;
-      }
-      
-      .quick-buttons,
-      .workday-toggle {
+        display: flex;
+        align-items: center;
         justify-content: center;
-      }
-      
-      .bulk-grid {
-        grid-template-columns: 1fr;
-        gap: 16px;
-      }
-      
-      .results-grid {
-        grid-template-columns: 1fr;
+        width: 52px;
+        height: 52px;
+        border-radius: 999px;
+        color: white;
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+        box-shadow: 0 12px 24px rgba(99, 102, 241, 0.28);
       }
 
-      .submit-summary,
-      .detail-toolbar {
-        grid-template-columns: 1fr;
-        align-items: stretch;
+      .range-actions {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+      }
+
+      .quick-buttons {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .quick-btn {
+        padding: 10px 16px;
+        border: 1px solid #dbe4f0;
+        border-radius: 999px;
+        color: #334155;
+        background: white;
+        font-size: 0.85rem;
+        font-weight: 750;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      .quick-btn:hover {
+        border-color: #667eea;
+        color: #667eea;
+        background: #f8fafc;
+        transform: translateY(-1px);
+      }
+
+      .workday-toggle {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        border-radius: 16px;
+        background: #fffbeb;
+        border: 1px solid #fde68a;
+      }
+
+      .workday-toggle label {
+        cursor: pointer;
+        display: flex;
         flex-direction: column;
+      }
+
+      .workday-toggle span {
+        font-weight: 600;
+        color: #92400e;
+        font-size: 0.95rem;
+        line-height: 1.2;
+      }
+
+      .workday-toggle small {
+        font-size: 0.8rem;
+        color: #a16207;
+        font-weight: 400;
+      }
+
+      ::ng-deep .workday-toggle .p-checkbox {
+        display: inline-flex;
+        position: relative;
+        flex: 0 0 auto;
+        width: 20px;
+        height: 20px;
+      }
+
+      ::ng-deep .workday-toggle .p-checkbox input,
+      ::ng-deep .workday-toggle .p-hidden-accessible,
+      ::ng-deep .workday-toggle .p-hidden-accessible input {
+        position: absolute !important;
+        width: 1px !important;
+        height: 1px !important;
+        padding: 0 !important;
+        margin: -1px !important;
+        overflow: hidden !important;
+        clip: rect(0, 0, 0, 0) !important;
+        white-space: nowrap !important;
+        border: 0 !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+      }
+
+      .range-footer {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        align-items: center;
+      }
+
+      .range-preview {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+        padding: 12px 20px;
+        border-radius: 12px;
+        border: 1px solid #3b82f6;
+        color: #1e40af;
+        font-weight: 600;
+        font-size: 0.9rem;
+      }
+
+      .empty-preview {
+        background: #f8fafc;
+        border-color: #e2e8f0;
+      }
+
+      .empty-preview .preview-info,
+      .empty-preview {
+        color: #64748b;
+      }
+
+      .preview-info {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: #1e40af;
+        font-weight: 600;
+        font-size: 0.9rem;
+      }
+
+      .generate-entries-btn {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+        border: none !important;
+        color: white !important;
+        padding: 14px 24px !important;
+        font-weight: 700 !important;
+        border-radius: 14px !important;
+        font-size: 1rem !important;
+        transition: all 0.3s ease !important;
+        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3) !important;
+        white-space: nowrap;
+      }
+
+      .generate-entries-btn:enabled:hover {
+        transform: translateY(-3px) !important;
+        box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4) !important;
+      }
+
+      .generate-entries-btn:disabled {
+        opacity: 0.6 !important;
+        cursor: not-allowed !important;
+        transform: none !important;
+        box-shadow: none !important;
+      }
+
+      /* Bulk Settings */
+      .bulk-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr auto;
+        gap: 20px;
+        align-items: end;
+      }
+
+      .apply-bulk-btn {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        border: none;
+        color: white;
+        padding: 14px 20px;
+        font-weight: 600;
+        border-radius: 12px;
+        transition: all 0.3s ease;
+        white-space: nowrap;
+      }
+
+      .apply-bulk-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(245, 158, 11, 0.4);
+      }
+
+      /* Table Styles */
+      .table-wrapper {
+        border-radius: 16px;
+        overflow: hidden;
+        border: 1px solid #e5e7eb;
+        margin-bottom: 24px;
+        background: white;
+      }
+
+      .date-col {
+        width: 150px;
+        min-width: 150px;
+        max-width: 150px;
+      }
+
+      .hours-col {
+        width: 112px;
+        min-width: 112px;
+        max-width: 112px;
+        text-align: center;
+      }
+
+      .note-col {
+        min-width: 320px;
+      }
+
+      .status-col {
+        width: 126px;
+        min-width: 126px;
+        max-width: 126px;
+        text-align: center;
+      }
+
+      .date-cell {
+        padding: 16px !important;
+      }
+
+      .date-display {
+        font-weight: 600;
+        color: #374151;
+        font-size: 0.95rem;
+      }
+
+      .date-small {
+        font-size: 0.8rem;
+        color: #6b7280;
+        margin-top: 2px;
+      }
+
+      .table-input {
+        width: 76px;
+        height: 38px;
+        padding: 0 10px;
+        border: 1px solid #dbe4f0;
+        border-radius: 12px;
+        text-align: center;
+        font: inherit;
+        font-weight: 800;
+        color: #0f172a;
+        background: #f8fafc;
+        appearance: textfield;
+        transition: all 0.2s ease;
+      }
+
+      .table-input:focus {
+        border-color: #6366f1;
+        background: white;
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.14);
+        outline: none;
+      }
+
+      .table-input:hover {
+        border-color: #94a3b8;
+        background: white;
+      }
+
+      .note-input {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        resize: vertical;
+        font-family: inherit;
+        min-height: 50px;
+      }
+
+      .note-input:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        outline: none;
+      }
+
+      .status-tag {
+        font-weight: 600;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+      }
+
+      /* Table Footer */
+      .table-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px 0;
+        border-top: 1px solid #e5e7eb;
+      }
+
+      .summary-stats {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+
+      .stat-item {
+        text-align: center;
+      }
+
+      .stat-value {
+        display: block;
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #374151;
+        line-height: 1.2;
+      }
+
+      .stat-label {
+        display: block;
+        font-size: 0.85rem;
+        color: #6b7280;
+        font-weight: 500;
+      }
+
+      .stat-divider {
+        width: 1px;
+        height: 40px;
+        background: #e5e7eb;
+      }
+
+      .action-buttons {
+        display: flex;
+        gap: 12px;
+      }
+
+      .clear-btn {
+        background: #6b7280;
+        border: none;
+        color: white;
+        padding: 12px 20px;
+        font-weight: 600;
+        border-radius: 10px;
+        transition: all 0.3s ease;
+      }
+
+      .clear-btn:enabled:hover {
+        background: #4b5563;
+        transform: translateY(-1px);
+      }
+
+      .submit-btn {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        border: none;
+        color: white;
+        padding: 12px 24px;
+        font-weight: 600;
+        border-radius: 10px;
+        transition: all 0.3s ease;
+      }
+
+      .submit-btn:enabled:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
+      }
+
+      .submit-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      .submit-summary {
+        display: grid;
+        grid-template-columns: 1fr 180px;
+        gap: 16px;
+        margin-bottom: 20px;
+      }
+
+      .submit-summary-item {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        padding: 16px;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        background: #f8fafc;
+      }
+
+      .summary-label {
+        color: #64748b;
+        font-size: 0.75rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .submit-timesheets-btn {
+        min-width: 240px;
+      }
+
+      .submit-result {
+        margin-top: 24px;
+      }
+
+      .detail-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 20px;
       }
 
       .month-picker-field {
-        align-items: stretch;
-        display: grid;
-        grid-template-columns: 42px 1fr 42px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        background: #f8fafc;
       }
 
-      .month-picker-field input {
-        width: 100%;
-        grid-column: 1 / -1;
+      .month-nav-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 42px;
+        height: 42px;
+        border: 1px solid #dbe4f0;
+        border-radius: 12px;
+        color: #475569;
+        background: white;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .month-nav-btn:hover {
+        color: white;
+        border-color: #6366f1;
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+        box-shadow: 0 8px 18px rgba(99, 102, 241, 0.24);
       }
 
       .month-picker-field label {
-        justify-content: center;
-        grid-column: 1 / -1;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: #334155;
+        font-size: 0.85rem;
+        font-weight: 900;
+        white-space: nowrap;
       }
-      
-      .table-footer {
+
+      .month-picker-field input {
+        width: 170px;
+        min-height: 42px;
+        padding: 10px 12px;
+        background: white;
+      }
+
+      .detail-total {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        color: #475569;
+      }
+
+      .detail-total strong {
+        color: #0f172a;
+        font-size: 1.5rem;
+        font-weight: 900;
+      }
+
+      .calendar-grid {
+        display: grid;
+        grid-template-columns: repeat(7, minmax(118px, 1fr));
+        gap: 8px;
+        overflow-x: auto;
+        padding-bottom: 8px;
+      }
+
+      .calendar-weekday {
+        padding: 10px 12px;
+        color: #64748b;
+        background: #f8fafc;
+        border-radius: 12px;
+        font-size: 0.78rem;
+        font-weight: 900;
+        letter-spacing: 0.08em;
+        text-align: center;
+        text-transform: uppercase;
+      }
+
+      .calendar-day {
+        min-height: 132px;
+        padding: 12px;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        background: white;
+      }
+
+      .calendar-day.weekend {
+        background: #fff7ed;
+      }
+
+      .calendar-day.outside {
+        opacity: 0.45;
+      }
+
+      .calendar-day.has-entry {
+        border-color: #93c5fd;
+        background: #eff6ff;
+      }
+
+      .calendar-day.submitted {
+        border-color: #fbbf24;
+        background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+      }
+
+      .calendar-day.approved {
+        border-color: #34d399;
+        background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+      }
+
+      .calendar-day.holiday {
+        border-color: #fb7185;
+        background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%);
+      }
+
+      .holiday-banner {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 8px;
+        padding: 8px;
+        border: 1px solid #fb7185;
+        border-radius: 12px;
+        color: #9f1239;
+        background: rgba(255, 255, 255, 0.78);
+      }
+
+      .holiday-banner i {
+        margin-top: 2px;
+        color: #e11d48;
+      }
+
+      .holiday-banner div {
+        display: grid;
+        gap: 2px;
+        min-width: 0;
+      }
+
+      .holiday-banner strong {
+        font-size: 0.72rem;
+        font-weight: 900;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      .holiday-banner span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 0.76rem;
+        font-weight: 800;
+      }
+
+      .calendar-day-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        color: #334155;
+        font-weight: 900;
+      }
+
+      .calendar-day-header small {
+        color: #94a3b8;
+        font-size: 0.72rem;
+        text-transform: uppercase;
+      }
+
+      .calendar-day-total {
+        display: inline-flex;
+        margin-bottom: 8px;
+        padding: 4px 8px;
+        border-radius: 999px;
+        color: #1d4ed8;
+        background: white;
+        font-size: 0.78rem;
+        font-weight: 900;
+      }
+
+      .calendar-status-row {
+        margin-bottom: 8px;
+      }
+
+      .calendar-status {
+        display: inline-flex;
+        padding: 3px 8px;
+        border-radius: 999px;
+        font-size: 0.68rem;
+        font-weight: 900;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      .submitted-status {
+        color: #92400e;
+        background: #fde68a;
+      }
+
+      .approved-status {
+        color: #065f46;
+        background: #a7f3d0;
+      }
+
+      .calendar-entry-list {
+        display: flex;
         flex-direction: column;
+        gap: 6px;
+      }
+
+      .calendar-event-list {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-bottom: 8px;
+      }
+
+      .calendar-event {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 8px;
+        border-radius: 10px;
+        color: #475569;
+        background: rgba(255, 255, 255, 0.75);
+        font-size: 0.72rem;
+        font-weight: 800;
+      }
+
+      .calendar-event.holiday-event {
+        color: #be123c;
+        background: #ffe4e6;
+      }
+
+      .calendar-entry {
+        display: grid;
+        gap: 2px;
+        padding: 8px;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.82);
+        color: #334155;
+        font-size: 0.78rem;
+      }
+
+      .calendar-entry.entry-submitted {
+        border-left: 3px solid #f59e0b;
+      }
+
+      .calendar-entry.entry-approved {
+        border-left: 3px solid #10b981;
+      }
+
+      .calendar-entry strong {
+        color: #0f172a;
+      }
+
+      .calendar-entry em {
+        color: #64748b;
+        font-size: 0.68rem;
+        font-style: normal;
+        font-weight: 900;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      .calendar-entry span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .empty-calendar {
+        padding: 28px;
+        border: 1px dashed #cbd5e1;
+        border-radius: 16px;
+        color: #64748b;
+        background: #f8fafc;
+        text-align: center;
+        font-weight: 700;
+      }
+
+      /* Progress & Results */
+      .progress-section {
+        margin-bottom: 24px;
+      }
+
+      .progress-text {
+        font-weight: 500;
+        color: #374151;
+        margin-bottom: 12px;
+      }
+
+      .results-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
         gap: 20px;
-        align-items: stretch;
+        margin-bottom: 24px;
       }
-      
-      .action-buttons {
-        justify-content: stretch;
+
+      .result-card {
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        padding: 24px;
+        border-radius: 16px;
+        text-align: center;
+        border: 1px solid #e5e7eb;
+        transition: all 0.3s ease;
       }
-      
-      .action-buttons button {
-        flex: 1;
+
+      .result-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
       }
-      
-      .summary-stats {
-        justify-content: space-around;
+
+      .total-card {
+        border-left: 4px solid #3b82f6;
       }
-    }
-  `]
+
+      .success-card {
+        border-left: 4px solid #10b981;
+      }
+
+      .error-card {
+        border-left: 4px solid #ef4444;
+      }
+
+      .result-icon {
+        font-size: 2rem;
+        margin-bottom: 8px;
+      }
+
+      .result-number {
+        font-size: 2.5rem;
+        font-weight: 800;
+        margin-bottom: 4px;
+        color: #374151;
+      }
+
+      .result-label {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .errors-section {
+        border-top: 1px solid #e5e7eb;
+        padding-top: 24px;
+      }
+
+      .errors-title {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: #ef4444;
+        margin-bottom: 16px;
+      }
+
+      .errors-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .error-item {
+        background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+        padding: 16px;
+        border-radius: 12px;
+        border-left: 4px solid #ef4444;
+      }
+
+      .error-date {
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 4px;
+      }
+
+      .error-message {
+        color: #dc2626;
+        margin-bottom: 4px;
+      }
+
+      .error-status {
+        font-size: 0.85rem;
+        color: #6b7280;
+      }
+
+      /* PrimeNG Overrides */
+      ::ng-deep .p-button {
+        transition: all 0.3s ease;
+      }
+
+      ::ng-deep .p-button:enabled:hover {
+        transform: translateY(-1px);
+      }
+
+      ::ng-deep .p-inputtext {
+        transition: all 0.3s ease;
+      }
+
+      ::ng-deep .p-checkbox .p-checkbox-box {
+        border: 2px solid #d97706 !important;
+        border-radius: 6px !important;
+        width: 20px !important;
+        height: 20px !important;
+        transition: all 0.3s ease !important;
+      }
+
+      ::ng-deep .p-checkbox .p-checkbox-box.p-highlight {
+        background: #f59e0b !important;
+        border-color: #f59e0b !important;
+      }
+
+      ::ng-deep .p-checkbox .p-checkbox-box .p-checkbox-icon {
+        color: white !important;
+        font-size: 12px !important;
+      }
+
+      ::ng-deep .modern-table .p-datatable-wrapper {
+        max-height: 360px !important;
+        overflow-y: auto !important;
+        overflow-x: auto !important;
+        scrollbar-color: #94a3b8 #f1f5f9;
+        scrollbar-width: thin;
+      }
+
+      ::ng-deep .modern-table .p-datatable-wrapper::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+      }
+
+      ::ng-deep .modern-table .p-datatable-wrapper::-webkit-scrollbar-track {
+        background: #f1f5f9;
+        border-radius: 999px;
+      }
+
+      ::ng-deep .modern-table .p-datatable-wrapper::-webkit-scrollbar-thumb {
+        background: linear-gradient(180deg, #94a3b8 0%, #64748b 100%);
+        border: 2px solid #f1f5f9;
+        border-radius: 999px;
+      }
+
+      ::ng-deep .modern-table .p-datatable-wrapper::-webkit-scrollbar-thumb:hover {
+        background: #475569;
+      }
+
+      ::ng-deep .modern-table table {
+        table-layout: fixed;
+        min-width: 820px;
+      }
+
+      ::ng-deep .modern-table .p-datatable-thead > tr > th,
+      ::ng-deep .modern-table .p-datatable-scrollable-header th {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        background: #f8fafc !important;
+        color: #334155;
+        font-weight: 800;
+        padding: 14px 16px;
+        border: 0;
+        border-bottom: 1px solid #e2e8f0;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        box-shadow: inset 0 -1px 0 #e2e8f0;
+      }
+
+      ::ng-deep .modern-table .p-datatable-tbody > tr > td {
+        padding: 14px 16px;
+        border-bottom: 1px solid #f3f4f6;
+        vertical-align: middle;
+        background: white;
+      }
+
+      ::ng-deep .modern-table .p-datatable-tbody > tr:hover {
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+      }
+
+      ::ng-deep .modern-progress .p-progressbar {
+        height: 12px;
+        border-radius: 6px;
+        background: #f3f4f6;
+        overflow: hidden;
+      }
+
+      ::ng-deep .modern-progress .p-progressbar-value {
+        background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+        transition: width 0.5s ease;
+      }
+
+      /* Responsive Design */
+      @media (max-width: 768px) {
+        .hero-section {
+          padding: 40px 20px;
+        }
+
+        .hero-title {
+          font-size: 2.5rem;
+        }
+
+        .tabs-card {
+          grid-template-columns: 1fr;
+        }
+
+        .range-picker-card {
+          grid-template-columns: 1fr;
+          gap: 20px;
+        }
+
+        .range-arrow {
+          width: 44px;
+          height: 44px;
+          margin: 0 auto;
+          transform: rotate(90deg);
+        }
+
+        .range-actions,
+        .range-footer {
+          align-items: stretch;
+          flex-direction: column;
+        }
+
+        .quick-buttons,
+        .workday-toggle {
+          justify-content: center;
+        }
+
+        .bulk-grid {
+          grid-template-columns: 1fr;
+          gap: 16px;
+        }
+
+        .results-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .submit-summary,
+        .detail-toolbar {
+          grid-template-columns: 1fr;
+          align-items: stretch;
+          flex-direction: column;
+        }
+
+        .month-picker-field {
+          align-items: stretch;
+          display: grid;
+          grid-template-columns: 42px 1fr 42px;
+        }
+
+        .month-picker-field input {
+          width: 100%;
+          grid-column: 1 / -1;
+        }
+
+        .month-picker-field label {
+          justify-content: center;
+          grid-column: 1 / -1;
+        }
+
+        .table-footer {
+          flex-direction: column;
+          gap: 20px;
+          align-items: stretch;
+        }
+
+        .action-buttons {
+          justify-content: stretch;
+        }
+
+        .action-buttons button {
+          flex: 1;
+        }
+
+        .summary-stats {
+          justify-content: space-around;
+        }
+      }
+    `,
+  ],
 })
 export class MyTimesheetComponent implements OnInit, OnDestroy {
   // Configuration
@@ -2133,7 +2176,7 @@ export class MyTimesheetComponent implements OnInit, OnDestroy {
     personId: '',
     serviceId: '',
     calendarIntegrationId: '98330',
-    clientDate: ''
+    clientDate: '',
   };
 
   // Date range
@@ -2150,12 +2193,14 @@ export class MyTimesheetComponent implements OnInit, OnDestroy {
   bulkNote: string = '';
 
   // Date entries with display fields
-  dateEntries: Array<TimesheetEntry & {
-    hours: number;
-    billableHours: number;
-    submitted?: boolean;
-    error?: string;
-  }> = [];
+  dateEntries: Array<
+    TimesheetEntry & {
+      hours: number;
+      billableHours: number;
+      submitted?: boolean;
+      error?: string;
+    }
+  > = [];
 
   // Submission state
   submitting: boolean = false;
@@ -2187,15 +2232,15 @@ export class MyTimesheetComponent implements OnInit, OnDestroy {
     this.enableGlobalScroll();
     this.loadSavedConfig();
     this.clientDate = this.toDateInputValue(new Date());
-    
+
     // Set default date range to current week business days
     const today = new Date();
     const startOfWeek = new Date(today);
     startOfWeek.setDate(today.getDate() - today.getDay() + 1); // Monday
-    
+
     const endOfWeek = new Date(today);
     endOfWeek.setDate(today.getDate() - today.getDay() + 5); // Friday
-    
+
     this.startDate = this.toDateInputValue(startOfWeek);
     this.endDate = this.toDateInputValue(endOfWeek);
     this.detailMonth = this.toMonthInputValue(today);
@@ -2206,8 +2251,12 @@ export class MyTimesheetComponent implements OnInit, OnDestroy {
   }
 
   isConfigValid(): boolean {
-    return !!(this.config.authToken && this.config.organizationId && 
-              this.config.personId && this.config.serviceId);
+    return !!(
+      this.config.authToken &&
+      this.config.organizationId &&
+      this.config.personId &&
+      this.config.serviceId
+    );
   }
 
   saveConfig() {
@@ -2217,7 +2266,7 @@ export class MyTimesheetComponent implements OnInit, OnDestroy {
       this.messageService.add({
         severity: 'success',
         summary: 'Configuration Saved',
-        detail: 'Your configuration has been saved locally'
+        detail: 'Your configuration has been saved locally',
       });
     }
   }
@@ -2235,7 +2284,9 @@ export class MyTimesheetComponent implements OnInit, OnDestroy {
   }
 
   changeDetailMonth(offset: number): void {
-    const [year, month] = (this.detailMonth || this.toMonthInputValue(new Date())).split('-').map(Number);
+    const [year, month] = (this.detailMonth || this.toMonthInputValue(new Date()))
+      .split('-')
+      .map(Number);
     const nextMonth = new Date(year, month - 1 + offset, 1);
     this.detailMonth = this.toMonthInputValue(nextMonth);
     this.loadTimesheetDetails();
@@ -2255,7 +2306,8 @@ export class MyTimesheetComponent implements OnInit, OnDestroy {
         this.config = {
           ...this.config,
           ...savedConfig,
-          calendarIntegrationId: savedConfig.calendarIntegrationId || this.config.calendarIntegrationId || '98330'
+          calendarIntegrationId:
+            savedConfig.calendarIntegrationId || this.config.calendarIntegrationId || '98330',
         };
         if (this.config.clientDate) {
           this.clientDate = this.config.clientDate;
@@ -2271,7 +2323,7 @@ export class MyTimesheetComponent implements OnInit, OnDestroy {
       this.messageService.add({
         severity: 'warn',
         summary: 'Missing Dates',
-        detail: 'Please select both start and end dates'
+        detail: 'Please select both start and end dates',
       });
       return;
     }
@@ -2283,30 +2335,30 @@ export class MyTimesheetComponent implements OnInit, OnDestroy {
       this.messageService.add({
         severity: 'error',
         summary: 'Invalid Range',
-        detail: 'Start date must be before end date'
+        detail: 'Start date must be before end date',
       });
       return;
     }
 
-    const dates = this.businessDaysOnly 
+    const dates = this.businessDaysOnly
       ? this.timesheetService.getBusinessDays(startDate, endDate)
       : this.timesheetService.generateDateRange(startDate, endDate);
     const holidayDates = await this.loadHolidayDatesForRange(this.startDate, this.endDate);
     const workingDates = this.timesheetService.filterOutDates(dates, holidayDates);
 
-    this.dateEntries = workingDates.map(date => ({
+    this.dateEntries = workingDates.map((date) => ({
       date,
       time: 480, // 8 hours in minutes
       billableTime: 480,
       note: '',
       hours: 8,
-      billableHours: 8
+      billableHours: 8,
     }));
 
     this.messageService.add({
       severity: 'info',
       summary: 'Entries Generated',
-      detail: `Generated ${workingDates.length} entries${holidayDates.size ? `, skipped ${holidayDates.size} Vietnam holiday date(s)` : ''}`
+      detail: `Generated ${workingDates.length} entries${holidayDates.size ? `, skipped ${holidayDates.size} Vietnam holiday date(s)` : ''}`,
     });
   }
 
@@ -2322,7 +2374,7 @@ export class MyTimesheetComponent implements OnInit, OnDestroy {
     this.messageService.add({
       severity: 'success',
       summary: 'Bulk Applied',
-      detail: 'Settings applied to all entries'
+      detail: 'Settings applied to all entries',
     });
   }
 
@@ -2343,7 +2395,9 @@ export class MyTimesheetComponent implements OnInit, OnDestroy {
     return 'Empty';
   }
 
-  getEntryStatusSeverity(entry: any): "danger" | "warning" | "success" | "info" | "secondary" | "contrast" | undefined {
+  getEntryStatusSeverity(
+    entry: any
+  ): 'danger' | 'warning' | 'success' | 'info' | 'secondary' | 'contrast' | undefined {
     if (entry.submitted) return 'success';
     if (entry.error) return 'danger';
     if (entry.hours > 0) return 'info';
@@ -2359,10 +2413,12 @@ export class MyTimesheetComponent implements OnInit, OnDestroy {
   }
 
   canSubmit(): boolean {
-    return this.isConfigValid() && 
-           this.dateEntries.length > 0 && 
-           this.dateEntries.some(entry => entry.hours > 0) &&
-           !this.submitting;
+    return (
+      this.isConfigValid() &&
+      this.dateEntries.length > 0 &&
+      this.dateEntries.some((entry) => entry.hours > 0) &&
+      !this.submitting
+    );
   }
 
   canSubmitTimesheets(): boolean {
@@ -2382,12 +2438,12 @@ export class MyTimesheetComponent implements OnInit, OnDestroy {
 
     // Filter entries with hours > 0
     const validEntries = this.dateEntries
-      .filter(entry => entry.hours > 0)
-      .map(entry => ({
+      .filter((entry) => entry.hours > 0)
+      .map((entry) => ({
         date: entry.date,
         time: entry.time,
         billableTime: entry.billableTime,
-        note: entry.note
+        note: entry.note,
       }));
 
     try {
@@ -2400,10 +2456,10 @@ export class MyTimesheetComponent implements OnInit, OnDestroy {
           this.submissionProgress = 100;
 
           // Update entry statuses
-          this.dateEntries.forEach(entry => {
-            const resultEntry = result.results.find(r => r.date === entry.date);
-            const errorEntry = result.errors.find(e => e.date === entry.date);
-            
+          this.dateEntries.forEach((entry) => {
+            const resultEntry = result.results.find((r) => r.date === entry.date);
+            const errorEntry = result.errors.find((e) => e.date === entry.date);
+
             if (resultEntry?.success) {
               entry.submitted = true;
               entry.error = undefined;
@@ -2416,7 +2472,7 @@ export class MyTimesheetComponent implements OnInit, OnDestroy {
           this.messageService.add({
             severity: result.success ? 'success' : 'warn',
             summary: 'Submission Complete',
-            detail: `${result.summary.successful}/${result.summary.total} entries submitted successfully`
+            detail: `${result.summary.successful}/${result.summary.total} entries submitted successfully`,
           });
 
           this.submitting = false;
@@ -2426,17 +2482,17 @@ export class MyTimesheetComponent implements OnInit, OnDestroy {
           this.messageService.add({
             severity: 'error',
             summary: 'Submission Failed',
-            detail: error.message || 'An unexpected error occurred'
+            detail: error.message || 'An unexpected error occurred',
           });
           this.submitting = false;
-        }
+        },
       });
     } catch (error) {
       console.error('Submission error:', error);
       this.messageService.add({
         severity: 'error',
         summary: 'Submission Failed',
-        detail: 'An unexpected error occurred'
+        detail: 'An unexpected error occurred',
       });
       this.submitting = false;
     }
@@ -2448,7 +2504,7 @@ export class MyTimesheetComponent implements OnInit, OnDestroy {
     this.messageService.add({
       severity: 'info',
       summary: 'Cleared',
-      detail: 'All entries have been cleared'
+      detail: 'All entries have been cleared',
     });
   }
 
@@ -2469,7 +2525,7 @@ export class MyTimesheetComponent implements OnInit, OnDestroy {
       this.messageService.add({
         severity: 'warn',
         summary: 'No Dates',
-        detail: 'No dates available for selected range'
+        detail: 'No dates available for selected range',
       });
       return;
     }
@@ -2483,7 +2539,7 @@ export class MyTimesheetComponent implements OnInit, OnDestroy {
         this.messageService.add({
           severity: result.success ? 'success' : 'warn',
           summary: 'Timesheet Submit Complete',
-          detail: `${result.summary.successful}/${result.summary.total} dates submitted`
+          detail: `${result.summary.successful}/${result.summary.total} dates submitted`,
         });
       },
       error: (error) => {
@@ -2491,9 +2547,9 @@ export class MyTimesheetComponent implements OnInit, OnDestroy {
         this.messageService.add({
           severity: 'error',
           summary: 'Timesheet Submit Failed',
-          detail: error instanceof Error ? error.message : 'Unable to submit timesheets'
+          detail: error instanceof Error ? error.message : 'Unable to submit timesheets',
         });
-      }
+      },
     });
   }
 
@@ -2513,7 +2569,7 @@ export class MyTimesheetComponent implements OnInit, OnDestroy {
 
     forkJoin({
       timeEntries: this.timesheetService.listTimeEntries(this.config, startDate, endDate),
-      calendarEvents: this.timesheetService.listCalendarEvents(this.config, startDate, endDate)
+      calendarEvents: this.timesheetService.listCalendarEvents(this.config, startDate, endDate),
     }).subscribe({
       next: ({ timeEntries, calendarEvents }) => {
         try {
@@ -2529,7 +2585,7 @@ export class MyTimesheetComponent implements OnInit, OnDestroy {
           this.messageService.add({
             severity: 'error',
             summary: 'Render Failed',
-            detail: error instanceof Error ? error.message : 'Unable to render timesheet calendar'
+            detail: error instanceof Error ? error.message : 'Unable to render timesheet calendar',
           });
         } finally {
           this.detailLoading = false;
@@ -2542,10 +2598,10 @@ export class MyTimesheetComponent implements OnInit, OnDestroy {
         this.messageService.add({
           severity: 'error',
           summary: 'Load Failed',
-          detail: error instanceof Error ? error.message : 'Unable to load timesheet detail'
+          detail: error instanceof Error ? error.message : 'Unable to load timesheet detail',
         });
         this.cdr.detectChanges();
-      }
+      },
     });
   }
 
@@ -2565,7 +2621,7 @@ export class MyTimesheetComponent implements OnInit, OnDestroy {
     const [year, month] = this.detailMonth.split('-').map(Number);
     return new Date(year, month - 1, 1).toLocaleDateString(undefined, {
       month: 'long',
-      year: 'numeric'
+      year: 'numeric',
     });
   }
 
@@ -2592,10 +2648,10 @@ export class MyTimesheetComponent implements OnInit, OnDestroy {
     const day = startOfWeek.getDay();
     const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1); // Monday
     startOfWeek.setDate(diff);
-    
+
     const endOfWeek = new Date(startOfWeek);
     endOfWeek.setDate(startOfWeek.getDate() + 4); // Friday
-    
+
     this.startDate = this.toDateInputValue(startOfWeek);
     this.endDate = this.toDateInputValue(endOfWeek);
   }
@@ -2606,10 +2662,10 @@ export class MyTimesheetComponent implements OnInit, OnDestroy {
     const day = lastWeekStart.getDay();
     const diff = lastWeekStart.getDate() - day - 6; // Last Monday
     lastWeekStart.setDate(diff);
-    
+
     const lastWeekEnd = new Date(lastWeekStart);
     lastWeekEnd.setDate(lastWeekStart.getDate() + 4); // Last Friday
-    
+
     this.startDate = this.toDateInputValue(lastWeekStart);
     this.endDate = this.toDateInputValue(lastWeekEnd);
   }
@@ -2618,7 +2674,7 @@ export class MyTimesheetComponent implements OnInit, OnDestroy {
     const today = new Date();
     const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
     const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-    
+
     this.startDate = this.toDateInputValue(startOfMonth);
     this.endDate = this.toDateInputValue(endOfMonth);
   }
@@ -2628,11 +2684,11 @@ export class MyTimesheetComponent implements OnInit, OnDestroy {
 
     const startDate = this.parseDateInput(this.startDate);
     const endDate = this.parseDateInput(this.endDate);
-    
-    const dates = this.businessDaysOnly 
+
+    const dates = this.businessDaysOnly
       ? this.timesheetService.getBusinessDays(startDate, endDate)
       : this.timesheetService.generateDateRange(startDate, endDate);
-    
+
     const dayType = this.businessDaysOnly ? 'business days' : 'days';
     return `${dates.length} ${dayType} selected (${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()})`;
   }
@@ -2664,7 +2720,7 @@ export class MyTimesheetComponent implements OnInit, OnDestroy {
       this.messageService.add({
         severity: 'warn',
         summary: 'Holiday Load Failed',
-        detail: error instanceof Error ? error.message : 'Unable to load Vietnam holidays'
+        detail: error instanceof Error ? error.message : 'Unable to load Vietnam holidays',
       });
       return new Set<string>();
     }
@@ -2676,7 +2732,9 @@ export class MyTimesheetComponent implements OnInit, OnDestroy {
     events
       .filter((event) => this.timesheetService.isVietnamHolidayEvent(event))
       .forEach((event) => {
-        this.timesheetService.getCalendarEventDates(event).forEach((date) => holidayDates.add(date));
+        this.timesheetService
+          .getCalendarEventDates(event)
+          .forEach((date) => holidayDates.add(date));
       });
 
     return holidayDates;
@@ -2724,9 +2782,12 @@ export class MyTimesheetComponent implements OnInit, OnDestroy {
         isApproved,
         isHoliday: dayEvents.some((event) => this.timesheetService.isVietnamHolidayEvent(event)),
         totalMinutes: dayEntries.reduce((total, entry) => total + (entry.attributes.time || 0), 0),
-        billableMinutes: dayEntries.reduce((total, entry) => total + (entry.attributes.billable_time || 0), 0),
+        billableMinutes: dayEntries.reduce(
+          (total, entry) => total + (entry.attributes.billable_time || 0),
+          0
+        ),
         entries: dayEntries,
-        events: dayEvents
+        events: dayEvents,
       });
 
       current.setDate(current.getDate() + 1);
@@ -2741,7 +2802,7 @@ export class MyTimesheetComponent implements OnInit, OnDestroy {
 
     return {
       startDate: this.toDateInputValue(start),
-      endDate: this.toDateInputValue(end)
+      endDate: this.toDateInputValue(end),
     };
   }
 

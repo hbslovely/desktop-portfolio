@@ -9,7 +9,7 @@ import {
   isOnOwnSide,
   findKing,
   cloneBoard,
-  setPieceAt
+  setPieceAt,
 } from '../models/board.model';
 import { PieceType, PieceColor, Piece } from '../models/piece.model';
 import { Move, createMove } from '../models/move.model';
@@ -53,7 +53,7 @@ export function generatePieceMoves(
 
   if (checkSafety) {
     // Lọc các nước đi không an toàn (để Tướng bị chiếu)
-    moves = moves.filter(move => !wouldBeInCheck(board, move, piece.color));
+    moves = moves.filter((move) => !wouldBeInCheck(board, move, piece.color));
   }
 
   return moves;
@@ -64,7 +64,12 @@ export function generatePieceMoves(
  */
 function generateKingMoves(board: Board, pos: Position, piece: Piece): Move[] {
   const moves: Move[] = [];
-  const directions = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+  const directions = [
+    [-1, 0],
+    [1, 0],
+    [0, -1],
+    [0, 1],
+  ];
 
   for (const [dr, dc] of directions) {
     const newPos = { row: pos.row + dr, col: pos.col + dc };
@@ -81,7 +86,12 @@ function generateKingMoves(board: Board, pos: Position, piece: Piece): Move[] {
  */
 function generateAdvisorMoves(board: Board, pos: Position, piece: Piece): Move[] {
   const moves: Move[] = [];
-  const directions = [[-1, -1], [-1, 1], [1, -1], [1, 1]];
+  const directions = [
+    [-1, -1],
+    [-1, 1],
+    [1, -1],
+    [1, 1],
+  ];
 
   for (const [dr, dc] of directions) {
     const newPos = { row: pos.row + dr, col: pos.col + dc };
@@ -98,8 +108,18 @@ function generateAdvisorMoves(board: Board, pos: Position, piece: Piece): Move[]
  */
 function generateElephantMoves(board: Board, pos: Position, piece: Piece): Move[] {
   const moves: Move[] = [];
-  const directions = [[-2, -2], [-2, 2], [2, -2], [2, 2]];
-  const blocking = [[-1, -1], [-1, 1], [1, -1], [1, 1]];
+  const directions = [
+    [-2, -2],
+    [-2, 2],
+    [2, -2],
+    [2, 2],
+  ];
+  const blocking = [
+    [-1, -1],
+    [-1, 1],
+    [1, -1],
+    [1, 1],
+  ];
 
   for (let i = 0; i < 4; i++) {
     const blockPos = { row: pos.row + blocking[i][0], col: pos.col + blocking[i][1] };
@@ -123,12 +143,24 @@ function generateElephantMoves(board: Board, pos: Position, piece: Piece): Move[
 function generateHorseMoves(board: Board, pos: Position, piece: Piece): Move[] {
   const moves: Move[] = [];
   const directions = [
-    [-2, -1], [-2, 1], [-1, -2], [-1, 2],
-    [1, -2], [1, 2], [2, -1], [2, 1]
+    [-2, -1],
+    [-2, 1],
+    [-1, -2],
+    [-1, 2],
+    [1, -2],
+    [1, 2],
+    [2, -1],
+    [2, 1],
   ];
   const blocking = [
-    [-1, 0], [-1, 0], [0, -1], [0, 1],
-    [0, -1], [0, 1], [1, 0], [1, 0]
+    [-1, 0],
+    [-1, 0],
+    [0, -1],
+    [0, 1],
+    [0, -1],
+    [0, 1],
+    [1, 0],
+    [1, 0],
   ];
 
   for (let i = 0; i < 8; i++) {
@@ -149,7 +181,12 @@ function generateHorseMoves(board: Board, pos: Position, piece: Piece): Move[] {
  */
 function generateRookMoves(board: Board, pos: Position, piece: Piece): Move[] {
   const moves: Move[] = [];
-  const directions = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+  const directions = [
+    [-1, 0],
+    [1, 0],
+    [0, -1],
+    [0, 1],
+  ];
 
   for (const [dr, dc] of directions) {
     let newRow = pos.row + dr;
@@ -180,7 +217,12 @@ function generateRookMoves(board: Board, pos: Position, piece: Piece): Move[] {
  */
 function generateCannonMoves(board: Board, pos: Position, piece: Piece): Move[] {
   const moves: Move[] = [];
-  const directions = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+  const directions = [
+    [-1, 0],
+    [1, 0],
+    [0, -1],
+    [0, 1],
+  ];
 
   for (const [dr, dc] of directions) {
     let newRow = pos.row + dr;

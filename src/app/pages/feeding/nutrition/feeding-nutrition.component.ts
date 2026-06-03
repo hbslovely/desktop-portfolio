@@ -1,10 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  input,
-  output,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   computeNutritionPace,
@@ -20,9 +14,7 @@ export interface NutritionTodayStats {
   typicalFeedMl: number;
 }
 
-function nutritionPaceLabelFromStatus(
-  status: NutritionPaceInfo['paceStatus']
-): string {
+function nutritionPaceLabelFromStatus(status: NutritionPaceInfo['paceStatus']): string {
   switch (status) {
     case 'ahead':
       return 'Nhanh hơn mức trung bình hiện tại';
@@ -77,16 +69,10 @@ export class FeedingNutritionComponent {
     return evaluateNutrition(target, today.total, today.count);
   });
 
-  nutritionPace = computed<
-    (NutritionPaceInfo & { paceLabelVi: string }) | null
-  >(() => {
+  nutritionPace = computed<(NutritionPaceInfo & { paceLabelVi: string }) | null>(() => {
     const target = this.nutritionTarget();
     if (!target) return null;
-    const p = computeNutritionPace(
-      target,
-      this.todayStats().total,
-      this.now()
-    );
+    const p = computeNutritionPace(target, this.todayStats().total, this.now());
     return { ...p, paceLabelVi: nutritionPaceLabelFromStatus(p.paceStatus) };
   });
 
@@ -184,12 +170,8 @@ export class FeedingNutritionComponent {
     const max = ev.target.dailyMlMax;
     const scaleMax = Math.max(max * 1.2, ev.actualMl + 10);
     const roundedMax = Math.round(scaleMax);
-    const pointerPct = Math.max(
-      0,
-      Math.min(100, (ev.actualMl / roundedMax) * 100)
-    );
-    const pointerVisPct =
-      pointerPct < 5 ? 5 : pointerPct > 95 ? 95 : pointerPct;
+    const pointerPct = Math.max(0, Math.min(100, (ev.actualMl / roundedMax) * 100));
+    const pointerVisPct = pointerPct < 5 ? 5 : pointerPct > 95 ? 95 : pointerPct;
     return {
       minLabel: min,
       maxLabel: max,
@@ -206,14 +188,9 @@ export class FeedingNutritionComponent {
     const min = pace.expectedMinMl;
     const max = pace.expectedMaxMl;
     const actual = ev.actualMl;
-    const scaleMax = Math.max(
-      Math.round(max * 1.2),
-      actual + 20,
-      Math.max(min + 30, 50)
-    );
+    const scaleMax = Math.max(Math.round(max * 1.2), actual + 20, Math.max(min + 30, 50));
     const pointerPct = Math.max(0, Math.min(100, (actual / scaleMax) * 100));
-    const pointerVisPct =
-      pointerPct < 5 ? 5 : pointerPct > 95 ? 95 : pointerPct;
+    const pointerVisPct = pointerPct < 5 ? 5 : pointerPct > 95 ? 95 : pointerPct;
     const bandLeft = (min / scaleMax) * 100;
     const bandW = ((max - min) / scaleMax) * 100;
     const minTickPct = Math.max(0, Math.min(100, (min / scaleMax) * 100));

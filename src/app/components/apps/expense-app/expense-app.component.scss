@@ -4,54 +4,58 @@
 // ============================================
 
 // === SOFT MODERN COLOR PALETTE ===
-$primary: #5B8DEF;           // Soft Blue
-$primary-dark: #4A7BD4;
-$primary-light: #EEF4FF;
-$primary-muted: #A8C5F7;
+$primary: #5b8def; // Soft Blue
+$primary-dark: #4a7bd4;
+$primary-light: #eef4ff;
+$primary-muted: #a8c5f7;
 
-$secondary: #7C6EE8;         // Soft Purple
-$secondary-light: #F0EEFF;
+$secondary: #7c6ee8; // Soft Purple
+$secondary-light: #f0eeff;
 
-$accent: #4ECDC4;            // Soft Teal
-$accent-light: #E8FAF8;
+$accent: #4ecdc4; // Soft Teal
+$accent-light: #e8faf8;
 
-$success: #6BCB77;           // Soft Green
-$success-light: #EDF9EE;
+$success: #6bcb77; // Soft Green
+$success-light: #edf9ee;
 
-$warning: #F5A962;           // Soft Orange
-$warning-light: #FEF4E8;
+$warning: #f5a962; // Soft Orange
+$warning-light: #fef4e8;
 
-$danger: #E8707E;            // Soft Red/Pink
-$danger-light: #FCEEF0;
+$danger: #e8707e; // Soft Red/Pink
+$danger-light: #fceef0;
 
-$purple: #9B8FE8;            // Lavender
-$purple-light: #F4F2FF;
+$purple: #9b8fe8; // Lavender
+$purple-light: #f4f2ff;
 
-$mint: #7DD3C0;              // Mint
-$mint-light: #EEFBF8;
+$mint: #7dd3c0; // Mint
+$mint-light: #eefbf8;
 
-$coral: #F4A896;             // Coral
-$coral-light: #FEF3F0;
+$coral: #f4a896; // Coral
+$coral-light: #fef3f0;
 
 // === NEUTRALS - Softer grays ===
-$white: #FFFFFF;
-$gray-50: #FAFBFC;
-$gray-100: #F4F6F8;
-$gray-200: #E9EDF2;
-$gray-300: #D8DEE6;
-$gray-400: #B4BFCC;
-$gray-500: #8E99A8;
-$gray-600: #6B7685;
-$gray-700: #4A5363;
+$white: #ffffff;
+$gray-50: #fafbfc;
+$gray-100: #f4f6f8;
+$gray-200: #e9edf2;
+$gray-300: #d8dee6;
+$gray-400: #b4bfcc;
+$gray-500: #8e99a8;
+$gray-600: #6b7685;
+$gray-700: #4a5363;
 $gray-800: #323942;
-$gray-900: #1D2128;
-$black: #0D0F12;
+$gray-900: #1d2128;
+$black: #0d0f12;
 
 // === TYPOGRAPHY ===
-$font-primary: 'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+$font-primary:
+  'Inter',
+  'SF Pro Display',
+  -apple-system,
+  BlinkMacSystemFont,
+  'Segoe UI',
+  sans-serif;
 $font-mono: 'Segoe UI', sans-serif;
-
-
 
 // Notification Dialog
 .notification-overlay {
@@ -135,10 +139,10 @@ $font-mono: 'Segoe UI', sans-serif;
   .budget-value,
   .expense-amount,
   .amount-input,
-  [class*="amount"],
-  [class*="price"],
-  [class*="total-value"],
-  [class*="money"] {
+  [class*='amount'],
+  [class*='price'],
+  [class*='total-value'],
+  [class*='money'] {
     font-family: $font-mono;
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.3px;
@@ -176,7 +180,9 @@ $font-mono: 'Segoe UI', sans-serif;
       padding: 48px 44px;
       max-width: 400px;
       width: 100%;
-      box-shadow: 0 8px 40px rgba($gray-900, 0.08), 0 0 1px rgba($gray-900, 0.1);
+      box-shadow:
+        0 8px 40px rgba($gray-900, 0.08),
+        0 0 1px rgba($gray-900, 0.1);
       position: relative;
       z-index: 1;
       animation: fadeIn 0.4s ease-out;
@@ -527,8 +533,12 @@ $font-mono: 'Segoe UI', sans-serif;
   }
 
   @keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
   }
 
   // ============================================
@@ -743,14 +753,18 @@ $font-mono: 'Segoe UI', sans-serif;
             background: $success-light;
             color: darken($success, 10%);
 
-            i { color: $success; }
+            i {
+              color: $success;
+            }
           }
 
           &.low {
             background: $warning-light;
             color: darken($warning, 10%);
 
-            i { color: $warning; }
+            i {
+              color: $warning;
+            }
           }
         }
       }
@@ -1329,7 +1343,7 @@ $font-mono: 'Segoe UI', sans-serif;
         cursor: pointer;
         margin-bottom: 8px;
 
-        input[type="checkbox"] {
+        input[type='checkbox'] {
           width: 14px;
           height: 14px;
           accent-color: $primary;
@@ -1508,7 +1522,7 @@ $font-mono: 'Segoe UI', sans-serif;
           background: $gray-100;
         }
 
-        input[type="checkbox"] {
+        input[type='checkbox'] {
           width: 14px;
           height: 14px;
           accent-color: var(--cat-color, $primary);
@@ -1660,13 +1674,34 @@ $font-mono: 'Segoe UI', sans-serif;
         font-size: 18px;
         flex-shrink: 0;
 
-        &.total { background: $primary-light; color: $primary; }
-        &.average { background: $accent-light; color: darken($accent, 10%); }
-        &.count { background: $purple-light; color: $purple; }
-        &.max { background: $danger-light; color: $danger; }
-        &.min { background: $success-light; color: $success; }
-        &.income { background: $success-light; color: $success; }
-        &.expense { background: $danger-light; color: $danger; }
+        &.total {
+          background: $primary-light;
+          color: $primary;
+        }
+        &.average {
+          background: $accent-light;
+          color: darken($accent, 10%);
+        }
+        &.count {
+          background: $purple-light;
+          color: $purple;
+        }
+        &.max {
+          background: $danger-light;
+          color: $danger;
+        }
+        &.min {
+          background: $success-light;
+          color: $success;
+        }
+        &.income {
+          background: $success-light;
+          color: $success;
+        }
+        &.expense {
+          background: $danger-light;
+          color: $danger;
+        }
       }
 
       .summary-content {
@@ -1686,8 +1721,12 @@ $font-mono: 'Segoe UI', sans-serif;
           color: $gray-900;
           font-family: $font-mono;
 
-          &.positive { color: $success; }
-          &.negative { color: $danger; }
+          &.positive {
+            color: $success;
+          }
+          &.negative {
+            color: $danger;
+          }
         }
 
         .summary-change {
@@ -1699,8 +1738,12 @@ $font-mono: 'Segoe UI', sans-serif;
 
           span {
             font-weight: 500;
-            &.positive { color: $danger; }
-            &.negative { color: $success; }
+            &.positive {
+              color: $danger;
+            }
+            &.negative {
+              color: $success;
+            }
           }
 
           .change-label {
@@ -2141,8 +2184,12 @@ $font-mono: 'Segoe UI', sans-serif;
     backdrop-filter: blur(2px);
 
     @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
     }
   }
 
@@ -2200,7 +2247,8 @@ $font-mono: 'Segoe UI', sans-serif;
           color: $primary;
         }
 
-        h2, h3 {
+        h2,
+        h3 {
           margin: 0;
           font-size: 16px;
           font-weight: 600;
@@ -2530,9 +2578,18 @@ $font-mono: 'Segoe UI', sans-serif;
         color: $primary;
         font-size: 16px;
 
-        &.trend-up { background: $danger-light; color: $danger; }
-        &.trend-down { background: $success-light; color: $success; }
-        &.trend-stable { background: $gray-100; color: $gray-500; }
+        &.trend-up {
+          background: $danger-light;
+          color: $danger;
+        }
+        &.trend-down {
+          background: $success-light;
+          color: $success;
+        }
+        &.trend-stable {
+          background: $gray-100;
+          color: $gray-500;
+        }
       }
 
       .stat-content {
@@ -2576,7 +2633,8 @@ $font-mono: 'Segoe UI', sans-serif;
       padding: 16px;
       border: 1px solid $gray-200;
 
-      h3, h4 {
+      h3,
+      h4 {
         margin: 0 0 12px 0;
         font-size: 14px;
         font-weight: 600;
@@ -2737,8 +2795,12 @@ $font-mono: 'Segoe UI', sans-serif;
               font-family: $font-mono;
               margin-bottom: 4px;
 
-              &.positive { color: $success; }
-              &.negative { color: $danger; }
+              &.positive {
+                color: $success;
+              }
+              &.negative {
+                color: $danger;
+              }
             }
 
             .comparison-amount {
@@ -3033,17 +3095,37 @@ $font-mono: 'Segoe UI', sans-serif;
             border-left: 3px solid $success;
           }
 
-          .outlier-date { font-size: 12px; color: $gray-700; }
-          .outlier-content { font-size: 12px; color: $gray-800; font-weight: 500; }
-          .outlier-category { font-size: 11px; color: $gray-500; }
-          .outlier-amount { font-size: 13px; font-weight: 600; color: $gray-900; text-align: right; font-family: $font-mono; }
+          .outlier-date {
+            font-size: 12px;
+            color: $gray-700;
+          }
+          .outlier-content {
+            font-size: 12px;
+            color: $gray-800;
+            font-weight: 500;
+          }
+          .outlier-category {
+            font-size: 11px;
+            color: $gray-500;
+          }
+          .outlier-amount {
+            font-size: 13px;
+            font-weight: 600;
+            color: $gray-900;
+            text-align: right;
+            font-family: $font-mono;
+          }
           .outlier-zscore {
             font-size: 11px;
             font-weight: 600;
             text-align: right;
 
-            &.zscore-high { color: $danger; }
-            &.zscore-moderate { color: $warning; }
+            &.zscore-high {
+              color: $danger;
+            }
+            &.zscore-moderate {
+              color: $warning;
+            }
           }
         }
       }
@@ -3328,12 +3410,30 @@ $font-mono: 'Segoe UI', sans-serif;
     font-size: 10px;
     font-weight: 500;
 
-    &.badge-primary { background: $primary-light; color: $primary; }
-    &.badge-success { background: $success-light; color: $success; }
-    &.badge-warning { background: $warning-light; color: darken($warning, 10%); }
-    &.badge-danger { background: $danger-light; color: $danger; }
-    &.badge-info { background: $accent-light; color: darken($accent, 10%); }
-    &.badge-purple { background: $purple-light; color: $purple; }
+    &.badge-primary {
+      background: $primary-light;
+      color: $primary;
+    }
+    &.badge-success {
+      background: $success-light;
+      color: $success;
+    }
+    &.badge-warning {
+      background: $warning-light;
+      color: darken($warning, 10%);
+    }
+    &.badge-danger {
+      background: $danger-light;
+      color: $danger;
+    }
+    &.badge-info {
+      background: $accent-light;
+      color: darken($accent, 10%);
+    }
+    &.badge-purple {
+      background: $purple-light;
+      color: $purple;
+    }
     &.badge-outline {
       background: transparent;
       border: 1px solid currentColor;
@@ -3353,9 +3453,15 @@ $font-mono: 'Segoe UI', sans-serif;
       background: $primary;
       transition: width 0.3s ease;
 
-      &.success { background: $success; }
-      &.warning { background: $warning; }
-      &.danger { background: $danger; }
+      &.success {
+        background: $success;
+      }
+      &.warning {
+        background: $warning;
+      }
+      &.danger {
+        background: $danger;
+      }
     }
   }
 
@@ -3457,7 +3563,7 @@ $font-mono: 'Segoe UI', sans-serif;
           color: $primary;
         }
 
-        input[type="checkbox"] {
+        input[type='checkbox'] {
           width: 14px;
           height: 14px;
           accent-color: $primary;
@@ -3727,7 +3833,9 @@ $font-mono: 'Segoe UI', sans-serif;
           border-color: rgba($danger, 0.3);
           color: $danger;
 
-          i { color: $danger; }
+          i {
+            color: $danger;
+          }
         }
 
         &.above-avg {
@@ -3735,7 +3843,9 @@ $font-mono: 'Segoe UI', sans-serif;
           border-color: rgba($warning, 0.3);
           color: darken($warning, 10%);
 
-          i { color: $warning; }
+          i {
+            color: $warning;
+          }
         }
 
         &.below-avg {
@@ -3743,7 +3853,9 @@ $font-mono: 'Segoe UI', sans-serif;
           border-color: rgba($success, 0.3);
           color: $success;
 
-          i { color: $success; }
+          i {
+            color: $success;
+          }
         }
 
         &.low {
@@ -3751,7 +3863,9 @@ $font-mono: 'Segoe UI', sans-serif;
           border-color: rgba($mint, 0.4);
           color: darken($mint, 20%);
 
-          i { color: $mint; }
+          i {
+            color: $mint;
+          }
         }
       }
     }
@@ -3877,7 +3991,11 @@ $font-mono: 'Segoe UI', sans-serif;
     transition: all 0.2s;
 
     &:hover {
-      background: linear-gradient(135deg, darken($purple-light, 3%) 0%, darken($secondary-light, 3%) 100%);
+      background: linear-gradient(
+        135deg,
+        darken($purple-light, 3%) 0%,
+        darken($secondary-light, 3%) 100%
+      );
     }
 
     .group-icon-compact {
@@ -5198,7 +5316,7 @@ $font-mono: 'Segoe UI', sans-serif;
         background: $gray-100;
       }
 
-      input[type="checkbox"] {
+      input[type='checkbox'] {
         width: 14px;
         height: 14px;
         accent-color: $primary;
@@ -5261,7 +5379,7 @@ $font-mono: 'Segoe UI', sans-serif;
         background: $gray-50;
       }
 
-      input[type="checkbox"] {
+      input[type='checkbox'] {
         width: 14px;
         height: 14px;
         accent-color: $primary;
@@ -5317,7 +5435,6 @@ $font-mono: 'Segoe UI', sans-serif;
     }
 
     .cash-flow-body {
-
       .projected-spending {
         text-align: center;
         padding: 20px 0;
@@ -7456,7 +7573,7 @@ $font-mono: 'Segoe UI', sans-serif;
       gap: 10px;
       cursor: pointer;
 
-      input[type="checkbox"] {
+      input[type='checkbox'] {
         width: 18px;
         height: 18px;
         accent-color: $primary;
@@ -7593,7 +7710,8 @@ $font-mono: 'Segoe UI', sans-serif;
             background: $gray-50;
           }
 
-          input, select {
+          input,
+          select {
             padding: 8px 10px;
             border: 1px solid $gray-300;
             font-size: 12px;
@@ -8594,11 +8712,11 @@ $font-mono: 'Segoe UI', sans-serif;
           box-shadow: 0 0 0 2px rgba($primary, 0.1);
         }
 
-        &[type="date"] {
+        &[type='date'] {
           min-width: 130px;
         }
 
-        &[type="text"] {
+        &[type='text'] {
           min-width: 120px;
         }
       }
@@ -8788,9 +8906,9 @@ $font-mono: 'Segoe UI', sans-serif;
   // Wider amount inputs in tables and multiple input mode
   .multiple-input-mode,
   .expenses-table-container {
-    .table-input[type="text"],
-    input[type="text"].table-input {
-      &[placeholder*="0"],
+    .table-input[type='text'],
+    input[type='text'].table-input {
+      &[placeholder*='0'],
       &[mask] {
         min-width: 140px;
       }
@@ -9152,7 +9270,11 @@ $font-mono: 'Segoe UI', sans-serif;
         }
 
         &.active {
-          background: linear-gradient(135deg, darken($secondary, 10%) 0%, darken($purple, 10%) 100%);
+          background: linear-gradient(
+            135deg,
+            darken($secondary, 10%) 0%,
+            darken($purple, 10%) 100%
+          );
         }
 
         i {
@@ -10862,7 +10984,8 @@ $font-mono: 'Segoe UI', sans-serif;
         }
 
         &:hover {
-          i, span {
+          i,
+          span {
             color: $primary;
           }
         }
@@ -10958,7 +11081,8 @@ $font-mono: 'Segoe UI', sans-serif;
           border-color: $primary;
           color: $white;
 
-          .date-day, .date-amount {
+          .date-day,
+          .date-amount {
             color: $white;
           }
         }
@@ -11838,7 +11962,9 @@ $font-mono: 'Segoe UI', sans-serif;
           .progress-fill {
             height: 100%;
             background: $success;
-            transition: width 0.5s ease, background 0.3s ease;
+            transition:
+              width 0.5s ease,
+              background 0.3s ease;
 
             &.warning {
               background: $warning;
@@ -12041,7 +12167,8 @@ $font-mono: 'Segoe UI', sans-serif;
   }
 
   @keyframes pulse-warning {
-    0%, 100% {
+    0%,
+    100% {
       opacity: 1;
     }
     50% {
@@ -12716,7 +12843,9 @@ $font-mono: 'Segoe UI', sans-serif;
     }
 
     @keyframes typingBounce {
-      0%, 60%, 100% {
+      0%,
+      60%,
+      100% {
         transform: translateY(0);
       }
       30% {

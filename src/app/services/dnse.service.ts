@@ -41,7 +41,7 @@ export interface DNSEOHLCData {
 export type ExchangeType = 'hose' | 'hnx' | 'upcom' | 'vn30';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class DnseService {
   // Use proxy to avoid CORS issues
@@ -79,8 +79,10 @@ export class DnseService {
     const today = new Date();
 
     // Check if last sync was in the same month and year
-    return lastSyncDate.getMonth() === today.getMonth() &&
-           lastSyncDate.getFullYear() === today.getFullYear();
+    return (
+      lastSyncDate.getMonth() === today.getMonth() &&
+      lastSyncDate.getFullYear() === today.getFullYear()
+    );
   }
 
   /**
@@ -114,7 +116,7 @@ export class DnseService {
         // API might return array directly or wrapped in data property
         const symbols: DNSESymbol[] = Array.isArray(response)
           ? response
-          : (response.data || response.symbols || []);
+          : response.data || response.symbols || [];
 
         // Cache the result
         this.symbolsCache.set(exchange, symbols);
@@ -133,14 +135,12 @@ export class DnseService {
    */
   getAllSymbols(): Observable<{ exchange: ExchangeType; symbols: DNSESymbol[] }[]> {
     const exchanges: ExchangeType[] = ['hose', 'hnx', 'upcom', 'vn30'];
-    const requests = exchanges.map(exchange =>
-      this.getSymbols(exchange).pipe(
-        map(symbols => ({ exchange, symbols }))
-      )
+    const requests = exchanges.map((exchange) =>
+      this.getSymbols(exchange).pipe(map((symbols) => ({ exchange, symbols })))
     );
 
     // Combine all requests
-    return new Observable(observer => {
+    return new Observable((observer) => {
       const results: { exchange: ExchangeType; symbols: DNSESymbol[] }[] = [];
       let completed = 0;
 
@@ -162,7 +162,7 @@ export class DnseService {
               observer.next(results);
               observer.complete();
             }
-          }
+          },
         });
       });
     });
@@ -189,7 +189,12 @@ export class DnseService {
    * @param to - End timestamp (Unix timestamp in seconds)
    * @param resolution - Time resolution (1D = daily, 1W = weekly, 1M = monthly)
    */
-  getOHLCData(symbol: string, from: number, to: number, resolution: string = '1D'): Observable<DNSEOHLCData> {
+  getOHLCData(
+    symbol: string,
+    from: number,
+    to: number,
+    resolution: string = '1D'
+  ): Observable<DNSEOHLCData> {
     const url = `/api/dnse-api/chart-api/v2/ohlcs/stock?from=${from}&to=${to}&symbol=${symbol}&resolution=${resolution}`;
 
     return this.http.get<DNSEOHLCData>(url).pipe(
@@ -203,9 +208,13 @@ export class DnseService {
   /**
    * Get OHLC data for the last N days
    */
-  getOHLCDataLastDays(symbol: string, days: number = 365, resolution: string = '1D'): Observable<DNSEOHLCData> {
+  getOHLCDataLastDays(
+    symbol: string,
+    days: number = 365,
+    resolution: string = '1D'
+  ): Observable<DNSEOHLCData> {
     const now = Math.floor(Date.now() / 1000);
-    const from = now - (days * 24 * 60 * 60);
+    const from = now - days * 24 * 60 * 60;
     return this.getOHLCData(symbol, from, now, resolution);
   }
 
@@ -291,7 +300,7 @@ export class DnseService {
    * Get ALL stock symbols from database (handles pagination automatically)
    */
   getAllStockSymbols(): Observable<string[]> {
-    return new Observable(observer => {
+    return new Observable((observer) => {
       const allSymbols: string[] = [];
       const pageSize = 500;
       let offset = 0;
@@ -322,7 +331,7 @@ export class DnseService {
             console.error('Error fetching stock symbols:', error);
             observer.next(allSymbols); // Return what we have so far
             observer.complete();
-          }
+          },
         });
       };
 
@@ -334,7 +343,6 @@ export class DnseService {
    * Pagination response interface
    */
 
-
   /**
    * Get stock data with pagination and search
    * @param options - Query options
@@ -343,7 +351,14 @@ export class DnseService {
    * @param options.offset - Number of records to skip (default: 0)
    * @param options.symbolType - 'all' | 'stocks' - Filter by symbol type (stocks = 3-char symbols)
    */
-  getStocksPaginated(options: { keyword?: string; limit?: number; offset?: number; symbolType?: 'all' | 'stocks' } = {}): Observable<{
+  getStocksPaginated(
+    options: {
+      keyword?: string;
+      limit?: number;
+      offset?: number;
+      symbolType?: 'all' | 'stocks';
+    } = {}
+  ): Observable<{
     stocks: any[];
     pagination: { total: number; limit: number; offset: number; hasMore: boolean } | null;
     query: { keyword: string; limit: number; offset: number };
@@ -364,13 +379,13 @@ export class DnseService {
           return {
             stocks: response.stocks || [],
             pagination: response.pagination || null,
-            query: response.query || { keyword, limit, offset }
+            query: response.query || { keyword, limit, offset },
           };
         }
         return {
           stocks: [],
           pagination: null,
-          query: { keyword, limit, offset }
+          query: { keyword, limit, offset },
         };
       }),
       catchError((error) => {
@@ -378,7 +393,7 @@ export class DnseService {
         return of({
           stocks: [],
           pagination: null,
-          query: { keyword, limit, offset }
+          query: { keyword, limit, offset },
         });
       })
     );
@@ -389,12 +404,16 @@ export class DnseService {
    * This should only be called during days 10-20 of the month
    * Returns Observable with { newSymbols: string[], totalFromDNSE: number }
    */
-  syncNewStocksFromDNSE(): Observable<{ newSymbols: string[]; totalFromDNSE: number; synced: boolean }> {
+  syncNewStocksFromDNSE(): Observable<{
+    newSymbols: string[];
+    totalFromDNSE: number;
+    synced: boolean;
+  }> {
     if (!this.shouldSyncWithDNSE()) {
       return of({ newSymbols: [], totalFromDNSE: 0, synced: false });
     }
 
-    return new Observable(observer => {
+    return new Observable((observer) => {
       // First, get all existing stocks from our API
       this.getAllStockData().subscribe({
         next: (existingStocks) => {
@@ -409,7 +428,7 @@ export class DnseService {
               let totalFromDNSE = 0;
 
               results.forEach(({ symbols }) => {
-                symbols.forEach(symbol => {
+                symbols.forEach((symbol) => {
                   const symbolStr = typeof symbol === 'string' ? symbol : symbol.symbol;
                   const symbolKey = symbolStr.toUpperCase();
                   totalFromDNSE++;
@@ -447,14 +466,14 @@ export class DnseService {
               console.error('Error getting symbols from DNSE:', error);
               observer.next({ newSymbols: [], totalFromDNSE: 0, synced: false });
               observer.complete();
-            }
+            },
           });
         },
         error: (error) => {
           console.error('Error getting existing stocks:', error);
           observer.next({ newSymbols: [], totalFromDNSE: 0, synced: false });
           observer.complete();
-        }
+        },
       });
     });
   }
@@ -463,21 +482,23 @@ export class DnseService {
    * Save new stocks to database with basic info
    */
   private saveNewStocksToDB(symbols: string[]): Observable<any> {
-    const requests = symbols.map(symbol =>
-      this.http.post<any>('/api/stocks-v2/save', {
-        symbol: symbol.toUpperCase(),
-        basicInfo: { symbol: symbol.toUpperCase() },
-        priceData: null,
-        fullData: null
-      }).pipe(
-        catchError(error => {
-          console.error(`Error creating stock ${symbol}:`, error);
-          return of(null);
+    const requests = symbols.map((symbol) =>
+      this.http
+        .post<any>('/api/stocks-v2/save', {
+          symbol: symbol.toUpperCase(),
+          basicInfo: { symbol: symbol.toUpperCase() },
+          priceData: null,
+          fullData: null,
         })
-      )
+        .pipe(
+          catchError((error) => {
+            console.error(`Error creating stock ${symbol}:`, error);
+            return of(null);
+          })
+        )
     );
 
-    return new Observable(observer => {
+    return new Observable((observer) => {
       if (requests.length === 0) {
         observer.next([]);
         observer.complete();
@@ -503,7 +524,7 @@ export class DnseService {
               observer.next(results);
               observer.complete();
             }
-          }
+          },
         });
       });
     });
@@ -555,35 +576,43 @@ export class DnseService {
     if (!keyword || keyword.trim().length === 0) {
       return of([]);
     }
-    return this.http.get<any>(`/api/stocks-v2/list?keyword=${encodeURIComponent(keyword.trim())}&limit=${limit}`).pipe(
-      map((response: any) => {
-        if (response.success && Array.isArray(response.stocks)) {
-          return response.stocks;
-        }
-        return [];
-      }),
-      catchError((error) => {
-        console.error(`Error searching stocks with keyword "${keyword}":`, error);
-        return of([]);
-      })
-    );
+    return this.http
+      .get<any>(`/api/stocks-v2/list?keyword=${encodeURIComponent(keyword.trim())}&limit=${limit}`)
+      .pipe(
+        map((response: any) => {
+          if (response.success && Array.isArray(response.stocks)) {
+            return response.stocks;
+          }
+          return [];
+        }),
+        catchError((error) => {
+          console.error(`Error searching stocks with keyword "${keyword}":`, error);
+          return of([]);
+        })
+      );
   }
 
   /**
    * Save stock data to Stock API
    */
-  saveStockData(symbol: string, basicInfo: any, priceData: DNSEOHLCData, fullData: any): Observable<any> {
-    return this.http.post<any>('/api/stocks-v2/save', {
-      symbol: symbol.toUpperCase(),
-      basicInfo,
-      priceData,
-      fullData
-    }).pipe(
-      catchError((error) => {
-        console.error(`Error saving stock data for ${symbol}:`, error);
-        return throwError(() => error);
+  saveStockData(
+    symbol: string,
+    basicInfo: any,
+    priceData: DNSEOHLCData,
+    fullData: any
+  ): Observable<any> {
+    return this.http
+      .post<any>('/api/stocks-v2/save', {
+        symbol: symbol.toUpperCase(),
+        basicInfo,
+        priceData,
+        fullData,
       })
-    );
+      .pipe(
+        catchError((error) => {
+          console.error(`Error saving stock data for ${symbol}:`, error);
+          return throwError(() => error);
+        })
+      );
   }
 }
-

@@ -39,7 +39,12 @@ interface DisposeMessage {
   type: 'dispose';
 }
 
-type WorkerMessage = TrainMessage | PredictMessage | LoadWeightsMessage | GetWeightsMessage | DisposeMessage;
+type WorkerMessage =
+  | TrainMessage
+  | PredictMessage
+  | LoadWeightsMessage
+  | GetWeightsMessage
+  | DisposeMessage;
 
 // Worker state
 let model: tf.Sequential | null = null;
@@ -98,9 +103,9 @@ function calculateMACD(prices: number[]): {
     }
   }
 
-  const validMacd = macd.filter(v => !isNaN(v));
+  const validMacd = macd.filter((v) => !isNaN(v));
   const signal = calculateEMA(validMacd, 9);
-  
+
   const paddedSignal: number[] = [];
   const signalOffset = macd.length - signal.length;
   for (let i = 0; i < macd.length; i++) {
@@ -126,12 +131,12 @@ function calculateMACD(prices: number[]): {
 /**
  * Normalize data to 0-1 range
  */
-function normalizeData(data: number[]): { normalized: number[], min: number, max: number } {
+function normalizeData(data: number[]): { normalized: number[]; min: number; max: number } {
   const min = Math.min(...data);
   const max = Math.max(...data);
   const range = max - min || 1;
 
-  const normalized = data.map(val => (val - min) / range);
+  const normalized = data.map((val) => (val - min) / range);
   return { normalized, min, max };
 }
 
@@ -145,34 +150,34 @@ function createModel(inputSize: number, learningRate: number): tf.Sequential {
         inputShape: [inputSize],
         units: 128,
         activation: 'relu',
-        name: 'dense1'
+        name: 'dense1',
       }),
       tf.layers.dropout({ rate: 0.2 }),
-      
+
       tf.layers.dense({
         units: 64,
         activation: 'relu',
-        name: 'dense2'
+        name: 'dense2',
       }),
       tf.layers.dropout({ rate: 0.2 }),
-      
+
       tf.layers.dense({
         units: 32,
         activation: 'relu',
-        name: 'dense3'
+        name: 'dense3',
       }),
-      
+
       tf.layers.dense({
         units: 3,
         activation: 'linear',
-        name: 'output'
-      })
-    ]
+        name: 'output',
+      }),
+    ],
   });
 
   newModel.compile({
     optimizer: tf.train.adam(learningRate),
-    loss: 'meanSquaredError'
+    loss: 'meanSquaredError',
   });
 
   return newModel;
@@ -188,23 +193,23 @@ async function trainModel(prices: number[], config: TrainMessage['config']): Pro
 
   // Normalize prices
   const { normalized: normalizedPrices, min, max } = normalizeData(prices);
-  
+
   // Calculate MACD
   const macdData = calculateMACD(normalizedPrices);
-  
+
   // Normalize MACD values
-  const allMacdValues = macdData.macd.filter(v => !isNaN(v));
-  const allSignalValues = macdData.signal.filter(v => !isNaN(v));
-  const allHistogramValues = macdData.histogram.filter(v => !isNaN(v));
-  
+  const allMacdValues = macdData.macd.filter((v) => !isNaN(v));
+  const allSignalValues = macdData.signal.filter((v) => !isNaN(v));
+  const allHistogramValues = macdData.histogram.filter((v) => !isNaN(v));
+
   const macdMin = Math.min(...allMacdValues);
   const macdMax = Math.max(...allMacdValues);
   const macdRange = macdMax - macdMin || 1;
-  
+
   const signalMin = Math.min(...allSignalValues);
   const signalMax = Math.max(...allSignalValues);
   const signalRange = signalMax - signalMin || 1;
-  
+
   const histMin = Math.min(...allHistogramValues);
   const histMax = Math.max(...allHistogramValues);
   const histRange = histMax - histMin || 1;
@@ -212,36 +217,48 @@ async function trainModel(prices: number[], config: TrainMessage['config']): Pro
   // Prepare training data
   const normalizedXs: number[][] = [];
   const normalizedYs: number[][] = [];
-  
+
   for (let i = lookback; i < normalizedPrices.length - 1; i++) {
     const priceFeatures = normalizedPrices.slice(i - lookback, i);
     const macdValue = isNaN(macdData.macd[i]) ? 0 : (macdData.macd[i] - macdMin) / macdRange;
-    const signalValue = isNaN(macdData.signal[i]) ? 0 : (macdData.signal[i] - signalMin) / signalRange;
-    const histogramValue = isNaN(macdData.histogram[i]) ? 0 : (macdData.histogram[i] - histMin) / histRange;
+    const signalValue = isNaN(macdData.signal[i])
+      ? 0
+      : (macdData.signal[i] - signalMin) / signalRange;
+    const histogramValue = isNaN(macdData.histogram[i])
+      ? 0
+      : (macdData.histogram[i] - histMin) / histRange;
     normalizedXs.push([...priceFeatures, macdValue, signalValue, histogramValue]);
-    
+
     const originalFuturePrice = prices[i + 1 - 1];
     const currentPrice = prices[i];
     const futurePriceOriginal = prices[Math.min(i + 5, prices.length - 1)];
     const returnPercent = (futurePriceOriginal - currentPrice) / currentPrice;
-    
-    const macdCrossUp = !isNaN(macdData.histogram[i]) && i > 0 && macdData.histogram[i] > 0 && macdData.histogram[i - 1] <= 0;
-    const macdCrossDown = !isNaN(macdData.histogram[i]) && i > 0 && macdData.histogram[i] < 0 && macdData.histogram[i - 1] >= 0;
-    
+
+    const macdCrossUp =
+      !isNaN(macdData.histogram[i]) &&
+      i > 0 &&
+      macdData.histogram[i] > 0 &&
+      macdData.histogram[i - 1] <= 0;
+    const macdCrossDown =
+      !isNaN(macdData.histogram[i]) &&
+      i > 0 &&
+      macdData.histogram[i] < 0 &&
+      macdData.histogram[i - 1] >= 0;
+
     let buySignal = 0;
     let sellSignal = 0;
-    
+
     if (returnPercent > 0.02 || (macdCrossUp && returnPercent > 0)) {
       buySignal = 1;
     }
     if (returnPercent < -0.02 || (macdCrossDown && returnPercent < 0)) {
       sellSignal = 1;
     }
-    
+
     const normalizedPrice = (originalFuturePrice - min) / (max - min);
     normalizedYs.push([normalizedPrice, buySignal, sellSignal]);
   }
-  
+
   const minLength = Math.min(normalizedXs.length, normalizedYs.length);
   const finalXs = normalizedXs.slice(0, minLength);
   const finalYs = normalizedYs.slice(0, minLength);
@@ -249,7 +266,7 @@ async function trainModel(prices: number[], config: TrainMessage['config']): Pro
   // Create tensors
   const xsTensor = tf.tensor2d(finalXs);
   const ysTensor = tf.tensor2d(finalYs);
-  
+
   const inputSize = lookback + 3;
 
   // Create or recreate model
@@ -261,7 +278,7 @@ async function trainModel(prices: number[], config: TrainMessage['config']): Pro
   // Train
   let finalLoss = 0;
   let finalAccuracy = 0;
-  
+
   await model.fit(xsTensor, ysTensor, {
     epochs: config.epochs,
     batchSize: config.batchSize,
@@ -271,17 +288,17 @@ async function trainModel(prices: number[], config: TrainMessage['config']): Pro
       onEpochEnd: (epoch, logs) => {
         finalLoss = logs?.['loss'] || 0;
         finalAccuracy = finalLoss > 0 ? Math.max(0, Math.min(1, 1 / (1 + finalLoss))) : 0;
-        
+
         // Send progress to main thread
         self.postMessage({
           type: 'progress',
           epoch: epoch + 1,
           totalEpochs: config.epochs,
           loss: finalLoss,
-          accuracy: finalAccuracy
+          accuracy: finalAccuracy,
         });
-      }
-    }
+      },
+    },
   });
 
   // Cleanup
@@ -295,7 +312,7 @@ async function trainModel(prices: number[], config: TrainMessage['config']): Pro
     type: 'trained',
     loss: finalLoss,
     accuracy: finalAccuracy,
-    epochs: config.epochs
+    epochs: config.epochs,
   });
 }
 
@@ -306,7 +323,7 @@ async function predict(prices: number[], days: number): Promise<void> {
   if (!model || !isModelReady) {
     self.postMessage({
       type: 'error',
-      error: 'Model is not trained yet'
+      error: 'Model is not trained yet',
     });
     return;
   }
@@ -315,7 +332,7 @@ async function predict(prices: number[], days: number): Promise<void> {
   if (prices.length < lookback) {
     self.postMessage({
       type: 'error',
-      error: `Need at least ${lookback} days of historical data`
+      error: `Need at least ${lookback} days of historical data`,
     });
     return;
   }
@@ -323,29 +340,35 @@ async function predict(prices: number[], days: number): Promise<void> {
   try {
     const { normalized: normalizedPrices, min, max } = normalizeData(prices);
     const macdData = calculateMACD(normalizedPrices);
-    
-    const allMacdValues = macdData.macd.filter(v => !isNaN(v));
-    const allSignalValues = macdData.signal.filter(v => !isNaN(v));
-    const allHistogramValues = macdData.histogram.filter(v => !isNaN(v));
-    
+
+    const allMacdValues = macdData.macd.filter((v) => !isNaN(v));
+    const allSignalValues = macdData.signal.filter((v) => !isNaN(v));
+    const allHistogramValues = macdData.histogram.filter((v) => !isNaN(v));
+
     const macdMin = Math.min(...allMacdValues);
     const macdMax = Math.max(...allMacdValues);
     const macdRange = macdMax - macdMin || 1;
-    
+
     const signalMin = Math.min(...allSignalValues);
     const signalMax = Math.max(...allSignalValues);
     const signalRange = signalMax - signalMin || 1;
-    
+
     const histMin = Math.min(...allHistogramValues);
     const histMax = Math.max(...allHistogramValues);
     const histRange = histMax - histMin || 1;
 
     const lastDays = normalizedPrices.slice(-lookback);
     const lastIndex = normalizedPrices.length - 1;
-    const macdValue = isNaN(macdData.macd[lastIndex]) ? 0 : (macdData.macd[lastIndex] - macdMin) / macdRange;
-    const signalValue = isNaN(macdData.signal[lastIndex]) ? 0 : (macdData.signal[lastIndex] - signalMin) / signalRange;
-    const histogramValue = isNaN(macdData.histogram[lastIndex]) ? 0 : (macdData.histogram[lastIndex] - histMin) / histRange;
-    
+    const macdValue = isNaN(macdData.macd[lastIndex])
+      ? 0
+      : (macdData.macd[lastIndex] - macdMin) / macdRange;
+    const signalValue = isNaN(macdData.signal[lastIndex])
+      ? 0
+      : (macdData.signal[lastIndex] - signalMin) / signalRange;
+    const histogramValue = isNaN(macdData.histogram[lastIndex])
+      ? 0
+      : (macdData.histogram[lastIndex] - histMin) / histRange;
+
     const inputFeatures = [...lastDays, macdValue, signalValue, histogramValue];
     const inputTensor = tf.tensor2d([inputFeatures]);
 
@@ -363,10 +386,10 @@ async function predict(prices: number[], days: number): Promise<void> {
     const currentHistogram = macdData.histogram[lastIndex];
     const macdBullish = !isNaN(currentHistogram) && currentHistogram > 0;
     const macdBearish = !isNaN(currentHistogram) && currentHistogram < 0;
-    
+
     let finalBuyProb = buySignalProb;
     let finalSellProb = sellSignalProb;
-    
+
     if (macdBullish) {
       finalBuyProb = Math.min(1, buySignalProb + 0.15);
     }
@@ -378,7 +401,7 @@ async function predict(prices: number[], days: number): Promise<void> {
     let action: 'buy' | 'sell' | 'hold' = 'hold';
     let confidence = Math.max(finalBuyProb, finalSellProb);
     let reason = '';
-    
+
     if (finalBuyProb > 0.6 && finalBuyProb > finalSellProb) {
       action = 'buy';
       confidence = finalBuyProb;
@@ -395,7 +418,7 @@ async function predict(prices: number[], days: number): Promise<void> {
     const currentPrice = prices[prices.length - 1];
     const priceChange = predictedPrice - currentPrice;
     const changePercent = Math.abs(priceChange / currentPrice);
-    
+
     let trend: 'up' | 'down' | 'neutral' = 'neutral';
     if (changePercent > 0.02) {
       trend = priceChange > 0 ? 'up' : 'down';
@@ -427,14 +450,14 @@ async function predict(prices: number[], days: number): Promise<void> {
         tradingDecision: {
           action,
           confidence,
-          reason
-        }
-      }
+          reason,
+        },
+      },
     });
   } catch (error: any) {
     self.postMessage({
       type: 'error',
-      error: error.message || 'Prediction failed'
+      error: error.message || 'Prediction failed',
     });
   }
 }
@@ -442,13 +465,16 @@ async function predict(prices: number[], days: number): Promise<void> {
 /**
  * Load weights into model
  */
-async function loadWeights(weightsData: any[], config: LoadWeightsMessage['config']): Promise<void> {
+async function loadWeights(
+  weightsData: any[],
+  config: LoadWeightsMessage['config']
+): Promise<void> {
   try {
     currentConfig.lookbackDays = config.lookbackDays;
     currentConfig.forecastDays = config.forecastDays;
-    
+
     const inputSize = config.lookbackDays + 3;
-    
+
     if (!model) {
       model = createModel(inputSize, 0.001);
     }
@@ -467,20 +493,20 @@ async function loadWeights(weightsData: any[], config: LoadWeightsMessage['confi
       model.layers[i].setWeights(weightTensors[i]);
     }
 
-    weightTensors.forEach(layerWeights => {
-      layerWeights.forEach(tensor => tensor.dispose());
+    weightTensors.forEach((layerWeights) => {
+      layerWeights.forEach((tensor) => tensor.dispose());
     });
 
     isModelReady = true;
 
     self.postMessage({
       type: 'weightsLoaded',
-      success: true
+      success: true,
     });
   } catch (error: any) {
     self.postMessage({
       type: 'error',
-      error: error.message || 'Failed to load weights'
+      error: error.message || 'Failed to load weights',
     });
   }
 }
@@ -492,7 +518,7 @@ async function getWeights(): Promise<void> {
   if (!model || !isModelReady) {
     self.postMessage({
       type: 'error',
-      error: 'Model is not ready'
+      error: 'Model is not ready',
     });
     return;
   }
@@ -507,24 +533,24 @@ async function getWeights(): Promise<void> {
         const shape = weight.shape;
         weightData.push({
           data: Array.from(data),
-          shape: shape
+          shape: shape,
         });
       }
       weights.push({
         layerName: layer.name,
-        weights: weightData
+        weights: weightData,
       });
     }
 
     self.postMessage({
       type: 'weights',
       weights,
-      config: currentConfig
+      config: currentConfig,
     });
   } catch (error: any) {
     self.postMessage({
       type: 'error',
-      error: error.message || 'Failed to get weights'
+      error: error.message || 'Failed to get weights',
     });
   }
 }
@@ -539,7 +565,7 @@ function disposeModel(): void {
     isModelReady = false;
   }
   self.postMessage({
-    type: 'disposed'
+    type: 'disposed',
   });
 }
 
@@ -563,4 +589,3 @@ addEventListener('message', async ({ data }: { data: WorkerMessage }) => {
       break;
   }
 });
-

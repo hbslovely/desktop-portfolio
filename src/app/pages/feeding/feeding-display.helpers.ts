@@ -29,19 +29,14 @@ export function viewGroupDisplayVolume(g: FeedingViewGroup): number {
   return g.members.reduce((s, m) => s + (m.volume || 0), 0);
 }
 
-export function viewGroupDisplayTime(
-  g: FeedingViewGroup,
-  toTimeStr: (d: Date) => string
-): string {
+export function viewGroupDisplayTime(g: FeedingViewGroup, toTimeStr: (d: Date) => string): string {
   const sum = g.members.reduce((s, m) => s + logTimestamp(m), 0);
   const avg = Math.round(sum / g.members.length);
   return toTimeStr(new Date(avg));
 }
 
 export function viewGroupNote(g: FeedingViewGroup): string {
-  const parts = g.members
-    .map((m) => (m.note || '').trim())
-    .filter(Boolean);
+  const parts = g.members.map((m) => (m.note || '').trim()).filter(Boolean);
   return parts.length ? parts.join(' · ') : '';
 }
 
@@ -57,10 +52,7 @@ export function isHighVolumeViewGroup(g: FeedingViewGroup): boolean {
   return sum > 200 || g.members.some((m) => isHighVolume(m.volume));
 }
 
-function globalPrevLogBefore(
-  group: FeedingViewGroup,
-  all: FeedingLog[]
-): FeedingLog | undefined {
+function globalPrevLogBefore(group: FeedingViewGroup, all: FeedingLog[]): FeedingLog | undefined {
   const curTs = logTimestamp(group.members[0]);
   const memberKey = new Set(group.members.map((m) => logRowKey(m)));
   let best: FeedingLog | undefined;

@@ -5,10 +5,11 @@
       Đọc nội dung từ hình ảnh (OCR)
     </h2>
     <div class="header-actions">
-      <button 
-        class="btn btn-secondary" 
+      <button
+        class="btn btn-secondary"
         (click)="showHistory.set(!showHistory())"
-        [class.active]="showHistory()">
+        [class.active]="showHistory()"
+      >
         <i class="pi pi-history"></i>
         Lịch sử ({{ history().length }})
       </button>
@@ -18,30 +19,29 @@
   <div class="ocr-container" *ngIf="!showHistory(); else historyView">
     <!-- Upload Section -->
     <div class="upload-section">
-      <div class="upload-area" 
-           [class.has-image]="selectedImage()"
-           (click)="triggerFileInput()"
-           (dragover)="$event.preventDefault()"
-           (drop)="handleDrop($event)">
-        <input 
+      <div
+        class="upload-area"
+        [class.has-image]="selectedImage()"
+        (click)="triggerFileInput()"
+        (dragover)="$event.preventDefault()"
+        (drop)="handleDrop($event)"
+      >
+        <input
           #fileInput
-          type="file" 
-          accept="image/*" 
+          type="file"
+          accept="image/*"
           (change)="onFileSelected($event)"
-          style="display: none;">
-        
+          style="display: none"
+        />
+
         <div *ngIf="!selectedImage()" class="upload-placeholder">
-          <i class="pi pi-cloud-upload" style="font-size: 48px; color: #666;"></i>
+          <i class="pi pi-cloud-upload" style="font-size: 48px; color: #666"></i>
           <p>Kéo thả hình ảnh vào đây hoặc click để chọn</p>
           <p class="hint">Hỗ trợ: JPG, PNG, GIF (tối đa 10MB)</p>
         </div>
 
         <div *ngIf="selectedImage()" class="image-preview-container">
-          <img 
-            #imagePreview
-            [src]="selectedImage()!" 
-            alt="Preview"
-            class="image-preview">
+          <img #imagePreview [src]="selectedImage()!" alt="Preview" class="image-preview" />
           <button class="btn-remove" (click)="clearImage(); $event.stopPropagation()">
             <i class="pi pi-times"></i>
           </button>
@@ -55,10 +55,11 @@
         <i class="pi pi-globe"></i>
         Ngôn ngữ:
       </label>
-      <select 
-        [value]="selectedLanguage()" 
+      <select
+        [value]="selectedLanguage()"
         (change)="selectedLanguage.set($any($event.target).value); onLanguageChange()"
-        [disabled]="isProcessing()">
+        [disabled]="isProcessing()"
+      >
         <option *ngFor="let lang of languages" [value]="lang.code">
           {{ lang.name }}
         </option>
@@ -67,13 +68,17 @@
 
     <!-- Process Button -->
     <div class="action-section">
-      <button 
+      <button
         class="btn btn-primary btn-process"
         (click)="processImage()"
-        [disabled]="!selectedImage() || isProcessing()">
-        <i class="pi" [class.pi-spin]="isProcessing()" 
-           [class.pi-spinner]="isProcessing()" 
-           [class.pi-search]="!isProcessing()"></i>
+        [disabled]="!selectedImage() || isProcessing()"
+      >
+        <i
+          class="pi"
+          [class.pi-spin]="isProcessing()"
+          [class.pi-spinner]="isProcessing()"
+          [class.pi-search]="!isProcessing()"
+        ></i>
         {{ isProcessing() ? 'Đang xử lý...' : 'Đọc nội dung' }}
       </button>
     </div>
@@ -101,7 +106,7 @@
         </h3>
         <div class="result-meta">
           <span class="confidence">
-            Độ chính xác: {{ ocrResult()!.confidence | number:'1.1-1' }}%
+            Độ chính xác: {{ ocrResult()!.confidence | number: '1.1-1' }}%
           </span>
         </div>
       </div>
@@ -118,17 +123,13 @@
       </div>
 
       <div class="result-text">
-        <textarea 
-          readonly 
-          [value]="ocrResult()!.text"
-          class="text-output">
-        </textarea>
+        <textarea readonly [value]="ocrResult()!.text" class="text-output"> </textarea>
       </div>
 
       <div class="result-info">
         <small>
           <i class="pi pi-clock"></i>
-          {{ ocrResult()!.timestamp | date:'dd/MM/yyyy HH:mm:ss' }}
+          {{ ocrResult()!.timestamp | date: 'dd/MM/yyyy HH:mm:ss' }}
         </small>
       </div>
     </div>
@@ -161,8 +162,8 @@
               <p>{{ item.text.substring(0, 200) }}{{ item.text.length > 200 ? '...' : '' }}</p>
             </div>
             <div class="history-meta">
-              <span class="confidence">{{ item.confidence | number:'1.1-1' }}%</span>
-              <span class="timestamp">{{ item.timestamp | date:'dd/MM/yyyy HH:mm' }}</span>
+              <span class="confidence">{{ item.confidence | number: '1.1-1' }}%</span>
+              <span class="timestamp">{{ item.timestamp | date: 'dd/MM/yyyy HH:mm' }}</span>
               <span class="language" *ngIf="item.language">
                 {{ getLanguageName(item.language) }}
               </span>
@@ -181,11 +182,10 @@
 
       <ng-template #noHistory>
         <div class="no-history">
-          <i class="pi pi-inbox" style="font-size: 48px; color: #999;"></i>
+          <i class="pi pi-inbox" style="font-size: 48px; color: #999"></i>
           <p>Chưa có lịch sử nào</p>
         </div>
       </ng-template>
     </div>
   </ng-template>
 </div>
-

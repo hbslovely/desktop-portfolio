@@ -19,12 +19,7 @@
   (click)="closeDialog()"
   (touchmove)="$event.preventDefault()"
 >
-  <div
-    class="activity-dialog"
-    role="dialog"
-    aria-modal="true"
-    (click)="$event.stopPropagation()"
-  >
+  <div class="activity-dialog" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
     <header class="activity-dialog__header">
       <div class="activity-dialog__header-main">
         <div class="activity-dialog__title-mark" aria-hidden="true">
@@ -121,8 +116,12 @@
       <div class="activity-empty" *ngIf="!loading() && filteredLogs().length === 0">
         <i class="pi pi-inbox"></i>
         <p *ngIf="hasTextFilter()">Không có mục nào khớp tìm kiếm.</p>
-        <p *ngIf="!hasTextFilter() && filterCategory === 'all'">Chưa có hoạt động nào được ghi nhận</p>
-        <p *ngIf="!hasTextFilter() && filterCategory !== 'all'">Không có hoạt động nào trong danh mục này</p>
+        <p *ngIf="!hasTextFilter() && filterCategory === 'all'">
+          Chưa có hoạt động nào được ghi nhận
+        </p>
+        <p *ngIf="!hasTextFilter() && filterCategory !== 'all'">
+          Không có hoạt động nào trong danh mục này
+        </p>
       </div>
 
       <ul class="activity-list" *ngIf="!loading() && displayedLogs().length > 0">

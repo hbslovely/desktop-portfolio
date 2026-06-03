@@ -2,13 +2,13 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, throwError, of, Subject, BehaviorSubject } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
-import { 
-  StockPrediction, 
-  TrainingProgress, 
-  TrainingConfig, 
+import {
+  StockPrediction,
+  TrainingProgress,
+  TrainingConfig,
   ModelStatus,
   DEFAULT_TRAINING_CONFIG,
-  NeuralNetworkService
+  NeuralNetworkService,
 } from './neural-network.service';
 
 export interface WorkerTrainingProgress extends TrainingProgress {
@@ -16,7 +16,7 @@ export interface WorkerTrainingProgress extends TrainingProgress {
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class NeuralNetworkWorkerService {
   private worker: Worker | null = null;
@@ -49,8 +49,10 @@ export class NeuralNetworkWorkerService {
     if (typeof Worker !== 'undefined') {
       try {
         // Use the correct path with .ts extension for Angular to bundle the worker
-        this.worker = new Worker(new URL('../workers/neural-network.worker.ts', import.meta.url), { type: 'module' });
-        
+        this.worker = new Worker(new URL('../workers/neural-network.worker.ts', import.meta.url), {
+          type: 'module',
+        });
+
         this.worker.onmessage = ({ data }) => {
           this.handleWorkerMessage(data);
         };
@@ -85,7 +87,7 @@ export class NeuralNetworkWorkerService {
           epoch: data.epoch,
           totalEpochs: data.totalEpochs,
           loss: data.loss,
-          accuracy: data.accuracy
+          accuracy: data.accuracy,
         });
         this.lastTrainingLoss = data.loss;
         this.lastTrainingAccuracy = data.accuracy;
@@ -143,17 +145,19 @@ export class NeuralNetworkWorkerService {
    * Check if model exists in database
    */
   checkModelExists(symbol: string): Observable<ModelStatus> {
-    return this.http.get<any>(`/api/stocks-v2/neural-network/${symbol.toUpperCase()}?action=check`).pipe(
-      map(response => ({
-        exists: response.exists || false,
-        hasWeights: response.hasWeights || false,
-        hasSimulation: response.hasSimulation || false
-      })),
-      catchError(error => {
-        console.error('Error checking model exists:', error);
-        return of({ exists: false, hasWeights: false, hasSimulation: false });
-      })
-    );
+    return this.http
+      .get<any>(`/api/stocks-v2/neural-network/${symbol.toUpperCase()}?action=check`)
+      .pipe(
+        map((response) => ({
+          exists: response.exists || false,
+          hasWeights: response.hasWeights || false,
+          hasSimulation: response.hasSimulation || false,
+        })),
+        catchError((error) => {
+          console.error('Error checking model exists:', error);
+          return of({ exists: false, hasWeights: false, hasSimulation: false });
+        })
+      );
   }
 
   /**
@@ -185,14 +189,14 @@ export class NeuralNetworkWorkerService {
 
     return new Promise((resolve, reject) => {
       // Subscribe to progress updates
-      const progressSub = this.trainingProgress$.subscribe(progress => {
+      const progressSub = this.trainingProgress$.subscribe((progress) => {
         if (progress && onProgress) {
           onProgress(progress);
         }
       });
 
       // Subscribe to errors
-      const errorSub = this.error$.subscribe(error => {
+      const errorSub = this.error$.subscribe((error) => {
         progressSub.unsubscribe();
         errorSub.unsubscribe();
         this.isTraining = false;
@@ -220,8 +224,8 @@ export class NeuralNetworkWorkerService {
           validationSplit: trainingConfig.validationSplit,
           lookbackDays: trainingConfig.lookbackDays,
           forecastDays: trainingConfig.forecastDays,
-          learningRate: trainingConfig.learningRate
-        }
+          learningRate: trainingConfig.learningRate,
+        },
       });
     });
   }
@@ -240,13 +244,13 @@ export class NeuralNetworkWorkerService {
     }
 
     return new Promise((resolve, reject) => {
-      const resultSub = this.predictionResult$.subscribe(result => {
+      const resultSub = this.predictionResult$.subscribe((result) => {
         resultSub.unsubscribe();
         errorSub.unsubscribe();
         resolve(result);
       });
 
-      const errorSub = this.error$.subscribe(error => {
+      const errorSub = this.error$.subscribe((error) => {
         resultSub.unsubscribe();
         errorSub.unsubscribe();
         reject(new Error(error));
@@ -255,7 +259,7 @@ export class NeuralNetworkWorkerService {
       this.worker?.postMessage({
         type: 'predict',
         prices,
-        days
+        days,
       });
     });
   }
@@ -276,8 +280,10 @@ export class NeuralNetworkWorkerService {
     }
 
     try {
-      const response: any = await this.http.get<any>(`/api/stocks-v2/neural-network/${symbol.toUpperCase()}`).toPromise();
-      
+      const response: any = await this.http
+        .get<any>(`/api/stocks-v2/neural-network/${symbol.toUpperCase()}`)
+        .toPromise();
+
       if (!response.success || !response.data) {
         console.log('No saved weights found for', symbol);
         return false;
@@ -295,7 +301,7 @@ export class NeuralNetworkWorkerService {
       this.currentTrainingConfig = {
         ...this.currentTrainingConfig,
         lookbackDays,
-        forecastDays
+        forecastDays,
       };
 
       return new Promise((resolve) => {
@@ -316,7 +322,7 @@ export class NeuralNetworkWorkerService {
         this.worker?.postMessage({
           type: 'loadWeights',
           weightsData,
-          config: { lookbackDays, forecastDays }
+          config: { lookbackDays, forecastDays },
         });
       });
     } catch (error) {
@@ -333,50 +339,53 @@ export class NeuralNetworkWorkerService {
     if (!this.useWorker || !this.worker) {
       return this.fallbackService.saveWeights(symbol);
     }
-    
+
     if (!this.isModelReady) {
       return throwError(() => new Error('Model is not trained yet'));
     }
 
-    return new Observable(observer => {
+    return new Observable((observer) => {
       const messageHandler = ({ data }: MessageEvent) => {
         if (data.type === 'weights') {
           this.worker?.removeEventListener('message', messageHandler);
-          
+
           const inputSize = this.currentTrainingConfig.lookbackDays + 3;
 
-          this.http.post<any>(`/api/stocks-v2/neural-network/${symbol.toUpperCase()}`, {
-            weights: data.weights,
-            trainingEpochs: this.lastTrainingEpochs,
-            loss: this.lastTrainingLoss,
-            accuracy: this.lastTrainingAccuracy,
-            modelConfig: {
-              inputSize: inputSize,
-              layers: [
-                { units: 128, activation: 'relu' },
-                { units: 64, activation: 'relu' },
-                { units: 32, activation: 'relu' },
-                { units: 3, activation: 'linear' }
-              ]
-            },
-            lookbackDays: this.currentTrainingConfig.lookbackDays,
-            forecastDays: this.currentTrainingConfig.forecastDays,
-            batchSize: this.currentTrainingConfig.batchSize,
-            validationSplit: this.currentTrainingConfig.validationSplit,
-          }).pipe(
-            catchError(error => {
-              console.error('Error saving weights:', error);
-              return throwError(() => error);
+          this.http
+            .post<any>(`/api/stocks-v2/neural-network/${symbol.toUpperCase()}`, {
+              weights: data.weights,
+              trainingEpochs: this.lastTrainingEpochs,
+              loss: this.lastTrainingLoss,
+              accuracy: this.lastTrainingAccuracy,
+              modelConfig: {
+                inputSize: inputSize,
+                layers: [
+                  { units: 128, activation: 'relu' },
+                  { units: 64, activation: 'relu' },
+                  { units: 32, activation: 'relu' },
+                  { units: 3, activation: 'linear' },
+                ],
+              },
+              lookbackDays: this.currentTrainingConfig.lookbackDays,
+              forecastDays: this.currentTrainingConfig.forecastDays,
+              batchSize: this.currentTrainingConfig.batchSize,
+              validationSplit: this.currentTrainingConfig.validationSplit,
             })
-          ).subscribe({
-            next: (response) => {
-              observer.next(response);
-              observer.complete();
-            },
-            error: (error) => {
-              observer.error(error);
-            }
-          });
+            .pipe(
+              catchError((error) => {
+                console.error('Error saving weights:', error);
+                return throwError(() => error);
+              })
+            )
+            .subscribe({
+              next: (response) => {
+                observer.next(response);
+                observer.complete();
+              },
+              error: (error) => {
+                observer.error(error);
+              },
+            });
         } else if (data.type === 'error') {
           this.worker?.removeEventListener('message', messageHandler);
           observer.error(new Error(data.error));
@@ -466,11 +475,11 @@ export class NeuralNetworkWorkerService {
     if (!this.useWorker || !this.worker) {
       return this.fallbackService.getModelSummary() + '\n(Fallback mode - main thread)';
     }
-    
+
     let summary = 'Neural Network Model (Worker):\n';
     summary += `Status: ${this.isModelReady ? 'Ready' : 'Not Ready'}\n`;
     summary += `Training: ${this.isTraining ? 'Yes' : 'No'}\n`;
-    
+
     const progress = this.trainingProgress$.value;
     if (progress) {
       summary += `Last Epoch: ${progress.epoch}/${progress.totalEpochs}\n`;
@@ -483,4 +492,3 @@ export class NeuralNetworkWorkerService {
     return summary;
   }
 }
-

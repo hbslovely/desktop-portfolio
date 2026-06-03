@@ -93,10 +93,8 @@ export function formatLogContent(
       const time = details['time'];
       const oldTime = details['oldTime'];
       const newTime = details['newTime'];
-      const timeChanged =
-        oldTime != null && newTime != null && String(oldTime) !== String(newTime);
-      const volumeChanged =
-        oldVol != null && newVol != null && Number(oldVol) !== Number(newVol);
+      const timeChanged = oldTime != null && newTime != null && String(oldTime) !== String(newTime);
+      const volumeChanged = oldVol != null && newVol != null && Number(oldVol) !== Number(newVol);
 
       if (timeChanged && volumeChanged) {
         return `Thay đổi cữ bú từ '${oldTime}' thành '${newTime}', dung tích từ '${oldVol}ml' thành '${newVol}ml'`;
@@ -114,8 +112,7 @@ export function formatLogContent(
     }
     case ACTIVITY_EVENT.FEEDING_DELETED: {
       const reason = details['reason'];
-      const r =
-        reason != null && String(reason).trim() !== '' ? String(reason).trim() : '';
+      const r = reason != null && String(reason).trim() !== '' ? String(reason).trim() : '';
       return r
         ? `Xóa cữ bú '${details['volume']}ml' lúc '${details['time']}'. Lý do: '${r}'`
         : `Xóa cữ bú '${details['volume']}ml' lúc '${details['time']}'`;
@@ -127,8 +124,7 @@ export function formatLogContent(
       const newV = details['newVolume'];
       const time = details['time'];
       const reason = details['reason'];
-      const r =
-        reason != null && String(reason).trim() !== '' ? String(reason).trim() : '';
+      const r = reason != null && String(reason).trim() !== '' ? String(reason).trim() : '';
       /** Không lặp tên user — template đã có `<user> đã`. */
       return r
         ? `Đổi sữa đã pha từ '${oldV}ml' thành '${newV}ml' lúc '${time}'. Lý do: '${r}'`
@@ -143,11 +139,8 @@ export function formatLogContent(
     case ACTIVITY_EVENT.BOTTLE_PREP_MANUAL_CLEARED: {
       const vol = details['volume'];
       const reason = details['reason'];
-      const r =
-        reason != null && String(reason).trim() !== '' ? String(reason).trim() : '';
-      return r
-        ? `Xóa '${vol}ml' sữa đã pha. Lý do: '${r}'`
-        : `Xóa '${vol}ml' sữa đã pha.`;
+      const r = reason != null && String(reason).trim() !== '' ? String(reason).trim() : '';
+      return r ? `Xóa '${vol}ml' sữa đã pha. Lý do: '${r}'` : `Xóa '${vol}ml' sữa đã pha.`;
     }
     case ACTIVITY_EVENT.BOTTLE_PREP_CLEARED_EXPIRY: {
       const vol = details['volume'];
@@ -614,17 +607,13 @@ export class ActivityLogService {
    *  - Content-Type `text/plain;charset=utf-8` vẫn cần để nằm trong
    *    "CORS-safelisted" và không trigger preflight OPTIONS.
    */
-  private postToAppsScript(
-    body: Record<string, unknown>
-  ): Observable<LogSheetResponse> {
+  private postToAppsScript(body: Record<string, unknown>): Observable<LogSheetResponse> {
     const url = this.APPS_SCRIPT_URL;
     const isProxy = !environment.production;
 
     if (isProxy) {
       const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
-      return this.http
-        .post<LogSheetResponse>(url, body, { headers })
-        .pipe(map((resp) => resp));
+      return this.http.post<LogSheetResponse>(url, body, { headers }).pipe(map((resp) => resp));
     }
 
     const payload = JSON.stringify(body);
@@ -715,8 +704,21 @@ export class ActivityLogService {
   /** Helper: Log a document/file event */
   logDocument(
     user: string,
-    eventType: 'FILE_ADDED' | 'FILE_DELETED' | 'FILE_MOVED' | 'FILE_RENAMED' | 'FOLDER_ADDED' | 'FOLDER_DELETED' | 'FOLDER_RENAMED',
-    details: { name?: string; folder?: string; toFolder?: string; oldName?: string; newName?: string }
+    eventType:
+      | 'FILE_ADDED'
+      | 'FILE_DELETED'
+      | 'FILE_MOVED'
+      | 'FILE_RENAMED'
+      | 'FOLDER_ADDED'
+      | 'FOLDER_DELETED'
+      | 'FOLDER_RENAMED',
+    details: {
+      name?: string;
+      folder?: string;
+      toFolder?: string;
+      oldName?: string;
+      newName?: string;
+    }
   ): Observable<boolean> {
     const content = formatLogContent(ACTIVITY_EVENT[eventType], {
       name: details.name,
@@ -747,11 +749,7 @@ export class ActivityLogService {
   }
 
   /** Người dùng xóa thủ công lượng sữa đã pha trên sheet. */
-  logBottlePrepManualClear(
-    actor: string,
-    volumeMl: number,
-    reason?: string
-  ): Observable<boolean> {
+  logBottlePrepManualClear(actor: string, volumeMl: number, reason?: string): Observable<boolean> {
     const content = formatLogContent(ACTIVITY_EVENT.BOTTLE_PREP_MANUAL_CLEARED, {
       volume: volumeMl,
       reason: reason?.trim() || undefined,

@@ -28,7 +28,7 @@ export interface GoogleSheetValuesResponse {
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class GoogleSheetsService {
   private http = inject(HttpClient);
@@ -54,7 +54,7 @@ export class GoogleSheetsService {
     // If we have a GID, find the sheet name first
     if (config.sheetGid) {
       return this.getSheetNameByGid(baseUrl, config.sheetGid).pipe(
-        switchMap(sheetName => {
+        switchMap((sheetName) => {
           const range = config.range || 'A:Z';
           const fullRange = `'${sheetName}'!${range}`;
           return this.fetchValues(baseUrl, fullRange);
@@ -75,9 +75,7 @@ export class GoogleSheetsService {
 
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}?key=${this.API_KEY}&fields=sheets(properties(sheetId,title,index))`;
 
-    return this.http.get<GoogleSheetMetadata>(url).pipe(
-      catchError(this.handleError)
-    );
+    return this.http.get<GoogleSheetMetadata>(url).pipe(catchError(this.handleError));
   }
 
   /**
@@ -87,9 +85,9 @@ export class GoogleSheetsService {
     const metadataUrl = `${baseUrl}?key=${this.API_KEY}&fields=sheets(properties(sheetId,title))`;
 
     return this.http.get<GoogleSheetMetadata>(metadataUrl).pipe(
-      map(metadata => {
+      map((metadata) => {
         const targetSheet = metadata.sheets.find(
-          sheet => sheet.properties.sheetId.toString() === gid
+          (sheet) => sheet.properties.sheetId.toString() === gid
         );
 
         if (!targetSheet) {
@@ -109,7 +107,7 @@ export class GoogleSheetsService {
     const url = `${baseUrl}/values/${encodeURIComponent(range)}?key=${this.API_KEY}&valueRenderOption=FORMATTED_VALUE`;
 
     return this.http.get<GoogleSheetValuesResponse>(url).pipe(
-      map(response => response.values || []),
+      map((response) => response.values || []),
       catchError(this.handleError)
     );
   }

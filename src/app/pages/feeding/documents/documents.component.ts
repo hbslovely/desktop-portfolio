@@ -10,10 +10,7 @@ import {
   signal,
 } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import {
-  ExplorerEntry,
-  ExplorerService,
-} from '../../../services/explorer.service';
+import { ExplorerEntry, ExplorerService } from '../../../services/explorer.service';
 import { ActivityLogService } from '../../../services/activity-log.service';
 
 interface Crumb {
@@ -143,9 +140,7 @@ export class DocumentsComponent {
   clipboard = signal<{ ids: number[] } | null>(null);
 
   /** Tiến độ upload nhiều file: hiện "Đang tải 3/8…". */
-  uploadProgress = signal<{ done: number; total: number; failed: number } | null>(
-    null
-  );
+  uploadProgress = signal<{ done: number; total: number; failed: number } | null>(null);
 
   // ===== Image preview zoom & pan =====
   /**
@@ -199,7 +194,7 @@ export class DocumentsComponent {
   /** CSS transform string áp lên `<img class="docs-preview__img">`. */
   previewTransform = computed(
     () =>
-      `translate3d(${ this.previewTx() }px, ${ this.previewTy() }px, 0) scale(${ this.previewScale() })`
+      `translate3d(${this.previewTx()}px, ${this.previewTy()}px, 0) scale(${this.previewScale()})`
   );
 
   previewZoomPercent = computed(() => Math.round(this.previewScale() * 100));
@@ -220,9 +215,7 @@ export class DocumentsComponent {
     if (!cur) return [];
     const parentId = cur.parentId;
     return this.entries()
-      .filter(
-        (e) => e.parentId === parentId && e.type === 'file' && this.isPreviewableFile(e)
-      )
+      .filter((e) => e.parentId === parentId && e.type === 'file' && this.isPreviewableFile(e))
       .sort((a, b) => a.name.localeCompare(b.name, 'vi'));
   });
 
@@ -380,23 +373,17 @@ export class DocumentsComponent {
   private async preloadFileContents(entries: ExplorerEntry[]): Promise<void> {
     const runId = ++this.preloadRunId;
     const candidates = entries.filter(
-      (e) =>
-        e.type === 'file' &&
-        this.isPreviewableFile(e) &&
-        !e.previewUrl &&
-        !e.content
+      (e) => e.type === 'file' && this.isPreviewableFile(e) && !e.previewUrl && !e.content
     );
 
     if (candidates.length === 0) return;
 
     try {
       // Lấy tất cả IDs cần preload
-      const ids = candidates.map(entry => entry.id);
-      
+      const ids = candidates.map((entry) => entry.id);
+
       // Gọi service để tải song song
-      const resultsMap = await firstValueFrom(
-        this.explorerService.getMultipleFileDataUrls(ids)
-      );
+      const resultsMap = await firstValueFrom(this.explorerService.getMultipleFileDataUrls(ids));
 
       // Kiểm tra nếu component đã bị hủy trong lúc loading
       if (runId !== this.preloadRunId) return;
@@ -527,9 +514,7 @@ export class DocumentsComponent {
       this.itemActionsMenuOpen.set(null);
       // Focus input sau khi *ngIf render xong.
       setTimeout(() => {
-        const el = document.querySelector(
-          '.docs-search-input'
-        ) as HTMLInputElement | null;
+        const el = document.querySelector('.docs-search-input') as HTMLInputElement | null;
         el?.focus();
         el?.select();
       }, 0);
@@ -729,7 +714,7 @@ export class DocumentsComponent {
     //    modal (`d.extension`). Fallback `.jpg` cho trường hợp file legacy
     //    không có extension và đang được rename lần đầu.
     if (d.entryType === 'file' && !/\.[a-z0-9]{2,5}$/i.test(name)) {
-      name = `${ name }${ d.extension || '.jpg' }`;
+      name = `${name}${d.extension || '.jpg'}`;
     }
 
     if (d.mode === 'add') {
@@ -764,30 +749,26 @@ export class DocumentsComponent {
       const targetId = d.targetId;
       const oldEntry = this.entriesById().get(targetId);
       const oldName = oldEntry?.name || '';
-      this.explorerService
-        .updateEntry(targetId, { name })
-        .subscribe({
-          next: () => {
-            this.saving.set(false);
-            this.folderDraft.set(null);
-            // Cập nhật cục bộ entry trong preview nếu user vừa đổi tên ảnh
-            // đang xem — tránh phải đợi reload mới thấy tên mới.
-            this.previewEntry.update((p) =>
-              p && p.id === targetId ? { ...p, name } : p
-            );
-            this.flashSuccess(`Đã đổi tên thành "${name}"`);
-            // Log activity (non-blocking)
-            const eventType = d.entryType === 'folder' ? 'FOLDER_RENAMED' : 'FILE_RENAMED';
-            this.activityLogService
-              .logDocument('System', eventType, { oldName, newName: name })
-              .subscribe();
-            setTimeout(() => this.loadEntries(), 800);
-          },
-          error: (err) => {
-            this.saving.set(false);
-            this.errorMsg.set(err?.message || 'Đổi tên thất bại.');
-          },
-        });
+      this.explorerService.updateEntry(targetId, { name }).subscribe({
+        next: () => {
+          this.saving.set(false);
+          this.folderDraft.set(null);
+          // Cập nhật cục bộ entry trong preview nếu user vừa đổi tên ảnh
+          // đang xem — tránh phải đợi reload mới thấy tên mới.
+          this.previewEntry.update((p) => (p && p.id === targetId ? { ...p, name } : p));
+          this.flashSuccess(`Đã đổi tên thành "${name}"`);
+          // Log activity (non-blocking)
+          const eventType = d.entryType === 'folder' ? 'FOLDER_RENAMED' : 'FILE_RENAMED';
+          this.activityLogService
+            .logDocument('System', eventType, { oldName, newName: name })
+            .subscribe();
+          setTimeout(() => this.loadEntries(), 800);
+        },
+        error: (err) => {
+          this.saving.set(false);
+          this.errorMsg.set(err?.message || 'Đổi tên thất bại.');
+        },
+      });
     }
   }
 
@@ -796,14 +777,14 @@ export class DocumentsComponent {
     if (entry.id === this.ROOT_ID) return;
     this.closeItemActionsMenu();
     const isFolder = entry.type === 'folder';
-    const childCount = this.entries().filter((e) => e.parentId === entry.id)
-      .length;
+    const childCount = this.entries().filter((e) => e.parentId === entry.id).length;
 
     let msg: string;
     if (isFolder) {
-      msg = childCount > 0
-        ? `Xoá thư mục "${entry.name}"?\n\nThư mục này chứa ${childCount} mục con — TẤT CẢ con cháu cũng sẽ bị xoá vĩnh viễn.`
-        : `Xoá thư mục "${entry.name}"?`;
+      msg =
+        childCount > 0
+          ? `Xoá thư mục "${entry.name}"?\n\nThư mục này chứa ${childCount} mục con — TẤT CẢ con cháu cũng sẽ bị xoá vĩnh viễn.`
+          : `Xoá thư mục "${entry.name}"?`;
     } else {
       msg = `Xoá ảnh "${entry.name}"?`;
     }
@@ -813,15 +794,11 @@ export class DocumentsComponent {
     this.explorerService.deleteEntry(entry.id).subscribe({
       next: () => {
         this.flashSuccess(
-          isFolder
-            ? `Đã xoá thư mục "${entry.name}"`
-            : `Đã xoá ảnh "${entry.name}"`
+          isFolder ? `Đã xoá thư mục "${entry.name}"` : `Đã xoá ảnh "${entry.name}"`
         );
         // Log activity (non-blocking)
         const eventType = isFolder ? 'FOLDER_DELETED' : 'FILE_DELETED';
-        this.activityLogService
-          .logDocument('System', eventType, { name: entry.name })
-          .subscribe();
+        this.activityLogService.logDocument('System', eventType, { name: entry.name }).subscribe();
         setTimeout(() => this.loadEntries(), 800);
       },
       error: (err) => {
@@ -900,13 +877,9 @@ export class DocumentsComponent {
           .subscribe();
       } catch (e: unknown) {
         failed++;
-        failedNames.push(
-          `${file.name}: ${e instanceof Error ? e.message : 'lỗi không rõ'}`
-        );
+        failedNames.push(`${file.name}: ${e instanceof Error ? e.message : 'lỗi không rõ'}`);
       } finally {
-        this.uploadProgress.update((p) =>
-          p ? { ...p, done: success } : p
-        );
+        this.uploadProgress.update((p) => (p ? { ...p, done: success } : p));
       }
     }
 
@@ -940,10 +913,7 @@ export class DocumentsComponent {
   private isImageFile(f: File): boolean {
     const t = (f.type || '').toLowerCase();
     if (t.startsWith('image/')) return true;
-    if (
-      !t &&
-      /\.(jpe?g|png|gif|webp|heic|heif|bmp|avif|dng)$/i.test(f.name)
-    ) {
+    if (!t && /\.(jpe?g|png|gif|webp|heic|heif|bmp|avif|dng)$/i.test(f.name)) {
       return true;
     }
     return false;
@@ -1283,12 +1253,7 @@ export class DocumentsComponent {
     if (typing && !inSearchInput) return;
 
     // Phím `/` mở search khi không có overlay nào (modal/preview/search).
-    if (
-      !this.previewEntry() &&
-      !this.searchOpen() &&
-      !this.folderDraft() &&
-      ev.key === '/'
-    ) {
+    if (!this.previewEntry() && !this.searchOpen() && !this.folderDraft() && ev.key === '/') {
       ev.preventDefault();
       this.toggleSearch();
       return;
@@ -1345,10 +1310,7 @@ export class DocumentsComponent {
     const [a, b] = pts;
     const dist = Math.hypot(a.x - b.x, a.y - b.y);
     const ratio = dist / start.dist;
-    const target = Math.min(
-      this.MAX_ZOOM,
-      Math.max(this.MIN_ZOOM, start.scale * ratio)
-    );
+    const target = Math.min(this.MAX_ZOOM, Math.max(this.MIN_ZOOM, start.scale * ratio));
     const r = target / start.scale;
     const kx = start.midX - start.centerX;
     const ky = start.midY - start.centerY;
@@ -1436,16 +1398,12 @@ export class DocumentsComponent {
     this.clipboard.set({ ids });
     this.exitSelectMode();
 
-    const folderCount = ids.filter(
-      (id) => this.entriesById().get(id)?.type === 'folder'
-    ).length;
+    const folderCount = ids.filter((id) => this.entriesById().get(id)?.type === 'folder').length;
     const fileCount = ids.length - folderCount;
     const parts: string[] = [];
     if (folderCount > 0) parts.push(`${folderCount} thư mục`);
     if (fileCount > 0) parts.push(`${fileCount} file`);
-    this.flashSuccess(
-      `Đã cắt ${parts.join(' + ')} — vào thư mục đích rồi bấm "Dán vào đây"`
-    );
+    this.flashSuccess(`Đã cắt ${parts.join(' + ')} — vào thư mục đích rồi bấm "Dán vào đây"`);
   }
 
   cancelClipboard() {
@@ -1557,7 +1515,7 @@ export class DocumentsComponent {
         return;
       }
       this.triggerDownload(hydrated.content, hydrated.name);
-      this.flashSuccess(`Đã tải "${ entry.name }"`);
+      this.flashSuccess(`Đã tải "${entry.name}"`);
     } catch (e) {
       console.error('downloadEntry failed', e);
       this.errorMsg.set('Tải xuống thất bại.');
@@ -1605,9 +1563,7 @@ export class DocumentsComponent {
         console.warn('triggerDownload failed', e.name, err);
         failed++;
       }
-      this.uploadProgress.update((p) =>
-        p ? { ...p, done, failed } : p
-      );
+      this.uploadProgress.update((p) => (p ? { ...p, done, failed } : p));
       // Delay nhỏ giữa các download để browser không nuốt request.
       if (i < ids.length - 1) {
         await new Promise((r) => setTimeout(r, 180));
@@ -1616,11 +1572,11 @@ export class DocumentsComponent {
     this.uploadProgress.set(null);
 
     if (failed === 0) {
-      this.flashSuccess(`Đã tải ${ done } file`);
+      this.flashSuccess(`Đã tải ${done} file`);
     } else {
-      this.flashSuccess(`Đã tải ${ done }/${ ids.length } file`);
+      this.flashSuccess(`Đã tải ${done}/${ids.length} file`);
       if (failed > 0) {
-        this.errorMsg.set(`${ failed } file không tải được.`);
+        this.errorMsg.set(`${failed} file không tải được.`);
       }
     }
   }
@@ -1730,9 +1686,8 @@ export class DocumentsComponent {
     if (folderCount > 0) parts.push(`${folderCount} thư mục`);
     if (fileCount > 0) parts.push(`${fileCount} file`);
     const summary = parts.join(' + ');
-    const warn = folderCount > 0
-      ? '\n\nTẤT CẢ file con & thư mục con bên trong cũng sẽ bị xoá.'
-      : '';
+    const warn =
+      folderCount > 0 ? '\n\nTẤT CẢ file con & thư mục con bên trong cũng sẽ bị xoá.' : '';
     if (!confirm(`Xoá ${summary} đã chọn?${warn}`)) return;
 
     this.deleteSequentially(ids);

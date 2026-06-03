@@ -11,31 +11,33 @@ import { ExpenseAppComponent } from '../../components/apps/expense-app/expense-a
       <app-expense-app [bypassAuth]="true"></app-expense-app>
     </div>
   `,
-  styles: [`
-    .chi-tieu-page {
-      width: 100%;
-      height: 100vh;
-      overflow: hidden;
-      background: #f5f7fa;
-    }
+  styles: [
+    `
+      .chi-tieu-page {
+        width: 100%;
+        height: 100vh;
+        overflow: hidden;
+        background: #f5f7fa;
+      }
 
-    :host {
-      display: block;
-      width: 100%;
-      height: 100%;
-    }
+      :host {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
 
-    ::ng-deep .expense-app {
-      width: 100%;
-      height: 100vh;
-      max-height: 100vh;
-      border-radius: 0;
-    }
+      ::ng-deep .expense-app {
+        width: 100%;
+        height: 100vh;
+        max-height: 100vh;
+        border-radius: 0;
+      }
 
-    ::ng-deep .main-screen {
-      height: 100vh;
-      max-height: 100vh;
-    }
-  `]
+      ::ng-deep .main-screen {
+        height: 100vh;
+        max-height: 100vh;
+      }
+    `,
+  ],
 })
 export class ChiTieuPageComponent {}

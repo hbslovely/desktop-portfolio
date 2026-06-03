@@ -1,10 +1,20 @@
 <div class="paint-app">
   <div class="top-toolbar">
     <div class="toolbar-group">
-      <button (click)="undo()" class="icon-button" title="Undo (Ctrl+Z)" [disabled]="paths.length === 0">
+      <button
+        (click)="undo()"
+        class="icon-button"
+        title="Undo (Ctrl+Z)"
+        [disabled]="paths.length === 0"
+      >
         <i class="pi pi-undo"></i>
       </button>
-      <button (click)="redo()" class="icon-button" title="Redo (Ctrl+Y)" [disabled]="redoPaths.length === 0">
+      <button
+        (click)="redo()"
+        class="icon-button"
+        title="Redo (Ctrl+Y)"
+        [disabled]="redoPaths.length === 0"
+      >
         <i class="pi pi-refresh"></i>
       </button>
     </div>
@@ -22,7 +32,12 @@
     </div>
     <div class="toolbar-separator"></div>
     <div class="toolbar-group">
-      <button (click)="toggleGrid()" class="icon-button" [class.active]="showGrid()" title="Toggle Grid">
+      <button
+        (click)="toggleGrid()"
+        class="icon-button"
+        [class.active]="showGrid()"
+        title="Toggle Grid"
+      >
         <i class="pi pi-th-large"></i>
       </button>
       <button (click)="toggleFullscreen()" class="icon-button" title="Fullscreen">
@@ -36,12 +51,13 @@
       <div class="tool-section">
         <div class="section-title">Tools</div>
         <div class="tool-grid">
-          <button 
+          <button
             *ngFor="let tool of tools"
             (click)="selectTool(tool.id)"
             [class.active]="selectedTool() === tool.id"
             class="tool-btn"
-            [title]="tool.name">
+            [title]="tool.name"
+          >
             <i [class]="tool.icon"></i>
           </button>
         </div>
@@ -50,24 +66,20 @@
       <div class="color-section">
         <div class="section-title">Colors</div>
         <div class="color-picker-container">
-          <input 
-            type="color" 
-            [(ngModel)]="selectedColor"
-            class="color-picker"
-            title="Pick Color">
+          <input type="color" [(ngModel)]="selectedColor" class="color-picker" title="Pick Color" />
           <div class="current-color-display" [style.background-color]="selectedColor()">
             <span>{{ selectedColor() }}</span>
           </div>
         </div>
         <div class="color-grid">
-          <button 
+          <button
             *ngFor="let color of colors"
             (click)="selectColor(color)"
             [class.active]="selectedColor() === color"
             class="color-swatch"
             [style.background-color]="color"
-            [title]="color">
-          </button>
+            [title]="color"
+          ></button>
         </div>
       </div>
 
@@ -76,42 +88,34 @@
         <div class="stroke-controls">
           <div class="slider-group">
             <label>Width</label>
-            <input 
-              type="range" 
-              min="1" 
-              max="50" 
-              [(ngModel)]="lineWidth"
-              class="slider">
+            <input type="range" min="1" max="50" [(ngModel)]="lineWidth" class="slider" />
             <span class="value">{{ lineWidth() }}px</span>
           </div>
           <div class="slider-group">
             <label>Opacity</label>
-            <input 
-              type="range" 
-              min="0" 
-              max="1" 
-              step="0.1"
-              [(ngModel)]="opacity"
-              class="slider">
+            <input type="range" min="0" max="1" step="0.1" [(ngModel)]="opacity" class="slider" />
             <span class="value">{{ (opacity() * 100).toFixed(0) }}%</span>
           </div>
         </div>
         <div class="stroke-preview">
-          <div 
+          <div
             class="preview-circle"
             [style.width.px]="lineWidth()"
             [style.height.px]="lineWidth()"
             [style.background-color]="selectedColor()"
-            [style.opacity]="opacity()">
-          </div>
+            [style.opacity]="opacity()"
+          ></div>
         </div>
       </div>
 
-      <div class="fill-section" *ngIf="selectedTool() === 'rectangle' || selectedTool() === 'circle'">
+      <div
+        class="fill-section"
+        *ngIf="selectedTool() === 'rectangle' || selectedTool() === 'circle'"
+      >
         <div class="section-title">Fill</div>
         <div class="fill-toggle">
           <label class="toggle-switch">
-            <input type="checkbox" [(ngModel)]="fillShape">
+            <input type="checkbox" [(ngModel)]="fillShape" />
             <span class="toggle-slider"></span>
           </label>
           <span>Fill Shape</span>
@@ -130,12 +134,7 @@
           </select>
           <div class="slider-group">
             <label>Size</label>
-            <input 
-              type="range" 
-              min="8" 
-              max="72" 
-              [(ngModel)]="fontSize"
-              class="slider">
+            <input type="range" min="8" max="72" [(ngModel)]="fontSize" class="slider" />
             <span class="value">{{ fontSize() }}px</span>
           </div>
         </div>
@@ -144,13 +143,14 @@
 
     <div class="canvas-area">
       <div class="canvas-wrapper" [class.show-grid]="showGrid()">
-        <canvas 
+        <canvas
           #canvas
           class="drawing-canvas"
           (mousedown)="startDrawing($event)"
           (mousemove)="draw($event)"
           (mouseup)="stopDrawing($event)"
-          (mouseleave)="stopDrawing($event)">
+          (mouseleave)="stopDrawing($event)"
+        >
         </canvas>
       </div>
       <div class="zoom-controls">
@@ -173,14 +173,15 @@
     <div class="text-input-dialog" (click)="$event.stopPropagation()">
       <h3>Add Text</h3>
       <div class="text-input-container">
-        <input 
-          type="text" 
+        <input
+          type="text"
           [(ngModel)]="textInput"
           placeholder="Enter text..."
           class="text-input-field"
           (keydown.enter)="addText()"
           (keydown.escape)="cancelText()"
-          autofocus>
+          autofocus
+        />
       </div>
       <div class="text-input-actions">
         <button (click)="addText()" class="text-add-btn">Add Text</button>
@@ -204,10 +205,11 @@
   </div>
 
   <!-- Hidden file input for image upload -->
-  <input 
-    type="file" 
-    #fileInput 
-    accept="image/*" 
-    style="display: none" 
-    (change)="onImageUpload($event)">
+  <input
+    type="file"
+    #fileInput
+    accept="image/*"
+    style="display: none"
+    (change)="onImageUpload($event)"
+  />
 </div>

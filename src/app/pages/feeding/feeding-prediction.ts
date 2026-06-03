@@ -42,9 +42,7 @@ function median(nums: number[]): number {
   if (nums.length === 0) return 0;
   const sorted = [...nums].sort((a, b) => a - b);
   const mid = Math.floor(sorted.length / 2);
-  return sorted.length % 2 === 0
-    ? (sorted[mid - 1] + sorted[mid]) / 2
-    : sorted[mid];
+  return sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
 }
 
 function mean(nums: number[]): number {
@@ -77,31 +75,31 @@ function predictVolumeBasedOnSimilarTime(
   currentMinute: number
 ): number | null {
   const oneWeekAgo = Date.now() - 7 * MS_PER_DAY;
-  
+
   // Lọc các cữ trong tuần qua
-  const weekSamples = sample.filter(x => x.at.getTime() >= oneWeekAgo);
-  
+  const weekSamples = sample.filter((x) => x.at.getTime() >= oneWeekAgo);
+
   if (weekSamples.length < 2) {
     return null; // Không đủ dữ liệu
   }
-  
+
   // Tìm các cữ có thời gian tương tự (sai lệch <= 60 phút)
   const similarFeedings: number[] = [];
-  
+
   for (const feed of weekSamples) {
     const feedMinute = minuteOfDay(feed.at);
     const timeDiff = circularDiff(feedMinute, currentMinute);
-    
+
     // Nếu thời gian tương tự (trong vòng 1 giờ)
     if (timeDiff <= 60) {
       similarFeedings.push(feed.log.volume);
     }
   }
-  
+
   if (similarFeedings.length === 0) {
     return null;
   }
-  
+
   // Loại bỏ các giá trị ngoại lệ (quá nhỏ hoặc quá lớn)
   const sorted = [...similarFeedings].sort((a, b) => a - b);
   const q1Index = Math.floor(sorted.length * 0.25);
@@ -109,18 +107,18 @@ function predictVolumeBasedOnSimilarTime(
   const q1 = sorted[q1Index];
   const q3 = sorted[q3Index];
   const iqr = q3 - q1;
-  
+
   // Loại bỏ outliers theo quy tắc IQR
   const lowerBound = q1 - 1.5 * iqr;
   const upperBound = q3 + 1.5 * iqr;
-  
-  const filtered = similarFeedings.filter(vol => vol >= lowerBound && vol <= upperBound);
-  
+
+  const filtered = similarFeedings.filter((vol) => vol >= lowerBound && vol <= upperBound);
+
   if (filtered.length === 0) {
     // Nếu tất cả đều bị loại, dùng lại toàn bộ
     return mean(similarFeedings);
   }
-  
+
   // Trả về trung bình của các giá trị hợp lệ
   return mean(filtered);
 }
@@ -137,10 +135,7 @@ function predictVolumeBasedOnSimilarTime(
  * VD: hôm qua 3:05 bú → 4:10 bú 40ml, hôm kia 2:55 bú → 4:05 bú 45ml.
  * Hôm nay 3:00 vừa bú → pattern gợi ý ~1h5p nữa, ~40ml.
  */
-export function predictNextFeeding(
-  logs: FeedingLog[],
-  now: Date = new Date()
-): FeedingPrediction {
+export function predictNextFeeding(logs: FeedingLog[], now: Date = new Date()): FeedingPrediction {
   if (!logs || logs.length === 0) {
     return {
       hasData: false,
@@ -216,9 +211,7 @@ export function predictNextFeeding(
   let matched: Pair[] = [];
   let usedWindowMin = 0;
   for (const w of windows) {
-    matched = allPairs.filter(
-      (p) => w === Infinity || circularDiff(p.prevMinute, lastMinute) <= w
-    );
+    matched = allPairs.filter((p) => w === Infinity || circularDiff(p.prevMinute, lastMinute) <= w);
     if (matched.length >= 3 || w === Infinity) {
       usedWindowMin = w === Infinity ? 0 : w;
       break;
@@ -247,12 +240,11 @@ export function predictNextFeeding(
 
   // ===== 3. COMBINE =====
   // Interval: chỉ dựa trên median matched (thuần pattern theo giờ)
-  const predictedAt =
-    medIv > 0 ? new Date(lastFeed.at.getTime() + medIv * MS_PER_MIN) : undefined;
+  const predictedAt = medIv > 0 ? new Date(lastFeed.at.getTime() + medIv * MS_PER_MIN) : undefined;
 
   // Smart volume prediction: tìm các cữ tương tự trong tuần qua
   const smartVolume = predictVolumeBasedOnSimilarTime(sample, lastMinute);
-  
+
   // Nếu có smart prediction, dùng nó; không thì fallback về logic cũ
   let predictedVolumeRaw: number;
   if (smartVolume !== null) {
@@ -292,9 +284,7 @@ export function predictNextFeeding(
   if (medIv > 0) {
     const h = Math.floor(medIv / 60);
     const m = Math.round(medIv % 60);
-    reasoning.push(
-      `Cữ kế tiếp thường cách khoảng ${h > 0 ? `${h}h ` : ''}${m}p.`
-    );
+    reasoning.push(`Cữ kế tiếp thường cách khoảng ${h > 0 ? `${h}h ` : ''}${m}p.`);
   }
   if (smartVolume !== null) {
     reasoning.push(
@@ -332,7 +322,11 @@ export function predictNextFeeding(
 /**
  * Tổng hợp theo ngày cho N ngày gần nhất (bao gồm hôm nay)
  */
-export function getDailySummaries(logs: FeedingLog[], days: number, now: Date = new Date()): DailySummary[] {
+export function getDailySummaries(
+  logs: FeedingLog[],
+  days: number,
+  now: Date = new Date()
+): DailySummary[] {
   const result: DailySummary[] = [];
   for (let i = days - 1; i >= 0; i--) {
     const d = new Date(now);

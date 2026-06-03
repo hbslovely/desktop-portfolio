@@ -47,8 +47,7 @@ export class MedicalHistoryPreviewComponent {
   canZoomOut = computed(() => this.scale() > this.minZoom + 0.001);
 
   private pointers = new Map<number, { x: number; y: number }>();
-  private panStart: { x: number; y: number; tx: number; ty: number } | null =
-    null;
+  private panStart: { x: number; y: number; tx: number; ty: number } | null = null;
   private pinchStart: {
     dist: number;
     scale: number;
@@ -65,8 +64,7 @@ export class MedicalHistoryPreviewComponent {
     if (!this.preview()) return;
     const target = ev.target as HTMLElement | null;
     const tag = target?.tagName;
-    const typing =
-      tag === 'INPUT' || tag === 'TEXTAREA' || target?.isContentEditable;
+    const typing = tag === 'INPUT' || tag === 'TEXTAREA' || target?.isContentEditable;
     if (typing) return;
     if (ev.key === 'Escape') {
       ev.preventDefault();
@@ -257,10 +255,7 @@ export class MedicalHistoryPreviewComponent {
     const [a, b] = pts;
     const dist = Math.hypot(a.x - b.x, a.y - b.y);
     const ratio = dist / start.dist;
-    const target = Math.min(
-      this.maxZoom,
-      Math.max(this.minZoom, start.scale * ratio)
-    );
+    const target = Math.min(this.maxZoom, Math.max(this.minZoom, start.scale * ratio));
     const r = target / start.scale;
     const kx = start.midX - start.centerX;
     const ky = start.midY - start.centerY;

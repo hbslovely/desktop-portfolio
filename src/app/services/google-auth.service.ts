@@ -6,7 +6,7 @@ declare var gapi: any;
 declare var google: any;
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class GoogleAuthService {
   private isInitialized = false;
@@ -43,12 +43,12 @@ export class GoogleAuthService {
             try {
               // Initialize client only (no auth2)
               await gapi.client.init({
-                discoveryDocs: this.DISCOVERY_DOCS
+                discoveryDocs: this.DISCOVERY_DOCS,
               });
-              
+
               this.isInitialized = true;
               console.log('✅ Google API client initialized');
-              
+
               // Check if we have a stored token
               const storedToken = sessionStorage.getItem('google_access_token');
               if (storedToken) {
@@ -56,7 +56,7 @@ export class GoogleAuthService {
                 this.setAccessToken(storedToken);
                 this.isSignedIn.next(true);
               }
-              
+
               resolve();
             } catch (error: any) {
               console.error('❌ Error initializing Google API client:', error);
@@ -87,7 +87,7 @@ export class GoogleAuthService {
    */
   checkSignInStatus(): boolean {
     if (!this.isInitialized) return false;
-    
+
     // Check if we have a stored token
     const storedToken = sessionStorage.getItem('google_access_token');
     if (storedToken) {
@@ -96,7 +96,7 @@ export class GoogleAuthService {
       this.isSignedIn.next(true);
       return true;
     }
-    
+
     this.isSignedIn.next(false);
     return false;
   }
@@ -105,63 +105,68 @@ export class GoogleAuthService {
    * Sign in with Google using Google Identity Services
    */
   signIn(): Observable<boolean> {
-    return from(this.initializeGapi().then(async () => {
-      try {
-        // Wait for Google Identity Services to be available
-        await this.waitForGoogleIdentityServices();
+    return from(
+      this.initializeGapi().then(async () => {
+        try {
+          // Wait for Google Identity Services to be available
+          await this.waitForGoogleIdentityServices();
 
-        // Check if Google Identity Services is available
-        if (typeof google === 'undefined' || !google.accounts || !google.accounts.oauth2) {
-          throw new Error('Google Identity Services chưa được tải. Vui lòng tải lại trang.');
-        }
-
-        // Use Google Identity Services OAuth 2.0
-        return new Promise<boolean>((resolve, reject) => {
-          try {
-            const tokenClient = google.accounts.oauth2.initTokenClient({
-              client_id: this.CLIENT_ID,
-              scope: this.SCOPES,
-              callback: (response: any) => {
-                if (response.error) {
-                  console.error('❌ OAuth error:', response.error);
-                  if (response.error === 'popup_closed_by_user' || response.error === 'access_denied') {
-                    reject(new Error('Đăng nhập bị hủy bởi người dùng'));
-                  } else {
-                    reject(new Error(`Lỗi đăng nhập: ${response.error}`));
-                  }
-                  return;
-                }
-
-                // Store token
-                this.accessToken = response.access_token;
-                sessionStorage.setItem('google_access_token', response.access_token);
-                
-                // Set token for gapi client
-                this.setAccessToken(response.access_token);
-                
-                this.isSignedIn.next(true);
-                console.log('✅ Signed in successfully');
-                resolve(true);
-              }
-            });
-            
-            // Request access token (this will open popup)
-            tokenClient.requestAccessToken();
-          } catch (error: any) {
-            console.error('❌ Error creating token client:', error);
-            reject(new Error('Không thể khởi tạo Google OAuth. Vui lòng thử lại.'));
+          // Check if Google Identity Services is available
+          if (typeof google === 'undefined' || !google.accounts || !google.accounts.oauth2) {
+            throw new Error('Google Identity Services chưa được tải. Vui lòng tải lại trang.');
           }
-        });
-      } catch (error: any) {
-        console.error('❌ Error signing in:', error);
-        
-        if (error.message) {
-          throw new Error(error.message);
+
+          // Use Google Identity Services OAuth 2.0
+          return new Promise<boolean>((resolve, reject) => {
+            try {
+              const tokenClient = google.accounts.oauth2.initTokenClient({
+                client_id: this.CLIENT_ID,
+                scope: this.SCOPES,
+                callback: (response: any) => {
+                  if (response.error) {
+                    console.error('❌ OAuth error:', response.error);
+                    if (
+                      response.error === 'popup_closed_by_user' ||
+                      response.error === 'access_denied'
+                    ) {
+                      reject(new Error('Đăng nhập bị hủy bởi người dùng'));
+                    } else {
+                      reject(new Error(`Lỗi đăng nhập: ${response.error}`));
+                    }
+                    return;
+                  }
+
+                  // Store token
+                  this.accessToken = response.access_token;
+                  sessionStorage.setItem('google_access_token', response.access_token);
+
+                  // Set token for gapi client
+                  this.setAccessToken(response.access_token);
+
+                  this.isSignedIn.next(true);
+                  console.log('✅ Signed in successfully');
+                  resolve(true);
+                },
+              });
+
+              // Request access token (this will open popup)
+              tokenClient.requestAccessToken();
+            } catch (error: any) {
+              console.error('❌ Error creating token client:', error);
+              reject(new Error('Không thể khởi tạo Google OAuth. Vui lòng thử lại.'));
+            }
+          });
+        } catch (error: any) {
+          console.error('❌ Error signing in:', error);
+
+          if (error.message) {
+            throw new Error(error.message);
+          }
+
+          throw new Error('Không thể đăng nhập Google. Vui lòng thử lại.');
         }
-        
-        throw new Error('Không thể đăng nhập Google. Vui lòng thử lại.');
-      }
-    }));
+      })
+    );
   }
 
   /**
@@ -196,33 +201,35 @@ export class GoogleAuthService {
    * Sign out
    */
   signOut(): Observable<void> {
-    return from(this.initializeGapi().then(async () => {
-      try {
-        // Revoke token if available
-        if (this.accessToken && typeof google !== 'undefined' && google.accounts) {
-          google.accounts.oauth2.revoke(this.accessToken, () => {
-            console.log('Token revoked');
-          });
+    return from(
+      this.initializeGapi().then(async () => {
+        try {
+          // Revoke token if available
+          if (this.accessToken && typeof google !== 'undefined' && google.accounts) {
+            google.accounts.oauth2.revoke(this.accessToken, () => {
+              console.log('Token revoked');
+            });
+          }
+
+          // Clear stored token
+          sessionStorage.removeItem('google_access_token');
+          this.accessToken = null;
+
+          // Clear gapi token
+          if (gapi.client) {
+            gapi.client.setToken(null);
+          }
+
+          this.isSignedIn.next(false);
+        } catch (error) {
+          console.error('Error signing out:', error);
+          // Still clear local state even if revoke fails
+          sessionStorage.removeItem('google_access_token');
+          this.accessToken = null;
+          this.isSignedIn.next(false);
         }
-        
-        // Clear stored token
-        sessionStorage.removeItem('google_access_token');
-        this.accessToken = null;
-        
-        // Clear gapi token
-        if (gapi.client) {
-          gapi.client.setToken(null);
-        }
-        
-        this.isSignedIn.next(false);
-      } catch (error) {
-        console.error('Error signing out:', error);
-        // Still clear local state even if revoke fails
-        sessionStorage.removeItem('google_access_token');
-        this.accessToken = null;
-        this.isSignedIn.next(false);
-      }
-    }));
+      })
+    );
   }
 
   /**
@@ -232,14 +239,14 @@ export class GoogleAuthService {
     if (this.accessToken) {
       return this.accessToken;
     }
-    
+
     // Try to get from session storage
     const storedToken = sessionStorage.getItem('google_access_token');
     if (storedToken) {
       this.accessToken = storedToken;
       return storedToken;
     }
-    
+
     return null;
   }
 
@@ -250,4 +257,3 @@ export class GoogleAuthService {
     return this.isInitialized && typeof gapi !== 'undefined' && gapi.client !== undefined;
   }
 }
-

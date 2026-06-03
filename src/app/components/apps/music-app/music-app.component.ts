@@ -27,7 +27,7 @@ interface Playlist {
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './music-app.component.html',
-  styleUrl: './music-app.component.scss'
+  styleUrl: './music-app.component.scss',
 })
 export class MusicAppComponent implements OnInit {
   // State
@@ -49,7 +49,7 @@ export class MusicAppComponent implements OnInit {
     { value: 'jazz', label: 'Jazz', icon: 'pi-palette' },
     { value: 'classical', label: 'Classical', icon: 'pi-crown' },
     { value: 'electronic', label: 'Electronic', icon: 'pi-desktop' },
-    { value: 'vietnamese', label: 'Vietnamese', icon: 'pi-heart' }
+    { value: 'vietnamese', label: 'Vietnamese', icon: 'pi-heart' },
   ];
 
   // Playlists
@@ -57,49 +57,70 @@ export class MusicAppComponent implements OnInit {
     const library = this.musicLibrary();
     return [
       { id: 'all', name: 'All Songs', icon: 'pi-list', count: library.length },
-      { id: 'liked', name: 'Liked Songs', icon: 'pi-heart-fill', count: library.filter(v => v.liked).length },
-      { id: 'international', name: 'International', icon: 'pi-globe', count: library.filter(v => v.playlist === 'international').length },
-      { id: 'vietnamese', name: 'Việt Nam', icon: 'pi-flag', count: library.filter(v => v.playlist === 'vietnamese').length },
-      { id: 'recent', name: 'Recently Played', icon: 'pi-clock', count: Math.min(10, library.length) }
+      {
+        id: 'liked',
+        name: 'Liked Songs',
+        icon: 'pi-heart-fill',
+        count: library.filter((v) => v.liked).length,
+      },
+      {
+        id: 'international',
+        name: 'International',
+        icon: 'pi-globe',
+        count: library.filter((v) => v.playlist === 'international').length,
+      },
+      {
+        id: 'vietnamese',
+        name: 'Việt Nam',
+        icon: 'pi-flag',
+        count: library.filter((v) => v.playlist === 'vietnamese').length,
+      },
+      {
+        id: 'recent',
+        name: 'Recently Played',
+        icon: 'pi-clock',
+        count: Math.min(10, library.length),
+      },
     ];
   });
 
   // Computed filtered videos
   filteredVideos = computed(() => {
     let videos = this.musicLibrary();
-    
+
     // Filter by playlist
     const playlist = this.selectedPlaylist();
     if (playlist === 'liked') {
-      videos = videos.filter(v => v.liked);
+      videos = videos.filter((v) => v.liked);
     } else if (playlist === 'international') {
-      videos = videos.filter(v => v.playlist === 'international');
+      videos = videos.filter((v) => v.playlist === 'international');
     } else if (playlist === 'vietnamese') {
-      videos = videos.filter(v => v.playlist === 'vietnamese');
+      videos = videos.filter((v) => v.playlist === 'vietnamese');
     } else if (playlist === 'recent') {
       videos = videos.slice(0, 10);
     }
-    
+
     // Filter by category
     if (this.selectedCategory() !== 'all') {
-      videos = videos.filter(v => v.category === this.selectedCategory());
+      videos = videos.filter((v) => v.category === this.selectedCategory());
     }
-    
+
     // Filter by search query
     const query = this.searchQuery().toLowerCase();
     if (query) {
-      videos = videos.filter(v => 
-        v.title.toLowerCase().includes(query) ||
-        v.artist.toLowerCase().includes(query) ||
-        (v.category && v.category.toLowerCase().includes(query))
+      videos = videos.filter(
+        (v) =>
+          v.title.toLowerCase().includes(query) ||
+          v.artist.toLowerCase().includes(query) ||
+          (v.category && v.category.toLowerCase().includes(query))
       );
     }
-    
+
     // Shuffle if enabled
     if (this.isShuffleOn()) {
       videos = [...videos].sort(() => Math.random() - 0.5);
     }
-    
+
     return videos;
   });
 
@@ -112,7 +133,7 @@ export class MusicAppComponent implements OnInit {
   safeVideoUrl = computed(() => {
     const video = this.currentVideo();
     if (!video) return null;
-    
+
     const url = `https://www.youtube.com/embed/${video.youtubeId}?autoplay=1&rel=0`;
     return this.sanitizer.bypassSecurityTrustResourceUrl(url);
   });
@@ -138,7 +159,7 @@ export class MusicAppComponent implements OnInit {
         category: 'pop',
         duration: '3:53',
         playlist: 'international',
-        liked: true
+        liked: true,
       },
       {
         id: '2',
@@ -149,7 +170,7 @@ export class MusicAppComponent implements OnInit {
         category: 'rock',
         duration: '5:55',
         playlist: 'international',
-        liked: true
+        liked: true,
       },
       {
         id: '3',
@@ -159,7 +180,7 @@ export class MusicAppComponent implements OnInit {
         thumbnail: 'https://img.youtube.com/vi/vmDDOFXSgAs/mqdefault.jpg',
         category: 'jazz',
         duration: '5:24',
-        playlist: 'international'
+        playlist: 'international',
       },
       {
         id: '4',
@@ -169,7 +190,7 @@ export class MusicAppComponent implements OnInit {
         thumbnail: 'https://img.youtube.com/vi/CvFH_6DNRCY/mqdefault.jpg',
         category: 'classical',
         duration: '5:20',
-        playlist: 'international'
+        playlist: 'international',
       },
       {
         id: '5',
@@ -179,7 +200,7 @@ export class MusicAppComponent implements OnInit {
         thumbnail: 'https://img.youtube.com/vi/tKi9Z-f6qX4/mqdefault.jpg',
         category: 'electronic',
         duration: '10:37',
-        playlist: 'international'
+        playlist: 'international',
       },
       {
         id: '6',
@@ -190,7 +211,7 @@ export class MusicAppComponent implements OnInit {
         category: 'pop',
         duration: '3:20',
         playlist: 'international',
-        liked: true
+        liked: true,
       },
       {
         id: '7',
@@ -200,7 +221,7 @@ export class MusicAppComponent implements OnInit {
         thumbnail: 'https://img.youtube.com/vi/QkF3oxziUI4/mqdefault.jpg',
         category: 'rock',
         duration: '8:02',
-        playlist: 'international'
+        playlist: 'international',
       },
       {
         id: '8',
@@ -210,7 +231,7 @@ export class MusicAppComponent implements OnInit {
         thumbnail: 'https://img.youtube.com/vi/zqNTltOGh5c/mqdefault.jpg',
         category: 'jazz',
         duration: '9:22',
-        playlist: 'international'
+        playlist: 'international',
       },
       {
         id: '9',
@@ -220,7 +241,7 @@ export class MusicAppComponent implements OnInit {
         thumbnail: 'https://img.youtube.com/vi/_4IRMYuE1hI/mqdefault.jpg',
         category: 'classical',
         duration: '7:29',
-        playlist: 'international'
+        playlist: 'international',
       },
       {
         id: '10',
@@ -230,7 +251,7 @@ export class MusicAppComponent implements OnInit {
         thumbnail: 'https://img.youtube.com/vi/_ovdm2yX4MA/mqdefault.jpg',
         category: 'electronic',
         duration: '3:18',
-        playlist: 'international'
+        playlist: 'international',
       },
       {
         id: '11',
@@ -240,7 +261,7 @@ export class MusicAppComponent implements OnInit {
         thumbnail: 'https://img.youtube.com/vi/E07s5ZYygMg/mqdefault.jpg',
         category: 'pop',
         duration: '2:54',
-        playlist: 'international'
+        playlist: 'international',
       },
       {
         id: '12',
@@ -250,7 +271,7 @@ export class MusicAppComponent implements OnInit {
         thumbnail: 'https://img.youtube.com/vi/09839DpTctU/mqdefault.jpg',
         category: 'rock',
         duration: '6:30',
-        playlist: 'international'
+        playlist: 'international',
       },
       // Vietnamese Songs
       {
@@ -262,7 +283,7 @@ export class MusicAppComponent implements OnInit {
         category: 'vietnamese',
         duration: '4:01',
         playlist: 'vietnamese',
-        liked: true
+        liked: true,
       },
       {
         id: '14',
@@ -273,7 +294,7 @@ export class MusicAppComponent implements OnInit {
         category: 'vietnamese',
         duration: '4:28',
         playlist: 'vietnamese',
-        liked: true
+        liked: true,
       },
       {
         id: '15',
@@ -283,7 +304,7 @@ export class MusicAppComponent implements OnInit {
         thumbnail: 'https://img.youtube.com/vi/fafYDUBKhJo/mqdefault.jpg',
         category: 'vietnamese',
         duration: '4:58',
-        playlist: 'vietnamese'
+        playlist: 'vietnamese',
       },
       {
         id: '16',
@@ -294,7 +315,7 @@ export class MusicAppComponent implements OnInit {
         category: 'vietnamese',
         duration: '3:50',
         playlist: 'vietnamese',
-        liked: true
+        liked: true,
       },
       {
         id: '17',
@@ -304,7 +325,7 @@ export class MusicAppComponent implements OnInit {
         thumbnail: 'https://img.youtube.com/vi/gEGy8EeSDBo/mqdefault.jpg',
         category: 'vietnamese',
         duration: '4:15',
-        playlist: 'vietnamese'
+        playlist: 'vietnamese',
       },
       {
         id: '18',
@@ -314,7 +335,7 @@ export class MusicAppComponent implements OnInit {
         thumbnail: 'https://img.youtube.com/vi/FN7ALfpGxiI/mqdefault.jpg',
         category: 'vietnamese',
         duration: '4:51',
-        playlist: 'vietnamese'
+        playlist: 'vietnamese',
       },
       {
         id: '19',
@@ -324,7 +345,7 @@ export class MusicAppComponent implements OnInit {
         thumbnail: 'https://img.youtube.com/vi/pqLvFfwcqfw/mqdefault.jpg',
         category: 'vietnamese',
         duration: '5:04',
-        playlist: 'vietnamese'
+        playlist: 'vietnamese',
       },
       {
         id: '20',
@@ -335,12 +356,12 @@ export class MusicAppComponent implements OnInit {
         category: 'vietnamese',
         duration: '4:38',
         playlist: 'vietnamese',
-        liked: true
-      }
+        liked: true,
+      },
     ];
 
     this.musicLibrary.set(library);
-    
+
     // Auto-play first video
     if (library.length > 0) {
       this.currentVideo.set(library[0]);
@@ -400,10 +421,8 @@ export class MusicAppComponent implements OnInit {
    * Toggle like on video
    */
   toggleLike(videoId: string): void {
-    this.musicLibrary.update(library => 
-      library.map(v => 
-        v.id === videoId ? { ...v, liked: !v.liked } : v
-      )
+    this.musicLibrary.update((library) =>
+      library.map((v) => (v.id === videoId ? { ...v, liked: !v.liked } : v))
     );
   }
 
@@ -422,8 +441,8 @@ export class MusicAppComponent implements OnInit {
     if (!current) return;
 
     const filtered = this.filteredVideos();
-    const currentIndex = filtered.findIndex(v => v.id === current.id);
-    
+    const currentIndex = filtered.findIndex((v) => v.id === current.id);
+
     if (currentIndex < filtered.length - 1) {
       this.currentVideo.set(filtered[currentIndex + 1]);
     } else {
@@ -442,8 +461,8 @@ export class MusicAppComponent implements OnInit {
     if (!current) return;
 
     const filtered = this.filteredVideos();
-    const currentIndex = filtered.findIndex(v => v.id === current.id);
-    
+    const currentIndex = filtered.findIndex((v) => v.id === current.id);
+
     if (currentIndex > 0) {
       this.currentVideo.set(filtered[currentIndex - 1]);
     } else {
@@ -462,4 +481,3 @@ export class MusicAppComponent implements OnInit {
     return current?.liked || false;
   }
 }
-

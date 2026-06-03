@@ -1,13 +1,52 @@
-import { Component, OnInit, OnDestroy, signal, computed, ViewChild, ElementRef, AfterViewInit, OnChanges, SimpleChanges, effect, NgZone, HostListener } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  OnDestroy,
+  signal,
+  computed,
+  ViewChild,
+  ElementRef,
+  AfterViewInit,
+  OnChanges,
+  SimpleChanges,
+  effect,
+  NgZone,
+  HostListener,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { ScrollingModule, CdkVirtualScrollViewport } from '@angular/cdk/scrolling';
-import { DnseService, DNSESymbol, DNSEStockData, DNSEOHLCData, ExchangeType } from '../../../services/dnse.service';
-import { StockPrediction, TrainingProgress, TrainingConfig, DEFAULT_TRAINING_CONFIG, TRAINING_CONFIG_DESCRIPTIONS, ModelStatus } from '../../../services/neural-network.service';
+import {
+  DnseService,
+  DNSESymbol,
+  DNSEStockData,
+  DNSEOHLCData,
+  ExchangeType,
+} from '../../../services/dnse.service';
+import {
+  StockPrediction,
+  TrainingProgress,
+  TrainingConfig,
+  DEFAULT_TRAINING_CONFIG,
+  TRAINING_CONFIG_DESCRIPTIONS,
+  ModelStatus,
+} from '../../../services/neural-network.service';
 import { NeuralNetworkWorkerService } from '../../../services/neural-network-worker.service';
-import { TradingSimulationService, TradingConfig, TradingResult, TradeSignal, TradingStrategy, StrategyConfig, DEFAULT_STRATEGY_CONFIG, STRATEGY_DESCRIPTIONS } from '../../../services/trading-simulation.service';
-import { TradingviewChartComponent, ChartMarker } from './tradingview-chart/tradingview-chart.component';
+import {
+  TradingSimulationService,
+  TradingConfig,
+  TradingResult,
+  TradeSignal,
+  TradingStrategy,
+  StrategyConfig,
+  DEFAULT_STRATEGY_CONFIG,
+  STRATEGY_DESCRIPTIONS,
+} from '../../../services/trading-simulation.service';
+import {
+  TradingviewChartComponent,
+  ChartMarker,
+} from './tradingview-chart/tradingview-chart.component';
 import { Chart, ChartConfiguration, registerables, TimeScale } from 'chart.js';
 import { Subject, Subscription } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
@@ -63,8 +102,8 @@ interface Transaction {
   transactionAmount: number; // Tiền giao dịch (số tiền dùng để mua hoặc nhận được khi bán)
   capitalAfter: number;
   totalSharesBefore: number; // Tổng số cổ phiếu đang nắm giữ trước GD
-  totalSharesAfter: number;  // Tổng số cổ phiếu đang nắm giữ sau GD
-  avgPriceAfter: number;     // Giá trung bình sau GD
+  totalSharesAfter: number; // Tổng số cổ phiếu đang nắm giữ sau GD
+  avgPriceAfter: number; // Giá trung bình sau GD
   holdingDays?: number; // Chỉ có khi là giao dịch bán
   profit?: number; // Lãi/lỗ khi bán (chỉ có khi là giao dịch bán)
 }
@@ -74,7 +113,7 @@ interface Transaction {
   standalone: true,
   imports: [CommonModule, FormsModule, ScrollingModule, TradingviewChartComponent],
   templateUrl: './stock-app.component.html',
-  styleUrl: './stock-app.component.scss'
+  styleUrl: './stock-app.component.scss',
 })
 export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
   @ViewChild('candlestickChart') candlestickChartRef!: ElementRef<HTMLCanvasElement>;
@@ -98,10 +137,10 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
   // Exchange types
   exchanges: ExchangeType[] = ['hose', 'hnx', 'upcom', 'vn30'];
   exchangeNames: Record<ExchangeType, string> = {
-    'hose': 'HOSE',
-    'hnx': 'HNX',
-    'upcom': 'UPCOM',
-    'vn30': 'VN30'
+    hose: 'HOSE',
+    hnx: 'HNX',
+    upcom: 'UPCOM',
+    vn30: 'VN30',
   };
 
   // State
@@ -121,7 +160,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
   // Computed: check if there are unfetched symbols
   hasUnfetchedSymbols = computed(() => {
-    return this.filteredSymbols().filter(s => !s.isFetched).length > 0;
+    return this.filteredSymbols().filter((s) => !s.isFetched).length > 0;
   });
 
   // Exchange counts
@@ -158,43 +197,43 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
   // Financial indicator labels mapping (Vietnamese)
   financialIndicatorLabels: Record<string, string> = {
-    'marketShare': 'Thị phần',
-    'totalAssets': 'Tổng tài sản',
-    'eps': 'EPS',
-    'pe': 'P/E',
-    'ps': 'P/S',
-    'pb': 'P/B',
-    'beta': 'Beta',
-    'netInterestMargin': 'NIM',
-    'lossRatio': 'Tỷ lệ bồi thường',
-    'combineRatio': 'Tỷ lệ kết hợp',
-    'profitGrowth': 'Tăng trưởng LN',
-    'ytd': 'YTD',
-    'nplRatio': 'Tỷ lệ nợ xấu',
-    'llr': 'Bao phủ nợ xấu',
-    'casaRatio': 'Tỷ lệ CASA',
-    'roe': 'ROE',
-    'roa': 'ROA',
-    'grossMargin': 'Biên LN gộp',
-    'debtEquityRatio': 'Nợ/Vốn CSH',
-    'inventoryGrowth': 'Tăng trưởng tồn kho',
-    'prepaidBuyerGrowth': 'Tăng trưởng NMTTT',
-    'proprietaryTradingRatio': 'Tỷ trọng tự doanh',
-    'marginLendingGrowth': 'Tăng trưởng cho vay margin',
-    'freeFloatRatio': 'Free Float',
-    'dividendYield': 'Tỷ suất cổ tức',
-    'dividendRatio': 'Tỷ lệ cổ tức',
-    'equity': 'Vốn chủ sở hữu',
-    'bookValue': 'Giá trị sổ sách',
-    'sales': 'Doanh số',
-    'capitalization': 'Vốn hóa',
-    'revenue': 'Doanh thu',
-    'revenuePerShare': 'Doanh thu/CP',
-    'profit': 'Lợi nhuận',
-    'foreignOwnershipRatio': 'Tỷ lệ SHNN',
-    'foreignHoldingRatio': 'Room NN',
-    'accuredInterestTotalAssetRatio': 'Lãi dự thu/TTS',
-    'remainForeignRoom': 'Room NN còn lại'
+    marketShare: 'Thị phần',
+    totalAssets: 'Tổng tài sản',
+    eps: 'EPS',
+    pe: 'P/E',
+    ps: 'P/S',
+    pb: 'P/B',
+    beta: 'Beta',
+    netInterestMargin: 'NIM',
+    lossRatio: 'Tỷ lệ bồi thường',
+    combineRatio: 'Tỷ lệ kết hợp',
+    profitGrowth: 'Tăng trưởng LN',
+    ytd: 'YTD',
+    nplRatio: 'Tỷ lệ nợ xấu',
+    llr: 'Bao phủ nợ xấu',
+    casaRatio: 'Tỷ lệ CASA',
+    roe: 'ROE',
+    roa: 'ROA',
+    grossMargin: 'Biên LN gộp',
+    debtEquityRatio: 'Nợ/Vốn CSH',
+    inventoryGrowth: 'Tăng trưởng tồn kho',
+    prepaidBuyerGrowth: 'Tăng trưởng NMTTT',
+    proprietaryTradingRatio: 'Tỷ trọng tự doanh',
+    marginLendingGrowth: 'Tăng trưởng cho vay margin',
+    freeFloatRatio: 'Free Float',
+    dividendYield: 'Tỷ suất cổ tức',
+    dividendRatio: 'Tỷ lệ cổ tức',
+    equity: 'Vốn chủ sở hữu',
+    bookValue: 'Giá trị sổ sách',
+    sales: 'Doanh số',
+    capitalization: 'Vốn hóa',
+    revenue: 'Doanh thu',
+    revenuePerShare: 'Doanh thu/CP',
+    profit: 'Lợi nhuận',
+    foreignOwnershipRatio: 'Tỷ lệ SHNN',
+    foreignHoldingRatio: 'Room NN',
+    accuredInterestTotalAssetRatio: 'Lãi dự thu/TTS',
+    remainForeignRoom: 'Room NN còn lại',
   };
 
   // Header search state
@@ -210,25 +249,25 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     if (!priceData || !priceData.t) return [];
 
     const result: Array<{
-      date: string,
-      open: number,
-      high: number,
-      low: number,
-      close: number,
-      volume: number,
-      referencePrice: number,
-      ceilingPrice: number,
-      floorPrice: number,
-      changeValue: number,
-      changePercent: number,
-      openColorClass: string,
-      highColorClass: string,
-      lowColorClass: string,
-      closeColorClass: string,
-      openFormatted: string,
-      highFormatted: string,
-      lowFormatted: string,
-      closeFormatted: string
+      date: string;
+      open: number;
+      high: number;
+      low: number;
+      close: number;
+      volume: number;
+      referencePrice: number;
+      ceilingPrice: number;
+      floorPrice: number;
+      changeValue: number;
+      changePercent: number;
+      openColorClass: string;
+      highColorClass: string;
+      lowColorClass: string;
+      closeColorClass: string;
+      openFormatted: string;
+      highFormatted: string;
+      lowFormatted: string;
+      closeFormatted: string;
     }> = [];
 
     // Data is sorted oldest to newest, so i-1 is the previous trading day
@@ -239,7 +278,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
       // Reference price = previous trading day's close price
       // For the first record, use the open price as reference (no previous data)
-      const referencePrice = i > 0 ? (priceData.c[i - 1] || 0) : (priceData.o[i] || 0);
+      const referencePrice = i > 0 ? priceData.c[i - 1] || 0 : priceData.o[i] || 0;
 
       // Calculate ceiling and floor (typically ±7% for HOSE/HNX, ±10% for UPCOM)
       // Using 7% as default
@@ -274,7 +313,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
         openFormatted: `${(open * 1000).toLocaleString('vi-VN')} đ`,
         highFormatted: `${(high * 1000).toLocaleString('vi-VN')} đ`,
         lowFormatted: `${(low * 1000).toLocaleString('vi-VN')} đ`,
-        closeFormatted: `${(close * 1000).toLocaleString('vi-VN')} đ`
+        closeFormatted: `${(close * 1000).toLocaleString('vi-VN')} đ`,
       });
     }
 
@@ -303,7 +342,9 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
       matchPrice: matchPrice,
       matchPriceFormatted: matchPrice ? `${(matchPrice * 1000).toLocaleString('vi-VN')} đ` : '-',
       changedValue: changedValue,
-      changedValueFormatted: changedValue ? `${(changedValue * 1000).toLocaleString('vi-VN')} đ` : '-',
+      changedValueFormatted: changedValue
+        ? `${(changedValue * 1000).toLocaleString('vi-VN')} đ`
+        : '-',
       changedRatio: basicInfo.changedRatio || '0',
       changedValueClass: changedValue !== null ? (changedValue >= 0 ? 'positive' : 'negative') : '',
       totalVolume: totalVolume,
@@ -313,9 +354,12 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
       pb: basicInfo.pb || '-',
       roe: basicInfo.roe || '-',
       roa: basicInfo.roa || '-',
-      marketCap: basicInfo.marketCap ? parseFloat(basicInfo.marketCap).toLocaleString('vi-VN') : '-',
+      marketCap: basicInfo.marketCap
+        ? parseFloat(basicInfo.marketCap).toLocaleString('vi-VN')
+        : '-',
       hasFullData: !!basicInfo.fullData,
-      hasTicker: !!basicInfo.fullData?.['pageProps.ticker'] || !!basicInfo.fullData?.pageProps?.ticker
+      hasTicker:
+        !!basicInfo.fullData?.['pageProps.ticker'] || !!basicInfo.fullData?.pageProps?.ticker,
     };
   });
 
@@ -326,7 +370,8 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
       return '';
     }
 
-    const ticker = symbol.basicInfo.fullData['pageProps.ticker'] || symbol.basicInfo.fullData?.pageProps?.ticker;
+    const ticker =
+      symbol.basicInfo.fullData['pageProps.ticker'] || symbol.basicInfo.fullData?.pageProps?.ticker;
     if (!ticker) {
       return '';
     }
@@ -350,7 +395,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
   // Computed: stock list items with formatted data
   stockListItems = computed(() => {
-    return this.filteredSymbols().map(symbol => {
+    return this.filteredSymbols().map((symbol) => {
       const basicInfo = symbol.basicInfo;
       const matchPrice = basicInfo?.matchPrice ? parseFloat(basicInfo.matchPrice) : null;
       const changedValue = basicInfo?.changedValue ? parseFloat(basicInfo.changedValue) : null;
@@ -363,10 +408,13 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
         matchPrice: matchPrice,
         matchPriceFormatted: matchPrice ? `${(matchPrice * 1000).toLocaleString('vi-VN')} đ` : '-',
         changedValue: changedValue,
-        changedValueFormatted: changedValue ? `${(changedValue * 1000).toLocaleString('vi-VN')} đ` : '-',
+        changedValueFormatted: changedValue
+          ? `${(changedValue * 1000).toLocaleString('vi-VN')} đ`
+          : '-',
         changedRatio: basicInfo?.changedRatio || '0',
-        changedValueClass: changedValue !== null ? (changedValue >= 0 ? 'positive' : 'negative') : '',
-        hasMetrics: !!(basicInfo?.pe || basicInfo?.pb || basicInfo?.roe)
+        changedValueClass:
+          changedValue !== null ? (changedValue >= 0 ? 'positive' : 'negative') : '',
+        hasMetrics: !!(basicInfo?.pe || basicInfo?.pb || basicInfo?.roe),
       };
     });
   });
@@ -458,9 +506,10 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     // Calculate profit/loss if holding
     const unrealizedPL = holdingShares > 0 ? (currentPrice - averagePrice) * holdingShares : 0;
-    const unrealizedPLPercent = holdingShares > 0 && averagePrice > 0
-      ? ((currentPrice - averagePrice) / averagePrice) * 100
-      : 0;
+    const unrealizedPLPercent =
+      holdingShares > 0 && averagePrice > 0
+        ? ((currentPrice - averagePrice) / averagePrice) * 100
+        : 0;
 
     // Calculate zones based on current price and trading config
     const stopLossPercent = tradingConfig.stopLossPercent;
@@ -471,9 +520,8 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const stopLossPrice = referencePrice * (1 - stopLossPercent / 100);
 
     // Take profit zone
-    const takeProfitPrice = takeProfitPercent > 0
-      ? referencePrice * (1 + takeProfitPercent / 100)
-      : predictedPrice; // Use predicted price if take profit is auto
+    const takeProfitPrice =
+      takeProfitPercent > 0 ? referencePrice * (1 + takeProfitPercent / 100) : predictedPrice; // Use predicted price if take profit is auto
 
     // Buy more zone (DCA) - suggest buying when price drops 3-5% from average
     const buyMoreZoneStart = referencePrice * 0.97; // -3%
@@ -509,7 +557,11 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
       } else if (decision?.action === 'sell' && confidence >= 0.6) {
         recommendation = 'sell';
         reason = `Tín hiệu BÁN từ mô hình (confidence: ${(confidence * 100).toFixed(1)}%)`;
-      } else if (currentPrice >= buyMoreZoneStart && currentPrice <= buyMoreZoneEnd && decision?.action !== 'sell') {
+      } else if (
+        currentPrice >= buyMoreZoneStart &&
+        currentPrice <= buyMoreZoneEnd &&
+        decision?.action !== 'sell'
+      ) {
         recommendation = 'buy_more';
         reason = `Giá đang ở vùng mua thêm (DCA) - cân nhắc gia tăng tỉ trọng`;
         confidence = 0.6;
@@ -519,18 +571,20 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
         confidence = decision.confidence;
       } else {
         recommendation = 'hold';
-        reason = unrealizedPLPercent > 0
-          ? `Đang lãi ${unrealizedPLPercent.toFixed(2)}% - tiếp tục nắm giữ`
-          : `Đang lỗ ${Math.abs(unrealizedPLPercent).toFixed(2)}% - chờ tín hiệu từ mô hình`;
+        reason =
+          unrealizedPLPercent > 0
+            ? `Đang lãi ${unrealizedPLPercent.toFixed(2)}% - tiếp tục nắm giữ`
+            : `Đang lỗ ${Math.abs(unrealizedPLPercent).toFixed(2)}% - chờ tín hiệu từ mô hình`;
       }
     }
 
     // Estimate sessions to take profit
     const priceChangePerDay = this.estimatePriceChangePerDay(priceData.c);
     const priceDifference = takeProfitPrice - currentPrice;
-    const estimatedSessions = priceChangePerDay > 0
-      ? Math.ceil(Math.abs(priceDifference) / (priceChangePerDay * 1000))
-      : null;
+    const estimatedSessions =
+      priceChangePerDay > 0
+        ? Math.ceil(Math.abs(priceDifference) / (priceChangePerDay * 1000))
+        : null;
 
     return {
       recommendation,
@@ -545,7 +599,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
       buyMoreZoneStart,
       buyMoreZoneEnd,
       estimatedSessions,
-      holdingValue: holdingShares * currentPrice
+      holdingValue: holdingShares * currentPrice,
     };
   });
 
@@ -563,7 +617,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const txs = this.transactions();
     if (txs.length === 0) return [];
 
-    return txs.map(tx => ({
+    return txs.map((tx) => ({
       time: tx.date,
       type: tx.type,
       price: tx.price,
@@ -571,14 +625,20 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
       label: `${tx.type === 'buy' ? 'Mua' : 'Bán'} ${tx.quantity} @ ${this.formatPredictionPrice(tx.price)}`,
       profitLoss: tx.profit,
       originalBuyPrice: tx.type === 'sell' ? tx.avgPriceAfter : undefined,
-      totalValue: tx.transactionAmount
+      totalValue: tx.transactionAmount,
     }));
   });
 
   // Strategy descriptions for UI
   strategyDescriptions = STRATEGY_DESCRIPTIONS;
-  availableStrategies: TradingStrategy[] = ['neural_network', 'ma_crossover', 'ema_crossover', 'rsi', 'macd', 'bollinger_bands'];
-
+  availableStrategies: TradingStrategy[] = [
+    'neural_network',
+    'ma_crossover',
+    'ema_crossover',
+    'rsi',
+    'macd',
+    'bollinger_bands',
+  ];
 
   // Date range for backtesting
   backtestStartDate = signal<string>('');
@@ -616,12 +676,11 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     this.checkFetchedStatus();
 
     // Setup search debounce
-    this.searchSubscription = this.searchSubject.pipe(
-      debounceTime(300),
-      distinctUntilChanged()
-    ).subscribe(keyword => {
-      this.performSearch(keyword);
-    });
+    this.searchSubscription = this.searchSubject
+      .pipe(debounceTime(300), distinctUntilChanged())
+      .subscribe((keyword) => {
+        this.performSearch(keyword);
+      });
   }
 
   ngAfterViewInit() {
@@ -680,7 +739,12 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
    * Check if we need to load more data
    */
   private checkAndLoadMore() {
-    if (!this.virtualScrollViewport || this.isLoadingMore() || !this.hasMoreData() || this.isLoading()) {
+    if (
+      !this.virtualScrollViewport ||
+      this.isLoadingMore() ||
+      !this.hasMoreData() ||
+      this.isLoading()
+    ) {
       return;
     }
 
@@ -711,45 +775,47 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const symbolType = this.searchType();
 
     // Load from internal API with pagination (server will fallback to JSON if DB fails)
-    this.dnseService.getStocksPaginated({
-      keyword,
-      limit: this.PAGE_SIZE,
-      offset: 0,
-      symbolType
-    }).subscribe({
-      next: (response) => {
-        const symbols = this.convertStocksToSymbols(response.stocks);
+    this.dnseService
+      .getStocksPaginated({
+        keyword,
+        limit: this.PAGE_SIZE,
+        offset: 0,
+        symbolType,
+      })
+      .subscribe({
+        next: (response) => {
+          const symbols = this.convertStocksToSymbols(response.stocks);
 
-        this.allSymbols.set(symbols);
-        this.filteredSymbols.set(symbols);
+          this.allSymbols.set(symbols);
+          this.filteredSymbols.set(symbols);
 
-        // Update pagination state
-        if (response.pagination) {
-          this.paginationTotal.set(response.pagination.total);
-          this.paginationOffset.set(response.stocks.length);
-          this.hasMoreData.set(response.pagination.hasMore);
-        } else {
+          // Update pagination state
+          if (response.pagination) {
+            this.paginationTotal.set(response.pagination.total);
+            this.paginationOffset.set(response.stocks.length);
+            this.hasMoreData.set(response.pagination.hasMore);
+          } else {
+            this.hasMoreData.set(false);
+          }
+
+          this.updateFetchedCount();
+          this.updateExchangeCounts();
+          this.isLoading.set(false);
+
+          // Check if we should sync with DNSE (days 10-20 of month)
+          this.checkAndSyncDNSE();
+        },
+        error: (error) => {
+          console.error('Error loading stock data:', error);
+          this.allSymbols.set([]);
+          this.filteredSymbols.set([]);
           this.hasMoreData.set(false);
-        }
+          this.isLoading.set(false);
 
-        this.updateFetchedCount();
-        this.updateExchangeCounts();
-        this.isLoading.set(false);
-
-        // Check if we should sync with DNSE (days 10-20 of month)
-        this.checkAndSyncDNSE();
-      },
-      error: (error) => {
-        console.error('Error loading stock data:', error);
-        this.allSymbols.set([]);
-        this.filteredSymbols.set([]);
-        this.hasMoreData.set(false);
-        this.isLoading.set(false);
-
-        // Still try to sync with DNSE if in window
-        this.checkAndSyncDNSE();
-      }
-    });
+          // Still try to sync with DNSE if in window
+          this.checkAndSyncDNSE();
+        },
+      });
   }
 
   /**
@@ -765,39 +831,41 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const symbolType = this.searchType();
     const currentOffset = this.paginationOffset();
 
-    this.dnseService.getStocksPaginated({
-      keyword,
-      limit: this.PAGE_SIZE,
-      offset: currentOffset,
-      symbolType
-    }).subscribe({
-      next: (response) => {
-        const newSymbols = this.convertStocksToSymbols(response.stocks);
+    this.dnseService
+      .getStocksPaginated({
+        keyword,
+        limit: this.PAGE_SIZE,
+        offset: currentOffset,
+        symbolType,
+      })
+      .subscribe({
+        next: (response) => {
+          const newSymbols = this.convertStocksToSymbols(response.stocks);
 
-        // Append to existing symbols
-        const currentSymbols = this.allSymbols();
-        const updatedSymbols = [...currentSymbols, ...newSymbols];
+          // Append to existing symbols
+          const currentSymbols = this.allSymbols();
+          const updatedSymbols = [...currentSymbols, ...newSymbols];
 
-        this.allSymbols.set(updatedSymbols);
-        this.filteredSymbols.set(updatedSymbols);
+          this.allSymbols.set(updatedSymbols);
+          this.filteredSymbols.set(updatedSymbols);
 
-        // Update pagination state
-        if (response.pagination) {
-          this.paginationOffset.set(currentOffset + response.stocks.length);
-          this.hasMoreData.set(response.pagination.hasMore);
-        } else {
-          this.hasMoreData.set(false);
-        }
+          // Update pagination state
+          if (response.pagination) {
+            this.paginationOffset.set(currentOffset + response.stocks.length);
+            this.hasMoreData.set(response.pagination.hasMore);
+          } else {
+            this.hasMoreData.set(false);
+          }
 
-        this.updateFetchedCount();
-        this.updateExchangeCounts();
-        this.isLoadingMore.set(false);
-      },
-      error: (error) => {
-        console.error('Error loading more stocks:', error);
-        this.isLoadingMore.set(false);
-      }
-    });
+          this.updateFetchedCount();
+          this.updateExchangeCounts();
+          this.isLoadingMore.set(false);
+        },
+        error: (error) => {
+          console.error('Error loading more stocks:', error);
+          this.isLoadingMore.set(false);
+        },
+      });
   }
 
   /**
@@ -810,7 +878,10 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
       if (stock && stock.symbol) {
         const symbolKey = stock.symbol.toUpperCase();
         const existing = uniqueStocksMap.get(symbolKey);
-        if (!existing || (stock.fullData || stock.basicInfo) && !(existing.fullData || existing.basicInfo)) {
+        if (
+          !existing ||
+          ((stock.fullData || stock.basicInfo) && !(existing.fullData || existing.basicInfo))
+        ) {
           uniqueStocksMap.set(symbolKey, stock);
         }
       }
@@ -820,12 +891,18 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     uniqueStocksMap.forEach((stock: any) => {
       const symbol: SymbolWithStatus = {
         symbol: stock.symbol,
-        name: stock.basicInfo?.companyName || stock.fullData?.['pageProps.companyInfo.fullName'] || stock.fullData?.pageProps?.companyInfo?.fullName,
+        name:
+          stock.basicInfo?.companyName ||
+          stock.fullData?.['pageProps.companyInfo.fullName'] ||
+          stock.fullData?.pageProps?.companyInfo?.fullName,
         exchange: (stock.basicInfo?.exchange || 'hose') as ExchangeType,
         isFetched: !!(stock.priceData || stock.fullData),
         updatedAt: stock.updatedAt, // Store last updated timestamp
         basicInfo: {
-          companyName: stock.basicInfo?.companyName || stock.fullData?.['pageProps.companyInfo.fullName'] || stock.fullData?.pageProps?.companyInfo?.fullName,
+          companyName:
+            stock.basicInfo?.companyName ||
+            stock.fullData?.['pageProps.companyInfo.fullName'] ||
+            stock.fullData?.pageProps?.companyInfo?.fullName,
           exchange: stock.basicInfo?.exchange || 'hose',
           matchPrice: stock.basicInfo?.matchPrice,
           changedValue: stock.basicInfo?.changedValue,
@@ -838,8 +915,8 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
           pb: stock.basicInfo?.pb,
           roe: stock.basicInfo?.roe,
           roa: stock.basicInfo?.roa,
-          fullData: stock.fullData
-        }
+          fullData: stock.fullData,
+        },
       };
       symbols.push(symbol);
     });
@@ -867,25 +944,34 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
         next: (result) => {
           if (result.synced) {
             if (result.newSymbols.length > 0) {
-              console.log(`✅ Synced ${result.newSymbols.length} new stocks from DNSE:`, result.newSymbols);
+              console.log(
+                `✅ Synced ${result.newSymbols.length} new stocks from DNSE:`,
+                result.newSymbols
+              );
               // Reload symbols to include new ones
               this.loadSymbolsWithoutDNSESync();
             } else {
-              console.log(`✅ DNSE sync complete. No new stocks found (${result.totalFromDNSE} total in DNSE)`);
+              console.log(
+                `✅ DNSE sync complete. No new stocks found (${result.totalFromDNSE} total in DNSE)`
+              );
             }
           }
         },
         error: (error) => {
           console.error('Error syncing with DNSE:', error);
-        }
+        },
       });
     } else {
       const today = new Date();
       const dayOfMonth = today.getDate();
       if (dayOfMonth < 10) {
-        console.log(`📅 DNSE sync skipped - waiting for sync window (current: day ${dayOfMonth}, window: days 10-20)`);
+        console.log(
+          `📅 DNSE sync skipped - waiting for sync window (current: day ${dayOfMonth}, window: days 10-20)`
+        );
       } else if (dayOfMonth > 20) {
-        console.log(`📅 DNSE sync skipped - window passed (current: day ${dayOfMonth}, window: days 10-20)`);
+        console.log(
+          `📅 DNSE sync skipped - window passed (current: day ${dayOfMonth}, window: days 10-20)`
+        );
       } else {
         console.log(`📅 DNSE sync skipped - already synced this month`);
       }
@@ -900,28 +986,30 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const keyword = this.searchQuery();
     const symbolType = this.searchType();
 
-    this.dnseService.getStocksPaginated({
-      keyword,
-      limit: this.PAGE_SIZE,
-      offset: 0,
-      symbolType
-    }).subscribe({
-      next: (response) => {
-        const symbols = this.convertStocksToSymbols(response.stocks);
+    this.dnseService
+      .getStocksPaginated({
+        keyword,
+        limit: this.PAGE_SIZE,
+        offset: 0,
+        symbolType,
+      })
+      .subscribe({
+        next: (response) => {
+          const symbols = this.convertStocksToSymbols(response.stocks);
 
-        this.allSymbols.set(symbols);
-        this.filteredSymbols.set(symbols);
+          this.allSymbols.set(symbols);
+          this.filteredSymbols.set(symbols);
 
-        if (response.pagination) {
-          this.paginationTotal.set(response.pagination.total);
-          this.paginationOffset.set(response.stocks.length);
-          this.hasMoreData.set(response.pagination.hasMore);
-        }
+          if (response.pagination) {
+            this.paginationTotal.set(response.pagination.total);
+            this.paginationOffset.set(response.stocks.length);
+            this.hasMoreData.set(response.pagination.hasMore);
+          }
 
-        this.updateFetchedCount();
-        this.updateExchangeCounts();
-      }
-    });
+          this.updateFetchedCount();
+          this.updateExchangeCounts();
+        },
+      });
   }
 
   /**
@@ -940,8 +1028,8 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
         });
 
         // Update symbols with fetched data
-        this.allSymbols.update(symbols =>
-          symbols.map(s => {
+        this.allSymbols.update((symbols) =>
+          symbols.map((s) => {
             const stockData = stockMap.get(s.symbol.toUpperCase());
             if (stockData) {
               const basicInfo = stockData.basicInfo || {};
@@ -949,7 +1037,12 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
                 ...s,
                 isFetched: true,
                 basicInfo: {
-                  companyName: basicInfo.companyName || stockData.fullData?.['pageProps.companyInfo.fullName'] || stockData.fullData?.pageProps?.companyInfo?.fullName || stockData.fullData?.['pageProps.companyInfo.name'] || stockData.fullData?.pageProps?.companyInfo?.name,
+                  companyName:
+                    basicInfo.companyName ||
+                    stockData.fullData?.['pageProps.companyInfo.fullName'] ||
+                    stockData.fullData?.pageProps?.companyInfo?.fullName ||
+                    stockData.fullData?.['pageProps.companyInfo.name'] ||
+                    stockData.fullData?.pageProps?.companyInfo?.name,
                   exchange: basicInfo.exchange || s.exchange,
                   matchPrice: basicInfo.matchPrice,
                   changedValue: basicInfo.changedValue,
@@ -961,13 +1054,13 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
                   pb: basicInfo.pb,
                   roe: basicInfo.roe,
                   roa: basicInfo.roa,
-                  fullData: stockData.fullData
-                }
+                  fullData: stockData.fullData,
+                },
               };
             }
             return {
               ...s,
-              isFetched: false
+              isFetched: false,
             };
           })
         );
@@ -977,7 +1070,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
       },
       error: (error) => {
         console.error('Error loading stock data:', error);
-      }
+      },
     });
   }
 
@@ -992,7 +1085,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const total = fetchedSymbols.length;
     const basicInfoMap = new Map<string, any>();
 
-    fetchedSymbols.forEach(symbol => {
+    fetchedSymbols.forEach((symbol) => {
       this.dnseService.getStockDataFromAPI(symbol).subscribe({
         next: (data) => {
           if (data) {
@@ -1002,19 +1095,40 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
           completed++;
           if (completed === total) {
             // Update all symbols with basic info
-            this.allSymbols.update(symbols =>
-              symbols.map(s => {
+            this.allSymbols.update((symbols) =>
+              symbols.map((s) => {
                 const stockData = basicInfoMap.get(s.symbol);
                 if (stockData) {
                   const fullData = stockData.fullData || {};
-                  const hasFullName = fullData['pageProps.companyInfo.fullName'] || fullData?.pageProps?.companyInfo?.fullName || fullData['pageProps.companyInfo.name'] || fullData?.pageProps?.companyInfo?.name;
-                  const hasFullNameEn = fullData['pageProps.companyInfo.fullNameEn'] || fullData?.pageProps?.companyInfo?.fullNameEn;
-                  const hasImage = fullData['pageProps.companyInfo.image'] || fullData?.pageProps?.companyInfo?.image;
-                  const hasIntroduction = fullData['pageProps.companyInfo.introduction'] || fullData?.pageProps?.companyInfo?.introduction;
-                  const hasNotes = fullData['pageProps.companyInfo.notes'] || fullData?.pageProps?.companyInfo?.notes;
-                  const hasPermanentAddress = fullData['pageProps.companyInfo.permanentAddress'] || fullData?.pageProps?.companyInfo?.permanentAddress;
+                  const hasFullName =
+                    fullData['pageProps.companyInfo.fullName'] ||
+                    fullData?.pageProps?.companyInfo?.fullName ||
+                    fullData['pageProps.companyInfo.name'] ||
+                    fullData?.pageProps?.companyInfo?.name;
+                  const hasFullNameEn =
+                    fullData['pageProps.companyInfo.fullNameEn'] ||
+                    fullData?.pageProps?.companyInfo?.fullNameEn;
+                  const hasImage =
+                    fullData['pageProps.companyInfo.image'] ||
+                    fullData?.pageProps?.companyInfo?.image;
+                  const hasIntroduction =
+                    fullData['pageProps.companyInfo.introduction'] ||
+                    fullData?.pageProps?.companyInfo?.introduction;
+                  const hasNotes =
+                    fullData['pageProps.companyInfo.notes'] ||
+                    fullData?.pageProps?.companyInfo?.notes;
+                  const hasPermanentAddress =
+                    fullData['pageProps.companyInfo.permanentAddress'] ||
+                    fullData?.pageProps?.companyInfo?.permanentAddress;
 
-                  const hasBasicInfo = !!(hasFullName || hasFullNameEn || hasImage || hasIntroduction || hasNotes || hasPermanentAddress);
+                  const hasBasicInfo = !!(
+                    hasFullName ||
+                    hasFullNameEn ||
+                    hasImage ||
+                    hasIntroduction ||
+                    hasNotes ||
+                    hasPermanentAddress
+                  );
 
                   // Extract basic info from stockData
                   const basicInfo = stockData.basicInfo || {};
@@ -1023,12 +1137,32 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
                     ...s,
                     hasBasicInfo,
                     basicInfo: {
-                      companyName: basicInfo.companyName || fullData['pageProps.companyInfo.fullName'] || fullData?.pageProps?.companyInfo?.fullName || fullData['pageProps.companyInfo.name'] || fullData?.pageProps?.companyInfo?.name,
-                      exchange: basicInfo.exchange || fullData['pageProps.companyInfo.exchange'] || fullData?.pageProps?.companyInfo?.exchange,
-                      matchPrice: basicInfo.matchPrice || fullData['pageProps.priceSnapshot.matchPrice'] || fullData?.pageProps?.priceSnapshot?.matchPrice,
-                      changedValue: basicInfo.changedValue || fullData['pageProps.priceSnapshot.changedValue'] || fullData?.pageProps?.priceSnapshot?.changedValue,
-                      changedRatio: basicInfo.changedRatio || fullData['pageProps.priceSnapshot.changedRatio'] || fullData?.pageProps?.priceSnapshot?.changedRatio,
-                      totalVolume: basicInfo.totalVolume || fullData['pageProps.priceSnapshot.totalVolumeTraded'] || fullData?.pageProps?.priceSnapshot?.totalVolumeTraded,
+                      companyName:
+                        basicInfo.companyName ||
+                        fullData['pageProps.companyInfo.fullName'] ||
+                        fullData?.pageProps?.companyInfo?.fullName ||
+                        fullData['pageProps.companyInfo.name'] ||
+                        fullData?.pageProps?.companyInfo?.name,
+                      exchange:
+                        basicInfo.exchange ||
+                        fullData['pageProps.companyInfo.exchange'] ||
+                        fullData?.pageProps?.companyInfo?.exchange,
+                      matchPrice:
+                        basicInfo.matchPrice ||
+                        fullData['pageProps.priceSnapshot.matchPrice'] ||
+                        fullData?.pageProps?.priceSnapshot?.matchPrice,
+                      changedValue:
+                        basicInfo.changedValue ||
+                        fullData['pageProps.priceSnapshot.changedValue'] ||
+                        fullData?.pageProps?.priceSnapshot?.changedValue,
+                      changedRatio:
+                        basicInfo.changedRatio ||
+                        fullData['pageProps.priceSnapshot.changedRatio'] ||
+                        fullData?.pageProps?.priceSnapshot?.changedRatio,
+                      totalVolume:
+                        basicInfo.totalVolume ||
+                        fullData['pageProps.priceSnapshot.totalVolumeTraded'] ||
+                        fullData?.pageProps?.priceSnapshot?.totalVolumeTraded,
                       marketCap: basicInfo.marketCap,
                       beta: basicInfo.beta,
                       eps: basicInfo.eps,
@@ -1036,8 +1170,8 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
                       pb: basicInfo.pb,
                       roe: basicInfo.roe,
                       roa: basicInfo.roa,
-                      fullData: fullData
-                    }
+                      fullData: fullData,
+                    },
                   };
                 }
                 return s;
@@ -1052,7 +1186,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
           if (completed === total) {
             this.applyFilters();
           }
-        }
+        },
       });
     });
   }
@@ -1069,12 +1203,32 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
           const updatedAt = data.updatedAt || new Date().toISOString();
 
           const updatedBasicInfo = {
-            companyName: basicInfo.companyName || fullData['pageProps.companyInfo.fullName'] || fullData?.pageProps?.companyInfo?.fullName || fullData['pageProps.companyInfo.name'] || fullData?.pageProps?.companyInfo?.name,
-            exchange: basicInfo.exchange || fullData['pageProps.companyInfo.exchange'] || fullData?.pageProps?.companyInfo?.exchange,
-            matchPrice: basicInfo.matchPrice || fullData['pageProps.priceSnapshot.matchPrice'] || fullData?.pageProps?.priceSnapshot?.matchPrice,
-            changedValue: basicInfo.changedValue || fullData['pageProps.priceSnapshot.changedValue'] || fullData?.pageProps?.priceSnapshot?.changedValue,
-            changedRatio: basicInfo.changedRatio || fullData['pageProps.priceSnapshot.changedRatio'] || fullData?.pageProps?.priceSnapshot?.changedRatio,
-            totalVolume: basicInfo.totalVolume || fullData['pageProps.priceSnapshot.totalVolumeTraded'] || fullData?.pageProps?.priceSnapshot?.totalVolumeTraded,
+            companyName:
+              basicInfo.companyName ||
+              fullData['pageProps.companyInfo.fullName'] ||
+              fullData?.pageProps?.companyInfo?.fullName ||
+              fullData['pageProps.companyInfo.name'] ||
+              fullData?.pageProps?.companyInfo?.name,
+            exchange:
+              basicInfo.exchange ||
+              fullData['pageProps.companyInfo.exchange'] ||
+              fullData?.pageProps?.companyInfo?.exchange,
+            matchPrice:
+              basicInfo.matchPrice ||
+              fullData['pageProps.priceSnapshot.matchPrice'] ||
+              fullData?.pageProps?.priceSnapshot?.matchPrice,
+            changedValue:
+              basicInfo.changedValue ||
+              fullData['pageProps.priceSnapshot.changedValue'] ||
+              fullData?.pageProps?.priceSnapshot?.changedValue,
+            changedRatio:
+              basicInfo.changedRatio ||
+              fullData['pageProps.priceSnapshot.changedRatio'] ||
+              fullData?.pageProps?.priceSnapshot?.changedRatio,
+            totalVolume:
+              basicInfo.totalVolume ||
+              fullData['pageProps.priceSnapshot.totalVolumeTraded'] ||
+              fullData?.pageProps?.priceSnapshot?.totalVolumeTraded,
             marketCap: basicInfo.marketCap,
             beta: basicInfo.beta,
             eps: basicInfo.eps,
@@ -1082,20 +1236,20 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
             pb: basicInfo.pb,
             roe: basicInfo.roe,
             roa: basicInfo.roa,
-            fullData: fullData
+            fullData: fullData,
           };
 
           // Update in allSymbols without reloading list
           this.updateSymbolInPlace(symbol.toUpperCase(), {
             basicInfo: updatedBasicInfo,
             updatedAt: updatedAt,
-            hasBasicInfo: true
+            hasBasicInfo: true,
           });
         }
       },
       error: (error) => {
         console.error(`Error loading basic info for ${symbol}:`, error);
-      }
+      },
     });
   }
 
@@ -1106,17 +1260,13 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const upperSymbol = symbolCode.toUpperCase();
 
     // Update in allSymbols
-    this.allSymbols.update(symbols =>
-      symbols.map(s =>
-        s.symbol.toUpperCase() === upperSymbol ? { ...s, ...updates } : s
-      )
+    this.allSymbols.update((symbols) =>
+      symbols.map((s) => (s.symbol.toUpperCase() === upperSymbol ? { ...s, ...updates } : s))
     );
 
     // Update in filteredSymbols
-    this.filteredSymbols.update(symbols =>
-      symbols.map(s =>
-        s.symbol.toUpperCase() === upperSymbol ? { ...s, ...updates } : s
-      )
+    this.filteredSymbols.update((symbols) =>
+      symbols.map((s) => (s.symbol.toUpperCase() === upperSymbol ? { ...s, ...updates } : s))
     );
   }
 
@@ -1126,19 +1276,19 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
   updateExchangeCounts() {
     const counts = new Map<ExchangeType, ExchangeCount>();
 
-    this.exchanges.forEach(exchange => {
-      const symbols = this.allSymbols().filter(s => {
+    this.exchanges.forEach((exchange) => {
+      const symbols = this.allSymbols().filter((s) => {
         if (Array.isArray(s.exchange)) {
           return s.exchange.includes(exchange);
         }
         return s.exchange === exchange;
       });
-      const fetched = symbols.filter(s => s.isFetched).length;
+      const fetched = symbols.filter((s) => s.isFetched).length;
 
       counts.set(exchange, {
         exchange,
         total: symbols.length,
-        fetched
+        fetched,
       });
     });
 
@@ -1150,7 +1300,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
    */
   getExchangeCountText(exchange: ExchangeType): string {
     // Always calculate on the fly to show current count
-    const symbols = this.allSymbols().filter(s => {
+    const symbols = this.allSymbols().filter((s) => {
       if (Array.isArray(s.exchange)) {
         return s.exchange.includes(exchange);
       }
@@ -1174,15 +1324,34 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     // Check if we have fullData in basicInfo
     if (symbol.basicInfo?.fullData) {
       const fullData = symbol.basicInfo.fullData;
-      const hasFullName = fullData['pageProps.companyInfo.fullName'] || fullData?.pageProps?.companyInfo?.fullName || fullData['pageProps.companyInfo.name'] || fullData?.pageProps?.companyInfo?.name;
-      const hasFullNameEn = fullData['pageProps.companyInfo.fullNameEn'] || fullData?.pageProps?.companyInfo?.fullNameEn;
-      const hasImage = fullData['pageProps.companyInfo.image'] || fullData?.pageProps?.companyInfo?.image;
-      const hasIntroduction = fullData['pageProps.companyInfo.introduction'] || fullData?.pageProps?.companyInfo?.introduction;
-      const hasNotes = fullData['pageProps.companyInfo.notes'] || fullData?.pageProps?.companyInfo?.notes;
-      const hasPermanentAddress = fullData['pageProps.companyInfo.permanentAddress'] || fullData?.pageProps?.companyInfo?.permanentAddress;
+      const hasFullName =
+        fullData['pageProps.companyInfo.fullName'] ||
+        fullData?.pageProps?.companyInfo?.fullName ||
+        fullData['pageProps.companyInfo.name'] ||
+        fullData?.pageProps?.companyInfo?.name;
+      const hasFullNameEn =
+        fullData['pageProps.companyInfo.fullNameEn'] ||
+        fullData?.pageProps?.companyInfo?.fullNameEn;
+      const hasImage =
+        fullData['pageProps.companyInfo.image'] || fullData?.pageProps?.companyInfo?.image;
+      const hasIntroduction =
+        fullData['pageProps.companyInfo.introduction'] ||
+        fullData?.pageProps?.companyInfo?.introduction;
+      const hasNotes =
+        fullData['pageProps.companyInfo.notes'] || fullData?.pageProps?.companyInfo?.notes;
+      const hasPermanentAddress =
+        fullData['pageProps.companyInfo.permanentAddress'] ||
+        fullData?.pageProps?.companyInfo?.permanentAddress;
 
       // Consider has basic info if at least fullName exists
-      return !!(hasFullName || hasFullNameEn || hasImage || hasIntroduction || hasNotes || hasPermanentAddress);
+      return !!(
+        hasFullName ||
+        hasFullNameEn ||
+        hasImage ||
+        hasIntroduction ||
+        hasNotes ||
+        hasPermanentAddress
+      );
     }
 
     return false;
@@ -1193,7 +1362,9 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
    */
   checkBasicInfoForAllSymbols() {
     this.isLoadingBasicInfoCheck.set(true);
-    const fetchedSymbols = this.allSymbols().filter(s => s.isFetched && s.hasBasicInfo === undefined);
+    const fetchedSymbols = this.allSymbols().filter(
+      (s) => s.isFetched && s.hasBasicInfo === undefined
+    );
 
     if (fetchedSymbols.length === 0) {
       this.isLoadingBasicInfoCheck.set(false);
@@ -1206,7 +1377,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const total = fetchedSymbols.length;
     const basicInfoMap = new Map<string, any>();
 
-    fetchedSymbols.forEach(symbol => {
+    fetchedSymbols.forEach((symbol) => {
       this.dnseService.getStockDataFromAPI(symbol.symbol).subscribe({
         next: (data) => {
           if (data && data.fullData) {
@@ -1216,32 +1387,53 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
           completed++;
           if (completed === total) {
             // Update all symbols with basic info check
-            this.allSymbols.update(symbols =>
-              symbols.map(s => {
+            this.allSymbols.update((symbols) =>
+              symbols.map((s) => {
                 if (s.isFetched && s.hasBasicInfo === undefined) {
                   const fullData = basicInfoMap.get(s.symbol);
                   if (fullData) {
-                    const hasFullName = fullData['pageProps.companyInfo.fullName'] || fullData?.pageProps?.companyInfo?.fullName || fullData['pageProps.companyInfo.name'] || fullData?.pageProps?.companyInfo?.name;
-                    const hasFullNameEn = fullData['pageProps.companyInfo.fullNameEn'] || fullData?.pageProps?.companyInfo?.fullNameEn;
-                    const hasImage = fullData['pageProps.companyInfo.image'] || fullData?.pageProps?.companyInfo?.image;
-                    const hasIntroduction = fullData['pageProps.companyInfo.introduction'] || fullData?.pageProps?.companyInfo?.introduction;
-                    const hasNotes = fullData['pageProps.companyInfo.notes'] || fullData?.pageProps?.companyInfo?.notes;
-                    const hasPermanentAddress = fullData['pageProps.companyInfo.permanentAddress'] || fullData?.pageProps?.companyInfo?.permanentAddress;
+                    const hasFullName =
+                      fullData['pageProps.companyInfo.fullName'] ||
+                      fullData?.pageProps?.companyInfo?.fullName ||
+                      fullData['pageProps.companyInfo.name'] ||
+                      fullData?.pageProps?.companyInfo?.name;
+                    const hasFullNameEn =
+                      fullData['pageProps.companyInfo.fullNameEn'] ||
+                      fullData?.pageProps?.companyInfo?.fullNameEn;
+                    const hasImage =
+                      fullData['pageProps.companyInfo.image'] ||
+                      fullData?.pageProps?.companyInfo?.image;
+                    const hasIntroduction =
+                      fullData['pageProps.companyInfo.introduction'] ||
+                      fullData?.pageProps?.companyInfo?.introduction;
+                    const hasNotes =
+                      fullData['pageProps.companyInfo.notes'] ||
+                      fullData?.pageProps?.companyInfo?.notes;
+                    const hasPermanentAddress =
+                      fullData['pageProps.companyInfo.permanentAddress'] ||
+                      fullData?.pageProps?.companyInfo?.permanentAddress;
 
-                    const hasBasicInfo = !!(hasFullName || hasFullNameEn || hasImage || hasIntroduction || hasNotes || hasPermanentAddress);
+                    const hasBasicInfo = !!(
+                      hasFullName ||
+                      hasFullNameEn ||
+                      hasImage ||
+                      hasIntroduction ||
+                      hasNotes ||
+                      hasPermanentAddress
+                    );
 
                     return {
                       ...s,
                       hasBasicInfo,
                       basicInfo: {
                         ...s.basicInfo,
-                        fullData: fullData
-                      }
+                        fullData: fullData,
+                      },
                     };
                   } else {
                     return {
                       ...s,
-                      hasBasicInfo: false
+                      hasBasicInfo: false,
                     };
                   }
                 }
@@ -1257,12 +1449,12 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
           completed++;
           if (completed === total) {
             // Mark as no basic info if error
-            this.allSymbols.update(symbols =>
-              symbols.map(s => {
+            this.allSymbols.update((symbols) =>
+              symbols.map((s) => {
                 if (s.isFetched && s.hasBasicInfo === undefined && !basicInfoMap.has(s.symbol)) {
                   return {
                     ...s,
-                    hasBasicInfo: false
+                    hasBasicInfo: false,
                   };
                 }
                 return s;
@@ -1271,7 +1463,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
             this.isLoadingBasicInfoCheck.set(false);
             this.applyFilters();
           }
-        }
+        },
       });
     });
   }
@@ -1284,7 +1476,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     // Filter by exchange
     if (this.selectedExchange() !== 'all') {
-      filtered = filtered.filter(s => {
+      filtered = filtered.filter((s) => {
         if (Array.isArray(s.exchange)) {
           return s.exchange.includes(this.selectedExchange() as ExchangeType);
         }
@@ -1295,10 +1487,10 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     // Filter by filter mode
     const filterMode = this.filterMode();
     if (filterMode === 'unfetched') {
-      filtered = filtered.filter(s => !s.isFetched);
+      filtered = filtered.filter((s) => !s.isFetched);
     } else if (filterMode === 'missingBasicInfo') {
       // Check basic info for symbols that haven't been checked yet
-      filtered = filtered.filter(s => {
+      filtered = filtered.filter((s) => {
         if (!s.isFetched) return false;
         return !this.hasBasicInfoData(s);
       });
@@ -1307,16 +1499,17 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     // Filter by search type (stocks = 3 char symbols only)
     const searchType = this.searchType();
     if (searchType === 'stocks') {
-      filtered = filtered.filter(s => s.symbol.length === 3);
+      filtered = filtered.filter((s) => s.symbol.length === 3);
     }
 
     // Filter by search query
     const query = this.searchQuery().toLowerCase().trim();
     if (query) {
-      filtered = filtered.filter(s =>
-        s.symbol.toLowerCase().includes(query) ||
-        (s.name && s.name.toLowerCase().includes(query)) ||
-        (s.basicInfo?.companyName && s.basicInfo.companyName.toLowerCase().includes(query))
+      filtered = filtered.filter(
+        (s) =>
+          s.symbol.toLowerCase().includes(query) ||
+          (s.name && s.name.toLowerCase().includes(query)) ||
+          (s.basicInfo?.companyName && s.basicInfo.companyName.toLowerCase().includes(query))
       );
     }
 
@@ -1376,7 +1569,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
       return; // Already fetching
     }
 
-    this.fetchingSymbols.update(set => {
+    this.fetchingSymbols.update((set) => {
       const newSet = new Set(set);
       newSet.add(symbol.symbol);
       return newSet;
@@ -1395,53 +1588,50 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
             const basicInfo = this.extractBasicInfoFromStockData(data);
 
             // Save to Stock API
-            this.dnseService.saveStockData(
-              symbol.symbol,
-              basicInfo,
-              ohlcData,
-              data.fullData || data
-            ).subscribe({
-              next: (response) => {
-                console.log(`✅ Đã lưu dữ liệu ${symbol.symbol} vào Stock API`, response);
+            this.dnseService
+              .saveStockData(symbol.symbol, basicInfo, ohlcData, data.fullData || data)
+              .subscribe({
+                next: (response) => {
+                  console.log(`✅ Đã lưu dữ liệu ${symbol.symbol} vào Stock API`, response);
 
-                // Mark as fetched
-                this.dnseService.markAsFetched(symbol.symbol);
+                  // Mark as fetched
+                  this.dnseService.markAsFetched(symbol.symbol);
 
-                // Update UI in place (don't reload list)
-                this.updateSymbolInPlace(symbol.symbol, {
-                  isFetched: true,
-                  isFetching: false,
-                  updatedAt: new Date().toISOString()
-                });
-                this.updateFetchedCount();
-                this.updateExchangeCounts();
+                  // Update UI in place (don't reload list)
+                  this.updateSymbolInPlace(symbol.symbol, {
+                    isFetched: true,
+                    isFetching: false,
+                    updatedAt: new Date().toISOString(),
+                  });
+                  this.updateFetchedCount();
+                  this.updateExchangeCounts();
 
-                // Load basic info for this symbol from DB
-                this.loadBasicInfoForSymbol(symbol.symbol);
+                  // Load basic info for this symbol from DB
+                  this.loadBasicInfoForSymbol(symbol.symbol);
 
-                // Remove from fetching set
-                this.fetchingSymbols.update(set => {
-                  const newSet = new Set(set);
-                  newSet.delete(symbol.symbol);
-                  return newSet;
-                });
-              },
-              error: (saveError) => {
-                console.error(`Error saving ${symbol.symbol} to API:`, saveError);
-                // Still mark as fetched even if save fails
-                this.dnseService.markAsFetched(symbol.symbol);
-                this.updateSymbolInPlace(symbol.symbol, {
-                  isFetched: true,
-                  isFetching: false
-                });
-                this.updateFetchedCount();
-                this.fetchingSymbols.update(set => {
-                  const newSet = new Set(set);
-                  newSet.delete(symbol.symbol);
-                  return newSet;
-                });
-              }
-            });
+                  // Remove from fetching set
+                  this.fetchingSymbols.update((set) => {
+                    const newSet = new Set(set);
+                    newSet.delete(symbol.symbol);
+                    return newSet;
+                  });
+                },
+                error: (saveError) => {
+                  console.error(`Error saving ${symbol.symbol} to API:`, saveError);
+                  // Still mark as fetched even if save fails
+                  this.dnseService.markAsFetched(symbol.symbol);
+                  this.updateSymbolInPlace(symbol.symbol, {
+                    isFetched: true,
+                    isFetching: false,
+                  });
+                  this.updateFetchedCount();
+                  this.fetchingSymbols.update((set) => {
+                    const newSet = new Set(set);
+                    newSet.delete(symbol.symbol);
+                    return newSet;
+                  });
+                },
+              });
           },
           error: (error) => {
             console.error(`Error fetching price data for ${symbol.symbol}:`, error);
@@ -1449,15 +1639,15 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
             this.dnseService.markAsFetched(symbol.symbol);
             this.updateSymbolInPlace(symbol.symbol, {
               isFetched: true,
-              isFetching: false
+              isFetching: false,
             });
             this.updateFetchedCount();
-            this.fetchingSymbols.update(set => {
+            this.fetchingSymbols.update((set) => {
               const newSet = new Set(set);
               newSet.delete(symbol.symbol);
               return newSet;
             });
-          }
+          },
         });
       },
       error: (error) => {
@@ -1467,12 +1657,12 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
         this.updateSymbolInPlace(symbol.symbol, { isFetching: false });
 
         // Remove from fetching set
-        this.fetchingSymbols.update(set => {
+        this.fetchingSymbols.update((set) => {
           const newSet = new Set(set);
           newSet.delete(symbol.symbol);
           return newSet;
         });
-      }
+      },
     });
   }
 
@@ -1486,7 +1676,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
         return;
       }
 
-      this.fetchingSymbols.update(set => {
+      this.fetchingSymbols.update((set) => {
         const newSet = new Set(set);
         newSet.add(symbol.symbol);
         return newSet;
@@ -1505,57 +1695,54 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
               const basicInfo = this.extractBasicInfoFromStockData(data);
 
               // Save to Stock API
-              this.dnseService.saveStockData(
-                symbol.symbol,
-                basicInfo,
-                ohlcData,
-                data.fullData || data
-              ).subscribe({
-                next: (response) => {
-                  console.log(`✅ Đã lưu dữ liệu ${symbol.symbol} vào Stock API`, response);
+              this.dnseService
+                .saveStockData(symbol.symbol, basicInfo, ohlcData, data.fullData || data)
+                .subscribe({
+                  next: (response) => {
+                    console.log(`✅ Đã lưu dữ liệu ${symbol.symbol} vào Stock API`, response);
 
-                  // Mark as fetched
-                  this.dnseService.markAsFetched(symbol.symbol);
+                    // Mark as fetched
+                    this.dnseService.markAsFetched(symbol.symbol);
 
-                  // Update UI in place (don't reload list)
-                  this.updateSymbolInPlace(symbol.symbol, {
-                    isFetched: true,
-                    isFetching: false,
-                    updatedAt: new Date().toISOString()
-                  });
-                  this.updateFetchedCount();
-                  this.updateExchangeCounts();
+                    // Update UI in place (don't reload list)
+                    this.updateSymbolInPlace(symbol.symbol, {
+                      isFetched: true,
+                      isFetching: false,
+                      updatedAt: new Date().toISOString(),
+                    });
+                    this.updateFetchedCount();
+                    this.updateExchangeCounts();
 
-                  // Load basic info for this symbol from DB
-                  this.loadBasicInfoForSymbol(symbol.symbol);
+                    // Load basic info for this symbol from DB
+                    this.loadBasicInfoForSymbol(symbol.symbol);
 
-                  // Remove from fetching set
-                  this.fetchingSymbols.update(set => {
-                    const newSet = new Set(set);
-                    newSet.delete(symbol.symbol);
-                    return newSet;
-                  });
+                    // Remove from fetching set
+                    this.fetchingSymbols.update((set) => {
+                      const newSet = new Set(set);
+                      newSet.delete(symbol.symbol);
+                      return newSet;
+                    });
 
-                  resolve();
-                },
-                error: (saveError) => {
-                  console.error(`Error saving ${symbol.symbol} to API:`, saveError);
-                  // Still mark as fetched even if save fails
-                  this.dnseService.markAsFetched(symbol.symbol);
-                  this.updateSymbolInPlace(symbol.symbol, {
-                    isFetched: true,
-                    isFetching: false
-                  });
-                  this.updateFetchedCount();
-                  this.fetchingSymbols.update(set => {
-                    const newSet = new Set(set);
-                    newSet.delete(symbol.symbol);
-                    return newSet;
-                  });
+                    resolve();
+                  },
+                  error: (saveError) => {
+                    console.error(`Error saving ${symbol.symbol} to API:`, saveError);
+                    // Still mark as fetched even if save fails
+                    this.dnseService.markAsFetched(symbol.symbol);
+                    this.updateSymbolInPlace(symbol.symbol, {
+                      isFetched: true,
+                      isFetching: false,
+                    });
+                    this.updateFetchedCount();
+                    this.fetchingSymbols.update((set) => {
+                      const newSet = new Set(set);
+                      newSet.delete(symbol.symbol);
+                      return newSet;
+                    });
 
-                  resolve(); // Resolve even on error to continue with next symbol
-                }
-              });
+                    resolve(); // Resolve even on error to continue with next symbol
+                  },
+                });
             },
             error: (error) => {
               console.error(`Error fetching price data for ${symbol.symbol}:`, error);
@@ -1563,17 +1750,17 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
               this.dnseService.markAsFetched(symbol.symbol);
               this.updateSymbolInPlace(symbol.symbol, {
                 isFetched: true,
-                isFetching: false
+                isFetching: false,
               });
               this.updateFetchedCount();
-              this.fetchingSymbols.update(set => {
+              this.fetchingSymbols.update((set) => {
                 const newSet = new Set(set);
                 newSet.delete(symbol.symbol);
                 return newSet;
               });
 
               resolve(); // Resolve even on error to continue with next symbol
-            }
+            },
           });
         },
         error: (error) => {
@@ -1583,14 +1770,14 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
           this.updateSymbolInPlace(symbol.symbol, { isFetching: false });
 
           // Remove from fetching set
-          this.fetchingSymbols.update(set => {
+          this.fetchingSymbols.update((set) => {
             const newSet = new Set(set);
             newSet.delete(symbol.symbol);
             return newSet;
           });
 
           resolve(); // Resolve even on error to continue with next symbol
-        }
+        },
       });
     });
   }
@@ -1599,7 +1786,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
    * Fetch multiple symbols sequentially (one by one)
    */
   async fetchSelectedSymbols(symbols: SymbolWithStatus[]) {
-    const unfetched = symbols.filter(s => !s.isFetched && !this.fetchingSymbols().has(s.symbol));
+    const unfetched = symbols.filter((s) => !s.isFetched && !this.fetchingSymbols().has(s.symbol));
 
     console.log(`🔄 Bắt đầu fetch tuần tự ${unfetched.length} mã cổ phiếu...`);
 
@@ -1616,7 +1803,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
    * Fetch all unfetched symbols
    */
   fetchAllUnfetched() {
-    const unfetched = this.filteredSymbols().filter(s => !s.isFetched);
+    const unfetched = this.filteredSymbols().filter((s) => !s.isFetched);
     this.fetchSelectedSymbols(unfetched);
   }
 
@@ -1626,10 +1813,8 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
   markAsNotFetched(symbol: SymbolWithStatus) {
     this.dnseService.markAsNotFetched(symbol.symbol);
 
-    this.allSymbols.update(symbols =>
-      symbols.map(s =>
-        s.symbol === symbol.symbol ? { ...s, isFetched: false } : s
-      )
+    this.allSymbols.update((symbols) =>
+      symbols.map((s) => (s.symbol === symbol.symbol ? { ...s, isFetched: false } : s))
     );
     this.applyFilters();
     this.updateFetchedCount();
@@ -1641,9 +1826,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
   clearAllFetched() {
     if (confirm('Bạn có chắc muốn xóa tất cả trạng thái đã fetch?')) {
       this.dnseService.clearFetchedSymbols();
-      this.allSymbols.update(symbols =>
-        symbols.map(s => ({ ...s, isFetched: false }))
-      );
+      this.allSymbols.update((symbols) => symbols.map((s) => ({ ...s, isFetched: false })));
       this.applyFilters();
       this.updateFetchedCount();
     }
@@ -1668,7 +1851,9 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
       next: (dbSymbols) => {
         const existingSymbols = new Set(dbSymbols);
         this.dbSymbolsCount.set(existingSymbols.size);
-        this.dnseDialogMessage.set(`Đã tìm thấy ${existingSymbols.size} cổ phiếu trong DB. Đang lấy danh sách từ DNSE...`);
+        this.dnseDialogMessage.set(
+          `Đã tìm thấy ${existingSymbols.size} cổ phiếu trong DB. Đang lấy danh sách từ DNSE...`
+        );
 
         console.log(`DB has ${existingSymbols.size} symbols`);
 
@@ -1679,7 +1864,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
             const missing: string[] = [];
 
             results.forEach(({ symbols }) => {
-              symbols.forEach(sym => {
+              symbols.forEach((sym) => {
                 const symbolStr = typeof sym === 'string' ? sym : sym.symbol;
                 if (symbolStr) {
                   dnseSymbols.push(symbolStr.toUpperCase());
@@ -1699,22 +1884,28 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
             this.dnseDialogStatus.set('success');
             this.dnseDialogMessage.set(`Hoàn tất kiểm tra!`);
 
-            console.log(`DNSE has ${dnseSymbols.length} symbols, missing ${missing.length} in our DB`);
+            console.log(
+              `DNSE has ${dnseSymbols.length} symbols, missing ${missing.length} in our DB`
+            );
           },
           error: (error) => {
             console.error('Error checking DNSE symbols:', error);
             this.isSyncingDNSE.set(false);
             this.dnseDialogStatus.set('error');
-            this.dnseDialogMessage.set('Lỗi khi lấy danh sách từ DNSE: ' + (error.message || 'Unknown error'));
-          }
+            this.dnseDialogMessage.set(
+              'Lỗi khi lấy danh sách từ DNSE: ' + (error.message || 'Unknown error')
+            );
+          },
         });
       },
       error: (error) => {
         console.error('Error getting DB symbols:', error);
         this.isSyncingDNSE.set(false);
         this.dnseDialogStatus.set('error');
-        this.dnseDialogMessage.set('Lỗi khi lấy danh sách từ Database: ' + (error.message || 'Unknown error'));
-      }
+        this.dnseDialogMessage.set(
+          'Lỗi khi lấy danh sách từ Database: ' + (error.message || 'Unknown error')
+        );
+      },
     });
   }
 
@@ -1741,31 +1932,33 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     this.isSyncingDNSE.set(true);
     let completed = 0;
 
-    missing.forEach(symbol => {
-      this.http.post<any>('/api/stocks-v2/save', {
-        symbol: symbol.toUpperCase(),
-        basicInfo: { symbol: symbol.toUpperCase() },
-        priceData: null,
-        fullData: null
-      }).subscribe({
-        next: () => {
-          completed++;
-          if (completed === missing.length) {
-            this.isSyncingDNSE.set(false);
-            this.missingSymbolsCount.set(0);
-            this.missingSymbols.set([]);
-            this.loadSymbols(); // Reload the list
-          }
-        },
-        error: (error) => {
-          console.error(`Error adding stock ${symbol}:`, error);
-          completed++;
-          if (completed === missing.length) {
-            this.isSyncingDNSE.set(false);
-            this.loadSymbols(); // Reload anyway
-          }
-        }
-      });
+    missing.forEach((symbol) => {
+      this.http
+        .post<any>('/api/stocks-v2/save', {
+          symbol: symbol.toUpperCase(),
+          basicInfo: { symbol: symbol.toUpperCase() },
+          priceData: null,
+          fullData: null,
+        })
+        .subscribe({
+          next: () => {
+            completed++;
+            if (completed === missing.length) {
+              this.isSyncingDNSE.set(false);
+              this.missingSymbolsCount.set(0);
+              this.missingSymbols.set([]);
+              this.loadSymbols(); // Reload the list
+            }
+          },
+          error: (error) => {
+            console.error(`Error adding stock ${symbol}:`, error);
+            completed++;
+            if (completed === missing.length) {
+              this.isSyncingDNSE.set(false);
+              this.loadSymbols(); // Reload anyway
+            }
+          },
+        });
     });
   }
 
@@ -1788,43 +1981,40 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
             const basicInfo = this.extractBasicInfoFromStockData(data);
 
             // Save updated data to API
-            this.dnseService.saveStockData(
-              symbol.symbol,
-              basicInfo,
-              priceData,
-              data.fullData || data
-            ).subscribe({
-              next: () => {
-                console.log(`✅ Updated basic info and price data for ${symbol.symbol}`);
-                // Update local state in place (don't reload list)
-                this.updateSymbolInPlace(symbol.symbol, {
-                  updatedAt: new Date().toISOString(),
-                  isFetched: true
-                });
-                // Load basic info to update UI with fresh data
-                this.loadBasicInfoForSymbol(symbol.symbol);
-                this.isUpdatingPrices.set(false);
-                this.updatingPriceSymbol.set(null);
-              },
-              error: (error) => {
-                console.error(`Error saving data for ${symbol.symbol}:`, error);
-                this.isUpdatingPrices.set(false);
-                this.updatingPriceSymbol.set(null);
-              }
-            });
+            this.dnseService
+              .saveStockData(symbol.symbol, basicInfo, priceData, data.fullData || data)
+              .subscribe({
+                next: () => {
+                  console.log(`✅ Updated basic info and price data for ${symbol.symbol}`);
+                  // Update local state in place (don't reload list)
+                  this.updateSymbolInPlace(symbol.symbol, {
+                    updatedAt: new Date().toISOString(),
+                    isFetched: true,
+                  });
+                  // Load basic info to update UI with fresh data
+                  this.loadBasicInfoForSymbol(symbol.symbol);
+                  this.isUpdatingPrices.set(false);
+                  this.updatingPriceSymbol.set(null);
+                },
+                error: (error) => {
+                  console.error(`Error saving data for ${symbol.symbol}:`, error);
+                  this.isUpdatingPrices.set(false);
+                  this.updatingPriceSymbol.set(null);
+                },
+              });
           },
           error: (error) => {
             console.error(`Error fetching OHLC data for ${symbol.symbol}:`, error);
             this.isUpdatingPrices.set(false);
             this.updatingPriceSymbol.set(null);
-          }
+          },
         });
       },
       error: (error) => {
         console.error(`Error fetching stock data for ${symbol.symbol}:`, error);
         this.isUpdatingPrices.set(false);
         this.updatingPriceSymbol.set(null);
-      }
+      },
     });
   }
 
@@ -1832,10 +2022,14 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
    * Update price data for all fetched stocks
    */
   updateAllPricesFromDNSE() {
-    const fetchedSymbols = this.allSymbols().filter(s => s.isFetched);
+    const fetchedSymbols = this.allSymbols().filter((s) => s.isFetched);
     if (fetchedSymbols.length === 0) return;
 
-    if (!confirm(`Bạn có chắc muốn cập nhật giá cho ${fetchedSymbols.length} cổ phiếu? Quá trình này có thể mất vài phút.`)) {
+    if (
+      !confirm(
+        `Bạn có chắc muốn cập nhật giá cho ${fetchedSymbols.length} cổ phiếu? Quá trình này có thể mất vài phút.`
+      )
+    ) {
       return;
     }
 
@@ -1860,32 +2054,34 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
         next: (priceData) => {
           this.dnseService.getStockDataFromAPI(symbol.symbol).subscribe({
             next: (stockData) => {
-              this.dnseService.saveStockData(
-                symbol.symbol,
-                stockData.basicInfo || {},
-                priceData,
-                stockData.fullData || null
-              ).subscribe({
-                next: () => {
-                  current++;
-                  setTimeout(() => updateNext(), 500); // Rate limit
-                },
-                error: () => {
-                  current++;
-                  setTimeout(() => updateNext(), 500);
-                }
-              });
+              this.dnseService
+                .saveStockData(
+                  symbol.symbol,
+                  stockData.basicInfo || {},
+                  priceData,
+                  stockData.fullData || null
+                )
+                .subscribe({
+                  next: () => {
+                    current++;
+                    setTimeout(() => updateNext(), 500); // Rate limit
+                  },
+                  error: () => {
+                    current++;
+                    setTimeout(() => updateNext(), 500);
+                  },
+                });
             },
             error: () => {
               current++;
               setTimeout(() => updateNext(), 500);
-            }
+            },
           });
         },
         error: () => {
           current++;
           setTimeout(() => updateNext(), 500);
-        }
+        },
       });
     };
 
@@ -1913,7 +2109,11 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
         const weeks = Math.floor(diffDays / 7);
         return `${weeks} tuần trước`;
       } else {
-        return date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        return date.toLocaleDateString('vi-VN', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+        });
       }
     } catch {
       return 'N/A';
@@ -1940,7 +2140,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
    * Update fetched count
    */
   updateFetchedCount() {
-    const count = this.allSymbols().filter(s => s.isFetched).length;
+    const count = this.allSymbols().filter((s) => s.isFetched).length;
     this.fetchedCount.set(count);
   }
 
@@ -1965,7 +2165,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
       pe: pageProps?.financialIndicators?.indexes?.pe?.value,
       pb: pageProps?.financialIndicators?.indexes?.pb?.value,
       roe: pageProps?.financialIndicators?.indexes?.roe?.value,
-      roa: pageProps?.financialIndicators?.indexes?.roa?.value
+      roa: pageProps?.financialIndicators?.indexes?.roa?.value,
     };
   }
 
@@ -1986,7 +2186,6 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     if (symbol.isFetched) return 'Đã fetch';
     return 'Chưa fetch';
   }
-
 
   /**
    * Load price data for detail view from Stock API
@@ -2012,7 +2211,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
         console.error(`Error loading price data from API for ${symbol}:`, error);
         // Fallback to fetch from DNSE API
         this.fetchPriceDataFromAPIAndSave(symbol, years);
-      }
+      },
     });
   }
 
@@ -2027,7 +2226,8 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
         // Load existing stock data to update
         this.dnseService.getStockDataFromAPI(symbol).subscribe({
           next: (existingData) => {
-            const basicInfo = existingData?.basicInfo || this.extractBasicInfoFromStockData({} as DNSEStockData);
+            const basicInfo =
+              existingData?.basicInfo || this.extractBasicInfoFromStockData({} as DNSEStockData);
             const fullData = existingData?.fullData || {};
 
             // Save updated data with new price data
@@ -2037,7 +2237,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
               },
               error: (saveError) => {
                 console.error(`Error saving price data for ${symbol}:`, saveError);
-              }
+              },
             });
           },
           error: () => {
@@ -2048,9 +2248,9 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
               },
               error: (saveError) => {
                 console.error(`Error saving price data for ${symbol}:`, saveError);
-              }
+              },
             });
-          }
+          },
         });
 
         this.selectedSymbolPriceData.set(ohlcData);
@@ -2061,7 +2261,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
         console.error(`Error loading price data for ${symbol}:`, error);
         this.isLoadingPrice.set(false);
         alert(`Không thể tải dữ liệu giá cho ${symbol}`);
-      }
+      },
     });
   }
 
@@ -2069,7 +2269,16 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
    * Convert sheet data format to OHLC format
    * Supports both dd/mm/yyyy and ISO date string formats
    */
-  convertSheetDataToOHLC(sheetData: Array<{time: string | Date, open: string | number, lowest: string | number, highest: string | number, close?: string | number, volume?: string | number}>): DNSEOHLCData {
+  convertSheetDataToOHLC(
+    sheetData: Array<{
+      time: string | Date;
+      open: string | number;
+      lowest: string | number;
+      highest: string | number;
+      close?: string | number;
+      volume?: string | number;
+    }>
+  ): DNSEOHLCData {
     const t: number[] = [];
     const o: number[] = [];
     const h: number[] = [];
@@ -2077,7 +2286,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const c: number[] = [];
     const v: number[] = [];
 
-    sheetData.forEach(row => {
+    sheetData.forEach((row) => {
       // Parse date - support both dd/mm/yyyy and ISO string formats
       let date: Date | null = null;
 
@@ -2150,7 +2359,8 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
         // Load existing stock data to update
         this.dnseService.getStockDataFromAPI(symbol.symbol).subscribe({
           next: (existingData) => {
-            const basicInfo = existingData?.basicInfo || this.extractBasicInfoFromStockData({} as DNSEStockData);
+            const basicInfo =
+              existingData?.basicInfo || this.extractBasicInfoFromStockData({} as DNSEStockData);
             const fullData = existingData?.fullData || {};
 
             // Save updated data with new price data
@@ -2160,7 +2370,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
               },
               error: (saveError) => {
                 console.error(`Error saving price data for ${symbol.symbol}:`, saveError);
-              }
+              },
             });
           },
           error: () => {
@@ -2171,9 +2381,9 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
               },
               error: (saveError) => {
                 console.error(`Error saving price data for ${symbol.symbol}:`, saveError);
-              }
+              },
             });
-          }
+          },
         });
 
         // Update UI
@@ -2189,10 +2399,9 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
         console.error(`Error fetching price data for ${symbol.symbol}:`, error);
         this.isLoadingPrice.set(false);
         alert(`Không thể fetch dữ liệu giá cho ${symbol.symbol}`);
-      }
+      },
     });
   }
-
 
   /**
    * Get total volume from price data
@@ -2201,7 +2410,6 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     if (!priceData.v || priceData.v.length === 0) return 0;
     return priceData.v.reduce((sum, vol) => sum + vol, 0);
   }
-
 
   /**
    * Format date to Vietnamese format dd/mm/yyyy
@@ -2241,7 +2449,6 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const parsed = parseFloat(value.toString().replace(/,/g, ''));
     return isNaN(parsed) ? 0 : parsed;
   }
-
 
   /**
    * Calculate Moving Average
@@ -2305,7 +2512,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
         rsi.push(100);
       } else {
         const rs = avgGain / avgLoss;
-        rsi.push(100 - (100 / (1 + rs)));
+        rsi.push(100 - 100 / (1 + rs));
       }
     }
 
@@ -2315,7 +2522,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
   /**
    * Calculate MACD
    */
-  calculateMACD(prices: number[]): { macd: number[], signal: number[], histogram: number[] } {
+  calculateMACD(prices: number[]): { macd: number[]; signal: number[]; histogram: number[] } {
     const ema12 = this.calculateEMA(prices, 12);
     const ema26 = this.calculateEMA(prices, 26);
 
@@ -2328,7 +2535,10 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
       }
     }
 
-    const signal = this.calculateEMA(macd.filter(v => !isNaN(v)), 9);
+    const signal = this.calculateEMA(
+      macd.filter((v) => !isNaN(v)),
+      9
+    );
     const histogram: number[] = [];
 
     for (let i = 0; i < macd.length; i++) {
@@ -2390,7 +2600,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     // Prepare data for candlestick chart
     // Note: Prices are in thousands (1000đ), so multiply by 1000
-    const closePrices = priceData.c.map(p => p * 1000);
+    const closePrices = priceData.c.map((p) => p * 1000);
     const ma20 = this.calculateMA(closePrices, 20);
     const ma50 = this.calculateMA(closePrices, 50);
     const rsi = this.calculateRSI(closePrices, 14);
@@ -2401,18 +2611,22 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
       o: (priceData.o[index] || 0) * 1000, // Open price * 1000
       h: (priceData.h[index] || 0) * 1000, // High price * 1000
       l: (priceData.l[index] || 0) * 1000, // Low price * 1000
-      c: (priceData.c[index] || 0) * 1000  // Close price * 1000
+      c: (priceData.c[index] || 0) * 1000, // Close price * 1000
     }));
 
-    const ma20Data = priceData.t.map((timestamp, index) => ({
-      x: timestamp * 1000,
-      y: isNaN(ma20[index]) ? null : ma20[index]
-    })).filter(d => d.y !== null);
+    const ma20Data = priceData.t
+      .map((timestamp, index) => ({
+        x: timestamp * 1000,
+        y: isNaN(ma20[index]) ? null : ma20[index],
+      }))
+      .filter((d) => d.y !== null);
 
-    const ma50Data = priceData.t.map((timestamp, index) => ({
-      x: timestamp * 1000,
-      y: isNaN(ma50[index]) ? null : ma50[index]
-    })).filter(d => d.y !== null);
+    const ma50Data = priceData.t
+      .map((timestamp, index) => ({
+        x: timestamp * 1000,
+        y: isNaN(ma50[index]) ? null : ma50[index],
+      }))
+      .filter((d) => d.y !== null);
 
     const config: ChartConfiguration<any, any, any> = {
       type: 'candlestick' as any,
@@ -2422,17 +2636,17 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
             label: this.selectedSymbol()?.symbol || 'Giá cổ phiếu',
             data: chartData as any,
             color: {
-              up: '#2e7d32',    // Dark green for up candles
-              down: '#d32f2f',  // Red for down candles
-              unchanged: '#757575' // Gray for unchanged
+              up: '#2e7d32', // Dark green for up candles
+              down: '#d32f2f', // Red for down candles
+              unchanged: '#757575', // Gray for unchanged
             },
             borderWidth: {
               up: 1,
-              down: 1
+              down: 1,
             },
             borderColor: {
-              up: '#1b5e20',    // Darker green border
-              down: '#b71c1c'   // Darker red border
+              up: '#1b5e20', // Darker green border
+              down: '#b71c1c', // Darker red border
             },
             // Adjust candlestick width - set a fixed width in pixels
             // For time scale, we calculate based on time unit
@@ -2444,13 +2658,13 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
             wick: {
               up: {
                 color: '#1b5e20',
-                lineWidth: 1
+                lineWidth: 1,
               },
               down: {
                 color: '#b71c1c',
-                lineWidth: 1
-              }
-            }
+                lineWidth: 1,
+              },
+            },
           } as any,
           {
             type: 'line',
@@ -2461,7 +2675,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
             borderWidth: 2,
             pointRadius: 0,
             tension: 0.1,
-            yAxisID: 'y'
+            yAxisID: 'y',
           },
           {
             type: 'line',
@@ -2472,40 +2686,40 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
             borderWidth: 2,
             pointRadius: 0,
             tension: 0.1,
-            yAxisID: 'y'
-          }
-        ]
+            yAxisID: 'y',
+          },
+        ],
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
           legend: {
-            display: false
+            display: false,
           },
           tooltip: {
-            enabled: false
+            enabled: false,
           },
           zoom: {
             zoom: {
               wheel: {
                 enabled: true,
-                speed: 0.1
+                speed: 0.1,
               },
               pinch: {
-                enabled: true
+                enabled: true,
               },
               mode: 'x',
               limits: {
                 x: {
-                  min: 0.1,  // Minimum zoom: 10% of original
-                  max: 1     // Maximum zoom: 100% of original (no zoom out beyond original)
+                  min: 0.1, // Minimum zoom: 10% of original
+                  max: 1, // Maximum zoom: 100% of original (no zoom out beyond original)
                 },
                 y: {
-                  min: 0.5,  // Minimum zoom: 50% of original for Y axis
-                  max: 2     // Maximum zoom: 200% of original for Y axis
-                }
-              }
+                  min: 0.5, // Minimum zoom: 50% of original for Y axis
+                  max: 2, // Maximum zoom: 200% of original for Y axis
+                },
+              },
             },
             pan: {
               enabled: true,
@@ -2513,11 +2727,11 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
               limits: {
                 x: {
                   min: 'original',
-                  max: 'original'
-                }
-              }
-            }
-          }
+                  max: 'original',
+                },
+              },
+            },
+          },
         },
         scales: {
           x: {
@@ -2525,35 +2739,35 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
             time: {
               unit: 'day',
               displayFormats: {
-                day: 'dd/MM/yyyy'
-              }
+                day: 'dd/MM/yyyy',
+              },
             },
             title: {
               display: true,
-              text: 'Ngày'
+              text: 'Ngày',
             },
             // For time scale, we need to adjust the bar width differently
             // The width is controlled by the dataset options
-            offset: false
+            offset: false,
           },
           y: {
             title: {
               display: true,
-              text: 'Giá (đồng)'
+              text: 'Giá (đồng)',
             },
             ticks: {
               callback: (value: any) => {
                 return this.formatNumberVN(value);
-              }
-            }
-          }
+              },
+            },
+          },
         },
         // Interaction settings for better zoom/pan
         interaction: {
           intersect: false,
-          mode: 'index'
-        }
-      }
+          mode: 'index',
+        },
+      },
     };
 
     this.candlestickChart = new Chart(this.candlestickChartRef.nativeElement, config as any);
@@ -2575,7 +2789,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     if (value === null || value === undefined || isNaN(value)) return '0';
     return value.toLocaleString('vi-VN', {
       minimumFractionDigits: 0,
-      maximumFractionDigits: 0
+      maximumFractionDigits: 0,
     });
   }
 
@@ -2591,7 +2805,10 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     // Try fullData first (new structure)
     if (data.fullData) {
       // Case 1: Check for flat key 'pageProps.companyInfo' (object)
-      if (data.fullData?.['pageProps']?.['companyInfo'] && typeof data.fullData?.['pageProps']?.['companyInfo'] === 'object') {
+      if (
+        data.fullData?.['pageProps']?.['companyInfo'] &&
+        typeof data.fullData?.['pageProps']?.['companyInfo'] === 'object'
+      ) {
         return data.fullData?.['pageProps']?.['companyInfo'];
       }
 
@@ -2678,7 +2895,12 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
    * Get price color class based on price, reference, ceiling, and floor
    * Green > reference, Yellow = reference, Red < reference, Purple = ceiling, Light blue = floor
    */
-  getPriceColorClass(price: number, referencePrice: number, ceilingPrice: number, floorPrice: number): string {
+  getPriceColorClass(
+    price: number,
+    referencePrice: number,
+    ceilingPrice: number,
+    floorPrice: number
+  ): string {
     const tolerance = 0.01; // Small tolerance for floating point comparison
 
     // Check if price equals ceiling price (within tolerance)
@@ -2720,12 +2942,18 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const fullData = symbol.basicInfo.fullData;
 
     // Case 1: Check for flat key 'pageProps.companyInfo' (object)
-    if (fullData['pageProps.companyInfo'] && typeof fullData['pageProps.companyInfo'] === 'object') {
+    if (
+      fullData['pageProps.companyInfo'] &&
+      typeof fullData['pageProps.companyInfo'] === 'object'
+    ) {
       return fullData['pageProps.companyInfo'];
     }
 
     // Case 2: Check for nested object fullData['pageProps']?.companyInfo
-    if (fullData['pageProps']?.companyInfo && typeof fullData['pageProps'].companyInfo === 'object') {
+    if (
+      fullData['pageProps']?.companyInfo &&
+      typeof fullData['pageProps'].companyInfo === 'object'
+    ) {
       return fullData['pageProps'].companyInfo;
     }
 
@@ -2764,11 +2992,17 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     let companyInfo: any = null;
 
     // Case 1: Check for flat key 'pageProps.companyInfo' (object)
-    if (fullData['pageProps.companyInfo'] && typeof fullData['pageProps.companyInfo'] === 'object') {
+    if (
+      fullData['pageProps.companyInfo'] &&
+      typeof fullData['pageProps.companyInfo'] === 'object'
+    ) {
       companyInfo = fullData['pageProps.companyInfo'];
     }
     // Case 2: Check for nested object fullData['pageProps']?.companyInfo
-    else if (fullData['pageProps']?.companyInfo && typeof fullData['pageProps'].companyInfo === 'object') {
+    else if (
+      fullData['pageProps']?.companyInfo &&
+      typeof fullData['pageProps'].companyInfo === 'object'
+    ) {
       companyInfo = fullData['pageProps'].companyInfo;
     }
     // Case 3: Check for flat key 'pageProps.companyInfo.address'
@@ -2963,7 +3197,9 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
         // Update selectedSymbol with fullData for same sector stocks
         if (data && data.fullData) {
-          this.selectedSymbol.update(s => s ? { ...s, basicInfo: { ...s.basicInfo, fullData: data.fullData } } : s);
+          this.selectedSymbol.update((s) =>
+            s ? { ...s, basicInfo: { ...s.basicInfo, fullData: data.fullData } } : s
+          );
           // Check same sector stocks status from API
           setTimeout(() => this.checkSameSectorStocksFromAPI(), 100);
         }
@@ -2987,7 +3223,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
         console.error('Error loading stock detail:', error);
         this.isLoadingDetail.set(false);
         this.isLoadingPrice.set(false);
-      }
+      },
     });
   }
 
@@ -3012,7 +3248,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
   /**
    * Get related stocks from sameSectorStocks
    */
-  getRelatedStocks(): Array<{symbol: string, name?: string, price?: number}> {
+  getRelatedStocks(): Array<{ symbol: string; name?: string; price?: number }> {
     const symbol = this.selectedSymbol();
     if (!symbol || !symbol.basicInfo?.fullData) {
       return [];
@@ -3044,28 +3280,32 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     }
 
     // Map to our format
-    return sameSectorStocks.map((stock: any) => {
-      if (typeof stock === 'string') {
-        // If it's just a symbol string
-        return { symbol: stock.toUpperCase() };
-      } else if (stock && stock.symbol) {
-        // If it's an object with symbol
-        return {
-          symbol: stock.symbol.toUpperCase(),
-          name: stock.name || stock.companyName,
-          price: stock.price || stock.matchPrice
-        } as any;
-      }
-      return null;
-    }).filter((s: any) => s !== null && s.symbol);
+    return sameSectorStocks
+      .map((stock: any) => {
+        if (typeof stock === 'string') {
+          // If it's just a symbol string
+          return { symbol: stock.toUpperCase() };
+        } else if (stock && stock.symbol) {
+          // If it's an object with symbol
+          return {
+            symbol: stock.symbol.toUpperCase(),
+            name: stock.name || stock.companyName,
+            price: stock.price || stock.matchPrice,
+          } as any;
+        }
+        return null;
+      })
+      .filter((s: any) => s !== null && s.symbol);
   }
 
   /**
    * View related stock detail
    */
-  viewRelatedStock(stock: {symbol: string, name?: string, price?: number}) {
+  viewRelatedStock(stock: { symbol: string; name?: string; price?: number }) {
     // Find the symbol in allSymbols
-    const foundSymbol = this.allSymbols().find(s => s.symbol.toUpperCase() === stock.symbol.toUpperCase());
+    const foundSymbol = this.allSymbols().find(
+      (s) => s.symbol.toUpperCase() === stock.symbol.toUpperCase()
+    );
     if (foundSymbol && foundSymbol.isFetched) {
       // If found and already fetched, view detail immediately
       this.viewStockDetail(foundSymbol);
@@ -3074,7 +3314,9 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
       this.fetchSymbol(foundSymbol);
       // Wait for fetch to complete
       const checkInterval = setInterval(() => {
-        const updatedSymbol = this.allSymbols().find(s => s.symbol.toUpperCase() === stock.symbol.toUpperCase());
+        const updatedSymbol = this.allSymbols().find(
+          (s) => s.symbol.toUpperCase() === stock.symbol.toUpperCase()
+        );
         if (updatedSymbol && updatedSymbol.isFetched) {
           clearInterval(checkInterval);
           this.viewStockDetail(updatedSymbol);
@@ -3087,16 +3329,18 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
       const tempSymbol: SymbolWithStatus = {
         symbol: stock.symbol.toUpperCase(),
         name: stock.name,
-        exchange: this.selectedSymbol()?.exchange || 'hose' as ExchangeType,
-        isFetched: false
+        exchange: this.selectedSymbol()?.exchange || ('hose' as ExchangeType),
+        isFetched: false,
       };
       // Add to allSymbols temporarily
-      this.allSymbols.update(symbols => [...symbols, tempSymbol]);
+      this.allSymbols.update((symbols) => [...symbols, tempSymbol]);
       // Fetch the symbol
       this.fetchSymbol(tempSymbol);
       // Wait for fetch to complete
       const checkInterval = setInterval(() => {
-        const updatedSymbol = this.allSymbols().find(s => s.symbol.toUpperCase() === stock.symbol.toUpperCase());
+        const updatedSymbol = this.allSymbols().find(
+          (s) => s.symbol.toUpperCase() === stock.symbol.toUpperCase()
+        );
         if (updatedSymbol && updatedSymbol.isFetched) {
           clearInterval(checkInterval);
           this.viewStockDetail(updatedSymbol);
@@ -3184,48 +3428,69 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
   /**
    * Get autocomplete suggestions for header search (merges local + API results)
    */
-  getHeaderSearchSuggestions = computed((): Array<{symbol: string, name: string, exchange: string[], isFetched: boolean, source: 'local' | 'api'}> => {
-    const query = this.headerSearchQuery().toLowerCase().trim();
-    if (!query || query.length < 1) return [];
+  getHeaderSearchSuggestions = computed(
+    (): Array<{
+      symbol: string;
+      name: string;
+      exchange: string[];
+      isFetched: boolean;
+      source: 'local' | 'api';
+    }> => {
+      const query = this.headerSearchQuery().toLowerCase().trim();
+      if (!query || query.length < 1) return [];
 
-    // Get local results
-    const localResults: Array<{symbol: string, name: string, exchange: string[], isFetched: boolean, source: 'local' | 'api'}> = this.allSymbols()
-      .filter(s =>
-        s.symbol.toLowerCase().includes(query) ||
-        (s.name && s.name.toLowerCase().includes(query)) ||
-        (s.basicInfo?.companyName && s.basicInfo.companyName.toLowerCase().includes(query))
-      )
-      .slice(0, 10)
-      .map(s => ({
+      // Get local results
+      const localResults: Array<{
+        symbol: string;
+        name: string;
+        exchange: string[];
+        isFetched: boolean;
+        source: 'local' | 'api';
+      }> = this.allSymbols()
+        .filter(
+          (s) =>
+            s.symbol.toLowerCase().includes(query) ||
+            (s.name && s.name.toLowerCase().includes(query)) ||
+            (s.basicInfo?.companyName && s.basicInfo.companyName.toLowerCase().includes(query))
+        )
+        .slice(0, 10)
+        .map((s) => ({
+          symbol: s.symbol,
+          name: s.basicInfo?.companyName || s.name || s.symbol,
+          exchange: this.getExchangesArray(s.exchange),
+          isFetched: s.isFetched || false,
+          source: 'local' as 'local' | 'api',
+        }));
+
+      // Get API results
+      const apiResults: Array<{
+        symbol: string;
+        name: string;
+        exchange: string[];
+        isFetched: boolean;
+        source: 'local' | 'api';
+      }> = this.apiSearchResults().map((s) => ({
         symbol: s.symbol,
-        name: s.basicInfo?.companyName || s.name || s.symbol,
-        exchange: this.getExchangesArray(s.exchange),
-        isFetched: s.isFetched || false,
-        source: 'local' as 'local' | 'api'
+        name: s.basicInfo?.companyName || s.symbol,
+        exchange: this.getExchangesArray(s.basicInfo?.exchange || 'hose'),
+        isFetched: true, // API results are fetched
+        source: 'api' as 'local' | 'api',
       }));
 
-    // Get API results
-    const apiResults: Array<{symbol: string, name: string, exchange: string[], isFetched: boolean, source: 'local' | 'api'}> = this.apiSearchResults().map(s => ({
-      symbol: s.symbol,
-      name: s.basicInfo?.companyName || s.symbol,
-      exchange: this.getExchangesArray(s.basicInfo?.exchange || 'hose'),
-      isFetched: true, // API results are fetched
-      source: 'api' as 'local' | 'api'
-    }));
+      // Merge results - local first, then API (avoiding duplicates)
+      const seenSymbols = new Set(localResults.map((r) => r.symbol.toUpperCase()));
+      const mergedResults = [...localResults];
 
-    // Merge results - local first, then API (avoiding duplicates)
-    const seenSymbols = new Set(localResults.map(r => r.symbol.toUpperCase()));
-    const mergedResults = [...localResults];
-
-    for (const apiResult of apiResults) {
-      if (!seenSymbols.has(apiResult.symbol.toUpperCase())) {
-        mergedResults.push(apiResult);
-        seenSymbols.add(apiResult.symbol.toUpperCase());
+      for (const apiResult of apiResults) {
+        if (!seenSymbols.has(apiResult.symbol.toUpperCase())) {
+          mergedResults.push(apiResult);
+          seenSymbols.add(apiResult.symbol.toUpperCase());
+        }
       }
-    }
 
-    return mergedResults.slice(0, 15); // Limit to 15 total suggestions
-  });
+      return mergedResults.slice(0, 15); // Limit to 15 total suggestions
+    }
+  );
 
   /**
    * Handle header search input with API search
@@ -3271,7 +3536,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
       error: () => {
         this.apiSearchResults.set([]);
         this.isSearchingAPI.set(false);
-      }
+      },
     });
   }
 
@@ -3283,11 +3548,11 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
       const query = this.headerSearchQuery().trim().toUpperCase();
       if (query) {
         // First check local symbols
-        let symbol = this.allSymbols().find(s => s.symbol.toUpperCase() === query);
+        let symbol = this.allSymbols().find((s) => s.symbol.toUpperCase() === query);
 
         // If not found locally, check API results
         if (!symbol) {
-          const apiResult = this.apiSearchResults().find(s => s.symbol.toUpperCase() === query);
+          const apiResult = this.apiSearchResults().find((s) => s.symbol.toUpperCase() === query);
           if (apiResult) {
             // Create a temporary symbol from API result
             symbol = {
@@ -3295,7 +3560,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
               name: apiResult.basicInfo?.companyName,
               exchange: apiResult.basicInfo?.exchange || 'hose',
               isFetched: true,
-              basicInfo: apiResult.basicInfo
+              basicInfo: apiResult.basicInfo,
             } as SymbolWithStatus;
           }
         }
@@ -3307,7 +3572,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
             // Fetch first then view
             this.fetchSymbol(symbol);
             const checkInterval = setInterval(() => {
-              const updatedSymbol = this.allSymbols().find(s => s.symbol.toUpperCase() === query);
+              const updatedSymbol = this.allSymbols().find((s) => s.symbol.toUpperCase() === query);
               if (updatedSymbol && updatedSymbol.isFetched) {
                 clearInterval(checkInterval);
                 this.viewStockDetail(updatedSymbol);
@@ -3342,7 +3607,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
             name: data.basicInfo?.companyName,
             exchange: data.basicInfo?.exchange || 'hose',
             isFetched: true,
-            basicInfo: data.basicInfo
+            basicInfo: data.basicInfo,
           };
           this.viewStockDetail(symbol);
           this.headerSearchQuery.set('');
@@ -3354,7 +3619,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
       error: () => {
         console.log(`Symbol ${symbolCode} not found in database`);
         this.isSearchingAPI.set(false);
-      }
+      },
     });
   }
 
@@ -3371,9 +3636,15 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
   /**
    * Select symbol from autocomplete (handles both local and API results)
    */
-  selectSymbolFromSuggestion(suggestion: {symbol: string, isFetched: boolean, source?: 'local' | 'api'}) {
+  selectSymbolFromSuggestion(suggestion: {
+    symbol: string;
+    isFetched: boolean;
+    source?: 'local' | 'api';
+  }) {
     // First try to find in local symbols
-    const localSymbol = this.allSymbols().find(s => s.symbol.toUpperCase() === suggestion.symbol.toUpperCase());
+    const localSymbol = this.allSymbols().find(
+      (s) => s.symbol.toUpperCase() === suggestion.symbol.toUpperCase()
+    );
 
     if (localSymbol) {
       if (localSymbol.isFetched) {
@@ -3381,7 +3652,9 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
       } else {
         this.fetchSymbol(localSymbol);
         const checkInterval = setInterval(() => {
-          const updatedSymbol = this.allSymbols().find(s => s.symbol.toUpperCase() === suggestion.symbol.toUpperCase());
+          const updatedSymbol = this.allSymbols().find(
+            (s) => s.symbol.toUpperCase() === suggestion.symbol.toUpperCase()
+          );
           if (updatedSymbol && updatedSymbol.isFetched) {
             clearInterval(checkInterval);
             this.viewStockDetail(updatedSymbol);
@@ -3391,14 +3664,16 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
       }
     } else if (suggestion.source === 'api' || suggestion.isFetched) {
       // Symbol from API - try to fetch and view directly
-      const apiResult = this.apiSearchResults().find(s => s.symbol.toUpperCase() === suggestion.symbol.toUpperCase());
+      const apiResult = this.apiSearchResults().find(
+        (s) => s.symbol.toUpperCase() === suggestion.symbol.toUpperCase()
+      );
       if (apiResult) {
         const symbol: SymbolWithStatus = {
           symbol: apiResult.symbol,
           name: apiResult.basicInfo?.companyName,
           exchange: apiResult.basicInfo?.exchange || 'hose',
           isFetched: true,
-          basicInfo: apiResult.basicInfo
+          basicInfo: apiResult.basicInfo,
         };
         this.viewStockDetail(symbol);
       } else {
@@ -3415,7 +3690,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
   /**
    * Get same sector stocks from fullData
    */
-  getSameSectorStocks(): Array<{symbol: string, name?: string, price?: number}> {
+  getSameSectorStocks(): Array<{ symbol: string; name?: string; price?: number }> {
     const symbol = this.selectedSymbol();
     if (!symbol || !symbol.basicInfo?.fullData) {
       return [];
@@ -3428,7 +3703,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
       return [];
     }
 
-    const result: Array<{symbol: string, name?: string, price?: number}> = [];
+    const result: Array<{ symbol: string; name?: string; price?: number }> = [];
     sameSectorStocks.forEach((stock: any) => {
       if (typeof stock === 'string') {
         result.push({ symbol: stock.toUpperCase() });
@@ -3436,7 +3711,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
         result.push({
           symbol: stock.symbol.toUpperCase(),
           name: stock.name || stock.companyName,
-          price: stock.price || stock.matchPrice
+          price: stock.price || stock.matchPrice,
         });
       }
     });
@@ -3453,7 +3728,11 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     }
 
     const fullData = symbol.basicInfo.fullData;
-    return fullData['pageProps.financialIndicators.indexes'] || fullData?.pageProps?.financialIndicators?.indexes || null;
+    return (
+      fullData['pageProps.financialIndicators.indexes'] ||
+      fullData?.pageProps?.financialIndicators?.indexes ||
+      null
+    );
   });
 
   /**
@@ -3466,7 +3745,11 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     }
 
     const fullData = symbol.basicInfo.fullData;
-    return fullData['pageProps.financialReportOverall'] || fullData?.pageProps?.financialReportOverall || null;
+    return (
+      fullData['pageProps.financialReportOverall'] ||
+      fullData?.pageProps?.financialReportOverall ||
+      null
+    );
   });
 
   /**
@@ -3598,12 +3881,35 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     }
 
     // Format based on indicator type
-    const percentageIndicators = ['marketShare', 'roe', 'roa', 'grossMargin', 'debtEquityRatio',
-      'profitGrowth', 'inventoryGrowth', 'prepaidBuyerGrowth', 'foreignOwnershipRatio',
-      'foreignHoldingRatio', 'dividendYield', 'nplRatio', 'llr', 'casaRatio',
-      'netInterestMargin', 'lossRatio', 'combineRatio', 'marginLendingGrowth'];
+    const percentageIndicators = [
+      'marketShare',
+      'roe',
+      'roa',
+      'grossMargin',
+      'debtEquityRatio',
+      'profitGrowth',
+      'inventoryGrowth',
+      'prepaidBuyerGrowth',
+      'foreignOwnershipRatio',
+      'foreignHoldingRatio',
+      'dividendYield',
+      'nplRatio',
+      'llr',
+      'casaRatio',
+      'netInterestMargin',
+      'lossRatio',
+      'combineRatio',
+      'marginLendingGrowth',
+    ];
 
-    const currencyIndicators = ['totalAssets', 'equity', 'sales', 'capitalization', 'revenue', 'profit'];
+    const currencyIndicators = [
+      'totalAssets',
+      'equity',
+      'sales',
+      'capitalization',
+      'revenue',
+      'profit',
+    ];
     const priceIndicators = ['bookValue', 'eps', 'revenuePerShare'];
 
     if (percentageIndicators.includes(key)) {
@@ -3644,13 +3950,29 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     // Key indicators to show prominently
     const keyIndicators = [
-      'eps', 'pe', 'pb', 'roe', 'roa', 'grossMargin', 'debtEquityRatio',
-      'beta', 'dividendYield', 'dividendRatio', 'profitGrowth', 'marketShare'
+      'eps',
+      'pe',
+      'pb',
+      'roe',
+      'roa',
+      'grossMargin',
+      'debtEquityRatio',
+      'beta',
+      'dividendYield',
+      'dividendRatio',
+      'profitGrowth',
+      'marketShare',
     ];
 
-    const result: Array<{key: string, label: string, value: string, tooltip: string, isPositive?: boolean}> = [];
+    const result: Array<{
+      key: string;
+      label: string;
+      value: string;
+      tooltip: string;
+      isPositive?: boolean;
+    }> = [];
 
-    keyIndicators.forEach(key => {
+    keyIndicators.forEach((key) => {
       if (indicators[key]) {
         const value = indicators[key];
         const formattedValue = this.formatIndicatorValue(key, value);
@@ -3670,7 +3992,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
             label: this.getIndicatorLabel(key),
             value: formattedValue,
             tooltip: this.getIndicatorTooltip(value),
-            isPositive
+            isPositive,
           });
         }
       }
@@ -3686,9 +4008,9 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const indicators = this.financialIndicators();
     if (!indicators) return [];
 
-    const result: Array<{key: string, label: string, value: string, tooltip: string}> = [];
+    const result: Array<{ key: string; label: string; value: string; tooltip: string }> = [];
 
-    Object.keys(indicators).forEach(key => {
+    Object.keys(indicators).forEach((key) => {
       const value = indicators[key];
       const formattedValue = this.formatIndicatorValue(key, value);
       if (formattedValue !== '-') {
@@ -3696,7 +4018,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
           key,
           label: this.getIndicatorLabel(key),
           value: formattedValue,
-          tooltip: this.getIndicatorTooltip(value)
+          tooltip: this.getIndicatorTooltip(value),
         });
       }
     });
@@ -3723,7 +4045,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
         value,
         yearValue,
         change,
-        changePercent
+        changePercent,
       };
     });
   });
@@ -3754,7 +4076,8 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     }
 
     const fullData = symbol.basicInfo.fullData;
-    const sameSectorStocks = fullData['pageProps.sameSectorStocks'] || fullData.pageProps?.sameSectorStocks;
+    const sameSectorStocks =
+      fullData['pageProps.sameSectorStocks'] || fullData.pageProps?.sameSectorStocks;
 
     if (!sameSectorStocks || !Array.isArray(sameSectorStocks)) {
       return [];
@@ -3764,33 +4087,44 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const allSymbolsList = this.allSymbols();
     const isChecking = this.isCheckingSameSectorStocks();
 
-    return sameSectorStocks.map((stock: any) => {
-      if (typeof stock === 'string') {
-        const upperSymbol = stock.toUpperCase();
-        const foundSymbol = allSymbolsList.find(s => s.symbol.toUpperCase() === upperSymbol);
-        // Check from API status map first, fallback to local status
-        const apiStatus = statusMap.get(upperSymbol);
-        const isFetched = apiStatus !== undefined ? apiStatus : (foundSymbol?.isFetched || false);
-        return {
-          symbol: upperSymbol,
-          name: foundSymbol?.name || foundSymbol?.basicInfo?.companyName || '',
-          isFetched: isChecking && apiStatus === undefined ? 'checking' as const : isFetched
-        };
-      } else if (stock && stock.symbol) {
-        const upperSymbol = stock.symbol.toUpperCase();
-        const foundSymbol = allSymbolsList.find(s => s.symbol.toUpperCase() === upperSymbol);
-        // Check from API status map first, fallback to local status
-        const apiStatus = statusMap.get(upperSymbol);
-        const isFetched = apiStatus !== undefined ? apiStatus : (foundSymbol?.isFetched || false);
-        return {
-          symbol: upperSymbol,
-          name: stock.name || stock.companyName || foundSymbol?.name || '',
-          shortName: stock.shortName,
-          isFetched: isChecking && apiStatus === undefined ? 'checking' as const : isFetched
-        };
-      }
-      return null;
-    }).filter((s): s is {symbol: string, name: string, shortName?: string, isFetched: boolean | 'checking'} => s !== null);
+    return sameSectorStocks
+      .map((stock: any) => {
+        if (typeof stock === 'string') {
+          const upperSymbol = stock.toUpperCase();
+          const foundSymbol = allSymbolsList.find((s) => s.symbol.toUpperCase() === upperSymbol);
+          // Check from API status map first, fallback to local status
+          const apiStatus = statusMap.get(upperSymbol);
+          const isFetched = apiStatus !== undefined ? apiStatus : foundSymbol?.isFetched || false;
+          return {
+            symbol: upperSymbol,
+            name: foundSymbol?.name || foundSymbol?.basicInfo?.companyName || '',
+            isFetched: isChecking && apiStatus === undefined ? ('checking' as const) : isFetched,
+          };
+        } else if (stock && stock.symbol) {
+          const upperSymbol = stock.symbol.toUpperCase();
+          const foundSymbol = allSymbolsList.find((s) => s.symbol.toUpperCase() === upperSymbol);
+          // Check from API status map first, fallback to local status
+          const apiStatus = statusMap.get(upperSymbol);
+          const isFetched = apiStatus !== undefined ? apiStatus : foundSymbol?.isFetched || false;
+          return {
+            symbol: upperSymbol,
+            name: stock.name || stock.companyName || foundSymbol?.name || '',
+            shortName: stock.shortName,
+            isFetched: isChecking && apiStatus === undefined ? ('checking' as const) : isFetched,
+          };
+        }
+        return null;
+      })
+      .filter(
+        (
+          s
+        ): s is {
+          symbol: string;
+          name: string;
+          shortName?: string;
+          isFetched: boolean | 'checking';
+        } => s !== null
+      );
   });
 
   /**
@@ -3803,21 +4137,24 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     }
 
     const fullData = symbol.basicInfo.fullData;
-    const sameSectorStocks = fullData['pageProps.sameSectorStocks'] || fullData.pageProps?.sameSectorStocks;
+    const sameSectorStocks =
+      fullData['pageProps.sameSectorStocks'] || fullData.pageProps?.sameSectorStocks;
 
     if (!sameSectorStocks || !Array.isArray(sameSectorStocks)) {
       return;
     }
 
     // Extract symbols
-    const symbols: string[] = sameSectorStocks.map((stock: any) => {
-      if (typeof stock === 'string') {
-        return stock.toUpperCase();
-      } else if (stock && stock.symbol) {
-        return stock.symbol.toUpperCase();
-      }
-      return null;
-    }).filter((s): s is string => s !== null);
+    const symbols: string[] = sameSectorStocks
+      .map((stock: any) => {
+        if (typeof stock === 'string') {
+          return stock.toUpperCase();
+        } else if (stock && stock.symbol) {
+          return stock.symbol.toUpperCase();
+        }
+        return null;
+      })
+      .filter((s): s is string => s !== null);
 
     if (symbols.length === 0) {
       return;
@@ -3829,12 +4166,12 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     // Check each symbol from API
     let completed = 0;
-    symbols.forEach(sym => {
+    symbols.forEach((sym) => {
       this.dnseService.getStockDataFromAPI(sym).subscribe({
         next: (data) => {
           // Stock has data in API
           const hasPriceData = data?.priceData && data.priceData.t && data.priceData.t.length > 0;
-          this.sameSectorStocksStatus.update(map => {
+          this.sameSectorStocksStatus.update((map) => {
             const newMap = new Map(map);
             newMap.set(sym, hasPriceData);
             return newMap;
@@ -3846,7 +4183,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
         },
         error: () => {
           // Stock not found in API
-          this.sameSectorStocksStatus.update(map => {
+          this.sameSectorStocksStatus.update((map) => {
             const newMap = new Map(map);
             newMap.set(sym, false);
             return newMap;
@@ -3855,7 +4192,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
           if (completed >= symbols.length) {
             this.isCheckingSameSectorStocks.set(false);
           }
-        }
+        },
       });
     });
   }
@@ -3879,7 +4216,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
             name: data.basicInfo?.companyName,
             exchange: data.basicInfo?.exchange || 'hose',
             isFetched: true,
-            basicInfo: data.basicInfo
+            basicInfo: data.basicInfo,
           };
           this.viewStockDetail(symbol);
         } else {
@@ -3890,7 +4227,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
       error: (error) => {
         console.error(`Error fetching ${upperSymbol}:`, error);
         this.isLoadingDetail.set(false);
-      }
+      },
     });
   }
 
@@ -3910,7 +4247,9 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const minDataRequired = config.lookbackDays + 50; // Need at least lookback + 50 for training
 
     if (!priceData || !priceData.c || priceData.c.length < minDataRequired) {
-      this.nnError.set(`Cần ít nhất ${minDataRequired} ngày dữ liệu giá để huấn luyện mô hình (lookback: ${config.lookbackDays} ngày)`);
+      this.nnError.set(
+        `Cần ít nhất ${minDataRequired} ngày dữ liệu giá để huấn luyện mô hình (lookback: ${config.lookbackDays} ngày)`
+      );
       return;
     }
 
@@ -3928,13 +4267,9 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
       const prices = priceData.c;
 
       // Use configurable training parameters
-      await this.nnService.trainModel(
-        prices,
-        config,
-        (progress) => {
-          this.nnTrainingProgress.set(progress);
-        }
-      );
+      await this.nnService.trainModel(prices, config, (progress) => {
+        this.nnTrainingProgress.set(progress);
+      });
 
       this.isNNReady.set(true);
       this.isNNTraining.set(false);
@@ -3944,7 +4279,11 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
         await this.nnService.saveWeights(symbol.symbol).toPromise();
         console.log('✅ Neural network weights saved to database');
         // Update model status
-        this.modelStatus.set({ exists: true, hasWeights: true, hasSimulation: this.modelStatus().hasSimulation });
+        this.modelStatus.set({
+          exists: true,
+          hasWeights: true,
+          hasSimulation: this.modelStatus().hasSimulation,
+        });
       } catch (saveError) {
         console.error('Error saving weights:', saveError);
         // Don't fail training if save fails
@@ -3963,7 +4302,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
    * Update training configuration
    */
   updateTrainingConfig(updates: Partial<TrainingConfig>) {
-    this.trainingConfig.update(config => ({ ...config, ...updates }));
+    this.trainingConfig.update((config) => ({ ...config, ...updates }));
     this.nnService.setTrainingConfig(updates);
   }
 
@@ -3987,7 +4326,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
         validationSplit: 0.15,
         lookbackDays: 30,
         forecastDays: 1,
-        learningRate: 0.002
+        learningRate: 0.002,
       },
       balanced: {
         epochs: 50,
@@ -3995,7 +4334,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
         validationSplit: 0.2,
         lookbackDays: 60,
         forecastDays: 1,
-        learningRate: 0.001
+        learningRate: 0.001,
       },
       accurate: {
         epochs: 100,
@@ -4003,13 +4342,13 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
         validationSplit: 0.25,
         lookbackDays: 90,
         forecastDays: 1,
-        learningRate: 0.0005
-      }
+        learningRate: 0.0005,
+      },
     };
 
     const presetConfig = presets[preset];
     if (presetConfig) {
-      this.trainingConfig.update(config => ({ ...config, ...presetConfig }));
+      this.trainingConfig.update((config) => ({ ...config, ...presetConfig }));
       this.nnService.setTrainingConfig(presetConfig);
     }
   }
@@ -4018,14 +4357,14 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
    * Toggle training config panel
    */
   toggleTrainingConfig() {
-    this.showTrainingConfig.update(v => !v);
+    this.showTrainingConfig.update((v) => !v);
   }
 
   /**
    * Toggle price table visibility in chart tab
    */
   togglePriceTable() {
-    this.showPriceTable.update(v => !v);
+    this.showPriceTable.update((v) => !v);
   }
 
   /**
@@ -4051,7 +4390,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
         error: (error) => {
           console.error('Error checking model:', error);
           this.isCheckingModel.set(false);
-        }
+        },
       });
     } catch (error) {
       console.error('Error checking model:', error);
@@ -4075,7 +4414,9 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
         const savedConfig = this.nnService.getTrainingConfig();
         this.trainingConfig.set(savedConfig);
         console.log(`✅ Model for ${symbol.symbol} auto-loaded successfully`);
-        console.log(`   Training config: lookback=${savedConfig.lookbackDays}, epochs=${savedConfig.epochs}`);
+        console.log(
+          `   Training config: lookback=${savedConfig.lookbackDays}, epochs=${savedConfig.epochs}`
+        );
       }
     } catch (error: any) {
       console.warn('Auto-load model failed:', error.message);
@@ -4103,12 +4444,14 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
       await this.fetchPriceDataOnly(this.selectedYears());
 
       // Wait a bit for data to load
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
       // Check if we have enough data
       const priceData = this.selectedSymbolPriceData();
       if (!priceData || !priceData.c || priceData.c.length < 100) {
-        this.nnError.set('Dữ liệu mới không đủ (cần ít nhất 100 ngày). Vui lòng chọn nhiều năm hơn.');
+        this.nnError.set(
+          'Dữ liệu mới không đủ (cần ít nhất 100 ngày). Vui lòng chọn nhiều năm hơn.'
+        );
         this.isNNTraining.set(false);
         this.isLoadingPrice.set(false);
         return;
@@ -4184,7 +4527,9 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
   async loadPredictionComparison(): Promise<any> {
     const priceData = this.selectedSymbolPriceData();
     if (!priceData || !priceData.c || !priceData.t || priceData.c.length < 70) {
-      this.nnError.set('Cần ít nhất 70 ngày dữ liệu để so sánh (60 ngày để dự đoán + 10 ngày để so sánh)');
+      this.nnError.set(
+        'Cần ít nhất 70 ngày dữ liệu để so sánh (60 ngày để dự đoán + 10 ngày để so sánh)'
+      );
       return;
     }
 
@@ -4197,14 +4542,14 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     this.nnError.set(null);
 
     try {
-    const priceData = this.selectedSymbolPriceData();
-    if (!priceData || !priceData.c || !priceData.t || priceData.c.length < 70) {
-      return null; // Need at least 70 days (60 for lookback + 10 for comparison)
-    }
+      const priceData = this.selectedSymbolPriceData();
+      if (!priceData || !priceData.c || !priceData.t || priceData.c.length < 70) {
+        return null; // Need at least 70 days (60 for lookback + 10 for comparison)
+      }
 
-    if (!this.nnService.isReady()) {
-      return null;
-    }
+      if (!this.nnService.isReady()) {
+        return null;
+      }
 
       const comparisons: Array<{
         date: number;
@@ -4240,7 +4585,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
             predictedPrice,
             actualPrice,
             error,
-            errorPercent
+            errorPercent,
           });
         } catch (error) {
           console.error(`Error predicting for day ${targetIndex}:`, error);
@@ -4347,7 +4692,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
   /**
    * Get available date range from price data
    */
-  getAvailableDateRange(): { minDate: string, maxDate: string } | null {
+  getAvailableDateRange(): { minDate: string; maxDate: string } | null {
     const priceData = this.selectedSymbolPriceData();
     if (!priceData || !priceData.t || priceData.t.length === 0) {
       return null;
@@ -4362,7 +4707,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     return {
       minDate: this.formatDateForInput(minDate),
-      maxDate: this.formatDateForInput(maxDate)
+      maxDate: this.formatDateForInput(maxDate),
     };
   }
 
@@ -4399,7 +4744,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     timestamps: number[],
     startDate: string,
     endDate: string
-  ): { prices: number[], timestamps: number[] } {
+  ): { prices: number[]; timestamps: number[] } {
     if (!startDate || !endDate) {
       return { prices, timestamps };
     }
@@ -4432,13 +4777,17 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const minDataRequired = strategy === 'neural_network' ? 60 : 35;
 
     if (!priceData || !priceData.c || priceData.c.length < minDataRequired) {
-      this.nnError.set(`Cần ít nhất ${minDataRequired} ngày dữ liệu để chạy mô phỏng với chiến lược ${this.strategyDescriptions[strategy].name}`);
+      this.nnError.set(
+        `Cần ít nhất ${minDataRequired} ngày dữ liệu để chạy mô phỏng với chiến lược ${this.strategyDescriptions[strategy].name}`
+      );
       return;
     }
 
     // Only require NN to be ready if using neural_network strategy
     if (strategy === 'neural_network' && !this.nnService.isReady()) {
-      this.nnError.set('Mô hình Neural Network chưa được huấn luyện. Vui lòng huấn luyện trước hoặc chọn chiến lược khác.');
+      this.nnError.set(
+        'Mô hình Neural Network chưa được huấn luyện. Vui lòng huấn luyện trước hoặc chọn chiến lược khác.'
+      );
       return;
     }
 
@@ -4462,12 +4811,18 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     try {
       // Filter data by date range
-      const { prices: filteredPrices, timestamps: filteredTimestamps } =
-        this.filterDataByDateRange(priceData.c, priceData.t, startDate, endDate);
+      const { prices: filteredPrices, timestamps: filteredTimestamps } = this.filterDataByDateRange(
+        priceData.c,
+        priceData.t,
+        startDate,
+        endDate
+      );
 
       const minFilteredData = strategy === 'neural_network' ? 30 : 20;
       if (filteredPrices.length < minFilteredData) {
-        this.nnError.set(`Vùng ngày được chọn có quá ít dữ liệu (cần ít nhất ${minFilteredData} ngày)`);
+        this.nnError.set(
+          `Vùng ngày được chọn có quá ít dữ liệu (cần ít nhất ${minFilteredData} ngày)`
+        );
         this.isRunningSimulation.set(false);
         return;
       }
@@ -4489,7 +4844,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
           predictedPrice: basePrediction.predictedPrice,
           confidence: basePrediction.confidence,
           trend: basePrediction.trend,
-          tradingDecision: basePrediction.tradingDecision
+          tradingDecision: basePrediction.tradingDecision,
         });
 
         predictions = this.tradingSimulationService.generatePredictionsForBacktest(
@@ -4512,10 +4867,12 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
       );
 
       console.log('[StockApp] Generated signals:', signals.length);
-      const buySignals = signals.filter(s => s.action === 'buy').length;
-      const sellSignals = signals.filter(s => s.action === 'sell').length;
-      const holdSignals = signals.filter(s => s.action === 'hold').length;
-      console.log(`[StockApp] Signals breakdown: ${buySignals} buy, ${sellSignals} sell, ${holdSignals} hold`);
+      const buySignals = signals.filter((s) => s.action === 'buy').length;
+      const sellSignals = signals.filter((s) => s.action === 'sell').length;
+      const holdSignals = signals.filter((s) => s.action === 'hold').length;
+      console.log(
+        `[StockApp] Signals breakdown: ${buySignals} buy, ${sellSignals} sell, ${holdSignals} hold`
+      );
 
       // Run simulation
       const result = this.tradingSimulationService.simulateTrading(
@@ -4556,8 +4913,8 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
         tradingConfig: this.tradingConfig(),
         dateRange: {
           startDate,
-          endDate
-        }
+          endDate,
+        },
       };
 
       this.http.post(`/api/stocks-v2/stock-model/${symbol}`, payload).subscribe({
@@ -4570,7 +4927,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
         },
         error: (error) => {
           console.error('Error saving simulation result:', error);
-        }
+        },
       });
     } catch (error: any) {
       console.error('Error in saveSimulationResult:', error);
@@ -4608,7 +4965,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
       error: (error) => {
         console.error('Error loading simulation result:', error);
         this.nnError.set('Lỗi khi tải kết quả mô phỏng đã lưu');
-      }
+      },
     });
   }
 
@@ -4642,23 +4999,23 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
    * Update trading config
    */
   updateTradingConfig(config: Partial<TradingConfig>) {
-    this.tradingConfig.update(current => ({ ...current, ...config }));
+    this.tradingConfig.update((current) => ({ ...current, ...config }));
   }
 
   /**
    * Update trading strategy
    */
   updateTradingStrategy(strategy: TradingStrategy) {
-    this.tradingConfig.update(current => ({ ...current, strategy }));
+    this.tradingConfig.update((current) => ({ ...current, strategy }));
   }
 
   /**
    * Update strategy-specific configuration
    */
   updateStrategyConfig(config: Partial<StrategyConfig>) {
-    this.tradingConfig.update(current => ({
+    this.tradingConfig.update((current) => ({
       ...current,
-      strategyConfig: { ...current.strategyConfig, ...config }
+      strategyConfig: { ...current.strategyConfig, ...config },
     }));
   }
 
@@ -4692,9 +5049,10 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
   calculateSharpeRatio(result: TradingResult): number {
     if (!result.trades || result.trades.length < 2) return 0;
 
-    const returns = result.trades.map(t => t.profitPercent / 100);
+    const returns = result.trades.map((t) => t.profitPercent / 100);
     const avgReturn = returns.reduce((a, b) => a + b, 0) / returns.length;
-    const variance = returns.reduce((sum, r) => sum + Math.pow(r - avgReturn, 2), 0) / returns.length;
+    const variance =
+      returns.reduce((sum, r) => sum + Math.pow(r - avgReturn, 2), 0) / returns.length;
     const stdDev = Math.sqrt(variance);
 
     // Assuming risk-free rate of 5% annually, ~0.02% per trade
@@ -4776,7 +5134,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     const winProb = result.winRate / 100;
     const lossProb = 1 - winProb;
 
-    return (winProb * (result.avgWinAmount || 0)) - (lossProb * (result.avgLossAmount || 0));
+    return winProb * (result.avgWinAmount || 0) - lossProb * (result.avgLossAmount || 0);
   }
 
   /**
@@ -4921,14 +5279,17 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
   /**
    * Build transactions from trades (helper for computed signal)
    */
-  private buildTransactionsFromTrades(trades: TradingResult['trades'], result: TradingResult): Transaction[] {
+  private buildTransactionsFromTrades(
+    trades: TradingResult['trades'],
+    result: TradingResult
+  ): Transaction[] {
     // Create a list of all events (buy and sell) sorted by date
     interface TradeEvent {
       type: 'buy' | 'sell';
       date: number;
       quantity: number;
       price: number;
-      trade: typeof trades[0];
+      trade: (typeof trades)[0];
     }
 
     const events: TradeEvent[] = [];
@@ -4939,14 +5300,14 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
         date: trade.buyDate,
         quantity: trade.quantity,
         price: trade.buyPrice,
-        trade
+        trade,
       });
       events.push({
         type: 'sell',
         date: trade.sellDate,
         quantity: trade.quantity,
         price: trade.sellPrice,
-        trade
+        trade,
       });
     }
 
@@ -4986,7 +5347,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
           capitalAfter: runningCapital,
           totalSharesBefore,
           totalSharesAfter: totalShares,
-          avgPriceAfter
+          avgPriceAfter,
         });
       } else {
         // Calculate new totals after sell
@@ -5014,7 +5375,7 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
           totalSharesAfter: totalShares,
           avgPriceAfter,
           holdingDays: trade.duration,
-          profit: trade.profit // Lãi/lỗ của giao dịch này
+          profit: trade.profit, // Lãi/lỗ của giao dịch này
         });
       }
     }
@@ -5076,19 +5437,19 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     }
 
     const now = Date.now() / 1000; // Current timestamp in seconds
-    const sevenDaysAgo = now - (7 * 24 * 60 * 60); // 7 days ago
+    const sevenDaysAgo = now - 7 * 24 * 60 * 60; // 7 days ago
 
     // Filter trades from last 7 days
-    const recentTrades = result.trades.filter(trade => {
+    const recentTrades = result.trades.filter((trade) => {
       return trade.buyDate >= sevenDaysAgo || trade.sellDate >= sevenDaysAgo;
     });
 
     // Get buy positions (trades that were bought in last 7 days)
     const buyPositions = recentTrades
-      .filter(trade => trade.buyDate >= sevenDaysAgo)
-      .map(trade => {
-        const sellTrade = result.trades.find(t =>
-          t.buyDate === trade.buyDate && t.sellDate > trade.buyDate
+      .filter((trade) => trade.buyDate >= sevenDaysAgo)
+      .map((trade) => {
+        const sellTrade = result.trades.find(
+          (t) => t.buyDate === trade.buyDate && t.sellDate > trade.buyDate
         );
         return {
           buyDate: trade.buyDate,
@@ -5099,14 +5460,14 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
           currentPrice: priceData.c[priceData.c.length - 1] * 1000, // Convert to actual VND
           profit: sellTrade ? sellTrade.profit : null,
           profitPercent: sellTrade ? sellTrade.profitPercent : null,
-          status: sellTrade ? 'sold' : 'holding'
+          status: sellTrade ? 'sold' : 'holding',
         };
       });
 
     // Get sell positions (trades that were sold in last 7 days)
     const sellPositions = recentTrades
-      .filter(trade => trade.sellDate >= sevenDaysAgo && trade.buyDate < sevenDaysAgo)
-      .map(trade => ({
+      .filter((trade) => trade.sellDate >= sevenDaysAgo && trade.buyDate < sevenDaysAgo)
+      .map((trade) => ({
         buyDate: trade.buyDate,
         buyPrice: trade.buyPrice,
         sellDate: trade.sellDate,
@@ -5114,29 +5475,31 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
         quantity: trade.quantity,
         profit: trade.profit,
         profitPercent: trade.profitPercent,
-        expectedBuyPrice: trade.buyPrice // Giá mua kỳ vọng
+        expectedBuyPrice: trade.buyPrice, // Giá mua kỳ vọng
       }));
 
     // Get today's recommendation
-        const todayRecommendation = this.nnPrediction();
-        const todaySignal = todayRecommendation?.tradingDecision;
+    const todayRecommendation = this.nnPrediction();
+    const todaySignal = todayRecommendation?.tradingDecision;
 
-        // Convert current price from database units to actual VND units
-        const currentPriceDb = priceData.c[priceData.c.length - 1];
-        const currentPriceActual = currentPriceDb * 1000; // Convert to actual VND
+    // Convert current price from database units to actual VND units
+    const currentPriceDb = priceData.c[priceData.c.length - 1];
+    const currentPriceActual = currentPriceDb * 1000; // Convert to actual VND
 
-        return {
-          buyPositions,
-          sellPositions,
-          todayRecommendation: todaySignal ? {
+    return {
+      buyPositions,
+      sellPositions,
+      todayRecommendation: todaySignal
+        ? {
             action: todaySignal.action,
             confidence: todaySignal.confidence,
             reason: todaySignal.reason,
             predictedPrice: todayRecommendation.predictedPrice,
-            currentPrice: currentPriceActual
-          } : null,
+            currentPrice: currentPriceActual,
+          }
+        : null,
       totalBuyPositions: buyPositions.length,
-      totalSellPositions: sellPositions.length
+      totalSellPositions: sellPositions.length,
     };
   }
 
@@ -5149,4 +5512,3 @@ export class StockAppComponent implements OnInit, OnDestroy, AfterViewInit {
     return date.toDateString() === today.toDateString();
   }
 }
-

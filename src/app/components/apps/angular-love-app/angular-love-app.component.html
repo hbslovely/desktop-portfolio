@@ -5,61 +5,64 @@
     <div class="top-bar">
       <div class="brand">
         <i class="pi pi-heart-fill"></i>
-        <div class="brand-text">
-          Angular<span class="highlight">.love</span>
-        </div>
+        <div class="brand-text">Angular<span class="highlight">.love</span></div>
       </div>
 
       <div class="top-controls">
         <!-- Search Box -->
         <div class="search-box">
           <i class="pi pi-search"></i>
-          <input 
+          <input
             type="text"
             [value]="searchQuery()"
             (input)="onSearch($event)"
             placeholder="Search articles..."
           />
-          <button 
+          <button
             *ngIf="searchQuery()"
             class="clear-search"
             (click)="clearSearch()"
-            title="Clear search">
+            title="Clear search"
+          >
             <i class="pi pi-times"></i>
           </button>
         </div>
 
         <!-- View Mode Buttons -->
         <div class="view-modes">
-          <button 
+          <button
             class="mode-btn"
             [class.active]="viewMode() === 'grid'"
             (click)="changeViewMode('grid')"
-            title="Grid view">
+            title="Grid view"
+          >
             <i class="pi pi-th-large"></i>
           </button>
-          <button 
+          <button
             class="mode-btn"
             [class.active]="viewMode() === 'list'"
             (click)="changeViewMode('list')"
-            title="List view">
+            title="List view"
+          >
             <i class="pi pi-list"></i>
           </button>
-          <button 
+          <button
             class="mode-btn"
             [class.active]="viewMode() === 'compact'"
             (click)="changeViewMode('compact')"
-            title="Compact view">
+            title="Compact view"
+          >
             <i class="pi pi-table"></i>
           </button>
         </div>
 
         <!-- Refresh Button -->
-        <button 
+        <button
           class="refresh-btn"
           [class.loading]="loading()"
           (click)="refreshArticles()"
-          title="Refresh articles">
+          title="Refresh articles"
+        >
           <i class="pi pi-refresh"></i>
         </button>
       </div>
@@ -72,7 +75,8 @@
           *ngFor="let category of categories"
           class="category-pill"
           [class.active]="selectedCategory() === category.value"
-          (click)="selectCategory(category.value)">
+          (click)="selectCategory(category.value)"
+        >
           <i class="pi" [ngClass]="category.icon"></i>
           <span>{{ category.label }}</span>
         </button>
@@ -80,7 +84,12 @@
 
       <!-- Pagination Info -->
       <div class="pagination-info" *ngIf="totalArticles() > 0">
-        <span>{{ currentPage() * articlesPerPage() + 1 }}-{{ Math.min((currentPage() + 1) * articlesPerPage(), totalArticles()) }} of {{ totalArticles() }}</span>
+        <span
+          >{{ currentPage() * articlesPerPage() + 1 }}-{{
+            Math.min((currentPage() + 1) * articlesPerPage(), totalArticles())
+          }}
+          of {{ totalArticles() }}</span
+        >
       </div>
     </div>
 
@@ -104,17 +113,18 @@
     <!-- Articles Grid -->
     <div *ngIf="!loading() && !error()" class="articles-container">
       <div class="articles-grid" [attr.data-view]="viewMode()">
-        <div 
+        <div
           *ngFor="let article of filteredArticles()"
           class="article-card"
-          (click)="openArticle(article)">
-          
+          (click)="openArticle(article)"
+        >
           <!-- Article Image -->
           <div class="article-image">
-            <img 
-              [src]="article.featuredImageUrl" 
+            <img
+              [src]="article.featuredImageUrl"
               [alt]="article.title"
-              (error)="onImageError($event)">
+              (error)="onImageError($event)"
+            />
             <div class="image-overlay"></div>
             <div class="reading-time">
               <i class="pi pi-clock"></i>
@@ -126,11 +136,12 @@
           <div class="article-content">
             <!-- Author Info -->
             <div class="author-section">
-              <img 
-                [src]="article.author.avatarUrl" 
+              <img
+                [src]="article.author.avatarUrl"
                 [alt]="article.author.name"
                 class="author-avatar"
-                (error)="onImageError($event)">
+                (error)="onImageError($event)"
+              />
               <div class="author-info">
                 <div class="author-name">{{ article.author.name }}</div>
                 <div class="publish-date">{{ getTimeAgo(article.publishDate) }}</div>
@@ -168,22 +179,20 @@
 
       <!-- Pagination -->
       <div class="pagination" *ngIf="filteredArticles().length > 0 && !searchQuery()">
-        <button 
-          class="page-btn"
-          [disabled]="currentPage() === 0"
-          (click)="previousPage()">
+        <button class="page-btn" [disabled]="currentPage() === 0" (click)="previousPage()">
           <i class="pi pi-chevron-left"></i>
           Previous
         </button>
-        
+
         <div class="page-indicator">
           Page {{ currentPage() + 1 }} of {{ Math.ceil(totalArticles() / articlesPerPage()) }}
         </div>
-        
-        <button 
+
+        <button
           class="page-btn"
           [disabled]="(currentPage() + 1) * articlesPerPage() >= totalArticles()"
-          (click)="nextPage()">
+          (click)="nextPage()"
+        >
           Next
           <i class="pi pi-chevron-right"></i>
         </button>
@@ -233,28 +242,41 @@
       </div>
 
       <!-- Article Content -->
-      <article *ngIf="!articleLoading() && !articleError() && selectedArticle()" class="article-detail">
+      <article
+        *ngIf="!articleLoading() && !articleError() && selectedArticle()"
+        class="article-detail"
+      >
         <!-- Article Hero Image -->
-        <div class="article-hero" *ngIf="selectedArticle()?.seo?.og_image && selectedArticle()?.seo?.og_image?.length && selectedArticle()!.seo!.og_image!.length > 0">
-          <img [src]="selectedArticle()!.seo!.og_image![0].url" [alt]="selectedArticle()!.title">
+        <div
+          class="article-hero"
+          *ngIf="
+            selectedArticle()?.seo?.og_image &&
+            selectedArticle()?.seo?.og_image?.length &&
+            selectedArticle()!.seo!.og_image!.length > 0
+          "
+        >
+          <img [src]="selectedArticle()!.seo!.og_image![0].url" [alt]="selectedArticle()!.title" />
           <div class="hero-overlay"></div>
         </div>
 
         <div class="article-container">
           <!-- Article Meta Bar - Flat & Compact -->
           <div class="article-meta-bar">
-            <img 
+            <img
               *ngIf="selectedArticle()?.author"
-              [src]="selectedArticle()!.author.avatarUrl" 
+              [src]="selectedArticle()!.author.avatarUrl"
               [alt]="selectedArticle()!.author.name"
               class="meta-avatar"
               (click)="openAuthor(selectedArticle()!.author.slug)"
-              title="View author profile">
-            <span 
-              class="meta-author" 
+              title="View author profile"
+            />
+            <span
+              class="meta-author"
               *ngIf="selectedArticle()?.author"
               (click)="openAuthor(selectedArticle()!.author.slug)"
-              title="View author profile">{{ selectedArticle()!.author.name }}</span>
+              title="View author profile"
+              >{{ selectedArticle()!.author.name }}</span
+            >
             <span class="meta-divider">•</span>
             <span class="meta-item">
               <i class="pi pi-calendar"></i>
@@ -266,10 +288,11 @@
               {{ selectedArticle()?.readingTime }} min
             </span>
             <span class="meta-divider" *ngIf="selectedArticle()?.difficulty">•</span>
-            <span 
+            <span
               *ngIf="selectedArticle()?.difficulty"
               class="meta-difficulty"
-              [ngClass]="getDifficultyClass(selectedArticle()?.difficulty)">
+              [ngClass]="getDifficultyClass(selectedArticle()?.difficulty)"
+            >
               <i class="pi pi-star"></i>
               {{ selectedArticle()?.difficulty }}
             </span>
@@ -279,7 +302,14 @@
           <h1 class="article-heading">{{ selectedArticle()?.title }}</h1>
 
           <!-- Table of Contents -->
-          <div class="table-of-contents" *ngIf="selectedArticle()?.anchors && selectedArticle()?.anchors?.length && selectedArticle()!.anchors!.length > 0">
+          <div
+            class="table-of-contents"
+            *ngIf="
+              selectedArticle()?.anchors &&
+              selectedArticle()?.anchors?.length &&
+              selectedArticle()!.anchors!.length > 0
+            "
+          >
             <h3 class="toc-title">
               <i class="pi pi-list"></i>
               Table of Contents
@@ -297,23 +327,48 @@
 
           <!-- Author Section -->
           <div class="author-card" *ngIf="selectedArticle()?.author">
-            <img 
-              [src]="selectedArticle()!.author.avatarUrl" 
+            <img
+              [src]="selectedArticle()!.author.avatarUrl"
               [alt]="selectedArticle()!.author.name"
-              class="author-card-avatar">
+              class="author-card-avatar"
+            />
             <div class="author-card-content">
               <h4 [innerHTML]="sanitizedAuthorName()"></h4>
-              <div *ngIf="selectedArticle()?.author?.description" 
-                   class="author-description"
-                   [innerHTML]="sanitizedAuthorDescription()"></div>
-              <div class="author-social" *ngIf="selectedArticle()?.author?.github || selectedArticle()?.author?.twitter || selectedArticle()?.author?.linkedin">
-                <a *ngIf="selectedArticle()?.author?.github" [href]="selectedArticle()!.author.github!" target="_blank" class="social-link">
+              <div
+                *ngIf="selectedArticle()?.author?.description"
+                class="author-description"
+                [innerHTML]="sanitizedAuthorDescription()"
+              ></div>
+              <div
+                class="author-social"
+                *ngIf="
+                  selectedArticle()?.author?.github ||
+                  selectedArticle()?.author?.twitter ||
+                  selectedArticle()?.author?.linkedin
+                "
+              >
+                <a
+                  *ngIf="selectedArticle()?.author?.github"
+                  [href]="selectedArticle()!.author.github!"
+                  target="_blank"
+                  class="social-link"
+                >
                   <i class="pi pi-github"></i>
                 </a>
-                <a *ngIf="selectedArticle()?.author?.twitter" [href]="selectedArticle()!.author.twitter!" target="_blank" class="social-link">
+                <a
+                  *ngIf="selectedArticle()?.author?.twitter"
+                  [href]="selectedArticle()!.author.twitter!"
+                  target="_blank"
+                  class="social-link"
+                >
                   <i class="pi pi-twitter"></i>
                 </a>
-                <a *ngIf="selectedArticle()?.author?.linkedin" [href]="selectedArticle()!.author.linkedin!" target="_blank" class="social-link">
+                <a
+                  *ngIf="selectedArticle()?.author?.linkedin"
+                  [href]="selectedArticle()!.author.linkedin!"
+                  target="_blank"
+                  class="social-link"
+                >
                   <i class="pi pi-linkedin"></i>
                 </a>
               </div>
@@ -340,79 +395,95 @@
 
       <!-- Author Dialog Content -->
       <div class="dialog-content">
-      <!-- Loading State -->
-      <div *ngIf="authorLoading()" class="loading-state">
-        <i class="pi pi-spin pi-spinner"></i>
-        <p>Loading author profile...</p>
-      </div>
-
-      <!-- Error State -->
-      <div *ngIf="authorError() && !authorLoading()" class="error-state">
-        <i class="pi pi-exclamation-circle"></i>
-        <h3>Failed to load author</h3>
-        <p>{{ authorError() }}</p>
-        <button class="retry-btn" (click)="openAuthor(selectedAuthor()?.slug || '')">
-          <i class="pi pi-refresh"></i>
-          Try Again
-        </button>
-      </div>
-
-      <!-- Author Content -->
-      <div *ngIf="!authorLoading() && !authorError() && selectedAuthor()" class="author-profile">
-        <div class="author-hero">
-          <img 
-            [src]="selectedAuthor()!.avatarUrl" 
-            [alt]="selectedAuthor()!.name"
-            class="author-hero-avatar">
-          
-          <div class="author-hero-content">
-            <h1 class="author-hero-name">{{ selectedAuthor()!.name }}</h1>
-            
-            <div class="author-titles" *ngIf="selectedAuthor()?.titles && selectedAuthor()!.titles.length > 0">
-              <span class="title-badge" *ngFor="let title of selectedAuthor()!.titles">
-                {{ title }}
-              </span>
-            </div>
-
-            <div class="author-social-links" *ngIf="selectedAuthor()?.github || selectedAuthor()?.twitter || selectedAuthor()?.linkedin">
-              <a *ngIf="selectedAuthor()?.github" 
-                 [href]="selectedAuthor()!.github!" 
-                 target="_blank" 
-                 class="social-link-btn"
-                 title="GitHub">
-                <i class="pi pi-github"></i>
-                <span>GitHub</span>
-              </a>
-              <a *ngIf="selectedAuthor()?.twitter" 
-                 [href]="selectedAuthor()!.twitter!" 
-                 target="_blank" 
-                 class="social-link-btn"
-                 title="Twitter">
-                <i class="pi pi-twitter"></i>
-                <span>Twitter</span>
-              </a>
-              <a *ngIf="selectedAuthor()?.linkedin" 
-                 [href]="selectedAuthor()!.linkedin!" 
-                 target="_blank" 
-                 class="social-link-btn"
-                 title="LinkedIn">
-                <i class="pi pi-linkedin"></i>
-                <span>LinkedIn</span>
-              </a>
-            </div>
-          </div>
+        <!-- Loading State -->
+        <div *ngIf="authorLoading()" class="loading-state">
+          <i class="pi pi-spin pi-spinner"></i>
+          <p>Loading author profile...</p>
         </div>
 
-        <div class="author-description-section" *ngIf="selectedAuthor()?.description">
-          <h2>About</h2>
-          <div 
-            class="author-description-content" 
-            [innerHTML]="sanitizedAuthorDetailDescription()">
+        <!-- Error State -->
+        <div *ngIf="authorError() && !authorLoading()" class="error-state">
+          <i class="pi pi-exclamation-circle"></i>
+          <h3>Failed to load author</h3>
+          <p>{{ authorError() }}</p>
+          <button class="retry-btn" (click)="openAuthor(selectedAuthor()?.slug || '')">
+            <i class="pi pi-refresh"></i>
+            Try Again
+          </button>
+        </div>
+
+        <!-- Author Content -->
+        <div *ngIf="!authorLoading() && !authorError() && selectedAuthor()" class="author-profile">
+          <div class="author-hero">
+            <img
+              [src]="selectedAuthor()!.avatarUrl"
+              [alt]="selectedAuthor()!.name"
+              class="author-hero-avatar"
+            />
+
+            <div class="author-hero-content">
+              <h1 class="author-hero-name">{{ selectedAuthor()!.name }}</h1>
+
+              <div
+                class="author-titles"
+                *ngIf="selectedAuthor()?.titles && selectedAuthor()!.titles.length > 0"
+              >
+                <span class="title-badge" *ngFor="let title of selectedAuthor()!.titles">
+                  {{ title }}
+                </span>
+              </div>
+
+              <div
+                class="author-social-links"
+                *ngIf="
+                  selectedAuthor()?.github ||
+                  selectedAuthor()?.twitter ||
+                  selectedAuthor()?.linkedin
+                "
+              >
+                <a
+                  *ngIf="selectedAuthor()?.github"
+                  [href]="selectedAuthor()!.github!"
+                  target="_blank"
+                  class="social-link-btn"
+                  title="GitHub"
+                >
+                  <i class="pi pi-github"></i>
+                  <span>GitHub</span>
+                </a>
+                <a
+                  *ngIf="selectedAuthor()?.twitter"
+                  [href]="selectedAuthor()!.twitter!"
+                  target="_blank"
+                  class="social-link-btn"
+                  title="Twitter"
+                >
+                  <i class="pi pi-twitter"></i>
+                  <span>Twitter</span>
+                </a>
+                <a
+                  *ngIf="selectedAuthor()?.linkedin"
+                  [href]="selectedAuthor()!.linkedin!"
+                  target="_blank"
+                  class="social-link-btn"
+                  title="LinkedIn"
+                >
+                  <i class="pi pi-linkedin"></i>
+                  <span>LinkedIn</span>
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <div class="author-description-section" *ngIf="selectedAuthor()?.description">
+            <h2>About</h2>
+            <div
+              class="author-description-content"
+              [innerHTML]="sanitizedAuthorDetailDescription()"
+            ></div>
           </div>
         </div>
       </div>
     </div>
   </div>
 </div>
-</div>
-

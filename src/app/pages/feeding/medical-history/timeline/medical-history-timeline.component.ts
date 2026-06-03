@@ -1,19 +1,11 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  input,
-  output,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ExplorerEntry } from '../../../../services/explorer.service';
 import {
   MedicalEventKind,
   MedicalHistoryEntry,
 } from '../../../../services/medical-history.service';
-import {
-  MedicalKindMeta,
-  kindMeta,
-} from '../medical-history-kinds.data';
+import { MedicalKindMeta, kindMeta } from '../medical-history-kinds.data';
 
 export interface MedicalTimelineGroup {
   key: string;
@@ -31,9 +23,9 @@ export interface MedicalTimelineGroup {
 })
 export class MedicalHistoryTimelineComponent {
   timelineGroups = input<MedicalTimelineGroup[]>([]);
-  resolveAttachment = input<
-    (entry: MedicalHistoryEntry) => ExplorerEntry | undefined
-  >(() => undefined);
+  resolveAttachment = input<(entry: MedicalHistoryEntry) => ExplorerEntry | undefined>(
+    () => undefined
+  );
 
   editEntry = output<MedicalHistoryEntry>();
   deleteEntry = output<MedicalHistoryEntry>();
@@ -41,7 +33,8 @@ export class MedicalHistoryTimelineComponent {
   openInDocuments = output<MedicalHistoryEntry>();
 
   // Placeholder SVG as computed property
-  readonly placeholderSvg = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjZjNmNGY2Ii8+CjxwYXRoIGQ9Im0xMiAxMiAyIDJoNXYtNXoiIGZpbGw9IiM5Y2EzYWYiLz4KPC9zdmc+';
+  readonly placeholderSvg =
+    'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjZjNmNGY2Ii8+CjxwYXRoIGQ9Im0xMiAxMiAyIDJoNXYtNXoiIGZpbGw9IiM5Y2EzYWYiLz4KPC9zdmc+';
 
   metaFor(kind: MedicalEventKind): MedicalKindMeta {
     return kindMeta(kind);

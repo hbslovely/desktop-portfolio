@@ -16,7 +16,7 @@
           <i class="pi pi-refresh"></i>
         </button>
       </div>
-      
+
       <div class="address-bar">
         <div class="breadcrumbs">
           <span *ngFor="let crumb of breadcrumbs(); let last = last" class="breadcrumb">
@@ -29,35 +29,41 @@
         </div>
       </div>
     </div>
-    
+
     <div class="header-right">
       <div class="search-container">
         <div class="search-input-wrapper">
           <i class="pi pi-search search-icon"></i>
-          <input 
-            type="text" 
-            class="search-input" 
+          <input
+            type="text"
+            class="search-input"
             placeholder="Search files and folders..."
             (input)="onSearchInput($event)"
-            (keydown)="onSearchKeyDown($event)">
-          <button 
-            *ngIf="isSearching()" 
-            class="search-clear-btn" 
-            (click)="clearSearch()" 
-            title="Clear search">
+            (keydown)="onSearchKeyDown($event)"
+          />
+          <button
+            *ngIf="isSearching()"
+            class="search-clear-btn"
+            (click)="clearSearch()"
+            title="Clear search"
+          >
             <i class="pi pi-times"></i>
           </button>
         </div>
       </div>
-      
+
       <div class="view-controls">
-        <button class="view-btn" (click)="toggleViewMode()" [title]="viewMode() === 'list' ? 'Icon view' : 'List view'">
+        <button
+          class="view-btn"
+          (click)="toggleViewMode()"
+          [title]="viewMode() === 'list' ? 'Icon view' : 'List view'"
+        >
           <i [class]="viewMode() === 'list' ? 'pi pi-th-large' : 'pi pi-list'"></i>
         </button>
       </div>
     </div>
   </div>
-  
+
   <!-- Main Content Area -->
   <div class="explorer-main">
     <!-- File List Panel -->
@@ -69,7 +75,7 @@
           </div>
           <p>This folder is empty</p>
         </div>
-        
+
         <!-- List View -->
         <div *ngIf="viewMode() === 'list' && currentItems().length > 0" class="list-view">
           <div class="list-header">
@@ -84,27 +90,27 @@
               <span>Date Modified</span>
             </div>
           </div>
-          
+
           <div class="list-content">
-            <div 
-              *ngFor="let item of currentItems()" 
+            <div
+              *ngFor="let item of currentItems()"
               class="list-item"
               [class.selected]="selectedItem() === item"
               [class.renaming]="renamingItem() === item"
               (click)="onItemClick(item)"
               (dblclick)="onItemDoubleClick(item)"
-              (contextmenu)="onItemRightClick($event, item)">
-              
+              (contextmenu)="onItemRightClick($event, item)"
+            >
               <div class="item-info">
                 <div class="item-icon-wrapper">
                   <i [class]="item.icon" class="item-icon"></i>
                 </div>
-                
+
                 <!-- Normal name display -->
                 <span *ngIf="renamingItem() !== item" class="item-name">{{ item.name }}</span>
-                
+
                 <!-- Rename input -->
-                <input 
+                <input
                   *ngIf="renamingItem() === item"
                   type="text"
                   class="rename-input"
@@ -112,40 +118,41 @@
                   (input)="onRenameInput($event)"
                   (keydown)="onRenameKeyDown($event)"
                   (blur)="finishRename()"
-                  (click)="$event.stopPropagation()">
+                  (click)="$event.stopPropagation()"
+                />
               </div>
-              
+
               <div class="item-size">
                 {{ item.type === 'folder' ? '—' : item.size }}
               </div>
-              
+
               <div class="item-date">
                 {{ item.modified | formatDate }}
               </div>
             </div>
           </div>
         </div>
-        
+
         <!-- Icons View -->
         <div *ngIf="viewMode() === 'icons' && currentItems().length > 0" class="icons-view">
-          <div 
-            *ngFor="let item of currentItems()" 
+          <div
+            *ngFor="let item of currentItems()"
             class="icon-item"
             [class.selected]="selectedItem() === item"
             [class.renaming]="renamingItem() === item"
             (click)="onItemClick(item)"
             (dblclick)="onItemDoubleClick(item)"
-            (contextmenu)="onItemRightClick($event, item)">
-            
+            (contextmenu)="onItemRightClick($event, item)"
+          >
             <div class="icon-wrapper">
               <i [class]="item.icon" class="item-icon"></i>
             </div>
-            
+
             <!-- Normal name display -->
             <span *ngIf="renamingItem() !== item" class="item-name">{{ item.name }}</span>
-            
+
             <!-- Rename input -->
-            <input 
+            <input
               *ngIf="renamingItem() === item"
               type="text"
               class="rename-input"
@@ -153,12 +160,13 @@
               (input)="onRenameInput($event)"
               (keydown)="onRenameKeyDown($event)"
               (blur)="finishRename()"
-              (click)="$event.stopPropagation()">
+              (click)="$event.stopPropagation()"
+            />
           </div>
         </div>
       </div>
     </div>
-    
+
     <!-- Preview Panel -->
     <div class="preview-panel" *ngIf="selectedItem()">
       <div class="preview-header">
@@ -167,7 +175,7 @@
           <i class="pi pi-times"></i>
         </button>
       </div>
-      
+
       <div class="preview-content">
         <div *ngIf="selectedItem()?.type === 'folder'" class="folder-preview">
           <div class="folder-icon">
@@ -179,7 +187,7 @@
             <p><strong>Modified:</strong> {{ selectedItem()?.modified | formatDate }}</p>
           </div>
         </div>
-        
+
         <div *ngIf="selectedItem()?.type === 'file'" class="file-preview">
           <div class="file-icon">
             <i [class]="selectedItem()?.icon"></i>
@@ -189,17 +197,18 @@
             <p><strong>Size:</strong> {{ selectedItem()?.size | formatFileSize }}</p>
             <p><strong>Modified:</strong> {{ selectedItem()?.modified | formatDate }}</p>
           </div>
-          
+
           <!-- Image Preview -->
           <div *ngIf="isImageFile(selectedItem())" class="image-preview">
-            <img 
-              [src]="getImagePath(selectedItem())" 
+            <img
+              [src]="getImagePath(selectedItem())"
               [alt]="selectedItem()?.name"
               loading="lazy"
               (load)="onImageLoad($event)"
-              (error)="onImageError($event)" />
+              (error)="onImageError($event)"
+            />
           </div>
-          
+
           <!-- Text Preview -->
           <div *ngIf="isTextFile(selectedItem())" class="text-preview">
             <div class="text-content">
@@ -210,7 +219,7 @@
       </div>
     </div>
   </div>
-  
+
   <!-- Status Bar -->
   <div class="status-bar">
     <div class="status-info">
@@ -218,33 +227,35 @@
       <span *ngIf="isSearching()" class="search-status">{{ searchStatus }}</span>
     </div>
     <div class="selected-info" *ngIf="selectedItem()">
-      <span>{{ selectedItem()?.name }} - {{ selectedItem()?.type === 'file' ? (selectedItem()?.size | formatFileSize) : 'Folder' }}</span>
+      <span
+        >{{ selectedItem()?.name }} -
+        {{
+          selectedItem()?.type === 'file' ? (selectedItem()?.size | formatFileSize) : 'Folder'
+        }}</span
+      >
     </div>
   </div>
 
   <!-- Context Menu -->
-  <div 
-    *ngIf="showContextMenu()" 
+  <div
+    *ngIf="showContextMenu()"
     class="context-menu"
     [ngStyle]="{
       left: contextMenuPosition().x + 'px',
-      top: contextMenuPosition().y + 'px'
+      top: contextMenuPosition().y + 'px',
     }"
-    (click)="$event.stopPropagation()">
-    
-    <div 
-      *ngFor="let menuItem of contextMenuItems" 
+    (click)="$event.stopPropagation()"
+  >
+    <div
+      *ngFor="let menuItem of contextMenuItems"
       class="context-menu-item"
-      (click)="handleContextMenuAction(menuItem.action)">
+      (click)="handleContextMenuAction(menuItem.action)"
+    >
       <i [class]="menuItem.icon"></i>
       <span>{{ menuItem.label }}</span>
     </div>
   </div>
 
   <!-- Context Menu Backdrop -->
-  <div 
-    *ngIf="showContextMenu()" 
-    class="context-menu-backdrop" 
-    (click)="hideContextMenu()">
-  </div>
+  <div *ngIf="showContextMenu()" class="context-menu-backdrop" (click)="hideContextMenu()"></div>
 </div>

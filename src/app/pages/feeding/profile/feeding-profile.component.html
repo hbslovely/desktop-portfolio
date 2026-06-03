@@ -72,12 +72,7 @@
       >
         <i class="pi pi-check"></i> Lưu profile
       </button>
-      <button
-        type="button"
-        class="btn ghost"
-        *ngIf="profile()"
-        (click)="cancelEdit.emit()"
-      >
+      <button type="button" class="btn ghost" *ngIf="profile()" (click)="cancelEdit.emit()">
         Huỷ
       </button>
     </div>

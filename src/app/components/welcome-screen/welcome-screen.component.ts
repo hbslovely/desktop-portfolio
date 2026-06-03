@@ -8,7 +8,7 @@ import { FormsModule } from '@angular/forms';
   imports: [CommonModule, FormsModule],
   templateUrl: './welcome-screen.component.html',
   styleUrl: './welcome-screen.component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class WelcomeScreenComponent implements OnInit, OnDestroy {
   // Password input
@@ -34,10 +34,14 @@ export class WelcomeScreenComponent implements OnInit, OnDestroy {
   particles = Array.from({ length: 10 }, (_, i) => i + 1);
 
   private greetings = [
-    'Welcome Back!', 'Hello There!', 'Good to See You!', 
-    'Ready to Create?', 'Let\'s Get Started!', 'Nice to See You Again!'
+    'Welcome Back!',
+    'Hello There!',
+    'Good to See You!',
+    'Ready to Create?',
+    "Let's Get Started!",
+    'Nice to See You Again!',
   ];
-  
+
   private timeInterval?: number;
 
   constructor() {
@@ -76,13 +80,13 @@ export class WelcomeScreenComponent implements OnInit, OnDestroy {
     const storedAuth = localStorage.getItem('desktop-portfolio-auth');
     const storedPassword = localStorage.getItem('desktop-portfolio-password');
     const currentPassword = this.formatDate(new Date());
-    
+
     if (storedAuth === 'true' && storedPassword === currentPassword) {
       // User was previously authenticated and password is still valid
       // Show welcome loading screen briefly
       this.showWelcomeLoading.set(true);
       this.stopTimeInterval();
-      
+
       setTimeout(() => {
         this.isAuthenticated.set(true);
         this.showWelcomeLoading.set(false);
@@ -120,17 +124,21 @@ export class WelcomeScreenComponent implements OnInit, OnDestroy {
 
   updateTime() {
     const now = new Date();
-    this.currentTime.set(now.toLocaleTimeString([], {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false
-    }));
-    this.currentDate.set(now.toLocaleDateString([], {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    }));
+    this.currentTime.set(
+      now.toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      })
+    );
+    this.currentDate.set(
+      now.toLocaleDateString([], {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      })
+    );
   }
 
   private startTimeInterval() {
@@ -164,20 +172,20 @@ export class WelcomeScreenComponent implements OnInit, OnDestroy {
     const enteredPassword = this.password();
     const currentDate = new Date();
     const expectedPassword = this.formatDate(currentDate);
-    
+
     if (enteredPassword === expectedPassword) {
       this.isLoading.set(true);
-      
+
       // Brief delay for button loading animation
       setTimeout(() => {
         this.isLoading.set(false);
         this.isLocked.set(false);
         this.saveAuthenticationStatus();
         this.stopTimeInterval();
-        
+
         // Show welcome loading screen
         this.showWelcomeLoading.set(true);
-        
+
         // After loading animation, show desktop
         setTimeout(() => {
           this.isAuthenticated.set(true);
@@ -185,7 +193,7 @@ export class WelcomeScreenComponent implements OnInit, OnDestroy {
         }, 1500);
       }, 500);
     } else {
-      this.errorMessage.set('Incorrect password. Hint: Use today\'s date in ddmmyyyy format');
+      this.errorMessage.set("Incorrect password. Hint: Use today's date in ddmmyyyy format");
       this.password.set('');
       // Shake animation trigger
       const input = document.querySelector('.field-input');
@@ -237,7 +245,7 @@ export class WelcomeScreenComponent implements OnInit, OnDestroy {
     this.startTimeInterval();
     this.startBootSequence();
   }
-  
+
   ngOnDestroy() {
     this.stopTimeInterval();
   }

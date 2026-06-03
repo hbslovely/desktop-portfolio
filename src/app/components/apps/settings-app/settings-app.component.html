@@ -18,7 +18,6 @@
 
     <!-- Settings Body -->
     <div class="settings-body">
-      
       <!-- Appearance Section -->
       <div class="setting-group">
         <div class="setting-group-header">
@@ -32,12 +31,13 @@
         </div>
         <div class="setting-group-content">
           <div class="wallpaper-grid">
-            <div 
-              *ngFor="let wallpaper of wallpapers" 
+            <div
+              *ngFor="let wallpaper of wallpapers"
               class="wallpaper-card"
               [class.active]="selectedWallpaper() === wallpaper.id"
-              (click)="onWallpaperChange(wallpaper.id)">
-              <img [src]="wallpaper.preview" [alt]="wallpaper.name">
+              (click)="onWallpaperChange(wallpaper.id)"
+            >
+              <img [src]="wallpaper.preview" [alt]="wallpaper.name" />
               <i class="pi pi-check check-icon" *ngIf="selectedWallpaper() === wallpaper.id"></i>
             </div>
           </div>
@@ -57,11 +57,12 @@
         </div>
         <div class="setting-group-content">
           <div class="button-group">
-            <button 
-              *ngFor="let theme of themes" 
+            <button
+              *ngFor="let theme of themes"
               class="option-btn"
               [class.active]="selectedTheme() === theme.value"
-              (click)="onThemeChange(theme.value)">
+              (click)="onThemeChange(theme.value)"
+            >
               <i [class]="theme.icon"></i>
               <span>{{ theme.label }}</span>
             </button>
@@ -82,13 +83,14 @@
         </div>
         <div class="setting-group-content">
           <div class="color-grid">
-            <button 
-              *ngFor="let color of themeColors" 
+            <button
+              *ngFor="let color of themeColors"
               class="color-btn"
               [class.active]="selectedThemeColor() === color.value"
               [style.background-color]="color.color"
               (click)="onThemeColorChange(color.value)"
-              [title]="color.label">
+              [title]="color.label"
+            >
               <i class="pi pi-check" *ngIf="selectedThemeColor() === color.value"></i>
             </button>
           </div>
@@ -108,13 +110,14 @@
         </div>
         <div class="setting-group-content">
           <div class="color-grid">
-            <button 
-              *ngFor="let color of windowColors" 
+            <button
+              *ngFor="let color of windowColors"
               class="color-btn"
               [class.active]="selectedWindowColor() === color.value"
               [style.background-color]="color.color"
               (click)="onWindowColorChange(color.value)"
-              [title]="color.label">
+              [title]="color.label"
+            >
               <i class="pi pi-check" *ngIf="selectedWindowColor() === color.value"></i>
             </button>
           </div>
@@ -135,14 +138,15 @@
         </div>
         <div class="setting-group-content">
           <div class="slider-container">
-            <input 
-              type="range" 
-              min="60" 
-              max="100" 
-              [value]="windowOpacity()" 
+            <input
+              type="range"
+              min="60"
+              max="100"
+              [value]="windowOpacity()"
               (input)="onWindowOpacityChange($event)"
               class="range-slider"
-              [style.--progress]="(windowOpacity() - 60) / 40 * 100 + '%'">
+              [style.--progress]="((windowOpacity() - 60) / 40) * 100 + '%'"
+            />
             <span class="slider-value">{{ windowOpacity() }}%</span>
           </div>
         </div>
@@ -161,11 +165,12 @@
         </div>
         <div class="setting-group-content">
           <div class="button-group">
-            <button 
-              *ngFor="let size of fontSizes" 
+            <button
+              *ngFor="let size of fontSizes"
               class="option-btn"
               [class.active]="fontSize() === size.value"
-              (click)="onFontSizeChange(size.value)">
+              (click)="onFontSizeChange(size.value)"
+            >
               {{ size.label }}
             </button>
           </div>
@@ -199,7 +204,7 @@
                 <div class="toggle-knob"></div>
               </div>
             </div>
-            
+
             <div class="toggle-item" (click)="toggleSetting('animations')">
               <div class="toggle-info">
                 <div class="toggle-icon">
@@ -225,7 +230,6 @@
           <span>Reset to Defaults</span>
         </button>
       </div>
-
     </div>
   </div>
 </div>

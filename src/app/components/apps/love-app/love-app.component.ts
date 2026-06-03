@@ -8,7 +8,7 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
   imports: [CommonModule],
   templateUrl: './love-app.component.html',
   styleUrl: './love-app.component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LoveAppComponent {
   @Input() set url(value: string) {
@@ -17,20 +17,20 @@ export class LoveAppComponent {
   get url() {
     return this._url();
   }
-  
+
   @Input() title = 'Love Application';
-  
+
   private _url = signal('https://hbslovely.vercel.app/');
   isLoading = signal(true);
   hasError = signal(false);
-  
+
   constructor(private sanitizer: DomSanitizer) {}
-  
+
   // Convert to computed signal to prevent infinite loading
   safeUrl = computed(() => {
     const url = this._url();
     if (!url) return null;
-    
+
     // Convert Facebook URLs to use proxy
     let processedUrl = url;
     if (url.includes('facebook.com')) {
@@ -39,20 +39,20 @@ export class LoveAppComponent {
       // Also handle facebook.com without www
       processedUrl = processedUrl.replace(/^https?:\/\/facebook\.com/, '/api/facebook');
     }
-    
+
     return this.sanitizer.bypassSecurityTrustResourceUrl(processedUrl);
   });
-  
+
   onIframeLoad() {
     this.isLoading.set(false);
     this.hasError.set(false);
   }
-  
+
   onIframeError() {
     this.isLoading.set(false);
     this.hasError.set(true);
   }
-  
+
   reloadIframe() {
     this.isLoading.set(true);
     this.hasError.set(false);
@@ -63,5 +63,3 @@ export class LoveAppComponent {
     }
   }
 }
-
-

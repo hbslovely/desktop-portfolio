@@ -158,7 +158,6 @@
                         <td class="p-3 text-center border-r stt-font">[6]</td>
                         <td colspan="3" class="p-3">Chi tiết số thuế TNCN phát sinh theo từng bậc</td>
                     </tr>
-                    <tbody id="taxStepsBody" class="sub-row-style divide-y divide-slate-50"></tbody>
 
                     <tr class="font-bold">
                         <td class="p-3 text-center border-r stt-font">[6]</td>
@@ -249,9 +248,9 @@
     const NEW = { pers: 15.5e6, dep: 6.2e6, steps: [
             { m: 10e6, r: 0.05 }, { m: 30e6, r: 0.1 }, { m: 60e6, r: 0.2 }, { m: 100e6, r: 0.3 }, { m: Infinity, r: 0.35 }
         ]};
-    
+
     // Biểu thuế NĂM (x12) - dùng cho quyết toán
-    const OLD_ANNUAL = { 
+    const OLD_ANNUAL = {
         pers: 11e6 * 12,  // 132 triệu
         dep: 4.4e6,       // giảm trừ NPT vẫn tính theo tháng
         steps: [
@@ -284,27 +283,27 @@
         const cursorPos = input.selectionStart;
         const oldLen = input.value.length;
         const oldValue = input.value;
-        
+
         // Get raw number
         const num = parseAmount(input.value);
-        
+
         // Format it
         if (num === 0 && input.value === '') {
             input.value = '';
         } else {
             input.value = formatNumber(num);
         }
-        
+
         // Adjust cursor position
         const newLen = input.value.length;
         const diff = newLen - oldLen;
         let newPos = cursorPos + diff;
-        
+
         // If we're at the start, stay at start
         if (cursorPos <= 1) newPos = input.value.length > 0 ? Math.min(cursorPos, input.value.length) : 0;
-        
+
         input.setSelectionRange(newPos, newPos);
-        
+
         // Trigger calculation
         calculate();
     }
@@ -406,7 +405,7 @@
     }
 
     // ============ TAX SETTLEMENT ============
-    
+
     function addIncomeEntry() {
         const container = document.getElementById('incomeEntries');
         const entry = document.createElement('div');
@@ -533,20 +532,20 @@
     function formatSettlementInput(input) {
         const cursorPos = input.selectionStart;
         const oldLen = input.value.length;
-        
+
         const num = parseAmount(input.value);
-        
+
         if (num === 0 && input.value === '') {
             input.value = '';
         } else {
             input.value = formatNumber(num);
         }
-        
+
         const newLen = input.value.length;
         const diff = newLen - oldLen;
         let newPos = cursorPos + diff;
         if (cursorPos <= 1) newPos = input.value.length > 0 ? Math.min(cursorPos, input.value.length) : 0;
-        
+
         input.setSelectionRange(newPos, newPos);
     }
 

@@ -22,7 +22,7 @@ export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
     defaultX: 100,
     defaultY: 100,
     maximizable: true,
-    statusText: 'Ready'
+    statusText: 'Ready',
   },
   'my-info': {
     id: 'my-info',
@@ -34,7 +34,7 @@ export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
     defaultX: 150,
     defaultY: 80,
     maximizable: true,
-    statusText: 'Ready'
+    statusText: 'Ready',
   },
   love: {
     id: 'love',
@@ -46,7 +46,7 @@ export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
     defaultX: 200,
     defaultY: 60,
     maximizable: true,
-    statusText: 'Ready'
+    statusText: 'Ready',
   },
   explorer: {
     id: 'explorer',
@@ -58,7 +58,7 @@ export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
     defaultX: 200,
     defaultY: 100,
     maximizable: true,
-    statusText: 'Ready'
+    statusText: 'Ready',
   },
   'text-viewer': {
     id: 'text-viewer',
@@ -70,7 +70,7 @@ export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
     defaultX: 300,
     defaultY: 80,
     maximizable: true,
-    statusText: 'Ready'
+    statusText: 'Ready',
   },
   'image-viewer': {
     id: 'image-viewer',
@@ -82,7 +82,7 @@ export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
     defaultX: 400,
     defaultY: 80,
     maximizable: true,
-    statusText: 'Ready'
+    statusText: 'Ready',
   },
   'pdf-viewer': {
     id: 'pdf-viewer',
@@ -94,7 +94,7 @@ export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
     defaultX: 350,
     defaultY: 60,
     maximizable: true,
-    statusText: 'Ready'
+    statusText: 'Ready',
   },
   paint: {
     id: 'paint',
@@ -106,7 +106,7 @@ export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
     defaultX: 150,
     defaultY: 50,
     maximizable: true,
-    statusText: 'Ready'
+    statusText: 'Ready',
   },
   credits: {
     id: 'credits',
@@ -118,7 +118,7 @@ export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
     defaultX: 300,
     defaultY: 80,
     maximizable: true,
-    statusText: 'Ready'
+    statusText: 'Ready',
   },
   hcmc: {
     id: 'hcmc',
@@ -130,7 +130,7 @@ export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
     defaultX: 200,
     defaultY: 60,
     maximizable: true,
-    statusText: 'Ready'
+    statusText: 'Ready',
   },
   news: {
     id: 'news',
@@ -142,7 +142,7 @@ export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
     defaultX: 250,
     defaultY: 100,
     maximizable: true,
-    statusText: 'Latest News'
+    statusText: 'Latest News',
   },
   settings: {
     id: 'settings',
@@ -154,9 +154,9 @@ export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
     defaultX: 250,
     defaultY: 80,
     maximizable: true,
-    statusText: 'Configure your desktop'
+    statusText: 'Configure your desktop',
   },
-  'weather': {
+  weather: {
     id: 'weather',
     title: 'Weather Forecast',
     icon: 'pi pi-cloud',
@@ -166,9 +166,9 @@ export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
     defaultX: 250,
     defaultY: 80,
     maximizable: true,
-    statusText: 'Current weather and forecast'
+    statusText: 'Current weather and forecast',
   },
-  'dictionary': {
+  dictionary: {
     id: 'dictionary',
     title: 'Dictionary',
     icon: 'pi pi-book',
@@ -178,9 +178,9 @@ export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
     defaultX: 250,
     defaultY: 60,
     maximizable: true,
-    statusText: 'Look up word definitions'
+    statusText: 'Look up word definitions',
   },
-  'countries': {
+  countries: {
     id: 'countries',
     title: 'Countries Explorer',
     icon: 'pi pi-globe',
@@ -190,9 +190,9 @@ export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
     defaultX: 150,
     defaultY: 60,
     maximizable: true,
-    statusText: 'Explore countries around the world'
+    statusText: 'Explore countries around the world',
   },
-  'yugioh': {
+  yugioh: {
     id: 'yugioh',
     title: 'Yu-Gi-Oh! Cards',
     icon: 'pi pi-images',
@@ -202,7 +202,7 @@ export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
     defaultX: 100,
     defaultY: 50,
     maximizable: true,
-    statusText: 'Browse Yu-Gi-Oh! card database'
+    statusText: 'Browse Yu-Gi-Oh! card database',
   },
   'yugioh-card-detail': {
     id: 'yugioh-card-detail',
@@ -214,9 +214,9 @@ export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
     defaultX: 150,
     defaultY: 100,
     maximizable: true,
-    statusText: 'View detailed card information'
+    statusText: 'View detailed card information',
   },
-  'calendar': {
+  calendar: {
     id: 'calendar',
     title: 'Lịch Việt Nam',
     icon: 'pi pi-calendar',
@@ -226,7 +226,7 @@ export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
     defaultX: 200,
     defaultY: 80,
     maximizable: true,
-    statusText: 'Vietnamese Calendar'
+    statusText: 'Vietnamese Calendar',
   },
   'angular-love': {
     id: 'angular-love',
@@ -238,9 +238,9 @@ export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
     defaultX: 100,
     defaultY: 50,
     maximizable: true,
-    statusText: 'Angular InDepth Articles'
+    statusText: 'Angular InDepth Articles',
   },
-  'music': {
+  music: {
     id: 'music',
     title: 'Music Player',
     icon: 'pi pi-youtube',
@@ -250,7 +250,7 @@ export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
     defaultX: 150,
     defaultY: 60,
     maximizable: true,
-    statusText: 'YouTube Music Player'
+    statusText: 'YouTube Music Player',
   },
   'angular-guidelines': {
     id: 'angular-guidelines',
@@ -262,7 +262,7 @@ export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
     defaultX: 100,
     defaultY: 50,
     maximizable: true,
-    statusText: 'Official Angular Documentation'
+    statusText: 'Official Angular Documentation',
   },
   'tuoitre-news': {
     id: 'tuoitre-news',
@@ -274,9 +274,9 @@ export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
     defaultX: 100,
     defaultY: 50,
     maximizable: true,
-    statusText: 'Tin tức từ Tuổi Trẻ Online'
+    statusText: 'Tin tức từ Tuổi Trẻ Online',
   },
-  'expense': {
+  expense: {
     id: 'expense',
     title: 'Quản lý Chi tiêu',
     icon: 'pi pi-wallet',
@@ -286,9 +286,9 @@ export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
     defaultX: 200,
     defaultY: 80,
     maximizable: true,
-    statusText: 'Quản lý chi tiêu gia đình'
+    statusText: 'Quản lý chi tiêu gia đình',
   },
-  'business': {
+  business: {
     id: 'business',
     title: 'Quản lý Bán hàng',
     icon: 'pi pi-shopping-cart',
@@ -298,7 +298,7 @@ export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
     defaultX: 150,
     defaultY: 60,
     maximizable: true,
-    statusText: 'Quản lý bán hàng và chi phí'
+    statusText: 'Quản lý bán hàng và chi phí',
   },
   'chinese-chess': {
     id: 'chinese-chess',
@@ -310,9 +310,9 @@ export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
     defaultX: 150,
     defaultY: 60,
     maximizable: true,
-    statusText: 'Cờ Tướng & Cờ Úp'
+    statusText: 'Cờ Tướng & Cờ Úp',
   },
-  'ocr': {
+  ocr: {
     id: 'ocr',
     title: 'Đọc hình ảnh (OCR)',
     icon: 'pi pi-image',
@@ -322,7 +322,7 @@ export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
     defaultX: 200,
     defaultY: 80,
     maximizable: true,
-    statusText: 'Đọc nội dung từ hình ảnh'
+    statusText: 'Đọc nội dung từ hình ảnh',
   },
   'fb-id-finder': {
     id: 'fb-id-finder',
@@ -334,7 +334,7 @@ export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
     defaultX: 300,
     defaultY: 100,
     maximizable: true,
-    statusText: 'Tìm Facebook ID từ số điện thoại'
+    statusText: 'Tìm Facebook ID từ số điện thoại',
   },
   'graph-visualizer': {
     id: 'graph-visualizer',
@@ -346,9 +346,9 @@ export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
     defaultX: 100,
     defaultY: 50,
     maximizable: true,
-    statusText: 'Tạo và phân tích đồ thị, tìm đường đi ngắn nhất'
+    statusText: 'Tạo và phân tích đồ thị, tìm đường đi ngắn nhất',
   },
-  'stock': {
+  stock: {
     id: 'stock',
     title: 'Chứng khoán DNSE',
     icon: 'pi pi-chart-line',
@@ -358,7 +358,7 @@ export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
     defaultX: 100,
     defaultY: 50,
     maximizable: true,
-    statusText: 'Quản lý và fetch dữ liệu cổ phiếu từ DNSE'
+    statusText: 'Quản lý và fetch dữ liệu cổ phiếu từ DNSE',
   },
   'sieu-co': {
     id: 'sieu-co',
@@ -370,7 +370,7 @@ export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
     defaultX: 100,
     defaultY: 40,
     maximizable: true,
-    statusText: 'Cờ Tướng, Cờ Úp & Cờ Thế'
+    statusText: 'Cờ Tướng, Cờ Úp & Cờ Thế',
   },
   'image-search': {
     id: 'image-search',
@@ -382,7 +382,7 @@ export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
     defaultX: 150,
     defaultY: 60,
     maximizable: true,
-    statusText: 'Tìm kiếm hình ảnh tương tự bằng thuật toán CV'
+    statusText: 'Tìm kiếm hình ảnh tương tự bằng thuật toán CV',
   },
   'shop-clone': {
     id: 'shop-clone',
@@ -394,11 +394,10 @@ export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
     defaultX: 90,
     defaultY: 45,
     maximizable: true,
-    statusText: 'Shopee homepage clone demo'
-  }
+    statusText: 'Shopee homepage clone demo',
+  },
 };
 
 export function getWindowDefinition(id: string): WindowDefinition | undefined {
   return WINDOW_REGISTRY[id];
 }
-

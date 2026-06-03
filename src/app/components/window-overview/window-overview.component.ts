@@ -11,7 +11,7 @@ import { WindowManagerService, WindowConfig } from '../../services/window-manage
 })
 export class WindowOverviewComponent {
   @Output() onClose = new EventEmitter<void>();
-  
+
   windowManager = inject(WindowManagerService);
 
   selectWindow(window: WindowConfig) {

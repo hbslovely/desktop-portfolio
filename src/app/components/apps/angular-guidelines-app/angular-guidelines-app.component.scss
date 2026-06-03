@@ -88,7 +88,9 @@ $error: #f44336;
       }
 
       span {
-        transition: opacity 0.2s, width 0.2s;
+        transition:
+          opacity 0.2s,
+          width 0.2s;
         white-space: nowrap;
       }
     }
@@ -169,7 +171,9 @@ $error: #f44336;
 
     span {
       flex: 1;
-      transition: opacity 0.2s, width 0.2s;
+      transition:
+        opacity 0.2s,
+        width 0.2s;
     }
 
     &:hover {
@@ -530,7 +534,8 @@ $error: #f44336;
     margin-bottom: 24px;
   }
 
-  p, h3 {
+  p,
+  h3 {
     color: $text-secondary;
     margin: 0 0 16px 0;
   }
@@ -558,7 +563,9 @@ $error: #f44336;
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes fadeIn {
@@ -710,10 +717,7 @@ $error: #f44336;
   flex: 1;
   overflow-y: auto;
   padding: 48px;
-  background: linear-gradient(180deg,
-    rgba(221, 0, 49, 0.02) 0%,
-    rgba(255, 255, 255, 0) 100%
-  );
+  background: linear-gradient(180deg, rgba(221, 0, 49, 0.02) 0%, rgba(255, 255, 255, 0) 100%);
   position: relative;
 
   // Animated gradient background
@@ -724,10 +728,7 @@ $error: #f44336;
     left: 0;
     right: 0;
     height: 200px;
-    background: radial-gradient(ellipse at top,
-      rgba(221, 0, 49, 0.08) 0%,
-      transparent 70%
-    );
+    background: radial-gradient(ellipse at top, rgba(221, 0, 49, 0.08) 0%, transparent 70%);
     pointer-events: none;
     z-index: 0;
   }
@@ -750,20 +751,14 @@ $error: #f44336;
   }
 
   &::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg,
-      rgba(221, 0, 49, 0.5) 0%,
-      rgba(221, 0, 49, 0.3) 100%
-    );
+    background: linear-gradient(180deg, rgba(221, 0, 49, 0.5) 0%, rgba(221, 0, 49, 0.3) 100%);
     border-radius: 10px;
     border: 2px solid transparent;
     background-clip: padding-box;
     transition: all 0.3s ease;
 
     &:hover {
-      background: linear-gradient(180deg,
-        rgba(221, 0, 49, 0.7) 0%,
-        rgba(221, 0, 49, 0.5) 100%
-      );
+      background: linear-gradient(180deg, rgba(221, 0, 49, 0.7) 0%, rgba(221, 0, 49, 0.5) 100%);
       border-color: rgba(221, 0, 49, 0.1);
     }
 
@@ -792,7 +787,12 @@ $error: #f44336;
     color: $text-primary;
 
     // Typography - Beautiful, readable styling
-    h1, h2, h3, h4, h5, h6 {
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
       margin: 40px 0 20px 0;
       font-weight: 800;
       line-height: 1.3;
@@ -835,12 +835,14 @@ $error: #f44336;
       font-size: 17px;
     }
 
-    strong, b {
+    strong,
+    b {
       font-weight: 700;
       color: $text-primary;
     }
 
-    em, i {
+    em,
+    i {
       font-style: italic;
       color: $text-secondary;
     }
@@ -862,7 +864,8 @@ $error: #f44336;
       }
     }
 
-    ul, ol {
+    ul,
+    ol {
       margin: 24px 0;
       padding-left: 36px;
 
@@ -877,7 +880,8 @@ $error: #f44336;
         }
       }
 
-      ul, ol {
+      ul,
+      ol {
         margin: 12px 0;
       }
     }
@@ -968,7 +972,8 @@ $error: #f44336;
       border-radius: 12px;
       overflow: hidden;
 
-      th, td {
+      th,
+      td {
         padding: 16px 20px;
         text-align: left;
         border-bottom: 2px solid $border-light;

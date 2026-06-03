@@ -6,9 +6,7 @@
 
   <!-- Loading State -->
   <div *ngIf="loading()" class="widget-loading">
-    <div class="loading-dots">
-      <span></span><span></span><span></span>
-    </div>
+    <div class="loading-dots"><span></span><span></span><span></span></div>
   </div>
 
   <!-- Error State -->
@@ -36,11 +34,13 @@
     <!-- Main Weather -->
     <div class="widget-main">
       <div class="weather-icon">
-        <img [src]="getWeatherIcon(weatherData()!.current.icon_num)" 
-             [alt]="weatherData()!.current.summary">
+        <img
+          [src]="getWeatherIcon(weatherData()!.current.icon_num)"
+          [alt]="weatherData()!.current.summary"
+        />
       </div>
       <div class="weather-info">
-        <div class="temperature">{{ weatherData()!.current.temperature | number:'1.0-0' }}°</div>
+        <div class="temperature">{{ weatherData()!.current.temperature | number: '1.0-0' }}°</div>
         <div class="condition">{{ weatherData()!.current.summary }}</div>
       </div>
     </div>
@@ -65,7 +65,7 @@
     <div class="hourly-preview">
       <div class="hourly-item" *ngFor="let hour of getHourlyForecast(); let i = index">
         <span class="hour-time">{{ formatHour(hour.date, i) }}</span>
-        <img [src]="getWeatherIcon(hour.icon)" class="hour-icon">
+        <img [src]="getWeatherIcon(hour.icon)" class="hour-icon" />
         <span class="hour-temp">{{ formatTemperature(hour.temperature) }}</span>
       </div>
     </div>

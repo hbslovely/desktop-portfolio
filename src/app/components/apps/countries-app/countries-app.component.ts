@@ -23,16 +23,16 @@ export class CountriesAppComponent implements OnInit {
   filteredCountries = signal<Country[]>([]);
   selectedCountry = signal<Country | null>(null);
   borderCountries = signal<Country[]>([]);
-  
+
   loading = signal<boolean>(true);
   loadingDetail = signal<boolean>(false);
   error = signal<string | null>(null);
   viewMode = signal<ViewMode>('list');
-  
+
   searchQuery = signal<string>('');
   filterType = signal<FilterType>('all');
   selectedRegion = signal<string>('all');
-  
+
   // New features
   displayType = signal<DisplayType>('grid');
   sortType = signal<SortType>('name');
@@ -40,31 +40,45 @@ export class CountriesAppComponent implements OnInit {
   groupType = signal<GroupType>('none');
   collapsedGroups = signal<Set<string>>(new Set());
   showAllTranslations = signal<boolean>(false);
-  
+
   regions = ['all', 'Africa', 'Americas', 'Asia', 'Europe', 'Oceania', 'Antarctic'];
-  
+
   // Common languages for translations
-  private readonly COMMON_LANGUAGES = ['ENG', 'ZHO', 'SPA', 'FRA', 'DEU', 'JPN', 'POR', 'RUS', 'ARA', 'KOR', 'ITA', 'NLD'];
-  
+  private readonly COMMON_LANGUAGES = [
+    'ENG',
+    'ZHO',
+    'SPA',
+    'FRA',
+    'DEU',
+    'JPN',
+    'POR',
+    'RUS',
+    'ARA',
+    'KOR',
+    'ITA',
+    'NLD',
+  ];
+
   // Computed values
   displayedCountries = computed(() => {
     let countries = this.filteredCountries();
     const query = this.searchQuery().toLowerCase();
-    
+
     // Apply search filter
     if (query) {
-      countries = countries.filter(country => 
-        country.name.common.toLowerCase().includes(query) ||
-        country.name.official.toLowerCase().includes(query) ||
-        country.capital?.some(cap => cap.toLowerCase().includes(query)) ||
-        country.region.toLowerCase().includes(query) ||
-        this.countriesService.getLanguagesString(country.languages).toLowerCase().includes(query)
+      countries = countries.filter(
+        (country) =>
+          country.name.common.toLowerCase().includes(query) ||
+          country.name.official.toLowerCase().includes(query) ||
+          country.capital?.some((cap) => cap.toLowerCase().includes(query)) ||
+          country.region.toLowerCase().includes(query) ||
+          this.countriesService.getLanguagesString(country.languages).toLowerCase().includes(query)
       );
     }
-    
+
     // Apply sorting
     countries = this.sortCountries(countries, this.sortType(), this.sortOrder());
-    
+
     return countries;
   });
 
@@ -72,16 +86,16 @@ export class CountriesAppComponent implements OnInit {
   groupedCountries = computed(() => {
     const countries = this.displayedCountries();
     const groupType = this.groupType();
-    
+
     if (groupType === 'none') {
       return { 'All Countries': countries };
     }
-    
+
     const grouped: { [key: string]: Country[] } = {};
-    
-    countries.forEach(country => {
+
+    countries.forEach((country) => {
       let key = 'Other';
-      
+
       switch (groupType) {
         case 'region':
           key = country.region || 'Unknown';
@@ -96,23 +110,25 @@ export class CountriesAppComponent implements OnInit {
           key = this.getNameCategory(country.name.common);
           break;
       }
-      
+
       if (!grouped[key]) {
         grouped[key] = [];
       }
       grouped[key].push(country);
     });
-    
+
     // Sort groups with custom order for population and size
     const sortOrder = this.getGroupSortOrder(groupType);
-    const sortedKeys = sortOrder.length > 0
-      ? sortOrder.filter(key => grouped[key])
-      : Object.keys(grouped).sort();
-    
-    return sortedKeys.reduce((acc, key) => {
-      acc[key] = grouped[key];
-      return acc;
-    }, {} as { [key: string]: Country[] });
+    const sortedKeys =
+      sortOrder.length > 0 ? sortOrder.filter((key) => grouped[key]) : Object.keys(grouped).sort();
+
+    return sortedKeys.reduce(
+      (acc, key) => {
+        acc[key] = grouped[key];
+        return acc;
+      },
+      {} as { [key: string]: Country[] }
+    );
   });
 
   getGroupKeys(): string[] {
@@ -158,7 +174,7 @@ export class CountriesAppComponent implements OnInit {
           '🔹 Medium-Large (10M - 50M)',
           '🔸 Medium (1M - 10M)',
           '⚪ Small (100K - 1M)',
-          '⚫ Very Small (< 100K)'
+          '⚫ Very Small (< 100K)',
         ];
       case 'size':
         return [
@@ -167,13 +183,38 @@ export class CountriesAppComponent implements OnInit {
           '📍 Large (500K - 1M km²)',
           '📌 Medium (100K - 500K km²)',
           '📎 Small (10K - 100K km²)',
-          '🔹 Very Small (< 10K km²)'
+          '🔹 Very Small (< 10K km²)',
         ];
       case 'name':
         // A-Z alphabetical order, with # at the end
         return [
-          'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
-          'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '#'
+          'A',
+          'B',
+          'C',
+          'D',
+          'E',
+          'F',
+          'G',
+          'H',
+          'I',
+          'J',
+          'K',
+          'L',
+          'M',
+          'N',
+          'O',
+          'P',
+          'Q',
+          'R',
+          'S',
+          'T',
+          'U',
+          'V',
+          'W',
+          'X',
+          'Y',
+          'Z',
+          '#',
         ];
       default:
         return [];
@@ -199,8 +240,7 @@ export class CountriesAppComponent implements OnInit {
       error: (err) => {
         this.error.set('Failed to load countries data. Please try again.');
         this.loading.set(false);
-
-      }
+      },
     });
   }
 
@@ -210,21 +250,21 @@ export class CountriesAppComponent implements OnInit {
 
   filterByRegion(region: string) {
     this.selectedRegion.set(region);
-    
+
     if (region === 'all') {
       this.filteredCountries.set(this.countries());
       return;
     }
 
     // Filter from existing countries instead of making new API call
-    const filtered = this.countries().filter(c => c.region === region);
+    const filtered = this.countries().filter((c) => c.region === region);
     this.filteredCountries.set(filtered);
   }
 
   sortCountries(countries: Country[], sortType: SortType, order: 'asc' | 'desc'): Country[] {
     const sorted = [...countries].sort((a, b) => {
       let comparison = 0;
-      
+
       switch (sortType) {
         case 'name':
           comparison = a.name.common.localeCompare(b.name.common);
@@ -239,10 +279,10 @@ export class CountriesAppComponent implements OnInit {
           comparison = a.region.localeCompare(b.region);
           break;
       }
-      
+
       return order === 'asc' ? comparison : -comparison;
     });
-    
+
     return sorted;
   }
 
@@ -285,7 +325,7 @@ export class CountriesAppComponent implements OnInit {
     this.selectedCountry.set(country);
     this.viewMode.set('detail');
     this.loadingDetail.set(true);
-    
+
     // Fetch full country details in the background
     // This ensures we have all fields, not just the 10 from the list view
     this.countriesService.getByCode(country.cca2 || country.cca3).subscribe({
@@ -300,11 +340,10 @@ export class CountriesAppComponent implements OnInit {
         this.loadingDetail.set(false);
       },
       error: (err) => {
-
         // Keep the basic country data and still load borders
         this.loadBorderCountries(country);
         this.loadingDetail.set(false);
-      }
+      },
     });
   }
 
@@ -319,9 +358,8 @@ export class CountriesAppComponent implements OnInit {
         this.borderCountries.set(data);
       },
       error: (err) => {
-
         this.borderCountries.set([]);
-      }
+      },
     });
   }
 
@@ -363,7 +401,7 @@ export class CountriesAppComponent implements OnInit {
     return Object.entries(country.name.nativeName).map(([code, names]) => ({
       lang: code.toUpperCase(),
       official: names.official,
-      common: names.common
+      common: names.common,
     }));
   }
 
@@ -372,7 +410,7 @@ export class CountriesAppComponent implements OnInit {
     return Object.entries(country.currencies).map(([code, curr]) => ({
       code,
       name: curr.name,
-      symbol: curr.symbol
+      symbol: curr.symbol,
     }));
   }
 
@@ -380,7 +418,7 @@ export class CountriesAppComponent implements OnInit {
     if (!country.languages) return [];
     return Object.entries(country.languages).map(([code, name]) => ({
       code,
-      name
+      name,
     }));
   }
 
@@ -424,7 +462,7 @@ export class CountriesAppComponent implements OnInit {
 
   getCarInfo(country: Country): string {
     if (!country.car) return 'N/A';
-    const signs = country.car.signs?.filter(s => s).join(', ') || 'No international signs';
+    const signs = country.car.signs?.filter((s) => s).join(', ') || 'No international signs';
     const side = country.car.side === 'right' ? 'right side' : 'left side';
     return `Signs: ${signs} • Drives on the ${side}`;
   }
@@ -442,27 +480,28 @@ export class CountriesAppComponent implements OnInit {
     // Remove duplicates and limit to reasonable number
     const spellings = country.altSpellings || [];
     const unique = [...new Set(spellings)];
-    return unique.filter(s => s !== country.name.common && s !== country.cca2 && s !== country.cca3);
+    return unique.filter(
+      (s) => s !== country.name.common && s !== country.cca2 && s !== country.cca3
+    );
   }
-
 
   getAllTranslations(country: Country): { lang: string; common: string; official: string }[] {
     if (!country.translations) return [];
     return Object.entries(country.translations).map(([code, trans]) => ({
       lang: code.toUpperCase(),
       common: trans.common,
-      official: trans.official
+      official: trans.official,
     }));
   }
 
   getCommonTranslations(country: Country): { lang: string; common: string; official: string }[] {
     const all = this.getAllTranslations(country);
-    return all.filter(trans => this.COMMON_LANGUAGES.includes(trans.lang));
+    return all.filter((trans) => this.COMMON_LANGUAGES.includes(trans.lang));
   }
 
   getOtherTranslations(country: Country): { lang: string; common: string; official: string }[] {
     const all = this.getAllTranslations(country);
-    return all.filter(trans => !this.COMMON_LANGUAGES.includes(trans.lang));
+    return all.filter((trans) => !this.COMMON_LANGUAGES.includes(trans.lang));
   }
 
   isPopularLanguage(lang: string): boolean {
@@ -471,9 +510,10 @@ export class CountriesAppComponent implements OnInit {
 
   getStatus(country: Country): string {
     const status = country.status || 'unknown';
-    return status.split('-').map(word => 
-      word.charAt(0).toUpperCase() + word.slice(1)
-    ).join(' ');
+    return status
+      .split('-')
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
   }
 
   isLandlocked(country: Country): boolean {

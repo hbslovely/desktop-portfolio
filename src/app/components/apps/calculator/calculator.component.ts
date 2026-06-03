@@ -1,4 +1,12 @@
-import { Component, signal, computed, ChangeDetectionStrategy, OnInit, OnDestroy, HostListener } from '@angular/core';
+import {
+  Component,
+  signal,
+  computed,
+  ChangeDetectionStrategy,
+  OnInit,
+  OnDestroy,
+  HostListener,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 interface CalculationHistory {
@@ -13,7 +21,7 @@ interface CalculationHistory {
   imports: [CommonModule],
   templateUrl: './calculator.component.html',
   styleUrl: './calculator.component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CalculatorComponent implements OnInit, OnDestroy {
   display = signal('0');
@@ -26,14 +34,14 @@ export class CalculatorComponent implements OnInit, OnDestroy {
   history = signal<CalculationHistory[]>([]);
   showHistory = signal(false);
   angleMode = signal<'DEG' | 'RAD'>('DEG');
-  
+
   // Basic calculator buttons
   basicButtons = [
     ['C', '⌫', '%', '÷'],
     ['7', '8', '9', '×'],
     ['4', '5', '6', '-'],
     ['1', '2', '3', '+'],
-    ['±', '0', '.', '=']
+    ['±', '0', '.', '='],
   ];
 
   // Scientific calculator buttons
@@ -45,21 +53,19 @@ export class CalculatorComponent implements OnInit, OnDestroy {
     ['7', '8', '9', '%'],
     ['4', '5', '6', '±'],
     ['1', '2', '3', '⌫'],
-    ['0', '.', 'C', '=']
+    ['0', '.', 'C', '='],
   ];
-  
+
   // Constants
   constants = [
     { label: 'π', value: 'π', name: 'Pi (3.14159...)' },
-    { label: 'e', value: 'e', name: 'Euler\'s number (2.71828...)' },
+    { label: 'e', value: 'e', name: "Euler's number (2.71828...)" },
     { label: 'φ', value: 'φ', name: 'Golden ratio (1.61803...)' },
-    { label: '√2', value: '√2', name: 'Square root of 2' }
+    { label: '√2', value: '√2', name: 'Square root of 2' },
   ];
 
   // Memory buttons
-  memoryButtons = [
-    ['MC', 'MR', 'M-', 'M+']
-  ];
+  memoryButtons = [['MC', 'MR', 'M-', 'M+']];
 
   displayValue = computed(() => {
     const val = this.display();
@@ -68,7 +74,7 @@ export class CalculatorComponent implements OnInit, OnDestroy {
     }
     const num = parseFloat(val);
     if (isNaN(num)) return val;
-    
+
     // Format large numbers
     if (Math.abs(num) >= 1e15) {
       return num.toExponential(10);
@@ -76,7 +82,7 @@ export class CalculatorComponent implements OnInit, OnDestroy {
     if (Math.abs(num) < 0.0001 && num !== 0) {
       return num.toExponential(6);
     }
-    
+
     // Format with appropriate decimal places
     const str = num.toString();
     if (str.includes('.')) {
@@ -94,10 +100,12 @@ export class CalculatorComponent implements OnInit, OnDestroy {
     if (savedHistory) {
       try {
         const parsed = JSON.parse(savedHistory);
-        this.history.set(parsed.map((h: any) => ({
-          ...h,
-          timestamp: new Date(h.timestamp)
-        })));
+        this.history.set(
+          parsed.map((h: any) => ({
+            ...h,
+            timestamp: new Date(h.timestamp),
+          }))
+        );
       } catch (e) {
         console.error('Error loading history:', e);
       }
@@ -123,20 +131,20 @@ export class CalculatorComponent implements OnInit, OnDestroy {
   @HostListener('window:keydown', ['$event'])
   handleKeyDown(event: KeyboardEvent) {
     const key = event.key;
-    
+
     // Handle copy/paste
     if ((event.ctrlKey || event.metaKey) && key === 'c') {
       this.copyToClipboard();
       event.preventDefault();
       return;
     }
-    
+
     if ((event.ctrlKey || event.metaKey) && key === 'v') {
       this.pasteFromClipboard();
       event.preventDefault();
       return;
     }
-    
+
     // Prevent default for calculator keys
     if (this.isCalculatorKey(key)) {
       event.preventDefault();
@@ -228,9 +236,24 @@ export class CalculatorComponent implements OnInit, OnDestroy {
   }
 
   private isScientificFunction(value: string): boolean {
-    return ['sin', 'cos', 'tan', 'log', 'ln', '√', 'x²', 'x³', 'xʸ', 'π', 'e', 'φ', '√2', '1/x'].includes(value);
+    return [
+      'sin',
+      'cos',
+      'tan',
+      'log',
+      'ln',
+      '√',
+      'x²',
+      'x³',
+      'xʸ',
+      'π',
+      'e',
+      'φ',
+      '√2',
+      '1/x',
+    ].includes(value);
   }
-  
+
   private isConstant(value: string): boolean {
     return ['π', 'e', 'φ', '√2'].includes(value);
   }
@@ -288,18 +311,18 @@ export class CalculatorComponent implements OnInit, OnDestroy {
     if (currentValue !== 0 && this.currentOperation()) {
       const newValue = this.performCalculation(currentValue, inputValue, this.currentOperation());
       const result = this.formatResult(newValue);
-      
+
       // Build expression for history
       const fullExpression = `${currentValue} ${this.currentOperation()} ${inputValue}`;
-      
+
       // Add to history
       const historyEntry: CalculationHistory = {
         expression: fullExpression + ' =',
         result: result,
-        timestamp: new Date()
+        timestamp: new Date(),
       };
-      this.history.update(h => [historyEntry, ...h.slice(0, 49)]); // Keep last 50
-      
+      this.history.update((h) => [historyEntry, ...h.slice(0, 49)]); // Keep last 50
+
       this.display.set(result);
       this.expression.set(fullExpression + ' = ' + result);
       this.previousValue.set(0);
@@ -312,10 +335,10 @@ export class CalculatorComponent implements OnInit, OnDestroy {
     if (isNaN(value) || !isFinite(value)) {
       return 'Error';
     }
-    
+
     // Round to avoid floating point errors
     const rounded = Math.round(value * 1e12) / 1e12;
-    
+
     return String(rounded);
   }
 
@@ -397,15 +420,15 @@ export class CalculatorComponent implements OnInit, OnDestroy {
       const formatted = this.formatResult(result);
       this.display.set(formatted);
       this.expression.set(`${func}(${value}) = ${formatted}`);
-      
+
       // Add to history
       const historyEntry: CalculationHistory = {
         expression: `${func}(${value})`,
         result: formatted,
-        timestamp: new Date()
+        timestamp: new Date(),
       };
-      this.history.update(h => [historyEntry, ...h.slice(0, 49)]);
-      
+      this.history.update((h) => [historyEntry, ...h.slice(0, 49)]);
+
       this.waitingForOperand.set(true);
     } catch (e) {
       this.display.set('Error');
@@ -415,7 +438,7 @@ export class CalculatorComponent implements OnInit, OnDestroy {
 
   private handleMemoryFunction(func: string) {
     const value = parseFloat(this.display());
-    
+
     switch (func) {
       case 'MC':
         this.memory.set(0);
@@ -450,7 +473,7 @@ export class CalculatorComponent implements OnInit, OnDestroy {
     const value = parseFloat(this.display());
     this.display.set(String(value / 100));
   }
-  
+
   private backspace() {
     const current = this.display();
     if (current.length > 1 && current !== 'Error') {
@@ -465,11 +488,11 @@ export class CalculatorComponent implements OnInit, OnDestroy {
     this.waitingForOperand.set(true);
     this.showHistory.set(false);
   }
-  
+
   private handleConstant(constant: string) {
     let value: number;
     let displayName: string;
-    
+
     switch (constant) {
       case 'π':
         value = Math.PI;
@@ -490,21 +513,21 @@ export class CalculatorComponent implements OnInit, OnDestroy {
       default:
         return;
     }
-    
+
     const formatted = this.formatResult(value);
     this.display.set(formatted);
     this.expression.set(`${displayName} = ${formatted}`);
     this.waitingForOperand.set(true);
-    
+
     // Add to history
     const historyEntry: CalculationHistory = {
       expression: displayName,
       result: formatted,
-      timestamp: new Date()
+      timestamp: new Date(),
     };
-    this.history.update(h => [historyEntry, ...h.slice(0, 49)]);
+    this.history.update((h) => [historyEntry, ...h.slice(0, 49)]);
   }
-  
+
   async copyToClipboard() {
     try {
       const text = this.displayValue();
@@ -514,7 +537,7 @@ export class CalculatorComponent implements OnInit, OnDestroy {
       console.error('Failed to copy:', err);
     }
   }
-  
+
   async pasteFromClipboard() {
     try {
       const text = await navigator.clipboard.readText();

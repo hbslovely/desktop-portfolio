@@ -16,15 +16,17 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
       ></iframe>
     </div>
   `,
-  styles: [`
-    .boi-vui-container {
-      width: 100%;
-      height: 100vh;
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
-    }
-  `]
+  styles: [
+    `
+      .boi-vui-container {
+        width: 100%;
+        height: 100vh;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+      }
+    `,
+  ],
 })
 export class BoiVuiComponent {
   private sanitizer = inject(DomSanitizer);

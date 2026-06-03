@@ -1,7 +1,6 @@
 <div class="tuoitre-news-app" [class.viewing-article]="showArticleViewer()">
   <!-- Main News List View -->
   <div class="main-view" *ngIf="!showArticleViewer()">
-    
     <!-- Header -->
     <div class="app-header">
       <div class="header-left">
@@ -12,22 +11,33 @@
         <!-- Search -->
         <div class="search-box">
           <i class="pi pi-search"></i>
-          <input 
-            type="text" 
-            placeholder="Tìm kiếm tin tức..." 
+          <input
+            type="text"
+            placeholder="Tìm kiếm tin tức..."
             [value]="searchTerm()"
             (input)="onSearchChange($event)"
-            (keydown.enter)="onSearchSubmit()">
-          <button *ngIf="searchTerm()" (click)="clearSearch()" class="clear-search" title="Xóa tìm kiếm">
+            (keydown.enter)="onSearchSubmit()"
+          />
+          <button
+            *ngIf="searchTerm()"
+            (click)="clearSearch()"
+            class="clear-search"
+            title="Xóa tìm kiếm"
+          >
             <i class="pi pi-times"></i>
           </button>
           <button (click)="onSearchSubmit()" class="search-btn" title="Tìm kiếm">
             <i class="pi pi-search"></i>
           </button>
         </div>
-        
+
         <!-- Refresh -->
-        <button (click)="refreshNews()" class="refresh-btn" [class.loading]="loading()" title="Làm mới">
+        <button
+          (click)="refreshNews()"
+          class="refresh-btn"
+          [class.loading]="loading()"
+          title="Làm mới"
+        >
           <i class="pi pi-refresh"></i>
         </button>
       </div>
@@ -38,7 +48,8 @@
       <button
         (click)="selectCategory('all')"
         [class.active]="selectedCategory() === 'all'"
-        class="category-btn">
+        class="category-btn"
+      >
         <i class="pi pi-home"></i>
         <span>Tất cả</span>
       </button>
@@ -46,7 +57,8 @@
         *ngFor="let category of categories()"
         (click)="selectCategory(category.id)"
         [class.active]="selectedCategory() === category.id"
-        class="category-btn">
+        class="category-btn"
+      >
         <span>{{ category.name }}</span>
       </button>
     </div>
@@ -70,20 +82,16 @@
 
     <!-- News Grid -->
     <div *ngIf="!loading() && !error()" class="news-grid">
-      <div 
-        *ngFor="let item of filteredNewsItems()" 
-        class="news-card"
-        (click)="openArticle(item)">
+      <div *ngFor="let item of filteredNewsItems()" class="news-card" (click)="openArticle(item)">
         <div class="news-image" *ngIf="item.imageUrl">
-          <img 
-            [src]="item.imageUrl" 
-            [alt]="item.title"
-            (error)="onImageError($event)">
+          <img [src]="item.imageUrl" [alt]="item.title" (error)="onImageError($event)" />
         </div>
         <div class="news-content">
           <div class="news-meta">
             <span class="news-category" *ngIf="item.category">{{ item.category }}</span>
-            <span class="news-date" *ngIf="item.publishedAt">{{ getTimeAgo(item.publishedAt) }}</span>
+            <span class="news-date" *ngIf="item.publishedAt">{{
+              getTimeAgo(item.publishedAt)
+            }}</span>
           </div>
           <h3 class="news-title" [innerHTML]="item.title"></h3>
           <p class="news-summary" *ngIf="item.summary">{{ item.summary }}</p>
@@ -95,9 +103,7 @@
         <i class="pi pi-inbox"></i>
         <h3>Không tìm thấy tin tức</h3>
         <p>Thử điều chỉnh từ khóa tìm kiếm</p>
-        <button (click)="clearSearch()" class="clear-btn">
-          Xóa tìm kiếm
-        </button>
+        <button (click)="clearSearch()" class="clear-btn">Xóa tìm kiếm</button>
       </div>
     </div>
   </div>
@@ -133,11 +139,21 @@
       </div>
       <div class="status-right">
         <div class="zoom-controls">
-          <button (click)="zoomOut()" class="zoom-btn" [disabled]="zoomLevel() <= minZoom" title="Thu nhỏ">
+          <button
+            (click)="zoomOut()"
+            class="zoom-btn"
+            [disabled]="zoomLevel() <= minZoom"
+            title="Thu nhỏ"
+          >
             <i class="pi pi-minus"></i>
           </button>
           <span class="zoom-level">{{ zoomLevel() }}%</span>
-          <button (click)="zoomIn()" class="zoom-btn" [disabled]="zoomLevel() >= maxZoom" title="Phóng to">
+          <button
+            (click)="zoomIn()"
+            class="zoom-btn"
+            [disabled]="zoomLevel() >= maxZoom"
+            title="Phóng to"
+          >
             <i class="pi pi-plus"></i>
           </button>
           <button (click)="resetZoom()" class="zoom-reset" title="Đặt lại">
@@ -165,9 +181,12 @@
       </div>
 
       <!-- Article Content -->
-      <article *ngIf="!articleLoading() && !articleError() && selectedArticle()" class="article-detail">
+      <article
+        *ngIf="!articleLoading() && !articleError() && selectedArticle()"
+        class="article-detail"
+      >
         <div class="article-hero" *ngIf="selectedArticle()?.imageUrl">
-          <img [src]="selectedArticle()!.imageUrl" [alt]="selectedArticle()!.title">
+          <img [src]="selectedArticle()!.imageUrl" [alt]="selectedArticle()!.title" />
         </div>
 
         <div class="article-container">
@@ -194,4 +213,3 @@
     </div>
   </div>
 </div>
-

@@ -1,7 +1,11 @@
 import { Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { AngularGuidelinesService, AngularGuideline, GuidelineCategory } from '../../../services/angular-guidelines.service';
+import {
+  AngularGuidelinesService,
+  AngularGuideline,
+  GuidelineCategory,
+} from '../../../services/angular-guidelines.service';
 
 @Component({
   selector: 'app-angular-guidelines-app',
@@ -13,7 +17,7 @@ import { AngularGuidelinesService, AngularGuideline, GuidelineCategory } from '.
 export class AngularGuidelinesAppComponent implements OnInit {
   // Service data
   categories = signal<GuidelineCategory[]>([]);
-  
+
   // UI state
   selectedCategory = signal<string>('introduction');
   selectedGuideline = signal<AngularGuideline | null>(null);
@@ -22,11 +26,11 @@ export class AngularGuidelinesAppComponent implements OnInit {
   error = signal<string | null>(null);
   searchTerm = signal<string>('');
   viewMode = signal<'browse' | 'viewer'>('browse');
-  
+
   // Viewer state
   guidelineLoading = signal<boolean>(false);
   guidelineError = signal<string | null>(null);
-  
+
   // Sidebar collapsed state
   sidebarCollapsed = signal<boolean>(false);
 
@@ -34,11 +38,11 @@ export class AngularGuidelinesAppComponent implements OnInit {
   filteredGuidelines = computed(() => {
     const search = this.searchTerm().toLowerCase();
     const allGuidelines = this.guidelines();
-    
+
     if (!search) {
       return allGuidelines;
     }
-    
+
     return this.guidelineService.searchGuidelines(search, allGuidelines);
   });
 
@@ -64,7 +68,7 @@ export class AngularGuidelinesAppComponent implements OnInit {
     this.guidelines.set([]);
     this.viewMode.set('browse');
 
-    const category = this.categories().find(c => c.id === categoryId);
+    const category = this.categories().find((c) => c.id === categoryId);
     if (!category) {
       this.error.set('Category not found');
       this.loading.set(false);
@@ -77,7 +81,7 @@ export class AngularGuidelinesAppComponent implements OnInit {
     const totalCount = guidelineUrls.length;
     const loadedGuidelines: AngularGuideline[] = [];
 
-    guidelineUrls.forEach(url => {
+    guidelineUrls.forEach((url) => {
       this.guidelineService.fetchGuideline(url).subscribe({
         next: (html) => {
           const guideline = this.guidelineService.parseGuidelineContent(html, url);
@@ -102,7 +106,7 @@ export class AngularGuidelinesAppComponent implements OnInit {
               this.error.set('Failed to load guidelines. Some content may not be available.');
             }
           }
-        }
+        },
       });
     });
   }
@@ -183,7 +187,7 @@ export class AngularGuidelinesAppComponent implements OnInit {
           const copyBtn = document.createElement('button');
           copyBtn.className = 'code-copy-btn';
           copyBtn.type = 'button';
-          
+
           copyBtn.style.cssText = `
             position: absolute;
             top: 8px;
@@ -205,8 +209,9 @@ export class AngularGuidelinesAppComponent implements OnInit {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             backdrop-filter: blur(10px);
           `;
-          
-          copyBtn.innerHTML = '<i class="pi pi-copy" style="font-size: 11px;"></i><span>Copy</span>';
+
+          copyBtn.innerHTML =
+            '<i class="pi pi-copy" style="font-size: 11px;"></i><span>Copy</span>';
 
           const code = pre.querySelector('code');
           if (code) {
@@ -215,13 +220,13 @@ export class AngularGuidelinesAppComponent implements OnInit {
               e.stopPropagation();
               this.copyCode(code as HTMLElement, copyBtn);
             };
-            
+
             copyBtn.onmouseenter = () => {
               copyBtn.style.background = 'rgba(221, 51, 51, 0.95)';
               copyBtn.style.borderColor = '#dd3333';
               copyBtn.style.color = 'white';
             };
-            
+
             copyBtn.onmouseleave = () => {
               if (!copyBtn.classList.contains('copied')) {
                 copyBtn.style.background = 'rgba(255, 255, 255, 0.9)';
@@ -244,31 +249,35 @@ export class AngularGuidelinesAppComponent implements OnInit {
    */
   copyCode(codeElement: HTMLElement, button: HTMLElement): void {
     const code = codeElement.textContent || '';
-    navigator.clipboard.writeText(code).then(() => {
-      const originalHTML = button.innerHTML;
-      button.classList.add('copied');
-      button.style.background = 'rgba(76, 175, 80, 0.95)';
-      button.style.borderColor = '#4caf50';
-      button.style.color = 'white';
-      button.innerHTML = '<i class="pi pi-check" style="font-size: 11px;"></i><span>Copied!</span>';
+    navigator.clipboard
+      .writeText(code)
+      .then(() => {
+        const originalHTML = button.innerHTML;
+        button.classList.add('copied');
+        button.style.background = 'rgba(76, 175, 80, 0.95)';
+        button.style.borderColor = '#4caf50';
+        button.style.color = 'white';
+        button.innerHTML =
+          '<i class="pi pi-check" style="font-size: 11px;"></i><span>Copied!</span>';
 
-      setTimeout(() => {
-        button.classList.remove('copied');
-        button.style.background = 'rgba(255, 255, 255, 0.9)';
-        button.style.borderColor = '#e0e0e0';
-        button.style.color = '#333';
-        button.innerHTML = originalHTML;
-      }, 2000);
-    }).catch(err => {
-      console.error('Failed to copy:', err);
-    });
+        setTimeout(() => {
+          button.classList.remove('copied');
+          button.style.background = 'rgba(255, 255, 255, 0.9)';
+          button.style.borderColor = '#e0e0e0';
+          button.style.color = '#333';
+          button.innerHTML = originalHTML;
+        }, 2000);
+      })
+      .catch((err) => {
+        console.error('Failed to copy:', err);
+      });
   }
 
   /**
    * Get category by ID
    */
   getCategoryById(id: string): GuidelineCategory | undefined {
-    return this.categories().find(c => c.id === id);
+    return this.categories().find((c) => c.id === id);
   }
 
   /**
@@ -279,5 +288,3 @@ export class AngularGuidelinesAppComponent implements OnInit {
     this.loadCategory(currentCategory);
   }
 }
-
-

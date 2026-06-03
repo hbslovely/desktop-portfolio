@@ -96,11 +96,11 @@ export interface SearchResult {
   bestMove: Move | null;
   score: number;
   nodesSearched: number;
-  time?: number;      // milliseconds
-  timeMs?: number;    // alias for time
+  time?: number; // milliseconds
+  timeMs?: number; // alias for time
   depth: number;
-  pv?: Move[];        // Principal Variation
-  principalVariation?: Move[];  // Alias for pv
+  pv?: Move[]; // Principal Variation
+  principalVariation?: Move[]; // Alias for pv
 }
 
 /**
@@ -110,7 +110,7 @@ export interface AlgorithmConfig {
   maxDepth: number;
   maxTimeMs?: number;
   useOpeningBook?: boolean;
-  useQuiescence?: boolean;      // Tìm kiếm yên tĩnh
+  useQuiescence?: boolean; // Tìm kiếm yên tĩnh
   useIterativeDeepening?: boolean;
   useTranspositionTable?: boolean;
 }

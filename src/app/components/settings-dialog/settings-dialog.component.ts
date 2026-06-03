@@ -25,7 +25,7 @@ export interface SettingsData {
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './settings-dialog.component.html',
-  styleUrl: './settings-dialog.component.scss'
+  styleUrl: './settings-dialog.component.scss',
 })
 export class SettingsDialogComponent implements OnChanges {
   @Input() isVisible = false;
@@ -33,8 +33,6 @@ export class SettingsDialogComponent implements OnChanges {
   @Output() onSettingsChange = new EventEmitter<SettingsData>();
 
   ngOnChanges() {
-
-    
     // Reload settings when dialog becomes visible
     if (this.isVisible) {
       this.loadSettings();
@@ -60,27 +58,27 @@ export class SettingsDialogComponent implements OnChanges {
       id: '1',
       name: 'Wallpaper 1',
       path: 'assets/images/lib/wallpaper/1.png',
-      preview: 'assets/images/lib/wallpaper/1.png'
+      preview: 'assets/images/lib/wallpaper/1.png',
     },
     {
       id: '2',
       name: 'Wallpaper 2',
       path: 'assets/images/lib/wallpaper/2.png',
-      preview: 'assets/images/lib/wallpaper/2.png'
+      preview: 'assets/images/lib/wallpaper/2.png',
     },
     {
       id: '3',
       name: 'Wallpaper 3',
       path: 'assets/images/lib/wallpaper/3.png',
-      preview: 'assets/images/lib/wallpaper/3.png'
-    }
+      preview: 'assets/images/lib/wallpaper/3.png',
+    },
   ];
 
   // Theme options
   themes = [
     { value: 'light', label: 'Light', icon: 'pi pi-sun' },
     { value: 'dark', label: 'Dark', icon: 'pi pi-moon' },
-    { value: 'auto', label: 'Auto', icon: 'pi pi-circle' }
+    { value: 'auto', label: 'Auto', icon: 'pi pi-circle' },
   ];
 
   // Theme color options
@@ -92,7 +90,7 @@ export class SettingsDialogComponent implements OnChanges {
     { value: '#6f42c1', label: 'Purple', color: '#6f42c1' },
     { value: '#fd7e14', label: 'Orange', color: '#fd7e14' },
     { value: '#20c997', label: 'Teal', color: '#20c997' },
-    { value: '#e83e8c', label: 'Pink', color: '#e83e8c' }
+    { value: '#e83e8c', label: 'Pink', color: '#e83e8c' },
   ];
 
   // Window color options
@@ -102,14 +100,14 @@ export class SettingsDialogComponent implements OnChanges {
     { value: '#1a1a1a', label: 'Black', color: '#1a1a1a' },
     { value: '#2c3e50', label: 'Dark Blue', color: '#2c3e50' },
     { value: '#34495e', label: 'Slate', color: '#34495e' },
-    { value: '#1e272e', label: 'Dark Navy', color: '#1e272e' }
+    { value: '#1e272e', label: 'Dark Navy', color: '#1e272e' },
   ];
 
   // Font size options
   readonly fontSizes = [
     { value: 'small' as const, label: 'Small' },
     { value: 'medium' as const, label: 'Medium' },
-    { value: 'large' as const, label: 'Large' }
+    { value: 'large' as const, label: 'Large' },
   ] as const;
 
   // Computed settings data
@@ -121,23 +119,22 @@ export class SettingsDialogComponent implements OnChanges {
     windowColor: this.selectedWindowColor(),
     windowOpacity: this.windowOpacity(),
     animations: this.animations(),
-    fontSize: this.fontSize()
+    fontSize: this.fontSize(),
   }));
 
   // Check if there are unsaved changes
   hasUnsavedChanges = computed(() => {
     const current = this.settingsData();
     const original = this.originalSettings();
-    
+
     if (!original) return true;
-    
+
     return JSON.stringify(current) !== JSON.stringify(original);
   });
 
   ngOnInit() {
     // Load saved settings from localStorage
     this.loadSettings();
-
   }
 
   loadSettings() {
@@ -145,10 +142,10 @@ export class SettingsDialogComponent implements OnChanges {
     if (savedSettings) {
       try {
         const settings = JSON.parse(savedSettings);
-        
+
         // Store original settings for cancel functionality
         this.originalSettings.set(settings);
-        
+
         // Set current values (these can be changed temporarily)
         this.selectedWallpaper.set(settings.wallpaper || '1');
         this.selectedTheme.set(settings.theme || 'auto');
@@ -158,7 +155,7 @@ export class SettingsDialogComponent implements OnChanges {
         this.windowOpacity.set(settings.windowOpacity || 95);
         this.animations.set(settings.animations !== false);
         this.fontSize.set(settings.fontSize || 'medium');
-        
+
         // Emit the loaded settings to parent component
         this.onSettingsChange.emit(settings);
       } catch (error) {
@@ -180,12 +177,12 @@ export class SettingsDialogComponent implements OnChanges {
       windowColor: '#1e3a5f',
       windowOpacity: 95,
       animations: true,
-      fontSize: 'medium'
+      fontSize: 'medium',
     };
-    
+
     // Store original settings
     this.originalSettings.set(defaultSettings);
-    
+
     this.selectedWallpaper.set(defaultSettings.wallpaper);
     this.selectedTheme.set(defaultSettings.theme);
     this.selectedThemeColor.set(defaultSettings.themeColor);
@@ -194,7 +191,7 @@ export class SettingsDialogComponent implements OnChanges {
     this.windowOpacity.set(defaultSettings.windowOpacity);
     this.animations.set(defaultSettings.animations);
     this.fontSize.set(defaultSettings.fontSize);
-    
+
     // Save default settings
     this.saveSettingsToStorage(defaultSettings);
   }
@@ -229,7 +226,7 @@ export class SettingsDialogComponent implements OnChanges {
   }
 
   onBackdropToggle() {
-    this.backdropEnabled.update(enabled => !enabled);
+    this.backdropEnabled.update((enabled) => !enabled);
     this.applySettingsPreview();
   }
 
@@ -245,7 +242,7 @@ export class SettingsDialogComponent implements OnChanges {
   }
 
   onAnimationsToggle() {
-    this.animations.update(enabled => !enabled);
+    this.animations.update((enabled) => !enabled);
     this.applySettingsPreview();
   }
 
@@ -273,11 +270,11 @@ export class SettingsDialogComponent implements OnChanges {
       this.windowOpacity.set(original.windowOpacity);
       this.animations.set(original.animations);
       this.fontSize.set(original.fontSize);
-      
+
       // Apply the restored settings
       this.onSettingsChange.emit(original);
     }
-    
+
     // Close dialog
     this.onClose.emit();
   }
@@ -287,10 +284,10 @@ export class SettingsDialogComponent implements OnChanges {
     const settings = this.settingsData();
 
     this.saveSettingsToStorage(settings);
-    
+
     // Update original settings to current values
     this.originalSettings.set(settings);
-    
+
     // Emit the applied settings
     this.onSettingsChange.emit(settings);
   }

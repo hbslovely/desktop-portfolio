@@ -79,9 +79,7 @@ export class FeedingMomComponent {
     POSTPARTUM_STAGES.findIndex((s) => s.id === this.activeMomStage().id)
   );
 
-  currentMomStage = computed(() =>
-    resolvePostpartumStage(this.ageInDays() ?? 0)
-  );
+  currentMomStage = computed(() => resolvePostpartumStage(this.ageInDays() ?? 0));
 
   isMomStageAuto = computed(() => {
     if (this.momFoodStageOverride() === null) return true;
@@ -116,9 +114,7 @@ export class FeedingMomComponent {
 
   selectStageIndex(index: number): void {
     const i = Math.max(0, Math.min(POSTPARTUM_STAGES.length - 1, index));
-    const autoIdx = POSTPARTUM_STAGES.findIndex(
-      (s) => s.id === this.currentMomStage().id
-    );
+    const autoIdx = POSTPARTUM_STAGES.findIndex((s) => s.id === this.currentMomStage().id);
     this.momFoodStageOverride.set(i === autoIdx ? null : i);
     this.activeSection.set('food');
   }
