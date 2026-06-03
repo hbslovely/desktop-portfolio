@@ -309,6 +309,10 @@
   padding: 8px 16px;
   cursor: pointer;
   transition: all 0.2s ease;
+  
+  // 🚀 Progressive rendering - items appear individually
+  animation: fadeInUp 0.2s ease-out;
+  animation-fill-mode: both;
   border-radius: 0;
   
   &:hover {
@@ -390,6 +394,10 @@
   align-items: center;
   padding: 12px 8px;
   border-radius: 8px;
+  
+  // 🚀 Progressive rendering - items appear individually
+  animation: fadeInUp 0.2s ease-out;
+  animation-fill-mode: both;
   cursor: pointer;
   transition: all 0.2s ease;
   text-align: center;
@@ -567,6 +575,15 @@
     max-height: 300px;
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    
+    // 🚀 Progressive loading animation
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+    
+    // Will be set to opacity: 1 in onImageLoad()
+    &.loaded {
+      opacity: 1;
+    }
   }
 }
 
@@ -714,3 +731,33 @@
     background: #a8b0b7;
   }
 }
+
+// 🚀 Progressive Loading Animations
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Staggered animation delay for items
+.list-item:nth-child(1) { animation-delay: 0.05s; }
+.list-item:nth-child(2) { animation-delay: 0.1s; }
+.list-item:nth-child(3) { animation-delay: 0.15s; }
+.list-item:nth-child(4) { animation-delay: 0.2s; }
+.list-item:nth-child(5) { animation-delay: 0.25s; }
+.list-item:nth-child(n+6) { animation-delay: 0.3s; }
+
+.icon-item:nth-child(1) { animation-delay: 0.05s; }
+.icon-item:nth-child(2) { animation-delay: 0.1s; }
+.icon-item:nth-child(3) { animation-delay: 0.15s; }
+.icon-item:nth-child(4) { animation-delay: 0.2s; }
+.icon-item:nth-child(5) { animation-delay: 0.25s; }
+.icon-item:nth-child(6) { animation-delay: 0.3s; }
+.icon-item:nth-child(7) { animation-delay: 0.35s; }
+.icon-item:nth-child(8) { animation-delay: 0.4s; }
+.icon-item:nth-child(n+9) { animation-delay: 0.45s; }

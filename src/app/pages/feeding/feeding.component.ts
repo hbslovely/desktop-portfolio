@@ -558,11 +558,22 @@ export class FeedingComponent {
 
     if (rows.length === 0) return;
 
-    forkJoin(rows.map((row) => this.eventLogService.acknowledgeEvent(row)))
-      .pipe(catchError(() => of([])))
-      .subscribe(() => {
-        this.eventLogService.loadEvents().subscribe();
-      });
+    // 🚀 Acknowledge each event independently - không đợi nhau
+    let completedCount = 0;
+    const totalCount = rows.length;
+    
+    rows.forEach((row) => {
+      this.eventLogService.acknowledgeEvent(row)
+        .pipe(catchError(() => of(null)))
+        .subscribe(() => {
+          completedCount++;
+          
+          // Reload events after all completed (hoặc có thể reload ngay sau từng cái)
+          if (completedCount === totalCount) {
+            this.eventLogService.loadEvents().subscribe();
+          }
+        });
+    });
   }
 
   formatReminderEventWhen(ev: { date: string; time: string }): string {

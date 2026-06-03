@@ -151,7 +151,7 @@ export class ExplorerComponent implements OnInit, OnDestroy {
     return virtualFiles[path]?.htmlContent || virtualFiles[path]?.textContent || null;
   }
 
-  // Computed current folder items
+  // Computed current folder items với progressive loading
   currentItems = computed(() => {
     // If searching, return search results
     if (this.isSearching() && this.searchQuery().trim()) {
@@ -162,11 +162,13 @@ export class ExplorerComponent implements OnInit, OnDestroy {
     if (!fs) return [];
 
     const path = this.currentPath();
-    if (path === '/') {
-      return fs.children || [];
-    }
+    const items = path === '/' 
+      ? (fs.children || [])
+      : (this.findItemByPath(fs, path)?.children || []);
 
-    return this.findItemByPath(fs, path)?.children || [];
+    // 🚀 Return items immediately without waiting for images
+    // Images will load individually với lazy loading
+    return items;
   });
 
   // Computed navigation state
@@ -650,6 +652,19 @@ export class ExplorerComponent implements OnInit, OnDestroy {
       return item.content;
     }
     return `assets/explorer${item.path}`;
+  }
+
+  onImageLoad(event: Event): void {
+    // Image loaded successfully - add fade-in effect
+    const img = event.target as HTMLImageElement;
+    img.classList.add('loaded');
+    img.style.opacity = '1';
+  }
+
+  onImageError(event: Event): void {
+    // Fallback for failed image loads
+    const img = event.target as HTMLImageElement;
+    img.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiBmaWxsPSIjZjNmNGY2Ii8+CjxwYXRoIGQ9Ik0yNCAyNGw0IDR2LThoLTR2NHptMC04aDR2NGgtNHYtNHoiIGZpbGw9IiM5Y2EzYWYiLz4KPC9zdmc+';
   }
 
   isTextFile(item: any): boolean {

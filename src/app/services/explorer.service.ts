@@ -31,6 +31,12 @@ export interface ExplorerEntry {
   sizeBytes?: number;
   /** Row trong sheet (1-based, header = row 1) — chỉ có khi load từ sheet */
   rowIndex?: number;
+  
+  // Loading states for UI
+  /** Đang loading preview/content từ Drive */
+  isLoading?: boolean;
+  /** Lỗi khi load preview/content */
+  loadError?: boolean;
 }
 
 export interface ExplorerResponse {

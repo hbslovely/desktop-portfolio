@@ -192,7 +192,12 @@
           
           <!-- Image Preview -->
           <div *ngIf="isImageFile(selectedItem())" class="image-preview">
-            <img [src]="getImagePath(selectedItem())" [alt]="selectedItem()?.name" />
+            <img 
+              [src]="getImagePath(selectedItem())" 
+              [alt]="selectedItem()?.name"
+              loading="lazy"
+              (load)="onImageLoad($event)"
+              (error)="onImageError($event)" />
           </div>
           
           <!-- Text Preview -->

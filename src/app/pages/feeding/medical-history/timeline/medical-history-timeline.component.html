@@ -38,23 +38,24 @@
                   (click)="onOpenPreview(e)"
                 >
                   <span class="mh-card__photo-frame">
+                    <!-- Loading indicator -->
+                    <div *ngIf="att.isLoading" class="mh-card__photo-loading">
+                      <i class="pi pi-spin pi-spinner"></i>
+                      <span>Đang tải...</span>
+                    </div>
+                    
+                    <!-- Actual image -->
                     <img
+                      *ngIf="!att.isLoading"
                       class="mh-card__photo-img"
-                      [src]="att.previewUrl || att.content || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjZjNmNGY2Ii8+CjxwYXRoIGQ9Im0xMiAxMiAyIDJoNXYtNXoiIGZpbGw9IiM5Y2EzYWYiLz4KPC9zdmc+'"
+                      [src]="att.previewUrl || att.content || placeholderSvg"
                       alt="Ảnh đính kèm"
+                      (error)="onImageError($event, att)"
                     />
                   </span>
                   <span class="mh-card__photo-cap">
                     <i class="pi pi-search-plus"></i> Xem ảnh
                   </span>
-                </button>
-                <button
-                  *ngIf="att.driveFileId || (att.id && att.content)"
-                  type="button"
-                  class="mh-card__photo-docs btn ghost sm"
-                  (click)="onOpenInDocuments(e)"
-                >
-                  <i class="pi pi-folder-open"></i> Tài liệu
                 </button>
               </div>
 

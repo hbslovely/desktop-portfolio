@@ -1,5 +1,6 @@
 import {
   ChangeDetectionStrategy,
+  ChangeDetectorRef,
   Component,
   DestroyRef,
   EventEmitter,
@@ -13,7 +14,8 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
-import { forkJoin } from 'rxjs';
+import { of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import {
   ExplorerEntry,
   ExplorerService,
@@ -61,6 +63,7 @@ export class MedicalHistoryComponent {
   private explorerService = inject(ExplorerService);
   private destroyRef = inject(DestroyRef);
   private activityLogService = inject(ActivityLogService);
+  private cdr = inject(ChangeDetectorRef);
 
   /** Cùng `?user=` với trang feeding */
   user = input<string>('guest');
@@ -227,30 +230,63 @@ export class MedicalHistoryComponent {
   load() {
     this.loading.set(true);
     this.errorMsg.set('');
-    forkJoin({
-      medical: this.medicalService.getEntries(),
-      explorer: this.explorerService.getEntries(),
-    })
+    
+    // Track completion của từng API call
+    let medicalLoaded = false;
+    let explorerLoaded = false;
+    let medicalData: any[] = [];
+    let explorerData: any[] = [];
+    
+    const checkAndFinalize = () => {
+      if (medicalLoaded && explorerLoaded) {
+        // Cả 2 APIs đã hoàn thành, finalize
+        const folder = explorerData.find(
+          (e) =>
+            e.type === 'folder' &&
+            e.parentId === EXPLORER_ROOT_ID &&
+            e.name === MEDICAL_FOLDER_NAME
+        );
+        this.medicalFolderId.set(folder?.id ?? null);
+        this.loading.set(false);
+        
+        // 🚀 Pre-load all medical attachments
+        this.preloadAttachments(medicalData);
+      }
+    };
+    
+    // 🚀 Load Medical History - độc lập
+    this.medicalService.getEntries()
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: ({ medical, explorer }) => {
+        next: (medical) => {
           this.entries.set(medical);
-          this.explorerEntries.set(explorer);
-          const folder = explorer.find(
-            (e) =>
-              e.type === 'folder' &&
-              e.parentId === EXPLORER_ROOT_ID &&
-              e.name === MEDICAL_FOLDER_NAME
-          );
-          this.medicalFolderId.set(folder?.id ?? null);
-          this.loading.set(false);
+          medicalData = medical;
+          medicalLoaded = true;
+          checkAndFinalize();
         },
         error: (err) => {
-          console.error(err);
+          console.error('Medical load failed:', err);
+          this.errorMsg.set('Không tải được Medical History data.');
           this.loading.set(false);
-          this.errorMsg.set(
-            'Không tải được tiền sử. Thêm tab "MedicalHistory" trong Sheet và redeploy Apps Script (xem docs/feeding/FEEDING_SETUP.md).'
-          );
+        },
+      });
+    
+    // 🚀 Load Explorer - độc lập, không block medical
+    this.explorerService.getEntries()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (explorer) => {
+          this.explorerEntries.set(explorer);
+          explorerData = explorer;
+          explorerLoaded = true;
+          checkAndFinalize();
+        },
+        error: (err) => {
+          console.error('Explorer load failed:', err);
+          // Explorer fail không block medical data
+          explorerLoaded = true; // Set true để không block finalization
+          explorerData = []; // Empty fallback
+          checkAndFinalize();
         },
       });
   }
@@ -261,11 +297,21 @@ export class MedicalHistoryComponent {
     setTimeout(() => this.load(), 600);
   }
 
+  // Cache để lưu trữ các attachment đã enriched với previewUrl/content
+  private attachmentCache = new Map<string, ExplorerEntry>();
+  
+
   attachmentFor(entry: MedicalHistoryEntry): ExplorerEntry | undefined {
     // Ưu tiên driveFileId trực tiếp từ medical entry  
     if (entry.driveFileId) {
+      // Kiểm tra cache trước
+      const cached = this.attachmentCache.get(entry.driveFileId);
+      if (cached) {
+        return cached;
+      }
+
       // Create a minimal ExplorerEntry object for the driveFileId
-      return {
+      const attachment: ExplorerEntry = {
         id: -1, // Fake ID for Drive-only files
         name: `med-attachment-${entry.driveFileId}`,
         type: 'file' as ExplorerType,
@@ -273,7 +319,16 @@ export class MedicalHistoryComponent {
         driveFileId: entry.driveFileId,
         mimeType: 'image/jpeg',
         storageStatus: 'drive',
+        // Add loading state properties
+        previewUrl: undefined, // Will be populated when loaded
+        isLoading: true, // Custom property để track loading state
+        loadError: false,
       };
+      
+      // Cache ngay lập tức để tránh multiple requests
+      this.attachmentCache.set(entry.driveFileId, attachment);
+      
+      return attachment;
     }
     
     // Fallback: tìm trong Explorer entries (để tương thích với data cũ)
@@ -294,6 +349,75 @@ export class MedicalHistoryComponent {
 
   readonly resolveAttachment = (entry: MedicalHistoryEntry) =>
     this.attachmentFor(entry);
+
+  private preloadAttachments(entries: MedicalHistoryEntry[]): void {
+    // Collect tất cả driveFileIds cần load (bao gồm cả những item đã có trong cache nhưng chưa load xong)
+    const driveFileIds = entries
+      .map(entry => entry.driveFileId)
+      .filter((id): id is string => {
+        if (!id) return false;
+        
+        const cached = this.attachmentCache.get(id);
+        // Load nếu: chưa có trong cache HOẶC đang loading HOẶC chưa có previewUrl
+        return !cached || cached.isLoading || !cached.previewUrl;
+      });
+
+    if (driveFileIds.length === 0) {
+      return;
+    }
+
+
+    // 🚀 Load each attachment independently - API nào về trước complete trước
+    driveFileIds.forEach((driveFileId) => {
+      this.explorerService.getFileDataUrl(driveFileId).pipe(
+        takeUntilDestroyed(this.destroyRef),
+        catchError((error) => {
+          return of({ success: false, error: error.message || 'Load failed', dataUrl: undefined });
+        })
+      ).subscribe({
+        next: (response) => {
+          const attachment = this.attachmentCache.get(driveFileId);
+          
+          if (attachment && response.success && (response as any).dataUrl) {
+            // ✅ Update cached attachment với loaded data
+            const dataUrl = (response as any).dataUrl;
+            attachment.previewUrl = dataUrl;
+            attachment.content = dataUrl; // Fallback
+            attachment.isLoading = false;
+            
+            // 🔄 Update UI ngay lập tức cho attachment này (không đợi others)
+            const currentEntries = this.entries();
+            this.entries.set([...currentEntries]);
+          } else if (attachment) {
+            // ❌ Mark as failed to load
+            attachment.isLoading = false;
+            attachment.loadError = true;
+            
+            // 🔄 Update UI ngay cả khi fail
+            const currentEntries = this.entries();
+            this.entries.set([...currentEntries]);
+          }
+        },
+        error: (error) => {
+          const attachment = this.attachmentCache.get(driveFileId);
+          if (attachment) {
+            attachment.isLoading = false;
+            attachment.loadError = true;
+          }
+          
+          // Check for Drive authorization errors
+          const isDriveAuthError = error.message && error.message.includes('DriveApp.getFileById');
+          if (isDriveAuthError) {
+            this.errorMsg.set('🚨 Apps Script chưa có quyền truy cập Google Drive. Hãy authorize Apps Script.');
+          }
+          
+          // 🔄 Update UI ngay cả khi error
+          const currentEntries = this.entries();
+          this.entries.set([...currentEntries]);
+        }
+      });
+    });
+  }
 
   openAttachmentInDocuments(entry: MedicalHistoryEntry): void {
     // Ưu tiên mở trong Explorer nếu có legacy ID
@@ -332,24 +456,38 @@ export class MedicalHistoryComponent {
     const att = this.attachmentFor(entry);
     if (!att?.driveFileId) return;
     
-    // Fetch image from Drive for preview
-    this.explorerService.getFileDataUrl(att.driveFileId)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (response) => {
-          if (response.dataUrl) {
-            this.imagePreview.set({
-              src: response.dataUrl,
-              title: entry.title || 'Ảnh đính kèm',
-              driveFileId: att.driveFileId,
-            });
-          }
-        },
-        error: (err) => {
-          console.error('Failed to load image for preview:', err);
-          this.errorMsg.set('Không tải được ảnh để xem trước.');
-        }
+    // Use cached data if available, otherwise fetch from Drive
+    if (att.previewUrl || att.content) {
+      // ⚡ Fast path: Use cached image data
+      this.imagePreview.set({
+        src: att.previewUrl || att.content || '',
+        title: entry.title || 'Ảnh đính kèm',
+        driveFileId: att.driveFileId,
       });
+    } else {
+      // 🔄 Fallback: Fetch from Drive if not cached
+      this.explorerService.getFileDataUrl(att.driveFileId)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: (response) => {
+            if (response.dataUrl) {
+              // Update cache for future use
+              att.previewUrl = response.dataUrl;
+              att.content = response.dataUrl;
+              att.isLoading = false;
+              
+              this.imagePreview.set({
+                src: response.dataUrl,
+                title: entry.title || 'Ảnh đính kèm',
+                driveFileId: att.driveFileId,
+              });
+            }
+          },
+          error: () => {
+            this.errorMsg.set('Không tải được ảnh đính kèm.');
+          }
+        });
+    }
   }
 
   closeImagePreview(): void {
