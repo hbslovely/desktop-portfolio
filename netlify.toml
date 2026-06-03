@@ -1,9 +1,23 @@
-# Angular SPA: direct URLs like /feeding must serve index.html for client routing.
-# Static assets (JS/CSS) are served first when they exist on disk.
+# Angular SPA + API proxies (mirrors vercel.json for Feeding on Netlify).
 [build]
   command = "npm run build"
   publish = "dist"
 
+# Feeding: Google Apps Script (feeding-log, weight, events, medical, activity)
+[[redirects]]
+  from = "/api/feeding-apps-script"
+  to = "https://script.google.com/macros/s/AKfycbzeEaz8xMniaEU8f-65tkER8OSCvBn1xGN0hH4GYLRAHVIlT4n6jdLHhPu-IcdCI3C05A/exec"
+  status = 200
+  force = true
+
+[[headers]]
+  for = "/api/feeding-apps-script"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "GET, POST, OPTIONS"
+    Access-Control-Allow-Headers = "Content-Type, Authorization"
+
+# SPA fallback — must be last (static files are served before redirects)
 [[redirects]]
   from = "/*"
   to = "/index.html"
