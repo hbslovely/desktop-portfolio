@@ -17,7 +17,7 @@ function normalizeBody(body) {
   }
 }
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   setCorsHeaders(res);
 
   if (req.method === 'OPTIONS') {
@@ -65,4 +65,4 @@ module.exports = async function handler(req, res) {
       error: `Feeding Apps Script proxy failed: ${message}`,
     });
   }
-};
+}
