@@ -260,10 +260,18 @@ export class ExplorerService {
    * Bây giờ có thể nhận cả Explorer ID hoặc Drive file ID.
    */
   getFileDataUrl(id: number | string): Observable<ExplorerFileResponse> {
-    return this.postToAppsScriptExpectResponse<ExplorerFileResponse>({
-      action: 'getExplorerFile',
-      id,
-    }).pipe(
+    const body: { action: string; driveFileId?: string; id?: number } = { 
+      action: 'getExplorerFile' 
+    };
+    
+    // Nếu là string và không phải số, coi như driveFileId
+    if (typeof id === 'string' && !/^\d+$/.test(id)) {
+      body.driveFileId = id;
+    } else {
+      body.id = typeof id === 'string' ? parseInt(id, 10) : id;
+    }
+
+    return this.postToAppsScriptExpectResponse<ExplorerFileResponse>(body).pipe(
       map((resp) => {
         if (!resp?.success) {
           throw new Error(resp?.error || 'Không lấy được nội dung file');

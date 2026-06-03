@@ -135,7 +135,7 @@ export class MedicalHistoryService {
         title: entry.title,
         detail: entry.detail || '',
         place: entry.place || '',
-        drive_file_id: entry.driveFileId || '',
+        attachment_id: entry.driveFileId || '',
       },
     }).pipe(catchError(() => of({ success: true })));
   }
@@ -165,7 +165,7 @@ export class MedicalHistoryService {
       Object.prototype.hasOwnProperty.call(patch, 'driveFileId')
     ) {
       const v = patch.driveFileId;
-      bodyPatch['drive_file_id'] =
+      bodyPatch['attachment_id'] =
         v === null || v === '' ? '' : v;
     }
 

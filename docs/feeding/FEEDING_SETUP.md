@@ -1,4 +1,4 @@
-# Baby App – Hướng dẫn cấu hình Google Sheets
+  # Baby App – Hướng dẫn cấu hình Google Sheets
 
 Tài liệu hướng dẫn chuẩn bị **các tab** trong Google Sheet và **Google Apps Script chung** để app `/feeding?user=<tên>` có thể đồng bộ:
 
@@ -7,7 +7,7 @@ Tài liệu hướng dẫn chuẩn bị **các tab** trong Google Sheet và **Go
 - Tab **`Weight`**: cân nặng bé (đọc / thêm / sửa / xoá).
 - Tab **`Event`**: lịch sự kiện (đọc API; thêm / sửa / xoá / acknowledge qua Apps Script) — trong app hiển thị tab **Lịch**.
 - Tab **`MedicalHistory`**: tiền sử y tế bé — Medical history V2 (đọc qua API; ghi / sửa / xoá qua Apps Script).
-- Tab **`Explorer`**: chỉ dùng tạm khi migrate từ dữ liệu cũ base64 (sau migrate có thể xoá hẳn tab).
+- **Explorer V2**: **Drive-first** - không còn dùng tab Explorer trong Sheet nữa. Files được lưu trực tiếp vào Google Drive với metadata trong PropertiesService. Hỗ trợ migration từ tab Explorer cũ.
 - Tab **`Log`**: lịch sử hoạt động (đọc API; ghi qua Apps Script).
 
 > Sheet: <https://docs.google.com/spreadsheets/d/1O4kAA61k4cX4mEwAjDy5gioVUAElCyu62Z3zPvgdDMM/edit?gid=0#gid=0>
@@ -98,7 +98,7 @@ Sau khi thêm tab, **cập nhật và redeploy** Apps Script (mục 4) để có
 | **User** | **Ngày**   | **Loại**   | **Tiêu đề** | **Chi tiết** | **Nơi khám** | **id file Explorer** |
 | phat     | 03/05/2026 | vaccine    | Pentaxim mũi 2 | Không sốt | BV Nhi         |                  |
 
-Cột **G**: id file ảnh trên tab `Explorer` (thư mục con « Y tế »), để trống nếu không có đính kèm — app tự ghi khi bạn đính kèm ảnh trong màn hình tiền sử.
+Cột **G**: Google Drive file ID cho ảnh đính kèm y tế, để trống nếu không có đính kèm. App tự ghi khi bạn đính kèm ảnh trong màn hình tiền sử. Files được lưu trong thư mục Drive riêng biệt (không qua Explorer tab).
 
 Quy ước:
 
@@ -106,9 +106,9 @@ Quy ước:
 - **Ngày**: `DD/MM/YYYY` — nên để cột B **Plain text**.
 - **Loại**: một trong `vaccine` | `checkup` | `medication` | `illness` | `lab` | `other` (app chuẩn hoá khi ghi).
 - **Tiêu đề**: bắt buộc; **Chi tiết** / **Nơi khám**: tuỳ chọn.
-- **Cột G**: tuỳ chọn — id file ảnh trên `Explorer` (app điền khi có đính kèm trong màn tiền sử).
+- **Cột G**: tuỳ chọn — Google Drive file ID cho ảnh đính kèm (app tự điền khi có đính kèm trong màn tiền sử).
 
-Sau khi thêm tab, **cập nhật và redeploy** Apps Script (mục 4) để có `addMedicalHistory` / `updateMedicalHistory` / `deleteMedicalHistory` (phiên bản có cột `attachment_id`).
+Sau khi thêm tab, **cập nhật và redeploy** Apps Script (mục 4) để có `addMedicalHistory` / `updateMedicalHistory` / `deleteMedicalHistory` với Drive-first attachment support.
 
 ---
 
@@ -228,8 +228,15 @@ Trong Sheet → **Extensions → Apps Script** → xoá toàn bộ code mặc đ
 
 ```javascript
 /**
- * Baby App – Google Apps Script
+ * Baby App – Google Apps Script V2.0 (Drive-first)
+ * Updated: June 3, 2026
  * Bound vào sheet 1O4kAA61k4cX4mEwAjDy5gioVUAElCyu62Z3zPvgdDMM.
+ *
+ * Major changes from V1:
+ * - Explorer V2: Drive-first storage (không dùng Sheet tabs nữa)
+ * - Medical History: hỗ trợ Drive file ID attachments trực tiếp
+ * - Migration tools: từ Explorer legacy sang Drive với batch processing
+ * - Better performance, security và scalability
  *
  * ===== Feeding actions =====
  *   addFeeding     → append cữ mới
@@ -250,26 +257,31 @@ Trong Sheet → **Extensions → Apps Script** → xoá toàn bộ code mặc đ
  *   updateEvent        → sửa ngày/giờ/tên/ghi chú/vị trí (row)
  *   deleteEvent        → xoá row
  *   acknowledgeEvent   → cột G = TRUE (ẩn nhắc)
- *   addMedicalHistory    → append tiền sử y tế
- *   updateMedicalHistory → sửa theo row
+ *   addMedicalHistory    → append tiền sử y tế (với Drive file ID)
+ *   updateMedicalHistory → sửa theo row (bao gồm attachment_id)
  *   deleteMedicalHistory → xoá row vật lý
  *
- * ===== Explorer actions =====
- *   addExplorer    → tạo folder hoặc file (auto-id, auto-stamp created_at, isDeleted=FALSE)
- *   updateExplorer → đổi name hoặc content (KHÔNG đổi type / parent_id)
- *   deleteExplorer → SOFT delete: set cột G `isDeleted=TRUE`. Folder cascade
- *                    luôn các con cháu. KHÔNG xoá row vật lý → có thể khôi phục.
- *   moveExplorer   → cut & paste 1 mảng ids (file lẫn folder) sang folder mới
- *                    Folder check chu kỳ: không cho move folder vào chính nó
- *                    hoặc descendant của nó (tránh tạo loop vô hạn).
- *   getExplorer    → trả về toàn bộ entries (đã filter isDeleted=TRUE)
- *   getExplorerFile → trả file dataUrl theo id (dùng cho private Drive preview/download)
- *   migrateExplorerToDrive → migrate batch file legacy (base64 trong sheet) sang Drive
- *   cleanupExplorerLegacyContent → dọn cột base64 sau khi migrate xong
+ * ===== Explorer V2 actions (Drive-first) =====
+ *   addExplorer    → tạo folder/file trực tiếp trong Google Drive
+ *   updateExplorer → đổi name hoặc content (metadata lưu trong PropertiesService)
+ *   deleteExplorer → SOFT delete + trash Drive objects (có thể restore)
+ *   moveExplorer   → move files/folders trong Drive với cycle detection
+ *   getExplorer    → trả về tree metadata từ PropertiesService
+ *   getExplorerFile → fetch file content từ Drive by ID hoặc driveFileId
+ *   migrateExplorerToDrive → migrate batch từ Explorer legacy sang Drive
+ *   cleanupExplorerLegacyContent → dọn base64 content sau khi migrate
  *
  * ===== Log (activity history) =====
  *   addLog         → append log entry (id, user, type, content, timestamp)
  */
+
+/***********************
+ * QUAN TRỌNG: Cấu hình Drive folder trước khi deploy:
+ * 1. Tạo folder trên Google Drive
+ * 2. Copy folder ID vào EXPL_DRIVE_FOLDER_ID bên dưới
+ * 3. Grant permissions cho Apps Script bằng cách chạy authorizeDriveAccess()
+ * 4. Test write permissions bằng authorizeDriveWrite()
+ ***********************/
 
 const FEED_SHEET = 'Feeding';
 const SETTINGS_SHEET = 'Settings';
@@ -288,7 +300,7 @@ const EV_USER = 1, EV_DATE = 2, EV_TIME = 3, EV_TITLE = 4, EV_NOTE = 5, EV_PLACE
 // Weight columns (1-based): User | Ngày DD/MM/YYYY | kg | Chiều cao(cm, optional) | Ghi chú
 const W_USER = 1, W_DATE = 2, W_WEIGHT = 3, W_HEIGHT = 4, W_NOTE = 5;
 
-// MedicalHistory columns (1-based): User | Ngày | Loại | Tiêu đề | Chi tiết | Nơi khám | id file Explorer
+// MedicalHistory columns (1-based): User | Ngày | Loại | Tiêu đề | Chi tiết | Nơi khám | Drive file ID
 const M_USER = 1, M_DATE = 2, M_KIND = 3, M_TITLE = 4, M_DETAIL = 5, M_PLACE = 6,
   M_ATTACHMENT = 7;
 
@@ -1625,6 +1637,17 @@ function testAddLog() {
     }
   });
   Logger.log(JSON.stringify(result));
+}
+
+function authorizeDriveAccess() {
+  return DriveApp.getFolderById(EXPL_DRIVE_FOLDER_ID).getName();
+}
+
+function authorizeDriveWrite() {
+  const root = DriveApp.getFolderById(EXPL_DRIVE_FOLDER_ID);
+  const tmp = root.createFolder('tmp-auth-' + Date.now());
+  tmp.setTrashed(true);
+  return 'ok';
 }
 ```
 
