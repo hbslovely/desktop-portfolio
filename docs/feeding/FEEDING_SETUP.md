@@ -332,9 +332,24 @@ function _buildOverflowCols() {
   return cols;
 }
 
+function doOptions(e) {
+  // Handle CORS preflight requests from mobile browsers
+  return ContentService
+    .createTextOutput('')
+    .setMimeType(ContentService.MimeType.TEXT)
+    .setHeaders({
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Max-Age': '86400'
+    });
+}
+
 function doPost(e) {
   try {
-    const body = JSON.parse(e.postData.contents || '{}');
+    // 🚀 Mobile CORS fix: Handle both application/json và text/plain
+    const rawBody = e.postData.contents || '{}';
+    const body = JSON.parse(rawBody);
     const action = body.action || '';
 
     switch (action) {
@@ -1479,7 +1494,12 @@ function _getSheet(name) {
 function _json(obj) {
   return ContentService
     .createTextOutput(JSON.stringify(obj))
-    .setMimeType(ContentService.MimeType.JSON);
+    .setMimeType(ContentService.MimeType.JSON)
+    .setHeaders({
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type'
+    });
 }
 
 function _toIntOrNull(val) {

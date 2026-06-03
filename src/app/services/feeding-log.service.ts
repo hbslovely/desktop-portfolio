@@ -493,9 +493,12 @@ export class FeedingLogService {
     const isProxy = !environment.production;
 
     if (isProxy) {
-      const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+      // 🚀 Mobile CORS fix: Avoid preflight by using simple content-type for dev proxy
+      const headers = new HttpHeaders({ 
+        'Content-Type': 'text/plain;charset=UTF-8' 
+      });
       return this.http
-        .post<FeedingSheetResponse>(url, body, { headers })
+        .post<FeedingSheetResponse>(url, JSON.stringify(body), { headers })
         .pipe(
           map((resp) => {
             return resp;

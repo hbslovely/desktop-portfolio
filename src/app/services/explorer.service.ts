@@ -2,6 +2,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, from, of, throwError } from 'rxjs';
 import { catchError, map, mergeMap, scan, switchMap, takeLast } from 'rxjs/operators';
+import { environment } from '../../environments/environment';
 
 export type ExplorerType = 'folder' | 'file';
 
@@ -76,7 +77,9 @@ export interface ExplorerMigrationResponse {
 export class ExplorerService {
   private http = inject(HttpClient);
 
-  private readonly APPS_SCRIPT_URL = '/api/feeding-apps-script';
+  private readonly APPS_SCRIPT_URL = environment.production 
+    ? environment.googleFeedingAppsScriptUrl 
+    : '/api/feeding-apps-script';
 
   getEntries(): Observable<ExplorerEntry[]> {
     return this.postToAppsScriptExpectResponse<ExplorerResponse>({
@@ -420,8 +423,13 @@ export class ExplorerService {
       );
     }
 
-    const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
-    return this.http.post<T>(url, body, { headers });
+    // 🚀 Mobile CORS fix: Use simple content-type only for proxy (dev)
+    const isProxy = this.shouldUseJsonProxy();
+    const headers = new HttpHeaders({ 
+      'Content-Type': isProxy ? 'text/plain;charset=UTF-8' : 'application/json'
+    });
+    const requestBody = isProxy ? JSON.stringify(body) : body;
+    return this.http.post<T>(url, requestBody, { headers });
   }
 
   private shouldUseJsonProxy(): boolean {
