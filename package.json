@@ -15,9 +15,7 @@
     "lint": "ng lint",
     "lint:fix": "ng lint --fix",
     "format": "prettier --write \"src/app/**/*.{ts,html,scss,css}\"",
-    "format:check": "prettier --check \"src/app/**/*.{ts,html,scss,css}\"",
-    "download-yugioh-images": "node scripts/download-yugioh-images.js",
-    "check-yugioh-progress": "./scripts/check-download-progress.sh"
+    "format:check": "prettier --check \"src/app/**/*.{ts,html,scss,css}\""
   },
   "private": true,
   "dependencies": {

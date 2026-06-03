@@ -7,7 +7,7 @@ A Windows-style desktop experience built with **Angular 17**, bundling productiv
 - **Desktop shell** — draggable icons, multi-window layout, Explorer file tree, rich text editor, calculator, paint, and more
 - **Life & family apps** — feeding tracker, expense manager, calendar (lunar), booking, weight/medical history via Google Sheets
 - **Finance & data** — stock charts, FireAnt integration, business management, neural-network experiments
-- **Reference & media** — Yu-Gi-Oh! card browser, Angular docs reader, news/weather, OCR, image search
+- **Reference & media** — Angular docs reader, news/weather, OCR, image search
 - **Real-time** — optional signaling server for peer features; local API server for stock and file operations
 
 ## Tech stack
@@ -68,7 +68,7 @@ desktop-portfolio/
 ├── server/                 # Local Node API (stocks, GitHub sync, …)
 ├── signaling-server/       # WebRTC signaling (optional)
 ├── docs/                   # Project documentation (see docs/README.md)
-├── scripts/                # Maintenance scripts (e.g. Yu-Gi-Oh images)
+├── scripts/                # Maintenance scripts
 └── proxy.conf.json         # Dev proxy to API & external services
 ```
 
@@ -83,7 +83,7 @@ All guides live under **[docs/](./docs/README.md)**:
 | [API](./docs/api/) | REST API setup and debugging |
 | [Integrations](./docs/integrations/) | Google Apps Script, GitHub App, FireAnt |
 | [Feeding](./docs/feeding/) | Baby feeding tracker & Sheets setup |
-| [Apps](./docs/apps/) | Per-app notes (Yu-Gi-Oh, Angular Love, editor, …) |
+| [Apps](./docs/apps/) | Per-app notes (Angular Love, editor, …) |
 | [Infrastructure](./docs/infrastructure/) | Docker notes |
 
 Submodule READMEs:

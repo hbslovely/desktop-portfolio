@@ -80,20 +80,6 @@ Project documentation for **Desktop Portfolio**. Guides are grouped by topic; st
 | [ANGULAR_LOVE_DYNAMIC_API.md](./apps/ANGULAR_LOVE_DYNAMIC_API.md) | Dynamic API details |
 | [ANGULAR_LOVE_LOCALSTORAGE_SUMMARY.md](./apps/ANGULAR_LOVE_LOCALSTORAGE_SUMMARY.md) | LocalStorage usage |
 
-### Yu-Gi-Oh! app
-
-| Document | Description |
-|----------|-------------|
-| [YUGIOH_APP_DOCUMENTATION.md](./apps/YUGIOH_APP_DOCUMENTATION.md) | Main documentation |
-| [YUGIOH_APP_SUMMARY.md](./apps/YUGIOH_APP_SUMMARY.md) | Summary |
-| [YUGIOH_API_EXAMPLES.md](./apps/YUGIOH_API_EXAMPLES.md) | API examples |
-| [YUGIOH_IMAGE_DOWNLOAD.md](./apps/YUGIOH_IMAGE_DOWNLOAD.md) | Image download guide |
-| [YUGIOH_DOWNLOAD_STATUS.md](./apps/YUGIOH_DOWNLOAD_STATUS.md) | Download status |
-| [YUGIOH_LOCAL_IMAGES_CHANGES.md](./apps/YUGIOH_LOCAL_IMAGES_CHANGES.md) | Local images implementation |
-| [YUGIOH_CARD_DETAIL_UPDATE.md](./apps/YUGIOH_CARD_DETAIL_UPDATE.md) | Card detail view |
-| [YUGIOH_LAZY_LOADING_UPDATE.md](./apps/YUGIOH_LAZY_LOADING_UPDATE.md) | Lazy loading |
-| [YUGIOH_FINAL_STATUS.md](./apps/YUGIOH_FINAL_STATUS.md) | Final status |
-
 ## Infrastructure
 
 | Document | Description |

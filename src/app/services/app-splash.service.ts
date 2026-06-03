@@ -50,11 +50,6 @@ export class AppSplashService {
       loadingSteps: ['Đang kết nối Tuổi Trẻ...', 'Đang tải bài viết...', 'Chuẩn bị hiển thị...'],
       duration: 1200,
     },
-    yugioh: {
-      appName: 'Yu-Gi-Oh! Cards',
-      loadingSteps: ['Đang tải database thẻ bài...', 'Đang tải hình ảnh...', "It's time to duel!"],
-      duration: 1400,
-    },
     countries: {
       appName: 'Countries',
       loadingSteps: ['Đang tải dữ liệu quốc gia...', 'Đang xử lý bản đồ...', 'Sẵn sàng khám phá!'],
@@ -193,7 +188,6 @@ export class AppSplashService {
       'weather',
       'news',
       'tuoitre-news',
-      'yugioh',
       'countries',
       'dictionary',
       'music',

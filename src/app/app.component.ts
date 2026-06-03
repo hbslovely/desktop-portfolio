@@ -34,8 +34,6 @@ import { SettingsAppComponent } from './components/apps/settings-app/settings-ap
 import { WeatherAppComponent } from './components/apps/weather-app/weather-app.component';
 import { DictionaryAppComponent } from './components/apps/dictionary-app/dictionary-app.component';
 import { CountriesAppComponent } from './components/apps/countries-app/countries-app.component';
-import { YugiohAppComponent } from './components/apps/yugioh-app/yugioh-app.component';
-import { YugiohCardDetailComponent } from './components/apps/yugioh-card-detail/yugioh-card-detail.component';
 import { CalendarAppComponent } from './components/apps/calendar-app/calendar-app.component';
 import { AngularLoveAppComponent } from './components/apps/angular-love-app/angular-love-app.component';
 import { MusicAppComponent } from './components/apps/music-app/music-app.component';
@@ -108,8 +106,6 @@ interface WindowConfig {
     WeatherAppComponent,
     DictionaryAppComponent,
     CountriesAppComponent,
-    YugiohAppComponent,
-    YugiohCardDetailComponent,
     CalendarAppComponent,
     AngularLoveAppComponent,
     MusicAppComponent,
@@ -449,7 +445,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
         { id: 'hcmc', name: 'Ho Chi Minh City', icon: 'pi pi-globe' },
         { id: 'news', name: 'News Headlines', icon: 'pi pi-globe' },
         { id: 'weather', name: 'Weather Forecast', icon: 'pi pi-cloud' },
-        { id: 'yugioh', name: 'Yu-Gi-Oh! Cards', icon: 'pi pi-images' },
       ],
     },
     {

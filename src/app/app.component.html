@@ -1042,15 +1042,6 @@
         <app-dictionary-app *ngSwitchCase="'dictionary'"></app-dictionary-app>
         <app-countries-app *ngSwitchCase="'countries'"></app-countries-app>
 
-        <app-yugioh-app *ngSwitchCase="'yugioh'"></app-yugioh-app>
-
-        <app-yugioh-card-detail
-          *ngSwitchCase="'yugioh-card-detail'"
-          [cardId]="window.data?.cardId"
-          [cardName]="window.data?.cardName"
-        >
-        </app-yugioh-card-detail>
-
         <app-calendar-app *ngSwitchCase="'calendar'"></app-calendar-app>
 
         <app-angular-love-app *ngSwitchCase="'angular-love'"></app-angular-love-app>
