@@ -334,15 +334,8 @@ function _buildOverflowCols() {
 
 function doOptions(e) {
   // Handle CORS preflight requests from mobile browsers
-  return ContentService
-    .createTextOutput('')
-    .setMimeType(ContentService.MimeType.TEXT)
-    .setHeaders({
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-      'Access-Control-Max-Age': '86400'
-    });
+  // Google Apps Script auto-handles CORS when deployment access = "Anyone"
+  return _json({ success: true, message: 'CORS preflight handled' });
 }
 
 function doPost(e) {
@@ -1494,12 +1487,7 @@ function _getSheet(name) {
 function _json(obj) {
   return ContentService
     .createTextOutput(JSON.stringify(obj))
-    .setMimeType(ContentService.MimeType.JSON)
-    .setHeaders({
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type'
-    });
+    .setMimeType(ContentService.MimeType.JSON);
 }
 
 function _toIntOrNull(val) {
@@ -1682,7 +1670,7 @@ function authorizeDriveWrite() {
 3. Cấu hình:
    - **Description**: `Baby App API v1`
    - **Execute as**: **Me**
-   - **Who has access**: **Anyone** *(không phải "Anyone with Google account" – sẽ bị 403)*.
+   - **Who has access**: **Anyone** *(QUAN TRỌNG: không phải "Anyone with Google account" – sẽ bị CORS errors trên mobile)*.
 4. **Deploy** → cấp quyền cho script (Allow).
 5. Copy **Web app URL** dạng:
    `https://script.google.com/macros/s/AKfycbXXXX...XXXX/exec`
@@ -1826,6 +1814,7 @@ Phải trả về JSON `{ success: true, ... }`. Nếu thấy `Script function n
 | `Không tải được dữ liệu`                         | Tab tương ứng (`Feeding` / `Explorer`) chưa tồn tại, hoặc sheet chưa share "Anyone with the link (Viewer)", hoặc API key sai/quota.                                              |
 | `Lưu thất bại` khi POST                          | `googleFeedingAppsScriptUrl` chưa set, hoặc proxy `/api/feeding-apps-script` còn placeholder, hoặc deployment đã bị disable.                                                    |
 | `403 Forbidden` khi POST                         | Deploy settings → **Who has access** phải là **Anyone**.                                                                                                                          |
+| Mobile CORS errors (`Status code: 405`)          | 1. Apps Script deployment → **Who has access** = **Anyone** (không phải "Anyone with Google account"). 2. Redeploy Apps Script với new version. 3. Mobile browsers có stricter CORS policies. |
 | File upload thất bại với lỗi "quá lớn"           | App giới hạn upload để phù hợp free-tier và Apps Script runtime (mặc định 10MB/file). Hãy giảm kích thước file rồi thử lại. |
 | Không tải được preview/download từ Explorer      | Thường do Apps Script chưa có action `getExplorerFile`, hoặc endpoint prod không đi qua proxy `/api/feeding-apps-script` nên không đọc được JSON response. |
 | Không xoá được folder                            | Folder đó là root logic của Explorer (`id=1`) hoặc folder Drive tương ứng bị khoá quyền. Kiểm tra quyền của acc A trên folder Drive acc B.                                      |
