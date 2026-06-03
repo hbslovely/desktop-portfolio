@@ -1,0 +1,10 @@
+# Angular SPA: direct URLs like /feeding must serve index.html for client routing.
+# Static assets (JS/CSS) are served first when they exist on disk.
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
