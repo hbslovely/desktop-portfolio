@@ -1,0 +1,144 @@
+# End of UTC day: commit package.json daily patch, then tag v<version>.
+
+name: Daily patch release
+
+on:
+  schedule:
+    - cron: "55 23 * * *"
+  workflow_dispatch:
+    inputs:
+      date:
+        description: "UTC date (YYYY-MM-DD); default today UTC"
+        required: false
+        type: string
+      force:
+        description: "Release even with no commits that day"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: daily-patch-${{ github.event.inputs.date || 'auto' }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Daily patch if changed
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Evaluate day and prepare release
+        id: prep
+        run: |
+          set -euo pipefail
+
+          DAY="${{ github.event.inputs.date }}"
+          if [ -z "${DAY}" ]; then
+            DAY="$(date -u +%Y-%m-%d)"
+          fi
+
+          if ! echo "${DAY}" | grep -qE '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'; then
+            echo "Invalid date: ${DAY}"
+            exit 1
+          fi
+
+          DAILY_MARKER="daily/${DAY}"
+          NEXT_DAY="$(date -u -d "${DAY} + 1 day" +%Y-%m-%d)"
+          SINCE="${DAY}T00:00:00Z"
+          BEFORE="${NEXT_DAY}T00:00:00Z"
+
+          echo "release_day=${DAY}" >> "${GITHUB_OUTPUT}"
+          echo "daily_marker=${DAILY_MARKER}" >> "${GITHUB_OUTPUT}"
+
+          if git rev-parse "refs/tags/${DAILY_MARKER}" >/dev/null 2>&1; then
+            echo "Daily release for ${DAY} already exists."
+            echo "should_release=false" >> "${GITHUB_OUTPUT}"
+            exit 0
+          fi
+
+          COMMIT_COUNT="$(git rev-list --count HEAD --since="${SINCE}" --before="${BEFORE}")"
+          echo "commit_count=${COMMIT_COUNT}" >> "${GITHUB_OUTPUT}"
+
+          FORCE="${{ github.event.inputs.force || 'false' }}"
+          if [ "${COMMIT_COUNT}" -eq 0 ] && [ "${FORCE}" != "true" ]; then
+            echo "No commits on ${DAY} (UTC)."
+            echo "should_release=false" >> "${GITHUB_OUTPUT}"
+            exit 0
+          fi
+
+          CURRENT="$(jq -r '.version' package.json)"
+          PACKAGE_VERSION="$(node .github/scripts/release-version.mjs daily "${CURRENT}")"
+          RELEASE_TAG="v${PACKAGE_VERSION}"
+
+          if git rev-parse "refs/tags/${RELEASE_TAG}" >/dev/null 2>&1; then
+            echo "Tag ${RELEASE_TAG} already exists."
+            echo "should_release=false" >> "${GITHUB_OUTPUT}"
+            exit 0
+          fi
+
+          echo "should_release=true" >> "${GITHUB_OUTPUT}"
+          echo "package_version=${PACKAGE_VERSION}" >> "${GITHUB_OUTPUT}"
+          echo "release_tag=${RELEASE_TAG}" >> "${GITHUB_OUTPUT}"
+          echo "previous_version=${CURRENT}" >> "${GITHUB_OUTPUT}"
+
+          {
+            echo "## Daily patch ${RELEASE_TAG}"
+            echo ""
+            echo "**UTC date:** ${DAY}"
+            echo ""
+            echo "**package.json:** \`${CURRENT}\` → \`${PACKAGE_VERSION}\`"
+            echo ""
+            echo "**Commits on ${DAY} (${COMMIT_COUNT}):**"
+            echo ""
+            git log --pretty=format:'- %s (`%h`)' --since="${SINCE}" --before="${BEFORE}" HEAD || true
+          } > release-notes.md
+
+      - name: Commit package.json version
+        if: steps.prep.outputs.should_release == 'true'
+        run: |
+          .github/scripts/commit-package-version.sh \
+            "${{ steps.prep.outputs.package_version }}" \
+            "chore(release): set version to ${{ steps.prep.outputs.package_version }} (${{ steps.prep.outputs.release_day }} UTC)" \
+            "${{ github.event.repository.default_branch }}"
+
+      - name: Push release tag
+        if: steps.prep.outputs.should_release == 'true'
+        run: |
+          .github/scripts/push-release-tag.sh \
+            "${{ steps.prep.outputs.release_tag }}" \
+            "${{ steps.prep.outputs.package_version }}" \
+            "Daily patch ${{ steps.prep.outputs.release_tag }} (${{ steps.prep.outputs.release_day }} UTC)"
+
+      - name: Push daily marker tag
+        if: steps.prep.outputs.should_release == 'true'
+        run: |
+          set -euo pipefail
+          DAILY_MARKER="${{ steps.prep.outputs.daily_marker }}"
+          RELEASE_TAG="${{ steps.prep.outputs.release_tag }}"
+          if git rev-parse "refs/tags/${DAILY_MARKER}" >/dev/null 2>&1; then
+            exit 0
+          fi
+          git tag -a "${DAILY_MARKER}" -m "Daily marker → ${RELEASE_TAG}"
+          git push origin "refs/tags/${DAILY_MARKER}"
+
+      - name: Create GitHub Release
+        if: steps.prep.outputs.should_release == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.prep.outputs.release_tag }}
+          name: Patch ${{ steps.prep.outputs.release_tag }} (${{ steps.prep.outputs.release_day }})
+          body_path: release-notes.md
+          generate_release_notes: false
+          draft: false
+          prerelease: false

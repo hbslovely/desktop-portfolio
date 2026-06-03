@@ -1,9 +1,8 @@
-# Annotated tag per push to the default branch (one tag per commit SHA).
-# Tag format: build/YYYY-MM-DD-<short-sha>
-# Does not match v*.*.* — avoids triggering Docker publish on every commit.
-# Does not bump package.json — semver is updated by monthly-release.yml (vYYYY.MM.0).
+# Each push to default branch: commit package.json -rc version, then tag v<version>.
+# Example: 0.0.0 → commit 2026.06.1-rc.01 → tag v2026.06.1-rc.01
+# Skips chore(release) commits to avoid infinite loops.
 
-name: Tag each commit
+name: Commit RC version
 
 on:
   push:
@@ -14,42 +13,57 @@ permissions:
   contents: write
 
 concurrency:
-  group: commit-tag-${{ github.sha }}
+  group: commit-rc-${{ github.sha }}
   cancel-in-progress: false
 
 jobs:
-  tag:
-    name: Create build tag
+  rc:
+    name: Commit version then tag
     runs-on: ubuntu-latest
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (
+        github.event.head_commit != null &&
+        !startsWith(github.event.head_commit.message, 'chore(release):')
+      )
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Create and push tag
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Compute next RC version
+        id: version
         run: |
           set -euo pipefail
+          CURRENT="$(jq -r '.version' package.json)"
+          PACKAGE_VERSION="$(node .github/scripts/release-version.mjs rc "${CURRENT}")"
+          RELEASE_TAG="v${PACKAGE_VERSION}"
 
-          SHORT_SHA="${GITHUB_SHA::7}"
-          DATE="$(date -u +%Y-%m-%d)"
-          TAG="build/${DATE}-${SHORT_SHA}"
-
-          if git rev-parse "refs/tags/${TAG}" >/dev/null 2>&1; then
-            echo "Tag ${TAG} already exists — skipping."
+          if git rev-parse "refs/tags/${RELEASE_TAG}" >/dev/null 2>&1; then
+            echo "Tag ${RELEASE_TAG} already exists — skipping."
+            echo "should_bump=false" >> "${GITHUB_OUTPUT}"
             exit 0
           fi
 
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          echo "should_bump=true" >> "${GITHUB_OUTPUT}"
+          echo "previous_version=${CURRENT}" >> "${GITHUB_OUTPUT}"
+          echo "package_version=${PACKAGE_VERSION}" >> "${GITHUB_OUTPUT}"
+          echo "release_tag=${RELEASE_TAG}" >> "${GITHUB_OUTPUT}"
 
-          git tag -a "${TAG}" -m "Build tag for commit ${GITHUB_SHA}
+      - name: Commit package.json version
+        if: steps.version.outputs.should_bump == 'true'
+        run: |
+          .github/scripts/commit-package-version.sh \
+            "${{ steps.version.outputs.package_version }}" \
+            "chore(release): set version to ${{ steps.version.outputs.package_version }}" \
+            "${{ github.event.repository.default_branch }}"
 
-          Repository: ${GITHUB_REPOSITORY}
-          Workflow: ${GITHUB_WORKFLOW}
-          Run: ${GITHUB_RUN_ID}"
-
-          git push origin "refs/tags/${TAG}"
-          echo "Created tag: ${TAG}"
+      - name: Push release tag
+        if: steps.version.outputs.should_bump == 'true'
+        run: |
+          .github/scripts/push-release-tag.sh \
+            "${{ steps.version.outputs.release_tag }}" \
+            "${{ steps.version.outputs.package_version }}" \
+            "RC ${{ steps.version.outputs.release_tag }} (was ${{ steps.version.outputs.previous_version }})"

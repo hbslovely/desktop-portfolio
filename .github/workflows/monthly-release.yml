@@ -1,13 +1,9 @@
-# On the 1st of each month (UTC), create a GitHub Release if the default branch
-# has new commits since the previous monthly tag (vYYYY.MM.0).
-# Bumps root package.json / package-lock.json to CalVer semver (e.g. 2026.6.0).
-# Monthly tags match docker-publish pattern v*.*.*.
+# 1st of each month (UTC): commit package.json YYYY.MM.1, then tag vYYYY.MM.1.
 
 name: Monthly release
 
 on:
   schedule:
-    # 09:00 UTC on the 1st day of every month
     - cron: "0 9 1 * *"
   workflow_dispatch:
     inputs:
@@ -39,25 +35,21 @@ jobs:
         run: |
           set -euo pipefail
 
-          YEAR="$(date -u +%Y)"
-          MONTH="$(date -u +%m)"
-          MONTH_NUM=$((10#${MONTH}))
-          TAG="v${YEAR}.${MONTH}.0"
-          PACKAGE_VERSION="${YEAR}.${MONTH_NUM}.0"
+          PACKAGE_VERSION="$(node .github/scripts/release-version.mjs monthly)"
+          RELEASE_TAG="v${PACKAGE_VERSION}"
 
-          echo "monthly_tag=${TAG}" >> "${GITHUB_OUTPUT}"
+          echo "monthly_tag=${RELEASE_TAG}" >> "${GITHUB_OUTPUT}"
           echo "package_version=${PACKAGE_VERSION}" >> "${GITHUB_OUTPUT}"
 
-          if git rev-parse "refs/tags/${TAG}" >/dev/null 2>&1; then
-            echo "Release tag ${TAG} already exists."
+          if git rev-parse "refs/tags/${RELEASE_TAG}" >/dev/null 2>&1; then
+            echo "Release tag ${RELEASE_TAG} already exists."
             echo "should_release=false" >> "${GITHUB_OUTPUT}"
             exit 0
           fi
 
-          # Previous monthly tags: vYYYY.MM.0
-          PREV_TAG="$(git tag -l 'v[0-9][0-9][0-9][0-9].[0-9][0-9].0' 2>/dev/null | sort -V | tail -1 || true)"
+          PREV_TAG="$(node .github/scripts/release-version.mjs previous-monthly-tag)"
 
-          if [ -n "${PREV_TAG}" ]; then
+          if git rev-parse "refs/tags/${PREV_TAG}" >/dev/null 2>&1; then
             COMMIT_COUNT="$(git rev-list --count "${PREV_TAG}..HEAD")"
             echo "previous_tag=${PREV_TAG}" >> "${GITHUB_OUTPUT}"
           else
@@ -77,73 +69,38 @@ jobs:
           echo "should_release=true" >> "${GITHUB_OUTPUT}"
 
           {
-            echo "## Monthly release ${TAG}"
+            echo "## Monthly release ${RELEASE_TAG}"
             echo ""
             echo "**package.json version:** \`${PACKAGE_VERSION}\`"
             echo ""
-            if [ -n "${PREV_TAG}" ]; then
+            if git rev-parse "refs/tags/${PREV_TAG}" >/dev/null 2>&1; then
               echo "Changes since \`${PREV_TAG}\` (${COMMIT_COUNT} commits):"
             else
-              echo "Initial monthly release (${COMMIT_COUNT} commits on default branch):"
+              echo "Initial monthly release (${COMMIT_COUNT} commits):"
             fi
             echo ""
-            if [ -n "${PREV_TAG}" ]; then
+            if git rev-parse "refs/tags/${PREV_TAG}" >/dev/null 2>&1; then
               git log --pretty=format:'- %s (`%h`)' "${PREV_TAG}..HEAD" || true
             else
               git log --pretty=format:'- %s (`%h`)' -n 50 HEAD || true
             fi
           } > release-notes.md
 
-      - name: Bump package.json semver
+      - name: Commit package.json version
         if: steps.prep.outputs.should_release == 'true'
         run: |
-          set -euo pipefail
-          VERSION="${{ steps.prep.outputs.package_version }}"
+          .github/scripts/commit-package-version.sh \
+            "${{ steps.prep.outputs.package_version }}" \
+            "chore(release): set version to ${{ steps.prep.outputs.package_version }}" \
+            "${{ github.event.repository.default_branch }}"
 
-          jq --arg v "${VERSION}" '.version = $v' package.json > package.json.tmp
-          mv package.json.tmp package.json
-
-          if [ -f package-lock.json ]; then
-            jq --arg v "${VERSION}" '.version = $v' package-lock.json > package-lock.json.tmp
-            mv package-lock.json.tmp package-lock.json
-          fi
-
-          echo "Set package.json version to ${VERSION}"
-
-      - name: Commit and push version bump
-        if: steps.prep.outputs.should_release == 'true'
-        env:
-          PACKAGE_VERSION: ${{ steps.prep.outputs.package_version }}
-        run: |
-          set -euo pipefail
-
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-          git add package.json
-          if [ -f package-lock.json ]; then
-            git add package-lock.json
-          fi
-
-          if git diff --staged --quiet; then
-            echo "package.json already at ${PACKAGE_VERSION} — no commit needed."
-          else
-            git commit -m "chore(release): bump version to ${PACKAGE_VERSION}"
-            git push origin "HEAD:${{ github.event.repository.default_branch }}"
-          fi
-
-      - name: Create and push monthly tag
+      - name: Push monthly tag
         if: steps.prep.outputs.should_release == 'true'
         run: |
-          set -euo pipefail
-          TAG="${{ steps.prep.outputs.monthly_tag }}"
-          VERSION="${{ steps.prep.outputs.package_version }}"
-
-          git tag -a "${TAG}" -m "Monthly release ${TAG}
-
-          package.json: ${VERSION}"
-
-          git push origin "refs/tags/${TAG}"
+          .github/scripts/push-release-tag.sh \
+            "${{ steps.prep.outputs.monthly_tag }}" \
+            "${{ steps.prep.outputs.package_version }}" \
+            "Monthly release ${{ steps.prep.outputs.monthly_tag }}"
 
       - name: Create GitHub Release
         if: steps.prep.outputs.should_release == 'true'
