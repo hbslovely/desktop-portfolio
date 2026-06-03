@@ -553,6 +553,33 @@
 
 .dialog--calendar {
   max-width: 560px;
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100dvh - env(safe-area-inset-top, 0px) - 36px);
+  overflow: hidden;
+
+  .dialog-head {
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    margin-bottom: 12px;
+    padding-bottom: 4px;
+    background: #fff;
+  }
+
+  .calendar-nav,
+  .calendar-weekdays,
+  .calendar-grid {
+    flex-shrink: 0;
+  }
+
+  .calendar-events {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
 }
 
 .calendar-nav {
@@ -790,9 +817,14 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-height: 280px;
-  overflow: auto;
-  padding-right: 2px;
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: 148px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 4px;
+  scrollbar-gutter: stable;
 }
 
 .dialog-head {
@@ -824,6 +856,17 @@
   background: #f1f5f9;
   cursor: pointer;
   color: var(--muted);
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s;
+
+  &:hover {
+    background: #fee2e2;
+    color: var(--rose);
+  }
 }
 
 .form-grid {
