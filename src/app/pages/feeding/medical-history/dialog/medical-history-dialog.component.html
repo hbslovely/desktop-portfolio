@@ -166,7 +166,7 @@
             attachmentFor(editingEntry()!) as sav
           "
         >
-          <img *ngIf="sav.content" [src]="sav.content" alt="Đính kèm hiện tại" />
+          <img *ngIf="sav.content || sav.previewUrl" [src]="sav.previewUrl || sav.content" alt="Đính kèm hiện tại" />
           <button
             type="button"
             class="btn ghost sm"

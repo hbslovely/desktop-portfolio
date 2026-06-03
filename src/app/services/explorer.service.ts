@@ -1,7 +1,7 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, from, of, throwError } from 'rxjs';
-import { catchError, map, mergeMap, scan, takeLast } from 'rxjs/operators';
+import { catchError, map, mergeMap, scan, switchMap, takeLast } from 'rxjs/operators';
 
 export type ExplorerType = 'folder' | 'file';
 
@@ -217,10 +217,49 @@ export class ExplorerService {
   }
 
   /**
+   * Upload ảnh medical lên Google Drive thông qua addExplorer.
+   * Trả về thông tin file bao gồm driveFileId.
+   */
+  uploadMedicalImageToDrive(payload: {
+    fileName: string;
+    dataUrl: string;
+    mimeType: string;
+    sizeBytes: number;
+    parentId: number;
+  }): Observable<ExplorerResponse & {driveFileId?: string}> {
+    return this.addEntry({
+      name: payload.fileName,
+      type: 'file',
+      parentId: payload.parentId,
+      content: payload.dataUrl,
+      mimeType: payload.mimeType,
+      sizeBytes: payload.sizeBytes,
+    }).pipe(
+      switchMap((response) => {
+        if (!response.success || !response.id) {
+          throw new Error('Upload thất bại');
+        }
+        
+        // Lấy thông tin entry vừa tạo để có driveFileId
+        return this.getEntries().pipe(
+          map((entries) => {
+            const createdEntry = entries.find(e => e.id === response.id);
+            return {
+              ...response,
+              driveFileId: createdEntry?.driveFileId
+            };
+          })
+        );
+      })
+    );
+  }
+
+  /**
    * Lấy nội dung file (data URL) qua Apps Script action `getExplorerFile`.
    * Dùng cho preview/download khi file đã chuyển sang Drive private.
+   * Bây giờ có thể nhận cả Explorer ID hoặc Drive file ID.
    */
-  getFileDataUrl(id: number): Observable<ExplorerFileResponse> {
+  getFileDataUrl(id: number | string): Observable<ExplorerFileResponse> {
     return this.postToAppsScriptExpectResponse<ExplorerFileResponse>({
       action: 'getExplorerFile',
       id,

@@ -1,8 +1,11 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, from, throwError, of } from 'rxjs';
-import { catchError, map } from 'rxjs/operators';
+import { catchError, map, switchMap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
+import { GoogleSheetsService } from './google-sheets.service';
+import { MedicalDataMapperService } from '../pages/feeding/medical-history/medical-data-mapper.service';
+import { MedicalErrorHandlerService } from '../pages/feeding/medical-history/medical-error-handler.service';
 import {
   MEDICAL_KINDS,
   type MedicalEventKind,
@@ -18,8 +21,8 @@ export interface MedicalHistoryEntry {
   title: string;
   detail: string;
   place?: string;
-  /** id file ảnh trên tab Explorer (thư mục « Y tế ») */
-  attachmentExplorerId?: number;
+  /** Google Drive file ID for medical image attachments */
+  driveFileId?: string;
   rowIndex?: number;
 }
 
@@ -29,25 +32,17 @@ export interface MedicalSheetResponse {
   error?: string;
 }
 
-const KIND_SET = new Set<string>(
-  MEDICAL_KINDS.map((k) => k.id as string)
-);
-
-function parseKind(raw: string): MedicalEventKind {
-  const s = String(raw ?? '')
-    .trim()
-    .toLowerCase();
-  return KIND_SET.has(s) ? (s as MedicalEventKind) : 'other';
-}
 
 @Injectable({ providedIn: 'root' })
 export class MedicalHistoryService {
   private http = inject(HttpClient);
+  private googleSheets = inject(GoogleSheetsService);
+  private dataMapper = inject(MedicalDataMapperService);
+  private errorHandler = inject(MedicalErrorHandlerService);
 
   private readonly SHEET_ID = '1O4kAA61k4cX4mEwAjDy5gioVUAElCyu62Z3zPvgdDMM';
-  private readonly SHEET_NAME = 'MedicalHistory';
-  private readonly API_KEY = environment.googleSheetsApiKey;
-  private readonly BASE_URL = `https://sheets.googleapis.com/v4/spreadsheets/${this.SHEET_ID}`;
+  private readonly SHEET_GID = '836488919'; // Medical History tab GID
+  private readonly SHEET_NAME = 'MedicalHistory'; // Will fallback to GID if name doesn't work
 
   private readonly APPS_SCRIPT_URL = '/api/feeding-apps-script';
 
@@ -59,61 +54,78 @@ export class MedicalHistoryService {
    *   D = Tiêu đề
    *   E = Chi tiết
    *   F = Nơi khám / ghi chú ngắn
-   *   G = id file đính kèm (Explorer), có thể để trống
+   *   G = Google Drive file ID cho ảnh đính kèm, có thể để trống
    */
   getEntries(): Observable<MedicalHistoryEntry[]> {
-    const range = `${this.SHEET_NAME}!A2:G`;
-    const url = `${this.BASE_URL}/values/${range}?key=${this.API_KEY}&valueRenderOption=FORMATTED_VALUE`;
+    const config = {
+      spreadsheetId: this.SHEET_ID,
+      sheetGid: this.SHEET_GID,
+      range: 'A2:H' // Include column H for id file Explorer
+    };
 
-    return this.http.get<{ values?: string[][] }>(url).pipe(
-      map((resp) => {
-        const rows = resp.values || [];
-        return rows
-          .map((row, idx) => {
-            const rowUser = (row[0] || '').trim();
-            const dateStr = (row[1] || '').trim();
-            const kindRaw = (row[2] || '').trim();
-            const title = (row[3] || '').trim();
-            const detail = (row[4] || '').trim();
-            const place = (row[5] || '').trim();
-            const attachRaw = (row[6] || '').toString().trim();
-            let attachmentExplorerId: number | undefined;
-            if (attachRaw !== '') {
-              const n = parseInt(attachRaw, 10);
-              if (Number.isFinite(n) && n > 0) attachmentExplorerId = n;
-            }
-
-            if (!dateStr || !title) return null;
-
-            const date = this.parseSheetDate(dateStr);
-            if (!date) return null;
-
-            const entry: MedicalHistoryEntry = {
-              user: rowUser.toLowerCase(),
-              date,
-              kind: parseKind(kindRaw),
-              title,
-              detail,
-              place: place || undefined,
-              attachmentExplorerId,
-              rowIndex: idx + 2,
-            };
-            return entry;
-          })
-          .filter((e): e is MedicalHistoryEntry => !!e)
-          .sort((a, b) => b.date.localeCompare(a.date));
+    return this.googleSheets.getSheetValues(config).pipe(
+      map(rows => {
+        console.log(`Fetched ${rows.length} rows from Google Sheets`);
+        const entries = this.dataMapper.mapRowsToEntries(rows);
+        console.log(`Mapped to ${entries.length} valid medical history entries`);
+        return entries;
       }),
-      catchError((err) => {
-        console.error('MedicalHistoryService.getEntries failed', err);
-        return throwError(() => err);
+      catchError(err => {
+        const handledError = this.errorHandler.handleError(err);
+        console.error('MedicalHistoryService.getEntries failed', {
+          original: err,
+          handled: handledError
+        });
+        return throwError(() => handledError);
       })
     );
   }
+
+  /**
+   * Test method to verify Google Sheets connection and data format
+   */
+  testConnection(): Observable<{ success: boolean; message: string; rowCount: number }> {
+    const config = {
+      spreadsheetId: this.SHEET_ID,
+      sheetGid: this.SHEET_GID,
+      range: 'A1:H10' // Test with first 10 rows including header
+    };
+
+    return this.googleSheets.getSheetValues(config).pipe(
+      map(rows => {
+        const hasHeader = rows.length > 0;
+        const headerRow = hasHeader ? rows[0] : [];
+        const dataRows = rows.slice(1);
+        const entries = this.dataMapper.mapRowsToEntries(dataRows);
+
+        return {
+          success: true,
+          message: `Connected successfully. Header: [${headerRow.join(', ')}]. Found ${entries.length} valid entries.`,
+          rowCount: dataRows.length
+        };
+      }),
+      catchError(err => {
+        return of({
+          success: false,
+          message: `Connection failed: ${err.message}`,
+          rowCount: 0
+        });
+      })
+    );
+  }
+
 
   addEntry(entry: MedicalHistoryEntry): Observable<MedicalSheetResponse> {
     if (!this.APPS_SCRIPT_URL) {
       return throwError(() => new Error('Chưa cấu hình Google Apps Script URL'));
     }
+
+    // Validate entry data before sending
+    const validationErrors = this.dataMapper.validateEntry(entry);
+    if (validationErrors.length > 0) {
+      return throwError(() => new Error(`Validation failed: ${validationErrors.join(', ')}`));
+    }
+
     return this.postToAppsScript({
       action: 'addMedicalHistory',
       log: {
@@ -123,10 +135,7 @@ export class MedicalHistoryService {
         title: entry.title,
         detail: entry.detail || '',
         place: entry.place || '',
-        attachment_id:
-          entry.attachmentExplorerId != null
-            ? entry.attachmentExplorerId
-            : '',
+        drive_file_id: entry.driveFileId || '',
       },
     }).pipe(catchError(() => of({ success: true })));
   }
@@ -140,7 +149,7 @@ export class MedicalHistoryService {
       detail?: string;
       place?: string;
       /** Gửi `null` hoặc `''` để xoá đính kèm */
-      attachmentExplorerId?: number | null | '';
+      driveFileId?: string | null | '';
     }
   ): Observable<MedicalSheetResponse> {
     if (!this.APPS_SCRIPT_URL) {
@@ -153,10 +162,10 @@ export class MedicalHistoryService {
     if (patch.detail !== undefined) bodyPatch['detail'] = patch.detail;
     if (patch.place !== undefined) bodyPatch['place'] = patch.place;
     if (
-      Object.prototype.hasOwnProperty.call(patch, 'attachmentExplorerId')
+      Object.prototype.hasOwnProperty.call(patch, 'driveFileId')
     ) {
-      const v = patch.attachmentExplorerId;
-      bodyPatch['attachment_id'] =
+      const v = patch.driveFileId;
+      bodyPatch['drive_file_id'] =
         v === null || v === '' ? '' : v;
     }
 

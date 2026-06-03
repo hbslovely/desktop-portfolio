@@ -18,6 +18,7 @@ import { firstValueFrom } from 'rxjs';
 import {
   ExplorerEntry,
   ExplorerService,
+  ExplorerType,
 } from '../../../../services/explorer.service';
 import {
   MedicalEventKind,
@@ -88,13 +89,6 @@ export class MedicalHistoryDialogComponent {
   readonly kindCatalog: readonly MedicalKindMeta[] = MEDICAL_KINDS;
   readonly defaultPlaces = DEFAULT_PLACES_VI;
 
-  userNorm = computed(
-    () =>
-      String(this.user() || 'guest')
-        .toLowerCase()
-        .trim() || 'guest'
-  );
-
   explorerById = computed(() => {
     const m = new Map<number, ExplorerEntry>();
     for (const e of this.explorerEntries()) {
@@ -102,6 +96,14 @@ export class MedicalHistoryDialogComponent {
     }
     return m;
   });
+
+  userNorm = computed(
+    () =>
+      String(this.user() || 'guest')
+        .toLowerCase()
+        .trim() || 'guest'
+  );
+
 
   filteredKindCatalog = computed(() => {
     const q = this.kindSearch().trim();
@@ -192,9 +194,33 @@ export class MedicalHistoryDialogComponent {
   }
 
   attachmentFor(entry: MedicalHistoryEntry): ExplorerEntry | undefined {
-    const id = entry.attachmentExplorerId;
-    if (!id) return undefined;
-    return this.explorerById().get(id);
+    // Ưu tiên driveFileId trực tiếp từ medical entry  
+    if (entry.driveFileId) {
+      // Create a minimal ExplorerEntry object for the driveFileId
+      return {
+        id: -1, // Fake ID for Drive-only files
+        name: `med-attachment-${entry.driveFileId}`,
+        type: 'file' as ExplorerType,
+        parentId: null,
+        driveFileId: entry.driveFileId,
+        mimeType: 'image/jpeg',
+        storageStatus: 'drive',
+      };
+    }
+    
+    // Fallback: tìm trong Explorer entries (để tương thích với data cũ)
+    const legacyId = (entry as any).attachmentExplorerId;
+    if (legacyId) {
+      const numericId = typeof legacyId === 'string' ? parseInt(legacyId, 10) : legacyId;
+      if (!isNaN(numericId)) {
+        const explorerEntry = this.explorerById().get(numericId);
+        if (explorerEntry?.driveFileId) {
+          return explorerEntry;
+        }
+      }
+    }
+    
+    return undefined;
   }
 
   get maxDateToday(): string {
@@ -321,13 +347,13 @@ export class MedicalHistoryDialogComponent {
     this.errorMsg.set('');
 
     try {
-      let attachmentExplorerId: number | undefined = edit?.attachmentExplorerId;
+      let driveFileId: string | undefined = edit?.driveFileId;
 
       if (this.stripExistingAttachment()) {
-        attachmentExplorerId = undefined;
+        driveFileId = undefined;
       }
       if (pending) {
-        attachmentExplorerId = await this.uploadAttachmentToExplorer(pending);
+        driveFileId = await this.uploadAttachmentToDrive(pending);
       }
 
       const base: MedicalHistoryEntry = {
@@ -337,7 +363,7 @@ export class MedicalHistoryDialogComponent {
         title,
         detail: d.detail.trim(),
         place: d.place.trim() || undefined,
-        attachmentExplorerId,
+        driveFileId,
       };
 
       if (edit?.rowIndex) {
@@ -347,7 +373,7 @@ export class MedicalHistoryDialogComponent {
           title: string;
           detail: string;
           place: string;
-          attachmentExplorerId?: number | null;
+          driveFileId?: string | null;
         } = {
           date: base.date,
           kind: base.kind,
@@ -356,7 +382,7 @@ export class MedicalHistoryDialogComponent {
           place: base.place ?? '',
         };
         if (pending || this.stripExistingAttachment()) {
-          patch.attachmentExplorerId = attachmentExplorerId ?? null;
+          patch.driveFileId = driveFileId ?? null;
         }
         await firstValueFrom(
           this.medicalService.updateEntry(edit.rowIndex, patch)
@@ -477,6 +503,54 @@ export class MedicalHistoryDialogComponent {
     };
   }
 
+
+  private async compressMedicalImage(file: File): Promise<string> {
+    const tries: Array<[number, number]> = [
+      [2048, 0.92],
+      [1920, 0.9],
+      [1600, 0.88],
+      [1280, 0.84],
+      [1024, 0.8],
+      [820, 0.74],
+      [640, 0.65],
+      [480, 0.55],
+    ];
+    let last = '';
+    for (const [size, q] of tries) {
+      last = await this.explorerService.fileToCompressedBase64(
+        file,
+        size,
+        q
+      );
+      if (last.length <= MAX_ATTACH_CHARS) return last;
+    }
+    throw new Error(
+      `Ảnh quá lớn sau khi nén (~${Math.round(last.length / 1024)}KB). Chọn ảnh nhỏ hơn.`
+    );
+  }
+
+  private async uploadAttachmentToDrive(file: File): Promise<string> {
+    const parentId = await this.ensureMedicalFolderId();
+    const dataUrl = await this.compressMedicalImage(file);
+    const safeName = `med-${Date.now()}-${Math.random().toString(36).slice(2, 9)}.jpg`;
+
+    const response = await firstValueFrom(
+      this.explorerService.uploadMedicalImageToDrive({
+        fileName: safeName,
+        dataUrl,
+        mimeType: 'image/jpeg',
+        sizeBytes: this.estimateBase64Bytes(dataUrl),
+        parentId,
+      })
+    );
+
+    if (!response.driveFileId) {
+      throw new Error('Không nhận được Drive file ID sau khi upload ảnh.');
+    }
+    
+    return response.driveFileId;
+  }
+
   private async ensureMedicalFolderId(): Promise<number> {
     const cached = this.medicalFolderId();
     if (cached != null) return cached;
@@ -517,63 +591,6 @@ export class MedicalHistoryDialogComponent {
       );
     }
     return folder.id;
-  }
-
-  private async compressMedicalImage(file: File): Promise<string> {
-    const tries: Array<[number, number]> = [
-      [2048, 0.92],
-      [1920, 0.9],
-      [1600, 0.88],
-      [1280, 0.84],
-      [1024, 0.8],
-      [820, 0.74],
-      [640, 0.65],
-      [480, 0.55],
-    ];
-    let last = '';
-    for (const [size, q] of tries) {
-      last = await this.explorerService.fileToCompressedBase64(
-        file,
-        size,
-        q
-      );
-      if (last.length <= MAX_ATTACH_CHARS) return last;
-    }
-    throw new Error(
-      `Ảnh quá lớn sau khi nén (~${Math.round(last.length / 1024)}KB). Chọn ảnh nhỏ hơn.`
-    );
-  }
-
-  private async uploadAttachmentToExplorer(file: File): Promise<number> {
-    const parentId = await this.ensureMedicalFolderId();
-    const dataUrl = await this.compressMedicalImage(file);
-    const safeName = `med-${Date.now()}-${Math.random().toString(36).slice(2, 9)}.jpg`;
-
-    await firstValueFrom(
-      this.explorerService.addEntry({
-        name: safeName,
-        type: 'file',
-        parentId,
-        content: dataUrl,
-        mimeType: 'image/jpeg',
-        sizeBytes: this.estimateBase64Bytes(dataUrl),
-      })
-    );
-
-    const all = await firstValueFrom(this.explorerService.getEntries());
-
-    const found = all.find(
-      (e) =>
-        e.type === 'file' &&
-        e.parentId === parentId &&
-        e.name === safeName
-    );
-    if (!found?.id) {
-      throw new Error(
-        'Đã gửi ảnh nhưng chưa thấy file trên Explorer — bấm Tải lại trên trang chủ.'
-      );
-    }
-    return found.id;
   }
 
   private estimateBase64Bytes(dataUrl: string): number {

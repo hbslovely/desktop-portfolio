@@ -72,13 +72,13 @@
         Cuộn hoặc bấm <i class="pi pi-plus"></i> để phóng to · Nháy đôi để zoom · Esc đóng
       </p>
     }
-    @if (pv.explorerId) {
+    @if (pv.driveFileId) {
       <button
         type="button"
         class="mh-preview__docs"
-        (click)="onOpenInDocuments(pv.explorerId)"
+        (click)="onOpenInDocuments(pv.driveFileId)"
       >
-        <i class="pi pi-folder-open"></i> Mở trong Tài liệu
+        <i class="pi pi-folder-open"></i> Mở trong tab mới
       </button>
     }
   </div>

@@ -17,6 +17,7 @@ import { forkJoin } from 'rxjs';
 import {
   ExplorerEntry,
   ExplorerService,
+  ExplorerType,
 } from '../../../services/explorer.service';
 import {
   MedicalEventKind,
@@ -85,6 +86,14 @@ export class MedicalHistoryComponent {
   imagePreview = signal<MedicalImagePreviewState | null>(null);
 
   readonly kindCatalog: readonly MedicalKindMeta[] = MEDICAL_KINDS;
+
+  explorerById = computed(() => {
+    const m = new Map<number, ExplorerEntry>();
+    for (const e of this.explorerEntries()) {
+      m.set(e.id, e);
+    }
+    return m;
+  });
 
   kindsInFilterPanel = computed(() => {
     const q = this.filterPanelKindSearch().trim();
@@ -157,13 +166,6 @@ export class MedicalHistoryComponent {
       .trim() || 'guest'
   );
 
-  explorerById = computed(() => {
-    const m = new Map<number, ExplorerEntry>();
-    for (const e of this.explorerEntries()) {
-      m.set(e.id, e);
-    }
-    return m;
-  });
 
   myEntries = computed(() => {
     return this.entries();
@@ -260,44 +262,117 @@ export class MedicalHistoryComponent {
   }
 
   attachmentFor(entry: MedicalHistoryEntry): ExplorerEntry | undefined {
-    const id = entry.attachmentExplorerId;
-    if (!id) return undefined;
-    return this.explorerById().get(id);
+    // Ưu tiên driveFileId trực tiếp từ medical entry  
+    if (entry.driveFileId) {
+      // Create a minimal ExplorerEntry object for the driveFileId
+      return {
+        id: -1, // Fake ID for Drive-only files
+        name: `med-attachment-${entry.driveFileId}`,
+        type: 'file' as ExplorerType,
+        parentId: null,
+        driveFileId: entry.driveFileId,
+        mimeType: 'image/jpeg',
+        storageStatus: 'drive',
+      };
+    }
+    
+    // Fallback: tìm trong Explorer entries (để tương thích với data cũ)
+    // Giả sử attachmentExplorerId có thể còn trong data cũ
+    const legacyId = (entry as any).attachmentExplorerId;
+    if (legacyId) {
+      const numericId = typeof legacyId === 'string' ? parseInt(legacyId, 10) : legacyId;
+      if (!isNaN(numericId)) {
+        const explorerEntry = this.explorerById().get(numericId);
+        if (explorerEntry?.driveFileId) {
+          return explorerEntry;
+        }
+      }
+    }
+    
+    return undefined;
   }
 
   readonly resolveAttachment = (entry: MedicalHistoryEntry) =>
     this.attachmentFor(entry);
 
   openAttachmentInDocuments(entry: MedicalHistoryEntry): void {
+    // Ưu tiên mở trong Explorer nếu có legacy ID
+    const legacyId = (entry as any).attachmentExplorerId;
+    if (legacyId) {
+      const numericId = typeof legacyId === 'string' ? parseInt(legacyId, 10) : legacyId;
+      if (!isNaN(numericId)) {
+        const explorerEntry = this.explorerById().get(numericId);
+        if (explorerEntry?.id) {
+          this.openExplorerFile.emit(explorerEntry.id);
+          return;
+        }
+      }
+    }
+    
+    // Fallback: fetch từ Drive và mở tab mới
     const att = this.attachmentFor(entry);
-    if (att?.id) {
-      this.openExplorerFile.emit(att.id);
-      return;
-    }
-    const url = att?.content?.trim();
-    if (url) {
-      window.open(url, '_blank', 'noopener,noreferrer');
-    }
+    if (!att?.driveFileId) return;
+    
+    this.explorerService.getFileDataUrl(att.driveFileId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (response) => {
+          if (response.dataUrl) {
+            window.open(response.dataUrl, '_blank', 'noopener,noreferrer');
+          }
+        },
+        error: (err) => {
+          console.error('Failed to load attachment:', err);
+          this.errorMsg.set('Không tải được ảnh đính kèm.');
+        }
+      });
   }
 
   openImagePreview(entry: MedicalHistoryEntry): void {
     const att = this.attachmentFor(entry);
-    const src = att?.content?.trim();
-    if (!src) return;
-    this.imagePreview.set({
-      src,
-      title: entry.title || 'Ảnh đính kèm',
-      explorerId: att?.id,
-    });
+    if (!att?.driveFileId) return;
+    
+    // Fetch image from Drive for preview
+    this.explorerService.getFileDataUrl(att.driveFileId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (response) => {
+          if (response.dataUrl) {
+            this.imagePreview.set({
+              src: response.dataUrl,
+              title: entry.title || 'Ảnh đính kèm',
+              driveFileId: att.driveFileId,
+            });
+          }
+        },
+        error: (err) => {
+          console.error('Failed to load image for preview:', err);
+          this.errorMsg.set('Không tải được ảnh để xem trước.');
+        }
+      });
   }
 
   closeImagePreview(): void {
     this.imagePreview.set(null);
   }
 
-  openInDocumentsFromPreview(explorerId: number): void {
+  openInDocumentsFromPreview(driveFileId: string): void {
     this.closeImagePreview();
-    this.openExplorerFile.emit(explorerId);
+    
+    // Since we no longer have Explorer integration, we'll just open the Drive file directly
+    this.explorerService.getFileDataUrl(driveFileId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (response) => {
+          if (response.dataUrl) {
+            window.open(response.dataUrl, '_blank', 'noopener,noreferrer');
+          }
+        },
+        error: (err) => {
+          console.error('Failed to open file:', err);
+          this.errorMsg.set('Không mở được file.');
+        }
+      });
   }
 
   toggleFilterPanel(): void {

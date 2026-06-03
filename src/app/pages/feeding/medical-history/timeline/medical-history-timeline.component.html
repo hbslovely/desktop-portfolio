@@ -32,7 +32,7 @@
 
               <div class="mh-card__photo" *ngIf="attachmentFor(e) as att">
                 <button
-                  *ngIf="att.content"
+                  *ngIf="att.content || att.previewUrl || att.driveFileId"
                   type="button"
                   class="mh-card__photo-open"
                   (click)="onOpenPreview(e)"
@@ -40,7 +40,7 @@
                   <span class="mh-card__photo-frame">
                     <img
                       class="mh-card__photo-img"
-                      [src]="att.content"
+                      [src]="att.previewUrl || att.content || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjZjNmNGY2Ii8+CjxwYXRoIGQ9Im0xMiAxMiAyIDJoNXYtNXoiIGZpbGw9IiM5Y2EzYWYiLz4KPC9zdmc+'"
                       alt="Ảnh đính kèm"
                     />
                   </span>
@@ -49,7 +49,7 @@
                   </span>
                 </button>
                 <button
-                  *ngIf="att.id && att.content"
+                  *ngIf="att.driveFileId || (att.id && att.content)"
                   type="button"
                   class="mh-card__photo-docs btn ghost sm"
                   (click)="onOpenInDocuments(e)"

@@ -12,7 +12,7 @@ import { CommonModule } from '@angular/common';
 export interface MedicalImagePreviewState {
   src: string;
   title: string;
-  explorerId?: number;
+  driveFileId?: string;
 }
 
 @Component({
@@ -27,7 +27,7 @@ export class MedicalHistoryPreviewComponent {
   preview = input<MedicalImagePreviewState | null>(null);
 
   closed = output<void>();
-  openInDocuments = output<number>();
+  openInDocuments = output<string>();
 
   private readonly minZoom = 1;
   private readonly maxZoom = 6;
@@ -92,9 +92,9 @@ export class MedicalHistoryPreviewComponent {
     this.closed.emit();
   }
 
-  onOpenInDocuments(explorerId: number): void {
+  onOpenInDocuments(driveFileId: string): void {
     this.close();
-    this.openInDocuments.emit(explorerId);
+    this.openInDocuments.emit(driveFileId);
   }
 
   resetZoom(): void {
