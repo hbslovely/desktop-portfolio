@@ -1,7 +1,7 @@
 import { InjectionToken } from '@angular/core';
 
 /** Display name shown in About (feeding app). */
-export const APP_NAME = 'Bé yêu';
+export const APP_NAME = 'Life with baby';
 
 /**
  * Application version — keep in sync with package.json "version".
