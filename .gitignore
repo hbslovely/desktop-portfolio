@@ -42,3 +42,6 @@ testem.log
 Thumbs.db
 .vercel
 .env*.local
+
+# Stock JSON cache (large; seed to Postgres via server/scripts/db-seed.js)
+/server/data/stocks/
