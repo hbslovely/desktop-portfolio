@@ -5,6 +5,7 @@ export const APP_NAME = 'Bé yêu';
 
 /**
  * Application version — keep in sync with package.json "version".
+ * Scheme: YYYY.MM (monthly), YYYY.MM.N (daily patch), <base>-rc.NN (commit RC).
  * Updated automatically by GitHub release workflows.
  */
 export const APP_VERSION = '0.0.0';

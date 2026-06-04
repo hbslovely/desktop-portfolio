@@ -1,46 +1,58 @@
 #!/usr/bin/env node
 /**
  * Version scheme:
- *   Monthly: YYYY.MM.1     (e.g. 2026.06.1)
- *   Daily:   YYYY.MM.N+1   (e.g. 2026.06.1 → 2026.06.2), strips -rc.NN
- *   Commit:  …-rc.NN — next number from max(package.json rc, existing v*-rc.* tags)
+ *   Monthly: YYYY.MM           (e.g. 2026.06) — tag v2026.06
+ *   Daily:   YYYY.MM.N         (e.g. 2026.06 → 2026.06.1 → 2026.06.2), strips -rc.NN
+ *   Commit:  <base>-rc.NN      (e.g. 2026.06-rc.01, 2026.06.1-rc.02)
  */
 
 import { execSync } from 'node:child_process';
 
-const BASE_RE = /^(\d{4})\.(\d{2})\.(\d+)$/;
-const RC_RE = /^(\d{4})\.(\d{2})\.(\d+)-rc\.(\d{2})$/;
+const MONTHLY_RE = /^(\d{4})\.(\d{2})$/;
+const PATCH_RE = /^(\d{4})\.(\d{2})\.(\d+)$/;
+const RC_SUFFIX_RE = /^(.+)-rc\.(\d{2})$/;
 
 export function monthlyVersion(date = new Date()) {
   const y = date.getUTCFullYear();
   const m = String(date.getUTCMonth() + 1).padStart(2, '0');
-  return `${y}.${m}.1`;
+  return `${y}.${m}`;
 }
 
 export function previousMonthlyTag(date = new Date()) {
   const d = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() - 1, 1));
   const y = d.getUTCFullYear();
   const m = String(d.getUTCMonth() + 1).padStart(2, '0');
-  return `v${y}.${m}.1`;
+  return `v${y}.${m}`;
 }
 
-export function bumpDaily(version) {
-  const rc = RC_RE.exec(version);
-  const base = rc ? `${rc[1]}.${rc[2]}.${rc[3]}` : version;
-  const m = BASE_RE.exec(base);
-  if (!m) {
-    throw new Error(`Cannot bump daily from: ${version}`);
-  }
-  const patch = parseInt(m[3], 10) + 1;
-  return `${m[1]}.${m[2]}.${patch}`;
+export function stripRcSuffix(version) {
+  const match = RC_SUFFIX_RE.exec(version);
+  return match ? match[1] : version;
 }
 
 export function parseBaseVersion(version) {
-  const rc = RC_RE.exec(version);
-  if (rc) return `${rc[1]}.${rc[2]}.${rc[3]}`;
-  const base = BASE_RE.exec(version);
-  if (base) return `${base[1]}.${base[2]}.${base[3]}`;
+  const withoutRc = stripRcSuffix(version);
+  if (MONTHLY_RE.test(withoutRc) || PATCH_RE.test(withoutRc)) {
+    return withoutRc;
+  }
   return monthlyVersion();
+}
+
+export function bumpDaily(version) {
+  const base = stripRcSuffix(version);
+
+  const monthly = MONTHLY_RE.exec(base);
+  if (monthly) {
+    return `${monthly[1]}.${monthly[2]}.1`;
+  }
+
+  const patch = PATCH_RE.exec(base);
+  if (patch) {
+    const next = parseInt(patch[3], 10) + 1;
+    return `${patch[1]}.${patch[2]}.${next}`;
+  }
+
+  throw new Error(`Cannot bump daily from: ${version}`);
 }
 
 export function listRcTagsForBase(base) {
@@ -60,9 +72,9 @@ export function nextRcVersion(packageVersion) {
   const base = parseBaseVersion(packageVersion);
   let maxRc = 0;
 
-  const inPkg = RC_RE.exec(packageVersion);
+  const inPkg = RC_SUFFIX_RE.exec(packageVersion);
   if (inPkg) {
-    maxRc = parseInt(inPkg[4], 10);
+    maxRc = parseInt(inPkg[2], 10);
   }
 
   const prefix = `v${base}-rc.`;
@@ -78,7 +90,7 @@ export function nextRcVersion(packageVersion) {
   return `${base}-rc.${String(maxRc + 1).padStart(2, '0')}`;
 }
 
-/** @deprecated Use nextRcVersion — only bumps from package.json, ignores existing tags */
+/** @deprecated Use nextRcVersion */
 export function bumpRc(version) {
   return nextRcVersion(version);
 }

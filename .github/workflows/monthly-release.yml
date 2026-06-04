@@ -1,4 +1,4 @@
-# 1st of each month (UTC): commit package.json YYYY.MM.1, then tag vYYYY.MM.1.
+# 1st of each month (UTC): commit package.json YYYY.MM, then tag vYYYY.MM.
 
 name: Monthly release
 
