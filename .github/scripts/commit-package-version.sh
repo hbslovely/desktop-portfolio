@@ -15,6 +15,8 @@ if [ -f package-lock.json ]; then
   mv package-lock.json.tmp package-lock.json
 fi
 
+node .github/scripts/sync-app-version.mjs "${VERSION}"
+
 ACTUAL="$(jq -r '.version' package.json)"
 if [ "${ACTUAL}" != "${VERSION}" ]; then
   echo "::error::Failed to set package.json to ${VERSION} (got ${ACTUAL})"
@@ -24,7 +26,7 @@ fi
 git config user.name "github-actions[bot]"
 git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-git add package.json
+git add package.json src/app/app-info.ts
 if [ -f package-lock.json ]; then
   git add package-lock.json
 fi
@@ -40,6 +42,12 @@ fi
 ACTUAL="$(jq -r '.version' package.json)"
 if [ "${ACTUAL}" != "${VERSION}" ]; then
   echo "::error::HEAD package.json must be ${VERSION} before tagging (got ${ACTUAL})"
+  exit 1
+fi
+
+APP_ACTUAL="$(grep -E "^export const APP_VERSION = " src/app/app-info.ts | sed -E "s/.*'([^']*)'.*/\1/")"
+if [ "${APP_ACTUAL}" != "${VERSION}" ]; then
+  echo "::error::app-info.ts APP_VERSION must be ${VERSION} (got ${APP_ACTUAL})"
   exit 1
 fi
 

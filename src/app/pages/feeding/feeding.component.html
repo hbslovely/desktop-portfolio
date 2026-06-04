@@ -109,6 +109,15 @@
                       <i class="pi pi-sliders-h" aria-hidden="true"></i>
                       <span>Cài đặt</span>
                     </button>
+                    <button
+                      type="button"
+                      class="hero-profile-menu__item"
+                      role="menuitem"
+                      (click)="closeProfileActionsMenu(profileActionsMenu); openAboutDialog()"
+                    >
+                      <i class="pi pi-info-circle" aria-hidden="true"></i>
+                      <span>About</span>
+                    </button>
                   </div>
                 </details>
               </div>
@@ -374,6 +383,49 @@
       <span class="bn-label">Tài liệu</span>
     </button>
   </nav>
+
+  <!-- About -->
+  <div
+    class="dialog-overlay dialog-overlay--front"
+    *ngIf="aboutDialogOpen()"
+    (click)="closeAboutDialog()"
+  >
+    <div
+      class="dialog about-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="feeding-about-title"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="dialog-head about-dialog__head">
+        <h2 id="feeding-about-title" class="about-dialog__title">
+          <i class="pi pi-info-circle" aria-hidden="true"></i>
+          About
+        </h2>
+        <button
+          type="button"
+          class="dialog-close"
+          (click)="closeAboutDialog()"
+          aria-label="Đóng"
+        >
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+      <dl class="about-dialog__meta">
+        <div class="about-dialog__row">
+          <dt>Ứng dụng</dt>
+          <dd>{{ appInfo.name }}</dd>
+        </div>
+        <div class="about-dialog__row">
+          <dt>Phiên bản</dt>
+          <dd><code>{{ appInfo.version }}</code></dd>
+        </div>
+      </dl>
+      <div class="dialog-actions">
+        <button type="button" class="btn primary" (click)="closeAboutDialog()">Đóng</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Nhắc sự kiện lịch (sheet Event + Settings) -->
   <div

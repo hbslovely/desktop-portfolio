@@ -42,6 +42,7 @@ import {
   formatLogContent,
   ACTIVITY_EVENT,
 } from '../../services/activity-log.service';
+import { APP_INFO_TOKEN } from '../../app-info';
 
 interface Profile {
   babyName: string;
@@ -98,6 +99,9 @@ export class FeedingComponent {
   private weightLogService = inject(WeightLogService);
   private activityLogService = inject(ActivityLogService);
   private eventLogService = inject(EventLogService);
+  readonly appInfo = inject(APP_INFO_TOKEN);
+
+  aboutDialogOpen = signal(false);
 
   /** Vùng cuộn thật của trang (`.feeding-page`), không phải `document`. */
   @ViewChild('feedingPage', { static: true })
@@ -396,6 +400,14 @@ export class FeedingComponent {
   /** Đóng menu bánh răng trên hero merged (dùng sau khi chọn mục). */
   closeProfileActionsMenu(menu: HTMLDetailsElement): void {
     menu.removeAttribute('open');
+  }
+
+  openAboutDialog(): void {
+    this.aboutDialogOpen.set(true);
+  }
+
+  closeAboutDialog(): void {
+    this.aboutDialogOpen.set(false);
   }
 
   updateDraftName(value: string) {

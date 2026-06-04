@@ -386,6 +386,67 @@
   }
 }
 
+.about-dialog {
+  max-width: 360px;
+
+  &__head {
+    margin-bottom: 8px;
+  }
+
+  &__title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+
+    i {
+      color: var(--primary);
+    }
+  }
+
+  &__meta {
+    margin: 0 0 16px;
+    padding: 0;
+  }
+
+  &__row {
+    display: grid;
+    grid-template-columns: 96px 1fr;
+    gap: 8px 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+
+    &:last-child {
+      border-bottom: 0;
+    }
+
+    dt {
+      margin: 0;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted-2);
+    }
+
+    dd {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+
+      code {
+        font-size: 13px;
+        font-weight: 600;
+        padding: 2px 8px;
+        border-radius: 6px;
+        background: var(--primary-soft, #eef0ff);
+        color: var(--primary);
+      }
+    }
+  }
+}
+
 @media (max-width: 640px) {
   .hero-title--merged .emoji {
     font-size: 26px;
