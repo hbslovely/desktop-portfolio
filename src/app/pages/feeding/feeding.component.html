@@ -402,12 +402,7 @@
           <i class="pi pi-info-circle" aria-hidden="true"></i>
           About
         </h2>
-        <button
-          type="button"
-          class="dialog-close"
-          (click)="closeAboutDialog()"
-          aria-label="Đóng"
-        >
+        <button type="button" class="dialog-close" (click)="closeAboutDialog()" aria-label="Đóng">
           <i class="pi pi-times"></i>
         </button>
       </div>
@@ -418,7 +413,9 @@
         </div>
         <div class="about-dialog__row">
           <dt>Phiên bản</dt>
-          <dd><code>{{ appInfo.version }}</code></dd>
+          <dd>
+            <code>{{ appInfo.version }}</code>
+          </dd>
         </div>
       </dl>
       <div class="dialog-actions">
