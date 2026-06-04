@@ -1,5 +1,5 @@
 # Each push to default branch: commit package.json -rc version, then tag v<version>.
-# Example: 0.0.0 → commit 2026.06.1-rc.01 → tag v2026.06.1-rc.01
+# Next RC uses max(existing v{base}-rc.* tags, package.json) + 1 (e.g. .01 → .02 if .01 exists).
 # Skips chore(release) commits to avoid infinite loops.
 
 name: Commit RC version
@@ -38,11 +38,11 @@ jobs:
         run: |
           set -euo pipefail
           CURRENT="$(jq -r '.version' package.json)"
-          PACKAGE_VERSION="$(node .github/scripts/release-version.mjs rc "${CURRENT}")"
+          PACKAGE_VERSION="$(node .github/scripts/release-version.mjs next-rc "${CURRENT}")"
           RELEASE_TAG="v${PACKAGE_VERSION}"
 
-          if git rev-parse "refs/tags/${RELEASE_TAG}" >/dev/null 2>&1; then
-            echo "Tag ${RELEASE_TAG} already exists — skipping."
+          if [ "${PACKAGE_VERSION}" = "${CURRENT}" ]; then
+            echo "Version unchanged (${CURRENT}) — skipping."
             echo "should_bump=false" >> "${GITHUB_OUTPUT}"
             exit 0
           fi

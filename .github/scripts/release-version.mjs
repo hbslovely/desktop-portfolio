@@ -3,8 +3,10 @@
  * Version scheme:
  *   Monthly: YYYY.MM.1     (e.g. 2026.06.1)
  *   Daily:   YYYY.MM.N+1   (e.g. 2026.06.1 → 2026.06.2), strips -rc.NN
- *   Commit:  …-rc.01 → …-rc.02 (e.g. 2026.06.1 → 2026.06.1-rc.01)
+ *   Commit:  …-rc.NN — next number from max(package.json rc, existing v*-rc.* tags)
  */
+
+import { execSync } from 'node:child_process';
 
 const BASE_RE = /^(\d{4})\.(\d{2})\.(\d+)$/;
 const RC_RE = /^(\d{4})\.(\d{2})\.(\d+)-rc\.(\d{2})$/;
@@ -33,18 +35,52 @@ export function bumpDaily(version) {
   return `${m[1]}.${m[2]}.${patch}`;
 }
 
-export function bumpRc(version) {
+export function parseBaseVersion(version) {
   const rc = RC_RE.exec(version);
-  if (rc) {
-    const n = parseInt(rc[4], 10) + 1;
-    return `${rc[1]}.${rc[2]}.${rc[3]}-rc.${String(n).padStart(2, '0')}`;
-  }
+  if (rc) return `${rc[1]}.${rc[2]}.${rc[3]}`;
   const base = BASE_RE.exec(version);
-  if (base) {
-    return `${base[1]}.${base[2]}.${base[3]}-rc.01`;
+  if (base) return `${base[1]}.${base[2]}.${base[3]}`;
+  return monthlyVersion();
+}
+
+export function listRcTagsForBase(base) {
+  try {
+    const out = execSync(`git tag -l "v${base}-rc.*"`, {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    });
+    return out.trim().split('\n').filter(Boolean);
+  } catch {
+    return [];
   }
-  // e.g. 0.0.0 before first monthly release
-  return `${monthlyVersion()}-rc.01`;
+}
+
+/** Next -rc.NN: max(existing tags for base, rc in package.json) + 1 */
+export function nextRcVersion(packageVersion) {
+  const base = parseBaseVersion(packageVersion);
+  let maxRc = 0;
+
+  const inPkg = RC_RE.exec(packageVersion);
+  if (inPkg) {
+    maxRc = parseInt(inPkg[4], 10);
+  }
+
+  const prefix = `v${base}-rc.`;
+  for (const tag of listRcTagsForBase(base)) {
+    if (tag.startsWith(prefix)) {
+      const n = parseInt(tag.slice(prefix.length), 10);
+      if (!Number.isNaN(n)) {
+        maxRc = Math.max(maxRc, n);
+      }
+    }
+  }
+
+  return `${base}-rc.${String(maxRc + 1).padStart(2, '0')}`;
+}
+
+/** @deprecated Use nextRcVersion — only bumps from package.json, ignores existing tags */
+export function bumpRc(version) {
+  return nextRcVersion(version);
 }
 
 const cmd = process.argv[2];
@@ -61,9 +97,12 @@ switch (cmd) {
     console.log(bumpDaily(arg ?? ''));
     break;
   case 'rc':
-    console.log(bumpRc(arg ?? ''));
+  case 'next-rc':
+    console.log(nextRcVersion(arg ?? ''));
     break;
   default:
-    console.error('Usage: release-version.mjs <monthly|previous-monthly-tag|daily|rc> [version]');
+    console.error(
+      'Usage: release-version.mjs <monthly|previous-monthly-tag|daily|next-rc> [version]'
+    );
     process.exit(1);
 }
