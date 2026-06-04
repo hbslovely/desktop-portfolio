@@ -1,14 +1,16 @@
-# End of UTC day: commit package.json daily patch, then tag v<version>.
+# Daily patch for the completed UTC day. Runs 00:05 UTC and evaluates *yesterday*
+# so delayed runners never skip commits from the day that just ended (23:55 + date
+# at 00:10 would wrongly check the new calendar day).
 
 name: Daily patch release
 
 on:
   schedule:
-    - cron: "55 23 * * *"
+    - cron: "5 0 * * *"
   workflow_dispatch:
     inputs:
       date:
-        description: "UTC date (YYYY-MM-DD); default today UTC"
+        description: "UTC date to evaluate (YYYY-MM-DD); default yesterday UTC"
         required: false
         type: string
       force:
@@ -43,10 +45,16 @@ jobs:
         run: |
           set -euo pipefail
 
+          RUNNER_NOW="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          echo "Runner UTC now: ${RUNNER_NOW}"
+
           DAY="${{ github.event.inputs.date }}"
           if [ -z "${DAY}" ]; then
-            DAY="$(date -u +%Y-%m-%d)"
+            # Scheduled (and manual default): the UTC day that just finished
+            DAY="$(date -u -d 'yesterday' +%Y-%m-%d)"
           fi
+
+          echo "Evaluating commits for UTC day: ${DAY}"
 
           if ! echo "${DAY}" | grep -qE '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'; then
             echo "Invalid date: ${DAY}"
