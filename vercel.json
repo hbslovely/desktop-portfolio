@@ -5,11 +5,6 @@
   "outputDirectory": "dist",
   "installCommand": "npm install",
   "ignoreCommand": "node scripts/vercel-should-build.mjs",
-  "functions": {
-    "api/**/*.js": {
-      "runtime": "nodejs20.x"
-    }
-  },
   "rewrites": [
     {
       "source": "/api/stocks-v2/:path*",
