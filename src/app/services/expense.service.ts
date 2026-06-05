@@ -62,14 +62,16 @@ export interface ExpenseGroup {
 })
 class ExpenseService {
   // Google Sheets API configuration
-  // Sheet ID from the URL: https://docs.google.com/spreadsheets/d/1nlLxaRCSePOddntUeNsMBKx2qP6kGSNLsZwtyqSbb88/edit
-  private readonly SHEET_ID = '1nlLxaRCSePOddntUeNsMBKx2qP6kGSNLsZwtyqSbb88';
+  // Sheet ID is provided via environment variable
+  private readonly SHEET_ID = environment.googleExpenseSheetId;
   private readonly SHEET_NAME = 'Chi tiêu'; // Tab name
   private readonly API_KEY = environment.googleSheetsApiKey;
 
   // For private sheets, we'll use a proxy or Google Apps Script
   // For now, using a simple approach with Google Sheets API v4
-  private readonly BASE_URL = `https://sheets.googleapis.com/v4/spreadsheets/${this.SHEET_ID}`;
+  private readonly BASE_URL = this.SHEET_ID
+    ? `https://sheets.googleapis.com/v4/spreadsheets/${this.SHEET_ID}`
+    : '';
 
   // Alternative: Use Google Apps Script Web App
   // You can create a Google Apps Script that exposes GET and POST endpoints
@@ -100,6 +102,11 @@ class ExpenseService {
    * Uses caching to prevent multiple API calls
    */
   getExpenses(forceRefresh: boolean = false): Observable<Expense[]> {
+    if (!this.BASE_URL || !this.API_KEY) {
+      return throwError(
+        () => new Error('Thiếu cấu hình Google Sheet. Hãy set NG_APP_GOOGLE_EXPENSE_SHEET_ID và API key.')
+      );
+    }
     // Check cache first
     const now = Date.now();
     if (!forceRefresh && this.cachedExpenses$ && now - this.lastLoadTime < this.CACHE_DURATION) {
@@ -222,6 +229,11 @@ class ExpenseService {
     }
 
     // Fallback: Try API key (will fail for write operations)
+    if (!this.BASE_URL || !this.API_KEY) {
+      return throwError(
+        () => new Error('Thiếu cấu hình Google Sheet fallback. Hãy set NG_APP_GOOGLE_EXPENSE_SHEET_ID.')
+      );
+    }
     const dateStr = this.formatDateForSheet(expense.date);
     const amountStr = this.formatAmountForSheet(expense.amount);
     const values = [
@@ -292,6 +304,11 @@ class ExpenseService {
 
     // Fallback: Try API key (will fail for write operations)
     // This is only for backward compatibility
+    if (!this.BASE_URL || !this.API_KEY) {
+      return throwError(
+        () => new Error('Thiếu cấu hình Google Sheet fallback. Hãy set NG_APP_GOOGLE_EXPENSE_SHEET_ID.')
+      );
+    }
     const dateStr = this.formatDateForSheet(expense.date);
     const amountStr = this.formatAmountForSheet(expense.amount);
     const values = [
@@ -339,6 +356,11 @@ class ExpenseService {
    * Columns: A = Category, B = Amount
    */
   getBudgets(forceRefresh: boolean = false): Observable<CategoryBudget[]> {
+    if (!this.BASE_URL || !this.API_KEY) {
+      return throwError(
+        () => new Error('Thiếu cấu hình Google Sheet. Hãy set NG_APP_GOOGLE_EXPENSE_SHEET_ID và API key.')
+      );
+    }
     // Check cache first
     const now = Date.now();
     if (

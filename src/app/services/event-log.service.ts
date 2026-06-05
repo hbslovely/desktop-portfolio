@@ -27,10 +27,12 @@ export interface EventSheetResponse {
 export class EventLogService {
   private http = inject(HttpClient);
 
-  private readonly SHEET_ID = '1O4kAA61k4cX4mEwAjDy5gioVUAElCyu62Z3zPvgdDMM';
+  private readonly SHEET_ID = environment.googleFeedingSheetId;
   private readonly SHEET_NAME = 'Event';
   private readonly API_KEY = environment.googleSheetsApiKey;
-  private readonly BASE_URL = `https://sheets.googleapis.com/v4/spreadsheets/${this.SHEET_ID}`;
+  private readonly BASE_URL = this.SHEET_ID
+    ? `https://sheets.googleapis.com/v4/spreadsheets/${this.SHEET_ID}`
+    : '';
 
   private readonly APPS_SCRIPT_URL = '/api/feeding-apps-script';
 
@@ -43,6 +45,10 @@ export class EventLogService {
    * A User | B Ngày DD/MM/YYYY | C Giờ HH:mm | D Tên sự kiện | E Ghi chú | F Vị trí | G Acknowledge
    */
   loadEvents(): Observable<FeedingEventLog[]> {
+    if (!this.BASE_URL || !this.API_KEY) {
+      this.events.set([]);
+      return of([]);
+    }
     this.loading.set(true);
     const range = `${this.SHEET_NAME}!A2:G`;
     const url = `${this.BASE_URL}/values/${encodeURIComponent(

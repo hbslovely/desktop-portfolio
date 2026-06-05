@@ -39,7 +39,7 @@ export class MedicalHistoryService {
   private dataMapper = inject(MedicalDataMapperService);
   private errorHandler = inject(MedicalErrorHandlerService);
 
-  private readonly SHEET_ID = '1O4kAA61k4cX4mEwAjDy5gioVUAElCyu62Z3zPvgdDMM';
+  private readonly SHEET_ID = environment.googleFeedingSheetId;
   private readonly SHEET_GID = '836488919'; // Medical History tab GID
   private readonly SHEET_NAME = 'MedicalHistory'; // Will fallback to GID if name doesn't work
 
@@ -56,6 +56,11 @@ export class MedicalHistoryService {
    *   G = Google Drive file ID cho ảnh đính kèm, có thể để trống
    */
   getEntries(): Observable<MedicalHistoryEntry[]> {
+    if (!this.SHEET_ID) {
+      return throwError(
+        () => new Error('Thiếu cấu hình Google Sheet. Hãy set NG_APP_GOOGLE_FEEDING_SHEET_ID.')
+      );
+    }
     const config = {
       spreadsheetId: this.SHEET_ID,
       sheetGid: this.SHEET_GID,
@@ -84,6 +89,13 @@ export class MedicalHistoryService {
    * Test method to verify Google Sheets connection and data format
    */
   testConnection(): Observable<{ success: boolean; message: string; rowCount: number }> {
+    if (!this.SHEET_ID) {
+      return of({
+        success: false,
+        message: 'Thiếu cấu hình NG_APP_GOOGLE_FEEDING_SHEET_ID',
+        rowCount: 0,
+      });
+    }
     const config = {
       spreadsheetId: this.SHEET_ID,
       sheetGid: this.SHEET_GID,

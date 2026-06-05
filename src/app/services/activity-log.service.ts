@@ -375,10 +375,12 @@ interface LogSheetResponse {
 export class ActivityLogService {
   private http = inject(HttpClient);
 
-  private readonly SHEET_ID = '1O4kAA61k4cX4mEwAjDy5gioVUAElCyu62Z3zPvgdDMM';
+  private readonly SHEET_ID = environment.googleFeedingSheetId;
   private readonly SHEET_NAME = 'Log';
   private readonly API_KEY = environment.googleSheetsApiKey;
-  private readonly BASE_URL = `https://sheets.googleapis.com/v4/spreadsheets/${this.SHEET_ID}`;
+  private readonly BASE_URL = this.SHEET_ID
+    ? `https://sheets.googleapis.com/v4/spreadsheets/${this.SHEET_ID}`
+    : '';
   private readonly STORAGE_KEY = 'activity-log-last-read-id';
 
   /** Luôn dùng proxy nội bộ để ổn định trên Safari/iOS. */
@@ -530,6 +532,10 @@ export class ActivityLogService {
 
   /** Fetch logs from sheet */
   private fetchLogs(): Observable<ActivityLogRow[]> {
+    if (!this.BASE_URL || !this.API_KEY) {
+      this.loading.set(false);
+      return of([]);
+    }
     this.loading.set(true);
     const url = `${this.BASE_URL}/values/${encodeURIComponent(this.SHEET_NAME)}?key=${this.API_KEY}`;
 
