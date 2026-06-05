@@ -524,7 +524,9 @@ export class FeedingComponent {
     this.notificationLogService.loadNotifications().subscribe({
       next: () => {},
       error: () => {
-        this.notificationError.set('Không tải được tab Notification. Kiểm tra tên tab và quyền truy cập.');
+        this.notificationError.set(
+          'Không tải được tab Notification. Kiểm tra tên tab và quyền truy cập.'
+        );
       },
     });
   }

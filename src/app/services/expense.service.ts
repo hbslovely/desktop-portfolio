@@ -104,7 +104,10 @@ class ExpenseService {
   getExpenses(forceRefresh: boolean = false): Observable<Expense[]> {
     if (!this.BASE_URL || !this.API_KEY) {
       return throwError(
-        () => new Error('Thiếu cấu hình Google Sheet. Hãy set NG_APP_GOOGLE_EXPENSE_SHEET_ID và API key.')
+        () =>
+          new Error(
+            'Thiếu cấu hình Google Sheet. Hãy set NG_APP_GOOGLE_EXPENSE_SHEET_ID và API key.'
+          )
       );
     }
     // Check cache first
@@ -231,7 +234,8 @@ class ExpenseService {
     // Fallback: Try API key (will fail for write operations)
     if (!this.BASE_URL || !this.API_KEY) {
       return throwError(
-        () => new Error('Thiếu cấu hình Google Sheet fallback. Hãy set NG_APP_GOOGLE_EXPENSE_SHEET_ID.')
+        () =>
+          new Error('Thiếu cấu hình Google Sheet fallback. Hãy set NG_APP_GOOGLE_EXPENSE_SHEET_ID.')
       );
     }
     const dateStr = this.formatDateForSheet(expense.date);
@@ -306,7 +310,8 @@ class ExpenseService {
     // This is only for backward compatibility
     if (!this.BASE_URL || !this.API_KEY) {
       return throwError(
-        () => new Error('Thiếu cấu hình Google Sheet fallback. Hãy set NG_APP_GOOGLE_EXPENSE_SHEET_ID.')
+        () =>
+          new Error('Thiếu cấu hình Google Sheet fallback. Hãy set NG_APP_GOOGLE_EXPENSE_SHEET_ID.')
       );
     }
     const dateStr = this.formatDateForSheet(expense.date);
@@ -358,7 +363,10 @@ class ExpenseService {
   getBudgets(forceRefresh: boolean = false): Observable<CategoryBudget[]> {
     if (!this.BASE_URL || !this.API_KEY) {
       return throwError(
-        () => new Error('Thiếu cấu hình Google Sheet. Hãy set NG_APP_GOOGLE_EXPENSE_SHEET_ID và API key.')
+        () =>
+          new Error(
+            'Thiếu cấu hình Google Sheet. Hãy set NG_APP_GOOGLE_EXPENSE_SHEET_ID và API key.'
+          )
       );
     }
     // Check cache first

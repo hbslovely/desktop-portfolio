@@ -90,7 +90,10 @@ export class BusinessService {
   getItems(sheetName: SheetName, forceRefresh: boolean = false): Observable<BusinessItem[]> {
     if (!this.BASE_URL || !this.API_KEY) {
       return throwError(
-        () => new Error('Thiếu cấu hình Google Sheet. Hãy set NG_APP_GOOGLE_BUSINESS_SHEET_ID và API key.')
+        () =>
+          new Error(
+            'Thiếu cấu hình Google Sheet. Hãy set NG_APP_GOOGLE_BUSINESS_SHEET_ID và API key.'
+          )
       );
     }
     // Check cache

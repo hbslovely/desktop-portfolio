@@ -46,7 +46,10 @@ export class WeightLogService {
   getLogs(): Observable<WeightLog[]> {
     if (!this.BASE_URL || !this.API_KEY) {
       return throwError(
-        () => new Error('Thiếu cấu hình Google Sheet. Hãy set NG_APP_GOOGLE_FEEDING_SHEET_ID và API key.')
+        () =>
+          new Error(
+            'Thiếu cấu hình Google Sheet. Hãy set NG_APP_GOOGLE_FEEDING_SHEET_ID và API key.'
+          )
       );
     }
     const range = `${this.SHEET_NAME}!A2:E`;
