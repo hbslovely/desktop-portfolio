@@ -179,11 +179,13 @@ export function parseFeedingSettingsFromRows(rows: FeedingSettingRow[]): Feeding
 export class FeedingLogService {
   private http = inject(HttpClient);
 
-  private readonly SHEET_ID = '1O4kAA61k4cX4mEwAjDy5gioVUAElCyu62Z3zPvgdDMM';
+  private readonly SHEET_ID = environment.googleFeedingSheetId;
   private readonly SHEET_NAME = 'Feeding';
   private readonly SETTINGS_SHEET_NAME = 'Settings';
   private readonly API_KEY = environment.googleSheetsApiKey;
-  private readonly BASE_URL = `https://sheets.googleapis.com/v4/spreadsheets/${this.SHEET_ID}`;
+  private readonly BASE_URL = this.SHEET_ID
+    ? `https://sheets.googleapis.com/v4/spreadsheets/${this.SHEET_ID}`
+    : '';
 
   /**
    * Luôn đi qua same-origin proxy trên Vercel để tránh redirect CORS của
@@ -202,6 +204,11 @@ export class FeedingLogService {
    * Trả về TẤT CẢ cữ bú trong sheet — mọi user share chung dữ liệu của bé.
    */
   getLogs(): Observable<FeedingLog[]> {
+    if (!this.BASE_URL || !this.API_KEY) {
+      return throwError(
+        () => new Error('Thiếu cấu hình Google Sheet. Hãy set NG_APP_GOOGLE_FEEDING_SHEET_ID và API key.')
+      );
+    }
     const range = `${this.SHEET_NAME}!A2:E`;
     const url = `${this.BASE_URL}/values/${range}?key=${this.API_KEY}&valueRenderOption=FORMATTED_VALUE`;
 
@@ -254,6 +261,9 @@ export class FeedingLogService {
    * Nếu K trống (script cũ): suy ra `at` từ J + ngày gần nhất với giờ đó.
    */
   getBottlePrep(): Observable<BottlePrepFromSheet | null> {
+    if (!this.BASE_URL || !this.API_KEY) {
+      return of(null);
+    }
     const range = `${this.SHEET_NAME}!G1:K1`;
     const url = `${this.BASE_URL}/values/${range}?key=${this.API_KEY}&valueRenderOption=FORMATTED_VALUE`;
 
@@ -271,6 +281,9 @@ export class FeedingLogService {
    * Sheet cần public read như tab Feeding.
    */
   getFeedingSettings(): Observable<FeedingSettingRow[]> {
+    if (!this.BASE_URL || !this.API_KEY) {
+      return of([]);
+    }
     const range = `${this.SETTINGS_SHEET_NAME}!A2:E`;
     const url = `${this.BASE_URL}/values/${encodeURIComponent(range)}?key=${this.API_KEY}&valueRenderOption=FORMATTED_VALUE`;
 

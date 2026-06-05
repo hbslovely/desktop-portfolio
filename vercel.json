@@ -11,23 +11,15 @@
       "use": "@vercel/static-build"
     },
     {
-      "src": "api/help.js",
+      "src": "api/feeding-apps-script.js",
       "use": "@vercel/node"
     },
     {
-      "src": "api/test-minimal.js",
+      "src": "api/business-apps-script.js",
       "use": "@vercel/node"
     },
     {
-      "src": "api/stocks/list.js",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "api/stocks/save.js",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "api/stocks/[symbol].js",
+      "src": "api/google-apps-script.js",
       "use": "@vercel/node"
     }
   ],
@@ -67,18 +59,6 @@
     {
       "source": "/api/tuoitre/:path*",
       "destination": "https://tuoitre.vn/:path*"
-    },
-    {
-      "source": "/api/google-apps-script",
-      "destination": "https://script.google.com/macros/s/AKfycbxeq8IaFmt6U-iihS-JwXF3tyGvekHQiRdRX7ZTPGsmktpovzYghy9WSJcw2flvYGUHqA/exec"
-    },
-    {
-      "source": "/api/business-apps-script",
-      "destination": "https://script.google.com/macros/s/AKfycbyWFdurzG4dxdIgQi3F8LDsgHJ2-k5d8_tM5tU7B0ArjOPURF1ykkqd-rg1AL9LyJp0Nw/exec"
-    },
-    {
-      "source": "/api/feeding-apps-script",
-      "destination": "https://script.google.com/macros/s/AKfycbzeEaz8xMniaEU8f-65tkER8OSCvBn1xGN0hH4GYLRAHVIlT4n6jdLHhPu-IcdCI3C05A/exec"
     },
     {
       "source": "/api/dnse-api/:path*",

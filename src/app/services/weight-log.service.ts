@@ -26,10 +26,12 @@ export interface WeightSheetResponse {
 export class WeightLogService {
   private http = inject(HttpClient);
 
-  private readonly SHEET_ID = '1O4kAA61k4cX4mEwAjDy5gioVUAElCyu62Z3zPvgdDMM';
+  private readonly SHEET_ID = environment.googleFeedingSheetId;
   private readonly SHEET_NAME = 'Weight';
   private readonly API_KEY = environment.googleSheetsApiKey;
-  private readonly BASE_URL = `https://sheets.googleapis.com/v4/spreadsheets/${this.SHEET_ID}`;
+  private readonly BASE_URL = this.SHEET_ID
+    ? `https://sheets.googleapis.com/v4/spreadsheets/${this.SHEET_ID}`
+    : '';
 
   private readonly APPS_SCRIPT_URL = '/api/feeding-apps-script';
 
@@ -42,6 +44,11 @@ export class WeightLogService {
    *   E = Ghi chú
    */
   getLogs(): Observable<WeightLog[]> {
+    if (!this.BASE_URL || !this.API_KEY) {
+      return throwError(
+        () => new Error('Thiếu cấu hình Google Sheet. Hãy set NG_APP_GOOGLE_FEEDING_SHEET_ID và API key.')
+      );
+    }
     const range = `${this.SHEET_NAME}!A2:E`;
     const url = `${this.BASE_URL}/values/${range}?key=${this.API_KEY}&valueRenderOption=FORMATTED_VALUE`;
 

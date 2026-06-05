@@ -62,9 +62,11 @@ export type SheetName = 'Menu' | 'Nguồn nguyên liệu' | 'Nguồn vật liệ
   providedIn: 'root',
 })
 export class BusinessService {
-  private readonly SHEET_ID = '1EHt1u4Ap8TfIwcH17OmdnlmXidnBHOb1wjuHA_ukB5g';
+  private readonly SHEET_ID = environment.googleBusinessSheetId;
   private readonly API_KEY = environment.googleSheetsApiKey;
-  private readonly BASE_URL = `https://sheets.googleapis.com/v4/spreadsheets/${this.SHEET_ID}`;
+  private readonly BASE_URL = this.SHEET_ID
+    ? `https://sheets.googleapis.com/v4/spreadsheets/${this.SHEET_ID}`
+    : '';
 
   // Use Google Apps Script for write operations (add, update, delete)
   // Google Sheets API v4 does not support write operations with API Key
@@ -86,6 +88,11 @@ export class BusinessService {
    * Uses Google Sheets API v4 for reading data (API Key can read public/accessible sheets)
    */
   getItems(sheetName: SheetName, forceRefresh: boolean = false): Observable<BusinessItem[]> {
+    if (!this.BASE_URL || !this.API_KEY) {
+      return throwError(
+        () => new Error('Thiếu cấu hình Google Sheet. Hãy set NG_APP_GOOGLE_BUSINESS_SHEET_ID và API key.')
+      );
+    }
     // Check cache
     const now = Date.now();
     const cached = this.cache[sheetName];
@@ -203,6 +210,30 @@ export class BusinessService {
    * Uses Google Sheets API directly (similar to expense.service.ts)
    */
   addItem(sheetName: SheetName, item: BusinessItem): Observable<any> {
+    if (!this.BASE_URL || !this.API_KEY) {
+      if (this.APPS_SCRIPT_URL) {
+        return this.http.post(
+          this.APPS_SCRIPT_URL,
+          {
+            action: 'add',
+            sheetName,
+            item,
+          },
+          {
+            headers: new HttpHeaders({
+              'Content-Type': 'application/json',
+            }),
+          }
+        );
+      }
+      return throwError(
+        () =>
+          new Error(
+            'Thiếu cấu hình Google Sheet. Hãy set NG_APP_GOOGLE_BUSINESS_SHEET_ID và API key.'
+          )
+      );
+    }
+
     // Try Google Sheets API first (fallback to Apps Script if needed)
     let range: string;
     let values: string[][];
