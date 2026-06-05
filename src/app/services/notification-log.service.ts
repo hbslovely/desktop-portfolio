@@ -59,7 +59,10 @@ export class NotificationLogService {
     );
   }
 
-  addNotification(payload: { user: string; content: string }): Observable<NotificationSheetResponse> {
+  addNotification(payload: {
+    user: string;
+    content: string;
+  }): Observable<NotificationSheetResponse> {
     if (!this.APPS_SCRIPT_URL) {
       return throwError(() => new Error('Chưa cấu hình Google Apps Script URL'));
     }
