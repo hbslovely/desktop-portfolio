@@ -38,6 +38,9 @@ export const ACTIVITY_EVENT = {
   // Settings events
   SETTINGS_UPDATED: 'SETTINGS_UPDATED',
   PROFILE_UPDATED: 'PROFILE_UPDATED',
+  NOTIFICATION_CREATED: 'NOTIFICATION_CREATED',
+  NOTIFICATION_ACKNOWLEDGED: 'NOTIFICATION_ACKNOWLEDGED',
+  NOTIFICATION_DELETED: 'NOTIFICATION_DELETED',
 
   // Document/Explorer events
   FILE_ADDED: 'FILE_ADDED',
@@ -187,6 +190,14 @@ export function formatLogContent(
       return `Cập nhật cài đặt '${details['setting']}'`;
     case ACTIVITY_EVENT.PROFILE_UPDATED:
       return `Cập nhật thông tin '${details['field']}'`;
+    case ACTIVITY_EVENT.NOTIFICATION_CREATED:
+      return `Tạo thông báo '${details['content']}'`;
+    case ACTIVITY_EVENT.NOTIFICATION_ACKNOWLEDGED:
+      return details['owner']
+        ? `Đọc thông báo '${details['content']}' của '${details['owner']}'`
+        : `Đọc thông báo '${details['content']}'`;
+    case ACTIVITY_EVENT.NOTIFICATION_DELETED:
+      return `Xóa thông báo '${details['content']}'`;
 
     // Documents
     case ACTIVITY_EVENT.FILE_ADDED:
@@ -300,6 +311,9 @@ export function getEventTypeLabel(eventType: ActivityEventType): string {
     [ACTIVITY_EVENT.SCHEDULE_DELETED]: 'Xóa lịch',
     [ACTIVITY_EVENT.SETTINGS_UPDATED]: 'Cài đặt',
     [ACTIVITY_EVENT.PROFILE_UPDATED]: 'Hồ sơ',
+    [ACTIVITY_EVENT.NOTIFICATION_CREATED]: 'Tạo thông báo',
+    [ACTIVITY_EVENT.NOTIFICATION_ACKNOWLEDGED]: 'Đã đọc thông báo',
+    [ACTIVITY_EVENT.NOTIFICATION_DELETED]: 'Xóa thông báo',
     [ACTIVITY_EVENT.FILE_ADDED]: 'Tải file',
     [ACTIVITY_EVENT.FILE_DELETED]: 'Xóa file',
     [ACTIVITY_EVENT.FILE_MOVED]: 'Di chuyển file',
@@ -315,6 +329,8 @@ export function getEventTypeLabel(eventType: ActivityEventType): string {
 export function getEventTypeIcon(eventType: ActivityEventType): string {
   if (isActivityDeleteEvent(eventType)) return 'pi-trash';
   if (eventType.includes('_UPDATED') || eventType.includes('_RENAMED')) return 'pi-pencil';
+  if (eventType.includes('_ACKNOWLEDGED')) return 'pi-check-circle';
+  if (eventType.includes('_CREATED')) return 'pi-plus-circle';
   if (eventType === ACTIVITY_EVENT.BOTTLE_PREP_ADDED) return 'pi-box';
   if (eventType.includes('_ADDED')) return 'pi-plus-circle';
   if (eventType === ACTIVITY_EVENT.FILE_MOVED) return 'pi-arrow-right';
@@ -333,6 +349,8 @@ export function getEventTypeIcon(eventType: ActivityEventType): string {
 /** Map event type sang màu */
 export function getEventTypeColor(eventType: ActivityEventType): string {
   if (isActivityDeleteEvent(eventType)) return 'red';
+  if (eventType.includes('_ACKNOWLEDGED')) return 'green';
+  if (eventType.includes('_CREATED')) return 'green';
   if (eventType.includes('_ADDED')) return 'green';
   if (eventType.includes('_UPDATED')) return 'blue';
   return 'gray';

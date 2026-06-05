@@ -42,6 +42,7 @@ import {
   formatLogContent,
   ACTIVITY_EVENT,
 } from '../../services/activity-log.service';
+import { NotificationLog, NotificationLogService } from '../../services/notification-log.service';
 import { APP_INFO_TOKEN } from '../../app-info';
 
 interface Profile {
@@ -70,6 +71,7 @@ interface DayStats {
 }
 
 const STORAGE_PREFIX = 'feeding-profile::';
+const INITIAL_NOTIFICATION_VISIBLE = 2;
 
 @Component({
   selector: 'app-feeding',
@@ -99,6 +101,7 @@ export class FeedingComponent {
   private weightLogService = inject(WeightLogService);
   private activityLogService = inject(ActivityLogService);
   private eventLogService = inject(EventLogService);
+  private notificationLogService = inject(NotificationLogService);
   readonly appInfo = inject(APP_INFO_TOKEN);
 
   aboutDialogOpen = signal(false);
@@ -179,6 +182,11 @@ export class FeedingComponent {
   private eventReminderHandledThisLoad = signal(false);
   /** Synced from daily + dialogs (log calc). */
   bottlePrep = signal<BottlePrepFromSheet | null>(null);
+  notificationDraft = signal('');
+  notificationSaving = signal(false);
+  notificationListDialogOpen = signal(false);
+  notificationError = signal('');
+  notificationComposerDialogOpen = signal(false);
 
   /** Ngày đang xem trên card lịch sử (mặc định: hôm qua). */
   ageInDays = computed<number | null>(() => {
@@ -205,6 +213,23 @@ export class FeedingComponent {
       const windowStart = dt - leadMs;
       return nowMs >= windowStart;
     });
+  });
+
+  visibleNotifications = computed<NotificationLog[]>(() => {
+    const currentUser = this.user().trim().toLowerCase();
+    if (!currentUser) return [];
+    return this.notificationLogService
+      .notifications()
+      .filter((item) => !item.acknowledgeUsers.includes(currentUser));
+  });
+
+  displayedNotifications = computed<NotificationLog[]>(() => {
+    return this.visibleNotifications().slice(0, INITIAL_NOTIFICATION_VISIBLE);
+  });
+
+  hiddenNotificationCount = computed<number>(() => {
+    const hidden = this.visibleNotifications().length - this.displayedNotifications().length;
+    return hidden > 0 ? hidden : 0;
   });
 
   /** Hero gộp tóm tắt profile (bỏ card overview riêng). */
@@ -320,6 +345,7 @@ export class FeedingComponent {
       this.loadFeedingSettings(); // Load again with user context
       this.loadWeightLogs();
       this.loadScheduleEvents();
+      this.loadNotifications();
     });
 
     const clockId = window.setInterval(() => this.now.set(new Date()), 60_000);
@@ -491,6 +517,213 @@ export class FeedingComponent {
         /* Sheet/Event có thể chưa tồn tại — không chặn app */
       },
     });
+  }
+
+  loadNotifications(): void {
+    this.notificationError.set('');
+    this.notificationLogService.loadNotifications().subscribe({
+      next: () => {},
+      error: () => {
+        this.notificationError.set('Không tải được tab Notification. Kiểm tra tên tab và quyền truy cập.');
+      },
+    });
+  }
+
+  updateNotificationDraft(value: string): void {
+    this.notificationDraft.set(value);
+  }
+
+  openNotificationComposerDialog(): void {
+    this.notificationError.set('');
+    this.notificationComposerDialogOpen.set(true);
+  }
+
+  closeNotificationComposerDialog(): void {
+    if (this.notificationSaving()) return;
+    this.notificationComposerDialogOpen.set(false);
+  }
+
+  openNotificationListDialog(): void {
+    this.notificationListDialogOpen.set(true);
+  }
+
+  closeNotificationListDialog(): void {
+    if (this.notificationSaving()) return;
+    this.notificationListDialogOpen.set(false);
+  }
+
+  createNotification(): void {
+    const content = this.notificationDraft().trim();
+    if (!content || this.notificationSaving()) return;
+
+    this.notificationSaving.set(true);
+    this.notificationError.set('');
+    const actor = this.user().trim().toLowerCase() || 'guest';
+
+    this.notificationLogService
+      .addNotification({ user: actor, content })
+      .pipe(finalize(() => this.notificationSaving.set(false)))
+      .subscribe({
+        next: (res) => {
+          if (res.success === false) {
+            this.notificationError.set(res.error || 'Tạo thông báo thất bại.');
+            return;
+          }
+          this.notificationDraft.set('');
+          this.logNotificationAction('create', content);
+          this.notificationComposerDialogOpen.set(false);
+          this.loadNotifications();
+        },
+        error: () => {
+          this.notificationError.set('Tạo thông báo thất bại. Vui lòng thử lại.');
+        },
+      });
+  }
+
+  acknowledgeNotification(item: NotificationLog): void {
+    if (!item.rowIndex || this.notificationSaving()) return;
+    const actor = this.user().trim().toLowerCase() || 'guest';
+    const previous = this.notificationLogService.notifications();
+
+    // Optimistic UI: ẩn thông báo ngay khi user bấm acknowledge.
+    this.notificationLogService.notifications.update((rows) =>
+      rows.map((row) => {
+        if (row.rowIndex !== item.rowIndex) return row;
+        if (row.acknowledgeUsers.includes(actor)) return row;
+        return { ...row, acknowledgeUsers: [...row.acknowledgeUsers, actor] };
+      })
+    );
+
+    this.notificationSaving.set(true);
+    this.notificationError.set('');
+    this.notificationLogService
+      .acknowledgeNotification(item.rowIndex, actor)
+      .pipe(finalize(() => this.notificationSaving.set(false)))
+      .subscribe({
+        next: (res) => {
+          if (res.success === false) {
+            this.notificationLogService.notifications.set(previous);
+            this.notificationError.set(res.error || 'Không thể xác nhận đã đọc thông báo.');
+            return;
+          }
+          this.logNotificationAction('ack', item.content, item.user);
+          this.loadNotifications();
+        },
+        error: () => {
+          this.notificationLogService.notifications.set(previous);
+          this.notificationError.set('Không thể xác nhận đã đọc thông báo.');
+        },
+      });
+  }
+
+  deleteNotification(item: NotificationLog): void {
+    if (!item.rowIndex || !this.canDeleteNotification(item) || this.notificationSaving()) return;
+    if (!confirm('Bạn có chắc muốn xóa thông báo này?')) return;
+
+    const actor = this.user().trim().toLowerCase() || 'guest';
+    this.notificationSaving.set(true);
+    this.notificationError.set('');
+
+    this.notificationLogService
+      .deleteNotification(item.rowIndex, actor)
+      .pipe(finalize(() => this.notificationSaving.set(false)))
+      .subscribe({
+        next: (res) => {
+          if (res.success === false) {
+            this.notificationError.set(
+              res.error || 'Chỉ người tạo thông báo mới được phép xóa thông báo.'
+            );
+            return;
+          }
+          this.logNotificationAction('delete', item.content, item.user);
+          this.loadNotifications();
+        },
+        error: () => {
+          this.notificationError.set('Xóa thông báo thất bại.');
+        },
+      });
+  }
+
+  canDeleteNotification(item: NotificationLog): boolean {
+    return item.user === (this.user().trim().toLowerCase() || 'guest');
+  }
+
+  acknowledgeAllNotifications(): void {
+    const actor = this.user().trim().toLowerCase() || 'guest';
+    const rows = this.visibleNotifications().filter((item) => !!item.rowIndex);
+    if (rows.length === 0 || this.notificationSaving()) return;
+
+    const previous = this.notificationLogService.notifications();
+    this.notificationError.set('');
+    this.notificationSaving.set(true);
+
+    // Optimistic UI: ẩn toàn bộ thông báo ngay khi user bấm "đã đọc tất cả".
+    this.notificationLogService.notifications.update((allRows) =>
+      allRows.map((row) => {
+        if (!row.rowIndex) return row;
+        const target = rows.find((item) => item.rowIndex === row.rowIndex);
+        if (!target) return row;
+        if (row.acknowledgeUsers.includes(actor)) return row;
+        return { ...row, acknowledgeUsers: [...row.acknowledgeUsers, actor] };
+      })
+    );
+
+    forkJoin(
+      rows.map((item) =>
+        this.notificationLogService
+          .acknowledgeNotification(item.rowIndex as number, actor)
+          .pipe(catchError(() => of({ success: false })))
+      )
+    )
+      .pipe(finalize(() => this.notificationSaving.set(false)))
+      .subscribe((results) => {
+        const hasFailed = results.some((res) => res.success === false);
+        if (hasFailed) {
+          this.notificationLogService.notifications.set(previous);
+          this.notificationError.set('Không thể đánh dấu tất cả đã đọc. Vui lòng thử lại.');
+          return;
+        }
+
+        rows.forEach((item) => this.logNotificationAction('ack', item.content, item.user));
+        this.loadNotifications();
+      });
+  }
+
+  formatNotificationCreatedAt(value?: string): string {
+    if (!value) return '';
+    const dt = new Date(value);
+    if (Number.isNaN(dt.getTime())) return value;
+    return dt.toLocaleString('vi-VN', {
+      hour12: false,
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  }
+
+  private logNotificationAction(
+    action: 'create' | 'ack' | 'delete',
+    content: string,
+    owner?: string
+  ): void {
+    const actor = this.user().trim().toLowerCase() || 'guest';
+    if (!content) return;
+
+    let eventType: (typeof ACTIVITY_EVENT)[keyof typeof ACTIVITY_EVENT] =
+      ACTIVITY_EVENT.NOTIFICATION_CREATED;
+    if (action === 'ack') eventType = ACTIVITY_EVENT.NOTIFICATION_ACKNOWLEDGED;
+    if (action === 'delete') eventType = ACTIVITY_EVENT.NOTIFICATION_DELETED;
+
+    const message = formatLogContent(eventType, { content, owner });
+    this.activityLogService
+      .addLog({
+        user: actor,
+        eventType,
+        content: message,
+      })
+      .subscribe();
   }
 
   /** Giống F5 — cho phép kiểm tra và mở lại dialog nhắc sự kiện. */
@@ -674,6 +907,7 @@ export class FeedingComponent {
     this.documentsCmp?.refresh();
     this.resetEventReminderSessionForReload();
     this.loadScheduleEvents({ checkReminder: true });
+    this.loadNotifications();
   }
 
   /** Khi có activity mới từ user khác — reload toàn bộ dữ liệu */

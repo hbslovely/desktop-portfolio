@@ -179,6 +179,222 @@
             </div>
           </div>
         </div>
+
+        <section class="hero-notification" aria-label="Thông báo nội bộ">
+          <div class="hero-notification__head">
+            <label class="hero-notification__composer-label" for="hero-notification-input">
+              <i class="pi pi-megaphone" aria-hidden="true"></i>
+              <span>Thông báo</span>
+            </label>
+            <div class="hero-notification__head-actions">
+              <button
+                type="button"
+                class="hero-notification__mark-all"
+                (click)="acknowledgeAllNotifications()"
+                [disabled]="notificationSaving() || visibleNotifications().length === 0"
+                title="Đánh dấu tất cả đã đọc"
+              >
+                Đánh dấu tất cả đã đọc
+              </button>
+              <button
+                type="button"
+                class="hero-notification__add"
+                (click)="openNotificationComposerDialog()"
+                aria-label="Tạo thông báo"
+                title="Tạo thông báo"
+              >
+                <i class="pi pi-plus" aria-hidden="true"></i>
+              </button>
+            </div>
+          </div>
+
+          <ul class="hero-notification__list" *ngIf="displayedNotifications().length > 0; else noNotice">
+            <li class="hero-notification__item" *ngFor="let notice of displayedNotifications()">
+              <div class="hero-notification__item-actions">
+                <button
+                  type="button"
+                  class="hero-notification__ack-top"
+                  (click)="acknowledgeNotification(notice)"
+                  [disabled]="notificationSaving()"
+                  aria-label="Đã đọc thông báo"
+                  title="Đã đọc"
+                >
+                  <i class="pi pi-times" aria-hidden="true"></i>
+                </button>
+                <button
+                  *ngIf="canDeleteNotification(notice)"
+                  type="button"
+                  class="hero-notification__delete"
+                  (click)="deleteNotification(notice)"
+                  [disabled]="notificationSaving()"
+                  aria-label="Xóa thông báo"
+                  title="Xóa thông báo"
+                >
+                  <i class="pi pi-trash" aria-hidden="true"></i>
+                </button>
+              </div>
+              <p class="hero-notification__content">{{ notice.content }}</p>
+              <div class="hero-notification__meta">
+                <span class="hero-notification__author">— {{ notice.user }}</span>
+                <span class="hero-notification__created" *ngIf="notice.createdAt">{{
+                  formatNotificationCreatedAt(notice.createdAt)
+                }}</span>
+              </div>
+            </li>
+          </ul>
+
+          <ng-template #noNotice>
+            <p class="hero-notification__empty">Không có thông báo mới.</p>
+          </ng-template>
+
+          <button
+            *ngIf="hiddenNotificationCount() > 0"
+            type="button"
+            class="hero-notification__more"
+            (click)="openNotificationListDialog()"
+          >
+            {{ 'Xem thêm ' + hiddenNotificationCount() + ' thông báo' }}
+          </button>
+        </section>
+
+        <div
+          class="dialog-overlay dialog-overlay--front"
+          *ngIf="notificationComposerDialogOpen()"
+          (click)="closeNotificationComposerDialog()"
+        >
+          <div
+            class="dialog hero-notification-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Tạo thông báo"
+            (click)="$event.stopPropagation()"
+          >
+            <div class="dialog-head hero-notification-dialog__head">
+              <h2 class="hero-notification-dialog__title">
+                <i class="pi pi-megaphone" aria-hidden="true"></i>
+                Tạo thông báo
+              </h2>
+              <button
+                type="button"
+                class="dialog-close"
+                (click)="closeNotificationComposerDialog()"
+                aria-label="Đóng"
+              >
+                <i class="pi pi-times"></i>
+              </button>
+            </div>
+
+            <div class="hero-notification__composer-panel">
+              <div class="hero-notification__composer-row">
+                <div class="hero-notification__input-wrap">
+                  <textarea
+                    id="hero-notification-input"
+                    class="hero-notification__input"
+                    [value]="notificationDraft()"
+                    (input)="updateNotificationDraft(($any($event.target)).value)"
+                    [disabled]="notificationSaving()"
+                    maxlength="300"
+                    placeholder="Nhập nội dung thông báo..."
+                    aria-label="Nội dung thông báo"
+                  ></textarea>
+                </div>
+              </div>
+              <div class="hero-notification__composer-actions">
+                <button
+                  type="button"
+                  class="btn ghost hero-notification__cancel"
+                  (click)="closeNotificationComposerDialog()"
+                  [disabled]="notificationSaving()"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  class="btn hero-notification__send"
+                  (click)="createNotification()"
+                  [disabled]="notificationSaving() || !notificationDraft().trim()"
+                >
+                  <i class="pi pi-send"></i>
+                  <span>Gửi</span>
+                </button>
+              </div>
+              <p class="hero-notification__composer-hint">
+                {{ notificationDraft().trim().length }}/300 ký tự
+              </p>
+            </div>
+            <p class="hero-notification__error" *ngIf="notificationError()">{{ notificationError() }}</p>
+          </div>
+        </div>
+
+        <div
+          class="dialog-overlay dialog-overlay--front"
+          *ngIf="notificationListDialogOpen()"
+          (click)="closeNotificationListDialog()"
+        >
+          <div
+            class="dialog hero-notification-list-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Danh sách thông báo"
+            (click)="$event.stopPropagation()"
+          >
+            <div class="dialog-head hero-notification-list-dialog__head">
+              <h2 class="hero-notification-list-dialog__title">
+                <i class="pi pi-megaphone" aria-hidden="true"></i>
+                Toàn bộ thông báo
+              </h2>
+              <button
+                type="button"
+                class="dialog-close"
+                (click)="closeNotificationListDialog()"
+                aria-label="Đóng"
+              >
+                <i class="pi pi-times"></i>
+              </button>
+            </div>
+
+            <div class="hero-notification-list-dialog__body">
+              <ul class="hero-notification__list" *ngIf="visibleNotifications().length > 0; else noNoticeAll">
+                <li class="hero-notification__item" *ngFor="let notice of visibleNotifications()">
+                  <div class="hero-notification__item-actions">
+                    <button
+                      type="button"
+                      class="hero-notification__ack-top"
+                      (click)="acknowledgeNotification(notice)"
+                      [disabled]="notificationSaving()"
+                      aria-label="Đã đọc thông báo"
+                      title="Đã đọc"
+                    >
+                      <i class="pi pi-times" aria-hidden="true"></i>
+                    </button>
+                    <button
+                      *ngIf="canDeleteNotification(notice)"
+                      type="button"
+                      class="hero-notification__delete"
+                      (click)="deleteNotification(notice)"
+                      [disabled]="notificationSaving()"
+                      aria-label="Xóa thông báo"
+                      title="Xóa thông báo"
+                    >
+                      <i class="pi pi-trash" aria-hidden="true"></i>
+                    </button>
+                  </div>
+                  <p class="hero-notification__content">{{ notice.content }}</p>
+                  <div class="hero-notification__meta">
+                    <span class="hero-notification__author">— {{ notice.user }}</span>
+                    <span class="hero-notification__created" *ngIf="notice.createdAt">{{
+                      formatNotificationCreatedAt(notice.createdAt)
+                    }}</span>
+                  </div>
+                </li>
+              </ul>
+
+              <ng-template #noNoticeAll>
+                <p class="hero-notification__empty">Không có thông báo mới.</p>
+              </ng-template>
+            </div>
+          </div>
+        </div>
       </div>
     </header>
 
