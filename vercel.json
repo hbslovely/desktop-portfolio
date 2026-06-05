@@ -5,24 +5,11 @@
   "outputDirectory": "dist",
   "installCommand": "npm install",
   "ignoreCommand": "node scripts/vercel-should-build.mjs",
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/static-build"
-    },
-    {
-      "src": "api/feeding-apps-script.js",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "api/business-apps-script.js",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "api/google-apps-script.js",
-      "use": "@vercel/node"
+  "functions": {
+    "api/**/*.js": {
+      "runtime": "nodejs20.x"
     }
-  ],
+  },
   "rewrites": [
     {
       "source": "/api/stocks-v2/:path*",
@@ -79,10 +66,6 @@
     {
       "source": "/api/securities-apps-script/:scriptId/exec",
       "destination": "https://script.google.com/macros/s/:scriptId/exec"
-    },
-    {
-      "source": "/api/:path*",
-      "destination": "/api/:path*"
     },
     {
       "source": "/(.*)",
