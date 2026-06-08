@@ -157,48 +157,50 @@
   </div>
 
   <!-- Metric chips -->
-  <ul class="nutri-metrics" *ngIf="nutritionMetricsStatus() as ms">
-    <li [attr.data-met]="ms.avgPerFeed">
-      <span class="m-icon mint" aria-hidden="true"><i class="pi pi-prime"></i></span>
+  <div class="nutri-metrics-wrap" *ngIf="nutritionMetricsStatus() as ms">
+    <p class="nutri-metrics__heading">
+      <i class="pi pi-sliders-h"></i>
+      Chỉ số hữu ích hôm nay
+    </p>
+    <ul class="nutri-metrics">
+    <li [attr.data-met]="ms.mlPerKg">
+      <span class="m-icon mint" aria-hidden="true"><i class="pi pi-chart-bar"></i></span>
       <div class="m-body">
-        <strong *ngIf="todayStats().count > 0; else nutriAvgEmpty">
-          <ng-container *ngIf="todayStats().count >= 3; else nutriTbMl">
-            Trung vị {{ todayStats().typicalFeedMl }}ml/cữ
-          </ng-container>
-          <ng-template #nutriTbMl> TB {{ todayStats().typicalFeedMl }}ml/cữ </ng-template>
+        <strong *ngIf="todayStats().count > 0; else nutriMlKgEmpty">
+          {{ ms.mlPerKgValue }} ml/kg
         </strong>
-        <ng-template #nutriAvgEmpty><strong>Chưa có cữ</strong></ng-template>
-        <span>so với ~{{ ms.modelAvgMl }}ml/cữ TB</span>
+        <ng-template #nutriMlKgEmpty><strong>— ml/kg</strong></ng-template>
+        <span>KN {{ ms.mlPerKgMin }}–{{ ms.mlPerKgMax }} ml/kg/ngày</span>
       </div>
-      <span class="m-status" [attr.data-met]="ms.avgPerFeed" [title]="ms.avgPerFeedTitle">
-        <i class="pi" [ngClass]="ms.avgPerFeedIcon"></i>
+      <span class="m-status" [attr.data-met]="ms.mlPerKg" [title]="ms.mlPerKgTitle">
+        <i class="pi" [ngClass]="ms.mlPerKgIcon"></i>
       </span>
     </li>
-    <li [attr.data-met]="ms.feedsByNow">
-      <span class="m-icon lavender" aria-hidden="true"><i class="pi pi-replay"></i></span>
+    <li [attr.data-met]="ms.perFeed">
+      <span class="m-icon lavender" aria-hidden="true"><i class="pi pi-circle"></i></span>
       <div class="m-body">
-        <strong>{{ todayStats().count }} cữ</strong>
-        <span>
-          DK ~{{ ms.feedsLow }}–{{ ms.feedsHigh }} cữ (KN {{ ev.target.feedsPerDayMin }}–{{
-            ev.target.feedsPerDayMax
-          }}/ngày)
-        </span>
+        <strong *ngIf="todayStats().count > 0; else nutriFeedEmpty">
+          {{ ms.perFeedValue }}ml/cữ
+        </strong>
+        <ng-template #nutriFeedEmpty><strong>Chưa có cữ</strong></ng-template>
+        <span>Gợi ý {{ ms.perFeedMin }}–{{ ms.perFeedMax }}ml mỗi cữ</span>
       </div>
-      <span class="m-status" [attr.data-met]="ms.feedsByNow" [title]="ms.feedsByNowTitle">
-        <i class="pi" [ngClass]="ms.feedsByNowIcon"></i>
+      <span class="m-status" [attr.data-met]="ms.perFeed" [title]="ms.perFeedTitle">
+        <i class="pi" [ngClass]="ms.perFeedIcon"></i>
       </span>
     </li>
-    <li [attr.data-met]="ms.volumeByNow">
-      <span class="m-icon peach" aria-hidden="true"><i class="pi pi-chart-line"></i></span>
+    <li [attr.data-met]="ms.remaining">
+      <span class="m-icon peach" aria-hidden="true"><i class="pi pi-flag"></i></span>
       <div class="m-body">
-        <strong>{{ ms.pctPaceMid }}%</strong>
-        <span>tổng ml so với mức trung bình hiện tại</span>
+        <strong>{{ ms.remainingPrimary }}</strong>
+        <span>{{ ms.remainingSecondary }}</span>
       </div>
-      <span class="m-status" [attr.data-met]="ms.volumeByNow" [title]="ms.volumeByNowTitle">
-        <i class="pi" [ngClass]="ms.volumeByNowIcon"></i>
+      <span class="m-status" [attr.data-met]="ms.remaining" [title]="ms.remainingTitle">
+        <i class="pi" [ngClass]="ms.remainingIcon"></i>
       </span>
     </li>
-  </ul>
+    </ul>
+  </div>
 
   <!-- Advice banner -->
   <div class="nutri-advice" [attr.data-status]="ev.status">

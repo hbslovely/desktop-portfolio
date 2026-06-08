@@ -77,89 +77,104 @@ export class FeedingNutritionComponent {
   });
 
   nutritionMetricsStatus = computed<{
-    avgPerFeed: 'met' | 'partial' | 'unmet';
-    feedsByNow: 'met' | 'partial' | 'unmet';
-    volumeByNow: 'met' | 'partial' | 'unmet';
-    avgPerFeedTitle: string;
-    avgPerFeedIcon: string;
-    feedsByNowTitle: string;
-    feedsByNowIcon: string;
-    volumeByNowTitle: string;
-    volumeByNowIcon: string;
-    modelAvgMl: number;
-    feedsLow: number;
-    feedsHigh: number;
-    pctPaceMid: number;
+    mlPerKg: 'met' | 'partial' | 'unmet';
+    perFeed: 'met' | 'partial' | 'unmet';
+    remaining: 'met' | 'partial' | 'unmet';
+    mlPerKgTitle: string;
+    mlPerKgIcon: string;
+    perFeedTitle: string;
+    perFeedIcon: string;
+    remainingTitle: string;
+    remainingIcon: string;
+    mlPerKgValue: number;
+    mlPerKgMin: number;
+    mlPerKgMax: number;
+    perFeedValue: number;
+    perFeedMin: number;
+    perFeedMax: number;
+    remainingPrimary: string;
+    remainingSecondary: string;
   } | null>(() => {
     const ev = this.nutritionEval();
-    const pace = this.nutritionPace();
-    if (!ev || !pace) return null;
+    const weightKg = this.latestWeightKg();
+    if (!ev || !weightKg || weightKg <= 0) return null;
+
     const today = this.todayStats();
     const t = ev.target;
-    const typicalMl = today.typicalFeedMl || 0;
     const count = today.count || 0;
-    const frac = pace.dayFraction;
+    const typicalMl = today.typicalFeedMl || 0;
+    const totalMl = today.total || 0;
 
-    const feedsMidDaily = (t.feedsPerDayMin + t.feedsPerDayMax) / 2;
-    const expFeedsMid = Math.max(0.35, feedsMidDaily * frac);
-    const modelAvgMl = pace.expectedMidMl / expFeedsMid;
+    const mlPerKgValue = count > 0 ? Math.round(totalMl / weightKg) : 0;
+    const mlPerKgMin = Math.round(t.dailyMlMin / weightKg);
+    const mlPerKgMax = Math.round(t.dailyMlMax / weightKg);
 
-    let avgPerFeed: 'met' | 'partial' | 'unmet' = 'unmet';
+    let mlPerKg: 'met' | 'partial' | 'unmet' = 'unmet';
     if (count === 0) {
-      avgPerFeed = frac < 0.05 ? 'partial' : 'unmet';
-    } else if (typicalMl >= modelAvgMl * 0.88 && typicalMl <= modelAvgMl * 1.14) {
-      avgPerFeed = 'met';
-    } else if (typicalMl >= modelAvgMl * 0.75 && typicalMl <= modelAvgMl * 1.28) {
-      avgPerFeed = 'partial';
-    } else if (typicalMl >= t.perFeedMin * 0.72 && typicalMl <= t.perFeedMax * 1.32) {
-      avgPerFeed = 'partial';
+      mlPerKg = 'unmet';
+    } else if (mlPerKgValue >= mlPerKgMin && mlPerKgValue <= mlPerKgMax) {
+      mlPerKg = 'met';
+    } else if (mlPerKgValue >= mlPerKgMin * 0.85 && mlPerKgValue <= mlPerKgMax * 1.12) {
+      mlPerKg = 'partial';
     }
 
-    const effMinF = t.feedsPerDayMin * frac;
-    const effMaxF = t.feedsPerDayMax * frac;
-    const feedsLow = Math.max(0, Math.floor(effMinF));
-    const feedsHigh = Math.max(feedsLow, Math.ceil(effMaxF));
-
-    let feedsByNow: 'met' | 'partial' | 'unmet' = 'unmet';
+    let perFeed: 'met' | 'partial' | 'unmet' = 'unmet';
     if (count === 0) {
-      feedsByNow = frac < 0.05 ? 'partial' : 'unmet';
-    } else if (count >= feedsLow && count <= feedsHigh + 1) {
-      feedsByNow = 'met';
-    } else if (count >= feedsLow - 1 && count <= feedsHigh + 2) {
-      feedsByNow = 'partial';
-    } else if (count < feedsLow - 1) {
-      feedsByNow = 'unmet';
-    } else {
-      feedsByNow = 'partial';
+      perFeed = 'unmet';
+    } else if (typicalMl >= t.perFeedMin && typicalMl <= t.perFeedMax) {
+      perFeed = 'met';
+    } else if (typicalMl >= t.perFeedMin * 0.78 && typicalMl <= t.perFeedMax * 1.22) {
+      perFeed = 'partial';
     }
 
-    const pct = pace.percentOfPaceMid;
-    let volumeByNow: 'met' | 'partial' | 'unmet' = 'unmet';
-    if (pace.paceStatus === 'on-track') {
-      volumeByNow = 'met';
-    } else if (pace.paceStatus === 'ahead') {
-      volumeByNow = pct > 125 ? 'partial' : 'met';
-    } else {
-      volumeByNow = pct >= 72 ? 'partial' : 'unmet';
+    let remaining: 'met' | 'partial' | 'unmet' = 'unmet';
+    let remainingPrimary = 'Chưa có cữ';
+    let remainingSecondary = `Mục tiêu tối thiểu ${ev.target.dailyMlMin}ml`;
+
+    if (count > 0) {
+      if (ev.remainingToMin > 0) {
+        const feedSize = Math.max(typicalMl, t.perFeedMin, 1);
+        const feedsLeft = Math.max(1, Math.ceil(ev.remainingToMin / feedSize));
+        remainingPrimary = `${ev.remainingToMin}ml nữa`;
+        remainingSecondary = `~${feedsLeft} cữ để đạt mức tối thiểu`;
+        remaining = ev.remainingToMin > t.dailyMlMin * 0.25 ? 'unmet' : 'partial';
+      } else if (ev.actualMl > ev.target.dailyMlMax) {
+        remainingPrimary = `+${ev.actualMl - ev.target.dailyMlMax}ml`;
+        remainingSecondary = 'Vượt mức tối đa khuyến nghị';
+        remaining = 'partial';
+      } else if (ev.remainingToMax > 0) {
+        remainingPrimary = 'Đã đủ min';
+        remainingSecondary = `Còn có thể bú thêm ${ev.remainingToMax}ml`;
+        remaining = 'met';
+      } else {
+        remainingPrimary = 'Đã đạt mức max';
+        remainingSecondary = 'Theo dõi dấu hiệu no';
+        remaining = 'met';
+      }
     }
 
-    const avgUi = metricMetUi(avgPerFeed);
-    const feedsUi = metricMetUi(feedsByNow);
-    const volUi = metricMetUi(volumeByNow);
+    const mlUi = metricMetUi(mlPerKg);
+    const feedUi = metricMetUi(perFeed);
+    const remUi = metricMetUi(remaining);
+
     return {
-      avgPerFeed,
-      feedsByNow,
-      volumeByNow,
-      avgPerFeedTitle: avgUi.title,
-      avgPerFeedIcon: avgUi.icon,
-      feedsByNowTitle: feedsUi.title,
-      feedsByNowIcon: feedsUi.icon,
-      volumeByNowTitle: volUi.title,
-      volumeByNowIcon: volUi.icon,
-      modelAvgMl: Math.round(modelAvgMl),
-      feedsLow,
-      feedsHigh,
-      pctPaceMid: pct,
+      mlPerKg,
+      perFeed,
+      remaining,
+      mlPerKgTitle: mlUi.title,
+      mlPerKgIcon: mlUi.icon,
+      perFeedTitle: feedUi.title,
+      perFeedIcon: feedUi.icon,
+      remainingTitle: remUi.title,
+      remainingIcon: remUi.icon,
+      mlPerKgValue,
+      mlPerKgMin,
+      mlPerKgMax,
+      perFeedValue: typicalMl,
+      perFeedMin: t.perFeedMin,
+      perFeedMax: t.perFeedMax,
+      remainingPrimary,
+      remainingSecondary,
     };
   });
 

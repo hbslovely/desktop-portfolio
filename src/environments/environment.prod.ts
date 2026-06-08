@@ -1,22 +1,14 @@
 export const environment = {
   production: true,
-  newsApiToken: import.meta.env['NG_APP_NEWS_API_TOKEN'] || '',
-  newsApiUrl: 'https://api.thenewsapi.com/v1/news/headlines',
-  weatherApiKey: import.meta.env['NG_APP_WEATHER_API_KEY'] ,
+  weatherApiKey: import.meta.env['NG_APP_WEATHER_API_KEY'],
   weatherApiUrl: 'https://www.meteosource.com/api/v1/free',
   googleSheetsApiKey: import.meta.env['NG_APP_GOOGLE_SHEETS_API_KEY'],
   googleClientId: import.meta.env['NG_APP_GOOGLE_CLIENT_ID'],
-  googleClientSecret: import.meta.env['NG_APP_GOOGLE_CLIENT_SECRET'],
   googleAppsScriptUrl: import.meta.env['NG_APP_GOOGLE_APPS_SCRIPT_URL'],
   googleBusinessAppsScriptUrl: import.meta.env['NG_APP_GOOGLE_BUSINESS_APPS_SCRIPT_URL'],
   googleFeedingAppsScriptUrl: import.meta.env['NG_APP_GOOGLE_FEEDING_APPS_SCRIPT_URL'] || '',
   googleFeedingSheetId: import.meta.env['NG_APP_GOOGLE_FEEDING_SHEET_ID'] || '',
   googleBusinessSheetId: import.meta.env['NG_APP_GOOGLE_BUSINESS_SHEET_ID'] || '',
   googleExpenseSheetId: import.meta.env['NG_APP_GOOGLE_EXPENSE_SHEET_ID'] || '',
-  securitiesSheetScriptId: import.meta.env['NG_APP_SECURITIES_SHEET_SCRIPT_ID'] || '',
-  // WebRTC Signaling Server URL
-  signalingServerUrl: (import.meta.env as unknown as Record<string, string>)['NG_APP_SIGNALING_SERVER_URL'] || 'https://webrtc-signaling-r7o2.onrender.com',
-  // HuggingFace API Token
   huggingfaceToken: import.meta.env['NG_APP_HUGGINGFACE_TOKEN'] || '',
 };
-

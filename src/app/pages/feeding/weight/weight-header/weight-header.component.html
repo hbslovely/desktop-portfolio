@@ -97,6 +97,28 @@
           Thiếu cân &lt; {{ formatKg(ev.estimate.underweightMaxKg) }} kg · Thừa cân &gt;
           {{ formatKg(ev.estimate.overweightMinKg) }} kg
         </p>
+        <div class="wh-eval-card__scale" aria-hidden="true">
+          <div class="wh-eval-card__scale-labels">
+            <span class="wh-eval-card__scale-zone">Thấp</span>
+            <span class="wh-eval-card__scale-zone wh-eval-card__scale-zone--mid">Phù hợp</span>
+            <span class="wh-eval-card__scale-zone">Cao</span>
+          </div>
+          <div class="wh-eval-card__scale-track">
+            <span class="wh-eval-card__scale-band wh-eval-card__scale-band--low"></span>
+            <span class="wh-eval-card__scale-band wh-eval-card__scale-band--mid"></span>
+            <span class="wh-eval-card__scale-band wh-eval-card__scale-band--high"></span>
+            <span
+              class="wh-eval-card__scale-marker"
+              [attr.data-status]="statusClass(ev.status)"
+              [style.left.%]="growthMarkerPosition(ev.zScore)"
+            ></span>
+          </div>
+          <div class="wh-eval-card__scale-legend">
+            <span>−2 SD</span>
+            <span class="wh-eval-card__scale-z">z {{ formatZScore(ev.zScore) }}</span>
+            <span>+2 SD</span>
+          </div>
+        </div>
       </article>
 
       <article
@@ -131,10 +153,26 @@
           </div>
         </div>
         <div class="wh-eval-card__scale" aria-hidden="true">
-          <span class="wh-eval-card__scale-zone">Thấp</span>
-          <span class="wh-eval-card__scale-zone wh-eval-card__scale-zone--mid">Phù hợp</span>
-          <span class="wh-eval-card__scale-zone">Cao</span>
-          <span class="wh-eval-card__scale-marker" [style.left.%]="heightMarkerPosition(hv)"></span>
+          <div class="wh-eval-card__scale-labels">
+            <span class="wh-eval-card__scale-zone">Thấp</span>
+            <span class="wh-eval-card__scale-zone wh-eval-card__scale-zone--mid">Phù hợp</span>
+            <span class="wh-eval-card__scale-zone">Cao</span>
+          </div>
+          <div class="wh-eval-card__scale-track">
+            <span class="wh-eval-card__scale-band wh-eval-card__scale-band--low"></span>
+            <span class="wh-eval-card__scale-band wh-eval-card__scale-band--mid"></span>
+            <span class="wh-eval-card__scale-band wh-eval-card__scale-band--high"></span>
+            <span
+              class="wh-eval-card__scale-marker"
+              [attr.data-status]="statusClass(hv.status)"
+              [style.left.%]="growthMarkerPosition(hv.zScore)"
+            ></span>
+          </div>
+          <div class="wh-eval-card__scale-legend">
+            <span>−2 SD</span>
+            <span class="wh-eval-card__scale-z">P{{ hv.percentile }} · z {{ formatZScore(hv.zScore) }}</span>
+            <span>+2 SD</span>
+          </div>
         </div>
         <p class="wh-eval-card__detail" *ngIf="latestHeightLog() as last">
           {{ friendlyHeightDetail(hv, last.heightCm || 0) }}

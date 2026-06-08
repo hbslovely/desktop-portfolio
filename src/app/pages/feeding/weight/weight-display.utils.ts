@@ -56,3 +56,15 @@ export function growthStatusClass(status: string): string {
       return 'neutral';
   }
 }
+
+/** Map WHO z-score (-2…+2) to horizontal position on the growth scale track. */
+export function growthMarkerPosition(zScore: number): number {
+  const z = Math.max(-2, Math.min(2, zScore));
+  const pct = ((z + 2) / 4) * 100;
+  return pct < 3 ? 3 : pct > 97 ? 97 : pct;
+}
+
+export function formatGrowthZScore(zScore: number): string {
+  const sign = zScore >= 0 ? '+' : '';
+  return `${sign}${zScore.toFixed(1)}`;
+}
