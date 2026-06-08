@@ -162,7 +162,7 @@
                 <div
                   class="sf-trial-day"
                   [class.is-done]="trial.days[day]"
-                  [attr.data-reaction]="trial.days[day]?.reaction"
+                  [attr.data-reaction]="trial.days[day] ? trial.days[day].reaction : null"
                 >
                   <span class="sf-trial-day__num">Ngày {{ day + 1 }}</span>
                   @if (trial.days[day]; as entry) {
