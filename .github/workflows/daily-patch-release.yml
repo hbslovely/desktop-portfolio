@@ -75,12 +75,14 @@ jobs:
             exit 0
           fi
 
-          COMMIT_COUNT="$(git rev-list --count HEAD --since="${SINCE}" --before="${BEFORE}")"
+          COMMIT_COUNT="$(git rev-list --count \
+            --grep='^chore(release):' --extended-regexp --invert-grep \
+            HEAD --since="${SINCE}" --before="${BEFORE}")"
           echo "commit_count=${COMMIT_COUNT}" >> "${GITHUB_OUTPUT}"
 
           FORCE="${{ github.event.inputs.force || 'false' }}"
           if [ "${COMMIT_COUNT}" -eq 0 ] && [ "${FORCE}" != "true" ]; then
-            echo "No commits on ${DAY} (UTC)."
+            echo "No non-release commits on ${DAY} (UTC)."
             echo "should_release=false" >> "${GITHUB_OUTPUT}"
             exit 0
           fi
@@ -107,9 +109,11 @@ jobs:
             echo ""
             echo "**package.json:** \`${CURRENT}\` → \`${PACKAGE_VERSION}\`"
             echo ""
-            echo "**Commits on ${DAY} (${COMMIT_COUNT}):**"
+            echo "**Commits on ${DAY} (${COMMIT_COUNT}, excluding chore(release)):**"
             echo ""
-            git log --pretty=format:'- %s (`%h`)' --since="${SINCE}" --before="${BEFORE}" HEAD || true
+            git log --pretty=format:'- %s (`%h`)' \
+              --grep='^chore(release):' --extended-regexp --invert-grep \
+              --since="${SINCE}" --before="${BEFORE}" HEAD || true
           } > release-notes.md
 
       - name: Commit package.json version
@@ -117,7 +121,7 @@ jobs:
         run: |
           .github/scripts/commit-package-version.sh \
             "${{ steps.prep.outputs.package_version }}" \
-            "chore(release): set version to ${{ steps.prep.outputs.package_version }} (${{ steps.prep.outputs.release_day }} UTC)" \
+            "chore(release): daily patch v${{ steps.prep.outputs.package_version }} (${{ steps.prep.outputs.release_day }} UTC)" \
             "${{ github.event.repository.default_branch }}"
 
       - name: Push release tag
