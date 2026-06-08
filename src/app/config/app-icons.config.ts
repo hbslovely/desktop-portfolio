@@ -23,13 +23,6 @@ export const APP_ICONS: DesktopIconData[] = [
     position: { x: 20, y: 220 },
   },
   {
-    id: 'paint',
-    name: 'Paint',
-    icon: 'pi pi-palette',
-    type: 'application',
-    position: { x: 20, y: 320 },
-  },
-  {
     id: 'chinese-chess',
     name: 'Cờ Tướng',
     icon: 'assets/images/icons/chess.png',
@@ -42,13 +35,6 @@ export const APP_ICONS: DesktopIconData[] = [
     icon: 'assets/images/icons/love.png',
     type: 'application',
     position: { x: 120, y: 220 },
-  },
-  {
-    id: 'music',
-    name: 'Music Player',
-    icon: 'pi pi-youtube',
-    type: 'application',
-    position: { x: 120, y: 320 },
   },
   {
     id: 'expense',
@@ -111,8 +97,6 @@ function getAppDescription(appId: string): string {
     'my-info': 'View personal information and portfolio details',
     love: 'Explore love and relationship content',
     explorer: 'Browse and manage files and folders',
-    paint: 'Create drawings and artwork with various tools',
-    music: 'Listen to music videos from YouTube with a curated playlist',
     expense:
       'Manage family expenses with Google Sheets integration, view spending history, and add new expenses',
     business:
@@ -135,25 +119,6 @@ function getAppKeywords(appId: string): string[] {
     'my-info': ['profile', 'personal', 'information', 'about', 'portfolio'],
     love: ['relationship', 'romance', 'heart', 'dating'],
     explorer: ['files', 'folders', 'browse', 'manage', 'directory'],
-    paint: ['draw', 'art', 'design', 'canvas', 'creative'],
-    music: [
-      'youtube',
-      'video',
-      'songs',
-      'audio',
-      'player',
-      'playlist',
-      'stream',
-      'listen',
-      'pop',
-      'rock',
-      'jazz',
-      'classical',
-      'electronic',
-      'artist',
-      'album',
-      'track',
-    ],
     expense: [
       'expense',
       'chi tiêu',

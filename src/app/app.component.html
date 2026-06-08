@@ -131,29 +131,6 @@
         </app-explorer>
       </app-window>
 
-      <!-- Paint Window -->
-      <app-window
-        *ngIf="showPaintWindow()"
-        title="Paint"
-        icon="pi pi-palette"
-        statusText="Ready"
-        [initialWidth]="1000"
-        [initialHeight]="800"
-        [initialX]="150"
-        [initialY]="50"
-        [maximizable]="true"
-        [zIndex]="paintZIndex()"
-        [isFocused]="paintFocused()"
-        [isMinimizedExternal]="paintMinimized()"
-        (onClose)="onClosePaintWindow()"
-        (onMinimize)="onMinimizePaintWindow()"
-        (onMaximize)="onMaximizePaintWindow()"
-        (onRestore)="onRestorePaintWindow()"
-        (onFocus)="onFocusPaintWindow()"
-      >
-        <app-paint-app></app-paint-app>
-      </app-window>
-
       <!-- Text Viewer Window -->
       <app-window
         *ngIf="showTextViewerWindow() && currentTextFile()"
@@ -492,18 +469,6 @@
             <span>{{ currentImageFile()?.name || 'Image Viewer' }}</span>
           </button>
 
-          <button
-            *ngIf="showPaintWindow() || paintMinimized()"
-            class="taskbar-app"
-            [class.active]="paintFocused()"
-            [class.minimized]="paintMinimized()"
-            (click)="toggleTaskbarApp('paint')"
-            title="Paint"
-          >
-            <i class="pi pi-palette"></i>
-            <span>Paint</span>
-          </button>
-
           <!-- Dynamic Windows from WindowManager Service -->
           <button
             *ngFor="let window of windowManager.windowList()"
@@ -559,12 +524,6 @@
                     <i class="pi pi-folder"></i>
                   </div>
                   <span class="app-tile-name">Explorer</span>
-                </div>
-                <div class="app-tile" (click)="openApp('paint')" title="Paint">
-                  <div class="app-tile-icon">
-                    <i class="pi pi-palette"></i>
-                  </div>
-                  <span class="app-tile-name">Paint</span>
                 </div>
                 <div class="app-tile" (click)="openApp('my-info')" title="My Information">
                   <div class="app-tile-icon">
@@ -922,12 +881,8 @@
         <app-pdf-viewer *ngSwitchCase="'pdf-viewer'" [pdfPath]="window.data?.path">
         </app-pdf-viewer>
 
-        <app-paint-app *ngSwitchCase="'paint'"></app-paint-app>
-
         <app-settings-app *ngSwitchCase="'settings'" (onSettingsChange)="onSettingsChange($event)">
         </app-settings-app>
-
-        <app-music-app *ngSwitchCase="'music'"></app-music-app>
 
         <app-expense-app *ngSwitchCase="'expense'"></app-expense-app>
 

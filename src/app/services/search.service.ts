@@ -253,7 +253,6 @@ export class SearchService {
       love: 'pi pi-heart',
       explorer: 'pi pi-folder',
       credit: 'pi pi-dollar',
-      paint: 'pi pi-palette',
       credits: 'pi pi-star',
       hcmc: 'pi pi-globe',
     };

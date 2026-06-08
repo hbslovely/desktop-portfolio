@@ -27,9 +27,7 @@ import {
 import { TextViewerComponent } from './components/apps/text-viewer/text-viewer.component';
 import { ImageViewerComponent } from './components/apps/image-viewer/image-viewer.component';
 import { PdfViewerComponent } from './components/apps/pdf-viewer/pdf-viewer.component';
-import { PaintAppComponent } from './components/apps/paint-app/paint-app.component';
 import { SettingsAppComponent } from './components/apps/settings-app/settings-app.component';
-import { MusicAppComponent } from './components/apps/music-app/music-app.component';
 import { ExpenseAppComponent } from './components/apps/expense-app/expense-app.component';
 import { BusinessAppComponent } from './components/apps/business-app/business-app.component';
 import { ChineseChessAppComponent } from './components/apps/chinese-chess-app/chinese-chess-app.component';
@@ -87,9 +85,7 @@ interface WindowConfig {
     TextViewerComponent,
     ImageViewerComponent,
     PdfViewerComponent,
-    PaintAppComponent,
     SettingsAppComponent,
-    MusicAppComponent,
     ExpenseAppComponent,
     BusinessAppComponent,
     ChineseChessAppComponent,
@@ -171,7 +167,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   showTextViewerWindow = signal(false);
   showImageViewerWindow = signal(false);
   showCreditWindow = signal(false);
-  showPaintWindow = signal(false);
   showSearchWindow = signal(false);
 
   // Widget visibility
@@ -193,7 +188,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     ['love', { id: 'love', showSignal: this.showLoveWindow }],
     ['explorer', { id: 'explorer', showSignal: this.showExplorerWindow }],
     ['credit', { id: 'credit', showSignal: this.showCreditWindow }],
-    ['paint', { id: 'paint', showSignal: this.showPaintWindow }],
     [
       'text-viewer',
       {
@@ -255,10 +249,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   pdfViewerZIndex = computed(() => this.computeWindowZIndex('pdf-viewer'));
   pdfViewerFocused = computed(() => this.focusedWindow() === 'pdf-viewer');
   pdfViewerMinimized = computed(() => this.minimizedWindows().has('pdf-viewer'));
-
-  paintZIndex = computed(() => this.computeWindowZIndex('paint'));
-  paintFocused = computed(() => this.focusedWindow() === 'paint');
-  paintMinimized = computed(() => this.minimizedWindows().has('paint'));
 
   // Computed for open windows list - cached to avoid recalculation in template
   openWindowsList = computed(() => this.computeAllOpenWindows());
@@ -388,10 +378,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
       id: 'creative',
       name: 'Creative',
       icon: 'pi pi-palette',
-      apps: [
-        { id: 'paint', name: 'Paint', icon: 'pi pi-palette' },
-        { id: 'love', name: 'Love', icon: 'pi pi-heart' },
-      ],
+      apps: [{ id: 'love', name: 'Love', icon: 'pi pi-heart' }],
     },
     {
       id: 'information',
@@ -595,26 +582,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
 
   onFocusCreditWindow() {
     this.focusWindow('credit');
-  }
-
-  onClosePaintWindow() {
-    this.closeWindow('paint');
-  }
-
-  onMinimizePaintWindow() {
-    this.minimizeWindow('paint');
-  }
-
-  onMaximizePaintWindow() {
-    this.maximizeWindow('paint');
-  }
-
-  onRestorePaintWindow() {
-    this.restoreWindow('paint');
-  }
-
-  onFocusPaintWindow() {
-    this.focusWindow('paint');
   }
 
   // Text Viewer Window Methods
@@ -888,9 +855,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     } else if (icon.id === 'credit') {
       this.showCreditWindow.set(true);
       this.focusWindow('credit');
-    } else if (icon.id === 'paint') {
-      this.showPaintWindow.set(true);
-      this.focusWindow('paint');
     }
   }
 
@@ -957,8 +921,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
         this.onCloseExplorerWindow();
       } else if (icon.id === 'credit' && this.showCreditWindow()) {
         this.onCloseCreditWindow();
-      } else if (icon.id === 'paint' && this.showPaintWindow()) {
-        this.onClosePaintWindow();
       }
     }
   }
@@ -1172,21 +1134,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
         } else {
           this.showCreditWindow.set(true);
           this.focusWindow('credit');
-        }
-        break;
-
-      case 'paint':
-        if (this.showPaintWindow()) {
-          if (this.isWindowMinimized('paint')) {
-            this.focusWindow('paint');
-          } else if (this.focusedWindow() === 'paint') {
-            this.minimizeWindow('paint');
-          } else {
-            this.focusWindow('paint');
-          }
-        } else {
-          this.showPaintWindow.set(true);
-          this.focusWindow('paint');
         }
         break;
     }
@@ -1561,7 +1508,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
         'image-viewer',
         'pdf-viewer',
         'credit',
-        'paint',
       ];
       return new Set(allWindows);
     });
@@ -1580,7 +1526,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
         'image-viewer',
         'pdf-viewer',
         'credit',
-        'paint',
       ];
       return new Set(allWindows);
     });
@@ -1892,7 +1837,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
       icon: 'pi pi-wallet',
       show: () => this.showCreditWindow(),
     },
-    { id: 'paint', title: 'Paint', icon: 'pi pi-palette', show: () => this.showPaintWindow() },
   ];
 
   // Window Switcher Methods - Private compute method for cached computed signal

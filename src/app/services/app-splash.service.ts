@@ -25,11 +25,6 @@ export class AppSplashService {
 
   // App-specific configurations
   private appConfigs: Record<string, Partial<AppSplashConfig>> = {
-    music: {
-      appName: 'Âm nhạc',
-      loadingSteps: ['Đang tải playlist...', 'Đang chuẩn bị audio...', 'Sẵn sàng phát nhạc!'],
-      duration: 1200,
-    },
     business: {
       appName: 'Kinh doanh',
       loadingSteps: ['Đang tải dữ liệu...', 'Đang phân tích báo cáo...', 'Sẵn sàng!'],
@@ -145,7 +140,7 @@ export class AppSplashService {
    * Check if app should show splash
    */
   shouldShowSplash(appId: string): boolean {
-    const appsWithSplash = ['expense', 'music', 'business', 'graph-visualizer'];
+    const appsWithSplash = ['expense', 'business', 'graph-visualizer'];
     return appsWithSplash.includes(appId);
   }
 }
