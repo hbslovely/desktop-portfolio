@@ -762,10 +762,6 @@
   font-family: inherit;
   transition: all 0.15s ease;
 
-  i {
-    font-size: 18px;
-  }
-
   strong {
     font-size: 13px;
   }
@@ -798,6 +794,15 @@
     strong {
       font-size: 11px;
     }
+  }
+}
+
+.sf-reaction-emoji {
+  font-size: 1.15rem;
+  line-height: 1;
+
+  &--lg {
+    font-size: 1.6rem;
   }
 }
 

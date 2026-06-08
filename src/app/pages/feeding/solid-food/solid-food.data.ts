@@ -163,52 +163,52 @@ export const REACTION_OPTIONS: {
   id: SolidFoodReaction;
   label: string;
   shortLabel: string;
-  icon: string;
+  emoji: string;
   hint: string;
 }[] = [
   {
     id: 'ok',
     label: 'Bé ổn',
     shortLabel: 'Ổn',
-    icon: 'pi-check-circle',
+    emoji: '😊',
     hint: 'Ăn được, vui vẻ, không triệu chứng lạ',
   },
   {
     id: 'neutral',
     label: 'Không thấy gì',
     shortLabel: 'BT',
-    icon: 'pi-minus-circle',
+    emoji: '😐',
     hint: 'Không có dấu hiệu bất thường rõ ràng',
   },
   {
     id: 'mild',
     label: 'Nghi ngờ nhẹ',
     shortLabel: 'Nghi ngờ',
-    icon: 'pi-exclamation-circle',
+    emoji: '😕',
     hint: 'Ban nhẹ, khó chịu, phân hơi lạ…',
   },
   {
     id: 'allergy',
     label: 'Dị ứng',
     shortLabel: 'Dị ứng',
-    icon: 'pi-times-circle',
+    emoji: '😢',
     hint: 'Nôn nhiều, phát ban, khó thở — cần theo dõi bác sĩ',
   },
 ];
 
-export const REACTION_LABELS: Record<SolidFoodReaction, { label: string; icon: string }> =
+export const REACTION_LABELS: Record<SolidFoodReaction, { label: string; emoji: string }> =
   Object.fromEntries(
-    REACTION_OPTIONS.map((o) => [o.id, { label: o.label, icon: o.icon }])
-  ) as Record<SolidFoodReaction, { label: string; icon: string }>;
+    REACTION_OPTIONS.map((o) => [o.id, { label: o.label, emoji: o.emoji }])
+  ) as Record<SolidFoodReaction, { label: string; emoji: string }>;
 
 export const TRIAL_OUTCOME_LABELS: Record<
   Exclude<FoodTrialOutcome, 'testing'>,
-  { label: string; icon: string }
+  { label: string; emoji: string }
 > = {
-  ok: { label: 'An toàn — bé ổn', icon: 'pi-check-circle' },
-  neutral: { label: 'Không thấy phản ứng', icon: 'pi-minus-circle' },
-  mild: { label: 'Nghi ngờ nhẹ', icon: 'pi-exclamation-circle' },
-  allergy: { label: 'Có dị ứng', icon: 'pi-times-circle' },
+  ok: { label: 'An toàn — bé ổn', emoji: '😊' },
+  neutral: { label: 'Không thấy phản ứng', emoji: '😐' },
+  mild: { label: 'Nghi ngờ nhẹ', emoji: '😕' },
+  allergy: { label: 'Có dị ứng', emoji: '😢' },
 };
 
 export function normalizeSolidFoodReaction(value: string): SolidFoodReaction {

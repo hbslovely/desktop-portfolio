@@ -167,7 +167,9 @@
                   <span class="sf-trial-day__num">Ngày {{ day + 1 }}</span>
                   @if (trial.days[day]; as entry) {
                     <span class="sf-trial-day__status">
-                      <i [class]="'pi ' + reactionLabels[entry.reaction].icon" aria-hidden="true"></i>
+                      <span class="sf-reaction-emoji" aria-hidden="true">{{
+                        reactionLabels[entry.reaction].emoji
+                      }}</span>
                       {{ reactionLabels[entry.reaction].label }}
                     </span>
                     @if (entry.note) {
@@ -227,10 +229,9 @@
                   <div class="sf-trial-history__main">
                     <strong>{{ trial.food }}</strong>
                     <span class="sf-trial-history__outcome">
-                      <i
-                        [class]="'pi ' + completedOutcomeMeta(trial.outcome).icon"
-                        aria-hidden="true"
-                      ></i>
+                      <span class="sf-reaction-emoji" aria-hidden="true">{{
+                        completedOutcomeMeta(trial.outcome).emoji
+                      }}</span>
                       {{ completedOutcomeMeta(trial.outcome).label }}
                     </span>
                   </div>
@@ -283,7 +284,9 @@
                     <span class="sf-log-item__meal">{{ mealTypeLabels[log.mealType] }}</span>
                     <strong>{{ log.food }}</strong>
                     <span class="sf-log-item__reaction" [attr.data-reaction]="log.reaction">
-                      <i [class]="'pi ' + reactionLabels[log.reaction].icon" aria-hidden="true"></i>
+                      <span class="sf-reaction-emoji" aria-hidden="true">{{
+                        reactionLabels[log.reaction].emoji
+                      }}</span>
                       {{ reactionLabels[log.reaction].label }}
                     </span>
                     @if (log.note) {
@@ -418,7 +421,7 @@
                 [attr.data-reaction]="opt.id"
                 (click)="trialDayDraftReaction = opt.id"
               >
-                <i [class]="'pi ' + opt.icon" aria-hidden="true"></i>
+                <span class="sf-reaction-emoji" aria-hidden="true">{{ opt.emoji }}</span>
                 <strong>{{ opt.label }}</strong>
                 <span>{{ opt.hint }}</span>
               </button>
@@ -483,7 +486,9 @@
                 [attr.data-reaction]="opt.id"
                 (click)="draftReaction = opt.id"
               >
-                <i [class]="'pi ' + opt.icon" aria-hidden="true"></i>
+                <span class="sf-reaction-emoji sf-reaction-emoji--lg" aria-hidden="true">{{
+                  opt.emoji
+                }}</span>
                 <strong>{{ opt.shortLabel }}</strong>
               </button>
             }
