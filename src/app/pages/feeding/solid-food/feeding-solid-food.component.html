@@ -1,0 +1,505 @@
+@if (profile() && !editing()) {
+  <div class="sf-shell">
+    @if (!unlocked()) {
+      <!-- ===== LOCKED: chưa đủ 6 tháng ===== -->
+      <header class="sf-banner sf-banner--locked">
+        <div class="sf-banner__glow" aria-hidden="true"></div>
+        <div class="sf-banner__top">
+          <span class="sf-banner__emoji" aria-hidden="true">🥣</span>
+          <div class="sf-banner__titles">
+            <p class="sf-banner__eyebrow">Chuẩn bị ăn dặm</p>
+            <h2 class="sf-banner__title">Ăn dặm</h2>
+          </div>
+          @if (daysUntil() !== null) {
+            <span class="sf-banner__countdown">Còn {{ daysUntil() }} ngày</span>
+          }
+        </div>
+        <p class="sf-banner__context">
+          Tính năng mở khi bé đủ <strong>6 tháng (180 ngày)</strong>.
+          WHO khuyến cáo bú mẹ hoàn toàn 6 tháng đầu — chưa cho ăn dặm sớm.
+        </p>
+      </header>
+
+      @if (showPrepBanner()) {
+        <section class="sf-card sf-card--prep">
+          <h3><i class="pi pi-clock" aria-hidden="true"></i> Sắp đến giai đoạn ăn dặm!</h3>
+          <p>Chuẩn bị ghế ăn, yếm, thìa silicon, bát/đĩa. Tìm hiểu phương pháp truyền thống hoặc BLW.</p>
+        </section>
+      }
+
+      <section class="sf-card">
+        <h3><i class="pi pi-check-square" aria-hidden="true"></i> Dấu hiệu sẵn sàng</h3>
+        <p class="sf-card__hint">Theo dõi trước — khi đủ 6 tháng, checklist này sẽ giúp quyết định bắt đầu.</p>
+        <ul class="sf-readiness-list">
+          @for (sign of readinessSigns; track sign.id) {
+            <li class="sf-readiness-item">
+              <button
+                type="button"
+                class="sf-readiness-check"
+                [class.is-checked]="readinessMap()[sign.id]"
+                (click)="toggleReadiness(sign.id)"
+                [attr.aria-pressed]="readinessMap()[sign.id]"
+              >
+                <i
+                  [class]="readinessMap()[sign.id] ? 'pi pi-check' : 'pi pi-circle'"
+                  aria-hidden="true"
+                ></i>
+              </button>
+              <div>
+                <strong>{{ sign.label }}</strong>
+                <p>{{ sign.description }}</p>
+              </div>
+            </li>
+          }
+        </ul>
+        <p class="sf-readiness-progress">
+          {{ readinessChecked() }}/{{ readinessSigns.length }} dấu hiệu đã đạt
+        </p>
+      </section>
+    } @else {
+      <!-- ===== UNLOCKED ===== -->
+      <header class="sf-banner" [attr.data-accent]="activeStage().accent">
+        <div class="sf-banner__glow" aria-hidden="true"></div>
+        <div class="sf-banner__top">
+          <span class="sf-banner__emoji" aria-hidden="true">🍽️</span>
+          <div class="sf-banner__titles">
+            <p class="sf-banner__eyebrow">Quản lý ăn dặm</p>
+            <h2 class="sf-banner__title">
+              @if (profile()?.babyName) {
+                {{ profile()!.babyName }}
+              } @else {
+                Ăn dặm
+              }
+            </h2>
+          </div>
+          @if (ageInDays() !== null) {
+            <span class="sf-banner__age">{{ ageInDays() }} ngày · {{ activeStage().label }}</span>
+          }
+        </div>
+
+        @if (activeGuide(); as guide) {
+          <p class="sf-banner__context">
+            <i class="pi pi-compass" aria-hidden="true"></i>
+            <span><strong>{{ guide.label }}</strong> — {{ guide.summary }}</span>
+          </p>
+        }
+
+        <div class="sf-stage-rail" role="tablist" aria-label="Giai đoạn ăn dặm">
+          @for (stage of stages; track stage.month) {
+            <button
+              type="button"
+              role="tab"
+              class="sf-stage-pill"
+              [class.is-active]="activeMonth() === stage.month"
+              [class.is-current]="autoMonth() === stage.month"
+              [attr.aria-selected]="activeMonth() === stage.month"
+              (click)="selectStage(stage.month)"
+            >
+              <span class="sf-stage-pill__label">{{ stage.shortLabel }}</span>
+            </button>
+          }
+        </div>
+      </header>
+
+      <nav class="sf-nav" aria-label="Nội dung ăn dặm">
+        <button
+          type="button"
+          class="sf-nav__btn"
+          [class.is-active]="activeSection() === 'trials'"
+          (click)="setSection('trials')"
+        >
+          <i class="pi pi-flask" aria-hidden="true"></i>
+          Thử món
+          @if (activeTrial()) {
+            <span class="sf-nav__badge">!</span>
+          }
+        </button>
+        <button
+          type="button"
+          class="sf-nav__btn"
+          [class.is-active]="activeSection() === 'log'"
+          (click)="setSection('log')"
+        >
+          <i class="pi pi-list" aria-hidden="true"></i>
+          Nhật ký
+        </button>
+        <button
+          type="button"
+          class="sf-nav__btn"
+          [class.is-active]="activeSection() === 'guide'"
+          (click)="setSection('guide')"
+        >
+          <i class="pi pi-book" aria-hidden="true"></i>
+          Hướng dẫn
+        </button>
+        <button
+          type="button"
+          class="sf-nav__btn"
+          [class.is-active]="activeSection() === 'foods'"
+          (click)="setSection('foods')"
+        >
+          <i class="pi pi-apple" aria-hidden="true"></i>
+          Gợi ý
+        </button>
+      </nav>
+
+      @if (activeSection() === 'trials') {
+        @if (activeTrial(); as trial) {
+          <section class="sf-card sf-card--trial-active">
+            <div class="sf-card__head">
+              <div>
+                <p class="sf-trial-eyebrow">Đang thử · {{ trialRequiredDays }} ngày</p>
+                <h3>{{ trial.food }}</h3>
+                <p class="sf-card__hint">
+                  Bắt đầu {{ formatTrialDate(trial.startDate) }} ·
+                  {{ activeTrialProgress()?.logged }}/{{ trialRequiredDays }} ngày đã ghi
+                </p>
+              </div>
+            </div>
+
+            <div class="sf-trial-days">
+              @for (day of [0, 1, 2]; track day) {
+                <div
+                  class="sf-trial-day"
+                  [class.is-done]="trial.days[day]"
+                  [attr.data-reaction]="trial.days[day]?.reaction"
+                >
+                  <span class="sf-trial-day__num">Ngày {{ day + 1 }}</span>
+                  @if (trial.days[day]; as entry) {
+                    <span class="sf-trial-day__status">
+                      <i [class]="'pi ' + reactionLabels[entry.reaction].icon" aria-hidden="true"></i>
+                      {{ reactionLabels[entry.reaction].label }}
+                    </span>
+                    @if (entry.note) {
+                      <span class="sf-trial-day__note">{{ entry.note }}</span>
+                    }
+                  } @else {
+                    <span class="sf-trial-day__status sf-trial-day__status--pending">Chưa ghi</span>
+                  }
+                </div>
+              }
+            </div>
+
+            <div class="sf-trial-actions">
+              @if (!todayTrialLogged()) {
+                <button type="button" class="sf-btn sf-btn--primary" (click)="openTrialDayDialog()">
+                  <i class="pi pi-pencil" aria-hidden="true"></i>
+                  Ghi hôm nay
+                </button>
+              } @else {
+                <button type="button" class="sf-btn" (click)="openTrialDayDialog()">
+                  <i class="pi pi-pencil" aria-hidden="true"></i>
+                  Sửa ghi chú hôm nay
+                </button>
+              }
+              @if (activeTrialProgress()?.canComplete) {
+                <button type="button" class="sf-btn sf-btn--success" (click)="completeActiveTrial()">
+                  <i class="pi pi-check" aria-hidden="true"></i>
+                  Hoàn thành thử món
+                </button>
+              }
+              <button type="button" class="sf-btn sf-btn--ghost" (click)="cancelActiveTrial()">
+                Huỷ thử
+              </button>
+            </div>
+          </section>
+        } @else {
+          <section class="sf-card sf-card--trial-start">
+            <h3><i class="pi pi-flask" aria-hidden="true"></i> Thử món mới</h3>
+            <p class="sf-card__hint">
+              Mỗi món mới thử liên tục <strong>{{ trialRequiredDays }} ngày</strong>, ghi lại bé
+              <strong>ổn</strong>, <strong>không thấy gì</strong>, <strong>nghi ngờ</strong> hay
+              <strong>dị ứng</strong> trước khi đổi sang món khác.
+            </p>
+            <button type="button" class="sf-btn sf-btn--primary" (click)="openStartTrialDialog()">
+              <i class="pi pi-plus" aria-hidden="true"></i>
+              Bắt đầu thử món mới
+            </button>
+          </section>
+        }
+
+        @if (completedTrials().length > 0) {
+          <section class="sf-card">
+            <h3><i class="pi pi-history" aria-hidden="true"></i> Đã thử xong</h3>
+            <ul class="sf-trial-history">
+              @for (trial of completedTrials(); track trial.id) {
+                <li class="sf-trial-history__item" [attr.data-outcome]="trial.outcome">
+                  <div class="sf-trial-history__main">
+                    <strong>{{ trial.food }}</strong>
+                    <span class="sf-trial-history__outcome">
+                      <i
+                        [class]="'pi ' + completedOutcomeMeta(trial.outcome).icon"
+                        aria-hidden="true"
+                      ></i>
+                      {{ completedOutcomeMeta(trial.outcome).label }}
+                    </span>
+                  </div>
+                  <p class="sf-trial-history__meta">
+                    {{ formatTrialDate(trial.startDate) }}
+                    @if (trial.completedAt) {
+                      → {{ formatTrialDate(trial.completedAt) }}
+                    }
+                    · {{ trial.days.length }} ngày ghi
+                  </p>
+                  @if (trial.summaryNote) {
+                    <p class="sf-trial-history__note">{{ trial.summaryNote }}</p>
+                  }
+                </li>
+              }
+            </ul>
+          </section>
+        }
+
+        @if (introducedFoods().length > 0) {
+          <section class="sf-card">
+            <h3><i class="pi pi-check" aria-hidden="true"></i> Món an toàn / đã qua</h3>
+            <div class="sf-chip-row">
+              @for (food of introducedFoods(); track food) {
+                <span class="sf-chip">{{ food }}</span>
+              }
+            </div>
+          </section>
+        }
+      }
+
+      @if (activeSection() === 'log') {
+        <section class="sf-card">
+          <div class="sf-card__head">
+            <h3><i class="pi pi-calendar-plus" aria-hidden="true"></i> Hôm nay</h3>
+            <button type="button" class="sf-btn sf-btn--primary" (click)="openLogDialog()">
+              <i class="pi pi-plus" aria-hidden="true"></i>
+              Ghi bữa ăn
+            </button>
+          </div>
+
+          @if (todayLogs().length === 0) {
+            <p class="sf-empty">Chưa ghi bữa ăn nào hôm nay.</p>
+          } @else {
+            <ul class="sf-log-list">
+              @for (log of todayLogs(); track log.id) {
+                <li class="sf-log-item">
+                  <div class="sf-log-item__time">{{ log.time }}</div>
+                  <div class="sf-log-item__body">
+                    <span class="sf-log-item__meal">{{ mealTypeLabels[log.mealType] }}</span>
+                    <strong>{{ log.food }}</strong>
+                    <span class="sf-log-item__reaction" [attr.data-reaction]="log.reaction">
+                      <i [class]="'pi ' + reactionLabels[log.reaction].icon" aria-hidden="true"></i>
+                      {{ reactionLabels[log.reaction].label }}
+                    </span>
+                    @if (log.note) {
+                      <p class="sf-log-item__note">{{ log.note }}</p>
+                    }
+                  </div>
+                  <button
+                    type="button"
+                    class="sf-log-item__delete"
+                    (click)="deleteLog(log.id)"
+                    aria-label="Xóa bữa ăn"
+                  >
+                    <i class="pi pi-trash" aria-hidden="true"></i>
+                  </button>
+                </li>
+              }
+            </ul>
+          }
+        </section>
+      }
+
+      @if (activeSection() === 'guide') {
+        <section class="sf-card">
+          <h3><i class="pi pi-lightbulb" aria-hidden="true"></i> Lưu ý {{ activeStage().label }}</h3>
+          <p class="sf-card__hint">{{ activeStage().milkNote }}</p>
+          <ul class="sf-tip-list">
+            @for (tip of feedingTips(); track tip.title) {
+              <li class="sf-tip-item">
+                <strong>{{ tip.title }}</strong>
+                <p>{{ tip.content }}</p>
+              </li>
+            }
+          </ul>
+        </section>
+
+        <section class="sf-card sf-card--rule">
+          <h3><i class="pi pi-shield" aria-hidden="true"></i> Nguyên tắc 1 mới – 3 ngày</h3>
+          <p>Mỗi thực phẩm mới cho bé ăn liên tục 3 ngày trước khi thử món khác để phát hiện dị ứng.</p>
+        </section>
+      }
+
+      @if (activeSection() === 'foods') {
+        <section class="sf-card">
+          <h3><i class="pi pi-shopping-bag" aria-hidden="true"></i> Gợi ý thực phẩm</h3>
+          <p class="sf-card__hint">Nhấn để bắt đầu thử món (3 ngày).</p>
+          <div class="sf-food-grid">
+            @for (food of foodsForMonth(); track food.name) {
+              <button
+                type="button"
+                class="sf-food-card"
+                [disabled]="!!activeTrial()"
+                (click)="quickStartTrial(food.name)"
+              >
+                <span class="sf-food-card__cat" [attr.data-cat]="food.category">{{
+                  food.category
+                }}</span>
+                <strong>{{ food.name }}</strong>
+                <span class="sf-food-card__note">{{ food.note }}</span>
+              </button>
+            }
+          </div>
+        </section>
+      }
+    }
+  </div>
+} @else {
+  <div class="sf-empty-state">
+    <i class="pi pi-user" aria-hidden="true"></i>
+    <p>Tạo profile bé để sử dụng quản lý ăn dặm.</p>
+  </div>
+}
+
+<!-- Dialog: bắt đầu thử món -->
+@if (trialDialogOpen()) {
+  <div class="sf-dialog-backdrop" (click)="closeStartTrialDialog()" role="presentation">
+    <div class="sf-dialog" (click)="$event.stopPropagation()" role="dialog" aria-labelledby="sf-trial-start-title">
+      <header class="sf-dialog__head">
+        <h3 id="sf-trial-start-title">Bắt đầu thử món mới</h3>
+        <button type="button" class="sf-dialog__close" (click)="closeStartTrialDialog()" aria-label="Đóng">
+          <i class="pi pi-times" aria-hidden="true"></i>
+        </button>
+      </header>
+      <form class="sf-dialog__body" (submit)="$event.preventDefault(); startTrial()">
+        <label class="sf-field">
+          <span>Tên món *</span>
+          <input
+            type="text"
+            [(ngModel)]="trialDraftFood"
+            name="trialFood"
+            placeholder="VD: Khoai lang"
+            required
+          />
+        </label>
+        <p class="sf-dialog__hint">
+          Sẽ thử liên tục {{ trialRequiredDays }} ngày. Mỗi ngày ghi phản ứng của bé.
+        </p>
+        <footer class="sf-dialog__foot">
+          <button type="button" class="sf-btn" (click)="closeStartTrialDialog()">Huỷ</button>
+          <button type="submit" class="sf-btn sf-btn--primary" [disabled]="!trialDraftFood.trim()">
+            Bắt đầu
+          </button>
+        </footer>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- Dialog: ghi phản ứng ngày thử -->
+@if (trialDayDialogOpen()) {
+  <div class="sf-dialog-backdrop" (click)="closeTrialDayDialog()" role="presentation">
+    <div class="sf-dialog" (click)="$event.stopPropagation()" role="dialog" aria-labelledby="sf-trial-day-title">
+      <header class="sf-dialog__head">
+        <h3 id="sf-trial-day-title">
+          Ghi phản ứng hôm nay
+          @if (activeTrial(); as trial) {
+            <span class="sf-dialog__subtitle">— {{ trial.food }}</span>
+          }
+        </h3>
+        <button type="button" class="sf-dialog__close" (click)="closeTrialDayDialog()" aria-label="Đóng">
+          <i class="pi pi-times" aria-hidden="true"></i>
+        </button>
+      </header>
+      <form class="sf-dialog__body" (submit)="$event.preventDefault(); saveTrialDay()">
+        <fieldset class="sf-reaction-picker">
+          <legend>Bé thế nào sau khi ăn?</legend>
+          <div class="sf-reaction-grid">
+            @for (opt of reactionOptions; track opt.id) {
+              <button
+                type="button"
+                class="sf-reaction-chip"
+                [class.is-selected]="trialDayDraftReaction === opt.id"
+                [attr.data-reaction]="opt.id"
+                (click)="trialDayDraftReaction = opt.id"
+              >
+                <i [class]="'pi ' + opt.icon" aria-hidden="true"></i>
+                <strong>{{ opt.label }}</strong>
+                <span>{{ opt.hint }}</span>
+              </button>
+            }
+          </div>
+        </fieldset>
+        <label class="sf-field">
+          <span>Ghi chú thêm</span>
+          <textarea
+            [(ngModel)]="trialDayDraftNote"
+            name="trialDayNote"
+            rows="3"
+            placeholder="VD: Ăn 2 muỗng, vui vẻ, không ban..."
+          ></textarea>
+        </label>
+        <footer class="sf-dialog__foot">
+          <button type="button" class="sf-btn" (click)="closeTrialDayDialog()">Huỷ</button>
+          <button type="submit" class="sf-btn sf-btn--primary">Lưu</button>
+        </footer>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- Dialog: ghi bữa ăn thường -->
+@if (logDialogOpen()) {
+  <div class="sf-dialog-backdrop" (click)="closeLogDialog()" role="presentation">
+    <div class="sf-dialog" (click)="$event.stopPropagation()" role="dialog" aria-labelledby="sf-log-title">
+      <header class="sf-dialog__head">
+        <h3 id="sf-log-title">Ghi bữa ăn dặm</h3>
+        <button type="button" class="sf-dialog__close" (click)="closeLogDialog()" aria-label="Đóng">
+          <i class="pi pi-times" aria-hidden="true"></i>
+        </button>
+      </header>
+      <form class="sf-dialog__body" (submit)="$event.preventDefault(); saveLog()">
+        <label class="sf-field">
+          <span>Thực phẩm *</span>
+          <input type="text" [(ngModel)]="draftFood" name="food" placeholder="VD: Cháo khoai lang" required />
+        </label>
+        <div class="sf-field-row">
+          <label class="sf-field">
+            <span>Giờ</span>
+            <input type="time" [(ngModel)]="draftTime" name="time" />
+          </label>
+          <label class="sf-field">
+            <span>Bữa</span>
+            <select [(ngModel)]="draftMealType" name="mealType">
+              @for (entry of mealTypeLabels | keyvalue; track entry.key) {
+                <option [value]="entry.key">{{ entry.value }}</option>
+              }
+            </select>
+          </label>
+        </div>
+        <fieldset class="sf-reaction-picker">
+          <legend>Phản ứng</legend>
+          <div class="sf-reaction-grid sf-reaction-grid--compact">
+            @for (opt of reactionOptions; track opt.id) {
+              <button
+                type="button"
+                class="sf-reaction-chip sf-reaction-chip--compact"
+                [class.is-selected]="draftReaction === opt.id"
+                [attr.data-reaction]="opt.id"
+                (click)="draftReaction = opt.id"
+              >
+                <i [class]="'pi ' + opt.icon" aria-hidden="true"></i>
+                <strong>{{ opt.shortLabel }}</strong>
+              </button>
+            }
+          </div>
+        </fieldset>
+        <label class="sf-field">
+          <span>Ghi chú</span>
+          <textarea [(ngModel)]="draftNote" name="note" rows="2" placeholder="Tùy chọn"></textarea>
+        </label>
+        <footer class="sf-dialog__foot">
+          <button type="button" class="sf-btn" (click)="closeLogDialog()">Huỷ</button>
+          <button type="submit" class="sf-btn sf-btn--primary" [disabled]="!draftFood.trim()">
+            Lưu
+          </button>
+        </footer>
+      </form>
+    </div>
+  </div>
+}

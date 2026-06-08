@@ -32,6 +32,7 @@ import { FeedingChartsComponent } from './charts/feeding-charts.component';
 import { FeedingProfileComponent } from './profile/feeding-profile.component';
 import { FeedingDialogsComponent } from './dialogs/feeding-dialogs.component';
 import { FeedingDailyComponent } from './daily/feeding-daily.component';
+import { FeedingSolidFoodComponent } from './solid-food/feeding-solid-food.component';
 import { MedicalHistoryComponent } from './medical-history/medical-history.component';
 import { WeightComponent } from './weight/weight.component';
 import { FeedingScheduleComponent } from './schedule/feeding-schedule.component';
@@ -44,11 +45,37 @@ import {
 } from '../../services/activity-log.service';
 import { NotificationLog, NotificationLogService } from '../../services/notification-log.service';
 import { APP_INFO_TOKEN } from '../../app-info';
+import {
+  isSolidFoodUnlocked,
+} from './solid-food/solid-food.data';
 
 interface Profile {
   babyName: string;
   birthDate: string;
   gender?: 'boy' | 'girl' | '';
+}
+
+type FeedingBottomTab =
+  | 'feeding'
+  | 'solid-food'
+  | 'weight'
+  | 'schedule'
+  | 'mom'
+  | 'medical'
+  | 'documents';
+
+interface NavMoreItem {
+  id: FeedingBottomTab;
+  label: string;
+  icon: string;
+  title?: string;
+  locked?: boolean;
+}
+
+interface BottomNavLayout {
+  grouped: boolean;
+  primary: NavMoreItem[];
+  overflow: NavMoreItem[];
 }
 
 interface DayStats {
@@ -72,6 +99,8 @@ interface DayStats {
 
 const STORAGE_PREFIX = 'feeding-profile::';
 const INITIAL_NOTIFICATION_VISIBLE = 2;
+/** Số tab tối đa hiển thị trực tiếp trên bottom nav; vượt ngưỡng → gom vào «Thêm». */
+const BOTTOM_NAV_MAX_ITEMS = 6;
 
 @Component({
   selector: 'app-feeding',
@@ -89,6 +118,7 @@ const INITIAL_NOTIFICATION_VISIBLE = 2;
     FeedingProfileComponent,
     FeedingDialogsComponent,
     FeedingDailyComponent,
+    FeedingSolidFoodComponent,
   ],
   templateUrl: './feeding.component.html',
   styleUrls: ['./feeding.component.scss'],
@@ -112,17 +142,29 @@ export class FeedingComponent {
 
   Math = Math;
 
-  /** Tab nav phía dưới: feeding | weight | schedule | mom | medical | documents. */
-  bottomTab = signal<'feeding' | 'weight' | 'schedule' | 'mom' | 'medical' | 'documents'>(
-    'feeding'
-  );
+  /** Tab nav phía dưới. */
+  bottomTab = signal<FeedingBottomTab>('feeding');
+  navMoreDialogOpen = signal(false);
 
-  setBottomTab(tab: 'feeding' | 'weight' | 'schedule' | 'mom' | 'medical' | 'documents') {
+  setBottomTab(tab: FeedingBottomTab) {
+    this.navMoreDialogOpen.set(false);
     this.bottomTab.set(tab);
     this.scrollFeedingShellToTop();
     if (tab === 'feeding') {
       this.loadWeightLogs();
     }
+  }
+
+  openNavMoreDialog(): void {
+    this.navMoreDialogOpen.set(true);
+  }
+
+  closeNavMoreDialog(): void {
+    this.navMoreDialogOpen.set(false);
+  }
+
+  selectNavFromMore(tab: FeedingBottomTab): void {
+    this.setBottomTab(tab);
   }
 
   /** Đưa cuộn về đầu khi đổi tab (shell `.feeding-page` + window dự phòng). */
@@ -196,6 +238,62 @@ export class FeedingComponent {
     if (isNaN(birth.getTime())) return null;
     const diffMs = this.now().getTime() - birth.getTime();
     return Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+  });
+
+  solidFoodUnlocked = computed(() => isSolidFoodUnlocked(this.ageInDays()));
+
+  /** Danh sách tab bottom nav — thêm/bớt item ở đây. */
+  allBottomNavItems = computed<NavMoreItem[]>(() => {
+    const items: NavMoreItem[] = [
+      { id: 'feeding', label: 'Cữ bú', icon: 'pi pi-heart-fill' },
+    ];
+    if (this.solidFoodUnlocked()) {
+      items.push({
+        id: 'solid-food',
+        label: 'Ăn dặm',
+        icon: 'pi pi-apple',
+        title: 'Quản lý ăn dặm',
+      });
+    }
+    items.push(
+      { id: 'weight', label: 'Thể trạng', icon: 'pi pi-chart-line' },
+      {
+        id: 'schedule',
+        label: 'Lịch',
+        icon: 'pi pi-calendar',
+        title: 'Lịch — sự kiện từ sheet Event',
+      },
+      { id: 'mom', label: 'Mẹ', icon: 'pi pi-sun', title: 'Chăm Mẹ — gợi ý & dinh dưỡng' },
+      { id: 'medical', label: 'Y tế', icon: 'pi pi-book' },
+      { id: 'documents', label: 'Tài liệu', icon: 'pi pi-folder' }
+    );
+    return items;
+  });
+
+  /** >6 tab → hiện tối đa 5 tab + nút «Thêm». */
+  bottomNavLayout = computed<BottomNavLayout>(() => {
+    const items = this.allBottomNavItems();
+    if (items.length <= BOTTOM_NAV_MAX_ITEMS) {
+      return { grouped: false, primary: items, overflow: [] };
+    }
+    const visibleCount = BOTTOM_NAV_MAX_ITEMS - 1;
+    return {
+      grouped: true,
+      primary: items.slice(0, visibleCount),
+      overflow: items.slice(visibleCount),
+    };
+  });
+
+  bottomNavSlotCount = computed(() => {
+    const layout = this.bottomNavLayout();
+    return layout.grouped ? layout.primary.length + 1 : layout.primary.length;
+  });
+
+  isNavMoreActive = computed(() => {
+    const layout = this.bottomNavLayout();
+    if (!layout.grouped) return false;
+    const tab = this.bottomTab();
+    return layout.overflow.some((item) => item.id === tab) || this.navMoreDialogOpen();
   });
 
   /**
@@ -357,6 +455,15 @@ export class FeedingComponent {
         this.eventLogService.loading();
         this.feedingSettings();
         this.tryOpenEventReminderAfterLoad();
+      },
+      { allowSignalWrites: true }
+    );
+
+    effect(
+      () => {
+        if (this.bottomTab() === 'solid-food' && !this.solidFoodUnlocked()) {
+          this.bottomTab.set('feeding');
+        }
       },
       { allowSignalWrites: true }
     );

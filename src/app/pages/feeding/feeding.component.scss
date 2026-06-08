@@ -981,6 +981,12 @@
       padding: 0 20px calc(24px + env(safe-area-inset-bottom, 0px));
     }
 
+    &--solid-food {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 20px calc(24px + env(safe-area-inset-bottom, 0px));
+    }
+
     &--medical {
       max-width: none;
       padding: 0;
@@ -995,6 +1001,61 @@
   }
 }
 
+/* ========== SOLID FOOD CTA (tab Cữ bú) ========== */
+.solid-food-cta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  margin: 0 0 16px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(5, 150, 105, 0.25);
+  background: linear-gradient(135deg, #ecfdf5, #fff);
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  transition: box-shadow 0.15s ease;
+
+  &:hover {
+    box-shadow: 0 4px 16px rgba(5, 150, 105, 0.12);
+  }
+
+  &--prep {
+    border-color: rgba(217, 119, 6, 0.3);
+    background: linear-gradient(135deg, #fffbeb, #fff);
+  }
+
+  &__icon {
+    font-size: 28px;
+    line-height: 1;
+  }
+
+  &__text {
+    flex: 1;
+    min-width: 0;
+
+    strong {
+      display: block;
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--text);
+    }
+
+    small {
+      display: block;
+      margin-top: 2px;
+      font-size: 12px;
+      color: var(--text-muted, #64748b);
+    }
+  }
+
+  .pi-chevron-right {
+    color: var(--text-muted, #94a3b8);
+    font-size: 14px;
+  }
+}
+
 /* ========== BOTTOM NAVIGATION ========== */
 .bottom-nav {
   position: fixed;
@@ -1006,7 +1067,7 @@
   box-sizing: border-box;
   z-index: 90;
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(var(--nav-count, 6), 1fr);
   gap: 4px;
   padding: 6px 8px;
   /* Nền gần đặc + blur — giảm khe tối (body #000) dưới thanh */
@@ -1046,6 +1107,10 @@
       font-size: 10.5px;
     }
 
+    &--locked:not(.active) {
+      opacity: 0.65;
+    }
+
     &:hover {
       color: var(--primary, #5b6cff);
     }
@@ -1062,6 +1127,88 @@
     &:active {
       transform: scale(0.97);
     }
+  }
+}
+
+/* ========== NAV MORE DIALOG (tab Ăn dặm) ========== */
+.nav-more-dialog {
+  width: min(420px, calc(100vw - 32px));
+  padding-bottom: 8px;
+
+  &__head {
+    margin-bottom: 12px;
+  }
+
+  &__title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    i {
+      color: rgb(5, 150, 105);
+    }
+  }
+
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  &__item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 96px;
+    padding: 14px 10px;
+    border-radius: 14px;
+    border: 1px solid var(--border, #e5e7eb);
+    background: #fff;
+    cursor: pointer;
+    font-family: inherit;
+    transition:
+      border-color 0.15s ease,
+      box-shadow 0.15s ease,
+      transform 0.12s ease;
+
+    &:hover {
+      border-color: rgb(5, 150, 105);
+      box-shadow: 0 6px 18px rgba(5, 150, 105, 0.12);
+    }
+
+    &:active {
+      transform: scale(0.98);
+    }
+
+    &.is-active {
+      border-color: rgb(5, 150, 105);
+      background: rgba(5, 150, 105, 0.08);
+      box-shadow: inset 0 0 0 1px rgba(5, 150, 105, 0.2);
+    }
+  }
+
+  &__icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(5, 150, 105, 0.1);
+    color: rgb(5, 120, 85);
+    font-size: 20px;
+  }
+
+  &__label {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    text-align: center;
   }
 }
 
