@@ -4,8 +4,6 @@ import {
   OnDestroy,
   signal,
   ChangeDetectionStrategy,
-  Output,
-  EventEmitter,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Subject, takeUntil, interval } from 'rxjs';
@@ -20,8 +18,6 @@ import { WeatherService, WeatherData, HourlyData } from '../../../services/weath
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class WeatherWidgetComponent implements OnInit, OnDestroy {
-  @Output() openWeatherApp = new EventEmitter<void>();
-
   weatherData = signal<WeatherData | null>(null);
   loading = signal<boolean>(true);
   error = signal<string | null>(null);
@@ -147,9 +143,5 @@ export class WeatherWidgetComponent implements OnInit, OnDestroy {
     if (iconNum >= 9 && iconNum <= 14) return 'rainy';
 
     return 'cloudy';
-  }
-
-  onOpenApp(): void {
-    this.openWeatherApp.emit();
   }
 }

@@ -10,10 +10,6 @@ Tài liệu hướng dẫn chuẩn bị **các tab** trong Google Sheet và **Go
 - **Explorer V2**: **Drive-first** - không còn dùng tab Explorer trong Sheet nữa. Files được lưu trực tiếp vào Google Drive với metadata trong PropertiesService. Hỗ trợ migration từ tab Explorer cũ.
 - Tab **`Log`**: lịch sử hoạt động (đọc API; ghi qua Apps Script).
 
-> Sheet: <https://docs.google.com/spreadsheets/d/1O4kAA61k4cX4mEwAjDy5gioVUAElCyu62Z3zPvgdDMM/edit?gid=0#gid=0>
->
-> Sheet ID: `1O4kAA61k4cX4mEwAjDy5gioVUAElCyu62Z3zPvgdDMM`
-
 ---
 
 ## 1. Chuẩn bị tab `Feeding`
@@ -230,9 +226,6 @@ Trong Sheet → **Extensions → Apps Script** → xoá toàn bộ code mặc đ
 /**
  * Baby App – Google Apps Script V2.0 (Drive-first)
  * Updated: June 3, 2026
- * Bound vào sheet 1O4kAA61k4cX4mEwAjDy5gioVUAElCyu62Z3zPvgdDMM.
- *
- * Major changes from V1:
  * - Explorer V2: Drive-first storage (không dùng Sheet tabs nữa)
  * - Medical History: hỗ trợ Drive file ID attachments trực tiếp
  * - Migration tools: từ Explorer legacy sang Drive với batch processing

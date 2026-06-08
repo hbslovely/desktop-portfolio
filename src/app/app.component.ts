@@ -28,27 +28,15 @@ import { TextViewerComponent } from './components/apps/text-viewer/text-viewer.c
 import { ImageViewerComponent } from './components/apps/image-viewer/image-viewer.component';
 import { PdfViewerComponent } from './components/apps/pdf-viewer/pdf-viewer.component';
 import { PaintAppComponent } from './components/apps/paint-app/paint-app.component';
-import { HcmcAppComponent } from './components/apps/hcmc-app/hcmc-app.component';
-import { NewsAppComponent } from './components/apps/news-app/news-app.component';
 import { SettingsAppComponent } from './components/apps/settings-app/settings-app.component';
-import { WeatherAppComponent } from './components/apps/weather-app/weather-app.component';
-import { DictionaryAppComponent } from './components/apps/dictionary-app/dictionary-app.component';
-import { CountriesAppComponent } from './components/apps/countries-app/countries-app.component';
-import { CalendarAppComponent } from './components/apps/calendar-app/calendar-app.component';
-import { AngularLoveAppComponent } from './components/apps/angular-love-app/angular-love-app.component';
 import { MusicAppComponent } from './components/apps/music-app/music-app.component';
-import { AngularGuidelinesAppComponent } from './components/apps/angular-guidelines-app/angular-guidelines-app.component';
-import { TuoiTreNewsAppComponent } from './components/apps/tuoitre-news-app/tuoitre-news-app.component';
 import { ExpenseAppComponent } from './components/apps/expense-app/expense-app.component';
 import { BusinessAppComponent } from './components/apps/business-app/business-app.component';
 import { ChineseChessAppComponent } from './components/apps/chinese-chess-app/chinese-chess-app.component';
-import { OcrAppComponent } from './components/apps/ocr-app/ocr-app.component';
 import { FbIdFinderAppComponent } from './components/apps/fb-id-finder-app/fb-id-finder-app.component';
 import { GraphVisualizerAppComponent } from './components/apps/graph-visualizer-app/graph-visualizer-app.component';
-import { StockAppComponent } from './components/apps/stock-app/stock-app.component';
 import { SieuCoAppComponent } from './components/apps/sieu-co-app/sieu-co-app.component';
 import { ImageSearchAppComponent } from './components/apps/image-search-app/image-search-app.component';
-import { ShopCloneAppComponent } from './components/apps/shop-clone-app/shop-clone-app.component';
 import { WeatherWidgetComponent } from './components/desktop-widgets/weather-widget/weather-widget.component';
 import { WelcomeScreenComponent } from './components/welcome-screen/welcome-screen.component';
 import { CommonModule } from '@angular/common';
@@ -100,27 +88,15 @@ interface WindowConfig {
     ImageViewerComponent,
     PdfViewerComponent,
     PaintAppComponent,
-    HcmcAppComponent,
-    NewsAppComponent,
     SettingsAppComponent,
-    WeatherAppComponent,
-    DictionaryAppComponent,
-    CountriesAppComponent,
-    CalendarAppComponent,
-    AngularLoveAppComponent,
     MusicAppComponent,
-    AngularGuidelinesAppComponent,
-    TuoiTreNewsAppComponent,
     ExpenseAppComponent,
     BusinessAppComponent,
     ChineseChessAppComponent,
-    OcrAppComponent,
     FbIdFinderAppComponent,
     GraphVisualizerAppComponent,
-    StockAppComponent,
     SieuCoAppComponent,
     ImageSearchAppComponent,
-    ShopCloneAppComponent,
     WeatherWidgetComponent,
     CommonModule,
     FormsModule,
@@ -196,9 +172,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   showImageViewerWindow = signal(false);
   showCreditWindow = signal(false);
   showPaintWindow = signal(false);
-  showCreditsWindow = signal(false);
-  showHcmcWindow = signal(false);
-  showNewsWindow = signal(false);
+  showSearchWindow = signal(false);
 
   // Widget visibility
   showWeatherWidget = signal(true);
@@ -208,7 +182,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   currentImageFile = signal<{ path: string; name: string } | null>(null);
   currentPdfFile = signal<{ path: string; name: string } | null>(null);
   showPdfViewerWindow = signal(false);
-  showSearchWindow = signal(false);
 
   /**
    * Centralized window registry for DRY window management
@@ -221,9 +194,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     ['explorer', { id: 'explorer', showSignal: this.showExplorerWindow }],
     ['credit', { id: 'credit', showSignal: this.showCreditWindow }],
     ['paint', { id: 'paint', showSignal: this.showPaintWindow }],
-    ['credits', { id: 'credits', showSignal: this.showCreditsWindow }],
-    ['hcmc', { id: 'hcmc', showSignal: this.showHcmcWindow }],
-    ['news', { id: 'news', showSignal: this.showNewsWindow }],
     [
       'text-viewer',
       {
@@ -289,18 +259,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   paintZIndex = computed(() => this.computeWindowZIndex('paint'));
   paintFocused = computed(() => this.focusedWindow() === 'paint');
   paintMinimized = computed(() => this.minimizedWindows().has('paint'));
-
-  creditsZIndex = computed(() => this.computeWindowZIndex('credits'));
-  creditsFocused = computed(() => this.focusedWindow() === 'credits');
-  creditsMinimized = computed(() => this.minimizedWindows().has('credits'));
-
-  hcmcZIndex = computed(() => this.computeWindowZIndex('hcmc'));
-  hcmcFocused = computed(() => this.focusedWindow() === 'hcmc');
-  hcmcMinimized = computed(() => this.minimizedWindows().has('hcmc'));
-
-  newsZIndex = computed(() => this.computeWindowZIndex('news'));
-  newsFocused = computed(() => this.focusedWindow() === 'news');
-  newsMinimized = computed(() => this.minimizedWindows().has('news'));
 
   // Computed for open windows list - cached to avoid recalculation in template
   openWindowsList = computed(() => this.computeAllOpenWindows());
@@ -423,7 +381,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
         { id: 'calculator', name: 'Calculator', icon: 'pi pi-calculator' },
         { id: 'credit', name: 'Finance Tracker', icon: 'pi pi-wallet' },
         { id: 'explorer', name: 'File Explorer', icon: 'pi pi-folder' },
-        { id: 'dictionary', name: 'Dictionary', icon: 'pi pi-book' },
         { id: 'link-shortener', name: 'Link Shortener', icon: 'pi pi-link' },
       ],
     },
@@ -442,9 +399,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
       icon: 'pi pi-info-circle',
       apps: [
         { id: 'my-info', name: 'My Information', icon: 'pi pi-user' },
-        { id: 'hcmc', name: 'Ho Chi Minh City', icon: 'pi pi-globe' },
-        { id: 'news', name: 'News Headlines', icon: 'pi pi-globe' },
-        { id: 'weather', name: 'Weather Forecast', icon: 'pi pi-cloud' },
       ],
     },
     {
@@ -453,7 +407,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
       icon: 'pi pi-cog',
       apps: [
         { id: 'settings', name: 'Settings', icon: 'pi pi-cog' },
-        { id: 'credits', name: 'Credits', icon: 'pi pi-star' },
       ],
     },
   ];
@@ -662,67 +615,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
 
   onFocusPaintWindow() {
     this.focusWindow('paint');
-  }
-
-  onCloseCreditsWindow() {
-    this.closeWindow('credits');
-  }
-
-  onMinimizeCreditsWindow() {
-    this.minimizeWindow('credits');
-  }
-
-  onMaximizeCreditsWindow() {
-    this.maximizeWindow('credits');
-  }
-
-  onRestoreCreditsWindow() {
-    this.restoreWindow('credits');
-  }
-
-  onFocusCreditsWindow() {
-    this.focusWindow('credits');
-  }
-
-  onCloseHcmcWindow() {
-    this.closeWindow('hcmc');
-  }
-
-  onMinimizeHcmcWindow() {
-    this.minimizeWindow('hcmc');
-  }
-
-  onMaximizeHcmcWindow() {
-    this.maximizeWindow('hcmc');
-  }
-
-  onRestoreHcmcWindow() {
-    this.restoreWindow('hcmc');
-  }
-
-  onFocusHcmcWindow() {
-    this.focusWindow('hcmc');
-  }
-
-  // News Window Methods
-  onCloseNewsWindow() {
-    this.closeWindow('news');
-  }
-
-  onMinimizeNewsWindow() {
-    this.minimizeWindow('news');
-  }
-
-  onMaximizeNewsWindow() {
-    this.maximizeWindow('news');
-  }
-
-  onRestoreNewsWindow() {
-    this.restoreWindow('news');
-  }
-
-  onFocusNewsWindow() {
-    this.focusWindow('news');
   }
 
   // Text Viewer Window Methods
@@ -999,15 +891,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     } else if (icon.id === 'paint') {
       this.showPaintWindow.set(true);
       this.focusWindow('paint');
-    } else if (icon.id === 'credits') {
-      this.showCreditsWindow.set(true);
-      this.focusWindow('credits');
-    } else if (icon.id === 'hcmc') {
-      this.showHcmcWindow.set(true);
-      this.focusWindow('hcmc');
-    } else if (icon.id === 'news') {
-      this.showNewsWindow.set(true);
-      this.focusWindow('news');
     }
   }
 
@@ -1076,12 +959,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
         this.onCloseCreditWindow();
       } else if (icon.id === 'paint' && this.showPaintWindow()) {
         this.onClosePaintWindow();
-      } else if (icon.id === 'credits' && this.showCreditsWindow()) {
-        this.onCloseCreditsWindow();
-      } else if (icon.id === 'hcmc' && this.showHcmcWindow()) {
-        this.onCloseHcmcWindow();
-      } else if (icon.id === 'news' && this.showNewsWindow()) {
-        this.onCloseNewsWindow();
       }
     }
   }
@@ -1310,51 +1187,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
         } else {
           this.showPaintWindow.set(true);
           this.focusWindow('paint');
-        }
-        break;
-
-      case 'credits':
-        if (this.showCreditsWindow()) {
-          if (this.isWindowMinimized('credits')) {
-            this.focusWindow('credits');
-          } else if (this.focusedWindow() === 'credits') {
-            this.minimizeWindow('credits');
-          } else {
-            this.focusWindow('credits');
-          }
-        } else {
-          this.showCreditsWindow.set(true);
-          this.focusWindow('credits');
-        }
-        break;
-
-      case 'hcmc':
-        if (this.showHcmcWindow()) {
-          if (this.isWindowMinimized('hcmc')) {
-            this.focusWindow('hcmc');
-          } else if (this.focusedWindow() === 'hcmc') {
-            this.minimizeWindow('hcmc');
-          } else {
-            this.focusWindow('hcmc');
-          }
-        } else {
-          this.showHcmcWindow.set(true);
-          this.focusWindow('hcmc');
-        }
-        break;
-
-      case 'news':
-        if (this.showNewsWindow()) {
-          if (this.isWindowMinimized('news')) {
-            this.focusWindow('news');
-          } else if (this.focusedWindow() === 'news') {
-            this.minimizeWindow('news');
-          } else {
-            this.focusWindow('news');
-          }
-        } else {
-          this.showNewsWindow.set(true);
-          this.focusWindow('news');
         }
         break;
     }
@@ -1730,9 +1562,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
         'pdf-viewer',
         'credit',
         'paint',
-        'credits',
-        'hcmc',
-        'news',
       ];
       return new Set(allWindows);
     });
@@ -1752,9 +1581,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
         'pdf-viewer',
         'credit',
         'paint',
-        'credits',
-        'hcmc',
-        'news',
       ];
       return new Set(allWindows);
     });
@@ -1768,11 +1594,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
 
   quickActionOpenCalculator() {
     this.openApp('calculator');
-    this.closeQuickActionsMenu();
-  }
-
-  quickActionOpenDictionary() {
-    this.openApp('dictionary');
     this.closeQuickActionsMenu();
   }
 
@@ -2072,14 +1893,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
       show: () => this.showCreditWindow(),
     },
     { id: 'paint', title: 'Paint', icon: 'pi pi-palette', show: () => this.showPaintWindow() },
-    { id: 'credits', title: 'Credits', icon: 'pi pi-star', show: () => this.showCreditsWindow() },
-    {
-      id: 'hcmc',
-      title: 'Ho Chi Minh City',
-      icon: 'pi pi-globe',
-      show: () => this.showHcmcWindow(),
-    },
-    { id: 'news', title: 'News Headlines', icon: 'pi pi-globe', show: () => this.showNewsWindow() },
   ];
 
   // Window Switcher Methods - Private compute method for cached computed signal

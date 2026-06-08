@@ -21,45 +21,10 @@ export class AppSplashService {
 
   // Callback to execute after splash completes
   private onCompleteCallback: (() => void) | null = null;
-  private progressInterval: any = null;
+  private progressInterval: ReturnType<typeof setInterval> | null = null;
 
   // App-specific configurations
   private appConfigs: Record<string, Partial<AppSplashConfig>> = {
-    stock: {
-      appName: 'Chứng khoán',
-      loadingSteps: [
-        'Đang kết nối máy chủ...',
-        'Đang tải dữ liệu thị trường...',
-        'Đang phân tích xu hướng...',
-        'Chuẩn bị giao diện...',
-      ],
-      duration: 1800,
-    },
-    weather: {
-      appName: 'Thời tiết',
-      loadingSteps: ['Đang lấy vị trí...', 'Đang tải dữ liệu thời tiết...', 'Đang xử lý dự báo...'],
-      duration: 1200,
-    },
-    news: {
-      appName: 'Tin tức',
-      loadingSteps: ['Đang kết nối nguồn tin...', 'Đang tải tin mới nhất...', 'Đang phân loại...'],
-      duration: 1200,
-    },
-    'tuoitre-news': {
-      appName: 'Tuổi Trẻ News',
-      loadingSteps: ['Đang kết nối Tuổi Trẻ...', 'Đang tải bài viết...', 'Chuẩn bị hiển thị...'],
-      duration: 1200,
-    },
-    countries: {
-      appName: 'Countries',
-      loadingSteps: ['Đang tải dữ liệu quốc gia...', 'Đang xử lý bản đồ...', 'Sẵn sàng khám phá!'],
-      duration: 1200,
-    },
-    dictionary: {
-      appName: 'Từ điển',
-      loadingSteps: ['Đang tải từ vựng...', 'Đang khởi tạo tra cứu...'],
-      duration: 1000,
-    },
     music: {
       appName: 'Âm nhạc',
       loadingSteps: ['Đang tải playlist...', 'Đang chuẩn bị audio...', 'Sẵn sàng phát nhạc!'],
@@ -107,7 +72,6 @@ export class AppSplashService {
   private animateProgress(config: AppSplashConfig): void {
     const duration = config.duration!;
     const steps = config.loadingSteps!;
-    const stepDuration = duration / steps.length;
     const progressIncrement = 100 / (duration / 30); // Update every 30ms
 
     let currentProgress = 0;
@@ -181,19 +145,7 @@ export class AppSplashService {
    * Check if app should show splash
    */
   shouldShowSplash(appId: string): boolean {
-    // Apps that should show splash screen
-    const appsWithSplash = [
-      'stock',
-      'expense',
-      'weather',
-      'news',
-      'tuoitre-news',
-      'countries',
-      'dictionary',
-      'music',
-      'business',
-      'graph-visualizer',
-    ];
+    const appsWithSplash = ['expense', 'music', 'business', 'graph-visualizer'];
     return appsWithSplash.includes(appId);
   }
 }

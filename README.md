@@ -89,8 +89,6 @@ All guides live under **[docs/](./docs/README.md)**:
 Submodule READMEs:
 
 - [server/README.md](./server/README.md) — local API server
-- [signaling-server/README.md](./signaling-server/README.md) — signaling service
-
 ## Environment variables
 
 Copy or create `.env.local` at the project root (and `server/.env.local` for the API). Common keys include:
@@ -100,9 +98,12 @@ NG_APP_GOOGLE_SHEETS_API_KEY=
 NG_APP_GOOGLE_CLIENT_ID=
 NG_APP_GOOGLE_APPS_SCRIPT_URL=
 NG_APP_GOOGLE_FEEDING_APPS_SCRIPT_URL=
+NG_APP_GOOGLE_FEEDING_SHEET_ID=
 NG_APP_GOOGLE_BUSINESS_APPS_SCRIPT_URL=
+NG_APP_GOOGLE_BUSINESS_SHEET_ID=
+NG_APP_GOOGLE_EXPENSE_SHEET_ID=
 NG_APP_WEATHER_API_KEY=
-NG_APP_NEWS_API_TOKEN=
+NG_APP_HUGGINGFACE_TOKEN=
 GITHUB_TOKEN=
 ```
 

@@ -7,6 +7,8 @@ import {
   formatWeightCm,
   formatWeightDateDisplay,
   formatWeightKg,
+  formatGrowthZScore,
+  growthMarkerPosition,
   growthStatusClass,
 } from '../weight-display.utils';
 
@@ -65,9 +67,12 @@ export class WeightHeaderComponent {
     return `${this.formatSigned(diff, 1)} cm`;
   }
 
-  heightMarkerPosition(ev: HeightGrowthEvaluation): number {
-    const z = Math.max(-2, Math.min(2, ev.zScore));
-    return ((z + 2) / 4) * 100;
+  growthMarkerPosition(zScore: number): number {
+    return growthMarkerPosition(zScore);
+  }
+
+  formatZScore(zScore: number): string {
+    return formatGrowthZScore(zScore);
   }
 
   friendlyHeightDetail(ev: HeightGrowthEvaluation, currentHeightCm: number): string {

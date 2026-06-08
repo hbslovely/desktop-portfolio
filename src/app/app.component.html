@@ -1,4 +1,4 @@
-<!-- Router Outlet for standalone pages like /chat -->
+<!-- Router Outlet for standalone pages (e.g. /feeding) -->
 <router-outlet *ngIf="!isDesktopRoute()"></router-outlet>
 
 <!-- Desktop Environment (only show on root route) -->
@@ -152,52 +152,6 @@
         (onFocus)="onFocusPaintWindow()"
       >
         <app-paint-app></app-paint-app>
-      </app-window>
-
-      <!-- Ho Chi Minh City Window -->
-      <app-window
-        *ngIf="showHcmcWindow()"
-        title="Ho Chi Minh City"
-        icon="pi pi-globe"
-        statusText="Welcome to Saigon"
-        [initialWidth]="1000"
-        [initialHeight]="700"
-        [initialX]="100"
-        [initialY]="50"
-        [maximizable]="true"
-        [zIndex]="hcmcZIndex()"
-        [isFocused]="hcmcFocused()"
-        [isMinimizedExternal]="hcmcMinimized()"
-        (onClose)="onCloseHcmcWindow()"
-        (onMinimize)="onMinimizeHcmcWindow()"
-        (onMaximize)="onMaximizeHcmcWindow()"
-        (onRestore)="onRestoreHcmcWindow()"
-        (onFocus)="onFocusHcmcWindow()"
-      >
-        <app-hcmc-app></app-hcmc-app>
-      </app-window>
-
-      <!-- News Window -->
-      <app-window
-        *ngIf="showNewsWindow() || newsMinimized()"
-        title="News Headlines"
-        icon="pi pi-globe"
-        statusText="Latest News"
-        [initialWidth]="1000"
-        [initialHeight]="700"
-        [initialX]="250"
-        [initialY]="100"
-        [maximizable]="true"
-        [zIndex]="newsZIndex()"
-        [isFocused]="newsFocused()"
-        [isMinimizedExternal]="newsMinimized()"
-        (onClose)="onCloseNewsWindow()"
-        (onMinimize)="onMinimizeNewsWindow()"
-        (onMaximize)="onMaximizeNewsWindow()"
-        (onRestore)="onRestoreNewsWindow()"
-        (onFocus)="onFocusNewsWindow()"
-      >
-        <app-news-app></app-news-app>
       </app-window>
 
       <!-- Text Viewer Window -->
@@ -449,7 +403,7 @@
 
       <!-- Desktop Widgets -->
       <div class="desktop-widgets" *ngIf="showWeatherWidget()">
-        <app-weather-widget (openWeatherApp)="openApp('weather')"> </app-weather-widget>
+        <app-weather-widget></app-weather-widget>
       </div>
 
       <!-- Taskbar -->
@@ -550,42 +504,6 @@
             <span>Paint</span>
           </button>
 
-          <button
-            *ngIf="showCreditsWindow() || creditsMinimized()"
-            class="taskbar-app"
-            [class.active]="creditsFocused()"
-            [class.minimized]="creditsMinimized()"
-            (click)="toggleTaskbarApp('credits')"
-            title="Credits"
-          >
-            <i class="pi pi-star"></i>
-            <span>Credits</span>
-          </button>
-
-          <button
-            *ngIf="showHcmcWindow() || hcmcMinimized()"
-            class="taskbar-app"
-            [class.active]="hcmcFocused()"
-            [class.minimized]="hcmcMinimized()"
-            (click)="toggleTaskbarApp('hcmc')"
-            title="Ho Chi Minh City"
-          >
-            <i class="pi pi-globe"></i>
-            <span>HCMC</span>
-          </button>
-
-          <button
-            *ngIf="showNewsWindow() || newsMinimized()"
-            class="taskbar-app"
-            [class.active]="newsFocused()"
-            [class.minimized]="newsMinimized()"
-            (click)="toggleTaskbarApp('news')"
-            title="News Headlines"
-          >
-            <i class="pi pi-globe"></i>
-            <span>News</span>
-          </button>
-
           <!-- Dynamic Windows from WindowManager Service -->
           <button
             *ngFor="let window of windowManager.windowList()"
@@ -653,18 +571,6 @@
                     <i class="pi pi-user"></i>
                   </div>
                   <span class="app-tile-name">My Information</span>
-                </div>
-                <div class="app-tile" (click)="openApp('news')" title="News">
-                  <div class="app-tile-icon">
-                    <i class="pi pi-globe"></i>
-                  </div>
-                  <span class="app-tile-name">News</span>
-                </div>
-                <div class="app-tile" (click)="openApp('hcmc')" title="HCMC">
-                  <div class="app-tile-icon">
-                    <i class="pi pi-map-marker"></i>
-                  </div>
-                  <span class="app-tile-name">HCMC</span>
                 </div>
               </div>
             </div>
@@ -780,11 +686,6 @@
           <span>Calculator</span>
         </div>
 
-        <div class="context-menu-item" (click)="openApp('dictionary')">
-          <i class="pi pi-book"></i>
-          <span>Dictionary</span>
-        </div>
-
         <div class="context-menu-separator"></div>
 
         <div class="context-menu-item" (click)="openSettings()">
@@ -864,15 +765,6 @@
           </div>
         </div>
 
-        <div class="quick-action-item" (click)="quickActionOpenDictionary()">
-          <div class="quick-action-icon">
-            <i class="pi pi-book"></i>
-          </div>
-          <div class="quick-action-content">
-            <div class="quick-action-title">Dictionary</div>
-            <div class="quick-action-desc">Look up words</div>
-          </div>
-        </div>
       </div>
 
       <!-- Desktop Context Menu Backdrop -->
@@ -1032,27 +924,10 @@
 
         <app-paint-app *ngSwitchCase="'paint'"></app-paint-app>
 
-        <app-hcmc-app *ngSwitchCase="'hcmc'"></app-hcmc-app>
-
-        <app-news-app *ngSwitchCase="'news'"></app-news-app>
-
         <app-settings-app *ngSwitchCase="'settings'" (onSettingsChange)="onSettingsChange($event)">
         </app-settings-app>
-        <app-weather-app *ngSwitchCase="'weather'"></app-weather-app>
-        <app-dictionary-app *ngSwitchCase="'dictionary'"></app-dictionary-app>
-        <app-countries-app *ngSwitchCase="'countries'"></app-countries-app>
-
-        <app-calendar-app *ngSwitchCase="'calendar'"></app-calendar-app>
-
-        <app-angular-love-app *ngSwitchCase="'angular-love'"></app-angular-love-app>
 
         <app-music-app *ngSwitchCase="'music'"></app-music-app>
-
-        <app-angular-guidelines-app
-          *ngSwitchCase="'angular-guidelines'"
-        ></app-angular-guidelines-app>
-
-        <app-tuoitre-news-app *ngSwitchCase="'tuoitre-news'"></app-tuoitre-news-app>
 
         <app-expense-app *ngSwitchCase="'expense'"></app-expense-app>
 
@@ -1060,15 +935,11 @@
 
         <app-chinese-chess-app *ngSwitchCase="'chinese-chess'"></app-chinese-chess-app>
 
-        <app-ocr-app *ngSwitchCase="'ocr'"></app-ocr-app>
-
         <app-fb-id-finder-app *ngSwitchCase="'fb-id-finder'"></app-fb-id-finder-app>
 
         <app-graph-visualizer-app *ngSwitchCase="'graph-visualizer'"></app-graph-visualizer-app>
-        <app-stock-app *ngSwitchCase="'stock'"></app-stock-app>
         <app-sieu-co-app *ngSwitchCase="'sieu-co'"></app-sieu-co-app>
         <app-image-search-app *ngSwitchCase="'image-search'"></app-image-search-app>
-        <app-shop-clone-app *ngSwitchCase="'shop-clone'"></app-shop-clone-app>
       </ng-container>
     </app-window>
   </ng-container> </ng-container

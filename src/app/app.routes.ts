@@ -7,11 +7,6 @@ export const routes: Routes = [
     title: 'Bói Vui',
   },
   {
-    path: 'chat',
-    loadComponent: () => import('./pages/chat/chat.component').then((m) => m.ChatComponent),
-    title: 'Video Chat - WebRTC',
-  },
-  {
     path: 'hello-2026',
     loadComponent: () =>
       import('./pages/hello-2026/hello-2026.component').then((m) => m.Hello2026Component),
@@ -60,13 +55,5 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./pages/my-timesheet/my-timesheet.component').then((m) => m.MyTimesheetComponent),
     title: 'My Timesheet - Submit to Productive.io',
-  },
-  {
-    path: 'shop-clone',
-    loadComponent: () =>
-      import('./components/apps/shop-clone-app/shop-clone-app.component').then(
-        (m) => m.ShopCloneAppComponent
-      ),
-    title: 'Shopee Clone',
   },
 ];

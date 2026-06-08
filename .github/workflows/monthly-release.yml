@@ -50,10 +50,14 @@ jobs:
           PREV_TAG="$(node .github/scripts/release-version.mjs previous-monthly-tag)"
 
           if git rev-parse "refs/tags/${PREV_TAG}" >/dev/null 2>&1; then
-            COMMIT_COUNT="$(git rev-list --count "${PREV_TAG}..HEAD")"
+            COMMIT_COUNT="$(git rev-list --count \
+              --grep='^chore(release):' --extended-regexp --invert-grep \
+              "${PREV_TAG}..HEAD")"
             echo "previous_tag=${PREV_TAG}" >> "${GITHUB_OUTPUT}"
           else
-            COMMIT_COUNT="$(git rev-list --count HEAD)"
+            COMMIT_COUNT="$(git rev-list --count \
+              --grep='^chore(release):' --extended-regexp --invert-grep \
+              HEAD)"
             echo "previous_tag=" >> "${GITHUB_OUTPUT}"
           fi
 
@@ -61,7 +65,7 @@ jobs:
 
           FORCE="${{ github.event.inputs.force || 'false' }}"
           if [ "${COMMIT_COUNT}" -eq 0 ] && [ "${FORCE}" != "true" ]; then
-            echo "No commits since last monthly release — skipping."
+            echo "No non-release commits since last monthly release — skipping."
             echo "should_release=false" >> "${GITHUB_OUTPUT}"
             exit 0
           fi
@@ -80,9 +84,13 @@ jobs:
             fi
             echo ""
             if git rev-parse "refs/tags/${PREV_TAG}" >/dev/null 2>&1; then
-              git log --pretty=format:'- %s (`%h`)' "${PREV_TAG}..HEAD" || true
+              git log --pretty=format:'- %s (`%h`)' \
+                --grep='^chore(release):' --extended-regexp --invert-grep \
+                "${PREV_TAG}..HEAD" || true
             else
-              git log --pretty=format:'- %s (`%h`)' -n 50 HEAD || true
+              git log --pretty=format:'- %s (`%h`)' \
+                --grep='^chore(release):' --extended-regexp --invert-grep \
+                -n 50 HEAD || true
             fi
           } > release-notes.md
 
@@ -91,7 +99,7 @@ jobs:
         run: |
           .github/scripts/commit-package-version.sh \
             "${{ steps.prep.outputs.package_version }}" \
-            "chore(release): set version to ${{ steps.prep.outputs.package_version }}" \
+            "chore(release): monthly release v${{ steps.prep.outputs.package_version }}" \
             "${{ github.event.repository.default_branch }}"
 
       - name: Push monthly tag
