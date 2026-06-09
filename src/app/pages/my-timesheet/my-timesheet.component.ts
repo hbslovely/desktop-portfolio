@@ -2408,11 +2408,11 @@ export class MyTimesheetComponent implements OnInit, OnDestroy {
 
   getEntryStatusSeverity(
     entry: any
-  ): 'danger' | 'warning' | 'success' | 'info' | 'secondary' | 'contrast' | undefined {
+  ): 'danger' | 'warn' | 'success' | 'info' | 'secondary' | 'contrast' | undefined {
     if (entry.submitted) return 'success';
     if (entry.error) return 'danger';
     if (entry.hours > 0) return 'info';
-    return 'warning';
+    return 'warn';
   }
 
   getTotalHours(): number {
