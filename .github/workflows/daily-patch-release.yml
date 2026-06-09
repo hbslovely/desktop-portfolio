@@ -142,7 +142,7 @@ jobs:
             exit 0
           fi
           git tag -a "${DAILY_MARKER}" -m "Daily marker → ${RELEASE_TAG}"
-          git push origin "refs/tags/${DAILY_MARKER}"
+          git push --force-with-lease origin "refs/tags/${DAILY_MARKER}"
 
       - name: Create GitHub Release
         if: steps.prep.outputs.should_release == 'true'
