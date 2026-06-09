@@ -413,6 +413,7 @@
       [class.is-schedule]="bottomTab() === 'schedule'"
       [class.is-mom]="bottomTab() === 'mom'"
       [class.is-medical]="bottomTab() === 'medical'"
+      [class.is-solid-food]="bottomTab() === 'solid-food'"
     >
       <!--
       ============ TAB PANES ============
@@ -477,6 +478,21 @@
         />
 
         <ng-container *ngIf="profile() && !editing() && ageBreakdown()">
+          @if (solidFoodUnlocked()) {
+            <button
+              type="button"
+              class="solid-food-cta solid-food-cta--active"
+              (click)="setBottomTab('solid-food')"
+            >
+              <span class="solid-food-cta__icon" aria-hidden="true">🍽️</span>
+              <span class="solid-food-cta__text">
+                <strong>Ăn dặm</strong>
+                <small>Quản lý bữa ăn & hướng dẫn theo tháng</small>
+              </span>
+              <i class="pi pi-chevron-right" aria-hidden="true"></i>
+            </button>
+          }
+
           <app-feeding-daily
             [logs]="logs()"
             [feedingSettings]="feedingSettings()"
@@ -532,81 +548,96 @@
         </button>
       </div>
       <!-- /.tab-pane--feeding -->
+
+      <!-- ============ TAB: ĂN DẶM ============ -->
+      <div class="tab-pane tab-pane--solid-food" [hidden]="bottomTab() !== 'solid-food'">
+        <app-feeding-solid-food
+          [profile]="profile()"
+          [editing]="editing()"
+          [user]="user()"
+        ></app-feeding-solid-food>
+      </div>
     </main>
   </div>
   <!-- /.feeding-page -->
 
   <!-- ============ BOTTOM NAVIGATION ============ -->
-  <nav class="bottom-nav" role="tablist" aria-label="Điều hướng chính">
-    <button
-      type="button"
-      class="bn-item"
-      role="tab"
-      [attr.aria-selected]="bottomTab() === 'feeding'"
-      [class.active]="bottomTab() === 'feeding'"
-      (click)="setBottomTab('feeding')"
-    >
-      <i class="pi pi-heart-fill bn-icon"></i>
-      <span class="bn-label">Cữ bú</span>
-    </button>
-    <button
-      type="button"
-      class="bn-item"
-      role="tab"
-      [attr.aria-selected]="bottomTab() === 'weight'"
-      [class.active]="bottomTab() === 'weight'"
-      (click)="setBottomTab('weight')"
-    >
-      <i class="pi pi-chart-line bn-icon"></i>
-      <span class="bn-label">Thể trạng</span>
-    </button>
-    <button
-      type="button"
-      class="bn-item"
-      role="tab"
-      [attr.aria-selected]="bottomTab() === 'schedule'"
-      [class.active]="bottomTab() === 'schedule'"
-      (click)="setBottomTab('schedule')"
-      title="Lịch — sự kiện từ sheet Event"
-    >
-      <i class="pi pi-calendar bn-icon"></i>
-      <span class="bn-label">Lịch</span>
-    </button>
-    <button
-      type="button"
-      class="bn-item"
-      role="tab"
-      [attr.aria-selected]="bottomTab() === 'mom'"
-      [class.active]="bottomTab() === 'mom'"
-      (click)="setBottomTab('mom')"
-      title="Chăm Mẹ — gợi ý & dinh dưỡng"
-    >
-      <i class="pi pi-sun bn-icon" aria-hidden="true"></i>
-      <span class="bn-label">Mẹ</span>
-    </button>
-    <button
-      type="button"
-      class="bn-item"
-      role="tab"
-      [attr.aria-selected]="bottomTab() === 'medical'"
-      [class.active]="bottomTab() === 'medical'"
-      (click)="setBottomTab('medical')"
-    >
-      <i class="pi pi-book bn-icon"></i>
-      <span class="bn-label">Y tế</span>
-    </button>
-    <button
-      type="button"
-      class="bn-item"
-      role="tab"
-      [attr.aria-selected]="bottomTab() === 'documents'"
-      [class.active]="bottomTab() === 'documents'"
-      (click)="setBottomTab('documents')"
-    >
-      <i class="pi pi-folder bn-icon"></i>
-      <span class="bn-label">Tài liệu</span>
-    </button>
+  <nav
+    class="bottom-nav"
+    [class.bottom-nav--grouped]="bottomNavLayout().grouped"
+    [style.--nav-count]="bottomNavSlotCount()"
+    role="tablist"
+    aria-label="Điều hướng chính"
+  >
+    @for (item of bottomNavLayout().primary; track item.id) {
+      <button
+        type="button"
+        class="bn-item"
+        role="tab"
+        [attr.aria-selected]="bottomTab() === item.id"
+        [class.active]="bottomTab() === item.id"
+        [class.bn-item--locked]="item.locked"
+        [title]="item.title || item.label"
+        (click)="setBottomTab(item.id)"
+      >
+        <i [class]="item.icon + ' bn-icon'" aria-hidden="true"></i>
+        <span class="bn-label">{{ item.label }}</span>
+      </button>
+    }
+    @if (bottomNavLayout().grouped) {
+      <button
+        type="button"
+        class="bn-item"
+        role="button"
+        [class.active]="isNavMoreActive()"
+        [attr.aria-expanded]="navMoreDialogOpen()"
+        (click)="openNavMoreDialog()"
+        title="Xem thêm tính năng"
+      >
+        <i class="pi pi-ellipsis-h bn-icon" aria-hidden="true"></i>
+        <span class="bn-label">Thêm</span>
+      </button>
+    }
   </nav>
+
+  <!-- Nav more — tab vượt ngưỡng bottom nav -->
+  <div
+    class="dialog-overlay dialog-overlay--front"
+    *ngIf="navMoreDialogOpen()"
+    (click)="closeNavMoreDialog()"
+  >
+    <div
+      class="dialog nav-more-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="nav-more-title"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="dialog-head nav-more-dialog__head">
+        <h2 id="nav-more-title" class="nav-more-dialog__title">
+          <i class="pi pi-th-large" aria-hidden="true"></i>
+          Tính năng khác
+        </h2>
+        <button type="button" class="dialog-close" (click)="closeNavMoreDialog()" aria-label="Đóng">
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+      <div class="nav-more-dialog__grid">
+        @for (item of bottomNavLayout().overflow; track item.id) {
+          <button
+            type="button"
+            class="nav-more-dialog__item"
+            [class.is-active]="bottomTab() === item.id"
+            [title]="item.title || item.label"
+            (click)="selectNavFromMore(item.id)"
+          >
+            <span class="nav-more-dialog__icon"><i [class]="item.icon" aria-hidden="true"></i></span>
+            <span class="nav-more-dialog__label">{{ item.label }}</span>
+          </button>
+        }
+      </div>
+    </div>
+  </div>
 
   <!-- About -->
   <div
