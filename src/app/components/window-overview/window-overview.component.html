@@ -21,48 +21,62 @@
   </div>
 
   <div class="overview-content">
-    <div *ngIf="windowManager.windowList().length === 0" class="empty-state">
-      <i class="pi pi-inbox"></i>
-      <h3>No Open Windows</h3>
-      <p>Open some apps to see them here</p>
-    </div>
-
-    <div *ngIf="windowManager.windowList().length > 0" class="windows-grid">
-      <div
-        *ngFor="let window of windowManager.windowList()"
-        class="window-card"
-        [class.minimized]="window.isMinimized"
-        [class.focused]="window.isFocused"
-        (click)="selectWindow(window)"
-      >
-        <div class="window-preview">
-          <div class="preview-placeholder">
-            <i [class]="window.icon"></i>
-            <span class="window-title">{{ window.title }}</span>
-          </div>
-          <button class="close-window-btn" (click)="closeWindow($event, window.id)" title="Close">
-            <i class="pi pi-times"></i>
-          </button>
-        </div>
-
-        <div class="window-info">
-          <div class="window-icon">
-            <i [class]="window.icon"></i>
-          </div>
-          <div class="window-details">
-            <h4>{{ window.title }}</h4>
-            <p *ngIf="window.statusText">{{ window.statusText }}</p>
-          </div>
-          <div class="window-status">
-            <span *ngIf="window.isFocused" class="status-badge focused">Active</span>
-            <span *ngIf="window.isMinimized" class="status-badge minimized">Minimized</span>
-            <span *ngIf="window.isMaximized && !window.isMinimized" class="status-badge maximized"
-              >Maximized</span
-            >
-          </div>
-        </div>
+    @if (windowManager.windowList().length === 0) {
+      <div class="empty-state">
+        <i class="pi pi-inbox"></i>
+        <h3>No Open Windows</h3>
+        <p>Open some apps to see them here</p>
       </div>
-    </div>
+    }
+
+    @if (windowManager.windowList().length > 0) {
+      <div class="windows-grid">
+        @for (window of windowManager.windowList(); track window) {
+          <div
+            class="window-card"
+            [class.minimized]="window.isMinimized"
+            [class.focused]="window.isFocused"
+            (click)="selectWindow(window)"
+          >
+            <div class="window-preview">
+              <div class="preview-placeholder">
+                <i [class]="window.icon"></i>
+                <span class="window-title">{{ window.title }}</span>
+              </div>
+              <button
+                class="close-window-btn"
+                (click)="closeWindow($event, window.id)"
+                title="Close"
+              >
+                <i class="pi pi-times"></i>
+              </button>
+            </div>
+            <div class="window-info">
+              <div class="window-icon">
+                <i [class]="window.icon"></i>
+              </div>
+              <div class="window-details">
+                <h4>{{ window.title }}</h4>
+                @if (window.statusText) {
+                  <p>{{ window.statusText }}</p>
+                }
+              </div>
+              <div class="window-status">
+                @if (window.isFocused) {
+                  <span class="status-badge focused">Active</span>
+                }
+                @if (window.isMinimized) {
+                  <span class="status-badge minimized">Minimized</span>
+                }
+                @if (window.isMaximized && !window.isMinimized) {
+                  <span class="status-badge maximized">Maximized</span>
+                }
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    }
   </div>
 
   <div class="overview-footer">

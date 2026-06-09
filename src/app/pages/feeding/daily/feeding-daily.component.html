@@ -1,151 +1,150 @@
 <!-- Inline sync banner (floating above FAB when present) -->
-<div class="toast success" *ngIf="syncMessage()">
-  <i class="pi pi-check-circle"></i> {{ syncMessage() }}
-</div>
-<div class="toast error" *ngIf="syncError() && !logDialogOpen()">
-  <i class="pi pi-exclamation-triangle"></i> {{ syncError() }}
-</div>
+@if (syncMessage()) {
+  <div class="toast success"><i class="pi pi-check-circle"></i> {{ syncMessage() }}</div>
+}
+@if (syncError() && !logDialogOpen()) {
+  <div class="toast error"><i class="pi pi-exclamation-triangle"></i> {{ syncError() }}</div>
+}
 
 <!-- ============ BOTTLE PREP (card phẳng: cảnh báo + bình + countdown) ============ -->
 <section class="bottle-prep">
-  <ng-container *ngIf="!bottlePrepEditing(); else bottlePrepEdit">
-    <div
-      class="bp-card"
-      *ngIf="bottlePrep() || bottlePrepWarning(); else bpIdleAdd"
-      [ngClass]="'bp-card--tone-' + bottlePrepBarTone()"
-    >
-      <div class="bp-card__headline">
-        <div class="bp-card__headline-main">
-          <ng-container *ngIf="bottlePrep() as prep; else bpNoPrepLead">
-            <div class="bp-card__line">
-              <strong class="bp-card__name">{{ prep.user }}</strong>
-              <span class="bp-card__muted"> đã pha </span>
-              <span class="bp-card__ml">{{ prep.volumeMl }} ml</span>
-            </div>
-          </ng-container>
-          <ng-template #bpNoPrepLead>
-            <div class="bp-card__empty-lead">
-              <i class="pi pi-inbox" aria-hidden="true"></i>
-              <span>Chưa ghi nhận sữa trong bình</span>
-            </div>
-          </ng-template>
+  @if (!bottlePrepEditing()) {
+    @if (bottlePrep() || bottlePrepWarning()) {
+      <div class="bp-card" [ngClass]="'bp-card--tone-' + bottlePrepBarTone()">
+        <div class="bp-card__headline">
+          <div class="bp-card__headline-main">
+            @if (bottlePrep(); as prep) {
+              <div class="bp-card__line">
+                <strong class="bp-card__name">{{ prep.user }}</strong>
+                <span class="bp-card__muted"> đã pha </span>
+                <span class="bp-card__ml">{{ prep.volumeMl }} ml</span>
+              </div>
+            } @else {
+              <div class="bp-card__empty-lead">
+                <i class="pi pi-inbox" aria-hidden="true"></i>
+                <span>Chưa ghi nhận sữa trong bình</span>
+              </div>
+            }
+          </div>
+          @if (bottlePrep() && bottlePrepWarning()?.type === 'expired') {
+            <span class="bp-tag bp-tag--danger bp-card__headline-tag">Hết hạn</span>
+          }
         </div>
-        <span
-          *ngIf="bottlePrep() && bottlePrepWarning()?.type === 'expired'"
-          class="bp-tag bp-tag--danger bp-card__headline-tag"
-          >Hết hạn</span
+        @if (bottlePrepWarning(); as bw) {
+          @if (bw.type !== 'expired') {
+            <div class="bp-card__tags">
+              @switch (bw.type) {
+                @case ('expiring-soon') {
+                  <span class="bp-tag bp-tag--soon">Sắp hết hạn · còn {{ bw.minutes }} phút</span>
+                }
+                @case ('no-prep-late') {
+                  <span class="bp-tag bp-tag--danger">Trễ cữ bú</span>
+                }
+                @case ('no-prep-soon') {
+                  <span class="bp-tag bp-tag--soon">Sắp tới cữ bú</span>
+                }
+              }
+            </div>
+          }
+        }
+        @if (bottlePrep(); as prep) {
+          <div class="bp-card__timeline">
+            <div class="bp-card__timeline-side bp-card__timeline-side--start">
+              <span class="bp-card__timeline-label">Thời gian pha</span>
+              <strong class="bp-card__timeline-value">{{ formatBottleAt(prep.at) }}</strong>
+            </div>
+            <div class="bp-card__timeline-line" aria-hidden="true"></div>
+            <div class="bp-card__timeline-side bp-card__timeline-side--end">
+              <span class="bp-card__timeline-label">Thời gian đến hạn</span>
+              <strong class="bp-card__timeline-value">{{
+                formatBottlePrepExpiryClock(prep.at)
+              }}</strong>
+            </div>
+          </div>
+        }
+        <div
+          class="bp-card__bar"
+          role="progressbar"
+          [attr.aria-valuenow]="bottlePrepBarPct()"
+          aria-valuemin="0"
+          aria-valuemax="100"
+          [attr.aria-label]="
+            bottlePrep()
+              ? 'Phần cửa sổ 1 giờ sau khi pha đã trôi qua'
+              : 'Mức gấp tới cữ bú khi chưa có sữa trong bình'
+          "
         >
-      </div>
-
-      <ng-container *ngIf="bottlePrepWarning() as bw">
-        <div class="bp-card__tags" *ngIf="bw.type !== 'expired'">
-          <ng-container [ngSwitch]="bw.type">
-            <span *ngSwitchCase="'expiring-soon'" class="bp-tag bp-tag--soon"
-              >Sắp hết hạn · còn {{ bw.minutes }} phút</span
-            >
-            <span *ngSwitchCase="'no-prep-late'" class="bp-tag bp-tag--danger">Trễ cữ bú</span>
-            <span *ngSwitchCase="'no-prep-soon'" class="bp-tag bp-tag--soon">Sắp tới cữ bú</span>
-          </ng-container>
+          <div class="bp-card__bar-fill" [style.width.%]="bottlePrepBarPct()"></div>
         </div>
-      </ng-container>
-
-      <div class="bp-card__timeline" *ngIf="bottlePrep() as prep">
-        <div class="bp-card__timeline-side bp-card__timeline-side--start">
-          <span class="bp-card__timeline-label">Thời gian pha</span>
-          <strong class="bp-card__timeline-value">{{ formatBottleAt(prep.at) }}</strong>
-        </div>
-        <div class="bp-card__timeline-line" aria-hidden="true"></div>
-        <div class="bp-card__timeline-side bp-card__timeline-side--end">
-          <span class="bp-card__timeline-label">Thời gian đến hạn</span>
-          <strong class="bp-card__timeline-value">{{
-            formatBottlePrepExpiryClock(prep.at)
-          }}</strong>
-        </div>
-      </div>
-
-      <div
-        class="bp-card__bar"
-        role="progressbar"
-        [attr.aria-valuenow]="bottlePrepBarPct()"
-        aria-valuemin="0"
-        aria-valuemax="100"
-        [attr.aria-label]="
-          bottlePrep()
-            ? 'Phần cửa sổ 1 giờ sau khi pha đã trôi qua'
-            : 'Mức gấp tới cữ bú khi chưa có sữa trong bình'
-        "
-      >
-        <div class="bp-card__bar-fill" [style.width.%]="bottlePrepBarPct()"></div>
-      </div>
-
-      <ng-container *ngIf="bottlePrep(); else bpCountdownNoPrep">
-        <div class="bp-card__countdown-row">
-          <p class="bp-card__countdown bp-card__countdown--row-main" *ngIf="bottlePrepFooterLeft()">
-            {{ bottlePrepFooterLeft() }}
-          </p>
-          <p class="bp-card__countdown bp-card__countdown--row-since">
-            {{ bottlePrepSincePrepLabel() }}
-          </p>
-        </div>
-      </ng-container>
-      <ng-template #bpCountdownNoPrep>
-        <p class="bp-card__countdown" *ngIf="bottlePrepCountdownLine()">
-          {{ bottlePrepCountdownLine() }}
-        </p>
-      </ng-template>
-
-      <div class="bp-card__actions">
-        <div class="bp-card__toolbar">
-          <button
-            *ngIf="bottlePrepWarning()"
-            type="button"
-            class="bp-card__btn bp-card__btn--primary"
-            (click)="editBottlePrep()"
-            [title]="bottlePrep() ? 'Cập nhật ml hoặc pha sữa mới' : 'Ghi nhận sữa đã pha'"
-          >
-            <i class="pi pi-plus" aria-hidden="true"></i>
-            <span>{{ bottlePrep() ? 'Cập nhật bình' : 'Pha mới' }}</span>
-          </button>
-          <button
-            *ngIf="bottlePrep() && !bottlePrepWarning()"
-            type="button"
-            class="bp-card__icon"
-            (click)="editBottlePrep()"
-            title="Sửa ml"
-            aria-label="Sửa ml"
-          >
-            <i class="pi pi-pencil" aria-hidden="true"></i>
-          </button>
-          <button
-            *ngIf="bottlePrep()"
-            type="button"
-            class="bp-card__icon bp-card__icon--danger"
-            (click)="openBottlePrepClearConfirm()"
-            title="Xóa bình"
-            aria-label="Xóa bình"
-          >
-            <i class="pi pi-trash" aria-hidden="true"></i>
-          </button>
+        @if (bottlePrep()) {
+          <div class="bp-card__countdown-row">
+            @if (bottlePrepFooterLeft()) {
+              <p class="bp-card__countdown bp-card__countdown--row-main">
+                {{ bottlePrepFooterLeft() }}
+              </p>
+            }
+            <p class="bp-card__countdown bp-card__countdown--row-since">
+              {{ bottlePrepSincePrepLabel() }}
+            </p>
+          </div>
+        } @else {
+          @if (bottlePrepCountdownLine()) {
+            <p class="bp-card__countdown">
+              {{ bottlePrepCountdownLine() }}
+            </p>
+          }
+        }
+        <div class="bp-card__actions">
+          <div class="bp-card__toolbar">
+            @if (bottlePrepWarning()) {
+              <button
+                type="button"
+                class="bp-card__btn bp-card__btn--primary"
+                (click)="editBottlePrep()"
+                [title]="bottlePrep() ? 'Cập nhật ml hoặc pha sữa mới' : 'Ghi nhận sữa đã pha'"
+              >
+                <i class="pi pi-plus" aria-hidden="true"></i>
+                <span>{{ bottlePrep() ? 'Cập nhật bình' : 'Pha mới' }}</span>
+              </button>
+            }
+            @if (bottlePrep() && !bottlePrepWarning()) {
+              <button
+                type="button"
+                class="bp-card__icon"
+                (click)="editBottlePrep()"
+                title="Sửa ml"
+                aria-label="Sửa ml"
+              >
+                <i class="pi pi-pencil" aria-hidden="true"></i>
+              </button>
+            }
+            @if (bottlePrep()) {
+              <button
+                type="button"
+                class="bp-card__icon bp-card__icon--danger"
+                (click)="openBottlePrepClearConfirm()"
+                title="Xóa bình"
+                aria-label="Xóa bình"
+              >
+                <i class="pi pi-trash" aria-hidden="true"></i>
+              </button>
+            }
+          </div>
         </div>
       </div>
-    </div>
-
-    <ng-template #bpIdleAdd>
+    } @else {
       <button type="button" class="bp-add" (click)="editBottlePrep()">
         <i class="pi pi-inbox" aria-hidden="true"></i>
         Lưu lượng sữa đã pha vào bình
       </button>
-    </ng-template>
-  </ng-container>
-
-  <ng-template #bottlePrepEdit>
+    }
+  } @else {
     <div class="bp-card bp-card--editing">
       <form class="bp-form">
         <div class="bp-form-head">
           <i class="pi pi-inbox"></i>
           <label class="bp-label">Sữa pha vào bình</label>
         </div>
-
         <div class="bp-input-wrap">
           <button
             type="button"
@@ -182,7 +181,6 @@
             <i class="pi pi-plus"></i>
           </button>
         </div>
-
         <div class="bp-quick">
           <span class="bp-quick-label">Nhanh:</span>
           <button
@@ -226,7 +224,6 @@
             150
           </button>
         </div>
-
         <div class="bp-form-actions">
           <button
             type="button"
@@ -254,325 +251,332 @@
         </div>
       </form>
     </div>
-  </ng-template>
+  }
 </section>
 
 <!-- Xác nhận xóa sữa đã pha (thủ công) -->
-<div
-  class="bp-clear-dialog-overlay"
-  *ngIf="bottlePrepClearConfirmOpen()"
-  (click)="closeBottlePrepClearConfirm()"
-  role="presentation"
->
-  <div class="bp-clear-dialog" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
-    <h3 class="bp-clear-dialog__title">Xóa sữa đã pha?</h3>
-    <p class="bp-clear-dialog__desc" *ngIf="bottlePrep() as p">
-      Bạn sắp xóa <strong>{{ p.volumeMl }}ml</strong> đã pha trong bình (ghi nhận lúc
-      {{ formatBottleAt(p.at) }}).
-    </p>
-    <label class="bp-clear-dialog__label" for="bp-clear-reason">Lý do (tuỳ chọn)</label>
-    <div class="bp-clear-dialog__quick">
-      <span class="bp-clear-dialog__quick-label">Gợi ý nhanh</span>
-      <div class="bp-clear-dialog__quick-tags">
+@if (bottlePrepClearConfirmOpen()) {
+  <div class="bp-clear-dialog-overlay" (click)="closeBottlePrepClearConfirm()" role="presentation">
+    <div class="bp-clear-dialog" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+      <h3 class="bp-clear-dialog__title">Xóa sữa đã pha?</h3>
+      @if (bottlePrep(); as p) {
+        <p class="bp-clear-dialog__desc">
+          Bạn sắp xóa <strong>{{ p.volumeMl }}ml</strong> đã pha trong bình (ghi nhận lúc
+          {{ formatBottleAt(p.at) }}).
+        </p>
+      }
+      <label class="bp-clear-dialog__label" for="bp-clear-reason">Lý do (tuỳ chọn)</label>
+      <div class="bp-clear-dialog__quick">
+        <span class="bp-clear-dialog__quick-label">Gợi ý nhanh</span>
+        <div class="bp-clear-dialog__quick-tags">
+          @for (tag of bottlePrepReasonQuickTags; track tag) {
+            <button
+              type="button"
+              class="bp-reason-chip"
+              [class.bp-reason-chip--active]="bottlePrepClearReasonDraft().trim() === tag"
+              [attr.aria-pressed]="bottlePrepClearReasonDraft().trim() === tag"
+              (click)="toggleBottlePrepClearReasonQuickTag(tag)"
+            >
+              {{ tag }}
+            </button>
+          }
+        </div>
+      </div>
+      <textarea
+        id="bp-clear-reason"
+        class="bp-clear-dialog__textarea"
+        rows="3"
+        maxlength="500"
+        [value]="bottlePrepClearReasonDraft()"
+        (input)="updateBottlePrepClearReason($any($event.target).value)"
+        placeholder="Ví dụ: đổ đi, pha lại, hết hạn…"
+      ></textarea>
+      <div class="bp-clear-dialog__actions">
+        <button type="button" class="btn ghost small" (click)="closeBottlePrepClearConfirm()">
+          Huỷ
+        </button>
         <button
           type="button"
-          class="bp-reason-chip"
-          *ngFor="let tag of bottlePrepReasonQuickTags"
-          [class.bp-reason-chip--active]="bottlePrepClearReasonDraft().trim() === tag"
-          [attr.aria-pressed]="bottlePrepClearReasonDraft().trim() === tag"
-          (click)="toggleBottlePrepClearReasonQuickTag(tag)"
+          class="btn small bp-clear-dialog__confirm"
+          (click)="confirmClearBottlePrep()"
         >
-          {{ tag }}
+          Xóa
         </button>
       </div>
     </div>
-    <textarea
-      id="bp-clear-reason"
-      class="bp-clear-dialog__textarea"
-      rows="3"
-      maxlength="500"
-      [value]="bottlePrepClearReasonDraft()"
-      (input)="updateBottlePrepClearReason($any($event.target).value)"
-      placeholder="Ví dụ: đổ đi, pha lại, hết hạn…"
-    ></textarea>
-    <div class="bp-clear-dialog__actions">
-      <button type="button" class="btn ghost small" (click)="closeBottlePrepClearConfirm()">
-        Huỷ
-      </button>
-      <button
-        type="button"
-        class="btn small bp-clear-dialog__confirm"
-        (click)="confirmClearBottlePrep()"
-      >
-        Xóa
-      </button>
-    </div>
   </div>
-</div>
+}
 
 <!-- Xác nhận đổi dung tích sữa đã pha -->
-<div
-  class="bp-clear-dialog-overlay"
-  *ngIf="bottlePrepEditConfirmOpen()"
-  (click)="closeBottlePrepEditConfirm()"
-  role="presentation"
->
-  <div class="bp-clear-dialog" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
-    <h3 class="bp-clear-dialog__title">Đổi lượng sữa đã pha?</h3>
-    <p class="bp-clear-dialog__desc" *ngIf="bottlePrepEditPending() as ep">
-      Lưu <strong>{{ ep.oldVolume }}ml</strong> → <strong>{{ ep.newVolume }}ml</strong> (ghi nhận
-      lúc {{ ep.time }}).
-    </p>
-    <label class="bp-clear-dialog__label" for="bp-edit-reason">Lý do (tuỳ chọn)</label>
-    <div class="bp-clear-dialog__quick">
-      <span class="bp-clear-dialog__quick-label">Gợi ý nhanh</span>
-      <div class="bp-clear-dialog__quick-tags">
-        <button
-          type="button"
-          class="bp-reason-chip"
-          *ngFor="let tag of bottlePrepReasonQuickTags"
-          [class.bp-reason-chip--active]="bottlePrepEditReasonDraft().trim() === tag"
-          [attr.aria-pressed]="bottlePrepEditReasonDraft().trim() === tag"
-          (click)="toggleBottlePrepEditReasonQuickTag(tag)"
-        >
-          {{ tag }}
+@if (bottlePrepEditConfirmOpen()) {
+  <div class="bp-clear-dialog-overlay" (click)="closeBottlePrepEditConfirm()" role="presentation">
+    <div class="bp-clear-dialog" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+      <h3 class="bp-clear-dialog__title">Đổi lượng sữa đã pha?</h3>
+      @if (bottlePrepEditPending(); as ep) {
+        <p class="bp-clear-dialog__desc">
+          Lưu <strong>{{ ep.oldVolume }}ml</strong> → <strong>{{ ep.newVolume }}ml</strong> (ghi
+          nhận lúc {{ ep.time }}).
+        </p>
+      }
+      <label class="bp-clear-dialog__label" for="bp-edit-reason">Lý do (tuỳ chọn)</label>
+      <div class="bp-clear-dialog__quick">
+        <span class="bp-clear-dialog__quick-label">Gợi ý nhanh</span>
+        <div class="bp-clear-dialog__quick-tags">
+          @for (tag of bottlePrepReasonQuickTags; track tag) {
+            <button
+              type="button"
+              class="bp-reason-chip"
+              [class.bp-reason-chip--active]="bottlePrepEditReasonDraft().trim() === tag"
+              [attr.aria-pressed]="bottlePrepEditReasonDraft().trim() === tag"
+              (click)="toggleBottlePrepEditReasonQuickTag(tag)"
+            >
+              {{ tag }}
+            </button>
+          }
+        </div>
+      </div>
+      <textarea
+        id="bp-edit-reason"
+        class="bp-clear-dialog__textarea"
+        rows="3"
+        maxlength="500"
+        [value]="bottlePrepEditReasonDraft()"
+        (input)="updateBottlePrepEditReason($any($event.target).value)"
+        placeholder="Ví dụ: bé uống ít hơn dự kiến, đổi loại sữa…"
+      ></textarea>
+      <div class="bp-clear-dialog__actions">
+        <button type="button" class="btn ghost small" (click)="closeBottlePrepEditConfirm()">
+          Huỷ
+        </button>
+        <button type="button" class="btn primary small" (click)="confirmBottlePrepEditSave()">
+          Lưu
         </button>
       </div>
     </div>
-    <textarea
-      id="bp-edit-reason"
-      class="bp-clear-dialog__textarea"
-      rows="3"
-      maxlength="500"
-      [value]="bottlePrepEditReasonDraft()"
-      (input)="updateBottlePrepEditReason($any($event.target).value)"
-      placeholder="Ví dụ: bé uống ít hơn dự kiến, đổi loại sữa…"
-    ></textarea>
-    <div class="bp-clear-dialog__actions">
-      <button type="button" class="btn ghost small" (click)="closeBottlePrepEditConfirm()">
-        Huỷ
-      </button>
-      <button type="button" class="btn primary small" (click)="confirmBottlePrepEditSave()">
-        Lưu
-      </button>
-    </div>
   </div>
-</div>
+}
 
 <!-- Xác nhận xóa cữ bú -->
-<div
-  class="bp-clear-dialog-overlay"
-  *ngIf="feedingDeleteConfirmLog() as deleteLog"
-  (click)="closeFeedingDeleteConfirm()"
-  role="presentation"
->
-  <div class="bp-clear-dialog" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
-    <h3 class="bp-clear-dialog__title">Xóa cữ bú?</h3>
-    <p class="bp-clear-dialog__desc">
-      Bạn sắp xóa <strong>{{ deleteLog.volume }}ml</strong> lúc
-      <strong>{{ deleteLog.time }}</strong> ngày
-      <strong>{{ formatDateDisplay(deleteLog.date) }}</strong
-      >.
-    </p>
-    <label class="bp-clear-dialog__label" for="feeding-delete-reason">Lý do (tuỳ chọn)</label>
-    <div class="bp-clear-dialog__quick">
-      <span class="bp-clear-dialog__quick-label">Gợi ý nhanh</span>
-      <div class="bp-clear-dialog__quick-tags">
+@if (feedingDeleteConfirmLog(); as deleteLog) {
+  <div class="bp-clear-dialog-overlay" (click)="closeFeedingDeleteConfirm()" role="presentation">
+    <div class="bp-clear-dialog" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+      <h3 class="bp-clear-dialog__title">Xóa cữ bú?</h3>
+      <p class="bp-clear-dialog__desc">
+        Bạn sắp xóa <strong>{{ deleteLog.volume }}ml</strong> lúc
+        <strong>{{ deleteLog.time }}</strong> ngày
+        <strong>{{ formatDateDisplay(deleteLog.date) }}</strong
+        >.
+      </p>
+      <label class="bp-clear-dialog__label" for="feeding-delete-reason">Lý do (tuỳ chọn)</label>
+      <div class="bp-clear-dialog__quick">
+        <span class="bp-clear-dialog__quick-label">Gợi ý nhanh</span>
+        <div class="bp-clear-dialog__quick-tags">
+          @for (tag of feedingDeleteReasonQuickTags; track tag) {
+            <button
+              type="button"
+              class="bp-reason-chip"
+              [class.bp-reason-chip--active]="feedingDeleteReasonDraft().trim() === tag"
+              [attr.aria-pressed]="feedingDeleteReasonDraft().trim() === tag"
+              [disabled]="feedingDeleteSaving()"
+              (click)="toggleFeedingDeleteReasonQuickTag(tag)"
+            >
+              {{ tag }}
+            </button>
+          }
+        </div>
+      </div>
+      <textarea
+        id="feeding-delete-reason"
+        class="bp-clear-dialog__textarea"
+        rows="3"
+        maxlength="500"
+        [value]="feedingDeleteReasonDraft()"
+        [disabled]="feedingDeleteSaving()"
+        (input)="updateFeedingDeleteReason($any($event.target).value)"
+        placeholder="Ví dụ: nhập nhầm, trùng cữ, bé không bú…"
+      ></textarea>
+      <div class="bp-clear-dialog__actions">
         <button
           type="button"
-          class="bp-reason-chip"
-          *ngFor="let tag of feedingDeleteReasonQuickTags"
-          [class.bp-reason-chip--active]="feedingDeleteReasonDraft().trim() === tag"
-          [attr.aria-pressed]="feedingDeleteReasonDraft().trim() === tag"
+          class="btn ghost small"
           [disabled]="feedingDeleteSaving()"
-          (click)="toggleFeedingDeleteReasonQuickTag(tag)"
+          (click)="closeFeedingDeleteConfirm()"
         >
-          {{ tag }}
+          Huỷ
+        </button>
+        <button
+          type="button"
+          class="btn small bp-clear-dialog__confirm"
+          [disabled]="feedingDeleteSaving()"
+          (click)="confirmDeleteFeedingLog()"
+        >
+          {{ feedingDeleteSaving() ? 'Đang xóa…' : 'Xóa' }}
         </button>
       </div>
     </div>
-    <textarea
-      id="feeding-delete-reason"
-      class="bp-clear-dialog__textarea"
-      rows="3"
-      maxlength="500"
-      [value]="feedingDeleteReasonDraft()"
-      [disabled]="feedingDeleteSaving()"
-      (input)="updateFeedingDeleteReason($any($event.target).value)"
-      placeholder="Ví dụ: nhập nhầm, trùng cữ, bé không bú…"
-    ></textarea>
-    <div class="bp-clear-dialog__actions">
-      <button
-        type="button"
-        class="btn ghost small"
-        [disabled]="feedingDeleteSaving()"
-        (click)="closeFeedingDeleteConfirm()"
-      >
-        Huỷ
-      </button>
-      <button
-        type="button"
-        class="btn small bp-clear-dialog__confirm"
-        [disabled]="feedingDeleteSaving()"
-        (click)="confirmDeleteFeedingLog()"
-      >
-        {{ feedingDeleteSaving() ? 'Đang xóa…' : 'Xóa' }}
-      </button>
-    </div>
   </div>
-</div>
+}
 
 <!-- ============ BURP WARNING ============ -->
-<div class="burp-warning" *ngIf="burpInsight() as bw" [attr.data-state]="bw.state">
-  <div class="burp-warning__icon">
-    <i
-      class="pi"
-      [class.pi-heart-fill]="bw.state === 'active'"
-      [class.pi-moon]="bw.state === 'done'"
-    ></i>
-  </div>
-  <div class="burp-warning__content">
-    <div class="burp-warning__title" *ngIf="bw.state === 'active'">Đang trong thời gian vỗ ợ</div>
-    <div class="burp-warning__title" *ngIf="bw.state === 'done'">Hoàn tất vỗ ợ</div>
-
-    <div class="burp-warning__text">
-      Bé bú <strong>{{ bw.lastFeedVolume }}ml</strong> lúc <strong>{{ bw.lastFeedTime }}</strong
-      >.
-      <ng-container *ngIf="bw.state === 'active'">
-        Tiếp tục bế bé thêm <strong>{{ bw.remainingMinutes }} phút</strong>.
-      </ng-container>
-      <ng-container *ngIf="bw.state === 'done'">
-        Đã qua mốc vỗ ợ {{ bw.burpDuration }} phút.
-      </ng-container>
+@if (burpInsight(); as bw) {
+  <div class="burp-warning" [attr.data-state]="bw.state">
+    <div class="burp-warning__icon">
+      <i
+        class="pi"
+        [class.pi-heart-fill]="bw.state === 'active'"
+        [class.pi-moon]="bw.state === 'done'"
+      ></i>
     </div>
-
-    <div
-      class="burp-warning__progress"
-      role="progressbar"
-      [attr.aria-valuenow]="burpProgressPct()"
-      aria-valuemin="0"
-      aria-valuemax="100"
-    >
-      <div class="burp-warning__progress-fill" [style.width.%]="burpProgressPct()"></div>
-    </div>
-
-    <div class="burp-warning__footer" *ngIf="bw.state === 'active'">
-      <i class="pi pi-clock"></i>
-      Còn <strong>{{ bw.remainingMinutes }}</strong> phút là đủ thời gian vỗ ợ.
-    </div>
-    <div class="burp-warning__footer burp-warning__footer--done" *ngIf="bw.state === 'done'">
-      <i class="pi pi-star-fill"></i>
-      Chúc bé ngủ ngon sau cữ bú này nhé.
-      <button
-        type="button"
-        class="burp-warning__dismiss"
-        (click)="closeBurpDoneBanner()"
-        aria-label="Đóng thông báo hoàn tất vỗ ợ"
-        title="Đóng"
+    <div class="burp-warning__content">
+      @if (bw.state === 'active') {
+        <div class="burp-warning__title">Đang trong thời gian vỗ ợ</div>
+      }
+      @if (bw.state === 'done') {
+        <div class="burp-warning__title">Hoàn tất vỗ ợ</div>
+      }
+      <div class="burp-warning__text">
+        Bé bú <strong>{{ bw.lastFeedVolume }}ml</strong> lúc <strong>{{ bw.lastFeedTime }}</strong
+        >.
+        @if (bw.state === 'active') {
+          Tiếp tục bế bé thêm <strong>{{ bw.remainingMinutes }} phút</strong>.
+        }
+        @if (bw.state === 'done') {
+          Đã qua mốc vỗ ợ {{ bw.burpDuration }} phút.
+        }
+      </div>
+      <div
+        class="burp-warning__progress"
+        role="progressbar"
+        [attr.aria-valuenow]="burpProgressPct()"
+        aria-valuemin="0"
+        aria-valuemax="100"
       >
-        <i class="pi pi-times"></i>
-      </button>
+        <div class="burp-warning__progress-fill" [style.width.%]="burpProgressPct()"></div>
+      </div>
+      @if (bw.state === 'active') {
+        <div class="burp-warning__footer">
+          <i class="pi pi-clock"></i>
+          Còn <strong>{{ bw.remainingMinutes }}</strong> phút là đủ thời gian vỗ ợ.
+        </div>
+      }
+      @if (bw.state === 'done') {
+        <div class="burp-warning__footer burp-warning__footer--done">
+          <i class="pi pi-star-fill"></i>
+          Chúc bé ngủ ngon sau cữ bú này nhé.
+          <button
+            type="button"
+            class="burp-warning__dismiss"
+            (click)="closeBurpDoneBanner()"
+            aria-label="Đóng thông báo hoàn tất vỗ ợ"
+            title="Đóng"
+          >
+            <i class="pi pi-times"></i>
+          </button>
+        </div>
+      }
     </div>
   </div>
-</div>
+}
 
 <!-- ============ ML PREDICTION (simplified) ============ -->
-<ng-container *ngIf="logs().length > 0">
-  <ng-container *ngIf="prediction().hasData && prediction().nextTime; else notEnough">
+@if (logs().length > 0) {
+  @if (prediction().hasData && prediction().nextTime) {
     <!-- Hero countdown -->
     <div class="countdown-hero" [attr.data-status]="countdownStatus()">
       <div class="hero-main">
         <div class="feeding-time-card" [attr.data-status]="countdownStatus()">
           <div class="time-header">
-            <ng-container [ngSwitch]="countdownStatus()">
-              <span *ngSwitchCase="'late'" class="status-badge status-late">
-                <i class="pi pi-exclamation-circle"></i> Đã quá giờ bú lúc
-              </span>
-              <span *ngSwitchCase="'now'" class="status-badge status-now">
-                <i class="pi pi-exclamation-triangle"></i> Sắp tới giờ bú lúc
-              </span>
-              <span *ngSwitchDefault class="status-badge status-waiting">
-                <i class="pi pi-clock"></i> Cữ bú tiếp theo lúc
-              </span>
-            </ng-container>
+            @switch (countdownStatus()) {
+              @case ('late') {
+                <span class="status-badge status-late">
+                  <i class="pi pi-exclamation-circle"></i> Đã quá giờ bú lúc
+                </span>
+              }
+              @case ('now') {
+                <span class="status-badge status-now">
+                  <i class="pi pi-exclamation-triangle"></i> Sắp tới giờ bú lúc
+                </span>
+              }
+              @default {
+                <span class="status-badge status-waiting">
+                  <i class="pi pi-clock"></i> Cữ bú tiếp theo lúc
+                </span>
+              }
+            }
           </div>
-
           <div class="time-display">
             <div class="predicted-time">{{ prediction().nextTime }}</div>
             <div class="time-remaining">{{ timeUntilNext() || '—' }}</div>
           </div>
         </div>
-
         <!-- Layout mới: Cột 2 với 2 dòng dự kiến và khuyến nghị -->
-        <div
-          class="volume-info"
-          [attr.data-status]="countdownStatus()"
-          *ngIf="nextFeedingRecommendation() as rec"
-        >
-          <div class="volume-row predicted-row">
-            <span class="volume-prefix">Dự kiến</span>
-            <span class="volume-amount">{{ prediction().nextVolume }}ml</span>
+        @if (nextFeedingRecommendation(); as rec) {
+          <div class="volume-info" [attr.data-status]="countdownStatus()">
+            <div class="volume-row predicted-row">
+              <span class="volume-prefix">Dự kiến</span>
+              <span class="volume-amount">{{ prediction().nextVolume }}ml</span>
+            </div>
+            @if (rec.hasNutritionData) {
+              <div class="volume-row recommended-row">
+                <span class="volume-prefix">Khuyến nghị</span>
+                <span class="volume-amount">{{ rec.recommendedMl }}ml</span>
+              </div>
+            }
           </div>
-          <div class="volume-row recommended-row" *ngIf="rec.hasNutritionData">
-            <span class="volume-prefix">Khuyến nghị</span>
-            <span class="volume-amount">{{ rec.recommendedMl }}ml</span>
-          </div>
-        </div>
-
+        }
         <!-- Fallback khi không có khuyến nghị -->
-        <div
-          class="volume-info"
-          [attr.data-status]="countdownStatus()"
-          *ngIf="!nextFeedingRecommendation().hasNutritionData"
-        >
-          <div class="volume-row predicted-row">
-            <span class="volume-prefix">Dự kiến</span>
-            <span class="volume-amount">{{ prediction().nextVolume }}ml</span>
+        @if (!nextFeedingRecommendation().hasNutritionData) {
+          <div class="volume-info" [attr.data-status]="countdownStatus()">
+            <div class="volume-row predicted-row">
+              <span class="volume-prefix">Dự kiến</span>
+              <span class="volume-amount">{{ prediction().nextVolume }}ml</span>
+            </div>
+          </div>
+        }
+      </div>
+      <!-- Progress bar: last feed → predicted next feed -->
+      @if (lastFeeding(); as last) {
+        <div class="countdown-progress">
+          <div class="cp-track">
+            <div
+              class="cp-fill"
+              [attr.data-status]="countdownStatus()"
+              [style.width.%]="countdownProgress()"
+            ></div>
+          </div>
+          <div class="cp-labels">
+            <span class="cp-left">
+              <i class="pi pi-history"></i>
+              {{ last.time }} · {{ last.volume }}ml
+              <span class="muted">({{ lastFeedingAgo() }})</span>
+            </span>
+            <span class="cp-right"> TB {{ predictionMedianIntervalHuman() }} </span>
+          </div>
+        </div>
+      }
+    </div>
+  } @else {
+    @if (lastFeeding(); as last) {
+      <div class="last-feed">
+        <div class="last-feed-icon"><i class="pi pi-history"></i></div>
+        <div class="last-feed-body">
+          <div class="last-feed-label">Cữ gần nhất</div>
+          <div class="last-feed-value">
+            <strong>{{ last.volume }}ml</strong>
+            <span class="sep">·</span>
+            <span>{{ last.time }}</span>
+            <span class="sep">·</span>
+            <span class="ago">{{ lastFeedingAgo() }}</span>
           </div>
         </div>
       </div>
-
-      <!-- Progress bar: last feed → predicted next feed -->
-      <div class="countdown-progress" *ngIf="lastFeeding() as last">
-        <div class="cp-track">
-          <div
-            class="cp-fill"
-            [attr.data-status]="countdownStatus()"
-            [style.width.%]="countdownProgress()"
-          ></div>
-        </div>
-        <div class="cp-labels">
-          <span class="cp-left">
-            <i class="pi pi-history"></i>
-            {{ last.time }} · {{ last.volume }}ml
-            <span class="muted">({{ lastFeedingAgo() }})</span>
-          </span>
-          <span class="cp-right"> TB {{ predictionMedianIntervalHuman() }} </span>
-        </div>
-      </div>
-    </div>
-  </ng-container>
-
-  <ng-template #notEnough>
-    <div class="last-feed" *ngIf="lastFeeding() as last">
-      <div class="last-feed-icon"><i class="pi pi-history"></i></div>
-      <div class="last-feed-body">
-        <div class="last-feed-label">Cữ gần nhất</div>
-        <div class="last-feed-value">
-          <strong>{{ last.volume }}ml</strong>
-          <span class="sep">·</span>
-          <span>{{ last.time }}</span>
-          <span class="sep">·</span>
-          <span class="ago">{{ lastFeedingAgo() }}</span>
-        </div>
-      </div>
-    </div>
+    }
     <div class="predict-empty">
       <i class="pi pi-info-circle"></i>
       Cần thêm vài cữ bú nữa để dự đoán giờ/dung tích tiếp theo.
     </div>
-  </ng-template>
-</ng-container>
+  }
+}
 
 <!-- ============ COMPARISON ============ -->
 <section class="compare-grid">
@@ -590,161 +594,179 @@
 
     <div class="day-stats">
       <div><i class="pi pi-th-list"></i> {{ todayStats().count }} cữ</div>
-      <div *ngIf="todayStats().count > 0">
-        <i class="pi pi-chart-bar"></i> TB {{ todayStats().avg }}ml
-      </div>
-      <div *ngIf="todayStats().count > 0">
-        <i class="pi pi-arrow-up"></i> Cao nhất {{ todayStats().max }}ml
-      </div>
-      <div *ngIf="todayStats().firstTime">
-        <i class="pi pi-clock"></i> Lần đầu {{ todayStats().firstTime }}
-      </div>
+      @if (todayStats().count > 0) {
+        <div><i class="pi pi-chart-bar"></i> TB {{ todayStats().avg }}ml</div>
+      }
+      @if (todayStats().count > 0) {
+        <div><i class="pi pi-arrow-up"></i> Cao nhất {{ todayStats().max }}ml</div>
+      }
+      @if (todayStats().firstTime) {
+        <div><i class="pi pi-clock"></i> Lần đầu {{ todayStats().firstTime }}</div>
+      }
     </div>
 
-    <div
-      class="compare-banner"
-      *ngIf="
-        todayStats().count > 0 &&
-        (yesterdayUpToNowStats().total > 0 || priorThreeDaysUpToNowAvg().avgTotal > 0)
-      "
-    >
-      <!-- So sánh với hôm qua -->
-      <div class="compare-row" *ngIf="yesterdayUpToNowStats().total > 0">
-        <div class="compare-stats">
-          <span class="label">Hôm qua:</span>
-          <strong>{{ yesterdayUpToNowStats().total }}ml</strong>
-          <span class="count">({{ yesterdayUpToNowStats().count }} cữ)</span>
-        </div>
-        <div class="compare-change" *ngIf="comparison().totalDiff !== 0">
-          <i
-            class="pi"
-            [class.pi-arrow-up]="comparison().totalDiff > 0"
-            [class.pi-arrow-down]="comparison().totalDiff < 0"
-            [class.up]="comparison().totalDiff > 0"
-            [class.down]="comparison().totalDiff < 0"
-          ></i>
-          <strong>{{ Math.abs(comparison().totalDiff) }}ml</strong>
-          <span *ngIf="comparison().pct !== null">({{ Math.abs(comparison().pct!) }}%)</span>
-        </div>
+    @if (
+      todayStats().count > 0 &&
+      (yesterdayUpToNowStats().total > 0 || priorThreeDaysUpToNowAvg().avgTotal > 0)
+    ) {
+      <div class="compare-banner">
+        <!-- So sánh với hôm qua -->
+        @if (yesterdayUpToNowStats().total > 0) {
+          <div class="compare-row">
+            <div class="compare-stats">
+              <span class="label">Hôm qua:</span>
+              <strong>{{ yesterdayUpToNowStats().total }}ml</strong>
+              <span class="count">({{ yesterdayUpToNowStats().count }} cữ)</span>
+            </div>
+            @if (comparison().totalDiff !== 0) {
+              <div class="compare-change">
+                <i
+                  class="pi"
+                  [class.pi-arrow-up]="comparison().totalDiff > 0"
+                  [class.pi-arrow-down]="comparison().totalDiff < 0"
+                  [class.up]="comparison().totalDiff > 0"
+                  [class.down]="comparison().totalDiff < 0"
+                ></i>
+                <strong>{{ Math.abs(comparison().totalDiff) }}ml</strong>
+                @if (comparison().pct !== null) {
+                  <span>({{ Math.abs(comparison().pct!) }}%)</span>
+                }
+              </div>
+            }
+          </div>
+        }
+        <!-- So sánh với TB 3 ngày -->
+        @if (priorThreeDaysUpToNowAvg().avgTotal > 0) {
+          <div class="compare-row">
+            <div class="compare-stats">
+              <span class="label">TB 3 ngày:</span>
+              <strong>{{ priorThreeDaysUpToNowAvg().avgTotal }}ml</strong>
+              <span class="count">({{ priorThreeDaysUpToNowAvg().avgCount }} cữ)</span>
+            </div>
+            @if (comparisonVsPrior3Avg().totalDiff !== 0) {
+              <div class="compare-change">
+                <i
+                  class="pi"
+                  [class.pi-arrow-up]="comparisonVsPrior3Avg().totalDiff > 0"
+                  [class.pi-arrow-down]="comparisonVsPrior3Avg().totalDiff < 0"
+                  [class.up]="comparisonVsPrior3Avg().totalDiff > 0"
+                  [class.down]="comparisonVsPrior3Avg().totalDiff < 0"
+                ></i>
+                <strong>{{ Math.abs(comparisonVsPrior3Avg().totalDiff) }}ml</strong>
+                @if (comparisonVsPrior3Avg().pct !== null) {
+                  <span>({{ Math.abs(comparisonVsPrior3Avg().pct!) }}%)</span>
+                }
+              </div>
+            }
+          </div>
+        }
       </div>
-      <!-- So sánh với TB 3 ngày -->
-      <div class="compare-row" *ngIf="priorThreeDaysUpToNowAvg().avgTotal > 0">
-        <div class="compare-stats">
-          <span class="label">TB 3 ngày:</span>
-          <strong>{{ priorThreeDaysUpToNowAvg().avgTotal }}ml</strong>
-          <span class="count">({{ priorThreeDaysUpToNowAvg().avgCount }} cữ)</span>
-        </div>
-        <div class="compare-change" *ngIf="comparisonVsPrior3Avg().totalDiff !== 0">
-          <i
-            class="pi"
-            [class.pi-arrow-up]="comparisonVsPrior3Avg().totalDiff > 0"
-            [class.pi-arrow-down]="comparisonVsPrior3Avg().totalDiff < 0"
-            [class.up]="comparisonVsPrior3Avg().totalDiff > 0"
-            [class.down]="comparisonVsPrior3Avg().totalDiff < 0"
-          ></i>
-          <strong>{{ Math.abs(comparisonVsPrior3Avg().totalDiff) }}ml</strong>
-          <span *ngIf="comparisonVsPrior3Avg().pct !== null"
-            >({{ Math.abs(comparisonVsPrior3Avg().pct!) }}%)</span
-          >
-        </div>
-      </div>
-    </div>
+    }
 
     <!-- Today's logs (collapsed) -->
-    <div class="today-logs" *ngIf="todayLogs().length > 0">
-      <div class="logs-header">
-        <span>Các cữ bú hôm nay</span>
-        <button
-          *ngIf="todayLogs().length > 2"
-          type="button"
-          class="logs-more"
-          (click)="openHistoryDialog('today')"
-        >
-          Xem tất cả {{ todayLogs().length }}
-          <i class="pi pi-chevron-right"></i>
-        </button>
-      </div>
-      <div class="log-list">
-        <div
-          class="log-row log-row--clickable"
-          *ngFor="let g of todayLogsPreview(); trackBy: trackFeedingViewGroup"
-          [class.low-volume]="isLowVolumeViewGroup(g)"
-          [class.high-volume]="isHighVolumeViewGroup(g)"
-          role="button"
-          tabindex="0"
-          (click)="onFeedRowClick(g)"
-          (keydown.enter)="onFeedRowClick(g)"
-          (keydown.space)="$event.preventDefault(); onFeedRowClick(g)"
-        >
-          <span class="log-time log-time--with-badge">
-            {{ viewGroupDisplayTime(g) }}
-            <button
-              *ngIf="g.members.length > 1"
-              type="button"
-              class="log-merge-badge"
-              (click)="openFeedGroupDetail(g); $event.stopPropagation()"
-              title="Xem các cữ đã gom"
-            >
-              {{ g.members.length }} cữ
+    @if (todayLogs().length > 0) {
+      <div class="today-logs">
+        <div class="logs-header">
+          <span>Các cữ bú hôm nay</span>
+          @if (todayLogs().length > 2) {
+            <button type="button" class="logs-more" (click)="openHistoryDialog('today')">
+              Xem tất cả {{ todayLogs().length }}
+              <i class="pi pi-chevron-right"></i>
             </button>
-          </span>
-          <span class="log-volume">{{ viewGroupDisplayVolume(g) }}ml</span>
-          <span
-            class="log-gap"
-            *ngIf="formatIntervalFromPrevViewGroup(g, todayLogViewGroups()) as iv"
-            [class.feed-gap-warn]="isFeedTimeGapWarningViewGroup(g, todayLogViewGroups())"
-          >
-            <i class="pi pi-clock"></i> {{ iv }}
-          </span>
-          <span class="log-note" *ngIf="viewGroupNote(g) as vn">· {{ vn }}</span>
-          <div class="log-actions" *ngIf="g.members.length === 1 && g.members[0].rowIndex">
-            <button
-              class="log-edit"
-              (click)="openEditDialog(g.members[0]); $event.stopPropagation()"
-              title="Sửa cữ bú này"
-              aria-label="Sửa cữ bú"
+          }
+        </div>
+        <div class="log-list">
+          @for (g of todayLogsPreview(); track trackFeedingViewGroup($index, g)) {
+            <div
+              class="log-row log-row--clickable"
+              [class.low-volume]="isLowVolumeViewGroup(g)"
+              [class.high-volume]="isHighVolumeViewGroup(g)"
+              role="button"
+              tabindex="0"
+              (click)="onFeedRowClick(g)"
+              (keydown.enter)="onFeedRowClick(g)"
+              (keydown.space)="$event.preventDefault(); onFeedRowClick(g)"
             >
-              <i class="pi pi-pencil"></i>
-            </button>
-            <button
-              class="log-del"
-              (click)="deleteLog(g.members[0]); $event.stopPropagation()"
-              title="Xoá cữ bú này"
-              aria-label="Xoá cữ bú"
-            >
-              <i class="pi pi-trash"></i>
-            </button>
-          </div>
-          <div class="log-actions" *ngIf="g.members.length > 1">
-            <button
-              class="log-edit"
-              (click)="openFeedGroupDetail(g); $event.stopPropagation()"
-              title="Chi tiết các cữ đã gom"
-              aria-label="Chi tiết gom nhóm"
-            >
-              <i class="pi pi-list"></i>
-            </button>
-          </div>
+              <span class="log-time log-time--with-badge">
+                {{ viewGroupDisplayTime(g) }}
+                @if (g.members.length > 1) {
+                  <button
+                    type="button"
+                    class="log-merge-badge"
+                    (click)="openFeedGroupDetail(g); $event.stopPropagation()"
+                    title="Xem các cữ đã gom"
+                  >
+                    {{ g.members.length }} cữ
+                  </button>
+                }
+              </span>
+              <span class="log-volume">{{ viewGroupDisplayVolume(g) }}ml</span>
+              @if (formatIntervalFromPrevViewGroup(g, todayLogViewGroups()); as iv) {
+                <span
+                  class="log-gap"
+                  [class.feed-gap-warn]="isFeedTimeGapWarningViewGroup(g, todayLogViewGroups())"
+                >
+                  <i class="pi pi-clock"></i> {{ iv }}
+                </span>
+              }
+              @if (viewGroupNote(g); as vn) {
+                <span class="log-note">· {{ vn }}</span>
+              }
+              @if (g.members.length === 1 && g.members[0].rowIndex) {
+                <div class="log-actions">
+                  <button
+                    class="log-edit"
+                    (click)="openEditDialog(g.members[0]); $event.stopPropagation()"
+                    title="Sửa cữ bú này"
+                    aria-label="Sửa cữ bú"
+                  >
+                    <i class="pi pi-pencil"></i>
+                  </button>
+                  <button
+                    class="log-del"
+                    (click)="deleteLog(g.members[0]); $event.stopPropagation()"
+                    title="Xoá cữ bú này"
+                    aria-label="Xoá cữ bú"
+                  >
+                    <i class="pi pi-trash"></i>
+                  </button>
+                </div>
+              }
+              @if (g.members.length > 1) {
+                <div class="log-actions">
+                  <button
+                    class="log-edit"
+                    (click)="openFeedGroupDetail(g); $event.stopPropagation()"
+                    title="Chi tiết các cữ đã gom"
+                    aria-label="Chi tiết gom nhóm"
+                  >
+                    <i class="pi pi-list"></i>
+                  </button>
+                </div>
+              }
+            </div>
+          }
         </div>
       </div>
-    </div>
-    <div class="empty-mini" *ngIf="todayLogs().length === 0 && !loadingLogs()">
-      Chưa có cữ bú nào hôm nay. Ghi lại cữ đầu tiên ở form trên nhé!
-    </div>
+    }
+    @if (todayLogs().length === 0 && !loadingLogs()) {
+      <div class="empty-mini">Chưa có cữ bú nào hôm nay. Ghi lại cữ đầu tiên ở form trên nhé!</div>
+    }
   </div>
 
   <div class="card day-card yesterday">
     <div class="day-date-nav-wrap">
-      <button
-        *ngIf="pastDayViewShowReset()"
-        type="button"
-        class="day-date-nav-reset"
-        (click)="pastDayViewReset()"
-        aria-label="Về hôm qua"
-        title="Về hôm qua"
-      >
-        <i class="pi pi-times"></i>
-      </button>
+      @if (pastDayViewShowReset()) {
+        <button
+          type="button"
+          class="day-date-nav-reset"
+          (click)="pastDayViewReset()"
+          aria-label="Về hôm qua"
+          title="Về hôm qua"
+        >
+          <i class="pi pi-times"></i>
+        </button>
+      }
       <nav class="day-date-strip" aria-label="Chọn ngày xem lịch sử">
         <button
           type="button"
@@ -756,19 +778,20 @@
           <i class="pi pi-chevron-left"></i>
         </button>
         <div class="day-date-strip-scroller" #pastDayStripScroller>
-          <button
-            type="button"
-            class="day-date-strip-day"
-            *ngFor="let d of pastDayStripItems(); trackBy: trackPastDayStripItem"
-            [class.active]="d.date === pastDayViewDate()"
-            [attr.data-past-day]="d.date"
-            (click)="selectPastDayView(d.date)"
-            [attr.aria-label]="'Ngày ' + d.dateLabel + ', ' + d.mlLabel"
-            [attr.aria-current]="d.date === pastDayViewDate() ? 'date' : null"
-          >
-            <span class="day-date-strip-date">{{ d.dateLabel }}</span>
-            <span class="day-date-strip-ml" [class.empty]="d.total === 0">{{ d.mlLabel }}</span>
-          </button>
+          @for (d of pastDayStripItems(); track trackPastDayStripItem($index, d)) {
+            <button
+              type="button"
+              class="day-date-strip-day"
+              [class.active]="d.date === pastDayViewDate()"
+              [attr.data-past-day]="d.date"
+              (click)="selectPastDayView(d.date)"
+              [attr.aria-label]="'Ngày ' + d.dateLabel + ', ' + d.mlLabel"
+              [attr.aria-current]="d.date === pastDayViewDate() ? 'date' : null"
+            >
+              <span class="day-date-strip-date">{{ d.dateLabel }}</span>
+              <span class="day-date-strip-ml" [class.empty]="d.total === 0">{{ d.mlLabel }}</span>
+            </button>
+          }
         </div>
         <button
           type="button"
@@ -797,87 +820,203 @@
 
     <div class="day-stats">
       <div><i class="pi pi-th-list"></i> {{ pastDayViewStats().count }} cữ</div>
-      <div *ngIf="pastDayViewStats().count > 0">
-        <i class="pi pi-chart-bar"></i> TB {{ pastDayViewStats().avg }}ml
-      </div>
-      <div *ngIf="pastDayViewStats().count > 0">
-        <i class="pi pi-arrow-up"></i> Cao nhất {{ pastDayViewStats().max }}ml
-      </div>
-      <div *ngIf="pastDayViewStats().firstTime">
-        <i class="pi pi-clock"></i> {{ pastDayViewStats().firstTime }} →
-        {{ pastDayViewStats().lastTime }}
-      </div>
+      @if (pastDayViewStats().count > 0) {
+        <div><i class="pi pi-chart-bar"></i> TB {{ pastDayViewStats().avg }}ml</div>
+      }
+      @if (pastDayViewStats().count > 0) {
+        <div><i class="pi pi-arrow-up"></i> Cao nhất {{ pastDayViewStats().max }}ml</div>
+      }
+      @if (pastDayViewStats().firstTime) {
+        <div>
+          <i class="pi pi-clock"></i> {{ pastDayViewStats().firstTime }} →
+          {{ pastDayViewStats().lastTime }}
+        </div>
+      }
     </div>
 
     <!-- Past day logs (collapsed) -->
-    <div class="today-logs" *ngIf="pastDayViewLogs().length > 0">
-      <div class="logs-header">
-        <span>Các cữ bú {{ formatDateDisplay(pastDayViewDate()) }}</span>
-        <button
-          *ngIf="pastDayViewLogs().length > 2"
-          type="button"
-          class="logs-more"
-          (click)="openHistoryDialog('date', pastDayViewDate())"
-        >
-          Xem tất cả {{ pastDayViewLogs().length }}
-          <i class="pi pi-chevron-right"></i>
-        </button>
-      </div>
-      <ng-container *ngIf="pastDayViewLogViewGroups() as pastDayGroups">
-        <div class="log-list">
-          <div
-            class="log-row log-row--clickable"
-            *ngFor="let g of pastDayViewLogsPreview(); trackBy: trackFeedingViewGroup"
-            [class.low-volume]="isLowVolumeViewGroup(g)"
-            [class.high-volume]="isHighVolumeViewGroup(g)"
-            role="button"
-            tabindex="0"
-            (click)="onFeedRowClick(g)"
-            (keydown.enter)="onFeedRowClick(g)"
-            (keydown.space)="$event.preventDefault(); onFeedRowClick(g)"
-          >
-            <span class="log-time log-time--with-badge">
-              {{ viewGroupDisplayTime(g) }}
-              <button
-                *ngIf="g.members.length > 1"
-                type="button"
-                class="log-merge-badge"
-                (click)="openFeedGroupDetail(g); $event.stopPropagation()"
-                title="Xem các cữ đã gom"
-              >
-                {{ g.members.length }} cữ
-              </button>
-            </span>
-            <span class="log-volume">{{ viewGroupDisplayVolume(g) }}ml</span>
-            <span
-              class="log-gap"
-              *ngIf="formatIntervalFromPrevViewGroup(g, pastDayGroups) as iv"
-              [class.feed-gap-warn]="isFeedTimeGapWarningViewGroup(g, pastDayGroups)"
+    @if (pastDayViewLogs().length > 0) {
+      <div class="today-logs">
+        <div class="logs-header">
+          <span>Các cữ bú {{ formatDateDisplay(pastDayViewDate()) }}</span>
+          @if (pastDayViewLogs().length > 2) {
+            <button
+              type="button"
+              class="logs-more"
+              (click)="openHistoryDialog('date', pastDayViewDate())"
             >
-              <i class="pi pi-clock"></i> {{ iv }}
-            </span>
-            <span class="log-note" *ngIf="viewGroupNote(g) as vn">· {{ vn }}</span>
-            <div class="log-actions" *ngIf="g.members.length === 1 && g.members[0].rowIndex">
+              Xem tất cả {{ pastDayViewLogs().length }}
+              <i class="pi pi-chevron-right"></i>
+            </button>
+          }
+        </div>
+        @if (pastDayViewLogViewGroups(); as pastDayGroups) {
+          <div class="log-list">
+            @for (g of pastDayViewLogsPreview(); track trackFeedingViewGroup($index, g)) {
+              <div
+                class="log-row log-row--clickable"
+                [class.low-volume]="isLowVolumeViewGroup(g)"
+                [class.high-volume]="isHighVolumeViewGroup(g)"
+                role="button"
+                tabindex="0"
+                (click)="onFeedRowClick(g)"
+                (keydown.enter)="onFeedRowClick(g)"
+                (keydown.space)="$event.preventDefault(); onFeedRowClick(g)"
+              >
+                <span class="log-time log-time--with-badge">
+                  {{ viewGroupDisplayTime(g) }}
+                  @if (g.members.length > 1) {
+                    <button
+                      type="button"
+                      class="log-merge-badge"
+                      (click)="openFeedGroupDetail(g); $event.stopPropagation()"
+                      title="Xem các cữ đã gom"
+                    >
+                      {{ g.members.length }} cữ
+                    </button>
+                  }
+                </span>
+                <span class="log-volume">{{ viewGroupDisplayVolume(g) }}ml</span>
+                @if (formatIntervalFromPrevViewGroup(g, pastDayGroups); as iv) {
+                  <span
+                    class="log-gap"
+                    [class.feed-gap-warn]="isFeedTimeGapWarningViewGroup(g, pastDayGroups)"
+                  >
+                    <i class="pi pi-clock"></i> {{ iv }}
+                  </span>
+                }
+                @if (viewGroupNote(g); as vn) {
+                  <span class="log-note">· {{ vn }}</span>
+                }
+                @if (g.members.length === 1 && g.members[0].rowIndex) {
+                  <div class="log-actions">
+                    <button
+                      class="log-edit"
+                      (click)="openEditDialog(g.members[0]); $event.stopPropagation()"
+                      title="Sửa cữ bú này"
+                      aria-label="Sửa cữ bú"
+                    >
+                      <i class="pi pi-pencil"></i>
+                    </button>
+                    <button
+                      class="log-del"
+                      (click)="deleteLog(g.members[0]); $event.stopPropagation()"
+                      title="Xoá cữ bú này"
+                      aria-label="Xoá cữ bú"
+                    >
+                      <i class="pi pi-trash"></i>
+                    </button>
+                  </div>
+                }
+                @if (g.members.length > 1) {
+                  <div class="log-actions">
+                    <button
+                      class="log-edit"
+                      (click)="openFeedGroupDetail(g); $event.stopPropagation()"
+                      title="Chi tiết các cữ đã gom"
+                      aria-label="Chi tiết gom nhóm"
+                    >
+                      <i class="pi pi-list"></i>
+                    </button>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
+
+    @if (pastDayViewStats().count === 0) {
+      <div class="empty-mini">Chưa có dữ liệu cho ngày này.</div>
+    }
+  </div>
+</section>
+<ng-content select="[data-feeding-charts]"></ng-content>
+<!-- ============ RECENT FEEDINGS (collapsed) ============ -->
+@if (logs().length > 0) {
+  <section class="card feed-list-card">
+    <div class="feed-list-head">
+      <div>
+        <div class="eyebrow"><i class="pi pi-list"></i> Lịch sử cữ bú</div>
+        <h2>Cữ bú gần đây</h2>
+      </div>
+      <button type="button" class="btn ghost small" (click)="openHistoryDialog()">
+        <i class="pi pi-external-link"></i>
+        Xem tất cả ({{ logs().length }})
+      </button>
+    </div>
+    <div class="feed-list-compact">
+      @for (g of recentFeedViewGroups(); track trackFeedingViewGroup($index, g)) {
+        <div
+          class="feed-row feed-row--clickable"
+          role="button"
+          tabindex="0"
+          (click)="onFeedRowClick(g)"
+          (keydown.enter)="onFeedRowClick(g)"
+          (keydown.space)="$event.preventDefault(); onFeedRowClick(g)"
+        >
+          <div class="feed-row-time">
+            <div class="time time--with-badge">
+              {{ viewGroupDisplayTime(g) }}
+              @if (g.members.length > 1) {
+                <button
+                  type="button"
+                  class="feed-merge-badge"
+                  (click)="openFeedGroupDetail(g); $event.stopPropagation()"
+                  title="Xem các cữ đã gom"
+                >
+                  {{ g.members.length }} cữ
+                </button>
+              }
+            </div>
+            <div class="date">
+              {{ formatDateShort(g.members[g.members.length - 1].date) }}
+            </div>
+            @if (formatIntervalFromPrevViewGroup(g, recentFeedViewGroups()); as ivR) {
+              <div
+                class="feed-row-gap"
+                [class.feed-gap-warn]="isFeedTimeGapWarningViewGroup(g, recentFeedViewGroups())"
+              >
+                <i class="pi pi-clock"></i> {{ ivR }}
+              </div>
+            }
+          </div>
+          <div class="feed-row-volume">
+            <strong>{{ viewGroupDisplayVolume(g) }}</strong>
+            <span class="u">ml</span>
+          </div>
+          @if (viewGroupNote(g)) {
+            <div class="feed-row-note">
+              {{ viewGroupNote(g) }}
+            </div>
+          } @else {
+            <div class="feed-row-note muted">—</div>
+          }
+          @if (g.members.length === 1 && g.members[0].rowIndex) {
+            <div class="feed-row-actions">
               <button
-                class="log-edit"
+                class="feed-row-edit"
                 (click)="openEditDialog(g.members[0]); $event.stopPropagation()"
-                title="Sửa cữ bú này"
+                title="Sửa cữ này"
                 aria-label="Sửa cữ bú"
               >
                 <i class="pi pi-pencil"></i>
               </button>
               <button
-                class="log-del"
+                class="feed-row-del"
                 (click)="deleteLog(g.members[0]); $event.stopPropagation()"
-                title="Xoá cữ bú này"
+                title="Xoá cữ này"
                 aria-label="Xoá cữ bú"
               >
                 <i class="pi pi-trash"></i>
               </button>
             </div>
-            <div class="log-actions" *ngIf="g.members.length > 1">
+          }
+          @if (g.members.length > 1) {
+            <div class="feed-row-actions">
               <button
-                class="log-edit"
+                class="feed-row-edit"
                 (click)="openFeedGroupDetail(g); $event.stopPropagation()"
                 title="Chi tiết các cữ đã gom"
                 aria-label="Chi tiết gom nhóm"
@@ -885,102 +1024,9 @@
                 <i class="pi pi-list"></i>
               </button>
             </div>
-          </div>
+          }
         </div>
-      </ng-container>
+      }
     </div>
-
-    <div class="empty-mini" *ngIf="pastDayViewStats().count === 0">
-      Chưa có dữ liệu cho ngày này.
-    </div>
-  </div>
-</section>
-<ng-content select="[data-feeding-charts]"></ng-content>
-<!-- ============ RECENT FEEDINGS (collapsed) ============ -->
-<section class="card feed-list-card" *ngIf="logs().length > 0">
-  <div class="feed-list-head">
-    <div>
-      <div class="eyebrow"><i class="pi pi-list"></i> Lịch sử cữ bú</div>
-      <h2>Cữ bú gần đây</h2>
-    </div>
-    <button type="button" class="btn ghost small" (click)="openHistoryDialog()">
-      <i class="pi pi-external-link"></i>
-      Xem tất cả ({{ logs().length }})
-    </button>
-  </div>
-
-  <div class="feed-list-compact">
-    <div
-      class="feed-row feed-row--clickable"
-      *ngFor="let g of recentFeedViewGroups(); trackBy: trackFeedingViewGroup"
-      role="button"
-      tabindex="0"
-      (click)="onFeedRowClick(g)"
-      (keydown.enter)="onFeedRowClick(g)"
-      (keydown.space)="$event.preventDefault(); onFeedRowClick(g)"
-    >
-      <div class="feed-row-time">
-        <div class="time time--with-badge">
-          {{ viewGroupDisplayTime(g) }}
-          <button
-            *ngIf="g.members.length > 1"
-            type="button"
-            class="feed-merge-badge"
-            (click)="openFeedGroupDetail(g); $event.stopPropagation()"
-            title="Xem các cữ đã gom"
-          >
-            {{ g.members.length }} cữ
-          </button>
-        </div>
-        <div class="date">
-          {{ formatDateShort(g.members[g.members.length - 1].date) }}
-        </div>
-        <div
-          class="feed-row-gap"
-          *ngIf="formatIntervalFromPrevViewGroup(g, recentFeedViewGroups()) as ivR"
-          [class.feed-gap-warn]="isFeedTimeGapWarningViewGroup(g, recentFeedViewGroups())"
-        >
-          <i class="pi pi-clock"></i> {{ ivR }}
-        </div>
-      </div>
-      <div class="feed-row-volume">
-        <strong>{{ viewGroupDisplayVolume(g) }}</strong>
-        <span class="u">ml</span>
-      </div>
-      <div class="feed-row-note" *ngIf="viewGroupNote(g); else noNote">
-        {{ viewGroupNote(g) }}
-      </div>
-      <ng-template #noNote>
-        <div class="feed-row-note muted">—</div>
-      </ng-template>
-      <div class="feed-row-actions" *ngIf="g.members.length === 1 && g.members[0].rowIndex">
-        <button
-          class="feed-row-edit"
-          (click)="openEditDialog(g.members[0]); $event.stopPropagation()"
-          title="Sửa cữ này"
-          aria-label="Sửa cữ bú"
-        >
-          <i class="pi pi-pencil"></i>
-        </button>
-        <button
-          class="feed-row-del"
-          (click)="deleteLog(g.members[0]); $event.stopPropagation()"
-          title="Xoá cữ này"
-          aria-label="Xoá cữ bú"
-        >
-          <i class="pi pi-trash"></i>
-        </button>
-      </div>
-      <div class="feed-row-actions" *ngIf="g.members.length > 1">
-        <button
-          class="feed-row-edit"
-          (click)="openFeedGroupDetail(g); $event.stopPropagation()"
-          title="Chi tiết các cữ đã gom"
-          aria-label="Chi tiết gom nhóm"
-        >
-          <i class="pi pi-list"></i>
-        </button>
-      </div>
-    </div>
-  </div>
-</section>
+  </section>
+}

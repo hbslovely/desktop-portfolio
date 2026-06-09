@@ -61,6 +61,8 @@ export interface ExpenseGroup {
   providedIn: 'root',
 })
 class ExpenseService {
+  private http = inject(HttpClient);
+
   // Google Sheets API configuration
   // Sheet ID is provided via environment variable
   private readonly SHEET_ID = environment.googleExpenseSheetId;
@@ -93,8 +95,6 @@ class ExpenseService {
 
   // LLM Service for AI-powered summaries
   private llmService = inject(LLMService);
-
-  constructor(private http: HttpClient) {}
 
   /**
    * Get all expenses from Google Sheets (with caching)

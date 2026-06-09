@@ -13,31 +13,38 @@
         </p>
       </div>
     </div>
-    <div class="medical-hero__stats" *ngIf="!loading() && myEntries().length > 0" role="status">
-      <span class="medical-stat">
-        <strong>{{ visibleEntries().length }}</strong>
-        <span class="medical-stat__label">mục hiển thị</span>
-      </span>
-      <span
-        class="medical-stat medical-stat--dim"
-        *ngIf="visibleEntries().length !== myEntries().length"
-      >
-        <span class="medical-stat__sep">·</span>
-        {{ myEntries().length }} trong sổ
-      </span>
-    </div>
+    @if (!loading() && myEntries().length > 0) {
+      <div class="medical-hero__stats" role="status">
+        <span class="medical-stat">
+          <strong>{{ visibleEntries().length }}</strong>
+          <span class="medical-stat__label">mục hiển thị</span>
+        </span>
+        @if (visibleEntries().length !== myEntries().length) {
+          <span class="medical-stat medical-stat--dim">
+            <span class="medical-stat__sep">·</span>
+            {{ myEntries().length }} trong sổ
+          </span>
+        }
+      </div>
+    }
   </header>
 
-  <div class="medical-alerts" *ngIf="errorMsg() || successMsg()">
-    <div class="alert error" *ngIf="errorMsg()">
-      <i class="pi pi-exclamation-circle"></i>
-      {{ errorMsg() }}
+  @if (errorMsg() || successMsg()) {
+    <div class="medical-alerts">
+      @if (errorMsg()) {
+        <div class="alert error">
+          <i class="pi pi-exclamation-circle"></i>
+          {{ errorMsg() }}
+        </div>
+      }
+      @if (successMsg()) {
+        <div class="alert ok">
+          <i class="pi pi-check-circle"></i>
+          {{ successMsg() }}
+        </div>
+      }
     </div>
-    <div class="alert ok" *ngIf="successMsg()">
-      <i class="pi pi-check-circle"></i>
-      {{ successMsg() }}
-    </div>
-  </div>
+  }
 
   <app-medical-history-filter
     [loading]="loading()"
@@ -64,69 +71,69 @@
     (toggleKindFilter)="toggleKindFilter($event)"
   />
 
-  <section class="card medical-state medical-state--loading" *ngIf="loading()">
-    <div class="medical-state__icon" aria-hidden="true">
-      <i class="pi pi-spin pi-spinner"></i>
-    </div>
-    <p class="medical-state__title">Đang tải tiền sử…</p>
-    <p class="medical-state__hint">Đồng bộ từ bảng tiền sử trên Google Sheet.</p>
-  </section>
+  @if (loading()) {
+    <section class="card medical-state medical-state--loading">
+      <div class="medical-state__icon" aria-hidden="true">
+        <i class="pi pi-spin pi-spinner"></i>
+      </div>
+      <p class="medical-state__title">Đang tải tiền sử…</p>
+      <p class="medical-state__hint">Đồng bộ từ bảng tiền sử trên Google Sheet.</p>
+    </section>
+  }
 
-  <section
-    class="card medical-state medical-state--empty"
-    *ngIf="!loading() && myEntries().length === 0"
-  >
-    <div class="medical-state__icon medical-state__icon--heart" aria-hidden="true">
-      <i class="pi pi-heart"></i>
-    </div>
-    <p class="medical-state__title">Chưa có sự kiện nào</p>
-    <p class="medical-state__hint">
-      Bấm <strong>Ghi sự kiện</strong> để thêm tiêm chủng, khám, thuốc hoặc ghi chú khác.
-    </p>
-  </section>
+  @if (!loading() && myEntries().length === 0) {
+    <section class="card medical-state medical-state--empty">
+      <div class="medical-state__icon medical-state__icon--heart" aria-hidden="true">
+        <i class="pi pi-heart"></i>
+      </div>
+      <p class="medical-state__title">Chưa có sự kiện nào</p>
+      <p class="medical-state__hint">
+        Bấm <strong>Ghi sự kiện</strong> để thêm tiêm chủng, khám, thuốc hoặc ghi chú khác.
+      </p>
+    </section>
+  }
 
-  <section
-    class="card medical-state medical-state--soft"
-    *ngIf="!loading() && myEntries().length > 0 && filteredEntries().length === 0"
-  >
-    <div class="medical-state__icon" aria-hidden="true">
-      <i class="pi pi-filter-slash"></i>
-    </div>
-    <p class="medical-state__title">Không khớp bộ lọc loại</p>
-    <p class="medical-state__hint">
-      Mở panel lọc và bấm <strong>Tất cả</strong>, hoặc bật lại từng loại bạn cần xem.
-    </p>
-  </section>
+  @if (!loading() && myEntries().length > 0 && filteredEntries().length === 0) {
+    <section class="card medical-state medical-state--soft">
+      <div class="medical-state__icon" aria-hidden="true">
+        <i class="pi pi-filter-slash"></i>
+      </div>
+      <p class="medical-state__title">Không khớp bộ lọc loại</p>
+      <p class="medical-state__hint">
+        Mở panel lọc và bấm <strong>Tất cả</strong>, hoặc bật lại từng loại bạn cần xem.
+      </p>
+    </section>
+  }
 
-  <section
-    class="card medical-state medical-state--soft"
-    *ngIf="
-      !loading() &&
-      myEntries().length > 0 &&
-      filteredEntries().length > 0 &&
-      visibleEntries().length === 0 &&
-      textSearchQuery().trim()
-    "
-  >
-    <div class="medical-state__icon" aria-hidden="true">
-      <i class="pi pi-search"></i>
-    </div>
-    <p class="medical-state__title">Không tìm thấy «{{ textSearchQuery().trim() }}»</p>
-    <p class="medical-state__hint">
-      Thử từ khác hoặc
-      <button type="button" class="mh-inline-link" (click)="clearTextSearch()">xoá ô tìm</button>.
-    </p>
-  </section>
+  @if (
+    !loading() &&
+    myEntries().length > 0 &&
+    filteredEntries().length > 0 &&
+    visibleEntries().length === 0 &&
+    textSearchQuery().trim()
+  ) {
+    <section class="card medical-state medical-state--soft">
+      <div class="medical-state__icon" aria-hidden="true">
+        <i class="pi pi-search"></i>
+      </div>
+      <p class="medical-state__title">Không tìm thấy «{{ textSearchQuery().trim() }}»</p>
+      <p class="medical-state__hint">
+        Thử từ khác hoặc
+        <button type="button" class="mh-inline-link" (click)="clearTextSearch()">xoá ô tìm</button>.
+      </p>
+    </section>
+  }
 
-  <app-medical-history-timeline
-    *ngIf="!loading() && visibleEntries().length > 0"
-    [timelineGroups]="timelineGroups()"
-    [resolveAttachment]="resolveAttachment"
-    (editEntry)="medicalDialog.openEdit($event)"
-    (deleteEntry)="deleteEntry($event)"
-    (openPreview)="openImagePreview($event)"
-    (openInDocuments)="openAttachmentInDocuments($event)"
-  />
+  @if (!loading() && visibleEntries().length > 0) {
+    <app-medical-history-timeline
+      [timelineGroups]="timelineGroups()"
+      [resolveAttachment]="resolveAttachment"
+      (editEntry)="medicalDialog.openEdit($event)"
+      (deleteEntry)="deleteEntry($event)"
+      (openPreview)="openImagePreview($event)"
+      (openInDocuments)="openAttachmentInDocuments($event)"
+    />
+  }
 
   <button
     type="button"

@@ -1,11 +1,11 @@
 import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { ExpenseAppComponent } from '../../components/apps/expense-app/expense-app.component';
 
 @Component({
   selector: 'app-chi-tieu-page',
   standalone: true,
-  imports: [CommonModule, ExpenseAppComponent],
+  imports: [ExpenseAppComponent],
   template: `
     <div class="chi-tieu-page">
       <app-expense-app [bypassAuth]="true"></app-expense-app>

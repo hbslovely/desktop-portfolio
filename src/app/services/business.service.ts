@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError, map, shareReplay } from 'rxjs/operators';
@@ -62,6 +62,8 @@ export type SheetName = 'Menu' | 'Nguồn nguyên liệu' | 'Nguồn vật liệ
   providedIn: 'root',
 })
 export class BusinessService {
+  private http = inject(HttpClient);
+
   private readonly SHEET_ID = environment.googleBusinessSheetId;
   private readonly API_KEY = environment.googleSheetsApiKey;
   private readonly BASE_URL = this.SHEET_ID
@@ -79,9 +81,7 @@ export class BusinessService {
   private cache: {
     [key: string]: { data$: Observable<BusinessItem[]> | null; timestamp: number };
   } = {};
-  private readonly CACHE_DURATION = 5000; // 5 seconds
-
-  constructor(private http: HttpClient) {}
+  private readonly CACHE_DURATION = 5000;
 
   /**
    * Get all items from a specific sheet

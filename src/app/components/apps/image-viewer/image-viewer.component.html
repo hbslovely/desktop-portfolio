@@ -4,7 +4,9 @@
     <div class="file-info">
       <i class="pi pi-image"></i>
       <span class="file-name">{{ imageName }}</span>
-      <span class="file-type" *ngIf="getFileExtension()">{{ getFileExtension() }}</span>
+      @if (getFileExtension()) {
+        <span class="file-type">{{ getFileExtension() }}</span>
+      }
       <span class="scale-info">{{ (scale() * 100).toFixed(0) }}%</span>
     </div>
 
@@ -52,17 +54,21 @@
   <!-- Image Display Area -->
   <div class="image-area">
     <!-- Loading State -->
-    <div *ngIf="isLoading()" class="loading-state">
-      <i class="pi pi-spin pi-spinner"></i>
-      <p>Loading {{ imageName }}...</p>
-    </div>
+    @if (isLoading()) {
+      <div class="loading-state">
+        <i class="pi pi-spin pi-spinner"></i>
+        <p>Loading {{ imageName }}...</p>
+      </div>
+    }
 
     <!-- Error State -->
-    <div *ngIf="hasError()" class="error-state">
-      <i class="pi pi-exclamation-triangle"></i>
-      <h3>Failed to load image</h3>
-      <p>{{ errorMessage() }}</p>
-    </div>
+    @if (hasError()) {
+      <div class="error-state">
+        <i class="pi pi-exclamation-triangle"></i>
+        <h3>Failed to load image</h3>
+        <p>{{ errorMessage() }}</p>
+      </div>
+    }
 
     <!-- Image Display -->
     <div [class.hidden]="!isLoading() && !hasError()" class="image-container">
@@ -82,48 +88,49 @@
   </div>
 
   <!-- Save as PNG Dialog -->
-  <div *ngIf="showSaveDialog()" class="save-dialog-overlay" (click)="closeSaveDialog()">
-    <div class="save-dialog" (click)="$event.stopPropagation()">
-      <div class="save-dialog-header">
-        <h3><i class="pi pi-download"></i> Lưu ảnh dưới dạng PNG</h3>
-        <button class="close-btn" (click)="closeSaveDialog()" title="Đóng">
-          <i class="pi pi-times"></i>
-        </button>
-      </div>
-
-      <div class="save-dialog-content">
-        <div class="form-group">
-          <label for="fileName">Tên file:</label>
-          <input
-            type="text"
-            id="fileName"
-            [(ngModel)]="saveFileName"
-            placeholder="image.png"
-            class="file-name-input"
-            (keydown.enter)="saveAsPNG()"
-            (keydown.escape)="closeSaveDialog()"
-            autofocus
-          />
+  @if (showSaveDialog()) {
+    <div class="save-dialog-overlay" (click)="closeSaveDialog()">
+      <div class="save-dialog" (click)="$event.stopPropagation()">
+        <div class="save-dialog-header">
+          <h3><i class="pi pi-download"></i> Lưu ảnh dưới dạng PNG</h3>
+          <button class="close-btn" (click)="closeSaveDialog()" title="Đóng">
+            <i class="pi pi-times"></i>
+          </button>
         </div>
-
-        <div class="form-group">
-          <label for="savePath">Thư mục:</label>
-          <select id="savePath" [(ngModel)]="savePath" class="path-select">
-            <option *ngFor="let folder of availableFolders" [value]="folder">{{ folder }}</option>
-          </select>
+        <div class="save-dialog-content">
+          <div class="form-group">
+            <label for="fileName">Tên file:</label>
+            <input
+              type="text"
+              id="fileName"
+              [(ngModel)]="saveFileName"
+              placeholder="image.png"
+              class="file-name-input"
+              (keydown.enter)="saveAsPNG()"
+              (keydown.escape)="closeSaveDialog()"
+              autofocus
+            />
+          </div>
+          <div class="form-group">
+            <label for="savePath">Thư mục:</label>
+            <select id="savePath" [(ngModel)]="savePath" class="path-select">
+              @for (folder of availableFolders; track folder) {
+                <option [value]="folder">{{ folder }}</option>
+              }
+            </select>
+          </div>
         </div>
-      </div>
-
-      <div class="save-dialog-actions">
-        <button class="btn btn-primary" (click)="saveAsPNG()">
-          <i class="pi pi-save"></i> Lưu
-        </button>
-        <button class="btn btn-secondary" (click)="closeSaveDialog()">
-          <i class="pi pi-times"></i> Hủy
-        </button>
+        <div class="save-dialog-actions">
+          <button class="btn btn-primary" (click)="saveAsPNG()">
+            <i class="pi pi-save"></i> Lưu
+          </button>
+          <button class="btn btn-secondary" (click)="closeSaveDialog()">
+            <i class="pi pi-times"></i> Hủy
+          </button>
+        </div>
       </div>
     </div>
-  </div>
+  }
 
   <!-- Status Bar -->
   <div class="status-bar">
@@ -132,7 +139,9 @@
     </div>
     <div class="status-right">
       <span>Scale: {{ (scale() * 100).toFixed(0) }}%</span>
-      <span *ngIf="rotation() !== 0">Rotation: {{ rotation() }}°</span>
+      @if (rotation() !== 0) {
+        <span>Rotation: {{ rotation() }}°</span>
+      }
       <span class="help-text">Scroll to zoom • Drag to pan • Double-click to reset</span>
     </div>
   </div>

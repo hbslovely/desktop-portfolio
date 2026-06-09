@@ -1,15 +1,17 @@
-import { Component, Input, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, Input, signal, inject } from '@angular/core';
+
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 
 @Component({
   selector: 'app-pdf-viewer',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   templateUrl: './pdf-viewer.component.html',
   styleUrl: './pdf-viewer.component.scss',
 })
 export class PdfViewerComponent {
+  private sanitizer = inject(DomSanitizer);
+
   @Input() set pdfPath(value: string) {
     this._pdfPath = value;
     this.safePdfUrl = this.sanitizer.bypassSecurityTrustResourceUrl(value);
@@ -19,8 +21,6 @@ export class PdfViewerComponent {
   safePdfUrl: SafeResourceUrl | null = null;
   loading = signal<boolean>(true);
   error = signal<boolean>(false);
-
-  constructor(private sanitizer: DomSanitizer) {}
 
   onLoadSuccess() {
     this.loading.set(false);

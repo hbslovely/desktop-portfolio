@@ -6,19 +6,22 @@ import {
   signal,
   computed,
   ChangeDetectionStrategy,
+  inject,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 
 @Component({
   selector: 'app-iframe-app',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   templateUrl: './iframe-app.component.html',
   styleUrl: './iframe-app.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class IframeAppComponent implements OnInit, OnDestroy {
+  private sanitizer = inject(DomSanitizer);
+
   @Input() set url(value: string) {
     this._url.set(value);
     // Reset loading state when URL changes
@@ -38,8 +41,6 @@ export class IframeAppComponent implements OnInit, OnDestroy {
   isLoading = signal(true);
   hasError = signal(false);
   private loadingTimeout: any;
-
-  constructor(private sanitizer: DomSanitizer) {}
 
   ngOnInit() {
     if (this._url()) {

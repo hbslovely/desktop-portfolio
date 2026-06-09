@@ -1,20 +1,26 @@
 <div class="wh-root">
   <div class="wh-alerts">
-    <div class="alert error" *ngIf="errorMsg()">
-      <i class="pi pi-exclamation-circle"></i>
-      {{ errorMsg() }}
-    </div>
-    <div class="alert ok" *ngIf="successMsg()">
-      <i class="pi pi-check-circle"></i>
-      {{ successMsg() }}
-    </div>
+    @if (errorMsg()) {
+      <div class="alert error">
+        <i class="pi pi-exclamation-circle"></i>
+        {{ errorMsg() }}
+      </div>
+    }
+    @if (successMsg()) {
+      <div class="alert ok">
+        <i class="pi pi-check-circle"></i>
+        {{ successMsg() }}
+      </div>
+    }
   </div>
 
   <div class="wh-toolbar">
-    <p class="wh-hint" *ngIf="!birthDate()">
-      <i class="pi pi-calendar"></i>
-      Thêm <strong>ngày sinh</strong> (tab Cữ bú) để có chuẩn WHO và timeline.
-    </p>
+    @if (!birthDate()) {
+      <p class="wh-hint">
+        <i class="pi pi-calendar"></i>
+        Thêm <strong>ngày sinh</strong> (tab Cữ bú) để có chuẩn WHO và timeline.
+      </p>
+    }
     <button
       type="button"
       class="wh-pill-btn"
@@ -26,160 +32,173 @@
     </button>
   </div>
 
-  <button
-    type="button"
-    class="wh-timeline-cta"
-    (click)="openTimeline.emit()"
-    *ngIf="birthDate() && currentTimelineMilestone() as cur"
-    [title]="'Xem dòng thời gian phát triển của bé'"
-  >
-    <span class="wh-timeline-cta__emoji">{{ cur.heroEmoji }}</span>
-    <span class="wh-timeline-cta__body">
-      <span class="wh-timeline-cta__label">
-        <i class="pi pi-chart-line"></i>
-        Timeline phát triển
+  @if (birthDate() && currentTimelineMilestone(); as cur) {
+    <button
+      type="button"
+      class="wh-timeline-cta"
+      (click)="openTimeline.emit()"
+      [title]="'Xem dòng thời gian phát triển của bé'"
+    >
+      <span class="wh-timeline-cta__emoji">{{ cur.heroEmoji }}</span>
+      <span class="wh-timeline-cta__body">
+        <span class="wh-timeline-cta__label">
+          <i class="pi pi-chart-line"></i>
+          Timeline phát triển
+        </span>
+        <span class="wh-timeline-cta__sub">{{ cur.periodLabel }} · {{ cur.tagline }}</span>
       </span>
-      <span class="wh-timeline-cta__sub">{{ cur.periodLabel }} · {{ cur.tagline }}</span>
-    </span>
-    <span class="wh-timeline-cta__stat">
-      {{ timelineStats().past }}/{{ timelineStats().total }}
-    </span>
-    <i class="pi pi-chevron-right"></i>
-  </button>
+      <span class="wh-timeline-cta__stat">
+        {{ timelineStats().past }}/{{ timelineStats().total }}
+      </span>
+      <i class="pi pi-chevron-right"></i>
+    </button>
+  }
 
-  <section class="wh-assessment" *ngIf="latestGrowthEval() || latestHeightEval()">
-    <header class="wh-assessment__head">
-      <div class="wh-assessment__eyebrow">
-        <i class="pi pi-heart"></i>
-        Đánh giá tăng trưởng gần nhất
+  @if (latestGrowthEval() || latestHeightEval()) {
+    <section class="wh-assessment">
+      <header class="wh-assessment__head">
+        <div class="wh-assessment__eyebrow">
+          <i class="pi pi-heart"></i>
+          Đánh giá tăng trưởng gần nhất
+        </div>
+        <p class="wh-assessment__sub">Theo chuẩn WHO (0-24 tháng) · dùng để tham khảo</p>
+      </header>
+      <div class="wh-assessment__grid">
+        @if (latestGrowthEval(); as ev) {
+          <article class="wh-eval-card" [attr.data-status]="statusClass(ev.status)">
+            <div class="wh-eval-card__head">
+              <h3 class="wh-eval-card__title">
+                <i class="pi pi-heart-fill"></i>
+                Cân nặng theo tuổi
+              </h3>
+              <span class="wh-eval-card__badge" [attr.data-status]="statusClass(ev.status)">
+                {{ ev.statusLabel }}
+              </span>
+            </div>
+            @if (sortedLogsDesc()[0]; as last) {
+              <p class="wh-eval-card__meta">
+                {{ formatDate(last.date) }} · {{ formatKg(last.weightKg) }} kg · {{ ev.weeksLabel }}
+              </p>
+            }
+            <div class="wh-score-grid">
+              <div class="wh-score">
+                <span class="wh-score__label">Hiện tại</span>
+                <strong class="wh-score__value"
+                  >{{ formatKg(ev.estimate.currentWeightKg) }} kg</strong
+                >
+              </div>
+              <div class="wh-score">
+                <span class="wh-score__label">Chuẩn</span>
+                <strong class="wh-score__value"
+                  >{{ formatKg(ev.estimate.standardMinKg) }}-{{
+                    formatKg(ev.estimate.standardMaxKg)
+                  }}
+                  kg</strong
+                >
+              </div>
+              <div class="wh-score">
+                <span class="wh-score__label">Lệch</span>
+                <strong class="wh-score__value">{{ weightDeltaLabel(ev) }}</strong>
+              </div>
+            </div>
+            <p class="wh-eval-card__detail wh-eval-card__detail--muted">
+              Thiếu cân &lt; {{ formatKg(ev.estimate.underweightMaxKg) }} kg · Thừa cân &gt;
+              {{ formatKg(ev.estimate.overweightMinKg) }} kg
+            </p>
+            <div class="wh-eval-card__scale" aria-hidden="true">
+              <div class="wh-eval-card__scale-labels">
+                <span class="wh-eval-card__scale-zone">Thấp</span>
+                <span class="wh-eval-card__scale-zone wh-eval-card__scale-zone--mid">Phù hợp</span>
+                <span class="wh-eval-card__scale-zone">Cao</span>
+              </div>
+              <div class="wh-eval-card__scale-track">
+                <span class="wh-eval-card__scale-band wh-eval-card__scale-band--low"></span>
+                <span class="wh-eval-card__scale-band wh-eval-card__scale-band--mid"></span>
+                <span class="wh-eval-card__scale-band wh-eval-card__scale-band--high"></span>
+                <span
+                  class="wh-eval-card__scale-marker"
+                  [attr.data-status]="statusClass(ev.status)"
+                  [style.left.%]="growthMarkerPosition(ev.zScore)"
+                ></span>
+              </div>
+              <div class="wh-eval-card__scale-legend">
+                <span>−2 SD</span>
+                <span class="wh-eval-card__scale-z">z {{ formatZScore(ev.zScore) }}</span>
+                <span>+2 SD</span>
+              </div>
+            </div>
+          </article>
+        }
+        @if (latestHeightEval(); as hv) {
+          <article
+            class="wh-eval-card wh-eval-card--height"
+            [attr.data-status]="statusClass(hv.status)"
+          >
+            <div class="wh-eval-card__head">
+              <h3 class="wh-eval-card__title">
+                <i class="pi pi-arrows-v"></i>
+                Chiều cao theo tuổi
+              </h3>
+              <span class="wh-eval-card__badge" [attr.data-status]="statusClass(hv.status)">
+                {{ hv.statusLabel }}
+              </span>
+            </div>
+            @if (latestHeightLog(); as last) {
+              <p class="wh-eval-card__meta">
+                {{ formatDate(last.date) }} · {{ formatCm(last.heightCm || 0) }} cm ·
+                {{ hv.monthsLabel }}
+              </p>
+            }
+            @if (latestHeightLog(); as last) {
+              <div class="wh-score-grid">
+                <div class="wh-score">
+                  <span class="wh-score__label">Hiện tại</span>
+                  <strong class="wh-score__value">{{ formatCm(last.heightCm || 0) }} cm</strong>
+                </div>
+                <div class="wh-score">
+                  <span class="wh-score__label">Mốc tham chiếu</span>
+                  <strong class="wh-score__value">{{ formatCm(hv.medianCm) }} cm</strong>
+                </div>
+                <div class="wh-score">
+                  <span class="wh-score__label">Lệch</span>
+                  <strong class="wh-score__value">{{
+                    heightDeltaLabel(hv, last.heightCm || 0)
+                  }}</strong>
+                </div>
+              </div>
+            }
+            <div class="wh-eval-card__scale" aria-hidden="true">
+              <div class="wh-eval-card__scale-labels">
+                <span class="wh-eval-card__scale-zone">Thấp</span>
+                <span class="wh-eval-card__scale-zone wh-eval-card__scale-zone--mid">Phù hợp</span>
+                <span class="wh-eval-card__scale-zone">Cao</span>
+              </div>
+              <div class="wh-eval-card__scale-track">
+                <span class="wh-eval-card__scale-band wh-eval-card__scale-band--low"></span>
+                <span class="wh-eval-card__scale-band wh-eval-card__scale-band--mid"></span>
+                <span class="wh-eval-card__scale-band wh-eval-card__scale-band--high"></span>
+                <span
+                  class="wh-eval-card__scale-marker"
+                  [attr.data-status]="statusClass(hv.status)"
+                  [style.left.%]="growthMarkerPosition(hv.zScore)"
+                ></span>
+              </div>
+              <div class="wh-eval-card__scale-legend">
+                <span>−2 SD</span>
+                <span class="wh-eval-card__scale-z"
+                  >P{{ hv.percentile }} · z {{ formatZScore(hv.zScore) }}</span
+                >
+                <span>+2 SD</span>
+              </div>
+            </div>
+            @if (latestHeightLog(); as last) {
+              <p class="wh-eval-card__detail">
+                {{ friendlyHeightDetail(hv, last.heightCm || 0) }}
+              </p>
+            }
+          </article>
+        }
       </div>
-      <p class="wh-assessment__sub">Theo chuẩn WHO (0-24 tháng) · dùng để tham khảo</p>
-    </header>
-
-    <div class="wh-assessment__grid">
-      <article
-        class="wh-eval-card"
-        *ngIf="latestGrowthEval() as ev"
-        [attr.data-status]="statusClass(ev.status)"
-      >
-        <div class="wh-eval-card__head">
-          <h3 class="wh-eval-card__title">
-            <i class="pi pi-heart-fill"></i>
-            Cân nặng theo tuổi
-          </h3>
-          <span class="wh-eval-card__badge" [attr.data-status]="statusClass(ev.status)">
-            {{ ev.statusLabel }}
-          </span>
-        </div>
-        <p class="wh-eval-card__meta" *ngIf="sortedLogsDesc()[0] as last">
-          {{ formatDate(last.date) }} · {{ formatKg(last.weightKg) }} kg · {{ ev.weeksLabel }}
-        </p>
-        <div class="wh-score-grid">
-          <div class="wh-score">
-            <span class="wh-score__label">Hiện tại</span>
-            <strong class="wh-score__value">{{ formatKg(ev.estimate.currentWeightKg) }} kg</strong>
-          </div>
-          <div class="wh-score">
-            <span class="wh-score__label">Chuẩn</span>
-            <strong class="wh-score__value"
-              >{{ formatKg(ev.estimate.standardMinKg) }}-{{
-                formatKg(ev.estimate.standardMaxKg)
-              }}
-              kg</strong
-            >
-          </div>
-          <div class="wh-score">
-            <span class="wh-score__label">Lệch</span>
-            <strong class="wh-score__value">{{ weightDeltaLabel(ev) }}</strong>
-          </div>
-        </div>
-        <p class="wh-eval-card__detail wh-eval-card__detail--muted">
-          Thiếu cân &lt; {{ formatKg(ev.estimate.underweightMaxKg) }} kg · Thừa cân &gt;
-          {{ formatKg(ev.estimate.overweightMinKg) }} kg
-        </p>
-        <div class="wh-eval-card__scale" aria-hidden="true">
-          <div class="wh-eval-card__scale-labels">
-            <span class="wh-eval-card__scale-zone">Thấp</span>
-            <span class="wh-eval-card__scale-zone wh-eval-card__scale-zone--mid">Phù hợp</span>
-            <span class="wh-eval-card__scale-zone">Cao</span>
-          </div>
-          <div class="wh-eval-card__scale-track">
-            <span class="wh-eval-card__scale-band wh-eval-card__scale-band--low"></span>
-            <span class="wh-eval-card__scale-band wh-eval-card__scale-band--mid"></span>
-            <span class="wh-eval-card__scale-band wh-eval-card__scale-band--high"></span>
-            <span
-              class="wh-eval-card__scale-marker"
-              [attr.data-status]="statusClass(ev.status)"
-              [style.left.%]="growthMarkerPosition(ev.zScore)"
-            ></span>
-          </div>
-          <div class="wh-eval-card__scale-legend">
-            <span>−2 SD</span>
-            <span class="wh-eval-card__scale-z">z {{ formatZScore(ev.zScore) }}</span>
-            <span>+2 SD</span>
-          </div>
-        </div>
-      </article>
-
-      <article
-        class="wh-eval-card wh-eval-card--height"
-        *ngIf="latestHeightEval() as hv"
-        [attr.data-status]="statusClass(hv.status)"
-      >
-        <div class="wh-eval-card__head">
-          <h3 class="wh-eval-card__title">
-            <i class="pi pi-arrows-v"></i>
-            Chiều cao theo tuổi
-          </h3>
-          <span class="wh-eval-card__badge" [attr.data-status]="statusClass(hv.status)">
-            {{ hv.statusLabel }}
-          </span>
-        </div>
-        <p class="wh-eval-card__meta" *ngIf="latestHeightLog() as last">
-          {{ formatDate(last.date) }} · {{ formatCm(last.heightCm || 0) }} cm · {{ hv.monthsLabel }}
-        </p>
-        <div class="wh-score-grid" *ngIf="latestHeightLog() as last">
-          <div class="wh-score">
-            <span class="wh-score__label">Hiện tại</span>
-            <strong class="wh-score__value">{{ formatCm(last.heightCm || 0) }} cm</strong>
-          </div>
-          <div class="wh-score">
-            <span class="wh-score__label">Mốc tham chiếu</span>
-            <strong class="wh-score__value">{{ formatCm(hv.medianCm) }} cm</strong>
-          </div>
-          <div class="wh-score">
-            <span class="wh-score__label">Lệch</span>
-            <strong class="wh-score__value">{{ heightDeltaLabel(hv, last.heightCm || 0) }}</strong>
-          </div>
-        </div>
-        <div class="wh-eval-card__scale" aria-hidden="true">
-          <div class="wh-eval-card__scale-labels">
-            <span class="wh-eval-card__scale-zone">Thấp</span>
-            <span class="wh-eval-card__scale-zone wh-eval-card__scale-zone--mid">Phù hợp</span>
-            <span class="wh-eval-card__scale-zone">Cao</span>
-          </div>
-          <div class="wh-eval-card__scale-track">
-            <span class="wh-eval-card__scale-band wh-eval-card__scale-band--low"></span>
-            <span class="wh-eval-card__scale-band wh-eval-card__scale-band--mid"></span>
-            <span class="wh-eval-card__scale-band wh-eval-card__scale-band--high"></span>
-            <span
-              class="wh-eval-card__scale-marker"
-              [attr.data-status]="statusClass(hv.status)"
-              [style.left.%]="growthMarkerPosition(hv.zScore)"
-            ></span>
-          </div>
-          <div class="wh-eval-card__scale-legend">
-            <span>−2 SD</span>
-            <span class="wh-eval-card__scale-z"
-              >P{{ hv.percentile }} · z {{ formatZScore(hv.zScore) }}</span
-            >
-            <span>+2 SD</span>
-          </div>
-        </div>
-        <p class="wh-eval-card__detail" *ngIf="latestHeightLog() as last">
-          {{ friendlyHeightDetail(hv, last.heightCm || 0) }}
-        </p>
-      </article>
-    </div>
-  </section>
+    </section>
+  }
 </div>

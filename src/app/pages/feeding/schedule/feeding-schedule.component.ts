@@ -458,7 +458,7 @@ export class FeedingScheduleComponent {
   } {
     const rect = origin.getBoundingClientRect();
     let top = rect.bottom + 4;
-    let left = rect.left;
+    const left = rect.left;
 
     // On mobile, when keyboard is shown, adjust for visual viewport offset
     if (typeof window !== 'undefined' && window.visualViewport) {

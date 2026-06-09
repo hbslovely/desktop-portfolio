@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
   ChangeDetectionStrategy,
@@ -60,7 +59,7 @@ const VIEW_MODE_KEY = 'documents:viewMode';
 @Component({
   selector: 'app-documents',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [FormsModule],
   templateUrl: './documents.component.html',
   styleUrls: ['./documents.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -1626,6 +1625,7 @@ export class DocumentsComponent {
    * vì uploads của app đều convert sang JPEG.
    */
   private sanitizeFilename(name: string): string {
+    // eslint-disable-next-line no-control-regex
     const cleaned = (name || 'image').replace(/[\\/:*?"<>|\x00-\x1f]+/g, '_').trim();
     const safe = cleaned.length > 0 ? cleaned : 'image';
     return safe.slice(0, 200);

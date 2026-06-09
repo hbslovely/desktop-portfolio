@@ -1,12 +1,12 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import type { WeightLog } from '../../../../services/weight-log.service';
 import { formatWeightCm, formatWeightDateDisplay, formatWeightKg } from '../weight-display.utils';
 
 @Component({
   selector: 'app-weight-history-list',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   templateUrl: './weight-history-list.component.html',
   styleUrls: ['./weight-history-list.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,

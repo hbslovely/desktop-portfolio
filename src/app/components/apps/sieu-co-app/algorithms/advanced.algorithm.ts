@@ -237,7 +237,7 @@ export class AdvancedAlgorithm implements IAIAlgorithm {
     if (moveCount > 6) return null;
 
     const moves = generateAllMoves(board, color);
-    let candidates: Move[] = [];
+    const candidates: Move[] = [];
 
     if (color === PieceColor.RED) {
       // Đỏ đi trước - chọn ngẫu nhiên từ các khai cuộc

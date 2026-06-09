@@ -2,8 +2,8 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, from } from 'rxjs';
 import { environment } from '../../environments/environment';
 
-declare var gapi: any;
-declare var google: any;
+declare let gapi: any;
+declare let google: any;
 
 @Injectable({
   providedIn: 'root',

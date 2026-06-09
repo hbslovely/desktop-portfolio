@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, BehaviorSubject, firstValueFrom, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
@@ -106,7 +106,9 @@ export class BookingService {
   // Expiration time: 1 day in milliseconds
   private readonly EXPIRATION_TIME = 24 * 60 * 60 * 1000;
 
-  constructor(private http: HttpClient) {
+  private http = inject(HttpClient);
+
+  constructor() {
     // Initialize pageview ID from localStorage or fetch new one
     this.initializePageViewId();
   }

@@ -110,7 +110,7 @@ export class GraphAlgorithms {
       // Update neighbors
       for (const edge of edges) {
         let neighbor: string | null = null;
-        let edgeWeight = edge.weight;
+        const edgeWeight = edge.weight;
 
         if (
           edge.from === current &&
@@ -552,7 +552,7 @@ export class GraphAlgorithms {
 
       for (const edge of edges) {
         let neighbor: string | null = null;
-        let edgeWeight = edge.weight;
+        const edgeWeight = edge.weight;
 
         if (
           edge.from === current &&

@@ -12,84 +12,95 @@
   <!-- Icon Image -->
   <div class="icon-image" [attr.data-app-id]="iconData.id">
     <!-- Local icon image -->
-    <img
-      [src]="iconData.icon"
-      *ngIf="iconData.icon && !iconData.icon.startsWith('pi ')"
-      [alt]="iconData.name"
-    />
+    @if (iconData.icon && !iconData.icon.startsWith('pi ')) {
+      <img [src]="iconData.icon" [alt]="iconData.name" />
+    }
     <!-- Font icon -->
-    <i [class]="iconData.icon" *ngIf="iconData.icon && iconData.icon.startsWith('pi ')"></i>
+    @if (iconData.icon && iconData.icon.startsWith('pi ')) {
+      <i [class]="iconData.icon"></i>
+    }
   </div>
 
   <!-- Icon Name -->
-  <div class="icon-name" *ngIf="!isRenaming()">
-    {{ iconData.name }}
-  </div>
+  @if (!isRenaming()) {
+    <div class="icon-name">
+      {{ iconData.name }}
+    </div>
+  }
 
   <!-- Rename Input -->
-  <input
-    *ngIf="isRenaming()"
-    class="rename-input"
-    type="text"
-    [value]="newName()"
-    (input)="onRenameInput($event)"
-    (keydown)="onRenameKeyDown($event)"
-    (blur)="finishRename()"
-    #renameInput
-  />
+  @if (isRenaming()) {
+    <input
+      class="rename-input"
+      type="text"
+      [value]="newName()"
+      (input)="onRenameInput($event)"
+      (keydown)="onRenameKeyDown($event)"
+      (blur)="finishRename()"
+      #renameInput
+    />
+  }
 </div>
 
 <!-- Context Menu -->
-<div
-  *ngIf="showContextMenu()"
-  class="context-menu"
-  [ngStyle]="{
-    left: contextMenuPosition().x + 'px',
-    top: contextMenuPosition().y + 'px',
-  }"
-  (click)="hideContextMenu()"
->
-  <div class="context-menu-item" (click)="onContextMenuAction('open')">
-    <i class="pi pi-external-link"></i>
-    <span>Open</span>
+@if (showContextMenu()) {
+  <div
+    class="context-menu"
+    [ngStyle]="{
+      left: contextMenuPosition().x + 'px',
+      top: contextMenuPosition().y + 'px',
+    }"
+    (click)="hideContextMenu()"
+  >
+    <div class="context-menu-item" (click)="onContextMenuAction('open')">
+      <i class="pi pi-external-link"></i>
+      <span>Open</span>
+    </div>
+    <div class="context-menu-separator"></div>
+    @if (!isInTrash) {
+      <div class="context-menu-item" (click)="onContextMenuAction('rename')">
+        <i class="pi pi-pencil"></i>
+        <span>Rename</span>
+      </div>
+    }
+    @if (!isInTrash) {
+      <div class="context-menu-separator"></div>
+    }
+    @if (!isInTrash) {
+      <div class="context-menu-item" (click)="onContextMenuAction('copy')">
+        <i class="pi pi-copy"></i>
+        <span>Copy</span>
+      </div>
+    }
+    @if (!isInTrash) {
+      <div class="context-menu-item" (click)="onContextMenuAction('cut')">
+        <i class="pi pi-scissors"></i>
+        <span>Cut</span>
+      </div>
+    }
+    @if (canPaste) {
+      <div class="context-menu-item" (click)="onContextMenuAction('paste')">
+        <i class="pi pi-clone"></i>
+        <span>Paste</span>
+      </div>
+    }
+    <div class="context-menu-separator"></div>
+    @if (isInTrash) {
+      <div class="context-menu-item" (click)="onContextMenuAction('restore')">
+        <i class="pi pi-undo"></i>
+        <span>Restore</span>
+      </div>
+    }
+    @if (!isInTrash) {
+      <div class="context-menu-item danger" (click)="onContextMenuAction('delete')">
+        <i class="pi pi-trash"></i>
+        <span>Delete</span>
+      </div>
+    }
   </div>
-
-  <div class="context-menu-separator"></div>
-
-  <div class="context-menu-item" (click)="onContextMenuAction('rename')" *ngIf="!isInTrash">
-    <i class="pi pi-pencil"></i>
-    <span>Rename</span>
-  </div>
-
-  <div class="context-menu-separator" *ngIf="!isInTrash"></div>
-
-  <div class="context-menu-item" (click)="onContextMenuAction('copy')" *ngIf="!isInTrash">
-    <i class="pi pi-copy"></i>
-    <span>Copy</span>
-  </div>
-
-  <div class="context-menu-item" (click)="onContextMenuAction('cut')" *ngIf="!isInTrash">
-    <i class="pi pi-scissors"></i>
-    <span>Cut</span>
-  </div>
-
-  <div class="context-menu-item" (click)="onContextMenuAction('paste')" *ngIf="canPaste">
-    <i class="pi pi-clone"></i>
-    <span>Paste</span>
-  </div>
-
-  <div class="context-menu-separator"></div>
-
-  <div class="context-menu-item" (click)="onContextMenuAction('restore')" *ngIf="isInTrash">
-    <i class="pi pi-undo"></i>
-    <span>Restore</span>
-  </div>
-
-  <div class="context-menu-item danger" (click)="onContextMenuAction('delete')" *ngIf="!isInTrash">
-    <i class="pi pi-trash"></i>
-    <span>Delete</span>
-  </div>
-</div>
+}
 
 <!-- Context Menu Backdrop -->
-<div *ngIf="showContextMenu()" class="context-menu-backdrop" (click)="hideContextMenu()"></div>
+@if (showContextMenu()) {
+  <div class="context-menu-backdrop" (click)="hideContextMenu()"></div>
+}

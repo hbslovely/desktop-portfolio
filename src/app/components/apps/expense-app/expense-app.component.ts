@@ -10,6 +10,7 @@ import {
   effect,
   HostListener,
   Input,
+  inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -30,6 +31,10 @@ Chart.register(...registerables);
   styleUrl: './expense-app.component.scss',
 })
 export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
+  private expenseService = inject(ExpenseService);
+  private expenseSettingsService = inject(ExpenseSettingsService);
+  private llmService = inject(LLMService);
+
   @ViewChild('categoryChart') categoryChartRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('dailyChart') dailyChartRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('categoryBarChart') categoryBarChartRef!: ElementRef<HTMLCanvasElement>;
@@ -500,11 +505,12 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
         this.reportYear.set(now.getFullYear());
         this.reportMonth.set(now.getMonth() + 1);
         break;
-      case 'lastMonth':
+      case 'lastMonth': {
         const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
         this.reportYear.set(lastMonth.getFullYear());
         this.reportMonth.set(lastMonth.getMonth() + 1);
         break;
+      }
       case 'thisYear':
         this.reportYear.set(now.getFullYear());
         this.reportMonth.set(null);
@@ -782,32 +788,31 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
     // Sort expenses based on dropdown option
     filtered.sort((a, b) => {
       switch (sortOption) {
-        case 'newest':
+        case 'newest': {
           const dateANew = this.parseDate(a.date);
           const dateBNew = this.parseDate(b.date);
           if (!dateANew || !dateBNew) return 0;
           const dateDiff = dateBNew.getTime() - dateANew.getTime();
-          // If same date, sort by rowIndex descending (newer index on top)
           if (dateDiff === 0) {
             return (b.rowIndex || 0) - (a.rowIndex || 0);
           }
           return dateDiff;
+        }
 
-        case 'oldest':
+        case 'oldest': {
           const dateAOld = this.parseDate(a.date);
           const dateBOld = this.parseDate(b.date);
           if (!dateAOld || !dateBOld) return 0;
           const dateDiffOld = dateAOld.getTime() - dateBOld.getTime();
-          // If same date, sort by rowIndex ascending (older index on top)
           if (dateDiffOld === 0) {
             return (a.rowIndex || 0) - (b.rowIndex || 0);
           }
           return dateDiffOld;
+        }
 
-        case 'amount_desc':
+        case 'amount_desc': {
           const amountDiffDesc = b.amount - a.amount;
           if (amountDiffDesc === 0) {
-            // If same amount, sort by date desc, then by rowIndex desc
             const dateA = this.parseDate(a.date);
             const dateB = this.parseDate(b.date);
             if (!dateA || !dateB) return 0;
@@ -818,11 +823,11 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
             return dateDiff;
           }
           return amountDiffDesc;
+        }
 
-        case 'amount_asc':
+        case 'amount_asc': {
           const amountDiffAsc = a.amount - b.amount;
           if (amountDiffAsc === 0) {
-            // If same amount, sort by date desc, then by rowIndex desc
             const dateA = this.parseDate(a.date);
             const dateB = this.parseDate(b.date);
             if (!dateA || !dateB) return 0;
@@ -833,36 +838,35 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
             return dateDiff;
           }
           return amountDiffAsc;
+        }
 
-        case 'most_frequent':
+        case 'most_frequent': {
           const freqAMost = frequencyMap.get(a.content.toLowerCase().trim()) || 0;
           const freqBMost = frequencyMap.get(b.content.toLowerCase().trim()) || 0;
-          // Sort by frequency desc, then by date desc for same frequency
           if (freqBMost !== freqAMost) return freqBMost - freqAMost;
           const dateAFreq = this.parseDate(a.date);
           const dateBFreq = this.parseDate(b.date);
           if (!dateAFreq || !dateBFreq) return 0;
           const dateDiffFreq = dateBFreq.getTime() - dateAFreq.getTime();
-          // If same date, sort by rowIndex descending
           if (dateDiffFreq === 0) {
             return (b.rowIndex || 0) - (a.rowIndex || 0);
           }
           return dateDiffFreq;
+        }
 
-        case 'least_frequent':
+        case 'least_frequent': {
           const freqALeast = frequencyMap.get(a.content.toLowerCase().trim()) || 0;
           const freqBLeast = frequencyMap.get(b.content.toLowerCase().trim()) || 0;
-          // Sort by frequency asc, then by date desc for same frequency
           if (freqALeast !== freqBLeast) return freqALeast - freqBLeast;
           const dateALFreq = this.parseDate(a.date);
           const dateBLFreq = this.parseDate(b.date);
           if (!dateALFreq || !dateBLFreq) return 0;
           const dateDiffLFreq = dateBLFreq.getTime() - dateALFreq.getTime();
-          // If same date, sort by rowIndex descending
           if (dateDiffLFreq === 0) {
             return (b.rowIndex || 0) - (a.rowIndex || 0);
           }
           return dateDiffLFreq;
+        }
 
         default:
           return 0;
@@ -2930,11 +2934,9 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
   // Settings
   settingsService = signal<ExpenseSettingsService | null>(null);
 
-  constructor(
-    private expenseService: ExpenseService,
-    private expenseSettingsService: ExpenseSettingsService,
-    private llmService: LLMService
-  ) {
+  constructor() {
+    const expenseSettingsService = this.expenseSettingsService;
+
     this.settingsService.set(expenseSettingsService);
 
     // Effect to update charts when filtered expenses or filters change
@@ -3283,7 +3285,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
    */
   showGroupDetailDialog(group: ExpenseGroup): void {
     const expenses = this.expenses();
-    let groupExpenses = expenses.filter((exp) => exp.groupId === group.id);
+    const groupExpenses = expenses.filter((exp) => exp.groupId === group.id);
 
     // Sort by date descending, then by rowIndex descending (newer on top)
     groupExpenses.sort((a, b) => {
@@ -8373,7 +8375,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
    */
   getPreviousMonthLabel(): string {
     const now = new Date();
-    let month = now.getMonth();
+    const month = now.getMonth();
     if (month === 0) {
       return 'Tháng 12';
     }

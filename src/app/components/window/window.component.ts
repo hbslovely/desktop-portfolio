@@ -10,7 +10,6 @@ import {
   OnChanges,
   ChangeDetectionStrategy,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
 
 export interface WindowState {
   isMaximized: boolean;
@@ -22,7 +21,7 @@ export interface WindowState {
 @Component({
   selector: 'app-window',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   templateUrl: './window.component.html',
   styleUrl: './window.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

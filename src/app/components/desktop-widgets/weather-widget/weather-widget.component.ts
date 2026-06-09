@@ -1,4 +1,11 @@
-import { Component, OnInit, OnDestroy, signal, ChangeDetectionStrategy } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  OnDestroy,
+  signal,
+  ChangeDetectionStrategy,
+  inject,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Subject, takeUntil, interval } from 'rxjs';
 import { WeatherService, WeatherData, HourlyData } from '../../../services/weather.service';
@@ -12,6 +19,8 @@ import { WeatherService, WeatherData, HourlyData } from '../../../services/weath
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class WeatherWidgetComponent implements OnInit, OnDestroy {
+  private weatherService = inject(WeatherService);
+
   weatherData = signal<WeatherData | null>(null);
   loading = signal<boolean>(true);
   error = signal<string | null>(null);
@@ -20,8 +29,6 @@ export class WeatherWidgetComponent implements OnInit, OnDestroy {
   units = signal<'metric' | 'us'>('metric');
 
   private readonly destroy$ = new Subject<void>();
-
-  constructor(private weatherService: WeatherService) {}
 
   async ngOnInit(): Promise<void> {
     await this.loadWeather();

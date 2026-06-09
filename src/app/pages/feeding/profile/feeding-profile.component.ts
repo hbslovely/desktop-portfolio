@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 
 export interface FeedingProfile {
@@ -17,7 +17,7 @@ export interface FeedingProfileDraft {
 @Component({
   selector: 'app-feeding-profile',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [FormsModule],
   templateUrl: './feeding-profile.component.html',
   styleUrls: ['./feeding-profile.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,

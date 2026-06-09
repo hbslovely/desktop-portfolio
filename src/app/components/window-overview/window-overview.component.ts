@@ -1,11 +1,11 @@
 import { Component, Output, EventEmitter, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { WindowManagerService, WindowConfig } from '../../services/window-manager.service';
 
 @Component({
   selector: 'app-window-overview',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   templateUrl: './window-overview.component.html',
   styleUrl: './window-overview.component.scss',
 })
