@@ -29,5 +29,5 @@ git tag -a "${TAG}" -m "${MSG}
 package.json: ${EXPECTED}
 commit: ${SHA}"
 
-git push origin "refs/tags/${TAG}"
+git push --force-with-lease origin "refs/tags/${TAG}"
 echo "Tagged ${TAG} at ${SHA} (package.json ${EXPECTED})"
