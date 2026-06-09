@@ -202,9 +202,7 @@
                   </option>
                   <option [value]="'backward'">
                     {{ getNodeLabel(selectedEdge() ? getEdgeToNode(selectedEdge()!) : '') }} →
-                    {{
-                      getNodeLabel(selectedEdge() ? getEdgeFromNode(selectedEdge()!) : '')
-                    }}
+                    {{ getNodeLabel(selectedEdge() ? getEdgeFromNode(selectedEdge()!) : '') }}
                     (Ngược lại)
                   </option>
                   <option [value]="'bidirectional'">
