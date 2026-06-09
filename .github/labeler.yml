@@ -1,0 +1,53 @@
+# Label pull requests based on changed file paths.
+# Docs: https://github.com/actions/labeler
+
+"ci/cd":
+  - changed-files:
+      - any-glob-to-any-file:
+          - ".github/**"
+          - "Dockerfile*"
+          - "docker-compose*.yml"
+          - "netlify.toml"
+
+"dependencies":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "package.json"
+          - "package-lock.json"
+
+"configuration":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "angular.json"
+          - ".eslintrc.json"
+          - ".prettierrc"
+          - "tsconfig*.json"
+          - ".editorconfig"
+
+"frontend":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "src/**"
+
+"styles":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "src/**/*.scss"
+          - "src/**/*.css"
+          - "src/styles.scss"
+
+"api":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "api/**"
+
+"assets":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "src/assets/**"
+
+"documentation":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "*.md"
+          - "docs/**"
