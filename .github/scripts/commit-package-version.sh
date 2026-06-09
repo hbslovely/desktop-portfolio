@@ -33,7 +33,7 @@ fi
 
 if ! git diff --staged --quiet; then
   git commit -m "${MSG}"
-  git push origin "HEAD:${BRANCH}"
+  git push --force-with-lease origin "HEAD:${BRANCH}"
   echo "Committed and pushed package.json version ${VERSION}"
 else
   echo "package.json already ${VERSION} at HEAD — no new commit"
