@@ -6,8 +6,16 @@ name: ESLint
 on:
   push:
     branches: [master, main]
+    paths-ignore:
+      - 'package.json'
+      - 'package-lock.json'
+      - 'src/app/app-info.ts'
   pull_request:
     branches: [master, main]
+    paths-ignore:
+      - 'package.json'
+      - 'package-lock.json'
+      - 'src/app/app-info.ts'
   schedule:
     - cron: '37 3 * * 4'
 
