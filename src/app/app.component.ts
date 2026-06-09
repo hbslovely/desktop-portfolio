@@ -384,17 +384,13 @@ export class AppComponent implements AfterViewInit, OnDestroy {
       id: 'information',
       name: 'Information',
       icon: 'pi pi-info-circle',
-      apps: [
-        { id: 'my-info', name: 'My Information', icon: 'pi pi-user' },
-      ],
+      apps: [{ id: 'my-info', name: 'My Information', icon: 'pi pi-user' }],
     },
     {
       id: 'system',
       name: 'System',
       icon: 'pi pi-cog',
-      apps: [
-        { id: 'settings', name: 'Settings', icon: 'pi pi-cog' },
-      ],
+      apps: [{ id: 'settings', name: 'Settings', icon: 'pi pi-cog' }],
     },
   ];
 

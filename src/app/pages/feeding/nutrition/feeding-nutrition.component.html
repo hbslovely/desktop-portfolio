@@ -163,42 +163,42 @@
       Chỉ số hữu ích hôm nay
     </p>
     <ul class="nutri-metrics">
-    <li [attr.data-met]="ms.mlPerKg">
-      <span class="m-icon mint" aria-hidden="true"><i class="pi pi-chart-bar"></i></span>
-      <div class="m-body">
-        <strong *ngIf="todayStats().count > 0; else nutriMlKgEmpty">
-          {{ ms.mlPerKgValue }} ml/kg
-        </strong>
-        <ng-template #nutriMlKgEmpty><strong>— ml/kg</strong></ng-template>
-        <span>KN {{ ms.mlPerKgMin }}–{{ ms.mlPerKgMax }} ml/kg/ngày</span>
-      </div>
-      <span class="m-status" [attr.data-met]="ms.mlPerKg" [title]="ms.mlPerKgTitle">
-        <i class="pi" [ngClass]="ms.mlPerKgIcon"></i>
-      </span>
-    </li>
-    <li [attr.data-met]="ms.perFeed">
-      <span class="m-icon lavender" aria-hidden="true"><i class="pi pi-circle"></i></span>
-      <div class="m-body">
-        <strong *ngIf="todayStats().count > 0; else nutriFeedEmpty">
-          {{ ms.perFeedValue }}ml/cữ
-        </strong>
-        <ng-template #nutriFeedEmpty><strong>Chưa có cữ</strong></ng-template>
-        <span>Gợi ý {{ ms.perFeedMin }}–{{ ms.perFeedMax }}ml mỗi cữ</span>
-      </div>
-      <span class="m-status" [attr.data-met]="ms.perFeed" [title]="ms.perFeedTitle">
-        <i class="pi" [ngClass]="ms.perFeedIcon"></i>
-      </span>
-    </li>
-    <li [attr.data-met]="ms.remaining">
-      <span class="m-icon peach" aria-hidden="true"><i class="pi pi-flag"></i></span>
-      <div class="m-body">
-        <strong>{{ ms.remainingPrimary }}</strong>
-        <span>{{ ms.remainingSecondary }}</span>
-      </div>
-      <span class="m-status" [attr.data-met]="ms.remaining" [title]="ms.remainingTitle">
-        <i class="pi" [ngClass]="ms.remainingIcon"></i>
-      </span>
-    </li>
+      <li [attr.data-met]="ms.mlPerKg">
+        <span class="m-icon mint" aria-hidden="true"><i class="pi pi-chart-bar"></i></span>
+        <div class="m-body">
+          <strong *ngIf="todayStats().count > 0; else nutriMlKgEmpty">
+            {{ ms.mlPerKgValue }} ml/kg
+          </strong>
+          <ng-template #nutriMlKgEmpty><strong>— ml/kg</strong></ng-template>
+          <span>KN {{ ms.mlPerKgMin }}–{{ ms.mlPerKgMax }} ml/kg/ngày</span>
+        </div>
+        <span class="m-status" [attr.data-met]="ms.mlPerKg" [title]="ms.mlPerKgTitle">
+          <i class="pi" [ngClass]="ms.mlPerKgIcon"></i>
+        </span>
+      </li>
+      <li [attr.data-met]="ms.perFeed">
+        <span class="m-icon lavender" aria-hidden="true"><i class="pi pi-circle"></i></span>
+        <div class="m-body">
+          <strong *ngIf="todayStats().count > 0; else nutriFeedEmpty">
+            {{ ms.perFeedValue }}ml/cữ
+          </strong>
+          <ng-template #nutriFeedEmpty><strong>Chưa có cữ</strong></ng-template>
+          <span>Gợi ý {{ ms.perFeedMin }}–{{ ms.perFeedMax }}ml mỗi cữ</span>
+        </div>
+        <span class="m-status" [attr.data-met]="ms.perFeed" [title]="ms.perFeedTitle">
+          <i class="pi" [ngClass]="ms.perFeedIcon"></i>
+        </span>
+      </li>
+      <li [attr.data-met]="ms.remaining">
+        <span class="m-icon peach" aria-hidden="true"><i class="pi pi-flag"></i></span>
+        <div class="m-body">
+          <strong>{{ ms.remainingPrimary }}</strong>
+          <span>{{ ms.remainingSecondary }}</span>
+        </div>
+        <span class="m-status" [attr.data-met]="ms.remaining" [title]="ms.remainingTitle">
+          <i class="pi" [ngClass]="ms.remainingIcon"></i>
+        </span>
+      </li>
     </ul>
   </div>
 
