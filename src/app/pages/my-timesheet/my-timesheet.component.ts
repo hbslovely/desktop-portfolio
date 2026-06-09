@@ -1,6 +1,6 @@
-import { ChangeDetectorRef, Component, Inject, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, Inject, OnDestroy, OnInit, DOCUMENT } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
-import { DOCUMENT } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
 import { forkJoin } from 'rxjs';
@@ -9,7 +9,7 @@ import { forkJoin } from 'rxjs';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { InputTextModule } from 'primeng/inputtext';
-import { InputTextareaModule } from 'primeng/inputtextarea';
+import { Textarea } from 'primeng/textarea';
 import { CheckboxModule } from 'primeng/checkbox';
 import { ToastModule } from 'primeng/toast';
 import { ProgressBarModule } from 'primeng/progressbar';
@@ -55,7 +55,7 @@ interface TimesheetCalendarDay {
     ButtonModule,
     CardModule,
     InputTextModule,
-    InputTextareaModule,
+    Textarea,
     CheckboxModule,
     ToastModule,
     ProgressBarModule,

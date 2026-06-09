@@ -4031,7 +4031,7 @@
                 <div class="amount-input-wrapper">
                   <input
                     type="text"
-                    [value]="newExpense.amount || ''"
+                    [value]="newExpense.amount ? newExpense.amount.toString() : ''"
                     (input)="onNewAmountInput($event)"
                     (blur)="onNewAmountBlur($event)"
                     mask="separator"

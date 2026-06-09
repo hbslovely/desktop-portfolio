@@ -3079,7 +3079,7 @@ export class ExpenseAppComponent implements OnInit, OnDestroy, AfterViewInit {
    * Handle ESC key to close dialogs (except create dialog)
    */
   @HostListener('document:keydown.escape', ['$event'])
-  handleEscapeKey(event: KeyboardEvent): void {
+  handleEscapeKey(event: Event): void {
     // Close category dropdown
     if (this.showCategoryDropdown()) {
       this.showCategoryDropdown.set(false);
