@@ -3126,17 +3126,21 @@
           </div>
           <div class="col-price" *ngIf="symbol.isFetched && symbol.basicInfo?.matchPrice">
             <strong
-              >{{ parseFloat(symbol.basicInfo.matchPrice) * 1000 | number: '1.0-0' }} đ</strong
+              >{{
+                parseFloat(symbol.basicInfo?.matchPrice ?? '0') * 1000 | number: '1.0-0'
+              }}
+              đ</strong
             >
           </div>
           <div class="col-price" *ngIf="!symbol.isFetched || !symbol.basicInfo?.matchPrice">-</div>
           <div class="col-change" *ngIf="symbol.isFetched && symbol.basicInfo?.changedValue">
             <span
-              [class]="parseFloat(symbol.basicInfo.changedValue) >= 0 ? 'positive' : 'negative'"
+              [class]="
+                parseFloat(symbol.basicInfo?.changedValue ?? '0') >= 0 ? 'positive' : 'negative'
+              "
             >
-              {{ parseFloat(symbol.basicInfo.changedValue) * 1000 | number: '1.0-0' }} đ ({{
-                symbol.basicInfo.changedRatio || '0'
-              }}%)
+              {{ parseFloat(symbol.basicInfo?.changedValue ?? '0') * 1000 | number: '1.0-0' }} đ
+              ({{ symbol.basicInfo?.changedRatio || '0' }}%)
             </span>
           </div>
           <div class="col-change" *ngIf="!symbol.isFetched || !symbol.basicInfo?.changedValue">
