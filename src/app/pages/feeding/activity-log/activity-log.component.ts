@@ -103,7 +103,7 @@ export class ActivityLogComponent implements OnInit, OnDestroy {
   filteredLogs = computed(() => {
     const logs = this.allLogs();
     const category = this.filterCategorySignal();
-    let list =
+    const list =
       category === 'all'
         ? logs
         : logs.filter((log) =>

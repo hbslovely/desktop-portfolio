@@ -8,7 +8,7 @@ import {
   effect,
   HostListener,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 // import * as d3 from 'd3'; // Will enable after npm install d3
 import {
@@ -24,7 +24,7 @@ type PathResult = AlgorithmResult;
 @Component({
   selector: 'app-graph-visualizer-app',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [FormsModule],
   templateUrl: './graph-visualizer-app.component.html',
   styleUrl: './graph-visualizer-app.component.scss',
 })
@@ -2520,8 +2520,8 @@ export class GraphVisualizerAppComponent implements AfterViewInit, OnDestroy {
     const centerX = canvas.width / 2;
     const centerY = canvas.height / 2;
     const nodeRadius = 20;
-    let nodes: Array<{ id: string; x: number; y: number; label: string; isStart: boolean }> = [];
-    let edges: Array<{ from: string; to: string }> = [];
+    const nodes: Array<{ id: string; x: number; y: number; label: string; isStart: boolean }> = [];
+    const edges: Array<{ from: string; to: string }> = [];
 
     // Get density-based spacing/radius
     const density = config.density || 'medium';

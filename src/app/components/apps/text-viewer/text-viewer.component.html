@@ -4,7 +4,9 @@
     <div class="file-info">
       <i class="pi pi-file" [class.pi-file-edit]="isMarkdown()"></i>
       <span class="file-name">{{ fileName }}</span>
-      <span class="file-type" *ngIf="fileType">.{{ fileType }}</span>
+      @if (fileType) {
+        <span class="file-type">.{{ fileType }}</span>
+      }
     </div>
 
     <div class="toolbar-actions">
@@ -17,29 +19,38 @@
   <!-- Content Area -->
   <div class="content-area">
     <!-- Loading State -->
-    <div *ngIf="isLoading()" class="loading-state">
-      <i class="pi pi-spin pi-spinner"></i>
-      <p>Loading {{ fileName }}...</p>
-    </div>
+    @if (isLoading()) {
+      <div class="loading-state">
+        <i class="pi pi-spin pi-spinner"></i>
+        <p>Loading {{ fileName }}...</p>
+      </div>
+    }
 
     <!-- Error State -->
-    <div *ngIf="hasError()" class="error-state">
-      <i class="pi pi-exclamation-triangle"></i>
-      <h3>Failed to load file</h3>
-      <p>{{ errorMessage() }}</p>
-      <button class="retry-btn" (click)="reload()">
-        <i class="pi pi-refresh"></i>
-        Try Again
-      </button>
-    </div>
+    @if (hasError()) {
+      <div class="error-state">
+        <i class="pi pi-exclamation-triangle"></i>
+        <h3>Failed to load file</h3>
+        <p>{{ errorMessage() }}</p>
+        <button class="retry-btn" (click)="reload()">
+          <i class="pi pi-refresh"></i>
+          Try Again
+        </button>
+      </div>
+    }
 
     <!-- Content Display -->
-    <div *ngIf="!isLoading() && !hasError()" class="content-display">
-      <!-- Plain Text -->
-      <pre *ngIf="!isMarkdown()" class="text-content">{{ content() }}</pre>
-
-      <!-- Markdown Content -->
-      <div *ngIf="isMarkdown()" class="markdown-content" [innerHTML]="formattedContent()"></div>
-    </div>
+    @if (!isLoading() && !hasError()) {
+      <div class="content-display">
+        <!-- Plain Text -->
+        @if (!isMarkdown()) {
+          <pre class="text-content">{{ content() }}</pre>
+        }
+        <!-- Markdown Content -->
+        @if (isMarkdown()) {
+          <div class="markdown-content" [innerHTML]="formattedContent()"></div>
+        }
+      </div>
+    }
   </div>
 </div>

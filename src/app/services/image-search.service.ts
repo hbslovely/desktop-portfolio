@@ -1827,7 +1827,7 @@ export class ImageSearchService {
     k: number,
     iterations: number
   ): [number, number, number][] {
-    let centroids: [number, number, number][] = [];
+    const centroids: [number, number, number][] = [];
     const shuffled = [...points].sort(() => Math.random() - 0.5);
     for (let i = 0; i < Math.min(k, shuffled.length); i++) {
       centroids.push([...shuffled[i]]);

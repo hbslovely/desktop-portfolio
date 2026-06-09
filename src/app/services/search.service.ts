@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { APP_SEARCH_CONFIG } from '../config/app-icons.config';
 import { of } from 'rxjs';
@@ -35,10 +35,12 @@ export interface FileSystemData {
   providedIn: 'root',
 })
 export class SearchService {
+  private http = inject(HttpClient);
+
   private fileSystemData: FileSystemItem[] = [];
   private isDataLoaded = false;
 
-  constructor(private http: HttpClient) {
+  constructor() {
     this.loadFileSystemData();
   }
 

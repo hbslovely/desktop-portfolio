@@ -7,7 +7,6 @@ import {
   output,
   signal,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
 
 export interface MedicalImagePreviewState {
   src: string;
@@ -18,7 +17,7 @@ export interface MedicalImagePreviewState {
 @Component({
   selector: 'app-medical-history-preview',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   templateUrl: './medical-history-preview.component.html',
   styleUrls: ['./medical-history-preview.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,

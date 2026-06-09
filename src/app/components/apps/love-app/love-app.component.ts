@@ -1,16 +1,18 @@
-import { Component, Input, signal, computed, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, Input, signal, computed, ChangeDetectionStrategy, inject } from '@angular/core';
+
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 
 @Component({
   selector: 'app-love-app',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   templateUrl: './love-app.component.html',
   styleUrl: './love-app.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LoveAppComponent {
+  private sanitizer = inject(DomSanitizer);
+
   @Input() set url(value: string) {
     this._url.set(value);
   }
@@ -23,8 +25,6 @@ export class LoveAppComponent {
   private _url = signal('https://hbslovely.vercel.app/');
   isLoading = signal(true);
   hasError = signal(false);
-
-  constructor(private sanitizer: DomSanitizer) {}
 
   // Convert to computed signal to prevent infinite loading
   safeUrl = computed(() => {
@@ -59,6 +59,7 @@ export class LoveAppComponent {
     // Force reload by changing src
     const iframe = document.querySelector('iframe') as HTMLIFrameElement;
     if (iframe) {
+      // eslint-disable-next-line no-self-assign
       iframe.src = iframe.src;
     }
   }

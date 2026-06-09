@@ -9,14 +9,14 @@ import {
   ElementRef,
   inject,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { FileSystemService } from '../../../services/file-system.service';
 
 @Component({
   selector: 'app-image-viewer',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [FormsModule],
   templateUrl: './image-viewer.component.html',
   styleUrl: './image-viewer.component.scss',
 })

@@ -1,51 +1,55 @@
 import { Component, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { AppSplashService } from '../../services/app-splash.service';
 
 @Component({
   selector: 'app-splash',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   template: `
     <!-- Backdrop -->
-    <div class="splash-backdrop" *ngIf="splashService.isVisible()"></div>
+    @if (splashService.isVisible()) {
+      <div class="splash-backdrop"></div>
+    }
 
     <!-- Splash Window -->
-    <div class="splash-window" *ngIf="splashService.isVisible()">
-      <!-- Left side - App branding -->
-      <div class="splash-branding">
-        <div class="splash-icon">
-          <img
-            *ngIf="!isIconClass()"
-            [src]="splashService.currentApp()?.appIcon"
-            [alt]="splashService.currentApp()?.appName"
-          />
-          <i *ngIf="isIconClass()" [class]="splashService.currentApp()?.appIcon"> </i>
+    @if (splashService.isVisible()) {
+      <div class="splash-window">
+        <!-- Left side - App branding -->
+        <div class="splash-branding">
+          <div class="splash-icon">
+            @if (!isIconClass()) {
+              <img
+                [src]="splashService.currentApp()?.appIcon"
+                [alt]="splashService.currentApp()?.appName"
+              />
+            }
+            @if (isIconClass()) {
+              <i [class]="splashService.currentApp()?.appIcon"> </i>
+            }
+          </div>
+          <div class="splash-app-info">
+            <div class="splash-title">{{ splashService.currentApp()?.appName }}</div>
+            <div class="splash-subtitle">Desktop Portfolio</div>
+          </div>
         </div>
-        <div class="splash-app-info">
-          <div class="splash-title">{{ splashService.currentApp()?.appName }}</div>
-          <div class="splash-subtitle">Desktop Portfolio</div>
-        </div>
-      </div>
-
-      <!-- Right side - Loading info -->
-      <div class="splash-loading">
-        <!-- Loading spinner -->
-        <div class="loading-spinner">
-          <div class="spinner-ring"></div>
-        </div>
-
-        <!-- Loading Step Text -->
-        <div class="splash-step">{{ splashService.currentStep() }}</div>
-
-        <!-- Loading Progress -->
-        <div class="splash-progress">
-          <div class="progress-track">
-            <div class="progress-fill" [style.width.%]="splashService.loadingProgress()"></div>
+        <!-- Right side - Loading info -->
+        <div class="splash-loading">
+          <!-- Loading spinner -->
+          <div class="loading-spinner">
+            <div class="spinner-ring"></div>
+          </div>
+          <!-- Loading Step Text -->
+          <div class="splash-step">{{ splashService.currentStep() }}</div>
+          <!-- Loading Progress -->
+          <div class="splash-progress">
+            <div class="progress-track">
+              <div class="progress-fill" [style.width.%]="splashService.loadingProgress()"></div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    }
   `,
   styles: [
     `

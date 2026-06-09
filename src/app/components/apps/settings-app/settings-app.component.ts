@@ -7,7 +7,7 @@ import {
   OnInit,
   ViewEncapsulation,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 
 export interface WallpaperOption {
@@ -31,7 +31,7 @@ export interface SettingsData {
 @Component({
   selector: 'app-settings-app',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [FormsModule],
   templateUrl: './settings-app.component.html',
   styleUrls: ['./settings-app.component.scss'],
   encapsulation: ViewEncapsulation.None,

@@ -18,42 +18,47 @@
     <!-- Left side - Icon and Title -->
     <div class="title-section">
       <!-- Sprite icon -->
-      <div
-        *ngIf="icon && !icon.startsWith('http') && !icon.startsWith('pi ')"
-        [class]="'icon-sprite window-icon ' + icon"
-      ></div>
+      @if (icon && !icon.startsWith('http') && !icon.startsWith('pi ')) {
+        <div [class]="'icon-sprite window-icon ' + icon"></div>
+      }
       <!-- Font icon -->
-      <i *ngIf="icon && icon.startsWith('pi ')" [class]="icon + ' window-icon-fallback'"></i>
+      @if (icon && icon.startsWith('pi ')) {
+        <i [class]="icon + ' window-icon-fallback'"></i>
+      }
       <!-- External image -->
-      <img *ngIf="icon && icon.startsWith('http')" [src]="icon" class="window-icon" [alt]="title" />
+      @if (icon && icon.startsWith('http')) {
+        <img [src]="icon" class="window-icon" [alt]="title" />
+      }
       <!-- Fallback icon -->
-      <i *ngIf="!icon" class="pi pi-window-maximize window-icon-fallback"></i>
+      @if (!icon) {
+        <i class="pi pi-window-maximize window-icon-fallback"></i>
+      }
       <span class="title-text">{{ title }}</span>
     </div>
 
     <!-- Right side - Window Controls -->
     <div class="window-controls">
-      <button
-        *ngIf="minimizable"
-        class="control-btn minimize-btn"
-        (click)="minimize()"
-        title="Minimize"
-      >
-        <span class="minimize-icon">_</span>
-      </button>
+      @if (minimizable) {
+        <button class="control-btn minimize-btn" (click)="minimize()" title="Minimize">
+          <span class="minimize-icon">_</span>
+        </button>
+      }
 
-      <button
-        *ngIf="maximizable"
-        class="control-btn maximize-btn"
-        (click)="isMaximized() ? restore() : maximize()"
-        [title]="isMaximized() ? 'Restore Down' : 'Maximize'"
-      >
-        <span class="maximize-icon" [class.restore]="isMaximized()">⬜</span>
-      </button>
+      @if (maximizable) {
+        <button
+          class="control-btn maximize-btn"
+          (click)="isMaximized() ? restore() : maximize()"
+          [title]="isMaximized() ? 'Restore Down' : 'Maximize'"
+        >
+          <span class="maximize-icon" [class.restore]="isMaximized()">⬜</span>
+        </button>
+      }
 
-      <button *ngIf="closable" class="control-btn close-btn" (click)="close()" title="Close">
-        <i class="pi pi-times"></i>
-      </button>
+      @if (closable) {
+        <button class="control-btn close-btn" (click)="close()" title="Close">
+          <i class="pi pi-times"></i>
+        </button>
+      }
     </div>
   </div>
 
@@ -63,31 +68,35 @@
   </div>
 
   <!-- Status Bar -->
-  <div *ngIf="showStatusBar" class="status-bar">
-    <div class="status-section">
-      <i class="pi pi-circle-fill status-indicator"></i>
-      <span class="status-text">{{ statusText }}</span>
+  @if (showStatusBar) {
+    <div class="status-bar">
+      <div class="status-section">
+        <i class="pi pi-circle-fill status-indicator"></i>
+        <span class="status-text">{{ statusText }}</span>
+      </div>
+      <div class="status-actions">
+        @if (resizable && !isMaximized()) {
+          <span class="resize-handle-corner">
+            <i class="pi pi-angle-double-down"></i>
+          </span>
+        }
+      </div>
     </div>
-
-    <div class="status-actions">
-      <span class="resize-handle-corner" *ngIf="resizable && !isMaximized()">
-        <i class="pi pi-angle-double-down"></i>
-      </span>
-    </div>
-  </div>
+  }
 
   <!-- Resize Handles -->
-  <div *ngIf="resizable && !isMaximized()" class="resize-handles">
-    <!-- Corner handles -->
-    <div class="resize-handle nw" (mousedown)="onResizeStart($event, 'nw')"></div>
-    <div class="resize-handle ne" (mousedown)="onResizeStart($event, 'ne')"></div>
-    <div class="resize-handle sw" (mousedown)="onResizeStart($event, 'sw')"></div>
-    <div class="resize-handle se" (mousedown)="onResizeStart($event, 'se')"></div>
-
-    <!-- Edge handles -->
-    <div class="resize-handle n" (mousedown)="onResizeStart($event, 'n')"></div>
-    <div class="resize-handle s" (mousedown)="onResizeStart($event, 's')"></div>
-    <div class="resize-handle e" (mousedown)="onResizeStart($event, 'e')"></div>
-    <div class="resize-handle w" (mousedown)="onResizeStart($event, 'w')"></div>
-  </div>
+  @if (resizable && !isMaximized()) {
+    <div class="resize-handles">
+      <!-- Corner handles -->
+      <div class="resize-handle nw" (mousedown)="onResizeStart($event, 'nw')"></div>
+      <div class="resize-handle ne" (mousedown)="onResizeStart($event, 'ne')"></div>
+      <div class="resize-handle sw" (mousedown)="onResizeStart($event, 'sw')"></div>
+      <div class="resize-handle se" (mousedown)="onResizeStart($event, 'se')"></div>
+      <!-- Edge handles -->
+      <div class="resize-handle n" (mousedown)="onResizeStart($event, 'n')"></div>
+      <div class="resize-handle s" (mousedown)="onResizeStart($event, 's')"></div>
+      <div class="resize-handle e" (mousedown)="onResizeStart($event, 'e')"></div>
+      <div class="resize-handle w" (mousedown)="onResizeStart($event, 'w')"></div>
+    </div>
+  }
 </div>

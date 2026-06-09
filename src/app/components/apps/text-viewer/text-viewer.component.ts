@@ -1,15 +1,17 @@
-import { Component, Input, OnInit, signal, computed } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, Input, OnInit, signal, computed, inject } from '@angular/core';
+
 import { HttpClient } from '@angular/common/http';
 
 @Component({
   selector: 'app-text-viewer',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   templateUrl: './text-viewer.component.html',
   styleUrl: './text-viewer.component.scss',
 })
 export class TextViewerComponent implements OnInit {
+  private http = inject(HttpClient);
+
   @Input() filePath = '';
   @Input() fileName = '';
   @Input() fileType: 'txt' | 'md' = 'txt';
@@ -30,8 +32,6 @@ export class TextViewerComponent implements OnInit {
     }
     return rawContent;
   });
-
-  constructor(private http: HttpClient) {}
 
   ngOnInit() {
     this.loadFile();
@@ -63,7 +63,7 @@ export class TextViewerComponent implements OnInit {
 
   private parseMarkdown(content: string): string {
     // Simple markdown parser for basic formatting
-    let html = content
+    const html = content
       // Headers
       .replace(/^### (.*$)/gim, '<h3>$1</h3>')
       .replace(/^## (.*$)/gim, '<h2>$1</h2>')

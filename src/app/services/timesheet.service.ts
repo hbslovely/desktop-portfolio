@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { catchError, firstValueFrom, map, Observable, throwError, timeout } from 'rxjs';
 
@@ -84,7 +84,7 @@ export interface ProductiveCalendarEvent {
   providedIn: 'root',
 })
 export class TimesheetService {
-  constructor(private http: HttpClient) {}
+  private http = inject(HttpClient);
 
   submitTimesheet(
     config: TimesheetConfig,

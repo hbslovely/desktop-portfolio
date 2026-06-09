@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
@@ -110,10 +110,10 @@ export interface LocationCoordinates {
   providedIn: 'root',
 })
 export class WeatherService {
+  private http = inject(HttpClient);
+
   private apiUrl = environment.weatherApiUrl;
   private apiKey = environment.weatherApiKey;
-
-  constructor(private http: HttpClient) {}
 
   /**
    * Get current location coordinates using browser's Geolocation API

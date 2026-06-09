@@ -1,27 +1,32 @@
 <!-- Router Outlet for standalone pages (e.g. /feeding) -->
-<router-outlet *ngIf="!isDesktopRoute()"></router-outlet>
+@if (!isDesktopRoute()) {
+  <router-outlet></router-outlet>
+}
 
 <!-- Desktop Environment (only show on root route) -->
-<ng-container *ngIf="isDesktopRoute()">
+@if (isDesktopRoute()) {
   <!-- System Restart Screen -->
-  <div *ngIf="showRestartScreen()" class="restart-screen">
-    <div class="terminal-body" #terminalBody>
-      <div
-        *ngFor="let message of restartMessages; let i = index"
-        class="terminal-line"
-        [class]="'terminal-' + message.type"
-      >
-        <span class="terminal-timestamp" *ngIf="message.timestamp">[{{ message.timestamp }}]</span>
-        <span class="terminal-text" [class.typing]="currentTypingIndex() === i">{{
-          message.text
-        }}</span>
-      </div>
-      <div class="terminal-cursor-line" *ngIf="showCursor()">
-        <span class="terminal-cursor"></span>
+  @if (showRestartScreen()) {
+    <div class="restart-screen">
+      <div class="terminal-body" #terminalBody>
+        @for (message of restartMessages; track message; let i = $index) {
+          <div class="terminal-line" [class]="'terminal-' + message.type">
+            @if (message.timestamp) {
+              <span class="terminal-timestamp">[{{ message.timestamp }}]</span>
+            }
+            <span class="terminal-text" [class.typing]="currentTypingIndex() === i">{{
+              message.text
+            }}</span>
+          </div>
+        }
+        @if (showCursor()) {
+          <div class="terminal-cursor-line">
+            <span class="terminal-cursor"></span>
+          </div>
+        }
       </div>
     </div>
-  </div>
-
+  }
   <!-- Welcome Screen with Desktop Environment -->
   <app-welcome-screen>
     <!-- Desktop Environment -->
@@ -32,457 +37,466 @@
     >
       <!-- Desktop Wallpaper -->
       <div class="wallpaper"></div>
-
       <!-- Calculator Window -->
-      <app-window
-        *ngIf="showTestWindow()"
-        title="Calculator"
-        icon="calculator"
-        statusText="Ready"
-        [initialWidth]="480"
-        [initialHeight]="720"
-        [initialX]="100"
-        [initialY]="100"
-        [maximizable]="true"
-        [zIndex]="calculatorZIndex()"
-        [isFocused]="calculatorFocused()"
-        [isMinimizedExternal]="calculatorMinimized()"
-        data-window-id="calculator"
-        (onClose)="onCloseTestWindow()"
-        (onMinimize)="onMinimizeTestWindow()"
-        (onMaximize)="onMaximizeTestWindow()"
-        (onRestore)="onRestoreTestWindow()"
-        (onFocus)="onFocusTestWindow()"
-      >
-        <app-calculator></app-calculator>
-      </app-window>
-
+      @if (showTestWindow()) {
+        <app-window
+          title="Calculator"
+          icon="calculator"
+          statusText="Ready"
+          [initialWidth]="480"
+          [initialHeight]="720"
+          [initialX]="100"
+          [initialY]="100"
+          [maximizable]="true"
+          [zIndex]="calculatorZIndex()"
+          [isFocused]="calculatorFocused()"
+          [isMinimizedExternal]="calculatorMinimized()"
+          data-window-id="calculator"
+          (onClose)="onCloseTestWindow()"
+          (onMinimize)="onMinimizeTestWindow()"
+          (onMaximize)="onMaximizeTestWindow()"
+          (onRestore)="onRestoreTestWindow()"
+          (onFocus)="onFocusTestWindow()"
+        >
+          <app-calculator></app-calculator>
+        </app-window>
+      }
       <!-- My Information Window -->
-      <app-window
-        *ngIf="showMyInfoWindow()"
-        title="About Me"
-        icon="user-profile"
-        [showStatusBar]="false"
-        [initialWidth]="900"
-        [initialHeight]="700"
-        [initialX]="200"
-        [initialY]="50"
-        [maximizable]="true"
-        [zIndex]="myInfoZIndex()"
-        [isFocused]="myInfoFocused()"
-        [isMinimizedExternal]="myInfoMinimized()"
-        data-window-id="my-info"
-        (onClose)="onCloseMyInfoWindow()"
-        (onMinimize)="onMinimizeMyInfoWindow()"
-        (onMaximize)="onMaximizeMyInfoWindow()"
-        (onRestore)="onRestoreMyInfoWindow()"
-        (onFocus)="onFocusMyInfoWindow()"
-      >
-        <app-iframe-app url="https://hpphat1992.vercel.app/" title="About Me"> </app-iframe-app>
-      </app-window>
-
+      @if (showMyInfoWindow()) {
+        <app-window
+          title="About Me"
+          icon="user-profile"
+          [showStatusBar]="false"
+          [initialWidth]="900"
+          [initialHeight]="700"
+          [initialX]="200"
+          [initialY]="50"
+          [maximizable]="true"
+          [zIndex]="myInfoZIndex()"
+          [isFocused]="myInfoFocused()"
+          [isMinimizedExternal]="myInfoMinimized()"
+          data-window-id="my-info"
+          (onClose)="onCloseMyInfoWindow()"
+          (onMinimize)="onMinimizeMyInfoWindow()"
+          (onMaximize)="onMaximizeMyInfoWindow()"
+          (onRestore)="onRestoreMyInfoWindow()"
+          (onFocus)="onFocusMyInfoWindow()"
+        >
+          <app-iframe-app url="https://hpphat1992.vercel.app/" title="About Me"> </app-iframe-app>
+        </app-window>
+      }
       <!-- Love Window -->
-      <app-window
-        *ngIf="showLoveWindow()"
-        title="Love"
-        icon="heart"
-        statusText="Loading love website..."
-        [initialWidth]="1000"
-        [initialHeight]="700"
-        [initialX]="200"
-        [initialY]="150"
-        [maximizable]="true"
-        [zIndex]="loveZIndex()"
-        [isFocused]="loveFocused()"
-        [isMinimizedExternal]="loveMinimized()"
-        (onClose)="onCloseLoveWindow()"
-        (onMinimize)="onMinimizeLoveWindow()"
-        (onMaximize)="onMaximizeLoveWindow()"
-        (onRestore)="onRestoreLoveWindow()"
-        (onFocus)="onFocusLoveWindow()"
-      >
-        <app-love-app url="https://hbslovely.vercel.app/" title="Love Application"> </app-love-app>
-      </app-window>
-
+      @if (showLoveWindow()) {
+        <app-window
+          title="Love"
+          icon="heart"
+          statusText="Loading love website..."
+          [initialWidth]="1000"
+          [initialHeight]="700"
+          [initialX]="200"
+          [initialY]="150"
+          [maximizable]="true"
+          [zIndex]="loveZIndex()"
+          [isFocused]="loveFocused()"
+          [isMinimizedExternal]="loveMinimized()"
+          (onClose)="onCloseLoveWindow()"
+          (onMinimize)="onMinimizeLoveWindow()"
+          (onMaximize)="onMaximizeLoveWindow()"
+          (onRestore)="onRestoreLoveWindow()"
+          (onFocus)="onFocusLoveWindow()"
+        >
+          <app-love-app url="https://hbslovely.vercel.app/" title="Love Application">
+          </app-love-app>
+        </app-window>
+      }
       <!-- Explorer Window -->
-      <app-window
-        *ngIf="showExplorerWindow()"
-        title="Explorer"
-        icon="pi pi-folder"
-        statusText="Ready"
-        [initialWidth]="800"
-        [initialHeight]="600"
-        [initialX]="300"
-        [initialY]="100"
-        [maximizable]="true"
-        [zIndex]="explorerZIndex()"
-        [isFocused]="explorerFocused()"
-        [isMinimizedExternal]="explorerMinimized()"
-        (onClose)="onCloseExplorerWindow()"
-        (onMinimize)="onMinimizeExplorerWindow()"
-        (onMaximize)="onMaximizeExplorerWindow()"
-        (onRestore)="onRestoreExplorerWindow()"
-        (onFocus)="onFocusExplorerWindow()"
-      >
-        <app-explorer
-          (onFileOpen)="onExplorerFileOpen($event)"
-          (onContextMenuAction)="onExplorerContextMenu($event)"
+      @if (showExplorerWindow()) {
+        <app-window
+          title="Explorer"
+          icon="pi pi-folder"
+          statusText="Ready"
+          [initialWidth]="800"
+          [initialHeight]="600"
+          [initialX]="300"
+          [initialY]="100"
+          [maximizable]="true"
+          [zIndex]="explorerZIndex()"
+          [isFocused]="explorerFocused()"
+          [isMinimizedExternal]="explorerMinimized()"
+          (onClose)="onCloseExplorerWindow()"
+          (onMinimize)="onMinimizeExplorerWindow()"
+          (onMaximize)="onMaximizeExplorerWindow()"
+          (onRestore)="onRestoreExplorerWindow()"
+          (onFocus)="onFocusExplorerWindow()"
         >
-        </app-explorer>
-      </app-window>
-
+          <app-explorer
+            (onFileOpen)="onExplorerFileOpen($event)"
+            (onContextMenuAction)="onExplorerContextMenu($event)"
+          >
+          </app-explorer>
+        </app-window>
+      }
       <!-- Text Viewer Window -->
-      <app-window
-        *ngIf="showTextViewerWindow() && currentTextFile()"
-        [title]="'Text Viewer - ' + currentTextFile()!.name"
-        icon="pi pi-file"
-        statusText="Ready"
-        [initialWidth]="800"
-        [initialHeight]="600"
-        [initialX]="350"
-        [initialY]="120"
-        [maximizable]="true"
-        [zIndex]="textViewerZIndex()"
-        [isFocused]="textViewerFocused()"
-        [isMinimizedExternal]="textViewerMinimized()"
-        windowId="text-viewer"
-        (onClose)="onCloseTextViewerWindow()"
-        (onMinimize)="onMinimizeTextViewerWindow()"
-        (onMaximize)="onMaximizeTextViewerWindow()"
-        (onRestore)="onRestoreTextViewerWindow()"
-        (onFocus)="onFocusTextViewerWindow()"
-      >
-        <app-text-viewer
-          [filePath]="currentTextFile()!.path"
-          [fileName]="currentTextFile()!.name"
-          [fileType]="currentTextFile()!.type"
+      @if (showTextViewerWindow() && currentTextFile()) {
+        <app-window
+          [title]="'Text Viewer - ' + currentTextFile()!.name"
+          icon="pi pi-file"
+          statusText="Ready"
+          [initialWidth]="800"
+          [initialHeight]="600"
+          [initialX]="350"
+          [initialY]="120"
+          [maximizable]="true"
+          [zIndex]="textViewerZIndex()"
+          [isFocused]="textViewerFocused()"
+          [isMinimizedExternal]="textViewerMinimized()"
+          windowId="text-viewer"
+          (onClose)="onCloseTextViewerWindow()"
+          (onMinimize)="onMinimizeTextViewerWindow()"
+          (onMaximize)="onMaximizeTextViewerWindow()"
+          (onRestore)="onRestoreTextViewerWindow()"
+          (onFocus)="onFocusTextViewerWindow()"
         >
-        </app-text-viewer>
-      </app-window>
-
+          <app-text-viewer
+            [filePath]="currentTextFile()!.path"
+            [fileName]="currentTextFile()!.name"
+            [fileType]="currentTextFile()!.type"
+          >
+          </app-text-viewer>
+        </app-window>
+      }
       <!-- Image Viewer Window -->
-      <app-window
-        *ngIf="showImageViewerWindow() && currentImageFile()"
-        [title]="'Image Viewer - ' + currentImageFile()!.name"
-        icon="pi pi-image"
-        statusText="Ready"
-        [initialWidth]="900"
-        [initialHeight]="700"
-        [initialX]="400"
-        [initialY]="80"
-        [maximizable]="true"
-        [zIndex]="imageViewerZIndex()"
-        [isFocused]="imageViewerFocused()"
-        [isMinimizedExternal]="imageViewerMinimized()"
-        windowId="image-viewer"
-        (onClose)="onCloseImageViewerWindow()"
-        (onMinimize)="onMinimizeImageViewerWindow()"
-        (onMaximize)="onMaximizeImageViewerWindow()"
-        (onRestore)="onRestoreImageViewerWindow()"
-        (onFocus)="onFocusImageViewerWindow()"
-      >
-        <app-image-viewer
-          [imagePath]="currentImageFile()!.path"
-          [imageName]="currentImageFile()!.name"
+      @if (showImageViewerWindow() && currentImageFile()) {
+        <app-window
+          [title]="'Image Viewer - ' + currentImageFile()!.name"
+          icon="pi pi-image"
+          statusText="Ready"
+          [initialWidth]="900"
+          [initialHeight]="700"
+          [initialX]="400"
+          [initialY]="80"
+          [maximizable]="true"
+          [zIndex]="imageViewerZIndex()"
+          [isFocused]="imageViewerFocused()"
+          [isMinimizedExternal]="imageViewerMinimized()"
+          windowId="image-viewer"
+          (onClose)="onCloseImageViewerWindow()"
+          (onMinimize)="onMinimizeImageViewerWindow()"
+          (onMaximize)="onMaximizeImageViewerWindow()"
+          (onRestore)="onRestoreImageViewerWindow()"
+          (onFocus)="onFocusImageViewerWindow()"
         >
-        </app-image-viewer>
-      </app-window>
-
+          <app-image-viewer
+            [imagePath]="currentImageFile()!.path"
+            [imageName]="currentImageFile()!.name"
+          >
+          </app-image-viewer>
+        </app-window>
+      }
       <!-- PDF Viewer Window -->
-      <app-window
-        *ngIf="showPdfViewerWindow() && currentPdfFile()"
-        [title]="'PDF Viewer - ' + currentPdfFile()!.name"
-        icon="pi pi-file-pdf"
-        statusText="Ready"
-        [initialWidth]="1000"
-        [initialHeight]="800"
-        [initialX]="350"
-        [initialY]="60"
-        [maximizable]="true"
-        [zIndex]="pdfViewerZIndex()"
-        [isFocused]="pdfViewerFocused()"
-        [isMinimizedExternal]="pdfViewerMinimized()"
-        windowId="pdf-viewer"
-        (onClose)="onClosePdfViewerWindow()"
-        (onMinimize)="onMinimizePdfViewerWindow()"
-        (onMaximize)="onMaximizePdfViewerWindow()"
-        (onRestore)="onRestorePdfViewerWindow()"
-        (onFocus)="onFocusPdfViewerWindow()"
-      >
-        <app-pdf-viewer [pdfPath]="currentPdfFile()!.path"> </app-pdf-viewer>
-      </app-window>
-
+      @if (showPdfViewerWindow() && currentPdfFile()) {
+        <app-window
+          [title]="'PDF Viewer - ' + currentPdfFile()!.name"
+          icon="pi pi-file-pdf"
+          statusText="Ready"
+          [initialWidth]="1000"
+          [initialHeight]="800"
+          [initialX]="350"
+          [initialY]="60"
+          [maximizable]="true"
+          [zIndex]="pdfViewerZIndex()"
+          [isFocused]="pdfViewerFocused()"
+          [isMinimizedExternal]="pdfViewerMinimized()"
+          windowId="pdf-viewer"
+          (onClose)="onClosePdfViewerWindow()"
+          (onMinimize)="onMinimizePdfViewerWindow()"
+          (onMaximize)="onMaximizePdfViewerWindow()"
+          (onRestore)="onRestorePdfViewerWindow()"
+          (onFocus)="onFocusPdfViewerWindow()"
+        >
+          <app-pdf-viewer [pdfPath]="currentPdfFile()!.path"> </app-pdf-viewer>
+        </app-window>
+      }
       <!-- Search Window -->
-      <div *ngIf="showSearchWindow()" class="search-window" (click)="closeSearchWindow()">
-        <div class="search-content" (click)="$event.stopPropagation()">
-          <!-- Search Header -->
-          <div class="search-header">
-            <div class="search-title">
-              <i class="pi pi-search"></i>
-              <span>Search</span>
-            </div>
-            <button class="search-close-btn" (click)="closeSearchWindow()" title="Close">
-              <i class="pi pi-times"></i>
-            </button>
-          </div>
-
-          <!-- Search Input -->
-          <div class="search-input-section">
-            <div class="search-input-container">
-              <i class="pi pi-search search-icon"></i>
-              <input
-                #searchInput
-                type="text"
-                class="search-input"
-                placeholder="Type to search applications, files, and web..."
-                [(ngModel)]="searchQuery"
-                (input)="onSearchInput($event)"
-                (keydown.enter)="selectSearchResult(searchResults[selectedSearchIndex])"
-                (keydown.arrowdown)="navigateSearchResults(1, $event)"
-                (keydown.arrowup)="navigateSearchResults(-1, $event)"
-                (keydown.escape)="closeSearchWindow()"
-              />
-              <div class="search-shortcuts">
-                <span class="shortcut-hint">↑↓ Navigate • Enter Open • Esc Close</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Search Results -->
-          <div class="search-results-container" *ngIf="showSearchSuggestions">
-            <div class="search-results">
-              <div class="search-section" *ngIf="appSearchResults.length > 0">
-                <div class="section-title">
-                  <i class="pi pi-apps"></i>
-                  <span>Applications</span>
-                  <span class="result-count">{{ appSearchResults.length }}</span>
-                </div>
-                <div
-                  class="result-item"
-                  *ngFor="let result of appSearchResults; let i = index"
-                  [class.selected]="getResultIndex('app', i) === selectedSearchIndex"
-                  (click)="selectSearchResult(result)"
-                >
-                  <div class="result-icon">
-                    <i [class]="'pi ' + result.icon"></i>
-                  </div>
-                  <div class="result-content">
-                    <span class="result-name">{{ result.name }}</span>
-                    <span class="result-description">{{ result.description }}</span>
-                  </div>
-                  <div class="result-action">
-                    <i class="pi pi-arrow-right"></i>
-                  </div>
-                </div>
-              </div>
-
-              <div class="search-section" *ngIf="fileSearchResults.length > 0">
-                <div class="section-title">
-                  <i class="pi pi-folder"></i>
-                  <span>Files</span>
-                  <span class="result-count">{{ fileSearchResults.length }}</span>
-                </div>
-                <div
-                  class="result-item"
-                  *ngFor="let result of fileSearchResults; let i = index"
-                  [class.selected]="getResultIndex('file', i) === selectedSearchIndex"
-                  (click)="selectSearchResult(result)"
-                >
-                  <div class="result-icon">
-                    <i [class]="'pi ' + result.icon"></i>
-                  </div>
-                  <div class="result-content">
-                    <span class="result-name">{{ result.name }}</span>
-                    <span class="result-description">{{ result.description }}</span>
-                    <span class="result-path">{{ result.path }}</span>
-                  </div>
-                  <div class="result-action">
-                    <i class="pi pi-arrow-right"></i>
-                  </div>
-                </div>
-              </div>
-
-              <div class="search-section" *ngIf="webSearchResults.length > 0">
-                <div class="section-title">
-                  <i class="pi pi-globe"></i>
-                  <span>Web Search</span>
-                  <span class="result-count">{{ webSearchResults.length }}</span>
-                </div>
-                <div
-                  class="result-item"
-                  *ngFor="let result of webSearchResults; let i = index"
-                  [class.selected]="getResultIndex('web', i) === selectedSearchIndex"
-                  (click)="selectSearchResult(result)"
-                >
-                  <div class="result-icon">
-                    <i [class]="'pi ' + result.icon"></i>
-                  </div>
-                  <div class="result-content">
-                    <span class="result-name">{{ result.name }}</span>
-                    <span class="result-description">{{ result.description }}</span>
-                  </div>
-                  <div class="result-action">
-                    <i class="pi pi-external-link"></i>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Empty State -->
-          <div class="search-empty" *ngIf="!showSearchSuggestions && searchQuery.length >= 2">
-            <div class="empty-icon">
-              <i class="pi pi-search"></i>
-            </div>
-            <div class="empty-content">
-              <h3>No results found</h3>
-              <p>Try searching for "{{ searchQuery }}" with different keywords</p>
-            </div>
-          </div>
-
-          <!-- Welcome State -->
-          <div class="search-welcome" *ngIf="searchQuery.length < 2">
-            <div class="welcome-content">
-              <div class="welcome-icon">
+      @if (showSearchWindow()) {
+        <div class="search-window" (click)="closeSearchWindow()">
+          <div class="search-content" (click)="$event.stopPropagation()">
+            <!-- Search Header -->
+            <div class="search-header">
+              <div class="search-title">
                 <i class="pi pi-search"></i>
+                <span>Search</span>
               </div>
-              <h3>Search Everything</h3>
-              <p>Find applications, files, and search the web</p>
-              <div class="search-examples">
-                <div class="example-item">
-                  <i class="pi pi-calculator"></i>
-                  <span>Calculator</span>
-                </div>
-                <div class="example-item">
-                  <i class="pi pi-file"></i>
-                  <span>README.md</span>
-                </div>
-                <div class="example-item">
-                  <i class="pi pi-globe"></i>
-                  <span>Angular</span>
+              <button class="search-close-btn" (click)="closeSearchWindow()" title="Close">
+                <i class="pi pi-times"></i>
+              </button>
+            </div>
+            <!-- Search Input -->
+            <div class="search-input-section">
+              <div class="search-input-container">
+                <i class="pi pi-search search-icon"></i>
+                <input
+                  #searchInput
+                  type="text"
+                  class="search-input"
+                  placeholder="Type to search applications, files, and web..."
+                  [(ngModel)]="searchQuery"
+                  (input)="onSearchInput($event)"
+                  (keydown.enter)="selectSearchResult(searchResults[selectedSearchIndex])"
+                  (keydown.arrowdown)="navigateSearchResults(1, $event)"
+                  (keydown.arrowup)="navigateSearchResults(-1, $event)"
+                  (keydown.escape)="closeSearchWindow()"
+                />
+                <div class="search-shortcuts">
+                  <span class="shortcut-hint">↑↓ Navigate • Enter Open • Esc Close</span>
                 </div>
               </div>
             </div>
+            <!-- Search Results -->
+            @if (showSearchSuggestions) {
+              <div class="search-results-container">
+                <div class="search-results">
+                  @if (appSearchResults.length > 0) {
+                    <div class="search-section">
+                      <div class="section-title">
+                        <i class="pi pi-apps"></i>
+                        <span>Applications</span>
+                        <span class="result-count">{{ appSearchResults.length }}</span>
+                      </div>
+                      @for (result of appSearchResults; track result; let i = $index) {
+                        <div
+                          class="result-item"
+                          [class.selected]="getResultIndex('app', i) === selectedSearchIndex"
+                          (click)="selectSearchResult(result)"
+                        >
+                          <div class="result-icon">
+                            <i [class]="'pi ' + result.icon"></i>
+                          </div>
+                          <div class="result-content">
+                            <span class="result-name">{{ result.name }}</span>
+                            <span class="result-description">{{ result.description }}</span>
+                          </div>
+                          <div class="result-action">
+                            <i class="pi pi-arrow-right"></i>
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  }
+                  @if (fileSearchResults.length > 0) {
+                    <div class="search-section">
+                      <div class="section-title">
+                        <i class="pi pi-folder"></i>
+                        <span>Files</span>
+                        <span class="result-count">{{ fileSearchResults.length }}</span>
+                      </div>
+                      @for (result of fileSearchResults; track result; let i = $index) {
+                        <div
+                          class="result-item"
+                          [class.selected]="getResultIndex('file', i) === selectedSearchIndex"
+                          (click)="selectSearchResult(result)"
+                        >
+                          <div class="result-icon">
+                            <i [class]="'pi ' + result.icon"></i>
+                          </div>
+                          <div class="result-content">
+                            <span class="result-name">{{ result.name }}</span>
+                            <span class="result-description">{{ result.description }}</span>
+                            <span class="result-path">{{ result.path }}</span>
+                          </div>
+                          <div class="result-action">
+                            <i class="pi pi-arrow-right"></i>
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  }
+                  @if (webSearchResults.length > 0) {
+                    <div class="search-section">
+                      <div class="section-title">
+                        <i class="pi pi-globe"></i>
+                        <span>Web Search</span>
+                        <span class="result-count">{{ webSearchResults.length }}</span>
+                      </div>
+                      @for (result of webSearchResults; track result; let i = $index) {
+                        <div
+                          class="result-item"
+                          [class.selected]="getResultIndex('web', i) === selectedSearchIndex"
+                          (click)="selectSearchResult(result)"
+                        >
+                          <div class="result-icon">
+                            <i [class]="'pi ' + result.icon"></i>
+                          </div>
+                          <div class="result-content">
+                            <span class="result-name">{{ result.name }}</span>
+                            <span class="result-description">{{ result.description }}</span>
+                          </div>
+                          <div class="result-action">
+                            <i class="pi pi-external-link"></i>
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+            <!-- Empty State -->
+            @if (!showSearchSuggestions && searchQuery.length >= 2) {
+              <div class="search-empty">
+                <div class="empty-icon">
+                  <i class="pi pi-search"></i>
+                </div>
+                <div class="empty-content">
+                  <h3>No results found</h3>
+                  <p>Try searching for "{{ searchQuery }}" with different keywords</p>
+                </div>
+              </div>
+            }
+            <!-- Welcome State -->
+            @if (searchQuery.length < 2) {
+              <div class="search-welcome">
+                <div class="welcome-content">
+                  <div class="welcome-icon">
+                    <i class="pi pi-search"></i>
+                  </div>
+                  <h3>Search Everything</h3>
+                  <p>Find applications, files, and search the web</p>
+                  <div class="search-examples">
+                    <div class="example-item">
+                      <i class="pi pi-calculator"></i>
+                      <span>Calculator</span>
+                    </div>
+                    <div class="example-item">
+                      <i class="pi pi-file"></i>
+                      <span>README.md</span>
+                    </div>
+                    <div class="example-item">
+                      <i class="pi pi-globe"></i>
+                      <span>Angular</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            }
           </div>
         </div>
-      </div>
-
+      }
       <!-- Test Icons -->
-      <app-desktop-icon
-        *ngFor="let icon of testIcons"
-        [iconData]="icon"
-        [isSelected]="selectedIconId() === icon.id"
-        (onClick)="onDesktopIconSelect($event)"
-        (onDoubleClick)="onDesktopIconDoubleClick($event)"
-        (onContextMenu)="onDesktopIconContextMenu($event)"
-      >
-      </app-desktop-icon>
-
+      @for (icon of testIcons; track icon) {
+        <app-desktop-icon
+          [iconData]="icon"
+          [isSelected]="selectedIconId() === icon.id"
+          (onClick)="onDesktopIconSelect($event)"
+          (onDoubleClick)="onDesktopIconDoubleClick($event)"
+          (onContextMenu)="onDesktopIconContextMenu($event)"
+        >
+        </app-desktop-icon>
+      }
       <!-- Desktop Widgets -->
-      <div class="desktop-widgets" *ngIf="showWeatherWidget()">
-        <app-weather-widget></app-weather-widget>
-      </div>
-
+      @if (showWeatherWidget()) {
+        <div class="desktop-widgets">
+          <app-weather-widget></app-weather-widget>
+        </div>
+      }
       <!-- Taskbar -->
       <div class="taskbar">
         <!-- Start Button -->
         <button class="start-button" (click)="toggleStartMenu()" title="Start">
           <i class="pi pi-microsoft"></i>
         </button>
-
         <!-- Search Button -->
         <button class="search-button" (click)="openSearchWindow()" title="Search">
           <i class="pi pi-search"></i>
         </button>
-
         <!-- Taskbar Apps -->
         <div class="taskbar-apps">
-          <button
-            *ngIf="showTestWindow() || calculatorMinimized()"
-            class="taskbar-app"
-            [class.active]="calculatorFocused()"
-            [class.minimized]="calculatorMinimized()"
-            (click)="toggleTaskbarApp('calculator')"
-            title="Calculator"
-          >
-            <i class="pi pi-calculator"></i>
-            <span>Calculator</span>
-          </button>
-
-          <button
-            *ngIf="showMyInfoWindow() || myInfoMinimized()"
-            class="taskbar-app"
-            [class.active]="myInfoFocused()"
-            [class.minimized]="myInfoMinimized()"
-            (click)="toggleTaskbarApp('my-info')"
-            title="My Information"
-          >
-            <i class="pi pi-user"></i>
-            <span>My Information</span>
-          </button>
-
-          <button
-            *ngIf="showLoveWindow() || loveMinimized()"
-            class="taskbar-app"
-            [class.active]="loveFocused()"
-            [class.minimized]="loveMinimized()"
-            (click)="toggleTaskbarApp('love')"
-            title="Love"
-          >
-            <i class="pi pi-heart"></i>
-            <span>Love</span>
-          </button>
-
-          <button
-            *ngIf="showExplorerWindow() || explorerMinimized()"
-            class="taskbar-app"
-            [class.active]="explorerFocused()"
-            [class.minimized]="explorerMinimized()"
-            (click)="toggleTaskbarApp('explorer')"
-            title="Explorer"
-          >
-            <i class="pi pi-folder"></i>
-            <span>Explorer</span>
-          </button>
-
-          <button
-            *ngIf="showTextViewerWindow() || textViewerMinimized()"
-            class="taskbar-app"
-            [class.active]="textViewerFocused()"
-            [class.minimized]="textViewerMinimized()"
-            (click)="toggleTaskbarApp('text-viewer')"
-            title="Text Viewer"
-          >
-            <i class="pi pi-file"></i>
-            <span>{{ currentTextFile()?.name || 'Text Viewer' }}</span>
-          </button>
-
-          <button
-            *ngIf="showImageViewerWindow() || imageViewerMinimized()"
-            class="taskbar-app"
-            [class.active]="imageViewerFocused()"
-            [class.minimized]="imageViewerMinimized()"
-            (click)="toggleTaskbarApp('image-viewer')"
-            title="Image Viewer"
-          >
-            <i class="pi pi-image"></i>
-            <span>{{ currentImageFile()?.name || 'Image Viewer' }}</span>
-          </button>
-
+          @if (showTestWindow() || calculatorMinimized()) {
+            <button
+              class="taskbar-app"
+              [class.active]="calculatorFocused()"
+              [class.minimized]="calculatorMinimized()"
+              (click)="toggleTaskbarApp('calculator')"
+              title="Calculator"
+            >
+              <i class="pi pi-calculator"></i>
+              <span>Calculator</span>
+            </button>
+          }
+          @if (showMyInfoWindow() || myInfoMinimized()) {
+            <button
+              class="taskbar-app"
+              [class.active]="myInfoFocused()"
+              [class.minimized]="myInfoMinimized()"
+              (click)="toggleTaskbarApp('my-info')"
+              title="My Information"
+            >
+              <i class="pi pi-user"></i>
+              <span>My Information</span>
+            </button>
+          }
+          @if (showLoveWindow() || loveMinimized()) {
+            <button
+              class="taskbar-app"
+              [class.active]="loveFocused()"
+              [class.minimized]="loveMinimized()"
+              (click)="toggleTaskbarApp('love')"
+              title="Love"
+            >
+              <i class="pi pi-heart"></i>
+              <span>Love</span>
+            </button>
+          }
+          @if (showExplorerWindow() || explorerMinimized()) {
+            <button
+              class="taskbar-app"
+              [class.active]="explorerFocused()"
+              [class.minimized]="explorerMinimized()"
+              (click)="toggleTaskbarApp('explorer')"
+              title="Explorer"
+            >
+              <i class="pi pi-folder"></i>
+              <span>Explorer</span>
+            </button>
+          }
+          @if (showTextViewerWindow() || textViewerMinimized()) {
+            <button
+              class="taskbar-app"
+              [class.active]="textViewerFocused()"
+              [class.minimized]="textViewerMinimized()"
+              (click)="toggleTaskbarApp('text-viewer')"
+              title="Text Viewer"
+            >
+              <i class="pi pi-file"></i>
+              <span>{{ currentTextFile()?.name || 'Text Viewer' }}</span>
+            </button>
+          }
+          @if (showImageViewerWindow() || imageViewerMinimized()) {
+            <button
+              class="taskbar-app"
+              [class.active]="imageViewerFocused()"
+              [class.minimized]="imageViewerMinimized()"
+              (click)="toggleTaskbarApp('image-viewer')"
+              title="Image Viewer"
+            >
+              <i class="pi pi-image"></i>
+              <span>{{ currentImageFile()?.name || 'Image Viewer' }}</span>
+            </button>
+          }
           <!-- Dynamic Windows from WindowManager Service -->
-          <button
-            *ngFor="let window of windowManager.windowList()"
-            class="taskbar-app"
-            [class.active]="windowManager.isWindowFocused(window.id)"
-            [class.minimized]="window.isMinimized"
-            (click)="toggleWindowManagerWindow(window.id)"
-            [title]="window.title"
-          >
-            <i [class]="window.icon"></i>
-            <span>{{ window.title }}</span>
-          </button>
+          @for (window of windowManager.windowList(); track window) {
+            <button
+              class="taskbar-app"
+              [class.active]="windowManager.isWindowFocused(window.id)"
+              [class.minimized]="window.isMinimized"
+              (click)="toggleWindowManagerWindow(window.id)"
+              [title]="window.title"
+            >
+              <i [class]="window.icon"></i>
+              <span>{{ window.title }}</span>
+            </button>
+          }
         </div>
-
         <!-- System Tray -->
         <div class="system-tray">
           <button class="lock-button" (click)="lockScreen()" title="Lock Screen">
@@ -490,254 +504,225 @@
           </button>
         </div>
       </div>
-
       <!-- Start Menu -->
-      <div *ngIf="showStartMenu()" class="start-menu-backdrop" (click)="closeStartMenu()">
-        <div class="start-menu" (click)="$event.stopPropagation()">
-          <!-- Search Bar -->
-          <div class="start-menu-search">
-            <i class="pi pi-search"></i>
-            <input
-              #startMenuSearchInput
-              type="text"
-              placeholder="Type to search apps..."
-              [(ngModel)]="startMenuSearch"
-            />
-          </div>
-
-          <!-- Scrollable Content -->
-          <div class="start-menu-content">
-            <!-- Pinned Apps Section -->
-            <div class="start-section pinned-section">
-              <div class="section-header">
-                <h3>Pinned</h3>
-              </div>
-              <div class="app-grid">
-                <div class="app-tile" (click)="openApp('calculator')" title="Calculator">
-                  <div class="app-tile-icon">
-                    <i class="pi pi-calculator"></i>
-                  </div>
-                  <span class="app-tile-name">Calculator</span>
-                </div>
-                <div class="app-tile" (click)="openApp('explorer')" title="File Explorer">
-                  <div class="app-tile-icon">
-                    <i class="pi pi-folder"></i>
-                  </div>
-                  <span class="app-tile-name">Explorer</span>
-                </div>
-                <div class="app-tile" (click)="openApp('my-info')" title="My Information">
-                  <div class="app-tile-icon">
-                    <i class="pi pi-user"></i>
-                  </div>
-                  <span class="app-tile-name">My Information</span>
-                </div>
-              </div>
+      @if (showStartMenu()) {
+        <div class="start-menu-backdrop" (click)="closeStartMenu()">
+          <div class="start-menu" (click)="$event.stopPropagation()">
+            <!-- Search Bar -->
+            <div class="start-menu-search">
+              <i class="pi pi-search"></i>
+              <input
+                #startMenuSearchInput
+                type="text"
+                placeholder="Type to search apps..."
+                [(ngModel)]="startMenuSearch"
+              />
             </div>
-
-            <!-- All Apps Section -->
-            <div class="start-section all-apps-section">
-              <div class="section-header">
-                <h3>All Apps</h3>
-              </div>
-              <div class="app-list">
-                <ng-container *ngIf="filteredStartMenuGroups().length > 0; else noResults">
-                  <ng-container *ngFor="let group of filteredStartMenuGroups()">
-                    <!-- Group Label -->
-                    <div class="app-list-group-label">{{ group.name }}</div>
-                    <!-- Apps in Group -->
-                    <div
-                      class="app-list-item"
-                      *ngFor="let app of group.apps"
-                      (click)="openApp(app.id)"
-                      [title]="app.name"
-                    >
-                      <div class="app-list-icon">
-                        <i [class]="app.icon"></i>
-                      </div>
-                      <span class="app-list-name">{{ app.name }}</span>
+            <!-- Scrollable Content -->
+            <div class="start-menu-content">
+              <!-- Pinned Apps Section -->
+              <div class="start-section pinned-section">
+                <div class="section-header">
+                  <h3>Pinned</h3>
+                </div>
+                <div class="app-grid">
+                  <div class="app-tile" (click)="openApp('calculator')" title="Calculator">
+                    <div class="app-tile-icon">
+                      <i class="pi pi-calculator"></i>
                     </div>
-                  </ng-container>
-                </ng-container>
-                <ng-template #noResults>
-                  <div class="no-results">
-                    <i class="pi pi-search"></i>
-                    <p>No apps found for "{{ startMenuSearch() }}"</p>
+                    <span class="app-tile-name">Calculator</span>
                   </div>
-                </ng-template>
+                  <div class="app-tile" (click)="openApp('explorer')" title="File Explorer">
+                    <div class="app-tile-icon">
+                      <i class="pi pi-folder"></i>
+                    </div>
+                    <span class="app-tile-name">Explorer</span>
+                  </div>
+                  <div class="app-tile" (click)="openApp('my-info')" title="My Information">
+                    <div class="app-tile-icon">
+                      <i class="pi pi-user"></i>
+                    </div>
+                    <span class="app-tile-name">My Information</span>
+                  </div>
+                </div>
+              </div>
+              <!-- All Apps Section -->
+              <div class="start-section all-apps-section">
+                <div class="section-header">
+                  <h3>All Apps</h3>
+                </div>
+                <div class="app-list">
+                  @if (filteredStartMenuGroups().length > 0) {
+                    @for (group of filteredStartMenuGroups(); track group) {
+                      <!-- Group Label -->
+                      <div class="app-list-group-label">{{ group.name }}</div>
+                      <!-- Apps in Group -->
+                      @for (app of group.apps; track app) {
+                        <div class="app-list-item" (click)="openApp(app.id)" [title]="app.name">
+                          <div class="app-list-icon">
+                            <i [class]="app.icon"></i>
+                          </div>
+                          <span class="app-list-name">{{ app.name }}</span>
+                        </div>
+                      }
+                    }
+                  } @else {
+                    <div class="no-results">
+                      <i class="pi pi-search"></i>
+                      <p>No apps found for "{{ startMenuSearch() }}"</p>
+                    </div>
+                  }
+                </div>
               </div>
             </div>
-          </div>
-
-          <!-- Footer -->
-          <div class="start-menu-footer">
-            <div class="user-profile" (click)="openApp('my-info')">
-              <div class="user-avatar">
-                <i class="pi pi-user"></i>
+            <!-- Footer -->
+            <div class="start-menu-footer">
+              <div class="user-profile" (click)="openApp('my-info')">
+                <div class="user-avatar">
+                  <i class="pi pi-user"></i>
+                </div>
+                <span class="user-name">hpphat1992</span>
               </div>
-              <span class="user-name">hpphat1992</span>
-            </div>
-            <div class="footer-actions">
-              <button
-                class="footer-btn settings-btn"
-                (click)="openApp('settings')"
-                title="Open Settings"
-              >
-                <i class="pi pi-cog"></i>
-                <span class="btn-label">Settings</span>
-              </button>
-              <button class="footer-btn lock-btn" (click)="lockScreen()" title="Lock Screen">
-                <i class="pi pi-lock"></i>
-                <span class="btn-label">Lock</span>
-              </button>
-              <button
-                class="footer-btn restart-btn"
-                (click)="restartSystem()"
-                title="Restart System"
-              >
-                <i class="pi pi-refresh"></i>
-                <span class="btn-label">Restart</span>
-              </button>
+              <div class="footer-actions">
+                <button
+                  class="footer-btn settings-btn"
+                  (click)="openApp('settings')"
+                  title="Open Settings"
+                >
+                  <i class="pi pi-cog"></i>
+                  <span class="btn-label">Settings</span>
+                </button>
+                <button class="footer-btn lock-btn" (click)="lockScreen()" title="Lock Screen">
+                  <i class="pi pi-lock"></i>
+                  <span class="btn-label">Lock</span>
+                </button>
+                <button
+                  class="footer-btn restart-btn"
+                  (click)="restartSystem()"
+                  title="Restart System"
+                >
+                  <i class="pi pi-refresh"></i>
+                  <span class="btn-label">Restart</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-
+      }
       <!-- Desktop Context Menu -->
-      <div
-        *ngIf="showDesktopContextMenu()"
-        class="desktop-context-menu"
-        [ngStyle]="{
-          left: desktopContextMenuPosition().x + 'px',
-          top: desktopContextMenuPosition().y + 'px',
-        }"
-        (click)="$event.stopPropagation()"
-      >
-        <div class="context-menu-item" (click)="refreshDesktop()">
-          <i class="pi pi-refresh"></i>
-          <span>Refresh</span>
-        </div>
-
-        <div class="context-menu-separator"></div>
-
+      @if (showDesktopContextMenu()) {
         <div
-          class="context-menu-item"
-          (click)="openQuickActionsMenu($event); $event.stopPropagation()"
+          class="desktop-context-menu"
+          [ngStyle]="{
+            left: desktopContextMenuPosition().x + 'px',
+            top: desktopContextMenuPosition().y + 'px',
+          }"
+          (click)="$event.stopPropagation()"
         >
-          <i class="pi pi-bolt"></i>
-          <span>Quick Actions</span>
-          <i class="pi pi-angle-right context-menu-arrow"></i>
-        </div>
-
-        <div class="context-menu-item" (click)="quickActionShowDesktop()">
-          <i class="pi pi-desktop"></i>
-          <span>Show Desktop</span>
-        </div>
-
-        <div class="context-menu-separator"></div>
-
-        <div class="context-menu-item" (click)="openApp('explorer')">
-          <i class="pi pi-folder"></i>
-          <span>File Explorer</span>
-        </div>
-
-        <div class="context-menu-item" (click)="openApp('calculator')">
-          <i class="pi pi-calculator"></i>
-          <span>Calculator</span>
-        </div>
-
-        <div class="context-menu-separator"></div>
-
-        <div class="context-menu-item" (click)="openSettings()">
-          <i class="pi pi-cog"></i>
-          <span>Settings</span>
-        </div>
-
-        <div class="context-menu-item" (click)="openShortcutsViewer()">
-          <i class="pi pi-keyboard"></i>
-          <span>Keyboard Shortcuts</span>
-        </div>
-
-        <div class="context-menu-separator"></div>
-
-        <div class="context-menu-item" (click)="lockScreen()">
-          <i class="pi pi-lock"></i>
-          <span>Lock Screen</span>
-        </div>
-      </div>
-
-      <!-- Quick Actions Menu -->
-      <div
-        *ngIf="showQuickActionsMenu()"
-        class="quick-actions-menu"
-        [ngStyle]="{
-          left: quickActionsMenuPosition().x + 'px',
-          top: quickActionsMenuPosition().y + 'px',
-        }"
-        (click)="$event.stopPropagation()"
-      >
-        <div class="quick-actions-header">
-          <i class="pi pi-bolt"></i>
-          <span>Quick Actions</span>
-        </div>
-
-        <div class="quick-actions-separator"></div>
-
-        <div class="quick-action-item" (click)="quickActionShowDesktop()">
-          <div class="quick-action-icon">
+          <div class="context-menu-item" (click)="refreshDesktop()">
+            <i class="pi pi-refresh"></i>
+            <span>Refresh</span>
+          </div>
+          <div class="context-menu-separator"></div>
+          <div
+            class="context-menu-item"
+            (click)="openQuickActionsMenu($event); $event.stopPropagation()"
+          >
+            <i class="pi pi-bolt"></i>
+            <span>Quick Actions</span>
+            <i class="pi pi-angle-right context-menu-arrow"></i>
+          </div>
+          <div class="context-menu-item" (click)="quickActionShowDesktop()">
             <i class="pi pi-desktop"></i>
+            <span>Show Desktop</span>
           </div>
-          <div class="quick-action-content">
-            <div class="quick-action-title">Show Desktop</div>
-            <div class="quick-action-desc">Minimize all windows</div>
-          </div>
-        </div>
-
-        <div class="quick-action-item" (click)="quickActionMinimizeAll()">
-          <div class="quick-action-icon">
-            <i class="pi pi-window-minimize"></i>
-          </div>
-          <div class="quick-action-content">
-            <div class="quick-action-title">Minimize All</div>
-            <div class="quick-action-desc">Minimize all windows</div>
-          </div>
-        </div>
-
-        <div class="quick-actions-separator"></div>
-
-        <div class="quick-action-item" (click)="quickActionOpenExplorer()">
-          <div class="quick-action-icon">
+          <div class="context-menu-separator"></div>
+          <div class="context-menu-item" (click)="openApp('explorer')">
             <i class="pi pi-folder"></i>
+            <span>File Explorer</span>
           </div>
-          <div class="quick-action-content">
-            <div class="quick-action-title">File Explorer</div>
-            <div class="quick-action-desc">Open file manager</div>
-          </div>
-        </div>
-
-        <div class="quick-action-item" (click)="quickActionOpenCalculator()">
-          <div class="quick-action-icon">
+          <div class="context-menu-item" (click)="openApp('calculator')">
             <i class="pi pi-calculator"></i>
+            <span>Calculator</span>
           </div>
-          <div class="quick-action-content">
-            <div class="quick-action-title">Calculator</div>
-            <div class="quick-action-desc">Open calculator</div>
+          <div class="context-menu-separator"></div>
+          <div class="context-menu-item" (click)="openSettings()">
+            <i class="pi pi-cog"></i>
+            <span>Settings</span>
+          </div>
+          <div class="context-menu-item" (click)="openShortcutsViewer()">
+            <i class="pi pi-keyboard"></i>
+            <span>Keyboard Shortcuts</span>
+          </div>
+          <div class="context-menu-separator"></div>
+          <div class="context-menu-item" (click)="lockScreen()">
+            <i class="pi pi-lock"></i>
+            <span>Lock Screen</span>
           </div>
         </div>
-
-      </div>
-
+      }
+      <!-- Quick Actions Menu -->
+      @if (showQuickActionsMenu()) {
+        <div
+          class="quick-actions-menu"
+          [ngStyle]="{
+            left: quickActionsMenuPosition().x + 'px',
+            top: quickActionsMenuPosition().y + 'px',
+          }"
+          (click)="$event.stopPropagation()"
+        >
+          <div class="quick-actions-header">
+            <i class="pi pi-bolt"></i>
+            <span>Quick Actions</span>
+          </div>
+          <div class="quick-actions-separator"></div>
+          <div class="quick-action-item" (click)="quickActionShowDesktop()">
+            <div class="quick-action-icon">
+              <i class="pi pi-desktop"></i>
+            </div>
+            <div class="quick-action-content">
+              <div class="quick-action-title">Show Desktop</div>
+              <div class="quick-action-desc">Minimize all windows</div>
+            </div>
+          </div>
+          <div class="quick-action-item" (click)="quickActionMinimizeAll()">
+            <div class="quick-action-icon">
+              <i class="pi pi-window-minimize"></i>
+            </div>
+            <div class="quick-action-content">
+              <div class="quick-action-title">Minimize All</div>
+              <div class="quick-action-desc">Minimize all windows</div>
+            </div>
+          </div>
+          <div class="quick-actions-separator"></div>
+          <div class="quick-action-item" (click)="quickActionOpenExplorer()">
+            <div class="quick-action-icon">
+              <i class="pi pi-folder"></i>
+            </div>
+            <div class="quick-action-content">
+              <div class="quick-action-title">File Explorer</div>
+              <div class="quick-action-desc">Open file manager</div>
+            </div>
+          </div>
+          <div class="quick-action-item" (click)="quickActionOpenCalculator()">
+            <div class="quick-action-icon">
+              <i class="pi pi-calculator"></i>
+            </div>
+            <div class="quick-action-content">
+              <div class="quick-action-title">Calculator</div>
+              <div class="quick-action-desc">Open calculator</div>
+            </div>
+          </div>
+        </div>
+      }
       <!-- Desktop Context Menu Backdrop -->
-      <div
-        *ngIf="showDesktopContextMenu() || showQuickActionsMenu()"
-        class="context-menu-backdrop"
-        (click)="hideDesktopContextMenu()"
-      ></div>
+      @if (showDesktopContextMenu() || showQuickActionsMenu()) {
+        <div class="context-menu-backdrop" (click)="hideDesktopContextMenu()"></div>
+      }
     </div>
   </app-welcome-screen>
-
   <!-- App Splash Screen -->
   <app-splash></app-splash>
-
   <!-- Settings Dialog -->
   <app-settings-dialog
     [isVisible]="showSettingsDialog()"
@@ -745,157 +730,174 @@
     (onSettingsChange)="onSettingsChange($event)"
   >
   </app-settings-dialog>
-
   <!-- Keyboard Shortcuts Viewer -->
-  <div
-    *ngIf="showShortcutsViewer()"
-    class="shortcuts-viewer-overlay"
-    (click)="closeShortcutsViewer()"
-  >
-    <div class="shortcuts-viewer-dialog" (click)="$event.stopPropagation()">
-      <div class="shortcuts-viewer-header">
-        <h2>
-          <i class="pi pi-keyboard"></i>
-          Keyboard Shortcuts
-        </h2>
-        <button class="close-btn" (click)="closeShortcutsViewer()" title="Close">
-          <i class="pi pi-times"></i>
-        </button>
-      </div>
-      <div class="shortcuts-viewer-content">
-        <div *ngFor="let category of keyboardShortcuts" class="shortcuts-category">
-          <h3 class="category-title">{{ category.category }}</h3>
-          <div class="shortcuts-list">
-            <div *ngFor="let shortcut of category.shortcuts" class="shortcut-item">
-              <div class="shortcut-keys">
-                <span *ngFor="let key of shortcut.keys; let last = last" class="key-badge">
-                  {{
-                    key === 'Option'
-                      ? isMac
-                        ? '⌥'
-                        : 'Alt'
-                      : key === 'Ctrl'
-                        ? isMac
-                          ? '⌃'
-                          : 'Ctrl'
-                        : key === 'Shift'
-                          ? '⇧'
-                          : key === 'Esc'
-                            ? 'Esc'
-                            : key === '←'
-                              ? '←'
-                              : key === '→'
-                                ? '→'
-                                : key
-                  }}
-                  <span *ngIf="!last" class="key-separator">+</span>
-                </span>
+  @if (showShortcutsViewer()) {
+    <div class="shortcuts-viewer-overlay" (click)="closeShortcutsViewer()">
+      <div class="shortcuts-viewer-dialog" (click)="$event.stopPropagation()">
+        <div class="shortcuts-viewer-header">
+          <h2>
+            <i class="pi pi-keyboard"></i>
+            Keyboard Shortcuts
+          </h2>
+          <button class="close-btn" (click)="closeShortcutsViewer()" title="Close">
+            <i class="pi pi-times"></i>
+          </button>
+        </div>
+        <div class="shortcuts-viewer-content">
+          @for (category of keyboardShortcuts; track category) {
+            <div class="shortcuts-category">
+              <h3 class="category-title">{{ category.category }}</h3>
+              <div class="shortcuts-list">
+                @for (shortcut of category.shortcuts; track shortcut) {
+                  <div class="shortcut-item">
+                    <div class="shortcut-keys">
+                      @for (key of shortcut.keys; track key; let last = $last) {
+                        <span class="key-badge">
+                          {{
+                            key === 'Option'
+                              ? isMac
+                                ? '⌥'
+                                : 'Alt'
+                              : key === 'Ctrl'
+                                ? isMac
+                                  ? '⌃'
+                                  : 'Ctrl'
+                                : key === 'Shift'
+                                  ? '⇧'
+                                  : key === 'Esc'
+                                    ? 'Esc'
+                                    : key === '←'
+                                      ? '←'
+                                      : key === '→'
+                                        ? '→'
+                                        : key
+                          }}
+                          @if (!last) {
+                            <span class="key-separator">+</span>
+                          }
+                        </span>
+                      }
+                    </div>
+                    <div class="shortcut-description">{{ shortcut.description }}</div>
+                  </div>
+                }
               </div>
-              <div class="shortcut-description">{{ shortcut.description }}</div>
             </div>
-          </div>
+          }
         </div>
       </div>
     </div>
-  </div>
-
+  }
   <!-- Window Switcher (Option+Arrow) -->
-  <div *ngIf="showWindowSwitcher()" class="window-switcher-overlay">
-    <div class="window-switcher-container">
-      <!-- Window List -->
-      <div class="window-switcher-windows">
-        <div
-          *ngFor="let window of openWindowsList(); let i = index"
-          class="window-switcher-item"
-          [class.selected]="i === windowSwitcherSelectedIndex()"
-          [class.minimized]="window.isMinimized"
-        >
-          <div class="window-switcher-icon">
-            <i [class]="window.icon"></i>
-          </div>
-          <div class="window-switcher-title">{{ window.title }}</div>
-          <div *ngIf="window.isMinimized" class="window-switcher-badge">
-            <i class="pi pi-window-minimize"></i>
-          </div>
+  @if (showWindowSwitcher()) {
+    <div class="window-switcher-overlay">
+      <div class="window-switcher-container">
+        <!-- Window List -->
+        <div class="window-switcher-windows">
+          @for (window of openWindowsList(); track window; let i = $index) {
+            <div
+              class="window-switcher-item"
+              [class.selected]="i === windowSwitcherSelectedIndex()"
+              [class.minimized]="window.isMinimized"
+            >
+              <div class="window-switcher-icon">
+                <i [class]="window.icon"></i>
+              </div>
+              <div class="window-switcher-title">{{ window.title }}</div>
+              @if (window.isMinimized) {
+                <div class="window-switcher-badge">
+                  <i class="pi pi-window-minimize"></i>
+                </div>
+              }
+            </div>
+          }
+        </div>
+        <div class="window-switcher-hint">
+          <span>Press ← → to switch • Release {{ isMac ? '⌥' : 'Alt' }} to select</span>
         </div>
       </div>
-      <div class="window-switcher-hint">
-        <span>Press ← → to switch • Release {{ isMac ? '⌥' : 'Alt' }} to select</span>
-      </div>
     </div>
-  </div>
-
+  }
   <!-- Dynamic Windows from WindowManager -->
-  <ng-container *ngFor="let window of windowManager.windowList()">
-    <app-window
-      *ngIf="!window.isMinimized || windowManager.isWindowOpen(window.id)"
-      [title]="window.title"
-      [icon]="window.icon"
-      [initialWidth]="window.initialWidth"
-      [initialHeight]="window.initialHeight"
-      [initialX]="window.initialX"
-      [initialY]="window.initialY"
-      [maximizable]="window.maximizable"
-      [zIndex]="window.zIndex"
-      [isFocused]="window.isFocused"
-      [isMinimizedExternal]="window.isMinimized"
-      (onClose)="windowManager.closeWindow(window.id)"
-      (onMinimize)="windowManager.minimizeWindow(window.id)"
-      (onMaximize)="windowManager.maximizeWindow(window.id)"
-      (onRestore)="windowManager.restoreWindow(window.id)"
-      (onFocus)="windowManager.focusWindow(window.id)"
-    >
-      <!-- Dynamic Component Rendering -->
-      <ng-container [ngSwitch]="window.component">
-        <app-calculator *ngSwitchCase="'calculator'"></app-calculator>
-
-        <app-iframe-app
-          url="https://hpphat1992.vercel.app"
-          *ngSwitchCase="'my-info'"
-        ></app-iframe-app>
-
-        <app-love-app *ngSwitchCase="'love'"></app-love-app>
-
-        <app-explorer
-          *ngSwitchCase="'explorer'"
-          (onFileOpen)="onExplorerFileOpen($event)"
-          (onContextMenuAction)="onExplorerContextMenu($event)"
-        >
-        </app-explorer>
-
-        <app-text-viewer
-          *ngSwitchCase="'text-viewer'"
-          [filePath]="window.data?.path"
-          [fileName]="window.data?.name"
-          [fileType]="window.data?.type"
-        >
-        </app-text-viewer>
-
-        <app-image-viewer
-          *ngSwitchCase="'image-viewer'"
-          [imagePath]="window.data?.path"
-          [imageName]="window.data?.name"
-        >
-        </app-image-viewer>
-
-        <app-pdf-viewer *ngSwitchCase="'pdf-viewer'" [pdfPath]="window.data?.path">
-        </app-pdf-viewer>
-
-        <app-settings-app *ngSwitchCase="'settings'" (onSettingsChange)="onSettingsChange($event)">
-        </app-settings-app>
-
-        <app-expense-app *ngSwitchCase="'expense'"></app-expense-app>
-
-        <app-business-app *ngSwitchCase="'business'"></app-business-app>
-
-        <app-chinese-chess-app *ngSwitchCase="'chinese-chess'"></app-chinese-chess-app>
-
-        <app-fb-id-finder-app *ngSwitchCase="'fb-id-finder'"></app-fb-id-finder-app>
-
-        <app-graph-visualizer-app *ngSwitchCase="'graph-visualizer'"></app-graph-visualizer-app>
-        <app-sieu-co-app *ngSwitchCase="'sieu-co'"></app-sieu-co-app>
-        <app-image-search-app *ngSwitchCase="'image-search'"></app-image-search-app>
-      </ng-container>
-    </app-window>
-  </ng-container> </ng-container
-><!-- End Desktop Environment -->
+  @for (window of windowManager.windowList(); track window) {
+    @if (!window.isMinimized || windowManager.isWindowOpen(window.id)) {
+      <app-window
+        [title]="window.title"
+        [icon]="window.icon"
+        [initialWidth]="window.initialWidth"
+        [initialHeight]="window.initialHeight"
+        [initialX]="window.initialX"
+        [initialY]="window.initialY"
+        [maximizable]="window.maximizable"
+        [zIndex]="window.zIndex"
+        [isFocused]="window.isFocused"
+        [isMinimizedExternal]="window.isMinimized"
+        (onClose)="windowManager.closeWindow(window.id)"
+        (onMinimize)="windowManager.minimizeWindow(window.id)"
+        (onMaximize)="windowManager.maximizeWindow(window.id)"
+        (onRestore)="windowManager.restoreWindow(window.id)"
+        (onFocus)="windowManager.focusWindow(window.id)"
+      >
+        <!-- Dynamic Component Rendering -->
+        @switch (window.component) {
+          @case ('calculator') {
+            <app-calculator></app-calculator>
+          }
+          @case ('my-info') {
+            <app-iframe-app url="https://hpphat1992.vercel.app"></app-iframe-app>
+          }
+          @case ('love') {
+            <app-love-app></app-love-app>
+          }
+          @case ('explorer') {
+            <app-explorer
+              (onFileOpen)="onExplorerFileOpen($event)"
+              (onContextMenuAction)="onExplorerContextMenu($event)"
+            >
+            </app-explorer>
+          }
+          @case ('text-viewer') {
+            <app-text-viewer
+              [filePath]="window.data?.path"
+              [fileName]="window.data?.name"
+              [fileType]="window.data?.type"
+            >
+            </app-text-viewer>
+          }
+          @case ('image-viewer') {
+            <app-image-viewer [imagePath]="window.data?.path" [imageName]="window.data?.name">
+            </app-image-viewer>
+          }
+          @case ('pdf-viewer') {
+            <app-pdf-viewer [pdfPath]="window.data?.path"> </app-pdf-viewer>
+          }
+          @case ('settings') {
+            <app-settings-app (onSettingsChange)="onSettingsChange($event)"> </app-settings-app>
+          }
+          @case ('expense') {
+            <app-expense-app></app-expense-app>
+          }
+          @case ('business') {
+            <app-business-app></app-business-app>
+          }
+          @case ('chinese-chess') {
+            <app-chinese-chess-app></app-chinese-chess-app>
+          }
+          @case ('fb-id-finder') {
+            <app-fb-id-finder-app></app-fb-id-finder-app>
+          }
+          @case ('graph-visualizer') {
+            <app-graph-visualizer-app></app-graph-visualizer-app>
+          }
+          @case ('sieu-co') {
+            <app-sieu-co-app></app-sieu-co-app>
+          }
+          @case ('image-search') {
+            <app-image-search-app></app-image-search-app>
+          }
+        }
+      </app-window>
+    }
+  }
+}
+<!-- End Desktop Environment -->

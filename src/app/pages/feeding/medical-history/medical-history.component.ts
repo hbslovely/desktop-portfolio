@@ -13,7 +13,7 @@ import {
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { CommonModule } from '@angular/common';
+
 import { of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { ExplorerEntry, ExplorerService, ExplorerType } from '../../../services/explorer.service';
@@ -40,7 +40,6 @@ const MEDICAL_FOLDER_NAME = 'Y tế';
   selector: 'app-medical-history',
   standalone: true,
   imports: [
-    CommonModule,
     MedicalHistoryDialogComponent,
     MedicalHistoryFilterComponent,
     MedicalHistoryTimelineComponent,

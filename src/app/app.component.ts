@@ -105,6 +105,12 @@ interface WindowConfig {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AppComponent implements AfterViewInit, OnDestroy {
+  private sanitizer = inject(DomSanitizer);
+  private cdr = inject(ChangeDetectorRef);
+  private searchService = inject(SearchService);
+  private systemRestartService = inject(SystemRestartService);
+  private fileSystemService = inject(FileSystemService);
+
   @ViewChild(WelcomeScreenComponent) welcomeScreen!: WelcomeScreenComponent;
   @ViewChild('searchInput', { static: false }) searchInput!: ElementRef<HTMLInputElement>;
   @ViewChild('startMenuSearchInput', { static: false })
@@ -130,13 +136,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   currentTypingText = signal('');
   currentTypingIndex = signal(-1);
 
-  constructor(
-    private sanitizer: DomSanitizer,
-    private cdr: ChangeDetectorRef,
-    private searchService: SearchService,
-    private systemRestartService: SystemRestartService,
-    private fileSystemService: FileSystemService
-  ) {
+  constructor() {
     // Listen for restart requests from lock screen
     this.systemRestartHandler = () => this.restartSystem();
     window.addEventListener('system-restart-requested', this.systemRestartHandler);
@@ -384,17 +384,13 @@ export class AppComponent implements AfterViewInit, OnDestroy {
       id: 'information',
       name: 'Information',
       icon: 'pi pi-info-circle',
-      apps: [
-        { id: 'my-info', name: 'My Information', icon: 'pi pi-user' },
-      ],
+      apps: [{ id: 'my-info', name: 'My Information', icon: 'pi pi-user' }],
     },
     {
       id: 'system',
       name: 'System',
       icon: 'pi pi-cog',
-      apps: [
-        { id: 'settings', name: 'Settings', icon: 'pi pi-cog' },
-      ],
+      apps: [{ id: 'settings', name: 'Settings', icon: 'pi pi-cog' }],
     },
   ];
 
@@ -735,13 +731,14 @@ export class AppComponent implements AfterViewInit, OnDestroy {
         this.clipboardAction.set('cut');
         break;
 
-      case 'paste':
+      case 'paste': {
         const clipboardItem = this.clipboardItem();
         const clipboardAction = this.clipboardAction();
         if (clipboardItem && clipboardAction) {
           this.pasteFileSystemItem(clipboardItem, clipboardAction);
         }
         break;
+      }
 
       case 'set-wallpaper':
         this.setImageAsWallpaper(item);

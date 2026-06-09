@@ -88,7 +88,7 @@ export class NotationService {
    * Get suffix for duplicate pieces in same column
    */
   private getDuplicateSuffix(board: Board, from: Position, piece: Piece): string {
-    let sameTypePieces: Position[] = [];
+    const sameTypePieces: Position[] = [];
 
     // Find all pieces of same type and color in same column
     for (let row = 0; row < 10; row++) {
@@ -198,7 +198,7 @@ export class NotationService {
    */
   formatMoveHistory(moves: Move[], board: Board): string[] {
     const notations: string[] = [];
-    let currentBoard = board;
+    const currentBoard = board;
 
     // This would need to track board state, simplified version
     for (let i = 0; i < moves.length; i++) {
