@@ -1,24 +1,19 @@
-# Generates a daily medical-history report (Markdown + PDF) from the "Y Tế"
-# Google Sheet tab and uploads both files to a shared Google Drive folder.
-# The report always covers ALL entries in the sheet — REPORT_DATE is only
-# used as the file name label (medical-report-YYYY-MM-DD.md / .pdf).
+# Generates individual medical report files from the "Y Tế" Google Sheet tab.
+# Each row in the sheet → 1 Markdown file + 1 PDF file.
+# File naming: YYYY-MM-DD_{kind}_{title-slug}_{user}.md / .pdf
 #
-# Idempotency: the Drive folder is checked first; if a file whose name matches
-# "medical-report-YYYY-MM-DD.pdf" already exists the job exits early.
+# Idempotency: each file is checked against the Drive folder before uploading.
+# Files already present are skipped — only new rows produce new uploads.
 #
 # Schedule: 01:00 UTC every day (08:00 ICT).
-# Can also be triggered manually with an optional custom label date.
 #
 # Required GitHub Secrets:
 #   GOOGLE_SHEETS_API_KEY          — public read-only Sheets API key
 #   GOOGLE_FEEDING_SHEET_ID        — spreadsheet ID
 #   GOOGLE_MEDICAL_SHEET_GID       — GID of the "Y Tế" tab (e.g. 631680908)
-#   GOOGLE_OAUTH_CLIENT_ID         — OAuth2 client ID (Desktop app type)
+#   GOOGLE_OAUTH_CLIENT_ID         — OAuth2 Desktop app client ID
 #   GOOGLE_OAUTH_CLIENT_SECRET     — OAuth2 client secret
 #   GOOGLE_OAUTH_REFRESH_TOKEN     — Refresh token for the Drive folder owner
-#
-# NOTE: Service accounts cannot upload to regular My Drive folders (no quota).
-# Use a personal OAuth2 refresh token instead — see docs/integrations/ for setup.
 
 name: Daily medical report
 
@@ -27,12 +22,8 @@ on:
     - cron: "0 1 * * *"   # 01:00 UTC = 08:00 ICT
   workflow_dispatch:
     inputs:
-      date:
-        description: "Label date for the report file (YYYY-MM-DD); defaults to today UTC"
-        required: false
-        type: string
       force:
-        description: "Regenerate even if report already exists in Drive"
+        description: "Re-upload all files even if already in Drive"
         required: false
         default: "false"
         type: choice
@@ -44,36 +35,19 @@ permissions:
   contents: read
 
 concurrency:
-  group: medical-report-${{ github.event.inputs.date || 'auto' }}
+  group: medical-report
   cancel-in-progress: false
 
 jobs:
   generate-and-upload:
-    name: Generate & upload report
+    name: Generate & upload per-entry reports
     runs-on: ubuntu-latest
 
     env:
       DRIVE_FOLDER_ID: "1gp2VKS1BWWUnFUQWOkz4RXK7bmThkJvP"
 
     steps:
-      # ── 1. Resolve report date ───────────────────────────────────────────────
-      - name: Resolve report date
-        id: date
-        run: |
-          set -euo pipefail
-          DATE="${{ github.event.inputs.date }}"
-          if [ -z "${DATE}" ]; then
-            DATE="$(date -u +%Y-%m-%d)"
-          fi
-          if ! echo "${DATE}" | grep -qE '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'; then
-            echo "Invalid date: ${DATE}" && exit 1
-          fi
-          echo "date=${DATE}"                         >> "${GITHUB_OUTPUT}"
-          echo "md_name=medical-report-${DATE}.md"   >> "${GITHUB_OUTPUT}"
-          echo "pdf_name=medical-report-${DATE}.pdf"  >> "${GITHUB_OUTPUT}"
-          echo "Report label date: ${DATE} (covers all sheet entries)"
-
-      # ── 2. Checkout (needed for helper scripts) ──────────────────────────────
+      # ── 1. Checkout ──────────────────────────────────────────────────────────
       - name: Checkout
         uses: actions/checkout@v4
         with:
@@ -81,65 +55,22 @@ jobs:
             .github/scripts/generate-medical-report.mjs
             .github/scripts/drive-oauth-token.py
             .github/scripts/drive-upload.py
+            .github/scripts/drive-upload-manifest.py
 
-      # ── 3. Set up Python ─────────────────────────────────────────────────────
+      # ── 2. Set up Python ─────────────────────────────────────────────────────
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
-      # ── 4. Check if report already exists in Drive ──────────────────────────
-      - name: Check Drive for existing report
-        id: check
-        env:
-          GOOGLE_OAUTH_CLIENT_ID:     ${{ secrets.GOOGLE_OAUTH_CLIENT_ID }}
-          GOOGLE_OAUTH_CLIENT_SECRET: ${{ secrets.GOOGLE_OAUTH_CLIENT_SECRET }}
-          GOOGLE_OAUTH_REFRESH_TOKEN: ${{ secrets.GOOGLE_OAUTH_REFRESH_TOKEN }}
-          PDF_NAME:  ${{ steps.date.outputs.pdf_name }}
-          FORCE:     ${{ github.event.inputs.force || 'false' }}
-        run: |
-          set -euo pipefail
-
-          if [ "${FORCE}" = "true" ]; then
-            echo "Force mode — skipping duplicate check."
-            echo "should_run=true" >> "${GITHUB_OUTPUT}"
-            exit 0
-          fi
-
-          # Get access token via refresh token
-          ACCESS_TOKEN="$(python3 .github/scripts/drive-oauth-token.py)"
-
-          # Search Drive folder for existing PDF
-          RESULT="$(curl -sf --get \
-            -H "Authorization: Bearer ${ACCESS_TOKEN}" \
-            --data-urlencode "q=name='${PDF_NAME}' and '${DRIVE_FOLDER_ID}' in parents and trashed=false" \
-            --data-urlencode "fields=files(id,name)" \
-            "https://www.googleapis.com/drive/v3/files" \
-            || true)"
-
-          echo "Drive search response: ${RESULT}"
-
-          FILE_COUNT="$(echo "${RESULT}" | python3 -c \
-            "import sys,json; print(len(json.load(sys.stdin).get('files',[])))" 2>/dev/null || echo "0")"
-
-          if [ "${FILE_COUNT}" -gt 0 ]; then
-            echo "Report ${PDF_NAME} already exists in Drive — skipping."
-            echo "should_run=false" >> "${GITHUB_OUTPUT}"
-          else
-            echo "No existing report found — will generate."
-            echo "should_run=true" >> "${GITHUB_OUTPUT}"
-          fi
-
-      # ── 5. Set up Node.js ────────────────────────────────────────────────────
+      # ── 3. Set up Node.js ────────────────────────────────────────────────────
       - name: Set up Node.js
-        if: steps.check.outputs.should_run == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: "20"
 
-      # ── 6. Install Node dependencies ─────────────────────────────────────────
-      - name: Install report dependencies
-        if: steps.check.outputs.should_run == 'true'
+      # ── 4. Install dependencies ──────────────────────────────────────────────
+      - name: Install dependencies
         run: |
           npm install --no-save md-to-pdf@5
           sudo apt-get update -qq
@@ -148,64 +79,52 @@ jobs:
           echo "PUPPETEER_EXECUTABLE_PATH=${CHROMIUM_PATH}" >> "${GITHUB_ENV}"
           echo "PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true"       >> "${GITHUB_ENV}"
 
-      # ── 7. Generate Markdown + PDF ───────────────────────────────────────────
-      - name: Generate report
-        if: steps.check.outputs.should_run == 'true'
+      # ── 5. Generate one MD + PDF per sheet row ───────────────────────────────
+      - name: Generate reports
         env:
           GOOGLE_SHEETS_API_KEY:    ${{ secrets.GOOGLE_SHEETS_API_KEY }}
           GOOGLE_FEEDING_SHEET_ID:  ${{ secrets.GOOGLE_FEEDING_SHEET_ID }}
           GOOGLE_MEDICAL_SHEET_GID: ${{ secrets.GOOGLE_MEDICAL_SHEET_GID }}
-          REPORT_DATE:              ${{ steps.date.outputs.date }}
-        run: node .github/scripts/generate-medical-report.mjs
+        run: |
+          node .github/scripts/generate-medical-report.mjs
+          echo "Generated files:"
+          ls reports/ | grep -v manifest.json | head -40
 
-      # ── 8. Upload MD + PDF to Google Drive ───────────────────────────────────
-      - name: Upload to Google Drive
-        if: steps.check.outputs.should_run == 'true'
+      # ── 6. Get OAuth2 access token ───────────────────────────────────────────
+      - name: Get Drive access token
+        id: token
         env:
           GOOGLE_OAUTH_CLIENT_ID:     ${{ secrets.GOOGLE_OAUTH_CLIENT_ID }}
           GOOGLE_OAUTH_CLIENT_SECRET: ${{ secrets.GOOGLE_OAUTH_CLIENT_SECRET }}
           GOOGLE_OAUTH_REFRESH_TOKEN: ${{ secrets.GOOGLE_OAUTH_REFRESH_TOKEN }}
-          MD_NAME:   ${{ steps.date.outputs.md_name }}
-          PDF_NAME:  ${{ steps.date.outputs.pdf_name }}
         run: |
-          set -euo pipefail
+          TOKEN="$(python3 .github/scripts/drive-oauth-token.py)"
+          echo "::add-mask::${TOKEN}"
+          echo "access_token=${TOKEN}" >> "${GITHUB_OUTPUT}"
 
-          echo "Uploading ${MD_NAME}…"
-          python3 .github/scripts/drive-upload.py \
-            "reports/${MD_NAME}" \
-            "text/markdown" \
-            "${MD_NAME}" \
-            "${DRIVE_FOLDER_ID}"
+      # ── 7. Upload each entry — skip files already in Drive ───────────────────
+      - name: Upload to Google Drive
+        env:
+          ACCESS_TOKEN:               ${{ steps.token.outputs.access_token }}
+          FORCE:                      ${{ github.event.inputs.force || 'false' }}
+          GOOGLE_OAUTH_CLIENT_ID:     ${{ secrets.GOOGLE_OAUTH_CLIENT_ID }}
+          GOOGLE_OAUTH_CLIENT_SECRET: ${{ secrets.GOOGLE_OAUTH_CLIENT_SECRET }}
+          GOOGLE_OAUTH_REFRESH_TOKEN: ${{ secrets.GOOGLE_OAUTH_REFRESH_TOKEN }}
+        run: python3 .github/scripts/drive-upload-manifest.py
 
-          echo "Uploading ${PDF_NAME}…"
-          python3 .github/scripts/drive-upload.py \
-            "reports/${PDF_NAME}" \
-            "application/pdf" \
-            "${PDF_NAME}" \
-            "${DRIVE_FOLDER_ID}"
-
-          echo "Both files uploaded successfully."
-
-      # ── 9. Job summary ───────────────────────────────────────────────────────
+      # ── 8. Job summary ───────────────────────────────────────────────────────
       - name: Job summary
         if: always()
-        env:
-          SHOULD_RUN:  ${{ steps.check.outputs.should_run }}
-          REPORT_DATE: ${{ steps.date.outputs.date }}
-          MD_NAME:     ${{ steps.date.outputs.md_name }}
-          PDF_NAME:    ${{ steps.date.outputs.pdf_name }}
         run: |
           {
-            echo "## 📋 Medical Report — ${REPORT_DATE}"
+            echo "## 📋 Medical Report Upload"
             echo ""
-            if [ "${SHOULD_RUN}" = "false" ]; then
-              echo "> ℹ️ Report **already existed** in Google Drive — skipped generation."
-            else
-              echo "| File | Status |"
-              echo "|------|--------|"
-              echo "| \`${MD_NAME}\` | ✅ Uploaded |"
-              echo "| \`${PDF_NAME}\` | ✅ Uploaded |"
-              echo ""
-              echo "📁 [Open Drive folder](https://drive.google.com/drive/folders/${DRIVE_FOLDER_ID})"
-            fi
+            echo "| | |"
+            echo "|---|---|"
+            echo "| **Total entries** | ${REPORT_TOTAL:-?} |"
+            echo "| **Uploaded** | ✅ ${REPORT_UPLOADED:-0} files |"
+            echo "| **Skipped** (already in Drive) | ⏭ ${REPORT_SKIPPED:-0} files |"
+            echo "| **Errors** | ❌ ${REPORT_ERRORS:-0} files |"
+            echo ""
+            echo "📁 [Open Drive folder](https://drive.google.com/drive/folders/${DRIVE_FOLDER_ID})"
           } >> "${GITHUB_STEP_SUMMARY}"
