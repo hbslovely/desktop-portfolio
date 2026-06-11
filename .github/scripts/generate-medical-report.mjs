@@ -2,9 +2,9 @@
 /**
  * generate-medical-report.mjs
  *
- * Fetches all rows from the "Y Tế" tab (GID 631680908) of the family Google Sheet,
- * builds a well-formatted Markdown document, then converts it to PDF via
- * the `md-to-pdf` npm package (uses Chromium under the hood — no extra binary needed).
+ * Fetches ALL rows from the medical-history Google Sheet tab and builds a
+ * well-formatted Markdown + PDF report covering every entry in the sheet.
+ * REPORT_DATE is used only as the file name label, not as a data filter.
  *
  * Output (written to ./reports/):
  *   medical-report-YYYY-MM-DD.md
@@ -13,7 +13,8 @@
  * Required environment variables:
  *   GOOGLE_SHEETS_API_KEY          — public read-only API key
  *   GOOGLE_FEEDING_SHEET_ID        — spreadsheet ID
- *   REPORT_DATE                    — ISO date to label the report (default: today UTC)
+ *   GOOGLE_MEDICAL_SHEET_GID       — GID of the "Y Tế" tab (e.g. 631680908)
+ *   REPORT_DATE                    — ISO date used as file label (default: today UTC)
  */
 
 import { writeFileSync, mkdirSync, existsSync } from 'node:fs';
@@ -24,13 +25,17 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
-const SHEET_ID = process.env.GOOGLE_FEEDING_SHEET_ID;
-const API_KEY = process.env.GOOGLE_SHEETS_API_KEY;
+const SHEET_ID  = process.env.GOOGLE_FEEDING_SHEET_ID;
+const API_KEY   = process.env.GOOGLE_SHEETS_API_KEY;
+const SHEET_GID = process.env.GOOGLE_MEDICAL_SHEET_GID;
 const REPORT_DATE = process.env.REPORT_DATE || new Date().toISOString().slice(0, 10);
-const SHEET_GID = '631680908'; // "Y Tế" tab
 
 if (!SHEET_ID || !API_KEY) {
   console.error('Missing GOOGLE_FEEDING_SHEET_ID or GOOGLE_SHEETS_API_KEY');
+  process.exit(1);
+}
+if (!SHEET_GID) {
+  console.error('Missing GOOGLE_MEDICAL_SHEET_GID');
   process.exit(1);
 }
 
