@@ -1,0 +1,297 @@
+# Generates a daily medical-history report (Markdown + PDF) from the "Y Tế"
+# Google Sheet tab and uploads both files to a shared Google Drive folder.
+#
+# Idempotency: the Drive folder is checked first; if a file whose name matches
+# "medical-report-YYYY-MM-DD.pdf" already exists the job exits early.
+#
+# Schedule: 01:00 UTC every day (08:00 ICT).
+# Can also be triggered manually with an optional custom date.
+#
+# Required GitHub Secrets:
+#   GOOGLE_SHEETS_API_KEY          — public read-only key (same as NG_APP_GOOGLE_SHEETS_API_KEY)
+#   GOOGLE_FEEDING_SHEET_ID        — spreadsheet ID (same as NG_APP_GOOGLE_FEEDING_SHEET_ID)
+#   GOOGLE_SERVICE_ACCOUNT_JSON    — full JSON key of a service account that has
+#                                    "Editor" access to the Drive folder below
+#
+# Required GitHub Variables (or can be hard-coded here):
+#   GOOGLE_DRIVE_FOLDER_ID         — Drive folder ID: 1gp2VKS1BWWUnFUQWOkz4RXK7bmThkJvP
+
+name: Daily medical report
+
+on:
+  schedule:
+    - cron: "0 1 * * *"   # 01:00 UTC = 08:00 ICT
+  workflow_dispatch:
+    inputs:
+      date:
+        description: "Report date (YYYY-MM-DD); defaults to yesterday UTC"
+        required: false
+        type: string
+      force:
+        description: "Regenerate even if report already exists in Drive"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: medical-report-${{ github.event.inputs.date || 'auto' }}
+  cancel-in-progress: false
+
+jobs:
+  generate-and-upload:
+    name: Generate & upload report
+    runs-on: ubuntu-latest
+
+    env:
+      DRIVE_FOLDER_ID: "1gp2VKS1BWWUnFUQWOkz4RXK7bmThkJvP"
+
+    steps:
+      # ── 1. Resolve report date ───────────────────────────────────────────────
+      - name: Resolve report date
+        id: date
+        run: |
+          set -euo pipefail
+          DATE="${{ github.event.inputs.date }}"
+          if [ -z "${DATE}" ]; then
+            DATE="$(date -u -d 'yesterday' +%Y-%m-%d)"
+          fi
+          if ! echo "${DATE}" | grep -qE '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'; then
+            echo "Invalid date: ${DATE}" && exit 1
+          fi
+          echo "date=${DATE}" >> "${GITHUB_OUTPUT}"
+          echo "md_name=medical-report-${DATE}.md" >> "${GITHUB_OUTPUT}"
+          echo "pdf_name=medical-report-${DATE}.pdf" >> "${GITHUB_OUTPUT}"
+          echo "Report date: ${DATE}"
+
+      # ── 2. Check if report already exists in Drive ──────────────────────────
+      - name: Check Drive for existing report
+        id: check
+        env:
+          SA_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          PDF_NAME: ${{ steps.date.outputs.pdf_name }}
+          FORCE: ${{ github.event.inputs.force || 'false' }}
+        run: |
+          set -euo pipefail
+
+          if [ "${FORCE}" = "true" ]; then
+            echo "Force mode — skipping duplicate check."
+            echo "should_run=true" >> "${GITHUB_OUTPUT}"
+            exit 0
+          fi
+
+          # Write service account key to temp file
+          SA_FILE="$(mktemp)"
+          echo "${SA_JSON}" > "${SA_FILE}"
+
+          # Obtain OAuth2 access token via service account JWT
+          ACCESS_TOKEN="$(python3 - "${SA_FILE}" <<'PYEOF'
+import sys, json, time, base64, hmac, hashlib, urllib.request, urllib.parse
+
+sa_file = sys.argv[1]
+with open(sa_file) as f:
+    sa = json.load(f)
+
+now = int(time.time())
+header = base64.urlsafe_b64encode(b'{"alg":"RS256","typ":"JWT"}').rstrip(b'=').decode()
+payload = base64.urlsafe_b64encode(json.dumps({
+    "iss": sa["client_email"],
+    "scope": "https://www.googleapis.com/auth/drive.readonly",
+    "aud": "https://oauth2.googleapis.com/token",
+    "iat": now,
+    "exp": now + 3600,
+}).encode()).rstrip(b'=').decode()
+
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import padding
+
+private_key = serialization.load_pem_private_key(sa["private_key"].encode(), password=None)
+sig_input = f"{header}.{payload}".encode()
+sig = private_key.sign(sig_input, padding.PKCS1v15(), hashes.SHA256())
+sig_b64 = base64.urlsafe_b64encode(sig).rstrip(b'=').decode()
+
+jwt = f"{header}.{payload}.{sig_b64}"
+
+data = urllib.parse.urlencode({
+    "grant_type": "urn:ietf:params:oauth:grant-type:jwt-bearer",
+    "assertion": jwt,
+}).encode()
+
+req = urllib.request.Request("https://oauth2.googleapis.com/token", data=data)
+with urllib.request.urlopen(req) as r:
+    resp = json.load(r)
+print(resp["access_token"])
+PYEOF
+          )"
+
+          rm -f "${SA_FILE}"
+
+          # Search Drive folder for existing PDF
+          ENCODED_NAME="$(python3 -c "import urllib.parse, sys; print(urllib.parse.quote(sys.argv[1]))" "${PDF_NAME}")"
+          SEARCH_URL="https://www.googleapis.com/drive/v3/files?q=name%3D%27${PDF_NAME}%27+and+%27${{ env.DRIVE_FOLDER_ID }}%27+in+parents+and+trashed%3Dfalse&fields=files(id,name)"
+
+          RESULT="$(curl -sf -H "Authorization: Bearer ${ACCESS_TOKEN}" "${SEARCH_URL}")"
+          FILE_COUNT="$(echo "${RESULT}" | python3 -c "import sys,json; d=json.load(sys.stdin); print(len(d.get('files',[])))")"
+
+          if [ "${FILE_COUNT}" -gt 0 ]; then
+            echo "Report ${PDF_NAME} already exists in Drive — skipping."
+            echo "should_run=false" >> "${GITHUB_OUTPUT}"
+          else
+            echo "No existing report found — will generate."
+            echo "should_run=true" >> "${GITHUB_OUTPUT}"
+          fi
+
+      # ── 3. Checkout (needed to run our local script) ─────────────────────────
+      - name: Checkout
+        if: steps.check.outputs.should_run == 'true'
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            .github/scripts/generate-medical-report.mjs
+
+      # ── 4. Set up Node.js ────────────────────────────────────────────────────
+      - name: Set up Node.js
+        if: steps.check.outputs.should_run == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      # ── 5. Install dependencies ──────────────────────────────────────────────
+      - name: Install report dependencies
+        if: steps.check.outputs.should_run == 'true'
+        run: |
+          # md-to-pdf uses Puppeteer / Chromium for PDF rendering
+          npm install --no-save md-to-pdf@5 cryptography 2>/dev/null || true
+          # Install system Chromium for Puppeteer
+          sudo apt-get update -qq && sudo apt-get install -y chromium-browser 2>/dev/null || true
+          # Tell Puppeteer where to find Chromium
+          echo "PUPPETEER_EXECUTABLE_PATH=$(which chromium-browser || which chromium)" >> "${GITHUB_ENV}"
+
+      # ── 6. Generate Markdown + PDF ───────────────────────────────────────────
+      - name: Generate report
+        if: steps.check.outputs.should_run == 'true'
+        id: generate
+        env:
+          GOOGLE_SHEETS_API_KEY:     ${{ secrets.GOOGLE_SHEETS_API_KEY }}
+          GOOGLE_FEEDING_SHEET_ID:   ${{ secrets.GOOGLE_FEEDING_SHEET_ID }}
+          REPORT_DATE:               ${{ steps.date.outputs.date }}
+        run: node .github/scripts/generate-medical-report.mjs
+
+      # ── 7. Upload MD + PDF to Google Drive ───────────────────────────────────
+      - name: Upload to Google Drive
+        if: steps.check.outputs.should_run == 'true'
+        env:
+          SA_JSON:      ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          MD_NAME:      ${{ steps.date.outputs.md_name }}
+          PDF_NAME:     ${{ steps.date.outputs.pdf_name }}
+          REPORT_DATE:  ${{ steps.date.outputs.date }}
+        run: |
+          set -euo pipefail
+
+          SA_FILE="$(mktemp)"
+          echo "${SA_JSON}" > "${SA_FILE}"
+
+          # Get Drive write token
+          ACCESS_TOKEN="$(python3 - "${SA_FILE}" <<'PYEOF'
+import sys, json, time, base64, urllib.request, urllib.parse
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import padding
+
+sa_file = sys.argv[1]
+with open(sa_file) as f:
+    sa = json.load(f)
+
+now = int(time.time())
+header = base64.urlsafe_b64encode(b'{"alg":"RS256","typ":"JWT"}').rstrip(b'=').decode()
+payload = base64.urlsafe_b64encode(json.dumps({
+    "iss": sa["client_email"],
+    "scope": "https://www.googleapis.com/auth/drive.file",
+    "aud": "https://oauth2.googleapis.com/token",
+    "iat": now,
+    "exp": now + 3600,
+}).encode()).rstrip(b'=').decode()
+
+private_key = serialization.load_pem_private_key(sa["private_key"].encode(), password=None)
+sig = private_key.sign(f"{header}.{payload}".encode(), padding.PKCS1v15(), hashes.SHA256())
+sig_b64 = base64.urlsafe_b64encode(sig).rstrip(b'=').decode()
+jwt = f"{header}.{payload}.{sig_b64}"
+
+data = urllib.parse.urlencode({
+    "grant_type": "urn:ietf:params:oauth:grant-type:jwt-bearer",
+    "assertion": jwt,
+}).encode()
+req = urllib.request.Request("https://oauth2.googleapis.com/token", data=data)
+with urllib.request.urlopen(req) as r:
+    print(json.load(r)["access_token"])
+PYEOF
+          )"
+
+          rm -f "${SA_FILE}"
+
+          upload_file() {
+            local LOCAL_PATH="$1"
+            local MIME="$2"
+            local FILE_NAME="$3"
+
+            # Multipart metadata+body upload
+            BOUNDARY="boundary_$(date +%s)"
+            METADATA="{\"name\":\"${FILE_NAME}\",\"parents\":[\"${{ env.DRIVE_FOLDER_ID }}\"]}"
+
+            curl -sf \
+              -X POST \
+              -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+              -H "Content-Type: multipart/related; boundary=${BOUNDARY}" \
+              --data-binary "
+--${BOUNDARY}
+Content-Type: application/json; charset=UTF-8
+
+${METADATA}
+--${BOUNDARY}
+Content-Type: ${MIME}
+
+$(cat "${LOCAL_PATH}")
+--${BOUNDARY}--" \
+              "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart" \
+              | python3 -c "import sys,json; d=json.load(sys.stdin); print('Uploaded:', d.get('name'), '| id:', d.get('id'))"
+          }
+
+          # Upload Markdown
+          MD_PATH="reports/${MD_NAME}"
+          PDF_PATH="reports/${PDF_NAME}"
+
+          echo "Uploading ${MD_NAME}…"
+          upload_file "${MD_PATH}" "text/markdown" "${MD_NAME}"
+
+          echo "Uploading ${PDF_NAME}…"
+          upload_file "${PDF_PATH}" "application/pdf" "${PDF_NAME}"
+
+          echo "Both files uploaded successfully."
+
+      # ── 8. Summary ───────────────────────────────────────────────────────────
+      - name: Job summary
+        if: always()
+        env:
+          SHOULD_RUN:   ${{ steps.check.outputs.should_run }}
+          REPORT_DATE:  ${{ steps.date.outputs.date }}
+          MD_NAME:      ${{ steps.date.outputs.md_name }}
+          PDF_NAME:     ${{ steps.date.outputs.pdf_name }}
+        run: |
+          {
+            echo "## 📋 Medical Report — ${REPORT_DATE}"
+            echo ""
+            if [ "${SHOULD_RUN}" = "false" ]; then
+              echo "> ℹ️ Report **already existed** in Google Drive — skipped generation."
+            else
+              echo "| File | Status |"
+              echo "|------|--------|"
+              echo "| \`${MD_NAME}\` | ✅ Uploaded |"
+              echo "| \`${PDF_NAME}\` | ✅ Uploaded |"
+              echo ""
+              echo "📁 [Open folder](https://drive.google.com/drive/folders/${{ env.DRIVE_FOLDER_ID }})"
+            fi
+          } >> "${GITHUB_STEP_SUMMARY}"
