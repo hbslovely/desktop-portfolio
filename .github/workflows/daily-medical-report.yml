@@ -139,7 +139,7 @@ jobs:
       - name: Install report dependencies
         if: steps.check.outputs.should_run == 'true'
         run: |
-          npm install --no-save md-to-pdf@5
+          npm install md-to-pdf@5
           # Point Puppeteer at the system Chromium to avoid a 300 MB download
           sudo apt-get update -qq
           sudo apt-get install -y chromium-browser 2>/dev/null || sudo apt-get install -y chromium
