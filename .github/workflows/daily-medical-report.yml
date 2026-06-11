@@ -198,12 +198,20 @@ jobs:
             cat "${LOCAL_PATH}" >> "${BODY_FILE}"
             printf "\r\n--%s--\r\n" "${BOUNDARY}" >> "${BODY_FILE}"
 
-            RESULT="$(curl -sf \
-              -X POST \
-              -H "Authorization: Bearer ${ACCESS_TOKEN}" \
-              -H "Content-Type: multipart/related; boundary=${BOUNDARY}" \
-              --data-binary "@${BODY_FILE}" \
-              "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart")"
+          RESULT="$(curl -v \
+            -X POST \
+            -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+            -H "Content-Type: multipart/related; boundary=${BOUNDARY}" \
+            --data-binary "@${BODY_FILE}" \
+            "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart" \
+            2>&1)"
+
+            if [ $? -ne 0 ]; then
+            echo "❌ cURL error. Response:"
+            echo "${RESULT}"
+            exit 1
+            fi
+
 
             rm -f "${BODY_FILE}"
 
