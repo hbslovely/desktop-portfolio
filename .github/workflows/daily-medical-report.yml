@@ -107,16 +107,18 @@ jobs:
 
           rm -f "${SA_FILE}"
 
-          # URL-encode the query
-          QUERY="name='${PDF_NAME}' and '${DRIVE_FOLDER_ID}' in parents and trashed=false"
-          ENCODED_QUERY="$(python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1]))" "${QUERY}")"
-
-          RESULT="$(curl -sf \
+          # Use --get + --data-urlencode so curl handles quoting correctly
+          RESULT="$(curl -sf --get \
             -H "Authorization: Bearer ${ACCESS_TOKEN}" \
-            "https://www.googleapis.com/drive/v3/files?q=${ENCODED_QUERY}&fields=files(id,name)")"
+            --data-urlencode "q=name='${PDF_NAME}' and '${DRIVE_FOLDER_ID}' in parents and trashed=false" \
+            --data-urlencode "fields=files(id,name)" \
+            "https://www.googleapis.com/drive/v3/files" \
+            || true)"
+
+          echo "Drive search response: ${RESULT}"
 
           FILE_COUNT="$(echo "${RESULT}" | python3 -c \
-            "import sys,json; print(len(json.load(sys.stdin).get('files',[])))")"
+            "import sys,json; print(len(json.load(sys.stdin).get('files',[])))" 2>/dev/null || echo "0")"
 
           if [ "${FILE_COUNT}" -gt 0 ]; then
             echo "Report ${PDF_NAME} already exists in Drive — skipping."
