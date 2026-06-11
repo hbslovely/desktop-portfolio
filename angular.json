@@ -19,7 +19,7 @@
       "prefix": "app",
       "architect": {
         "build": {
-          "builder": "@ngx-env/builder:application",
+          "builder": "@ngx-env/builder:browser",
           "options": {
             "outputPath": "dist",
             "index": "src/index.html",
