@@ -1,75 +1,66 @@
 #!/usr/bin/env python3
 """
-Upload a file to Google Drive using a service account.
+Upload a file to Google Drive using a user OAuth2 refresh token.
+
+This avoids the "Service Accounts do not have storage quota" error that
+occurs when uploading to a regular My Drive folder with a service account.
 
 Usage:
-  python3 drive-upload.py <sa-json-path> <local-file> <mime-type> <file-name> <folder-id>
+  python3 drive-upload.py <local-file> <mime-type> <file-name> <folder-id>
+
+Required environment variables:
+  GOOGLE_OAUTH_CLIENT_ID      — OAuth2 client ID (desktop/installed app type)
+  GOOGLE_OAUTH_CLIENT_SECRET  — OAuth2 client secret
+  GOOGLE_OAUTH_REFRESH_TOKEN  — Long-lived refresh token for the folder owner
 
 Prints the uploaded file ID to stdout.
 """
 
 import sys
 import json
-import time
-import base64
+import os
 import urllib.request
 import urllib.parse
 import urllib.error
 
-from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.primitives.asymmetric import padding
 
-
-def get_token(sa_file: str, scope: str) -> str:
-    with open(sa_file) as f:
-        sa = json.load(f)
-
-    now = int(time.time())
-    header_b64 = base64.urlsafe_b64encode(
-        b'{"alg":"RS256","typ":"JWT"}'
-    ).rstrip(b"=").decode()
-    payload_b64 = base64.urlsafe_b64encode(
-        json.dumps({
-            "iss": sa["client_email"],
-            "scope": scope,
-            "aud": "https://oauth2.googleapis.com/token",
-            "iat": now,
-            "exp": now + 3600,
-        }).encode()
-    ).rstrip(b"=").decode()
-
-    private_key = serialization.load_pem_private_key(
-        sa["private_key"].encode(), password=None
-    )
-    sig = private_key.sign(
-        f"{header_b64}.{payload_b64}".encode(),
-        padding.PKCS1v15(),
-        hashes.SHA256(),
-    )
-    sig_b64 = base64.urlsafe_b64encode(sig).rstrip(b"=").decode()
-    jwt = f"{header_b64}.{payload_b64}.{sig_b64}"
+def get_access_token() -> str:
+    client_id     = os.environ["GOOGLE_OAUTH_CLIENT_ID"]
+    client_secret = os.environ["GOOGLE_OAUTH_CLIENT_SECRET"]
+    refresh_token = os.environ["GOOGLE_OAUTH_REFRESH_TOKEN"]
 
     data = urllib.parse.urlencode({
-        "grant_type": "urn:ietf:params:oauth:grant-type:jwt-bearer",
-        "assertion": jwt,
+        "client_id":     client_id,
+        "client_secret": client_secret,
+        "refresh_token": refresh_token,
+        "grant_type":    "refresh_token",
     }).encode()
-    req = urllib.request.Request("https://oauth2.googleapis.com/token", data=data)
+
+    req = urllib.request.Request(
+        "https://oauth2.googleapis.com/token",
+        data=data,
+        method="POST",
+    )
     try:
         with urllib.request.urlopen(req) as r:
-            return json.load(r)["access_token"]
+            resp = json.load(r)
+            if "access_token" not in resp:
+                print(f"Token refresh failed: {resp}", file=sys.stderr)
+                sys.exit(1)
+            return resp["access_token"]
     except urllib.error.HTTPError as e:
         body = e.read().decode(errors="replace")
-        print(f"Token fetch failed HTTP {e.code}: {body}", file=sys.stderr)
+        print(f"Token refresh HTTP {e.code}: {body}", file=sys.stderr)
         sys.exit(1)
 
 
-def upload(sa_file: str, local_path: str, mime_type: str, file_name: str, folder_id: str) -> str:
-    token = get_token(sa_file, "https://www.googleapis.com/auth/drive.file")
+def upload(local_path: str, mime_type: str, file_name: str, folder_id: str) -> str:
+    token = get_access_token()
 
     with open(local_path, "rb") as f:
         file_bytes = f.read()
 
-    boundary = b"drive_upload_boundary_xyz"
+    boundary = b"drive_report_boundary_abc123"
     metadata = json.dumps({"name": file_name, "parents": [folder_id]}).encode("utf-8")
 
     body = (
@@ -87,8 +78,8 @@ def upload(sa_file: str, local_path: str, mime_type: str, file_name: str, folder
         data=body,
         method="POST",
         headers={
-            "Authorization": f"Bearer {token}",
-            "Content-Type": f"multipart/related; boundary={boundary.decode()}",
+            "Authorization":  f"Bearer {token}",
+            "Content-Type":   f"multipart/related; boundary={boundary.decode()}",
             "Content-Length": str(len(body)),
         },
     )
@@ -99,29 +90,12 @@ def upload(sa_file: str, local_path: str, mime_type: str, file_name: str, folder
     except urllib.error.HTTPError as e:
         raw = e.read()
         decoded = raw.decode(errors="replace")
-        print(f"HTTP {e.code} {e.reason}", file=sys.stderr)
+        print(f"Upload HTTP {e.code} {e.reason}", file=sys.stderr)
         print(f"Response: {decoded}", file=sys.stderr)
-        # Parse Drive error message if available
-        try:
-            err_json = json.loads(raw)
-            msg = err_json.get("error", {}).get("message", "")
-            status = err_json.get("error", {}).get("status", "")
-            if status == "FORBIDDEN":
-                print(
-                    f"\nPermission denied. Make sure the service account has Editor access to folder '{folder_id}'.",
-                    file=sys.stderr,
-                )
-            print(f"Drive error: {status} — {msg}", file=sys.stderr)
-        except json.JSONDecodeError:
-            pass
         sys.exit(1)
 
     if not raw or not raw.strip():
         print("ERROR: Drive API returned an empty response.", file=sys.stderr)
-        print(
-            f"Check that the service account has Editor access to Drive folder '{folder_id}'.",
-            file=sys.stderr,
-        )
         sys.exit(1)
 
     try:
@@ -141,8 +115,11 @@ def upload(sa_file: str, local_path: str, mime_type: str, file_name: str, folder
 
 
 if __name__ == "__main__":
-    if len(sys.argv) < 6:
-        print("Usage: drive-upload.py <sa-json> <local-file> <mime-type> <file-name> <folder-id>", file=sys.stderr)
+    if len(sys.argv) < 5:
+        print(
+            "Usage: drive-upload.py <local-file> <mime-type> <file-name> <folder-id>",
+            file=sys.stderr,
+        )
         sys.exit(1)
-    sa_file, local_path, mime_type, file_name, folder_id = sys.argv[1:6]
-    upload(sa_file, local_path, mime_type, file_name, folder_id)
+    local_path, mime_type, file_name, folder_id = sys.argv[1:5]
+    upload(local_path, mime_type, file_name, folder_id)
