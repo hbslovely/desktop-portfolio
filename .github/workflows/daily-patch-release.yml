@@ -76,7 +76,7 @@ jobs:
           fi
 
           COMMIT_COUNT="$(git rev-list --count \
-            --grep='^chore(release):' --extended-regexp --invert-grep \
+            --grep='^chore\(release\):' --extended-regexp --invert-grep \
             HEAD --since="${SINCE}" --before="${BEFORE}")"
           echo "commit_count=${COMMIT_COUNT}" >> "${GITHUB_OUTPUT}"
 
@@ -112,7 +112,7 @@ jobs:
             echo "**Commits on ${DAY} (${COMMIT_COUNT}, excluding chore(release)):**"
             echo ""
             git log --pretty=format:'- %s (`%h`)' \
-              --grep='^chore(release):' --extended-regexp --invert-grep \
+              --grep='^chore\(release\):' --extended-regexp --invert-grep \
               --since="${SINCE}" --before="${BEFORE}" HEAD || true
           } > release-notes.md
 
