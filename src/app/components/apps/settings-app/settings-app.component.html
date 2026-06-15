@@ -31,15 +31,18 @@
         </div>
         <div class="setting-group-content">
           <div class="wallpaper-grid">
-            <div
-              *ngFor="let wallpaper of wallpapers"
-              class="wallpaper-card"
-              [class.active]="selectedWallpaper() === wallpaper.id"
-              (click)="onWallpaperChange(wallpaper.id)"
-            >
-              <img [src]="wallpaper.preview" [alt]="wallpaper.name" />
-              <i class="pi pi-check check-icon" *ngIf="selectedWallpaper() === wallpaper.id"></i>
-            </div>
+            @for (wallpaper of wallpapers; track wallpaper) {
+              <div
+                class="wallpaper-card"
+                [class.active]="selectedWallpaper() === wallpaper.id"
+                (click)="onWallpaperChange(wallpaper.id)"
+              >
+                <img [src]="wallpaper.preview" [alt]="wallpaper.name" />
+                @if (selectedWallpaper() === wallpaper.id) {
+                  <i class="pi pi-check check-icon"></i>
+                }
+              </div>
+            }
           </div>
         </div>
       </div>
@@ -57,15 +60,16 @@
         </div>
         <div class="setting-group-content">
           <div class="button-group">
-            <button
-              *ngFor="let theme of themes"
-              class="option-btn"
-              [class.active]="selectedTheme() === theme.value"
-              (click)="onThemeChange(theme.value)"
-            >
-              <i [class]="theme.icon"></i>
-              <span>{{ theme.label }}</span>
-            </button>
+            @for (theme of themes; track theme) {
+              <button
+                class="option-btn"
+                [class.active]="selectedTheme() === theme.value"
+                (click)="onThemeChange(theme.value)"
+              >
+                <i [class]="theme.icon"></i>
+                <span>{{ theme.label }}</span>
+              </button>
+            }
           </div>
         </div>
       </div>
@@ -83,16 +87,19 @@
         </div>
         <div class="setting-group-content">
           <div class="color-grid">
-            <button
-              *ngFor="let color of themeColors"
-              class="color-btn"
-              [class.active]="selectedThemeColor() === color.value"
-              [style.background-color]="color.color"
-              (click)="onThemeColorChange(color.value)"
-              [title]="color.label"
-            >
-              <i class="pi pi-check" *ngIf="selectedThemeColor() === color.value"></i>
-            </button>
+            @for (color of themeColors; track color) {
+              <button
+                class="color-btn"
+                [class.active]="selectedThemeColor() === color.value"
+                [style.background-color]="color.color"
+                (click)="onThemeColorChange(color.value)"
+                [title]="color.label"
+              >
+                @if (selectedThemeColor() === color.value) {
+                  <i class="pi pi-check"></i>
+                }
+              </button>
+            }
           </div>
         </div>
       </div>
@@ -110,16 +117,19 @@
         </div>
         <div class="setting-group-content">
           <div class="color-grid">
-            <button
-              *ngFor="let color of windowColors"
-              class="color-btn"
-              [class.active]="selectedWindowColor() === color.value"
-              [style.background-color]="color.color"
-              (click)="onWindowColorChange(color.value)"
-              [title]="color.label"
-            >
-              <i class="pi pi-check" *ngIf="selectedWindowColor() === color.value"></i>
-            </button>
+            @for (color of windowColors; track color) {
+              <button
+                class="color-btn"
+                [class.active]="selectedWindowColor() === color.value"
+                [style.background-color]="color.color"
+                (click)="onWindowColorChange(color.value)"
+                [title]="color.label"
+              >
+                @if (selectedWindowColor() === color.value) {
+                  <i class="pi pi-check"></i>
+                }
+              </button>
+            }
           </div>
         </div>
       </div>
@@ -165,14 +175,15 @@
         </div>
         <div class="setting-group-content">
           <div class="button-group">
-            <button
-              *ngFor="let size of fontSizes"
-              class="option-btn"
-              [class.active]="fontSize() === size.value"
-              (click)="onFontSizeChange(size.value)"
-            >
-              {{ size.label }}
-            </button>
+            @for (size of fontSizes; track size) {
+              <button
+                class="option-btn"
+                [class.active]="fontSize() === size.value"
+                (click)="onFontSizeChange(size.value)"
+              >
+                {{ size.label }}
+              </button>
+            }
           </div>
         </div>
       </div>

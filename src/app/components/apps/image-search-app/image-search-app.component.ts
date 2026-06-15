@@ -1,5 +1,5 @@
-import { Component, signal, ViewChild, ElementRef, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, signal, ViewChild, ElementRef, OnInit, inject } from '@angular/core';
+
 import { FormsModule } from '@angular/forms';
 import {
   ImageSearchService,
@@ -26,11 +26,13 @@ export interface UploadFileItem {
 @Component({
   selector: 'app-image-search-app',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [FormsModule],
   templateUrl: './image-search-app.component.html',
   styleUrl: './image-search-app.component.scss',
 })
 export class ImageSearchAppComponent implements OnInit {
+  imageSearchService = inject(ImageSearchService);
+
   @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
   @ViewChild('searchFileInput') searchFileInput!: ElementRef<HTMLInputElement>;
 
@@ -95,8 +97,6 @@ export class ImageSearchAppComponent implements OnInit {
   feedbackGiven = signal<Map<string, boolean>>(new Map()); // resultId -> isRelevant
   showLearningPanel = signal<boolean>(false);
   currentQueryId = signal<string>('');
-
-  constructor(public imageSearchService: ImageSearchService) {}
 
   ngOnInit() {
     // Service loads images from IndexedDB on init

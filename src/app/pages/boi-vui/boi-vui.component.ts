@@ -1,11 +1,11 @@
 import { Component, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 
 @Component({
   selector: 'app-boi-vui',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   template: `
     <div class="boi-vui-container">
       <iframe

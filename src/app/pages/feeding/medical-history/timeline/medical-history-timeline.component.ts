@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { ExplorerEntry } from '../../../../services/explorer.service';
 import {
   MedicalEventKind,
@@ -16,7 +16,7 @@ export interface MedicalTimelineGroup {
 @Component({
   selector: 'app-medical-history-timeline',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   templateUrl: './medical-history-timeline.component.html',
   styleUrls: ['./medical-history-timeline.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,

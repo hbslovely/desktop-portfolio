@@ -1,6 +1,6 @@
 {
   "root": true,
-  "ignorePatterns": ["dist", "node_modules", "coverage", "server/**"],
+  "ignorePatterns": ["dist", "node_modules", "coverage", "server/**", "api/**", "scripts/**", "signaling-server/**", "proxy.conf.js"],
   "overrides": [
     {
       "files": ["*.ts"],

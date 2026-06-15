@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, signal, computed } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { BusinessService, BusinessItem, SheetName } from '../../../services/business.service';
@@ -11,6 +11,8 @@ import { BusinessService, BusinessItem, SheetName } from '../../../services/busi
   styleUrl: './business-app.component.scss',
 })
 export class BusinessAppComponent implements OnInit, OnDestroy {
+  private businessService = inject(BusinessService);
+
   // Active sheet tab
   activeSheet = signal<SheetName>('Menu');
 
@@ -322,8 +324,6 @@ export class BusinessAppComponent implements OnInit, OnDestroy {
   isMenuSheet = computed(() => {
     return this.activeSheet() === 'Menu';
   });
-
-  constructor(private businessService: BusinessService) {}
 
   ngOnInit(): void {
     // Check if already authenticated and still valid (same day)

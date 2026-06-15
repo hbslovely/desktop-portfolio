@@ -12,7 +12,7 @@ import {
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import {
@@ -45,7 +45,7 @@ const MAX_ATTACH_CHARS = 49000 * 100;
 @Component({
   selector: 'app-medical-history-dialog',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [FormsModule],
   templateUrl: './medical-history-dialog.component.html',
   styleUrls: ['./medical-history-dialog.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,

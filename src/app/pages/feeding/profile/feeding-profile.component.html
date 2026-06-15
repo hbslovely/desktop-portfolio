@@ -1,80 +1,78 @@
 <!-- Profile form -->
-<section class="card profile-card" *ngIf="editing()">
-  <div class="card-header">
-    <h2>
-      <i class="pi pi-user"></i>
-      {{ profile() ? 'Cập nhật profile của bé' : 'Thêm profile của bé' }}
-    </h2>
-    <p>Thông tin được lưu cục bộ trên trình duyệt này cho user "{{ user() }}".</p>
-  </div>
-
-  <form class="form" (ngSubmit)="save.emit()">
-    <label class="field">
-      <span class="label">Tên của bé</span>
-      <input
-        type="text"
-        [ngModel]="draft().babyName"
-        (ngModelChange)="draftNameChange.emit($event)"
-        name="babyName"
-        placeholder="VD: Bin, Bông, Minh Anh..."
-        required
-        autocomplete="off"
-      />
-    </label>
-
-    <label class="field">
-      <span class="label">Ngày sinh của bé</span>
-      <input
-        type="date"
-        [ngModel]="draft().birthDate"
-        (ngModelChange)="draftBirthChange.emit($event)"
-        name="birthDate"
-        [max]="maxBirthDate()"
-        required
-      />
-    </label>
-
-    <label class="field">
-      <span class="label">Giới tính (tuỳ chọn)</span>
-      <div class="radio-group">
-        <button
-          type="button"
-          class="chip"
-          [class.active]="draft().gender === 'boy'"
-          (click)="onDraftGender('boy')"
-        >
-          👦 Bé trai
-        </button>
-        <button
-          type="button"
-          class="chip"
-          [class.active]="draft().gender === 'girl'"
-          (click)="onDraftGender('girl')"
-        >
-          👧 Bé gái
-        </button>
-        <button
-          type="button"
-          class="chip"
-          [class.active]="!draft().gender"
-          (click)="onDraftGender('')"
-        >
-          Bỏ qua
-        </button>
-      </div>
-    </label>
-
-    <div class="form-actions">
-      <button
-        type="submit"
-        class="btn primary"
-        [disabled]="!draft().babyName.trim() || !draft().birthDate"
-      >
-        <i class="pi pi-check"></i> Lưu profile
-      </button>
-      <button type="button" class="btn ghost" *ngIf="profile()" (click)="cancelEdit.emit()">
-        Huỷ
-      </button>
+@if (editing()) {
+  <section class="card profile-card">
+    <div class="card-header">
+      <h2>
+        <i class="pi pi-user"></i>
+        {{ profile() ? 'Cập nhật profile của bé' : 'Thêm profile của bé' }}
+      </h2>
+      <p>Thông tin được lưu cục bộ trên trình duyệt này cho user "{{ user() }}".</p>
     </div>
-  </form>
-</section>
+    <form class="form" (ngSubmit)="save.emit()">
+      <label class="field">
+        <span class="label">Tên của bé</span>
+        <input
+          type="text"
+          [ngModel]="draft().babyName"
+          (ngModelChange)="draftNameChange.emit($event)"
+          name="babyName"
+          placeholder="VD: Bin, Bông, Minh Anh..."
+          required
+          autocomplete="off"
+        />
+      </label>
+      <label class="field">
+        <span class="label">Ngày sinh của bé</span>
+        <input
+          type="date"
+          [ngModel]="draft().birthDate"
+          (ngModelChange)="draftBirthChange.emit($event)"
+          name="birthDate"
+          [max]="maxBirthDate()"
+          required
+        />
+      </label>
+      <label class="field">
+        <span class="label">Giới tính (tuỳ chọn)</span>
+        <div class="radio-group">
+          <button
+            type="button"
+            class="chip"
+            [class.active]="draft().gender === 'boy'"
+            (click)="onDraftGender('boy')"
+          >
+            👦 Bé trai
+          </button>
+          <button
+            type="button"
+            class="chip"
+            [class.active]="draft().gender === 'girl'"
+            (click)="onDraftGender('girl')"
+          >
+            👧 Bé gái
+          </button>
+          <button
+            type="button"
+            class="chip"
+            [class.active]="!draft().gender"
+            (click)="onDraftGender('')"
+          >
+            Bỏ qua
+          </button>
+        </div>
+      </label>
+      <div class="form-actions">
+        <button
+          type="submit"
+          class="btn primary"
+          [disabled]="!draft().babyName.trim() || !draft().birthDate"
+        >
+          <i class="pi pi-check"></i> Lưu profile
+        </button>
+        @if (profile()) {
+          <button type="button" class="btn ghost" (click)="cancelEdit.emit()">Huỷ</button>
+        }
+      </div>
+    </form>
+  </section>
+}

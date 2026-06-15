@@ -23,8 +23,8 @@ if [ "${ACTUAL}" != "${VERSION}" ]; then
   exit 1
 fi
 
-git config user.name "github-actions[bot]"
-git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+git config user.name "hbslovely-auto-bot"
+git config user.email "quyenninh.720@gmail.com"
 
 git add package.json src/app/app-info.ts
 if [ -f package-lock.json ]; then
@@ -33,7 +33,7 @@ fi
 
 if ! git diff --staged --quiet; then
   git commit -m "${MSG}"
-  git push origin "HEAD:${BRANCH}"
+  git push --force-with-lease origin "HEAD:${BRANCH}"
   echo "Committed and pushed package.json version ${VERSION}"
 else
   echo "package.json already ${VERSION} at HEAD — no new commit"

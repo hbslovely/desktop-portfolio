@@ -5,6 +5,7 @@ import {
   signal,
   computed,
   ChangeDetectionStrategy,
+  inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -62,6 +63,10 @@ const DIFFICULTY_NAMES: Record<AIDifficulty, string> = {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SieuCoAppComponent implements OnInit, OnDestroy {
+  private gameService = inject(GameService);
+  private puzzleService = inject(PuzzleService);
+  private audioService = inject(AudioService);
+
   // ============ Signals ============
   gameState = signal<GameState | null>(null);
   currentTab = signal<'game' | 'settings' | 'puzzles' | 'notation'>('game');
@@ -85,10 +90,11 @@ export class SieuCoAppComponent implements OnInit, OnDestroy {
     switch (state.status) {
       case GameStatus.NOT_STARTED:
         return 'Chọn "Ván mới" để bắt đầu';
-      case GameStatus.PLAYING:
+      case GameStatus.PLAYING: {
         const turn = state.currentTurn === PieceColor.RED ? 'Đỏ' : 'Đen';
         const check = state.isCheck ? ' - CHIẾU!' : '';
         return `Lượt: ${turn}${check}`;
+      }
       case GameStatus.RED_WIN:
         return '🏆 ĐỎ THẮNG!';
       case GameStatus.BLACK_WIN:
@@ -244,12 +250,6 @@ export class SieuCoAppComponent implements OnInit, OnDestroy {
   readonly AIDifficulty = AIDifficulty;
 
   private destroy$ = new Subject<void>();
-
-  constructor(
-    private gameService: GameService,
-    private puzzleService: PuzzleService,
-    private audioService: AudioService
-  ) {}
 
   ngOnInit(): void {
     // Subscribe to game state

@@ -1,5 +1,5 @@
-import { Component, signal, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, signal, ViewChild, ElementRef, AfterViewInit, inject } from '@angular/core';
+
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { trigger, style, animate, transition } from '@angular/animations';
@@ -19,7 +19,7 @@ interface FacebookProfile {
 @Component({
   selector: 'app-fb-id-finder-app',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [FormsModule],
   templateUrl: './fb-id-finder-app.component.html',
   styleUrl: './fb-id-finder-app.component.scss',
   animations: [
@@ -44,6 +44,8 @@ interface FacebookProfile {
   ],
 })
 export class FbIdFinderAppComponent implements AfterViewInit {
+  private http = inject(HttpClient);
+
   @ViewChild('phoneInput') phoneInput!: ElementRef<HTMLInputElement>;
 
   private readonly API_URL = 'https://api.shopeelike.com/facebook-info/api/guest/get/fid';
@@ -56,7 +58,7 @@ export class FbIdFinderAppComponent implements AfterViewInit {
   facebookProfile = signal<FacebookProfile | null>(null);
   loadingProfile = signal<boolean>(false);
 
-  constructor(private http: HttpClient) {
+  constructor() {
     this.loadSearchHistory();
   }
 

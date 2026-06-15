@@ -69,8 +69,6 @@ export class FileSystemService {
         this.http.get<{ fileSystem: FileSystemItem }>('assets/json/explore.json')
       );
       this.fileSystemSignal.set(data.fileSystem);
-    } catch (error) {
-      throw error;
     } finally {
       this.loadPromise = null;
     }
@@ -127,7 +125,6 @@ export class FileSystemService {
       // This ensures Angular's change detection picks up the change
       const updatedFs = JSON.parse(JSON.stringify(fs));
       this.fileSystemSignal.set(updatedFs);
-    } else {
     }
   }
 

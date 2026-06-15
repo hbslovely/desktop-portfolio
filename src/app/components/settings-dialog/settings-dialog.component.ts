@@ -1,5 +1,14 @@
-import { Component, Input, Output, EventEmitter, signal, computed, OnChanges } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import {
+  Component,
+  Input,
+  Output,
+  EventEmitter,
+  signal,
+  computed,
+  OnChanges,
+  OnInit,
+} from '@angular/core';
+
 import { FormsModule } from '@angular/forms';
 
 export interface WallpaperOption {
@@ -23,11 +32,11 @@ export interface SettingsData {
 @Component({
   selector: 'app-settings-dialog',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [FormsModule],
   templateUrl: './settings-dialog.component.html',
   styleUrl: './settings-dialog.component.scss',
 })
-export class SettingsDialogComponent implements OnChanges {
+export class SettingsDialogComponent implements OnChanges, OnInit {
   @Input() isVisible = false;
   @Output() onClose = new EventEmitter<void>();
   @Output() onSettingsChange = new EventEmitter<SettingsData>();

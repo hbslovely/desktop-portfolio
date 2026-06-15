@@ -403,7 +403,7 @@ export class MoveValidatorService {
         }
         break;
 
-      case PieceType.PAWN:
+      case PieceType.PAWN: {
         const forward = isRed ? -1 : 1;
         addMove({ row: from.row + forward, col: from.col });
         if (hasCrossedRiver(from, isRed)) {
@@ -411,6 +411,7 @@ export class MoveValidatorService {
           addMove({ row: from.row, col: from.col + 1 });
         }
         break;
+      }
     }
 
     return moves;

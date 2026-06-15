@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { MedicalEventKind } from '../../../../services/medical-history.service';
 import { MedicalKindMeta } from '../medical-history-kinds.data';
@@ -7,7 +7,7 @@ import { MedicalKindMeta } from '../medical-history-kinds.data';
 @Component({
   selector: 'app-medical-history-filter',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [FormsModule],
   templateUrl: './medical-history-filter.component.html',
   styleUrls: ['./medical-history-filter.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,

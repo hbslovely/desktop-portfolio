@@ -1,6 +1,6 @@
-import { ChangeDetectorRef, Component, Inject, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnDestroy, OnInit, DOCUMENT, inject } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
-import { DOCUMENT } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
 import { forkJoin } from 'rxjs';
@@ -9,7 +9,7 @@ import { forkJoin } from 'rxjs';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { InputTextModule } from 'primeng/inputtext';
-import { InputTextareaModule } from 'primeng/inputtextarea';
+import { Textarea } from 'primeng/textarea';
 import { CheckboxModule } from 'primeng/checkbox';
 import { ToastModule } from 'primeng/toast';
 import { ProgressBarModule } from 'primeng/progressbar';
@@ -55,7 +55,7 @@ interface TimesheetCalendarDay {
     ButtonModule,
     CardModule,
     InputTextModule,
-    InputTextareaModule,
+    Textarea,
     CheckboxModule,
     ToastModule,
     ProgressBarModule,
@@ -229,518 +229,531 @@ interface TimesheetCalendarDay {
             </div>
 
             <!-- Date Range Selection -->
-            <div class="panel-card date-range-card" *ngIf="activeTab !== 'detail'">
-              <div class="card-header">
-                <div class="card-icon">📆</div>
-                <div>
-                  <h3 class="card-title">Select Date Range</h3>
-                  <p class="card-subtitle">Pick the days you want to log</p>
+            @if (activeTab !== 'detail') {
+              <div class="panel-card date-range-card">
+                <div class="card-header">
+                  <div class="card-icon">📆</div>
+                  <div>
+                    <h3 class="card-title">Select Date Range</h3>
+                    <p class="card-subtitle">Pick the days you want to log</p>
+                  </div>
                 </div>
-              </div>
-
-              <div class="card-content">
-                <div class="range-shell">
-                  <div class="range-picker-card">
-                    <div class="range-field">
-                      <span class="range-field-icon"><i class="pi pi-calendar"></i></span>
-                      <label for="timesheetStartDate">From</label>
-                      <input
-                        id="timesheetStartDate"
-                        type="date"
-                        [(ngModel)]="startDate"
-                        class="range-date-input"
-                      />
+                <div class="card-content">
+                  <div class="range-shell">
+                    <div class="range-picker-card">
+                      <div class="range-field">
+                        <span class="range-field-icon"><i class="pi pi-calendar"></i></span>
+                        <label for="timesheetStartDate">From</label>
+                        <input
+                          id="timesheetStartDate"
+                          type="date"
+                          [(ngModel)]="startDate"
+                          class="range-date-input"
+                        />
+                      </div>
+                      <div class="range-arrow" aria-hidden="true">
+                        <i class="pi pi-arrow-right"></i>
+                      </div>
+                      <div class="range-field">
+                        <span class="range-field-icon"><i class="pi pi-calendar"></i></span>
+                        <label for="timesheetEndDate">To</label>
+                        <input
+                          id="timesheetEndDate"
+                          type="date"
+                          [(ngModel)]="endDate"
+                          class="range-date-input"
+                        />
+                      </div>
                     </div>
-
-                    <div class="range-arrow" aria-hidden="true">
-                      <i class="pi pi-arrow-right"></i>
+                    <div class="range-actions">
+                      <div class="quick-buttons">
+                        <button type="button" class="quick-btn" (click)="setThisWeek()">
+                          This week
+                        </button>
+                        <button type="button" class="quick-btn" (click)="setLastWeek()">
+                          Last week
+                        </button>
+                        <button type="button" class="quick-btn" (click)="setThisMonth()">
+                          This month
+                        </button>
+                      </div>
+                      <div class="workday-toggle">
+                        <p-checkbox
+                          [(ngModel)]="businessDaysOnly"
+                          binary="true"
+                          inputId="businessDays"
+                        ></p-checkbox>
+                        <label for="businessDays">
+                          <span>Business days only</span>
+                          <small>Skip Saturday and Sunday</small>
+                        </label>
+                      </div>
                     </div>
-
-                    <div class="range-field">
-                      <span class="range-field-icon"><i class="pi pi-calendar"></i></span>
-                      <label for="timesheetEndDate">To</label>
-                      <input
-                        id="timesheetEndDate"
-                        type="date"
-                        [(ngModel)]="endDate"
-                        class="range-date-input"
-                      />
+                    <div class="range-footer">
+                      <div class="range-preview" [class.empty-preview]="!startDate || !endDate">
+                        <i class="pi pi-info-circle"></i>
+                        <span>{{
+                          getDateRangePreview() || 'Select both dates to preview generated entries.'
+                        }}</span>
+                      </div>
+                      @if (activeTab === 'log') {
+                        <button
+                          pButton
+                          (click)="generateDateEntries()"
+                          label="Generate entries"
+                          icon="pi pi-plus-circle"
+                          [disabled]="!startDate || !endDate"
+                          class="generate-entries-btn"
+                        ></button>
+                      }
                     </div>
-                  </div>
-
-                  <div class="range-actions">
-                    <div class="quick-buttons">
-                      <button type="button" class="quick-btn" (click)="setThisWeek()">
-                        This week
-                      </button>
-                      <button type="button" class="quick-btn" (click)="setLastWeek()">
-                        Last week
-                      </button>
-                      <button type="button" class="quick-btn" (click)="setThisMonth()">
-                        This month
-                      </button>
-                    </div>
-
-                    <div class="workday-toggle">
-                      <p-checkbox
-                        [(ngModel)]="businessDaysOnly"
-                        binary="true"
-                        inputId="businessDays"
-                      ></p-checkbox>
-                      <label for="businessDays">
-                        <span>Business days only</span>
-                        <small>Skip Saturday and Sunday</small>
-                      </label>
-                    </div>
-                  </div>
-
-                  <div class="range-footer">
-                    <div class="range-preview" [class.empty-preview]="!startDate || !endDate">
-                      <i class="pi pi-info-circle"></i>
-                      <span>{{
-                        getDateRangePreview() || 'Select both dates to preview generated entries.'
-                      }}</span>
-                    </div>
-
-                    <button
-                      *ngIf="activeTab === 'log'"
-                      pButton
-                      (click)="generateDateEntries()"
-                      label="Generate entries"
-                      icon="pi pi-plus-circle"
-                      [disabled]="!startDate || !endDate"
-                      class="generate-entries-btn"
-                    ></button>
                   </div>
                 </div>
               </div>
-            </div>
+            }
 
             <!-- Bulk Settings -->
-            <ng-container *ngIf="activeTab === 'log'">
-              <div class="panel-card bulk-settings-card" *ngIf="dateEntries.length > 0">
-                <div class="card-header">
-                  <div class="card-icon">⚙️</div>
-                  <div>
-                    <h3 class="card-title">Bulk Settings</h3>
-                    <p class="card-subtitle">Apply settings to all entries</p>
+            @if (activeTab === 'log') {
+              @if (dateEntries.length > 0) {
+                <div class="panel-card bulk-settings-card">
+                  <div class="card-header">
+                    <div class="card-icon">⚙️</div>
+                    <div>
+                      <h3 class="card-title">Bulk Settings</h3>
+                      <p class="card-subtitle">Apply settings to all entries</p>
+                    </div>
+                  </div>
+                  <div class="card-content">
+                    <div class="bulk-grid">
+                      <div class="input-group">
+                        <label class="input-label">Default Hours</label>
+                        <input
+                          type="number"
+                          [(ngModel)]="bulkHours"
+                          min="0"
+                          max="24"
+                          step="0.5"
+                          placeholder="8.0"
+                          class="styled-input number-input"
+                        />
+                      </div>
+                      <div class="input-group">
+                        <label class="input-label">Default Note</label>
+                        <input
+                          pInputText
+                          [(ngModel)]="bulkNote"
+                          placeholder="Daily work tasks"
+                          class="styled-input"
+                        />
+                      </div>
+                      <button
+                        pButton
+                        (click)="applyBulkSettings()"
+                        label="Apply to All"
+                        icon="pi pi-copy"
+                        class="apply-bulk-btn"
+                      ></button>
+                    </div>
                   </div>
                 </div>
-
-                <div class="card-content">
-                  <div class="bulk-grid">
-                    <div class="input-group">
-                      <label class="input-label">Default Hours</label>
-                      <input
-                        type="number"
-                        [(ngModel)]="bulkHours"
-                        min="0"
-                        max="24"
-                        step="0.5"
-                        placeholder="8.0"
-                        class="styled-input number-input"
-                      />
-                    </div>
-
-                    <div class="input-group">
-                      <label class="input-label">Default Note</label>
-                      <input
-                        pInputText
-                        [(ngModel)]="bulkNote"
-                        placeholder="Daily work tasks"
-                        class="styled-input"
-                      />
-                    </div>
-
-                    <button
-                      pButton
-                      (click)="applyBulkSettings()"
-                      label="Apply to All"
-                      icon="pi pi-copy"
-                      class="apply-bulk-btn"
-                    ></button>
-                  </div>
-                </div>
-              </div>
-
+              }
               <!-- Time Entries Table -->
-              <div class="panel-card entries-card" *ngIf="dateEntries.length > 0">
-                <div class="card-header">
-                  <div class="card-icon">📊</div>
-                  <div>
-                    <h3 class="card-title">Time Entries</h3>
-                    <p class="card-subtitle">Review and edit your timesheet</p>
-                  </div>
-                </div>
-
-                <div class="card-content">
-                  <div class="table-wrapper">
-                    <p-table
-                      [value]="dateEntries"
-                      styleClass="modern-table"
-                      [scrollable]="true"
-                      scrollHeight="360px"
-                    >
-                      <ng-template pTemplate="header">
-                        <tr>
-                          <th class="date-col">Date</th>
-                          <th class="hours-col">Hours</th>
-                          <th class="hours-col">Billable</th>
-                          <th class="note-col">Description</th>
-                          <th class="status-col">Status</th>
-                        </tr>
-                      </ng-template>
-                      <ng-template pTemplate="body" let-entry let-i="rowIndex">
-                        <tr class="table-row">
-                          <td class="date-col date-cell">
-                            <div class="date-display">{{ entry.date | date: 'EEE, MMM d' }}</div>
-                            <div class="date-small">{{ entry.date }}</div>
-                          </td>
-                          <td class="hours-col">
-                            <input
-                              type="number"
-                              [(ngModel)]="entry.hours"
-                              (ngModelChange)="updateEntryTime(i)"
-                              min="0"
-                              max="24"
-                              step="0.5"
-                              placeholder="8.0"
-                              class="table-input"
-                            />
-                          </td>
-                          <td class="hours-col">
-                            <input
-                              type="number"
-                              [(ngModel)]="entry.billableHours"
-                              (ngModelChange)="updateEntryBillableTime(i)"
-                              min="0"
-                              max="24"
-                              step="0.5"
-                              placeholder="8.0"
-                              class="table-input"
-                            />
-                          </td>
-                          <td class="note-col">
-                            <textarea
-                              pInputTextarea
-                              [(ngModel)]="entry.note"
-                              rows="2"
-                              class="note-input"
-                              placeholder="Describe your work..."
-                            ></textarea>
-                          </td>
-                          <td class="status-col">
-                            <p-tag
-                              [value]="getEntryStatus(entry)"
-                              [severity]="getEntryStatusSeverity(entry)"
-                              styleClass="status-tag"
-                            ></p-tag>
-                          </td>
-                        </tr>
-                      </ng-template>
-                    </p-table>
-                  </div>
-
-                  <div class="table-footer">
-                    <div class="summary-stats">
-                      <div class="stat-item">
-                        <span class="stat-value">{{ dateEntries.length }}</span>
-                        <span class="stat-label">Days</span>
-                      </div>
-                      <div class="stat-divider"></div>
-                      <div class="stat-item">
-                        <span class="stat-value">{{ getTotalHours() }}h</span>
-                        <span class="stat-label">Total Hours</span>
-                      </div>
-                      <div class="stat-divider"></div>
-                      <div class="stat-item">
-                        <span class="stat-value">{{ getTotalBillableHours() }}h</span>
-                        <span class="stat-label">Billable</span>
-                      </div>
-                    </div>
-
-                    <div class="action-buttons">
-                      <button
-                        pButton
-                        (click)="clearAll()"
-                        label="Clear All"
-                        icon="pi pi-trash"
-                        severity="secondary"
-                        [disabled]="submitting"
-                        class="clear-btn"
-                      ></button>
-
-                      <button
-                        pButton
-                        (click)="submitTimesheet()"
-                        label="Submit Timesheet"
-                        icon="pi pi-send"
-                        [loading]="submitting"
-                        [disabled]="!canSubmit()"
-                        class="submit-btn"
-                      ></button>
+              @if (dateEntries.length > 0) {
+                <div class="panel-card entries-card">
+                  <div class="card-header">
+                    <div class="card-icon">📊</div>
+                    <div>
+                      <h3 class="card-title">Time Entries</h3>
+                      <p class="card-subtitle">Review and edit your timesheet</p>
                     </div>
                   </div>
-                </div>
-              </div>
-
-              <!-- Progress & Results -->
-              <div class="panel-card results-card" *ngIf="submitting || lastResult">
-                <div class="card-header">
-                  <div class="card-icon">📈</div>
-                  <div>
-                    <h3 class="card-title">Submission Progress</h3>
-                    <p class="card-subtitle">Track your submission status</p>
-                  </div>
-                </div>
-
-                <div class="card-content">
-                  <div *ngIf="submitting" class="progress-section">
-                    <p class="progress-text">Submitting your timesheet entries...</p>
-                    <p-progressBar
-                      [value]="submissionProgress"
-                      styleClass="modern-progress"
-                    ></p-progressBar>
-                  </div>
-
-                  <div *ngIf="lastResult" class="results-section">
-                    <div class="results-grid">
-                      <div class="result-card total-card">
-                        <div class="result-icon">📊</div>
-                        <div class="result-number">{{ lastResult.summary.total }}</div>
-                        <div class="result-label">Total Entries</div>
-                      </div>
-                      <div class="result-card success-card">
-                        <div class="result-icon">✅</div>
-                        <div class="result-number">{{ lastResult.summary.successful }}</div>
-                        <div class="result-label">Successful</div>
-                      </div>
-                      <div class="result-card error-card">
-                        <div class="result-icon">❌</div>
-                        <div class="result-number">{{ lastResult.summary.failed }}</div>
-                        <div class="result-label">Failed</div>
-                      </div>
+                  <div class="card-content">
+                    <div class="table-wrapper">
+                      <p-table
+                        [value]="dateEntries"
+                        styleClass="modern-table"
+                        [scrollable]="true"
+                        scrollHeight="360px"
+                      >
+                        <ng-template pTemplate="header">
+                          <tr>
+                            <th class="date-col">Date</th>
+                            <th class="hours-col">Hours</th>
+                            <th class="hours-col">Billable</th>
+                            <th class="note-col">Description</th>
+                            <th class="status-col">Status</th>
+                          </tr>
+                        </ng-template>
+                        <ng-template pTemplate="body" let-entry let-i="rowIndex">
+                          <tr class="table-row">
+                            <td class="date-col date-cell">
+                              <div class="date-display">{{ entry.date | date: 'EEE, MMM d' }}</div>
+                              <div class="date-small">{{ entry.date }}</div>
+                            </td>
+                            <td class="hours-col">
+                              <input
+                                type="number"
+                                [(ngModel)]="entry.hours"
+                                (ngModelChange)="updateEntryTime(i)"
+                                min="0"
+                                max="24"
+                                step="0.5"
+                                placeholder="8.0"
+                                class="table-input"
+                              />
+                            </td>
+                            <td class="hours-col">
+                              <input
+                                type="number"
+                                [(ngModel)]="entry.billableHours"
+                                (ngModelChange)="updateEntryBillableTime(i)"
+                                min="0"
+                                max="24"
+                                step="0.5"
+                                placeholder="8.0"
+                                class="table-input"
+                              />
+                            </td>
+                            <td class="note-col">
+                              <textarea
+                                pInputTextarea
+                                [(ngModel)]="entry.note"
+                                rows="2"
+                                class="note-input"
+                                placeholder="Describe your work..."
+                              ></textarea>
+                            </td>
+                            <td class="status-col">
+                              <p-tag
+                                [value]="getEntryStatus(entry)"
+                                [severity]="getEntryStatusSeverity(entry)"
+                                styleClass="status-tag"
+                              ></p-tag>
+                            </td>
+                          </tr>
+                        </ng-template>
+                      </p-table>
                     </div>
-
-                    <div *ngIf="lastResult.errors.length > 0" class="errors-section">
-                      <h4 class="errors-title">Failed Submissions</h4>
-                      <div class="errors-list">
-                        <div *ngFor="let error of lastResult.errors" class="error-item">
-                          <div class="error-date">{{ error.date }}</div>
-                          <div class="error-message">{{ error.error }}</div>
-                          <div *ngIf="error.status" class="error-status">
-                            Status: {{ error.status }}
-                          </div>
+                    <div class="table-footer">
+                      <div class="summary-stats">
+                        <div class="stat-item">
+                          <span class="stat-value">{{ dateEntries.length }}</span>
+                          <span class="stat-label">Days</span>
+                        </div>
+                        <div class="stat-divider"></div>
+                        <div class="stat-item">
+                          <span class="stat-value">{{ getTotalHours() }}h</span>
+                          <span class="stat-label">Total Hours</span>
+                        </div>
+                        <div class="stat-divider"></div>
+                        <div class="stat-item">
+                          <span class="stat-value">{{ getTotalBillableHours() }}h</span>
+                          <span class="stat-label">Billable</span>
                         </div>
                       </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </ng-container>
-
-            <div class="panel-card submit-timesheet-card" *ngIf="activeTab === 'submit'">
-              <div class="card-header">
-                <div class="card-icon">📤</div>
-                <div>
-                  <h3 class="card-title">Submit Timesheet</h3>
-                  <p class="card-subtitle">Create Productive timesheets for selected dates</p>
-                </div>
-              </div>
-
-              <div class="card-content">
-                <div class="submit-summary">
-                  <div class="submit-summary-item">
-                    <span class="summary-label">Date range</span>
-                    <strong>{{ getDateRangePreview() || 'No range selected' }}</strong>
-                  </div>
-                  <div class="submit-summary-item">
-                    <span class="summary-label">Person ID</span>
-                    <strong>{{ config.personId || '-' }}</strong>
-                  </div>
-                </div>
-
-                <button
-                  pButton
-                  (click)="submitTimesheets()"
-                  label="Submit selected timesheets"
-                  icon="pi pi-send"
-                  [loading]="timesheetSubmitting"
-                  [disabled]="!canSubmitTimesheets()"
-                  class="submit-btn submit-timesheets-btn"
-                ></button>
-
-                <div class="results-section submit-result" *ngIf="timesheetSubmitResult">
-                  <div class="results-grid">
-                    <div class="result-card total-card">
-                      <div class="result-number">{{ timesheetSubmitResult.summary.total }}</div>
-                      <div class="result-label">Total dates</div>
-                    </div>
-                    <div class="result-card success-card">
-                      <div class="result-number">
-                        {{ timesheetSubmitResult.summary.successful }}
-                      </div>
-                      <div class="result-label">Submitted</div>
-                    </div>
-                    <div class="result-card error-card">
-                      <div class="result-number">{{ timesheetSubmitResult.summary.failed }}</div>
-                      <div class="result-label">Failed</div>
-                    </div>
-                  </div>
-
-                  <div *ngIf="timesheetSubmitResult.errors.length > 0" class="errors-section">
-                    <h4 class="errors-title">Failed submissions</h4>
-                    <div class="errors-list">
-                      <div *ngFor="let error of timesheetSubmitResult.errors" class="error-item">
-                        <div class="error-date">{{ error.date }}</div>
-                        <div class="error-message">{{ error.error }}</div>
+                      <div class="action-buttons">
+                        <button
+                          pButton
+                          (click)="clearAll()"
+                          label="Clear All"
+                          icon="pi pi-trash"
+                          severity="secondary"
+                          [disabled]="submitting"
+                          class="clear-btn"
+                        ></button>
+                        <button
+                          pButton
+                          (click)="submitTimesheet()"
+                          label="Submit Timesheet"
+                          icon="pi pi-send"
+                          [loading]="submitting"
+                          [disabled]="!canSubmit()"
+                          class="submit-btn"
+                        ></button>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            </div>
-
-            <div class="panel-card detail-card" *ngIf="activeTab === 'detail'">
-              <div class="card-header">
-                <div class="card-icon">🗓️</div>
-                <div>
-                  <h3 class="card-title">Timesheet Calendar</h3>
-                  <p class="card-subtitle">View logged time entries by day</p>
-                </div>
-              </div>
-
-              <div class="card-content">
-                <div class="detail-toolbar">
-                  <div class="month-picker-field">
-                    <button
-                      type="button"
-                      class="month-nav-btn"
-                      aria-label="Previous month"
-                      (click)="changeDetailMonth(-1)"
-                    >
-                      <i class="pi pi-chevron-left"></i>
-                    </button>
-
-                    <label for="detailMonth">
-                      <i class="pi pi-calendar"></i>
-                      Detail month
-                    </label>
-                    <input
-                      id="detailMonth"
-                      type="month"
-                      [(ngModel)]="detailMonth"
-                      (ngModelChange)="onDetailMonthChange()"
-                      class="styled-input native-date-input"
-                    />
-
-                    <button
-                      type="button"
-                      class="month-nav-btn"
-                      aria-label="Next month"
-                      (click)="changeDetailMonth(1)"
-                    >
-                      <i class="pi pi-chevron-right"></i>
-                    </button>
+              }
+              <!-- Progress & Results -->
+              @if (submitting || lastResult) {
+                <div class="panel-card results-card">
+                  <div class="card-header">
+                    <div class="card-icon">📈</div>
+                    <div>
+                      <h3 class="card-title">Submission Progress</h3>
+                      <p class="card-subtitle">Track your submission status</p>
+                    </div>
                   </div>
+                  <div class="card-content">
+                    @if (submitting) {
+                      <div class="progress-section">
+                        <p class="progress-text">Submitting your timesheet entries...</p>
+                        <p-progressBar
+                          [value]="submissionProgress"
+                          styleClass="modern-progress"
+                        ></p-progressBar>
+                      </div>
+                    }
+                    @if (lastResult) {
+                      <div class="results-section">
+                        <div class="results-grid">
+                          <div class="result-card total-card">
+                            <div class="result-icon">📊</div>
+                            <div class="result-number">{{ lastResult.summary.total }}</div>
+                            <div class="result-label">Total Entries</div>
+                          </div>
+                          <div class="result-card success-card">
+                            <div class="result-icon">✅</div>
+                            <div class="result-number">{{ lastResult.summary.successful }}</div>
+                            <div class="result-label">Successful</div>
+                          </div>
+                          <div class="result-card error-card">
+                            <div class="result-icon">❌</div>
+                            <div class="result-number">{{ lastResult.summary.failed }}</div>
+                            <div class="result-label">Failed</div>
+                          </div>
+                        </div>
+                        @if (lastResult.errors.length > 0) {
+                          <div class="errors-section">
+                            <h4 class="errors-title">Failed Submissions</h4>
+                            <div class="errors-list">
+                              @for (error of lastResult.errors; track error) {
+                                <div class="error-item">
+                                  <div class="error-date">{{ error.date }}</div>
+                                  <div class="error-message">{{ error.error }}</div>
+                                  @if (error.status) {
+                                    <div class="error-status">Status: {{ error.status }}</div>
+                                  }
+                                </div>
+                              }
+                            </div>
+                          </div>
+                        }
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+            }
 
+            @if (activeTab === 'submit') {
+              <div class="panel-card submit-timesheet-card">
+                <div class="card-header">
+                  <div class="card-icon">📤</div>
+                  <div>
+                    <h3 class="card-title">Submit Timesheet</h3>
+                    <p class="card-subtitle">Create Productive timesheets for selected dates</p>
+                  </div>
+                </div>
+                <div class="card-content">
+                  <div class="submit-summary">
+                    <div class="submit-summary-item">
+                      <span class="summary-label">Date range</span>
+                      <strong>{{ getDateRangePreview() || 'No range selected' }}</strong>
+                    </div>
+                    <div class="submit-summary-item">
+                      <span class="summary-label">Person ID</span>
+                      <strong>{{ config.personId || '-' }}</strong>
+                    </div>
+                  </div>
                   <button
                     pButton
-                    (click)="loadTimesheetDetails()"
-                    label="Load timesheet detail"
-                    icon="pi pi-refresh"
-                    [loading]="detailLoading"
-                    [disabled]="!canLoadDetails()"
-                    class="generate-entries-btn"
+                    (click)="submitTimesheets()"
+                    label="Submit selected timesheets"
+                    icon="pi pi-send"
+                    [loading]="timesheetSubmitting"
+                    [disabled]="!canSubmitTimesheets()"
+                    class="submit-btn submit-timesheets-btn"
                   ></button>
-
-                  <div class="detail-total" *ngIf="calendarDays.length > 0">
-                    <strong>{{ minutesToHours(getCalendarTotalMinutes()) }}</strong>
-                    <span>logged in {{ getDetailMonthLabel() }}</span>
-                  </div>
-                </div>
-
-                <div class="calendar-grid" *ngIf="calendarDays.length > 0">
-                  <div class="calendar-weekday" *ngFor="let day of calendarWeekdays">{{ day }}</div>
-                  <div
-                    class="calendar-day"
-                    *ngFor="let day of calendarDays"
-                    [class.weekend]="day.isWeekend"
-                    [class.outside]="day.isOutsideRange"
-                    [class.has-entry]="day.entries.length > 0"
-                    [class.submitted]="day.isSubmitted"
-                    [class.approved]="day.isApproved"
-                    [class.holiday]="day.isHoliday"
-                    [style.grid-column-start]="day.gridColumnStart || null"
-                  >
-                    <div class="calendar-day-header">
-                      <span>{{ day.dayNumber }}</span>
-                      <small>{{ day.weekday }}</small>
-                    </div>
-
-                    <div class="holiday-banner" *ngIf="day.isHoliday">
-                      <i class="pi pi-flag"></i>
-                      <div>
-                        <strong>Vietnam holiday</strong>
-                        <span>{{ getHolidayTitles(day).join(', ') }}</span>
+                  @if (timesheetSubmitResult) {
+                    <div class="results-section submit-result">
+                      <div class="results-grid">
+                        <div class="result-card total-card">
+                          <div class="result-number">{{ timesheetSubmitResult.summary.total }}</div>
+                          <div class="result-label">Total dates</div>
+                        </div>
+                        <div class="result-card success-card">
+                          <div class="result-number">
+                            {{ timesheetSubmitResult.summary.successful }}
+                          </div>
+                          <div class="result-label">Submitted</div>
+                        </div>
+                        <div class="result-card error-card">
+                          <div class="result-number">
+                            {{ timesheetSubmitResult.summary.failed }}
+                          </div>
+                          <div class="result-label">Failed</div>
+                        </div>
                       </div>
+                      @if (timesheetSubmitResult.errors.length > 0) {
+                        <div class="errors-section">
+                          <h4 class="errors-title">Failed submissions</h4>
+                          <div class="errors-list">
+                            @for (error of timesheetSubmitResult.errors; track error) {
+                              <div class="error-item">
+                                <div class="error-date">{{ error.date }}</div>
+                                <div class="error-message">{{ error.error }}</div>
+                              </div>
+                            }
+                          </div>
+                        </div>
+                      }
                     </div>
-
-                    <div class="calendar-day-total" *ngIf="day.entries.length > 0">
-                      {{ minutesToHours(day.totalMinutes) }}
-                    </div>
-
-                    <div class="calendar-status-row" *ngIf="day.isSubmitted || day.isApproved">
-                      <span class="calendar-status approved-status" *ngIf="day.isApproved"
-                        >Approved</span
-                      >
-                      <span
-                        class="calendar-status submitted-status"
-                        *ngIf="!day.isApproved && day.isSubmitted"
-                        >Submitted</span
-                      >
-                    </div>
-
-                    <div class="calendar-event-list" *ngIf="day.events.length > 0">
-                      <div
-                        class="calendar-event"
-                        *ngFor="let event of day.events"
-                        [class.holiday-event]="isHolidayEvent(event)"
-                      >
-                        <i
-                          class="pi"
-                          [class.pi-flag]="isHolidayEvent(event)"
-                          [class.pi-calendar]="!isHolidayEvent(event)"
-                        ></i>
-                        <span>{{ getCalendarEventTitle(event) }}</span>
-                      </div>
-                    </div>
-
-                    <div class="calendar-entry-list">
-                      <div
-                        class="calendar-entry"
-                        *ngFor="let entry of day.entries"
-                        [class.entry-approved]="entry.attributes.approved"
-                        [class.entry-submitted]="
-                          entry.attributes.submitted && !entry.attributes.approved
-                        "
-                      >
-                        <strong>{{ minutesToHours(entry.attributes.time || 0) }}</strong>
-                        <span>{{ entry.attributes.note || 'No note' }}</span>
-                        <em *ngIf="entry.attributes.approved">Approved</em>
-                        <em *ngIf="!entry.attributes.approved && entry.attributes.submitted"
-                          >Submitted</em
-                        >
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="empty-calendar" *ngIf="!detailLoading && calendarDays.length === 0">
-                  Select a month and click "Load timesheet detail".
+                  }
                 </div>
               </div>
-            </div>
+            }
+
+            @if (activeTab === 'detail') {
+              <div class="panel-card detail-card">
+                <div class="card-header">
+                  <div class="card-icon">🗓️</div>
+                  <div>
+                    <h3 class="card-title">Timesheet Calendar</h3>
+                    <p class="card-subtitle">View logged time entries by day</p>
+                  </div>
+                </div>
+                <div class="card-content">
+                  <div class="detail-toolbar">
+                    <div class="month-picker-field">
+                      <button
+                        type="button"
+                        class="month-nav-btn"
+                        aria-label="Previous month"
+                        (click)="changeDetailMonth(-1)"
+                      >
+                        <i class="pi pi-chevron-left"></i>
+                      </button>
+                      <label for="detailMonth">
+                        <i class="pi pi-calendar"></i>
+                        Detail month
+                      </label>
+                      <input
+                        id="detailMonth"
+                        type="month"
+                        [(ngModel)]="detailMonth"
+                        (ngModelChange)="onDetailMonthChange()"
+                        class="styled-input native-date-input"
+                      />
+                      <button
+                        type="button"
+                        class="month-nav-btn"
+                        aria-label="Next month"
+                        (click)="changeDetailMonth(1)"
+                      >
+                        <i class="pi pi-chevron-right"></i>
+                      </button>
+                    </div>
+                    <button
+                      pButton
+                      (click)="loadTimesheetDetails()"
+                      label="Load timesheet detail"
+                      icon="pi pi-refresh"
+                      [loading]="detailLoading"
+                      [disabled]="!canLoadDetails()"
+                      class="generate-entries-btn"
+                    ></button>
+                    @if (calendarDays.length > 0) {
+                      <div class="detail-total">
+                        <strong>{{ minutesToHours(getCalendarTotalMinutes()) }}</strong>
+                        <span>logged in {{ getDetailMonthLabel() }}</span>
+                      </div>
+                    }
+                  </div>
+                  @if (calendarDays.length > 0) {
+                    <div class="calendar-grid">
+                      @for (day of calendarWeekdays; track day) {
+                        <div class="calendar-weekday">{{ day }}</div>
+                      }
+                      @for (day of calendarDays; track day) {
+                        <div
+                          class="calendar-day"
+                          [class.weekend]="day.isWeekend"
+                          [class.outside]="day.isOutsideRange"
+                          [class.has-entry]="day.entries.length > 0"
+                          [class.submitted]="day.isSubmitted"
+                          [class.approved]="day.isApproved"
+                          [class.holiday]="day.isHoliday"
+                          [style.grid-column-start]="day.gridColumnStart || null"
+                        >
+                          <div class="calendar-day-header">
+                            <span>{{ day.dayNumber }}</span>
+                            <small>{{ day.weekday }}</small>
+                          </div>
+                          @if (day.isHoliday) {
+                            <div class="holiday-banner">
+                              <i class="pi pi-flag"></i>
+                              <div>
+                                <strong>Vietnam holiday</strong>
+                                <span>{{ getHolidayTitles(day).join(', ') }}</span>
+                              </div>
+                            </div>
+                          }
+                          @if (day.entries.length > 0) {
+                            <div class="calendar-day-total">
+                              {{ minutesToHours(day.totalMinutes) }}
+                            </div>
+                          }
+                          @if (day.isSubmitted || day.isApproved) {
+                            <div class="calendar-status-row">
+                              @if (day.isApproved) {
+                                <span class="calendar-status approved-status">Approved</span>
+                              }
+                              @if (!day.isApproved && day.isSubmitted) {
+                                <span class="calendar-status submitted-status">Submitted</span>
+                              }
+                            </div>
+                          }
+                          @if (day.events.length > 0) {
+                            <div class="calendar-event-list">
+                              @for (event of day.events; track event) {
+                                <div
+                                  class="calendar-event"
+                                  [class.holiday-event]="isHolidayEvent(event)"
+                                >
+                                  <i
+                                    class="pi"
+                                    [class.pi-flag]="isHolidayEvent(event)"
+                                    [class.pi-calendar]="!isHolidayEvent(event)"
+                                  ></i>
+                                  <span>{{ getCalendarEventTitle(event) }}</span>
+                                </div>
+                              }
+                            </div>
+                          }
+                          <div class="calendar-entry-list">
+                            @for (entry of day.entries; track entry) {
+                              <div
+                                class="calendar-entry"
+                                [class.entry-approved]="entry.attributes.approved"
+                                [class.entry-submitted]="
+                                  entry.attributes.submitted && !entry.attributes.approved
+                                "
+                              >
+                                <strong>{{ minutesToHours(entry.attributes.time || 0) }}</strong>
+                                <span>{{ entry.attributes.note || 'No note' }}</span>
+                                @if (entry.attributes.approved) {
+                                  <em>Approved</em>
+                                }
+                                @if (!entry.attributes.approved && entry.attributes.submitted) {
+                                  <em>Submitted</em>
+                                }
+                              </div>
+                            }
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  }
+                  @if (!detailLoading && calendarDays.length === 0) {
+                    <div class="empty-calendar">
+                      Select a month and click "Load timesheet detail".
+                    </div>
+                  }
+                </div>
+              </div>
+            }
           </div>
         </div>
       </div>
@@ -2169,6 +2182,11 @@ interface TimesheetCalendarDay {
   ],
 })
 export class MyTimesheetComponent implements OnInit, OnDestroy {
+  private timesheetService = inject(TimesheetService);
+  private messageService = inject(MessageService);
+  private cdr = inject(ChangeDetectorRef);
+  private document = inject<Document>(DOCUMENT);
+
   // Configuration
   config: TimesheetConfig = {
     authToken: '',
@@ -2220,13 +2238,6 @@ export class MyTimesheetComponent implements OnInit, OnDestroy {
   private previousBodyWidth = '';
   private previousHtmlHeight = '';
   private previousHtmlOverflowY = '';
-
-  constructor(
-    private timesheetService: TimesheetService,
-    private messageService: MessageService,
-    private cdr: ChangeDetectorRef,
-    @Inject(DOCUMENT) private document: Document
-  ) {}
 
   ngOnInit() {
     this.enableGlobalScroll();
@@ -2397,11 +2408,11 @@ export class MyTimesheetComponent implements OnInit, OnDestroy {
 
   getEntryStatusSeverity(
     entry: any
-  ): 'danger' | 'warning' | 'success' | 'info' | 'secondary' | 'contrast' | undefined {
+  ): 'danger' | 'warn' | 'success' | 'info' | 'secondary' | 'contrast' | undefined {
     if (entry.submitted) return 'success';
     if (entry.error) return 'danger';
     if (entry.hours > 0) return 'info';
-    return 'warning';
+    return 'warn';
   }
 
   getTotalHours(): number {

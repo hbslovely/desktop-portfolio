@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FeedingLog } from '../../../services/feeding-log.service';
 import { DailySummary, getDailySummaries } from '../feeding-prediction';
 import { NutritionTarget } from '../feeding-nutrition';
@@ -7,7 +7,7 @@ import { NutritionTarget } from '../feeding-nutrition';
 @Component({
   selector: 'app-feeding-charts',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   templateUrl: './feeding-charts.component.html',
   styleUrls: ['./feeding-charts.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,

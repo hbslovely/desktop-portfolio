@@ -1,4 +1,4 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, signal, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, throwError, of, from } from 'rxjs';
 import { catchError, map, tap } from 'rxjs/operators';
@@ -91,6 +91,8 @@ export type ExpenseCategory = (typeof EXPENSE_CATEGORIES)[number];
   providedIn: 'root',
 })
 export class LLMService {
+  private http = inject(HttpClient);
+
   // Default configuration - HuggingFace
   private config: LLMConfig = {
     model: 'mistralai/Mistral-7B-Instruct-v0.2:featherless-ai',
@@ -106,7 +108,7 @@ export class LLMService {
   // HuggingFace Router API URL - use proxy to avoid CORS
   private readonly HUGGINGFACE_URL = '/api/huggingface';
 
-  constructor(private http: HttpClient) {
+  constructor() {
     this.loadConfig();
     this.checkHuggingFaceStatus();
   }
@@ -453,7 +455,7 @@ Ví dụ:
             const parsed = JSON.parse(jsonMatch[0]);
 
             // Find best matching category
-            let category = this.findBestMatchingCategory(parsed.category);
+            const category = this.findBestMatchingCategory(parsed.category);
 
             // Parse amount - handle string numbers
             let amount = parsed.amount;

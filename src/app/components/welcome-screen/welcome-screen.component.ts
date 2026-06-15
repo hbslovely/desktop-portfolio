@@ -1,11 +1,11 @@
 import { Component, signal, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-welcome-screen',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [FormsModule],
   templateUrl: './welcome-screen.component.html',
   styleUrl: './welcome-screen.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

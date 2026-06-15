@@ -1,0 +1,130 @@
+# Generates individual medical report files from the "Y Tế" Google Sheet tab.
+# Each row in the sheet → 1 Markdown file + 1 PDF file.
+# File naming: YYYY-MM-DD_{kind}_{title-slug}_{user}.md / .pdf
+#
+# Idempotency: each file is checked against the Drive folder before uploading.
+# Files already present are skipped — only new rows produce new uploads.
+#
+# Schedule: 01:00 UTC every day (08:00 ICT).
+#
+# Required GitHub Secrets:
+#   GOOGLE_SHEETS_API_KEY          — public read-only Sheets API key
+#   GOOGLE_FEEDING_SHEET_ID        — spreadsheet ID
+#   GOOGLE_MEDICAL_SHEET_GID       — GID of the "Y Tế" tab (e.g. 631680908)
+#   GOOGLE_OAUTH_CLIENT_ID         — OAuth2 Desktop app client ID
+#   GOOGLE_OAUTH_CLIENT_SECRET     — OAuth2 client secret
+#   GOOGLE_OAUTH_REFRESH_TOKEN     — Refresh token for the Drive folder owner
+
+name: Daily medical report
+
+on:
+  schedule:
+    - cron: "0 1 * * *"   # 01:00 UTC = 08:00 ICT
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Re-upload all files even if already in Drive"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: medical-report
+  cancel-in-progress: false
+
+jobs:
+  generate-and-upload:
+    name: Generate & upload per-entry reports
+    runs-on: ubuntu-latest
+
+    env:
+      DRIVE_FOLDER_ID: "1gp2VKS1BWWUnFUQWOkz4RXK7bmThkJvP"
+
+    steps:
+      # ── 1. Checkout ──────────────────────────────────────────────────────────
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            .github/scripts/generate-medical-report.mjs
+            .github/scripts/drive-oauth-token.py
+            .github/scripts/drive-upload.py
+            .github/scripts/drive-upload-manifest.py
+
+      # ── 2. Set up Python ─────────────────────────────────────────────────────
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # ── 3. Set up Node.js ────────────────────────────────────────────────────
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      # ── 4. Install dependencies ──────────────────────────────────────────────
+      - name: Install dependencies
+        run: |
+          npm install --no-save md-to-pdf@5
+          sudo apt-get update -qq
+          sudo apt-get install -y chromium-browser 2>/dev/null || sudo apt-get install -y chromium
+          CHROMIUM_PATH="$(which chromium-browser 2>/dev/null || which chromium)"
+          echo "PUPPETEER_EXECUTABLE_PATH=${CHROMIUM_PATH}" >> "${GITHUB_ENV}"
+          echo "PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true"       >> "${GITHUB_ENV}"
+
+      # ── 5. Generate one MD + PDF per sheet row ───────────────────────────────
+      - name: Generate reports
+        env:
+          GOOGLE_SHEETS_API_KEY:    ${{ secrets.GOOGLE_SHEETS_API_KEY }}
+          GOOGLE_FEEDING_SHEET_ID:  ${{ secrets.GOOGLE_FEEDING_SHEET_ID }}
+          GOOGLE_MEDICAL_SHEET_GID: ${{ secrets.GOOGLE_MEDICAL_SHEET_GID }}
+        run: |
+          node .github/scripts/generate-medical-report.mjs
+          echo "Generated files:"
+          ls reports/ | grep -v manifest.json | head -40
+
+      # ── 6. Get OAuth2 access token ───────────────────────────────────────────
+      - name: Get Drive access token
+        id: token
+        env:
+          GOOGLE_OAUTH_CLIENT_ID:     ${{ secrets.GOOGLE_OAUTH_CLIENT_ID }}
+          GOOGLE_OAUTH_CLIENT_SECRET: ${{ secrets.GOOGLE_OAUTH_CLIENT_SECRET }}
+          GOOGLE_OAUTH_REFRESH_TOKEN: ${{ secrets.GOOGLE_OAUTH_REFRESH_TOKEN }}
+        run: |
+          TOKEN="$(python3 .github/scripts/drive-oauth-token.py)"
+          echo "::add-mask::${TOKEN}"
+          echo "access_token=${TOKEN}" >> "${GITHUB_OUTPUT}"
+
+      # ── 7. Upload each entry — skip files already in Drive ───────────────────
+      - name: Upload to Google Drive
+        env:
+          ACCESS_TOKEN:               ${{ steps.token.outputs.access_token }}
+          FORCE:                      ${{ github.event.inputs.force || 'false' }}
+          GOOGLE_OAUTH_CLIENT_ID:     ${{ secrets.GOOGLE_OAUTH_CLIENT_ID }}
+          GOOGLE_OAUTH_CLIENT_SECRET: ${{ secrets.GOOGLE_OAUTH_CLIENT_SECRET }}
+          GOOGLE_OAUTH_REFRESH_TOKEN: ${{ secrets.GOOGLE_OAUTH_REFRESH_TOKEN }}
+        run: python3 .github/scripts/drive-upload-manifest.py
+
+      # ── 8. Job summary ───────────────────────────────────────────────────────
+      - name: Job summary
+        if: always()
+        run: |
+          {
+            echo "## 📋 Medical Report Upload"
+            echo ""
+            echo "| | |"
+            echo "|---|---|"
+            echo "| **Total entries** | ${REPORT_TOTAL:-?} |"
+            echo "| **Uploaded** | ✅ ${REPORT_UPLOADED:-0} files |"
+            echo "| **Skipped** (already in Drive) | ⏭ ${REPORT_SKIPPED:-0} files |"
+            echo "| **Errors** | ❌ ${REPORT_ERRORS:-0} files |"
+            echo ""
+            echo "📁 [Open Drive folder](https://drive.google.com/drive/folders/${DRIVE_FOLDER_ID})"
+          } >> "${GITHUB_STEP_SUMMARY}"

@@ -8,7 +8,7 @@ import {
   output,
   signal,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { interval } from 'rxjs';
 import {
@@ -30,7 +30,7 @@ type MomSection = 'overview' | 'care' | 'food' | 'tips';
 @Component({
   selector: 'app-feeding-mom',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   templateUrl: './feeding-mom.component.html',
   styleUrls: ['./feeding-mom.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,

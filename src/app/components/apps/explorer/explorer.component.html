@@ -19,13 +19,21 @@
 
       <div class="address-bar">
         <div class="breadcrumbs">
-          <span *ngFor="let crumb of breadcrumbs(); let last = last" class="breadcrumb">
-            <button *ngIf="!last" class="breadcrumb-btn" (click)="navigateToPath(crumb.path)">
-              {{ crumb.name }}
-            </button>
-            <span *ngIf="last" class="current-crumb">{{ crumb.name }}</span>
-            <i *ngIf="!last" class="pi pi-angle-right separator"></i>
-          </span>
+          @for (crumb of breadcrumbs(); track crumb; let last = $last) {
+            <span class="breadcrumb">
+              @if (!last) {
+                <button class="breadcrumb-btn" (click)="navigateToPath(crumb.path)">
+                  {{ crumb.name }}
+                </button>
+              }
+              @if (last) {
+                <span class="current-crumb">{{ crumb.name }}</span>
+              }
+              @if (!last) {
+                <i class="pi pi-angle-right separator"></i>
+              }
+            </span>
+          }
         </div>
       </div>
     </div>
@@ -41,14 +49,11 @@
             (input)="onSearchInput($event)"
             (keydown)="onSearchKeyDown($event)"
           />
-          <button
-            *ngIf="isSearching()"
-            class="search-clear-btn"
-            (click)="clearSearch()"
-            title="Clear search"
-          >
-            <i class="pi pi-times"></i>
-          </button>
+          @if (isSearching()) {
+            <button class="search-clear-btn" (click)="clearSearch()" title="Clear search">
+              <i class="pi pi-times"></i>
+            </button>
+          }
         </div>
       </div>
 
@@ -69,193 +74,213 @@
     <!-- File List Panel -->
     <div class="file-panel">
       <div class="file-list-container">
-        <div *ngIf="currentItems().length === 0" class="empty-folder">
-          <div class="empty-icon">
-            <i class="pi pi-folder-open"></i>
+        @if (currentItems().length === 0) {
+          <div class="empty-folder">
+            <div class="empty-icon">
+              <i class="pi pi-folder-open"></i>
+            </div>
+            <p>This folder is empty</p>
           </div>
-          <p>This folder is empty</p>
-        </div>
+        }
 
         <!-- List View -->
-        <div *ngIf="viewMode() === 'list' && currentItems().length > 0" class="list-view">
-          <div class="list-header">
-            <div class="column name-column">
-              <span>Name</span>
-              <i class="pi pi-sort-alt sort-icon"></i>
+        @if (viewMode() === 'list' && currentItems().length > 0) {
+          <div class="list-view">
+            <div class="list-header">
+              <div class="column name-column">
+                <span>Name</span>
+                <i class="pi pi-sort-alt sort-icon"></i>
+              </div>
+              <div class="column size-column">
+                <span>Size</span>
+              </div>
+              <div class="column date-column">
+                <span>Date Modified</span>
+              </div>
             </div>
-            <div class="column size-column">
-              <span>Size</span>
-            </div>
-            <div class="column date-column">
-              <span>Date Modified</span>
-            </div>
-          </div>
-
-          <div class="list-content">
-            <div
-              *ngFor="let item of currentItems()"
-              class="list-item"
-              [class.selected]="selectedItem() === item"
-              [class.renaming]="renamingItem() === item"
-              (click)="onItemClick(item)"
-              (dblclick)="onItemDoubleClick(item)"
-              (contextmenu)="onItemRightClick($event, item)"
-            >
-              <div class="item-info">
-                <div class="item-icon-wrapper">
-                  <i [class]="item.icon" class="item-icon"></i>
+            <div class="list-content">
+              @for (item of currentItems(); track item) {
+                <div
+                  class="list-item"
+                  [class.selected]="selectedItem() === item"
+                  [class.renaming]="renamingItem() === item"
+                  (click)="onItemClick(item)"
+                  (dblclick)="onItemDoubleClick(item)"
+                  (contextmenu)="onItemRightClick($event, item)"
+                >
+                  <div class="item-info">
+                    <div class="item-icon-wrapper">
+                      <i [class]="item.icon" class="item-icon"></i>
+                    </div>
+                    <!-- Normal name display -->
+                    @if (renamingItem() !== item) {
+                      <span class="item-name">{{ item.name }}</span>
+                    }
+                    <!-- Rename input -->
+                    @if (renamingItem() === item) {
+                      <input
+                        type="text"
+                        class="rename-input"
+                        [value]="newItemName()"
+                        (input)="onRenameInput($event)"
+                        (keydown)="onRenameKeyDown($event)"
+                        (blur)="finishRename()"
+                        (click)="$event.stopPropagation()"
+                      />
+                    }
+                  </div>
+                  <div class="item-size">
+                    {{ item.type === 'folder' ? '—' : item.size }}
+                  </div>
+                  <div class="item-date">
+                    {{ item.modified | formatDate }}
+                  </div>
                 </div>
-
-                <!-- Normal name display -->
-                <span *ngIf="renamingItem() !== item" class="item-name">{{ item.name }}</span>
-
-                <!-- Rename input -->
-                <input
-                  *ngIf="renamingItem() === item"
-                  type="text"
-                  class="rename-input"
-                  [value]="newItemName()"
-                  (input)="onRenameInput($event)"
-                  (keydown)="onRenameKeyDown($event)"
-                  (blur)="finishRename()"
-                  (click)="$event.stopPropagation()"
-                />
-              </div>
-
-              <div class="item-size">
-                {{ item.type === 'folder' ? '—' : item.size }}
-              </div>
-
-              <div class="item-date">
-                {{ item.modified | formatDate }}
-              </div>
+              }
             </div>
           </div>
-        </div>
+        }
 
         <!-- Icons View -->
-        <div *ngIf="viewMode() === 'icons' && currentItems().length > 0" class="icons-view">
-          <div
-            *ngFor="let item of currentItems()"
-            class="icon-item"
-            [class.selected]="selectedItem() === item"
-            [class.renaming]="renamingItem() === item"
-            (click)="onItemClick(item)"
-            (dblclick)="onItemDoubleClick(item)"
-            (contextmenu)="onItemRightClick($event, item)"
-          >
-            <div class="icon-wrapper">
-              <i [class]="item.icon" class="item-icon"></i>
-            </div>
-
-            <!-- Normal name display -->
-            <span *ngIf="renamingItem() !== item" class="item-name">{{ item.name }}</span>
-
-            <!-- Rename input -->
-            <input
-              *ngIf="renamingItem() === item"
-              type="text"
-              class="rename-input"
-              [value]="newItemName()"
-              (input)="onRenameInput($event)"
-              (keydown)="onRenameKeyDown($event)"
-              (blur)="finishRename()"
-              (click)="$event.stopPropagation()"
-            />
+        @if (viewMode() === 'icons' && currentItems().length > 0) {
+          <div class="icons-view">
+            @for (item of currentItems(); track item) {
+              <div
+                class="icon-item"
+                [class.selected]="selectedItem() === item"
+                [class.renaming]="renamingItem() === item"
+                (click)="onItemClick(item)"
+                (dblclick)="onItemDoubleClick(item)"
+                (contextmenu)="onItemRightClick($event, item)"
+              >
+                <div class="icon-wrapper">
+                  <i [class]="item.icon" class="item-icon"></i>
+                </div>
+                <!-- Normal name display -->
+                @if (renamingItem() !== item) {
+                  <span class="item-name">{{ item.name }}</span>
+                }
+                <!-- Rename input -->
+                @if (renamingItem() === item) {
+                  <input
+                    type="text"
+                    class="rename-input"
+                    [value]="newItemName()"
+                    (input)="onRenameInput($event)"
+                    (keydown)="onRenameKeyDown($event)"
+                    (blur)="finishRename()"
+                    (click)="$event.stopPropagation()"
+                  />
+                }
+              </div>
+            }
           </div>
-        </div>
+        }
       </div>
     </div>
 
     <!-- Preview Panel -->
-    <div class="preview-panel" *ngIf="selectedItem()">
-      <div class="preview-header">
-        <h3>{{ selectedItem()?.name }}</h3>
-        <button class="close-preview-btn" (click)="selectedItem.set(null)" title="Close preview">
-          <i class="pi pi-times"></i>
-        </button>
-      </div>
-
-      <div class="preview-content">
-        <div *ngIf="selectedItem()?.type === 'folder'" class="folder-preview">
-          <div class="folder-icon">
-            <i [class]="selectedItem()?.icon"></i>
-          </div>
-          <div class="folder-info">
-            <p><strong>Type:</strong> Folder</p>
-            <p><strong>Items:</strong> {{ selectedItem()?.children?.length || 0 }}</p>
-            <p><strong>Modified:</strong> {{ selectedItem()?.modified | formatDate }}</p>
-          </div>
+    @if (selectedItem()) {
+      <div class="preview-panel">
+        <div class="preview-header">
+          <h3>{{ selectedItem()?.name }}</h3>
+          <button class="close-preview-btn" (click)="selectedItem.set(null)" title="Close preview">
+            <i class="pi pi-times"></i>
+          </button>
         </div>
-
-        <div *ngIf="selectedItem()?.type === 'file'" class="file-preview">
-          <div class="file-icon">
-            <i [class]="selectedItem()?.icon"></i>
-          </div>
-          <div class="file-info">
-            <p><strong>Type:</strong> {{ getFileTypeDisplay(selectedItem()?.name || '') }}</p>
-            <p><strong>Size:</strong> {{ selectedItem()?.size | formatFileSize }}</p>
-            <p><strong>Modified:</strong> {{ selectedItem()?.modified | formatDate }}</p>
-          </div>
-
-          <!-- Image Preview -->
-          <div *ngIf="isImageFile(selectedItem())" class="image-preview">
-            <img
-              [src]="getImagePath(selectedItem())"
-              [alt]="selectedItem()?.name"
-              loading="lazy"
-              (load)="onImageLoad($event)"
-              (error)="onImageError($event)"
-            />
-          </div>
-
-          <!-- Text Preview -->
-          <div *ngIf="isTextFile(selectedItem())" class="text-preview">
-            <div class="text-content">
-              {{ selectedItem()?.content || 'No content available' }}
+        <div class="preview-content">
+          @if (selectedItem()?.type === 'folder') {
+            <div class="folder-preview">
+              <div class="folder-icon">
+                <i [class]="selectedItem()?.icon"></i>
+              </div>
+              <div class="folder-info">
+                <p><strong>Type:</strong> Folder</p>
+                <p><strong>Items:</strong> {{ selectedItem()?.children?.length || 0 }}</p>
+                <p><strong>Modified:</strong> {{ selectedItem()?.modified | formatDate }}</p>
+              </div>
             </div>
-          </div>
+          }
+          @if (selectedItem()?.type === 'file') {
+            <div class="file-preview">
+              <div class="file-icon">
+                <i [class]="selectedItem()?.icon"></i>
+              </div>
+              <div class="file-info">
+                <p><strong>Type:</strong> {{ getFileTypeDisplay(selectedItem()?.name || '') }}</p>
+                <p><strong>Size:</strong> {{ selectedItem()?.size | formatFileSize }}</p>
+                <p><strong>Modified:</strong> {{ selectedItem()?.modified | formatDate }}</p>
+              </div>
+              <!-- Image Preview -->
+              @if (isImageFile(selectedItem())) {
+                <div class="image-preview">
+                  <img
+                    [src]="getImagePath(selectedItem())"
+                    [alt]="selectedItem()?.name"
+                    loading="lazy"
+                    (load)="onImageLoad($event)"
+                    (error)="onImageError($event)"
+                  />
+                </div>
+              }
+              <!-- Text Preview -->
+              @if (isTextFile(selectedItem())) {
+                <div class="text-preview">
+                  <div class="text-content">
+                    {{ selectedItem()?.content || 'No content available' }}
+                  </div>
+                </div>
+              }
+            </div>
+          }
         </div>
       </div>
-    </div>
+    }
   </div>
 
   <!-- Status Bar -->
   <div class="status-bar">
     <div class="status-info">
-      <span *ngIf="!isSearching()">{{ currentItems().length }} items</span>
-      <span *ngIf="isSearching()" class="search-status">{{ searchStatus }}</span>
+      @if (!isSearching()) {
+        <span>{{ currentItems().length }} items</span>
+      }
+      @if (isSearching()) {
+        <span class="search-status">{{ searchStatus }}</span>
+      }
     </div>
-    <div class="selected-info" *ngIf="selectedItem()">
-      <span
-        >{{ selectedItem()?.name }} -
-        {{
-          selectedItem()?.type === 'file' ? (selectedItem()?.size | formatFileSize) : 'Folder'
-        }}</span
-      >
-    </div>
+    @if (selectedItem()) {
+      <div class="selected-info">
+        <span
+          >{{ selectedItem()?.name }} -
+          {{
+            selectedItem()?.type === 'file' ? (selectedItem()?.size | formatFileSize) : 'Folder'
+          }}</span
+        >
+      </div>
+    }
   </div>
 
   <!-- Context Menu -->
-  <div
-    *ngIf="showContextMenu()"
-    class="context-menu"
-    [ngStyle]="{
-      left: contextMenuPosition().x + 'px',
-      top: contextMenuPosition().y + 'px',
-    }"
-    (click)="$event.stopPropagation()"
-  >
+  @if (showContextMenu()) {
     <div
-      *ngFor="let menuItem of contextMenuItems"
-      class="context-menu-item"
-      (click)="handleContextMenuAction(menuItem.action)"
+      class="context-menu"
+      [ngStyle]="{
+        left: contextMenuPosition().x + 'px',
+        top: contextMenuPosition().y + 'px',
+      }"
+      (click)="$event.stopPropagation()"
     >
-      <i [class]="menuItem.icon"></i>
-      <span>{{ menuItem.label }}</span>
+      @for (menuItem of contextMenuItems; track menuItem) {
+        <div class="context-menu-item" (click)="handleContextMenuAction(menuItem.action)">
+          <i [class]="menuItem.icon"></i>
+          <span>{{ menuItem.label }}</span>
+        </div>
+      }
     </div>
-  </div>
+  }
 
   <!-- Context Menu Backdrop -->
-  <div *ngIf="showContextMenu()" class="context-menu-backdrop" (click)="hideContextMenu()"></div>
+  @if (showContextMenu()) {
+    <div class="context-menu-backdrop" (click)="hideContextMenu()"></div>
+  }
 </div>

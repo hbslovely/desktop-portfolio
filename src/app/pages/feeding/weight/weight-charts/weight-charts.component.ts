@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import {
   formatWeightCm,
   formatWeightDateShort,
@@ -16,7 +16,7 @@ import type {
 @Component({
   selector: 'app-weight-charts',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   templateUrl: './weight-charts.component.html',
   styleUrls: ['./weight-charts.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,

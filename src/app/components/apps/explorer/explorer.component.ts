@@ -9,6 +9,8 @@ import {
   computed,
   effect,
   ChangeDetectionStrategy,
+  OnChanges,
+  inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
@@ -55,7 +57,10 @@ export interface ContextMenuEvent {
   styleUrl: './explorer.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ExplorerComponent implements OnInit, OnDestroy {
+export class ExplorerComponent implements OnInit, OnDestroy, OnChanges {
+  private http = inject(HttpClient);
+  private fileSystemService = inject(FileSystemService);
+
   private readonly destroy$ = new Subject<void>();
   @Input() externalFileSystem: FileSystemItem | null = null;
   @Output() onFileOpen = new EventEmitter<FileOpenEvent>();
@@ -92,10 +97,7 @@ export class ExplorerComponent implements OnInit, OnDestroy {
   private lastClickTime = 0;
   private lastClickItem: FileSystemItem | null = null;
 
-  constructor(
-    private http: HttpClient,
-    private fileSystemService: FileSystemService
-  ) {
+  constructor() {
     // Watch for changes in the shared file system
     effect(
       () => {
