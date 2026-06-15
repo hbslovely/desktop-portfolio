@@ -714,10 +714,22 @@
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--muted);
+  line-height: 1;
 
   i {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1em;
+    height: 1em;
     font-size: 12px;
+    line-height: 1;
     color: var(--muted-2, #94a3b8);
+    flex-shrink: 0;
+
+    &::before {
+      line-height: 1;
+    }
   }
 }
 
@@ -737,7 +749,8 @@
     display: grid;
     grid-template-columns: 40px minmax(0, 1fr) 24px;
     align-items: center;
-    gap: 10px 12px;
+    column-gap: 12px;
+    row-gap: 0;
     padding: 12px 14px;
     background: linear-gradient(180deg, #ffffff 0%, #fafbfc 100%);
     border: 1px solid #e8ecf1;
@@ -773,6 +786,14 @@
 
     .m-body {
       min-width: 0;
+
+      > span {
+        display: block;
+        font-size: 11px;
+        line-height: 1.4;
+        color: var(--muted);
+        margin-top: 3px;
+      }
     }
 
     strong {
@@ -782,14 +803,6 @@
       color: var(--text);
       line-height: 1.15;
       font-variant-numeric: tabular-nums;
-    }
-
-    span {
-      display: block;
-      font-size: 11px;
-      line-height: 1.4;
-      color: var(--muted);
-      margin-top: 3px;
     }
 
     .m-skew-hint {
@@ -805,20 +818,23 @@
     width: 40px;
     height: 40px;
     border-radius: 12px;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    line-height: 0;
+    align-self: center;
+    margin: 0;
+    font-size: 16px;
+    line-height: 1;
 
     i {
-      font-size: 16px;
-      line-height: 0;
-      display: flex;
-      width: 1em;
-      height: 1em;
+      display: inline-flex;
       align-items: center;
       justify-content: center;
+      width: 1em;
+      height: 1em;
+      font-size: inherit;
+      line-height: 1;
 
       &::before {
         line-height: 1;
@@ -854,20 +870,23 @@
   .m-status {
     width: 24px;
     height: 24px;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    line-height: 0;
+    flex-shrink: 0;
+    align-self: center;
     justify-self: end;
+    margin: 0;
+    line-height: 1;
 
     i {
-      font-size: 20px;
-      line-height: 0;
-      display: flex;
-      width: 1em;
-      height: 1em;
+      display: inline-flex;
       align-items: center;
       justify-content: center;
+      width: 1em;
+      height: 1em;
+      font-size: 20px;
+      line-height: 1;
 
       &::before {
         line-height: 1;
