@@ -214,6 +214,21 @@
             <ul class="hero-notification__list">
               @for (notice of displayedNotifications(); track notice) {
                 <li class="hero-notification__item">
+                  <div class="hero-notification__item-accent" aria-hidden="true"></div>
+                  <div class="hero-notification__item-body">
+                    <p class="hero-notification__content">{{ notice.content }}</p>
+                    <div class="hero-notification__meta">
+                      <span class="hero-notification__author">
+                        <i class="pi pi-user" aria-hidden="true"></i>
+                        {{ notice.user }}
+                      </span>
+                      @if (notice.createdAt) {
+                        <span class="hero-notification__created">{{
+                          formatNotificationCreatedAt(notice.createdAt)
+                        }}</span>
+                      }
+                    </div>
+                  </div>
                   <div class="hero-notification__item-actions">
                     <button
                       type="button"
@@ -236,15 +251,6 @@
                       >
                         <i class="pi pi-trash" aria-hidden="true"></i>
                       </button>
-                    }
-                  </div>
-                  <p class="hero-notification__content">{{ notice.content }}</p>
-                  <div class="hero-notification__meta">
-                    <span class="hero-notification__author">— {{ notice.user }}</span>
-                    @if (notice.createdAt) {
-                      <span class="hero-notification__created">{{
-                        formatNotificationCreatedAt(notice.createdAt)
-                      }}</span>
                     }
                   </div>
                 </li>
@@ -366,6 +372,21 @@
                   <ul class="hero-notification__list">
                     @for (notice of visibleNotifications(); track notice) {
                       <li class="hero-notification__item">
+                        <div class="hero-notification__item-accent" aria-hidden="true"></div>
+                        <div class="hero-notification__item-body">
+                          <p class="hero-notification__content">{{ notice.content }}</p>
+                          <div class="hero-notification__meta">
+                            <span class="hero-notification__author">
+                              <i class="pi pi-user" aria-hidden="true"></i>
+                              {{ notice.user }}
+                            </span>
+                            @if (notice.createdAt) {
+                              <span class="hero-notification__created">{{
+                                formatNotificationCreatedAt(notice.createdAt)
+                              }}</span>
+                            }
+                          </div>
+                        </div>
                         <div class="hero-notification__item-actions">
                           <button
                             type="button"
@@ -388,15 +409,6 @@
                             >
                               <i class="pi pi-trash" aria-hidden="true"></i>
                             </button>
-                          }
-                        </div>
-                        <p class="hero-notification__content">{{ notice.content }}</p>
-                        <div class="hero-notification__meta">
-                          <span class="hero-notification__author">— {{ notice.user }}</span>
-                          @if (notice.createdAt) {
-                            <span class="hero-notification__created">{{
-                              formatNotificationCreatedAt(notice.createdAt)
-                            }}</span>
                           }
                         </div>
                       </li>
