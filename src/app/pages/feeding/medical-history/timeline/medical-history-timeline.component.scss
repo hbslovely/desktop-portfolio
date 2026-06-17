@@ -271,6 +271,23 @@
   font-weight: 700;
 }
 
+.mh-card__photo-unavailable {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted-2, #9ca3af);
+  background: color-mix(in srgb, var(--border, #e5e7eb) 40%, transparent);
+  border: 1px dashed var(--border, #e5e7eb);
+  border-radius: 8px;
+  padding: 6px 10px;
+
+  i {
+    font-size: 13px;
+  }
+}
+
 .mh-card__actions {
   display: flex;
   gap: 8px;

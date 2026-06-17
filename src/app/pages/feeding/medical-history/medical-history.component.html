@@ -128,6 +128,7 @@
     <app-medical-history-timeline
       [timelineGroups]="timelineGroups()"
       [resolveAttachment]="resolveAttachment"
+      [explorerEnabled]="explorerEnabled"
       (editEntry)="medicalDialog.openEdit($event)"
       (deleteEntry)="deleteEntry($event)"
       (openPreview)="openImagePreview($event)"

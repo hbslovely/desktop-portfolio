@@ -52,6 +52,7 @@ const MEDICAL_FOLDER_NAME = 'Y tế';
 export class MedicalHistoryComponent {
   private medicalService = inject(MedicalHistoryService);
   private explorerService = inject(ExplorerService);
+  readonly explorerEnabled = this.explorerService.isEnabled;
   private destroyRef = inject(DestroyRef);
   private activityLogService = inject(ActivityLogService);
   private cdr = inject(ChangeDetectorRef);

@@ -1069,7 +1069,7 @@
   box-sizing: border-box;
   z-index: 90;
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(var(--bn-cols, 6), 1fr);
   gap: 4px;
   padding: 6px 8px;
   /* Nền gần đặc + blur — giảm khe tối (body #000) dưới thanh */

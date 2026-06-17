@@ -383,8 +383,9 @@ export class ActivityLogService {
     : '';
   private readonly STORAGE_KEY = 'activity-log-last-read-id';
 
-  /** Luôn dùng proxy nội bộ để ổn định trên Safari/iOS. */
-  private readonly APPS_SCRIPT_URL = '/api/feeding-apps-script';
+  private readonly APPS_SCRIPT_URL = environment.appsScriptDirect
+    ? environment.googleFeedingAppsScriptUrl
+    : '/api/feeding-apps-script';
 
   /** Refresh interval in minutes (configurable from settings) */
   refreshIntervalMinutes = signal<number>(5);
@@ -633,11 +634,13 @@ export class ActivityLogService {
    */
   private postToAppsScript(body: Record<string, unknown>): Observable<LogSheetResponse> {
     const url = this.APPS_SCRIPT_URL;
-    const isProxy = !environment.production;
+    const useProxy = url.startsWith('/');
 
-    if (isProxy) {
-      const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
-      return this.http.post<LogSheetResponse>(url, body, { headers }).pipe(map((resp) => resp));
+    if (useProxy) {
+      const headers = new HttpHeaders({ 'Content-Type': 'text/plain;charset=UTF-8' });
+      return this.http
+        .post<LogSheetResponse>(url, JSON.stringify(body), { headers })
+        .pipe(map((resp) => resp));
     }
 
     const payload = JSON.stringify(body);

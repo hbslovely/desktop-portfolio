@@ -31,34 +31,39 @@
                   <h4 class="mh-card__title">{{ e.title }}</h4>
                   @if (attachmentFor(e); as att) {
                     <div class="mh-card__photo">
-                      @if (att.content || att.previewUrl || att.driveFileId) {
-                        <button
-                          type="button"
-                          class="mh-card__photo-open"
-                          (click)="onOpenPreview(e)"
-                        >
-                          <span class="mh-card__photo-frame">
-                            <!-- Loading indicator -->
-                            @if (att.isLoading) {
-                              <div class="mh-card__photo-loading">
-                                <i class="pi pi-spin pi-spinner"></i>
-                                <span>Đang tải...</span>
-                              </div>
-                            }
-                            <!-- Actual image -->
-                            @if (!att.isLoading) {
-                              <img
-                                class="mh-card__photo-img"
-                                [src]="att.previewUrl || att.content || placeholderSvg"
-                                alt="Ảnh đính kèm"
-                                (error)="onImageError($event, att)"
-                              />
-                            }
-                          </span>
-                          <span class="mh-card__photo-cap">
-                            <i class="pi pi-search-plus"></i> Xem ảnh
-                          </span>
-                        </button>
+                      @if (explorerEnabled()) {
+                        @if (att.content || att.previewUrl || att.driveFileId) {
+                          <button
+                            type="button"
+                            class="mh-card__photo-open"
+                            (click)="onOpenPreview(e)"
+                          >
+                            <span class="mh-card__photo-frame">
+                              @if (att.isLoading) {
+                                <div class="mh-card__photo-loading">
+                                  <i class="pi pi-spin pi-spinner"></i>
+                                  <span>Đang tải...</span>
+                                </div>
+                              }
+                              @if (!att.isLoading) {
+                                <img
+                                  class="mh-card__photo-img"
+                                  [src]="att.previewUrl || att.content || placeholderSvg"
+                                  alt="Ảnh đính kèm"
+                                  (error)="onImageError($event, att)"
+                                />
+                              }
+                            </span>
+                            <span class="mh-card__photo-cap">
+                              <i class="pi pi-search-plus"></i> Xem ảnh
+                            </span>
+                          </button>
+                        }
+                      } @else {
+                        <div class="mh-card__photo-unavailable">
+                          <i class="pi pi-lock"></i>
+                          <span>Tệp đính kèm không khả dụng</span>
+                        </div>
                       }
                     </div>
                   }

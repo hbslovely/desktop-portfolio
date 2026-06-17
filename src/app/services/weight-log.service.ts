@@ -33,7 +33,9 @@ export class WeightLogService {
     ? `https://sheets.googleapis.com/v4/spreadsheets/${this.SHEET_ID}`
     : '';
 
-  private readonly APPS_SCRIPT_URL = '/api/feeding-apps-script';
+  private readonly APPS_SCRIPT_URL = environment.appsScriptDirect
+    ? environment.googleFeedingAppsScriptUrl
+    : '/api/feeding-apps-script';
 
   /**
    * Cột:
@@ -144,11 +146,11 @@ export class WeightLogService {
 
   private postToAppsScript(body: Record<string, unknown>): Observable<WeightSheetResponse> {
     const url = this.APPS_SCRIPT_URL;
-    const isProxy = !environment.production;
+    const useProxy = url.startsWith('/');
 
-    if (isProxy) {
-      const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
-      return this.http.post<WeightSheetResponse>(url, body, { headers });
+    if (useProxy) {
+      const headers = new HttpHeaders({ 'Content-Type': 'text/plain;charset=UTF-8' });
+      return this.http.post<WeightSheetResponse>(url, JSON.stringify(body), { headers });
     }
 
     const payload = JSON.stringify(body);

@@ -28,7 +28,9 @@ export class NotificationLogService {
   private readonly BASE_URL = this.SHEET_ID
     ? `https://sheets.googleapis.com/v4/spreadsheets/${this.SHEET_ID}`
     : '';
-  private readonly APPS_SCRIPT_URL = '/api/feeding-apps-script';
+  private readonly APPS_SCRIPT_URL = environment.appsScriptDirect
+    ? environment.googleFeedingAppsScriptUrl
+    : '/api/feeding-apps-script';
 
   readonly notifications = signal<NotificationLog[]>([]);
   readonly loading = signal(false);
@@ -128,11 +130,11 @@ export class NotificationLogService {
 
   private postToAppsScript(body: Record<string, unknown>): Observable<NotificationSheetResponse> {
     const url = this.APPS_SCRIPT_URL;
-    const isProxy = !environment.production;
+    const useProxy = url.startsWith('/');
 
-    if (isProxy) {
-      const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
-      return this.http.post<NotificationSheetResponse>(url, body, { headers });
+    if (useProxy) {
+      const headers = new HttpHeaders({ 'Content-Type': 'text/plain;charset=UTF-8' });
+      return this.http.post<NotificationSheetResponse>(url, JSON.stringify(body), { headers });
     }
 
     const payload = JSON.stringify(body);
