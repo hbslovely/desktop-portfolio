@@ -51,12 +51,12 @@ jobs:
 
           if git rev-parse "refs/tags/${PREV_TAG}" >/dev/null 2>&1; then
             COMMIT_COUNT="$(git rev-list --count \
-              --grep='^chore(release):' --extended-regexp --invert-grep \
+              --grep='^chore\(release\):' --extended-regexp --invert-grep \
               "${PREV_TAG}..HEAD")"
             echo "previous_tag=${PREV_TAG}" >> "${GITHUB_OUTPUT}"
           else
             COMMIT_COUNT="$(git rev-list --count \
-              --grep='^chore(release):' --extended-regexp --invert-grep \
+              --grep='^chore\(release\):' --extended-regexp --invert-grep \
               HEAD)"
             echo "previous_tag=" >> "${GITHUB_OUTPUT}"
           fi
@@ -85,11 +85,11 @@ jobs:
             echo ""
             if git rev-parse "refs/tags/${PREV_TAG}" >/dev/null 2>&1; then
               git log --pretty=format:'- %s (`%h`)' \
-                --grep='^chore(release):' --extended-regexp --invert-grep \
+                --grep='^chore\(release\):' --extended-regexp --invert-grep \
                 "${PREV_TAG}..HEAD" || true
             else
               git log --pretty=format:'- %s (`%h`)' \
-                --grep='^chore(release):' --extended-regexp --invert-grep \
+                --grep='^chore\(release\):' --extended-regexp --invert-grep \
                 -n 50 HEAD || true
             fi
           } > release-notes.md
