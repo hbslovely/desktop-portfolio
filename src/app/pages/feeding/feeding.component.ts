@@ -44,6 +44,7 @@ import {
 } from '../../services/activity-log.service';
 import { NotificationLog, NotificationLogService } from '../../services/notification-log.service';
 import { APP_INFO_TOKEN } from '../../app-info';
+import { environment } from '../../../environments/environment';
 
 interface Profile {
   babyName: string;
@@ -103,6 +104,10 @@ export class FeedingComponent {
   private eventLogService = inject(EventLogService);
   private notificationLogService = inject(NotificationLogService);
   readonly appInfo = inject(APP_INFO_TOKEN);
+
+  /** Controlled by NG_APP_ENABLE_EXPLORER env var. When false, the Documents
+   *  tab is hidden and no Drive/Apps Script calls are made. */
+  readonly explorerEnabled = environment.enableExplorer;
 
   aboutDialogOpen = signal(false);
 

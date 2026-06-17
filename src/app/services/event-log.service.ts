@@ -34,7 +34,9 @@ export class EventLogService {
     ? `https://sheets.googleapis.com/v4/spreadsheets/${this.SHEET_ID}`
     : '';
 
-  private readonly APPS_SCRIPT_URL = '/api/feeding-apps-script';
+  private readonly APPS_SCRIPT_URL = environment.appsScriptDirect
+    ? environment.googleFeedingAppsScriptUrl
+    : '/api/feeding-apps-script';
 
   /** Trạng thái dùng chung (tab Lịch + nhắc toàn cục) */
   readonly events = signal<FeedingEventLog[]>([]);

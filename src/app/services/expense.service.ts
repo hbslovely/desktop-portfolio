@@ -79,10 +79,9 @@ class ExpenseService {
   // You can create a Google Apps Script that exposes GET and POST endpoints
   // See docs/integrations/google-apps-script/GOOGLE_APPS_SCRIPT_SETUP.md for instructions
   // IMPORTANT: API Key cannot write to Google Sheets. You MUST use Google Apps Script for write operations.
-  // Use proxy in development to avoid CORS issues
-  private readonly APPS_SCRIPT_URL = environment.production
+  private readonly APPS_SCRIPT_URL = environment.appsScriptDirect
     ? environment.googleAppsScriptUrl
-    : '/api/google-apps-script'; // Use proxy in development
+    : '/api/google-apps-script';
 
   // Use Google API client for read/write operations
   private useGapi = true;

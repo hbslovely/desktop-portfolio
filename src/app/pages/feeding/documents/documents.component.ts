@@ -329,7 +329,9 @@ export class DocumentsComponent {
   });
 
   constructor() {
-    this.loadEntries();
+    if (this.explorerService.isEnabled) {
+      this.loadEntries();
+    }
     this.destroyRef.onDestroy(() => {
       if (this.highlightTimer) {
         clearTimeout(this.highlightTimer);

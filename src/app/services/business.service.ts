@@ -73,9 +73,9 @@ export class BusinessService {
   // Use Google Apps Script for write operations (add, update, delete)
   // Google Sheets API v4 does not support write operations with API Key
   // IMPORTANT: API Key can only READ data. You MUST use Google Apps Script for write operations.
-  private readonly APPS_SCRIPT_URL = environment.production
+  private readonly APPS_SCRIPT_URL = environment.appsScriptDirect
     ? environment.googleBusinessAppsScriptUrl || '/api/business-apps-script'
-    : '/api/business-apps-script'; // Use proxy in development
+    : '/api/business-apps-script';
 
   // Cache for each sheet
   private cache: {

@@ -11,4 +11,9 @@ export const environment = {
   googleBusinessSheetId: import.meta.env['NG_APP_GOOGLE_BUSINESS_SHEET_ID'] || '',
   googleExpenseSheetId: import.meta.env['NG_APP_GOOGLE_EXPENSE_SHEET_ID'] || '',
   huggingfaceToken: import.meta.env['NG_APP_HUGGINGFACE_TOKEN'] || '',
+  /** Explorer/Documents tab in the Feeding app is enabled only when this is "true". */
+  enableExplorer: import.meta.env['NG_APP_ENABLE_EXPLORER'] === 'true',
+  /** When true, all Apps Script calls go directly to the Google Script exec URL.
+   *  When false (default), they go through the Vercel /api/* proxy functions. */
+  appsScriptDirect: import.meta.env['NG_APP_APPS_SCRIPT_MODE'] === 'direct',
 };

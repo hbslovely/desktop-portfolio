@@ -72,16 +72,24 @@ export interface ExplorerMigrationResponse {
  * - Cây thư mục và file metadata đọc qua Apps Script action `getExplorer`.
  * - Binary file lưu private trong Google Drive (account B), Apps Script account A làm proxy.
  * - Không phụ thuộc tab `Explorer` trong Google Sheet sau khi finalize migration.
+ *
+ * Toàn bộ service bị vô hiệu hoá khi `environment.enableExplorer === false`.
+ * Các method read trả về empty observable; write method trả về no-op success.
+ * Không có request nào được gửi đi khi feature bị tắt.
  */
 @Injectable({ providedIn: 'root' })
 export class ExplorerService {
   private http = inject(HttpClient);
 
-  private readonly APPS_SCRIPT_URL = environment.production
+  private readonly APPS_SCRIPT_URL = environment.appsScriptDirect
     ? environment.googleFeedingAppsScriptUrl
     : '/api/feeding-apps-script';
 
+  /** True when the Explorer feature is active (controlled by NG_APP_ENABLE_EXPLORER). */
+  readonly isEnabled = environment.enableExplorer;
+
   getEntries(): Observable<ExplorerEntry[]> {
+    if (!this.isEnabled) return of([]);
     return this.postToAppsScriptExpectResponse<ExplorerResponse>({
       action: 'getExplorer',
     }).pipe(
@@ -270,6 +278,7 @@ export class ExplorerService {
    * Bây giờ có thể nhận cả Explorer ID hoặc Drive file ID.
    */
   getFileDataUrl(id: number | string): Observable<ExplorerFileResponse> {
+    if (!this.isEnabled) return of({ success: false, error: 'Explorer disabled' });
     const body: { action: string; driveFileId?: string; id?: number } = {
       action: 'getExplorerFile',
     };
@@ -296,7 +305,7 @@ export class ExplorerService {
    * Trả về Map<id, ExplorerFileResponse> để dễ dàng map với entry tương ứng.
    */
   getMultipleFileDataUrls(ids: number[]): Observable<Map<number, ExplorerFileResponse>> {
-    if (ids.length === 0) {
+    if (!this.isEnabled || ids.length === 0) {
       return of(new Map());
     }
 
@@ -413,7 +422,7 @@ export class ExplorerService {
       return throwError(
         () =>
           new Error(
-            'Endpoint hiện tại không đọc được response do CORS. Hãy dùng proxy /api/feeding-apps-script.'
+            'Endpoint hiện tại không đọc được response do CORS. Đặt NG_APP_APPS_SCRIPT_MODE khác "direct" để dùng proxy /api/feeding-apps-script.'
           )
       );
     }

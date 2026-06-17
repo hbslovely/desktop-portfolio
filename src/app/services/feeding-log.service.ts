@@ -187,11 +187,9 @@ export class FeedingLogService {
     ? `https://sheets.googleapis.com/v4/spreadsheets/${this.SHEET_ID}`
     : '';
 
-  /**
-   * Luôn đi qua same-origin proxy trên Vercel để tránh redirect CORS của
-   * Apps Script (đặc biệt Safari/iOS).
-   */
-  private readonly APPS_SCRIPT_URL = '/api/feeding-apps-script';
+  private readonly APPS_SCRIPT_URL = environment.appsScriptDirect
+    ? environment.googleFeedingAppsScriptUrl
+    : '/api/feeding-apps-script';
 
   /**
    * Columns:

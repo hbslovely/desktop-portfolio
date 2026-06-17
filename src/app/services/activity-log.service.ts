@@ -383,8 +383,9 @@ export class ActivityLogService {
     : '';
   private readonly STORAGE_KEY = 'activity-log-last-read-id';
 
-  /** Luôn dùng proxy nội bộ để ổn định trên Safari/iOS. */
-  private readonly APPS_SCRIPT_URL = '/api/feeding-apps-script';
+  private readonly APPS_SCRIPT_URL = environment.appsScriptDirect
+    ? environment.googleFeedingAppsScriptUrl
+    : '/api/feeding-apps-script';
 
   /** Refresh interval in minutes (configurable from settings) */
   refreshIntervalMinutes = signal<number>(5);

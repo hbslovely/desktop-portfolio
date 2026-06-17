@@ -28,7 +28,9 @@ export class NotificationLogService {
   private readonly BASE_URL = this.SHEET_ID
     ? `https://sheets.googleapis.com/v4/spreadsheets/${this.SHEET_ID}`
     : '';
-  private readonly APPS_SCRIPT_URL = '/api/feeding-apps-script';
+  private readonly APPS_SCRIPT_URL = environment.appsScriptDirect
+    ? environment.googleFeedingAppsScriptUrl
+    : '/api/feeding-apps-script';
 
   readonly notifications = signal<NotificationLog[]>([]);
   readonly loading = signal(false);

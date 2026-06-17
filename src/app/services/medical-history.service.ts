@@ -43,7 +43,9 @@ export class MedicalHistoryService {
   private readonly SHEET_GID = '836488919'; // Medical History tab GID
   private readonly SHEET_NAME = 'MedicalHistory'; // Will fallback to GID if name doesn't work
 
-  private readonly APPS_SCRIPT_URL = '/api/feeding-apps-script';
+  private readonly APPS_SCRIPT_URL = environment.appsScriptDirect
+    ? environment.googleFeedingAppsScriptUrl
+    : '/api/feeding-apps-script';
 
   /**
    * Cột:

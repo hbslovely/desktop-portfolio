@@ -429,9 +429,11 @@
       chạy 1 lần, các lần switch tab kế tiếp không gọi API thêm.
       -->
       <!-- ============ TAB: DOCUMENTS ============ -->
-      <div class="tab-pane tab-pane--documents" [hidden]="bottomTab() !== 'documents'">
-        <app-documents></app-documents>
-      </div>
+      @if (explorerEnabled) {
+        <div class="tab-pane tab-pane--documents" [hidden]="bottomTab() !== 'documents'">
+          <app-documents></app-documents>
+        </div>
+      }
 
       <!-- ============ TAB: WEIGHT ============ -->
       <div class="tab-pane tab-pane--weight" [hidden]="bottomTab() !== 'weight'">
@@ -600,17 +602,19 @@
       <i class="pi pi-book bn-icon"></i>
       <span class="bn-label">Y tế</span>
     </button>
-    <button
-      type="button"
-      class="bn-item"
-      role="tab"
-      [attr.aria-selected]="bottomTab() === 'documents'"
-      [class.active]="bottomTab() === 'documents'"
-      (click)="setBottomTab('documents')"
-    >
-      <i class="pi pi-folder bn-icon"></i>
-      <span class="bn-label">Tài liệu</span>
-    </button>
+    @if (explorerEnabled) {
+      <button
+        type="button"
+        class="bn-item"
+        role="tab"
+        [attr.aria-selected]="bottomTab() === 'documents'"
+        [class.active]="bottomTab() === 'documents'"
+        (click)="setBottomTab('documents')"
+      >
+        <i class="pi pi-folder bn-icon"></i>
+        <span class="bn-label">Tài liệu</span>
+      </button>
+    }
   </nav>
 
   <!-- About -->
