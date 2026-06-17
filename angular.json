@@ -23,6 +23,7 @@
           "options": {
             "outputPath": "dist",
             "index": "src/index.html",
+            "browser": "src/main.ts",
             "polyfills": [
               "zone.js"
             ],
@@ -35,7 +36,6 @@
             "styles": [
               "src/styles.scss"
             ],
-            "scripts": [],
             "allowedCommonJsDependencies": [
               "long"
             ],
@@ -45,7 +45,6 @@
             "production": {
               "optimization": true,
               "sourceMap": false,
-              "namedChunks": false,
               "extractLicenses": true,
               "budgets": [
                 {
