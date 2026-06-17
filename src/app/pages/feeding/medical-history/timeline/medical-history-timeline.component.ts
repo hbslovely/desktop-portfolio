@@ -26,6 +26,7 @@ export class MedicalHistoryTimelineComponent {
   resolveAttachment = input<(entry: MedicalHistoryEntry) => ExplorerEntry | undefined>(
     () => undefined
   );
+  explorerEnabled = input<boolean>(true);
 
   editEntry = output<MedicalHistoryEntry>();
   deleteEntry = output<MedicalHistoryEntry>();

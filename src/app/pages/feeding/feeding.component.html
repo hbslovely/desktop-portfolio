@@ -544,7 +544,12 @@
   <!-- /.feeding-page -->
 
   <!-- ============ BOTTOM NAVIGATION ============ -->
-  <nav class="bottom-nav" role="tablist" aria-label="Điều hướng chính">
+  <nav
+    class="bottom-nav"
+    role="tablist"
+    aria-label="Điều hướng chính"
+    [style.--bn-cols]="explorerEnabled ? 6 : 5"
+  >
     <button
       type="button"
       class="bn-item"

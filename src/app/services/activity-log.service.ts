@@ -637,8 +637,10 @@ export class ActivityLogService {
     const isProxy = !environment.production;
 
     if (isProxy) {
-      const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
-      return this.http.post<LogSheetResponse>(url, body, { headers }).pipe(map((resp) => resp));
+      const headers = new HttpHeaders({ 'Content-Type': 'text/plain;charset=UTF-8' });
+      return this.http
+        .post<LogSheetResponse>(url, JSON.stringify(body), { headers })
+        .pipe(map((resp) => resp));
     }
 
     const payload = JSON.stringify(body);
