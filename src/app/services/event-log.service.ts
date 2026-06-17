@@ -199,11 +199,11 @@ export class EventLogService {
 
   private postToAppsScript(body: Record<string, unknown>): Observable<EventSheetResponse> {
     const url = this.APPS_SCRIPT_URL;
-    const isProxy = !environment.production;
+    const useProxy = url.startsWith('/');
 
-    if (isProxy) {
-      const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
-      return this.http.post<EventSheetResponse>(url, body, { headers });
+    if (useProxy) {
+      const headers = new HttpHeaders({ 'Content-Type': 'text/plain;charset=UTF-8' });
+      return this.http.post<EventSheetResponse>(url, JSON.stringify(body), { headers });
     }
 
     const payload = JSON.stringify(body);

@@ -376,11 +376,11 @@ export class ExplorerService {
       return throwError(() => new Error('Chưa cấu hình Google Apps Script URL'));
     }
 
-    const isProxy = this.shouldUseJsonProxy();
+    const useProxy = this.shouldUseJsonProxy();
 
-    if (isProxy) {
-      const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
-      return this.http.post<ExplorerResponse>(url, body, { headers }).pipe(
+    if (useProxy) {
+      const headers = new HttpHeaders({ 'Content-Type': 'text/plain;charset=UTF-8' });
+      return this.http.post<ExplorerResponse>(url, JSON.stringify(body), { headers }).pipe(
         catchError((err) => {
           console.warn(
             '[ExplorerService] POST response không parse được — coi như đã ghi thành công, sẽ reload để verify.',

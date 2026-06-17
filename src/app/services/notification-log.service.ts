@@ -130,11 +130,11 @@ export class NotificationLogService {
 
   private postToAppsScript(body: Record<string, unknown>): Observable<NotificationSheetResponse> {
     const url = this.APPS_SCRIPT_URL;
-    const isProxy = !environment.production;
+    const useProxy = url.startsWith('/');
 
-    if (isProxy) {
-      const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
-      return this.http.post<NotificationSheetResponse>(url, body, { headers });
+    if (useProxy) {
+      const headers = new HttpHeaders({ 'Content-Type': 'text/plain;charset=UTF-8' });
+      return this.http.post<NotificationSheetResponse>(url, JSON.stringify(body), { headers });
     }
 
     const payload = JSON.stringify(body);

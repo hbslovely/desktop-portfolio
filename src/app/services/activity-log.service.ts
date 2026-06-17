@@ -634,9 +634,9 @@ export class ActivityLogService {
    */
   private postToAppsScript(body: Record<string, unknown>): Observable<LogSheetResponse> {
     const url = this.APPS_SCRIPT_URL;
-    const isProxy = !environment.production;
+    const useProxy = url.startsWith('/');
 
-    if (isProxy) {
+    if (useProxy) {
       const headers = new HttpHeaders({ 'Content-Type': 'text/plain;charset=UTF-8' });
       return this.http
         .post<LogSheetResponse>(url, JSON.stringify(body), { headers })
