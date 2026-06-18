@@ -560,76 +560,22 @@
     class="bottom-nav"
     role="tablist"
     aria-label="Điều hướng chính"
-    [style.--bn-cols]="explorerEnabled ? 6 : 5"
+    [style.--bn-cols]="navTabs().length"
+    [style.--active-index]="activeTabIndex()"
   >
-    <button
-      type="button"
-      class="bn-item"
-      role="tab"
-      [attr.aria-selected]="bottomTab() === 'feeding'"
-      [class.active]="bottomTab() === 'feeding'"
-      (click)="setBottomTab('feeding')"
-    >
-      <i class="pi pi-heart-fill bn-icon"></i>
-      <span class="bn-label">Cữ bú</span>
-    </button>
-    <button
-      type="button"
-      class="bn-item"
-      role="tab"
-      [attr.aria-selected]="bottomTab() === 'weight'"
-      [class.active]="bottomTab() === 'weight'"
-      (click)="setBottomTab('weight')"
-    >
-      <i class="pi pi-chart-line bn-icon"></i>
-      <span class="bn-label">Thể trạng</span>
-    </button>
-    <button
-      type="button"
-      class="bn-item"
-      role="tab"
-      [attr.aria-selected]="bottomTab() === 'schedule'"
-      [class.active]="bottomTab() === 'schedule'"
-      (click)="setBottomTab('schedule')"
-      title="Lịch — sự kiện từ sheet Event"
-    >
-      <i class="pi pi-calendar bn-icon"></i>
-      <span class="bn-label">Lịch</span>
-    </button>
-    <button
-      type="button"
-      class="bn-item"
-      role="tab"
-      [attr.aria-selected]="bottomTab() === 'mom'"
-      [class.active]="bottomTab() === 'mom'"
-      (click)="setBottomTab('mom')"
-      title="Chăm Mẹ — gợi ý & dinh dưỡng"
-    >
-      <i class="pi pi-sun bn-icon" aria-hidden="true"></i>
-      <span class="bn-label">Mẹ</span>
-    </button>
-    <button
-      type="button"
-      class="bn-item"
-      role="tab"
-      [attr.aria-selected]="bottomTab() === 'medical'"
-      [class.active]="bottomTab() === 'medical'"
-      (click)="setBottomTab('medical')"
-    >
-      <i class="pi pi-book bn-icon"></i>
-      <span class="bn-label">Y tế</span>
-    </button>
-    @if (explorerEnabled) {
+    @for (tab of navTabs(); track tab.id) {
       <button
         type="button"
         class="bn-item"
         role="tab"
-        [attr.aria-selected]="bottomTab() === 'documents'"
-        [class.active]="bottomTab() === 'documents'"
-        (click)="setBottomTab('documents')"
+        [attr.aria-selected]="bottomTab() === tab.id"
+        [class.active]="bottomTab() === tab.id"
+        (click)="setBottomTab(tab.id)"
       >
-        <i class="pi pi-folder bn-icon"></i>
-        <span class="bn-label">Tài liệu</span>
+        <span class="bn-icon-wrap">
+          <i class="pi {{ tab.icon }} bn-icon" aria-hidden="true"></i>
+        </span>
+        <span class="bn-label">{{ tab.label }}</span>
       </button>
     }
   </nav>

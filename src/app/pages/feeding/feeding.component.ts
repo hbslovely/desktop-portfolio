@@ -122,6 +122,21 @@ export class FeedingComponent {
     'feeding'
   );
 
+  readonly navTabs = computed(() => [
+    { id: 'feeding' as const, icon: 'pi-heart-fill', label: 'Cữ bú' },
+    { id: 'weight' as const, icon: 'pi-chart-line', label: 'Thể trạng' },
+    { id: 'schedule' as const, icon: 'pi-calendar', label: 'Lịch' },
+    { id: 'mom' as const, icon: 'pi-sun', label: 'Mẹ' },
+    { id: 'medical' as const, icon: 'pi-book', label: 'Y tế' },
+    ...(this.explorerEnabled
+      ? [{ id: 'documents' as const, icon: 'pi-folder', label: 'Tài liệu' }]
+      : []),
+  ]);
+
+  readonly activeTabIndex = computed(() =>
+    this.navTabs().findIndex((t) => t.id === this.bottomTab())
+  );
+
   setBottomTab(tab: 'feeding' | 'weight' | 'schedule' | 'mom' | 'medical' | 'documents') {
     this.bottomTab.set(tab);
     this.scrollFeedingShellToTop();
