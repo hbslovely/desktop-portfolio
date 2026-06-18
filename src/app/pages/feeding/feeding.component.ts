@@ -207,6 +207,7 @@ export class FeedingComponent {
   notificationListDialogOpen = signal(false);
   notificationError = signal('');
   notificationComposerDialogOpen = signal(false);
+  acknowledgeAllConfirmDialogOpen = signal(false);
 
   /** Ngày đang xem trên card lịch sử (mặc định: hôm qua). */
   ageInDays = computed<number | null>(() => {
@@ -668,6 +669,21 @@ export class FeedingComponent {
 
   canDeleteNotification(item: NotificationLog): boolean {
     return item.user === (this.user().trim().toLowerCase() || 'guest');
+  }
+
+  openAcknowledgeAllConfirmDialog(): void {
+    if (this.visibleNotifications().length === 0 || this.notificationSaving()) return;
+    this.acknowledgeAllConfirmDialogOpen.set(true);
+  }
+
+  closeAcknowledgeAllConfirmDialog(): void {
+    if (this.notificationSaving()) return;
+    this.acknowledgeAllConfirmDialogOpen.set(false);
+  }
+
+  confirmAcknowledgeAll(): void {
+    this.acknowledgeAllConfirmDialogOpen.set(false);
+    this.acknowledgeAllNotifications();
   }
 
   acknowledgeAllNotifications(): void {
