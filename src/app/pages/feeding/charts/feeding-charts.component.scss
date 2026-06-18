@@ -765,6 +765,167 @@
   }
 }
 
+// ── Timeline line chart ──────────────────────────────────────────────────────
+.nd-chart-box--timeline {
+  position: relative;
+  margin-top: 12px;
+}
+
+.nd-tl-zoom {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  justify-content: flex-end;
+}
+
+.nd-zoom-btn {
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--nd-border);
+  border-radius: 6px;
+  background: var(--nd-surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: var(--nd-muted);
+  cursor: pointer;
+
+  &[disabled] {
+    opacity: 0.35;
+    cursor: default;
+  }
+}
+
+.nd-zoom-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--nd-text);
+  min-width: 26px;
+  text-align: center;
+}
+
+.nd-tl-scroll-wrap {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 12px;
+  border: 1px solid var(--nd-border);
+  background: var(--nd-bg);
+}
+
+.nd-tl-svg {
+  display: block;
+}
+
+// SVG path classes
+.nd-tl-path {
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+
+  &--today {
+    stroke: var(--nd-primary);
+    stroke-width: 2.5;
+  }
+
+  &--yest {
+    stroke: var(--nd-rose);
+    stroke-dasharray: 5, 3;
+    opacity: 0.75;
+  }
+
+  &--avg3 {
+    stroke: var(--nd-amber);
+    stroke-dasharray: 3, 3;
+    opacity: 0.65;
+  }
+}
+
+.nd-tl-area-today {
+  fill: url(#tlTodayGrad);
+}
+
+.nd-tl-rec-band {
+  fill: url(#tlRecGrad);
+}
+
+.nd-tl-rec-mid {
+  fill: none;
+  stroke: var(--nd-green);
+  stroke-width: 1.2;
+  stroke-dasharray: 6, 4;
+  opacity: 0.6;
+}
+
+.nd-tl-now-line {
+  stroke: var(--nd-slate);
+  stroke-width: 1;
+  stroke-dasharray: 3, 3;
+  opacity: 0.5;
+}
+
+.nd-tl-dot--today {
+  fill: var(--nd-primary);
+  stroke: #fff;
+  stroke-width: 2;
+}
+
+.nd-tl-end-label {
+  font-size: 10px;
+  font-weight: 700;
+  fill: var(--nd-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+// Legend
+.nd-tl-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  margin-top: 10px;
+
+  &__item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--nd-muted);
+
+    strong {
+      font-variant-numeric: tabular-nums;
+      color: var(--nd-text);
+    }
+  }
+
+  &__line {
+    width: 20px;
+    height: 2.5px;
+    border-radius: 2px;
+  }
+
+  &__item.today &__line {
+    background: var(--nd-primary);
+  }
+
+  &__item.yest &__line {
+    background: var(--nd-rose);
+    opacity: 0.75;
+  }
+
+  &__item.avg3 &__line {
+    background: var(--nd-amber);
+    opacity: 0.7;
+  }
+
+  &__item.rec &__line {
+    background: var(--nd-green);
+    opacity: 0.55;
+  }
+}
+
 // ── Peak callout ─────────────────────────────────────────────────────────────
 .nd-peak {
   display: flex;

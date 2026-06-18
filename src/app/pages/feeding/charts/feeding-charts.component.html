@@ -647,63 +647,93 @@
         </div>
       </div>
 
-      <!-- dot-matrix calendar -->
-      <div class="nd-cal-box">
-        <div class="nd-cal__header">
-          @for (d of ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN']; track d) {
-            <div class="nd-cal__day-label">{{ d }}</div>
-          }
-        </div>
-        @for (week of calendarData(); track $index) {
-          <div class="nd-cal__row">
-            @for (cell of week; track $index) {
-              <div
-                class="nd-cal__cell"
-                [class.nd-cal__cell--today]="cell.isToday"
-                [class.nd-cal__cell--empty]="cell.count === 0"
-                [style.--alpha]="cell.count === 0 ? 0.1 : 0.2 + cell.count * 0.16"
-              >
-                @if (cell.count > 0) {
-                  {{ cell.count }}
-                }
-              </div>
-            }
-          </div>
-        }
-      </div>
+      <!-- Bar chart: số cữ/ngày -->
+      <div class="nd-chart-box">
+        @if (chartStats().daysWithData > 0) {
+          <svg
+            class="nd-svg"
+            [attr.viewBox]="'0 0 ' + weeklyCountChart().W + ' ' + weeklyCountChart().H"
+            preserveAspectRatio="xMidYMid meet"
+          >
+            <defs>
+              <linearGradient id="ndCountGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#818cf8" />
+                <stop offset="100%" stop-color="#4c5cf0" />
+              </linearGradient>
+              <linearGradient id="ndCountGradT" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#34d399" />
+                <stop offset="100%" stop-color="#10b981" />
+              </linearGradient>
+            </defs>
 
-      <!-- distribution strip -->
-      <div class="nd-dist">
-        <div class="nd-section-title">Phân bổ số cữ</div>
-        <div class="nd-dist__strip">
-          @if (chartStats().daysWithData > 0) {
-            @for (
-              bucket of [
-                { label: '≤3 cữ', color: 'var(--nd-primary-light)' },
-                { label: '4 cữ', color: 'var(--nd-primary-mid)' },
-                { label: '5+ cữ', color: 'var(--nd-primary)' },
-              ];
-              track bucket.label
-            ) {
-              <div class="nd-dist__seg" [style.background]="bucket.color" [style.flex]="1"></div>
+            <!-- grid lines -->
+            @for (g of weeklyCountChart().gridLines; track g.y) {
+              <line
+                class="nd-grid-line"
+                [attr.x1]="weeklyCountChart().PAD_L"
+                [attr.x2]="weeklyCountChart().W - 16"
+                [attr.y1]="g.y"
+                [attr.y2]="g.y"
+              />
+              <text
+                class="nd-grid-label"
+                [attr.x]="weeklyCountChart().PAD_L - 5"
+                [attr.y]="g.y + 3"
+                text-anchor="end"
+              >{{ g.label }}</text>
             }
-          }
-        </div>
-        <div class="nd-dist__legend">
-          @for (
-            bucket of [
-              { label: '≤3 cữ', color: 'var(--nd-primary-light)' },
-              { label: '4 cữ', color: 'var(--nd-primary-mid)' },
-              { label: '5+ cữ', color: 'var(--nd-primary)' },
-            ];
-            track bucket.label
-          ) {
-            <div class="nd-dist__leg-item">
-              <div class="nd-dist__leg-dot" [style.background]="bucket.color"></div>
-              <span>{{ bucket.label }}</span>
-            </div>
-          }
-        </div>
+
+              <!-- avg line omitted: use gridLines for scale reference -->
+
+            <!-- bars -->
+            @for (b of weeklyCountChart().bars; track b.cx) {
+              <g>
+                <rect
+                  [attr.x]="b.x"
+                  [attr.y]="b.y"
+                  [attr.width]="b.barW"
+                  [attr.height]="b.h"
+                  [attr.rx]="b.d.count === 0 ? 2 : 4"
+                  [attr.fill]="
+                    b.d.date === todayDateStr()
+                      ? 'url(#ndCountGradT)'
+                      : b.d.count === 0
+                        ? '#e2e8f0'
+                        : 'url(#ndCountGrad)'
+                  "
+                />
+                <!-- value on top of bar -->
+                @if (b.d.count > 0 && b.showValue) {
+                  <text
+                    class="nd-bar-val"
+                    [class.today]="b.d.date === todayDateStr()"
+                    [attr.x]="b.cx"
+                    [attr.y]="b.y - 5"
+                    text-anchor="middle"
+                  >{{ b.d.count }}</text>
+                }
+                <!-- x label -->
+                @if (b.showLabel) {
+                  <text
+                    class="nd-x-label"
+                    [class.today]="b.d.date === todayDateStr()"
+                    [attr.x]="b.cx"
+                    [attr.y]="weeklyCountChart().H - weeklyCountChart().PAD_B + 14"
+                    text-anchor="middle"
+                  >{{ formatDayLabel(b.d.date) }}</text>
+                  <text
+                    class="nd-x-sub"
+                    [attr.x]="b.cx"
+                    [attr.y]="weeklyCountChart().H - weeklyCountChart().PAD_B + 24"
+                    text-anchor="middle"
+                  >{{ formatDayLabel(b.d.date) }}</text>
+                }
+              </g>
+            }
+          </svg>
+        } @else {
+          <div class="nd-empty">Chưa có dữ liệu để hiển thị biểu đồ.</div>
+        }
       </div>
 
       <!-- stat chips -->
@@ -740,15 +770,6 @@
     <div class="nd-body">
       <div class="nd-toolbar">
         <div class="nd-section-title">Trong ngày</div>
-        <div class="nd-date-nav">
-          <button type="button" class="nd-nav-btn" disabled>
-            <i class="pi pi-chevron-left"></i>
-          </button>
-          <span class="nd-date-nav__label">Hôm nay</span>
-          <button type="button" class="nd-nav-btn nd-nav-btn--disabled">
-            <i class="pi pi-chevron-right"></i>
-          </button>
-        </div>
       </div>
 
       <!-- quick stats -->
@@ -776,93 +797,188 @@
         </div>
       </div>
 
-      <!-- heatmap 24h -->
-      <div class="nd-hm-box">
-        <div class="nd-section-title">Heatmap giờ bú</div>
-        <svg class="nd-hm-svg" viewBox="0 0 560 60" preserveAspectRatio="xMidYMid meet">
-          <!-- hour labels 0,3,6...21 -->
-          @for (h of [0, 3, 6, 9, 12, 15, 18, 21]; track h) {
-            <text
-              [attr.x]="h * (560 / 24) + 560 / 48"
-              y="10"
-              text-anchor="middle"
-              class="nd-hm-label"
-            >
-              {{ h }}h
-            </text>
-          }
-          <!-- today row -->
-          @for (v of heatmapData().today; track $index) {
-            <rect
-              [attr.x]="$index * (560 / 24) + 0.5"
-              y="14"
-              [attr.width]="560 / 24 - 1"
-              height="18"
-              rx="2"
-              [class.nd-hm-cell--today]="v > 0"
-              [class.nd-hm-cell--empty]="v === 0"
-              [style.opacity]="v > 0 ? 0.3 + (v / heatmapData().maxVal) * 0.7 : 1"
-            />
-            @if (v > 0) {
-              <text
-                [attr.x]="$index * (560 / 24) + 560 / 48"
-                y="26"
-                text-anchor="middle"
-                class="nd-hm-val"
-              >
-                {{ v }}
-              </text>
-            }
-          }
-          <!-- yesterday row -->
-          @for (v of heatmapData().yesterday; track $index) {
-            <rect
-              [attr.x]="$index * (560 / 24) + 0.5"
-              y="34"
-              [attr.width]="560 / 24 - 1"
-              height="18"
-              rx="2"
-              [class.nd-hm-cell--yest]="v > 0"
-              [class.nd-hm-cell--empty]="v === 0"
-              [style.opacity]="v > 0 ? 0.3 + (v / heatmapData().maxVal) * 0.7 : 1"
-            />
-            @if (v > 0) {
-              <text
-                [attr.x]="$index * (560 / 24) + 560 / 48"
-                y="46"
-                text-anchor="middle"
-                class="nd-hm-val yest"
-              >
-                {{ v }}
-              </text>
-            }
-          }
-        </svg>
-        <!-- hm legend -->
-        <div class="nd-hm-legend">
-          <div class="nd-hm-legend__item">
-            <div class="nd-hm-legend__dot today"></div>
-            <span>Hôm nay</span>
-            <strong>{{ heatmapData().totalToday }}ml</strong>
+      <!-- Cumulative line chart -->
+      <div class="nd-chart-box nd-chart-box--timeline">
+        @if (hasTimelineChartData()) {
+          <!-- zoom controls -->
+          <div class="nd-tl-zoom">
+            <button
+              type="button"
+              class="nd-zoom-btn"
+              [disabled]="timelineChartZoom() <= 1"
+              (click)="timelineZoomOut()"
+              title="Thu nhỏ"
+            ><i class="pi pi-minus"></i></button>
+            <span class="nd-zoom-label">{{ timelineChartZoom() }}×</span>
+            <button
+              type="button"
+              class="nd-zoom-btn"
+              [disabled]="timelineChartZoom() >= 2.5"
+              (click)="timelineZoomIn()"
+              title="Phóng to"
+            ><i class="pi pi-plus"></i></button>
           </div>
-          <div class="nd-hm-legend__item">
-            <div class="nd-hm-legend__dot yest"></div>
-            <span>Hôm qua</span>
-            <strong>{{ heatmapData().totalYest }}ml</strong>
-          </div>
-        </div>
-      </div>
 
-      <!-- peak callout -->
-      @if (heatmapData().feedCount > 0) {
-        <div class="nd-peak">
-          <i class="pi pi-chart-line nd-peak__icon"></i>
-          <span
-            >Cữ đỉnh lúc <strong>{{ heatmapData().peakHour }}:00</strong> —
-            <strong>{{ heatmapData().today[heatmapData().peakHour] }}ml</strong></span
-          >
-        </div>
-      }
+          <div class="nd-tl-scroll-wrap">
+            <svg
+              class="nd-tl-svg"
+              [attr.viewBox]="'0 0 ' + timelineChart().W + ' ' + timelineChart().H"
+              [attr.width]="timelineChart().W"
+              [attr.height]="timelineChart().H"
+              preserveAspectRatio="xMinYMid meet"
+            >
+              <defs>
+                <!-- today area gradient -->
+                <linearGradient id="tlTodayGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#4c5cf0" stop-opacity="0.22" />
+                  <stop offset="100%" stop-color="#4c5cf0" stop-opacity="0.02" />
+                </linearGradient>
+                <!-- rec band gradient -->
+                @if (timelineChart().hasRecommendation) {
+                  <linearGradient id="tlRecGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#10b981" stop-opacity="0.18" />
+                    <stop offset="100%" stop-color="#10b981" stop-opacity="0.04" />
+                  </linearGradient>
+                }
+              </defs>
+
+              <!-- y grid lines -->
+              @for (g of timelineChart().yGrid; track g.y) {
+                <line
+                  class="nd-grid-line"
+                  [attr.x1]="timelineChart().PAD_L"
+                  [attr.x2]="timelineChart().W - 16"
+                  [attr.y1]="g.y"
+                  [attr.y2]="g.y"
+                />
+                <text
+                  class="nd-grid-label"
+                  [attr.x]="timelineChart().PAD_L - 5"
+                  [attr.y]="g.y + 3"
+                  text-anchor="end"
+                >{{ g.label }}</text>
+              }
+
+              <!-- x ticks (hours) -->
+              @for (t of timelineChart().xTicks; track t.hour) {
+                <line
+                  class="nd-grid-line"
+                  [attr.x1]="t.x"
+                  [attr.x2]="t.x"
+                  [attr.y1]="timelineChart().chartTop"
+                  [attr.y2]="timelineChart().chartBottom"
+                  stroke-dasharray="2,3"
+                />
+                <text
+                  class="nd-x-label"
+                  [attr.x]="t.x"
+                  [attr.y]="timelineChart().chartBottom + 13"
+                  text-anchor="middle"
+                >{{ t.hour }}h</text>
+              }
+
+              <!-- recommendation band -->
+              @if (timelineChart().hasRecommendation && timelineChart().recBandPath) {
+                <path
+                  class="nd-tl-rec-band"
+                  [attr.d]="timelineChart().recBandPath"
+                />
+                <path
+                  class="nd-tl-rec-mid"
+                  [attr.d]="timelineChart().recMidPath"
+                />
+              }
+
+              <!-- today area fill -->
+              @if (timelineChart().todayPath) {
+                <path
+                  class="nd-tl-area-today"
+                  [attr.d]="timelineChart().todayPath + ' L' + timelineChart().nowX + ',' + timelineChart().chartBottom + ' L' + timelineChart().PAD_L + ',' + timelineChart().chartBottom + ' Z'"
+                />
+              }
+
+              <!-- avg 3 ngày trước line -->
+              @if (timelineChart().avg3Path && timelineChart().avg3Total > 0) {
+                <path
+                  class="nd-tl-path nd-tl-path--avg3"
+                  [attr.d]="timelineChart().avg3Path"
+                />
+              }
+
+              <!-- hôm qua line -->
+              @if (timelineChart().yesterdayPath && timelineChart().yesterdayTotal > 0) {
+                <path
+                  class="nd-tl-path nd-tl-path--yest"
+                  [attr.d]="timelineChart().yesterdayPath"
+                />
+              }
+
+              <!-- hôm nay line (on top) -->
+              @if (timelineChart().todayPath) {
+                <path
+                  class="nd-tl-path nd-tl-path--today"
+                  [attr.d]="timelineChart().todayPath"
+                />
+              }
+
+              <!-- "now" vertical marker -->
+              <line
+                class="nd-tl-now-line"
+                [attr.x1]="timelineChart().nowX"
+                [attr.x2]="timelineChart().nowX"
+                [attr.y1]="timelineChart().chartTop"
+                [attr.y2]="timelineChart().chartBottom"
+              />
+
+              <!-- today end dot + label -->
+              @if (timelineChart().todayEndPoint; as ep) {
+                <circle
+                  class="nd-tl-dot--today"
+                  [attr.cx]="ep.x"
+                  [attr.cy]="ep.y"
+                  r="4"
+                />
+                <text
+                  class="nd-tl-end-label"
+                  [attr.x]="ep.x + 8"
+                  [attr.y]="ep.y + 4"
+                >{{ ep.v }}ml</text>
+              }
+            </svg>
+          </div>
+
+          <!-- legend -->
+          <div class="nd-tl-legend">
+            <div class="nd-tl-legend__item today">
+              <div class="nd-tl-legend__line"></div>
+              <span>Hôm nay</span>
+              <strong>{{ timelineChart().todayTotal }}ml</strong>
+            </div>
+            @if (timelineChart().yesterdayTotal > 0) {
+              <div class="nd-tl-legend__item yest">
+                <div class="nd-tl-legend__line"></div>
+                <span>Hôm qua</span>
+                <strong>{{ timelineChart().yesterdayTotal }}ml</strong>
+              </div>
+            }
+            @if (timelineChart().avg3Total > 0 && timelineChart().prev3DaysCount > 0) {
+              <div class="nd-tl-legend__item avg3">
+                <div class="nd-tl-legend__line"></div>
+                <span>TB {{ timelineChart().prev3DaysCount }} ngày trước</span>
+                <strong>{{ timelineChart().avg3Total }}ml</strong>
+              </div>
+            }
+            @if (timelineChart().hasRecommendation) {
+              <div class="nd-tl-legend__item rec">
+                <div class="nd-tl-legend__line"></div>
+                <span>KN {{ timelineChart().recRangeLabel }}</span>
+              </div>
+            }
+          </div>
+        } @else {
+          <div class="nd-empty">Chưa có đủ dữ liệu để vẽ biểu đồ.</div>
+        }
+      </div>
 
       <!-- session feed cards -->
       <div class="nd-section-title" style="margin-top: 16px">Danh sách cữ bú</div>
