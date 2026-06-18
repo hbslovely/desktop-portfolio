@@ -551,9 +551,6 @@
     [style.--bn-cols]="navTabs().length"
     [style.--active-index]="activeTabIndex()"
   >
-    <!-- Sliding pill indicator -->
-    <span class="bn-pill" aria-hidden="true"></span>
-
     @for (tab of navTabs(); track tab.id) {
       <button
         type="button"

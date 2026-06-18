@@ -1001,8 +1001,6 @@
   --bn-primary-rgb: 91, 108, 255;
   --bn-inactive: #b0b7c3;
   --bn-height: 62px;
-  --bn-pill-w: 52px;
-  --bn-pill-h: 48px;
 
   position: fixed;
   left: 0;
@@ -1012,7 +1010,9 @@
   box-sizing: border-box;
   z-index: 90;
 
-  /* Grid: pill sits in the same grid as buttons via position:absolute */
+  /* Nav is the stacking context for the pill pseudo-element */
+  position: fixed; /* re-stated to ensure stacking context */
+
   display: grid;
   grid-template-columns: repeat(var(--bn-cols, 5), 1fr);
   align-items: center;
@@ -1025,29 +1025,35 @@
   border-top: 1px solid rgba(0, 0, 0, 0.055);
   box-shadow: 0 -4px 24px -4px rgba(15, 23, 42, 0.08);
 
-  /* ── Sliding pill ── */
-  .bn-pill {
+  /*
+   * Sliding pill — lives on ::before so it never enters the grid,
+   * covers exactly one column-width, and slides via translateX.
+   */
+  &::before {
+    content: '';
     position: absolute;
+    /* vertical: centre within the nav, 48 px tall */
     top: 50%;
-    left: 0;
+    margin-top: calc(env(safe-area-inset-bottom, 0px) / 2);
     width: calc(100% / var(--bn-cols, 5));
-    height: var(--bn-pill-h);
-    transform: translateY(-50%) translateX(calc(var(--active-index, 0) * 100%));
-    transition: transform 0.32s cubic-bezier(0.65, 0, 0.35, 1);
+    height: 48px;
+    /* shift right by (active-index × one column width) */
+    left: calc(var(--active-index, 0) * (100% / var(--bn-cols, 5)));
+    transform: translateY(-50%);
+    transition: left 0.32s cubic-bezier(0.65, 0, 0.35, 1);
     pointer-events: none;
     z-index: 0;
 
-    &::after {
-      content: '';
-      position: absolute;
-      inset: 6px 10px;
-      border-radius: 16px;
-      background: linear-gradient(
-        145deg,
-        rgba(var(--bn-primary-rgb), 0.15) 0%,
-        rgba(var(--bn-primary-rgb), 0.07) 100%
-      );
-    }
+    /* inner pill with inset so it doesn't touch nav edges */
+    border-radius: 16px;
+    background: linear-gradient(
+      145deg,
+      rgba(var(--bn-primary-rgb), 0.14) 0%,
+      rgba(var(--bn-primary-rgb), 0.06) 100%
+    );
+    /* small inset so pill doesn't span full column width */
+    margin-left: 6px;
+    width: calc(100% / var(--bn-cols, 5) - 12px);
   }
 
   /* ── Tab button ── */
@@ -1090,10 +1096,8 @@
       font-size: 10px;
       font-weight: 500;
       letter-spacing: 0.025em;
-      transition:
-        color 0.22s ease,
-        font-weight 0.22s ease;
       line-height: 1;
+      transition: font-weight 0.22s ease;
     }
 
     /* Hover (non-active) */
@@ -1120,7 +1124,6 @@
 
       .bn-label {
         font-weight: 700;
-        color: var(--bn-primary);
       }
     }
   }
