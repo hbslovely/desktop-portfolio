@@ -1277,7 +1277,7 @@
   grid-template-columns: repeat(var(--bn-cols, 5), 1fr);
   align-items: center;
   min-height: var(--bn-height);
-  padding: 0 4px calc(env(safe-area-inset-bottom, 0px));
+  padding: 0 4px 0px;
 
   background: rgba(255, 255, 255, 0.96);
   backdrop-filter: blur(24px) saturate(200%);
@@ -1294,7 +1294,7 @@
     position: absolute;
     /* vertical: centre within the nav, 48 px tall */
     top: 50%;
-    margin-top: calc(env(safe-area-inset-bottom, 0px) / 2);
+    margin-top: 0;
     width: calc(100% / var(--bn-cols, 5));
     height: 48px;
     /* shift right by (active-index × one column width) */
