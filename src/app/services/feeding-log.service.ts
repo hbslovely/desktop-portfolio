@@ -100,7 +100,7 @@ const DEFAULT_FEEDING_SETTINGS: FeedingSettingsResolved = {
 };
 
 export function parseFeedingSettingsFromRows(rows: FeedingSettingRow[]): FeedingSettingsResolved {
-  const byId = new Map(rows.map((r) => [ r.id.trim(), r ]));
+  const byId = new Map(rows.map((r) => [r.id.trim(), r]));
   const timeRow = byId.get(FEEDING_SETTING_ID.FEED_TIME_WARNING) ?? byId.get('GROUP_FEEDING_TIME');
   const wRow = byId.get(FEEDING_SETTING_ID.FEED_WARNING_AMOUNT);
   const gapRow = byId.get(FEEDING_SETTING_ID.FEED_GROUP_GAP_MINUTES);
@@ -184,7 +184,7 @@ export class FeedingLogService {
   private readonly SETTINGS_SHEET_NAME = 'Settings';
   private readonly API_KEY = environment.googleSheetsApiKey;
   private readonly BASE_URL = this.SHEET_ID
-    ? `https://sheets.googleapis.com/v4/spreadsheets/${ this.SHEET_ID }`
+    ? `https://sheets.googleapis.com/v4/spreadsheets/${this.SHEET_ID}`
     : '';
 
   private readonly APPS_SCRIPT_URL = environment.appsScriptDirect
@@ -210,8 +210,8 @@ export class FeedingLogService {
           )
       );
     }
-    const range = `${ this.SHEET_NAME }!A2:E`;
-    const url = `${ this.BASE_URL }/values/${ range }?key=${ this.API_KEY }&valueRenderOption=FORMATTED_VALUE`;
+    const range = `${this.SHEET_NAME}!A2:E`;
+    const url = `${this.BASE_URL}/values/${range}?key=${this.API_KEY}&valueRenderOption=FORMATTED_VALUE`;
 
     return this.http.get<{ values?: string[][] }>(url).pipe(
       map((resp) => {
@@ -244,8 +244,8 @@ export class FeedingLogService {
           })
           .filter((l): l is FeedingLog => !!l)
           .sort((a, b) => {
-            const aK = `${ a.date } ${ a.time }`;
-            const bK = `${ b.date } ${ b.time }`;
+            const aK = `${a.date} ${a.time}`;
+            const bK = `${b.date} ${b.time}`;
             return bK.localeCompare(aK);
           });
       }),
@@ -265,8 +265,8 @@ export class FeedingLogService {
     if (!this.BASE_URL || !this.API_KEY) {
       return of(null);
     }
-    const range = `${ this.SHEET_NAME }!G1:K1`;
-    const url = `${ this.BASE_URL }/values/${ range }?key=${ this.API_KEY }&valueRenderOption=FORMATTED_VALUE`;
+    const range = `${this.SHEET_NAME}!G1:K1`;
+    const url = `${this.BASE_URL}/values/${range}?key=${this.API_KEY}&valueRenderOption=FORMATTED_VALUE`;
 
     return this.http.get<{ values?: string[][] }>(url).pipe(
       map((resp) => this.parseBottlePrepRow(resp.values?.[0])),
@@ -285,8 +285,8 @@ export class FeedingLogService {
     if (!this.BASE_URL || !this.API_KEY) {
       return of([]);
     }
-    const range = `${ this.SETTINGS_SHEET_NAME }!A2:E`;
-    const url = `${ this.BASE_URL }/values/${ encodeURIComponent(range) }?key=${ this.API_KEY }&valueRenderOption=FORMATTED_VALUE`;
+    const range = `${this.SETTINGS_SHEET_NAME}!A2:E`;
+    const url = `${this.BASE_URL}/values/${encodeURIComponent(range)}?key=${this.API_KEY}&valueRenderOption=FORMATTED_VALUE`;
 
     return this.http.get<{ values?: string[][] }>(url).pipe(
       map((resp) => {
@@ -485,9 +485,9 @@ export class FeedingLogService {
 
     if (useProxy) {
       const headers = new HttpHeaders({ 'Content-Type': 'text/plain;charset=UTF-8' });
-      return this.http.post<FeedingSheetResponse>(url, JSON.stringify(body), { headers }).pipe(
-        map((resp) => resp)
-      );
+      return this.http
+        .post<FeedingSheetResponse>(url, JSON.stringify(body), { headers })
+        .pipe(map((resp) => resp));
     }
 
     const payload = JSON.stringify(body);
@@ -519,20 +519,20 @@ export class FeedingLogService {
     if (!raw) return null;
     const m1 = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
     if (m1) {
-      const [ , d, mo, y ] = m1;
-      return `${ y }-${ mo.padStart(2, '0') }-${ d.padStart(2, '0') }`;
+      const [, d, mo, y] = m1;
+      return `${y}-${mo.padStart(2, '0')}-${d.padStart(2, '0')}`;
     }
     const m2 = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
     if (m2) {
-      const [ , y, mo, d ] = m2;
-      return `${ y }-${ mo.padStart(2, '0') }-${ d.padStart(2, '0') }`;
+      const [, y, mo, d] = m2;
+      return `${y}-${mo.padStart(2, '0')}-${d.padStart(2, '0')}`;
     }
     const parsed = new Date(raw);
     if (!isNaN(parsed.getTime())) {
       const y = parsed.getFullYear();
       const mo = (parsed.getMonth() + 1).toString().padStart(2, '0');
       const d = parsed.getDate().toString().padStart(2, '0');
-      return `${ y }-${ mo }-${ d }`;
+      return `${y}-${mo}-${d}`;
     }
     return null;
   }
@@ -541,7 +541,7 @@ export class FeedingLogService {
     if (!raw) return '00:00';
     const m = raw.match(/(\d{1,2})[:h](\d{1,2})/);
     if (m) {
-      return `${ m[1].padStart(2, '0') }:${ m[2].padStart(2, '0') }`;
+      return `${m[1].padStart(2, '0')}:${m[2].padStart(2, '0')}`;
     }
     return raw;
   }
@@ -578,7 +578,7 @@ export class FeedingLogService {
     let best = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hh, mm, 0, 0);
     let bestDiff = Math.abs(now.getTime() - best.getTime());
 
-    for (const delta of [ -1, 1 ]) {
+    for (const delta of [-1, 1]) {
       const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + delta, hh, mm, 0, 0);
       const diff = Math.abs(now.getTime() - d.getTime());
       if (diff < bestDiff) {
