@@ -1,13 +1,16 @@
+import { DecimalPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core';
 
 import { FeedingLog } from '../../../services/feeding-log.service';
 import { DailySummary, getDailySummaries } from '../feeding-prediction';
 import { NutritionTarget } from '../feeding-nutrition';
 
+export type ChartMode = 'bar' | 'area';
+
 @Component({
   selector: 'app-feeding-charts',
   standalone: true,
-  imports: [],
+  imports: [DecimalPipe],
   templateUrl: './feeding-charts.component.html',
   styleUrls: ['./feeding-charts.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -20,6 +23,14 @@ export class FeedingChartsComponent {
   chartTab = signal<'volume' | 'count' | 'timeline'>('volume');
   /** Số ngày hiển thị trong biểu đồ phân tích (7 / 14 / 30) */
   chartRange = signal<7 | 14 | 30>(7);
+
+  /** Bar / Area toggle cho tab "Xu hướng sữa" */
+  chartMode = signal<ChartMode>('bar');
+
+  readonly chartRangeOptions: readonly (7 | 14 | 30)[] = [7, 14, 30];
+
+  /** Index của bar/dot đang được chọn (click highlight) */
+  selectedIndex = signal<number | null>(null);
 
   /** Thu phóng trục thời gian — tab "Trong ngày" (cuộn ngang khi > 1×). */
   private static readonly TIMELINE_ZOOM_LEVELS = [1, 1.5, 2, 2.5] as const;
@@ -484,8 +495,250 @@ export class FeedingChartsComponent {
     return t.yesterdayTotal > 0 || t.avg3Total > 0 || t.todayTotal > 0;
   });
 
+  // ===== New concept: bar/area chart geometry =====
+
+  /** SVG geometry cho bar chart (tất cả ranges đều dùng bars) */
+  barChartData = computed(() => {
+    const data = this.weeklySummary();
+    const n = data.length;
+    const W = 560,
+      H = 200,
+      PL = 36,
+      PR = 24,
+      PT = 24,
+      PB = 36;
+    const cW = W - PL - PR,
+      cH = H - PT - PB;
+    const max = Math.max(...data.map((d) => d.total), 1);
+    const active = data.filter((d) => d.total > 0);
+    const avgVol = active.length
+      ? Math.round(active.reduce((s, d) => s + d.total, 0) / active.length)
+      : 0;
+    const slotW = cW / n;
+    const bW = Math.max(slotW * 0.58, 4);
+    const xC = (i: number) => PL + i * slotW + slotW / 2;
+    const yOf = (v: number) => PT + cH - (v / max) * cH;
+    const avgY = yOf(avgVol);
+    const every = n <= 7 ? 1 : n <= 14 ? 1 : 4;
+
+    const bars = data.map((d, i) => {
+      const h = d.total > 0 ? (d.total / max) * cH : 2;
+      const bx = xC(i) - bW / 2;
+      const by = d.total > 0 ? PT + cH - h : PT + cH - 2;
+      const isToday = d.date === this.todayDateStr();
+      const showLabel = i % every === 0 || i === n - 1;
+      return { d, i, h, bx, by, cx: xC(i), bW, isToday, showLabel };
+    });
+
+    // trend path overlay (14d / 30d)
+    const trendPath =
+      n > 7
+        ? data
+            .map((d, i) => `${i === 0 ? 'M' : 'L'}${xC(i)},${yOf(Math.max(d.total, 1))}`)
+            .join(' ')
+        : '';
+
+    return { W, H, PL, PR, PT, PB, cH, max, avgVol, avgY, bars, trendPath, every, xC, yOf };
+  });
+
+  /** SVG geometry cho area chart (smooth catmull-rom) */
+  areaChartData = computed(() => {
+    const data = this.weeklySummary();
+    const n = data.length;
+    const W = 560,
+      H = 210,
+      PL = 36,
+      PR = 24,
+      PT = 24,
+      PB = 36;
+    const cW = W - PL - PR,
+      cH = H - PT - PB;
+    const max = Math.max(...data.map((d) => d.total), 1);
+    const active = data.filter((d) => d.total > 0);
+    const avgVol = active.length
+      ? Math.round(active.reduce((s, d) => s + d.total, 0) / active.length)
+      : 0;
+    const xOf = (i: number) => PL + (i / Math.max(n - 1, 1)) * cW;
+    const yOf = (v: number) => PT + cH - (v / max) * cH;
+    const avgY = yOf(avgVol);
+    const every = n <= 7 ? 1 : n <= 14 ? 2 : 5;
+
+    const pts = data.map((d, i) => ({
+      x: xOf(i),
+      y: d.total > 0 ? yOf(d.total) : PT + cH,
+      d,
+      i,
+      isToday: d.date === this.todayDateStr(),
+    }));
+
+    const smooth = pts
+      .map((p, i, arr) => {
+        if (i === 0) return `M${p.x},${p.y}`;
+        const prev = arr[i - 1];
+        const c1x = prev.x + (p.x - prev.x) * 0.55;
+        const c2x = p.x - (p.x - prev.x) * 0.55;
+        return `C${c1x},${prev.y} ${c2x},${p.y} ${p.x},${p.y}`;
+      })
+      .join(' ');
+    const areaPath =
+      pts.length > 0 ? `${smooth} L${pts[n - 1].x},${PT + cH} L${pts[0].x},${PT + cH} Z` : '';
+
+    const showDot = (i: number) => n <= 7 || (n <= 14 && i % 2 === 0) || i === n - 1;
+    const showLabel = (i: number) => i % every === 0 || i === n - 1;
+
+    return {
+      W,
+      H,
+      PL,
+      PR,
+      PT,
+      PB,
+      cH,
+      max,
+      avgVol,
+      avgY,
+      pts,
+      smooth,
+      areaPath,
+      showDot,
+      showLabel,
+      xOf,
+      yOf,
+    };
+  });
+
+  /** Tooltip info cho điểm đang được chọn */
+  selectedPoint = computed(() => {
+    const idx = this.selectedIndex();
+    if (idx === null) return null;
+    const data = this.weeklySummary();
+    if (idx < 0 || idx >= data.length) return null;
+    const d = data[idx];
+    return {
+      idx,
+      total: d.total,
+      count: d.count,
+      date: d.date,
+      dayLabel: this.formatDayLabel(d.date),
+      dateLabel: this.formatDateShort(d.date),
+      isToday: d.date === this.todayDateStr(),
+    };
+  });
+
+  /** Tooltip SVG bubble geometry (tính bên TS để dùng trong template) */
+  tooltipBubble = computed(() => {
+    const pt = this.selectedPoint();
+    const idx = this.selectedIndex();
+    if (!pt || idx === null) return null;
+
+    const mode = this.chartMode();
+    let cx = 0,
+      cy = 0,
+      W = 0;
+
+    if (mode === 'bar') {
+      const bc = this.barChartData();
+      if (idx! >= bc.bars.length) return null;
+      const bar = bc.bars[idx!];
+      cx = bar.cx;
+      cy = bc.yOf(pt.total);
+      W = bc.W;
+    } else {
+      const ac = this.areaChartData();
+      if (idx! >= ac.pts.length) return null;
+      const p = ac.pts[idx!];
+      cx = p.x;
+      cy = p.y;
+      W = ac.W;
+    }
+
+    const bw = 80,
+      bh = 46;
+    const bx = Math.min(Math.max(cx - bw / 2, 2), W - bw - 2);
+    const by = Math.max(cy - bh - 14, 2);
+    const arrowX = Math.min(Math.max(cx - bx, 10), bw - 10);
+    return { bx, by, bw, bh, cx, cy, arrowX };
+  });
+
+  /** Dot-matrix calendar data (5 weeks × 7 days) cho tab Số cữ */
+  calendarData = computed(() => {
+    const today = new Date(this.now());
+    today.setHours(0, 0, 0, 0);
+    const days: { date: string; count: number; isToday: boolean; isFuture: boolean }[] = [];
+    for (let i = 34; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      const ds = this.toDateStr(d);
+      const logs = this.logs().filter((l) => l.date === ds);
+      days.push({
+        date: ds,
+        count: logs.length,
+        isToday: ds === this.toDateStr(today),
+        isFuture: false,
+      });
+    }
+    // group into 5 rows of 7
+    const weeks: (typeof days)[] = [];
+    for (let w = 0; w < 5; w++) weeks.push(days.slice(w * 7, w * 7 + 7));
+    return weeks;
+  });
+
+  /** Heatmap data (today + yesterday) cho tab Trong ngày */
+  heatmapData = computed(() => {
+    const todayStr = this.todayDateStr();
+    const yesterdayStr = this.yesterdayDateStr();
+    const todayLogs = this.logs().filter((l) => l.date === todayStr);
+    const yestLogs = this.logs().filter((l) => l.date === yesterdayStr);
+
+    const buildHours = (logs: FeedingLog[]) => {
+      const hours = new Array<number>(24).fill(0);
+      for (const l of logs) {
+        const h = parseInt(l.time.split(':')[0], 10);
+        if (h >= 0 && h < 24) hours[h] += l.volume;
+      }
+      return hours;
+    };
+
+    const today = buildHours(todayLogs);
+    const yesterday = buildHours(yestLogs);
+    const maxVal = Math.max(...today, ...yesterday, 1);
+    const totalToday = today.reduce((s, v) => s + v, 0);
+    const totalYest = yesterday.reduce((s, v) => s + v, 0);
+    const feedCount = today.filter((v) => v > 0).length;
+    const avgPerFeed = feedCount > 0 ? Math.round(totalToday / feedCount) : 0;
+    const peakHour = today.reduce((best, v, i) => (v > today[best] ? i : best), 0);
+
+    return { today, yesterday, maxVal, totalToday, totalYest, feedCount, avgPerFeed, peakHour };
+  });
+
+  /** Sessions hôm nay (sorted by time) */
+  todaySessions = computed(() => {
+    const todayStr = this.todayDateStr();
+    return this.logs()
+      .filter((l) => l.date === todayStr)
+      .sort((a, b) => a.time.localeCompare(b.time))
+      .map((l, i, arr) => {
+        let gap = '—';
+        if (i > 0) {
+          const [ph, pm] = arr[i - 1].time.split(':').map(Number);
+          const [ch, cm] = l.time.split(':').map(Number);
+          const diffMin = ch * 60 + cm - (ph * 60 + pm);
+          const gh = Math.floor(diffMin / 60);
+          const gm = diffMin % 60;
+          gap = gh > 0 ? `${gh}h ${gm > 0 ? gm + 'm' : ''}`.trim() : `${gm}m`;
+        }
+        return { ...l, gap };
+      });
+  });
+
+  todaySessionsMaxVol = computed(() => {
+    const s = this.todaySessions();
+    return s.length > 0 ? Math.max(...s.map((x) => x.volume)) : 1;
+  });
+
   setChartTab(tab: 'volume' | 'count' | 'timeline') {
     this.chartTab.set(tab);
+    this.selectedIndex.set(null);
     if (tab !== 'timeline') {
       this.timelineChartZoomIndex.set(0);
     }
@@ -493,6 +746,20 @@ export class FeedingChartsComponent {
 
   setChartRange(r: 7 | 14 | 30) {
     this.chartRange.set(r);
+    this.selectedIndex.set(null);
+  }
+
+  setChartMode(m: ChartMode): void {
+    this.chartMode.set(m);
+    this.selectedIndex.set(null);
+  }
+
+  toggleSelected(i: number): void {
+    this.selectedIndex.update((cur) => (cur === i ? null : i));
+  }
+
+  clearSelected(): void {
+    this.selectedIndex.set(null);
   }
 
   todayDateStr(): string {
@@ -516,7 +783,7 @@ export class FeedingChartsComponent {
     return dayNames[d.getDay()];
   }
 
-  private toDateStr(d: Date): string {
+  toDateStr(d: Date): string {
     const y = d.getFullYear();
     const mo = (d.getMonth() + 1).toString().padStart(2, '0');
     const day = d.getDate().toString().padStart(2, '0');

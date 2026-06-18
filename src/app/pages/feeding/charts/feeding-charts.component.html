@@ -1,560 +1,907 @@
-<!-- ============ HISTORY: charts with tabs ============ -->
-<section class="card history-card">
-  <div class="history-head">
-    <div>
-      <div class="eyebrow"><i class="pi pi-chart-line"></i> Phân tích 7–30 ngày</div>
-      <h2>Biểu đồ dinh dưỡng</h2>
-    </div>
-    @if (weeklyAverage() > 0) {
-      <div class="week-avg">
-        TB/ngày: <strong>{{ weeklyAverage() }}ml</strong>
+<!-- ============ NUTRITION DASHBOARD — new concept ============ -->
+<section class="nd-card">
+  <!-- ── Header ── -->
+  <div class="nd-header">
+    <svg aria-hidden="true" class="nd-wm" viewBox="0 0 560 72" preserveAspectRatio="xMidYMid slice">
+      <!-- bar chart watermark top-right -->
+      <g transform="translate(510,8) rotate(10) scale(1.5)" opacity="0.45">
+        <rect x="0" y="9" width="4" height="9" rx="1" fill="currentColor" />
+        <rect x="6" y="5" width="4" height="13" rx="1" fill="currentColor" />
+        <rect x="12" y="1" width="4" height="17" rx="1" fill="currentColor" />
+      </g>
+      <!-- line chart watermark top-left -->
+      <g transform="translate(14,10) rotate(-8) scale(1.3)" opacity="0.4">
+        <polyline
+          points="0,16 5,9 11,12 17,4 23,8"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </g>
+      <!-- drop center -->
+      <g transform="translate(268,6) rotate(4) scale(1.05)" opacity="0.28">
+        <path d="M9 0 C9 0 18 10 18 15 A9 9 0 0 1 0 15 C0 10 9 0 9 0Z" fill="currentColor" />
+      </g>
+      <circle cx="420" cy="14" r="4" fill="currentColor" opacity="0.3" />
+      <circle cx="440" cy="7" r="2.5" fill="currentColor" opacity="0.22" />
+      <circle cx="140" cy="58" r="3.5" fill="currentColor" opacity="0.2" />
+    </svg>
+
+    <div class="nd-header__inner">
+      <div class="nd-header__title-group">
+        <div class="nd-header__title">Biểu đồ dinh dưỡng</div>
+        <div class="nd-header__sub">{{ chartRange() }} ngày gần nhất</div>
       </div>
-    }
-  </div>
-
-  <!-- Tabs -->
-  <div class="chart-tabs" role="tablist">
-    <button
-      type="button"
-      class="chart-tab"
-      [class.active]="chartTab() === 'volume'"
-      (click)="setChartTab('volume')"
-    >
-      <i class="pi pi-chart-line"></i>
-      Xu hướng sữa
-    </button>
-    <button
-      type="button"
-      class="chart-tab"
-      [class.active]="chartTab() === 'count'"
-      (click)="setChartTab('count')"
-    >
-      <i class="pi pi-chart-bar"></i>
-      Số cữ/ngày
-    </button>
-    <button
-      type="button"
-      class="chart-tab"
-      [class.active]="chartTab() === 'timeline'"
-      (click)="setChartTab('timeline')"
-    >
-      <i class="pi pi-stopwatch"></i>
-      Trong ngày
-    </button>
-  </div>
-
-  <!-- Range filter (chỉ áp dụng cho volume + count) -->
-  @if (chartTab() !== 'timeline') {
-    <div class="chart-range">
-      <span class="range-label">Khoảng:</span>
-      <button
-        type="button"
-        class="range-chip"
-        [class.active]="chartRange() === 7"
-        (click)="setChartRange(7)"
-      >
-        7 ngày
-      </button>
-      <button
-        type="button"
-        class="range-chip"
-        [class.active]="chartRange() === 14"
-        (click)="setChartRange(14)"
-      >
-        14 ngày
-      </button>
-      <button
-        type="button"
-        class="range-chip"
-        [class.active]="chartRange() === 30"
-        (click)="setChartRange(30)"
-      >
-        30 ngày
-      </button>
-    </div>
-  }
-
-  <!-- TAB: Xu hướng sữa -->
-  @if (chartTab() === 'volume' && weeklyAverage() > 0) {
-    <div class="chart-wrapper tall">
-      <div class="chart-title">Xu hướng sữa theo ngày ({{ chartRange() }} ngày)</div>
-      <div class="chart-scroll" [class.scrollable]="chartRange() === 30">
-        <svg
-          class="bar-chart volume tall"
-          [class.line-mode]="weeklyLineChart().isLineChart"
-          [attr.viewBox]="'0 0 ' + weeklyLineChart().W + ' ' + weeklyLineChart().H"
-          preserveAspectRatio="xMidYMid meet"
-        >
-          <defs>
-            <linearGradient id="volBarGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stop-color="#7c8aff" />
-              <stop offset="100%" stop-color="#5b6cff" />
-            </linearGradient>
-            <linearGradient id="volBarGradToday" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stop-color="#34d399" />
-              <stop offset="100%" stop-color="#10b981" />
-            </linearGradient>
-            <linearGradient id="volLineAreaGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stop-color="#5b6cff" stop-opacity="0.25" />
-              <stop offset="100%" stop-color="#5b6cff" stop-opacity="0.02" />
-            </linearGradient>
-            <linearGradient id="volLineGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stop-color="#818cf8" />
-              <stop offset="100%" stop-color="#5b6cff" />
-            </linearGradient>
-          </defs>
-          <g class="grid">
-            @for (g of weeklyLineChart().gridLines; track g) {
-              <line
-                [attr.x1]="weeklyLineChart().PAD_L"
-                [attr.x2]="weeklyLineChart().W - 16"
-                [attr.y1]="g.y"
-                [attr.y2]="g.y"
-              />
-            }
-            @for (g of weeklyLineChart().gridLines; track g) {
-              <text
-                [attr.x]="weeklyLineChart().PAD_L - 6"
-                [attr.y]="g.y + 4"
-                text-anchor="end"
-                class="grid-label"
-              >
-                {{ g.label }}
-              </text>
-            }
-          </g>
-          <!-- Bar Chart Mode (7 ngày) -->
-          @if (!weeklyLineChart().isLineChart) {
-            <ng-container>
-              <g class="bars">
-                @for (b of weeklyLineChart().bars; track b) {
-                  <g>
-                    <rect
-                      [attr.x]="b.x"
-                      [attr.y]="b.y"
-                      [attr.width]="b.barW"
-                      [attr.height]="b.h"
-                      rx="6"
-                      class="bar"
-                      [class.today]="b.d.date === todayDateStr()"
-                      [class.empty]="b.d.total === 0"
-                    />
-                    @if (b.d.total > 0 && b.showValue) {
-                      <text
-                        [attr.x]="b.cx"
-                        [attr.y]="b.y - 8"
-                        text-anchor="middle"
-                        class="bar-text bar-text-lg"
-                        [class.today]="b.d.date === todayDateStr()"
-                      >
-                        {{ b.d.total }}
-                      </text>
-                    }
-                  </g>
-                }
-              </g>
-              <g class="x-labels">
-                @for (b of weeklyLineChart().bars; track b) {
-                  <ng-container>
-                    @if (b.showLabel) {
-                      <text
-                        [attr.x]="b.cx"
-                        [attr.y]="weeklyLineChart().H - 22"
-                        text-anchor="middle"
-                        class="x-label"
-                        [class.today]="b.d.date === todayDateStr()"
-                      >
-                        {{ formatDayLabel(b.d.date) }}
-                      </text>
-                    }
-                    @if (b.showLabel) {
-                      <text
-                        [attr.x]="b.cx"
-                        [attr.y]="weeklyLineChart().H - 6"
-                        text-anchor="middle"
-                        class="x-sublabel"
-                      >
-                        {{ formatDateShort(b.d.date) }}
-                      </text>
-                    }
-                  </ng-container>
-                }
-              </g>
-            </ng-container>
-          }
-          <!-- Line Chart Mode (30 ngày) -->
-          @if (weeklyLineChart().isLineChart) {
-            <ng-container>
-              <path
-                class="vol-line-area"
-                [attr.d]="weeklyLineChart().areaPath"
-                fill="url(#volLineAreaGrad)"
-              />
-              <path
-                class="vol-line-path"
-                [attr.d]="weeklyLineChart().linePath"
-                fill="none"
-                stroke="url(#volLineGrad)"
-                stroke-width="2.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-              <g class="vol-line-dots">
-                @for (p of weeklyLineChart().points; track p) {
-                  <g>
-                    <circle
-                      [attr.cx]="p.x"
-                      [attr.cy]="p.y"
-                      [attr.r]="p.d.date === todayDateStr() ? 5 : 3.5"
-                      class="vol-dot"
-                      [class.today]="p.d.date === todayDateStr()"
-                      [class.empty]="p.d.total === 0"
-                    />
-                    @if (p.showValue) {
-                      <text
-                        [attr.x]="p.x"
-                        [attr.y]="p.y - 10"
-                        text-anchor="middle"
-                        class="bar-text bar-text-sm"
-                        [class.today]="p.d.date === todayDateStr()"
-                      >
-                        {{ p.d.total }}
-                      </text>
-                    }
-                  </g>
-                }
-              </g>
-              <g class="x-labels">
-                @for (p of weeklyLineChart().points; track p) {
-                  <ng-container>
-                    @if (p.showLabel) {
-                      <text
-                        [attr.x]="p.x"
-                        [attr.y]="weeklyLineChart().H - 6"
-                        text-anchor="middle"
-                        class="x-label x-label--compact"
-                        [class.today]="p.d.date === todayDateStr()"
-                      >
-                        {{ formatDateShort(p.d.date) }}
-                      </text>
-                    }
-                  </ng-container>
-                }
-              </g>
-            </ng-container>
-          }
-        </svg>
-      </div>
-      <!-- Stats footer -->
-      @if (chartStats(); as cs) {
-        <div class="chart-stats">
-          <div class="cs-item">
-            <div class="cs-label"><i class="pi pi-arrow-up"></i> Cao nhất</div>
-            <div class="cs-value">{{ cs.maxMl }}<span class="u">ml</span></div>
-            @if (cs.maxDate) {
-              <div class="cs-sub">{{ formatDateShort(cs.maxDate) }}</div>
-            }
-          </div>
-          <div class="cs-item">
-            <div class="cs-label"><i class="pi pi-arrow-down"></i> Thấp nhất</div>
-            <div class="cs-value">{{ cs.minMl }}<span class="u">ml</span></div>
-            @if (cs.minDate) {
-              <div class="cs-sub">{{ formatDateShort(cs.minDate) }}</div>
-            }
-          </div>
-          <div class="cs-item">
-            <div class="cs-label"><i class="pi pi-chart-bar"></i> Trung bình</div>
-            <div class="cs-value">{{ cs.avgMl }}<span class="u">ml</span></div>
-            <div class="cs-sub">trên {{ cs.daysWithData }} ngày có cữ</div>
-          </div>
-          <div class="cs-item">
-            <div class="cs-label"><i class="pi pi-bookmark"></i> Tổng</div>
-            <div class="cs-value">{{ cs.totalMl }}<span class="u">ml</span></div>
-            <div class="cs-sub">{{ cs.rangeDays }} ngày gần nhất</div>
-          </div>
+      @if (weeklyAverage() > 0) {
+        <div class="nd-header__avg">
+          <span class="nd-header__avg-label">TB/ngày</span>
+          <span class="nd-header__avg-value">{{ weeklyAverage() }}</span>
+          <span class="nd-header__avg-unit">ml</span>
         </div>
       }
     </div>
-  }
 
-  <!-- TAB: Số cữ/ngày -->
-  @if (chartTab() === 'count' && weeklyAverage() > 0) {
-    <div class="chart-wrapper tall">
-      <div class="chart-title">Số cữ bú mỗi ngày ({{ chartRange() }} ngày)</div>
-      <div class="chart-scroll" [class.scrollable]="chartRange() === 30">
-        <svg
-          class="bar-chart tall"
-          [attr.viewBox]="'0 0 ' + weeklyCountChart().W + ' ' + weeklyCountChart().H"
-          preserveAspectRatio="xMidYMid meet"
-        >
-          <g class="grid">
-            @for (g of weeklyCountChart().gridLines; track g) {
-              <line
-                [attr.x1]="weeklyCountChart().PAD_L"
-                [attr.x2]="weeklyCountChart().W - 16"
-                [attr.y1]="g.y"
-                [attr.y2]="g.y"
-              />
-            }
-            @for (g of weeklyCountChart().gridLines; track g) {
-              <text
-                [attr.x]="weeklyCountChart().PAD_L - 6"
-                [attr.y]="g.y + 4"
-                text-anchor="end"
-                class="grid-label"
-              >
-                {{ g.label }}
-              </text>
-            }
-          </g>
-          <g class="bars">
-            @for (b of weeklyCountChart().bars; track b) {
-              <g>
-                <rect
-                  [attr.x]="b.x"
-                  [attr.y]="b.y"
-                  [attr.width]="b.barW"
-                  [attr.height]="b.h"
-                  rx="6"
-                  class="bar"
-                  [class.today]="b.d.date === todayDateStr()"
-                  [class.empty]="b.d.count === 0"
-                />
-                @if (b.d.count > 0 && b.showValue) {
-                  <text
-                    [attr.x]="b.cx"
-                    [attr.y]="b.y - 6"
-                    text-anchor="middle"
-                    class="bar-text bar-text-lg"
-                    [class.today]="b.d.date === todayDateStr()"
-                  >
-                    {{ b.d.count }}
-                  </text>
-                }
-              </g>
-            }
-          </g>
-          <g class="x-labels">
-            @for (b of weeklyCountChart().bars; track b) {
-              <ng-container>
-                @if (b.showLabel) {
-                  <text
-                    [attr.x]="b.cx"
-                    [attr.y]="weeklyCountChart().H - 22"
-                    text-anchor="middle"
-                    class="x-label"
-                    [class.today]="b.d.date === todayDateStr()"
-                  >
-                    {{ formatDayLabel(b.d.date) }}
-                  </text>
-                }
-                @if (b.showLabel) {
-                  <text
-                    [attr.x]="b.cx"
-                    [attr.y]="weeklyCountChart().H - 6"
-                    text-anchor="middle"
-                    class="x-sublabel"
-                  >
-                    {{ formatDateShort(b.d.date) }}
-                  </text>
-                }
-              </ng-container>
-            }
-          </g>
-        </svg>
-      </div>
-      <!-- Stats footer -->
-      @if (chartStats(); as cs) {
-        <div class="chart-stats">
-          <div class="cs-item">
-            <div class="cs-label"><i class="pi pi-arrow-up"></i> Cao nhất</div>
-            <div class="cs-value">{{ cs.maxCount }}<span class="u">cữ</span></div>
-            <div class="cs-sub">trong {{ cs.rangeDays }} ngày</div>
-          </div>
-          <div class="cs-item">
-            <div class="cs-label"><i class="pi pi-chart-bar"></i> Trung bình</div>
-            <div class="cs-value">{{ cs.avgCount }}<span class="u">cữ</span></div>
-            <div class="cs-sub">mỗi ngày có cữ</div>
-          </div>
-          <div class="cs-item">
-            <div class="cs-label"><i class="pi pi-calendar"></i> Có cữ</div>
-            <div class="cs-value">{{ cs.daysWithData }}<span class="u">ngày</span></div>
-            <div class="cs-sub">trên {{ cs.rangeDays }} ngày</div>
-          </div>
-        </div>
-      }
+    <!-- Segmented tab control -->
+    <div class="nd-tabs" role="tablist">
+      <button
+        type="button"
+        class="nd-tab"
+        [class.active]="chartTab() === 'volume'"
+        (click)="setChartTab('volume')"
+        role="tab"
+      >
+        Xu hướng
+      </button>
+      <button
+        type="button"
+        class="nd-tab"
+        [class.active]="chartTab() === 'count'"
+        (click)="setChartTab('count')"
+        role="tab"
+      >
+        Số cữ
+      </button>
+      <button
+        type="button"
+        class="nd-tab"
+        [class.active]="chartTab() === 'timeline'"
+        (click)="setChartTab('timeline')"
+        role="tab"
+      >
+        Trong ngày
+      </button>
     </div>
-  }
+  </div>
 
-  <!-- TAB: Timeline trong ngày -->
-  @if (chartTab() === 'timeline') {
-    <div class="chart-wrapper tall">
-      <div class="chart-title">
-        Tiến độ bú trong ngày
-        <span class="muted-small"> · tích luỹ ml từ 00h → 24h </span>
-      </div>
-      @if (hasTimelineChartData()) {
-        <div class="timeline-zoom-bar">
-          <span class="timeline-zoom-hint">
-            <i class="pi pi-search-plus"></i>
-            Thu phóng trục thời gian (cuộn ngang khi &gt; 1×)
-          </span>
-          <div class="timeline-zoom-controls">
-            <button
-              type="button"
-              class="tz-btn"
-              (click)="timelineZoomOut()"
-              [disabled]="timelineChartZoomIndex() === 0"
-              aria-label="Thu nhỏ biểu đồ"
-            >
-              −
-            </button>
-            <span class="tz-value">{{ timelineChartZoom() }}×</span>
-            <button
-              type="button"
-              class="tz-btn"
-              (click)="timelineZoomIn()"
-              [disabled]="timelineChartZoomIndex() === 3"
-              aria-label="Phóng to biểu đồ"
-            >
-              +
-            </button>
-            @if (timelineChartZoomIndex() > 0) {
-              <button type="button" class="btn ghost sm tz-reset" (click)="timelineZoomReset()">
-                Mặc định
+  <!-- ══════════════════════════════════════════════════
+       TAB 1 — Xu hướng sữa
+  ══════════════════════════════════════════════════ -->
+  @if (chartTab() === 'volume') {
+    <div class="nd-body">
+      <!-- toolbar -->
+      <div class="nd-toolbar">
+        <div class="nd-section-title">Sữa theo ngày</div>
+        <div class="nd-toolbar__right">
+          <div class="nd-range-pills">
+            @for (r of chartRangeOptions; track r) {
+              <button
+                type="button"
+                class="nd-pill"
+                [class.active]="chartRange() === r"
+                (click)="setChartRange(r)"
+              >
+                {{ r }}d
               </button>
             }
           </div>
-        </div>
-        <!-- Legend + totals -->
-        <div class="timeline-legend">
-          <div class="tl-item today">
-            <span class="tl-swatch"></span>
-            <span class="tl-label">Hôm nay</span>
-            <strong class="tl-value">{{ timelineChart().todayTotal }}ml</strong>
-          </div>
-          <div class="tl-item yesterday">
-            <span class="tl-swatch"></span>
-            <span class="tl-label">Hôm qua</span>
-            <strong class="tl-value">{{ timelineChart().yesterdayTotal }}ml</strong>
-          </div>
-          <div class="tl-item avg3">
-            <span class="tl-swatch"></span>
-            <span class="tl-label">
-              TB 3 ngày trước
-              @if (timelineChart().prev3DaysCount < 3) {
-                <span class="muted-small">
-                  (có {{ timelineChart().prev3DaysCount }} ngày dữ liệu)
-                </span>
-              }
-            </span>
-            <strong class="tl-value">{{ timelineChart().avg3Total }}ml</strong>
-          </div>
-          @if (timelineChart().hasRecommendation) {
-            <div class="tl-item rec">
-              <span class="tl-swatch tl-swatch--rec"></span>
-              <span class="tl-label">
-                Khuyến nghị (phân bổ đều)
-                <span class="muted-small">{{ timelineChart().recRangeLabel }}</span>
-              </span>
-              <strong class="tl-value">~{{ timelineChart().recMidDailyRounded }}ml</strong>
-            </div>
-          }
-        </div>
-        <div class="chart-scroll timeline-chart-scroll scrollable">
-          <svg
-            class="line-chart tall timeline-svg"
-            [attr.viewBox]="'0 0 ' + timelineChart().W + ' ' + timelineChart().H"
-            [style.min-width.px]="timelineChart().W"
-            preserveAspectRatio="xMinYMid meet"
-          >
-            <g class="grid">
-              @for (g of timelineChart().yGrid; track g) {
-                <line
-                  [attr.x1]="timelineChart().PAD_L"
-                  [attr.x2]="timelineChart().W - 16"
-                  [attr.y1]="g.y"
-                  [attr.y2]="g.y"
+          <div class="nd-mode-toggle">
+            <button
+              type="button"
+              class="nd-mode-btn"
+              [class.active]="chartMode() === 'bar'"
+              (click)="setChartMode('bar')"
+              title="Bar chart"
+            >
+              <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
+                <rect x="0" y="7" width="3" height="7" rx="1" fill="currentColor" />
+                <rect x="4" y="4" width="3" height="10" rx="1" fill="currentColor" />
+                <rect x="8" y="1" width="3" height="13" rx="1" fill="currentColor" />
+                <rect x="12" y="3" width="2" height="11" rx="1" fill="currentColor" />
+              </svg>
+              Bar
+            </button>
+            <button
+              type="button"
+              class="nd-mode-btn"
+              [class.active]="chartMode() === 'area'"
+              (click)="setChartMode('area')"
+              title="Area chart"
+            >
+              <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
+                <path
+                  d="M0 12 C2 12 3 4 7 5 C10 6 12 2 14 2 L14 14 L0 14 Z"
+                  fill="currentColor"
+                  opacity="0.35"
                 />
-              }
-              @for (g of timelineChart().yGrid; track g) {
+                <path
+                  d="M0 12 C2 12 3 4 7 5 C10 6 12 2 14 2"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                />
+              </svg>
+              Area
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- selected point banner -->
+      @if (selectedPoint(); as pt) {
+        @if (pt.total > 0) {
+          <div class="nd-sel-banner">
+            <div class="nd-sel-banner__dot" [class.today]="pt.isToday"></div>
+            <span class="nd-sel-banner__date">{{ pt.dayLabel }}, {{ pt.dateLabel }}</span>
+            <div class="nd-sel-banner__val">
+              <span class="nd-sel-banner__num">{{ pt.total }}</span>
+              <span class="nd-sel-banner__unit">ml</span>
+            </div>
+            <button type="button" class="nd-sel-banner__close" (click)="clearSelected()">✕</button>
+          </div>
+        }
+      }
+
+      <!-- chart area -->
+      <div class="nd-chart-box">
+        @if (weeklyAverage() > 0) {
+          <!-- BAR MODE -->
+          @if (chartMode() === 'bar') {
+            <svg
+              class="nd-svg"
+              [attr.viewBox]="'0 0 ' + barChartData().W + ' ' + barChartData().H"
+              preserveAspectRatio="xMidYMid meet"
+              (click)="clearSelected()"
+            >
+              <defs>
+                <linearGradient id="ndBarGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stop-color="#7c8aff" />
+                  <stop offset="100%" stop-color="#4c5cf0" />
+                </linearGradient>
+                <linearGradient id="ndBarGradT" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stop-color="#34d399" />
+                  <stop offset="100%" stop-color="#10b981" />
+                </linearGradient>
+              </defs>
+
+              <!-- grid -->
+              @for (r of [0.33, 0.66, 1]; track r) {
+                <line
+                  class="nd-grid-line"
+                  [attr.x1]="barChartData().PL"
+                  [attr.x2]="barChartData().W - barChartData().PR"
+                  [attr.y1]="barChartData().PT + barChartData().cH - r * barChartData().cH"
+                  [attr.y2]="barChartData().PT + barChartData().cH - r * barChartData().cH"
+                />
                 <text
-                  [attr.x]="timelineChart().PAD_L - 6"
-                  [attr.y]="g.y + 4"
+                  class="nd-grid-label"
+                  [attr.x]="barChartData().PL - 5"
+                  [attr.y]="barChartData().PT + barChartData().cH - r * barChartData().cH + 3"
                   text-anchor="end"
-                  class="grid-label"
                 >
-                  {{ g.label }}
+                  {{ barChartData().max * r | number: '1.0-0' }}
                 </text>
               }
-            </g>
-            <!-- Dải KN min–max (phân bổ đều trong ngày) -->
-            @if (timelineChart().hasRecommendation && timelineChart().recBandPath) {
-              <path class="tl-rec-band" [attr.d]="timelineChart().recBandPath" />
-            }
-            <!-- Lines (avg first so it sits behind) -->
-            <path class="tl-path avg3" [attr.d]="timelineChart().avg3Path" />
-            <path class="tl-path yesterday" [attr.d]="timelineChart().yesterdayPath" />
-            <!-- Đường KN trung điểm (ml/ngày tuyến tính theo giờ) -->
-            @if (timelineChart().hasRecommendation && timelineChart().recMidPath) {
-              <path class="tl-path rec-mid" [attr.d]="timelineChart().recMidPath" />
-            }
-            <path class="tl-path today" [attr.d]="timelineChart().todayPath" />
-            <!-- "Now" vertical line -->
-            <g class="now-marker">
+
+              <!-- avg line -->
               <line
-                [attr.x1]="timelineChart().nowX"
-                [attr.x2]="timelineChart().nowX"
-                [attr.y1]="timelineChart().chartTop"
-                [attr.y2]="timelineChart().chartBottom"
-                class="now-line"
+                class="nd-avg-line"
+                [attr.x1]="barChartData().PL"
+                [attr.x2]="barChartData().W - barChartData().PR - 4"
+                [attr.y1]="barChartData().avgY"
+                [attr.y2]="barChartData().avgY"
               />
               <text
-                [attr.x]="timelineChart().nowX"
-                [attr.y]="timelineChart().chartTop - 6"
-                text-anchor="middle"
-                class="now-label"
+                class="nd-avg-label"
+                [attr.x]="barChartData().W - barChartData().PR + 1"
+                [attr.y]="barChartData().avgY + 3"
               >
-                bây giờ
+                avg
               </text>
-            </g>
-            <!-- Today end marker -->
-            @if (timelineChart().todayEndPoint; as pt) {
-              <g>
-                <circle [attr.cx]="pt.x" [attr.cy]="pt.y" r="6" class="tl-end-outer" />
-                <circle [attr.cx]="pt.x" [attr.cy]="pt.y" r="3" class="tl-end-inner" />
+
+              <!-- trend dashed overlay (14d/30d) -->
+              @if (barChartData().trendPath) {
+                <path class="nd-trend-line" [attr.d]="barChartData().trendPath" />
+              }
+
+              <!-- bars -->
+              @for (b of barChartData().bars; track b.i) {
+                <g class="nd-bar-grp" (click)="$event.stopPropagation(); toggleSelected(b.i)">
+                  @if (selectedIndex() === b.i) {
+                    <rect
+                      [attr.x]="b.bx - 4"
+                      [attr.y]="barChartData().PT"
+                      [attr.width]="b.bW + 8"
+                      [attr.height]="barChartData().cH + 4"
+                      rx="6"
+                      class="nd-bar-halo"
+                      [class.today]="b.isToday"
+                    />
+                  }
+                  <rect
+                    [attr.x]="b.bx"
+                    [attr.y]="b.by"
+                    [attr.width]="b.bW"
+                    [attr.height]="b.h"
+                    [attr.rx]="b.d.total === 0 ? 2 : 4"
+                    [attr.fill]="
+                      b.isToday
+                        ? 'url(#ndBarGradT)'
+                        : b.d.total === 0
+                          ? '#e2e8f0'
+                          : 'url(#ndBarGrad)'
+                    "
+                    [class.nd-bar--dimmed]="selectedIndex() !== null && selectedIndex() !== b.i"
+                  />
+                  <!-- value label -->
+                  @if (
+                    b.d.total > 0 &&
+                    (selectedIndex() === b.i ||
+                      chartRange() <= 7 ||
+                      (chartRange() <= 14 && b.isToday))
+                  ) {
+                    <text
+                      class="nd-bar-val"
+                      [class.today]="b.isToday"
+                      [attr.x]="b.cx"
+                      [attr.y]="b.by - 5"
+                      text-anchor="middle"
+                    >
+                      {{ b.d.total }}
+                    </text>
+                  }
+                  <!-- x labels -->
+                  @if (b.showLabel) {
+                    <text
+                      class="nd-x-label"
+                      [class.today]="b.isToday"
+                      [class.nd-x-label--sel]="selectedIndex() === b.i"
+                      [attr.x]="b.cx"
+                      [attr.y]="barChartData().H - 18"
+                      text-anchor="middle"
+                    >
+                      {{ formatDayLabel(b.d.date) }}
+                    </text>
+                    <text
+                      class="nd-x-sub"
+                      [attr.x]="b.cx"
+                      [attr.y]="barChartData().H - 4"
+                      text-anchor="middle"
+                    >
+                      {{ formatDateShort(b.d.date) }}
+                    </text>
+                  }
+                </g>
+              }
+
+              <!-- tooltip -->
+              @if (selectedIndex() !== null && tooltipBubble(); as tb) {
+                @if (selectedPoint()!.total > 0) {
+                  <g class="nd-tooltip" style="pointer-events: none">
+                    <rect
+                      [attr.x]="tb.bx + 1"
+                      [attr.y]="tb.by + 2"
+                      [attr.width]="tb.bw"
+                      [attr.height]="tb.bh"
+                      rx="8"
+                      class="nd-tooltip__shadow"
+                    />
+                    <rect
+                      [attr.x]="tb.bx"
+                      [attr.y]="tb.by"
+                      [attr.width]="tb.bw"
+                      [attr.height]="tb.bh"
+                      rx="8"
+                      class="nd-tooltip__bg"
+                      [class.today]="selectedPoint()!.isToday"
+                    />
+                    <path
+                      [attr.d]="
+                        'M' +
+                        (tb.bx + tb.arrowX - 5) +
+                        ',' +
+                        (tb.by + tb.bh) +
+                        ' L' +
+                        (tb.bx + tb.arrowX) +
+                        ',' +
+                        (tb.by + tb.bh + 7) +
+                        ' L' +
+                        (tb.bx + tb.arrowX + 5) +
+                        ',' +
+                        (tb.by + tb.bh) +
+                        'Z'
+                      "
+                      class="nd-tooltip__bg"
+                      [class.today]="selectedPoint()!.isToday"
+                    />
+                    <line
+                      [attr.x1]="tb.bx + tb.arrowX - 4"
+                      [attr.y1]="tb.by + tb.bh"
+                      [attr.x2]="tb.bx + tb.arrowX + 4"
+                      [attr.y2]="tb.by + tb.bh"
+                      class="nd-tooltip__seal"
+                    />
+                    <text
+                      [attr.x]="tb.bx + tb.bw / 2"
+                      [attr.y]="tb.by + 18"
+                      text-anchor="middle"
+                      class="nd-tooltip__vol"
+                      [class.today]="selectedPoint()!.isToday"
+                    >
+                      {{ selectedPoint()!.total }}ml
+                    </text>
+                    <text
+                      [attr.x]="tb.bx + tb.bw / 2"
+                      [attr.y]="tb.by + 33"
+                      text-anchor="middle"
+                      class="nd-tooltip__date"
+                    >
+                      {{ selectedPoint()!.dayLabel }} · {{ selectedPoint()!.dateLabel }}
+                    </text>
+                  </g>
+                }
+              }
+            </svg>
+          }
+
+          <!-- AREA MODE -->
+          @if (chartMode() === 'area') {
+            <svg
+              class="nd-svg"
+              [attr.viewBox]="'0 0 ' + areaChartData().W + ' ' + areaChartData().H"
+              preserveAspectRatio="xMidYMid meet"
+              (click)="clearSelected()"
+            >
+              <defs>
+                <linearGradient id="ndAreaGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stop-color="#4c5cf0" stop-opacity="0.18" />
+                  <stop offset="100%" stop-color="#4c5cf0" stop-opacity="0.02" />
+                </linearGradient>
+              </defs>
+
+              <!-- grid -->
+              @for (r of [0.33, 0.66, 1]; track r) {
+                <line
+                  class="nd-grid-line"
+                  [attr.x1]="areaChartData().PL"
+                  [attr.x2]="areaChartData().W - areaChartData().PR"
+                  [attr.y1]="areaChartData().PT + areaChartData().cH - r * areaChartData().cH"
+                  [attr.y2]="areaChartData().PT + areaChartData().cH - r * areaChartData().cH"
+                />
                 <text
-                  [attr.x]="pt.x"
-                  [attr.y]="pt.y - 12"
-                  text-anchor="middle"
-                  class="tl-end-label"
+                  class="nd-grid-label"
+                  [attr.x]="areaChartData().PL - 5"
+                  [attr.y]="areaChartData().PT + areaChartData().cH - r * areaChartData().cH + 4"
+                  text-anchor="end"
                 >
-                  {{ pt.v }}ml
-                </text>
-              </g>
-            }
-            <!-- X tick labels -->
-            <g class="x-labels">
-              @for (t of timelineChart().xTicks; track t) {
-                <text
-                  [attr.x]="t.x"
-                  [attr.y]="timelineChart().H - 14"
-                  text-anchor="middle"
-                  class="x-label"
-                >
-                  {{ t.hour }}h
+                  {{ areaChartData().max * r | number: '1.0-0' }}
                 </text>
               }
-            </g>
-          </svg>
+
+              <!-- avg line -->
+              <line
+                class="nd-avg-line"
+                [attr.x1]="areaChartData().PL"
+                [attr.x2]="areaChartData().W - areaChartData().PR - 4"
+                [attr.y1]="areaChartData().avgY"
+                [attr.y2]="areaChartData().avgY"
+              />
+              <text
+                class="nd-avg-label"
+                [attr.x]="areaChartData().W - areaChartData().PR + 1"
+                [attr.y]="areaChartData().avgY + 3"
+              >
+                avg
+              </text>
+
+              <!-- selected vertical crosshair -->
+              @if (selectedIndex() !== null) {
+                <line
+                  class="nd-crosshair"
+                  [attr.x1]="areaChartData().pts[selectedIndex()!].x"
+                  [attr.x2]="areaChartData().pts[selectedIndex()!].x"
+                  [attr.y1]="areaChartData().PT"
+                  [attr.y2]="areaChartData().PT + areaChartData().cH"
+                />
+              }
+
+              <path [attr.d]="areaChartData().areaPath" fill="url(#ndAreaGrad)" />
+              <path class="nd-area-line" [attr.d]="areaChartData().smooth" />
+
+              <!-- dots + hit targets -->
+              @for (p of areaChartData().pts; track p.i) {
+                <g (click)="$event.stopPropagation(); toggleSelected(p.i)" class="nd-dot-grp">
+                  <rect
+                    [attr.x]="p.x - 12"
+                    [attr.y]="p.y - 12"
+                    width="24"
+                    height="24"
+                    fill="transparent"
+                  />
+                  @if (areaChartData().showDot(p.i)) {
+                    @if (selectedIndex() === p.i) {
+                      <circle
+                        [attr.cx]="p.x"
+                        [attr.cy]="p.y"
+                        r="14"
+                        [class.nd-dot-halo]="true"
+                        [class.today]="p.isToday"
+                      />
+                    }
+                    <circle
+                      [attr.cx]="p.x"
+                      [attr.cy]="p.y"
+                      [attr.r]="selectedIndex() === p.i ? 7 : p.isToday ? 7 : 3.5"
+                      [class.nd-dot]="true"
+                      [class.today]="p.isToday"
+                      [class.nd-dot--dimmed]="selectedIndex() !== null && selectedIndex() !== p.i"
+                    />
+                    @if (p.isToday && selectedIndex() !== p.i) {
+                      <circle [attr.cx]="p.x" [attr.cy]="p.y" r="11" class="nd-dot-ring today" />
+                    }
+                  }
+                  @if (areaChartData().showLabel(p.i) && selectedIndex() !== p.i && p.isToday) {
+                    <text
+                      [attr.x]="p.x"
+                      [attr.y]="p.y - 14"
+                      text-anchor="middle"
+                      class="nd-bar-val today"
+                    >
+                      {{ p.d.total }}
+                    </text>
+                  }
+                </g>
+              }
+
+              <!-- x labels -->
+              @for (p of areaChartData().pts; track p.i) {
+                @if (areaChartData().showLabel(p.i)) {
+                  <text
+                    class="nd-x-label"
+                    [class.today]="p.isToday"
+                    [class.nd-x-label--sel]="selectedIndex() === p.i"
+                    [attr.x]="p.x"
+                    [attr.y]="areaChartData().H - 18"
+                    text-anchor="middle"
+                  >
+                    {{ formatDayLabel(p.d.date) }}
+                  </text>
+                  <text
+                    class="nd-x-sub"
+                    [attr.x]="p.x"
+                    [attr.y]="areaChartData().H - 4"
+                    text-anchor="middle"
+                  >
+                    {{ formatDateShort(p.d.date) }}
+                  </text>
+                }
+              }
+
+              <!-- tooltip (area mode) -->
+              @if (selectedIndex() !== null && tooltipBubble(); as tb) {
+                @if (selectedPoint()!.total > 0) {
+                  <g class="nd-tooltip" style="pointer-events: none">
+                    <rect
+                      [attr.x]="tb.bx + 1"
+                      [attr.y]="tb.by + 2"
+                      [attr.width]="tb.bw"
+                      [attr.height]="tb.bh"
+                      rx="8"
+                      class="nd-tooltip__shadow"
+                    />
+                    <rect
+                      [attr.x]="tb.bx"
+                      [attr.y]="tb.by"
+                      [attr.width]="tb.bw"
+                      [attr.height]="tb.bh"
+                      rx="8"
+                      class="nd-tooltip__bg"
+                      [class.today]="selectedPoint()!.isToday"
+                    />
+                    <path
+                      [attr.d]="
+                        'M' +
+                        (tb.bx + tb.arrowX - 5) +
+                        ',' +
+                        (tb.by + tb.bh) +
+                        ' L' +
+                        (tb.bx + tb.arrowX) +
+                        ',' +
+                        (tb.by + tb.bh + 7) +
+                        ' L' +
+                        (tb.bx + tb.arrowX + 5) +
+                        ',' +
+                        (tb.by + tb.bh) +
+                        'Z'
+                      "
+                      class="nd-tooltip__bg"
+                      [class.today]="selectedPoint()!.isToday"
+                    />
+                    <line
+                      [attr.x1]="tb.bx + tb.arrowX - 4"
+                      [attr.y1]="tb.by + tb.bh"
+                      [attr.x2]="tb.bx + tb.arrowX + 4"
+                      [attr.y2]="tb.by + tb.bh"
+                      class="nd-tooltip__seal"
+                    />
+                    <text
+                      [attr.x]="tb.bx + tb.bw / 2"
+                      [attr.y]="tb.by + 18"
+                      text-anchor="middle"
+                      class="nd-tooltip__vol"
+                      [class.today]="selectedPoint()!.isToday"
+                    >
+                      {{ selectedPoint()!.total }}ml
+                    </text>
+                    <text
+                      [attr.x]="tb.bx + tb.bw / 2"
+                      [attr.y]="tb.by + 33"
+                      text-anchor="middle"
+                      class="nd-tooltip__date"
+                    >
+                      {{ selectedPoint()!.dayLabel }} · {{ selectedPoint()!.dateLabel }}
+                    </text>
+                  </g>
+                }
+              }
+            </svg>
+
+            <!-- area legend -->
+            <div class="nd-legend">
+              <div class="nd-legend__item">
+                <svg width="20" height="4">
+                  <line x1="0" y1="2" x2="20" y2="2" class="nd-legend-line" />
+                </svg>
+                <span>Xu hướng</span>
+              </div>
+              <div class="nd-legend__item">
+                <svg width="8" height="8">
+                  <circle cx="4" cy="4" r="4" class="nd-legend-dot today" />
+                </svg>
+                <span>Hôm nay</span>
+              </div>
+              <div class="nd-legend__item">
+                <svg width="20" height="4">
+                  <line
+                    x1="0"
+                    y1="2"
+                    x2="20"
+                    y2="2"
+                    class="nd-legend-line--avg"
+                    stroke-dasharray="4 3"
+                  />
+                </svg>
+                <span>Trung bình</span>
+              </div>
+            </div>
+          }
+        } @else {
+          <div class="nd-empty">Chưa có dữ liệu. Hãy ghi lại vài cữ bú nhé!</div>
+        }
+      </div>
+
+      <!-- stat chips -->
+      <div class="nd-chips">
+        <div class="nd-chip nd-chip--accent">
+          <div class="nd-chip__label">TB/ngày</div>
+          <div class="nd-chip__row">
+            <span class="nd-chip__val">{{ chartStats().avgMl }}</span>
+            <span class="nd-chip__unit">ml</span>
+          </div>
         </div>
-      } @else {
-        <div class="empty-mini">Chưa đủ dữ liệu. Cần ít nhất vài cữ bú trong 3 ngày gần đây.</div>
-      }
+        <div class="nd-chip">
+          <div class="nd-chip__label">Cao nhất</div>
+          <div class="nd-chip__row">
+            <span class="nd-chip__val">{{ chartStats().maxMl }}</span>
+            <span class="nd-chip__unit">ml</span>
+          </div>
+        </div>
+        <div class="nd-chip">
+          <div class="nd-chip__label">Thấp nhất</div>
+          <div class="nd-chip__row">
+            <span class="nd-chip__val">{{ chartStats().minMl }}</span>
+            <span class="nd-chip__unit">ml</span>
+          </div>
+        </div>
+        <div class="nd-chip">
+          <div class="nd-chip__label">Tổng</div>
+          <div class="nd-chip__row">
+            <span class="nd-chip__val">{{ (chartStats().totalMl / 1000).toFixed(1) }}</span>
+            <span class="nd-chip__unit">L</span>
+          </div>
+        </div>
+      </div>
     </div>
   }
 
-  @if (chartTab() !== 'timeline' && weeklyAverage() === 0) {
-    <div class="empty-mini">Chưa có dữ liệu nào trong 7 ngày qua.</div>
+  <!-- ══════════════════════════════════════════════════
+       TAB 2 — Số cữ/ngày
+  ══════════════════════════════════════════════════ -->
+  @if (chartTab() === 'count') {
+    <div class="nd-body">
+      <div class="nd-toolbar">
+        <div class="nd-section-title">Số cữ theo ngày</div>
+        <div class="nd-range-pills">
+          @for (r of chartRangeOptions; track r) {
+            <button
+              type="button"
+              class="nd-pill"
+              [class.active]="chartRange() === r"
+              (click)="setChartRange(r)"
+            >
+              {{ r }}d
+            </button>
+          }
+        </div>
+      </div>
+
+      <!-- dot-matrix calendar -->
+      <div class="nd-cal-box">
+        <div class="nd-cal__header">
+          @for (d of ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN']; track d) {
+            <div class="nd-cal__day-label">{{ d }}</div>
+          }
+        </div>
+        @for (week of calendarData(); track $index) {
+          <div class="nd-cal__row">
+            @for (cell of week; track $index) {
+              <div
+                class="nd-cal__cell"
+                [class.nd-cal__cell--today]="cell.isToday"
+                [class.nd-cal__cell--empty]="cell.count === 0"
+                [style.--alpha]="cell.count === 0 ? 0.1 : 0.2 + cell.count * 0.16"
+              >
+                @if (cell.count > 0) {
+                  {{ cell.count }}
+                }
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- distribution strip -->
+      <div class="nd-dist">
+        <div class="nd-section-title">Phân bổ số cữ</div>
+        <div class="nd-dist__strip">
+          @if (chartStats().daysWithData > 0) {
+            @for (
+              bucket of [
+                { label: '≤3 cữ', color: 'var(--nd-primary-light)' },
+                { label: '4 cữ', color: 'var(--nd-primary-mid)' },
+                { label: '5+ cữ', color: 'var(--nd-primary)' },
+              ];
+              track bucket.label
+            ) {
+              <div class="nd-dist__seg" [style.background]="bucket.color" [style.flex]="1"></div>
+            }
+          }
+        </div>
+        <div class="nd-dist__legend">
+          @for (
+            bucket of [
+              { label: '≤3 cữ', color: 'var(--nd-primary-light)' },
+              { label: '4 cữ', color: 'var(--nd-primary-mid)' },
+              { label: '5+ cữ', color: 'var(--nd-primary)' },
+            ];
+            track bucket.label
+          ) {
+            <div class="nd-dist__leg-item">
+              <div class="nd-dist__leg-dot" [style.background]="bucket.color"></div>
+              <span>{{ bucket.label }}</span>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- stat chips -->
+      <div class="nd-chips nd-chips--3">
+        <div class="nd-chip nd-chip--accent">
+          <div class="nd-chip__label">TB/ngày</div>
+          <div class="nd-chip__row">
+            <span class="nd-chip__val">{{ chartStats().avgCount }}</span>
+            <span class="nd-chip__unit">cữ</span>
+          </div>
+        </div>
+        <div class="nd-chip">
+          <div class="nd-chip__label">Cao nhất</div>
+          <div class="nd-chip__row">
+            <span class="nd-chip__val">{{ chartStats().maxCount }}</span>
+            <span class="nd-chip__unit">cữ</span>
+          </div>
+        </div>
+        <div class="nd-chip">
+          <div class="nd-chip__label">Có cữ</div>
+          <div class="nd-chip__row">
+            <span class="nd-chip__val">{{ chartStats().daysWithData }}</span>
+            <span class="nd-chip__unit">ngày</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ══════════════════════════════════════════════════
+       TAB 3 — Trong ngày
+  ══════════════════════════════════════════════════ -->
+  @if (chartTab() === 'timeline') {
+    <div class="nd-body">
+      <div class="nd-toolbar">
+        <div class="nd-section-title">Trong ngày</div>
+        <div class="nd-date-nav">
+          <button type="button" class="nd-nav-btn" disabled>
+            <i class="pi pi-chevron-left"></i>
+          </button>
+          <span class="nd-date-nav__label">Hôm nay</span>
+          <button type="button" class="nd-nav-btn nd-nav-btn--disabled">
+            <i class="pi pi-chevron-right"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- quick stats -->
+      <div class="nd-chips nd-chips--3">
+        <div class="nd-chip nd-chip--accent">
+          <div class="nd-chip__label">Tổng hôm nay</div>
+          <div class="nd-chip__row">
+            <span class="nd-chip__val">{{ heatmapData().totalToday }}</span>
+            <span class="nd-chip__unit">ml</span>
+          </div>
+        </div>
+        <div class="nd-chip">
+          <div class="nd-chip__label">Số cữ</div>
+          <div class="nd-chip__row">
+            <span class="nd-chip__val">{{ heatmapData().feedCount }}</span>
+            <span class="nd-chip__unit">cữ</span>
+          </div>
+        </div>
+        <div class="nd-chip">
+          <div class="nd-chip__label">TB mỗi cữ</div>
+          <div class="nd-chip__row">
+            <span class="nd-chip__val">{{ heatmapData().avgPerFeed }}</span>
+            <span class="nd-chip__unit">ml</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- heatmap 24h -->
+      <div class="nd-hm-box">
+        <div class="nd-section-title">Heatmap giờ bú</div>
+        <svg class="nd-hm-svg" viewBox="0 0 560 60" preserveAspectRatio="xMidYMid meet">
+          <!-- hour labels 0,3,6...21 -->
+          @for (h of [0, 3, 6, 9, 12, 15, 18, 21]; track h) {
+            <text
+              [attr.x]="h * (560 / 24) + 560 / 48"
+              y="10"
+              text-anchor="middle"
+              class="nd-hm-label"
+            >
+              {{ h }}h
+            </text>
+          }
+          <!-- today row -->
+          @for (v of heatmapData().today; track $index) {
+            <rect
+              [attr.x]="$index * (560 / 24) + 0.5"
+              y="14"
+              [attr.width]="560 / 24 - 1"
+              height="18"
+              rx="2"
+              [class.nd-hm-cell--today]="v > 0"
+              [class.nd-hm-cell--empty]="v === 0"
+              [style.opacity]="v > 0 ? 0.3 + (v / heatmapData().maxVal) * 0.7 : 1"
+            />
+            @if (v > 0) {
+              <text
+                [attr.x]="$index * (560 / 24) + 560 / 48"
+                y="26"
+                text-anchor="middle"
+                class="nd-hm-val"
+              >
+                {{ v }}
+              </text>
+            }
+          }
+          <!-- yesterday row -->
+          @for (v of heatmapData().yesterday; track $index) {
+            <rect
+              [attr.x]="$index * (560 / 24) + 0.5"
+              y="34"
+              [attr.width]="560 / 24 - 1"
+              height="18"
+              rx="2"
+              [class.nd-hm-cell--yest]="v > 0"
+              [class.nd-hm-cell--empty]="v === 0"
+              [style.opacity]="v > 0 ? 0.3 + (v / heatmapData().maxVal) * 0.7 : 1"
+            />
+            @if (v > 0) {
+              <text
+                [attr.x]="$index * (560 / 24) + 560 / 48"
+                y="46"
+                text-anchor="middle"
+                class="nd-hm-val yest"
+              >
+                {{ v }}
+              </text>
+            }
+          }
+        </svg>
+        <!-- hm legend -->
+        <div class="nd-hm-legend">
+          <div class="nd-hm-legend__item">
+            <div class="nd-hm-legend__dot today"></div>
+            <span>Hôm nay</span>
+            <strong>{{ heatmapData().totalToday }}ml</strong>
+          </div>
+          <div class="nd-hm-legend__item">
+            <div class="nd-hm-legend__dot yest"></div>
+            <span>Hôm qua</span>
+            <strong>{{ heatmapData().totalYest }}ml</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- peak callout -->
+      @if (heatmapData().feedCount > 0) {
+        <div class="nd-peak">
+          <i class="pi pi-chart-line nd-peak__icon"></i>
+          <span
+            >Cữ đỉnh lúc <strong>{{ heatmapData().peakHour }}:00</strong> —
+            <strong>{{ heatmapData().today[heatmapData().peakHour] }}ml</strong></span
+          >
+        </div>
+      }
+
+      <!-- session feed cards -->
+      <div class="nd-section-title" style="margin-top: 16px">Danh sách cữ bú</div>
+      @if (todaySessions().length > 0) {
+        <div class="nd-sessions">
+          @for (s of todaySessions(); track s.time; let last = $last) {
+            <div class="nd-session">
+              <div class="nd-session__spine">
+                <div class="nd-session__dot"></div>
+                @if (!last) {
+                  <div class="nd-session__line"></div>
+                }
+              </div>
+              <div class="nd-session__card" [class.nd-session__card--last]="last">
+                <div class="nd-session__card-top">
+                  <span class="nd-session__time">{{ s.time }}</span>
+                  <div class="nd-session__vol">
+                    <span class="nd-session__vol-num">{{ s.volume }}</span>
+                    <span class="nd-session__vol-unit">ml</span>
+                  </div>
+                </div>
+                <div class="nd-session__prog-bg">
+                  <div
+                    class="nd-session__prog-fill"
+                    [style.width.%]="(s.volume / todaySessionsMaxVol()) * 100"
+                  ></div>
+                </div>
+                <div class="nd-session__meta">
+                  @if (s.gap !== '—') {
+                    <span class="nd-session__gap">+{{ s.gap }}</span>
+                  }
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      } @else {
+        <div class="nd-empty">Chưa có cữ bú nào hôm nay.</div>
+      }
+    </div>
   }
 </section>
