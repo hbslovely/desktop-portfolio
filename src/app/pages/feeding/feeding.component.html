@@ -183,10 +183,45 @@
         </div>
 
         <section class="hero-notification" aria-label="Thông báo nội bộ">
+          <!-- watermark background icons -->
+          <span class="hero-notification__bg-icon hero-notification__bg-icon--bell" aria-hidden="true">
+            <i class="pi pi-bell"></i>
+          </span>
+          <span class="hero-notification__bg-icon hero-notification__bg-icon--megaphone" aria-hidden="true">
+            <i class="pi pi-megaphone"></i>
+          </span>
+          <span class="hero-notification__bg-icon hero-notification__bg-icon--comments" aria-hidden="true">
+            <i class="pi pi-comments"></i>
+          </span>
+          <span class="hero-notification__bg-icon hero-notification__bg-icon--send" aria-hidden="true">
+            <i class="pi pi-send"></i>
+          </span>
+          <span class="hero-notification__bg-icon hero-notification__bg-icon--star" aria-hidden="true">
+            <i class="pi pi-star"></i>
+          </span>
+          <span class="hero-notification__bg-icon hero-notification__bg-icon--bolt" aria-hidden="true">
+            <i class="pi pi-bolt"></i>
+          </span>
+          <span class="hero-notification__bg-icon hero-notification__bg-icon--heart" aria-hidden="true">
+            <i class="pi pi-heart"></i>
+          </span>
+          <span class="hero-notification__bg-icon hero-notification__bg-icon--info" aria-hidden="true">
+            <i class="pi pi-info-circle"></i>
+          </span>
+          <span class="hero-notification__bg-icon hero-notification__bg-icon--check" aria-hidden="true">
+            <i class="pi pi-check-circle"></i>
+          </span>
+          <span class="hero-notification__bg-icon hero-notification__bg-icon--eye" aria-hidden="true">
+            <i class="pi pi-eye"></i>
+          </span>
+
           <div class="hero-notification__head">
             <label class="hero-notification__composer-label" for="hero-notification-input">
               <i class="pi pi-megaphone" aria-hidden="true"></i>
               <span>Thông báo</span>
+              @if (visibleNotifications().length > 0) {
+                <span class="hero-notification__unread-badge">{{ visibleNotifications().length }}</span>
+              }
             </label>
             <div class="hero-notification__head-actions">
               <button
@@ -196,7 +231,8 @@
                 [disabled]="notificationSaving() || visibleNotifications().length === 0"
                 title="Đánh dấu tất cả đã đọc"
               >
-                Đánh dấu tất cả đã đọc
+                <i class="pi pi-check" aria-hidden="true"></i>
+                Đã đọc tất cả
               </button>
               <button
                 type="button"
@@ -214,20 +250,19 @@
             <ul class="hero-notification__list">
               @for (notice of displayedNotifications(); track notice) {
                 <li class="hero-notification__item">
-                  <div class="hero-notification__item-accent" aria-hidden="true"></div>
-                  <div class="hero-notification__item-body">
-                    <p class="hero-notification__content">{{ notice.content }}</p>
-                    <div class="hero-notification__meta">
-                      <span class="hero-notification__author">
-                        <i class="pi pi-user" aria-hidden="true"></i>
-                        {{ notice.user }}
-                      </span>
-                      @if (notice.createdAt) {
-                        <span class="hero-notification__created">{{
-                          formatNotificationCreatedAt(notice.createdAt)
-                        }}</span>
-                      }
+                  <div class="hero-notification__avatar" aria-hidden="true">
+                    {{ notice.user | slice: 0 : 2 | uppercase }}
+                  </div>
+                  <div class="hero-notification__body">
+                    <div class="hero-notification__body-head">
+                      <span class="hero-notification__author">{{ notice.user }}</span>
                     </div>
+                    <p class="hero-notification__content">{{ notice.content }}</p>
+                    @if (notice.createdAt) {
+                      <span class="hero-notification__created">{{
+                        formatNotificationCreatedAt(notice.createdAt)
+                      }}</span>
+                    }
                   </div>
                   <div class="hero-notification__item-actions">
                     <button
@@ -257,7 +292,11 @@
               }
             </ul>
           } @else {
-            <p class="hero-notification__empty">Không có thông báo mới.</p>
+            <div class="hero-notification__empty">
+              <i class="pi pi-bell hero-notification__empty-icon" aria-hidden="true"></i>
+              <span class="hero-notification__empty-title">Không có thông báo mới</span>
+              <span class="hero-notification__empty-sub">Mọi thứ đều ổn. Thông báo mới sẽ xuất hiện ở đây.</span>
+            </div>
           }
 
           @if (hiddenNotificationCount() > 0) {
@@ -266,7 +305,7 @@
               class="hero-notification__more"
               (click)="openNotificationListDialog()"
             >
-              {{ 'Xem thêm ' + hiddenNotificationCount() + ' thông báo' }}
+              Xem thêm {{ hiddenNotificationCount() }} thông báo →
             </button>
           }
         </section>
@@ -283,11 +322,33 @@
               aria-label="Tạo thông báo"
               (click)="$event.stopPropagation()"
             >
+              <!-- watermark background icons -->
+              <span class="hero-notification__bg-icon hero-notification__bg-icon--bell" aria-hidden="true">
+                <i class="pi pi-bell"></i>
+              </span>
+              <span class="hero-notification__bg-icon hero-notification__bg-icon--megaphone" aria-hidden="true">
+                <i class="pi pi-megaphone"></i>
+              </span>
+              <span class="hero-notification__bg-icon hero-notification__bg-icon--send" aria-hidden="true">
+                <i class="pi pi-send"></i>
+              </span>
+              <span class="hero-notification__bg-icon hero-notification__bg-icon--star" aria-hidden="true">
+                <i class="pi pi-star"></i>
+              </span>
+              <span class="hero-notification__bg-icon hero-notification__bg-icon--comments" aria-hidden="true">
+                <i class="pi pi-comments"></i>
+              </span>
+
               <div class="dialog-head hero-notification-dialog__head">
-                <h2 class="hero-notification-dialog__title">
-                  <i class="pi pi-megaphone" aria-hidden="true"></i>
-                  Tạo thông báo
-                </h2>
+                <div class="hero-notification-dialog__title-group">
+                  <div class="hero-notification-dialog__icon-wrap">
+                    <i class="pi pi-megaphone" aria-hidden="true"></i>
+                  </div>
+                  <div>
+                    <h2 class="hero-notification-dialog__title">Tạo thông báo</h2>
+                    <p class="hero-notification-dialog__subtitle">Thông báo sẽ hiển thị cho toàn bộ thành viên</p>
+                  </div>
+                </div>
                 <button
                   type="button"
                   class="dialog-close"
@@ -307,9 +368,20 @@
                       (input)="updateNotificationDraft($any($event.target).value)"
                       [disabled]="notificationSaving()"
                       maxlength="300"
-                      placeholder="Nhập nội dung thông báo..."
+                      placeholder="Nhập nội dung thông báo cho mọi người..."
                       aria-label="Nội dung thông báo"
                     ></textarea>
+                    <div class="hero-notification__char-ring" aria-hidden="true">
+                      <svg viewBox="0 0 36 36">
+                        <circle class="hero-notification__char-ring-track" cx="18" cy="18" r="15" />
+                        <circle
+                          class="hero-notification__char-ring-fill"
+                          cx="18" cy="18" r="15"
+                          [style.stroke-dashoffset]="94 - (notificationDraft().trim().length / 300) * 94"
+                        />
+                      </svg>
+                      <span class="hero-notification__char-count">{{ notificationDraft().trim().length }}</span>
+                    </div>
                   </div>
                 </div>
                 <div class="hero-notification__composer-actions">
@@ -319,7 +391,7 @@
                     (click)="closeNotificationComposerDialog()"
                     [disabled]="notificationSaving()"
                   >
-                    Cancel
+                    Hủy
                   </button>
                   <button
                     type="button"
@@ -328,12 +400,9 @@
                     [disabled]="notificationSaving() || !notificationDraft().trim()"
                   >
                     <i class="pi pi-send"></i>
-                    <span>Gửi</span>
+                    <span>Gửi thông báo</span>
                   </button>
                 </div>
-                <p class="hero-notification__composer-hint">
-                  {{ notificationDraft().trim().length }}/300 ký tự
-                </p>
               </div>
               @if (notificationError()) {
                 <p class="hero-notification__error">
