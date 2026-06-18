@@ -483,58 +483,74 @@
   @if (prediction().hasData && prediction().nextTime) {
     <!-- Hero countdown -->
     <div class="countdown-hero" [attr.data-status]="countdownStatus()">
-      <div class="hero-main">
-        <div class="feeding-time-card" [attr.data-status]="countdownStatus()">
-          <div class="time-header">
-            @switch (countdownStatus()) {
-              @case ('late') {
-                <span class="status-badge status-late">
-                  <i class="pi pi-exclamation-circle"></i> Đã quá giờ bú lúc
-                </span>
-              }
-              @case ('now') {
-                <span class="status-badge status-now">
-                  <i class="pi pi-exclamation-triangle"></i> Sắp tới giờ bú lúc
-                </span>
-              }
-              @default {
-                <span class="status-badge status-waiting">
-                  <i class="pi pi-clock"></i> Cữ bú tiếp theo lúc
-                </span>
-              }
+      <!-- Zone A — status badge (top band) -->
+      <div class="hero-band">
+        <!-- Watermark SVG icon -->
+        <svg class="hero-watermark" viewBox="0 0 100 100" aria-hidden="true">
+          @switch (countdownStatus()) {
+            @case ('now') {
+              <path d="M50,8 L56,35 L84,35 L62,52 L70,80 L50,63 L30,80 L38,52 L16,35 L44,35 Z"
+                fill="none" stroke="currentColor" stroke-width="3"
+                stroke-linejoin="round"/>
             }
-          </div>
-          <div class="time-display">
-            <div class="predicted-time">{{ prediction().nextTime }}</div>
-            <div class="time-remaining">{{ timeUntilNext() || '—' }}</div>
-          </div>
-        </div>
-        <!-- Layout mới: Cột 2 với 2 dòng dự kiến và khuyến nghị -->
-        @if (nextFeedingRecommendation(); as rec) {
-          <div class="volume-info" [attr.data-status]="countdownStatus()">
-            <div class="volume-row predicted-row">
-              <span class="volume-prefix">Dự kiến</span>
-              <span class="volume-amount">{{ prediction().nextVolume }}ml</span>
-            </div>
-            @if (rec.hasNutritionData) {
-              <div class="volume-row recommended-row">
-                <span class="volume-prefix">Khuyến nghị</span>
-                <span class="volume-amount">{{ rec.recommendedMl }}ml</span>
-              </div>
+            @case ('late') {
+              <path d="M50,10 L90,85 L10,85 Z M50,35 L50,60 M50,70 L50,75"
+                fill="none" stroke="currentColor" stroke-width="4"
+                stroke-linecap="round" stroke-linejoin="round"/>
             }
-          </div>
-        }
-        <!-- Fallback khi không có khuyến nghị -->
-        @if (!nextFeedingRecommendation().hasNutritionData) {
-          <div class="volume-info" [attr.data-status]="countdownStatus()">
-            <div class="volume-row predicted-row">
-              <span class="volume-prefix">Dự kiến</span>
-              <span class="volume-amount">{{ prediction().nextVolume }}ml</span>
-            </div>
-          </div>
+            @default {
+              <path d="M50,10 A40,40 0 1,1 49.9,10 Z M50,22 A28,28 0 1,1 49.9,22 Z M50,36 L50,50 M50,36 L62,28"
+                fill="none" stroke="currentColor" stroke-width="3"
+                stroke-linecap="round"/>
+            }
+          }
+        </svg>
+
+        @switch (countdownStatus()) {
+          @case ('late') {
+            <span class="status-badge status-late">
+              <i class="pi pi-exclamation-circle"></i> Đã quá giờ bú lúc
+            </span>
+          }
+          @case ('now') {
+            <span class="status-badge status-now">
+              <i class="pi pi-exclamation-triangle"></i> Sắp tới giờ bú lúc
+            </span>
+          }
+          @default {
+            <span class="status-badge status-waiting">
+              <i class="pi pi-clock"></i> Cữ bú tiếp theo lúc
+            </span>
+          }
         }
       </div>
-      <!-- Progress bar: last feed → predicted next feed -->
+
+      <!-- Zone B+C / Zone E — main body row -->
+      <div class="hero-main">
+        <!-- Left: big time + countdown -->
+        <div class="hero-time">
+          <div class="predicted-time">{{ prediction().nextTime }}</div>
+          <div class="time-remaining">{{ timeUntilNext() || '—' }}</div>
+        </div>
+
+        <!-- Right: volume panel -->
+        <div class="volume-info" [attr.data-status]="countdownStatus()">
+          <div class="volume-item predicted-row">
+            <span class="volume-prefix">Dự kiến</span>
+            <span class="volume-amount">{{ prediction().nextVolume }}<em>ml</em></span>
+          </div>
+          <div class="volume-item recommended-row">
+            <span class="volume-prefix">Khuyến nghị</span>
+            @if (nextFeedingRecommendation().hasNutritionData) {
+              <span class="volume-amount">{{ nextFeedingRecommendation().recommendedMl }}<em>ml</em></span>
+            } @else {
+              <span class="volume-amount volume-empty">—</span>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- Zone F — progress bar -->
       @if (lastFeeding(); as last) {
         <div class="countdown-progress">
           <div class="cp-track">
@@ -543,6 +559,7 @@
               [attr.data-status]="countdownStatus()"
               [style.width.%]="countdownProgress()"
             ></div>
+            <div class="cp-shimmer"></div>
           </div>
           <div class="cp-labels">
             <span class="cp-left">
@@ -550,7 +567,7 @@
               {{ last.time }} · {{ last.volume }}ml
               <span class="muted">({{ lastFeedingAgo() }})</span>
             </span>
-            <span class="cp-right"> TB {{ predictionMedianIntervalHuman() }} </span>
+            <span class="cp-right">TB {{ predictionMedianIntervalHuman() }}</span>
           </div>
         </div>
       }
