@@ -489,19 +489,32 @@
         <svg class="hero-watermark" viewBox="0 0 100 100" aria-hidden="true">
           @switch (countdownStatus()) {
             @case ('now') {
-              <path d="M50,8 L56,35 L84,35 L62,52 L70,80 L50,63 L30,80 L38,52 L16,35 L44,35 Z"
-                fill="none" stroke="currentColor" stroke-width="3"
-                stroke-linejoin="round"/>
+              <path
+                d="M50,8 L56,35 L84,35 L62,52 L70,80 L50,63 L30,80 L38,52 L16,35 L44,35 Z"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="3"
+                stroke-linejoin="round"
+              />
             }
             @case ('late') {
-              <path d="M50,10 L90,85 L10,85 Z M50,35 L50,60 M50,70 L50,75"
-                fill="none" stroke="currentColor" stroke-width="4"
-                stroke-linecap="round" stroke-linejoin="round"/>
+              <path
+                d="M50,10 L90,85 L10,85 Z M50,35 L50,60 M50,70 L50,75"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="4"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
             }
             @default {
-              <path d="M50,10 A40,40 0 1,1 49.9,10 Z M50,22 A28,28 0 1,1 49.9,22 Z M50,36 L50,50 M50,36 L62,28"
-                fill="none" stroke="currentColor" stroke-width="3"
-                stroke-linecap="round"/>
+              <path
+                d="M50,10 A40,40 0 1,1 49.9,10 Z M50,22 A28,28 0 1,1 49.9,22 Z M50,36 L50,50 M50,36 L62,28"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="3"
+                stroke-linecap="round"
+              />
             }
           }
         </svg>
@@ -542,7 +555,9 @@
           <div class="volume-item recommended-row">
             <span class="volume-prefix">Khuyến nghị</span>
             @if (nextFeedingRecommendation().hasNutritionData) {
-              <span class="volume-amount">{{ nextFeedingRecommendation().recommendedMl }}<em>ml</em></span>
+              <span class="volume-amount"
+                >{{ nextFeedingRecommendation().recommendedMl }}<em>ml</em></span
+              >
             } @else {
               <span class="volume-amount volume-empty">—</span>
             }

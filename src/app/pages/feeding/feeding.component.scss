@@ -590,16 +590,66 @@
     display: block;
   }
 
-  &--bell    { top: 8%;  left: 6%;   font-size: 28px; transform: rotate(-18deg); }
-  &--megaphone { top: 10%; right: 8%;  font-size: 24px; transform: rotate(12deg); }
-  &--comments  { bottom: 14%; right: 10%; font-size: 22px; transform: rotate(-8deg); }
-  &--send    { bottom: 10%; left: 50%; font-size: 20px; transform: rotate(-22deg); }
-  &--star    { bottom: 16%; left: 4%;  font-size: 18px; transform: rotate(20deg); }
-  &--bolt    { top: 46%;  right: 2%;  font-size: 20px; transform: rotate(-5deg); }
-  &--heart   { top: 38%;  left: 14%;  font-size: 17px; transform: rotate(15deg); }
-  &--info    { top: 4%;   left: 50%;  font-size: 18px; transform: rotate(0deg); }
-  &--check   { bottom: 24%; left: 35%; font-size: 17px; transform: rotate(8deg); }
-  &--eye     { top: 14%;  left: 28%;  font-size: 18px; transform: rotate(-10deg); }
+  &--bell {
+    top: 8%;
+    left: 6%;
+    font-size: 28px;
+    transform: rotate(-18deg);
+  }
+  &--megaphone {
+    top: 10%;
+    right: 8%;
+    font-size: 24px;
+    transform: rotate(12deg);
+  }
+  &--comments {
+    bottom: 14%;
+    right: 10%;
+    font-size: 22px;
+    transform: rotate(-8deg);
+  }
+  &--send {
+    bottom: 10%;
+    left: 50%;
+    font-size: 20px;
+    transform: rotate(-22deg);
+  }
+  &--star {
+    bottom: 16%;
+    left: 4%;
+    font-size: 18px;
+    transform: rotate(20deg);
+  }
+  &--bolt {
+    top: 46%;
+    right: 2%;
+    font-size: 20px;
+    transform: rotate(-5deg);
+  }
+  &--heart {
+    top: 38%;
+    left: 14%;
+    font-size: 17px;
+    transform: rotate(15deg);
+  }
+  &--info {
+    top: 4%;
+    left: 50%;
+    font-size: 18px;
+    transform: rotate(0deg);
+  }
+  &--check {
+    bottom: 24%;
+    left: 35%;
+    font-size: 17px;
+    transform: rotate(8deg);
+  }
+  &--eye {
+    top: 14%;
+    left: 28%;
+    font-size: 18px;
+    transform: rotate(-10deg);
+  }
 }
 
 /* ── hero-notification container ── */
@@ -822,7 +872,9 @@
     color 0.15s ease,
     transform 0.15s ease;
 
-  i { font-size: 10px; }
+  i {
+    font-size: 10px;
+  }
 
   &:active:not(:disabled) {
     transform: scale(0.96);
@@ -846,7 +898,9 @@
   align-items: center;
   justify-content: center;
 
-  i { font-size: 10px; }
+  i {
+    font-size: 10px;
+  }
 
   &:hover:not(:disabled) {
     background: #fee2e2;
@@ -1063,7 +1117,9 @@
   justify-content: center;
   flex-shrink: 0;
 
-  i { font-size: 14px; }
+  i {
+    font-size: 14px;
+  }
 }
 
 .hero-notification-dialog__title {
