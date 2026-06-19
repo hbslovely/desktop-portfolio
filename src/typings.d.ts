@@ -11,6 +11,13 @@ interface ImportMetaEnv {
   readonly NG_APP_GOOGLE_BUSINESS_SHEET_ID: string;
   readonly NG_APP_GOOGLE_EXPENSE_SHEET_ID: string;
   readonly NG_APP_HUGGINGFACE_TOKEN: string;
+  /** Set to "true" to enable the Explorer/Documents tab in the Feeding app.
+   *  When absent or any other value, the tab is hidden and no Drive API calls are made. */
+  readonly NG_APP_ENABLE_EXPLORER: string;
+  /** Controls how the app reaches Google Apps Script.
+   *  "direct" → call the Apps Script exec URL directly from the browser (no Vercel proxy).
+   *  Any other value / absent → use the Vercel /api/* proxy functions (default, CORS-safe). */
+  readonly NG_APP_APPS_SCRIPT_MODE: string;
 }
 
 interface ImportMeta {
