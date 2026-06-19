@@ -29,8 +29,8 @@ export const routes: Routes = [
   {
     path: 'feeding',
     loadComponent: () =>
-      import('./pages/feeding/feeding.component').then((m) => m.FeedingComponent),
-    title: 'Tips chăm bé theo ngày',
+      import('@hbslovely/baby-feeding').then((m) => m.FeedingComponent),
+    title: 'Life with baby',
   },
   {
     path: 'tax',
