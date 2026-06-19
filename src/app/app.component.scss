@@ -13,10 +13,12 @@
 
 // Apply base font size to html/body
 html {
+  height: 100vh;
   font-size: var(--base-font-size, 14px);
 }
 
 body {
+  height: 100vh;
   font-size: var(--base-font-size, 14px);
 }
 
