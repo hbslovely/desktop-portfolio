@@ -1,5 +1,3 @@
-import { InjectionToken } from '@angular/core';
-
 /** Display name shown in About (feeding app). */
 export const APP_NAME = 'Life with baby';
 
@@ -19,5 +17,3 @@ export const APP_INFO: AppInfo = {
   name: APP_NAME,
   version: APP_VERSION,
 };
-
-export const APP_INFO_TOKEN = new InjectionToken<AppInfo>('APP_INFO');
