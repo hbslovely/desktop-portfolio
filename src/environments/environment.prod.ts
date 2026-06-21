@@ -13,6 +13,4 @@ export const environment = {
   googleBusinessSheetId: import.meta.env['NG_APP_GOOGLE_BUSINESS_SHEET_ID'] || '',
   googleExpenseSheetId: import.meta.env['NG_APP_GOOGLE_EXPENSE_SHEET_ID'] || '',
   huggingfaceToken: import.meta.env['NG_APP_HUGGINGFACE_TOKEN'] || '',
-  enableExplorer: import.meta.env['NG_APP_ENABLE_EXPLORER'] === 'true',
-  appsScriptDirect: import.meta.env['NG_APP_APPS_SCRIPT_MODE'] === 'direct',
 };
