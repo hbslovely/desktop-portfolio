@@ -35,7 +35,6 @@ import { FbIdFinderAppComponent } from './components/apps/fb-id-finder-app/fb-id
 import { GraphVisualizerAppComponent } from './components/apps/graph-visualizer-app/graph-visualizer-app.component';
 import { SieuCoAppComponent } from './components/apps/sieu-co-app/sieu-co-app.component';
 import { ImageSearchAppComponent } from './components/apps/image-search-app/image-search-app.component';
-import { WeatherWidgetComponent } from './components/desktop-widgets/weather-widget/weather-widget.component';
 import { WelcomeScreenComponent } from './components/welcome-screen/welcome-screen.component';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -93,7 +92,6 @@ interface WindowConfig {
     GraphVisualizerAppComponent,
     SieuCoAppComponent,
     ImageSearchAppComponent,
-    WeatherWidgetComponent,
     CommonModule,
     FormsModule,
     SettingsDialogComponent,
@@ -168,9 +166,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   showImageViewerWindow = signal(false);
   showCreditWindow = signal(false);
   showSearchWindow = signal(false);
-
-  // Widget visibility
-  showWeatherWidget = signal(true);
 
   // File viewer data
   currentTextFile = signal<{ path: string; name: string; type: 'txt' | 'md' } | null>(null);

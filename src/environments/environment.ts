@@ -1,7 +1,5 @@
 export const environment = {
   production: false,
-  weatherApiKey: import.meta.env['NG_APP_WEATHER_API_KEY'],
-  weatherApiUrl: 'https://www.meteosource.com/api/v1/free',
   googleSheetsApiKey: import.meta.env['NG_APP_GOOGLE_SHEETS_API_KEY'],
   googleClientId: import.meta.env['NG_APP_GOOGLE_CLIENT_ID'],
   googleAppsScriptUrl: import.meta.env['NG_APP_GOOGLE_APPS_SCRIPT_URL'],

@@ -2703,24 +2703,6 @@ body {
   }
 }
 
-// Desktop Widgets
-.desktop-widgets {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  max-width: 600px;
-  z-index: 100;
-  pointer-events: none;
-  align-content: flex-start;
-
-  > * {
-    pointer-events: all;
-  }
-}
-
 .widget {
   flex: 0 0 calc(50% - 8px); // Two columns with gap
   min-width: 280px;
@@ -2855,106 +2837,6 @@ body {
 .widget-body {
   padding: 16px;
   color: #ffffff;
-}
-
-// Weather Widget (Compact)
-.weather-widget {
-  .weather-compact {
-    .weather-main-compact {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 12px;
-
-      .weather-icon-compact {
-        width: 64px;
-        height: 64px;
-        filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.3));
-      }
-
-      .weather-info-compact {
-        .weather-temp-compact {
-          font-size: 36px;
-          font-weight: 700;
-          color: #ffffff;
-          line-height: 1;
-          text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-        }
-
-        .weather-location-compact {
-          font-size: 12px;
-          color: rgba(255, 255, 255, 0.7);
-          margin-top: 4px;
-        }
-      }
-    }
-
-    .weather-condition-text {
-      font-size: 14px;
-      font-weight: 500;
-      color: rgba(255, 255, 255, 0.9);
-      margin-bottom: 12px;
-      text-align: center;
-    }
-
-    .weather-details-compact {
-      display: flex;
-      justify-content: space-around;
-      padding: 10px;
-      background: rgba(255, 255, 255, 0.05);
-      border-radius: 8px;
-      margin-bottom: 12px;
-
-      span {
-        font-size: 12px;
-        font-weight: 500;
-        color: rgba(255, 255, 255, 0.9);
-        display: flex;
-        align-items: center;
-        gap: 6px;
-
-        i {
-          font-size: 12px;
-          color: #64b5f6;
-        }
-      }
-    }
-
-    .open-weather-app-btn {
-      width: 100%;
-      padding: 10px;
-      background: linear-gradient(
-        135deg,
-        rgba(102, 126, 234, 0.8) 0%,
-        rgba(118, 75, 162, 0.8) 100%
-      );
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      border-radius: 8px;
-      color: white;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-
-      i {
-        font-size: 12px;
-      }
-
-      &:hover {
-        background: linear-gradient(135deg, rgba(102, 126, 234, 1) 0%, rgba(118, 75, 162, 1) 100%);
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-      }
-
-      &:active {
-        transform: translateY(0);
-      }
-    }
-  }
 }
 
 // Notes Widget
