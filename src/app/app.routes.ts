@@ -28,8 +28,7 @@ export const routes: Routes = [
   },
   {
     path: 'feeding',
-    loadComponent: () =>
-      import('@hbslovely/baby-feeding').then((m) => m.FeedingComponent),
+    loadComponent: () => import('@hbslovely/baby-feeding').then((m) => m.FeedingComponent),
     title: 'Life with baby',
   },
   {
