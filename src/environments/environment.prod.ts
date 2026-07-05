@@ -11,4 +11,9 @@ export const environment = {
   googleBusinessSheetId: import.meta.env['NG_APP_GOOGLE_BUSINESS_SHEET_ID'] || '',
   googleExpenseSheetId: import.meta.env['NG_APP_GOOGLE_EXPENSE_SHEET_ID'] || '',
   huggingfaceToken: import.meta.env['NG_APP_HUGGINGFACE_TOKEN'] || '',
+  hfInferenceUrl: import.meta.env['NG_APP_HF_INFERENCE_URL'] || '/api/hf-chat',
+  /** HuggingFace API token. For production, inject via a server proxy instead. */
+  hfApiToken: import.meta.env['NG_APP_HF_API_TOKEN'] || '',
+  /** HF chat model id. */
+  hfModel: import.meta.env['NG_APP_HF_MODEL'] || 'mistralai/Mistral-7B-Instruct-v0.3',
 };

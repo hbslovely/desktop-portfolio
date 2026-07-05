@@ -17,6 +17,14 @@ interface ImportMetaEnv {
    *  "direct" → call the Apps Script exec URL directly from the browser (no Vercel proxy).
    *  Any other value / absent → use the Vercel /api/* proxy functions (default, CORS-safe). */
   readonly NG_APP_APPS_SCRIPT_MODE: string;
+
+  // ── HuggingFace chat assistant (Trợ lý AI) ──
+  /** Inference Endpoint URL. Empty → chat assistant disabled. */
+  readonly NG_APP_HF_INFERENCE_URL: string;
+  /** HF API token. For production, inject via a server proxy and leave this empty. */
+  readonly NG_APP_HF_API_TOKEN: string;
+  /** HF chat model id (used when endpoint is the public router). */
+  readonly NG_APP_HF_MODEL: string;
 }
 
 interface ImportMeta {
