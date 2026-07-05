@@ -13,12 +13,7 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(),
     { provide: APP_INFO_TOKEN, useValue: APP_INFO },
     provideFeedingConfig({
-      googleFeedingSheetId: environment.googleFeedingSheetId,
-      googleSheetsApiKey: environment.googleSheetsApiKey,
-      googleFeedingAppsScriptUrl: environment.googleFeedingAppsScriptUrl,
-      googleClientId: environment.googleClientId,
-      enableExplorer: environment.enableExplorer,
-      appsScriptDirect: environment.appsScriptDirect,
+      ...environment
     }),
   ],
 };
