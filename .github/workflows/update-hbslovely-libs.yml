@@ -1,0 +1,144 @@
+# Pulls the latest published versions of @hbslovely/* libraries and commits
+# the updated package.json + package-lock.json to master.
+#
+# Triggered manually (workflow_dispatch) or on a weekly schedule (Mon 02:00 UTC).
+# Skipped automatically if all packages are already up to date.
+#
+# Required secret:
+#   RELEASE_PAT — GitHub Personal Access Token with `repo` write scope
+#                 (needed so the commit triggers downstream CI workflows)
+
+name: Update hbslovely libs
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run — check versions but do not commit"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+  schedule:
+    - cron: "0 2 * * 1"   # every Monday at 02:00 UTC
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-hbslovely-libs
+  cancel-in-progress: false
+
+jobs:
+  update:
+    name: Check & update @hbslovely packages
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.RELEASE_PAT }}
+          ref: master
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Check latest versions and update package.json
+        id: check
+        run: |
+          set -euo pipefail
+
+          PACKAGES=("@hbslovely/expense" "@hbslovely/baby-feeding")
+          UPDATED=()
+
+          for PKG in "${PACKAGES[@]}"; do
+            # Check if this package is actually in package.json
+            CURRENT=$(node -e "
+              const pkg = require('./package.json');
+              const v = (pkg.dependencies || {})['${PKG}'] || (pkg.devDependencies || {})['${PKG}'] || '';
+              console.log(v.replace(/^[\^~]/, ''));
+            ")
+
+            if [ -z "$CURRENT" ]; then
+              echo "⏭  ${PKG} not found in package.json — skipping."
+              continue
+            fi
+
+            LATEST=$(npm view "${PKG}" version 2>/dev/null || echo "")
+
+            if [ -z "$LATEST" ]; then
+              echo "⚠  Could not resolve latest version for ${PKG} — skipping."
+              continue
+            fi
+
+            echo "📦 ${PKG}: current=${CURRENT}  latest=${LATEST}"
+
+            if [ "$CURRENT" = "$LATEST" ]; then
+              echo "✔  Already up to date."
+            else
+              echo "⬆  Updating ${PKG} ${CURRENT} → ${LATEST}"
+              # Update the version in package.json (exact, no range prefix)
+              node -e "
+                const fs = require('fs');
+                const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+                if (pkg.dependencies && pkg.dependencies['${PKG}']) {
+                  pkg.dependencies['${PKG}'] = '${LATEST}';
+                } else if (pkg.devDependencies && pkg.devDependencies['${PKG}']) {
+                  pkg.devDependencies['${PKG}'] = '${LATEST}';
+                }
+                fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+              "
+              UPDATED+=("${PKG}@${LATEST}")
+            fi
+          done
+
+          if [ ${#UPDATED[@]} -eq 0 ]; then
+            echo "should_commit=false" >> "$GITHUB_OUTPUT"
+            echo "summary=All @hbslovely packages are already up to date." >> "$GITHUB_OUTPUT"
+          else
+            SUMMARY=$(printf "%s, " "${UPDATED[@]}" | sed 's/, $//')
+            echo "should_commit=true" >> "$GITHUB_OUTPUT"
+            echo "summary=${SUMMARY}" >> "$GITHUB_OUTPUT"
+            echo "Updated: ${SUMMARY}"
+          fi
+
+      - name: Install (update package-lock.json)
+        if: steps.check.outputs.should_commit == 'true'
+        run: npm install --legacy-peer-deps
+
+      - name: Verify build still passes
+        if: steps.check.outputs.should_commit == 'true'
+        run: npm run build
+
+      - name: Commit and push
+        if: >-
+          steps.check.outputs.should_commit == 'true' &&
+          github.event.inputs.dry_run != 'true'
+        run: |
+          set -euo pipefail
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json
+          git commit -m "chore(deps): update @hbslovely libs — ${{ steps.check.outputs.summary }}"
+          git push origin master
+
+      - name: Summary
+        if: always()
+        run: |
+          DRY="${{ github.event.inputs.dry_run || 'false' }}"
+          COMMIT="${{ steps.check.outputs.should_commit || 'false' }}"
+          MSG="${{ steps.check.outputs.summary || 'All packages already up to date.' }}"
+
+          echo "### @hbslovely lib update result" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Field | Value |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|---|---|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Updates found | ${COMMIT} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Dry run | ${DRY} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Detail | ${MSG} |" >> "$GITHUB_STEP_SUMMARY"
