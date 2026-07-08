@@ -28,7 +28,7 @@ import { TextViewerComponent } from './components/apps/text-viewer/text-viewer.c
 import { ImageViewerComponent } from './components/apps/image-viewer/image-viewer.component';
 import { PdfViewerComponent } from './components/apps/pdf-viewer/pdf-viewer.component';
 import { SettingsAppComponent } from './components/apps/settings-app/settings-app.component';
-import { ExpenseAppComponent } from './components/apps/expense-app/expense-app.component';
+import { ExpenseAppComponent } from '@hbslovely/expense';
 import { BusinessAppComponent } from './components/apps/business-app/business-app.component';
 import { ChineseChessAppComponent } from './components/apps/chinese-chess-app/chinese-chess-app.component';
 import { FbIdFinderAppComponent } from './components/apps/fb-id-finder-app/fb-id-finder-app.component';

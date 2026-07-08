@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 
-import { ExpenseAppComponent } from '../../components/apps/expense-app/expense-app.component';
+import { ExpenseAppComponent } from '@hbslovely/expense';
 
 @Component({
   selector: 'app-chi-tieu-page',
