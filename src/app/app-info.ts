@@ -6,7 +6,7 @@ export const APP_NAME = 'Life with baby';
  * Scheme: YYYY.MM (monthly), YYYY.MM.N (daily patch), <base>-rc.NN (commit RC).
  * Updated automatically by GitHub release workflows.
  */
-export const APP_VERSION = '2026.07.6-rc.01';
+export const APP_VERSION = '2026.07.7';
 
 export interface AppInfo {
   name: string;
