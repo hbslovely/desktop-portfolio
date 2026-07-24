@@ -1,6 +1,6 @@
 {
   "name": "desktop-portfolio",
-  "version": "2026.07.9-rc.02",
+  "version": "2026.07.10",
   "scripts": {
     "ng": "ng",
     "start": "npm run dev",
