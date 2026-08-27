@@ -1,5 +1,5 @@
 /** Display name shown in About (feeding app). */
-export const APP_NAME = 'Life with baby';
+export const APP_NAME = 'Baby Lovely Data Storage';
 
 /**
  * Application version — keep in sync with package.json "version".
