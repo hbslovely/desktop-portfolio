@@ -6,7 +6,7 @@ export const APP_NAME = 'Baby Lovely Data Storage';
  * Scheme: YYYY.MM (monthly), YYYY.MM.N (daily patch), <base>-rc.NN (commit RC).
  * Updated automatically by GitHub release workflows.
  */
-export const APP_VERSION = '2026.08.6-rc.05';
+export const APP_VERSION = '2026.08.6-rc.06';
 
 export interface AppInfo {
   name: string;
