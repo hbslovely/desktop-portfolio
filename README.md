@@ -4,7 +4,7 @@ A Windows-style desktop experience built with **Angular 17**, bundling productiv
 
 ## Highlights
 
-- **Desktop shell** — draggable icons, multi-window layout, Explorer file tree, rich text editor, calculator, paint, and more
+- **Desktop shell** — draggable icons, multi-window layout, Explorer file tree, rich text editor, paint, and more
 - **Life & family apps** — feeding tracker, expense manager, calendar (lunar), booking, weight/medical history via Google Sheets
 - **Finance & data** — stock charts, FireAnt integration, business management, neural-network experiments
 - **Reference & media** — Angular docs reader, news, OCR, image search

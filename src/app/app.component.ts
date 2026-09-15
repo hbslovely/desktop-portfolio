@@ -16,7 +16,6 @@ import {
   DesktopIconComponent,
   DesktopIconData,
 } from './components/desktop-icon/desktop-icon.component';
-import { CalculatorComponent } from './components/apps/calculator/calculator.component';
 import { IframeAppComponent } from './components/apps/iframe-app/iframe-app.component';
 import { LoveAppComponent } from './components/apps/love-app/love-app.component';
 import {
@@ -27,15 +26,8 @@ import {
 import { TextViewerComponent } from './components/apps/text-viewer/text-viewer.component';
 import { ImageViewerComponent } from './components/apps/image-viewer/image-viewer.component';
 import { PdfViewerComponent } from './components/apps/pdf-viewer/pdf-viewer.component';
-import { SettingsAppComponent } from './components/apps/settings-app/settings-app.component';
-import { ExpenseAppComponent } from '@hbslovely/expense';
-import { BusinessAppComponent } from './components/apps/business-app/business-app.component';
-import { ChineseChessAppComponent } from './components/apps/chinese-chess-app/chinese-chess-app.component';
-import { FbIdFinderAppComponent } from './components/apps/fb-id-finder-app/fb-id-finder-app.component';
-import { GraphVisualizerAppComponent } from './components/apps/graph-visualizer-app/graph-visualizer-app.component';
-import { SieuCoAppComponent } from './components/apps/sieu-co-app/sieu-co-app.component';
-import { ImageSearchAppComponent } from './components/apps/image-search-app/image-search-app.component';
 import { WelcomeScreenComponent } from './components/welcome-screen/welcome-screen.component';
+import { WindowAppContentComponent } from './components/window-app-content/window-app-content.component';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DomSanitizer } from '@angular/platform-browser';
@@ -49,9 +41,6 @@ import { WindowManagerService } from './services/window-manager.service';
 import { getWindowDefinition } from './config/window-registry';
 import { SystemRestartService, BootMessage } from './services/system-restart.service';
 import { FileSystemService } from './services/file-system.service';
-import { AppSplashService } from './services/app-splash.service';
-import { AppSplashComponent } from './components/app-splash/app-splash.component';
-
 /** Window state interface for legacy window tracking */
 interface LegacyWindowState {
   id: string;
@@ -77,25 +66,16 @@ interface WindowConfig {
     WelcomeScreenComponent,
     WindowComponent,
     DesktopIconComponent,
-    CalculatorComponent,
     IframeAppComponent,
     LoveAppComponent,
     ExplorerComponent,
     TextViewerComponent,
     ImageViewerComponent,
     PdfViewerComponent,
-    SettingsAppComponent,
-    ExpenseAppComponent,
-    BusinessAppComponent,
-    ChineseChessAppComponent,
-    FbIdFinderAppComponent,
-    GraphVisualizerAppComponent,
-    SieuCoAppComponent,
-    ImageSearchAppComponent,
+    WindowAppContentComponent,
     CommonModule,
     FormsModule,
     SettingsDialogComponent,
-    AppSplashComponent,
     RouterOutlet,
   ],
   templateUrl: './app.component.html',
@@ -116,7 +96,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   @ViewChild('previewContainer', { static: false }) previewContainer!: ElementRef<HTMLDivElement>;
 
   windowManager = inject(WindowManagerService);
-  appSplashService = inject(AppSplashService);
   private router = inject(Router);
 
   // Track if we're on desktop or a routed page
@@ -158,7 +137,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   title = 'Desktop Portfolio';
 
   // Window visibility signals
-  showTestWindow = signal(false); // Start with calculator closed so users can test double-click
   showMyInfoWindow = signal(false);
   showLoveWindow = signal(false);
   showExplorerWindow = signal(false);
@@ -178,7 +156,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
    * Maps window IDs to their configuration and show signals
    */
   private readonly windowRegistry: Map<string, WindowConfig> = new Map([
-    ['calculator', { id: 'calculator', showSignal: this.showTestWindow }],
     ['my-info', { id: 'my-info', showSignal: this.showMyInfoWindow }],
     ['love', { id: 'love', showSignal: this.showLoveWindow }],
     ['explorer', { id: 'explorer', showSignal: this.showExplorerWindow }],
@@ -217,10 +194,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   minimizedWindows = signal<Set<string>>(new Set());
 
   // Computed signals for window states - Avoid method calls in template
-  calculatorZIndex = computed(() => this.computeWindowZIndex('calculator'));
-  calculatorFocused = computed(() => this.focusedWindow() === 'calculator');
-  calculatorMinimized = computed(() => this.minimizedWindows().has('calculator'));
-
   myInfoZIndex = computed(() => this.computeWindowZIndex('my-info'));
   myInfoFocused = computed(() => this.focusedWindow() === 'my-info');
   myInfoMinimized = computed(() => this.minimizedWindows().has('my-info'));
@@ -363,7 +336,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
       name: 'Productivity',
       icon: 'pi pi-briefcase',
       apps: [
-        { id: 'calculator', name: 'Calculator', icon: 'pi pi-calculator' },
         { id: 'credit', name: 'Finance Tracker', icon: 'pi pi-wallet' },
         { id: 'explorer', name: 'File Explorer', icon: 'pi pi-folder' },
         { id: 'link-shortener', name: 'Link Shortener', icon: 'pi pi-link' },
@@ -474,26 +446,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   // ============================================
   // 📦 SPECIFIC WINDOW HANDLERS (Use generic methods)
   // ============================================
-
-  onCloseTestWindow() {
-    this.closeWindow('calculator');
-  }
-
-  onMinimizeTestWindow() {
-    this.minimizeWindow('calculator');
-  }
-
-  onMaximizeTestWindow() {
-    this.maximizeWindow('calculator');
-  }
-
-  onRestoreTestWindow() {
-    this.restoreWindow('calculator');
-  }
-
-  onFocusTestWindow() {
-    this.focusWindow('calculator');
-  }
 
   onCloseMyInfoWindow() {
     this.closeWindow('my-info');
@@ -784,32 +736,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   }
 
   onDesktopIconDoubleClick(icon: DesktopIconData) {
-    // Double-click opens the app
-    this.openTestApp(icon);
-  }
-
-  openTestApp(icon: DesktopIconData) {
-    // Check if app should show splash screen
-    if (this.appSplashService.shouldShowSplash(icon.id)) {
-      // Check if window already exists (don't show splash for existing windows)
-      if (this.windowManager.isWindowOpen(icon.id)) {
-        this.doOpenApp(icon);
-        return;
-      }
-
-      // Show splash then open app
-      this.appSplashService.showSplash(
-        {
-          appId: icon.id,
-          appName: icon.name,
-          appIcon: icon.icon,
-        },
-        () => this.doOpenApp(icon)
-      );
-    } else {
-      // Open app directly without splash
-      this.doOpenApp(icon);
-    }
+    this.doOpenApp(icon);
   }
 
   private doOpenApp(icon: DesktopIconData) {
@@ -832,10 +759,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     }
 
     // Fallback to old system for apps not yet in window registry
-    if (icon.id === 'calculator') {
-      this.showTestWindow.set(true);
-      this.focusWindow('calculator');
-    } else if (icon.id === 'my-info') {
+    if (icon.id === 'my-info') {
       this.showMyInfoWindow.set(true);
       this.focusWindow('my-info');
     } else if (icon.id === 'love') {
@@ -855,7 +779,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
 
     switch (action) {
       case 'open':
-        this.openTestApp(icon);
+        this.doOpenApp(icon);
         break;
       case 'delete':
         this.deleteDesktopIcon(icon);
@@ -903,8 +827,8 @@ export class AppComponent implements AfterViewInit, OnDestroy {
       this.testIcons.splice(index, 1);
 
       // Close the associated window if it's open
-      if (icon.id === 'calculator' && this.showTestWindow()) {
-        this.onCloseTestWindow();
+      if (this.windowManager.isWindowOpen(icon.id)) {
+        this.windowManager.closeWindow(icon.id);
       } else if (icon.id === 'my-info' && this.showMyInfoWindow()) {
         this.onCloseMyInfoWindow();
       } else if (icon.id === 'love' && this.showLoveWindow()) {
@@ -1019,25 +943,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   // Toggle window: minimize if focused, restore/focus if not focused, open if closed
   toggleTaskbarApp(windowId: string): void {
     switch (windowId) {
-      case 'calculator':
-        if (this.showTestWindow()) {
-          if (this.calculatorMinimized()) {
-            // Window is minimized, restore and focus it
-            this.focusWindow('calculator');
-          } else if (this.focusedWindow() === 'calculator') {
-            // Window is focused, minimize it
-            this.minimizeWindow('calculator');
-          } else {
-            // Window is open but not focused, focus it
-            this.focusWindow('calculator');
-          }
-        } else {
-          // Window is closed, open it
-          this.showTestWindow.set(true);
-          this.focusWindow('calculator');
-        }
-        break;
-
       case 'my-info':
         if (this.showMyInfoWindow()) {
           if (this.isWindowMinimized('my-info')) {
@@ -1492,7 +1397,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     // Also minimize legacy windows
     this.minimizedWindows.update((set) => {
       const allWindows = [
-        'calculator',
         'my-info',
         'love',
         'explorer',
@@ -1510,7 +1414,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     this.windowManager.minimizeAllWindows();
     this.minimizedWindows.update((set) => {
       const allWindows = [
-        'calculator',
         'my-info',
         'love',
         'explorer',
@@ -1526,11 +1429,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
 
   quickActionOpenExplorer() {
     this.openApp('explorer');
-    this.closeQuickActionsMenu();
-  }
-
-  quickActionOpenCalculator() {
-    this.openApp('calculator');
     this.closeQuickActionsMenu();
   }
 
@@ -1791,12 +1689,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
 
   // Legacy windows configuration - moved to class level for reuse
   private readonly legacyWindowsConfig: LegacyWindowState[] = [
-    {
-      id: 'calculator',
-      title: 'Calculator',
-      icon: 'pi pi-calculator',
-      show: () => this.showTestWindow(),
-    },
     { id: 'my-info', title: 'About Me', icon: 'pi pi-user', show: () => this.showMyInfoWindow() },
     { id: 'love', title: 'Love', icon: 'pi pi-heart', show: () => this.showLoveWindow() },
     {

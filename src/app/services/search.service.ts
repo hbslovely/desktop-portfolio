@@ -250,7 +250,6 @@ export class SearchService {
 
   private getAppIcon(appId: string): string {
     const icons: { [key: string]: string } = {
-      calculator: 'pi pi-calculator',
       'my-info': 'pi pi-user',
       love: 'pi pi-heart',
       explorer: 'pi pi-folder',

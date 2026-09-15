@@ -37,30 +37,6 @@
     >
       <!-- Desktop Wallpaper -->
       <div class="wallpaper"></div>
-      <!-- Calculator Window -->
-      @if (showTestWindow()) {
-        <app-window
-          title="Calculator"
-          icon="calculator"
-          statusText="Ready"
-          [initialWidth]="480"
-          [initialHeight]="720"
-          [initialX]="100"
-          [initialY]="100"
-          [maximizable]="true"
-          [zIndex]="calculatorZIndex()"
-          [isFocused]="calculatorFocused()"
-          [isMinimizedExternal]="calculatorMinimized()"
-          data-window-id="calculator"
-          (onClose)="onCloseTestWindow()"
-          (onMinimize)="onMinimizeTestWindow()"
-          (onMaximize)="onMaximizeTestWindow()"
-          (onRestore)="onRestoreTestWindow()"
-          (onFocus)="onFocusTestWindow()"
-        >
-          <app-calculator></app-calculator>
-        </app-window>
-      }
       <!-- My Information Window -->
       @if (showMyInfoWindow()) {
         <app-window
@@ -364,12 +340,8 @@
                   <p>Find applications, files, and search the web</p>
                   <div class="search-examples">
                     <div class="example-item">
-                      <i class="pi pi-calculator"></i>
-                      <span>Calculator</span>
-                    </div>
-                    <div class="example-item">
-                      <i class="pi pi-file"></i>
-                      <span>README.md</span>
+                      <i class="pi pi-folder"></i>
+                      <span>Explorer</span>
                     </div>
                     <div class="example-item">
                       <i class="pi pi-globe"></i>
@@ -405,18 +377,6 @@
         </button>
         <!-- Taskbar Apps -->
         <div class="taskbar-apps">
-          @if (showTestWindow() || calculatorMinimized()) {
-            <button
-              class="taskbar-app"
-              [class.active]="calculatorFocused()"
-              [class.minimized]="calculatorMinimized()"
-              (click)="toggleTaskbarApp('calculator')"
-              title="Calculator"
-            >
-              <i class="pi pi-calculator"></i>
-              <span>Calculator</span>
-            </button>
-          }
           @if (showMyInfoWindow() || myInfoMinimized()) {
             <button
               class="taskbar-app"
@@ -520,12 +480,6 @@
                   <h3>Pinned</h3>
                 </div>
                 <div class="app-grid">
-                  <div class="app-tile" (click)="openApp('calculator')" title="Calculator">
-                    <div class="app-tile-icon">
-                      <i class="pi pi-calculator"></i>
-                    </div>
-                    <span class="app-tile-name">Calculator</span>
-                  </div>
                   <div class="app-tile" (click)="openApp('explorer')" title="File Explorer">
                     <div class="app-tile-icon">
                       <i class="pi pi-folder"></i>
@@ -635,10 +589,6 @@
             <i class="pi pi-folder"></i>
             <span>File Explorer</span>
           </div>
-          <div class="context-menu-item" (click)="openApp('calculator')">
-            <i class="pi pi-calculator"></i>
-            <span>Calculator</span>
-          </div>
           <div class="context-menu-separator"></div>
           <div class="context-menu-item" (click)="openSettings()">
             <i class="pi pi-cog"></i>
@@ -698,15 +648,6 @@
               <div class="quick-action-desc">Open file manager</div>
             </div>
           </div>
-          <div class="quick-action-item" (click)="quickActionOpenCalculator()">
-            <div class="quick-action-icon">
-              <i class="pi pi-calculator"></i>
-            </div>
-            <div class="quick-action-content">
-              <div class="quick-action-title">Calculator</div>
-              <div class="quick-action-desc">Open calculator</div>
-            </div>
-          </div>
         </div>
       }
       <!-- Desktop Context Menu Backdrop -->
@@ -715,8 +656,6 @@
       }
     </div>
   </app-welcome-screen>
-  <!-- App Splash Screen -->
-  <app-splash></app-splash>
   <!-- Settings Dialog -->
   <app-settings-dialog
     [isVisible]="showSettingsDialog()"
@@ -833,63 +772,13 @@
         (onFocus)="windowManager.focusWindow(window.id)"
       >
         <!-- Dynamic Component Rendering -->
-        @switch (window.component) {
-          @case ('calculator') {
-            <app-calculator></app-calculator>
-          }
-          @case ('my-info') {
-            <app-iframe-app url="https://hpphat1992.vercel.app"></app-iframe-app>
-          }
-          @case ('love') {
-            <app-love-app></app-love-app>
-          }
-          @case ('explorer') {
-            <app-explorer
-              (onFileOpen)="onExplorerFileOpen($event)"
-              (onContextMenuAction)="onExplorerContextMenu($event)"
-            >
-            </app-explorer>
-          }
-          @case ('text-viewer') {
-            <app-text-viewer
-              [filePath]="window.data?.path"
-              [fileName]="window.data?.name"
-              [fileType]="window.data?.type"
-            >
-            </app-text-viewer>
-          }
-          @case ('image-viewer') {
-            <app-image-viewer [imagePath]="window.data?.path" [imageName]="window.data?.name">
-            </app-image-viewer>
-          }
-          @case ('pdf-viewer') {
-            <app-pdf-viewer [pdfPath]="window.data?.path"> </app-pdf-viewer>
-          }
-          @case ('settings') {
-            <app-settings-app (onSettingsChange)="onSettingsChange($event)"> </app-settings-app>
-          }
-          @case ('expense') {
-            <app-expense-app></app-expense-app>
-          }
-          @case ('business') {
-            <app-business-app></app-business-app>
-          }
-          @case ('chinese-chess') {
-            <app-chinese-chess-app></app-chinese-chess-app>
-          }
-          @case ('fb-id-finder') {
-            <app-fb-id-finder-app></app-fb-id-finder-app>
-          }
-          @case ('graph-visualizer') {
-            <app-graph-visualizer-app></app-graph-visualizer-app>
-          }
-          @case ('sieu-co') {
-            <app-sieu-co-app></app-sieu-co-app>
-          }
-          @case ('image-search') {
-            <app-image-search-app></app-image-search-app>
-          }
-        }
+        <app-window-app-content
+          [componentId]="window.component"
+          [windowData]="window.data"
+          (explorerFileOpen)="onExplorerFileOpen($event)"
+          (explorerContextMenuAction)="onExplorerContextMenu($event)"
+          (settingsChange)="onSettingsChange($event)"
+        />
       </app-window>
     }
   }

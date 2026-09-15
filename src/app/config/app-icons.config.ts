@@ -16,13 +16,6 @@ export const APP_ICONS: DesktopIconData[] = [
     position: { x: 20, y: 120 },
   },
   {
-    id: 'calculator',
-    name: 'Calculator',
-    icon: 'pi pi-calculator',
-    type: 'application',
-    position: { x: 20, y: 220 },
-  },
-  {
     id: 'chinese-chess',
     name: 'Cờ Tướng',
     icon: 'assets/images/icons/chess.png',
@@ -34,7 +27,7 @@ export const APP_ICONS: DesktopIconData[] = [
     name: 'Love',
     icon: 'assets/images/icons/love.png',
     type: 'application',
-    position: { x: 120, y: 220 },
+    position: { x: 120, y: 120 },
   },
   {
     id: 'expense',
@@ -57,27 +50,6 @@ export const APP_ICONS: DesktopIconData[] = [
     type: 'application',
     position: { x: 220, y: 220 },
   },
-  {
-    id: 'graph-visualizer',
-    name: 'Đồ thị & Thuật toán',
-    icon: 'pi pi-sitemap',
-    type: 'application',
-    position: { x: 220, y: 320 },
-  },
-  {
-    id: 'sieu-co',
-    name: 'Siêu Cờ',
-    icon: 'pi pi-th-large',
-    type: 'application',
-    position: { x: 320, y: 20 },
-  },
-  {
-    id: 'image-search',
-    name: 'Tìm Kiếm Ảnh',
-    icon: 'pi pi-images',
-    type: 'application',
-    position: { x: 320, y: 120 },
-  },
 ];
 
 export const APP_SEARCH_CONFIG = {
@@ -93,7 +65,6 @@ export const APP_SEARCH_CONFIG = {
 
 function getAppDescription(appId: string): string {
   const descriptions: { [key: string]: string } = {
-    calculator: 'Perform mathematical calculations and computations',
     'my-info': 'View personal information and portfolio details',
     love: 'Explore love and relationship content',
     explorer: 'Browse and manage files and folders',
@@ -103,19 +74,12 @@ function getAppDescription(appId: string): string {
       'Manage sales, materials, and costs with Google Sheets integration across multiple tabs (Menu, Materials, Costs)',
     'chinese-chess': 'Chơi cờ tướng và cờ úp với AI, phá thế cờ, nhiều giao diện đẹp mắt',
     'fb-id-finder': 'Tìm Facebook ID từ số điện thoại, tra cứu thông tin Facebook',
-    'graph-visualizer':
-      'Tạo và phân tích đồ thị, tìm đường đi ngắn nhất với các thuật toán Dijkstra, Bellman-Ford, Floyd-Warshall, A*',
-    'sieu-co':
-      'Siêu Cờ - Chơi Cờ Tướng, Cờ Úp, giải Cờ Thế với AI thông minh. Ghi chép kỳ phổ, nhiều theme đẹp mắt',
-    'image-search':
-      'Tìm kiếm hình ảnh tương tự sử dụng thuật toán Computer Vision: pHash, dHash, Color Histogram, Edge Detection',
   };
   return descriptions[appId] || 'Application';
 }
 
 function getAppKeywords(appId: string): string[] {
   const keywords: { [key: string]: string[] } = {
-    calculator: ['math', 'calculate', 'compute', 'arithmetic', 'numbers'],
     'my-info': ['profile', 'personal', 'information', 'about', 'portfolio'],
     love: ['relationship', 'romance', 'heart', 'dating'],
     explorer: ['files', 'folders', 'browse', 'manage', 'directory'],
@@ -182,66 +146,6 @@ function getAppKeywords(appId: string): string[] {
       'facebook id finder',
       'lookup',
       'search facebook',
-    ],
-    'graph-visualizer': [
-      'graph',
-      'đồ thị',
-      'do thi',
-      'graph visualization',
-      'shortest path',
-      'đường đi ngắn nhất',
-      'duong di ngan nhat',
-      'dijkstra',
-      'bellman-ford',
-      'floyd-warshall',
-      'a-star',
-      'algorithm',
-      'thuật toán',
-      'thuat toan',
-      'node',
-      'edge',
-      'weighted graph',
-      'directed graph',
-      'undirected graph',
-    ],
-    'sieu-co': [
-      'siêu cờ',
-      'sieu co',
-      'cờ tướng',
-      'co tuong',
-      'xiangqi',
-      'cờ úp',
-      'co up',
-      'cờ thế',
-      'co the',
-      'puzzle chess',
-      'chinese chess',
-      'AI chess',
-      'game',
-      'kỳ phổ',
-      'ky pho',
-      'minimax',
-      'alpha-beta',
-    ],
-    'image-search': [
-      'image search',
-      'tìm kiếm ảnh',
-      'tim kiem anh',
-      'hình ảnh tương tự',
-      'hinh anh tuong tu',
-      'similar image',
-      'reverse image search',
-      'phash',
-      'dhash',
-      'color histogram',
-      'edge detection',
-      'computer vision',
-      'image matching',
-      'so sánh ảnh',
-      'so sanh anh',
-      'thuật toán',
-      'thuat toan',
-      'perceptual hash',
     ],
   };
   return keywords[appId] || [];

@@ -12,18 +12,6 @@ export interface WindowDefinition {
 }
 
 export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
-  calculator: {
-    id: 'calculator',
-    title: 'Calculator',
-    icon: 'pi pi-calculator',
-    component: 'calculator',
-    defaultWidth: 480,
-    defaultHeight: 720,
-    defaultX: 100,
-    defaultY: 100,
-    maximizable: true,
-    statusText: 'Ready',
-  },
   'my-info': {
     id: 'my-info',
     title: 'About Me',
@@ -155,42 +143,6 @@ export const WINDOW_REGISTRY: Record<string, WindowDefinition> = {
     defaultY: 100,
     maximizable: true,
     statusText: 'Tìm Facebook ID từ số điện thoại',
-  },
-  'graph-visualizer': {
-    id: 'graph-visualizer',
-    title: 'Đồ thị & Thuật toán',
-    icon: 'pi pi-sitemap',
-    component: 'graph-visualizer',
-    defaultWidth: 1400,
-    defaultHeight: 900,
-    defaultX: 100,
-    defaultY: 50,
-    maximizable: true,
-    statusText: 'Tạo và phân tích đồ thị, tìm đường đi ngắn nhất',
-  },
-  'sieu-co': {
-    id: 'sieu-co',
-    title: 'Siêu Cờ',
-    icon: 'pi pi-th-large',
-    component: 'sieu-co',
-    defaultWidth: 1200,
-    defaultHeight: 850,
-    defaultX: 100,
-    defaultY: 40,
-    maximizable: true,
-    statusText: 'Cờ Tướng, Cờ Úp & Cờ Thế',
-  },
-  'image-search': {
-    id: 'image-search',
-    title: 'Tìm Kiếm Hình Ảnh',
-    icon: 'pi pi-images',
-    component: 'image-search',
-    defaultWidth: 1100,
-    defaultHeight: 800,
-    defaultX: 150,
-    defaultY: 60,
-    maximizable: true,
-    statusText: 'Tìm kiếm hình ảnh tương tự bằng thuật toán CV',
   },
 };
 
